@@ -125,7 +125,7 @@ contract GenArt721 is CustomERC721Metadata {
 
     }
 
-
+          ///FIXME set "external"?
     function mint(address _to, uint256 _projectId, address _by) public returns (uint256 _tokenId) {
         require(isMintWhitelisted[msg.sender], "Must mint from whitelisted minter contract.");
         require(projects[_projectId].invocations.add(1) <= projects[_projectId].maxInvocations, "Must not exceed max invocations");
@@ -251,12 +251,12 @@ contract GenArt721 is CustomERC721Metadata {
         projects[_projectId].paused = !projects[_projectId].paused;
     }
 
-    function addProject(string memory _projectName, address _artistAddress, string memory _currencySymbol, uint256 _pricePerTokenInWei, bool _dynamic) public onlyWhitelisted() {
+    function addProject(string memory _projectName, address _artistAddress, uint256 _pricePerTokenInWei, bool _dynamic) public onlyWhitelisted {
 
         uint256 projectId = nextProjectId;
         projectIdToArtistAddress[projectId] = _artistAddress;
         projects[projectId].name = _projectName;
-        projectIdToCurrencySymbol[projectId] = _currencySymbol;
+        projectIdToCurrencySymbol[projectId] = "ETH";
         projectIdToPricePerTokenInWei[projectId] = _pricePerTokenInWei;
         projects[projectId].paused=true;
         projects[projectId].dynamic=_dynamic;
@@ -316,7 +316,8 @@ contract GenArt721 is CustomERC721Metadata {
         projects[_projectId].license = _projectLicense;
     }
 
-    function updateProjectMaxInvocations(uint256 _projectId, uint256 _maxInvocations) onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) public {
+    function updateProjectMaxInvocations(uint256 _projectId, uint256 _maxInvocations) onlyArtist(_projectId) public {
+        require((!projects[_projectId].locked || _maxInvocations<projects[_projectId].maxInvocations, "Only if unlocked");
         require(_maxInvocations > projects[_projectId].invocations, "You must set max invocations greater than current invocations");
         require(_maxInvocations <= ONE_MILLION, "Cannot exceed 1,000,000");
         projects[_projectId].maxInvocations = _maxInvocations;
