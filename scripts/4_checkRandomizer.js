@@ -6,7 +6,7 @@ async function main() {
   const [deployer] = await ethers.getSigners();
   const deployerAddress = await deployer.getAddress();
   console.log(
-    "Adding project:",
+    "Checking:",
     deployerAddress
   );
 
@@ -17,15 +17,11 @@ async function main() {
     deployer //provider
   );
 
-  await genArt721.addProject(
-    "Test",
-    "0x8De4e517A6F0B84654625228D8293b70AB49cF6C",
-    "ETH",
-    "100000000000000000",
-    true,
-  );
+  let randomizer = await genArt721.randomizerContract();
 
-  console.log('addProject done');
+  console.log('randomizer: '+randomizer);
+  //let supply = await genArt721.totalSupply();
+  //console.log("supply:" +supply);
 }
 
 main()

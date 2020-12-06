@@ -43,7 +43,9 @@ module.exports = {
     */
     rinkeby: {
       url: `https://rinkeby.infura.io/v3/${INFURA_PROJECT_ID}`,
-      accounts: {mnemonic:`update worry tide frequent intact pave fun daring abandon already payment wonder`}
+
+      accounts: [`0x${PRIVATE_KEY}`]
+      //accounts: {mnemonic:`update worry tide frequent intact pave fun daring abandon already payment wonder`}
     },
     kovan: {
       url: `https://kovan.infura.io/v3/${INFURA_PROJECT_ID}`,
