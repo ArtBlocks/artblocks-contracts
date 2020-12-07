@@ -1,8 +1,8 @@
 // File: contracts/GenArt721.sol
 
-//0xEC85c08504D52040c7B2252600b2823eF3e0bC24
+//0x1454EFCa69FA654e5A7d83CB61c1aD81790c44B7
 
-//https://oneclickdapp.com/pandora-happy/
+//https://oneclickdapp.com/radar-valery/
 
 pragma solidity ^0.5.0;
 
@@ -33,11 +33,6 @@ contract GenArt721 is CustomERC721Metadata {
         string website;
         string license;
         bool dynamic;
-        //address artistAddress;
-        //address additionalPayee;
-        //uint256 additionalPayeePercentage;
-        uint256 secondMarketRoyalty;
-        //uint256 pricePerTokenInWei;
         string projectBaseURI;
         string projectBaseIpfsURI;
         uint256 invocations;
@@ -51,19 +46,20 @@ contract GenArt721 is CustomERC721Metadata {
         bool active;
         bool locked;
         bool paused;
-        //string currencySymbol;
-        //address currencyAddress;
+
     }
 
     uint256 constant ONE_MILLION = 1_000_000;
     mapping(uint256 => Project) projects;
 
+    //All financial functions are stripped from struct for visibility
     mapping(uint256 => address) public projectIdToArtistAddress;
     mapping(uint256 => string) public projectIdToCurrencySymbol;
     mapping(uint256 => address) public projectIdToCurrencyAddress;
     mapping(uint256 => uint256) public projectIdToPricePerTokenInWei;
     mapping(uint256 => address) public projectIdToAdditionalPayee;
     mapping(uint256 => uint256) public projectIdToAdditionalPayeePercentage;
+    mapping(uint256 => uint256) public projectIdToSecondaryMarketRoyaltyPercentage;
 
     address public artblocksAddress;
     uint256 public artblocksPercentage = 10;
@@ -71,15 +67,14 @@ contract GenArt721 is CustomERC721Metadata {
     mapping(uint256 => string) public staticIpfsImageLink;
     mapping(uint256 => uint256) public tokenIdToProjectId;
     mapping(uint256 => uint256[]) internal projectIdToTokenIds;
-    mapping(uint256 => bytes32) internal tokenIdToHash;
+    mapping(uint256 => bytes32) public tokenIdToHash;
     mapping(bytes32 => uint256) public hashToTokenId;
 
     address public admin;
     mapping(address => bool) public isWhitelisted;
     mapping(address => bool) public isMintWhitelisted;
-    //mapping(address => bool) public isDeployer;
 
-    uint256 public nextProjectId;
+    uint256 public nextProjectId = 3;
 
     modifier onlyValidTokenId(uint256 _tokenId) {
         require(_exists(_tokenId), "Token ID does not exist");
@@ -105,12 +100,6 @@ contract GenArt721 is CustomERC721Metadata {
         require(isWhitelisted[msg.sender], "Only whitelisted");
         _;
     }
-/*
-    modifier onlyDeployer() {
-        require(isDeployer[msg.sender], "Only deployer");
-        _;
-    }
-    */
 
     modifier onlyArtistOrWhitelisted(uint256 _projectId) {
         require(isWhitelisted[msg.sender] || msg.sender == projectIdToArtistAddress[_projectId], "Only artist or whitelisted");
@@ -125,8 +114,7 @@ contract GenArt721 is CustomERC721Metadata {
 
     }
 
-          ///FIXME set "external"?
-    function mint(address _to, uint256 _projectId, address _by) public returns (uint256 _tokenId) {
+    function mint(address _to, uint256 _projectId, address _by) external returns (uint256 _tokenId) {
         require(isMintWhitelisted[msg.sender], "Must mint from whitelisted minter contract.");
         require(projects[_projectId].invocations.add(1) <= projects[_projectId].maxInvocations, "Must not exceed max invocations");
         require(projects[_projectId].active || _by == projectIdToArtistAddress[_projectId], "Project must exist and be active");
@@ -134,11 +122,6 @@ contract GenArt721 is CustomERC721Metadata {
 
 
         uint256 tokenId = _mintToken(_to, _projectId);
-        /*
-        if (projects[_projectId].useETH){
-          _splitFunds(_projectId);
-        }
-        */
 
         return tokenId;
     }
@@ -164,40 +147,6 @@ contract GenArt721 is CustomERC721Metadata {
 
         return tokenIdToBe;
     }
-/*
-    function _splitFunds(uint256 _projectId) internal {
-        if (msg.value > 0) {
-
-            uint256 pricePerTokenInWei = projects[_projectId].pricePerTokenInWei;
-            uint256 refund = msg.value.sub(projects[_projectId].pricePerTokenInWei);
-
-            if (refund > 0) {
-                msg.sender.transfer(refund);
-            }
-
-            uint256 foundationAmount = pricePerTokenInWei.div(100).mul(artblocksPercentage);
-            if (foundationAmount > 0) {
-                artblocksAddress.transfer(foundationAmount);
-            }
-
-            uint256 projectFunds = pricePerTokenInWei.sub(foundationAmount);
-
-            uint256 additionalPayeeAmount;
-            if (projects[_projectId].additionalPayeePercentage > 0) {
-                additionalPayeeAmount = projectFunds.div(100).mul(projects[_projectId].additionalPayeePercentage);
-                if (additionalPayeeAmount > 0) {
-                    projects[_projectId].additionalPayee.transfer(additionalPayeeAmount);
-                }
-            }
-
-            uint256 creatorFunds = projectFunds.sub(additionalPayeeAmount);
-            if (creatorFunds > 0) {
-                projects[_projectId].artistAddress.transfer(creatorFunds);
-            }
-        }
-    }
-    */
-
     function updateArtblocksAddress(address _artblocksAddress) public onlyAdmin {
         artblocksAddress = _artblocksAddress;
     }
@@ -222,15 +171,6 @@ contract GenArt721 is CustomERC721Metadata {
     function removeMintWhitelisted(address _address) public onlyAdmin {
         isMintWhitelisted[_address] = false;
     }
-/*
-    function addDeployer(address _address) public onlyWhitelisted {
-        isDeployer[_address] = true;
-    }
-
-    function removeDeployer(address _address) public onlyWhitelisted {
-        isDeployer[_address] = false;
-    }
-    */
 
     function updateRandomizerAddress(address _randomizerAddress) public onlyWhitelisted {
       randomizerContract = Randomizer(_randomizerAddress);
@@ -269,22 +209,15 @@ contract GenArt721 is CustomERC721Metadata {
         nextProjectId = nextProjectId.add(1);
     }
 
-    function updateProjectCurrencySymbol(uint256 _projectId, string memory _currencySymbol) onlyArtist(_projectId) public {
+    function updateProjectCurrencyInfo(uint256 _projectId, string memory _currencySymbol, address _currencyAddress) onlyArtist(_projectId) public {
         projectIdToCurrencySymbol[_projectId] = _currencySymbol;
-    }
-
-    function updateProjectCurrencyAddress(uint256 _projectId, address _currencyAddress) onlyArtist(_projectId) public {
         projectIdToCurrencyAddress[_projectId] = _currencyAddress;
     }
 
     function updateProjectPricePerTokenInWei(uint256 _projectId, uint256 _pricePerTokenInWei) onlyArtist(_projectId) public {
         projectIdToPricePerTokenInWei[_projectId] = _pricePerTokenInWei;
     }
-/*
-    function toggleProjectUseETH(uint256 _projectId) public onlyArtist(_projectId) {
-      projects[_projectId].useETH = !projects[_projectId].useETH;
-    }
-*/
+
     function updateProjectName(uint256 _projectId, string memory _projectName) onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) public {
         projects[_projectId].name = _projectName;
     }
@@ -301,7 +234,7 @@ contract GenArt721 is CustomERC721Metadata {
 
     function updateProjectSecondaryMarketRoyaltyPercentage(uint256 _projectId, uint256 _secondMarketRoyalty) onlyArtist(_projectId) public {
         require(_secondMarketRoyalty <= 100, "Max of 100%");
-        projects[_projectId].secondMarketRoyalty = _secondMarketRoyalty;
+        projectIdToSecondaryMarketRoyaltyPercentage[_projectId] = _secondMarketRoyalty;
     }
 
     function updateProjectDescription(uint256 _projectId, string memory _projectDescription) onlyArtist(_projectId) public {
@@ -317,19 +250,12 @@ contract GenArt721 is CustomERC721Metadata {
     }
 
     function updateProjectMaxInvocations(uint256 _projectId, uint256 _maxInvocations) onlyArtist(_projectId) public {
-        require((!projects[_projectId].locked || _maxInvocations<projects[_projectId].maxInvocations, "Only if unlocked");
+        require((!projects[_projectId].locked || _maxInvocations<projects[_projectId].maxInvocations), "Only if unlocked");
         require(_maxInvocations > projects[_projectId].invocations, "You must set max invocations greater than current invocations");
         require(_maxInvocations <= ONE_MILLION, "Cannot exceed 1,000,000");
         projects[_projectId].maxInvocations = _maxInvocations;
     }
-/*
-    function updateProjectHashesGenerated(uint256 _projectId, uint256 _hashes) onlyUnlocked(_projectId) onlyWhitelisted() public {
-        require(projects[_projectId].invocations == 0, "Can not modify hashes generated after a token is minted.");
-        require(projects[_projectId].dynamic, "Can only modify hashes on dynamic projects.");
-        require(_hashes <= 100 && _hashes >= 0, "Hashes generated must be a positive integer and max hashes per invocation are 100");
-        projects[_projectId].hashes = _hashes;
-    }
-    */
+
     function toggleProjectUseHashString(uint256 _projectId) onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) public {
       require(projects[_projectId].invocations == 0, "Cannot modify after a token is minted.");
       projects[_projectId].useHashString = !projects[_projectId].useHashString;
@@ -399,7 +325,7 @@ contract GenArt721 is CustomERC721Metadata {
         dynamic = projects[_projectId].dynamic;
     }
 
-    function projectTokenInfo(uint256 _projectId) view public returns (address artistAddress, uint256 pricePerTokenInWei, uint256 invocations, uint256 maxInvocations, bool active, address additionalPayee, uint256 additionalPayeePercentage /*,string memory currency, address currencyAddress*/) {
+    function projectTokenInfo(uint256 _projectId) view public returns (address artistAddress, uint256 pricePerTokenInWei, uint256 invocations, uint256 maxInvocations, bool active, address additionalPayee, uint256 additionalPayeePercentage ,string memory currency, address currencyAddress) {
         artistAddress = projectIdToArtistAddress[_projectId];
         pricePerTokenInWei = projectIdToPricePerTokenInWei[_projectId];
         invocations = projects[_projectId].invocations;
@@ -407,8 +333,8 @@ contract GenArt721 is CustomERC721Metadata {
         active = projects[_projectId].active;
         additionalPayee = projectIdToAdditionalPayee[_projectId];
         additionalPayeePercentage = projectIdToAdditionalPayeePercentage[_projectId];
-        //currency = projectIdToCurrencySymbol[_projectId];
-        //currencyAddress = projectIdToCurrencyAddress[_projectId];
+        currency = projectIdToCurrencySymbol[_projectId];
+        currencyAddress = projectIdToCurrencyAddress[_projectId];
     }
 
     function projectScriptInfo(uint256 _projectId) view public returns (string memory scriptJSON, uint256 scriptCount, bool useHashString, string memory ipfsHash, bool locked, bool paused) {
@@ -434,10 +360,6 @@ contract GenArt721 is CustomERC721Metadata {
         return projectIdToTokenIds[_projectId];
     }
 
-    function showTokenHash(uint _tokenId) public view returns (bytes32){
-        return tokenIdToHash[_tokenId];
-    }
-
     function tokensOfOwner(address owner) external view returns (uint256[] memory) {
         return _tokensOfOwner(owner);
     }
@@ -446,7 +368,7 @@ contract GenArt721 is CustomERC721Metadata {
         artistAddress = projectIdToArtistAddress[tokenIdToProjectId[_tokenId]];
         additionalPayee = projectIdToAdditionalPayee[tokenIdToProjectId[_tokenId]];
         additionalPayeePercentage = projectIdToAdditionalPayeePercentage[tokenIdToProjectId[_tokenId]];
-        royaltyFeeByID = projects[tokenIdToProjectId[_tokenId]].secondMarketRoyalty;
+        royaltyFeeByID = projectIdToSecondaryMarketRoyaltyPercentage[tokenIdToProjectId[_tokenId]];
     }
 
     function tokenURI(uint256 _tokenId) external view onlyValidTokenId(_tokenId) returns (string memory) {

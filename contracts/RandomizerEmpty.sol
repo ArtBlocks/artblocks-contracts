@@ -9,7 +9,7 @@ contract RandomizerEmpty {
 
 
 
-  function returnValue () public view returns (uint256){
+  function returnValue () public pure returns (uint256){
     return 0;
   }
 
