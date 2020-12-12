@@ -7,7 +7,7 @@ interface DAI {
 
 
 
-contract Randomizer {
+contract RandomizerDAI {
 
   DAI public daiContract;
 

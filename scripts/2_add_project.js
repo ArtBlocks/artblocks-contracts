@@ -1,5 +1,5 @@
 var prompt = require('prompt-sync')();
-const GenArt721 = require('../artifacts/GenArt721.json');
+const GenArt721Core = require('../artifacts/GenArt721Core.json');
 const {BigNumber} = require('ethers');
 
 async function main() {
@@ -11,16 +11,15 @@ async function main() {
   );
 
   const genArt721Address = prompt('GenArt721 address? ');
-  const genArt721 = new ethers.Contract(
+  const genArt721Core = new ethers.Contract(
     genArt721Address,
-    GenArt721.abi,
+    GenArt721Core.abi,
     deployer //provider
   );
 
-  await genArt721.addProject(
-    "Test",
+  await genArt721Core.addProject(
+    "Cryptoblots",
     "0x8De4e517A6F0B84654625228D8293b70AB49cF6C",
-    "ETH",
     "100000000000000000",
     true,
   );

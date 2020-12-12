@@ -4,14 +4,14 @@ async function main() {
   const [deployer] = await ethers.getSigners();
   const deployerAddress = await deployer.getAddress();
   console.log(
-    "Deploying Randomizer DAI from:",
+    "Deploying Randomizer from:",
     deployerAddress
   );
 
-  const RandomizerDAI = await ethers.getContractFactory("RandomizerEmpty");
-  const randomizerDAI = await RandomizerDAI.deploy();
+  const Randomizer = await ethers.getContractFactory("Randomizer");
+  const randomizer = await Randomizer.deploy();
 
-  console.log('Randomizer Empty contract deployed at:', (await randomizerDAI.deployed()).address);
+  console.log('Randomizer contract deployed at:', (await randomizer.deployed()).address);
 }
 
 main()

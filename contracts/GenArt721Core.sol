@@ -1,4 +1,4 @@
-// File: contracts/GenArt721.sol
+// File: contracts/GenArt721Core.sol
 
 //0x1454EFCa69FA654e5A7d83CB61c1aD81790c44B7
 
@@ -14,13 +14,13 @@ interface Randomizer {
    function returnValue() external view returns(bytes32);
 }
 
-contract GenArt721 is CustomERC721Metadata {
+contract GenArt721Core is CustomERC721Metadata {
     using SafeMath for uint256;
 
     event Mint(
         address indexed _to,
         uint256 indexed _tokenId,
-        bytes32 indexed _hashString
+        uint256 indexed _projectId
 
     );
 
@@ -143,7 +143,7 @@ contract GenArt721 is CustomERC721Metadata {
         tokenIdToProjectId[tokenIdToBe] = _projectId;
         projectIdToTokenIds[_projectId].push(tokenIdToBe);
 
-        emit Mint(_to, tokenIdToBe, hash);
+        emit Mint(_to, tokenIdToBe, _projectId);
 
         return tokenIdToBe;
     }
