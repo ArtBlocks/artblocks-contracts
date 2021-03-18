@@ -132,10 +132,11 @@ contract GenArt721Core is CustomERC721Metadata {
 
         projects[_projectId].invocations = projects[_projectId].invocations.add(1);
 
-
+        if (projects[_projectId].useHashString) {
             bytes32 hash = keccak256(abi.encodePacked(projects[_projectId].invocations, block.number, blockhash(block.number - 1), msg.sender, randomizerContract.returnValue()));
             tokenIdToHash[tokenIdToBe]=hash;
             hashToTokenId[hash] = tokenIdToBe;
+          }
 
 
         _mint(_to, tokenIdToBe);

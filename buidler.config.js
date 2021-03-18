@@ -8,6 +8,7 @@ usePlugin("@nomiclabs/buidler-solhint");
 const INFURA_PROJECT_ID = process.env.PROTOTYPE_BR_INFURA_KEY;
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
 const MNEMONIC = process.env.MNEMONIC;
+const MAINNET_KEY = process.env.MAINNET_KEY;
 
 module.exports = {
   solc: {
@@ -27,8 +28,9 @@ module.exports = {
     },
     mainnet: {
       url: `https://mainnet.infura.io/v3/${INFURA_PROJECT_ID}`,
-      accounts: {mnemonic:`${MNEMONIC}`},
-      gasPrice: 30000000000
+      //accounts: {mnemonic:`${MNEMONIC}`},
+      accounts: [`0x${MAINNET_KEY}`],
+      gasPrice: 125000000000
     },
     ropsten: {
       url: `http://127.0.0.1:8545`,

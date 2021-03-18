@@ -75,9 +75,13 @@ contract GenArt721Minter {
       require(msg.value==0, "this project accepts a different currency and cannot accept ETH");
       require(ERC20(artblocksContract.projectIdToCurrencyAddress(_projectId)).allowance(msg.sender, address(this)) >= artblocksContract.projectIdToPricePerTokenInWei(_projectId), "Insufficient Funds Approved for TX");
       require(ERC20(artblocksContract.projectIdToCurrencyAddress(_projectId)).balanceOf(msg.sender) >= artblocksContract.projectIdToPricePerTokenInWei(_projectId), "Insufficient balance.");
+      _splitFundsERC20(_projectId);
     } else {
       require(msg.value>=artblocksContract.projectIdToPricePerTokenInWei(_projectId), "Must send minimum value to mint!");
+      _splitFundsETH(_projectId);
     }
+
+
     uint256 tokenId = artblocksContract.mint(_to, _projectId, msg.sender);
 
     if (projectIdToBonus[_projectId]){
@@ -85,11 +89,7 @@ contract GenArt721Minter {
       BonusContract(projectIdToBonusContractAddress[_projectId]).triggerBonus(msg.sender);
       }
 
-    if (keccak256(abi.encodePacked(artblocksContract.projectIdToCurrencySymbol(_projectId))) != keccak256(abi.encodePacked("ETH"))){
-      _splitFundsERC20(_projectId);
-    } else {
-      _splitFundsETH(_projectId);
-    }
+
 
     return tokenId;
   }
