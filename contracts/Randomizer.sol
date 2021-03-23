@@ -7,7 +7,7 @@ contract Randomizer {
   function returnValue () public view returns (bytes32){
     uint256 time = block.timestamp;
     uint256 extra = (time%200)+1;
-    return keccak256(abi.encodePacked(block.number, blockhash(block.number - 2), block.timestamp, extra));
+    return keccak256(abi.encodePacked(block.number, blockhash(block.number - 2), time, extra));
   }
 
 }
