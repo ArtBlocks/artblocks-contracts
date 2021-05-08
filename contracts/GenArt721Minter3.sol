@@ -207,7 +207,7 @@ contract GenArt721Minter3 {
 
   GenArt721CoreContract public artblocksContract;
 
-  address public ownerAddress;
+  address payable public ownerAddress;
   uint256 public ownerPercentage;
 
   mapping(uint256 => bool) public projectIdToBonus;
@@ -235,7 +235,7 @@ contract GenArt721Minter3 {
     projectMintLimit[_projectId] = _limit;
   }
 
-  function setOwnerAddress(address _ownerAddress) public {
+  function setOwnerAddress(address payable _ownerAddress) public {
     require(artblocksContract.isWhitelisted(msg.sender), "can only be set by admin");
     ownerAddress = _ownerAddress;
   }
