@@ -18,7 +18,7 @@ async function main() {
   );
 
   await genArt721Core.addProject(
-    "Cryptoblots",
+    "Flamingo1",
     "0x8De4e517A6F0B84654625228D8293b70AB49cF6C",
     "100000000000000000",
     true,

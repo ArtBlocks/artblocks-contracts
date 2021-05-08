@@ -30,7 +30,7 @@ module.exports = {
       url: `https://mainnet.infura.io/v3/${INFURA_PROJECT_ID}`,
       //accounts: {mnemonic:`${MNEMONIC}`},
       accounts: [`0x${MAINNET_KEY}`],
-      gasPrice: 125000000000
+      gasPrice: 75000000000
     },
     ropsten: {
       url: `http://127.0.0.1:8545`,
