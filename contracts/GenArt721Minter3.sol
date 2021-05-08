@@ -202,7 +202,7 @@ interface BonusContract {
 
 
 
-contract GenArt721Minter2 {
+contract GenArt721Minter3 {
   using SafeMath for uint256;
 
   GenArt721CoreContract public artblocksContract;
