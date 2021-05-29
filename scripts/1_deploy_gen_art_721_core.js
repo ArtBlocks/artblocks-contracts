@@ -8,10 +8,10 @@ async function main() {
     deployerAddress
   );
 
-  const GenArt721Core = await ethers.getContractFactory("GenArt721Core");
-  const genArt721Core = await GenArt721Core.deploy("Art Blocks", "BLOCKS", "0x92E52C3406c5Cc72968C6D702476d430818D425D");
+  const GenArt721Core2 = await ethers.getContractFactory("GenArt721Core2");
+  const genArt721Core2 = await GenArt721Core2.deploy("Generativo", "GEN", "0x92E52C3406c5Cc72968C6D702476d430818D425D");
 
-  console.log('GenArt721 Core token contract deployed at:', (await genArt721Core.deployed()).address);
+  console.log('GenArt721 Core token contract deployed at:', (await genArt721Core2.deployed()).address);
 }
 
 main()

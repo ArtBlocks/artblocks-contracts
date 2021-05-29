@@ -49,7 +49,7 @@ contract GenArt721Core2 is CustomERC721Metadata {
 
     }
 
-    uint256 constant ONE_MILLION = 1_000_000;
+    //uint256 constant ONE_MILLION = 1_000_000;
     mapping(uint256 => Project) projects;
 
     //All financial functions are stripped from struct for visibility
@@ -75,7 +75,7 @@ contract GenArt721Core2 is CustomERC721Metadata {
     mapping(address => bool) public isWhitelisted;
     mapping(address => bool) public isMintWhitelisted;
 
-    uint256 public nextProjectId = 3;
+    uint256 public nextProjectId = 0;
 
     modifier onlyValidTokenId(uint256 _tokenId) {
         require(_exists(_tokenId), "Token ID does not exist");
@@ -129,7 +129,7 @@ contract GenArt721Core2 is CustomERC721Metadata {
 
     function _mintToken(address _to, uint256 _projectId) internal returns (uint256 _tokenId) {
 
-        uint256 tokenIdToBe = (_projectId * ONE_MILLION) + projects[_projectId].invocations;
+        uint256 tokenIdToBe = (_projectId * 100) + projects[_projectId].invocations;
 
         projects[_projectId].invocations = projects[_projectId].invocations.add(1);
 
@@ -208,7 +208,7 @@ contract GenArt721Core2 is CustomERC721Metadata {
         projectIdToPricePerTokenInWei[projectId] = _pricePerTokenInWei;
         projects[projectId].paused=true;
         projects[projectId].dynamic=_dynamic;
-        projects[projectId].maxInvocations = ONE_MILLION;
+        projects[projectId].maxInvocations = 100;
         if (!_dynamic) {
             projects[projectId].useHashString = false;
         } else {
@@ -260,7 +260,7 @@ contract GenArt721Core2 is CustomERC721Metadata {
     function updateProjectMaxInvocations(uint256 _projectId, uint256 _maxInvocations) onlyArtist(_projectId) public {
         require((!projects[_projectId].locked || _maxInvocations<projects[_projectId].maxInvocations), "Only if unlocked");
         require(_maxInvocations > projects[_projectId].invocations, "You must set max invocations greater than current invocations");
-        require(_maxInvocations <= ONE_MILLION, "Cannot exceed 1,000,000");
+        require(_maxInvocations <= 100, "Cannot exceed 1,000,000");
         projects[_projectId].maxInvocations = _maxInvocations;
     }
 
