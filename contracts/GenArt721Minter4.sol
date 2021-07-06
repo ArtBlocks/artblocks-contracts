@@ -53,9 +53,8 @@ contract GenArt721Minter4 {
   mapping(uint256 => uint256) public projectMintLimit;
 
   // Auction variables
-  mapping(uint256 => uint256) public projectMultiplier;
-  mapping(uint256 => uint256) public projectTimestamp;
-  mapping(uint256 => bool) public projectIsAuction;
+  mapping(uint256 => uint256) public auctionMultiplier;
+  mapping(uint256 => uint256) public auctionTimestamp;
   mapping(uint256 => uint256) public auctionDuration;
 
   constructor(address _genArt721Address) public {
@@ -91,31 +90,6 @@ contract GenArt721Minter4 {
     require(artblocksContract.isWhitelisted(msg.sender), "can only be set by admin");
     contractFilterProject[_projectId]=!contractFilterProject[_projectId];
   }
-////// Auction Functions
-
-  function setProjectMultiplier(uint256 _projectId, uint256 _projectMultiplier) public {
-    require(artblocksContract.isWhitelisted(msg.sender), "can only be set by admin");
-    require(_projectMultiplier<=20, "max multiplier is 20x");
-    projectMultiplier[_projectId]=_projectMultiplier;
-  }
-
-  function setAuctionDuration(uint256 _projectId, uint256 _auctionDuration) public {
-    require(artblocksContract.isWhitelisted(msg.sender), "can only be set by admin");
-    require(_auctionDuration>600, "10 minute mininum for duration");
-    auctionDuration[_projectId]=_auctionDuration;
-  }
-
-  function toggleProjectIsAuction(uint256 _projectId) public {
-    require(artblocksContract.isWhitelisted(msg.sender), "can only be set by admin");
-    require(projectMultiplier[_projectId]!=0, "multiplier must be in place to set project for auction");
-    projectIsAuction[_projectId]=!projectIsAuction[_projectId];
-  }
-
-  function setProjectTimestamp(uint256 _projectId) public {
-    require(artblocksContract.isWhitelisted(msg.sender), "can only be set by admin");
-    require(projectIsAuction[_projectId], "can only set timestamp for an auction contract");
-    projectTimestamp[_projectId]=block.timestamp;
-  }
 
   function artistToggleBonus(uint256 _projectId) public {
     require(msg.sender==artblocksContract.projectIdToArtistAddress(_projectId), "can only be set by artist");
@@ -126,6 +100,32 @@ contract GenArt721Minter4 {
     require(msg.sender==artblocksContract.projectIdToArtistAddress(_projectId), "can only be set by artist");
     projectIdToBonusContractAddress[_projectId]=_bonusContractAddress;
   }
+
+
+  ////// Auction Functions
+
+    function setAuctionDetails(uint256 _projectId, uint256 _auctionMultiplier, uint256 _durationInSeconds) public {
+      require(artblocksContract.isWhitelisted(msg.sender), "can only be set by admin");
+      auctionMultiplier[_projectId]=_auctionMultiplier;
+      auctionDuration[_projectId]=_durationInSeconds;
+    }
+
+    function startAuctionNow(uint256 _projectId) public {
+      require(artblocksContract.isWhitelisted(msg.sender), "can only be set by admin");
+      require(auctionMultiplier[_projectId]!=0, "multiplier must be in place to set project for auction");
+      auctionTimestamp[_projectId]=block.timestamp;
+    }
+
+    function startAuctionLater(uint256 _projectId, uint256 _startTime) public {
+      require(artblocksContract.isWhitelisted(msg.sender), "can only be set by admin");
+      require(auctionMultiplier[_projectId]!=0, "multiplier must be in place to set project for auction");
+      auctionTimestamp[_projectId]=_startTime;
+    }
+
+    function stopAuction(uint256 _projectId) public {
+      require(artblocksContract.isWhitelisted(msg.sender), "can only be set by admin");
+      auctionTimestamp[_projectId]=0;
+    }
 
   function purchase(uint256 _projectId) public payable returns (uint256 _tokenId) {
     return purchaseTo(msg.sender, _projectId);
@@ -261,10 +261,13 @@ contract GenArt721Minter4 {
       }
     }
 
-  function getPrice(uint256 _projectId) public view returns (uint) {
-    uint256 elapsedTime = block.timestamp.sub(projectTimestamp[_projectId]);
+  function getPrice(uint256 _projectId) public view returns (uint256) {
+    uint256 auctionStartPrice = artblocksContract.projectIdToPricePerTokenInWei(_projectId).mul(auctionMultiplier[_projectId]);
+    if (block.timestamp<auctionTimestamp[_projectId]){
+      return auctionStartPrice;
+    } else {
+    uint256 elapsedTime = block.timestamp.sub(auctionTimestamp[_projectId]);
     uint256 duration = auctionDuration[_projectId];
-    uint256 auctionStartPrice = artblocksContract.projectIdToPricePerTokenInWei(_projectId).mul(projectMultiplier[_projectId]);
     if (elapsedTime<duration){
       uint256 currentPrice = duration.sub(elapsedTime).mul(auctionStartPrice).div(duration);
       if (currentPrice<artblocksContract.projectIdToPricePerTokenInWei(_projectId)){
@@ -276,12 +279,29 @@ contract GenArt721Minter4 {
     } else {
       return artblocksContract.projectIdToPricePerTokenInWei(_projectId);
     }
+  }
 
      }
 
-     function isAuctionLive(uint _projectId) public view returns (bool){
-       return block.timestamp.sub(projectTimestamp[_projectId])<auctionDuration[_projectId];
+  function isAuctionLive(uint256 _projectId) public view returns (bool){
+    if (block.timestamp<auctionTimestamp[_projectId]){
+      return false;
+    } else {
+       return block.timestamp.sub(auctionTimestamp[_projectId])<auctionDuration[_projectId];
      }
+     }
+
+  function auctionTimeRemaining(uint256 _projectId) public view returns (uint256) {
+    require(isAuctionLive(_projectId), "auction is not currently live");
+    uint256 elapsedTime = block.timestamp.sub(auctionTimestamp[_projectId]);
+    uint256 duration = auctionDuration[_projectId];
+    return duration.sub(elapsedTime);
+
+  }
+
+  function getCurrentTime() public view returns (uint256){
+    return block.timestamp;
+  }
 
 
 }
