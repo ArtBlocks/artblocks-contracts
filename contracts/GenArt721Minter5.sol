@@ -59,7 +59,9 @@ contract GenArt721Minter5 {
   mapping(uint256 => uint256) public auctionedIterations;
   mapping(uint256 => uint256) public auctionIterationCounter;
   mapping(uint256 => uint256) public auctionFinalPrice;
-  mapping(address => uint256) public addressPricePaid;
+  mapping(address => mapping (uint256 => uint256)) public addressPricePaid;
+  mapping(address => mapping (uint256 => bool)) public addressClaimedRefund;
+  mapping(uint256 => bool) public projectSplitAuctionFunds;
 
   constructor(address _genArt721Address) public {
     artblocksContract=GenArt721CoreContract(_genArt721Address);
@@ -114,6 +116,10 @@ contract GenArt721Minter5 {
       auctionDuration[_projectId]=_durationInSeconds;
       auctionedIterations[_projectId]=_auctionedIterations;
       auctionIterationCounter[_projectId]=0;
+      projectMintLimit[_projectId] = 1;
+      contractFilterProject[_projectId]=true;
+      projectSplitAuctionFunds[_projectId]=false;
+
     }
 
     function startAuctionNow(uint256 _projectId) public {
@@ -135,7 +141,9 @@ contract GenArt721Minter5 {
 
     function withdrawExcess(uint256 _projectId) public payable returns (bool) {
       require(!isAuctionLive(_projectId), "cannot withdraw until after auction");
-      uint256 pricePaid = addressPricePaid[msg.sender];
+      require(!addressClaimedRefund[msg.sender][_projectId], "refund already claimed");
+      uint256 pricePaid = addressPricePaid[msg.sender][_projectId];
+      addressClaimedRefund[msg.sender][_projectId]=true;
 
       if (auctionFinalPrice[_projectId]>0){
         uint256 finalPrice=auctionFinalPrice[_projectId];
@@ -150,7 +158,13 @@ contract GenArt721Minter5 {
           msg.sender.transfer(refund);
         }
       }
+      return true;
+    }
 
+    function splitAuctionFunds(uint256 _projectId) public payable returns (bool) {
+      require(artblocksContract.isWhitelisted(msg.sender), "can only be triggered by admin");
+      require(!isAuctionLive(_projectId), "cannot trigger while auction is live");
+      _splitFundsETHAuction(_projectId);
       return true;
     }
 
@@ -158,7 +172,7 @@ contract GenArt721Minter5 {
     return purchaseTo(msg.sender, _projectId);
   }
 //remove public and payable to prevent public use of purchaseTo function
-  function purchaseTo(address _to, uint256 _projectId) public payable returns(uint256 _tokenId){
+  function purchaseTo(address _to, uint256 _projectId) private returns(uint256 _tokenId){
     if (keccak256(abi.encodePacked(artblocksContract.projectIdToCurrencySymbol(_projectId))) != keccak256(abi.encodePacked("ETH"))){
       require(msg.value==0, "this project accepts a different currency and cannot accept ETH");
       require(ERC20(artblocksContract.projectIdToCurrencyAddress(_projectId)).allowance(msg.sender, address(this)) >= artblocksContract.projectIdToPricePerTokenInWei(_projectId), "Insufficient Funds Approved for TX");
@@ -173,7 +187,8 @@ contract GenArt721Minter5 {
         uint256 currentPrice = getPrice(_projectId);
         require(totalIterations<projectMaxIterations, "max number of auctioned iterations met");
         auctionIterationCounter[_projectId] = newIterations;
-        addressPricePaid[_to] = currentPrice;
+        addressClaimedRefund[_to][_projectId]=false;
+        addressPricePaid[_to][_projectId] = currentPrice;
         if (newIterations == projectMaxIterations){
           auctionFinalPrice[_projectId] = currentPrice;
         }
@@ -238,25 +253,33 @@ contract GenArt721Minter5 {
   }
 
   function _splitFundsETHAuction(uint256 _projectId) internal {
-    if (msg.value > 0) {
-      uint256 pricePerTokenInWei = getPrice(_projectId);
-      uint256 refund = msg.value.sub(pricePerTokenInWei);
-      if (refund > 0) {
-        msg.sender.transfer(refund);
+    require(!projectSplitAuctionFunds[_projectId], "Funds have already been split for this project");
+    require(!isAuctionLive(_projectId), "cannot split funds during an auction");
+
+      uint256 totalFundsToSplit;
+      if (auctionFinalPrice[_projectId]>0){
+        totalFundsToSplit = auctionFinalPrice[_projectId].mul(auctionIterationCounter[_projectId]);
+      } else {
+        totalFundsToSplit = getPrice(_projectId).mul(auctionIterationCounter[_projectId]);
       }
-      uint256 artBlocksAmount = pricePerTokenInWei.div(100).mul(artblocksContract.artblocksPercentage());
+      //uint256 pricePerTokenInWei = getPrice(_projectId);
+      //uint256 refund = msg.value.sub(pricePerTokenInWei);
+      //if (refund > 0) {
+        //msg.sender.transfer(refund);
+      //}
+      uint256 artBlocksAmount = totalFundsToSplit.div(100).mul(artblocksContract.artblocksPercentage());
       if (artBlocksAmount > 0) {
         artblocksContract.artblocksAddress().transfer(artBlocksAmount);
       }
 
-      uint256 remainingFunds = pricePerTokenInWei.sub(artBlocksAmount);
+      uint256 remainingFunds = totalFundsToSplit.sub(artBlocksAmount);
 
       uint256 ownerFunds = remainingFunds.div(100).mul(ownerPercentage);
       if (ownerFunds > 0) {
         ownerAddress.transfer(ownerFunds);
       }
 
-      uint256 projectFunds = pricePerTokenInWei.sub(artBlocksAmount).sub(ownerFunds);
+      uint256 projectFunds = totalFundsToSplit.sub(artBlocksAmount).sub(ownerFunds);
       uint256 additionalPayeeAmount;
       if (artblocksContract.projectIdToAdditionalPayeePercentage(_projectId) > 0) {
         additionalPayeeAmount = projectFunds.div(100).mul(artblocksContract.projectIdToAdditionalPayeePercentage(_projectId));
@@ -268,7 +291,7 @@ contract GenArt721Minter5 {
       if (creatorFunds > 0) {
         artblocksContract.projectIdToArtistAddress(_projectId).transfer(creatorFunds);
       }
-    }
+
   }
 
   function _splitFundsERC20(uint256 _projectId) internal {
@@ -305,7 +328,7 @@ contract GenArt721Minter5 {
     } else {
     uint256 elapsedTime = block.timestamp.sub(auctionTimestamp[_projectId]);
     uint256 duration = auctionDuration[_projectId];
-    if (elapsedTime<duration){
+    if (elapsedTime<duration && isAuctionLive(_projectId)){
       uint256 currentPrice = duration.sub(elapsedTime).mul(auctionStartPrice).div(duration);
       if (currentPrice<artblocksContract.projectIdToPricePerTokenInWei(_projectId)){
         return artblocksContract.projectIdToPricePerTokenInWei(_projectId);
@@ -340,6 +363,20 @@ contract GenArt721Minter5 {
 
   function getCurrentTime() public view returns (uint256){
     return block.timestamp;
+  }
+
+//// clear refund amount once refund is claimed
+  function getRefundAmount(address _address, uint256 _projectId) public view returns (uint256){
+    uint256 pricePaid = addressPricePaid[_address][_projectId];
+    if (auctionFinalPrice[_projectId]>0){
+      uint256 finalPrice=auctionFinalPrice[_projectId];
+      uint256 refund = pricePaid.sub(finalPrice);
+      return refund;
+    } else {
+      uint256 finalPrice=artblocksContract.projectIdToPricePerTokenInWei(_projectId);
+      uint256 refund = pricePaid.sub(finalPrice);
+      return refund;
+    }
   }
 
 
