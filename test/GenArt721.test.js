@@ -47,7 +47,6 @@ describe('GenArt721Core2', async function () {
 
     await this.token.connect(snowfro).toggleProjectIsActive(projectZero );
     await this.token.connect(snowfro).addMintWhitelisted(this.minter.address );
-    console.log("HERE")
     await this.token.connect(artist).updateProjectMaxInvocations(projectZero, 15 );
 
 
