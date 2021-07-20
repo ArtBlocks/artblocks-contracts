@@ -3,7 +3,6 @@ const {ZERO_ADDRESS} = constants;
 
 const {expect} = require('chai');
 const {ethers} = require('hardhat');
-// var utils = require('ethers').utils
 
 
 describe('GenArt721Minter2', async function () {
@@ -34,7 +33,6 @@ describe('GenArt721Minter2', async function () {
     const minterFactory = await ethers.getContractFactory("GenArt721Minter2")
     this.minter = await minterFactory.deploy(this.token.address);
 
-    //await this.token.addWhitelisted(artist, {from: snowfro});
 
     await this.token.connect(snowfro).addProject(
       "project1",
@@ -50,8 +48,6 @@ describe('GenArt721Minter2', async function () {
       true
     );
 
-    // this.projectZeroInfo = await this.token.projectTokenInfo(projectZero);
-    //await this.token.updateProjectCurrencyInfo(projectZero,"ABST",ZERO_ADDRESS, {from:artist});
 
     await this.token.connect(snowfro).toggleProjectIsActive(projectZero );
     await this.token.connect(snowfro).toggleProjectIsActive(projectOne );

@@ -125,8 +125,8 @@ contract GenArt721Minter2 {
     // What if this overflows, since default value of uint256 is 0?
     // that is intended, so that by default the minter allows infinite transactions,
     // allowing the artblocks contract to stop minting
-    uint256 tokenInvocation = tokenId % ONE_MILLION;
-    if (tokenInvocation == projectMaxInvocations[_projectId]-1){
+    // uint256 tokenInvocation = tokenId % ONE_MILLION;
+    if (tokenId % ONE_MILLION == projectMaxInvocations[_projectId]-1){
         projectMaxHasBeenInvoked[_projectId] = true;
     }
 

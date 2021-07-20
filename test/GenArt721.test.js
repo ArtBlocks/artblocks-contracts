@@ -3,7 +3,6 @@ const {ZERO_ADDRESS} = constants;
 
 const {expect} = require('chai');
 const {ethers} = require('hardhat');
-// var utils = require('ethers').utils
 
 
 describe('GenArt721Core2', async function () {
@@ -33,7 +32,6 @@ describe('GenArt721Core2', async function () {
     const minterFactory = await ethers.getContractFactory("GenArt721Minter2")
     this.minter = await minterFactory.deploy(this.token.address);
 
-    //await this.token.addWhitelisted(artist, {from: snowfro});
 
     await this.token.connect(snowfro).addProject(
       "name",
@@ -43,19 +41,12 @@ describe('GenArt721Core2', async function () {
     );
 
     this.projectZeroInfo = await this.token.projectTokenInfo(projectZero);
-    //await this.token.updateProjectCurrencyInfo(projectZero,"ABST",ZERO_ADDRESS, {from:artist});
 
     await this.token.connect(snowfro).toggleProjectIsActive(projectZero );
     await this.token.connect(snowfro).addMintWhitelisted(this.minter.address );
     await this.token.connect(artist).updateProjectMaxInvocations(projectZero, 15 );
 
 
-    //await this.token.toggleProjectIsPaused(projectZero, {from: artist});
-    /*
-    for (let i=0;i<10;i++){
-      this.minter.purchase(projectZero, {value: pricePerTokenInWei, from: artist});
-    }
-    */
   });
 
   describe('has whitelisted owner', function () {
@@ -76,7 +67,6 @@ describe('GenArt721Core2', async function () {
     it('reverts if try to modify script', async function(){
       await this.token.connect(this.accounts.snowfro).toggleProjectIsLocked(projectZero);
       await expectRevert(this.token.connect(this.accounts.artist).updateProjectScriptJSON(projectZero, "lorem ipsum"), "Only if unlocked");
-      //await expectRevert(this.token.updateProjectMaxInvocations(projectZero, 13, {from:artist}), "Only if unlocked");
     });
   });
 
