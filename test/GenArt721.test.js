@@ -139,12 +139,8 @@ describe('GenArt721Core2', async function () {
       this.projectZeroInfo = await this.token.projectTokenInfo(projectZero);
       expect(this.projectZeroInfo.invocations).to.equal('1');
 
-      // expect(await snowfroBalance.delta()).to.equal(ethers.utils.parseEther('0.1'));
-      // expect(await additionalBalance.delta()).to.equal(ethers.utils.parseEther('0.9'));
-      // expect(await ownerBalance.delta()).to.equal(ethers.utils.parseEther('1').mul('-1')); // spent 1 ETH
-      // expect(await artistBalance.delta()).to.equal(ethers.utils.parseEther('0'));
       expect((await this.accounts.snowfro.getBalance()).sub(snowfroBalance)).to.equal(ethers.utils.parseEther('0.1'));
-      expect((await this.accounts.additional.getBalance()).sub(additionalBalance)).to.equal(ethers.utils.parseEther('0.09'));
+      expect((await this.accounts.additional.getBalance()).sub(additionalBalance)).to.equal(ethers.utils.parseEther('0.9'));
       expect((await this.accounts.owner.getBalance()).sub(ownerBalance)).to.equal(ethers.utils.parseEther('1').mul('-1')); // spent 1 ETH
       expect((await this.accounts.artist.getBalance()).sub(artistBalance)).to.equal(ethers.utils.parseEther('0'));
     });
