@@ -27,6 +27,7 @@
     "ethers": "^5.4.1",
     "hardhat": "^2.4.3",
     "hardhat-contract-sizer": "^2.0.3",
+    "hardhat-gas-reporter": "^1.0.4",
     "prettier": "^2.3.2",
     "prettier-plugin-solidity": "^1.0.0-beta.17",
     "prompt-sync": "^4.2.0",

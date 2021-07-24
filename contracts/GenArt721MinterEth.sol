@@ -40,6 +40,21 @@ interface GenArt721CoreContract {
         view
         returns (uint256);
 
+    function projectTokenInfo(uint256 _projectId)
+        external
+        view
+        returns (
+            address,
+            uint256,
+            uint256,
+            uint256,
+            bool,
+            address,
+            uint256,
+            string memory,
+            address
+        );
+
     function artblocksAddress() external view returns (address payable);
 
     function artblocksPercentage() external view returns (uint256);
@@ -48,7 +63,7 @@ interface GenArt721CoreContract {
         address _to,
         uint256 _projectId,
         address _by
-    ) external returns (uint256);
+    ) external returns (uint256 tokenId);
 }
 
 interface IMinterFilter {
@@ -66,63 +81,42 @@ interface IMinterFilter {
     ) external returns (uint256);
 }
 
-contract GenArt721MinterEthAuction {
+contract GenArt721MinterEth {
     using SafeMath for uint256;
 
     GenArt721CoreContract public artblocksContract;
     IMinterFilter public minterFilter;
 
-    address payable public ownerAddress;
-    uint256 public ownerPercentage;
+    uint256 constant ONE_MILLION = 1_000_000;
 
-    // Auction variables
-    mapping(uint256 => AuctionParameters) public projectAuctionParameters;
-    struct AuctionParameters {
-        uint256 timestampStart;
-        uint256 timestampEnd;
-        uint256 priceStart;
-        uint256 priceEnd;
-    }
+    mapping(address => mapping(uint256 => uint256)) public projectMintCounter;
+    mapping(uint256 => uint256) public projectMintLimit;
+    mapping(uint256 => bool) public projectMaxHasBeenInvoked;
+    mapping(uint256 => uint256) public projectMaxInvocations;
 
     constructor(address _genArt721Address, address _minterFilter) public {
         artblocksContract = GenArt721CoreContract(_genArt721Address);
         minterFilter = IMinterFilter(_minterFilter);
     }
 
-    function setOwnerAddress(address payable _ownerAddress) public {
+    function setProjectMintLimit(uint256 _projectId, uint8 _limit) public {
         require(
             artblocksContract.isWhitelisted(msg.sender),
             "can only be set by admin"
         );
-        ownerAddress = _ownerAddress;
+        projectMintLimit[_projectId] = _limit;
     }
 
-    function setOwnerPercentage(uint256 _ownerPercentage) public {
+    function setProjectMaxInvocations(uint256 _projectId) public {
         require(
             artblocksContract.isWhitelisted(msg.sender),
             "can only be set by admin"
         );
-        ownerPercentage = _ownerPercentage;
-    }
-
-    ////// Auction Functions
-    function setAuctionDetails(
-        uint256 _projectId,
-        uint256 _auctionTimestampStart,
-        uint256 _auctionTimestampEnd,
-        uint256 _auctionPriceStart,
-        uint256 _auctionPriceEnd
-    ) public {
-        require(
-            artblocksContract.isWhitelisted(msg.sender),
-            "can only be set by admin"
+        uint256 maxInvocations;
+        (, , , maxInvocations, , , , , ) = artblocksContract.projectTokenInfo(
+            _projectId
         );
-        projectAuctionParameters[_projectId] = AuctionParameters(
-            _auctionTimestampStart,
-            _auctionTimestampEnd,
-            _auctionPriceStart,
-            _auctionPriceEnd
-        );
+        projectMaxInvocations[_projectId] = maxInvocations;
     }
 
     function purchase(uint256 _projectId)
@@ -133,51 +127,65 @@ contract GenArt721MinterEthAuction {
         return purchaseTo(msg.sender, _projectId);
     }
 
-    //remove public and payable to prevent public use of purchaseTo function
+    //removed public and payable
     function purchaseTo(address _to, uint256 _projectId)
-        public
-        payable
+        private
         returns (uint256 _tokenId)
     {
         require(
-            msg.value >= getPrice(_projectId),
-            "Must send minimum value to mint!"
+            !projectMaxHasBeenInvoked[_projectId],
+            "Maximum number of invocations reached"
         );
         require(msg.sender == tx.origin, "No Contract Buys");
 
-        _splitFundsETHAuction(_projectId);
+        require(
+            msg.value >=
+                artblocksContract.projectIdToPricePerTokenInWei(_projectId),
+            "Must send minimum value to mint!"
+        );
+        _splitFundsETH(_projectId);
 
         // if contract filter is active prevent calls from another contract
 
+        // limit mints per address by project
+        if (projectMintLimit[_projectId] > 0) {
+            require(
+                projectMintCounter[msg.sender][_projectId] <
+                    projectMintLimit[_projectId],
+                "Reached minting limit"
+            );
+            projectMintCounter[msg.sender][_projectId]++;
+        }
+
         uint256 tokenId = minterFilter.mint(_to, _projectId, msg.sender);
+        // What if this overflows, since default value of uint256 is 0?
+        // that is intended, so that by default the minter allows infinite transactions,
+        // allowing the artblocks contract to stop minting
+        // uint256 tokenInvocation = tokenId % ONE_MILLION;
+        if (tokenId % ONE_MILLION == projectMaxInvocations[_projectId] - 1) {
+            projectMaxHasBeenInvoked[_projectId] = true;
+        }
 
         return tokenId;
     }
 
-    function _splitFundsETHAuction(uint256 _projectId) internal {
+    function _splitFundsETH(uint256 _projectId) internal {
         if (msg.value > 0) {
-            uint256 pricePerTokenInWei = getPrice(_projectId);
-            uint256 refund = msg.value.sub(pricePerTokenInWei);
+            uint256 pricePerTokenInWei = artblocksContract
+                .projectIdToPricePerTokenInWei(_projectId);
+            uint256 refund = msg.value.sub(
+                artblocksContract.projectIdToPricePerTokenInWei(_projectId)
+            );
             if (refund > 0) {
                 msg.sender.transfer(refund);
             }
-            uint256 artBlocksAmount = pricePerTokenInWei.div(100).mul(
+            uint256 foundationAmount = pricePerTokenInWei.div(100).mul(
                 artblocksContract.artblocksPercentage()
             );
-            if (artBlocksAmount > 0) {
-                artblocksContract.artblocksAddress().transfer(artBlocksAmount);
+            if (foundationAmount > 0) {
+                artblocksContract.artblocksAddress().transfer(foundationAmount);
             }
-
-            uint256 remainingFunds = pricePerTokenInWei.sub(artBlocksAmount);
-
-            uint256 ownerFunds = remainingFunds.div(100).mul(ownerPercentage);
-            if (ownerFunds > 0) {
-                ownerAddress.transfer(ownerFunds);
-            }
-
-            uint256 projectFunds = pricePerTokenInWei.sub(artBlocksAmount).sub(
-                ownerFunds
-            );
+            uint256 projectFunds = pricePerTokenInWei.sub(foundationAmount);
             uint256 additionalPayeeAmount;
             if (
                 artblocksContract.projectIdToAdditionalPayeePercentage(
@@ -202,53 +210,5 @@ contract GenArt721MinterEthAuction {
                     );
             }
         }
-    }
-
-    function getPrice(uint256 _projectId) public view returns (uint256) {
-        AuctionParameters memory auctionParams = projectAuctionParameters[
-            _projectId
-        ];
-        if (getCurrentTime() < auctionParams.timestampStart) {
-            return auctionParams.priceStart;
-        } else if (getCurrentTime() > auctionParams.timestampEnd) {
-            return auctionParams.priceEnd;
-        }
-        uint256 elapsedTime = getCurrentTime().sub(
-            auctionParams.timestampStart
-        );
-        uint256 duration = auctionParams.timestampEnd.sub(
-            auctionParams.timestampStart
-        );
-        uint256 startToEndDiff = auctionParams.priceStart.sub(
-            auctionParams.priceEnd
-        );
-        return
-            auctionParams.priceStart.sub(
-                elapsedTime.mul(startToEndDiff).div(duration)
-            );
-    }
-
-    function isAuctionLive(uint256 _projectId) public view returns (bool) {
-        AuctionParameters memory auctionParams = projectAuctionParameters[
-            _projectId
-        ];
-        return (getCurrentTime() < auctionParams.timestampEnd &&
-            getCurrentTime() > auctionParams.timestampStart);
-    }
-
-    function auctionTimeRemaining(uint256 _projectId)
-        public
-        view
-        returns (uint256)
-    {
-        AuctionParameters memory auctionParams = projectAuctionParameters[
-            _projectId
-        ];
-        require(isAuctionLive(_projectId), "auction is not currently live");
-        return auctionParams.timestampEnd.sub(getCurrentTime());
-    }
-
-    function getCurrentTime() internal view returns (uint256) {
-        return block.timestamp;
     }
 }

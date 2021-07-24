@@ -47,7 +47,6 @@ contract GenArt721Minter2 {
 
   uint256 constant ONE_MILLION = 1_000_000;
 
-  mapping(uint256 => bool) public enabledForProject;
 
   mapping(uint256 => bool) public projectIdToBonus;
   mapping(uint256 => address) public projectIdToBonusContractAddress;
@@ -61,15 +60,6 @@ contract GenArt721Minter2 {
     artblocksContract=GenArt721CoreContract(_genArt721Address);
   }
 
-  function enableMinterForProject(uint256 _projectId) public {
-    require(artblocksContract.isWhitelisted(msg.sender), "can only be set by admin");
-    enabledForProject[_projectId] = true;
-  }
-
-  function disableMinterForProject(uint256 _projectId) public {
-    require(artblocksContract.isWhitelisted(msg.sender), "can only be set by admin");
-    enabledForProject[_projectId] = false;
-  }
 
   function getYourBalanceOfProjectERC20(uint256 _projectId) public view returns (uint256){
     uint256 balance = ERC20(artblocksContract.projectIdToCurrencyAddress(_projectId)).balanceOf(msg.sender);
@@ -114,7 +104,6 @@ contract GenArt721Minter2 {
 //removed public and payable
   function purchaseTo(address _to, uint256 _projectId) private returns(uint256 _tokenId){
     require(!projectMaxHasBeenInvoked[_projectId], "Maximum number of invocations reached");
-    require(enabledForProject[_projectId], "This minter not enabled for this project");
     if (keccak256(abi.encodePacked(artblocksContract.projectIdToCurrencySymbol(_projectId))) != keccak256(abi.encodePacked("ETH"))){
       require(msg.value==0, "this project accepts a different currency and cannot accept ETH");
       require(ERC20(artblocksContract.projectIdToCurrencyAddress(_projectId)).allowance(msg.sender, address(this)) >= artblocksContract.projectIdToPricePerTokenInWei(_projectId), "Insufficient Funds Approved for TX");

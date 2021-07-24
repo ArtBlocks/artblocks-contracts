@@ -1,5 +1,6 @@
 require("@nomiclabs/hardhat-waffle");
 require('hardhat-contract-sizer');
+require("hardhat-gas-reporter");
 
 
 const INFURA_PROJECT_ID = process.env.PROTOTYPE_BR_INFURA_KEY;
@@ -56,6 +57,11 @@ module.exports = {
     alphaSort: true,
     runOnCompile: true,
     disambiguatePaths: false,
-  }
+  },
+
+    gasReporter: {
+      currency: 'USD',
+      gasPrice: 500
+    }
 };
 // console.log(`https://mainnet.infura.io/v3/${INFURA_PROJECT_ID}`);
