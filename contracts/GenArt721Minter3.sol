@@ -1,3 +1,6 @@
+/**
+ *Submitted for verification at Etherscan.io on 2020-12-20
+*/
 
 // File contracts/libs/SafeMath.sol
 
@@ -172,6 +175,7 @@ pragma solidity ^0.5.0;
 
 
 interface GenArt721CoreContract {
+  function isWhitelisted(address sender) external view returns (bool);
   function projectIdToCurrencySymbol(uint256 _projectId) external view returns (string memory);
   function projectIdToCurrencyAddress(uint256 _projectId) external view returns (address);
   function projectIdToArtistAddress(uint256 _projectId) external view returns (address payable);
@@ -198,14 +202,19 @@ interface BonusContract {
 
 
 
-contract GenArt721Minter {
+contract GenArt721Minter3 {
   using SafeMath for uint256;
 
   GenArt721CoreContract public artblocksContract;
 
+  address payable public ownerAddress;
+  uint256 public ownerPercentage;
 
   mapping(uint256 => bool) public projectIdToBonus;
   mapping(uint256 => address) public projectIdToBonusContractAddress;
+  mapping(uint256 => bool) public contractFilterProject;
+  mapping(address => mapping (uint256 => uint256)) public projectMintCounter;
+  mapping(uint256 => uint256) public projectMintLimit;
 
   constructor(address _genArt721Address) public {
     artblocksContract=GenArt721CoreContract(_genArt721Address);
@@ -221,6 +230,26 @@ contract GenArt721Minter {
     return remaining;
   }
 
+  function setProjectMintLimit(uint256 _projectId,uint8 _limit) public {
+    require(artblocksContract.isWhitelisted(msg.sender), "can only be set by admin");
+    projectMintLimit[_projectId] = _limit;
+  }
+
+  function setOwnerAddress(address payable _ownerAddress) public {
+    require(artblocksContract.isWhitelisted(msg.sender), "can only be set by admin");
+    ownerAddress = _ownerAddress;
+  }
+
+  function setOwnerPercentage(uint256 _ownerPercentage) public {
+    require(artblocksContract.isWhitelisted(msg.sender), "can only be set by admin");
+    ownerPercentage = _ownerPercentage;
+  }
+
+  function toggleContractFilter(uint256 _projectId) public {
+    require(artblocksContract.isWhitelisted(msg.sender), "can only be set by admin");
+    contractFilterProject[_projectId]=!contractFilterProject[_projectId];
+  }
+
   function artistToggleBonus(uint256 _projectId) public {
     require(msg.sender==artblocksContract.projectIdToArtistAddress(_projectId), "can only be set by artist");
     projectIdToBonus[_projectId]=!projectIdToBonus[_projectId];
@@ -234,7 +263,7 @@ contract GenArt721Minter {
   function purchase(uint256 _projectId) public payable returns (uint256 _tokenId) {
     return purchaseTo(msg.sender, _projectId);
   }
-
+//remove public and payable to prevent public use of purchaseTo function
   function purchaseTo(address _to, uint256 _projectId) public payable returns(uint256 _tokenId){
     if (keccak256(abi.encodePacked(artblocksContract.projectIdToCurrencySymbol(_projectId))) != keccak256(abi.encodePacked("ETH"))){
       require(msg.value==0, "this project accepts a different currency and cannot accept ETH");
@@ -246,15 +275,21 @@ contract GenArt721Minter {
       _splitFundsETH(_projectId);
     }
 
+    // if contract filter is active prevent calls from another contract
+    if (contractFilterProject[_projectId]) require(msg.sender == tx.origin, "No Contract Buys");
+
+    // limit mints per address by project
+    if (projectMintLimit[_projectId] > 0) {
+        require(projectMintCounter[msg.sender][_projectId] < projectMintLimit[_projectId], "Reached minting limit");
+        projectMintCounter[msg.sender][_projectId]++;
+    }
 
     uint256 tokenId = artblocksContract.mint(_to, _projectId, msg.sender);
 
     if (projectIdToBonus[_projectId]){
       require(BonusContract(projectIdToBonusContractAddress[_projectId]).bonusIsActive(), "bonus must be active");
       BonusContract(projectIdToBonusContractAddress[_projectId]).triggerBonus(msg.sender);
-      }
-
-
+    }
 
     return tokenId;
   }
@@ -266,11 +301,19 @@ contract GenArt721Minter {
       if (refund > 0) {
         msg.sender.transfer(refund);
       }
-      uint256 foundationAmount = pricePerTokenInWei.div(100).mul(artblocksContract.artblocksPercentage());
-      if (foundationAmount > 0) {
-        artblocksContract.artblocksAddress().transfer(foundationAmount);
+      uint256 artBlocksAmount = pricePerTokenInWei.div(100).mul(artblocksContract.artblocksPercentage());
+      if (artBlocksAmount > 0) {
+        artblocksContract.artblocksAddress().transfer(artBlocksAmount);
       }
-      uint256 projectFunds = pricePerTokenInWei.sub(foundationAmount);
+
+      uint256 remainingFunds = pricePerTokenInWei.sub(artBlocksAmount);
+
+      uint256 ownerFunds = remainingFunds.div(100).mul(ownerPercentage);
+      if (ownerFunds > 0) {
+        ownerAddress.transfer(ownerFunds);
+      }
+
+      uint256 projectFunds = pricePerTokenInWei.sub(artBlocksAmount).sub(ownerFunds);
       uint256 additionalPayeeAmount;
       if (artblocksContract.projectIdToAdditionalPayeePercentage(_projectId) > 0) {
         additionalPayeeAmount = projectFunds.div(100).mul(artblocksContract.projectIdToAdditionalPayeePercentage(_projectId));

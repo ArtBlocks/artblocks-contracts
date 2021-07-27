@@ -1,29 +1,23 @@
-var prompt = require('prompt-sync')();
-const GenArt721Core = require('../artifacts/GenArt721Core.json');
-const {BigNumber} = require('ethers');
+var prompt = require("prompt-sync")();
+const GenArt721Core = require("../artifacts/contracts/GenArt721CorePlus.sol/GenArt721CorePlus.json");
+const { BigNumber } = require("ethers");
 
 async function main() {
   const [deployer] = await ethers.getSigners();
   const deployerAddress = await deployer.getAddress();
-  console.log(
-    "Checking minter:",
-    deployerAddress
-  );
+  console.log("Checking minter:", deployerAddress);
 
-  const genArt721Address = prompt('GenArt721 address? ');
-  const minterAddress = prompt('Minting Contract Address? ');
+  const genArt721Address = prompt("GenArt721 address? ");
+  const minterAddress = prompt("Minting Contract Address? ");
   const genArt721Core = new ethers.Contract(
     genArt721Address,
     GenArt721Core.abi,
     deployer //provider
   );
 
-  let wl = await genArt721Core.isMintWhitelisted(
+  let wl = await genArt721Core.isMintWhitelisted(minterAddress);
 
-    minterAddress
-  );
-
-  console.log('whitelisted? '+wl);
+  console.log("whitelisted? " + wl);
 }
 
 main()
