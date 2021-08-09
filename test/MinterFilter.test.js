@@ -18,7 +18,7 @@ const {
 } = require('hardhat');
 
 
-describe('MinterFiler', async function() {
+describe('MinterFilter', async function() {
 
     const name = 'Non Fungible Token';
     const symbol = 'NFT';

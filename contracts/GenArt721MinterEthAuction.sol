@@ -67,6 +67,8 @@ interface IMinterFilter {
 }
 
 contract GenArt721MinterEthAuction {
+    event SetAuctionDetails(uint256 indexed projectId, uint256 _auctionTimestampStart, uint256 _auctionTimestampEnd, uint256 _auctionPriceStart);
+
     using SafeMath for uint256;
 
     GenArt721CoreContract public artblocksContract;
@@ -81,7 +83,6 @@ contract GenArt721MinterEthAuction {
         uint256 timestampStart;
         uint256 timestampEnd;
         uint256 priceStart;
-        uint256 priceEnd;
     }
 
     constructor(address _genArt721Address, address _minterFilter) public {
@@ -110,8 +111,7 @@ contract GenArt721MinterEthAuction {
         uint256 _projectId,
         uint256 _auctionTimestampStart,
         uint256 _auctionTimestampEnd,
-        uint256 _auctionPriceStart,
-        uint256 _auctionPriceEnd
+        uint256 _auctionPriceStart
     ) public {
         require(
             artblocksContract.isWhitelisted(msg.sender),
@@ -120,9 +120,9 @@ contract GenArt721MinterEthAuction {
         projectAuctionParameters[_projectId] = AuctionParameters(
             _auctionTimestampStart,
             _auctionTimestampEnd,
-            _auctionPriceStart,
-            _auctionPriceEnd
+            _auctionPriceStart
         );
+        emit SetAuctionDetails(_projectId, _auctionTimestampStart, _auctionTimestampEnd, _auctionPriceStart);
     }
 
     function purchase(uint256 _projectId)
@@ -211,7 +211,7 @@ contract GenArt721MinterEthAuction {
         if (getCurrentTime() < auctionParams.timestampStart) {
             return auctionParams.priceStart;
         } else if (getCurrentTime() > auctionParams.timestampEnd) {
-            return auctionParams.priceEnd;
+            return artblocksContract.projectIdToPricePerTokenInWei(_projectId);
         }
         uint256 elapsedTime = getCurrentTime().sub(
             auctionParams.timestampStart
@@ -220,7 +220,7 @@ contract GenArt721MinterEthAuction {
             auctionParams.timestampStart
         );
         uint256 startToEndDiff = auctionParams.priceStart.sub(
-            auctionParams.priceEnd
+            artblocksContract.projectIdToPricePerTokenInWei(_projectId)
         );
         return
             auctionParams.priceStart.sub(

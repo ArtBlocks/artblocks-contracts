@@ -18,14 +18,14 @@ const {
 } = require('hardhat');
 
 
-describe('GenArt721Minter2', async function() {
+describe('GenArt721MinterEthAuction', async function() {
 
     const name = 'Non Fungible Token';
     const symbol = 'NFT';
     const firstTokenId = new BN('30000000');
     const secondTokenId = new BN('3000001');
 
-    const pricePerTokenInWei = ethers.utils.parseEther('1');
+    const pricePerTokenInWei = ethers.utils.parseEther('0.1');
     const projectOne = 0;
     const ONE_MINUTE = 60000;
     const ONE_HOUR = ONE_MINUTE * 60;
@@ -79,7 +79,7 @@ describe('GenArt721Minter2', async function() {
         }
 
         startTimePlusMinuteAndTwoHours = this.startTime + ONE_HOUR * 2;
-        await this.minter.connect(this.accounts.snowfro).setAuctionDetails(projectOne, this.startTime, startTimePlusMinuteAndTwoHours, ethers.utils.parseEther('1'), ethers.utils.parseEther('0.1'));
+        await this.minter.connect(this.accounts.snowfro).setAuctionDetails(projectOne, this.startTime, startTimePlusMinuteAndTwoHours, ethers.utils.parseEther('1'));
     });
 
 
@@ -117,7 +117,7 @@ describe('GenArt721Minter2', async function() {
         it('Calculates the price before correctly', async function() {
             await network.provider.send("evm_setNextBlockTimestamp", [this.startTime]);
 
-            await this.minter.connect(this.accounts.snowfro).setAuctionDetails(projectOne, this.startTime + 60000, this.startTime + 2 * ONE_HOUR, ethers.utils.parseEther('1'), ethers.utils.parseEther('0.1'));
+            await this.minter.connect(this.accounts.snowfro).setAuctionDetails(projectOne, this.startTime + 60000, this.startTime + 2 * ONE_HOUR, ethers.utils.parseEther('1'));
 
             startingPrice = ethers.utils.parseEther('1');
             endingPrice = ethers.utils.parseEther('0.1');
@@ -128,7 +128,7 @@ describe('GenArt721Minter2', async function() {
         it('Calculates the price after correctly ', async function() {
             await network.provider.send("evm_setNextBlockTimestamp", [this.startTime + 5 * ONE_HOUR]);
 
-            await this.minter.connect(this.accounts.snowfro).setAuctionDetails(projectOne, this.startTime + 60000, this.startTime + 2 * ONE_HOUR, ethers.utils.parseEther('1'), ethers.utils.parseEther('0.1'));
+            await this.minter.connect(this.accounts.snowfro).setAuctionDetails(projectOne, this.startTime + 60000, this.startTime + 2 * ONE_HOUR, ethers.utils.parseEther('1'));
 
             startingPrice = ethers.utils.parseEther('1');
             endingPrice = ethers.utils.parseEther('0.1');
