@@ -17,13 +17,25 @@ const MAINNET_KEY = process.env.MAINNET_KEY;
 
 module.exports = {
   solidity: {
-    version: "0.5.17",
-    settings: {
-      optimizer: {
-        enabled: true,
-        runs: 100,
+    compilers: [
+      {
+        version: "0.5.17",
+      settings: {
+        optimizer: {
+          enabled: true,
+          runs: 100,
+        },
+      },   
+    }, {
+      version: "0.8.7",
+      settings: {
+        optimizer: {
+          enabled: true,
+          runs: 100,
+        },
       },
-    },
+    }
+  ]
   },
   networks: {
     hardhat: {

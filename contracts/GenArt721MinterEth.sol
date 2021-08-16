@@ -4,87 +4,15 @@
 
 import "./libs/SafeMath.sol";
 import "./libs/Strings.sol";
+import "./interfaces/IGenArt721CoreContract.sol";
+import "./interfaces/IMinterFilter.sol";
 
 pragma solidity ^0.5.0;
-
-interface GenArt721CoreContract {
-    function isWhitelisted(address sender) external view returns (bool);
-
-    function projectIdToCurrencySymbol(uint256 _projectId)
-        external
-        view
-        returns (string memory);
-
-    function projectIdToCurrencyAddress(uint256 _projectId)
-        external
-        view
-        returns (address);
-
-    function projectIdToArtistAddress(uint256 _projectId)
-        external
-        view
-        returns (address payable);
-
-    function projectIdToPricePerTokenInWei(uint256 _projectId)
-        external
-        view
-        returns (uint256);
-
-    function projectIdToAdditionalPayee(uint256 _projectId)
-        external
-        view
-        returns (address payable);
-
-    function projectIdToAdditionalPayeePercentage(uint256 _projectId)
-        external
-        view
-        returns (uint256);
-
-    function projectTokenInfo(uint256 _projectId)
-        external
-        view
-        returns (
-            address,
-            uint256,
-            uint256,
-            uint256,
-            bool,
-            address,
-            uint256,
-            string memory,
-            address
-        );
-
-    function artblocksAddress() external view returns (address payable);
-
-    function artblocksPercentage() external view returns (uint256);
-
-    function mint(
-        address _to,
-        uint256 _projectId,
-        address _by
-    ) external returns (uint256 tokenId);
-}
-
-interface IMinterFilter {
-    function setOwnerAddress(address payable _ownerAddress) external;
-
-    function setMinterForProject(uint256 _projectId, address _minterAddress)
-        external;
-
-    function disableMinterForProject(uint256 _projectId) external;
-
-    function mint(
-        address _to,
-        uint256 _projectId,
-        address sender
-    ) external returns (uint256);
-}
 
 contract GenArt721MinterEth {
     using SafeMath for uint256;
 
-    GenArt721CoreContract public artblocksContract;
+    IGenArt721CoreContract public artblocksContract;
     IMinterFilter public minterFilter;
 
     uint256 constant ONE_MILLION = 1_000_000;
@@ -95,7 +23,7 @@ contract GenArt721MinterEth {
     mapping(uint256 => uint256) public projectMaxInvocations;
 
     constructor(address _genArt721Address, address _minterFilter) public {
-        artblocksContract = GenArt721CoreContract(_genArt721Address);
+        artblocksContract = IGenArt721CoreContract(_genArt721Address);
         minterFilter = IMinterFilter(_minterFilter);
     }
 

@@ -57,6 +57,7 @@ contract MinterFilter {
     GenArt721CoreContract public artblocksContract;
 
     address payable public ownerAddress;
+    address public defaultMinter;
 
     mapping(uint256 => address) public minterForProject;
 
@@ -82,6 +83,16 @@ contract MinterFilter {
         minterForProject[_projectId] = _minterAddress;
     }
 
+    function setDefaultMinter(address _minterAddress)
+        public
+    {
+        require(
+            artblocksContract.isWhitelisted(msg.sender),
+            "can only be set by admin"
+        );
+        defaultMinter = _minterAddress;
+    }
+
     function disableMinterForProject(uint256 _projectId) public {
         require(
             artblocksContract.isWhitelisted(msg.sender),
@@ -96,7 +107,8 @@ contract MinterFilter {
         address sender
     ) public returns (uint256 _tokenId) {
         require(
-            msg.sender == minterForProject[_projectId],
+            (minterForProject[_projectId] != address(0x0) && msg.sender == minterForProject[_projectId]) ||
+            (minterForProject[_projectId] == address(0x0) && msg.sender == defaultMinter),
             "Not sent from correct minter for project"
         );
         uint256 tokenId = artblocksContract.mint(_to, _projectId, sender);

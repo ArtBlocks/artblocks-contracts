@@ -108,6 +108,14 @@ describe('MinterFilter', async function() {
                 });
             }
         });
+        it('Allows purchases through the default minter if not set', async function() {
+            await this.minterFilter.connect(this.accounts.snowfro).setDefaultMinter(this.minter1.address);
+            for (let i = 0; i < 15; i++) {
+                await this.minter1.connect(this.accounts.owner).purchase(projectThree, {
+                    value: pricePerTokenInWei
+                });
+            }
+        });
 
         it('Blocks purchases through the incorrect minter', async function() {
             await expectRevert(this.minter2.connect(this.accounts.owner).purchase(projectOne, {
