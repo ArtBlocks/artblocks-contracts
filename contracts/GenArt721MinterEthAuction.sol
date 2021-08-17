@@ -73,7 +73,12 @@ contract GenArt721MinterEthAuction {
 
     GenArt721CoreContract public artblocksContract;
     IMinterFilter public minterFilter;
+    uint256 constant ONE_MILLION = 1_000_000;
 
+    mapping(address => mapping(uint256 => uint256)) public projectMintCounter;
+    mapping(uint256 => uint256) public projectMintLimit;
+    mapping(uint256 => bool) public projectMaxHasBeenInvoked;
+    mapping(uint256 => uint256) public projectMaxInvocations;
     address payable public ownerAddress;
     uint256 public ownerPercentage;
 
@@ -135,22 +140,36 @@ contract GenArt721MinterEthAuction {
 
     //remove public and payable to prevent public use of purchaseTo function
     function purchaseTo(address _to, uint256 _projectId)
-        public
-        payable
+        private
         returns (uint256 _tokenId)
     {
+        require(
+            !projectMaxHasBeenInvoked[_projectId],
+            "Maximum number of invocations reached"
+        );
         require(
             msg.value >= getPrice(_projectId),
             "Must send minimum value to mint!"
         );
         require(msg.sender == tx.origin, "No Contract Buys");
 
+        // limit mints per address by project
+        if (projectMintLimit[_projectId] > 0) {
+            require(projectMintCounter[msg.sender][_projectId] < projectMintLimit[_projectId], "Reached minting limit");
+            projectMintCounter[msg.sender][_projectId]++;
+        }
         _splitFundsETHAuction(_projectId);
 
         // if contract filter is active prevent calls from another contract
 
         uint256 tokenId = minterFilter.mint(_to, _projectId, msg.sender);
-
+        // What if this overflows, since default value of uint256 is 0?
+        // that is intended, so that by default the minter allows infinite transactions,
+        // allowing the artblocks contract to stop minting
+        // uint256 tokenInvocation = tokenId % ONE_MILLION;
+        if (tokenId % ONE_MILLION == projectMaxInvocations[_projectId] - 1) {
+            projectMaxHasBeenInvoked[_projectId] = true;
+        }
         return tokenId;
     }
 

@@ -93,7 +93,7 @@ contract MinterFilter {
         defaultMinter = _minterAddress;
     }
 
-    function disableMinterForProject(uint256 _projectId) public {
+    function resetMinterForProjectToDefault(uint256 _projectId) public {
         require(
             artblocksContract.isWhitelisted(msg.sender),
             "can only be set by admin"
