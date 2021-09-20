@@ -1,34 +1,35 @@
-require('dotenv').config();
-usePlugin("@nomiclabs/buidler-waffle");
-usePlugin("@nomiclabs/buidler-truffle5");
-usePlugin("buidler-gas-reporter");
-usePlugin("solidity-coverage");
-usePlugin("@nomiclabs/buidler-solhint");
+require("@nomiclabs/hardhat-waffle");
+require('hardhat-contract-sizer');
+
 
 const INFURA_PROJECT_ID = process.env.PROTOTYPE_BR_INFURA_KEY;
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
 const MNEMONIC = process.env.MNEMONIC;
 const MAINNET_KEY = process.env.MAINNET_KEY;
 
+// You need to export an object to set up your config
+// Go to https://hardhat.org/config/ to learn more
+
+/**
+ * @type import('hardhat/config').HardhatUserConfig
+ */
+
 module.exports = {
-  solc: {
-    version: '0.5.17',
-    optimizer: {
-      enabled: true,
-      runs: 200
-    }
-  },
-  gasReporter: {
-    currency: 'USD',
-    enabled: true
+  solidity: {
+    version: "0.5.17",
+    settings: {
+      optimizer: {
+        enabled: true,
+        runs: 100,
+      },
+    },
   },
   networks: {
-    buidlerevm: {
-      gasPrice: 0, // 0 gwei
+    hardhat: {
+      gasPrice: 0,
     },
     mainnet: {
       url: `https://mainnet.infura.io/v3/${INFURA_PROJECT_ID}`,
-      //accounts: {mnemonic:`${MNEMONIC}`},
       accounts: [`0x${MAINNET_KEY}`],
       gasPrice: 75000000000
     },
@@ -37,25 +38,24 @@ module.exports = {
       chainId:3,
       from: `0x8De4e517A6F0B84654625228D8293b70AB49cF6C`
     },
-    /*
-    rinkeby: {
-      url: `https://rinkeby.infura.io/v3/${INFURA_PROJECT_ID}`,
-      accounts: [`0x${PRIVATE_KEY}`]
-    },
-    */
     rinkeby: {
       url: `https://rinkeby.infura.io/v3/${INFURA_PROJECT_ID}`,
 
       accounts: [`0x${PRIVATE_KEY}`]
-      //accounts: {mnemonic:`update worry tide frequent intact pave fun daring abandon already payment wonder`}
     },
     kovan: {
       url: `https://kovan.infura.io/v3/${INFURA_PROJECT_ID}`,
       accounts: [`0x${PRIVATE_KEY}`]
     },
     coverage: {
-      url: 'http://localhost:8555',
-      gasPrice: 8000000000, // 8 gwei
+      url: 'http://localhost:8545',
+      // gasPrice: 8000000000, // 8 gwei
     }
+  },
+  contractSizer: {
+    alphaSort: true,
+    runOnCompile: true,
+    disambiguatePaths: false,
   }
 };
+// console.log(`https://mainnet.infura.io/v3/${INFURA_PROJECT_ID}`);

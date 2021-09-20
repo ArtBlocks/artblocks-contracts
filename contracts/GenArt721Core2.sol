@@ -10,7 +10,7 @@ import "./libs/CustomERC721Metadata.sol";
 import "./libs/SafeMath.sol";
 import "./libs/Strings.sol";
 
-interface Randomizer {
+interface IRandomizer {
    function returnValue() external view returns(bytes32);
 }
 
@@ -24,7 +24,7 @@ contract GenArt721Core2 is CustomERC721Metadata {
 
     );
 
-    Randomizer public randomizerContract;
+    IRandomizer public randomizerContract;
 
     struct Project {
         string name;
@@ -49,7 +49,7 @@ contract GenArt721Core2 is CustomERC721Metadata {
 
     }
 
-    //uint256 constant ONE_MILLION = 1_000_000;
+    uint256 constant ONE_MILLION = 1_000_000;
     mapping(uint256 => Project) projects;
 
     //All financial functions are stripped from struct for visibility
@@ -111,7 +111,7 @@ contract GenArt721Core2 is CustomERC721Metadata {
         admin = msg.sender;
         isWhitelisted[msg.sender] = true;
         artblocksAddress = msg.sender;
-        randomizerContract = Randomizer(_randomizerContract);
+        randomizerContract = IRandomizer(_randomizerContract);
 
     }
 
@@ -129,7 +129,7 @@ contract GenArt721Core2 is CustomERC721Metadata {
 
     function _mintToken(address _to, uint256 _projectId) internal returns (uint256 _tokenId) {
 
-        uint256 tokenIdToBe = (_projectId * 100) + projects[_projectId].invocations;
+        uint256 tokenIdToBe = (_projectId * ONE_MILLION) + projects[_projectId].invocations;
 
         projects[_projectId].invocations = projects[_projectId].invocations.add(1);
 
@@ -181,7 +181,7 @@ contract GenArt721Core2 is CustomERC721Metadata {
     }
 
     function updateRandomizerAddress(address _randomizerAddress) public onlyWhitelisted {
-      randomizerContract = Randomizer(_randomizerAddress);
+      randomizerContract = IRandomizer(_randomizerAddress);
     }
     function toggleProjectIsLocked(uint256 _projectId) public onlyWhitelisted onlyUnlocked(_projectId) {
         projects[_projectId].locked = true;
