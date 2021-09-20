@@ -5,7 +5,9 @@ const {expect} = require('chai');
 
 const {shouldSupportInterfaces} = require('./SupportsInterface.behavior');
 
-const GenArt721 = artifacts.require('GenArt721');
+const GenArt721Core = artifacts.require('GenArt721Core');
+const GenArt721Minter = artifacts.require('GenArt721Minter');
+const Randomizer = artifacts.require('Randomizer');
 const ERC721ReceiverMock = artifacts.require('ERC721ReceiverMock');
 
 contract('ERC721', function (accounts) {
@@ -13,18 +15,22 @@ contract('ERC721', function (accounts) {
 
   const name = 'Non Fungible Token';
   const symbol = 'NFT';
+  const randomizer = "0x876572b50e7b623C890e7Ae4eb90597D21B5a92A";
 
-  const firstTokenId = new BN('0');
-  const secondTokenId = new BN('1');
+  const firstTokenId = new BN('3000000');
+  const secondTokenId = new BN('3000001');
   const nonExistentTokenId = new BN('99999999999999');
 
   const RECEIVER_MAGIC_VALUE = '0x150b7a02';
 
   const pricePerTokenInWei = new BN("100000000000000000");
-  const projectZero = new BN('0');
+  const projectZero = new BN('3');
 
   beforeEach(async function () {
-    this.token = await GenArt721.new(name, symbol);
+    this.randomizer = await Randomizer.new();
+    this.token = await GenArt721Core.new(name, symbol, this.randomizer.address);
+    this.minter = await GenArt721Minter.new(this.token.address);
+
   });
 
   shouldSupportInterfaces([
@@ -46,13 +52,17 @@ contract('ERC721', function (accounts) {
     describe('token URI', function () {
       beforeEach(async function () {
         await this.token.addProject(
+          "test1",
+          owner,
           pricePerTokenInWei,
           true,
         );
 
         await this.token.toggleProjectIsActive(projectZero);
+        await this.token.toggleProjectIsPaused(projectZero);
+        await this.token.addMintWhitelisted(this.minter.address);
 
-        await this.token.purchase(projectZero, {value: pricePerTokenInWei});
+        await this.minter.purchase(projectZero, {from: owner, value: pricePerTokenInWei});
       });
 
       const baseURI = 'https://api.com/v1/';
@@ -78,14 +88,19 @@ contract('ERC721', function (accounts) {
   context('with minted tokens', function () {
     beforeEach(async function () {
       await this.token.addProject(
+        "test1",
+        owner,
         pricePerTokenInWei,
         true,
       );
 
       await this.token.toggleProjectIsActive(projectZero);
+      await this.token.toggleProjectIsPaused(projectZero);
+      await this.token.addMintWhitelisted(this.minter.address);
 
-      await this.token.purchaseTo(owner, projectZero, {value: pricePerTokenInWei});
-      await this.token.purchaseTo(owner, projectZero, {value: pricePerTokenInWei});
+
+      await this.minter.purchaseTo(owner, projectZero, {from: owner, value: pricePerTokenInWei});
+      await this.minter.purchaseTo(owner, projectZero, {from: owner, value: pricePerTokenInWei});
       this.toWhom = other; // default to other for toWhom in context-dependent tests
     });
 
