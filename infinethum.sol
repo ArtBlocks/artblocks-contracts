@@ -858,9 +858,9 @@ contract CustomERC721Metadata is ERC165, ERC721, ERC721Enumerable {
 }
 
 
-// File contracts/GenArt721Core2.sol
+// File contracts/GenArt721CoreV2.sol
 
-// File: contracts/GenArt721Core.sol
+// File: contracts/GenArt721CoreV2.sol
 
 //0x1454EFCa69FA654e5A7d83CB61c1aD81790c44B7
 
@@ -872,7 +872,7 @@ interface Randomizer {
    function returnValue() external view returns(bytes32);
 }
 
-contract GenArt721Core2 is CustomERC721Metadata {
+contract GenArt721CoreV2 is CustomERC721Metadata {
     using SafeMath for uint256;
 
     event Mint(

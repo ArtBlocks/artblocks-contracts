@@ -528,7 +528,7 @@ contract ERC721 is ERC165, IERC721 {
 
     // Mapping from owner to operator approvals
     mapping (address => mapping (address => bool)) private _operatorApprovals;
-    
+
     bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
 
     constructor () public {
@@ -1334,9 +1334,9 @@ contract GenArt721Core is CustomERC721Metadata {
 }
 
 
-// File contracts/GenArt721Core2.sol
+// File contracts/GenArt721CoreV2.sol
 
-// File: contracts/GenArt721Core.sol
+// File: contracts/GenArt721CoreV2.sol
 
 //0x1454EFCa69FA654e5A7d83CB61c1aD81790c44B7
 
@@ -1351,7 +1351,7 @@ interface Randomizer {
    function returnValue() external view returns(bytes32);
 }
 
-contract GenArt721Core2 is CustomERC721Metadata {
+contract GenArt721CoreV2 is CustomERC721Metadata {
     using SafeMath for uint256;
 
     event Mint(
@@ -2491,7 +2491,7 @@ contract GenArt721Minter2 {
   function purchase(uint256 _projectId) public payable returns (uint256 _tokenId) {
     return purchaseTo(msg.sender, _projectId);
   }
-//removed public and payable 
+//removed public and payable
   function purchaseTo(address _to, uint256 _projectId) private returns(uint256 _tokenId){
     if (keccak256(abi.encodePacked(artblocksContract.projectIdToCurrencySymbol(_projectId))) != keccak256(abi.encodePacked("ETH"))){
       require(msg.value==0, "this project accepts a different currency and cannot accept ETH");
