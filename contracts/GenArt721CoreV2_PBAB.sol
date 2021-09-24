@@ -15,7 +15,6 @@ contract GenArt721CoreV2 is CustomERC721Metadata {
         address indexed _to,
         uint256 indexed _tokenId,
         uint256 indexed _projectId
-
     );
 
     IRandomizer public randomizerContract;

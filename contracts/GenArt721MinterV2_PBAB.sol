@@ -16,7 +16,6 @@ interface GenArt721CoreContract {
   function mint(address _to, uint256 _projectId, address _by) external returns (uint256 tokenId);
 }
 
-
 interface ERC20 {
   function balanceOf(address _owner) external view returns (uint balance);
   function transferFrom(address _from, address _to, uint _value) external returns (bool success);
@@ -27,9 +26,6 @@ interface BonusContract {
   function triggerBonus(address _to) external returns (bool);
   function bonusIsActive() external view returns (bool);
 }
-
-
-
 
 contract GenArt721MinterV2_PBAB {
   using SafeMath for uint256;
