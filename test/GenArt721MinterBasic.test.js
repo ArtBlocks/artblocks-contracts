@@ -5,7 +5,7 @@ const {expect} = require('chai');
 const {ethers} = require('hardhat');
 
 
-describe('GenArt721Minter2', async function () {
+describe('GenArt721MinterBasic', async function () {
 
   const name = 'Non Fungible Token';
   const symbol = 'NFT';
@@ -30,7 +30,7 @@ describe('GenArt721Minter2', async function () {
     this.randomizer = await randomizerFactory.deploy();
     const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV2")
     this.token = await artblocksFactory.connect(snowfro).deploy(name, symbol, this.randomizer.address)
-    const minterFactory = await ethers.getContractFactory("GenArt721Minter2")
+    const minterFactory = await ethers.getContractFactory("GenArt721MinterBasic")
     this.minter = await minterFactory.deploy(this.token.address);
 
 
