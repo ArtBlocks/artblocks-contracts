@@ -38,7 +38,7 @@ interface BonusContract {
 
 
 
-contract GenArt721Minter5 {
+contract GenArt721MinterDAPlusRefund {
   using SafeMath for uint256;
 
   GenArt721CoreContract public artblocksContract;
