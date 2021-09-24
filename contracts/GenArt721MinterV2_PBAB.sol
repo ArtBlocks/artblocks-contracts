@@ -3,7 +3,7 @@ pragma solidity ^0.5.0;
 import "./libs/SafeMath.sol";
 import "./libs/Strings.sol";
 
-interface GenArt721CoreContract {
+interface GenArt721CoreV2_PBAB {
   function isWhitelisted(address sender) external view returns (bool);
   function projectIdToCurrencySymbol(uint256 _projectId) external view returns (string memory);
   function projectIdToCurrencyAddress(uint256 _projectId) external view returns (address);
@@ -30,7 +30,7 @@ interface BonusContract {
 contract GenArt721MinterV2_PBAB {
   using SafeMath for uint256;
 
-  GenArt721CoreContract public genArtCoreContract;
+  GenArt721CoreV2_PBAB public genArtCoreContract;
 
   address payable public ownerAddress;
   uint256 public ownerPercentage;
@@ -42,7 +42,7 @@ contract GenArt721MinterV2_PBAB {
   mapping(uint256 => uint256) public projectMintLimit;
 
   constructor(address _genArt721Address) public {
-    genArtCoreContract=GenArt721CoreContract(_genArt721Address);
+    genArtCoreContract=GenArt721CoreV2_PBAB(_genArt721Address);
   }
 
   function getYourBalanceOfProjectERC20(uint256 _projectId) public view returns (uint256){

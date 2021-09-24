@@ -8,7 +8,7 @@ interface IRandomizer {
    function returnValue() external view returns(bytes32);
 }
 
-contract GenArt721CoreV2 is CustomERC721Metadata {
+contract GenArt721CoreV2_PBAB is CustomERC721Metadata {
     using SafeMath for uint256;
 
     event Mint(
