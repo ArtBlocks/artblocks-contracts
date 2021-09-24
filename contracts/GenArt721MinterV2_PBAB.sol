@@ -1,14 +1,7 @@
-/**
- *Submitted for verification at Etherscan.io on 2020-12-20
-*/
+pragma solidity ^0.5.0;
 
 import "./libs/SafeMath.sol";
 import "./libs/Strings.sol";
-
-
-pragma solidity ^0.5.0;
-
-
 
 interface GenArt721CoreContract {
   function isWhitelisted(address sender) external view returns (bool);
