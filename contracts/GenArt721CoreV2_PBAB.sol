@@ -27,15 +27,12 @@ contract GenArt721CoreV2_PBAB is CustomERC721Metadata {
         string license;
         bool dynamic;
         string projectBaseURI;
-        string projectBaseIpfsURI;
         uint256 invocations;
         uint256 maxInvocations;
         string scriptJSON;
         mapping(uint256 => string) scripts;
         uint scriptCount;
-        string ipfsHash;
         bool useHashString;
-        bool useIpfs;
         bool active;
         bool locked;
         bool paused;
@@ -57,7 +54,6 @@ contract GenArt721CoreV2_PBAB is CustomERC721Metadata {
     address public renderProviderAddress;
     uint256 public renderProviderPercentage = 10;
 
-    mapping(uint256 => string) public staticIpfsImageLink;
     mapping(uint256 => uint256) public tokenIdToProjectId;
     //mapping(uint256 => uint256[]) internal projectIdToTokenIds;
     mapping(uint256 => bytes32) public tokenIdToHash;
@@ -280,21 +276,8 @@ contract GenArt721CoreV2_PBAB is CustomERC721Metadata {
         projects[_projectId].scriptJSON = _projectScriptJSON;
     }
 
-    function updateProjectIpfsHash(uint256 _projectId, string memory _ipfsHash) onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) public {
-        projects[_projectId].ipfsHash = _ipfsHash;
-    }
-
     function updateProjectBaseURI(uint256 _projectId, string memory _newBaseURI) onlyArtist(_projectId) public {
         projects[_projectId].projectBaseURI = _newBaseURI;
-    }
-
-    function updateProjectBaseIpfsURI(uint256 _projectId, string memory _projectBaseIpfsURI) onlyArtist(_projectId) public {
-        projects[_projectId].projectBaseIpfsURI = _projectBaseIpfsURI;
-    }
-
-    function toggleProjectUseIpfsForStatic(uint256 _projectId) onlyArtist(_projectId) public {
-        require(!projects[_projectId].dynamic, "can only set static IPFS hash for static projects");
-        projects[_projectId].useIpfs = !projects[_projectId].useIpfs;
     }
 
     function toggleProjectIsDynamic(uint256 _projectId) onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) public {
@@ -305,14 +288,6 @@ contract GenArt721CoreV2_PBAB is CustomERC721Metadata {
             projects[_projectId].useHashString = true;
         }
         projects[_projectId].dynamic = !projects[_projectId].dynamic;
-    }
-
-    function overrideTokenDynamicImageWithIpfsLink(uint256 _tokenId, string memory _ipfsHash) onlyArtist(tokenIdToProjectId[_tokenId]) public {
-        staticIpfsImageLink[_tokenId] = _ipfsHash;
-    }
-
-    function clearTokenIpfsImageUri(uint256 _tokenId) onlyArtist(tokenIdToProjectId[_tokenId]) public {
-        delete staticIpfsImageLink[tokenIdToProjectId[_tokenId]];
     }
 
     function projectDetails(uint256 _projectId) view public returns (string memory projectName, string memory artist, string memory description, string memory website, string memory license, bool dynamic) {
@@ -336,11 +311,10 @@ contract GenArt721CoreV2_PBAB is CustomERC721Metadata {
         currencyAddress = projectIdToCurrencyAddress[_projectId];
     }
 
-    function projectScriptInfo(uint256 _projectId) view public returns (string memory scriptJSON, uint256 scriptCount, bool useHashString, string memory ipfsHash, bool locked, bool paused) {
+    function projectScriptInfo(uint256 _projectId) view public returns (string memory scriptJSON, uint256 scriptCount, bool useHashString, bool locked, bool paused) {
         scriptJSON = projects[_projectId].scriptJSON;
         scriptCount = projects[_projectId].scriptCount;
         useHashString = projects[_projectId].useHashString;
-        ipfsHash = projects[_projectId].ipfsHash;
         locked = projects[_projectId].locked;
         paused = projects[_projectId].paused;
     }
@@ -349,10 +323,8 @@ contract GenArt721CoreV2_PBAB is CustomERC721Metadata {
         return projects[_projectId].scripts[_index];
     }
 
-    function projectURIInfo(uint256 _projectId) view public returns (string memory projectBaseURI, string memory projectBaseIpfsURI, bool useIpfs) {
+    function projectURIInfo(uint256 _projectId) view public returns (string memory projectBaseURI) {
         projectBaseURI = projects[_projectId].projectBaseURI;
-        projectBaseIpfsURI = projects[_projectId].projectBaseIpfsURI;
-        useIpfs = projects[_projectId].useIpfs;
     }
 /*
     function projectShowAllTokens(uint _projectId) public view returns (uint256[] memory){
@@ -372,14 +344,6 @@ contract GenArt721CoreV2_PBAB is CustomERC721Metadata {
     }
 
     function tokenURI(uint256 _tokenId) external view onlyValidTokenId(_tokenId) returns (string memory) {
-        if (bytes(staticIpfsImageLink[_tokenId]).length > 0) {
-            return Strings.strConcat(projects[tokenIdToProjectId[_tokenId]].projectBaseIpfsURI, staticIpfsImageLink[_tokenId]);
-        }
-
-        if (!projects[tokenIdToProjectId[_tokenId]].dynamic && projects[tokenIdToProjectId[_tokenId]].useIpfs) {
-            return Strings.strConcat(projects[tokenIdToProjectId[_tokenId]].projectBaseIpfsURI, projects[tokenIdToProjectId[_tokenId]].ipfsHash);
-        }
-
         return Strings.strConcat(projects[tokenIdToProjectId[_tokenId]].projectBaseURI, Strings.uint2str(_tokenId));
     }
 }
