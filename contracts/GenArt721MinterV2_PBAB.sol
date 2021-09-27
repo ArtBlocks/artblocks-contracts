@@ -11,6 +11,7 @@ interface GenArt721CoreContract {
   function projectIdToPricePerTokenInWei(uint256 _projectId) external view returns (uint256);
   function projectIdToAdditionalPayee(uint256 _projectId) external view returns (address payable);
   function projectIdToAdditionalPayeePercentage(uint256 _projectId) external view returns (uint256);
+  function projectTokenInfo(uint256 _projectId) external view returns (address, uint256, uint256, uint256, bool, address, uint256, string memory, address);
   function artblocksAddress() external view returns (address payable);
   function artblocksPercentage() external view returns (uint256);
   function mint(address _to, uint256 _projectId, address _by) external returns (uint256 tokenId);
@@ -32,6 +33,8 @@ contract GenArt721MinterV2_PBAB {
 
   GenArt721CoreContract public artblocksContract;
 
+  uint256 constant ONE_MILLION = 1_000_000;
+
   address payable public ownerAddress;
   uint256 public ownerPercentage;
 
@@ -40,6 +43,8 @@ contract GenArt721MinterV2_PBAB {
   mapping(uint256 => bool) public contractFilterProject;
   mapping(address => mapping (uint256 => uint256)) public projectMintCounter;
   mapping(uint256 => uint256) public projectMintLimit;
+  mapping(uint256 => bool) public projectMaxHasBeenInvoked;
+  mapping(uint256 => uint256) public projectMaxInvocations;
 
   constructor(address _genArt721Address) public {
     artblocksContract=GenArt721CoreContract(_genArt721Address);
@@ -58,6 +63,13 @@ contract GenArt721MinterV2_PBAB {
   function setProjectMintLimit(uint256 _projectId,uint8 _limit) public {
     require(artblocksContract.isWhitelisted(msg.sender), "can only be set by admin");
     projectMintLimit[_projectId] = _limit;
+  }
+
+  function setProjectMaxInvocations(uint256 _projectId) public {
+    require(artblocksContract.isWhitelisted(msg.sender), "can only be set by admin");
+    uint256 maxInvocations;
+    ( , , , maxInvocations, , , , , ) = artblocksContract.projectTokenInfo(_projectId);
+    projectMaxInvocations[_projectId] = maxInvocations;
   }
 
   function setOwnerAddress(address payable _ownerAddress) public {
@@ -92,6 +104,7 @@ contract GenArt721MinterV2_PBAB {
   // Remove `public`` and `payable`` to prevent public use
   // of the `purchaseTo`` function.
   function purchaseTo(address _to, uint256 _projectId) public payable returns(uint256 _tokenId){
+    require(!projectMaxHasBeenInvoked[_projectId], "Maximum number of invocations reached");
     if (keccak256(abi.encodePacked(artblocksContract.projectIdToCurrencySymbol(_projectId))) != keccak256(abi.encodePacked("ETH"))){
       require(msg.value==0, "this project accepts a different currency and cannot accept ETH");
       require(ERC20(artblocksContract.projectIdToCurrencyAddress(_projectId)).allowance(msg.sender, address(this)) >= artblocksContract.projectIdToPricePerTokenInWei(_projectId), "Insufficient Funds Approved for TX");
@@ -112,6 +125,14 @@ contract GenArt721MinterV2_PBAB {
     }
 
     uint256 tokenId = artblocksContract.mint(_to, _projectId, msg.sender);
+
+    // What if this overflows, since default value of uint256 is 0?
+    // that is intended, so that by default the minter allows infinite transactions,
+    // allowing the artblocks contract to stop minting
+    // uint256 tokenInvocation = tokenId % ONE_MILLION;
+    if (tokenId % ONE_MILLION == projectMaxInvocations[_projectId]-1){
+        projectMaxHasBeenInvoked[_projectId] = true;
+    }
 
     if (projectIdToBonus[_projectId]){
       require(BonusContract(projectIdToBonusContractAddress[_projectId]).bonusIsActive(), "bonus must be active");
