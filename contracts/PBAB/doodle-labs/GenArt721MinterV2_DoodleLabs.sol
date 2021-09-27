@@ -28,7 +28,7 @@ interface BonusContract {
   function bonusIsActive() external view returns (bool);
 }
 
-contract GenArt721MinterV2_PBAB {
+contract GenArt721MinterV2_DoodleLabs {
   using SafeMath for uint256;
 
   GenArt721CoreV2 public genArtCoreContract;
