@@ -2,13 +2,10 @@
  *Submitted for verification at Etherscan.io on 2020-12-20
 */
 
-
 import "./libs/SafeMath.sol";
 import "./libs/Strings.sol";
 
 pragma solidity ^0.5.0;
-
-
 
 interface GenArt721CoreContract {
   function isWhitelisted(address sender) external view returns (bool);
@@ -24,7 +21,6 @@ interface GenArt721CoreContract {
   function mint(address _to, uint256 _projectId, address _by) external returns (uint256 tokenId);
 }
 
-
 interface ERC20 {
   function balanceOf(address _owner) external view returns (uint balance);
   function transferFrom(address _from, address _to, uint _value) external returns (bool success);
@@ -36,14 +32,10 @@ interface BonusContract {
   function bonusIsActive() external view returns (bool);
 }
 
-
-
-
 contract GenArt721MinterV2 {
   using SafeMath for uint256;
 
   GenArt721CoreContract public artblocksContract;
-
 
   uint256 constant ONE_MILLION = 1_000_000;
 
@@ -183,5 +175,4 @@ function _splitFundsERC20(uint256 _projectId) internal {
       ERC20(artblocksContract.projectIdToCurrencyAddress(_projectId)).transferFrom(msg.sender, artblocksContract.projectIdToArtistAddress(_projectId), creatorFunds);
     }
   }
-
 }
