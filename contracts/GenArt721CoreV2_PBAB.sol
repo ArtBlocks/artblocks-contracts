@@ -39,7 +39,6 @@ contract GenArt721CoreV2_PBAB is CustomERC721Metadata {
         bool active;
         bool locked;
         bool paused;
-
     }
 
     uint256 constant ONE_MILLION = 1_000_000;
@@ -59,7 +58,6 @@ contract GenArt721CoreV2_PBAB is CustomERC721Metadata {
 
     mapping(uint256 => string) public staticIpfsImageLink;
     mapping(uint256 => uint256) public tokenIdToProjectId;
-    //mapping(uint256 => uint256[]) internal projectIdToTokenIds;
     mapping(uint256 => bytes32) public tokenIdToHash;
     mapping(bytes32 => uint256) public hashToTokenId;
 
@@ -135,7 +133,6 @@ contract GenArt721CoreV2_PBAB is CustomERC721Metadata {
         _mint(_to, tokenIdToBe);
 
         tokenIdToProjectId[tokenIdToBe] = _projectId;
-        //projectIdToTokenIds[_projectId].push(tokenIdToBe);
 
         emit Mint(_to, tokenIdToBe, _projectId);
 
@@ -199,7 +196,7 @@ contract GenArt721CoreV2_PBAB is CustomERC721Metadata {
         projectIdToPricePerTokenInWei[projectId] = _pricePerTokenInWei;
         projects[projectId].paused=true;
         projects[projectId].dynamic=_dynamic;
-        projects[projectId].maxInvocations = 100;
+        projects[projectId].maxInvocations = ONE_MILLION;
         if (!_dynamic) {
             projects[projectId].useHashString = false;
         } else {
@@ -251,7 +248,7 @@ contract GenArt721CoreV2_PBAB is CustomERC721Metadata {
     function updateProjectMaxInvocations(uint256 _projectId, uint256 _maxInvocations) onlyArtist(_projectId) public {
         require((!projects[_projectId].locked || _maxInvocations<projects[_projectId].maxInvocations), "Only if unlocked");
         require(_maxInvocations > projects[_projectId].invocations, "You must set max invocations greater than current invocations");
-        require(_maxInvocations <= 100, "Cannot exceed 100");
+        require(_maxInvocations <= ONE_MILLION, "Cannot exceed 1000000");
         projects[_projectId].maxInvocations = _maxInvocations;
     }
 
@@ -354,11 +351,6 @@ contract GenArt721CoreV2_PBAB is CustomERC721Metadata {
         projectBaseIpfsURI = projects[_projectId].projectBaseIpfsURI;
         useIpfs = projects[_projectId].useIpfs;
     }
-/*
-    function projectShowAllTokens(uint _projectId) public view returns (uint256[] memory){
-        return projectIdToTokenIds[_projectId];
-    }
-    */
 
     function tokensOfOwner(address owner) external view returns (uint256[] memory) {
         return _tokensOfOwner(owner);
