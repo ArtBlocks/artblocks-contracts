@@ -38,11 +38,6 @@ module.exports = {
       accounts: [`0x${MAINNET_KEY}`],
       gasPrice: 75000000000
     },
-    // ropsten: {
-    //   url: `http://127.0.0.1:8545`,
-    //   chainId:3,
-    //   from: `0x8De4e517A6F0B84654625228D8293b70AB49cF6C`
-    // },
     ropsten: {
       url: process.env.ROPSTEN_JSON_RPC_PROVIDER_URL,
       accounts: [`0x${PRIVATE_KEY}`],
