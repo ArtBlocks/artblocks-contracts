@@ -1,22 +1,22 @@
 
 
-### install
-node 10.x
-
-`yarn install`
+### install packages
+`yarn`
 
 ### compile
-`npx buidler compile`
+`yarn hardhat compile`
 
-### deploy
+### generate typescript contract bindings
+`yarn generate:typechain`
 
-create a `.env` file at the root with two vars
+### deploy a gen art contract + minter
 
-```
-PROTOTYPE_BR_INFURA_KEY=074e3b1da7000000
-PRIVATE_KEY=61e7f869e9d9b2b000000
-```
+1. create a `.env` file by duplicating `.env.example` and populating all variables
+2. copy doodle_labs_contract_setup.ts and update to use the desired contracts, token name, and token symbol
+3. `yarn hardhat run scripts/<new script name> --network <network>`
 
-`npx buidler run ./scripts/1_deploy_gen_art_721.js --network ropsten`
-
-`npx buidler run ./scripts/2_add_project.js --network ropsten`
+### verify on etherscan
+- GenArt
+  - `yarn hardhat verify --contract <path to .sol>:<contract name> --network <network> <contract address> "<randomize contract address>" "<token name>" "<token symbol>"`
+- Minter
+  - `yarn hardhat verify --contract <path to .sol>:<contract name> --network <network> <contract address> "<gen art contract address>"`

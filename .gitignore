@@ -6,6 +6,8 @@ build
 # local env files
 .env.local
 .env.*.local
+.env.*
+!.env.example
 
 # Log files
 npm-debug.log*

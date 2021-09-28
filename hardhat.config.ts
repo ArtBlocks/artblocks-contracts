@@ -9,7 +9,6 @@ import "@nomiclabs/hardhat-etherscan";
 
 const INFURA_PROJECT_ID = process.env.PROTOTYPE_BR_INFURA_KEY;
 const PRIVATE_KEY = process.env.PRIVATE_KEY;
-const MNEMONIC = process.env.MNEMONIC;
 const MAINNET_KEY = process.env.MAINNET_KEY;
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
 
@@ -71,4 +70,3 @@ module.exports = {
     disambiguatePaths: false,
   }
 };
-// console.log(`https://mainnet.infura.io/v3/${INFURA_PROJECT_ID}`);
