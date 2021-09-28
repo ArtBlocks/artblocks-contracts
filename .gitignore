@@ -39,3 +39,6 @@ node_modules
 #Hardhat files
 cache
 artifacts
+
+# Typechain generated files
+scripts/contracts
