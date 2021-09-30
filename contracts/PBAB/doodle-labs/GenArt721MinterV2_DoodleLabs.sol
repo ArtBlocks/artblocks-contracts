@@ -1,7 +1,7 @@
 pragma solidity ^0.5.0;
 
-import "./libs/SafeMath.sol";
-import "./libs/Strings.sol";
+import "../../libs/SafeMath.sol";
+import "../../libs/Strings.sol";
 
 interface GenArt721CoreV2 {
   function isWhitelisted(address sender) external view returns (bool);
