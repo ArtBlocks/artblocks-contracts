@@ -25,14 +25,13 @@ contract GenArt721CoreV2_PBAB is CustomERC721Metadata {
         string description;
         string website;
         string license;
-        bool dynamic;
         string projectBaseURI;
         uint256 invocations;
         uint256 maxInvocations;
         string scriptJSON;
         mapping(uint256 => string) scripts;
         uint scriptCount;
-        bool useHashString;
+        string ipfsHash;
         bool active;
         bool locked;
         bool paused;
@@ -119,12 +118,9 @@ contract GenArt721CoreV2_PBAB is CustomERC721Metadata {
 
         projects[_projectId].invocations = projects[_projectId].invocations.add(1);
 
-        if (projects[_projectId].useHashString) {
-            bytes32 hash = keccak256(abi.encodePacked(projects[_projectId].invocations, block.number, blockhash(block.number - 1), msg.sender, randomizerContract.returnValue()));
-            tokenIdToHash[tokenIdToBe]=hash;
-            hashToTokenId[hash] = tokenIdToBe;
-          }
-
+        bytes32 hash = keccak256(abi.encodePacked(projects[_projectId].invocations, block.number, blockhash(block.number - 1), msg.sender, randomizerContract.returnValue()));
+        tokenIdToHash[tokenIdToBe]=hash;
+        hashToTokenId[hash] = tokenIdToBe;
 
         _mint(_to, tokenIdToBe);
 
@@ -183,7 +179,7 @@ contract GenArt721CoreV2_PBAB is CustomERC721Metadata {
         projects[_projectId].paused = !projects[_projectId].paused;
     }
 
-    function addProject(string memory _projectName, address _artistAddress, uint256 _pricePerTokenInWei, bool _dynamic) public onlyWhitelisted {
+    function addProject(string memory _projectName, address _artistAddress, uint256 _pricePerTokenInWei) public onlyWhitelisted {
 
         uint256 projectId = nextProjectId;
         projectIdToArtistAddress[projectId] = _artistAddress;
@@ -191,13 +187,7 @@ contract GenArt721CoreV2_PBAB is CustomERC721Metadata {
         projectIdToCurrencySymbol[projectId] = "ETH";
         projectIdToPricePerTokenInWei[projectId] = _pricePerTokenInWei;
         projects[projectId].paused=true;
-        projects[projectId].dynamic=_dynamic;
         projects[projectId].maxInvocations = ONE_MILLION;
-        if (!_dynamic) {
-            projects[projectId].useHashString = false;
-        } else {
-            projects[projectId].useHashString = true;
-        }
         nextProjectId = nextProjectId.add(1);
     }
 
@@ -248,11 +238,6 @@ contract GenArt721CoreV2_PBAB is CustomERC721Metadata {
         projects[_projectId].maxInvocations = _maxInvocations;
     }
 
-    function toggleProjectUseHashString(uint256 _projectId) onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) public {
-      require(projects[_projectId].invocations == 0, "Cannot modify after a token is minted.");
-      projects[_projectId].useHashString = !projects[_projectId].useHashString;
-    }
-
     function addProjectScript(uint256 _projectId, string memory _script) onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) public {
         projects[_projectId].scripts[projects[_projectId].scriptCount] = _script;
         projects[_projectId].scriptCount = projects[_projectId].scriptCount.add(1);
@@ -273,27 +258,20 @@ contract GenArt721CoreV2_PBAB is CustomERC721Metadata {
         projects[_projectId].scriptJSON = _projectScriptJSON;
     }
 
+    function updateProjectIpfsHash(uint256 _projectId, string memory _ipfsHash) onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) public {
+        projects[_projectId].ipfsHash = _ipfsHash;
+    }
+
     function updateProjectBaseURI(uint256 _projectId, string memory _newBaseURI) onlyArtist(_projectId) public {
         projects[_projectId].projectBaseURI = _newBaseURI;
     }
 
-    function toggleProjectIsDynamic(uint256 _projectId) onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) public {
-      require(projects[_projectId].invocations == 0, "Can not switch after a token is minted.");
-        if (projects[_projectId].dynamic) {
-            projects[_projectId].useHashString = false;
-        } else {
-            projects[_projectId].useHashString = true;
-        }
-        projects[_projectId].dynamic = !projects[_projectId].dynamic;
-    }
-
-    function projectDetails(uint256 _projectId) view public returns (string memory projectName, string memory artist, string memory description, string memory website, string memory license, bool dynamic) {
+    function projectDetails(uint256 _projectId) view public returns (string memory projectName, string memory artist, string memory description, string memory website, string memory license) {
         projectName = projects[_projectId].name;
         artist = projects[_projectId].artist;
         description = projects[_projectId].description;
         website = projects[_projectId].website;
         license = projects[_projectId].license;
-        dynamic = projects[_projectId].dynamic;
     }
 
     function projectTokenInfo(uint256 _projectId) view public returns (address artistAddress, uint256 pricePerTokenInWei, uint256 invocations, uint256 maxInvocations, bool active, address additionalPayee, uint256 additionalPayeePercentage ,string memory currency, address currencyAddress) {
@@ -308,10 +286,10 @@ contract GenArt721CoreV2_PBAB is CustomERC721Metadata {
         currencyAddress = projectIdToCurrencyAddress[_projectId];
     }
 
-    function projectScriptInfo(uint256 _projectId) view public returns (string memory scriptJSON, uint256 scriptCount, bool useHashString, bool locked, bool paused) {
+    function projectScriptInfo(uint256 _projectId) view public returns (string memory scriptJSON, uint256 scriptCount, string memory ipfsHash, bool locked, bool paused) {
         scriptJSON = projects[_projectId].scriptJSON;
         scriptCount = projects[_projectId].scriptCount;
-        useHashString = projects[_projectId].useHashString;
+        ipfsHash = projects[_projectId].ipfsHash;
         locked = projects[_projectId].locked;
         paused = projects[_projectId].paused;
     }
