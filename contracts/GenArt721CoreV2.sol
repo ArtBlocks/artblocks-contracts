@@ -31,7 +31,6 @@ contract GenArt721CoreV2 is CustomERC721Metadata {
         string scriptJSON;
         mapping(uint256 => string) scripts;
         uint scriptCount;
-        string ipfsHash;
         bool active;
         bool locked;
         bool paused;
@@ -262,10 +261,6 @@ contract GenArt721CoreV2 is CustomERC721Metadata {
         projects[_projectId].scriptJSON = _projectScriptJSON;
     }
 
-    function updateProjectIpfsHash(uint256 _projectId, string memory _ipfsHash) onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) public {
-        projects[_projectId].ipfsHash = _ipfsHash;
-    }
-
     function updateProjectBaseURI(uint256 _projectId, string memory _newBaseURI) onlyArtist(_projectId) public {
         projects[_projectId].projectBaseURI = _newBaseURI;
     }
@@ -290,10 +285,9 @@ contract GenArt721CoreV2 is CustomERC721Metadata {
         currencyAddress = projectIdToCurrencyAddress[_projectId];
     }
 
-    function projectScriptInfo(uint256 _projectId) view public returns (string memory scriptJSON, uint256 scriptCount, string memory ipfsHash, bool locked, bool paused) {
+    function projectScriptInfo(uint256 _projectId) view public returns (string memory scriptJSON, uint256 scriptCount, bool locked, bool paused) {
         scriptJSON = projects[_projectId].scriptJSON;
         scriptCount = projects[_projectId].scriptCount;
-        ipfsHash = projects[_projectId].ipfsHash;
         locked = projects[_projectId].locked;
         paused = projects[_projectId].paused;
     }
