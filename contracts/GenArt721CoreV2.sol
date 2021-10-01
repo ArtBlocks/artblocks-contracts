@@ -26,14 +26,12 @@ contract GenArt721CoreV2 is CustomERC721Metadata {
         string website;
         string license;
         string projectBaseURI;
-        string projectBaseIpfsURI;
         uint256 invocations;
         uint256 maxInvocations;
         string scriptJSON;
         mapping(uint256 => string) scripts;
         uint scriptCount;
         string ipfsHash;
-        bool useIpfs;
         bool active;
         bool locked;
         bool paused;
@@ -54,7 +52,6 @@ contract GenArt721CoreV2 is CustomERC721Metadata {
     address public artblocksAddress;
     uint256 public artblocksPercentage = 10;
 
-    mapping(uint256 => string) public staticIpfsImageLink;
     mapping(uint256 => uint256) public tokenIdToProjectId;
     //mapping(uint256 => uint256[]) internal projectIdToTokenIds;
     mapping(uint256 => bytes32) public tokenIdToHash;
@@ -273,18 +270,6 @@ contract GenArt721CoreV2 is CustomERC721Metadata {
         projects[_projectId].projectBaseURI = _newBaseURI;
     }
 
-    function updateProjectBaseIpfsURI(uint256 _projectId, string memory _projectBaseIpfsURI) onlyArtist(_projectId) public {
-        projects[_projectId].projectBaseIpfsURI = _projectBaseIpfsURI;
-    }
-
-    function overrideTokenDynamicImageWithIpfsLink(uint256 _tokenId, string memory _ipfsHash) onlyArtist(tokenIdToProjectId[_tokenId]) public {
-        staticIpfsImageLink[_tokenId] = _ipfsHash;
-    }
-
-    function clearTokenIpfsImageUri(uint256 _tokenId) onlyArtist(tokenIdToProjectId[_tokenId]) public {
-        delete staticIpfsImageLink[tokenIdToProjectId[_tokenId]];
-    }
-
     function projectDetails(uint256 _projectId) view public returns (string memory projectName, string memory artist, string memory description, string memory website, string memory license) {
         projectName = projects[_projectId].name;
         artist = projects[_projectId].artist;
@@ -317,10 +302,8 @@ contract GenArt721CoreV2 is CustomERC721Metadata {
         return projects[_projectId].scripts[_index];
     }
 
-    function projectURIInfo(uint256 _projectId) view public returns (string memory projectBaseURI, string memory projectBaseIpfsURI, bool useIpfs) {
+    function projectURIInfo(uint256 _projectId) view public returns (string memory projectBaseURI) {
         projectBaseURI = projects[_projectId].projectBaseURI;
-        projectBaseIpfsURI = projects[_projectId].projectBaseIpfsURI;
-        useIpfs = projects[_projectId].useIpfs;
     }
 /*
     function projectShowAllTokens(uint _projectId) public view returns (uint256[] memory){
@@ -340,10 +323,6 @@ contract GenArt721CoreV2 is CustomERC721Metadata {
     }
 
     function tokenURI(uint256 _tokenId) external view onlyValidTokenId(_tokenId) returns (string memory) {
-        if (bytes(staticIpfsImageLink[_tokenId]).length > 0) {
-            return Strings.strConcat(projects[tokenIdToProjectId[_tokenId]].projectBaseIpfsURI, staticIpfsImageLink[_tokenId]);
-        }
-
         return Strings.strConcat(projects[tokenIdToProjectId[_tokenId]].projectBaseURI, Strings.uint2str(_tokenId));
     }
 }
