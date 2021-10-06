@@ -7,9 +7,10 @@ import "@nomiclabs/hardhat-solhint";
 import "hardhat-contract-sizer";
 import "@nomiclabs/hardhat-etherscan";
 
-const INFURA_PROJECT_ID = process.env.PROTOTYPE_BR_INFURA_KEY;
-const PRIVATE_KEY = process.env.PRIVATE_KEY;
-const MAINNET_KEY = process.env.MAINNET_KEY;
+const MAINNET_JSON_RPC_PROVIDER_URL = process.env.MAINNET_JSON_RPC_PROVIDER_URL;
+const ROPSTEN_JSON_RPC_PROVIDER_URL = process.env.ROPSTEN_JSON_RPC_PROVIDER_URL;
+const MAINNET_PRIVATE_KEY = process.env.MAINNET_PRIVATE_KEY;
+const TESTNET_PRIVATE_KEY = process.env.TESTNET_PRIVATE_KEY;
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
 
 // You need to export an object to set up your config
@@ -34,22 +35,13 @@ module.exports = {
       gasPrice: 0,
     },
     mainnet: {
-      url: `https://mainnet.infura.io/v3/${INFURA_PROJECT_ID}`,
-      accounts: [`0x${MAINNET_KEY}`],
+      url: MAINNET_JSON_RPC_PROVIDER_URL,
+      accounts: [`0x${MAINNET_PRIVATE_KEY}`],
       gasPrice: 75000000000
     },
     ropsten: {
-      url: process.env.ROPSTEN_JSON_RPC_PROVIDER_URL,
-      accounts: [`0x${PRIVATE_KEY}`],
-    },
-    rinkeby: {
-      url: `https://rinkeby.infura.io/v3/${INFURA_PROJECT_ID}`,
-
-      accounts: [`0x${PRIVATE_KEY}`]
-    },
-    kovan: {
-      url: `https://kovan.infura.io/v3/${INFURA_PROJECT_ID}`,
-      accounts: [`0x${PRIVATE_KEY}`]
+      url: ROPSTEN_JSON_RPC_PROVIDER_URL,
+      accounts: [`0x${TESTNET_PRIVATE_KEY}`],
     },
     coverage: {
       url: 'http://localhost:8545',
