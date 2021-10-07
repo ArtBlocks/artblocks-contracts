@@ -1,5 +1,5 @@
 import { ethers } from "hardhat";
-import { GenArt721CoreV2Flutter__factory } from "./contracts/factories/GenArt721CoreV2Flutter__factory";
+import { GenArt721CoreV2Flutter__factory } from "../../contracts/factories/GenArt721CoreV2Flutter__factory";
 
 async function main() {
   const [deployer] = await ethers.getSigners();
