@@ -13,5 +13,5 @@ TBD
 
 ### Upload 1
 
-**GenArt721CoreV2:** https://ropsten.etherscan.io/address/0x8Be503bcdEd90ED42Eff31f56199399B2b0154CA#code
-**GenArt721Minter:** https://ropsten.etherscan.io/address/0x47c5e40890bcE4a473A49D7501808b9633F29782#code
+**GenArt721CoreV2:** https://ropsten.etherscan.io/address/0xd9f14781f6cba1f4ffb0743bcfd5fc860d1da847#code
+**GenArt721Minter:** https://ropsten.etherscan.io/address/0x422f493d257e8efab558137299a509d5a2702bbc#code
