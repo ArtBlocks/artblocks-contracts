@@ -17,6 +17,6 @@
 
 ### verify on etherscan
 - GenArt
-  - `yarn hardhat verify --contract <path to .sol>:<contract name> --network <network> <contract address> "<randomize contract address>" "<token name>" "<token symbol>"`
+  - `yarn hardhat verify --contract <path to .sol>:<contract name> --network <network> <contract address> "<token name>" "<token symbol>" "<randomizer contract address>"`
 - Minter
   - `yarn hardhat verify --contract <path to .sol>:<contract name> --network <network> <contract address> "<gen art contract address>"`
