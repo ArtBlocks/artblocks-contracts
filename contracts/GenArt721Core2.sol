@@ -260,7 +260,7 @@ contract GenArt721Core2 is CustomERC721Metadata {
     function updateProjectMaxInvocations(uint256 _projectId, uint256 _maxInvocations) onlyArtist(_projectId) public {
         require((!projects[_projectId].locked || _maxInvocations<projects[_projectId].maxInvocations), "Only if unlocked");
         require(_maxInvocations > projects[_projectId].invocations, "You must set max invocations greater than current invocations");
-        require(_maxInvocations <= 100, "Cannot exceed 1,000,000");
+        require(_maxInvocations <= 100, "Cannot exceed 100");
         projects[_projectId].maxInvocations = _maxInvocations;
     }
 
