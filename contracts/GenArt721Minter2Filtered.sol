@@ -20,13 +20,6 @@ interface ERC20 {
   function allowance(address _owner, address _spender) external view returns (uint remaining);
 }
 
-interface BonusContract {
-  function triggerBonus(address _to) external returns (bool);
-  function bonusIsActive() external view returns (bool);
-}
-
-
-
 
 contract GenArt721Minter2WithFilter {
   using SafeMath for uint256;
@@ -38,8 +31,6 @@ contract GenArt721Minter2WithFilter {
   uint256 constant ONE_MILLION = 1_000_000;
 
 
-  mapping(uint256 => bool) public projectIdToBonus;
-  mapping(uint256 => address) public projectIdToBonusContractAddress;
   mapping(uint256 => bool) public contractFilterProject;
   mapping(address => mapping (uint256 => uint256)) public projectMintCounter;
   mapping(uint256 => uint256) public projectMintLimit;
@@ -79,16 +70,6 @@ contract GenArt721Minter2WithFilter {
     contractFilterProject[_projectId]=!contractFilterProject[_projectId];
   }
 
-  function artistToggleBonus(uint256 _projectId) public {
-    require(msg.sender==artblocksContract.projectIdToArtistAddress(_projectId), "can only be set by artist");
-    projectIdToBonus[_projectId]=!projectIdToBonus[_projectId];
-  }
-
-  function artistSetBonusContractAddress(uint256 _projectId, address _bonusContractAddress) public {
-    require(msg.sender==artblocksContract.projectIdToArtistAddress(_projectId), "can only be set by artist");
-    projectIdToBonusContractAddress[_projectId]=_bonusContractAddress;
-  }
-
   function purchase(uint256 _projectId) public payable returns (uint256 _tokenId) {
     return purchaseTo(msg.sender, _projectId);
   }
@@ -123,10 +104,6 @@ contract GenArt721Minter2WithFilter {
         projectMaxHasBeenInvoked[_projectId] = true;
     }
 
-    if (projectIdToBonus[_projectId]){
-      require(BonusContract(projectIdToBonusContractAddress[_projectId]).bonusIsActive(), "bonus must be active");
-      BonusContract(projectIdToBonusContractAddress[_projectId]).triggerBonus(msg.sender);
-    }
 
     return tokenId;
   }

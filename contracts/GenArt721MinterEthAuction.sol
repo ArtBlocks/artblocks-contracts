@@ -81,6 +81,7 @@ contract GenArt721MinterEthAuction {
     mapping(uint256 => uint256) public projectMaxInvocations;
     address payable public ownerAddress;
     uint256 public ownerPercentage;
+    uint256 public minimumAuctionLength = 3600;
 
     // Auction variables
     mapping(uint256 => AuctionParameters) public projectAuctionParameters;
@@ -111,6 +112,14 @@ contract GenArt721MinterEthAuction {
         ownerPercentage = _ownerPercentage;
     }
 
+    function setMinimumAuctionLength(uint256 _minimumAuctionLength) public {
+        require(
+            artblocksContract.isWhitelisted(msg.sender),
+            "can only be set by admin"
+        );
+        minimumAuctionLength = minimumAuctionLength;
+    }
+
     ////// Auction Functions
     function setAuctionDetails(
         uint256 _projectId,
@@ -122,6 +131,9 @@ contract GenArt721MinterEthAuction {
             artblocksContract.isWhitelisted(msg.sender),
             "can only be set by admin"
         );
+        require(_auctionTimestampEnd > _auctionTimestampStart, "Auction end must be greater than auction start");
+        require(_auctionTimestampEnd > _auctionTimestampStart + minimumAuctionLength, "Auction length must be at least minimumAuctionLength");
+        require(_auctionPriceStart > getPrice(_projectId), "Auction start price must be greater than auction end price");
         projectAuctionParameters[_projectId] = AuctionParameters(
             _auctionTimestampStart,
             _auctionTimestampEnd,
@@ -151,6 +163,8 @@ contract GenArt721MinterEthAuction {
             msg.value >= getPrice(_projectId),
             "Must send minimum value to mint!"
         );
+
+        //By default, no contract buys
         require(msg.sender == tx.origin, "No Contract Buys");
 
         // limit mints per address by project
@@ -160,7 +174,6 @@ contract GenArt721MinterEthAuction {
         }
         _splitFundsETHAuction(_projectId);
 
-        // if contract filter is active prevent calls from another contract
 
         uint256 tokenId = minterFilter.mint(_to, _projectId, msg.sender);
         // What if this overflows, since default value of uint256 is 0?

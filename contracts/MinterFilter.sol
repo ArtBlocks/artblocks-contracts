@@ -1,7 +1,3 @@
-/**
- *Submitted for verification at Etherscan.io on 2020-12-20
- */
-
 import "./libs/SafeMath.sol";
 import "./libs/Strings.sol";
 
