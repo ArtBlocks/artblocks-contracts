@@ -17,49 +17,57 @@ const {
     ethers
 } = require('hardhat');
 
+describe('GenArt721CoreV2', async function () {
 
-describe('GenArt721Core2', async function() {
+  const name = 'Non Fungible Token';
+  const symbol = 'NFT';
 
-    const name = 'Non Fungible Token';
-    const symbol = 'NFT';
+  const firstTokenId = new BN('30000000');
+  const secondTokenId = new BN('3000001');
 
-    const firstTokenId = new BN('30000000');
-    const secondTokenId = new BN('3000001');
+  const pricePerTokenInWei = ethers.utils.parseEther('1');
+  const projectZero = 0;
 
-    const pricePerTokenInWei = ethers.utils.parseEther('1');
-    const projectZero = 0;
-
-    beforeEach(async function() {
-        const [owner, newOwner, artist, additional, snowfro] = await ethers.getSigners();
-        this.accounts = {
-            "owner": owner,
-            "newOwner": newOwner,
-            "artist": artist,
-            "additional": additional,
-            "snowfro": snowfro
-        }
-        const randomizerFactory = await ethers.getContractFactory("Randomizer")
-        this.randomizer = await randomizerFactory.deploy();
-        const artblocksFactory = await ethers.getContractFactory("GenArt721Core2")
-        this.token = await artblocksFactory.connect(snowfro).deploy(name, symbol, this.randomizer.address)
-        const minterFactory = await ethers.getContractFactory("GenArt721Minter2")
-        this.minter = await minterFactory.deploy(this.token.address);
-
-
-        await this.token.connect(snowfro).addProject(
-            "name",
-            artist.address,
-            pricePerTokenInWei,
-            true
-        );
-
-        this.projectZeroInfo = await this.token.projectTokenInfo(projectZero);
-
-        await this.token.connect(snowfro).toggleProjectIsActive(projectZero);
-        await this.token.connect(snowfro).addMintWhitelisted(this.minter.address);
-        await this.token.connect(artist).updateProjectMaxInvocations(projectZero, 15);
+  beforeEach(async function () {
+    const [owner, newOwner, artist, additional, snowfro] =  await ethers.getSigners();
+    this.accounts = {
+      "owner": owner,
+      "newOwner": newOwner,
+      "artist": artist,
+      "additional": additional,
+      "snowfro": snowfro
+    }
+    const randomizerFactory = await ethers.getContractFactory("Randomizer")
+    this.randomizer = await randomizerFactory.deploy();
+    const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV2")
+    this.token = await artblocksFactory.connect(snowfro).deploy(name, symbol, this.randomizer.address)
+    const minterFactory = await ethers.getContractFactory("GenArt721MinterBasic")
+    this.minter = await minterFactory.deploy(this.token.address);
 
 
+    await this.token.connect(snowfro).addProject(
+      "name",
+      artist.address,
+      pricePerTokenInWei,
+      true
+    );
+
+    this.projectZeroInfo = await this.token.projectTokenInfo(projectZero);
+
+    await this.token.connect(snowfro).toggleProjectIsActive(projectZero );
+    await this.token.connect(snowfro).addMintWhitelisted(this.minter.address );
+    await this.token.connect(artist).updateProjectMaxInvocations(projectZero, 15 );
+
+
+  });
+
+  describe('has whitelisted owner', function () {
+    it('has an admin', async function () {
+      expect(await this.token.artblocksAddress()).to.be.equal(this.accounts.snowfro.address);
+    });
+
+    it('has an admin', async function () {
+      expect(await this.token.admin()).to.be.equal(this.accounts.snowfro.address);
     });
 
     describe('has whitelisted owner', function() {

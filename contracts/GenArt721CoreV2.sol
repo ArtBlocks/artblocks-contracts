@@ -1,9 +1,3 @@
-// File: contracts/GenArt721Core.sol
-
-//0x1454EFCa69FA654e5A7d83CB61c1aD81790c44B7
-
-//https://oneclickdapp.com/radar-valery/
-
 pragma solidity ^0.5.0;
 
 import "./libs/CustomERC721Metadata.sol";
@@ -14,7 +8,7 @@ interface IRandomizer {
    function returnValue() external view returns(bytes32);
 }
 
-contract GenArt721Core2 is CustomERC721Metadata {
+contract GenArt721CoreV2 is CustomERC721Metadata {
     using SafeMath for uint256;
 
     event Mint(

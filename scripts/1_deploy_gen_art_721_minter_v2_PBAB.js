@@ -10,7 +10,7 @@ async function main() {
   );
 
   const genArt721Address = prompt('GenArt721 address? ');
-  const GenArt721 = await ethers.getContractFactory("GenArt721Minter2");
+  const GenArt721 = await ethers.getContractFactory("GenArt721MinterV2_PBAB");
 
   const genArt721 = await GenArt721.deploy(genArt721Address);
 

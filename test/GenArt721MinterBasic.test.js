@@ -1,3 +1,4 @@
+<<<<<<< HEAD:test/GenArt721Minter2.test.js
 const {
     BN,
     constants,
@@ -72,6 +73,80 @@ describe('GenArt721Minter2', async function() {
 
         this.token.connect(this.accounts.artist).toggleProjectIsPaused(projectZero);
         this.token.connect(this.accounts.artist).toggleProjectIsPaused(projectOne);
+=======
+const {BN, constants, expectEvent, expectRevert, balance, ether} = require('@openzeppelin/test-helpers');
+const {ZERO_ADDRESS} = constants;
+
+const {expect} = require('chai');
+const {ethers} = require('hardhat');
+
+
+describe('GenArt721MinterBasic', async function () {
+
+  const name = 'Non Fungible Token';
+  const symbol = 'NFT';
+
+  const firstTokenId = new BN('30000000');
+  const secondTokenId = new BN('3000001');
+
+  const pricePerTokenInWei = ethers.utils.parseEther('1');
+  const projectZero = 0;
+  const projectOne = 1;
+
+  beforeEach(async function () {
+    const [owner, newOwner, artist, additional, snowfro] =  await ethers.getSigners();
+    this.accounts = {
+      "owner": owner,
+      "newOwner": newOwner,
+      "artist": artist,
+      "additional": additional,
+      "snowfro": snowfro
+    }
+    const randomizerFactory = await ethers.getContractFactory("Randomizer")
+    this.randomizer = await randomizerFactory.deploy();
+    const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV2")
+    this.token = await artblocksFactory.connect(snowfro).deploy(name, symbol, this.randomizer.address)
+    const minterFactory = await ethers.getContractFactory("GenArt721MinterBasic")
+    this.minter = await minterFactory.deploy(this.token.address);
+
+
+    await this.token.connect(snowfro).addProject(
+      "project1",
+      artist.address,
+      pricePerTokenInWei,
+      true
+    );
+
+    await this.token.connect(snowfro).addProject(
+      "project2",
+      artist.address,
+      pricePerTokenInWei,
+      true
+    );
+
+
+    await this.token.connect(snowfro).toggleProjectIsActive(projectZero );
+    await this.token.connect(snowfro).toggleProjectIsActive(projectOne );
+
+    await this.token.connect(snowfro).addMintWhitelisted(this.minter.address );
+
+    await this.token.connect(artist).updateProjectMaxInvocations(projectZero, 15 );
+    await this.token.connect(artist).updateProjectMaxInvocations(projectOne, 15 );
+
+    this.token.connect(this.accounts.artist).toggleProjectIsPaused(projectZero);
+    this.token.connect(this.accounts.artist).toggleProjectIsPaused(projectOne);
+  });
+
+
+  describe('purchase', async function () {
+    it('does nothing if setProjectMaxInvocations is not called (fails correctly)', async function () {
+      for (let i = 0; i < 15; i++) {
+        await this.minter.connect(this.accounts.owner).purchase(projectZero, {value: pricePerTokenInWei});
+      }
+
+      const ownerBalance = await this.accounts.owner.getBalance();
+      await expectRevert(this.minter.connect(this.accounts.owner).purchase(projectZero, {value: pricePerTokenInWei}), "Must not exceed max invocations");
+>>>>>>> upstream/master:test/GenArt721MinterBasic.test.js
     });
 
 

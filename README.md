@@ -3,7 +3,7 @@
 ### install
 node 10.x
 
-`npm i`
+`yarn install`
 
 ### compile
 `npx buidler compile`

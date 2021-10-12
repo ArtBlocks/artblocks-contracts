@@ -38,7 +38,7 @@ interface BonusContract {
 
 
 
-contract GenArt721Minter4 {
+contract GenArt721MinterV2_PBAB {
   using SafeMath for uint256;
 
   GenArt721CoreContract public artblocksContract;
@@ -51,11 +51,6 @@ contract GenArt721Minter4 {
   mapping(uint256 => bool) public contractFilterProject;
   mapping(address => mapping (uint256 => uint256)) public projectMintCounter;
   mapping(uint256 => uint256) public projectMintLimit;
-
-  // Auction variables
-  mapping(uint256 => uint256) public auctionMultiplier;
-  mapping(uint256 => uint256) public auctionTimestamp;
-  mapping(uint256 => uint256) public auctionDuration;
 
   constructor(address _genArt721Address) public {
     artblocksContract=GenArt721CoreContract(_genArt721Address);
@@ -101,32 +96,6 @@ contract GenArt721Minter4 {
     projectIdToBonusContractAddress[_projectId]=_bonusContractAddress;
   }
 
-
-  ////// Auction Functions
-
-    function setAuctionDetails(uint256 _projectId, uint256 _auctionMultiplier, uint256 _durationInSeconds) public {
-      require(artblocksContract.isWhitelisted(msg.sender), "can only be set by admin");
-      auctionMultiplier[_projectId]=_auctionMultiplier;
-      auctionDuration[_projectId]=_durationInSeconds;
-    }
-
-    function startAuctionNow(uint256 _projectId) public {
-      require(artblocksContract.isWhitelisted(msg.sender), "can only be set by admin");
-      require(auctionMultiplier[_projectId]!=0, "multiplier must be in place to set project for auction");
-      auctionTimestamp[_projectId]=block.timestamp;
-    }
-
-    function startAuctionLater(uint256 _projectId, uint256 _startTime) public {
-      require(artblocksContract.isWhitelisted(msg.sender), "can only be set by admin");
-      require(auctionMultiplier[_projectId]!=0, "multiplier must be in place to set project for auction");
-      auctionTimestamp[_projectId]=_startTime;
-    }
-
-    function stopAuction(uint256 _projectId) public {
-      require(artblocksContract.isWhitelisted(msg.sender), "can only be set by admin");
-      auctionTimestamp[_projectId]=0;
-    }
-
   function purchase(uint256 _projectId) public payable returns (uint256 _tokenId) {
     return purchaseTo(msg.sender, _projectId);
   }
@@ -138,13 +107,8 @@ contract GenArt721Minter4 {
       require(ERC20(artblocksContract.projectIdToCurrencyAddress(_projectId)).balanceOf(msg.sender) >= artblocksContract.projectIdToPricePerTokenInWei(_projectId), "Insufficient balance.");
       _splitFundsERC20(_projectId);
     } else {
-      if (isAuctionLive(_projectId)){
-        require(msg.value>=getPrice(_projectId), "Must send minimum value to mint!");
-        _splitFundsETHAuction(_projectId);
-      } else {
       require(msg.value>=artblocksContract.projectIdToPricePerTokenInWei(_projectId), "Must send minimum value to mint!");
       _splitFundsETH(_projectId);
-    }
     }
 
     // if contract filter is active prevent calls from another contract
@@ -170,40 +134,6 @@ contract GenArt721Minter4 {
     if (msg.value > 0) {
       uint256 pricePerTokenInWei = artblocksContract.projectIdToPricePerTokenInWei(_projectId);
       uint256 refund = msg.value.sub(artblocksContract.projectIdToPricePerTokenInWei(_projectId));
-      if (refund > 0) {
-        msg.sender.transfer(refund);
-      }
-      uint256 artBlocksAmount = pricePerTokenInWei.div(100).mul(artblocksContract.artblocksPercentage());
-      if (artBlocksAmount > 0) {
-        artblocksContract.artblocksAddress().transfer(artBlocksAmount);
-      }
-
-      uint256 remainingFunds = pricePerTokenInWei.sub(artBlocksAmount);
-
-      uint256 ownerFunds = remainingFunds.div(100).mul(ownerPercentage);
-      if (ownerFunds > 0) {
-        ownerAddress.transfer(ownerFunds);
-      }
-
-      uint256 projectFunds = pricePerTokenInWei.sub(artBlocksAmount).sub(ownerFunds);
-      uint256 additionalPayeeAmount;
-      if (artblocksContract.projectIdToAdditionalPayeePercentage(_projectId) > 0) {
-        additionalPayeeAmount = projectFunds.div(100).mul(artblocksContract.projectIdToAdditionalPayeePercentage(_projectId));
-        if (additionalPayeeAmount > 0) {
-          artblocksContract.projectIdToAdditionalPayee(_projectId).transfer(additionalPayeeAmount);
-        }
-      }
-      uint256 creatorFunds = projectFunds.sub(additionalPayeeAmount);
-      if (creatorFunds > 0) {
-        artblocksContract.projectIdToArtistAddress(_projectId).transfer(creatorFunds);
-      }
-    }
-  }
-
-  function _splitFundsETHAuction(uint256 _projectId) internal {
-    if (msg.value > 0) {
-      uint256 pricePerTokenInWei = getPrice(_projectId);
-      uint256 refund = msg.value.sub(pricePerTokenInWei);
       if (refund > 0) {
         msg.sender.transfer(refund);
       }
@@ -260,48 +190,5 @@ contract GenArt721Minter4 {
         ERC20(artblocksContract.projectIdToCurrencyAddress(_projectId)).transferFrom(msg.sender, artblocksContract.projectIdToArtistAddress(_projectId), creatorFunds);
       }
     }
-
-  function getPrice(uint256 _projectId) public view returns (uint256) {
-    uint256 auctionStartPrice = artblocksContract.projectIdToPricePerTokenInWei(_projectId).mul(auctionMultiplier[_projectId]);
-    if (block.timestamp<auctionTimestamp[_projectId]){
-      return auctionStartPrice;
-    } else {
-    uint256 elapsedTime = block.timestamp.sub(auctionTimestamp[_projectId]);
-    uint256 duration = auctionDuration[_projectId];
-    if (elapsedTime<duration){
-      uint256 currentPrice = duration.sub(elapsedTime).mul(auctionStartPrice).div(duration);
-      if (currentPrice<artblocksContract.projectIdToPricePerTokenInWei(_projectId)){
-        return artblocksContract.projectIdToPricePerTokenInWei(_projectId);
-      } else {
-        return currentPrice;
-      }
-
-    } else {
-      return artblocksContract.projectIdToPricePerTokenInWei(_projectId);
-    }
-  }
-
-     }
-
-  function isAuctionLive(uint256 _projectId) public view returns (bool){
-    if (block.timestamp<auctionTimestamp[_projectId]){
-      return false;
-    } else {
-       return block.timestamp.sub(auctionTimestamp[_projectId])<auctionDuration[_projectId];
-     }
-     }
-
-  function auctionTimeRemaining(uint256 _projectId) public view returns (uint256) {
-    require(isAuctionLive(_projectId), "auction is not currently live");
-    uint256 elapsedTime = block.timestamp.sub(auctionTimestamp[_projectId]);
-    uint256 duration = auctionDuration[_projectId];
-    return duration.sub(elapsedTime);
-
-  }
-
-  function getCurrentTime() public view returns (uint256){
-    return block.timestamp;
-  }
-
 
 }
