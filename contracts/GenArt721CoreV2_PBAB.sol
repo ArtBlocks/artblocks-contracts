@@ -118,7 +118,7 @@ contract GenArt721CoreV2_PBAB is CustomERC721Metadata {
 
         projects[_projectId].invocations = projects[_projectId].invocations.add(1);
 
-        bytes32 hash = keccak256(abi.encodePacked(projects[_projectId].invocations, block.number, blockhash(block.number - 1), msg.sender, randomizerContract.returnValue()));
+        bytes32 hash = keccak256(abi.encodePacked(projects[_projectId].invocations, block.number, blockhash(block.number - 1), randomizerContract.returnValue()));
         tokenIdToHash[tokenIdToBe]=hash;
         hashToTokenId[hash] = tokenIdToBe;
 
