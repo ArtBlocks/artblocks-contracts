@@ -2,7 +2,16 @@
 
 ## Mainnet
 
-TBD
+### Upload
+
+**Randomizer:** https://etherscan.io/address/0x3b30d421a6da95694eaae09971424f15eb375269
+**GenArt721CoreV2:** https://etherscan.io/address/0x28f2d3805652fb5d359486dffb7d08320d403240#code
+**GenArt721Minter:** https://etherscan.io/address/0x7497909537ce00fdda93c12d5083d8647c593c67#code
+
+### Additional Details
+
+**Admin Transferee Address**: `0xCD5950ec6CB98Ad62acdBa4b1680563ba3367bF0`
+**Art Blocks Renderer Payment Address**: `0x51cFD298b73e19ecAB5BE6c88438bE3922f34293`
 
 ## Ropsten
 
