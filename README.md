@@ -65,6 +65,7 @@ Create a `.env` file by duplicating `.env.example` and populating all variables.
 **You must perform the following steps in order.**
 
 1. Update the owner of the Minter to reflect the final address of the PBAB project owner (which is likely not the default of the deployer address, which is likely a hot wallet). This can be done by connecting to the contract via Etherscan (e.g. https://etherscan.io/address/0x7497909537ce00fdda93c12d5083d8647c593c67#writeContract) and using the `setOwnerAddress` method.
+1. Update the Core Contract to reflect the final address of the PBAB owner as a whitelisted address (this must be done in addition to making them the admin, and is easier to remember to do during setup, prior to transferring the admin role, rather than requiring that PBAB partners to this themselves). This can be done by connecting to the contract via Etherscan (e.g. https://etherscan.io/address/0x28f2d3805652fb5d359486dffb7d08320d403240#writeContract) and using the `addWhitelisted` method.
 1. Update the admin role for the Core Contract to reflect the final address of the PBAB project owner (which is likely not the default of the deployer address, which is likely a hot wallet). This can be done by connecting to the contract via Etherscan (e.g. https://etherscan.io/address/0x28f2d3805652fb5d359486dffb7d08320d403240#writeContract) and using the `updateAdmin` method.
 
 ### post deployment infra configuration
