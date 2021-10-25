@@ -74,6 +74,10 @@ Create a `.env` file by duplicating `.env.example` and populating all variables.
 1. Add an associated S3 bucket for the new PBAB contract.
 1. To allow for rendered project images to be previewed in the artist project manager, integrate this new S3 bucket in Vercel's external reference whitelisting.
 
+### recording deployment log
+
+After having successfully deployed a set of contracts for a new PBAB configuration, it is good practice to make record of the deployment details (e.g. in a simple Markdown file) regarding which contracts were deployed and what deployed addresses they now live at. You can see an example of this in this repository with PR #33.
+
 ## Project Launch Details
 
 ### project creation
