@@ -68,8 +68,12 @@ contract GenArt721Minter_PBAB {
   function setProjectMaxInvocations(uint256 _projectId) public {
     require(genArtCoreContract.isWhitelisted(msg.sender), "can only be set by admin");
     uint256 maxInvocations;
-    ( , , , maxInvocations, , , , , ) = genArtCoreContract.projectTokenInfo(_projectId);
+    uint256 invocations;
+    ( , , invocations, maxInvocations, , , , , ) = genArtCoreContract.projectTokenInfo(_projectId);
     projectMaxInvocations[_projectId] = maxInvocations;
+    if (invocations < maxInvocations) {
+        projectMaxHasBeenInvoked[_projectId] = false;
+    }
   }
 
   function setOwnerAddress(address payable _ownerAddress) public {
