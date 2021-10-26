@@ -37,7 +37,7 @@ module.exports = {
     mainnet: {
       url: MAINNET_JSON_RPC_PROVIDER_URL,
       accounts: [`0x${MAINNET_PRIVATE_KEY}`],
-      gasPrice: 75000000000
+      gasPrice: 100000000000, // 100 gwei
     },
     ropsten: {
       url: ROPSTEN_JSON_RPC_PROVIDER_URL,
@@ -45,7 +45,6 @@ module.exports = {
     },
     coverage: {
       url: 'http://localhost:8545',
-      // gasPrice: 8000000000, // 8 gwei
     }
   },
   etherscan: {
