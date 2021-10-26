@@ -51,7 +51,9 @@ Create a `.env` file by duplicating `.env.example` and populating all variables.
 ### (required) configuring base contract setup
 
 1. Update the Core Contract to record the deployed minter as a whitelisted minter. This can be done by connecting to the contract via Etherscan (e.g. https://etherscan.io/address/0x28f2d3805652fb5d359486dffb7d08320d403240#writeContract) and using the `addMintWhitelisted` method.
-1. Update the render provider address (e.g. the Art Blocks address) to use a secure multi-sig wallet (e.g. https://gnosis-safe.io/app/#/safes/0x51cFD298b73e19ecAB5BE6c88438bE3922f34293) rather than the default-assigned wallet of the deployer wallet (which is likely a hot wallet). This can be done by connecting to the contract via Etherscan (e.g. https://etherscan.io/address/0x28f2d3805652fb5d359486dffb7d08320d403240#writeContract) and using the `updateRenderProviderAddress` method.
+1. Update the render provider address (e.g. the Art Blocks address) to use a secure Art Blocks owned hardware wallet rather than the default-assigned wallet of the deployer wallet (which is likely a hot wallet). This can be done by connecting to the contract via Etherscan (e.g. https://etherscan.io/address/0x28f2d3805652fb5d359486dffb7d08320d403240#writeContract) and using the `updateRenderProviderAddress` method.
+
+**Note:** in the future, it would be preferrable to use a multi-sig vault (e.g. Gnosis) rather than using a single-failure-point hardware wallet as the render provider payee for new core contract deployments, but this is currently problematic due to EIP-2929 (see https://help.gnosis-safe.io/en/articles/5249851-why-can-t-i-transfer-eth-from-a-contract-into-a-safe).
 
 ### whitelist ab staff (testnet only)
 
@@ -92,6 +94,7 @@ Prior to minting your first token (#0) on your new project shell, please verify 
 
 1. The `baseTokenURI` has been set, taking the format of `http://token.artblocks.io/{CORE_CONTRACT_ADDRESS}/`.
 1. The max invocations for the project have been set **on the minter**. This is achieved by calling the `setProjectMaxInvocations` on the Minter contract when connecting with Etherscan, with the project ID of the project to be minted as the parameter. **Note**: This should only be done _after_ setting this max invocations for the project on the Core Contract itself.
+1. Perform a test-mint in each currency the project accepts (e.g. if the project is planned to use both ETH and some custom ERC20 token for separate stages of the launch, ensure that **both** minting flows are empirically verified).
 
 ### pre-launch (open minting) flight check
 
