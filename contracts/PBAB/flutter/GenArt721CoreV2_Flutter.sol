@@ -1,14 +1,14 @@
 pragma solidity ^0.5.0;
 
-import "./libs/CustomERC721Metadata.sol";
-import "./libs/SafeMath.sol";
-import "./libs/Strings.sol";
+import "../../libs/CustomERC721Metadata.sol";
+import "../../libs/SafeMath.sol";
+import "../../libs/Strings.sol";
 
 interface IRandomizer {
    function returnValue() external view returns(bytes32);
 }
 
-contract GenArt721CoreV2 is CustomERC721Metadata {
+contract GenArt721CoreV2_Flutter is CustomERC721Metadata {
     using SafeMath for uint256;
 
     event Mint(
@@ -49,11 +49,10 @@ contract GenArt721CoreV2 is CustomERC721Metadata {
     mapping(uint256 => uint256) public projectIdToAdditionalPayeePercentage;
     mapping(uint256 => uint256) public projectIdToSecondaryMarketRoyaltyPercentage;
 
-    address public artblocksAddress;
-    uint256 public artblocksPercentage = 10;
+    address public renderProviderAddress;
+    uint256 public renderProviderPercentage = 10;
 
     mapping(uint256 => uint256) public tokenIdToProjectId;
-    //mapping(uint256 => uint256[]) internal projectIdToTokenIds;
     mapping(uint256 => bytes32) public tokenIdToHash;
     mapping(bytes32 => uint256) public hashToTokenId;
 
@@ -96,7 +95,7 @@ contract GenArt721CoreV2 is CustomERC721Metadata {
     constructor(string memory _tokenName, string memory _tokenSymbol, address _randomizerContract) CustomERC721Metadata(_tokenName, _tokenSymbol) public {
         admin = msg.sender;
         isWhitelisted[msg.sender] = true;
-        artblocksAddress = msg.sender;
+        renderProviderAddress = msg.sender;
         randomizerContract = IRandomizer(_randomizerContract);
 
     }
@@ -126,7 +125,6 @@ contract GenArt721CoreV2 is CustomERC721Metadata {
         _mint(_to, tokenIdToBe);
 
         tokenIdToProjectId[tokenIdToBe] = _projectId;
-        //projectIdToTokenIds[_projectId].push(tokenIdToBe);
 
         emit Mint(_to, tokenIdToBe, _projectId);
 
@@ -137,14 +135,13 @@ contract GenArt721CoreV2 is CustomERC721Metadata {
         admin = _adminAddress;
     }
 
-    function updateArtblocksAddress(address _artblocksAddress) public onlyAdmin {
-        artblocksAddress = _artblocksAddress;
+    function updateRenderProviderAddress(address _renderProviderAddress) public onlyAdmin {
+        renderProviderAddress = _renderProviderAddress;
     }
 
-
-    function updateArtblocksPercentage(uint256 _artblocksPercentage) public onlyAdmin {
-        require(_artblocksPercentage <= 25, "Max of 25%");
-        artblocksPercentage = _artblocksPercentage;
+    function updateRenderProviderPercentage(uint256 _renderProviderPercentage) public onlyAdmin {
+        require(_renderProviderPercentage <= 25, "Max of 25%");
+        renderProviderPercentage = _renderProviderPercentage;
     }
 
     function addWhitelisted(address _address) public onlyAdmin {
@@ -191,7 +188,6 @@ contract GenArt721CoreV2 is CustomERC721Metadata {
         projectIdToPricePerTokenInWei[projectId] = _pricePerTokenInWei;
         projects[projectId].paused=true;
         projects[projectId].maxInvocations = ONE_MILLION;
-
         nextProjectId = nextProjectId.add(1);
     }
 
@@ -305,11 +301,6 @@ contract GenArt721CoreV2 is CustomERC721Metadata {
     function projectURIInfo(uint256 _projectId) view public returns (string memory projectBaseURI) {
         projectBaseURI = projects[_projectId].projectBaseURI;
     }
-/*
-    function projectShowAllTokens(uint _projectId) public view returns (uint256[] memory){
-        return projectIdToTokenIds[_projectId];
-    }
-    */
 
     function tokensOfOwner(address owner) external view returns (uint256[] memory) {
         return _tokensOfOwner(owner);
