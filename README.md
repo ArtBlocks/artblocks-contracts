@@ -27,7 +27,7 @@ Create a `.env` file by duplicating `.env.example` and populating all variables.
 1. Create a new directory for the deployment of your projects' smart contracts (e.g. `scripts/PBAB/silly-dilly`)
 1. Navigate to an existing project in the `script` directory (e.g. `scripts/PBAB/tboa`)
 1. Copy the deployment scripts from said existing project into your new directory, and update them to use the desired new information for the contracts, token name, and token symbol.
-1. Perform the 3 contract deployments by running a forked and updated deployment script, with the format `yarn hardhat run scripts/<randomizer script name> --network <network>`.
+1. Perform the 3 contract deployments by running a forked and updated deployment script, with the format `yarn hardhat run scripts/<deployment script name> --network <network>`.
 
 ### deploying the smart contracts
 
