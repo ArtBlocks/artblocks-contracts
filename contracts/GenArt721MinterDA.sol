@@ -1,14 +1,7 @@
-/**
- *Submitted for verification at Etherscan.io on 2020-12-20
-*/
-
 import "./libs/SafeMath.sol";
 import "./libs/Strings.sol";
 
-
 pragma solidity ^0.5.0;
-
-
 
 interface GenArt721CoreContract {
   function isWhitelisted(address sender) external view returns (bool);
@@ -23,7 +16,6 @@ interface GenArt721CoreContract {
   function mint(address _to, uint256 _projectId, address _by) external returns (uint256 tokenId);
 }
 
-
 interface ERC20 {
   function balanceOf(address _owner) external view returns (uint balance);
   function transferFrom(address _from, address _to, uint _value) external returns (bool success);
@@ -34,9 +26,6 @@ interface BonusContract {
   function triggerBonus(address _to) external returns (bool);
   function bonusIsActive() external view returns (bool);
 }
-
-
-
 
 contract GenArt721MinterDA {
   using SafeMath for uint256;
@@ -100,7 +89,6 @@ contract GenArt721MinterDA {
     require(msg.sender==artblocksContract.projectIdToArtistAddress(_projectId), "can only be set by artist");
     projectIdToBonusContractAddress[_projectId]=_bonusContractAddress;
   }
-
 
   ////// Auction Functions
 
@@ -266,30 +254,28 @@ contract GenArt721MinterDA {
     if (block.timestamp<auctionTimestamp[_projectId]){
       return auctionStartPrice;
     } else {
-    uint256 elapsedTime = block.timestamp.sub(auctionTimestamp[_projectId]);
-    uint256 duration = auctionDuration[_projectId];
-    if (elapsedTime<duration){
-      uint256 currentPrice = duration.sub(elapsedTime).mul(auctionStartPrice).div(duration);
-      if (currentPrice<artblocksContract.projectIdToPricePerTokenInWei(_projectId)){
-        return artblocksContract.projectIdToPricePerTokenInWei(_projectId);
+      uint256 elapsedTime = block.timestamp.sub(auctionTimestamp[_projectId]);
+      uint256 duration = auctionDuration[_projectId];
+      if (elapsedTime<duration){
+        uint256 currentPrice = duration.sub(elapsedTime).mul(auctionStartPrice).div(duration);
+        if (currentPrice<artblocksContract.projectIdToPricePerTokenInWei(_projectId)){
+          return artblocksContract.projectIdToPricePerTokenInWei(_projectId);
+        } else {
+          return currentPrice;
+        }
       } else {
-        return currentPrice;
+        return artblocksContract.projectIdToPricePerTokenInWei(_projectId);
       }
-
-    } else {
-      return artblocksContract.projectIdToPricePerTokenInWei(_projectId);
     }
   }
-
-     }
 
   function isAuctionLive(uint256 _projectId) public view returns (bool){
     if (block.timestamp<auctionTimestamp[_projectId]){
       return false;
     } else {
        return block.timestamp.sub(auctionTimestamp[_projectId])<auctionDuration[_projectId];
-     }
-     }
+    }
+  }
 
   function auctionTimeRemaining(uint256 _projectId) public view returns (uint256) {
     require(isAuctionLive(_projectId), "auction is not currently live");
@@ -302,6 +288,4 @@ contract GenArt721MinterDA {
   function getCurrentTime() public view returns (uint256){
     return block.timestamp;
   }
-
-
 }

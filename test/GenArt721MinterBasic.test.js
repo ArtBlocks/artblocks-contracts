@@ -229,8 +229,5 @@ describe('GenArt721MinterBasic', async function () {
 
             expect(ownerDeltaMaxSet.abs().lt(ownerDeltaNoMaxSet.abs())).to.be.true;
         });
-
-
-
     });
 });
