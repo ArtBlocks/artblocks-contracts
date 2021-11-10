@@ -49,7 +49,7 @@ describe('MinterFilter', async function() {
         const minterFilterFactory = await ethers.getContractFactory("MinterFilter")
         this.minterFilter = await minterFilterFactory.deploy(this.token.address);
 
-        const minterFactory = await ethers.getContractFactory("GenArt721MinterEth")
+        const minterFactory = await ethers.getContractFactory("GenArt721FilteredMinterETH")
         this.minter1 = await minterFactory.deploy(this.token.address, this.minterFilter.address);
         this.minter2 = await minterFactory.deploy(this.token.address, this.minterFilter.address);
         this.minter3 = await minterFactory.deploy(this.token.address, this.minterFilter.address);

@@ -1,15 +1,12 @@
-/**
- *Submitted for verification at Etherscan.io on 2020-12-20
- */
-
 import "./libs/SafeMath.sol";
 import "./libs/Strings.sol";
+
 import "./interfaces/IGenArt721CoreContract.sol";
 import "./interfaces/IMinterFilter.sol";
 
 pragma solidity ^0.5.0;
 
-contract GenArt721MinterEth {
+contract GenArt721FilteredMinterETH {
     using SafeMath for uint256;
 
     IGenArt721CoreContract public artblocksContract;

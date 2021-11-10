@@ -1,18 +1,10 @@
-/**
- *Submitted for verification at Etherscan.io on 2020-12-20
-*/
-
-
 import "./libs/SafeMath.sol";
 import "./libs/Strings.sol";
 
 import "./interfaces/IGenArt721CoreContract.sol";
 import "./interfaces/IMinterFilter.sol";
 
-
 pragma solidity ^0.5.0;
-
-
 
 interface ERC20 {
   function balanceOf(address _owner) external view returns (uint balance);
@@ -21,7 +13,7 @@ interface ERC20 {
 }
 
 
-contract GenArt721Minter2WithFilter {
+contract GenArt721FilteredMinter {
   using SafeMath for uint256;
 
   IGenArt721CoreContract public artblocksContract;

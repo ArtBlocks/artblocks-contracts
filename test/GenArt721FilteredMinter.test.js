@@ -18,7 +18,7 @@ const {
 } = require('hardhat');
 
 
-describe('GenArt721Minter2WithFilter', async function() {
+describe('GenArt721FilteredMinter', async function() {
 
     const name = 'Non Fungible Token';
     const symbol = 'NFT';
@@ -45,7 +45,7 @@ describe('GenArt721Minter2WithFilter', async function() {
         this.token = await artblocksFactory.connect(snowfro).deploy(name, symbol, this.randomizer.address)
         const minterFilterFactory = await ethers.getContractFactory("MinterFilter")
         this.minterFilter = await minterFilterFactory.deploy(this.token.address);
-        const minterFactory = await ethers.getContractFactory("GenArt721Minter2WithFilter")
+        const minterFactory = await ethers.getContractFactory("GenArt721FilteredMinter")
         this.minter = await minterFactory.deploy(this.token.address, this.minterFilter.address);
 
 

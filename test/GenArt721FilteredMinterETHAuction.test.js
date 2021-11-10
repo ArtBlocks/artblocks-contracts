@@ -30,7 +30,7 @@ describe('GenArt721MinterEthAuction', async function() {
     const ONE_MINUTE = 60000;
     const ONE_HOUR = ONE_MINUTE * 60;
     const ONE_DAY = ONE_HOUR * 24;
-    
+
 
     beforeEach(async function() {
         const [owner, newOwner, artist, additional, snowfro] = await ethers.getSigners();
@@ -51,7 +51,7 @@ describe('GenArt721MinterEthAuction', async function() {
         const minterFilterFactory = await ethers.getContractFactory("MinterFilter")
         this.minterFilter = await minterFilterFactory.deploy(this.token.address);
 
-        const minterFactory = await ethers.getContractFactory("GenArt721MinterEthAuction")
+        const minterFactory = await ethers.getContractFactory("GenArt721FilteredMinterETHAuction")
         this.minter = await minterFactory.deploy(this.token.address, this.minterFilter.address);
 
 
@@ -81,7 +81,6 @@ describe('GenArt721MinterEthAuction', async function() {
         startTimePlusMinuteAndTwoHours = this.startTime + ONE_HOUR * 2;
         await this.minter.connect(this.accounts.snowfro).setAuctionDetails(projectOne, this.startTime, startTimePlusMinuteAndTwoHours, ethers.utils.parseEther('1'));
     });
-
 
     describe('purchase', async function() {
         it('Calculates the price correctly', async function() {

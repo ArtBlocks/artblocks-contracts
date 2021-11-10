@@ -1,7 +1,3 @@
-/**
- *Submitted for verification at Etherscan.io on 2020-12-20
- */
-
 import "./libs/SafeMath.sol";
 import "./libs/Strings.sol";
 
@@ -66,7 +62,7 @@ interface IMinterFilter {
     ) external returns (uint256);
 }
 
-contract GenArt721MinterEthAuction {
+contract GenArt721FilteredMinterETHAuction {
     event SetAuctionDetails(uint256 indexed projectId, uint256 _auctionTimestampStart, uint256 _auctionTimestampEnd, uint256 _auctionPriceStart);
 
     using SafeMath for uint256;
