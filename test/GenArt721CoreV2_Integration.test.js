@@ -41,9 +41,8 @@ describe('GenArt721CoreV2', async function () {
     this.randomizer = await randomizerFactory.deploy();
     const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV2")
     this.token = await artblocksFactory.connect(snowfro).deploy(name, symbol, this.randomizer.address)
-    const minterFactory = await ethers.getContractFactory("GenArt721MinterBasic")
+    const minterFactory = await ethers.getContractFactory("GenArt721Minter")
     this.minter = await minterFactory.deploy(this.token.address);
-
 
     await this.token.connect(snowfro).addProject(
       "name",
@@ -57,8 +56,6 @@ describe('GenArt721CoreV2', async function () {
     await this.token.connect(snowfro).toggleProjectIsActive(projectZero );
     await this.token.connect(snowfro).addMintWhitelisted(this.minter.address );
     await this.token.connect(artist).updateProjectMaxInvocations(projectZero, 15 );
-
-
   });
 
   describe('has whitelisted owner', function () {
@@ -103,8 +100,6 @@ describe('GenArt721CoreV2', async function () {
                 value: pricePerTokenInWei
             }), 'Purchases are paused.');
         });
-
-
 
         it('can create a token then funds distributed (no additional payee)', async function() {
             const artistBalance = await this.accounts.artist.getBalance();
@@ -175,6 +170,5 @@ describe('GenArt721CoreV2', async function () {
             expect((await this.accounts.owner.getBalance()).sub(ownerBalance)).to.equal(ethers.utils.parseEther('1').mul('-1')); // spent 1 ETH
             expect((await this.accounts.artist.getBalance()).sub(artistBalance)).to.equal(ethers.utils.parseEther('0'));
         });
-
     });
 });
