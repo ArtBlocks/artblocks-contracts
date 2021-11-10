@@ -72,7 +72,7 @@ contract GenArt721Minter {
     require(artblocksContract.isWhitelisted(msg.sender), "can only be set by admin");
     uint256 maxInvocations;
     uint256 invocations;
-    ( , , invocations, maxInvocations, , , , , ) = genArtCoreContract.projectTokenInfo(_projectId);
+    ( , , invocations, maxInvocations, , , , , ) = artblocksContract.projectTokenInfo(_projectId);
     projectMaxInvocations[_projectId] = maxInvocations;
     if (invocations < maxInvocations) {
         projectMaxHasBeenInvoked[_projectId] = false;

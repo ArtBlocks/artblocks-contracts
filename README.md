@@ -25,28 +25,30 @@ Create a `.env` file by duplicating `.env.example` and populating all variables.
 ### setup steps
 
 1. Create a new directory for the deployment of your projects' smart contracts (e.g. `scripts/PBAB/silly-dilly`)
-1. Navigate to an existing project in the `script` directory (e.g. `scripts/PBAB/doodle-labs`)
+1. Navigate to an existing project in the `script` directory (e.g. `scripts/PBAB/tboa`)
 1. Copy the deployment scripts from said existing project into your new directory, and update them to use the desired new information for the contracts, token name, and token symbol.
-1. Perform the 3 main deployment steps below running the relevant deployment scripts in order, with the format `yarn hardhat run scripts/<randomizer script name> --network <network>`. Note that for a standard deployment these deployments should be done in order (and the files should be prefixed in this order accordingly): 1) `Randomizer`, 2) `GenArt721CoreV2`, 3) `GenArt721Minter`.
+1. Perform the 3 contract deployments by running a forked and updated deployment script, with the format `yarn hardhat run scripts/<deployment script name> --network <network>`.
 
-### deploying the randomizer
+### deploying the smart contracts
 
-1. Run the Randomizer deployment script with, e.g. `yarn hardhat run scripts/PBAB/silly-dilly/1_silly_dilly_randomizer.ts --network ropsten`.
-1. Once the contract deployment is successful, verify this on Etherscan and record the contract address of the successfully deployed Randomizer.
+### multi-contract deployment
 
-### deploying the core contract
+1. Update the multi-contract deployment script (e.g. `1_silly_dilly_deployer.ts`) to include the details of the name and ticker of the new ERC721 token contract. E.g.:
+```js
+const genArt721Core = await genArt721CoreFactory.deploy(
+  "Silly Dilly Club",
+  "DILLY",
+  randomizer.address
+);
+```
+1. Run the core contract deployment script with, e.g., `yarn hardhat run scripts/PBAB/silly-dilly/1_silly_dilly_deployer.ts --network ropsten`.
+1. Once the contract deployments are successful, verify that the deployed addresses reported in your terminal match those that you find on Etherscan when looking at the outgoing transactions for your deployer wallet.
 
-1. Update the Core Contract deployment script (e.g. `2_silly_dilly_deploy_coreV2.ts`) to include the successfully deployed Randomizer contract address as the parameterized randomizer.
-1. Run the core contract deployment script with, e.g., `yarn hardhat run scripts/PBAB/silly-dilly/2_silly_dilly_deploy_coreV2.ts --network ropsten`.
-1. Once the contract deployment is successful, verify this on Etherscan and record the contract address of the successfully deployed Core Contract.
+### contract verification
+
 1. Verify the Core Contract on Etherscan: `yarn hardhat verify --contract <path to .sol>:<contract name> --network <network> <core contract address> "<token name>" "<token symbol>" "<randomizer contract address>"`
-
-### deploying the minter
-
-1. Update the Minter deployment script (e.g. `3_silly_dilly_deploy_minter.ts`) to include the successfully deployed Core Contract contract address as the parameterized core contract.
-1. Run the minter deployment script with, e.g., `yarn hardhat run scripts/PBAB/silly-dilly/3_silly_dilly_deploy_minter.ts --network ropsten`.
-1. Once the minter is successful, verify this on Etherscan and record the contract address of the successfully deployed Core Contract.
 1. Verify the Minter on Etherscan: `yarn hardhat verify --contract <path to .sol>:<contract name> --network <network> <minter contract address> "<gen art contract address>"`
+1. Navigate to both deployed contracts on Etherscan, and verify empirically that the contract verification succeeded as expected.
 
 ### (required) configuring base contract setup
 
