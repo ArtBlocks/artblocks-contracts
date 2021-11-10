@@ -9,7 +9,7 @@ import "./interfaces/IMinterFilter.sol";
 
 pragma solidity ^0.5.0;
 
-contract GenArt721MinterEth {
+contract GenArt721FilteredMinterETH {
     using SafeMath for uint256;
 
     IGenArt721CoreContract public artblocksContract;
