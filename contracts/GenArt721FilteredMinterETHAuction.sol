@@ -34,6 +34,28 @@ contract GenArt721FilteredMinterETHAuction {
         minterFilter = IMinterFilter(_minterFilter);
     }
 
+    function setProjectMintLimit(uint256 _projectId, uint8 _limit) public {
+        require(
+            artblocksContract.isWhitelisted(msg.sender),
+            "can only be set by admin"
+        );
+        projectMintLimit[_projectId] = _limit;
+    }
+
+    function setProjectMaxInvocations(uint256 _projectId) public {
+        require(
+            artblocksContract.isWhitelisted(msg.sender),
+            "can only be set by admin"
+        );
+        uint256 maxInvocations;
+        uint256 invocations;
+        ( , , invocations, maxInvocations, , , , , ) = artblocksContract.projectTokenInfo(_projectId);
+        projectMaxInvocations[_projectId] = maxInvocations;
+        if (invocations < maxInvocations) {
+            projectMaxHasBeenInvoked[_projectId] = false;
+        }
+    }
+
     function setMinimumAuctionLengthSeconds(uint256 _minimumAuctionLengthSeconds) public {
         require(
             artblocksContract.isWhitelisted(msg.sender),
