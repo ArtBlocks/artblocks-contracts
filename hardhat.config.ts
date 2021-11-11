@@ -32,7 +32,7 @@ module.exports = {
   },
   networks: {
     hardhat: {
-      gasPrice: 0,
+      gasPrice: 100000000000,
     },
     mainnet: {
       url: MAINNET_JSON_RPC_PROVIDER_URL,

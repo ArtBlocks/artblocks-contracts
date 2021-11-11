@@ -172,3 +172,4 @@ describe('GenArt721CoreV2', async function () {
         });
     });
 });
+})

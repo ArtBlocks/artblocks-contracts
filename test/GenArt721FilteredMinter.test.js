@@ -77,11 +77,10 @@ describe('GenArt721FilteredMinter', async function() {
 
         await this.minterFilter.connect(this.accounts.snowfro).setMinterForProject(projectZero, this.minter.address);
         await this.minterFilter.connect(this.accounts.snowfro).setMinterForProject(projectOne, this.minter.address);
-
     });
 
-
     describe('purchase', async function() {
+
         it('does nothing if setProjectMaxInvocations is not called (fails correctly)', async function() {
             for (let i = 0; i < 15; i++) {
                 await this.minter.connect(this.accounts.owner).purchase(projectZero, {
@@ -160,8 +159,5 @@ describe('GenArt721FilteredMinter', async function() {
 
             expect(ownerDeltaMaxSet.abs().lt(ownerDeltaNoMaxSet.abs())).to.be.true;
         });
-
-
-
     });
 });
