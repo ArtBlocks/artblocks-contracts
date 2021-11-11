@@ -43,7 +43,7 @@ describe('MinterFilter', async function() {
         const randomizerFactory = await ethers.getContractFactory("Randomizer")
         this.randomizer = await randomizerFactory.deploy();
 
-        const artblocksFactory = await ethers.getContractFactory("GenArt721Core2")
+        const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV2")
         this.token = await artblocksFactory.connect(snowfro).deploy(name, symbol, this.randomizer.address)
 
         const minterFilterFactory = await ethers.getContractFactory("MinterFilter")

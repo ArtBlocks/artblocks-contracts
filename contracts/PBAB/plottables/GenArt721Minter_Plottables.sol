@@ -3,19 +3,7 @@ pragma solidity ^0.5.0;
 import "../../libs/SafeMath.sol";
 import "../../libs/Strings.sol";
 
-interface GenArt721CoreV2 {
-  function isWhitelisted(address sender) external view returns (bool);
-  function projectIdToCurrencySymbol(uint256 _projectId) external view returns (string memory);
-  function projectIdToCurrencyAddress(uint256 _projectId) external view returns (address);
-  function projectIdToArtistAddress(uint256 _projectId) external view returns (address payable);
-  function projectIdToPricePerTokenInWei(uint256 _projectId) external view returns (uint256);
-  function projectIdToAdditionalPayee(uint256 _projectId) external view returns (address payable);
-  function projectIdToAdditionalPayeePercentage(uint256 _projectId) external view returns (uint256);
-  function projectTokenInfo(uint256 _projectId) external view returns (address, uint256, uint256, uint256, bool, address, uint256, string memory, address);
-  function renderProviderAddress() external view returns (address payable);
-  function renderProviderPercentage() external view returns (uint256);
-  function mint(address _to, uint256 _projectId, address _by) external returns (uint256 tokenId);
-}
+import "../../interfaces/IGenArt721CoreV2.sol";
 
 interface ERC20 {
   function balanceOf(address _owner) external view returns (uint balance);
@@ -31,7 +19,7 @@ interface BonusContract {
 contract GenArt721Minter_Plottables {
   using SafeMath for uint256;
 
-  GenArt721CoreV2 public genArtCoreContract;
+  IGenArt721CoreV2 public genArtCoreContract;
 
   uint256 constant ONE_MILLION = 1_000_000;
 
@@ -47,7 +35,7 @@ contract GenArt721Minter_Plottables {
   mapping(uint256 => uint256) public projectMaxInvocations;
 
   constructor(address _genArt721Address) public {
-    genArtCoreContract=GenArt721CoreV2(_genArt721Address);
+    genArtCoreContract=IGenArt721CoreV2(_genArt721Address);
   }
 
   function getYourBalanceOfProjectERC20(uint256 _projectId) public view returns (uint256){
