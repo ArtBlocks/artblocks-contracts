@@ -52,21 +52,12 @@ contract MinterFilter {
 
     GenArt721CoreContract public artblocksContract;
 
-    address payable public ownerAddress;
     address public defaultMinter;
 
     mapping(uint256 => address) public minterForProject;
 
     constructor(address _genArt721Address) public {
         artblocksContract = GenArt721CoreContract(_genArt721Address);
-    }
-
-    function setOwnerAddress(address payable _ownerAddress) public {
-        require(
-            artblocksContract.isWhitelisted(msg.sender),
-            "can only be set by admin"
-        );
-        ownerAddress = _ownerAddress;
     }
 
     function setMinterForProject(uint256 _projectId, address _minterAddress)
