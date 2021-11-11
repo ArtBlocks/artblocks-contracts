@@ -1,8 +1,8 @@
 require("dotenv").config();
 import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-truffle5";
-import "hardhat-gas-reporter";
-import "solidity-coverage";
+//import "hardhat-gas-reporter";
+//import "solidity-coverage";
 import "@nomiclabs/hardhat-solhint";
 import "hardhat-contract-sizer";
 import "@nomiclabs/hardhat-etherscan";
@@ -32,20 +32,21 @@ module.exports = {
   },
   networks: {
     hardhat: {
-      gasPrice: 100000000000,
+      gasPrice: 0,
+      initialBaseFeePerGas: 0,
     },
-    mainnet: {
-      url: MAINNET_JSON_RPC_PROVIDER_URL,
-      accounts: [`0x${MAINNET_PRIVATE_KEY}`],
-      gasPrice: 100000000000, // 100 gwei
-    },
-    ropsten: {
-      url: ROPSTEN_JSON_RPC_PROVIDER_URL,
-      accounts: [`0x${TESTNET_PRIVATE_KEY}`],
-    },
-    coverage: {
-      url: 'http://localhost:8545',
-    }
+    //mainnet: {
+      //url: MAINNET_JSON_RPC_PROVIDER_URL,
+      //accounts: [`0x${MAINNET_PRIVATE_KEY}`],
+      //gasPrice: 100000000000, // 100 gwei
+    //},
+    //ropsten: {
+      //url: ROPSTEN_JSON_RPC_PROVIDER_URL,
+      //accounts: [`0x${TESTNET_PRIVATE_KEY}`],
+    //},
+    //coverage: {
+    //  url: 'http://localhost:8545',
+    //}
   },
   etherscan: {
     apiKey: ETHERSCAN_API_KEY

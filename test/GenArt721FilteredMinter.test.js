@@ -53,14 +53,12 @@ describe('GenArt721FilteredMinter', async function() {
             "project1",
             artist.address,
             pricePerTokenInWei,
-            true
         );
 
         await this.token.connect(snowfro).addProject(
             "project2",
             artist.address,
             pricePerTokenInWei,
-            true
         );
 
 
