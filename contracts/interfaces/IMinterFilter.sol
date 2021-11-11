@@ -1,3 +1,5 @@
+pragma solidity ^0.5.0;
+
 interface IMinterFilter {
     function setOwnerAddress(address payable _ownerAddress) external;
 

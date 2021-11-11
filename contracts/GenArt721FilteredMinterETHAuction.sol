@@ -73,7 +73,7 @@ contract GenArt721FilteredMinterETHAuction {
         );
         require(_auctionTimestampEnd > _auctionTimestampStart, "Auction end must be greater than auction start");
         require(_auctionTimestampEnd > _auctionTimestampStart + minimumAuctionLength, "Auction length must be at least minimumAuctionLength");
-        require(_auctionPriceStart > getPrice(_projectId), "Auction start price must be greater than auction end price");
+        require(_auctionPriceStart > artblocksContract.projectIdToPricePerTokenInWei(_projectId), "Auction start price must be greater than auction end price");
         projectAuctionParameters[_projectId] = AuctionParameters(
             _auctionTimestampStart,
             _auctionTimestampEnd,

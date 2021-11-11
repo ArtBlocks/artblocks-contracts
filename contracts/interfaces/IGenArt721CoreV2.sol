@@ -1,3 +1,5 @@
+pragma solidity ^0.5.0;
+
 interface IGenArt721CoreV2 {
   function isWhitelisted(address sender) external view returns (bool);
   function projectIdToCurrencySymbol(uint256 _projectId) external view returns (string memory);
