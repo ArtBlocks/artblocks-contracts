@@ -8,6 +8,10 @@ pragma solidity ^0.5.0;
  * from ERC721 asset contracts.
  */
 contract IERC721Receiver {
-    function onERC721Received(address operator, address from, uint256 tokenId, bytes memory data)
-    public returns (bytes4);
+    function onERC721Received(
+        address operator,
+        address from,
+        uint256 tokenId,
+        bytes memory data
+    ) public returns (bytes4);
 }

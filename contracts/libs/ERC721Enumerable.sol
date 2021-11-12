@@ -6,9 +6,6 @@ import "./ERC165.sol";
 import "./ERC721.sol";
 import "./IERC721Enumerable.sol";
 
-
-
-
 /**
  * @title ERC-721 Non-Fungible Token with optional enumeration extension logic
  * @dev See https://eips.ethereum.org/EIPS/eip-721
@@ -38,7 +35,7 @@ contract ERC721Enumerable is ERC165, ERC721, IERC721Enumerable {
     /**
      * @dev Constructor function.
      */
-    constructor () public {
+    constructor() public {
         // register the supported interface to conform to ERC721Enumerable via ERC165
         _registerInterface(_INTERFACE_ID_ERC721_ENUMERABLE);
     }
@@ -49,8 +46,15 @@ contract ERC721Enumerable is ERC165, ERC721, IERC721Enumerable {
      * @param index uint256 representing the index to be accessed of the requested tokens list
      * @return uint256 token ID at the given index of the tokens list owned by the requested address
      */
-    function tokenOfOwnerByIndex(address owner, uint256 index) public view returns (uint256) {
-        require(index < balanceOf(owner), "ERC721Enumerable: owner index out of bounds");
+    function tokenOfOwnerByIndex(address owner, uint256 index)
+        public
+        view
+        returns (uint256)
+    {
+        require(
+            index < balanceOf(owner),
+            "ERC721Enumerable: owner index out of bounds"
+        );
         return _ownedTokens[owner][index];
     }
 
@@ -69,7 +73,10 @@ contract ERC721Enumerable is ERC165, ERC721, IERC721Enumerable {
      * @return uint256 token ID at the given index of the tokens list
      */
     function tokenByIndex(uint256 index) public view returns (uint256) {
-        require(index < totalSupply(), "ERC721Enumerable: global index out of bounds");
+        require(
+            index < totalSupply(),
+            "ERC721Enumerable: global index out of bounds"
+        );
         return _allTokens[index];
     }
 
@@ -80,7 +87,11 @@ contract ERC721Enumerable is ERC165, ERC721, IERC721Enumerable {
      * @param to address to receive the ownership of the given token ID
      * @param tokenId uint256 ID of the token to be transferred
      */
-    function _transferFrom(address from, address to, uint256 tokenId) internal {
+    function _transferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) internal {
         super._transferFrom(from, to, tokenId);
 
         _removeTokenFromOwnerEnumeration(from, tokenId);
@@ -124,7 +135,11 @@ contract ERC721Enumerable is ERC165, ERC721, IERC721Enumerable {
      * @param owner address owning the tokens
      * @return uint256[] List of token IDs owned by the requested address
      */
-    function _tokensOfOwner(address owner) internal view returns (uint256[] storage) {
+    function _tokensOfOwner(address owner)
+        internal
+        view
+        returns (uint256[] storage)
+    {
         return _ownedTokens[owner];
     }
 
@@ -155,7 +170,9 @@ contract ERC721Enumerable is ERC165, ERC721, IERC721Enumerable {
      * @param from address representing the previous owner of the given token ID
      * @param tokenId uint256 ID of the token to be removed from the tokens list of the given address
      */
-    function _removeTokenFromOwnerEnumeration(address from, uint256 tokenId) private {
+    function _removeTokenFromOwnerEnumeration(address from, uint256 tokenId)
+        private
+    {
         // To prevent a gap in from's tokens array, we store the last token in the index of the token to delete, and
         // then delete the last slot (swap and pop).
 

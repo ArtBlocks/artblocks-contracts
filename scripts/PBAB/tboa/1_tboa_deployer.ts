@@ -6,7 +6,7 @@ import { GenArt721MinterTBOA__factory } from "../../contracts/factories/GenArt72
 async function main() {
   const [deployer] = await ethers.getSigners();
 
-  const randomizerFactory = new RandomizerTBOA__factory(deployer)
+  const randomizerFactory = new RandomizerTBOA__factory(deployer);
   const randomizer = await randomizerFactory.deploy();
 
   await randomizer.deployed();
@@ -33,7 +33,7 @@ async function main() {
 
 main()
   .then(() => process.exit(0))
-  .catch(error => {
+  .catch((error) => {
     console.error(error);
     process.exit(1);
   });

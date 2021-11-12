@@ -6,13 +6,10 @@ import "./ERC165.sol";
 import "./ERC721.sol";
 import "./ERC721Enumerable.sol";
 
-
-
 /**
  * ERC721 base contract without the concept of tokenUri as this is managed by the parent
  */
 contract CustomERC721Metadata is ERC165, ERC721, ERC721Enumerable {
-
     // Token name
     string private _name;
 
@@ -24,7 +21,7 @@ contract CustomERC721Metadata is ERC165, ERC721, ERC721Enumerable {
     /**
      * @dev Constructor function
      */
-    constructor (string memory name, string memory symbol) public {
+    constructor(string memory name, string memory symbol) public {
         _name = name;
         _symbol = symbol;
 
@@ -47,5 +44,4 @@ contract CustomERC721Metadata is ERC165, ERC721, ERC721Enumerable {
     function symbol() external view returns (string memory) {
         return _symbol;
     }
-
 }

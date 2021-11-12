@@ -1,34 +1,28 @@
-var prompt = require('prompt-sync')();
-const GenArt721Core = require('../artifacts/GenArt721Core.json');
-const {BigNumber} = require('ethers');
+var prompt = require("prompt-sync")();
+const GenArt721Core = require("../artifacts/GenArt721Core.json");
+const { BigNumber } = require("ethers");
 
 async function main() {
   const [deployer] = await ethers.getSigners();
   const deployerAddress = await deployer.getAddress();
-  console.log(
-    "Adding whitelisted:",
-    deployerAddress
-  );
+  console.log("Adding whitelisted:", deployerAddress);
 
-  const genArt721Address = prompt('GenArt721 address? ');
-  const whitelistedAddress = prompt('Whitelisted Address? ');
+  const genArt721Address = prompt("GenArt721 address? ");
+  const whitelistedAddress = prompt("Whitelisted Address? ");
   const genArt721Core = new ethers.Contract(
     genArt721Address,
     GenArt721Core.abi,
     deployer //provider
   );
 
-  await genArt721Core.addWhitelisted(
+  await genArt721Core.addWhitelisted(whitelistedAddress);
 
-    whitelistedAddress
-  );
-
-  console.log('addWhitelisted done');
+  console.log("addWhitelisted done");
 }
 
 main()
   .then(() => process.exit(0))
-  .catch(error => {
+  .catch((error) => {
     console.error(error);
     process.exit(1);
   });

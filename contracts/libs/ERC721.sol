@@ -23,34 +23,39 @@ contract ERC721 is ERC165, IERC721 {
     bytes4 private constant _ERC721_RECEIVED = 0x150b7a02;
 
     // Mapping from token ID to owner
-    mapping (uint256 => address) private _tokenOwner;
+    mapping(uint256 => address) private _tokenOwner;
 
     // Mapping from token ID to approved address
-    mapping (uint256 => address) private _tokenApprovals;
+    mapping(uint256 => address) private _tokenApprovals;
 
     // Mapping from owner to number of owned token
-    mapping (address => Counters.Counter) private _ownedTokensCount;
+    mapping(address => Counters.Counter) private _ownedTokensCount;
 
     // Mapping from owner to operator approvals
-    mapping (address => mapping (address => bool)) private _operatorApprovals;
-    
+    mapping(address => mapping(address => bool)) private _operatorApprovals;
+
     bytes4 private constant _INTERFACE_ID_ERC721 = 0x80ac58cd;
 
-    constructor () public {
+    constructor() public {
         // register the supported interfaces to conform to ERC721 via ERC165
         _registerInterface(_INTERFACE_ID_ERC721);
     }
 
-
     function balanceOf(address owner) public view returns (uint256) {
-        require(owner != address(0), "ERC721: balance query for the zero address");
+        require(
+            owner != address(0),
+            "ERC721: balance query for the zero address"
+        );
 
         return _ownedTokensCount[owner].current();
     }
 
     function ownerOf(uint256 tokenId) public view returns (address) {
         address owner = _tokenOwner[tokenId];
-        require(owner != address(0), "ERC721: owner query for nonexistent token");
+        require(
+            owner != address(0),
+            "ERC721: owner query for nonexistent token"
+        );
 
         return owner;
     }
@@ -59,7 +64,8 @@ contract ERC721 is ERC165, IERC721 {
         address owner = ownerOf(tokenId);
         require(to != owner, "ERC721: approval to current owner");
 
-        require(msg.sender == owner || isApprovedForAll(owner, msg.sender),
+        require(
+            msg.sender == owner || isApprovedForAll(owner, msg.sender),
             "ERC721: approve caller is not owner nor approved for all"
         );
 
@@ -68,7 +74,10 @@ contract ERC721 is ERC165, IERC721 {
     }
 
     function getApproved(uint256 tokenId) public view returns (address) {
-        require(_exists(tokenId), "ERC721: approved query for nonexistent token");
+        require(
+            _exists(tokenId),
+            "ERC721: approved query for nonexistent token"
+        );
 
         return _tokenApprovals[tokenId];
     }
@@ -80,24 +89,47 @@ contract ERC721 is ERC165, IERC721 {
         emit ApprovalForAll(msg.sender, to, approved);
     }
 
-    function isApprovedForAll(address owner, address operator) public view returns (bool) {
+    function isApprovedForAll(address owner, address operator)
+        public
+        view
+        returns (bool)
+    {
         return _operatorApprovals[owner][operator];
     }
 
-    function transferFrom(address from, address to, uint256 tokenId) public {
+    function transferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) public {
         //solhint-disable-next-line max-line-length
-        require(_isApprovedOrOwner(msg.sender, tokenId), "ERC721: transfer caller is not owner nor approved");
+        require(
+            _isApprovedOrOwner(msg.sender, tokenId),
+            "ERC721: transfer caller is not owner nor approved"
+        );
 
         _transferFrom(from, to, tokenId);
     }
 
-    function safeTransferFrom(address from, address to, uint256 tokenId) public {
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) public {
         safeTransferFrom(from, to, tokenId, "");
     }
 
-    function safeTransferFrom(address from, address to, uint256 tokenId, bytes memory _data) public {
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId,
+        bytes memory _data
+    ) public {
         transferFrom(from, to, tokenId);
-        require(_checkOnERC721Received(from, to, tokenId, _data), "ERC721: transfer to non ERC721Receiver implementer");
+        require(
+            _checkOnERC721Received(from, to, tokenId, _data),
+            "ERC721: transfer to non ERC721Receiver implementer"
+        );
     }
 
     function _exists(uint256 tokenId) internal view returns (bool) {
@@ -105,10 +137,19 @@ contract ERC721 is ERC165, IERC721 {
         return owner != address(0);
     }
 
-    function _isApprovedOrOwner(address spender, uint256 tokenId) internal view returns (bool) {
-        require(_exists(tokenId), "ERC721: operator query for nonexistent token");
+    function _isApprovedOrOwner(address spender, uint256 tokenId)
+        internal
+        view
+        returns (bool)
+    {
+        require(
+            _exists(tokenId),
+            "ERC721: operator query for nonexistent token"
+        );
         address owner = ownerOf(tokenId);
-        return (spender == owner || getApproved(tokenId) == spender || isApprovedForAll(owner, spender));
+        return (spender == owner ||
+            getApproved(tokenId) == spender ||
+            isApprovedForAll(owner, spender));
     }
 
     function _mint(address to, uint256 tokenId) internal {
@@ -122,7 +163,10 @@ contract ERC721 is ERC165, IERC721 {
     }
 
     function _burn(address owner, uint256 tokenId) internal {
-        require(ownerOf(tokenId) == owner, "ERC721: burn of token that is not own");
+        require(
+            ownerOf(tokenId) == owner,
+            "ERC721: burn of token that is not own"
+        );
 
         _clearApproval(tokenId);
 
@@ -136,8 +180,15 @@ contract ERC721 is ERC165, IERC721 {
         _burn(ownerOf(tokenId), tokenId);
     }
 
-    function _transferFrom(address from, address to, uint256 tokenId) internal {
-        require(ownerOf(tokenId) == from, "ERC721: transfer of token that is not own");
+    function _transferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) internal {
+        require(
+            ownerOf(tokenId) == from,
+            "ERC721: transfer of token that is not own"
+        );
         require(to != address(0), "ERC721: transfer to the zero address");
 
         _clearApproval(tokenId);
@@ -150,14 +201,22 @@ contract ERC721 is ERC165, IERC721 {
         emit Transfer(from, to, tokenId);
     }
 
-    function _checkOnERC721Received(address from, address to, uint256 tokenId, bytes memory _data)
-    internal returns (bool)
-    {
+    function _checkOnERC721Received(
+        address from,
+        address to,
+        uint256 tokenId,
+        bytes memory _data
+    ) internal returns (bool) {
         if (!to.isContract()) {
             return true;
         }
 
-        bytes4 retval = IERC721Receiver(to).onERC721Received(msg.sender, from, tokenId, _data);
+        bytes4 retval = IERC721Receiver(to).onERC721Received(
+            msg.sender,
+            from,
+            tokenId,
+            _data
+        );
         return (retval == _ERC721_RECEIVED);
     }
 
