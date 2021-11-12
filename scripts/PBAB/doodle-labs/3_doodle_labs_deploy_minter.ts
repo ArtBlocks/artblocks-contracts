@@ -4,7 +4,9 @@ import { GenArt721MinterDoodleLabs__factory } from "../../contracts/factories/Ge
 async function main() {
   const [deployer] = await ethers.getSigners();
 
-  const genArt721MinterFactory = new GenArt721MinterDoodleLabs__factory(deployer);
+  const genArt721MinterFactory = new GenArt721MinterDoodleLabs__factory(
+    deployer
+  );
   const genArt721Minter = await genArt721MinterFactory.deploy(
     "TODO: Enter GenArt721CoreV2 address here."
   );
@@ -13,7 +15,7 @@ async function main() {
 
 main()
   .then(() => process.exit(0))
-  .catch(error => {
+  .catch((error) => {
     console.error(error);
     process.exit(1);
   });

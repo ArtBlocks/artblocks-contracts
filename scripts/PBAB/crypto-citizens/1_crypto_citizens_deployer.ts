@@ -6,13 +6,15 @@ import { GenArt721MinterCryptoCitizens__factory } from "../../contracts/factorie
 async function main() {
   const [deployer] = await ethers.getSigners();
 
-  const randomizerFactory = new RandomizerCryptoCitizens__factory(deployer)
+  const randomizerFactory = new RandomizerCryptoCitizens__factory(deployer);
   const randomizer = await randomizerFactory.deploy();
 
   await randomizer.deployed();
   console.log(`Randomizer deployed at ${randomizer.address}`);
 
-  const genArt721CoreFactory = new GenArt721CoreV2CryptoCitizens__factory(deployer);
+  const genArt721CoreFactory = new GenArt721CoreV2CryptoCitizens__factory(
+    deployer
+  );
   const genArt721Core = await genArt721CoreFactory.deploy(
     "CryptoCitizens",
     "CITIZEN",
@@ -22,7 +24,9 @@ async function main() {
   await genArt721Core.deployed();
   console.log(`GenArt721Core deployed at ${genArt721Core.address}`);
 
-  const genArt721MinterFactory = new GenArt721MinterCryptoCitizens__factory(deployer);
+  const genArt721MinterFactory = new GenArt721MinterCryptoCitizens__factory(
+    deployer
+  );
   const genArt721Minter = await genArt721MinterFactory.deploy(
     genArt721Core.address
   );
@@ -33,7 +37,7 @@ async function main() {
 
 main()
   .then(() => process.exit(0))
-  .catch(error => {
+  .catch((error) => {
     console.error(error);
     process.exit(1);
   });
