@@ -7,8 +7,10 @@
     "test": "test"
   },
   "scripts": {
+    "compile": "hardhat compile",
     "generate:typechain": "typechain --target ethers-v5 --outDir ./scripts/contracts './artifacts/contracts/**/!(*.dbg)*.json'",
-    "test": "npx hardhat test"
+    "test": "hardhat test",
+    "prettier": "prettier --write 'contracts/**/*.sol'"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",

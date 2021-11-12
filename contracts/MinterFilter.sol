@@ -70,9 +70,7 @@ contract MinterFilter {
         minterForProject[_projectId] = _minterAddress;
     }
 
-    function setDefaultMinter(address _minterAddress)
-        public
-    {
+    function setDefaultMinter(address _minterAddress) public {
         require(
             artblocksContract.isWhitelisted(msg.sender),
             "can only be set by admin"
@@ -94,8 +92,10 @@ contract MinterFilter {
         address sender
     ) public returns (uint256 _tokenId) {
         require(
-            (minterForProject[_projectId] != address(0x0) && msg.sender == minterForProject[_projectId]) ||
-            (minterForProject[_projectId] == address(0x0) && msg.sender == defaultMinter),
+            (minterForProject[_projectId] != address(0x0) &&
+                msg.sender == minterForProject[_projectId]) ||
+                (minterForProject[_projectId] == address(0x0) &&
+                    msg.sender == defaultMinter),
             "Not sent from correct minter for project"
         );
         uint256 tokenId = artblocksContract.mint(_to, _projectId, sender);
