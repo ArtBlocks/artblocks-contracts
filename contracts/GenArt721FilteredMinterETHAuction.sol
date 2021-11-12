@@ -19,9 +19,7 @@ contract GenArt721FilteredMinterETHAuction {
     mapping(uint256 => uint256) public projectMintLimit;
     mapping(uint256 => bool) public projectMaxHasBeenInvoked;
     mapping(uint256 => uint256) public projectMaxInvocations;
-    address payable public ownerAddress;
-    uint256 public ownerPercentage;
-    uint256 public minimumAuctionLength = 3600;
+    uint256 public minimumAuctionLengthSeconds = 3600;
 
     // Auction variables
     mapping(uint256 => AuctionParameters) public projectAuctionParameters;
@@ -36,28 +34,34 @@ contract GenArt721FilteredMinterETHAuction {
         minterFilter = IMinterFilter(_minterFilter);
     }
 
-    function setOwnerAddress(address payable _ownerAddress) public {
+    function setProjectMintLimit(uint256 _projectId, uint8 _limit) public {
         require(
             artblocksContract.isWhitelisted(msg.sender),
             "can only be set by admin"
         );
-        ownerAddress = _ownerAddress;
+        projectMintLimit[_projectId] = _limit;
     }
 
-    function setOwnerPercentage(uint256 _ownerPercentage) public {
+    function setProjectMaxInvocations(uint256 _projectId) public {
         require(
             artblocksContract.isWhitelisted(msg.sender),
             "can only be set by admin"
         );
-        ownerPercentage = _ownerPercentage;
+        uint256 maxInvocations;
+        uint256 invocations;
+        ( , , invocations, maxInvocations, , , , , ) = artblocksContract.projectTokenInfo(_projectId);
+        projectMaxInvocations[_projectId] = maxInvocations;
+        if (invocations < maxInvocations) {
+            projectMaxHasBeenInvoked[_projectId] = false;
+        }
     }
 
-    function setMinimumAuctionLength(uint256 _minimumAuctionLength) public {
+    function setMinimumAuctionLengthSeconds(uint256 _minimumAuctionLengthSeconds) public {
         require(
             artblocksContract.isWhitelisted(msg.sender),
             "can only be set by admin"
         );
-        minimumAuctionLength = _minimumAuctionLength;
+        minimumAuctionLengthSeconds = _minimumAuctionLengthSeconds;
     }
 
     ////// Auction Functions
@@ -72,8 +76,8 @@ contract GenArt721FilteredMinterETHAuction {
             "can only be set by admin"
         );
         require(_auctionTimestampEnd > _auctionTimestampStart, "Auction end must be greater than auction start");
-        require(_auctionTimestampEnd > _auctionTimestampStart + minimumAuctionLength, "Auction length must be at least minimumAuctionLength");
-        require(_auctionPriceStart > getPrice(_projectId), "Auction start price must be greater than auction end price");
+        require(_auctionTimestampEnd > _auctionTimestampStart + minimumAuctionLengthSeconds, "Auction length must be at least minimumAuctionLengthSeconds");
+        require(_auctionPriceStart > artblocksContract.projectIdToPricePerTokenInWei(_projectId), "Auction start price must be greater than auction end price");
         projectAuctionParameters[_projectId] = AuctionParameters(
             _auctionTimestampStart,
             _auctionTimestampEnd,
@@ -133,23 +137,13 @@ contract GenArt721FilteredMinterETHAuction {
             if (refund > 0) {
                 msg.sender.transfer(refund);
             }
-            uint256 artBlocksAmount = pricePerTokenInWei.div(100).mul(
+            uint256 foundationAmount = pricePerTokenInWei.div(100).mul(
                 artblocksContract.artblocksPercentage()
             );
-            if (artBlocksAmount > 0) {
-                artblocksContract.artblocksAddress().transfer(artBlocksAmount);
+            if (foundationAmount > 0) {
+                artblocksContract.artblocksAddress().transfer(foundationAmount);
             }
-
-            uint256 remainingFunds = pricePerTokenInWei.sub(artBlocksAmount);
-
-            uint256 ownerFunds = remainingFunds.div(100).mul(ownerPercentage);
-            if (ownerFunds > 0) {
-                ownerAddress.transfer(ownerFunds);
-            }
-
-            uint256 projectFunds = pricePerTokenInWei.sub(artBlocksAmount).sub(
-                ownerFunds
-            );
+            uint256 projectFunds = pricePerTokenInWei.sub(foundationAmount);
             uint256 additionalPayeeAmount;
             if (
                 artblocksContract.projectIdToAdditionalPayeePercentage(

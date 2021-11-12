@@ -32,7 +32,8 @@ module.exports = {
   },
   networks: {
     hardhat: {
-      gasPrice: 100000000000,
+      gasPrice: 0,
+      initialBaseFeePerGas: 0,
     },
     mainnet: {
       url: MAINNET_JSON_RPC_PROVIDER_URL,
@@ -44,7 +45,7 @@ module.exports = {
       accounts: [`0x${TESTNET_PRIVATE_KEY}`],
     },
     coverage: {
-      url: 'http://localhost:8545',
+     url: 'http://localhost:8545',
     }
   },
   etherscan: {

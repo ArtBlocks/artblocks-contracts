@@ -48,7 +48,6 @@ describe('GenArt721CoreV2', async function () {
       "name",
       artist.address,
       pricePerTokenInWei,
-      true
     );
 
     this.projectZeroInfo = await this.token.projectTokenInfo(projectZero);

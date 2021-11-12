@@ -38,10 +38,12 @@ contract GenArt721FilteredMinterETH {
             "can only be set by admin"
         );
         uint256 maxInvocations;
-        (, , , maxInvocations, , , , , ) = artblocksContract.projectTokenInfo(
-            _projectId
-        );
+        uint256 invocations;
+        ( , , invocations, maxInvocations, , , , , ) = artblocksContract.projectTokenInfo(_projectId);
         projectMaxInvocations[_projectId] = maxInvocations;
+        if (invocations < maxInvocations) {
+            projectMaxHasBeenInvoked[_projectId] = false;
+        }
     }
 
     function purchase(uint256 _projectId)

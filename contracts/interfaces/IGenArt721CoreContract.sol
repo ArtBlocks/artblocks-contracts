@@ -1,3 +1,5 @@
+pragma solidity ^0.5.0;
+
 interface IGenArt721CoreContract {
     function isWhitelisted(address sender) external view returns (bool);
 

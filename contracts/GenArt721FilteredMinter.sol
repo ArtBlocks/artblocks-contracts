@@ -12,16 +12,13 @@ interface ERC20 {
   function allowance(address _owner, address _spender) external view returns (uint remaining);
 }
 
-
 contract GenArt721FilteredMinter {
   using SafeMath for uint256;
 
   IGenArt721CoreContract public artblocksContract;
   IMinterFilter public minterFilter;
 
-
   uint256 constant ONE_MILLION = 1_000_000;
-
 
   mapping(uint256 => bool) public contractFilterProject;
   mapping(address => mapping (uint256 => uint256)) public projectMintCounter;
@@ -33,7 +30,6 @@ contract GenArt721FilteredMinter {
     artblocksContract=IGenArt721CoreContract(_genArt721Address);
     minterFilter = IMinterFilter(_minterFilter);
   }
-
 
   function getYourBalanceOfProjectERC20(uint256 _projectId) public view returns (uint256){
     uint256 balance = ERC20(artblocksContract.projectIdToCurrencyAddress(_projectId)).balanceOf(msg.sender);
@@ -69,8 +65,9 @@ contract GenArt721FilteredMinter {
   function purchase(uint256 _projectId) public payable returns (uint256 _tokenId) {
     return purchaseTo(msg.sender, _projectId);
   }
-//removed public and payable
-  function purchaseTo(address _to, uint256 _projectId) private returns(uint256 _tokenId){
+
+  // removed public and payable
+  function purchaseTo(address _to, uint256 _projectId) private returns(uint256 _tokenId) {
     require(!projectMaxHasBeenInvoked[_projectId], "Maximum number of invocations reached");
     if (keccak256(abi.encodePacked(artblocksContract.projectIdToCurrencySymbol(_projectId))) != keccak256(abi.encodePacked("ETH"))){
       require(msg.value==0, "this project accepts a different currency and cannot accept ETH");
@@ -99,7 +96,6 @@ contract GenArt721FilteredMinter {
     if (tokenId % ONE_MILLION == projectMaxInvocations[_projectId]-1){
         projectMaxHasBeenInvoked[_projectId] = true;
     }
-
 
     return tokenId;
   }
@@ -130,7 +126,7 @@ contract GenArt721FilteredMinter {
     }
   }
 
-function _splitFundsERC20(uint256 _projectId) internal {
+  function _splitFundsERC20(uint256 _projectId) internal {
     uint256 pricePerTokenInWei = artblocksContract.projectIdToPricePerTokenInWei(_projectId);
     uint256 foundationAmount = pricePerTokenInWei.div(100).mul(artblocksContract.artblocksPercentage());
     if (foundationAmount > 0) {
@@ -149,5 +145,4 @@ function _splitFundsERC20(uint256 _projectId) internal {
       ERC20(artblocksContract.projectIdToCurrencyAddress(_projectId)).transferFrom(msg.sender, artblocksContract.projectIdToArtistAddress(_projectId), creatorFunds);
     }
   }
-
 }
