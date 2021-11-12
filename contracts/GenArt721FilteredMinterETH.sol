@@ -39,7 +39,8 @@ contract GenArt721FilteredMinterETH {
         );
         uint256 maxInvocations;
         uint256 invocations;
-        ( , , invocations, maxInvocations, , , , , ) = artblocksContract.projectTokenInfo(_projectId);
+        (, , invocations, maxInvocations, , , , , ) = artblocksContract
+            .projectTokenInfo(_projectId);
         projectMaxInvocations[_projectId] = maxInvocations;
         if (invocations < maxInvocations) {
             projectMaxHasBeenInvoked[_projectId] = false;

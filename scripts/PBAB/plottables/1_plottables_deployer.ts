@@ -6,7 +6,7 @@ import { GenArt721MinterPlottables__factory } from "../../contracts/factories/Ge
 async function main() {
   const [deployer] = await ethers.getSigners();
 
-  const randomizerFactory = new RandomizerPlottables__factory(deployer)
+  const randomizerFactory = new RandomizerPlottables__factory(deployer);
   const randomizer = await randomizerFactory.deploy();
 
   await randomizer.deployed();
@@ -22,7 +22,9 @@ async function main() {
   await genArt721Core.deployed();
   console.log(`GenArt721Core deployed at ${genArt721Core.address}`);
 
-  const genArt721MinterFactory = new GenArt721MinterPlottables__factory(deployer);
+  const genArt721MinterFactory = new GenArt721MinterPlottables__factory(
+    deployer
+  );
   const genArt721Minter = await genArt721MinterFactory.deploy(
     genArt721Core.address
   );
@@ -33,7 +35,7 @@ async function main() {
 
 main()
   .then(() => process.exit(0))
-  .catch(error => {
+  .catch((error) => {
     console.error(error);
     process.exit(1);
   });

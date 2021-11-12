@@ -7,7 +7,12 @@ import "./interfaces/IMinterFilter.sol";
 pragma solidity ^0.5.0;
 
 contract GenArt721FilteredMinterETHAuction {
-    event SetAuctionDetails(uint256 indexed projectId, uint256 _auctionTimestampStart, uint256 _auctionTimestampEnd, uint256 _auctionPriceStart);
+    event SetAuctionDetails(
+        uint256 indexed projectId,
+        uint256 _auctionTimestampStart,
+        uint256 _auctionTimestampEnd,
+        uint256 _auctionPriceStart
+    );
 
     using SafeMath for uint256;
 
@@ -49,14 +54,17 @@ contract GenArt721FilteredMinterETHAuction {
         );
         uint256 maxInvocations;
         uint256 invocations;
-        ( , , invocations, maxInvocations, , , , , ) = artblocksContract.projectTokenInfo(_projectId);
+        (, , invocations, maxInvocations, , , , , ) = artblocksContract
+            .projectTokenInfo(_projectId);
         projectMaxInvocations[_projectId] = maxInvocations;
         if (invocations < maxInvocations) {
             projectMaxHasBeenInvoked[_projectId] = false;
         }
     }
 
-    function setMinimumAuctionLengthSeconds(uint256 _minimumAuctionLengthSeconds) public {
+    function setMinimumAuctionLengthSeconds(
+        uint256 _minimumAuctionLengthSeconds
+    ) public {
         require(
             artblocksContract.isWhitelisted(msg.sender),
             "can only be set by admin"
@@ -75,15 +83,31 @@ contract GenArt721FilteredMinterETHAuction {
             artblocksContract.isWhitelisted(msg.sender),
             "can only be set by admin"
         );
-        require(_auctionTimestampEnd > _auctionTimestampStart, "Auction end must be greater than auction start");
-        require(_auctionTimestampEnd > _auctionTimestampStart + minimumAuctionLengthSeconds, "Auction length must be at least minimumAuctionLengthSeconds");
-        require(_auctionPriceStart > artblocksContract.projectIdToPricePerTokenInWei(_projectId), "Auction start price must be greater than auction end price");
+        require(
+            _auctionTimestampEnd > _auctionTimestampStart,
+            "Auction end must be greater than auction start"
+        );
+        require(
+            _auctionTimestampEnd >
+                _auctionTimestampStart + minimumAuctionLengthSeconds,
+            "Auction length must be at least minimumAuctionLengthSeconds"
+        );
+        require(
+            _auctionPriceStart >
+                artblocksContract.projectIdToPricePerTokenInWei(_projectId),
+            "Auction start price must be greater than auction end price"
+        );
         projectAuctionParameters[_projectId] = AuctionParameters(
             _auctionTimestampStart,
             _auctionTimestampEnd,
             _auctionPriceStart
         );
-        emit SetAuctionDetails(_projectId, _auctionTimestampStart, _auctionTimestampEnd, _auctionPriceStart);
+        emit SetAuctionDetails(
+            _projectId,
+            _auctionTimestampStart,
+            _auctionTimestampEnd,
+            _auctionPriceStart
+        );
     }
 
     function purchase(uint256 _projectId)
@@ -113,11 +137,14 @@ contract GenArt721FilteredMinterETHAuction {
 
         // limit mints per address by project
         if (projectMintLimit[_projectId] > 0) {
-            require(projectMintCounter[msg.sender][_projectId] < projectMintLimit[_projectId], "Reached minting limit");
+            require(
+                projectMintCounter[msg.sender][_projectId] <
+                    projectMintLimit[_projectId],
+                "Reached minting limit"
+            );
             projectMintCounter[msg.sender][_projectId]++;
         }
         _splitFundsETHAuction(_projectId);
-
 
         uint256 tokenId = minterFilter.mint(_to, _projectId, msg.sender);
         // What if this overflows, since default value of uint256 is 0?

@@ -1,17 +1,14 @@
-var prompt = require('prompt-sync')();
-const GenArt721 = require('../artifacts/GenArt721Core.json');
-const {BigNumber} = require('ethers');
+var prompt = require("prompt-sync")();
+const GenArt721 = require("../artifacts/GenArt721Core.json");
+const { BigNumber } = require("ethers");
 
 async function main() {
   const [deployer] = await ethers.getSigners();
   const deployerAddress = await deployer.getAddress();
-  console.log(
-    "Checking:",
-    deployerAddress
-  );
+  console.log("Checking:", deployerAddress);
 
-  const genArt721Address = prompt('GenArt721 address? ');
-  const randomizerAddress = prompt('Randomizer address? ');
+  const genArt721Address = prompt("GenArt721 address? ");
+  const randomizerAddress = prompt("Randomizer address? ");
   const genArt721 = new ethers.Contract(
     genArt721Address,
     GenArt721.abi,
@@ -27,7 +24,7 @@ async function main() {
 
 main()
   .then(() => process.exit(0))
-  .catch(error => {
+  .catch((error) => {
     console.error(error);
     process.exit(1);
   });

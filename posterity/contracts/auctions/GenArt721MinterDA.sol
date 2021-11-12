@@ -36,21 +36,6 @@ interface GenArt721CoreContract {
         view
         returns (uint256);
 
-    function projectTokenInfo(uint256 _projectId)
-        external
-        view
-        returns (
-            address,
-            uint256,
-            uint256,
-            uint256,
-            bool,
-            address,
-            uint256,
-            string memory,
-            address
-        );
-
     function artblocksAddress() external view returns (address payable);
 
     function artblocksPercentage() external view returns (uint256);
@@ -83,20 +68,24 @@ interface BonusContract {
     function bonusIsActive() external view returns (bool);
 }
 
-contract GenArt721Minter {
+contract GenArt721MinterDA {
     using SafeMath for uint256;
 
     GenArt721CoreContract public artblocksContract;
 
-    uint256 constant ONE_MILLION = 1_000_000;
+    address payable public ownerAddress;
+    uint256 public ownerPercentage;
 
     mapping(uint256 => bool) public projectIdToBonus;
     mapping(uint256 => address) public projectIdToBonusContractAddress;
     mapping(uint256 => bool) public contractFilterProject;
     mapping(address => mapping(uint256 => uint256)) public projectMintCounter;
     mapping(uint256 => uint256) public projectMintLimit;
-    mapping(uint256 => bool) public projectMaxHasBeenInvoked;
-    mapping(uint256 => uint256) public projectMaxInvocations;
+
+    // Auction variables
+    mapping(uint256 => uint256) public auctionMultiplier;
+    mapping(uint256 => uint256) public auctionTimestamp;
+    mapping(uint256 => uint256) public auctionDuration;
 
     constructor(address _genArt721Address) public {
         artblocksContract = GenArt721CoreContract(_genArt721Address);
@@ -132,19 +121,20 @@ contract GenArt721Minter {
         projectMintLimit[_projectId] = _limit;
     }
 
-    function setProjectMaxInvocations(uint256 _projectId) public {
+    function setOwnerAddress(address payable _ownerAddress) public {
         require(
             artblocksContract.isWhitelisted(msg.sender),
             "can only be set by admin"
         );
-        uint256 maxInvocations;
-        uint256 invocations;
-        (, , invocations, maxInvocations, , , , , ) = artblocksContract
-            .projectTokenInfo(_projectId);
-        projectMaxInvocations[_projectId] = maxInvocations;
-        if (invocations < maxInvocations) {
-            projectMaxHasBeenInvoked[_projectId] = false;
-        }
+        ownerAddress = _ownerAddress;
+    }
+
+    function setOwnerPercentage(uint256 _ownerPercentage) public {
+        require(
+            artblocksContract.isWhitelisted(msg.sender),
+            "can only be set by admin"
+        );
+        ownerPercentage = _ownerPercentage;
     }
 
     function toggleContractFilter(uint256 _projectId) public {
@@ -176,6 +166,53 @@ contract GenArt721Minter {
         projectIdToBonusContractAddress[_projectId] = _bonusContractAddress;
     }
 
+    ////// Auction Functions
+
+    function setAuctionDetails(
+        uint256 _projectId,
+        uint256 _auctionMultiplier,
+        uint256 _durationInSeconds
+    ) public {
+        require(
+            artblocksContract.isWhitelisted(msg.sender),
+            "can only be set by admin"
+        );
+        auctionMultiplier[_projectId] = _auctionMultiplier;
+        auctionDuration[_projectId] = _durationInSeconds;
+    }
+
+    function startAuctionNow(uint256 _projectId) public {
+        require(
+            artblocksContract.isWhitelisted(msg.sender),
+            "can only be set by admin"
+        );
+        require(
+            auctionMultiplier[_projectId] != 0,
+            "multiplier must be in place to set project for auction"
+        );
+        auctionTimestamp[_projectId] = block.timestamp;
+    }
+
+    function startAuctionLater(uint256 _projectId, uint256 _startTime) public {
+        require(
+            artblocksContract.isWhitelisted(msg.sender),
+            "can only be set by admin"
+        );
+        require(
+            auctionMultiplier[_projectId] != 0,
+            "multiplier must be in place to set project for auction"
+        );
+        auctionTimestamp[_projectId] = _startTime;
+    }
+
+    function stopAuction(uint256 _projectId) public {
+        require(
+            artblocksContract.isWhitelisted(msg.sender),
+            "can only be set by admin"
+        );
+        auctionTimestamp[_projectId] = 0;
+    }
+
     function purchase(uint256 _projectId)
         public
         payable
@@ -184,15 +221,12 @@ contract GenArt721Minter {
         return purchaseTo(msg.sender, _projectId);
     }
 
-    //removed public and payable
+    //remove public and payable to prevent public use of purchaseTo function
     function purchaseTo(address _to, uint256 _projectId)
-        private
+        public
+        payable
         returns (uint256 _tokenId)
     {
-        require(
-            !projectMaxHasBeenInvoked[_projectId],
-            "Maximum number of invocations reached"
-        );
         if (
             keccak256(
                 abi.encodePacked(
@@ -218,12 +252,22 @@ contract GenArt721Minter {
             );
             _splitFundsERC20(_projectId);
         } else {
-            require(
-                msg.value >=
-                    artblocksContract.projectIdToPricePerTokenInWei(_projectId),
-                "Must send minimum value to mint!"
-            );
-            _splitFundsETH(_projectId);
+            if (isAuctionLive(_projectId)) {
+                require(
+                    msg.value >= getPrice(_projectId),
+                    "Must send minimum value to mint!"
+                );
+                _splitFundsETHAuction(_projectId);
+            } else {
+                require(
+                    msg.value >=
+                        artblocksContract.projectIdToPricePerTokenInWei(
+                            _projectId
+                        ),
+                    "Must send minimum value to mint!"
+                );
+                _splitFundsETH(_projectId);
+            }
         }
 
         // if contract filter is active prevent calls from another contract
@@ -241,13 +285,6 @@ contract GenArt721Minter {
         }
 
         uint256 tokenId = artblocksContract.mint(_to, _projectId, msg.sender);
-        // What if this overflows, since default value of uint256 is 0?
-        // that is intended, so that by default the minter allows infinite transactions,
-        // allowing the artblocks contract to stop minting
-        // uint256 tokenInvocation = tokenId % ONE_MILLION;
-        if (tokenId % ONE_MILLION == projectMaxInvocations[_projectId] - 1) {
-            projectMaxHasBeenInvoked[_projectId] = true;
-        }
 
         if (projectIdToBonus[_projectId]) {
             require(
@@ -272,13 +309,73 @@ contract GenArt721Minter {
             if (refund > 0) {
                 msg.sender.transfer(refund);
             }
-            uint256 foundationAmount = pricePerTokenInWei.div(100).mul(
+            uint256 artBlocksAmount = pricePerTokenInWei.div(100).mul(
                 artblocksContract.artblocksPercentage()
             );
-            if (foundationAmount > 0) {
-                artblocksContract.artblocksAddress().transfer(foundationAmount);
+            if (artBlocksAmount > 0) {
+                artblocksContract.artblocksAddress().transfer(artBlocksAmount);
             }
-            uint256 projectFunds = pricePerTokenInWei.sub(foundationAmount);
+
+            uint256 remainingFunds = pricePerTokenInWei.sub(artBlocksAmount);
+
+            uint256 ownerFunds = remainingFunds.div(100).mul(ownerPercentage);
+            if (ownerFunds > 0) {
+                ownerAddress.transfer(ownerFunds);
+            }
+
+            uint256 projectFunds = pricePerTokenInWei.sub(artBlocksAmount).sub(
+                ownerFunds
+            );
+            uint256 additionalPayeeAmount;
+            if (
+                artblocksContract.projectIdToAdditionalPayeePercentage(
+                    _projectId
+                ) > 0
+            ) {
+                additionalPayeeAmount = projectFunds.div(100).mul(
+                    artblocksContract.projectIdToAdditionalPayeePercentage(
+                        _projectId
+                    )
+                );
+                if (additionalPayeeAmount > 0) {
+                    artblocksContract
+                        .projectIdToAdditionalPayee(_projectId)
+                        .transfer(additionalPayeeAmount);
+                }
+            }
+            uint256 creatorFunds = projectFunds.sub(additionalPayeeAmount);
+            if (creatorFunds > 0) {
+                artblocksContract.projectIdToArtistAddress(_projectId).transfer(
+                        creatorFunds
+                    );
+            }
+        }
+    }
+
+    function _splitFundsETHAuction(uint256 _projectId) internal {
+        if (msg.value > 0) {
+            uint256 pricePerTokenInWei = getPrice(_projectId);
+            uint256 refund = msg.value.sub(pricePerTokenInWei);
+            if (refund > 0) {
+                msg.sender.transfer(refund);
+            }
+            uint256 artBlocksAmount = pricePerTokenInWei.div(100).mul(
+                artblocksContract.artblocksPercentage()
+            );
+            if (artBlocksAmount > 0) {
+                artblocksContract.artblocksAddress().transfer(artBlocksAmount);
+            }
+
+            uint256 remainingFunds = pricePerTokenInWei.sub(artBlocksAmount);
+
+            uint256 ownerFunds = remainingFunds.div(100).mul(ownerPercentage);
+            if (ownerFunds > 0) {
+                ownerAddress.transfer(ownerFunds);
+            }
+
+            uint256 projectFunds = pricePerTokenInWei.sub(artBlocksAmount).sub(
+                ownerFunds
+            );
             uint256 additionalPayeeAmount;
             if (
                 artblocksContract.projectIdToAdditionalPayeePercentage(
@@ -308,18 +405,28 @@ contract GenArt721Minter {
     function _splitFundsERC20(uint256 _projectId) internal {
         uint256 pricePerTokenInWei = artblocksContract
             .projectIdToPricePerTokenInWei(_projectId);
-        uint256 foundationAmount = pricePerTokenInWei.div(100).mul(
+        uint256 artBlocksAmount = pricePerTokenInWei.div(100).mul(
             artblocksContract.artblocksPercentage()
         );
-        if (foundationAmount > 0) {
+        if (artBlocksAmount > 0) {
             ERC20(artblocksContract.projectIdToCurrencyAddress(_projectId))
                 .transferFrom(
                     msg.sender,
                     artblocksContract.artblocksAddress(),
-                    foundationAmount
+                    artBlocksAmount
                 );
         }
-        uint256 projectFunds = pricePerTokenInWei.sub(foundationAmount);
+        uint256 remainingFunds = pricePerTokenInWei.sub(artBlocksAmount);
+
+        uint256 ownerFunds = remainingFunds.div(100).mul(ownerPercentage);
+        if (ownerFunds > 0) {
+            ERC20(artblocksContract.projectIdToCurrencyAddress(_projectId))
+                .transferFrom(msg.sender, ownerAddress, ownerFunds);
+        }
+
+        uint256 projectFunds = pricePerTokenInWei.sub(artBlocksAmount).sub(
+            ownerFunds
+        );
         uint256 additionalPayeeAmount;
         if (
             artblocksContract.projectIdToAdditionalPayeePercentage(_projectId) >
@@ -350,5 +457,64 @@ contract GenArt721Minter {
                     creatorFunds
                 );
         }
+    }
+
+    function getPrice(uint256 _projectId) public view returns (uint256) {
+        uint256 auctionStartPrice = artblocksContract
+            .projectIdToPricePerTokenInWei(_projectId)
+            .mul(auctionMultiplier[_projectId]);
+        if (block.timestamp < auctionTimestamp[_projectId]) {
+            return auctionStartPrice;
+        } else {
+            uint256 elapsedTime = block.timestamp.sub(
+                auctionTimestamp[_projectId]
+            );
+            uint256 duration = auctionDuration[_projectId];
+            if (elapsedTime < duration) {
+                uint256 currentPrice = duration
+                    .sub(elapsedTime)
+                    .mul(auctionStartPrice)
+                    .div(duration);
+                if (
+                    currentPrice <
+                    artblocksContract.projectIdToPricePerTokenInWei(_projectId)
+                ) {
+                    return
+                        artblocksContract.projectIdToPricePerTokenInWei(
+                            _projectId
+                        );
+                } else {
+                    return currentPrice;
+                }
+            } else {
+                return
+                    artblocksContract.projectIdToPricePerTokenInWei(_projectId);
+            }
+        }
+    }
+
+    function isAuctionLive(uint256 _projectId) public view returns (bool) {
+        if (block.timestamp < auctionTimestamp[_projectId]) {
+            return false;
+        } else {
+            return
+                block.timestamp.sub(auctionTimestamp[_projectId]) <
+                auctionDuration[_projectId];
+        }
+    }
+
+    function auctionTimeRemaining(uint256 _projectId)
+        public
+        view
+        returns (uint256)
+    {
+        require(isAuctionLive(_projectId), "auction is not currently live");
+        uint256 elapsedTime = block.timestamp.sub(auctionTimestamp[_projectId]);
+        uint256 duration = auctionDuration[_projectId];
+        return duration.sub(elapsedTime);
+    }
+
+    function getCurrentTime() public view returns (uint256) {
+        return block.timestamp;
     }
 }
