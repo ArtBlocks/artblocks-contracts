@@ -8,6 +8,10 @@ pragma solidity ^0.5.0;
 contract MinterFilter {
     using SafeMath for uint256;
 
+    event DefaultMinterRegistered(address indexed _minterAddress);
+    event ProjectMinterRegistered(uint256 indexed _projectId, address indexed _minterAddress);
+    event ProjectMinterReset(uint256 indexed _projectId);
+
     IGenArt721CoreContract public artblocksContract;
 
     address public defaultMinter;
@@ -26,6 +30,7 @@ contract MinterFilter {
             "can only be set by admin"
         );
         minterForProject[_projectId] = _minterAddress;
+        emit ProjectMinterRegistered(_projectId, _minterAddress);
     }
 
     function setDefaultMinter(address _minterAddress) public {
@@ -34,6 +39,7 @@ contract MinterFilter {
             "can only be set by admin"
         );
         defaultMinter = _minterAddress;
+        emit DefaultMinterRegistered(_minterAddress);
     }
 
     function resetMinterForProjectToDefault(uint256 _projectId) public {
@@ -42,6 +48,7 @@ contract MinterFilter {
             "can only be set by admin"
         );
         minterForProject[_projectId] = address(0);
+        emit ProjectMinterReset(_projectId);
     }
 
     function mint(
