@@ -9,7 +9,10 @@ contract MinterFilter {
     using SafeMath for uint256;
 
     event DefaultMinterRegistered(address indexed _minterAddress);
-    event ProjectMinterRegistered(uint256 indexed _projectId, address indexed _minterAddress);
+    event ProjectMinterRegistered(
+        uint256 indexed _projectId,
+        address indexed _minterAddress
+    );
     event ProjectMinterReset(uint256 indexed _projectId);
 
     IGenArt721CoreContract public artblocksContract;
