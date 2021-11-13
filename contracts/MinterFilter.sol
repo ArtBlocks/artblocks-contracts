@@ -1,63 +1,21 @@
 import "./libs/SafeMath.sol";
 import "./libs/Strings.sol";
 
+import "./interfaces/IGenArt721CoreContract.sol";
+
 pragma solidity ^0.5.0;
-
-interface GenArt721CoreContract {
-    function isWhitelisted(address sender) external view returns (bool);
-
-    function projectIdToCurrencySymbol(uint256 _projectId)
-        external
-        view
-        returns (string memory);
-
-    function projectIdToCurrencyAddress(uint256 _projectId)
-        external
-        view
-        returns (address);
-
-    function projectIdToArtistAddress(uint256 _projectId)
-        external
-        view
-        returns (address payable);
-
-    function projectIdToPricePerTokenInWei(uint256 _projectId)
-        external
-        view
-        returns (uint256);
-
-    function projectIdToAdditionalPayee(uint256 _projectId)
-        external
-        view
-        returns (address payable);
-
-    function projectIdToAdditionalPayeePercentage(uint256 _projectId)
-        external
-        view
-        returns (uint256);
-
-    function artblocksAddress() external view returns (address payable);
-
-    function artblocksPercentage() external view returns (uint256);
-
-    function mint(
-        address _to,
-        uint256 _projectId,
-        address _by
-    ) external returns (uint256 tokenId);
-}
 
 contract MinterFilter {
     using SafeMath for uint256;
 
-    GenArt721CoreContract public artblocksContract;
+    IGenArt721CoreContract public artblocksContract;
 
     address public defaultMinter;
 
     mapping(uint256 => address) public minterForProject;
 
     constructor(address _genArt721Address) public {
-        artblocksContract = GenArt721CoreContract(_genArt721Address);
+        artblocksContract = IGenArt721CoreContract(_genArt721Address);
     }
 
     function setMinterForProject(uint256 _projectId, address _minterAddress)
