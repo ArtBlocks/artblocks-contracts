@@ -33,7 +33,7 @@ contract MinterFilter {
     }
 
     function setMinterForProject(uint256 _projectId, address _minterAddress)
-        public
+        external
         onlyCoreWhitelisted
     {
         minterForProject[_projectId] = _minterAddress;
@@ -41,7 +41,7 @@ contract MinterFilter {
     }
 
     function setDefaultMinter(address _minterAddress)
-        public
+        external
         onlyCoreWhitelisted
     {
         defaultMinter = _minterAddress;
@@ -49,7 +49,7 @@ contract MinterFilter {
     }
 
     function resetMinterForProjectToDefault(uint256 _projectId)
-        public
+        external
         onlyCoreWhitelisted
     {
         minterForProject[_projectId] = address(0);
@@ -60,7 +60,7 @@ contract MinterFilter {
         address _to,
         uint256 _projectId,
         address sender
-    ) public returns (uint256 _tokenId) {
+    ) external returns (uint256 _tokenId) {
         require(
             (minterForProject[_projectId] != address(0x0) &&
                 msg.sender == minterForProject[_projectId]) ||
