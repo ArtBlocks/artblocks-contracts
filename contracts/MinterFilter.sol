@@ -62,9 +62,9 @@ contract MinterFilter {
         address sender
     ) external returns (uint256 _tokenId) {
         require(
-            (minterForProject[_projectId] != address(0x0) &&
+            (minterForProject[_projectId] != address(0) &&
                 msg.sender == minterForProject[_projectId]) ||
-                (minterForProject[_projectId] == address(0x0) &&
+                (minterForProject[_projectId] == address(0) &&
                     msg.sender == defaultMinter),
             "Not sent from correct minter for project"
         );
