@@ -46,19 +46,16 @@ describe('GenArt721Minter', async function() {
         const minterFactory = await ethers.getContractFactory("GenArt721Minter")
         this.minter = await minterFactory.deploy(this.token.address);
 
-
         await this.token.connect(snowfro).addProject(
             "project1",
             artist.address,
             pricePerTokenInWei,
         );
-
         await this.token.connect(snowfro).addProject(
             "project2",
             artist.address,
             pricePerTokenInWei,
         );
-
 
         await this.token.connect(snowfro).toggleProjectIsActive(projectZero);
         await this.token.connect(snowfro).toggleProjectIsActive(projectOne);
@@ -118,7 +115,6 @@ describe('GenArt721Minter', async function() {
         });
 
         it('fails more cheaply if setProjectMaxInvocations is set', async function() {
-
             // Try without setProjectMaxInvocations, store gas cost
             for (let i = 0; i < 15; i++) {
                 await this.minter.connect(this.accounts.owner).purchase(projectZero, {

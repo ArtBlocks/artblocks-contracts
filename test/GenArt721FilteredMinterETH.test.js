@@ -17,7 +17,6 @@ const {
     ethers
 } = require('hardhat');
 
-
 describe('MinterFilter', async function() {
 
     const name = 'Non Fungible Token';
@@ -91,9 +90,8 @@ describe('MinterFilter', async function() {
         // We leave project three with no minter on purpose
     });
 
-
     describe('purchase', async function() {
-        it('Allows purchases through the correct minter', async function() {
+        it('allows purchases through the correct minter', async function() {
             for (let i = 0; i < 15; i++) {
                 await this.minter1.connect(this.accounts.owner).purchase(projectOne, {
                     value: pricePerTokenInWei
@@ -105,7 +103,7 @@ describe('MinterFilter', async function() {
                 });
             }
         });
-        it('Allows purchases through the default minter if not set', async function() {
+        it('allows purchases through the default minter if not set', async function() {
             await this.minterFilter.connect(this.accounts.snowfro).setDefaultMinter(this.minter1.address);
             for (let i = 0; i < 15; i++) {
                 await this.minter1.connect(this.accounts.owner).purchase(projectThree, {
@@ -114,7 +112,7 @@ describe('MinterFilter', async function() {
             }
         });
 
-        it('Blocks purchases through the incorrect minter', async function() {
+        it('blocks purchases through the incorrect minter', async function() {
             await expectRevert(this.minter2.connect(this.accounts.owner).purchase(projectOne, {
                 value: pricePerTokenInWei
             }), "Not sent from correct minter for project");

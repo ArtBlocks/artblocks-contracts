@@ -78,7 +78,6 @@ describe('GenArt721FilteredMinter', async function() {
     });
 
     describe('purchase', async function() {
-
         it('does nothing if setProjectMaxInvocations is not called (fails correctly)', async function() {
             for (let i = 0; i < 15; i++) {
                 await this.minter.connect(this.accounts.owner).purchase(projectZero, {
@@ -124,7 +123,6 @@ describe('GenArt721FilteredMinter', async function() {
         });
 
         it('fails more cheaply if setProjectMaxInvocations is set', async function() {
-
             // Try without setProjectMaxInvocations, store gas cost
             for (let i = 0; i < 15; i++) {
                 await this.minter.connect(this.accounts.owner).purchase(projectZero, {

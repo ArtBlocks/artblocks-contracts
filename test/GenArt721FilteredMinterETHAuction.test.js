@@ -54,7 +54,6 @@ describe('GenArt721MinterEthAuction', async function() {
         const minterFactory = await ethers.getContractFactory("GenArt721FilteredMinterETHAuction")
         this.minter = await minterFactory.deploy(this.token.address, this.minterFilter.address);
 
-
         await this.token.connect(snowfro).addProject(
             "project1",
             artist.address,
@@ -82,7 +81,7 @@ describe('GenArt721MinterEthAuction', async function() {
     });
 
     describe('purchase', async function() {
-        it('Calculates the price correctly', async function() {
+        it('calculates the price correctly', async function() {
             await network.provider.send("evm_setNextBlockTimestamp", [this.startTime]);
             const duration = ONE_HOUR * 2; // 2 hours
             const step = ONE_MINUTE * 8; // 480 seconds
@@ -112,7 +111,7 @@ describe('GenArt721MinterEthAuction', async function() {
             }
         });
 
-        it('Calculates the price before correctly', async function() {
+        it('calculates the price before correctly', async function() {
             await network.provider.send("evm_setNextBlockTimestamp", [this.startTime]);
 
             await this.minter.connect(this.accounts.snowfro).setAuctionDetails(projectOne, this.startTime + 60000, this.startTime + 2 * ONE_HOUR, ethers.utils.parseEther('1'));
@@ -123,7 +122,7 @@ describe('GenArt721MinterEthAuction', async function() {
             expect(contractPrice).to.be.equal(startingPrice);
         });
 
-        it('Calculates the price after correctly ', async function() {
+        it('calculates the price after correctly ', async function() {
             await network.provider.send("evm_setNextBlockTimestamp", [this.startTime + 5 * ONE_HOUR]);
 
             await this.minter.connect(this.accounts.snowfro).setAuctionDetails(projectOne, this.startTime + 60000, this.startTime + 2 * ONE_HOUR, ethers.utils.parseEther('1'));
