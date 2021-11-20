@@ -13,7 +13,6 @@ contract MinterFilter {
         uint256 indexed _projectId,
         address indexed _minterAddress
     );
-    event ProjectMinterReset(uint256 indexed _projectId);
 
     IGenArt721CoreContract public artblocksContract;
 
@@ -51,7 +50,7 @@ contract MinterFilter {
             "can only be set by admin"
         );
         minterForProject[_projectId] = address(0);
-        emit ProjectMinterReset(_projectId);
+        emit ProjectMinterRegistered(_projectId, address(0));
     }
 
     function mint(

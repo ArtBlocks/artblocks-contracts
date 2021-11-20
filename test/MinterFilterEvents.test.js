@@ -54,8 +54,8 @@ describe('MinterFilterEvents', async function() {
             await expect(
               this.minterFilter.connect(this.accounts.snowfro).resetMinterForProjectToDefault(0)
             )
-            .to.emit(this.minterFilter, "ProjectMinterReset")
-            .withArgs(0);
+            .to.emit(this.minterFilter, "ProjectMinterRegistered")
+            .withArgs(0, ethers.constants.AddressZero);
         });
     });
 
