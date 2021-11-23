@@ -94,7 +94,7 @@ contract GenArt721FilteredMinterETH {
             );
             projectMintCounter[msg.sender][_projectId]++;
         }
-        
+
         _splitFundsETH(_projectId);
 
         tokenId = minterFilter.mint(_to, _projectId, msg.sender);
@@ -142,8 +142,8 @@ contract GenArt721FilteredMinterETH {
             uint256 creatorFunds = projectFunds.sub(additionalPayeeAmount);
             if (creatorFunds > 0) {
                 artblocksContract.projectIdToArtistAddress(_projectId).transfer(
-                    creatorFunds
-                );
+                        creatorFunds
+                    );
             }
         }
     }

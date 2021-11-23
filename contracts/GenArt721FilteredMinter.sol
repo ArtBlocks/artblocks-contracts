@@ -204,8 +204,8 @@ contract GenArt721FilteredMinter {
             uint256 creatorFunds = projectFunds.sub(additionalPayeeAmount);
             if (creatorFunds > 0) {
                 artblocksContract.projectIdToArtistAddress(_projectId).transfer(
-                    creatorFunds
-                );
+                        creatorFunds
+                    );
             }
         }
     }
