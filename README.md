@@ -51,7 +51,6 @@ Create a `.env` file by duplicating `.env.example` and populating all variables.
 
 After having successfully deployed a set of contracts for a new PBAB configuration, it is good practice to make record of the deployment details (e.g. in a simple Markdown file) regarding which contracts were deployed and what deployed addresses they now live at. You can see an example of this in this repository with PR #33.
 
-
 ### automated post-deployment setup
 
 **NOTE:** The following post-deployment steps are done _automatically_ by the integrated multi-contract deployment script. The following descriptions exist purely for descriptive purposes.
@@ -77,26 +76,3 @@ After having successfully deployed a set of contracts for a new PBAB configurati
 1. Update the owner of the Minter to reflect the final address of the PBAB project owner (which is likely not the default of the deployer address, which is likely a hot wallet). This can be done by connecting to the contract via Etherscan (e.g. https://etherscan.io/address/0x7497909537ce00fdda93c12d5083d8647c593c67#writeContract) and using the `setOwnerAddress` method.
 1. Update the Core Contract to reflect the final address of the PBAB owner as a whitelisted address (this must be done in addition to making them the admin, and is easier to remember to do during setup, prior to transferring the admin role, rather than requiring that PBAB partners to this themselves). This can be done by connecting to the contract via Etherscan (e.g. https://etherscan.io/address/0x28f2d3805652fb5d359486dffb7d08320d403240#writeContract) and using the `addWhitelisted` method.
 1. Update the admin role for the Core Contract to reflect the final address of the PBAB project owner (which is likely not the default of the deployer address, which is likely a hot wallet). This can be done by connecting to the contract via Etherscan (e.g. https://etherscan.io/address/0x28f2d3805652fb5d359486dffb7d08320d403240#writeContract) and using the `updateAdmin` method.
-
-## Project Launch Details
-
-### project creation
-
-After having deployed a PBAB contract, you can now create projects on your contract.
-
-To create a new project shell, use the `addProject` method of your deployed Core Contract. This can be done by connecting to the contract via Etherscan.
-
-### pre-mint #0 flight check
-
-Prior to minting your first token (#0) on your new project shell, please verify the following.
-
-1. The `baseTokenURI` has been set, taking the format of `http://token.artblocks.io/{CORE_CONTRACT_ADDRESS}/`.
-1. The max invocations for the project have been set **on the minter**. This is achieved by calling the `setProjectMaxInvocations` on the Minter contract when connecting with Etherscan, with the project ID of the project to be minted as the parameter. **Note**: This should only be done _after_ setting this max invocations for the project on the Core Contract itself.
-1. Perform a test-mint in each currency the project accepts (e.g. if the project is planned to use both ETH and some custom ERC20 token for separate stages of the launch, ensure that **both** minting flows are empirically verified).
-
-### pre-launch (open minting) flight check
-
-Prior to launching your token for open minting, please verify the following.
-
-1. The project has been activated by the contract admin. This can be verified by reading the `projectTokenInfo` field.
-1. The project is not yet unpaused. Project pause status is toggle-able by the project artist. This can be verified by reading the `projectScriptInfo` field.
