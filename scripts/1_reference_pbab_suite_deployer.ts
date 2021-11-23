@@ -41,7 +41,9 @@ async function main() {
 
   // Deploy Minter contract.
   const genArt721MinterFactory = new GenArt721MinterPBAB__factory(deployer);
-  const genArt721Minter = await genArt721MinterFactory.deploy(genArt721Core.address);
+  const genArt721Minter = await genArt721MinterFactory.deploy(
+    genArt721Core.address
+  );
 
   await genArt721Minter.deployed();
   console.log(`MinterFilter deployed at ${genArt721Minter.address}`);
@@ -67,9 +69,7 @@ async function main() {
   console.log(`Updated the renderer provider to: ${rendererProviderAddress}.`);
 
   // Set Minter owner.
-  await genArt721Minter
-    .connect(deployer)
-    .setOwnerAddress(pbabTransferAddress);
+  await genArt721Minter.connect(deployer).setOwnerAddress(pbabTransferAddress);
   console.log(`Set the Minter owner to: ${pbabTransferAddress}.`);
 
   // Allowlist AB staff (testnet only)
@@ -91,23 +91,24 @@ async function main() {
   }
 
   // Allowlist new PBAB owner.
-  await genArt721Core
-    .connect(deployer)
-    .addWhitelisted(pbabTransferAddress);
+  await genArt721Core.connect(deployer).addWhitelisted(pbabTransferAddress);
   console.log(`Allowlisted Core contract access for: ${pbabTransferAddress}.`);
 
   // Transfer Core contract to new PBAB owner.
-  await genArt721Core
-    .connect(deployer)
-    .updateAdmin(pbabTransferAddress);
+  await genArt721Core.connect(deployer).updateAdmin(pbabTransferAddress);
   console.log(`Transferred Core contract admin to: ${pbabTransferAddress}.`);
 
   // Output instructions for manual Etherscan verification.
-  const standardVerify = "yarn hardhat verify --contract <path to .sol>:<contract name>";
-  console.log(`Verify GenArt721CoreV2 deployment with:`)
-  console.log(`${standardVerify} --network ${network.name} ${genArt721Core.address} "${pbabTokenName}" "${pbabTokenTicker}" ${randomizer.address}`);
-  console.log(`Verify GenArt721Minter deployment with:`)
-  console.log(`${standardVerify} --network ${network.name} ${genArt721Minter.address} ${genArt721Core.address}`);
+  const standardVerify =
+    "yarn hardhat verify --contract <path to .sol>:<contract name>";
+  console.log(`Verify GenArt721CoreV2 deployment with:`);
+  console.log(
+    `${standardVerify} --network ${network.name} ${genArt721Core.address} "${pbabTokenName}" "${pbabTokenTicker}" ${randomizer.address}`
+  );
+  console.log(`Verify GenArt721Minter deployment with:`);
+  console.log(
+    `${standardVerify} --network ${network.name} ${genArt721Minter.address} ${genArt721Core.address}`
+  );
 
   //////////////////////////////////////////////////////////////////////////////
   // SETUP ENDS HERE
