@@ -83,7 +83,7 @@ contract GenArt721FilteredMinterETH {
         _splitFundsETH(_projectId);
 
         // if contract filter is off, allow calls from another contract
-        if (contractMintable[_projectId]) {
+        if (!contractMintable[_projectId]) {
             require(msg.sender == tx.origin, "No Contract Buys");
         }
 

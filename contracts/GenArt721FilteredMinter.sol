@@ -144,7 +144,7 @@ contract GenArt721FilteredMinter {
         }
 
         // if contract filter is off, allow calls from another contract
-        if (contractMintable[_projectId]) {
+        if (!contractMintable[_projectId]) {
             require(msg.sender == tx.origin, "No Contract Buys");
         }
 
