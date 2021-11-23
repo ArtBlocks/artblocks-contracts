@@ -12,9 +12,12 @@ workflows:
   run-the-tests:
     jobs:
       - node/test:
-          # This is the node version to use for the `cimg/node` tag
-          # Relevant tags can be found on the CircleCI Developer Hub
-          # https://circleci.com/developer/images/image/cimg/node
+          version: '16.10'
+          # Using `yarn` rather than `npm`.
+          pkg-manager: yarn
+  run-the-lints:
+    jobs:
+      - node/lint:
           version: '16.10'
           # Using `yarn` rather than `npm`.
           pkg-manager: yarn
