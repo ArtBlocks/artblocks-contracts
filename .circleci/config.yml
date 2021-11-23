@@ -5,13 +5,15 @@ orbs:
 
 jobs:
   lint-and-test:
-    executor:
-      name: node/default
+    docker:
+      - image: 'cimg/base:stable'
     steps:
       - checkout
-      - run:
-          name: Install
-          command: yarn
+      - node/install:
+          install-yarn: true
+      - node/install-packages:
+          pkg-manager: yarn
+      - run: node --version
       - run:
           name: Lint
           command: yarn lint
