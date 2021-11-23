@@ -112,6 +112,20 @@ contract GenArt721FilteredMinter {
             !projectMaxHasBeenInvoked[_projectId],
             "Maximum number of invocations reached"
         );
+        // if contract filter is active prevent calls from another contract
+        if (contractFilterProject[_projectId])
+            require(msg.sender == tx.origin, "No Contract Buys");
+
+        // limit mints per address by project
+        if (projectMintLimit[_projectId] > 0) {
+            require(
+                projectMintCounter[msg.sender][_projectId] <
+                    projectMintLimit[_projectId],
+                "Reached minting limit"
+            );
+            projectMintCounter[msg.sender][_projectId]++;
+        }
+
         if (
             keccak256(
                 abi.encodePacked(
@@ -145,20 +159,6 @@ contract GenArt721FilteredMinter {
             _splitFundsETH(_projectId);
         }
 
-        // if contract filter is active prevent calls from another contract
-        if (contractFilterProject[_projectId])
-            require(msg.sender == tx.origin, "No Contract Buys");
-
-        // limit mints per address by project
-        if (projectMintLimit[_projectId] > 0) {
-            require(
-                projectMintCounter[msg.sender][_projectId] <
-                    projectMintLimit[_projectId],
-                "Reached minting limit"
-            );
-            projectMintCounter[msg.sender][_projectId]++;
-        }
-
         tokenId = minterFilter.mint(_to, _projectId, msg.sender);
         // What if this overflows, since default value of uint256 is 0?
         // that is intended, so that by default the minter allows infinite transactions,
@@ -173,9 +173,7 @@ contract GenArt721FilteredMinter {
         if (msg.value > 0) {
             uint256 pricePerTokenInWei = artblocksContract
                 .projectIdToPricePerTokenInWei(_projectId);
-            uint256 refund = msg.value.sub(
-                artblocksContract.projectIdToPricePerTokenInWei(_projectId)
-            );
+            uint256 refund = msg.value.sub(pricePerTokenInWei);
             if (refund > 0) {
                 msg.sender.transfer(refund);
             }

@@ -1,5 +1,4 @@
 import "./libs/SafeMath.sol";
-import "./libs/Strings.sol";
 
 import "./interfaces/IGenArt721CoreContract.sol";
 import "./interfaces/IMinterFilter.sol";
@@ -19,24 +18,30 @@ contract GenArt721FilteredMinterETH {
     mapping(uint256 => bool) public projectMaxHasBeenInvoked;
     mapping(uint256 => uint256) public projectMaxInvocations;
 
+    modifier onlyCoreWhitelisted() {
+        require(
+            artblocksContract.isWhitelisted(msg.sender),
+            "Only Core whitelisted"
+        );
+        _;
+    }
+
     constructor(address _genArt721Address, address _minterFilter) public {
         artblocksContract = IGenArt721CoreContract(_genArt721Address);
         minterFilter = IMinterFilter(_minterFilter);
     }
 
-    function setProjectMintLimit(uint256 _projectId, uint8 _limit) public {
-        require(
-            artblocksContract.isWhitelisted(msg.sender),
-            "can only be set by admin"
-        );
+    function setProjectMintLimit(uint256 _projectId, uint8 _limit)
+        external 
+        onlyCoreWhitelisted 
+    {
         projectMintLimit[_projectId] = _limit;
     }
 
-    function setProjectMaxInvocations(uint256 _projectId) public {
-        require(
-            artblocksContract.isWhitelisted(msg.sender),
-            "can only be set by admin"
-        );
+    function setProjectMaxInvocations(uint256 _projectId) 
+        external 
+        onlyCoreWhitelisted
+    {
         uint256 maxInvocations;
         uint256 invocations;
         (, , invocations, maxInvocations, , , , , ) = artblocksContract
@@ -48,32 +53,37 @@ contract GenArt721FilteredMinterETH {
     }
 
     function purchase(uint256 _projectId)
-        public
+        external
         payable
-        returns (uint256 _tokenId)
+        returns (uint256 tokenId)
     {
-        return purchaseTo(msg.sender, _projectId);
+        tokenId = purchaseTo(msg.sender, _projectId);
     }
 
     //removed public and payable
     function purchaseTo(address _to, uint256 _projectId)
         private
-        returns (uint256 _tokenId)
+        returns (uint256 tokenId)
     {
         require(
             !projectMaxHasBeenInvoked[_projectId],
             "Maximum number of invocations reached"
         );
+        // by default, no contract buys
         require(msg.sender == tx.origin, "No Contract Buys");
 
+        // project currency must be ETH
+        require(keccak256(
+                abi.encodePacked(
+                    artblocksContract.projectIdToCurrencySymbol(_projectId)
+                )
+            ) == keccak256(abi.encodePacked("ETH")));
+            
         require(
             msg.value >=
                 artblocksContract.projectIdToPricePerTokenInWei(_projectId),
             "Must send minimum value to mint!"
         );
-        _splitFundsETH(_projectId);
-
-        // if contract filter is active prevent calls from another contract
 
         // limit mints per address by project
         if (projectMintLimit[_projectId] > 0) {
@@ -84,8 +94,10 @@ contract GenArt721FilteredMinterETH {
             );
             projectMintCounter[msg.sender][_projectId]++;
         }
+        
+        _splitFundsETH(_projectId);
 
-        uint256 tokenId = minterFilter.mint(_to, _projectId, msg.sender);
+        tokenId = minterFilter.mint(_to, _projectId, msg.sender);
         // What if this overflows, since default value of uint256 is 0?
         // that is intended, so that by default the minter allows infinite transactions,
         // allowing the artblocks contract to stop minting
@@ -93,17 +105,13 @@ contract GenArt721FilteredMinterETH {
         if (tokenId % ONE_MILLION == projectMaxInvocations[_projectId] - 1) {
             projectMaxHasBeenInvoked[_projectId] = true;
         }
-
-        return tokenId;
     }
 
     function _splitFundsETH(uint256 _projectId) internal {
         if (msg.value > 0) {
             uint256 pricePerTokenInWei = artblocksContract
                 .projectIdToPricePerTokenInWei(_projectId);
-            uint256 refund = msg.value.sub(
-                artblocksContract.projectIdToPricePerTokenInWei(_projectId)
-            );
+            uint256 refund = msg.value.sub(pricePerTokenInWei);
             if (refund > 0) {
                 msg.sender.transfer(refund);
             }
@@ -134,8 +142,8 @@ contract GenArt721FilteredMinterETH {
             uint256 creatorFunds = projectFunds.sub(additionalPayeeAmount);
             if (creatorFunds > 0) {
                 artblocksContract.projectIdToArtistAddress(_projectId).transfer(
-                        creatorFunds
-                    );
+                    creatorFunds
+                );
             }
         }
     }

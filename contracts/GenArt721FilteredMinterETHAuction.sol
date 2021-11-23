@@ -1,5 +1,4 @@
 import "./libs/SafeMath.sol";
-import "./libs/Strings.sol";
 
 import "./interfaces/IGenArt721CoreContract.sol";
 import "./interfaces/IMinterFilter.sol";
@@ -18,6 +17,7 @@ contract GenArt721FilteredMinterETHAuction {
 
     IGenArt721CoreContract public artblocksContract;
     IMinterFilter public minterFilter;
+
     uint256 constant ONE_MILLION = 1_000_000;
 
     mapping(address => mapping(uint256 => uint256)) public projectMintCounter;
@@ -34,24 +34,30 @@ contract GenArt721FilteredMinterETHAuction {
         uint256 priceStart;
     }
 
+    modifier onlyCoreWhitelisted() {
+        require(
+            artblocksContract.isWhitelisted(msg.sender),
+            "Only Core whitelisted"
+        );
+        _;
+    }
+
     constructor(address _genArt721Address, address _minterFilter) public {
         artblocksContract = IGenArt721CoreContract(_genArt721Address);
         minterFilter = IMinterFilter(_minterFilter);
     }
 
-    function setProjectMintLimit(uint256 _projectId, uint8 _limit) public {
-        require(
-            artblocksContract.isWhitelisted(msg.sender),
-            "can only be set by admin"
-        );
+    function setProjectMintLimit(uint256 _projectId, uint8 _limit)
+        external
+        onlyCoreWhitelisted
+    {
         projectMintLimit[_projectId] = _limit;
     }
 
-    function setProjectMaxInvocations(uint256 _projectId) public {
-        require(
-            artblocksContract.isWhitelisted(msg.sender),
-            "can only be set by admin"
-        );
+    function setProjectMaxInvocations(uint256 _projectId) 
+        external 
+        onlyCoreWhitelisted
+    {
         uint256 maxInvocations;
         uint256 invocations;
         (, , invocations, maxInvocations, , , , , ) = artblocksContract
@@ -64,11 +70,7 @@ contract GenArt721FilteredMinterETHAuction {
 
     function setMinimumAuctionLengthSeconds(
         uint256 _minimumAuctionLengthSeconds
-    ) public {
-        require(
-            artblocksContract.isWhitelisted(msg.sender),
-            "can only be set by admin"
-        );
+    ) external onlyCoreWhitelisted {
         minimumAuctionLengthSeconds = _minimumAuctionLengthSeconds;
     }
 
@@ -78,18 +80,14 @@ contract GenArt721FilteredMinterETHAuction {
         uint256 _auctionTimestampStart,
         uint256 _auctionTimestampEnd,
         uint256 _auctionPriceStart
-    ) public {
-        require(
-            artblocksContract.isWhitelisted(msg.sender),
-            "can only be set by admin"
-        );
+    ) external onlyCoreWhitelisted {
         require(
             _auctionTimestampEnd > _auctionTimestampStart,
             "Auction end must be greater than auction start"
         );
         require(
-            _auctionTimestampEnd >
-                _auctionTimestampStart + minimumAuctionLengthSeconds,
+            _auctionTimestampEnd >=
+                _auctionTimestampStart.add(minimumAuctionLengthSeconds),
             "Auction length must be at least minimumAuctionLengthSeconds"
         );
         require(
@@ -111,29 +109,36 @@ contract GenArt721FilteredMinterETHAuction {
     }
 
     function purchase(uint256 _projectId)
-        public
+        external
         payable
-        returns (uint256 _tokenId)
+        returns (uint256 tokenId)
     {
-        return purchaseTo(msg.sender, _projectId);
+        tokenId = purchaseTo(msg.sender, _projectId);
     }
 
-    //remove public and payable to prevent public use of purchaseTo function
+    //removed public and payable
     function purchaseTo(address _to, uint256 _projectId)
         private
-        returns (uint256 _tokenId)
+        returns (uint256 tokenId)
     {
         require(
             !projectMaxHasBeenInvoked[_projectId],
             "Maximum number of invocations reached"
         );
+        // by default, no contract buys
+        require(msg.sender == tx.origin, "No Contract Buys");
+
+        // project currency must be ETH
+        require(keccak256(
+                abi.encodePacked(
+                    artblocksContract.projectIdToCurrencySymbol(_projectId)
+                )
+            ) == keccak256(abi.encodePacked("ETH")));
+
         require(
             msg.value >= getPrice(_projectId),
             "Must send minimum value to mint!"
         );
-
-        //By default, no contract buys
-        require(msg.sender == tx.origin, "No Contract Buys");
 
         // limit mints per address by project
         if (projectMintLimit[_projectId] > 0) {
@@ -144,9 +149,10 @@ contract GenArt721FilteredMinterETHAuction {
             );
             projectMintCounter[msg.sender][_projectId]++;
         }
+
         _splitFundsETHAuction(_projectId);
 
-        uint256 tokenId = minterFilter.mint(_to, _projectId, msg.sender);
+        tokenId = minterFilter.mint(_to, _projectId, msg.sender);
         // What if this overflows, since default value of uint256 is 0?
         // that is intended, so that by default the minter allows infinite transactions,
         // allowing the artblocks contract to stop minting
@@ -154,7 +160,6 @@ contract GenArt721FilteredMinterETHAuction {
         if (tokenId % ONE_MILLION == projectMaxInvocations[_projectId] - 1) {
             projectMaxHasBeenInvoked[_projectId] = true;
         }
-        return tokenId;
     }
 
     function _splitFundsETHAuction(uint256 _projectId) internal {
@@ -201,9 +206,9 @@ contract GenArt721FilteredMinterETHAuction {
         AuctionParameters memory auctionParams = projectAuctionParameters[
             _projectId
         ];
-        if (getCurrentTime() < auctionParams.timestampStart) {
+        if (getCurrentTime() <= auctionParams.timestampStart) {
             return auctionParams.priceStart;
-        } else if (getCurrentTime() > auctionParams.timestampEnd) {
+        } else if (getCurrentTime() >= auctionParams.timestampEnd) {
             return artblocksContract.projectIdToPricePerTokenInWei(_projectId);
         }
         uint256 elapsedTime = getCurrentTime().sub(
@@ -230,7 +235,7 @@ contract GenArt721FilteredMinterETHAuction {
     }
 
     function auctionTimeRemaining(uint256 _projectId)
-        public
+        external
         view
         returns (uint256)
     {
