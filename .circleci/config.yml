@@ -1,23 +1,32 @@
-# This config is equivalent to both the '.circleci/extended/orb-free.yml' and the base '.circleci/config.yml'
 version: 2.1
 
-# Orbs are reusable packages of CircleCI configuration that you may share across projects, enabling you to create encapsulated, parameterized commands, jobs, and executors that can be used across multiple projects.
-# See: https://circleci.com/docs/2.0/orb-intro/
 orbs:
   node: circleci/node@4.7
 
-# Invoke jobs via workflows
-# See: https://circleci.com/docs/2.0/configuration-reference/#workflows
+commands:
+  setup-node-and-yarn-install-with-cache:
+    steps:
+      - node/install:
+          install-yarn: true
+          node-version: latest
+      - node/install-packages:
+          pkg-manager: yarn
+
+jobs:
+  lint-and-test:
+    executor:
+      name: node/default
+    steps:
+      - checkout
+      - setup-node-and-yarn-install-with-cache
+      - run:
+          name: Lint
+          command: yarn lint
+      - run:
+          name: Run tests
+          command: yarn test
+
 workflows:
-  run-the-tests:
+  run-ci:
     jobs:
-      - node/test:
-          version: '16.10'
-          # Using `yarn` rather than `npm`.
-          pkg-manager: yarn
-  run-the-lints:
-    jobs:
-      - node/lint:
-          version: '16.10'
-          # Using `yarn` rather than `npm`.
-          pkg-manager: yarn
+      - lint-and-test
