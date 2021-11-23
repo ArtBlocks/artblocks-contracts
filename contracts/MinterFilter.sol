@@ -1,5 +1,4 @@
 import "./libs/SafeMath.sol";
-import "./libs/Strings.sol";
 
 import "./interfaces/IGenArt721CoreContract.sol";
 
