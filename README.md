@@ -1,5 +1,7 @@
 # Art Blocks Smart Contracts
 
+[![CircleCI](https://circleci.com/gh/ArtBlocks/artblocks-contracts/tree/main.svg?style=svg)](https://circleci.com/gh/ArtBlocks/artblocks-contracts/tree/main)
+
 ## Initial Setup
 
 ### install packages
