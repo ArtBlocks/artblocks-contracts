@@ -32,14 +32,14 @@ contract GenArt721FilteredMinterETH {
     }
 
     function setProjectMintLimit(uint256 _projectId, uint8 _limit)
-        external 
-        onlyCoreWhitelisted 
+        external
+        onlyCoreWhitelisted
     {
         projectMintLimit[_projectId] = _limit;
     }
 
-    function setProjectMaxInvocations(uint256 _projectId) 
-        external 
+    function setProjectMaxInvocations(uint256 _projectId)
+        external
         onlyCoreWhitelisted
     {
         uint256 maxInvocations;
@@ -73,12 +73,14 @@ contract GenArt721FilteredMinterETH {
         require(msg.sender == tx.origin, "No Contract Buys");
 
         // project currency must be ETH
-        require(keccak256(
+        require(
+            keccak256(
                 abi.encodePacked(
                     artblocksContract.projectIdToCurrencySymbol(_projectId)
                 )
-            ) == keccak256(abi.encodePacked("ETH")));
-            
+            ) == keccak256(abi.encodePacked("ETH"))
+        );
+
         require(
             msg.value >=
                 artblocksContract.projectIdToPricePerTokenInWei(_projectId),

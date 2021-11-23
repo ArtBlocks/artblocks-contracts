@@ -67,15 +67,15 @@ contract GenArt721FilteredMinter {
         ).allowance(msg.sender, address(this));
     }
 
-    function setProjectMintLimit(uint256 _projectId, uint8 _limit) 
-        external 
-        onlyCoreWhitelisted 
+    function setProjectMintLimit(uint256 _projectId, uint8 _limit)
+        external
+        onlyCoreWhitelisted
     {
         projectMintLimit[_projectId] = _limit;
     }
 
-    function setProjectMaxInvocations(uint256 _projectId) 
-        external 
+    function setProjectMaxInvocations(uint256 _projectId)
+        external
         onlyCoreWhitelisted
     {
         uint256 maxInvocations;
@@ -88,7 +88,7 @@ contract GenArt721FilteredMinter {
         }
     }
 
-    function toggleContractFilter(uint256 _projectId) 
+    function toggleContractFilter(uint256 _projectId)
         external
         onlyCoreWhitelisted
     {
