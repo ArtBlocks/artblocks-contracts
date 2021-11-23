@@ -14,6 +14,7 @@ contract GenArt721FilteredMinterETH {
 
     uint256 constant ONE_MILLION = 1_000_000;
 
+    mapping(uint256 => bool) public contractMintable;
     mapping(address => mapping(uint256 => uint256)) public projectMintCounter;
     mapping(uint256 => uint256) public projectMintLimit;
     mapping(uint256 => bool) public projectMaxHasBeenInvoked;
@@ -47,6 +48,14 @@ contract GenArt721FilteredMinterETH {
         }
     }
 
+    function toggleContractMintable(uint256 _projectId) public {
+        require(
+            artblocksContract.isWhitelisted(msg.sender),
+            "can only be set by admin"
+        );
+        contractMintable[_projectId] = !contractMintable[_projectId];
+    }
+
     function purchase(uint256 _projectId)
         public
         payable
@@ -73,7 +82,10 @@ contract GenArt721FilteredMinterETH {
         );
         _splitFundsETH(_projectId);
 
-        // if contract filter is active prevent calls from another contract
+        // if contract filter is off, allow calls from another contract
+        if (contractMintable[_projectId]) {
+            require(msg.sender == tx.origin, "No Contract Buys");
+        }
 
         // limit mints per address by project
         if (projectMintLimit[_projectId] > 0) {

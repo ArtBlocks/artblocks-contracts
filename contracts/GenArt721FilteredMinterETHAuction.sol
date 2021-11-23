@@ -18,8 +18,10 @@ contract GenArt721FilteredMinterETHAuction {
 
     IGenArt721CoreContract public artblocksContract;
     IMinterFilter public minterFilter;
+
     uint256 constant ONE_MILLION = 1_000_000;
 
+    mapping(uint256 => bool) public contractMintable;
     mapping(address => mapping(uint256 => uint256)) public projectMintCounter;
     mapping(uint256 => uint256) public projectMintLimit;
     mapping(uint256 => bool) public projectMaxHasBeenInvoked;
@@ -60,6 +62,14 @@ contract GenArt721FilteredMinterETHAuction {
         if (invocations < maxInvocations) {
             projectMaxHasBeenInvoked[_projectId] = false;
         }
+    }
+
+    function toggleContractMintable(uint256 _projectId) public {
+        require(
+            artblocksContract.isWhitelisted(msg.sender),
+            "can only be set by admin"
+        );
+        contractMintable[_projectId] = !contractMintable[_projectId];
     }
 
     function setMinimumAuctionLengthSeconds(
@@ -132,8 +142,10 @@ contract GenArt721FilteredMinterETHAuction {
             "Must send minimum value to mint!"
         );
 
-        //By default, no contract buys
-        require(msg.sender == tx.origin, "No Contract Buys");
+        // if contract filter is off, allow calls from another contract
+        if (contractMintable[_projectId]) {
+            require(msg.sender == tx.origin, "No Contract Buys");
+        }
 
         // limit mints per address by project
         if (projectMintLimit[_projectId] > 0) {
