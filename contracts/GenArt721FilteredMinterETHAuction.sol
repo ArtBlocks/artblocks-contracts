@@ -135,8 +135,9 @@ contract GenArt721FilteredMinterETHAuction {
                 )
             ) == keccak256(abi.encodePacked("ETH")));
 
+        uint256 pricePerTokenInWei = getPrice(_projectId);
         require(
-            msg.value >= getPrice(_projectId),
+            msg.value >= pricePerTokenInWei,
             "Must send minimum value to mint!"
         );
 
@@ -150,7 +151,7 @@ contract GenArt721FilteredMinterETHAuction {
             projectMintCounter[msg.sender][_projectId]++;
         }
 
-        _splitFundsETHAuction(_projectId);
+        _splitFundsETHAuction(_projectId, pricePerTokenInWei);
 
         tokenId = minterFilter.mint(_to, _projectId, msg.sender);
         // What if this overflows, since default value of uint256 is 0?
@@ -162,9 +163,11 @@ contract GenArt721FilteredMinterETHAuction {
         }
     }
 
-    function _splitFundsETHAuction(uint256 _projectId) internal {
+    function _splitFundsETHAuction(
+        uint256 _projectId, 
+        uint256 pricePerTokenInWei
+    ) internal {
         if (msg.value > 0) {
-            uint256 pricePerTokenInWei = getPrice(_projectId);
             uint256 refund = msg.value.sub(pricePerTokenInWei);
             if (refund > 0) {
                 msg.sender.transfer(refund);
