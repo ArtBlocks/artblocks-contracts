@@ -3,22 +3,15 @@ version: 2.1
 orbs:
   node: circleci/node@4.7
 
-commands:
-  setup-node-and-yarn-install:
-    steps:
-      - node/install:
-          install-yarn: true
-          node-version: latest
-      - node/install-packages:
-          pkg-manager: yarn
-
 jobs:
   lint-and-test:
     executor:
       name: node/default
     steps:
       - checkout
-      - setup-node-and-yarn-install
+      - run:
+          name: Install
+          command: yarn
       - run:
           name: Lint
           command: yarn lint
