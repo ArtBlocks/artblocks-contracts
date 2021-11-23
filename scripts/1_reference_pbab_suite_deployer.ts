@@ -11,7 +11,7 @@ const pbabTokenTicker = "TODO";
 const pbabTransferAddress = "0x000000000000000000000000000000000000dEaD";
 const rendererProviderAddress = "0x000000000000000000000000000000000000dEaD";
 //////////////////////////////////////////////////////////////////////////////
-// CONFIG BEGINS HERE
+// CONFIG ENDS HERE
 //////////////////////////////////////////////////////////////////////////////
 
 async function main() {
