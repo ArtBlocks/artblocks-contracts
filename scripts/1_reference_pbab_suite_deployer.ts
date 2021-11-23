@@ -74,7 +74,7 @@ async function main() {
 
   // Allowlist AB staff (testnet only)
   const network = await ethers.provider.getNetwork();
-  if (network.name != "mainnet") {
+  if (network.name == "ropsten") {
     // purplehat
     await genArt721Core
       .connect(deployer)
