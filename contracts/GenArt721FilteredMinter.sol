@@ -28,7 +28,7 @@ contract GenArt721FilteredMinter {
 
     uint256 constant ONE_MILLION = 1_000_000;
 
-    mapping(uint256 => bool) public contractFilterProject;
+    mapping(uint256 => bool) public contractMintable;
     mapping(address => mapping(uint256 => uint256)) public projectMintCounter;
     mapping(uint256 => uint256) public projectMintLimit;
     mapping(uint256 => bool) public projectMaxHasBeenInvoked;
@@ -90,11 +90,11 @@ contract GenArt721FilteredMinter {
         }
     }
 
-    function toggleContractFilter(uint256 _projectId)
+    function toggleContractMintable(uint256 _projectId)
         external
         onlyCoreWhitelisted
     {
-        contractFilterProject[_projectId] = !contractFilterProject[_projectId];
+        contractMintable[_projectId] = !contractMintable[_projectId];
     }
 
     function purchase(uint256 _projectId)
@@ -115,9 +115,11 @@ contract GenArt721FilteredMinter {
             !projectMaxHasBeenInvoked[_projectId],
             "Maximum number of invocations reached"
         );
-        // if contract filter is active prevent calls from another contract
-        if (contractFilterProject[_projectId])
+
+        // if contract filter is off, allow calls from another contract
+        if (!contractMintable[_projectId]) {
             require(msg.sender == tx.origin, "No Contract Buys");
+        }
 
         // limit mints per address by project
         if (projectMintLimit[_projectId] > 0) {

@@ -13,6 +13,7 @@ contract GenArt721FilteredMinterETH {
 
     uint256 constant ONE_MILLION = 1_000_000;
 
+    mapping(uint256 => bool) public contractMintable;
     mapping(address => mapping(uint256 => uint256)) public projectMintCounter;
     mapping(uint256 => uint256) public projectMintLimit;
     mapping(uint256 => bool) public projectMaxHasBeenInvoked;
@@ -52,6 +53,13 @@ contract GenArt721FilteredMinterETH {
         }
     }
 
+    function toggleContractMintable(uint256 _projectId)
+        external
+        onlyCoreWhitelisted
+    {
+        contractMintable[_projectId] = !contractMintable[_projectId];
+    }
+
     function purchase(uint256 _projectId)
         external
         payable
@@ -70,8 +78,11 @@ contract GenArt721FilteredMinterETH {
             !projectMaxHasBeenInvoked[_projectId],
             "Maximum number of invocations reached"
         );
-        // by default, no contract buys
-        require(msg.sender == tx.origin, "No Contract Buys");
+
+        // if contract filter is off, allow calls from another contract
+        if (!contractMintable[_projectId]) {
+            require(msg.sender == tx.origin, "No Contract Buys");
+        }
 
         // project currency must be ETH
         require(
