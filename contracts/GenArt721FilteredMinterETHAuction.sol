@@ -218,9 +218,7 @@ contract GenArt721FilteredMinterETHAuction {
         } else if (block.timestamp >= auctionParams.timestampEnd) {
             return artblocksContract.projectIdToPricePerTokenInWei(_projectId);
         }
-        uint256 elapsedTime = block.timestamp.sub(
-            auctionParams.timestampStart
-        );
+        uint256 elapsedTime = block.timestamp.sub(auctionParams.timestampStart);
         uint256 duration = auctionParams.timestampEnd.sub(
             auctionParams.timestampStart
         );
