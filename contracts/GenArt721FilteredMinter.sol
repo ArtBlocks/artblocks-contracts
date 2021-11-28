@@ -115,12 +115,12 @@ contract GenArt721FilteredMinter {
             !projectMaxHasBeenInvoked[_projectId],
             "Maximum number of invocations reached"
         );
-        
+
         // if contract filter is off, allow calls from another contract
         if (!contractMintable[_projectId]) {
             require(msg.sender == tx.origin, "No Contract Buys");
         }
-        
+
         // limit mints per address by project
         if (projectMintLimit[_projectId] > 0) {
             require(
