@@ -78,20 +78,11 @@ contract GenArt721FilteredMinterETH {
             !projectMaxHasBeenInvoked[_projectId],
             "Maximum number of invocations reached"
         );
-        
+
         // if contract filter is off, allow calls from another contract
         if (!contractMintable[_projectId]) {
             require(msg.sender == tx.origin, "No Contract Buys");
         }
-
-        // project currency must be ETH
-        require(
-            keccak256(
-                abi.encodePacked(
-                    artblocksContract.projectIdToCurrencySymbol(_projectId)
-                )
-            ) == keccak256(abi.encodePacked("ETH"))
-        );
 
         // project currency must be ETH
         require(
