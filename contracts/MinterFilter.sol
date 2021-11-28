@@ -1,10 +1,11 @@
 import "./libs/SafeMath.sol";
 
+import "./interfaces/IMinterFilter.sol";
 import "./interfaces/IGenArt721CoreContract.sol";
 
 pragma solidity ^0.5.0;
 
-contract MinterFilter {
+contract MinterFilter is IMinterFilter {
     using SafeMath for uint256;
 
     event DefaultMinterRegistered(address indexed _minterAddress);

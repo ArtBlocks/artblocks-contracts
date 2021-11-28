@@ -93,6 +93,15 @@ contract GenArt721FilteredMinterETH {
             ) == keccak256(abi.encodePacked("ETH"))
         );
 
+        // project currency must be ETH
+        require(
+            keccak256(
+                abi.encodePacked(
+                    artblocksContract.projectIdToCurrencySymbol(_projectId)
+                )
+            ) == keccak256(abi.encodePacked("ETH"))
+        );
+
         require(
             msg.value >=
                 artblocksContract.projectIdToPricePerTokenInWei(_projectId),
