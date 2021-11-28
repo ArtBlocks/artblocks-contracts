@@ -55,6 +55,7 @@ contract GenArt721FilteredMinter {
         balance = ERC20(
             artblocksContract.projectIdToCurrencyAddress(_projectId)
         ).balanceOf(msg.sender);
+        return balance;
     }
 
     function checkYourAllowanceOfProjectERC20(uint256 _projectId)
@@ -65,6 +66,7 @@ contract GenArt721FilteredMinter {
         remaining = ERC20(
             artblocksContract.projectIdToCurrencyAddress(_projectId)
         ).allowance(msg.sender, address(this));
+        return remaining;
     }
 
     function setProjectMintLimit(uint256 _projectId, uint8 _limit)
@@ -101,6 +103,7 @@ contract GenArt721FilteredMinter {
         returns (uint256 tokenId)
     {
         tokenId = purchaseTo(msg.sender, _projectId);
+        return tokenId;
     }
 
     // removed public and payable
@@ -167,6 +170,7 @@ contract GenArt721FilteredMinter {
         if (tokenId % ONE_MILLION == projectMaxInvocations[_projectId] - 1) {
             projectMaxHasBeenInvoked[_projectId] = true;
         }
+        return tokenId;
     }
 
     function _splitFundsETH(uint256 _projectId) internal {

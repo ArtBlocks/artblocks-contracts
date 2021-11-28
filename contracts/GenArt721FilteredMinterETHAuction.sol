@@ -114,6 +114,7 @@ contract GenArt721FilteredMinterETHAuction {
         returns (uint256 tokenId)
     {
         tokenId = purchaseTo(msg.sender, _projectId);
+        return tokenId;
     }
 
     //removed public and payable
@@ -137,9 +138,9 @@ contract GenArt721FilteredMinterETHAuction {
             ) == keccak256(abi.encodePacked("ETH"))
         );
 
-        uint256 pricePerTokenInWei = getPrice(_projectId);
+        uint256 priceWeiAuction = getPrice(_projectId);
         require(
-            msg.value >= pricePerTokenInWei,
+            msg.value >= priceWeiAuction,
             "Must send minimum value to mint!"
         );
 
@@ -153,7 +154,7 @@ contract GenArt721FilteredMinterETHAuction {
             projectMintCounter[msg.sender][_projectId]++;
         }
 
-        _splitFundsETHAuction(_projectId, pricePerTokenInWei);
+        _splitFundsETHAuction(_projectId, priceWeiAuction);
 
         tokenId = minterFilter.mint(_to, _projectId, msg.sender);
         // What if this overflows, since default value of uint256 is 0?
@@ -163,24 +164,25 @@ contract GenArt721FilteredMinterETHAuction {
         if (tokenId % ONE_MILLION == projectMaxInvocations[_projectId] - 1) {
             projectMaxHasBeenInvoked[_projectId] = true;
         }
+        return tokenId;
     }
 
     function _splitFundsETHAuction(
         uint256 _projectId,
-        uint256 pricePerTokenInWei
+        uint256 _priceWeiAuction
     ) internal {
         if (msg.value > 0) {
-            uint256 refund = msg.value.sub(pricePerTokenInWei);
+            uint256 refund = msg.value.sub(_priceWeiAuction);
             if (refund > 0) {
                 msg.sender.transfer(refund);
             }
-            uint256 foundationAmount = pricePerTokenInWei.div(100).mul(
+            uint256 foundationAmount = _priceWeiAuction.div(100).mul(
                 artblocksContract.artblocksPercentage()
             );
             if (foundationAmount > 0) {
                 artblocksContract.artblocksAddress().transfer(foundationAmount);
             }
-            uint256 projectFunds = pricePerTokenInWei.sub(foundationAmount);
+            uint256 projectFunds = _priceWeiAuction.sub(foundationAmount);
             uint256 additionalPayeeAmount;
             if (
                 artblocksContract.projectIdToAdditionalPayeePercentage(
@@ -211,12 +213,12 @@ contract GenArt721FilteredMinterETHAuction {
         AuctionParameters memory auctionParams = projectAuctionParameters[
             _projectId
         ];
-        if (getCurrentTime() <= auctionParams.timestampStart) {
+        if (block.timestamp <= auctionParams.timestampStart) {
             return auctionParams.priceStart;
-        } else if (getCurrentTime() >= auctionParams.timestampEnd) {
+        } else if (block.timestamp >= auctionParams.timestampEnd) {
             return artblocksContract.projectIdToPricePerTokenInWei(_projectId);
         }
-        uint256 elapsedTime = getCurrentTime().sub(
+        uint256 elapsedTime = block.timestamp.sub(
             auctionParams.timestampStart
         );
         uint256 duration = auctionParams.timestampEnd.sub(
@@ -235,8 +237,8 @@ contract GenArt721FilteredMinterETHAuction {
         AuctionParameters memory auctionParams = projectAuctionParameters[
             _projectId
         ];
-        return (getCurrentTime() < auctionParams.timestampEnd &&
-            getCurrentTime() > auctionParams.timestampStart);
+        return (block.timestamp < auctionParams.timestampEnd &&
+            block.timestamp > auctionParams.timestampStart);
     }
 
     function auctionTimeRemaining(uint256 _projectId)
@@ -248,10 +250,6 @@ contract GenArt721FilteredMinterETHAuction {
             _projectId
         ];
         require(isAuctionLive(_projectId), "auction is not currently live");
-        return auctionParams.timestampEnd.sub(getCurrentTime());
-    }
-
-    function getCurrentTime() internal view returns (uint256) {
-        return block.timestamp;
+        return auctionParams.timestampEnd.sub(block.timestamp);
     }
 }

@@ -58,6 +58,7 @@ contract GenArt721FilteredMinterETH {
         returns (uint256 tokenId)
     {
         tokenId = purchaseTo(msg.sender, _projectId);
+        return tokenId;
     }
 
     //removed public and payable
@@ -107,6 +108,7 @@ contract GenArt721FilteredMinterETH {
         if (tokenId % ONE_MILLION == projectMaxInvocations[_projectId] - 1) {
             projectMaxHasBeenInvoked[_projectId] = true;
         }
+        return tokenId;
     }
 
     function _splitFundsETH(uint256 _projectId) internal {
