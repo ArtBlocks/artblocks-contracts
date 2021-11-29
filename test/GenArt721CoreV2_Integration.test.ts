@@ -35,7 +35,9 @@ describe("GenArt721CoreV2", async function () {
     this.token = await artblocksFactory
       .connect(snowfro)
       .deploy(name, symbol, this.randomizer.address);
-    const minterFactory = await ethers.getContractFactory("GenArt721LegacyMinter");
+    const minterFactory = await ethers.getContractFactory(
+      "GenArt721LegacyMinter"
+    );
     this.minter = await minterFactory.deploy(this.token.address);
 
     await this.token
