@@ -2,13 +2,12 @@ import "../libs/CustomERC721Metadata.sol";
 import "../libs/SafeMath.sol";
 import "../libs/Strings.sol";
 
+import "../interfaces/IRandomizer.sol";
+import "../interfaces/IGenArt721CoreV2.sol";
+
 pragma solidity ^0.5.0;
 
-interface IRandomizer {
-    function returnValue() external view returns (bytes32);
-}
-
-contract GenArt721CoreV2_PBAB is CustomERC721Metadata {
+contract GenArt721CoreV2_PBAB is CustomERC721Metadata, IGenArt721CoreV2 {
     using SafeMath for uint256;
 
     event Mint(

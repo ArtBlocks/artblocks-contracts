@@ -1,92 +1,16 @@
 import "./libs/SafeMath.sol";
 import "./libs/Strings.sol";
+import "./libs/IERC20.sol";
+
+import "./interfaces/IGenArt721CoreContract.sol";
+import "./interfaces/IBonusContract.sol";
 
 pragma solidity ^0.5.0;
-
-interface GenArt721CoreContract {
-    function isWhitelisted(address sender) external view returns (bool);
-
-    function projectIdToCurrencySymbol(uint256 _projectId)
-        external
-        view
-        returns (string memory);
-
-    function projectIdToCurrencyAddress(uint256 _projectId)
-        external
-        view
-        returns (address);
-
-    function projectIdToArtistAddress(uint256 _projectId)
-        external
-        view
-        returns (address payable);
-
-    function projectIdToPricePerTokenInWei(uint256 _projectId)
-        external
-        view
-        returns (uint256);
-
-    function projectIdToAdditionalPayee(uint256 _projectId)
-        external
-        view
-        returns (address payable);
-
-    function projectIdToAdditionalPayeePercentage(uint256 _projectId)
-        external
-        view
-        returns (uint256);
-
-    function projectTokenInfo(uint256 _projectId)
-        external
-        view
-        returns (
-            address,
-            uint256,
-            uint256,
-            uint256,
-            bool,
-            address,
-            uint256,
-            string memory,
-            address
-        );
-
-    function artblocksAddress() external view returns (address payable);
-
-    function artblocksPercentage() external view returns (uint256);
-
-    function mint(
-        address _to,
-        uint256 _projectId,
-        address _by
-    ) external returns (uint256 tokenId);
-}
-
-interface ERC20 {
-    function balanceOf(address _owner) external view returns (uint256 balance);
-
-    function transferFrom(
-        address _from,
-        address _to,
-        uint256 _value
-    ) external returns (bool success);
-
-    function allowance(address _owner, address _spender)
-        external
-        view
-        returns (uint256 remaining);
-}
-
-interface BonusContract {
-    function triggerBonus(address _to) external returns (bool);
-
-    function bonusIsActive() external view returns (bool);
-}
 
 contract GenArt721LegacyMinter {
     using SafeMath for uint256;
 
-    GenArt721CoreContract public artblocksContract;
+    IGenArt721CoreContract public artblocksContract;
 
     uint256 constant ONE_MILLION = 1_000_000;
 
@@ -99,7 +23,7 @@ contract GenArt721LegacyMinter {
     mapping(uint256 => uint256) public projectMaxInvocations;
 
     constructor(address _genArt721Address) public {
-        artblocksContract = GenArt721CoreContract(_genArt721Address);
+        artblocksContract = IGenArt721CoreContract(_genArt721Address);
     }
 
     function getYourBalanceOfProjectERC20(uint256 _projectId)
@@ -107,7 +31,7 @@ contract GenArt721LegacyMinter {
         view
         returns (uint256)
     {
-        uint256 balance = ERC20(
+        uint256 balance = IERC20(
             artblocksContract.projectIdToCurrencyAddress(_projectId)
         ).balanceOf(msg.sender);
         return balance;
@@ -118,7 +42,7 @@ contract GenArt721LegacyMinter {
         view
         returns (uint256)
     {
-        uint256 remaining = ERC20(
+        uint256 remaining = IERC20(
             artblocksContract.projectIdToCurrencyAddress(_projectId)
         ).allowance(msg.sender, address(this));
         return remaining;
@@ -205,13 +129,13 @@ contract GenArt721LegacyMinter {
                 "this project accepts a different currency and cannot accept ETH"
             );
             require(
-                ERC20(artblocksContract.projectIdToCurrencyAddress(_projectId))
+                IERC20(artblocksContract.projectIdToCurrencyAddress(_projectId))
                     .allowance(msg.sender, address(this)) >=
                     artblocksContract.projectIdToPricePerTokenInWei(_projectId),
                 "Insufficient Funds Approved for TX"
             );
             require(
-                ERC20(artblocksContract.projectIdToCurrencyAddress(_projectId))
+                IERC20(artblocksContract.projectIdToCurrencyAddress(_projectId))
                     .balanceOf(msg.sender) >=
                     artblocksContract.projectIdToPricePerTokenInWei(_projectId),
                 "Insufficient balance."
@@ -251,11 +175,11 @@ contract GenArt721LegacyMinter {
 
         if (projectIdToBonus[_projectId]) {
             require(
-                BonusContract(projectIdToBonusContractAddress[_projectId])
+                IBonusContract(projectIdToBonusContractAddress[_projectId])
                     .bonusIsActive(),
                 "bonus must be active"
             );
-            BonusContract(projectIdToBonusContractAddress[_projectId])
+            IBonusContract(projectIdToBonusContractAddress[_projectId])
                 .triggerBonus(msg.sender);
         }
 
@@ -312,7 +236,7 @@ contract GenArt721LegacyMinter {
             artblocksContract.artblocksPercentage()
         );
         if (foundationAmount > 0) {
-            ERC20(artblocksContract.projectIdToCurrencyAddress(_projectId))
+            IERC20(artblocksContract.projectIdToCurrencyAddress(_projectId))
                 .transferFrom(
                     msg.sender,
                     artblocksContract.artblocksAddress(),
@@ -331,7 +255,7 @@ contract GenArt721LegacyMinter {
                 )
             );
             if (additionalPayeeAmount > 0) {
-                ERC20(artblocksContract.projectIdToCurrencyAddress(_projectId))
+                IERC20(artblocksContract.projectIdToCurrencyAddress(_projectId))
                     .transferFrom(
                         msg.sender,
                         artblocksContract.projectIdToAdditionalPayee(
@@ -343,7 +267,7 @@ contract GenArt721LegacyMinter {
         }
         uint256 creatorFunds = projectFunds.sub(additionalPayeeAmount);
         if (creatorFunds > 0) {
-            ERC20(artblocksContract.projectIdToCurrencyAddress(_projectId))
+            IERC20(artblocksContract.projectIdToCurrencyAddress(_projectId))
                 .transferFrom(
                     msg.sender,
                     artblocksContract.projectIdToArtistAddress(_projectId),

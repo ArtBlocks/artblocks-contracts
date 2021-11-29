@@ -1,30 +1,11 @@
 import "../libs/SafeMath.sol";
 import "../libs/Strings.sol";
+import "../libs/IERC20.sol";
 
 import "../interfaces/IGenArt721CoreV2.sol";
+import "../interfaces/IBonusContract.sol";
 
 pragma solidity ^0.5.0;
-
-interface ERC20 {
-    function balanceOf(address _owner) external view returns (uint256 balance);
-
-    function transferFrom(
-        address _from,
-        address _to,
-        uint256 _value
-    ) external returns (bool success);
-
-    function allowance(address _owner, address _spender)
-        external
-        view
-        returns (uint256 remaining);
-}
-
-interface BonusContract {
-    function triggerBonus(address _to) external returns (bool);
-
-    function bonusIsActive() external view returns (bool);
-}
 
 contract GenArt721Minter_PBAB {
     using SafeMath for uint256;
@@ -53,7 +34,7 @@ contract GenArt721Minter_PBAB {
         view
         returns (uint256)
     {
-        uint256 balance = ERC20(
+        uint256 balance = IERC20(
             genArtCoreContract.projectIdToCurrencyAddress(_projectId)
         ).balanceOf(msg.sender);
         return balance;
@@ -64,7 +45,7 @@ contract GenArt721Minter_PBAB {
         view
         returns (uint256)
     {
-        uint256 remaining = ERC20(
+        uint256 remaining = IERC20(
             genArtCoreContract.projectIdToCurrencyAddress(_projectId)
         ).allowance(msg.sender, address(this));
         return remaining;
@@ -146,8 +127,8 @@ contract GenArt721Minter_PBAB {
         return purchaseTo(msg.sender, _projectId);
     }
 
-    // Remove `public`` and `payable`` to prevent public use
-    // of the `purchaseTo`` function.
+    // Remove `public` and `payable` to prevent public use
+    // of the `purchaseTo` function.
     function purchaseTo(address _to, uint256 _projectId)
         public
         payable
@@ -169,16 +150,18 @@ contract GenArt721Minter_PBAB {
                 "this project accepts a different currency and cannot accept ETH"
             );
             require(
-                ERC20(genArtCoreContract.projectIdToCurrencyAddress(_projectId))
-                    .allowance(msg.sender, address(this)) >=
+                IERC20(
+                    genArtCoreContract.projectIdToCurrencyAddress(_projectId)
+                ).allowance(msg.sender, address(this)) >=
                     genArtCoreContract.projectIdToPricePerTokenInWei(
                         _projectId
                     ),
                 "Insufficient Funds Approved for TX"
             );
             require(
-                ERC20(genArtCoreContract.projectIdToCurrencyAddress(_projectId))
-                    .balanceOf(msg.sender) >=
+                IERC20(
+                    genArtCoreContract.projectIdToCurrencyAddress(_projectId)
+                ).balanceOf(msg.sender) >=
                     genArtCoreContract.projectIdToPricePerTokenInWei(
                         _projectId
                     ),
@@ -222,11 +205,11 @@ contract GenArt721Minter_PBAB {
 
         if (projectIdToBonus[_projectId]) {
             require(
-                BonusContract(projectIdToBonusContractAddress[_projectId])
+                IBonusContract(projectIdToBonusContractAddress[_projectId])
                     .bonusIsActive(),
                 "bonus must be active"
             );
-            BonusContract(projectIdToBonusContractAddress[_projectId])
+            IBonusContract(projectIdToBonusContractAddress[_projectId])
                 .triggerBonus(msg.sender);
         }
 
@@ -297,7 +280,7 @@ contract GenArt721Minter_PBAB {
             genArtCoreContract.renderProviderPercentage()
         );
         if (renderProviderAmount > 0) {
-            ERC20(genArtCoreContract.projectIdToCurrencyAddress(_projectId))
+            IERC20(genArtCoreContract.projectIdToCurrencyAddress(_projectId))
                 .transferFrom(
                     msg.sender,
                     genArtCoreContract.renderProviderAddress(),
@@ -308,7 +291,7 @@ contract GenArt721Minter_PBAB {
 
         uint256 ownerFunds = remainingFunds.div(100).mul(ownerPercentage);
         if (ownerFunds > 0) {
-            ERC20(genArtCoreContract.projectIdToCurrencyAddress(_projectId))
+            IERC20(genArtCoreContract.projectIdToCurrencyAddress(_projectId))
                 .transferFrom(msg.sender, ownerAddress, ownerFunds);
         }
 
@@ -327,8 +310,9 @@ contract GenArt721Minter_PBAB {
                 )
             );
             if (additionalPayeeAmount > 0) {
-                ERC20(genArtCoreContract.projectIdToCurrencyAddress(_projectId))
-                    .transferFrom(
+                IERC20(
+                    genArtCoreContract.projectIdToCurrencyAddress(_projectId)
+                ).transferFrom(
                         msg.sender,
                         genArtCoreContract.projectIdToAdditionalPayee(
                             _projectId
@@ -339,7 +323,7 @@ contract GenArt721Minter_PBAB {
         }
         uint256 creatorFunds = projectFunds.sub(additionalPayeeAmount);
         if (creatorFunds > 0) {
-            ERC20(genArtCoreContract.projectIdToCurrencyAddress(_projectId))
+            IERC20(genArtCoreContract.projectIdToCurrencyAddress(_projectId))
                 .transferFrom(
                     msg.sender,
                     genArtCoreContract.projectIdToArtistAddress(_projectId),
