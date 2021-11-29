@@ -15,6 +15,7 @@ contract GenArt721FilteredMinterETH is IFilteredMinter {
     uint256 constant ONE_MILLION = 1_000_000;
 
     mapping(uint256 => bool) public contractMintable;
+    mapping(uint256 => bool) public purchaseToDisabled;
     mapping(address => mapping(uint256 => uint256)) public projectMintCounter;
     mapping(uint256 => uint256) public projectMintLimit;
     mapping(uint256 => bool) public projectMaxHasBeenInvoked;
@@ -61,6 +62,13 @@ contract GenArt721FilteredMinterETH is IFilteredMinter {
         contractMintable[_projectId] = !contractMintable[_projectId];
     }
 
+    function togglePurchaseToDisabled(uint256 _projectId)
+        external
+        onlyCoreWhitelisted
+    {
+        purchaseToDisabled[_projectId] = !purchaseToDisabled[_projectId];
+    }
+
     function purchase(uint256 _projectId)
         external
         payable
@@ -70,9 +78,9 @@ contract GenArt721FilteredMinterETH is IFilteredMinter {
         return tokenId;
     }
 
-    // removed public and payable
     function purchaseTo(address _to, uint256 _projectId)
-        private
+        public
+        payable
         returns (uint256 tokenId)
     {
         require(
@@ -83,6 +91,12 @@ contract GenArt721FilteredMinterETH is IFilteredMinter {
         // if contract filter is off, allow calls from another contract
         if (!contractMintable[_projectId]) {
             require(msg.sender == tx.origin, "No Contract Buys");
+        }
+
+        // if purchaseTo is disabled, enforce purchase destination to be the TX
+        // sending address.
+        if (purchaseToDisabled[_projectId]) {
+            require(msg.sender == _to, "No `purchaseTo` Allowed");
         }
 
         // project currency must be ETH

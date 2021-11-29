@@ -5,4 +5,8 @@ interface IFilteredMinter {
       external
       payable
       returns (uint256 tokenId);
+  function purchaseTo(address _to, uint256 _projectId)
+      external
+      payable
+      returns (uint256 tokenId);
 }
