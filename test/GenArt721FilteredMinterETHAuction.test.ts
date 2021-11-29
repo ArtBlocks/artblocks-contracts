@@ -180,23 +180,31 @@ describe("GenArt721MinterEthAuction", async function () {
     const maxPrice = ethers.utils.parseEther("1");
 
     it("allows `purchaseTo` by default", async function () {
-      await this.minter.connect(this.accounts.owner).purchaseTo(this.accounts.additional.address, projectOne, {
-        value: maxPrice,
-      });
+      await this.minter
+        .connect(this.accounts.owner)
+        .purchaseTo(this.accounts.additional.address, projectOne, {
+          value: maxPrice,
+        });
     });
 
     it("disallows `purchaseTo` if disallowed explicitly", async function () {
-      await this.minter.connect(this.accounts.snowfro).togglePurchaseToDisabled(projectOne);
+      await this.minter
+        .connect(this.accounts.snowfro)
+        .togglePurchaseToDisabled(projectOne);
       await expectRevert(
-        this.minter.connect(this.accounts.owner).purchaseTo(this.accounts.additional.address, projectOne, {
-          value: maxPrice,
-        }),
+        this.minter
+          .connect(this.accounts.owner)
+          .purchaseTo(this.accounts.additional.address, projectOne, {
+            value: maxPrice,
+          }),
         "No `purchaseTo` Allowed"
       );
       // still allows `purchaseTo` if destination matches sender.
-      await this.minter.connect(this.accounts.owner).purchaseTo(this.accounts.owner.address, projectOne, {
-        value: maxPrice,
-      });
+      await this.minter
+        .connect(this.accounts.owner)
+        .purchaseTo(this.accounts.owner.address, projectOne, {
+          value: maxPrice,
+        });
     });
   });
 });

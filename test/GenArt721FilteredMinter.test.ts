@@ -196,23 +196,31 @@ describe("GenArt721FilteredMinter", async function () {
 
   describe("purchaseTo", async function () {
     it("allows `purchaseTo` by default", async function () {
-      await this.minter.connect(this.accounts.owner).purchaseTo(this.accounts.additional.address, projectOne, {
-        value: pricePerTokenInWei,
-      });
+      await this.minter
+        .connect(this.accounts.owner)
+        .purchaseTo(this.accounts.additional.address, projectOne, {
+          value: pricePerTokenInWei,
+        });
     });
 
     it("disallows `purchaseTo` if disallowed explicitly", async function () {
-      await this.minter.connect(this.accounts.snowfro).togglePurchaseToDisabled(projectOne);
+      await this.minter
+        .connect(this.accounts.snowfro)
+        .togglePurchaseToDisabled(projectOne);
       await expectRevert(
-        this.minter.connect(this.accounts.owner).purchaseTo(this.accounts.additional.address, projectOne, {
-          value: pricePerTokenInWei,
-        }),
+        this.minter
+          .connect(this.accounts.owner)
+          .purchaseTo(this.accounts.additional.address, projectOne, {
+            value: pricePerTokenInWei,
+          }),
         "No `purchaseTo` Allowed"
       );
       // still allows `purchaseTo` if destination matches sender.
-      await this.minter.connect(this.accounts.owner).purchaseTo(this.accounts.owner.address, projectOne, {
-        value: pricePerTokenInWei,
-      });
+      await this.minter
+        .connect(this.accounts.owner)
+        .purchaseTo(this.accounts.owner.address, projectOne, {
+          value: pricePerTokenInWei,
+        });
     });
   });
 });
