@@ -94,9 +94,7 @@ describe("GenArt721MinterEthAuction", async function () {
 
   describe("purchase", async function () {
     it("calculates the price correctly", async function () {
-      await ethers.provider.send("evm_setNextBlockTimestamp", [
-        this.startTime,
-      ]);
+      await ethers.provider.send("evm_setNextBlockTimestamp", [this.startTime]);
       const duration = ONE_HOUR * 2; // 2 hours
       const step = ONE_MINUTE * 8; // 480 seconds
       const startingPrice = ethers.utils.parseEther("1");
@@ -136,9 +134,7 @@ describe("GenArt721MinterEthAuction", async function () {
     });
 
     it("calculates the price before correctly", async function () {
-      await ethers.provider.send("evm_setNextBlockTimestamp", [
-        this.startTime,
-      ]);
+      await ethers.provider.send("evm_setNextBlockTimestamp", [this.startTime]);
 
       await this.minter
         .connect(this.accounts.snowfro)
