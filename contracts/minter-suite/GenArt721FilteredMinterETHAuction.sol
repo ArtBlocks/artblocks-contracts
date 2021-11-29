@@ -1,11 +1,18 @@
-import "./libs/SafeMath.sol";
+import "../libs/SafeMath.sol";
 
-import "./interfaces/IGenArt721CoreContract.sol";
-import "./interfaces/IMinterFilter.sol";
+import "../interfaces/IGenArt721CoreContract.sol";
+import "../interfaces/IMinterFilter.sol";
 
 pragma solidity ^0.5.0;
 
-contract GenArt721FilteredMinterETH {
+contract GenArt721FilteredMinterETHAuction {
+    event SetAuctionDetails(
+        uint256 indexed projectId,
+        uint256 _auctionTimestampStart,
+        uint256 _auctionTimestampEnd,
+        uint256 _auctionPriceStart
+    );
+
     using SafeMath for uint256;
 
     IGenArt721CoreContract public artblocksContract;
@@ -18,6 +25,15 @@ contract GenArt721FilteredMinterETH {
     mapping(uint256 => uint256) public projectMintLimit;
     mapping(uint256 => bool) public projectMaxHasBeenInvoked;
     mapping(uint256 => uint256) public projectMaxInvocations;
+    uint256 public minimumAuctionLengthSeconds = 3600;
+
+    // Auction variables
+    mapping(uint256 => AuctionParameters) public projectAuctionParameters;
+    struct AuctionParameters {
+        uint256 timestampStart;
+        uint256 timestampEnd;
+        uint256 priceStart;
+    }
 
     modifier onlyCoreWhitelisted() {
         require(
@@ -60,6 +76,46 @@ contract GenArt721FilteredMinterETH {
         contractMintable[_projectId] = !contractMintable[_projectId];
     }
 
+    function setMinimumAuctionLengthSeconds(
+        uint256 _minimumAuctionLengthSeconds
+    ) external onlyCoreWhitelisted {
+        minimumAuctionLengthSeconds = _minimumAuctionLengthSeconds;
+    }
+
+    ////// Auction Functions
+    function setAuctionDetails(
+        uint256 _projectId,
+        uint256 _auctionTimestampStart,
+        uint256 _auctionTimestampEnd,
+        uint256 _auctionPriceStart
+    ) external onlyCoreWhitelisted {
+        require(
+            _auctionTimestampEnd > _auctionTimestampStart,
+            "Auction end must be greater than auction start"
+        );
+        require(
+            _auctionTimestampEnd >=
+                _auctionTimestampStart.add(minimumAuctionLengthSeconds),
+            "Auction length must be at least minimumAuctionLengthSeconds"
+        );
+        require(
+            _auctionPriceStart >
+                artblocksContract.projectIdToPricePerTokenInWei(_projectId),
+            "Auction start price must be greater than auction end price"
+        );
+        projectAuctionParameters[_projectId] = AuctionParameters(
+            _auctionTimestampStart,
+            _auctionTimestampEnd,
+            _auctionPriceStart
+        );
+        emit SetAuctionDetails(
+            _projectId,
+            _auctionTimestampStart,
+            _auctionTimestampEnd,
+            _auctionPriceStart
+        );
+    }
+
     function purchase(uint256 _projectId)
         external
         payable
@@ -93,9 +149,9 @@ contract GenArt721FilteredMinterETH {
             ) == keccak256(abi.encodePacked("ETH"))
         );
 
+        uint256 currentPriceInWei = getPrice(_projectId);
         require(
-            msg.value >=
-                artblocksContract.projectIdToPricePerTokenInWei(_projectId),
+            msg.value >= currentPriceInWei,
             "Must send minimum value to mint!"
         );
 
@@ -109,7 +165,7 @@ contract GenArt721FilteredMinterETH {
             projectMintCounter[msg.sender][_projectId]++;
         }
 
-        _splitFundsETH(_projectId);
+        _splitFundsETHAuction(_projectId, currentPriceInWei);
 
         tokenId = minterFilter.mint(_to, _projectId, msg.sender);
         // What if this overflows, since default value of uint256 is 0?
@@ -122,21 +178,22 @@ contract GenArt721FilteredMinterETH {
         return tokenId;
     }
 
-    function _splitFundsETH(uint256 _projectId) internal {
+    function _splitFundsETHAuction(
+        uint256 _projectId,
+        uint256 _currentPriceInWei
+    ) internal {
         if (msg.value > 0) {
-            uint256 pricePerTokenInWei = artblocksContract
-                .projectIdToPricePerTokenInWei(_projectId);
-            uint256 refund = msg.value.sub(pricePerTokenInWei);
+            uint256 refund = msg.value.sub(_currentPriceInWei);
             if (refund > 0) {
                 msg.sender.transfer(refund);
             }
-            uint256 foundationAmount = pricePerTokenInWei.div(100).mul(
+            uint256 foundationAmount = _currentPriceInWei.div(100).mul(
                 artblocksContract.artblocksPercentage()
             );
             if (foundationAmount > 0) {
                 artblocksContract.artblocksAddress().transfer(foundationAmount);
             }
-            uint256 projectFunds = pricePerTokenInWei.sub(foundationAmount);
+            uint256 projectFunds = _currentPriceInWei.sub(foundationAmount);
             uint256 additionalPayeeAmount;
             if (
                 artblocksContract.projectIdToAdditionalPayeePercentage(
@@ -161,5 +218,47 @@ contract GenArt721FilteredMinterETH {
                     );
             }
         }
+    }
+
+    function getPrice(uint256 _projectId) public view returns (uint256) {
+        AuctionParameters memory auctionParams = projectAuctionParameters[
+            _projectId
+        ];
+        if (block.timestamp <= auctionParams.timestampStart) {
+            return auctionParams.priceStart;
+        } else if (block.timestamp >= auctionParams.timestampEnd) {
+            return artblocksContract.projectIdToPricePerTokenInWei(_projectId);
+        }
+        uint256 elapsedTime = block.timestamp.sub(auctionParams.timestampStart);
+        uint256 duration = auctionParams.timestampEnd.sub(
+            auctionParams.timestampStart
+        );
+        uint256 startToEndDiff = auctionParams.priceStart.sub(
+            artblocksContract.projectIdToPricePerTokenInWei(_projectId)
+        );
+        return
+            auctionParams.priceStart.sub(
+                elapsedTime.mul(startToEndDiff).div(duration)
+            );
+    }
+
+    function isAuctionLive(uint256 _projectId) public view returns (bool) {
+        AuctionParameters memory auctionParams = projectAuctionParameters[
+            _projectId
+        ];
+        return (block.timestamp < auctionParams.timestampEnd &&
+            block.timestamp > auctionParams.timestampStart);
+    }
+
+    function auctionTimeRemaining(uint256 _projectId)
+        external
+        view
+        returns (uint256)
+    {
+        AuctionParameters memory auctionParams = projectAuctionParameters[
+            _projectId
+        ];
+        require(isAuctionLive(_projectId), "auction is not currently live");
+        return auctionParams.timestampEnd.sub(block.timestamp);
     }
 }

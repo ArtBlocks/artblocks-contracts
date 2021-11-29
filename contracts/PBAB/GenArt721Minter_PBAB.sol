@@ -1,7 +1,7 @@
-import "./libs/SafeMath.sol";
-import "./libs/Strings.sol";
+import "../libs/SafeMath.sol";
+import "../libs/Strings.sol";
 
-import "./interfaces/IGenArt721CoreV2.sol";
+import "../interfaces/IGenArt721CoreV2.sol";
 
 pragma solidity ^0.5.0;
 
