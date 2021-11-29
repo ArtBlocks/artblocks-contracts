@@ -2,10 +2,11 @@ import "../libs/SafeMath.sol";
 
 import "../interfaces/IGenArt721CoreContract.sol";
 import "../interfaces/IMinterFilter.sol";
+import "../interfaces/IFilteredMinter.sol";
 
 pragma solidity ^0.5.0;
 
-contract GenArt721FilteredMinterETH {
+contract GenArt721FilteredMinterETH is IFilteredMinter {
     using SafeMath for uint256;
 
     IGenArt721CoreContract public artblocksContract;
@@ -69,7 +70,7 @@ contract GenArt721FilteredMinterETH {
         return tokenId;
     }
 
-    //removed public and payable
+    // removed public and payable
     function purchaseTo(address _to, uint256 _projectId)
         private
         returns (uint256 tokenId)

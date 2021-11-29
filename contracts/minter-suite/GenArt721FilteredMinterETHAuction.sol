@@ -2,10 +2,11 @@ import "../libs/SafeMath.sol";
 
 import "../interfaces/IGenArt721CoreContract.sol";
 import "../interfaces/IMinterFilter.sol";
+import "../interfaces/IFilteredMinter.sol";
 
 pragma solidity ^0.5.0;
 
-contract GenArt721FilteredMinterETHAuction {
+contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
     event SetAuctionDetails(
         uint256 indexed projectId,
         uint256 _auctionTimestampStart,
@@ -125,7 +126,7 @@ contract GenArt721FilteredMinterETHAuction {
         return tokenId;
     }
 
-    //removed public and payable
+    // removed public and payable
     function purchaseTo(address _to, uint256 _projectId)
         private
         returns (uint256 tokenId)

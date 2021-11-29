@@ -2,6 +2,7 @@ import "../libs/SafeMath.sol";
 
 import "../interfaces/IGenArt721CoreContract.sol";
 import "../interfaces/IMinterFilter.sol";
+import "../interfaces/IFilteredMinter.sol";
 
 pragma solidity ^0.5.0;
 
@@ -20,7 +21,7 @@ interface ERC20 {
         returns (uint256 remaining);
 }
 
-contract GenArt721FilteredMinter {
+contract GenArt721FilteredMinter is IFilteredMinter {
     using SafeMath for uint256;
 
     IGenArt721CoreContract public artblocksContract;
