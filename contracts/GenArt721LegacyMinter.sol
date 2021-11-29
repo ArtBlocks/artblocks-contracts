@@ -83,7 +83,7 @@ interface BonusContract {
     function bonusIsActive() external view returns (bool);
 }
 
-contract GenArt721Minter {
+contract GenArt721LegacyMinter {
     using SafeMath for uint256;
 
     GenArt721CoreContract public artblocksContract;

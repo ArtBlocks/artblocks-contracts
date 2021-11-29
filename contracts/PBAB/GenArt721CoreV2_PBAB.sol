@@ -1,6 +1,6 @@
-import "./libs/CustomERC721Metadata.sol";
-import "./libs/SafeMath.sol";
-import "./libs/Strings.sol";
+import "../libs/CustomERC721Metadata.sol";
+import "../libs/SafeMath.sol";
+import "../libs/Strings.sol";
 
 pragma solidity ^0.5.0;
 

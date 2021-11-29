@@ -1,26 +1,11 @@
-import "./libs/SafeMath.sol";
+import "../libs/SafeMath.sol";
 
-import "./interfaces/IGenArt721CoreContract.sol";
-import "./interfaces/IMinterFilter.sol";
+import "../interfaces/IGenArt721CoreContract.sol";
+import "../interfaces/IMinterFilter.sol";
 
 pragma solidity ^0.5.0;
 
-interface ERC20 {
-    function balanceOf(address _owner) external view returns (uint256 balance);
-
-    function transferFrom(
-        address _from,
-        address _to,
-        uint256 _value
-    ) external returns (bool success);
-
-    function allowance(address _owner, address _spender)
-        external
-        view
-        returns (uint256 remaining);
-}
-
-contract GenArt721FilteredMinter {
+contract GenArt721FilteredMinterETH {
     using SafeMath for uint256;
 
     IGenArt721CoreContract public artblocksContract;
@@ -45,28 +30,6 @@ contract GenArt721FilteredMinter {
     constructor(address _genArt721Address, address _minterFilter) public {
         artblocksContract = IGenArt721CoreContract(_genArt721Address);
         minterFilter = IMinterFilter(_minterFilter);
-    }
-
-    function getYourBalanceOfProjectERC20(uint256 _projectId)
-        external
-        view
-        returns (uint256 balance)
-    {
-        balance = ERC20(
-            artblocksContract.projectIdToCurrencyAddress(_projectId)
-        ).balanceOf(msg.sender);
-        return balance;
-    }
-
-    function checkYourAllowanceOfProjectERC20(uint256 _projectId)
-        external
-        view
-        returns (uint256 remaining)
-    {
-        remaining = ERC20(
-            artblocksContract.projectIdToCurrencyAddress(_projectId)
-        ).allowance(msg.sender, address(this));
-        return remaining;
     }
 
     function setProjectMintLimit(uint256 _projectId, uint8 _limit)
@@ -106,7 +69,7 @@ contract GenArt721FilteredMinter {
         return tokenId;
     }
 
-    // removed public and payable
+    //removed public and payable
     function purchaseTo(address _to, uint256 _projectId)
         private
         returns (uint256 tokenId)
@@ -121,6 +84,21 @@ contract GenArt721FilteredMinter {
             require(msg.sender == tx.origin, "No Contract Buys");
         }
 
+        // project currency must be ETH
+        require(
+            keccak256(
+                abi.encodePacked(
+                    artblocksContract.projectIdToCurrencySymbol(_projectId)
+                )
+            ) == keccak256(abi.encodePacked("ETH"))
+        );
+
+        require(
+            msg.value >=
+                artblocksContract.projectIdToPricePerTokenInWei(_projectId),
+            "Must send minimum value to mint!"
+        );
+
         // limit mints per address by project
         if (projectMintLimit[_projectId] > 0) {
             require(
@@ -131,38 +109,7 @@ contract GenArt721FilteredMinter {
             projectMintCounter[msg.sender][_projectId]++;
         }
 
-        if (
-            keccak256(
-                abi.encodePacked(
-                    artblocksContract.projectIdToCurrencySymbol(_projectId)
-                )
-            ) != keccak256(abi.encodePacked("ETH"))
-        ) {
-            require(
-                msg.value == 0,
-                "this project accepts a different currency and cannot accept ETH"
-            );
-            require(
-                ERC20(artblocksContract.projectIdToCurrencyAddress(_projectId))
-                    .allowance(msg.sender, address(this)) >=
-                    artblocksContract.projectIdToPricePerTokenInWei(_projectId),
-                "Insufficient Funds Approved for TX"
-            );
-            require(
-                ERC20(artblocksContract.projectIdToCurrencyAddress(_projectId))
-                    .balanceOf(msg.sender) >=
-                    artblocksContract.projectIdToPricePerTokenInWei(_projectId),
-                "Insufficient balance."
-            );
-            _splitFundsERC20(_projectId);
-        } else {
-            require(
-                msg.value >=
-                    artblocksContract.projectIdToPricePerTokenInWei(_projectId),
-                "Must send minimum value to mint!"
-            );
-            _splitFundsETH(_projectId);
-        }
+        _splitFundsETH(_projectId);
 
         tokenId = minterFilter.mint(_to, _projectId, msg.sender);
         // What if this overflows, since default value of uint256 is 0?
@@ -213,53 +160,6 @@ contract GenArt721FilteredMinter {
                         creatorFunds
                     );
             }
-        }
-    }
-
-    function _splitFundsERC20(uint256 _projectId) internal {
-        uint256 pricePerTokenInWei = artblocksContract
-            .projectIdToPricePerTokenInWei(_projectId);
-        uint256 foundationAmount = pricePerTokenInWei.div(100).mul(
-            artblocksContract.artblocksPercentage()
-        );
-        if (foundationAmount > 0) {
-            ERC20(artblocksContract.projectIdToCurrencyAddress(_projectId))
-                .transferFrom(
-                    msg.sender,
-                    artblocksContract.artblocksAddress(),
-                    foundationAmount
-                );
-        }
-        uint256 projectFunds = pricePerTokenInWei.sub(foundationAmount);
-        uint256 additionalPayeeAmount;
-        if (
-            artblocksContract.projectIdToAdditionalPayeePercentage(_projectId) >
-            0
-        ) {
-            additionalPayeeAmount = projectFunds.div(100).mul(
-                artblocksContract.projectIdToAdditionalPayeePercentage(
-                    _projectId
-                )
-            );
-            if (additionalPayeeAmount > 0) {
-                ERC20(artblocksContract.projectIdToCurrencyAddress(_projectId))
-                    .transferFrom(
-                        msg.sender,
-                        artblocksContract.projectIdToAdditionalPayee(
-                            _projectId
-                        ),
-                        additionalPayeeAmount
-                    );
-            }
-        }
-        uint256 creatorFunds = projectFunds.sub(additionalPayeeAmount);
-        if (creatorFunds > 0) {
-            ERC20(artblocksContract.projectIdToCurrencyAddress(_projectId))
-                .transferFrom(
-                    msg.sender,
-                    artblocksContract.projectIdToArtistAddress(_projectId),
-                    creatorFunds
-                );
         }
     }
 }

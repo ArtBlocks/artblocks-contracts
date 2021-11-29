@@ -1,7 +1,7 @@
-import "./libs/SafeMath.sol";
+import "../libs/SafeMath.sol";
 
-import "./interfaces/IMinterFilter.sol";
-import "./interfaces/IGenArt721CoreContract.sol";
+import "../interfaces/IMinterFilter.sol";
+import "../interfaces/IGenArt721CoreContract.sol";
 
 pragma solidity ^0.5.0;
 
