@@ -10,8 +10,8 @@
     "compile": "hardhat compile",
     "generate:typechain": "typechain --target ethers-v5 --outDir ./scripts/contracts './artifacts/contracts/**/!(*.dbg)*.json'",
     "test": "hardhat test",
-    "prettier": "prettier --write 'contracts/**/*.sol' && prettier --write 'scripts/**/*.ts'",
-    "lint": "prettier --check 'contracts/**/*.sol' && prettier --check 'scripts/**/*.ts'"
+    "prettier": "prettier --write 'contracts/**/*.sol' && prettier --write 'scripts/**/*.ts' && prettier --write 'test/**/*.ts'",
+    "lint": "prettier --check 'contracts/**/*.sol' && prettier --check 'scripts/**/*.ts' && prettier --check 'test/**/*.ts'"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
@@ -22,6 +22,7 @@
     "@nomiclabs/hardhat-web3": "^2.0.0",
     "@openzeppelin/test-helpers": "^0.5.6",
     "@typechain/ethers-v5": "^6.0.5",
+    "@types/jest": "^27.0.3",
     "chai": "^4.3.4",
     "dotenv": "^8.2.0",
     "ethereum-waffle": "^3.4.0",
