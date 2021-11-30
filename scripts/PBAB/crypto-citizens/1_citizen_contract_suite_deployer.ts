@@ -1,7 +1,7 @@
 import { ethers } from "hardhat";
-import { RandomizerArtCode__factory } from "../../contracts/factories/RandomizerArtCode__factory";
-import { GenArt721CoreV2ArtCode__factory } from "../../contracts/factories/GenArt721CoreV2ArtCode__factory";
-import { GenArt721MinterArtCode__factory } from "../../contracts/factories/GenArt721MinterArtCode__factory";
+import { RandomizerCryptoCitizens__factory } from "../../contracts/factories/RandomizerCryptoCitizens__factory";
+import { GenArt721CoreV2CryptoCitizens__factory } from "../../contracts/factories/GenArt721CoreV2CryptoCitizens__factory";
+import { GenArt721MinterCryptoCitizens__factory } from "../../contracts/factories/GenArt721MinterCryptoCitizens__factory";
 
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG BEGINS HERE
@@ -22,14 +22,14 @@ async function main() {
   //////////////////////////////////////////////////////////////////////////////
 
   // Deploy Randomizer contract.
-  const randomizerFactory = new RandomizerArtCode__factory(deployer);
+  const randomizerFactory = new RandomizerCryptoCitizens__factory(deployer);
   const randomizer = await randomizerFactory.deploy();
 
   await randomizer.deployed();
   console.log(`Randomizer deployed at ${randomizer.address}`);
 
   // Deploy Core contract.
-  const genArt721CoreFactory = new GenArt721CoreV2ArtCode__factory(deployer);
+  const genArt721CoreFactory = new GenArt721CoreV2CryptoCitizens__factory(deployer);
   const genArt721Core = await genArt721CoreFactory.deploy(
     pbabTokenName,
     pbabTokenTicker,
@@ -40,7 +40,7 @@ async function main() {
   console.log(`GenArt721Core deployed at ${genArt721Core.address}`);
 
   // Deploy Minter contract.
-  const genArt721MinterFactory = new GenArt721MinterArtCode__factory(deployer);
+  const genArt721MinterFactory = new GenArt721MinterCryptoCitizens__factory(deployer);
   const genArt721Minter = await genArt721MinterFactory.deploy(
     genArt721Core.address
   );
