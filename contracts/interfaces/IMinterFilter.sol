@@ -1,6 +1,13 @@
 pragma solidity ^0.5.0;
 
 interface IMinterFilter {
+    event DefaultMinterRegistered(address indexed _minterAddress);
+
+    event ProjectMinterRegistered(
+        uint256 indexed _projectId,
+        address indexed _minterAddress
+    );
+
     function setMinterForProject(uint256, address) external;
 
     function setDefaultMinter(address) external;
