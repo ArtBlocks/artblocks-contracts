@@ -1,15 +1,15 @@
 import { ethers } from "hardhat";
-import { Randomizer__factory } from "./contracts/factories/Randomizer__factory";
-import { GenArt721CoreV2PBAB__factory } from "./contracts/factories/GenArt721CoreV2PBAB__factory";
-import { GenArt721MinterPBAB__factory } from "./contracts/factories/GenArt721MinterPBAB__factory";
+import { RandomizerArtCode__factory } from "../../contracts/factories/RandomizerArtCode__factory";
+import { GenArt721CoreV2ArtCode__factory } from "../../contracts/factories/GenArt721CoreV2ArtCode__factory";
+import { GenArt721MinterArtCode__factory } from "../../contracts/factories/GenArt721MinterArtCode__factory";
 
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG BEGINS HERE
 // TODO: Update and verify the below configuration items before deploying!
 //////////////////////////////////////////////////////////////////////////////
-const pbabTokenName = "TODO :: Placeholder";
-const pbabTokenTicker = "TODO";
-const pbabTransferAddress = "0x000000000000000000000000000000000000dEaD";
+const pbabTokenName = "ARTCODE";
+const pbabTokenTicker = "ARTCODE";
+const pbabTransferAddress = "0x0a690B298f84D12414F5c8dB7de1EcE5a4605877";
 const rendererProviderAddress = "0x000000000000000000000000000000000000dEaD";
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG ENDS HERE
@@ -23,14 +23,14 @@ async function main() {
   //////////////////////////////////////////////////////////////////////////////
 
   // Deploy Randomizer contract.
-  const randomizerFactory = new Randomizer__factory(deployer);
+  const randomizerFactory = new RandomizerArtCode__factory(deployer);
   const randomizer = await randomizerFactory.deploy();
 
   await randomizer.deployed();
   console.log(`Randomizer deployed at ${randomizer.address}`);
 
   // Deploy Core contract.
-  const genArt721CoreFactory = new GenArt721CoreV2PBAB__factory(deployer);
+  const genArt721CoreFactory = new GenArt721CoreV2ArtCode__factory(deployer);
   const genArt721Core = await genArt721CoreFactory.deploy(
     pbabTokenName,
     pbabTokenTicker,
@@ -41,7 +41,7 @@ async function main() {
   console.log(`GenArt721Core deployed at ${genArt721Core.address}`);
 
   // Deploy Minter contract.
-  const genArt721MinterFactory = new GenArt721MinterPBAB__factory(deployer);
+  const genArt721MinterFactory = new GenArt721MinterArtCode__factory(deployer);
   const genArt721Minter = await genArt721MinterFactory.deploy(
     genArt721Core.address
   );
