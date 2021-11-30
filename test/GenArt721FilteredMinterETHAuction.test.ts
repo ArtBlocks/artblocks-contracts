@@ -207,4 +207,67 @@ describe("GenArt721MinterEthAuction", async function () {
         });
     });
   });
+
+  describe("setAuctionDetails", async function () {
+    const maxPrice = ethers.utils.parseEther("1");
+
+    it("allows whitelisted to set auction details", async function () {
+      await this.minter
+        .connect(this.accounts.snowfro)
+        .setAuctionDetails(
+          projectOne,
+          this.startTime + 60000,
+          this.startTime + 2 * ONE_HOUR,
+          maxPrice
+        );
+    });
+
+    it("allows artist to set auction details", async function () {
+      await this.minter
+        .connect(this.accounts.artist)
+        .setAuctionDetails(
+          projectOne,
+          this.startTime + 60000,
+          this.startTime + 2 * ONE_HOUR,
+          maxPrice
+        );
+    });
+
+    it("disallows non-whitelisted non-artist to set auction details", async function () {
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.additional)
+          .setAuctionDetails(
+            projectOne,
+            this.startTime + 60000,
+            this.startTime + 2 * ONE_HOUR,
+            maxPrice
+          ),
+        "Only Core whitelisted or Artist"
+      );
+    });
+  });
+
+  describe("only allow ETH", async function () {
+    const maxPrice = ethers.utils.parseEther("1");
+
+    it("disallows non-ETH projects", async function () {
+      await this.token
+        .connect(this.accounts.artist)
+        .updateProjectCurrencyInfo(
+          projectOne,
+          "USDC",
+          "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+        );
+
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.owner)
+          .purchaseTo(this.accounts.additional.address, projectOne, {
+            value: maxPrice,
+          }),
+        "Project currency must be ETH"
+      );
+    });
+  });
 });

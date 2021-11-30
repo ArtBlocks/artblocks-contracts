@@ -105,7 +105,8 @@ contract GenArt721FilteredMinterETH is IFilteredMinter {
                 abi.encodePacked(
                     artblocksContract.projectIdToCurrencySymbol(_projectId)
                 )
-            ) == keccak256(abi.encodePacked("ETH"))
+            ) == keccak256(abi.encodePacked("ETH")),
+            "Project currency must be ETH"
         );
 
         require(
