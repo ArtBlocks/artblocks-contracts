@@ -1,6 +1,6 @@
 # Art Blocks Smart Contracts
 
-[![CircleCI](https://circleci.com/gh/ArtBlocks/artblocks-contracts/tree/main.svg?style=svg)](https://circleci.com/gh/ArtBlocks/artblocks-contracts/tree/main)
+[![CircleCI](https://circleci.com/gh/ArtBlocks/artblocks-contracts/tree/main.svg?style=svg&circle-token=757a2689792bc9c126834396d6fa47e8f023bc2d)](https://circleci.com/gh/ArtBlocks/artblocks-contracts/tree/main)
 
 ## Initial Setup
 
