@@ -171,7 +171,8 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
                 abi.encodePacked(
                     artblocksContract.projectIdToCurrencySymbol(_projectId)
                 )
-            ) == keccak256(abi.encodePacked("ETH"))
+            ) == keccak256(abi.encodePacked("ETH")),
+            "Project currency must be ETH"
         );
 
         uint256 currentPriceInWei = getPrice(_projectId);

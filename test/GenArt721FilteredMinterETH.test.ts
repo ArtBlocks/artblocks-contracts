@@ -208,4 +208,25 @@ describe("MinterFilter", async function () {
         });
     });
   });
+
+  describe("only allow ETH", async function () {
+    it("disallows non-ETH projects", async function () {
+      await this.token
+        .connect(this.accounts.artist)
+        .updateProjectCurrencyInfo(
+          projectOne,
+          "USDC",
+          "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
+        );
+
+      await expectRevert(
+        this.minter1
+          .connect(this.accounts.owner)
+          .purchaseTo(this.accounts.additional.address, projectOne, {
+            value: pricePerTokenInWei,
+          }),
+        "Project currency must be ETH"
+      );
+    });
+  });
 });
