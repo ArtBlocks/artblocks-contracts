@@ -1,8 +1,8 @@
-import "./interfaces/IRandomizer.sol";
+import "../../interfaces/IRandomizer.sol";
 
 pragma solidity ^0.5.0;
 
-contract Randomizer is IRandomizer {
+contract Randomizer_ArtCode is IRandomizer {
     function returnValue() public view returns (bytes32) {
         uint256 time = block.timestamp;
         uint256 extra = (time % 200) + 1;

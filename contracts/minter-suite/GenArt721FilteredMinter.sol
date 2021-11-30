@@ -1,25 +1,11 @@
 import "../libs/SafeMath.sol";
+import "../libs/IERC20.sol";
 
 import "../interfaces/IGenArt721CoreContract.sol";
 import "../interfaces/IMinterFilter.sol";
 import "../interfaces/IFilteredMinter.sol";
 
 pragma solidity ^0.5.0;
-
-interface ERC20 {
-    function balanceOf(address _owner) external view returns (uint256 balance);
-
-    function transferFrom(
-        address _from,
-        address _to,
-        uint256 _value
-    ) external returns (bool success);
-
-    function allowance(address _owner, address _spender)
-        external
-        view
-        returns (uint256 remaining);
-}
 
 contract GenArt721FilteredMinter is IFilteredMinter {
     using SafeMath for uint256;
@@ -54,7 +40,7 @@ contract GenArt721FilteredMinter is IFilteredMinter {
         view
         returns (uint256 balance)
     {
-        balance = ERC20(
+        balance = IERC20(
             artblocksContract.projectIdToCurrencyAddress(_projectId)
         ).balanceOf(msg.sender);
         return balance;
@@ -65,7 +51,7 @@ contract GenArt721FilteredMinter is IFilteredMinter {
         view
         returns (uint256 remaining)
     {
-        remaining = ERC20(
+        remaining = IERC20(
             artblocksContract.projectIdToCurrencyAddress(_projectId)
         ).allowance(msg.sender, address(this));
         return remaining;
@@ -158,13 +144,13 @@ contract GenArt721FilteredMinter is IFilteredMinter {
                 "this project accepts a different currency and cannot accept ETH"
             );
             require(
-                ERC20(artblocksContract.projectIdToCurrencyAddress(_projectId))
+                IERC20(artblocksContract.projectIdToCurrencyAddress(_projectId))
                     .allowance(msg.sender, address(this)) >=
                     artblocksContract.projectIdToPricePerTokenInWei(_projectId),
                 "Insufficient Funds Approved for TX"
             );
             require(
-                ERC20(artblocksContract.projectIdToCurrencyAddress(_projectId))
+                IERC20(artblocksContract.projectIdToCurrencyAddress(_projectId))
                     .balanceOf(msg.sender) >=
                     artblocksContract.projectIdToPricePerTokenInWei(_projectId),
                 "Insufficient balance."
@@ -238,7 +224,7 @@ contract GenArt721FilteredMinter is IFilteredMinter {
             artblocksContract.artblocksPercentage()
         );
         if (foundationAmount > 0) {
-            ERC20(artblocksContract.projectIdToCurrencyAddress(_projectId))
+            IERC20(artblocksContract.projectIdToCurrencyAddress(_projectId))
                 .transferFrom(
                     msg.sender,
                     artblocksContract.artblocksAddress(),
@@ -257,7 +243,7 @@ contract GenArt721FilteredMinter is IFilteredMinter {
                 )
             );
             if (additionalPayeeAmount > 0) {
-                ERC20(artblocksContract.projectIdToCurrencyAddress(_projectId))
+                IERC20(artblocksContract.projectIdToCurrencyAddress(_projectId))
                     .transferFrom(
                         msg.sender,
                         artblocksContract.projectIdToAdditionalPayee(
@@ -269,7 +255,7 @@ contract GenArt721FilteredMinter is IFilteredMinter {
         }
         uint256 creatorFunds = projectFunds.sub(additionalPayeeAmount);
         if (creatorFunds > 0) {
-            ERC20(artblocksContract.projectIdToCurrencyAddress(_projectId))
+            IERC20(artblocksContract.projectIdToCurrencyAddress(_projectId))
                 .transferFrom(
                     msg.sender,
                     artblocksContract.projectIdToArtistAddress(_projectId),
