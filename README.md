@@ -27,7 +27,7 @@ Create a `.env` file by duplicating `.env.example` and populating all variables.
 
 **Important notes:**
 
-1. **Always** recompile and regenerate typechain contract bindings before deployment `yarn hardhat compile && yarn generate:typechain`.
+1. **Always** recompile and regenerate typechain contract bindings before deployment `yarn hardhat clean && yarn hardhat compile && yarn generate:typechain`.
 1. If deploying to mainnet, before running any of the deployment scripts below, ensure you have updated your `hardhat.config.ts` file to reflect a gas price for your transaction that is aligned with [current gas prices](https://etherscan.io/gastracker).
 
 ### deployment steps
