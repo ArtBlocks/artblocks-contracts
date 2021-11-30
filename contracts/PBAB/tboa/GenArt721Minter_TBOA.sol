@@ -3,7 +3,7 @@ pragma solidity ^0.5.0;
 import "../../libs/SafeMath.sol";
 import "../../libs/Strings.sol";
 
-import "../../interfaces/IGenArt721CoreV2.sol";
+import "../../interfaces/IGenArt721CoreV2_PBAB.sol";
 
 interface ERC20 {
     function balanceOf(address _owner) external view returns (uint256 balance);
@@ -29,7 +29,7 @@ interface BonusContract {
 contract GenArt721Minter_TBOA {
     using SafeMath for uint256;
 
-    IGenArt721CoreV2 public genArtCoreContract;
+    IGenArt721CoreV2_PBAB public genArtCoreContract;
 
     uint256 constant ONE_MILLION = 1_000_000;
 
@@ -45,7 +45,7 @@ contract GenArt721Minter_TBOA {
     mapping(uint256 => uint256) public projectMaxInvocations;
 
     constructor(address _genArt721Address) public {
-        genArtCoreContract = IGenArt721CoreV2(_genArt721Address);
+        genArtCoreContract = IGenArt721CoreV2_PBAB(_genArt721Address);
     }
 
     function getYourBalanceOfProjectERC20(uint256 _projectId)

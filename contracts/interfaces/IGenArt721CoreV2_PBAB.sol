@@ -1,6 +1,6 @@
 pragma solidity ^0.5.0;
 
-interface IGenArt721CoreV2 {
+interface IGenArt721CoreV2_PBAB {
     event Mint(
         address indexed _to,
         uint256 indexed _tokenId,
