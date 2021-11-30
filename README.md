@@ -41,6 +41,10 @@ Create a `.env` file by duplicating `.env.example` and populating all variables.
 1. Verify that the deployed addresses reported in your terminal match those that you find on Etherscan when looking at the outgoing transactions for your deployer wallet.
 1. Verify the deployed contracts on Etherscan, using the commands prompted to you by the deployment script.
 
+### help!
+
+If you're running into issues while attempting a deployment, before you begin to panic try running `yarn hardhat clean` first.
+
 ### post deployment infra configuration
 
 1. Update The Graph's subgraph for PBAB to index the newly created smart contracts.

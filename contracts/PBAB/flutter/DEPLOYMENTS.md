@@ -2,7 +2,10 @@
 
 ## Mainnet
 
-TBD
+**GenArt721CoreV2:** https://etherscan.io/address/TODO#code
+**GenArt721Minter:** _Not deployed by AB for mainnet, as Flutter team is moving forward with using a custom Minter implementation._
+
+`TODO` set as minter owner, whitelisted on core contract, and admin of core contract.
 
 ## Ropsten
 
