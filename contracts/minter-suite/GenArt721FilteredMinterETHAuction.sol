@@ -2,10 +2,11 @@ import "../libs/SafeMath.sol";
 
 import "../interfaces/IGenArt721CoreContract.sol";
 import "../interfaces/IMinterFilter.sol";
+import "../interfaces/IFilteredMinter.sol";
 
 pragma solidity ^0.5.0;
 
-contract GenArt721FilteredMinterETHAuction {
+contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
     event SetAuctionDetails(
         uint256 indexed projectId,
         uint256 _auctionTimestampStart,
@@ -21,6 +22,7 @@ contract GenArt721FilteredMinterETHAuction {
     uint256 constant ONE_MILLION = 1_000_000;
 
     mapping(uint256 => bool) public contractMintable;
+    mapping(uint256 => bool) public purchaseToDisabled;
     mapping(address => mapping(uint256 => uint256)) public projectMintCounter;
     mapping(uint256 => uint256) public projectMintLimit;
     mapping(uint256 => bool) public projectMaxHasBeenInvoked;
@@ -76,6 +78,13 @@ contract GenArt721FilteredMinterETHAuction {
         contractMintable[_projectId] = !contractMintable[_projectId];
     }
 
+    function togglePurchaseToDisabled(uint256 _projectId)
+        external
+        onlyCoreWhitelisted
+    {
+        purchaseToDisabled[_projectId] = !purchaseToDisabled[_projectId];
+    }
+
     function setMinimumAuctionLengthSeconds(
         uint256 _minimumAuctionLengthSeconds
     ) external onlyCoreWhitelisted {
@@ -125,9 +134,9 @@ contract GenArt721FilteredMinterETHAuction {
         return tokenId;
     }
 
-    //removed public and payable
     function purchaseTo(address _to, uint256 _projectId)
-        private
+        public
+        payable
         returns (uint256 tokenId)
     {
         require(
@@ -138,6 +147,12 @@ contract GenArt721FilteredMinterETHAuction {
         // if contract filter is off, allow calls from another contract
         if (!contractMintable[_projectId]) {
             require(msg.sender == tx.origin, "No Contract Buys");
+        }
+
+        // if purchaseTo is disabled, enforce purchase destination to be the TX
+        // sending address.
+        if (purchaseToDisabled[_projectId]) {
+            require(msg.sender == _to, "No `purchaseTo` Allowed");
         }
 
         // project currency must be ETH
