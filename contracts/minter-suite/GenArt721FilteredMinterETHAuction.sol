@@ -45,6 +45,16 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
         _;
     }
 
+    modifier onlyCoreWhitelistedOrArtist(uint256 _projectId) {
+        require(
+            (artblocksContract.isWhitelisted(msg.sender) ||
+                msg.sender ==
+                artblocksContract.projectIdToArtistAddress(_projectId)),
+            "Only Core whitelisted or Artist"
+        );
+        _;
+    }
+
     constructor(address _genArt721Address, address _minterFilter) public {
         artblocksContract = IGenArt721CoreContract(_genArt721Address);
         minterFilter = IMinterFilter(_minterFilter);
@@ -97,7 +107,7 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
         uint256 _auctionTimestampStart,
         uint256 _auctionTimestampEnd,
         uint256 _auctionPriceStart
-    ) external onlyCoreWhitelisted {
+    ) external onlyCoreWhitelistedOrArtist(_projectId) {
         require(
             _auctionTimestampEnd > _auctionTimestampStart,
             "Auction end must be greater than auction start"
