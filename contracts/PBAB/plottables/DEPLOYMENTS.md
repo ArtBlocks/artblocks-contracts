@@ -2,7 +2,10 @@
 
 ## Mainnet
 
-TBD
+**GenArt721CoreV2:** https://etherscan.io/address/0xa319C382a702682129fcbF55d514E61a16f97f9c#code
+**GenArt721Minter:** https://etherscan.io/address/0x463B8CED7D22a55Aa4A5d69EF6a54a08AA0feB93#code
+
+`0xC9604821E25E162452157c932380984F7c1f6402` set as minter owner, whitelisted on core contract, and admin of core contract.
 
 ## Ropsten
 

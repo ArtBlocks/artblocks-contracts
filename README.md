@@ -27,7 +27,7 @@ Create a `.env` file by duplicating `.env.example` and populating all variables.
 
 **Important notes:**
 
-1. **Always** recompile and regenerate typechain contract bindings before deployment `yarn hardhat compile && yarn generate:typechain`.
+1. **Always** recompile and regenerate typechain contract bindings before deployment `yarn hardhat clean && yarn hardhat compile && yarn generate:typechain`.
 1. If deploying to mainnet, before running any of the deployment scripts below, ensure you have updated your `hardhat.config.ts` file to reflect a gas price for your transaction that is aligned with [current gas prices](https://etherscan.io/gastracker).
 
 ### deployment steps
@@ -40,6 +40,10 @@ Create a `.env` file by duplicating `.env.example` and populating all variables.
 1. Perform the 3 contract deployments by running a forked and updated deployment script, with the format `yarn hardhat run scripts/<deployment script name> --network <network>`.
 1. Verify that the deployed addresses reported in your terminal match those that you find on Etherscan when looking at the outgoing transactions for your deployer wallet.
 1. Verify the deployed contracts on Etherscan, using the commands prompted to you by the deployment script.
+
+### help!
+
+If you're running into issues while attempting a deployment, before you begin to panic try running `yarn hardhat clean` first.
 
 ### post deployment infra configuration
 
