@@ -29,7 +29,9 @@ async function main() {
   console.log(`Randomizer deployed at ${randomizer.address}`);
 
   // Deploy Core contract.
-  const genArt721CoreFactory = new GenArt721CoreV2CryptoCitizens__factory(deployer);
+  const genArt721CoreFactory = new GenArt721CoreV2CryptoCitizens__factory(
+    deployer
+  );
   const genArt721Core = await genArt721CoreFactory.deploy(
     pbabTokenName,
     pbabTokenTicker,
@@ -40,7 +42,9 @@ async function main() {
   console.log(`GenArt721Core deployed at ${genArt721Core.address}`);
 
   // Deploy Minter contract.
-  const genArt721MinterFactory = new GenArt721MinterCryptoCitizens__factory(deployer);
+  const genArt721MinterFactory = new GenArt721MinterCryptoCitizens__factory(
+    deployer
+  );
   const genArt721Minter = await genArt721MinterFactory.deploy(
     genArt721Core.address
   );
