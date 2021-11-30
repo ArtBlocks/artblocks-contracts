@@ -212,40 +212,28 @@ describe("GenArt721MinterEthAuction", async function () {
     const maxPrice = ethers.utils.parseEther("1");
 
     it("allows whitelisted to set auction details", async function () {
-      await ethers.provider.send("evm_setNextBlockTimestamp", [
-        this.startTime + 5 * ONE_HOUR,
-      ]);
-
       await this.minter
         .connect(this.accounts.snowfro)
         .setAuctionDetails(
           projectOne,
           this.startTime + 60000,
           this.startTime + 2 * ONE_HOUR,
-          ethers.utils.parseEther("1")
+          maxPrice
         );
     });
 
     it("allows artist to set auction details", async function () {
-      await ethers.provider.send("evm_setNextBlockTimestamp", [
-        this.startTime + 5 * ONE_HOUR,
-      ]);
-
       await this.minter
         .connect(this.accounts.artist)
         .setAuctionDetails(
           projectOne,
           this.startTime + 60000,
           this.startTime + 2 * ONE_HOUR,
-          ethers.utils.parseEther("1")
+          maxPrice
         );
     });
 
     it("disallows non-whitelisted non-artist to set auction details", async function () {
-      await ethers.provider.send("evm_setNextBlockTimestamp", [
-        this.startTime + 5 * ONE_HOUR,
-      ]);
-
       await expectRevert(
         this.minter
           .connect(this.accounts.additional)
@@ -253,7 +241,7 @@ describe("GenArt721MinterEthAuction", async function () {
             projectOne,
             this.startTime + 60000,
             this.startTime + 2 * ONE_HOUR,
-            ethers.utils.parseEther("1")
+            maxPrice
           ),
         "Only Core whitelisted or Artist"
       );
