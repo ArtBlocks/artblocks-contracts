@@ -207,4 +207,44 @@ describe("GenArt721MinterEthAuction", async function () {
         });
     });
   });
+
+  describe("setAuctionDetails", async function () {
+    const maxPrice = ethers.utils.parseEther("1");
+
+    it("allows whitelisted to set auction details", async function () {
+      await this.minter
+        .connect(this.accounts.snowfro)
+        .setAuctionDetails(
+          projectOne,
+          this.startTime + 60000,
+          this.startTime + 2 * ONE_HOUR,
+          maxPrice
+        );
+    });
+
+    it("allows artist to set auction details", async function () {
+      await this.minter
+        .connect(this.accounts.artist)
+        .setAuctionDetails(
+          projectOne,
+          this.startTime + 60000,
+          this.startTime + 2 * ONE_HOUR,
+          maxPrice
+        );
+    });
+
+    it("disallows non-whitelisted non-artist to set auction details", async function () {
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.additional)
+          .setAuctionDetails(
+            projectOne,
+            this.startTime + 60000,
+            this.startTime + 2 * ONE_HOUR,
+            maxPrice
+          ),
+        "Only Core whitelisted or Artist"
+      );
+    });
+  });
 });
