@@ -1,6 +1,12 @@
 pragma solidity ^0.5.0;
 
 interface IGenArt721CoreV2 {
+    event Mint(
+        address indexed _to,
+        uint256 indexed _tokenId,
+        uint256 indexed _projectId
+    );
+
     function isWhitelisted(address sender) external view returns (bool);
 
     function projectIdToCurrencySymbol(uint256 _projectId)
