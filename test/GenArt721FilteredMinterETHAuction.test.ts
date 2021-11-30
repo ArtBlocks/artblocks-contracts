@@ -207,4 +207,56 @@ describe("GenArt721MinterEthAuction", async function () {
         });
     });
   });
+
+  describe("setAuctionDetails", async function () {
+    const maxPrice = ethers.utils.parseEther("1");
+
+    it("allows whitelisted to set auction details", async function () {
+      await ethers.provider.send("evm_setNextBlockTimestamp", [
+        this.startTime + 5 * ONE_HOUR,
+      ]);
+
+      await this.minter
+        .connect(this.accounts.snowfro)
+        .setAuctionDetails(
+          projectOne,
+          this.startTime + 60000,
+          this.startTime + 2 * ONE_HOUR,
+          ethers.utils.parseEther("1")
+        );
+    });
+
+    it("allows artist to set auction details", async function () {
+      await ethers.provider.send("evm_setNextBlockTimestamp", [
+        this.startTime + 5 * ONE_HOUR,
+      ]);
+
+      await this.minter
+        .connect(this.accounts.artist)
+        .setAuctionDetails(
+          projectOne,
+          this.startTime + 60000,
+          this.startTime + 2 * ONE_HOUR,
+          ethers.utils.parseEther("1")
+        );
+    });
+
+    it("disallows non-whitelisted non-artist to set auction details", async function () {
+      await ethers.provider.send("evm_setNextBlockTimestamp", [
+        this.startTime + 5 * ONE_HOUR,
+      ]);
+
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.additional)
+          .setAuctionDetails(
+            projectOne,
+            this.startTime + 60000,
+            this.startTime + 2 * ONE_HOUR,
+            ethers.utils.parseEther("1")
+          ),
+        "Only Core whitelisted or Artist"
+      );
+    });
+  });
 });
