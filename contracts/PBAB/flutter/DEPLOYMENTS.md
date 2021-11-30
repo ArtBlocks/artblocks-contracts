@@ -2,10 +2,10 @@
 
 ## Mainnet
 
-**GenArt721CoreV2:** https://etherscan.io/address/TODO#code
+**GenArt721CoreV2:** https://etherscan.io/address/0x13aAe6f9599880edbB7d144BB13F1212CeE99533#code
 **GenArt721Minter:** _Not deployed by AB for mainnet, as Flutter team is moving forward with using a custom Minter implementation._
 
-`TODO` set as minter owner, whitelisted on core contract, and admin of core contract.
+`0xB88F61E6FbdA83fbfffAbE364112137480398018` whitelisted on core contract and set as admin of core contract.
 
 ## Ropsten
 
