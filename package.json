@@ -7,6 +7,7 @@
     "test": "test"
   },
   "scripts": {
+    "clean": "hardhat clean",
     "compile": "hardhat compile",
     "generate:typechain": "typechain --target ethers-v5 --outDir ./scripts/contracts './artifacts/contracts/**/!(*.dbg)*.json'",
     "test": "hardhat test",
