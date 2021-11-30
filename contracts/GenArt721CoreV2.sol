@@ -2,13 +2,12 @@ import "./libs/CustomERC721Metadata.sol";
 import "./libs/SafeMath.sol";
 import "./libs/Strings.sol";
 
+import "./interfaces/IRandomizer.sol";
+import "./interfaces/IGenArt721CoreContract.sol";
+
 pragma solidity ^0.5.0;
 
-interface IRandomizer {
-    function returnValue() external view returns (bytes32);
-}
-
-contract GenArt721CoreV2 is CustomERC721Metadata {
+contract GenArt721CoreV2 is CustomERC721Metadata, IGenArt721CoreContract {
     using SafeMath for uint256;
 
     event Mint(
@@ -492,12 +491,6 @@ contract GenArt721CoreV2 is CustomERC721Metadata {
     {
         projectBaseURI = projects[_projectId].projectBaseURI;
     }
-
-    /*
-    function projectShowAllTokens(uint _projectId) public view returns (uint256[] memory){
-        return projectIdToTokenIds[_projectId];
-    }
-    */
 
     function tokensOfOwner(address owner)
         external
