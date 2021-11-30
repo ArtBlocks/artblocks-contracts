@@ -1,6 +1,6 @@
 pragma solidity ^0.5.0;
 
-interface IGenArt721CoreV2 {
+interface IGenArt721CoreV2_PBAB {
     function isWhitelisted(address sender) external view returns (bool);
 
     function projectIdToCurrencySymbol(uint256 _projectId)
