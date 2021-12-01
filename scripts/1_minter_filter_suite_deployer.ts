@@ -69,22 +69,13 @@ async function main() {
   // DEPLOYMENT ENDS HERE
   //////////////////////////////////////////////////////////////////////////////
 
-  //////////////////////////////////////////////////////////////////////////////
-  // SETUP BEGINS HERE
-  //////////////////////////////////////////////////////////////////////////////
-
-  // Setup the Minter Filter to use the most basic minter as the default.
-  await minterFilter
-    .connect(deployer)
-    .setDefaultMinter(genArt721FilteredMinter.address);
-
-  //////////////////////////////////////////////////////////////////////////////
-  // SETUP ENDS HERE
-  //////////////////////////////////////////////////////////////////////////////
-
   // Reminder re: CoreContract allowlisting.
   console.log(
     `REMINDER: Allowlist the MinterFilter on your core contract located at: ${CORE_CONTRACT_ADDRESS}`
+  );
+  // Reminder re: CoreContract allowlisting.
+  console.log(
+    `REMINDER: Set a default minter for the MinterFilter deployed at: ${minterFilter.address}`
   );
 
   // Output instructions for manual Etherscan verification.
