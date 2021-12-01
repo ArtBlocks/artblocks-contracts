@@ -206,6 +206,29 @@ async function main() {
   // TESTNET VERIFICATION FUNCTIONALITY ENDS HERE
   // DO NOT DEPLOY THIS TO MAINNET
   //////////////////////////////////////////////////////////////////////////////
+
+  // Output instructions for manual Etherscan verification.
+  const networkName = network.name == "homestead" ? "mainnet" : network.name;
+  const standardVerify =
+    "yarn hardhat verify --contract <path to .sol>:<contract name>";
+  console.log(`Verify GenArt721CoreV2 deployment with:`);
+  console.log(
+    `${standardVerify} --network ${networkName} ${genArt721Core.address} "${pbabTokenName}" "${pbabTokenTicker}" ${randomizer.address}`
+  );
+  console.log(`Verify MinterFilter deployment with:`);
+  console.log(
+    `${standardVerify} --network ${networkName} ${minterFilter.address} ${genArt721Core.address}`
+  );
+  console.log(`Verify each of the Minter deployments with:`);
+  console.log(
+    `${standardVerify} --network ${networkName} ${genArt721FilteredMinter.address} ${genArt721Core.address} ${minterFilter.address}`
+  );
+  console.log(
+    `${standardVerify} --network ${networkName} ${genArt721FilteredMinterETH.address} ${genArt721Core.address} ${minterFilter.address}`
+  );
+  console.log(
+    `${standardVerify} --network ${networkName} ${genArt721FilteredMinterETHAuction.address} ${genArt721Core.address} ${minterFilter.address}`
+  );
 }
 
 main()
