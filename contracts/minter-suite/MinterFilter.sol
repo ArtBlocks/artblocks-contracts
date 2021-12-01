@@ -28,6 +28,16 @@ contract MinterFilter is IMinterFilter {
         _;
     }
 
+    modifier onlyCoreWhitelistedOrArtist(uint256 _projectId) {
+        require(
+            (artblocksContract.isWhitelisted(msg.sender) ||
+                msg.sender ==
+                artblocksContract.projectIdToArtistAddress(_projectId)),
+            "Only Core whitelisted or Artist"
+        );
+        _;
+    }
+
     constructor(address _genArt721Address) public {
         artblocksContract = IGenArt721CoreContract(_genArt721Address);
     }
@@ -42,7 +52,7 @@ contract MinterFilter is IMinterFilter {
 
     function setMinterForProject(uint256 _projectId, address _minterAddress)
         external
-        onlyCoreWhitelisted
+        onlyCoreWhitelistedOrArtist(_projectId)
     {
         minterForProject[_projectId] = _minterAddress;
         emit ProjectMinterRegistered(_projectId, _minterAddress);
@@ -50,7 +60,7 @@ contract MinterFilter is IMinterFilter {
 
     function resetMinterForProjectToDefault(uint256 _projectId)
         external
-        onlyCoreWhitelisted
+        onlyCoreWhitelistedOrArtist(_projectId)
     {
         minterForProject[_projectId] = address(0);
         emit ProjectMinterRegistered(_projectId, address(0));
