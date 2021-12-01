@@ -32,20 +32,20 @@ contract MinterFilter is IMinterFilter {
         artblocksContract = IGenArt721CoreContract(_genArt721Address);
     }
 
-    function setMinterForProject(uint256 _projectId, address _minterAddress)
-        external
-        onlyCoreWhitelisted
-    {
-        minterForProject[_projectId] = _minterAddress;
-        emit ProjectMinterRegistered(_projectId, _minterAddress);
-    }
-
     function setDefaultMinter(address _minterAddress)
         external
         onlyCoreWhitelisted
     {
         defaultMinter = _minterAddress;
         emit DefaultMinterRegistered(_minterAddress);
+    }
+
+    function setMinterForProject(uint256 _projectId, address _minterAddress)
+        external
+        onlyCoreWhitelisted
+    {
+        minterForProject[_projectId] = _minterAddress;
+        emit ProjectMinterRegistered(_projectId, _minterAddress);
     }
 
     function resetMinterForProjectToDefault(uint256 _projectId)

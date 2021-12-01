@@ -11,28 +11,25 @@ import { ethers } from "hardhat";
 
 describe("MinterFilterEvents", async function () {
   beforeEach(async function () {
-    const [owner, newOwner, artist, additional, snowfro] =
-      await ethers.getSigners();
+    const [deployer] = await ethers.getSigners();
     this.accounts = {
-      owner: owner,
-      newOwner: newOwner,
-      artist: artist,
-      additional: additional,
-      snowfro: snowfro,
+      deployer: deployer,
     };
     const randomizerFactory = await ethers.getContractFactory("Randomizer");
     this.randomizer = await randomizerFactory.deploy();
     const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV2");
-    this.token = await artblocksFactory
-      .connect(snowfro)
+    this.genArt721CoreV2 = await artblocksFactory
+      .connect(deployer)
       .deploy("Test Contract", "TEST", this.randomizer.address);
     const minterFilterFactory = await ethers.getContractFactory("MinterFilter");
-    this.minterFilter = await minterFilterFactory.deploy(this.token.address);
+    this.minterFilter = await minterFilterFactory.deploy(
+      this.genArt721CoreV2.address
+    );
     const minterFactory = await ethers.getContractFactory(
       "GenArt721FilteredMinter"
     );
     this.minter = await minterFactory.deploy(
-      this.token.address,
+      this.genArt721CoreV2.address,
       this.minterFilter.address
     );
   });
@@ -41,7 +38,7 @@ describe("MinterFilterEvents", async function () {
     it("emits an event", async function () {
       await expect(
         this.minterFilter
-          .connect(this.accounts.snowfro)
+          .connect(this.accounts.deployer)
           .setDefaultMinter(this.minter.address)
       )
         .to.emit(this.minterFilter, "DefaultMinterRegistered")
@@ -53,7 +50,7 @@ describe("MinterFilterEvents", async function () {
     it("emits an event", async function () {
       await expect(
         this.minterFilter
-          .connect(this.accounts.snowfro)
+          .connect(this.accounts.deployer)
           .resetMinterForProjectToDefault(0)
       )
         .to.emit(this.minterFilter, "ProjectMinterRegistered")
@@ -65,7 +62,7 @@ describe("MinterFilterEvents", async function () {
     it("emits an event", async function () {
       await expect(
         this.minterFilter
-          .connect(this.accounts.snowfro)
+          .connect(this.accounts.deployer)
           .setMinterForProject(0, this.minter.address)
       )
         .to.emit(this.minterFilter, "ProjectMinterRegistered")
@@ -73,7 +70,7 @@ describe("MinterFilterEvents", async function () {
 
       await expect(
         this.minterFilter
-          .connect(this.accounts.snowfro)
+          .connect(this.accounts.deployer)
           .setMinterForProject(1, this.minter.address)
       )
         .to.emit(this.minterFilter, "ProjectMinterRegistered")
