@@ -8,6 +8,9 @@ pragma solidity ^0.5.0;
 contract MinterFilter is IMinterFilter {
     using SafeMath for uint256;
 
+    event MinterApproved(address indexed _minterAddress);
+    event MinterRevoked(address indexed _minterAddress);
+
     event DefaultMinterRegistered(address indexed _minterAddress);
     event ProjectMinterRegistered(
         uint256 indexed _projectId,
@@ -56,6 +59,7 @@ contract MinterFilter is IMinterFilter {
         onlyCoreWhitelisted
     {
         isApprovedMinter[_minterAddress] = true;
+        emit MinterApproved(_minterAddress);
     }
 
     function removeApprovedMinter(address _minterAddress)
@@ -63,6 +67,7 @@ contract MinterFilter is IMinterFilter {
         onlyCoreWhitelisted
     {
         isApprovedMinter[_minterAddress] = false;
+        emit MinterRevoked(_minterAddress);
     }
 
     function setDefaultMinter(address _minterAddress)
