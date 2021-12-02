@@ -19,6 +19,7 @@ contract MinterFilter is IMinterFilter {
     address public defaultMinter;
 
     mapping(uint256 => address) public minterForProject;
+    mapping(address => bool) public isApprovedMinter;
 
     modifier onlyCoreWhitelisted() {
         require(
@@ -38,13 +39,36 @@ contract MinterFilter is IMinterFilter {
         _;
     }
 
+    modifier usingApprovedMinter(address _minterAddress) {
+        require(
+            isApprovedMinter[_minterAddress],
+            "Only approved minters are allowed"
+        );
+        _;
+    }
+
     constructor(address _genArt721Address) public {
         artblocksContract = IGenArt721CoreContract(_genArt721Address);
+    }
+
+    function addApprovedMinter(address _minterAddress)
+        external
+        onlyCoreWhitelisted
+    {
+        isApprovedMinter[_minterAddress] = true;
+    }
+
+    function removeApprovedMinter(address _minterAddress)
+        external
+        onlyCoreWhitelisted
+    {
+        isApprovedMinter[_minterAddress] = false;
     }
 
     function setDefaultMinter(address _minterAddress)
         external
         onlyCoreWhitelisted
+        usingApprovedMinter(_minterAddress)
     {
         defaultMinter = _minterAddress;
         emit DefaultMinterRegistered(_minterAddress);
@@ -53,6 +77,7 @@ contract MinterFilter is IMinterFilter {
     function setMinterForProject(uint256 _projectId, address _minterAddress)
         external
         onlyCoreWhitelistedOrArtist(_projectId)
+        usingApprovedMinter(_minterAddress)
     {
         minterForProject[_projectId] = _minterAddress;
         emit ProjectMinterRegistered(_projectId, _minterAddress);

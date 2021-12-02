@@ -32,6 +32,10 @@ describe("MinterFilterEvents", async function () {
       this.genArt721CoreV2.address,
       this.minterFilter.address
     );
+
+    await this.minterFilter
+      .connect(this.accounts.deployer)
+      .addApprovedMinter(this.minter.address);
   });
 
   describe("setDefaultMinter", async function () {

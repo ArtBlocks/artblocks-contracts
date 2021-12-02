@@ -73,6 +73,9 @@ describe("GenArt721MinterEthAuction", async function () {
 
     await this.minterFilter
       .connect(this.accounts.snowfro)
+      .addApprovedMinter(this.minter.address);
+    await this.minterFilter
+      .connect(this.accounts.snowfro)
       .setMinterForProject(projectOne, this.minter.address);
 
     if (this.hasOwnProperty("startTime") && this.startTime) {

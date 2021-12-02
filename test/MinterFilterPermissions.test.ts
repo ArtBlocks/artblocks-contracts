@@ -9,7 +9,7 @@ import {
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
-describe("MinterFilterEvents", async function () {
+describe("MinterPermissionsEvents", async function () {
   beforeEach(async function () {
     // Deployment
     const [deployer, artist, misc] = await ethers.getSigners();
@@ -49,8 +49,18 @@ describe("MinterFilterEvents", async function () {
 
   describe("`setDefaultMinter`", async function () {
     const permissionErrorMessage = "Only Core whitelisted";
+    const approvedMinterErrorMessage = "Only approved minters are allowed";
 
     it("is callable by 'whitelisted' EOA", async function () {
+      await expectRevert(
+        this.minterFilter
+          .connect(this.accounts.deployer)
+          .setDefaultMinter(this.minter.address),
+        approvedMinterErrorMessage
+      );
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .addApprovedMinter(this.minter.address);
       await this.minterFilter
         .connect(this.accounts.deployer)
         .setDefaultMinter(this.minter.address);
@@ -102,14 +112,33 @@ describe("MinterFilterEvents", async function () {
 
   describe("`setMinterForProject`", async function () {
     const permissionErrorMessage = "Only Core whitelisted or Artist";
+    const approvedMinterErrorMessage = "Only approved minters are allowed";
 
     it("is callable by 'whitelisted' EOA", async function () {
+      await expectRevert(
+        this.minterFilter
+          .connect(this.accounts.deployer)
+          .setMinterForProject(0, this.minter.address),
+        approvedMinterErrorMessage
+      );
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .addApprovedMinter(this.minter.address);
       await this.minterFilter
         .connect(this.accounts.deployer)
         .setMinterForProject(0, this.minter.address);
     });
 
     it("is callable by 'artist' EOA", async function () {
+      await expectRevert(
+        this.minterFilter
+          .connect(this.accounts.artist)
+          .setMinterForProject(0, this.minter.address),
+        approvedMinterErrorMessage
+      );
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .addApprovedMinter(this.minter.address);
       await this.minterFilter
         .connect(this.accounts.artist)
         .setMinterForProject(0, this.minter.address);
