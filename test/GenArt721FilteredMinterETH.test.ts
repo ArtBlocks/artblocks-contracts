@@ -100,6 +100,16 @@ describe("MinterFilter", async function () {
 
     await this.minterFilter
       .connect(this.accounts.snowfro)
+      .addApprovedMinter(this.minter1.address);
+    await this.minterFilter
+      .connect(this.accounts.snowfro)
+      .addApprovedMinter(this.minter2.address);
+    await this.minterFilter
+      .connect(this.accounts.snowfro)
+      .addApprovedMinter(this.minter3.address);
+
+    await this.minterFilter
+      .connect(this.accounts.snowfro)
       .setMinterForProject(projectOne, this.minter1.address);
     await this.minterFilter
       .connect(this.accounts.snowfro)

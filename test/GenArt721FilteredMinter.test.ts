@@ -73,6 +73,9 @@ describe("GenArt721FilteredMinter", async function () {
 
     await this.minterFilter
       .connect(this.accounts.snowfro)
+      .addApprovedMinter(this.minter.address);
+    await this.minterFilter
+      .connect(this.accounts.snowfro)
       .setMinterForProject(projectZero, this.minter.address);
     await this.minterFilter
       .connect(this.accounts.snowfro)

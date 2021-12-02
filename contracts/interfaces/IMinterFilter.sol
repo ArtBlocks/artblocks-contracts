@@ -1,6 +1,10 @@
 pragma solidity ^0.5.0;
 
 interface IMinterFilter {
+    event MinterApproved(address indexed _minterAddress);
+
+    event MinterRevoked(address indexed _minterAddress);
+
     event DefaultMinterRegistered(address indexed _minterAddress);
 
     event ProjectMinterRegistered(
