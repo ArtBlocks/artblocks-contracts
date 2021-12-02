@@ -32,6 +32,34 @@ describe("MinterFilterEvents", async function () {
       this.genArt721CoreV2.address,
       this.minterFilter.address
     );
+
+    await this.minterFilter
+      .connect(this.accounts.deployer)
+      .addApprovedMinter(this.minter.address);
+  });
+
+  describe("addApprovedMinter", async function () {
+    it("emits an event", async function () {
+      await expect(
+        this.minterFilter
+          .connect(this.accounts.deployer)
+          .addApprovedMinter(this.minter.address)
+      )
+        .to.emit(this.minterFilter, "MinterApproved")
+        .withArgs(this.minter.address);
+    });
+  });
+
+  describe("removeApprovedMinter", async function () {
+    it("emits an event", async function () {
+      await expect(
+        this.minterFilter
+          .connect(this.accounts.deployer)
+          .removeApprovedMinter(this.minter.address)
+      )
+        .to.emit(this.minterFilter, "MinterRevoked")
+        .withArgs(this.minter.address);
+    });
   });
 
   describe("setDefaultMinter", async function () {
