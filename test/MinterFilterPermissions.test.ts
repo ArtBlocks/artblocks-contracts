@@ -47,6 +47,56 @@ describe("MinterPermissionsEvents", async function () {
       );
   });
 
+  describe("`addApprovedMinter`/`removeApprovedMinter`", async function () {
+    const permissionErrorMessage = "Only Core whitelisted";
+    const approvedMinterErrorMessage = "Only approved minters are allowed";
+
+    it("is callable by 'whitelisted' EOA", async function () {
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .addApprovedMinter(this.minter.address);
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .removeApprovedMinter(this.minter.address);
+      await expectRevert(
+        this.minterFilter
+          .connect(this.accounts.deployer)
+          .setDefaultMinter(this.minter.address),
+        approvedMinterErrorMessage
+      );
+    });
+
+    it("is *not* callable by 'artist' EOA", async function () {
+      await expectRevert(
+        this.minterFilter
+          .connect(this.accounts.artist)
+          .addApprovedMinter(this.minter.address),
+        permissionErrorMessage
+      );
+      await expectRevert(
+        this.minterFilter
+          .connect(this.accounts.artist)
+          .removeApprovedMinter(this.minter.address),
+        permissionErrorMessage
+      );
+    });
+
+    it("is *not* callable by 'misc' EOA", async function () {
+      await expectRevert(
+        this.minterFilter
+          .connect(this.accounts.misc)
+          .addApprovedMinter(this.minter.address),
+        permissionErrorMessage
+      );
+      await expectRevert(
+        this.minterFilter
+          .connect(this.accounts.misc)
+          .removeApprovedMinter(this.minter.address),
+        permissionErrorMessage
+      );
+    });
+  });
+
   describe("`setDefaultMinter`", async function () {
     const permissionErrorMessage = "Only Core whitelisted";
     const approvedMinterErrorMessage = "Only approved minters are allowed";
