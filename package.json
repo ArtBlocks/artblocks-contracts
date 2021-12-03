@@ -11,8 +11,14 @@
     "compile": "hardhat compile",
     "generate:typechain": "typechain --target ethers-v5 --outDir ./scripts/contracts './artifacts/contracts/**/!(*.dbg)*.json'",
     "test": "hardhat test",
-    "prettier": "prettier --write 'contracts/**/*.sol' && prettier --write 'scripts/**/*.ts' && prettier --write 'test/**/*.ts'",
+    "format": "prettier --write 'contracts/**/*.sol' && prettier --write 'scripts/**/*.ts' && prettier --write 'test/**/*.ts'",
     "lint": "prettier --check 'contracts/**/*.sol' && prettier --check 'scripts/**/*.ts' && prettier --check 'test/**/*.ts'"
+  },
+  "husky": {
+    "hooks": {
+      "pre-commit": "yarn lint",
+      "pre-push": "yarn test"
+    }
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.2",
