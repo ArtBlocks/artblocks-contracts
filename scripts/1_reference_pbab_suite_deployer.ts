@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: LGPL-3.0-only
+// Creatd By: Art Blocks Inc.
+
 import { ethers } from "hardhat";
 import { Randomizer__factory } from "./contracts/factories/Randomizer__factory";
 import { GenArt721CoreV2PBAB__factory } from "./contracts/factories/GenArt721CoreV2PBAB__factory";

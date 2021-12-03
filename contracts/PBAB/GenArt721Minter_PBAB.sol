@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: LGPL-3.0-only
+// Creatd By: Art Blocks Inc.
+
 import "../libs/SafeMath.sol";
 import "../libs/Strings.sol";
 import "../libs/IERC20.sol";

@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: LGPL-3.0-only
+// Creatd By: Art Blocks Inc.
+
 import { ethers } from "hardhat";
 import { MinterFilter__factory } from "./contracts/factories/MinterFilter__factory";
 import { GenArt721FilteredMinter__factory } from "./contracts/factories/GenArt721FilteredMinter__factory";

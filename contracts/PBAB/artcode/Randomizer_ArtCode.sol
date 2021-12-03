@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: LGPL-3.0-only
+// Creatd By: Art Blocks Inc.
+
 import "../../interfaces/IRandomizer.sol";
 
 pragma solidity ^0.5.0;
