@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Creatd By: Art Blocks Inc.
 
-import "../libs/SafeMath.sol";
+import "../libs/0.5.x/SafeMath.sol";
 
-import "../interfaces/IMinterFilter.sol";
-import "../interfaces/IGenArt721CoreContract.sol";
+import "../interfaces/0.5.x/IMinterFilter.sol";
+import "../interfaces/0.5.x/IGenArt721CoreContract.sol";
 
 pragma solidity ^0.5.0;
 

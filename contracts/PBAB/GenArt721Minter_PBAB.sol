@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Creatd By: Art Blocks Inc.
 
-import "../libs/SafeMath.sol";
-import "../libs/Strings.sol";
-import "../libs/IERC20.sol";
+import "../libs/0.5.x/SafeMath.sol";
+import "../libs/0.5.x/Strings.sol";
+import "../libs/0.5.x/IERC20.sol";
 
-import "../interfaces/IGenArt721CoreV2_PBAB.sol";
-import "../interfaces/IBonusContract.sol";
+import "../interfaces/0.5.x/IGenArt721CoreV2_PBAB.sol";
+import "../interfaces/0.5.x/IBonusContract.sol";
 
 pragma solidity ^0.5.0;
 
