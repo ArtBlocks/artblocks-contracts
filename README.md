@@ -24,5 +24,5 @@ Create a `.env` file by duplicating `.env.example` and populating all variables.
 ### run the tests
 `yarn test`
 
-### prettify your source code
-`yarn prettier`
+### format your source code
+`yarn format`
