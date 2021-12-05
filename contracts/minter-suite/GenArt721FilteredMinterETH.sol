@@ -1,17 +1,13 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Creatd By: Art Blocks Inc.
 
-import "../libs/0.5.x/SafeMath.sol";
+import "../interfaces/0.8.x/IGenArt721CoreContract.sol";
+import "../interfaces/0.8.x/IMinterFilter.sol";
+import "../interfaces/0.8.x/IFilteredMinter.sol";
 
-import "../interfaces/0.5.x/IGenArt721CoreContract.sol";
-import "../interfaces/0.5.x/IMinterFilter.sol";
-import "../interfaces/0.5.x/IFilteredMinter.sol";
-
-pragma solidity ^0.5.0;
+pragma solidity 0.8.9;
 
 contract GenArt721FilteredMinterETH is IFilteredMinter {
-    using SafeMath for uint256;
-
     IGenArt721CoreContract public artblocksContract;
     IMinterFilter public minterFilter;
 
@@ -32,7 +28,7 @@ contract GenArt721FilteredMinterETH is IFilteredMinter {
         _;
     }
 
-    constructor(address _genArt721Address, address _minterFilter) public {
+    constructor(address _genArt721Address, address _minterFilter) {
         artblocksContract = IGenArt721CoreContract(_genArt721Address);
         minterFilter = IMinterFilter(_minterFilter);
     }
@@ -131,11 +127,14 @@ contract GenArt721FilteredMinterETH is IFilteredMinter {
         _splitFundsETH(_projectId);
 
         tokenId = minterFilter.mint(_to, _projectId, msg.sender);
-        // What if this overflows, since default value of uint256 is 0?
+        // what if projectMaxInvocations[_projectId] is 0 (default value)?
         // that is intended, so that by default the minter allows infinite transactions,
         // allowing the artblocks contract to stop minting
         // uint256 tokenInvocation = tokenId % ONE_MILLION;
-        if (tokenId % ONE_MILLION == projectMaxInvocations[_projectId] - 1) {
+        if (
+            projectMaxInvocations[_projectId] > 0 &&
+            tokenId % ONE_MILLION == projectMaxInvocations[_projectId] - 1
+        ) {
             projectMaxHasBeenInvoked[_projectId] = true;
         }
         return tokenId;
@@ -145,35 +144,34 @@ contract GenArt721FilteredMinterETH is IFilteredMinter {
         if (msg.value > 0) {
             uint256 pricePerTokenInWei = artblocksContract
                 .projectIdToPricePerTokenInWei(_projectId);
-            uint256 refund = msg.value.sub(pricePerTokenInWei);
+            uint256 refund = msg.value - pricePerTokenInWei;
             if (refund > 0) {
-                msg.sender.transfer(refund);
+                payable(msg.sender).transfer(refund);
             }
-            uint256 foundationAmount = pricePerTokenInWei.div(100).mul(
-                artblocksContract.artblocksPercentage()
-            );
+            uint256 foundationAmount = (pricePerTokenInWei / 100) *
+                artblocksContract.artblocksPercentage();
             if (foundationAmount > 0) {
                 artblocksContract.artblocksAddress().transfer(foundationAmount);
             }
-            uint256 projectFunds = pricePerTokenInWei.sub(foundationAmount);
+            uint256 projectFunds = pricePerTokenInWei - foundationAmount;
             uint256 additionalPayeeAmount;
             if (
                 artblocksContract.projectIdToAdditionalPayeePercentage(
                     _projectId
                 ) > 0
             ) {
-                additionalPayeeAmount = projectFunds.div(100).mul(
+                additionalPayeeAmount =
+                    (projectFunds / 100) *
                     artblocksContract.projectIdToAdditionalPayeePercentage(
                         _projectId
-                    )
-                );
+                    );
                 if (additionalPayeeAmount > 0) {
                     artblocksContract
                         .projectIdToAdditionalPayee(_projectId)
                         .transfer(additionalPayeeAmount);
                 }
             }
-            uint256 creatorFunds = projectFunds.sub(additionalPayeeAmount);
+            uint256 creatorFunds = projectFunds - additionalPayeeAmount;
             if (creatorFunds > 0) {
                 artblocksContract.projectIdToArtistAddress(_projectId).transfer(
                         creatorFunds

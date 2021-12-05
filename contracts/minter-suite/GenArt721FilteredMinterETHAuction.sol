@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Creatd By: Art Blocks Inc.
 
-import "../libs/0.5.x/SafeMath.sol";
+import "../interfaces/0.8.x/IGenArt721CoreContract.sol";
+import "../interfaces/0.8.x/IMinterFilter.sol";
+import "../interfaces/0.8.x/IFilteredMinter.sol";
 
-import "../interfaces/0.5.x/IGenArt721CoreContract.sol";
-import "../interfaces/0.5.x/IMinterFilter.sol";
-import "../interfaces/0.5.x/IFilteredMinter.sol";
-
-pragma solidity ^0.5.0;
+pragma solidity 0.8.9;
 
 contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
     event SetAuctionDetails(
@@ -16,8 +14,6 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
         uint256 _auctionTimestampEnd,
         uint256 _auctionPriceStart
     );
-
-    using SafeMath for uint256;
 
     IGenArt721CoreContract public artblocksContract;
     IMinterFilter public minterFilter;
@@ -58,7 +54,7 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
         _;
     }
 
-    constructor(address _genArt721Address, address _minterFilter) public {
+    constructor(address _genArt721Address, address _minterFilter) {
         artblocksContract = IGenArt721CoreContract(_genArt721Address);
         minterFilter = IMinterFilter(_minterFilter);
     }
@@ -117,7 +113,7 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
         );
         require(
             _auctionTimestampEnd >=
-                _auctionTimestampStart.add(minimumAuctionLengthSeconds),
+                _auctionTimestampStart + minimumAuctionLengthSeconds,
             "Auction length must be at least minimumAuctionLengthSeconds"
         );
         require(
@@ -197,11 +193,14 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
         _splitFundsETHAuction(_projectId, currentPriceInWei);
 
         tokenId = minterFilter.mint(_to, _projectId, msg.sender);
-        // What if this overflows, since default value of uint256 is 0?
+        // what if projectMaxInvocations[_projectId] is 0 (default value)?
         // that is intended, so that by default the minter allows infinite transactions,
         // allowing the artblocks contract to stop minting
         // uint256 tokenInvocation = tokenId % ONE_MILLION;
-        if (tokenId % ONE_MILLION == projectMaxInvocations[_projectId] - 1) {
+        if (
+            projectMaxInvocations[_projectId] > 0 &&
+            tokenId % ONE_MILLION == projectMaxInvocations[_projectId] - 1
+        ) {
             projectMaxHasBeenInvoked[_projectId] = true;
         }
         return tokenId;
@@ -212,35 +211,34 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
         uint256 _currentPriceInWei
     ) internal {
         if (msg.value > 0) {
-            uint256 refund = msg.value.sub(_currentPriceInWei);
+            uint256 refund = msg.value - _currentPriceInWei;
             if (refund > 0) {
-                msg.sender.transfer(refund);
+                payable(msg.sender).transfer(refund);
             }
-            uint256 foundationAmount = _currentPriceInWei.div(100).mul(
-                artblocksContract.artblocksPercentage()
-            );
+            uint256 foundationAmount = (_currentPriceInWei / 100) *
+                artblocksContract.artblocksPercentage();
             if (foundationAmount > 0) {
                 artblocksContract.artblocksAddress().transfer(foundationAmount);
             }
-            uint256 projectFunds = _currentPriceInWei.sub(foundationAmount);
+            uint256 projectFunds = _currentPriceInWei - foundationAmount;
             uint256 additionalPayeeAmount;
             if (
                 artblocksContract.projectIdToAdditionalPayeePercentage(
                     _projectId
                 ) > 0
             ) {
-                additionalPayeeAmount = projectFunds.div(100).mul(
+                additionalPayeeAmount =
+                    (projectFunds / 100) *
                     artblocksContract.projectIdToAdditionalPayeePercentage(
                         _projectId
-                    )
-                );
+                    );
                 if (additionalPayeeAmount > 0) {
                     artblocksContract
                         .projectIdToAdditionalPayee(_projectId)
                         .transfer(additionalPayeeAmount);
                 }
             }
-            uint256 creatorFunds = projectFunds.sub(additionalPayeeAmount);
+            uint256 creatorFunds = projectFunds - additionalPayeeAmount;
             if (creatorFunds > 0) {
                 artblocksContract.projectIdToArtistAddress(_projectId).transfer(
                         creatorFunds
@@ -258,17 +256,14 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
         } else if (block.timestamp >= auctionParams.timestampEnd) {
             return artblocksContract.projectIdToPricePerTokenInWei(_projectId);
         }
-        uint256 elapsedTime = block.timestamp.sub(auctionParams.timestampStart);
-        uint256 duration = auctionParams.timestampEnd.sub(
-            auctionParams.timestampStart
-        );
-        uint256 startToEndDiff = auctionParams.priceStart.sub(
-            artblocksContract.projectIdToPricePerTokenInWei(_projectId)
-        );
+        uint256 elapsedTime = block.timestamp - auctionParams.timestampStart;
+        uint256 duration = auctionParams.timestampEnd -
+            auctionParams.timestampStart;
+        uint256 startToEndDiff = auctionParams.priceStart -
+            artblocksContract.projectIdToPricePerTokenInWei(_projectId);
         return
-            auctionParams.priceStart.sub(
-                elapsedTime.mul(startToEndDiff).div(duration)
-            );
+            auctionParams.priceStart -
+            ((elapsedTime * startToEndDiff) / duration);
     }
 
     function isAuctionLive(uint256 _projectId) public view returns (bool) {
@@ -288,6 +283,6 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
             _projectId
         ];
         require(isAuctionLive(_projectId), "auction is not currently live");
-        return auctionParams.timestampEnd.sub(block.timestamp);
+        return auctionParams.timestampEnd - block.timestamp;
     }
 }
