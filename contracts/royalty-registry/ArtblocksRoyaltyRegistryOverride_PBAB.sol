@@ -52,7 +52,7 @@ contract ArtblocksRoyaltyRegistryOverride_PBAB is
     function supportsInterface(bytes4 interfaceId)
         public
         view
-        override(ERC165)
+        override(ERC165, IERC165)
         returns (bool)
     {
         return
