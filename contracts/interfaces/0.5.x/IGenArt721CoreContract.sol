@@ -66,4 +66,14 @@ interface IGenArt721CoreContract {
         uint256 _projectId,
         address _by
     ) external returns (uint256 tokenId);
+
+    function getRoyaltyData(uint256 _tokenId)
+        external
+        view
+        returns (
+            address artistAddress,
+            address additionalPayee,
+            uint256 additionalPayeePercentage,
+            uint256 royaltyFeeByID
+        );
 }
