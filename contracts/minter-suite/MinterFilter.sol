@@ -1,25 +1,12 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Creatd By: Art Blocks Inc.
 
-import "../libs/0.5.x/SafeMath.sol";
+import "../interfaces/0.8.x/IMinterFilter.sol";
+import "../interfaces/0.8.x/IGenArt721CoreContract.sol";
 
-import "../interfaces/0.5.x/IMinterFilter.sol";
-import "../interfaces/0.5.x/IGenArt721CoreContract.sol";
-
-pragma solidity ^0.5.0;
+pragma solidity 0.8.9;
 
 contract MinterFilter is IMinterFilter {
-    using SafeMath for uint256;
-
-    event MinterApproved(address indexed _minterAddress);
-    event MinterRevoked(address indexed _minterAddress);
-
-    event DefaultMinterRegistered(address indexed _minterAddress);
-    event ProjectMinterRegistered(
-        uint256 indexed _projectId,
-        address indexed _minterAddress
-    );
-
     IGenArt721CoreContract public artblocksContract;
 
     address public defaultMinter;
@@ -53,7 +40,7 @@ contract MinterFilter is IMinterFilter {
         _;
     }
 
-    constructor(address _genArt721Address) public {
+    constructor(address _genArt721Address) {
         artblocksContract = IGenArt721CoreContract(_genArt721Address);
     }
 
