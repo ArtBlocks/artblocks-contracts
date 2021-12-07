@@ -148,6 +148,8 @@ contract ArtblocksRoyaltyRegistryOverride is
         view
         returns (address payable[] memory recipients_, uint256[] memory bps)
     {
+        recipients_ = new address payable[](3);
+        bps = new uint256[](3);
         // get standard AB Royalty Info
         (
             address artistAddress,
