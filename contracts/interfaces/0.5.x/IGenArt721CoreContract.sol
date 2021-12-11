@@ -10,6 +10,9 @@ interface IGenArt721CoreContract {
         uint256 indexed _projectId
     );
 
+    // getter function of public variable
+    function admin() external view returns (address);
+
     function isWhitelisted(address sender) external view returns (bool);
 
     function projectIdToCurrencySymbol(uint256 _projectId)

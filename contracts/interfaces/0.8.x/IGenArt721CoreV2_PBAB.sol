@@ -10,6 +10,9 @@ interface IGenArt721CoreV2_PBAB {
         uint256 indexed _projectId
     );
 
+    // getter function of public variable
+    function admin() external view returns (address);
+
     function isWhitelisted(address sender) external view returns (bool);
 
     function projectIdToCurrencySymbol(uint256 _projectId)
@@ -57,7 +60,7 @@ interface IGenArt721CoreV2_PBAB {
             address
         );
 
-    function renderProviderAddress() external view returns (address payable);
+    function renderProviderAddress() external view returns (address);
 
     function renderProviderPercentage() external view returns (uint256);
 
