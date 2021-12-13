@@ -61,10 +61,10 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
      *  Update render provider royalty payment bps to be used
      *  for a specific token contract.
      */
-    function updateRenderProviderBpsForContract(address _tokenContract, uint256 _bps)
-        external
-        onlyAdminOnContract(_tokenContract)
-    {
+    function updateRenderProviderBpsForContract(
+        address _tokenContract,
+        uint256 _bps
+    ) external onlyAdminOnContract(_tokenContract) {
         renderProviderBpsOverrideForContract[_tokenContract] = BpsOverride(
             true,
             _bps
@@ -101,7 +101,10 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
         external
         onlyAdminOnContract(_tokenContract)
     {
-        renderProviderBpsOverrideForContract[_tokenContract] = BpsOverride(false, 0); // initial values
+        renderProviderBpsOverrideForContract[_tokenContract] = BpsOverride(
+            false,
+            0
+        ); // initial values
         emit RenderProviderBpsForContractUpdated(_tokenContract, false, 0);
     }
 
@@ -124,11 +127,10 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
         );
     }
 
-    function getRenderProviderRoyaltyBps(address _tokenAddress, uint256 _tokenId)
-        public
-        view
-        returns (uint256 bps)
-    {
+    function getRenderProviderRoyaltyBps(
+        address _tokenAddress,
+        uint256 _tokenId
+    ) public view returns (uint256 bps) {
         uint256 _projectNumber = _tokenId / (ONE_MILLION);
         // use project override if specified
         if (
@@ -136,8 +138,9 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
                 .useOverride
         ) {
             return
-                renderProviderBpsOverrideForProject[_tokenAddress][_projectNumber]
-                    .bps;
+                renderProviderBpsOverrideForProject[_tokenAddress][
+                    _projectNumber
+                ].bps;
         }
         // use contract override if specified
         if (renderProviderBpsOverrideForContract[_tokenAddress].useOverride) {
@@ -167,7 +170,9 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
         recipients_[1] = payable(additionalPayee);
         bps[1] = additionalPayeePercentage * royaltyFeeByID;
         // append render provider royalty
-        recipients_[2] = payable(IGenArt721CoreV2_PBAB(_tokenAddress).renderProviderAddress());
+        recipients_[2] = payable(
+            IGenArt721CoreV2_PBAB(_tokenAddress).renderProviderAddress()
+        );
         bps[2] = getRenderProviderRoyaltyBps(_tokenAddress, _tokenId);
         return (recipients_, bps);
     }

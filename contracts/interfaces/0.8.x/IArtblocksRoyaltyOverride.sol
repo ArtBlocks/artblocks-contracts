@@ -7,7 +7,7 @@ pragma solidity ^0.8.0;
 /**
  *  Interface for Art Blocks Royalty override
  *  Supported by the Royalty Registry v1 Engine
- *  ref: https://royaltyregistry.xyz 
+ *  ref: https://royaltyregistry.xyz
  *       v1 deployed at: engine-v1.royaltyregistry.eth
  */
 interface IArtblocksRoyaltyOverride is IERC165 {
