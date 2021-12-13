@@ -60,7 +60,7 @@ interface IGenArt721CoreV2_PBAB {
             address
         );
 
-    function renderProviderAddress() external view returns (address);
+    function renderProviderAddress() external view returns (address payable);
 
     function renderProviderPercentage() external view returns (uint256);
 
