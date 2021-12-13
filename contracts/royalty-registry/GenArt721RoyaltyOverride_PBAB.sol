@@ -8,7 +8,7 @@ import "../interfaces/0.8.x/IGenArt721CoreV2_PBAB.sol";
 
 pragma solidity 0.8.9;
 
-contract ArtblocksRoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
+contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
     event RenderProviderBpsForContractUpdated(
         address indexed tokenAddress,
         bool indexed useOverride,

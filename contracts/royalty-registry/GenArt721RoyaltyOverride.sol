@@ -8,7 +8,7 @@ import "../interfaces/0.8.x/IGenArt721CoreContract.sol";
 
 pragma solidity 0.8.9;
 
-contract ArtblocksRoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
+contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
     event AdminCoreContractUpdated(address indexed adminCoreContract);
 
     event RenderProviderDefaultPaymentAddressUpdated(
