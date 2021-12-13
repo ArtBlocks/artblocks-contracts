@@ -117,6 +117,10 @@ contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
         emit AdminCoreContractUpdated(_adminCoreContract);
     }
 
+    function getAdmin() public view returns (address) {
+        return adminCoreContract.admin();
+    }
+
     /**
      *  This may be called by an admin address on the current
      *  adminCoreContract to route AB royalties to a new default address.
