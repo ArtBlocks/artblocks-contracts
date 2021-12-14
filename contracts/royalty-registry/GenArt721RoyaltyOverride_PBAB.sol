@@ -65,6 +65,7 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
         address _tokenContract,
         uint256 _bps
     ) external onlyAdminOnContract(_tokenContract) {
+        require(_bps <= 10000, "invalid bps");
         renderProviderBpsOverrideForContract[_tokenContract] = BpsOverride(
             true,
             _bps
@@ -75,13 +76,13 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
     /**
      *  Update render provider royalty payment bps to be used
      *  for a specific project.
-     *  Must be less than or equal to default bps.
      */
     function updateRenderProviderBpsForProject(
         address _tokenContract,
         uint256 _projectNumber,
         uint256 _bps
     ) external onlyAdminOnContract(_tokenContract) {
+        require(_bps <= 10000, "invalid bps");
         renderProviderBpsOverrideForProject[_tokenContract][
             _projectNumber
         ] = BpsOverride(true, _bps);
