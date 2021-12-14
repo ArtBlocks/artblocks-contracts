@@ -214,7 +214,7 @@ describe("GenArt721RoyaltyOverride", async function () {
       .connect(this.accounts.anyone)
       .purchase(projectOne, { value: pricePerTokenInWei });
 
-    // deploy minter override, tokenA set as admin core contract
+    // deploy royalty override, tokenA set as admin core contract
     const royaltyOverrideFactory = await ethers.getContractFactory(
       "GenArt721RoyaltyOverride"
     );
@@ -816,7 +816,7 @@ describe("GenArt721RoyaltyOverride", async function () {
 
   describe("handles changes to render provider bps for contract", async function () {
     const legalBps = 200;
-    const illegalBps = 260; // override must be <= default
+    const illegalBps = defaultBps + 1; // override must be <= default
     const zeroBps = 0;
     const maxLegalBps = defaultBps;
     it("allows only contract admin to update render provider bps for contract", async function () {
@@ -933,7 +933,7 @@ describe("GenArt721RoyaltyOverride", async function () {
       );
     });
 
-    it("allows only contract admin to update render provider address for project", async function () {
+    it("allows only contract admin to update render provider bps for project", async function () {
       // reverts when non-admin tries to update bps for project
       await expectRevert(
         this.royaltyOverride
@@ -974,14 +974,14 @@ describe("GenArt721RoyaltyOverride", async function () {
         .withArgs(this.tokenB.address, projectZero, false, zeroBps);
     });
 
-    it("reflects updated render provider address for project", async function () {
+    it("reflects updated render provider bps for project", async function () {
       // update project's payment address
       await this.royaltyOverride
         .connect(this.accounts.adminB)
-        .updateRenderProviderPaymentAddressForProject(
+        .updateRenderProviderBpsForProject(
           this.tokenB.address,
           projectZero,
-          this.accounts.renderProviderPaymentAddr2.address
+          legalBps
         );
       // ensure update is reflected in getRoyalties call
       let response = await this.royaltyOverride
@@ -992,17 +992,14 @@ describe("GenArt721RoyaltyOverride", async function () {
         [
           this.accounts.artist0.address,
           this.accounts.additional0.address,
-          this.accounts.renderProviderPaymentAddr2.address,
+          this.accounts.renderProviderPaymentAddr1.address,
         ],
-        [new BN(400), new BN(600), new BN(defaultBps)]
+        [new BN(400), new BN(600), new BN(legalBps)]
       );
-      // clear project's payment address
+      // clear project's bps
       await this.royaltyOverride
         .connect(this.accounts.adminB)
-        .clearRenderProviderPaymentAddressForProject(
-          this.tokenB.address,
-          projectZero
-        );
+        .clearRenderProviderBpsForProject(this.tokenB.address, projectZero);
       // ensure update is reflected in getRoyalties call
       response = await this.royaltyOverride
         .connect(this.accounts.anyone)
