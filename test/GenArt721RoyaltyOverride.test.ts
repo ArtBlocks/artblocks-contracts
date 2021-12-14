@@ -7,6 +7,7 @@ interface RoyaltiesResponse {
   bps: Array<BN>;
 }
 
+// helper function to compare getRoyalties response
 const assertRoyaltiesResponse = async (
   response: RoyaltiesResponse,
   recipients_: Array<String>,
@@ -32,6 +33,7 @@ describe("GenArt721RoyaltyOverride", async function () {
   const projectOne = 1;
 
   const addressZero = "0x0000000000000000000000000000000000000000";
+  const defaultBps = 250;
 
   beforeEach(async function () {
     const [
@@ -266,7 +268,7 @@ describe("GenArt721RoyaltyOverride", async function () {
           this.accounts.additional0.address,
           this.accounts.renderProviderPaymentAddr1.address,
         ],
-        [new BN(400), new BN(100), new BN(250)]
+        [new BN(400), new BN(100), new BN(defaultBps)]
       );
       // tokenA, project 1
       response = await this.royaltyOverride
@@ -279,7 +281,7 @@ describe("GenArt721RoyaltyOverride", async function () {
           addressZero,
           this.accounts.renderProviderPaymentAddr1.address,
         ],
-        [new BN(500), new BN(0), new BN(250)]
+        [new BN(500), new BN(0), new BN(defaultBps)]
       );
       // tokenB, project 0
       response = await this.royaltyOverride
@@ -292,7 +294,7 @@ describe("GenArt721RoyaltyOverride", async function () {
           this.accounts.additional0.address,
           this.accounts.renderProviderPaymentAddr1.address,
         ],
-        [new BN(400), new BN(600), new BN(250)]
+        [new BN(400), new BN(600), new BN(defaultBps)]
       );
       // tokenB, project 1
       response = await this.royaltyOverride
@@ -305,7 +307,7 @@ describe("GenArt721RoyaltyOverride", async function () {
           addressZero,
           this.accounts.renderProviderPaymentAddr1.address,
         ],
-        [new BN(1000), new BN(0), new BN(250)]
+        [new BN(1000), new BN(0), new BN(defaultBps)]
       );
     });
   });
@@ -327,7 +329,7 @@ describe("GenArt721RoyaltyOverride", async function () {
           this.accounts.additional0.address,
           this.accounts.renderProviderPaymentAddr1.address,
         ],
-        [new BN(0), new BN(0), new BN(250)]
+        [new BN(0), new BN(0), new BN(defaultBps)]
       );
       // artist set royalties to non-zero (10 percent)
       await this.tokenA
@@ -344,7 +346,7 @@ describe("GenArt721RoyaltyOverride", async function () {
           this.accounts.additional0.address,
           this.accounts.renderProviderPaymentAddr1.address,
         ],
-        [new BN(800), new BN(200), new BN(250)]
+        [new BN(800), new BN(200), new BN(defaultBps)]
       );
     });
 
@@ -368,7 +370,7 @@ describe("GenArt721RoyaltyOverride", async function () {
           this.accounts.additional1.address,
           this.accounts.renderProviderPaymentAddr1.address,
         ],
-        [new BN(0), new BN(500), new BN(250)]
+        [new BN(0), new BN(500), new BN(defaultBps)]
       );
       // artist set different secondary payee to 0 percent
       await this.tokenA
@@ -389,7 +391,7 @@ describe("GenArt721RoyaltyOverride", async function () {
           this.accounts.additional1.address,
           this.accounts.renderProviderPaymentAddr1.address,
         ],
-        [new BN(500), new BN(0), new BN(250)]
+        [new BN(500), new BN(0), new BN(defaultBps)]
       );
     });
   });
@@ -511,7 +513,7 @@ describe("GenArt721RoyaltyOverride", async function () {
           this.accounts.additional0.address,
           this.accounts.renderProviderPaymentAddr2.address,
         ],
-        [new BN(400), new BN(100), new BN(250)]
+        [new BN(400), new BN(100), new BN(defaultBps)]
       );
     });
 
@@ -582,7 +584,7 @@ describe("GenArt721RoyaltyOverride", async function () {
           this.accounts.additional0.address,
           this.accounts.renderProviderPaymentAddr2.address,
         ],
-        [new BN(400), new BN(600), new BN(250)]
+        [new BN(400), new BN(600), new BN(defaultBps)]
       );
       // clear contract's payment address
       await this.royaltyOverride
@@ -599,7 +601,7 @@ describe("GenArt721RoyaltyOverride", async function () {
           this.accounts.additional0.address,
           this.accounts.renderProviderPaymentAddr1.address,
         ],
-        [new BN(400), new BN(600), new BN(250)]
+        [new BN(400), new BN(600), new BN(defaultBps)]
       );
     });
 
@@ -680,7 +682,7 @@ describe("GenArt721RoyaltyOverride", async function () {
           this.accounts.additional0.address,
           this.accounts.renderProviderPaymentAddr2.address,
         ],
-        [new BN(400), new BN(600), new BN(250)]
+        [new BN(400), new BN(600), new BN(defaultBps)]
       );
       // clear project's payment address
       await this.royaltyOverride
@@ -700,7 +702,7 @@ describe("GenArt721RoyaltyOverride", async function () {
           this.accounts.additional0.address,
           this.accounts.renderProviderPaymentAddr1.address,
         ],
-        [new BN(400), new BN(600), new BN(250)]
+        [new BN(400), new BN(600), new BN(defaultBps)]
       );
     });
 
@@ -731,7 +733,7 @@ describe("GenArt721RoyaltyOverride", async function () {
           this.accounts.additional0.address,
           this.accounts.renderProviderPaymentAddr2.address,
         ],
-        [new BN(400), new BN(600), new BN(250)]
+        [new BN(400), new BN(600), new BN(defaultBps)]
       );
       // ensure contract payment addr is reflected in untouched project
       response = await this.royaltyOverride
@@ -744,7 +746,7 @@ describe("GenArt721RoyaltyOverride", async function () {
           addressZero,
           this.accounts.renderProviderPaymentAddr3.address,
         ],
-        [new BN(1000), new BN(0), new BN(250)]
+        [new BN(1000), new BN(0), new BN(defaultBps)]
       );
       // ensure default payment addr is reflected in untouched contract
       response = await this.royaltyOverride
@@ -757,7 +759,7 @@ describe("GenArt721RoyaltyOverride", async function () {
           this.accounts.additional0.address,
           this.accounts.renderProviderPaymentAddr1.address,
         ],
-        [new BN(400), new BN(100), new BN(250)]
+        [new BN(400), new BN(100), new BN(defaultBps)]
       );
       // clear project-level payment addr;
       await this.royaltyOverride
@@ -777,7 +779,7 @@ describe("GenArt721RoyaltyOverride", async function () {
           this.accounts.additional0.address,
           this.accounts.renderProviderPaymentAddr3.address,
         ],
-        [new BN(400), new BN(600), new BN(250)]
+        [new BN(400), new BN(600), new BN(defaultBps)]
       );
       // clear contract-level payment addr
       await this.royaltyOverride
@@ -794,7 +796,7 @@ describe("GenArt721RoyaltyOverride", async function () {
           this.accounts.additional0.address,
           this.accounts.renderProviderPaymentAddr1.address,
         ],
-        [new BN(400), new BN(600), new BN(250)]
+        [new BN(400), new BN(600), new BN(defaultBps)]
       );
       // ensure default payment is reflected in untouched project
       response = await this.royaltyOverride
@@ -807,7 +809,7 @@ describe("GenArt721RoyaltyOverride", async function () {
           addressZero,
           this.accounts.renderProviderPaymentAddr1.address,
         ],
-        [new BN(1000), new BN(0), new BN(250)]
+        [new BN(1000), new BN(0), new BN(defaultBps)]
       );
     });
   });
@@ -816,7 +818,7 @@ describe("GenArt721RoyaltyOverride", async function () {
     const legalBps = 200;
     const illegalBps = 260; // override must be <= default
     const zeroBps = 0;
-    const maxLegalBps = 250;
+    const maxLegalBps = defaultBps;
     it("allows only contract admin to update render provider bps for contract", async function () {
       // reverts when non-admin tries to update bps for contract
       await expectRevert(
@@ -883,7 +885,7 @@ describe("GenArt721RoyaltyOverride", async function () {
           this.accounts.additional0.address,
           this.accounts.renderProviderPaymentAddr1.address,
         ],
-        [new BN(400), new BN(600), new BN(250)]
+        [new BN(400), new BN(600), new BN(defaultBps)]
       );
     });
 
@@ -992,7 +994,7 @@ describe("GenArt721RoyaltyOverride", async function () {
           this.accounts.additional0.address,
           this.accounts.renderProviderPaymentAddr2.address,
         ],
-        [new BN(400), new BN(600), new BN(250)]
+        [new BN(400), new BN(600), new BN(defaultBps)]
       );
       // clear project's payment address
       await this.royaltyOverride
@@ -1012,7 +1014,7 @@ describe("GenArt721RoyaltyOverride", async function () {
           this.accounts.additional0.address,
           this.accounts.renderProviderPaymentAddr1.address,
         ],
-        [new BN(400), new BN(600), new BN(250)]
+        [new BN(400), new BN(600), new BN(defaultBps)]
       );
     });
 
@@ -1122,7 +1124,7 @@ describe("GenArt721RoyaltyOverride", async function () {
           this.accounts.additional0.address,
           this.accounts.renderProviderPaymentAddr1.address,
         ],
-        [new BN(400), new BN(100), new BN(250)]
+        [new BN(400), new BN(100), new BN(defaultBps)]
       );
       // clear project-level bps and ensure contract-level bps is returned
       await this.royaltyOverride
@@ -1156,7 +1158,7 @@ describe("GenArt721RoyaltyOverride", async function () {
           this.accounts.additional0.address,
           this.accounts.renderProviderPaymentAddr1.address,
         ],
-        [new BN(400), new BN(600), new BN(250)]
+        [new BN(400), new BN(600), new BN(defaultBps)]
       );
       // ensure default bps is reflected in untouched project
       response = await this.royaltyOverride
@@ -1169,7 +1171,7 @@ describe("GenArt721RoyaltyOverride", async function () {
           addressZero,
           this.accounts.renderProviderPaymentAddr1.address,
         ],
-        [new BN(1000), new BN(0), new BN(250)]
+        [new BN(1000), new BN(0), new BN(defaultBps)]
       );
     });
   });
