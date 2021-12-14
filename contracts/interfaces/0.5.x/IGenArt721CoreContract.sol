@@ -13,6 +13,12 @@ interface IGenArt721CoreContract {
     // getter function of public variable
     function admin() external view returns (address);
 
+    // getter function of public mapping
+    function tokenIdToProjectId(uint256 tokenId)
+        external
+        view
+        returns (uint256 projectId);
+
     function isWhitelisted(address sender) external view returns (bool);
 
     function projectIdToCurrencySymbol(uint256 _projectId)

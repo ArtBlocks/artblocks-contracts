@@ -17,7 +17,7 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
 
     event RenderProviderBpsForProjectUpdated(
         address indexed tokenAddress,
-        uint256 indexed projectNumber,
+        uint256 indexed projectId,
         bool indexed useOverride,
         uint256 bps
     );
@@ -79,16 +79,16 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
      */
     function updateRenderProviderBpsForProject(
         address _tokenContract,
-        uint256 _projectNumber,
+        uint256 _projectId,
         uint256 _bps
     ) external onlyAdminOnContract(_tokenContract) {
         require(_bps <= 10000, "invalid bps");
         renderProviderBpsOverrideForProject[_tokenContract][
-            _projectNumber
+            _projectId
         ] = BpsOverride(true, _bps);
         emit RenderProviderBpsForProjectUpdated(
             _tokenContract,
-            _projectNumber,
+            _projectId,
             true,
             _bps
         );
@@ -115,14 +115,14 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
      */
     function clearRenderProviderBpsForProject(
         address _tokenContract,
-        uint256 _projectNumber
+        uint256 _projectId
     ) external onlyAdminOnContract(_tokenContract) {
         renderProviderBpsOverrideForProject[_tokenContract][
-            _projectNumber
+            _projectId
         ] = BpsOverride(false, 0); // initial values
         emit RenderProviderBpsForProjectUpdated(
             _tokenContract,
-            _projectNumber,
+            _projectId,
             false,
             0
         );
@@ -132,16 +132,16 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
         address _tokenAddress,
         uint256 _tokenId
     ) public view returns (uint256 bps) {
-        uint256 _projectNumber = _tokenId / (ONE_MILLION);
+        uint256 _projectId = IGenArt721CoreV2_PBAB(_tokenAddress)
+            .tokenIdToProjectId(_tokenId);
         // use project override if specified
         if (
-            renderProviderBpsOverrideForProject[_tokenAddress][_projectNumber]
+            renderProviderBpsOverrideForProject[_tokenAddress][_projectId]
                 .useOverride
         ) {
             return
-                renderProviderBpsOverrideForProject[_tokenAddress][
-                    _projectNumber
-                ].bps;
+                renderProviderBpsOverrideForProject[_tokenAddress][_projectId]
+                    .bps;
         }
         // use contract override if specified
         if (renderProviderBpsOverrideForContract[_tokenAddress].useOverride) {
