@@ -72,22 +72,6 @@ contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
     }
 
     /**
-     *  Clear art blocks royalty payment address to be used
-     *  for a specific token contract.
-     */
-    function clearArtBlocksRoyaltyAddressForContract(
-        address _tokenContract
-    ) external onlyAdminOnContract(_tokenContract) {
-        artBlocksRoyaltyAddressForContract[_tokenContract] = payable(
-            address(0)
-        );
-        emit ArtBlocksRoyaltyAddressForContractUpdated(
-            _tokenContract,
-            payable(address(0))
-        );
-    }
-
-    /**
      *  Update art blocks royalty payment bps to be used
      *  for a specific token contract.
      *  Must be less than or equal to default bps.
