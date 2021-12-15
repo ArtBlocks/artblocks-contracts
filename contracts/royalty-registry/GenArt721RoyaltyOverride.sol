@@ -9,20 +9,8 @@ import "../interfaces/0.8.x/IGenArt721CoreContract.sol";
 pragma solidity 0.8.9;
 
 contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
-    event AdminCoreContractUpdated(address indexed adminCoreContract);
-
-    event RenderProviderDefaultPaymentAddressUpdated(
-        address payable indexed renderProviderPaymentAddress
-    );
-
     event RenderProviderPaymentAddressForContractUpdated(
         address indexed contractAddress,
-        address payable indexed renderProviderPaymentAddress
-    );
-
-    event RenderProviderPaymentAddressForProjectUpdated(
-        address indexed contractAddress,
-        uint256 indexed projectId,
         address payable indexed renderProviderPaymentAddress
     );
 
@@ -32,24 +20,8 @@ contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
         uint256 bps
     );
 
-    event RenderProviderBpsForProjectUpdated(
-        address indexed tokenAddress,
-        uint256 indexed projectId,
-        bool indexed useOverride,
-        uint256 bps
-    );
-
-    /**
-     *  delegate authority to change AB royalty payment address and
-     *  change admin core contract to a core contract's admin.
-     */
-    IGenArt721CoreContract public adminCoreContract;
-
-    address payable public renderProviderDefaultPaymentAddress;
     mapping(address => address payable)
         public renderProviderPaymentAddressForContract;
-    mapping(address => mapping(uint256 => address payable))
-        public renderProviderPaymentAddressForProject;
 
     struct BpsOverride {
         bool useOverride;
@@ -58,15 +30,6 @@ contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
 
     uint256 public renderProviderDefaultBps = 250; // 2.5 percent
     mapping(address => BpsOverride) public renderProviderBpsOverrideForContract;
-    mapping(address => mapping(uint256 => BpsOverride))
-        public renderProviderBpsOverrideForProject;
-
-    uint256 constant ONE_MILLION = 1_000_000;
-
-    modifier onlyAdmin() {
-        require(adminCoreContract.admin() == msg.sender, "Only core admin");
-        _;
-    }
 
     modifier onlyAdminOnContract(address _tokenContract) {
         require(
@@ -74,16 +37,6 @@ contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
             "Only core admin for specified token contract"
         );
         _;
-    }
-
-    constructor(
-        address _adminCoreContract,
-        address payable _renderProviderDefaultPaymentAddress
-    ) {
-        _setAdminCoreContract(_adminCoreContract);
-        _setRenderProviderDefaultPaymentAddress(
-            _renderProviderDefaultPaymentAddress
-        );
     }
 
     /**
@@ -99,47 +52,6 @@ contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
             // register interface 0x9ca7dc7a - getRoyalties(address,uint256)
             interfaceId == type(IArtblocksRoyaltyOverride).interfaceId ||
             super.supportsInterface(interfaceId);
-    }
-
-    /**
-     *  This may be called by an admin address on the current
-     *  adminCoreContract to update to a new core contract's admin.
-     */
-    function updateAdminCoreContract(address _adminCoreContract)
-        external
-        onlyAdmin
-    {
-        _setAdminCoreContract(_adminCoreContract);
-    }
-
-    function _setAdminCoreContract(address _adminCoreContract) private {
-        adminCoreContract = IGenArt721CoreContract(_adminCoreContract);
-        emit AdminCoreContractUpdated(_adminCoreContract);
-    }
-
-    function getAdmin() public view returns (address) {
-        return adminCoreContract.admin();
-    }
-
-    /**
-     *  This may be called by an admin address on the current
-     *  adminCoreContract to route AB royalties to a new default address.
-     */
-    function updateRenderProviderDefaultPaymentAddress(
-        address payable _renderProviderDefaultPaymentAddress
-    ) external onlyAdmin {
-        _setRenderProviderDefaultPaymentAddress(
-            _renderProviderDefaultPaymentAddress
-        );
-    }
-
-    function _setRenderProviderDefaultPaymentAddress(
-        address payable _renderProviderDefaultPaymentAddress
-    ) private {
-        renderProviderDefaultPaymentAddress = _renderProviderDefaultPaymentAddress;
-        emit RenderProviderDefaultPaymentAddressUpdated(
-            renderProviderDefaultPaymentAddress
-        );
     }
 
     /**
@@ -160,25 +72,6 @@ contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
     }
 
     /**
-     *  Update render provider royalty payment address to be used
-     *  for a specific project on a specific token contract.
-     */
-    function updateRenderProviderPaymentAddressForProject(
-        address _tokenContract,
-        uint256 _projectId,
-        address payable _renderProviderPaymentAddress
-    ) external onlyAdminOnContract(_tokenContract) {
-        renderProviderPaymentAddressForProject[_tokenContract][
-            _projectId
-        ] = _renderProviderPaymentAddress;
-        emit RenderProviderPaymentAddressForProjectUpdated(
-            _tokenContract,
-            _projectId,
-            _renderProviderPaymentAddress
-        );
-    }
-
-    /**
      *  Clear render provider royalty payment address to be used
      *  for a specific token contract.
      */
@@ -190,24 +83,6 @@ contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
         );
         emit RenderProviderPaymentAddressForContractUpdated(
             _tokenContract,
-            payable(address(0))
-        );
-    }
-
-    /**
-     *  Update render provider royalty payment address to be used
-     *  for a specific project on a specific token contract.
-     */
-    function clearRenderProviderPaymentAddressForProject(
-        address _tokenContract,
-        uint256 _projectId
-    ) external onlyAdminOnContract(_tokenContract) {
-        renderProviderPaymentAddressForProject[_tokenContract][
-            _projectId
-        ] = payable(address(0));
-        emit RenderProviderPaymentAddressForProjectUpdated(
-            _tokenContract,
-            _projectId,
             payable(address(0))
         );
     }
@@ -233,38 +108,6 @@ contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
     }
 
     /**
-     *  Update render provider royalty payment bps to be used
-     *  for a specific project.
-     *  Must be less than or equal to default bps.
-     */
-    function updateRenderProviderBpsForProject(
-        address _tokenContract,
-        uint256 _projectId,
-        uint256 _bps
-    ) external onlyAdminOnContract(_tokenContract) {
-        // prevent admin from rugging a project
-        require(
-            _bps <= renderProviderDefaultBps,
-            "override bps for project must be less than default"
-        );
-        require(
-            !renderProviderBpsOverrideForContract[_tokenContract].useOverride ||
-                _bps <=
-                renderProviderBpsOverrideForContract[_tokenContract].bps,
-            "override bps for project must be less than default for contract"
-        );
-        renderProviderBpsOverrideForProject[_tokenContract][
-            _projectId
-        ] = BpsOverride(true, _bps);
-        emit RenderProviderBpsForProjectUpdated(
-            _tokenContract,
-            _projectId,
-            true,
-            _bps
-        );
-    }
-
-    /**
      *  Clear render provider royalty payment bps override to be used
      *  for a specific token contract.
      */
@@ -277,74 +120,6 @@ contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
             0
         ); // initial values
         emit RenderProviderBpsForContractUpdated(_tokenContract, false, 0);
-    }
-
-    /**
-     *  Clear render provider royalty payment bps to be used
-     *  for a specific project.
-     */
-    function clearRenderProviderBpsForProject(
-        address _tokenContract,
-        uint256 _projectId
-    ) external onlyAdminOnContract(_tokenContract) {
-        renderProviderBpsOverrideForProject[_tokenContract][
-            _projectId
-        ] = BpsOverride(false, 0); // initial values
-        emit RenderProviderBpsForProjectUpdated(
-            _tokenContract,
-            _projectId,
-            false,
-            0
-        );
-    }
-
-    function getRenderProviderPaymentAddress(
-        address _tokenAddress,
-        uint256 _tokenId
-    ) public view returns (address payable renderProviderPaymentAddress) {
-        uint256 _projectId = IGenArt721CoreContract(_tokenAddress)
-            .tokenIdToProjectId(_tokenId);
-        // use project override if specified
-        if (
-            renderProviderPaymentAddressForProject[_tokenAddress][_projectId] !=
-            address(0)
-        ) {
-            return
-                renderProviderPaymentAddressForProject[_tokenAddress][
-                    _projectId
-                ];
-        }
-        // use contract override if specified
-        if (
-            renderProviderPaymentAddressForContract[_tokenAddress] != address(0)
-        ) {
-            return renderProviderPaymentAddressForContract[_tokenAddress];
-        }
-        // default
-        return renderProviderDefaultPaymentAddress;
-    }
-
-    function getRenderProviderRoyaltyBps(
-        address _tokenAddress,
-        uint256 _tokenId
-    ) public view returns (uint256 bps) {
-        uint256 _projectId = IGenArt721CoreContract(_tokenAddress)
-            .tokenIdToProjectId(_tokenId);
-        // use project override if specified
-        if (
-            renderProviderBpsOverrideForProject[_tokenAddress][_projectId]
-                .useOverride
-        ) {
-            return
-                renderProviderBpsOverrideForProject[_tokenAddress][_projectId]
-                    .bps;
-        }
-        // use contract override if specified
-        if (renderProviderBpsOverrideForContract[_tokenAddress].useOverride) {
-            return renderProviderBpsOverrideForContract[_tokenAddress].bps;
-        }
-        // default
-        return renderProviderDefaultBps;
     }
 
     function getRoyalties(address _tokenAddress, uint256 _tokenId)
@@ -367,11 +142,15 @@ contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
         recipients_[1] = payable(additionalPayee);
         bps[1] = additionalPayeePercentage * royaltyFeeByID;
         // append render provider royalty
-        recipients_[2] = getRenderProviderPaymentAddress(
-            _tokenAddress,
-            _tokenId
+        require(
+            renderProviderPaymentAddressForContract[_tokenAddress] !=
+                address(0),
+            "Art Blocks royalty address must be defined for contract"
         );
-        bps[2] = getRenderProviderRoyaltyBps(_tokenAddress, _tokenId);
+        recipients_[2] = renderProviderPaymentAddressForContract[_tokenAddress];
+        bps[2] = renderProviderBpsOverrideForContract[_tokenAddress].useOverride
+            ? renderProviderBpsOverrideForContract[_tokenAddress].bps
+            : renderProviderDefaultBps;
         return (recipients_, bps);
     }
 }
