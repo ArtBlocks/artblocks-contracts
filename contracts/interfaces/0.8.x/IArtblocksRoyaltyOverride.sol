@@ -1,4 +1,5 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: LGPL-3.0-only
+// Creatd By: Art Blocks Inc.
 
 import "../../libs/0.8.x/IERC165.sol";
 
