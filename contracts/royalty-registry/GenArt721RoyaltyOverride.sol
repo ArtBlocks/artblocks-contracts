@@ -76,10 +76,10 @@ contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
      *  for a specific token contract.
      *  Must be less than or equal to default bps.
      */
-    function updateArtBlocksBpsForContract(
-        address _tokenContract,
-        uint256 _bps
-    ) external onlyAdminOnContract(_tokenContract) {
+    function updateArtBlocksBpsForContract(address _tokenContract, uint256 _bps)
+        external
+        onlyAdminOnContract(_tokenContract)
+    {
         require(
             _bps <= artBlocksDefaultBps,
             "override bps for contract must be less than default"
@@ -99,10 +99,7 @@ contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
         external
         onlyAdminOnContract(_tokenContract)
     {
-        artBlocksBpsOverrideForContract[_tokenContract] = BpsOverride(
-            false,
-            0
-        ); // initial values
+        artBlocksBpsOverrideForContract[_tokenContract] = BpsOverride(false, 0); // initial values
         emit ArtBlocksBpsForContractUpdated(_tokenContract, false, 0);
     }
 
@@ -127,8 +124,7 @@ contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
         bps[1] = additionalPayeePercentage * royaltyFeeByID;
         // append art blocks royalty
         require(
-            artBlocksRoyaltyAddressForContract[_tokenAddress] !=
-                address(0),
+            artBlocksRoyaltyAddressForContract[_tokenAddress] != address(0),
             "Art Blocks royalty address must be defined for contract"
         );
         recipients_[2] = artBlocksRoyaltyAddressForContract[_tokenAddress];
