@@ -47,7 +47,7 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
       renderProviderRoyaltyAddr1,
       renderProviderRoyaltyAddr2,
       platformRoyaltyAddr1,
-      platformRoyaltyAddr2
+      platformRoyaltyAddr2,
     ] = await ethers.getSigners();
     this.accounts = {
       adminA: adminA,
@@ -60,7 +60,7 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
       renderProviderRoyaltyAddr1,
       renderProviderRoyaltyAddr2,
       platformRoyaltyAddr1,
-      platformRoyaltyAddr2
+      platformRoyaltyAddr2,
     };
     const randomizerFactory = await ethers.getContractFactory("Randomizer");
     this.randomizer = await randomizerFactory.deploy();

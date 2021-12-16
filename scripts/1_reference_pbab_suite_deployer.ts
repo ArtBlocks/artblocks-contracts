@@ -5,6 +5,7 @@ import { ethers } from "hardhat";
 import { Randomizer__factory } from "./contracts/factories/Randomizer__factory";
 import { GenArt721CoreV2PBAB__factory } from "./contracts/factories/GenArt721CoreV2PBAB__factory";
 import { GenArt721MinterPBAB__factory } from "./contracts/factories/GenArt721MinterPBAB__factory";
+import royaltyRegistryABI from "../contracts/libs/abi/RoyaltyRegistry.json";
 
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG BEGINS HERE
@@ -17,6 +18,18 @@ const rendererProviderAddress = "0x000000000000000000000000000000000000dEaD";
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG ENDS HERE
 //////////////////////////////////////////////////////////////////////////////
+
+function getRoyaltyRegistryAddress(networkName: string): string {
+  // ref: https://royaltyregistry.xyz/lookup)
+  if (networkName == "ropsten") {
+    return "0x9cac159ec266E76ed7377b801f3b5d2cC7bcf40d";
+  }
+  if (networkName == "rinkeby") {
+    return "0xc9198CbbB57708CF31e0caBCe963c98e60d333c3";
+  }
+  // return address on ETH mainnet
+  return "0xaD2184FB5DBcfC05d8f056542fB25b04fa32A95D";
+}
 
 async function main() {
   const [deployer] = await ethers.getSigners();
@@ -93,6 +106,23 @@ async function main() {
       .addWhitelisted("0x0B7917b62BC98967e06e80EFBa9aBcAcCF3d4928");
     console.log(`Performing ${network.name} deployment, allowlisted AB staff.`);
   }
+
+  // TODO - un-comment this block once royalty override contract is deployed
+  // // set override on Royalty Registry
+  // const royaltyOverrideAddress_PBAB =
+  // "0xTODO - Update Once Royalty Override for PBAB is Deployed";
+  // const RoyaltyRegistryAddress = getRoyaltyRegistryAddress(network.name);
+  // const RoyaltyRegistryContract = await ethers.getContractAt(
+  //   royaltyRegistryABI,
+  //   RoyaltyRegistryAddress
+  // );
+  // await RoyaltyRegistryContract.connect(deployer).setRoyaltyLookupAddress(
+  //   genArt721Core.address, // token address
+  //   royaltyOverrideAddress_PBAB // override address
+  // );
+  // console.log(
+  //   "Royalty Registry Override for GenArt721Core set to: ${royaltyOverrideAddress_PBAB}"
+  // );
 
   // Allowlist new PBAB owner.
   await genArt721Core.connect(deployer).addWhitelisted(pbabTransferAddress);

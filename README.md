@@ -26,3 +26,11 @@ Create a `.env` file by duplicating `.env.example` and populating all variables.
 
 ### format your source code
 `yarn format`
+
+## Deployments
+Deployment script templates are located in the `./scripts` directory. To run a deployment script `deploy.ts`:
+```
+yarn hardhat run --network <your-network> scripts/deploy.ts
+```
+where `<your network>` is any network configured in `hardhat.config.js`.
+For additional deployment details, see hardhat docs: [https://hardhat.org/guides/deploying.html](https://hardhat.org/guides/deploying.html)
