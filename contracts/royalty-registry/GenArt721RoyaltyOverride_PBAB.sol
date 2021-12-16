@@ -143,8 +143,8 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
         view
         returns (address payable[] memory recipients_, uint256[] memory bps)
     {
-        recipients_ = new address payable[](3);
-        bps = new uint256[](3);
+        recipients_ = new address payable[](4);
+        bps = new uint256[](4);
         // get standard royalty data for artist and additional payee
         (
             address artistAddress,
@@ -162,7 +162,7 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
             platformRoyaltyAddressForContract[_tokenAddress] != address(0),
             "Platform royalty address must be defined for contract"
         );
-        recipients_[2] = payable(address(0)); // todo
+        recipients_[2] = platformRoyaltyAddressForContract[_tokenAddress];
         bps[2] = platformBpsOverrideForContract[_tokenAddress].useOverride
             ? platformBpsOverrideForContract[_tokenAddress].bps
             : platformDefaultBps;

@@ -166,7 +166,7 @@ describe("GenArt721RoyaltyOverride", async function () {
       .updateProjectSecondaryMarketRoyaltyPercentage(projectOne, 10);
 
     // mint a token on each project because accurate royalties may only be looked
-    // up for existing (core returns royalties for tokenId=0 on non-existant tokens)
+    // up for existing (core returns royalties for tokenId=0 on non-existent tokens)
     this.minterFilterB = await minterFilterFactory.deploy(this.tokenB.address);
     this.minterB = await minterFactory.deploy(
       this.tokenB.address,
