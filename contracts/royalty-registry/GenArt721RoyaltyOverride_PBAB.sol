@@ -99,10 +99,10 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
      *  Update platform provider royalty payment bps to be used
      *  for a specific token contract.
      */
-    function updatePlatformBpsForContract(
-        address _tokenContract,
-        uint256 _bps
-    ) external onlyAdminOnContract(_tokenContract) {
+    function updatePlatformBpsForContract(address _tokenContract, uint256 _bps)
+        external
+        onlyAdminOnContract(_tokenContract)
+    {
         require(_bps <= 10000, "invalid bps");
         platformBpsOverrideForContract[_tokenContract] = BpsOverride(
             true,
@@ -134,10 +134,7 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
         external
         onlyAdminOnContract(_tokenContract)
     {
-        platformBpsOverrideForContract[_tokenContract] = BpsOverride(
-            false,
-            0
-        ); // initial values
+        platformBpsOverrideForContract[_tokenContract] = BpsOverride(false, 0); // initial values
         emit PlatformBpsForContractUpdated(_tokenContract, false, 0);
     }
 
