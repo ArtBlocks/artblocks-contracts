@@ -309,21 +309,21 @@ contract GenArt721MinterDA {
             if (refund > 0) {
                 msg.sender.transfer(refund);
             }
-            uint256 artBlocksAmount = pricePerTokenInWei.div(100).mul(
+            uint256 artblocksAmount = pricePerTokenInWei.div(100).mul(
                 artblocksContract.artblocksPercentage()
             );
-            if (artBlocksAmount > 0) {
-                artblocksContract.artblocksAddress().transfer(artBlocksAmount);
+            if (artblocksAmount > 0) {
+                artblocksContract.artblocksAddress().transfer(artblocksAmount);
             }
 
-            uint256 remainingFunds = pricePerTokenInWei.sub(artBlocksAmount);
+            uint256 remainingFunds = pricePerTokenInWei.sub(artblocksAmount);
 
             uint256 ownerFunds = remainingFunds.div(100).mul(ownerPercentage);
             if (ownerFunds > 0) {
                 ownerAddress.transfer(ownerFunds);
             }
 
-            uint256 projectFunds = pricePerTokenInWei.sub(artBlocksAmount).sub(
+            uint256 projectFunds = pricePerTokenInWei.sub(artblocksAmount).sub(
                 ownerFunds
             );
             uint256 additionalPayeeAmount;
@@ -359,21 +359,21 @@ contract GenArt721MinterDA {
             if (refund > 0) {
                 msg.sender.transfer(refund);
             }
-            uint256 artBlocksAmount = pricePerTokenInWei.div(100).mul(
+            uint256 artblocksAmount = pricePerTokenInWei.div(100).mul(
                 artblocksContract.artblocksPercentage()
             );
-            if (artBlocksAmount > 0) {
-                artblocksContract.artblocksAddress().transfer(artBlocksAmount);
+            if (artblocksAmount > 0) {
+                artblocksContract.artblocksAddress().transfer(artblocksAmount);
             }
 
-            uint256 remainingFunds = pricePerTokenInWei.sub(artBlocksAmount);
+            uint256 remainingFunds = pricePerTokenInWei.sub(artblocksAmount);
 
             uint256 ownerFunds = remainingFunds.div(100).mul(ownerPercentage);
             if (ownerFunds > 0) {
                 ownerAddress.transfer(ownerFunds);
             }
 
-            uint256 projectFunds = pricePerTokenInWei.sub(artBlocksAmount).sub(
+            uint256 projectFunds = pricePerTokenInWei.sub(artblocksAmount).sub(
                 ownerFunds
             );
             uint256 additionalPayeeAmount;
@@ -405,18 +405,18 @@ contract GenArt721MinterDA {
     function _splitFundsERC20(uint256 _projectId) internal {
         uint256 pricePerTokenInWei = artblocksContract
             .projectIdToPricePerTokenInWei(_projectId);
-        uint256 artBlocksAmount = pricePerTokenInWei.div(100).mul(
+        uint256 artblocksAmount = pricePerTokenInWei.div(100).mul(
             artblocksContract.artblocksPercentage()
         );
-        if (artBlocksAmount > 0) {
+        if (artblocksAmount > 0) {
             ERC20(artblocksContract.projectIdToCurrencyAddress(_projectId))
                 .transferFrom(
                     msg.sender,
                     artblocksContract.artblocksAddress(),
-                    artBlocksAmount
+                    artblocksAmount
                 );
         }
-        uint256 remainingFunds = pricePerTokenInWei.sub(artBlocksAmount);
+        uint256 remainingFunds = pricePerTokenInWei.sub(artblocksAmount);
 
         uint256 ownerFunds = remainingFunds.div(100).mul(ownerPercentage);
         if (ownerFunds > 0) {
@@ -424,7 +424,7 @@ contract GenArt721MinterDA {
                 .transferFrom(msg.sender, ownerAddress, ownerFunds);
         }
 
-        uint256 projectFunds = pricePerTokenInWei.sub(artBlocksAmount).sub(
+        uint256 projectFunds = pricePerTokenInWei.sub(artblocksAmount).sub(
             ownerFunds
         );
         uint256 additionalPayeeAmount;
