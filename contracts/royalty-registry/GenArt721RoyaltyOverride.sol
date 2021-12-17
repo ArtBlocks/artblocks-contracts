@@ -9,27 +9,27 @@ import "../interfaces/0.8.x/IGenArt721CoreContract.sol";
 pragma solidity 0.8.9;
 
 contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
-    event ArtBlocksRoyaltyAddressForContractUpdated(
+    event ArtblocksRoyaltyAddressForContractUpdated(
         address indexed contractAddress,
-        address payable indexed artBlocksRoyaltyAddress
+        address payable indexed artblocksRoyaltyAddress
     );
 
-    event ArtBlocksBpsForContractUpdated(
+    event ArtblocksBpsForContractUpdated(
         address indexed tokenAddress,
         bool indexed useOverride,
         uint256 bps
     );
 
     mapping(address => address payable)
-        public artBlocksRoyaltyAddressForContract;
+        public artblocksRoyaltyAddressForContract;
 
     struct BpsOverride {
         bool useOverride;
         uint256 bps;
     }
 
-    uint256 public artBlocksDefaultBps = 250; // 2.5 percent
-    mapping(address => BpsOverride) public artBlocksBpsOverrideForContract;
+    uint256 public artblocksDefaultBps = 250; // 2.5 percent
+    mapping(address => BpsOverride) public artblocksBpsOverrideForContract;
 
     modifier onlyAdminOnContract(address _tokenContract) {
         require(
@@ -58,16 +58,16 @@ contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
      *  Update art blocks royalty payment address to be used
      *  for a specific token contract.
      */
-    function updateArtBlocksRoyaltyAddressForContract(
+    function updateArtblocksRoyaltyAddressForContract(
         address _tokenContract,
-        address payable _artBlocksRoyaltyAddress
+        address payable _artblocksRoyaltyAddress
     ) external onlyAdminOnContract(_tokenContract) {
-        artBlocksRoyaltyAddressForContract[
+        artblocksRoyaltyAddressForContract[
             _tokenContract
-        ] = _artBlocksRoyaltyAddress;
-        emit ArtBlocksRoyaltyAddressForContractUpdated(
+        ] = _artblocksRoyaltyAddress;
+        emit ArtblocksRoyaltyAddressForContractUpdated(
             _tokenContract,
-            _artBlocksRoyaltyAddress
+            _artblocksRoyaltyAddress
         );
     }
 
@@ -76,31 +76,31 @@ contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
      *  for a specific token contract.
      *  Must be less than or equal to default bps.
      */
-    function updateArtBlocksBpsForContract(address _tokenContract, uint256 _bps)
+    function updateArtblocksBpsForContract(address _tokenContract, uint256 _bps)
         external
         onlyAdminOnContract(_tokenContract)
     {
         require(
-            _bps <= artBlocksDefaultBps,
-            "override bps for contract must be less than default"
+            _bps <= artblocksDefaultBps,
+            "override bps for contract must be less than or equal to default"
         );
-        artBlocksBpsOverrideForContract[_tokenContract] = BpsOverride(
+        artblocksBpsOverrideForContract[_tokenContract] = BpsOverride(
             true,
             _bps
         );
-        emit ArtBlocksBpsForContractUpdated(_tokenContract, true, _bps);
+        emit ArtblocksBpsForContractUpdated(_tokenContract, true, _bps);
     }
 
     /**
      *  Clear art blocks royalty payment bps override to be used
      *  for a specific token contract.
      */
-    function clearArtBlocksBpsForContract(address _tokenContract)
+    function clearArtblocksBpsForContract(address _tokenContract)
         external
         onlyAdminOnContract(_tokenContract)
     {
-        artBlocksBpsOverrideForContract[_tokenContract] = BpsOverride(false, 0); // initial values
-        emit ArtBlocksBpsForContractUpdated(_tokenContract, false, 0);
+        artblocksBpsOverrideForContract[_tokenContract] = BpsOverride(false, 0); // initial values
+        emit ArtblocksBpsForContractUpdated(_tokenContract, false, 0);
     }
 
     function getRoyalties(address _tokenAddress, uint256 _tokenId)
@@ -124,13 +124,13 @@ contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
         bps[1] = additionalPayeePercentage * royaltyFeeByID;
         // append art blocks royalty
         require(
-            artBlocksRoyaltyAddressForContract[_tokenAddress] != address(0),
+            artblocksRoyaltyAddressForContract[_tokenAddress] != address(0),
             "Art Blocks royalty address must be defined for contract"
         );
-        recipients_[2] = artBlocksRoyaltyAddressForContract[_tokenAddress];
-        bps[2] = artBlocksBpsOverrideForContract[_tokenAddress].useOverride
-            ? artBlocksBpsOverrideForContract[_tokenAddress].bps
-            : artBlocksDefaultBps;
+        recipients_[2] = artblocksRoyaltyAddressForContract[_tokenAddress];
+        bps[2] = artblocksBpsOverrideForContract[_tokenAddress].useOverride
+            ? artblocksBpsOverrideForContract[_tokenAddress].bps
+            : artblocksDefaultBps;
         return (recipients_, bps);
     }
 }
