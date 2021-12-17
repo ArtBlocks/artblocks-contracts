@@ -3,7 +3,7 @@
 
 pragma solidity ^0.8.0;
 
-interface IGenArt721CoreContract {
+interface IGenArt721CoreV2_PBAB {
     event Mint(
         address indexed _to,
         uint256 indexed _tokenId,
@@ -66,9 +66,9 @@ interface IGenArt721CoreContract {
             address
         );
 
-    function artblocksAddress() external view returns (address payable);
+    function renderProviderAddress() external view returns (address);
 
-    function artblocksPercentage() external view returns (uint256);
+    function renderProviderPercentage() external view returns (uint256);
 
     function mint(
         address _to,

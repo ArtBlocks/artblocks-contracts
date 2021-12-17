@@ -10,6 +10,15 @@ interface IGenArt721CoreV2_PBAB {
         uint256 indexed _projectId
     );
 
+    // getter function of public variable
+    function admin() external view returns (address);
+
+    // getter function of public mapping
+    function tokenIdToProjectId(uint256 tokenId)
+        external
+        view
+        returns (uint256 projectId);
+
     function isWhitelisted(address sender) external view returns (bool);
 
     function projectIdToCurrencySymbol(uint256 _projectId)
@@ -66,4 +75,14 @@ interface IGenArt721CoreV2_PBAB {
         uint256 _projectId,
         address _by
     ) external returns (uint256 tokenId);
+
+    function getRoyaltyData(uint256 _tokenId)
+        external
+        view
+        returns (
+            address artistAddress,
+            address additionalPayee,
+            uint256 additionalPayeePercentage,
+            uint256 royaltyFeeByID
+        );
 }
