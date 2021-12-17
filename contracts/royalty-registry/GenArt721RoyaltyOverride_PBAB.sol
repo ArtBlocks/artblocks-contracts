@@ -27,7 +27,7 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
     );
 
     mapping(address => address payable)
-        public platformRoyaltyAddressForContract;
+        public tokenAddressToPlatformRoyaltyAddress;
 
     struct BpsOverride {
         bool useOverride;
@@ -36,8 +36,9 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
 
     uint256 public constant RENDER_PROVIDER_DEFAULT_BPS = 250; // 2.5 percent
     uint256 public constant PLATFORM_DEFAULT_BPS = 250; // 2.5 percent
-    mapping(address => BpsOverride) public renderProviderBpsOverrideForContract;
-    mapping(address => BpsOverride) public platformBpsOverrideForContract;
+    mapping(address => BpsOverride)
+        public tokenAddressToRenderProviderBpsOverride;
+    mapping(address => BpsOverride) public tokenAddressToPlatformBpsOverride;
 
     modifier onlyAdminOnContract(address _tokenContract) {
         require(
@@ -70,7 +71,7 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
         address _tokenContract,
         address payable _platformRoyaltyAddress
     ) external onlyAdminOnContract(_tokenContract) {
-        platformRoyaltyAddressForContract[
+        tokenAddressToPlatformRoyaltyAddress[
             _tokenContract
         ] = _platformRoyaltyAddress;
         emit PlatformRoyaltyAddressForContractUpdated(
@@ -88,7 +89,7 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
         uint256 _bps
     ) external onlyAdminOnContract(_tokenContract) {
         require(_bps <= 10000, "invalid bps");
-        renderProviderBpsOverrideForContract[_tokenContract] = BpsOverride(
+        tokenAddressToRenderProviderBpsOverride[_tokenContract] = BpsOverride(
             true,
             _bps
         );
@@ -104,7 +105,7 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
         onlyAdminOnContract(_tokenContract)
     {
         require(_bps <= 10000, "invalid bps");
-        platformBpsOverrideForContract[_tokenContract] = BpsOverride(
+        tokenAddressToPlatformBpsOverride[_tokenContract] = BpsOverride(
             true,
             _bps
         );
@@ -119,7 +120,7 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
         external
         onlyAdminOnContract(_tokenContract)
     {
-        renderProviderBpsOverrideForContract[_tokenContract] = BpsOverride(
+        tokenAddressToRenderProviderBpsOverride[_tokenContract] = BpsOverride(
             false,
             0
         ); // initial values
@@ -134,7 +135,10 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
         external
         onlyAdminOnContract(_tokenContract)
     {
-        platformBpsOverrideForContract[_tokenContract] = BpsOverride(false, 0); // initial values
+        tokenAddressToPlatformBpsOverride[_tokenContract] = BpsOverride(
+            false,
+            0
+        ); // initial values
         emit PlatformBpsForContractUpdated(_tokenContract, false, 0);
     }
 
@@ -159,19 +163,20 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
         bps[1] = additionalPayeePercentage * royaltyFeeByID;
         // append platform provider royalty
         require(
-            platformRoyaltyAddressForContract[_tokenAddress] != address(0),
+            tokenAddressToPlatformRoyaltyAddress[_tokenAddress] != address(0),
             "Platform royalty address must be defined for contract"
         );
-        recipients_[2] = platformRoyaltyAddressForContract[_tokenAddress];
-        bps[2] = platformBpsOverrideForContract[_tokenAddress].useOverride
-            ? platformBpsOverrideForContract[_tokenAddress].bps
+        recipients_[2] = tokenAddressToPlatformRoyaltyAddress[_tokenAddress];
+        bps[2] = tokenAddressToPlatformBpsOverride[_tokenAddress].useOverride
+            ? tokenAddressToPlatformBpsOverride[_tokenAddress].bps
             : PLATFORM_DEFAULT_BPS;
         // append render provider royalty
         recipients_[3] = payable(
             IGenArt721CoreV2_PBAB(_tokenAddress).renderProviderAddress()
         );
-        bps[3] = renderProviderBpsOverrideForContract[_tokenAddress].useOverride
-            ? renderProviderBpsOverrideForContract[_tokenAddress].bps
+        bps[3] = tokenAddressToRenderProviderBpsOverride[_tokenAddress]
+            .useOverride
+            ? tokenAddressToRenderProviderBpsOverride[_tokenAddress].bps
             : RENDER_PROVIDER_DEFAULT_BPS;
         return (recipients_, bps);
     }

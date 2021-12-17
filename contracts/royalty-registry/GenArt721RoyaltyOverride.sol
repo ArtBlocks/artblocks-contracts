@@ -21,7 +21,7 @@ contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
     );
 
     mapping(address => address payable)
-        public artblocksRoyaltyAddressForContract;
+        public tokenAddressToArtblocksRoyaltyAddress;
 
     struct BpsOverride {
         bool useOverride;
@@ -29,7 +29,7 @@ contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
     }
 
     uint256 public constant ARTBLOCKS_DEFAULT_BPS = 250; // 2.5 percent
-    mapping(address => BpsOverride) public artblocksBpsOverrideForContract;
+    mapping(address => BpsOverride) public tokenAddressToArtblocksBpsOverride;
 
     modifier onlyAdminOnContract(address _tokenContract) {
         require(
@@ -62,7 +62,7 @@ contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
         address _tokenContract,
         address payable _artblocksRoyaltyAddress
     ) external onlyAdminOnContract(_tokenContract) {
-        artblocksRoyaltyAddressForContract[
+        tokenAddressToArtblocksRoyaltyAddress[
             _tokenContract
         ] = _artblocksRoyaltyAddress;
         emit ArtblocksRoyaltyAddressForContractUpdated(
@@ -84,7 +84,7 @@ contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
             _bps <= ARTBLOCKS_DEFAULT_BPS,
             "override bps for contract must be less than or equal to default"
         );
-        artblocksBpsOverrideForContract[_tokenContract] = BpsOverride(
+        tokenAddressToArtblocksBpsOverride[_tokenContract] = BpsOverride(
             true,
             _bps
         );
@@ -99,7 +99,10 @@ contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
         external
         onlyAdminOnContract(_tokenContract)
     {
-        artblocksBpsOverrideForContract[_tokenContract] = BpsOverride(false, 0); // initial values
+        tokenAddressToArtblocksBpsOverride[_tokenContract] = BpsOverride(
+            false,
+            0
+        ); // initial values
         emit ArtblocksBpsForContractUpdated(_tokenContract, false, 0);
     }
 
@@ -124,12 +127,12 @@ contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
         bps[1] = additionalPayeePercentage * royaltyFeeByID;
         // append art blocks royalty
         require(
-            artblocksRoyaltyAddressForContract[_tokenAddress] != address(0),
+            tokenAddressToArtblocksRoyaltyAddress[_tokenAddress] != address(0),
             "Art Blocks royalty address must be defined for contract"
         );
-        recipients_[2] = artblocksRoyaltyAddressForContract[_tokenAddress];
-        bps[2] = artblocksBpsOverrideForContract[_tokenAddress].useOverride
-            ? artblocksBpsOverrideForContract[_tokenAddress].bps
+        recipients_[2] = tokenAddressToArtblocksRoyaltyAddress[_tokenAddress];
+        bps[2] = tokenAddressToArtblocksBpsOverride[_tokenAddress].useOverride
+            ? tokenAddressToArtblocksBpsOverride[_tokenAddress].bps
             : ARTBLOCKS_DEFAULT_BPS;
         return (recipients_, bps);
     }
