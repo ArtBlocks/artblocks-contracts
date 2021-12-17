@@ -28,7 +28,7 @@ contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
         uint256 bps;
     }
 
-    uint256 public artblocksDefaultBps = 250; // 2.5 percent
+    uint256 public constant ARTBLOCKS_DEFAULT_BPS = 250; // 2.5 percent
     mapping(address => BpsOverride) public artblocksBpsOverrideForContract;
 
     modifier onlyAdminOnContract(address _tokenContract) {
@@ -81,7 +81,7 @@ contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
         onlyAdminOnContract(_tokenContract)
     {
         require(
-            _bps <= artblocksDefaultBps,
+            _bps <= ARTBLOCKS_DEFAULT_BPS,
             "override bps for contract must be less than or equal to default"
         );
         artblocksBpsOverrideForContract[_tokenContract] = BpsOverride(
@@ -130,7 +130,7 @@ contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
         recipients_[2] = artblocksRoyaltyAddressForContract[_tokenAddress];
         bps[2] = artblocksBpsOverrideForContract[_tokenAddress].useOverride
             ? artblocksBpsOverrideForContract[_tokenAddress].bps
-            : artblocksDefaultBps;
+            : ARTBLOCKS_DEFAULT_BPS;
         return (recipients_, bps);
     }
 }

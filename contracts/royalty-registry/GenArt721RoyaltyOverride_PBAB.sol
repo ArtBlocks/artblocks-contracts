@@ -34,8 +34,8 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
         uint256 bps;
     }
 
-    uint256 public renderProviderDefaultBps = 250; // 2.5 percent
-    uint256 public platformDefaultBps = 250; // 2.5 percent
+    uint256 public constant RENDER_PROVIDER_DEFAULT_BPS = 250; // 2.5 percent
+    uint256 public constant PLATFORM_DEFAULT_BPS = 250; // 2.5 percent
     mapping(address => BpsOverride) public renderProviderBpsOverrideForContract;
     mapping(address => BpsOverride) public platformBpsOverrideForContract;
 
@@ -165,14 +165,14 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
         recipients_[2] = platformRoyaltyAddressForContract[_tokenAddress];
         bps[2] = platformBpsOverrideForContract[_tokenAddress].useOverride
             ? platformBpsOverrideForContract[_tokenAddress].bps
-            : platformDefaultBps;
+            : PLATFORM_DEFAULT_BPS;
         // append render provider royalty
         recipients_[3] = payable(
             IGenArt721CoreV2_PBAB(_tokenAddress).renderProviderAddress()
         );
         bps[3] = renderProviderBpsOverrideForContract[_tokenAddress].useOverride
             ? renderProviderBpsOverrideForContract[_tokenAddress].bps
-            : renderProviderDefaultBps;
+            : RENDER_PROVIDER_DEFAULT_BPS;
         return (recipients_, bps);
     }
 }
