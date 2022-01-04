@@ -34,3 +34,6 @@ yarn hardhat run --network <your-network> scripts/deploy.ts
 ```
 where `<your network>` is any network configured in `hardhat.config.js`.
 For additional deployment details, see hardhat docs: [https://hardhat.org/guides/deploying.html](https://hardhat.org/guides/deploying.html)
+
+## Documentation
+Documenation for contracts may be generated via `yarn docgen`. Some Art Blocks contracts use [NatSpec](https://docs.soliditylang.org/en/v0.8.9/natspec-format.html#documentation-example) comments to automatically enrich generated documentation. 
