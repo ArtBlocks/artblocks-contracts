@@ -7,17 +7,29 @@ import "../interfaces/0.8.x/IFilteredMinter.sol";
 
 pragma solidity 0.8.9;
 
+/**
+    @title Filtered Minter contract that allows tokens to be minted with ETH.
+    @author Art Blocks Inc.
+ */
 contract GenArt721FilteredMinterETH is IFilteredMinter {
+    /// Art Blocks core contract this minter may interact with.
     IGenArt721CoreContract public artblocksContract;
+    /// Minter filter contract this minter may interact with.
     IMinterFilter public minterFilter;
 
     uint256 constant ONE_MILLION = 1_000_000;
 
+    /// projectId => are contracts allowed to mint?
     mapping(uint256 => bool) public contractMintable;
+    /// projectId => are tokens allowed to be minted to other addresses?
     mapping(uint256 => bool) public purchaseToDisabled;
+    /// purchaser address => projectId => number of mints purchased
     mapping(address => mapping(uint256 => uint256)) public projectMintCounter;
+    /// projectId => maximum number of mints a single address may invoke
     mapping(uint256 => uint256) public projectMintLimit;
+    /// projectId => has project reached its maximum number of invocations?
     mapping(uint256 => bool) public projectMaxHasBeenInvoked;
+    /// projectId => project's maximum number of invocations
     mapping(uint256 => uint256) public projectMaxInvocations;
 
     modifier onlyCoreWhitelisted() {
@@ -28,11 +40,26 @@ contract GenArt721FilteredMinterETH is IFilteredMinter {
         _;
     }
 
+    /**
+        @notice Initializes contract to be a Filtered Minter for 
+        `_minterFilter`, integrated with Art Blocks core contract
+        at address `_genArt721Address`.
+        @param _genArt721Address Art Blocks core contract address for
+        which this contract will be a minter.
+        @param _minterFilter Minter filter contract address for which
+        this will a filtered minter.
+     */
     constructor(address _genArt721Address, address _minterFilter) {
         artblocksContract = IGenArt721CoreContract(_genArt721Address);
         minterFilter = IMinterFilter(_minterFilter);
     }
 
+    /**
+        @notice Sets the mint limit of project `_projectId` to `_limit`.
+        @param _projectId Project ID to set the mint limit for.
+        @param _limit Number of times a single address may mint the
+        project's tokens.
+     */
     function setProjectMintLimit(uint256 _projectId, uint8 _limit)
         external
         onlyCoreWhitelisted
@@ -40,6 +67,12 @@ contract GenArt721FilteredMinterETH is IFilteredMinter {
         projectMintLimit[_projectId] = _limit;
     }
 
+    /**
+        @notice Sets the maximum invocations of project `_projectId` based
+        on the value currently defined in the core contract.
+        @param _projectId Project ID to set the maximum invocations for.
+        @dev also checks and may refresh projectMaxHasBeenInvoked for project
+     */
     function setProjectMaxInvocations(uint256 _projectId)
         external
         onlyCoreWhitelisted
@@ -54,6 +87,11 @@ contract GenArt721FilteredMinterETH is IFilteredMinter {
         }
     }
 
+    /**
+        @notice Toggles if contracts are allowed to mint tokens for
+        project `_projectId`.
+        @param _projectId Project ID to be toggled.
+     */
     function toggleContractMintable(uint256 _projectId)
         external
         onlyCoreWhitelisted
@@ -61,6 +99,11 @@ contract GenArt721FilteredMinterETH is IFilteredMinter {
         contractMintable[_projectId] = !contractMintable[_projectId];
     }
 
+    /**
+        @notice Toggles if purchases to other address are enabled for 
+        project `_projectId`.
+        @param _projectId Project ID to be toggled.
+     */
     function togglePurchaseToDisabled(uint256 _projectId)
         external
         onlyCoreWhitelisted
@@ -68,6 +111,11 @@ contract GenArt721FilteredMinterETH is IFilteredMinter {
         purchaseToDisabled[_projectId] = !purchaseToDisabled[_projectId];
     }
 
+    /**
+        @notice Purchases a token from project `_projectId`.
+        @param _projectId Mint a token from this Project ID.
+        @return tokenId Token ID of minted token
+     */
     function purchase(uint256 _projectId)
         external
         payable
@@ -77,6 +125,13 @@ contract GenArt721FilteredMinterETH is IFilteredMinter {
         return tokenId;
     }
 
+    /**
+        @notice Purchases a token from project `_projectId` and sets
+        the token's owner as `_to`.
+        @param _projectId Mint a token from this Project ID.
+        @param _to Address to be the newly minted token's owner.
+        @return tokenId Token ID of minted token
+     */
     function purchaseTo(address _to, uint256 _projectId)
         public
         payable
@@ -140,6 +195,14 @@ contract GenArt721FilteredMinterETH is IFilteredMinter {
         return tokenId;
     }
 
+    /**
+        @notice Splits ETH funds between sender (if refund), foundation,
+        artist, and artist's additional payee for a token purchased on 
+        project `_projectId`.
+        @dev utilizes transfer() to send ETH, which may fail if any access 
+        lists are not properly populated when purchasing tokens.
+        @param _projectId Project ID for which funds shall be split.
+     */
     function _splitFundsETH(uint256 _projectId) internal {
         if (msg.value > 0) {
             uint256 pricePerTokenInWei = artblocksContract
