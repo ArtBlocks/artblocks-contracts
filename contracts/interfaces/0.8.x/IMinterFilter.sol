@@ -12,7 +12,7 @@ interface IMinterFilter {
     /**
         @notice Revoked approval for minter contract at address
         `_minterAddress`
-     */ 
+     */
     event MinterRevoked(address indexed _minterAddress);
 
     /**
