@@ -128,7 +128,7 @@ contract GenArt721FilteredMinterETH is IFilteredMinter {
 
     /**
      * @notice Purchases a token from project `_projectId` and sets
-     * the token's owner as `_to`.
+     * the token's owner to `_to`.
      * @param _projectId Project ID to mint a token on.
      * @param _to Address to be the new token's owner.
      * @return tokenId Token ID of minted token

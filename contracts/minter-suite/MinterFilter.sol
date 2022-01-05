@@ -124,7 +124,7 @@ contract MinterFilter is IMinterFilter {
 
     /**
      * @notice Mint a token from project `_projectId` to `_to`, originally
-     * requested by sender `sender`.
+     * purchased by `sender`.
      * @param _to The new token's owner.
      * @param _projectId Project ID to mint a new token on.
      * @param sender Address purchasing a new token.
