@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-// Creatd By: Art Blocks Inc.
+// Created By: Art Blocks Inc.
 
 import "../libs/0.5.x/SafeMath.sol";
 import "../libs/0.5.x/Strings.sol";
@@ -10,6 +10,11 @@ import "../interfaces/0.5.x/IBonusContract.sol";
 
 pragma solidity ^0.5.0;
 
+/**
+ * @title Powered by Art Blocks minter contract that allows tokens to be
+ * minted with ETH or any ERC-20 token.
+ * @author Art Blocks Inc.
+ */
 contract GenArt721Minter_PBAB {
     using SafeMath for uint256;
 
@@ -122,6 +127,11 @@ contract GenArt721Minter_PBAB {
         projectIdToBonusContractAddress[_projectId] = _bonusContractAddress;
     }
 
+    /**
+     * @notice Purchases a token from project `_projectId`.
+     * @param _projectId Project ID to mint a token on.
+     * @return tokenId Token ID of minted token
+     */
     function purchase(uint256 _projectId)
         public
         payable
@@ -130,8 +140,13 @@ contract GenArt721Minter_PBAB {
         return purchaseTo(msg.sender, _projectId);
     }
 
-    // Remove `public` and `payable` to prevent public use
-    // of the `purchaseTo` function.
+    /**
+     * @notice Purchases a token from project `_projectId` and sets
+     * the token's owner as `_to`.
+     * @param _projectId Project ID to mint a token on.
+     * @param _to Address to be the new token's owner.
+     * @return tokenId Token ID of minted token
+     */
     function purchaseTo(address _to, uint256 _projectId)
         public
         payable
