@@ -14,7 +14,7 @@ interface IArtblocksRoyaltyOverride is IERC165 {
     /**
      * @notice Gets royalites of token ID `_tokenId` on token contract
      * `_tokenAddress`.
-     * @param tokenAddress Address of token contract to be queried.
+     * @param tokenAddress Token contract to be queried.
      * @param tokenId Token ID to be queried.
      * @return recipients_ array of royalty recipients
      * @return bps array of basis points for each recipient, aligned by index

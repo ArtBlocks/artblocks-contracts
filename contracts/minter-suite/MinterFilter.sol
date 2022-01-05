@@ -7,20 +7,20 @@ import "../interfaces/0.8.x/IGenArt721CoreContract.sol";
 pragma solidity 0.8.9;
 
 /**
- * @title Minter filter contract that allows filtered minter contracts 
- * to be set on a per-project basis.
+ * @title Minter filter contract that allows filtered minters to be set
+ * on a per-project basis.
  * @author Art Blocks Inc.
  */
 contract MinterFilter is IMinterFilter {
     /// Art Blocks core contract this minter may interact with.
     IGenArt721CoreContract public artblocksContract;
 
-    /// Default minter contract address
+    /// Default minter address
     address public defaultMinter;
 
-    /// projectId => filtered minter contract address
+    /// projectId => minter address
     mapping(uint256 => address) public minterForProject;
-    /// minter contract address => is an approved minter contract?
+    /// minter address => is an approved minter?
     mapping(address => bool) public isApprovedMinter;
 
     modifier onlyCoreWhitelisted() {
@@ -59,8 +59,8 @@ contract MinterFilter is IMinterFilter {
     }
 
     /**
-     * @notice Approves a minter contract, `_minterAddress`.
-     * @param _minterAddress Minter contract to be added as an approved minter.
+     * @notice Approves minter `_minterAddress`.
+     * @param _minterAddress Minter to be added as an approved minter.
      */
     function addApprovedMinter(address _minterAddress)
         external
@@ -71,8 +71,8 @@ contract MinterFilter is IMinterFilter {
     }
 
     /**
-     * @notice Removes previously approved minter contract, `_minterAddress`.
-     * @param _minterAddress Minter contract to remove from approved minters.
+     * @notice Removes previously approved minter `_minterAddress`.
+     * @param _minterAddress Minter to remove.
      */
     function removeApprovedMinter(address _minterAddress)
         external
@@ -83,8 +83,8 @@ contract MinterFilter is IMinterFilter {
     }
 
     /**
-     * @notice Sets default minter to minter contract `_minterAddress`.
-     * @param _minterAddress Minter contract to be set as default minter.
+     * @notice Sets default minter to minter `_minterAddress`.
+     * @param _minterAddress Minter to be set as default minter.
      */
     function setDefaultMinter(address _minterAddress)
         external
@@ -96,10 +96,10 @@ contract MinterFilter is IMinterFilter {
     }
 
     /**
-     * @notice Sets minter for project `_projectId` to minter contract 
+     * @notice Sets minter for project `_projectId` to minter 
      * `_minterAddress`.
      * @param _projectId Project ID to set minter for.
-     * @param _minterAddress Minter contract to be the project's minter.
+     * @param _minterAddress Minter to be the project's minter.
      */
     function setMinterForProject(uint256 _projectId, address _minterAddress)
         external
@@ -112,7 +112,7 @@ contract MinterFilter is IMinterFilter {
 
     /**
      * @notice Updates project `_projectId` to use the default minter.
-     * @param _projectId Project ID to have use the default minter.
+     * @param _projectId Project ID to reset.
      */
     function resetMinterForProjectToDefault(uint256 _projectId)
         external
@@ -124,10 +124,10 @@ contract MinterFilter is IMinterFilter {
 
     /**
      * @notice Mint a token from project `_projectId` to `_to`, originally
-     * requested by sender at address `sender`.
-     * @param _to Address to be the new token's owner.
+     * requested by sender `sender`.
+     * @param _to The new token's owner.
      * @param _projectId Project ID to mint a new token on.
-     * @param sender Address purchasing a token on the minter contract.
+     * @param sender Address purchasing a new token.
      * @return _tokenId Token ID of minted token
      */
     function mint(

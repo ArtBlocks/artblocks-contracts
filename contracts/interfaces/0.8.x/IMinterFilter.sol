@@ -5,24 +5,23 @@ pragma solidity ^0.8.0;
 
 interface IMinterFilter {
     /**
-     * @notice Approved minter contract at address `_minterAddress`.
+     * @notice Approved minter `_minterAddress`.
      */
     event MinterApproved(address indexed _minterAddress);
 
     /**
-     * @notice Revoked approval for minter contract at address
-     * `_minterAddress`
+     * @notice Revoked approval for minter `_minterAddress`
      */
     event MinterRevoked(address indexed _minterAddress);
 
     /**
-     * @notice Default minter registered at address `_minterAddress`.
-    */
+     * @notice Minter `_minterAddress` registered as default minter.
+     */
     event DefaultMinterRegistered(address indexed _minterAddress);
 
     /**
-     * @notice Minter at address `_minterAddress` registered for 
-     * project `_projectId`.
+     * @notice Minter `_minterAddress` registered for project 
+     * `_projectId`.
      */
     event ProjectMinterRegistered(
         uint256 indexed _projectId,

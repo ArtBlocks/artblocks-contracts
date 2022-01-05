@@ -14,8 +14,8 @@ pragma solidity 0.8.9;
  */
 contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
     /**
-     * @notice Platform royalty payment address for token contract 
-     * `contractAddress` updated to be `platformRoyaltyAddress`
+     * @notice Platform royalty payment address for `contractAddress`
+     * updated to be `platformRoyaltyAddress`.
      */
     event PlatformRoyaltyAddressForContractUpdated(
         address indexed contractAddress,
@@ -23,9 +23,8 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
     );
 
     /**
-     * @notice Render provider royalty payment basis points for token 
-     * contract `tokenAddress` updated to be `bps` if `useOverride`,
-     * else updated to use default BPS.
+     * @notice Render provider royalty payment basis points for `tokenAddress`
+     * updated to be `bps` if `useOverride`, else updated to use default BPS.
      */
     event RenderProviderBpsForContractUpdated(
         address indexed tokenAddress,
@@ -34,7 +33,7 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
     );
 
     /**
-     * @notice Platform royalty payment basis points for token contract 
+     * @notice Platform royalty payment basis points for 
      * `tokenAddress` updated to be `bps` if `useOverride`, else
      * updated to use default BPS.
      */
@@ -44,7 +43,7 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
         uint256 bps
     );
 
-    /// token contract address => Platform royalty payment address
+    /// token contract => Platform royalty payment address
     mapping(address => address payable)
         public tokenAddressToPlatformRoyaltyAddress;
 
@@ -57,9 +56,10 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
     uint256 public constant RENDER_PROVIDER_DEFAULT_BPS = 250; // 2.5 percent
     /// Default Platform royalty basis points if no BPS override is set.
     uint256 public constant PLATFORM_DEFAULT_BPS = 250; // 2.5 percent
+    /// token contract => if render provider bps override is set, and bps value.
     mapping(address => BpsOverride)
         public tokenAddressToRenderProviderBpsOverride;
-    /// token contract address => if Platform bps override is set, and bps value.
+    /// token contract => if Platform bps override is set, and bps value.
     mapping(address => BpsOverride) public tokenAddressToPlatformBpsOverride;
 
     modifier onlyAdminOnContract(address _tokenContract) {
@@ -86,12 +86,10 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
     }
 
     /**
-     * @notice Updates platform royalty payment address for sales of tokens
-     * on contract `_tokenContract` to be `_platformRoyaltyAddress`.
-     * @param _tokenContract Address of token contract to set platform
-     * royalty payment address for.
-     * @param _platformRoyaltyAddress Address to be sent platform royalty
-     * payments.
+     * @notice Updates platform royalty payment address for `_tokenContract`
+     * to be `_platformRoyaltyAddress`.
+     * @param _tokenContract Token contract to be updated.
+     * @param _platformRoyaltyAddress Address to receive royalty payments.
      */
     function updatePlatformRoyaltyAddressForContract(
         address _tokenContract,
@@ -107,10 +105,9 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
     }
 
     /**
-     * @notice Updates render provider royalty payment bps for sales of 
-     * tokens on contract `_tokenContract` to be `_bps`.
-     * @param _tokenContract Address of token contract to set render 
-     * provider royalty payment address for.
+     * @notice Updates render provider royalty payment BPS for `_tokenContract`
+     * to be `_bps`.
+     * @param _tokenContract Token contract to be updated.
      * @param _bps Render provider royalty payment basis points.
      */
     function updateRenderProviderBpsForContract(
@@ -126,10 +123,9 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
     }
 
     /**
-     * @notice Updates platform royalty payment bps for sales of tokens
-     * on contract `_tokenContract` to be `_bps`.
-     * @param _tokenContract Address of token contract to set platform royalty
-     * payment address for.
+     * @notice Updates platform royalty payment BPS for `_tokenContract` to be
+     * `_bps`.
+     * @param _tokenContract Token contract to be updated.
      * @param _bps Platform royalty payment basis points.
      */
     function updatePlatformBpsForContract(address _tokenContract, uint256 _bps)
@@ -146,9 +142,8 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
 
     /**
      * @notice Clears any overrides of render provider royalty payment BPS 
-     * for sales of tokens on contract `_tokenContract`.
-     * @param _tokenContract Token contract address to clear render provider
-     * BPS override for.
+     * for `_tokenContract`.
+     * @param _tokenContract Token contract to be cleared.
      * @dev token contracts without overrides use default BPS value.
      */
     function clearRenderProviderBpsForContract(address _tokenContract)
@@ -163,14 +158,9 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
     }
 
     /**
-     *  Clearss platform provider royalty payment bps override to be used
-     *  for a specific token contract.
-     */
-    /**
      * @notice Clears any overrides of platform provider royalty payment BPS 
-     * for sales of tokens on contract `_tokenContract`.
-     * @param _tokenContract Address of token contract address to clear 
-     * platform provider BPS override for.
+     * for `_tokenContract`.
+     * @param _tokenContract Token contract to be cleared.
      * @dev token contracts without overrides use default BPS value.
      */
     function clearPlatformBpsForContract(address _tokenContract)
@@ -187,7 +177,7 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
     /**
      * @notice Gets royalites of token ID `_tokenId` on token contract
      * `_tokenAddress`.
-     * @param _tokenAddress Address of token contract to be queried.
+     * @param _tokenAddress Token contract to be queried.
      * @param _tokenId Token ID to be queried.
      * @return recipients_ array of royalty recipients
      * @return bps array of basis points for each recipient, aligned by index

@@ -23,7 +23,7 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
 
     /// Art Blocks core contract this minter may interact with.
     IGenArt721CoreContract public artblocksContract;
-    /// Minter filter contract this minter may interact with.
+    /// Minter filter this minter may interact with.
     IMinterFilter public minterFilter;
 
     uint256 constant ONE_MILLION = 1_000_000;
@@ -34,7 +34,7 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
     mapping(uint256 => bool) public purchaseToDisabled;
     /// purchaser address => projectId => number of mints purchased
     mapping(address => mapping(uint256 => uint256)) public projectMintCounter;
-    /// projectId => maximum number of mints a single address may invoke
+    /// projectId => maximum number of mints a given address may invoke
     mapping(uint256 => uint256) public projectMintLimit;
     /// projectId => has project reached its maximum number of invocations?
     mapping(uint256 => bool) public projectMaxHasBeenInvoked;
@@ -75,7 +75,7 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
      * at address `_genArt721Address`.
      * @param _genArt721Address Art Blocks core contract address for
      * which this contract will be a minter.
-     * @param _minterFilter Minter filter contract address for which
+     * @param _minterFilter Minter filter for which
      * this will a filtered minter.
      */
     constructor(address _genArt721Address, address _minterFilter) {
@@ -84,9 +84,9 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
     }
 
     /**
-     * @notice Sets the mint limit of project `_projectId` to `_limit`.
-     * @param _projectId Project ID to set the mint limit for.
-     * @param _limit Number of times a single address may mint the
+     * @notice Sets the mint limit of a single purchaser for project 
+     * `_projectId` to `_limit`.
+     * @param _limit Number of times a given address may mint the
      * project's tokens.
      */
     function setProjectMintLimit(uint256 _projectId, uint8 _limit)
@@ -157,7 +157,7 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
      * @param _projectId Project ID to set auction details for.
      * @param _auctionTimestampStart Timestamp at which to start the auction.
      * @param _auctionTimestampEnd Timestamp at which to end the auction.
-     * @param _auctionPriceStart Price at which to start the action, in Wei.
+     * @param _auctionPriceStart Price at which to start the auction, in Wei.
      */
     function setAuctionDetails(
         uint256 _projectId,
@@ -194,7 +194,7 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
 
     /**
      * @notice Purchases a token from project `_projectId`.
-     * @param _projectId Mint a token from this Project ID.
+     * @param _projectId Project ID to mint a token on.
      * @return tokenId Token ID of minted token
      */
     function purchase(uint256 _projectId)
@@ -209,8 +209,8 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
     /**
      * @notice Purchases a token from project `_projectId` and sets
      * the token's owner as `_to`.
-     * @param _projectId Mint a token from this Project ID.
-     * @param _to Address to be the newly minted token's owner.
+     * @param _projectId Project ID to mint a token on.
+     * @param _to Address to be the new token's owner.
      * @return tokenId Token ID of minted token
      */
     function purchaseTo(address _to, uint256 _projectId)
