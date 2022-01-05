@@ -20,7 +20,7 @@ interface IMinterFilter {
     event DefaultMinterRegistered(address indexed _minterAddress);
 
     /**
-     * @notice Minter `_minterAddress` registered for project 
+     * @notice Minter `_minterAddress` registered for project
      * `_projectId`.
      */
     event ProjectMinterRegistered(

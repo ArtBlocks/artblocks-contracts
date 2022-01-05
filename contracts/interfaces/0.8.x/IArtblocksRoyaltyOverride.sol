@@ -6,7 +6,7 @@ import "../../libs/0.8.x/IERC165.sol";
 pragma solidity ^0.8.0;
 
 /**
- * @notice Interface for Art Blocks Royalty override. 
+ * @notice Interface for Art Blocks Royalty override.
  * Supported by the Royalty Registry v1 Engine.
  * @dev  ref: https://royaltyregistry.xyz / engine-v1.royaltyregistry.eth
  */
@@ -19,7 +19,7 @@ interface IArtblocksRoyaltyOverride is IERC165 {
      * @return recipients_ array of royalty recipients
      * @return bps array of basis points for each recipient, aligned by index
      * @dev Interface ID:
-     * 
+     *
      * bytes4(keccak256('getRoyalties(address,uint256)')) == 0x9ca7dc7a
      *
      * => 0x9ca7dc7a = 0x9ca7dc7a

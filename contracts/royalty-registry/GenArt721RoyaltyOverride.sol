@@ -24,7 +24,7 @@ contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
 
     /**
      * @notice Art Blocks royalty payment basis points for `tokenAddress`
-     * updated to be `bps` if `useOverride`, else updated to use default 
+     * updated to be `bps` if `useOverride`, else updated to use default
      * BPS.
      */
     event ArtblocksBpsForContractUpdated(
@@ -112,7 +112,7 @@ contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
     }
 
     /**
-     * @notice Clears any overrides of Art Blocks royalty payment BPS for 
+     * @notice Clears any overrides of Art Blocks royalty payment BPS for
      *  `_tokenContract`.
      * @param _tokenContract Token contract to be cleared.
      * @dev token contracts without overrides use default BPS value.

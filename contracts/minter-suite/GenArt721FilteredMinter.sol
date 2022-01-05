@@ -44,7 +44,7 @@ contract GenArt721FilteredMinter is IFilteredMinter {
     }
 
     /**
-     * @notice Initializes contract to be a Filtered Minter for 
+     * @notice Initializes contract to be a Filtered Minter for
      * `_minterFilter`, integrated with Art Blocks core contract
      * at address `_genArt721Address`.
      * @param _genArt721Address Art Blocks core contract address for
@@ -75,8 +75,8 @@ contract GenArt721FilteredMinter is IFilteredMinter {
     }
 
     /**
-     * @notice Gets your allowance for this minter of the ERC-20 
-     * token currently set as the payment currency for project 
+     * @notice Gets your allowance for this minter of the ERC-20
+     * token currently set as the payment currency for project
      * `_projectId`.
      * @param _projectId Project ID to be queried.
      * @return remaining Remaining allowance of ERC-20
@@ -93,7 +93,7 @@ contract GenArt721FilteredMinter is IFilteredMinter {
     }
 
     /**
-     * @notice Sets the mint limit of a single purchaser for project 
+     * @notice Sets the mint limit of a single purchaser for project
      * `_projectId` to `_limit`.
      * @param _projectId Project ID to set the mint limit for.
      * @param _limit Number of times a given address may mint the
@@ -139,7 +139,7 @@ contract GenArt721FilteredMinter is IFilteredMinter {
     }
 
     /**
-     * @notice Toggles if purchases to other address are enabled for 
+     * @notice Toggles if purchases to other address are enabled for
      * project `_projectId`.
      * @param _projectId Project ID to be toggled.
      */
@@ -251,9 +251,9 @@ contract GenArt721FilteredMinter is IFilteredMinter {
 
     /**
      * @notice Splits ETH funds between sender (if refund), foundation,
-     * artist, and artist's additional payee for a token purchased on 
+     * artist, and artist's additional payee for a token purchased on
      * project `_projectId`.
-     * @dev utilizes transfer() to send ETH, which may fail if any access 
+     * @dev utilizes transfer() to send ETH, which may fail if any access
      * lists are not properly populated when purchasing tokens.
      * @param _projectId Project ID for which funds shall be split.
      */
@@ -299,7 +299,7 @@ contract GenArt721FilteredMinter is IFilteredMinter {
 
     /**
      * @notice Splits ERC-20 funds between sender (if refund), foundation,
-     * artist, and artist's additional payee, for a token purchased on 
+     * artist, and artist's additional payee, for a token purchased on
      * project `_projectId`.
      * @param _projectId Project ID for which funds shall be split.
      */

@@ -51,7 +51,7 @@ contract MinterFilter is IMinterFilter {
 
     /**
      * @notice Initializes contract to be a Minter for `_genArt721Address`.
-     * @param _genArt721Address Art Blocks core contract address 
+     * @param _genArt721Address Art Blocks core contract address
      * this contract will be a minter for. Can never be updated.
      */
     constructor(address _genArt721Address) {
@@ -96,7 +96,7 @@ contract MinterFilter is IMinterFilter {
     }
 
     /**
-     * @notice Sets minter for project `_projectId` to minter 
+     * @notice Sets minter for project `_projectId` to minter
      * `_minterAddress`.
      * @param _projectId Project ID to set minter for.
      * @param _minterAddress Minter to be the project's minter.

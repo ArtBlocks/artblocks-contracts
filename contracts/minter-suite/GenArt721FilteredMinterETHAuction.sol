@@ -70,7 +70,7 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
     }
 
     /**
-     * @notice Initializes contract to be a Filtered Minter for 
+     * @notice Initializes contract to be a Filtered Minter for
      * `_minterFilter`, integrated with Art Blocks core contract
      * at address `_genArt721Address`.
      * @param _genArt721Address Art Blocks core contract address for
@@ -84,7 +84,7 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
     }
 
     /**
-     * @notice Sets the mint limit of a single purchaser for project 
+     * @notice Sets the mint limit of a single purchaser for project
      * `_projectId` to `_limit`.
      * @param _limit Number of times a given address may mint the
      * project's tokens.
@@ -129,7 +129,7 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
     }
 
     /**
-     * @notice Toggles if purchases to other address are enabled for 
+     * @notice Toggles if purchases to other address are enabled for
      * project `_projectId`.
      * @param _projectId Project ID to be toggled.
      */
@@ -278,9 +278,9 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
 
     /**
      * @notice Splits ETH funds between sender (if refund), foundation,
-     * artist, and artist's additional payee for a token purchased on 
+     * artist, and artist's additional payee for a token purchased on
      * project `_projectId`.
-     * @dev utilizes transfer() to send ETH, which may fail if any access 
+     * @dev utilizes transfer() to send ETH, which may fail if any access
      * lists are not properly populated when purchasing tokens.
      * @param _projectId Project ID for which funds shall be split.
      * @param _currentPriceInWei Current price of token, in Wei.
@@ -352,7 +352,7 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
     }
 
     /**
-     * @notice Returns if auction for project `_projectId` is live (i.e. 
+     * @notice Returns if auction for project `_projectId` is live (i.e.
      * current timestamp is between start and end timestamp).
      * @param _projectId Project ID to be checked.
      * @return true if auction is live, false otherwise
@@ -366,7 +366,7 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
     }
 
     /**
-     * @notice Returns time remaining until end of auction for project 
+     * @notice Returns time remaining until end of auction for project
      * `_projectId`.
      * @param _projectId Project ID to be checked.
      * @return seconds remaining until end of auction

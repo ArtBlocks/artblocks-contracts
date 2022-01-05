@@ -33,7 +33,7 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
     );
 
     /**
-     * @notice Platform royalty payment basis points for 
+     * @notice Platform royalty payment basis points for
      * `tokenAddress` updated to be `bps` if `useOverride`, else
      * updated to use default BPS.
      */
@@ -141,7 +141,7 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
     }
 
     /**
-     * @notice Clears any overrides of render provider royalty payment BPS 
+     * @notice Clears any overrides of render provider royalty payment BPS
      * for `_tokenContract`.
      * @param _tokenContract Token contract to be cleared.
      * @dev token contracts without overrides use default BPS value.
@@ -158,7 +158,7 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
     }
 
     /**
-     * @notice Clears any overrides of platform provider royalty payment BPS 
+     * @notice Clears any overrides of platform provider royalty payment BPS
      * for `_tokenContract`.
      * @param _tokenContract Token contract to be cleared.
      * @dev token contracts without overrides use default BPS value.
