@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-// Creatd By: Art Blocks Inc.
+// Created By: Art Blocks Inc.
 
 pragma solidity ^0.8.0;
 

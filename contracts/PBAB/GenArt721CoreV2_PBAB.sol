@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-// Creatd By: Art Blocks Inc.
+// Created By: Art Blocks Inc.
 
 import "../libs/0.5.x/CustomERC721Metadata.sol";
 import "../libs/0.5.x/SafeMath.sol";
