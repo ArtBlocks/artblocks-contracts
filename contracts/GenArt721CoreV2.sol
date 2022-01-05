@@ -18,8 +18,7 @@ contract GenArt721CoreV2 is CustomERC721Metadata, IGenArt721CoreContract {
     using SafeMath for uint256;
 
     /**
-     * @notice Token ID `_tokenId` minted on project ID `_projectId` to
-     * `_to`.
+     * @notice Token ID `_tokenId` minted on project ID `_projectId` to `_to`.
      * @dev NatSpec for events not supported in Solidity ^0.5.0
      */
     event Mint(
@@ -301,7 +300,7 @@ contract GenArt721CoreV2 is CustomERC721Metadata, IGenArt721CoreContract {
     }
 
     /**
-     * @notice Toggles project `_projectId` as paused/not paused.
+     * @notice Toggles paused state of project `_projectId`.
      */
     function toggleProjectIsPaused(uint256 _projectId)
         public
@@ -333,11 +332,11 @@ contract GenArt721CoreV2 is CustomERC721Metadata, IGenArt721CoreContract {
     }
 
     /**
-     * @notice Updates payment currency of project `_projectId`' to be
+     * @notice Updates payment currency of project `_projectId` to be
      * `_currencySymbol`.
      * @param _projectId Project ID to update.
-     * @param _currencySymbol Currency Symbol.
-     * @param _currencyAddress Address of new currency.
+     * @param _currencySymbol Currency symbol.
+     * @param _currencyAddress Currency address.
      */
     function updateProjectCurrencyInfo(
         uint256 _projectId,
@@ -371,7 +370,7 @@ contract GenArt721CoreV2 is CustomERC721Metadata, IGenArt721CoreContract {
     }
 
     /**
-     * @notice Updates artist's name for project `_projectId` to be
+     * @notice Updates artist name for project `_projectId` to be 
      * `_projectArtistName`.
      */
     function updateProjectArtistName(
@@ -399,7 +398,7 @@ contract GenArt721CoreV2 is CustomERC721Metadata, IGenArt721CoreContract {
     }
 
     /**
-     * @notice Updates artist secondary market royalty for project
+     * @notice Updates artist secondary market royalties for project
      * `_projectId` to be `_secondMarketRoyalty` percent.
      */
     function updateProjectSecondaryMarketRoyaltyPercentage(
@@ -443,7 +442,7 @@ contract GenArt721CoreV2 is CustomERC721Metadata, IGenArt721CoreContract {
     }
 
     /**
-     * @notice Updates maximum invocations for project `_projectId` to be
+     * @notice Updates maximum invocations for project `_projectId` to
      * `_maxInvocations`.
      */
     function updateProjectMaxInvocations(
@@ -582,10 +581,10 @@ contract GenArt721CoreV2 is CustomERC721Metadata, IGenArt721CoreContract {
      * @param _projectId Project to be queried.
      * @return artistAddress Project Artist's address
      * @return pricePerTokenInWei Price to mint a token, in Wei
-     * @return invocations Number of invocations on project
-     * @return maxInvocations Maximum allowed invocations on project
+     * @return invocations Current number of invocations
+     * @return maxInvocations Maximum allowed invocations
      * @return active Boolean representing if project is currently active
-     * @return additionalPayee Additional payee address for project
+     * @return additionalPayee Additional payee address
      * @return additionalPayeePercentage Percentage of artist revenue
      * to be sent to the additional payee's address
      * @return currency Symbol of project's currency
@@ -647,8 +646,7 @@ contract GenArt721CoreV2 is CustomERC721Metadata, IGenArt721CoreContract {
     }
 
     /**
-     * @notice Returns project script for project `_projectId` at script
-     * index `_index`.
+     * @notice Returns script for project `_projectId` at script index `_index`.
      */
     function projectScriptByIndex(uint256 _projectId, uint256 _index)
         public
@@ -688,7 +686,7 @@ contract GenArt721CoreV2 is CustomERC721Metadata, IGenArt721CoreContract {
      * @return additionalPayeePercentage Percentage of artist revenue
      * to be sent to the additional payee's address
      * @return royaltyFeeByID Total royalty percentage to be sent to
-     * artist + additional payee
+     * combination of artist and additional payee
      */
     function getRoyaltyData(uint256 _tokenId)
         public
