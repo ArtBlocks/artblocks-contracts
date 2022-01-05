@@ -8,24 +8,43 @@ import "../interfaces/0.8.x/IGenArt721CoreV2_PBAB.sol";
 
 pragma solidity 0.8.9;
 
+/**
+ * @title Royalty Registry override for Art Blocks PBAB token contracts.
+ * @author Art Blocks Inc.
+ */
 contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
+    /**
+     * @notice Platform royalty payment address for token contract 
+     * `contractAddress` updated to be `platformRoyaltyAddress`
+     */
     event PlatformRoyaltyAddressForContractUpdated(
         address indexed contractAddress,
         address payable indexed platformRoyaltyAddress
     );
 
+    /**
+     * @notice Render provider royalty payment basis points for token 
+     * contract `tokenAddress` updated to be `bps` if `useOverride`,
+     * else updated to use default BPS.
+     */
     event RenderProviderBpsForContractUpdated(
         address indexed tokenAddress,
         bool indexed useOverride,
         uint256 bps
     );
 
+    /**
+     * @notice Platform royalty payment basis points for token contract 
+     * `tokenAddress` updated to be `bps` if `useOverride`, else
+     * updated to use default BPS.
+     */
     event PlatformBpsForContractUpdated(
         address indexed tokenAddress,
         bool indexed useOverride,
         uint256 bps
     );
 
+    /// token contract address => Platform royalty payment address
     mapping(address => address payable)
         public tokenAddressToPlatformRoyaltyAddress;
 
@@ -34,10 +53,13 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
         uint256 bps;
     }
 
+    /// Default Render Provider royalty basis points if no BPS override is set.
     uint256 public constant RENDER_PROVIDER_DEFAULT_BPS = 250; // 2.5 percent
+    /// Default Platform royalty basis points if no BPS override is set.
     uint256 public constant PLATFORM_DEFAULT_BPS = 250; // 2.5 percent
     mapping(address => BpsOverride)
         public tokenAddressToRenderProviderBpsOverride;
+    /// token contract address => if Platform bps override is set, and bps value.
     mapping(address => BpsOverride) public tokenAddressToPlatformBpsOverride;
 
     modifier onlyAdminOnContract(address _tokenContract) {
@@ -64,8 +86,12 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
     }
 
     /**
-     *  Update platform provider royalty payment address to be used
-     *  for a specific token contract.
+     * @notice Updates platform royalty payment address for sales of tokens
+     * on contract `_tokenContract` to be `_platformRoyaltyAddress`.
+     * @param _tokenContract Address of token contract to set platform
+     * royalty payment address for.
+     * @param _platformRoyaltyAddress Address to be sent platform royalty
+     * payments.
      */
     function updatePlatformRoyaltyAddressForContract(
         address _tokenContract,
@@ -81,8 +107,11 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
     }
 
     /**
-     *  Update render provider royalty payment bps to be used
-     *  for a specific token contract.
+     * @notice Updates render provider royalty payment bps for sales of 
+     * tokens on contract `_tokenContract` to be `_bps`.
+     * @param _tokenContract Address of token contract to set render 
+     * provider royalty payment address for.
+     * @param _bps Render provider royalty payment basis points.
      */
     function updateRenderProviderBpsForContract(
         address _tokenContract,
@@ -97,8 +126,11 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
     }
 
     /**
-     *  Update platform provider royalty payment bps to be used
-     *  for a specific token contract.
+     * @notice Updates platform royalty payment bps for sales of tokens
+     * on contract `_tokenContract` to be `_bps`.
+     * @param _tokenContract Address of token contract to set platform royalty
+     * payment address for.
+     * @param _bps Platform royalty payment basis points.
      */
     function updatePlatformBpsForContract(address _tokenContract, uint256 _bps)
         external
@@ -113,8 +145,11 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
     }
 
     /**
-     *  Clear render provider royalty payment bps override to be used
-     *  for a specific token contract.
+     * @notice Clears any overrides of render provider royalty payment BPS 
+     * for sales of tokens on contract `_tokenContract`.
+     * @param _tokenContract Token contract address to clear render provider
+     * BPS override for.
+     * @dev token contracts without overrides use default BPS value.
      */
     function clearRenderProviderBpsForContract(address _tokenContract)
         external
@@ -128,8 +163,15 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
     }
 
     /**
-     *  Clear platform provider royalty payment bps override to be used
+     *  Clearss platform provider royalty payment bps override to be used
      *  for a specific token contract.
+     */
+    /**
+     * @notice Clears any overrides of platform provider royalty payment BPS 
+     * for sales of tokens on contract `_tokenContract`.
+     * @param _tokenContract Address of token contract address to clear 
+     * platform provider BPS override for.
+     * @dev token contracts without overrides use default BPS value.
      */
     function clearPlatformBpsForContract(address _tokenContract)
         external
@@ -142,6 +184,14 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
         emit PlatformBpsForContractUpdated(_tokenContract, false, 0);
     }
 
+    /**
+     * @notice Gets royalites of token ID `_tokenId` on token contract
+     * `_tokenAddress`.
+     * @param _tokenAddress Address of token contract to be queried.
+     * @param _tokenId Token ID to be queried.
+     * @return recipients_ array of royalty recipients
+     * @return bps array of basis points for each recipient, aligned by index
+     */
     function getRoyalties(address _tokenAddress, uint256 _tokenId)
         external
         view

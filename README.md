@@ -36,4 +36,4 @@ where `<your network>` is any network configured in `hardhat.config.js`.
 For additional deployment details, see hardhat docs: [https://hardhat.org/guides/deploying.html](https://hardhat.org/guides/deploying.html)
 
 ## Documentation
-Documenation for contracts may be generated via `yarn docgen`. Some Art Blocks contracts use [NatSpec](https://docs.soliditylang.org/en/v0.8.9/natspec-format.html#documentation-example) comments to automatically enrich generated documentation. 
+Documenation for contracts may be generated via `yarn docgen`. Some Art Blocks contracts use [NatSpec](https://docs.soliditylang.org/en/v0.8.9/natspec-format.html#documentation-example) comments to automatically enrich generated documentation. Some contracts also use dynamic expressions in Ethereum's NatSpec (see e.g. [radspec](https://github.com/aragon/radspec)).
