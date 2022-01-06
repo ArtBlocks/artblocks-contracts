@@ -370,7 +370,7 @@ contract GenArt721CoreV2 is CustomERC721Metadata, IGenArt721CoreContract {
     }
 
     /**
-     * @notice Updates artist name for project `_projectId` to be 
+     * @notice Updates artist name for project `_projectId` to be
      * `_projectArtistName`.
      */
     function updateProjectArtistName(

@@ -47,8 +47,8 @@ contract GenArt721FilteredMinter is IFilteredMinter {
      * @notice Initializes contract to be a Filtered Minter for
      * `_minterFilter`, integrated with Art Blocks core contract
      * at address `_genArt721Address`.
-     * @param _genArt721Address Art Blocks core contract address for
-     * which this contract will be a minter.
+     * @param _genArt721Address Art Blocks core contract for which this
+     * contract will be a minter.
      * @param _minterFilter Minter filter for which
      * this will a filtered minter.
      */
@@ -96,8 +96,8 @@ contract GenArt721FilteredMinter is IFilteredMinter {
      * @notice Sets the mint limit of a single purchaser for project
      * `_projectId` to `_limit`.
      * @param _projectId Project ID to set the mint limit for.
-     * @param _limit Number of times a given address may mint the
-     * project's tokens.
+     * @param _limit Number of times a given address may mint the project's
+     * tokens.
      */
     function setProjectMintLimit(uint256 _projectId, uint8 _limit)
         external
@@ -167,8 +167,8 @@ contract GenArt721FilteredMinter is IFilteredMinter {
     /**
      * @notice Purchases a token from project `_projectId` and sets
      * the token's owner to `_to`.
-     * @param _projectId Project ID to mint a token on.
      * @param _to Address to be the new token's owner.
+     * @param _projectId Project ID to mint a token on.
      * @return tokenId Token ID of minted token
      */
     function purchaseTo(address _to, uint256 _projectId)
@@ -250,12 +250,11 @@ contract GenArt721FilteredMinter is IFilteredMinter {
     }
 
     /**
-     * @notice Splits ETH funds between sender (if refund), foundation,
+     * @dev splits ETH funds between sender (if refund), foundation,
      * artist, and artist's additional payee for a token purchased on
      * project `_projectId`.
-     * @dev utilizes transfer() to send ETH, which may fail if any access
-     * lists are not properly populated when purchasing tokens.
-     * @param _projectId Project ID for which funds shall be split.
+     * @dev utilizes transfer() to send ETH, so access lists may need to be
+     * populated when purchasing tokens.
      */
     function _splitFundsETH(uint256 _projectId) internal {
         if (msg.value > 0) {
@@ -298,10 +297,8 @@ contract GenArt721FilteredMinter is IFilteredMinter {
     }
 
     /**
-     * @notice Splits ERC-20 funds between sender (if refund), foundation,
-     * artist, and artist's additional payee, for a token purchased on
-     * project `_projectId`.
-     * @param _projectId Project ID for which funds shall be split.
+     * @dev splits ERC-20 funds between foundation, artist, and artist's
+     * additional payee, for a token purchased on project `_projectId`.
      */
     function _splitFundsERC20(uint256 _projectId) internal {
         uint256 pricePerTokenInWei = artblocksContract

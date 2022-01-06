@@ -129,8 +129,8 @@ contract GenArt721FilteredMinterETH is IFilteredMinter {
     /**
      * @notice Purchases a token from project `_projectId` and sets
      * the token's owner to `_to`.
-     * @param _projectId Project ID to mint a token on.
      * @param _to Address to be the new token's owner.
+     * @param _projectId Project ID to mint a token on.
      * @return tokenId Token ID of minted token
      */
     function purchaseTo(address _to, uint256 _projectId)
@@ -197,12 +197,11 @@ contract GenArt721FilteredMinterETH is IFilteredMinter {
     }
 
     /**
-     * @notice Splits ETH funds between sender (if refund), foundation,
+     * @dev splits ETH funds between sender (if refund), foundation,
      * artist, and artist's additional payee for a token purchased on
      * project `_projectId`.
-     * @dev utilizes transfer() to send ETH, which may fail if any access
-     * lists are not properly populated when purchasing tokens.
-     * @param _projectId Project ID for which funds shall be split.
+     * @dev utilizes transfer() to send ETH, so access lists may need to be
+     * populated when purchasing tokens.
      */
     function _splitFundsETH(uint256 _projectId) internal {
         if (msg.value > 0) {
