@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-// Creatd By: Art Blocks Inc.
+// Created By: Art Blocks Inc.
 
 import "../interfaces/0.8.x/IGenArt721CoreContract.sol";
 import "../interfaces/0.8.x/IMinterFilter.sol";
@@ -7,7 +7,13 @@ import "../interfaces/0.8.x/IFilteredMinter.sol";
 
 pragma solidity 0.8.9;
 
+/**
+ * @title Filtered Minter contract that allows tokens to be minted with ETH.
+ * Pricing is achieved using an automated Dutch-auction mechanism.
+ * @author Art Blocks Inc.
+ */
 contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
+    /// Auction details updated for project `projectId`.
     event SetAuctionDetails(
         uint256 indexed projectId,
         uint256 _auctionTimestampStart,
@@ -15,20 +21,29 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
         uint256 _auctionPriceStart
     );
 
+    /// Art Blocks core contract this minter may interact with.
     IGenArt721CoreContract public artblocksContract;
+    /// Minter filter this minter may interact with.
     IMinterFilter public minterFilter;
 
     uint256 constant ONE_MILLION = 1_000_000;
 
+    /// projectId => are contracts allowed to mint?
     mapping(uint256 => bool) public contractMintable;
+    /// projectId => are tokens allowed to be minted to other addresses?
     mapping(uint256 => bool) public purchaseToDisabled;
+    /// purchaser address => projectId => number of mints purchased
     mapping(address => mapping(uint256 => uint256)) public projectMintCounter;
+    /// projectId => maximum number of mints a given address may invoke
     mapping(uint256 => uint256) public projectMintLimit;
+    /// projectId => has project reached its maximum number of invocations?
     mapping(uint256 => bool) public projectMaxHasBeenInvoked;
+    /// projectId => project's maximum number of invocations
     mapping(uint256 => uint256) public projectMaxInvocations;
+    /// Minimum auction length in seconds
     uint256 public minimumAuctionLengthSeconds = 3600;
 
-    // Auction variables
+    /// projectId => auction parameters
     mapping(uint256 => AuctionParameters) public projectAuctionParameters;
     struct AuctionParameters {
         uint256 timestampStart;
@@ -54,11 +69,26 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
         _;
     }
 
+    /**
+     * @notice Initializes contract to be a Filtered Minter for
+     * `_minterFilter`, integrated with Art Blocks core contract
+     * at address `_genArt721Address`.
+     * @param _genArt721Address Art Blocks core contract address for
+     * which this contract will be a minter.
+     * @param _minterFilter Minter filter for which
+     * this will a filtered minter.
+     */
     constructor(address _genArt721Address, address _minterFilter) {
         artblocksContract = IGenArt721CoreContract(_genArt721Address);
         minterFilter = IMinterFilter(_minterFilter);
     }
 
+    /**
+     * @notice Sets the mint limit of a single purchaser for project
+     * `_projectId` to `_limit`.
+     * @param _limit Number of times a given address may mint the
+     * project's tokens.
+     */
     function setProjectMintLimit(uint256 _projectId, uint8 _limit)
         external
         onlyCoreWhitelisted
@@ -66,6 +96,12 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
         projectMintLimit[_projectId] = _limit;
     }
 
+    /**
+     * @notice Sets the maximum invocations of project `_projectId` based
+     * on the value currently defined in the core contract.
+     * @param _projectId Project ID to set the maximum invocations for.
+     * @dev also checks and may refresh projectMaxHasBeenInvoked for project
+     */
     function setProjectMaxInvocations(uint256 _projectId)
         external
         onlyCoreWhitelisted
@@ -80,6 +116,11 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
         }
     }
 
+    /**
+     * @notice Toggles if contracts are allowed to mint tokens for
+     * project `_projectId`.
+     * @param _projectId Project ID to be toggled.
+     */
     function toggleContractMintable(uint256 _projectId)
         external
         onlyCoreWhitelisted
@@ -87,6 +128,11 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
         contractMintable[_projectId] = !contractMintable[_projectId];
     }
 
+    /**
+     * @notice Toggles if purchases to other address are enabled for
+     * project `_projectId`.
+     * @param _projectId Project ID to be toggled.
+     */
     function togglePurchaseToDisabled(uint256 _projectId)
         external
         onlyCoreWhitelisted
@@ -94,6 +140,11 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
         purchaseToDisabled[_projectId] = !purchaseToDisabled[_projectId];
     }
 
+    /**
+     * @notice Sets minimum auction length to `_minimumAuctionLengthSeconds`
+     * for all projects.
+     * @param _minimumAuctionLengthSeconds Minimum auction length in seconds.
+     */
     function setMinimumAuctionLengthSeconds(
         uint256 _minimumAuctionLengthSeconds
     ) external onlyCoreWhitelisted {
@@ -101,6 +152,13 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
     }
 
     ////// Auction Functions
+    /**
+     * @notice Sets auction details for project `_projectId`.
+     * @param _projectId Project ID to set auction details for.
+     * @param _auctionTimestampStart Timestamp at which to start the auction.
+     * @param _auctionTimestampEnd Timestamp at which to end the auction.
+     * @param _auctionPriceStart Price at which to start the auction, in Wei.
+     */
     function setAuctionDetails(
         uint256 _projectId,
         uint256 _auctionTimestampStart,
@@ -134,6 +192,11 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
         );
     }
 
+    /**
+     * @notice Purchases a token from project `_projectId`.
+     * @param _projectId Project ID to mint a token on.
+     * @return tokenId Token ID of minted token
+     */
     function purchase(uint256 _projectId)
         external
         payable
@@ -143,6 +206,13 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
         return tokenId;
     }
 
+    /**
+     * @notice Purchases a token from project `_projectId` and sets
+     * the token's owner to `_to`.
+     * @param _to Address to be the new token's owner.
+     * @param _projectId Project ID to mint a token on.
+     * @return tokenId Token ID of minted token
+     */
     function purchaseTo(address _to, uint256 _projectId)
         public
         payable
@@ -206,6 +276,15 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
         return tokenId;
     }
 
+    /**
+     * @dev splits ETH funds between sender (if refund), foundation,
+     * artist, and artist's additional payee for a token purchased on
+     * project `_projectId`.
+     * @dev utilizes transfer() to send ETH, which may fail if access
+     * lists are not properly populated when purchasing tokens.
+     * @param _projectId Project ID for which funds shall be split.
+     * @param _currentPriceInWei Current price of token, in Wei.
+     */
     function _splitFundsETHAuction(
         uint256 _projectId,
         uint256 _currentPriceInWei
@@ -247,6 +326,12 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
         }
     }
 
+    /**
+     * @notice Gets price of minting a token on project `_projectId` given
+     * the project's AuctionParameters and current block timestamp.
+     * @param _projectId Project ID to get price of token for.
+     * @return current price of token in Wei
+     */
     function getPrice(uint256 _projectId) public view returns (uint256) {
         AuctionParameters memory auctionParams = projectAuctionParameters[
             _projectId
@@ -266,6 +351,12 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
             ((elapsedTime * startToEndDiff) / duration);
     }
 
+    /**
+     * @notice Returns if auction for project `_projectId` is live (i.e.
+     * current timestamp is between start and end timestamp).
+     * @param _projectId Project ID to be checked.
+     * @return true if auction is live, false otherwise
+     */
     function isAuctionLive(uint256 _projectId) public view returns (bool) {
         AuctionParameters memory auctionParams = projectAuctionParameters[
             _projectId
@@ -274,6 +365,12 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
             block.timestamp > auctionParams.timestampStart);
     }
 
+    /**
+     * @notice Returns time remaining until end of auction for project
+     * `_projectId`.
+     * @param _projectId Project ID to be checked.
+     * @return seconds remaining until end of auction
+     */
     function auctionTimeRemaining(uint256 _projectId)
         external
         view

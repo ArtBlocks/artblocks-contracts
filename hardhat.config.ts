@@ -6,6 +6,7 @@ import "solidity-coverage";
 import "@nomiclabs/hardhat-solhint";
 import "hardhat-contract-sizer";
 import "@nomiclabs/hardhat-etherscan";
+import "hardhat-docgen";
 
 const MAINNET_JSON_RPC_PROVIDER_URL = process.env.MAINNET_JSON_RPC_PROVIDER_URL;
 const ROPSTEN_JSON_RPC_PROVIDER_URL = process.env.ROPSTEN_JSON_RPC_PROVIDER_URL;
@@ -31,7 +32,7 @@ module.exports = {
             enabled: true,
             runs: 100,
           },
-        }
+        },
       },
       {
         version: "0.8.9",
@@ -40,9 +41,9 @@ module.exports = {
             enabled: true,
             runs: 100,
           },
-        }
-      }
-    ]
+        },
+      },
+    ],
   },
   networks: {
     hardhat: {
@@ -63,15 +64,20 @@ module.exports = {
       accounts: [`0x${TESTNET_PRIVATE_KEY}`],
     },
     coverage: {
-     url: 'http://localhost:8545',
-    }
+      url: "http://localhost:8545",
+    },
   },
   etherscan: {
-    apiKey: ETHERSCAN_API_KEY
+    apiKey: ETHERSCAN_API_KEY,
   },
   contractSizer: {
     alphaSort: true,
     runOnCompile: true,
     disambiguatePaths: false,
-  }
+  },
+  docgen: {
+    path: "./docs",
+    clear: true,
+    runOnCompile: true,
+  },
 };

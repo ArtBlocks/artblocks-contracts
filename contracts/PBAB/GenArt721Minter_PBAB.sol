@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-// Creatd By: Art Blocks Inc.
+// Created By: Art Blocks Inc.
 
 import "../libs/0.5.x/SafeMath.sol";
 import "../libs/0.5.x/Strings.sol";
@@ -10,9 +10,15 @@ import "../interfaces/0.5.x/IBonusContract.sol";
 
 pragma solidity ^0.5.0;
 
+/**
+ * @title Powered by Art Blocks minter contract that allows tokens to be
+ * minted with ETH or any ERC-20 token.
+ * @author Art Blocks Inc.
+ */
 contract GenArt721Minter_PBAB {
     using SafeMath for uint256;
 
+    /// PBAB core contract this minter may interact with.
     IGenArt721CoreV2_PBAB public genArtCoreContract;
 
     uint256 constant ONE_MILLION = 1_000_000;
@@ -28,10 +34,20 @@ contract GenArt721Minter_PBAB {
     mapping(uint256 => bool) public projectMaxHasBeenInvoked;
     mapping(uint256 => uint256) public projectMaxInvocations;
 
+    /**
+     * @notice Initializes contract to be a Minter for PBAB core contract at
+     * address `_genArt721Address`.
+     */
     constructor(address _genArt721Address) public {
         genArtCoreContract = IGenArt721CoreV2_PBAB(_genArt721Address);
     }
 
+    /**
+     * @notice Gets your balance of the ERC-20 token currently set
+     * as the payment currency for project `_projectId`.
+     * @param _projectId Project ID to be queried.
+     * @return balance Balance of ERC-20
+     */
     function getYourBalanceOfProjectERC20(uint256 _projectId)
         public
         view
@@ -43,6 +59,13 @@ contract GenArt721Minter_PBAB {
         return balance;
     }
 
+    /**
+     * @notice Gets your allowance for this minter of the ERC-20
+     * token currently set as the payment currency for project
+     * `_projectId`.
+     * @param _projectId Project ID to be queried.
+     * @return remaining Remaining allowance of ERC-20
+     */
     function checkYourAllowanceOfProjectERC20(uint256 _projectId)
         public
         view
@@ -54,6 +77,13 @@ contract GenArt721Minter_PBAB {
         return remaining;
     }
 
+    /**
+     * @notice Sets the mint limit of a single purchaser for project
+     * `_projectId` to `_limit`.
+     * @param _projectId Project ID to set the mint limit for.
+     * @param _limit Number of times a given address may mint the project's
+     * tokens.
+     */
     function setProjectMintLimit(uint256 _projectId, uint8 _limit) public {
         require(
             genArtCoreContract.isWhitelisted(msg.sender),
@@ -62,6 +92,12 @@ contract GenArt721Minter_PBAB {
         projectMintLimit[_projectId] = _limit;
     }
 
+    /**
+     * @notice Sets the maximum invocations of project `_projectId` based
+     * on the value currently defined in the core contract.
+     * @param _projectId Project ID to set the maximum invocations for.
+     * @dev also checks and may refresh projectMaxHasBeenInvoked for project
+     */
     function setProjectMaxInvocations(uint256 _projectId) public {
         require(
             genArtCoreContract.isWhitelisted(msg.sender),
@@ -77,6 +113,10 @@ contract GenArt721Minter_PBAB {
         }
     }
 
+    /**
+     * @notice Sets the owner address to `_ownerAddress`.
+     * @param _ownerAddress New owner address.
+     */
     function setOwnerAddress(address payable _ownerAddress) public {
         require(
             genArtCoreContract.isWhitelisted(msg.sender),
@@ -85,6 +125,10 @@ contract GenArt721Minter_PBAB {
         ownerAddress = _ownerAddress;
     }
 
+    /**
+     * @notice Sets the owner mint revenue to `_ownerPercentage` percent.
+     * @param _ownerPercentage New owner percentage.
+     */
     function setOwnerPercentage(uint256 _ownerPercentage) public {
         require(
             genArtCoreContract.isWhitelisted(msg.sender),
@@ -93,6 +137,11 @@ contract GenArt721Minter_PBAB {
         ownerPercentage = _ownerPercentage;
     }
 
+    /**
+     * @notice Toggles if contracts are allowed to mint tokens for
+     * project `_projectId`.
+     * @param _projectId Project ID to be toggled.
+     */
     function toggleContractFilter(uint256 _projectId) public {
         require(
             genArtCoreContract.isWhitelisted(msg.sender),
@@ -101,6 +150,10 @@ contract GenArt721Minter_PBAB {
         contractFilterProject[_projectId] = !contractFilterProject[_projectId];
     }
 
+    /**
+     * @notice Toggles if bonus contract for project `_projectId`.
+     * @param _projectId Project ID to be toggled.
+     */
     function artistToggleBonus(uint256 _projectId) public {
         require(
             msg.sender ==
@@ -110,6 +163,12 @@ contract GenArt721Minter_PBAB {
         projectIdToBonus[_projectId] = !projectIdToBonus[_projectId];
     }
 
+    /**
+     * @notice Sets bonus contract for project `_projectId` to
+     * `_bonusContractAddress`.
+     * @param _projectId Project ID to be toggled.
+     * @param _bonusContractAddress Bonus contract.
+     */
     function artistSetBonusContractAddress(
         uint256 _projectId,
         address _bonusContractAddress
@@ -122,6 +181,11 @@ contract GenArt721Minter_PBAB {
         projectIdToBonusContractAddress[_projectId] = _bonusContractAddress;
     }
 
+    /**
+     * @notice Purchases a token from project `_projectId`.
+     * @param _projectId Project ID to mint a token on.
+     * @return tokenId Token ID of minted token
+     */
     function purchase(uint256 _projectId)
         public
         payable
@@ -130,8 +194,13 @@ contract GenArt721Minter_PBAB {
         return purchaseTo(msg.sender, _projectId);
     }
 
-    // Remove `public` and `payable` to prevent public use
-    // of the `purchaseTo` function.
+    /**
+     * @notice Purchases a token from project `_projectId` and sets
+     * the token's owner to `_to`.
+     * @param _to Address to be the new token's owner.
+     * @param _projectId Project ID to mint a token on.
+     * @return _tokenId Token ID of minted token
+     */
     function purchaseTo(address _to, uint256 _projectId)
         public
         payable
@@ -219,6 +288,13 @@ contract GenArt721Minter_PBAB {
         return tokenId;
     }
 
+    /**
+     * @dev splits ETH funds between sender (if refund), foundation,
+     * artist, and artist's additional payee for a token purchased on
+     * project `_projectId`.
+     * @dev utilizes transfer() to send ETH, so access lists may need to be
+     * populated when purchasing tokens.
+     */
     function _splitFundsETH(uint256 _projectId) internal {
         if (msg.value > 0) {
             uint256 pricePerTokenInWei = genArtCoreContract
@@ -276,6 +352,11 @@ contract GenArt721Minter_PBAB {
         }
     }
 
+    /**
+     * @dev splits ERC-20 funds between render provider, owner, artist, and 
+     * artist's additional payee, for a token purchased on project 
+     `_projectId`.
+     */
     function _splitFundsERC20(uint256 _projectId) internal {
         uint256 pricePerTokenInWei = genArtCoreContract
             .projectIdToPricePerTokenInWei(_projectId);

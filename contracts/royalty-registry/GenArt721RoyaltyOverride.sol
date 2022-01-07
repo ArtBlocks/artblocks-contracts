@@ -8,18 +8,32 @@ import "../interfaces/0.8.x/IGenArt721CoreContract.sol";
 
 pragma solidity 0.8.9;
 
+/**
+ * @title Royalty Registry override for Art Blocks token contracts.
+ * @author Art Blocks Inc.
+ */
 contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
+    /**
+     * @notice Art Blocks royalty payment address for `contractAddress`
+     * updated to be `artblocksRoyaltyAddress`.
+     */
     event ArtblocksRoyaltyAddressForContractUpdated(
         address indexed contractAddress,
         address payable indexed artblocksRoyaltyAddress
     );
 
+    /**
+     * @notice Art Blocks royalty payment basis points for `tokenAddress`
+     * updated to be `bps` if `useOverride`, else updated to use default
+     * BPS.
+     */
     event ArtblocksBpsForContractUpdated(
         address indexed tokenAddress,
         bool indexed useOverride,
         uint256 bps
     );
 
+    /// token contract => Art Blocks royalty payment address
     mapping(address => address payable)
         public tokenAddressToArtblocksRoyaltyAddress;
 
@@ -28,7 +42,9 @@ contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
         uint256 bps;
     }
 
+    /// Default Art Blocks royalty basis points if no BPS override is set.
     uint256 public constant ARTBLOCKS_DEFAULT_BPS = 250; // 2.5 percent
+    /// token contract => if bps override is set, and bps value.
     mapping(address => BpsOverride) public tokenAddressToArtblocksBpsOverride;
 
     modifier onlyAdminOnContract(address _tokenContract) {
@@ -55,8 +71,10 @@ contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
     }
 
     /**
-     *  Update art blocks royalty payment address to be used
-     *  for a specific token contract.
+     * @notice Updates Art Blocks royalty payment address for `_tokenContract`
+     * to be `_artblocksRoyaltyAddress`.
+     * @param _tokenContract Token contract to be updated.
+     * @param _artblocksRoyaltyAddress Address to receive royalty payments.
      */
     function updateArtblocksRoyaltyAddressForContract(
         address _tokenContract,
@@ -72,9 +90,11 @@ contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
     }
 
     /**
-     *  Update art blocks royalty payment bps to be used
-     *  for a specific token contract.
-     *  Must be less than or equal to default bps.
+     * @notice Updates Art Blocks royalty payment BPS for `_tokenContract` to be
+     * `_bps`.
+     * @param _tokenContract Token contract to be updated.
+     * @param _bps Art Blocks royalty basis points.
+     * @dev `_bps` must be less than or equal to default bps
      */
     function updateArtblocksBpsForContract(address _tokenContract, uint256 _bps)
         external
@@ -92,8 +112,10 @@ contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
     }
 
     /**
-     *  Clear art blocks royalty payment bps override to be used
-     *  for a specific token contract.
+     * @notice Clears any overrides of Art Blocks royalty payment BPS for
+     *  `_tokenContract`.
+     * @param _tokenContract Token contract to be cleared.
+     * @dev token contracts without overrides use default BPS value.
      */
     function clearArtblocksBpsForContract(address _tokenContract)
         external
@@ -106,6 +128,14 @@ contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
         emit ArtblocksBpsForContractUpdated(_tokenContract, false, 0);
     }
 
+    /**
+     * @notice Gets royalites of token ID `_tokenId` on token contract
+     * `_tokenAddress`.
+     * @param _tokenAddress Token contract to be queried.
+     * @param _tokenId Token ID to be queried.
+     * @return recipients_ array of royalty recipients
+     * @return bps array of basis points for each recipient, aligned by index
+     */
     function getRoyalties(address _tokenAddress, uint256 _tokenId)
         external
         view
