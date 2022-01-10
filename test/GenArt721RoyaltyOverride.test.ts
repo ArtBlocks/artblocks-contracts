@@ -60,7 +60,7 @@ describe("GenArt721RoyaltyOverride", async function () {
     };
     const randomizerFactory = await ethers.getContractFactory("Randomizer");
     this.randomizer = await randomizerFactory.deploy();
-    const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV2");
+    const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV3");
     this.tokenA = await artblocksFactory
       .connect(adminA)
       .deploy(name, symbol, this.randomizer.address);
