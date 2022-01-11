@@ -20,25 +20,25 @@ describe("MinterPermissionsEvents", async function () {
     };
     const randomizerFactory = await ethers.getContractFactory("Randomizer");
     this.randomizer = await randomizerFactory.deploy();
-    const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV2");
-    this.genArt721CoreV2 = await artblocksFactory
+    const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV3");
+    this.genArt721Core = await artblocksFactory
       .connect(deployer)
       .deploy("Test Contract", "TEST", this.randomizer.address);
     const minterFilterFactory = await ethers.getContractFactory("MinterFilter");
     this.minterFilter = await minterFilterFactory.deploy(
-      this.genArt721CoreV2.address
+      this.genArt721Core.address
     );
     const minterFactory = await ethers.getContractFactory(
       "GenArt721FilteredMinter"
     );
     this.minter = await minterFactory.deploy(
-      this.genArt721CoreV2.address,
+      this.genArt721Core.address,
       this.minterFilter.address
     );
 
     // Project setup
     const pricePerTokenInWei = ethers.utils.parseEther("1");
-    await this.genArt721CoreV2
+    await this.genArt721Core
       .connect(deployer)
       .addProject(
         "Test Project",

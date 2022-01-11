@@ -32,7 +32,7 @@ describe("GenArt721FilteredMinter", async function () {
     };
     const randomizerFactory = await ethers.getContractFactory("Randomizer");
     this.randomizer = await randomizerFactory.deploy();
-    const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV2");
+    const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV3");
     this.token = await artblocksFactory
       .connect(snowfro)
       .deploy(name, symbol, this.randomizer.address);

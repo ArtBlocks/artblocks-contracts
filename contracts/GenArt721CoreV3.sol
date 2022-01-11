@@ -14,7 +14,7 @@ pragma solidity ^0.5.0;
  * @title Art Blocks ERC-721 core contract, V3.
  * @author Art Blocks Inc.
  */
-contract GenArt721CoreV2 is CustomERC721Metadata, IGenArt721CoreContract {
+contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContract {
     using SafeMath for uint256;
 
     /**

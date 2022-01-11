@@ -3,7 +3,7 @@
 
 import { ethers } from "hardhat";
 import { Randomizer__factory } from "./contracts/factories/Randomizer__factory";
-import { GenArt721CoreV2__factory } from "./contracts/factories/GenArt721CoreV2__factory";
+import { GenArt721CoreV3__factory } from "./contracts/factories/GenArt721CoreV3__factory";
 import { MinterFilter__factory } from "./contracts/factories/MinterFilter__factory";
 import { GenArt721FilteredMinter__factory } from "./contracts/factories/GenArt721FilteredMinter__factory";
 import { GenArt721FilteredMinterETH__factory } from "./contracts/factories/GenArt721FilteredMinterETH__factory";
@@ -24,7 +24,7 @@ async function main() {
   console.log(`Randomizer deployed at ${randomizer.address}`);
 
   // Deploy Core contract.
-  const genArt721CoreFactory = new GenArt721CoreV2__factory(deployer);
+  const genArt721CoreFactory = new GenArt721CoreV3__factory(deployer);
   const genArt721Core = await genArt721CoreFactory.deploy(
     "Minter Filter GenArt721 Test",
     "FLTR",
@@ -214,7 +214,7 @@ async function main() {
   const networkName = network.name == "homestead" ? "mainnet" : network.name;
   const standardVerify =
     "yarn hardhat verify --contract <path to .sol>:<contract name>";
-  console.log(`Verify GenArt721CoreV2 deployment with:`);
+  console.log(`Verify GenArt721CoreV3 deployment with:`);
   console.log(
     `${standardVerify} --network ${networkName} ${genArt721Core.address} "${pbabTokenName}" "${pbabTokenTicker}" ${randomizer.address}`
   );
