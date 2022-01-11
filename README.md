@@ -35,7 +35,18 @@ yarn hardhat run --network <your-network> scripts/deploy.ts
 where `<your network>` is any network configured in `hardhat.config.js`.
 For additional deployment details, see hardhat docs: [https://hardhat.org/guides/deploying.html](https://hardhat.org/guides/deploying.html)
 
-## Documentation
+## Core Contract Versions
+
+Core contracts use the versioning schema below:
+
+| Description | Version | Project Range | Mainnet Address |
+|:-----------:|:-------:|:-------------:|:----------------|
+| Original AB Core | V0 | 0-2 | 0x059EDD72Cd353dF5106D2B9cC5ab83a52287aC3a |
+| Revised AB Core | V1 | 3+ | 0xa7d8d9ef8D8Ce8992Df33D8b8CF4Aebabd5bD270 |
+| PBAB Cores | V2 | All PBAB | Various - see PBAB directory DEPLOYMENTS.md |
+| Current Draft AB Core | V3 | (TBR) | - |
+
+## Contract Documentation
 Documenation for contracts may be generated via `yarn docgen`. Some Art Blocks contracts use [NatSpec](https://docs.soliditylang.org/en/v0.8.9/natspec-format.html#documentation-example) comments to automatically enrich generated documentation. Some contracts use [dynamic expressions](https://docs.soliditylang.org/en/v0.8.9/natspec-format.html#dynamic-expressions) to improve user experience.
 
 ## Royalty Registry Overrides
