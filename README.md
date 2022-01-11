@@ -35,16 +35,40 @@ yarn hardhat run --network <your-network> scripts/deploy.ts
 where `<your network>` is any network configured in `hardhat.config.js`.
 For additional deployment details, see hardhat docs: [https://hardhat.org/guides/deploying.html](https://hardhat.org/guides/deploying.html)
 
-## Core Contract Versions
+## Deployed Contract Details
+
+### Core Contract Versions
+
+This is the Smart contract that controls the artwork created by the artist. No financial transactions occur on this Smart contract.
 
 Core contracts use the versioning schema below:
 
 | Description | Version | Project Range | Mainnet Address |
 |:-----------:|:-------:|:-------------:|:----------------|
-| Original AB Core | V0 | 0-2 | 0x059EDD72Cd353dF5106D2B9cC5ab83a52287aC3a |
+| Original AB Core | V0 | 0-2 | 0x059EDD72Cd353dF5106D2B9cC5ab83a52287aC3a | 
 | Revised AB Core | V1 | 3+ | 0xa7d8d9ef8D8Ce8992Df33D8b8CF4Aebabd5bD270 |
-| PBAB Cores | V2 | All PBAB | Various - see PBAB directory DEPLOYMENTS.md |
+| PBAB Cores | V2 | All PBAB | Various - see PBAB directory [DEPLOYMENTS.md files](https://github.com/search?q=repo%3AArtBlocks%2Fartblocks-contracts+extension%3Amd+filename%3ADEPLOYMENTS&type=Code&ref=advsearch&l=&l=) |
 | Current Draft AB Core | V3 | (TBR) | - |
+
+### Active Minting Contract(s)
+
+This is the Smart contract that receives funds, and splits them between the artist(s) and the platform. Artists receive funds directly from this contract.
+
+Current minting contract: [0x47e312d99c09ce61a866c83cbbbbed5a4b9d33e7](https://etherscan.io/address/0x47e312d99c09ce61a866c83cbbbbed5a4b9d33e7).
+
+For deployed PBAB minting contracts, see PBAB directory [DEPLOYMENTS.md files](https://github.com/search?q=repo%3AArtBlocks%2Fartblocks-contracts+extension%3Amd+filename%3ADEPLOYMENTS&type=Code&ref=advsearch&l=&l=).
+
+### Old contracts/addresses:
+* **Primary Sales and Minting Contract (no longer in use) [0x059edd72cd353df5106d2b9cc5ab83a52287ac3a](https://etherscan.io/address/0x059edd72cd353df5106d2b9cc5ab83a52287ac3a)**
+  * This is the original Art Blocks smart contract which had a built in minter. This contract represents only projects 0 (Chromie Squiggle), 1 (Genesis), 2 (Construction Token) and handled both control of the NFTs and the purchase transactions. This smart contract received funds and automatically split them between the artist and the platform. 
+* Secondary Sales Receiving and Sending Address (no longer in use) [0x8e9398907d036e904fff116132ff2be459592277](https://etherscan.io/address/0x8e9398907d036e904fff116132ff2be459592277)
+  * This address received secondary market royalties from https://opensea.io until July 29th 2021. These royalties were subsequently distributed to artists directly from this address. After July 29th the secondary royalty address was changes to the current one on the first page of this doc.
+* Primary Sales Minting Contracts (no longer in use) –
+  * [0x091dcd914fCEB1d47423e532955d1E62d1b2dAEf](https://etherscan.io/address/0x091dcd914fCEB1d47423e532955d1E62d1b2dAEf)
+  * [0x1Db80B860081AF41Bc0ceb3c877F8AcA8379F869](https://etherscan.io/address/0x1Db80B860081AF41Bc0ceb3c877F8AcA8379F869)
+  * [0xAA6EBab3Bf3Ce561305bd53E4BD3B3945920B176](https://etherscan.io/address/0xAA6EBab3Bf3Ce561305bd53E4BD3B3945920B176)
+  * [0x0E8BD86663e3c2418900178e96E14c51B2859957](https://etherscan.io/address/0x0E8BD86663e3c2418900178e96E14c51B2859957)
+  * These are the Smart contract that received funds from primary sales and split them between the artist(s) and the platform. Artists received funds directly from this contract.These minter contracts are no longer in use.
 
 ## Contract Documentation
 Documenation for contracts may be generated via `yarn docgen`. Some Art Blocks contracts use [NatSpec](https://docs.soliditylang.org/en/v0.8.9/natspec-format.html#documentation-example) comments to automatically enrich generated documentation. Some contracts use [dynamic expressions](https://docs.soliditylang.org/en/v0.8.9/natspec-format.html#dynamic-expressions) to improve user experience.
