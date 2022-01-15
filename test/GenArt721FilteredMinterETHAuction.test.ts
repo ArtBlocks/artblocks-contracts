@@ -251,6 +251,31 @@ describe("GenArt721MinterEthAuction", async function () {
     });
   });
 
+  describe("enforce and broadcasts min auction length", async function () {
+    it("enforces min auction length constraint", async function () {
+      const invalidLengthSeconds = 60;
+      // expect revert when creating a new project with
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.snowfro)
+          .setAuctionDetails(0, 0, 60, pricePerTokenInWei),
+        "Auction length must be at least minimumAuctionLengthSeconds"
+      );
+    });
+
+    it("emits event when min auction length is updated", async function () {
+      const newLengthSeconds = 3601;
+      // emits event when minimum auction length is updated
+      await expect(
+        this.minter
+          .connect(this.accounts.snowfro)
+          .setMinimumAuctionLengthSeconds(newLengthSeconds)
+      )
+        .to.emit(this.minter, "MinimumAuctionLengthSecondsUpdated")
+        .withArgs(newLengthSeconds);
+    });
+  });
+
   describe("only allow ETH", async function () {
     const maxPrice = ethers.utils.parseEther("1");
 
