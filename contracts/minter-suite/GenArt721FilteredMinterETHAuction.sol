@@ -21,6 +21,11 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
         uint256 _auctionPriceStart
     );
 
+    /// Minimum allowed auction length updated
+    event MinimumAuctionLengthSecondsUpdated(
+        uint256 _minimumAuctionLengthSeconds
+    );
+
     /// Art Blocks core contract this minter may interact with.
     IGenArt721CoreContract public artblocksContract;
     /// Minter filter this minter may interact with.
@@ -149,6 +154,7 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
         uint256 _minimumAuctionLengthSeconds
     ) external onlyCoreWhitelisted {
         minimumAuctionLengthSeconds = _minimumAuctionLengthSeconds;
+        emit MinimumAuctionLengthSecondsUpdated(_minimumAuctionLengthSeconds);
     }
 
     ////// Auction Functions
