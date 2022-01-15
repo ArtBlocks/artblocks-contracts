@@ -21,12 +21,6 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
         uint256 _auctionPriceStart
     );
 
-    /// togglePurchaseToDisabled updated
-    event PurchaseToDisabledUpdated(
-        uint256 _projectId,
-        bool _purchaseToDisabled
-    );
-
     /// Minimum allowed auction length updated
     event MinimumAuctionLengthSecondsUpdated(
         uint256 _minimumAuctionLengthSeconds
