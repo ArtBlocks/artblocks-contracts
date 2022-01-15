@@ -217,6 +217,25 @@ describe("MinterFilter", async function () {
           value: pricePerTokenInWei,
         });
     });
+
+    it("emits event when `purchaseTo` is toggled", async function () {
+      // emits true when changed from initial value of false
+      await expect(
+        this.minter1
+          .connect(this.accounts.snowfro)
+          .togglePurchaseToDisabled(projectOne)
+      )
+        .to.emit(this.minter1, "PurchaseToDisabledUpdated")
+        .withArgs(projectOne, true);
+      // emits false when changed from initial value of true
+      await expect(
+        this.minter1
+          .connect(this.accounts.snowfro)
+          .togglePurchaseToDisabled(projectOne)
+      )
+        .to.emit(this.minter1, "PurchaseToDisabledUpdated")
+        .withArgs(projectOne, false);
+    });
   });
 
   describe("only allow ETH", async function () {
