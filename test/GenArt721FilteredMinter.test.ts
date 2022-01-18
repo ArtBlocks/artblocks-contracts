@@ -225,5 +225,24 @@ describe("GenArt721FilteredMinter", async function () {
           value: pricePerTokenInWei,
         });
     });
+
+    it("emits event when `purchaseTo` is toggled", async function () {
+      // emits true when changed from initial value of false
+      await expect(
+        this.minter
+          .connect(this.accounts.snowfro)
+          .togglePurchaseToDisabled(projectOne)
+      )
+        .to.emit(this.minter, "PurchaseToDisabledUpdated")
+        .withArgs(projectOne, true);
+      // emits false when changed from initial value of true
+      await expect(
+        this.minter
+          .connect(this.accounts.snowfro)
+          .togglePurchaseToDisabled(projectOne)
+      )
+        .to.emit(this.minter, "PurchaseToDisabledUpdated")
+        .withArgs(projectOne, false);
+    });
   });
 });

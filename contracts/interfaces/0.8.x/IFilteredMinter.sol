@@ -4,6 +4,12 @@
 pragma solidity ^0.8.0;
 
 interface IFilteredMinter {
+    /// togglePurchaseToDisabled updated
+    event PurchaseToDisabledUpdated(
+        uint256 _projectId,
+        bool _purchaseToDisabled
+    );
+
     // Triggers a purchase of a token from the desired project, to the
     // TX-sending address.
     function purchase(uint256 _projectId)

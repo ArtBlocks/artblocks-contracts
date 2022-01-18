@@ -110,6 +110,10 @@ contract GenArt721FilteredMinterETH is IFilteredMinter {
         onlyCoreWhitelisted
     {
         purchaseToDisabled[_projectId] = !purchaseToDisabled[_projectId];
+        emit PurchaseToDisabledUpdated(
+            _projectId,
+            purchaseToDisabled[_projectId]
+        );
     }
 
     /**
