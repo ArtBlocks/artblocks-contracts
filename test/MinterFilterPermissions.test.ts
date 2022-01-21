@@ -123,6 +123,7 @@ describe("MinterPermissionsEvents", async function () {
   describe("`setMinterForProject`", async function () {
     const permissionErrorMessage = "Only Core whitelisted or Artist";
     const approvedMinterErrorMessage = "Only approved minters are allowed";
+    const projectExistsErrorMessage = "Only existing projects";
 
     it("is callable by 'whitelisted' EOA", async function () {
       await expectRevert(
@@ -160,6 +161,18 @@ describe("MinterPermissionsEvents", async function () {
           .connect(this.accounts.misc)
           .setMinterForProject(0, this.minter.address),
         permissionErrorMessage
+      );
+    });
+
+    it("is *not* configurable for non-existent project", async function () {
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .addApprovedMinter(this.minter.address);
+      await expectRevert(
+        this.minterFilter
+          .connect(this.accounts.deployer)
+          .setMinterForProject(1, this.minter.address),
+        projectExistsErrorMessage
       );
     });
   });
