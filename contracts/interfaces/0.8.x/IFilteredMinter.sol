@@ -10,6 +10,9 @@ interface IFilteredMinter {
         bool _purchaseToDisabled
     );
 
+    // getter function of public variable
+    function minterType() external view returns (string memory);
+
     // Triggers a purchase of a token from the desired project, to the
     // TX-sending address.
     function purchase(uint256 _projectId)

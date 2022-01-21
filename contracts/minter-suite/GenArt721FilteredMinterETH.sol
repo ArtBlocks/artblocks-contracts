@@ -17,6 +17,9 @@ contract GenArt721FilteredMinterETH is IFilteredMinter {
     /// Minter filter this minter may interact with.
     IMinterFilter public minterFilter;
 
+    /// minterType for this minter
+    string public constant minterType = "GenArt721FilteredMinterETH";
+
     uint256 constant ONE_MILLION = 1_000_000;
 
     /// projectId => are contracts allowed to mint?
