@@ -61,7 +61,7 @@ describe("MinterPermissionsEvents", async function () {
       await expectRevert(
         this.minterFilter
           .connect(this.accounts.deployer)
-          .setDefaultMinter(this.minter.address),
+          .setMinterForProject(0, this.minter.address),
         approvedMinterErrorMessage
       );
     });
@@ -97,64 +97,24 @@ describe("MinterPermissionsEvents", async function () {
     });
   });
 
-  describe("`setDefaultMinter`", async function () {
-    const permissionErrorMessage = "Only Core whitelisted";
-    const approvedMinterErrorMessage = "Only approved minters are allowed";
-
-    it("is callable by 'whitelisted' EOA", async function () {
-      await expectRevert(
-        this.minterFilter
-          .connect(this.accounts.deployer)
-          .setDefaultMinter(this.minter.address),
-        approvedMinterErrorMessage
-      );
-      await this.minterFilter
-        .connect(this.accounts.deployer)
-        .addApprovedMinter(this.minter.address);
-      await this.minterFilter
-        .connect(this.accounts.deployer)
-        .setDefaultMinter(this.minter.address);
-    });
-
-    it("is *not* callable by 'artist' EOA", async function () {
-      await expectRevert(
-        this.minterFilter
-          .connect(this.accounts.artist)
-          .setDefaultMinter(this.minter.address),
-        permissionErrorMessage
-      );
-    });
-
-    it("is *not* callable by 'misc' EOA", async function () {
-      await expectRevert(
-        this.minterFilter
-          .connect(this.accounts.misc)
-          .setDefaultMinter(this.minter.address),
-        permissionErrorMessage
-      );
-    });
-  });
-
-  describe("`resetMinterForProjectToDefault`", async function () {
+  describe("`removeMinterForProject`", async function () {
     const permissionErrorMessage = "Only Core whitelisted or Artist";
 
     it("is callable by 'whitelisted' EOA", async function () {
       await this.minterFilter
         .connect(this.accounts.deployer)
-        .resetMinterForProjectToDefault(0);
+        .removeMinterForProject(0);
     });
 
     it("is callable by 'artist' EOA", async function () {
       await this.minterFilter
         .connect(this.accounts.artist)
-        .resetMinterForProjectToDefault(0);
+        .removeMinterForProject(0);
     });
 
     it("is *not* callable by 'misc' EOA", async function () {
       await expectRevert(
-        this.minterFilter
-          .connect(this.accounts.misc)
-          .resetMinterForProjectToDefault(0),
+        this.minterFilter.connect(this.accounts.misc).removeMinterForProject(0),
         permissionErrorMessage
       );
     });
