@@ -15,9 +15,6 @@ contract MinterFilter is IMinterFilter {
     /// Art Blocks core contract this minter may interact with.
     IGenArt721CoreContract public artblocksContract;
 
-    /// Default minter address
-    address public defaultMinter;
-
     /// projectId => minter address
     mapping(uint256 => address) public minterForProject;
     /// minter address => is an approved minter?
@@ -83,19 +80,6 @@ contract MinterFilter is IMinterFilter {
     }
 
     /**
-     * @notice Sets default minter to minter `_minterAddress`.
-     * @param _minterAddress Minter to be set as default minter.
-     */
-    function setDefaultMinter(address _minterAddress)
-        external
-        onlyCoreWhitelisted
-        usingApprovedMinter(_minterAddress)
-    {
-        defaultMinter = _minterAddress;
-        emit DefaultMinterRegistered(_minterAddress);
-    }
-
-    /**
      * @notice Sets minter for project `_projectId` to minter
      * `_minterAddress`.
      * @param _projectId Project ID to set minter for.
@@ -111,10 +95,10 @@ contract MinterFilter is IMinterFilter {
     }
 
     /**
-     * @notice Updates project `_projectId` to use the default minter.
-     * @param _projectId Project ID to reset.
+     * @notice Updates project `_projectId` to have no configured minter.
+     * @param _projectId Project ID to remove minter.
      */
-    function resetMinterForProjectToDefault(uint256 _projectId)
+    function removeMinterForProject(uint256 _projectId)
         external
         onlyCoreWhitelistedOrArtist(_projectId)
     {
@@ -136,9 +120,7 @@ contract MinterFilter is IMinterFilter {
         address sender
     ) external returns (uint256 _tokenId) {
         require(
-            (msg.sender == minterForProject[_projectId]) ||
-                (minterForProject[_projectId] == address(0) &&
-                    msg.sender == defaultMinter),
+            msg.sender == minterForProject[_projectId],
             "Not sent from correct minter for project"
         );
         uint256 tokenId = artblocksContract.mint(_to, _projectId, sender);
