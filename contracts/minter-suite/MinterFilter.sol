@@ -2,6 +2,7 @@
 // Created By: Art Blocks Inc.
 
 import "../interfaces/0.8.x/IMinterFilter.sol";
+import "../interfaces/0.8.x/IFilteredMinter.sol";
 import "../interfaces/0.8.x/IGenArt721CoreContract.sol";
 
 pragma solidity 0.8.9;
@@ -72,7 +73,10 @@ contract MinterFilter is IMinterFilter {
         onlyCoreWhitelisted
     {
         isApprovedMinter[_minterAddress] = true;
-        emit MinterApproved(_minterAddress);
+        emit MinterApproved(
+            _minterAddress,
+            IFilteredMinter(_minterAddress).minterType()
+        );
     }
 
     /**
