@@ -198,13 +198,20 @@ contract MinterFilter is IMinterFilter {
      * @param _index enumerable map index to query.
      * @return projectId project ID at index `_index`
      * @return minterAddress minter address for project at index `_index`
+     * @return minterType minter type of minter at minterAddress
      * @dev index must be < quantity of projects that have assigned minters
      */
-    function getProjectAndMinterAt(uint256 _index)
+    function getProjectAndMinterInfoAt(uint256 _index)
         external
         view
-        returns (uint256 projectId, address minterAddress)
+        returns (
+            uint256 projectId,
+            address minterAddress,
+            string memory minterType
+        )
     {
-        return minterForProject.at(_index);
+        (projectId, minterAddress) = minterForProject.at(_index);
+        minterType = IFilteredMinter(minterAddress).minterType();
+        return (projectId, minterAddress, minterType);
     }
 }
