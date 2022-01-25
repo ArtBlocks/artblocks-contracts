@@ -231,6 +231,31 @@ describe("MinterPermissionsEvents", async function () {
       );
     });
 
+    it("is *not* callable *after* is minter removed", async function () {
+      // approve and assign minter
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .addApprovedMinter(this.minter.address);
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .setMinterForProject(0, this.minter.address);
+      // remove minter from project
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .removeMinterForProject(0);
+      // deployer call project with unassigned minter
+      await expectRevert(
+        this.minterFilter
+          .connect(this.accounts.artist)
+          .mint(
+            this.accounts.deployer.address,
+            0,
+            this.accounts.artist.address
+          ),
+        unassignedErrorMessage
+      );
+    });
+
     it("is *not* callable by 'whitelisted' EOA", async function () {
       // approve and assign minter
       await this.minterFilter
