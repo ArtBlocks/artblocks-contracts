@@ -133,6 +133,25 @@ contract MinterFilter is IMinterFilter {
     }
 
     /**
+     * @notice Updates an array of projects to have no configured minter.
+     * @param _projectIds Project IDs to remove minter.
+     * @dev does not require project to have minter to stay gas-efficient,
+     * and is gated for whitelisted only (no artists)
+     * @dev caution when using this function with respect to single tx gas 
+     * limits
+     */
+    function removeMinterForProjects(uint256[] calldata _projectIds)
+        external
+        onlyCoreWhitelisted()
+    {
+        for (uint i; i < _projectIds.length; i++) {
+            // remove minter for project and emit
+            minterForProject.remove(_projectIds[i]);
+            emit ProjectMinterRemoved(_projectIds[i]);
+        }
+    }
+
+    /**
      * @notice Mint a token from project `_projectId` to `_to`, originally
      * purchased by `sender`.
      * @param _to The new token's owner.
