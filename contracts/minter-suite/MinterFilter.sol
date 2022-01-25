@@ -145,7 +145,9 @@ contract MinterFilter is IMinterFilter {
         uint256 _projectId,
         address sender
     ) external returns (uint256 _tokenId) {
-        // validate minter
+        // minter is an approved minter
+        require(isApprovedMinter[msg.sender], "Only approved minters");
+        // minter is the project's minter
         require(
             msg.sender == getMinterForProject(_projectId),
             "Only assigned minter for project"
