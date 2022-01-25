@@ -125,7 +125,7 @@ contract MinterFilter is IMinterFilter {
         // only projects with assigned minters
         require(
             projectHasMinter(_projectId),
-            "Project does not have an assigned minter"
+            "Only projects with an assigned minter"
         );
         // remove minter for project and emit
         minterForProject.remove(_projectId);
@@ -169,7 +169,7 @@ contract MinterFilter is IMinterFilter {
         (bool _hasMinter, address _currentMinter) = minterForProject.tryGet(
             _projectId
         );
-        require(_hasMinter, "Project does not have an assigned minter");
+        require(_hasMinter, "Only projects with an assigned minter");
         return _currentMinter;
     }
 
