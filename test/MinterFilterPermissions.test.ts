@@ -307,6 +307,18 @@ describe("MinterPermissionsEvents", async function () {
         }),
         permissionErrorMessage
       );
+      // revoke permission for minterA
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .removeApprovedMinter(minterA.address);
+      // revert when minting from minterA
+      await expectRevert(
+        minterA.connect(this.accounts.artist).purchase(0, {
+          value: pricePerTokenInWei,
+          gasPrice: 1,
+        }),
+        onlyApprovedErrorMessage
+      );
     });
 
     it("is *not* directly callable by 'whitelisted' EOA", async function () {
