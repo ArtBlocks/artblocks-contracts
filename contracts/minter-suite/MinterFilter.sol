@@ -24,6 +24,9 @@ contract MinterFilter is IMinterFilter {
     /// projectId => minter address
     EnumerableMap.UintToAddressMap private minterForProject;
 
+    /// minter address => qty projects currently using minter
+    mapping(address => uint256) public numProjectsUsingMinter;
+
     /// minter address => is an approved minter?
     mapping(address => bool) public isApprovedMinter;
 
@@ -93,6 +96,10 @@ contract MinterFilter is IMinterFilter {
         external
         onlyCoreWhitelisted
     {
+        require(
+            numProjectsUsingMinter[_minterAddress] == 0,
+            "Only unused minters"
+        );
         isApprovedMinter[_minterAddress] = false;
         emit MinterRevoked(_minterAddress);
     }
@@ -109,6 +116,14 @@ contract MinterFilter is IMinterFilter {
         usingApprovedMinter(_minterAddress)
         projectExists(_projectId)
     {
+        // decrement number of projects using a previous minter
+        (bool hasPreviousMinter, address previousMinter) = minterForProject
+            .tryGet(_projectId);
+        if (hasPreviousMinter) {
+            numProjectsUsingMinter[previousMinter]--;
+        }
+        // add new minter
+        numProjectsUsingMinter[_minterAddress]++;
         minterForProject.set(_projectId, _minterAddress);
         emit ProjectMinterRegistered(_projectId, _minterAddress);
     }
@@ -116,36 +131,32 @@ contract MinterFilter is IMinterFilter {
     /**
      * @notice Updates project `_projectId` to have no configured minter.
      * @param _projectId Project ID to remove minter.
-     * @dev requires project to have assigned minter (de-clutter event noise)
+     * @dev requires project to have an assigned minter
      */
     function removeMinterForProject(uint256 _projectId)
         external
         onlyCoreWhitelistedOrArtist(_projectId)
     {
-        // only projects with assigned minters
-        require(
-            projectHasMinter(_projectId),
-            "Only projects with an assigned minter"
-        );
-        // remove minter for project and emit
+        // remove existing minter for project and emit
+        numProjectsUsingMinter[getMinterForProject(_projectId)]--;
         minterForProject.remove(_projectId);
         emit ProjectMinterRemoved(_projectId);
     }
 
     /**
-     * @notice Updates an array of projects to have no configured minter.
+     * @notice Updates an array of project IDs to have no configured minter.
      * @param _projectIds Project IDs to remove minter.
-     * @dev does not require project to have minter to stay gas-efficient,
-     * and is gated for whitelisted only (no artists)
-     * @dev caution when using this function with respect to single tx gas 
+     * @dev requires all project IDs to have an assigned minter
+     * @dev caution with respect to single tx gas limits
      * limits
      */
     function removeMinterForProjects(uint256[] calldata _projectIds)
         external
-        onlyCoreWhitelisted()
+        onlyCoreWhitelisted
     {
-        for (uint i; i < _projectIds.length; i++) {
+        for (uint256 i; i < _projectIds.length; i++) {
             // remove minter for project and emit
+            numProjectsUsingMinter[getMinterForProject(_projectIds[i])]--;
             minterForProject.remove(_projectIds[i]);
             emit ProjectMinterRemoved(_projectIds[i]);
         }
@@ -158,14 +169,13 @@ contract MinterFilter is IMinterFilter {
      * @param _projectId Project ID to mint a new token on.
      * @param sender Address purchasing a new token.
      * @return _tokenId Token ID of minted token
+     * @dev guaranteed that minter for any project is an approved minter
      */
     function mint(
         address _to,
         uint256 _projectId,
         address sender
     ) external returns (uint256 _tokenId) {
-        // minter is an approved minter
-        require(isApprovedMinter[msg.sender], "Only approved minters");
         // minter is the project's minter
         require(
             msg.sender == getMinterForProject(_projectId),
