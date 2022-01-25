@@ -15,11 +15,6 @@ interface IMinterFilter {
     event MinterRevoked(address indexed _minterAddress);
 
     /**
-     * @notice Minter `_minterAddress` registered as default minter.
-     */
-    event DefaultMinterRegistered(address indexed _minterAddress);
-
-    /**
      * @notice Minter `_minterAddress` registered for project
      * `_projectId`.
      */
@@ -30,9 +25,7 @@ interface IMinterFilter {
 
     function setMinterForProject(uint256, address) external;
 
-    function setDefaultMinter(address) external;
-
-    function resetMinterForProjectToDefault(uint256) external;
+    function removeMinterForProject(uint256) external;
 
     function mint(
         address _to,

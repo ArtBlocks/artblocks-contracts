@@ -62,24 +62,12 @@ describe("MinterFilterEvents", async function () {
     });
   });
 
-  describe("setDefaultMinter", async function () {
+  describe("removeMinterForProject", async function () {
     it("emits an event", async function () {
       await expect(
         this.minterFilter
           .connect(this.accounts.deployer)
-          .setDefaultMinter(this.minter.address)
-      )
-        .to.emit(this.minterFilter, "DefaultMinterRegistered")
-        .withArgs(this.minter.address);
-    });
-  });
-
-  describe("resetMinterForProjectToDefault", async function () {
-    it("emits an event", async function () {
-      await expect(
-        this.minterFilter
-          .connect(this.accounts.deployer)
-          .resetMinterForProjectToDefault(0)
+          .removeMinterForProject(0)
       )
         .to.emit(this.minterFilter, "ProjectMinterRegistered")
         .withArgs(0, ethers.constants.AddressZero);
