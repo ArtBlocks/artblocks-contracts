@@ -7,7 +7,10 @@ interface IMinterFilter {
     /**
      * @notice Approved minter `_minterAddress`.
      */
-    event MinterApproved(address indexed _minterAddress);
+    event MinterApproved(
+        address indexed _minterAddress,
+        string indexed _minterType
+    );
 
     /**
      * @notice Revoked approval for minter `_minterAddress`

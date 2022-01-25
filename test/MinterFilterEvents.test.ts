@@ -38,17 +38,55 @@ describe("MinterFilterEvents", async function () {
     await this.minterFilter
       .connect(this.accounts.deployer)
       .addApprovedMinter(this.minter.address);
+    // deploy all types of filtered minters
+    const minterFactoryETH = await ethers.getContractFactory(
+      "GenArt721FilteredMinterETH"
+    );
+    this.minterETH = await minterFactoryETH.deploy(
+      this.genArt721Core.address,
+      this.minterFilter.address
+    );
+    const minterFactoryETHAuction = await ethers.getContractFactory(
+      "GenArt721FilteredMinterETHAuction"
+    );
+    this.minterETHAuction = await minterFactoryETHAuction.deploy(
+      this.genArt721Core.address,
+      this.minterFilter.address
+    );
   });
 
   describe("addApprovedMinter", async function () {
-    it("emits an event", async function () {
+    it("emits an event for GenArt721FilteredMinter", async function () {
+      const minterType = "GenArt721FilteredMinter";
       await expect(
         this.minterFilter
           .connect(this.accounts.deployer)
           .addApprovedMinter(this.minter.address)
       )
         .to.emit(this.minterFilter, "MinterApproved")
-        .withArgs(this.minter.address);
+        .withArgs(this.minter.address, minterType);
+    });
+
+    it("emits an event for GenArt721FilteredMinterETH", async function () {
+      const minterType = "GenArt721FilteredMinterETH";
+      await expect(
+        this.minterFilter
+          .connect(this.accounts.deployer)
+          .addApprovedMinter(this.minterETH.address)
+      )
+        .to.emit(this.minterFilter, "MinterApproved")
+        .withArgs(this.minterETH.address, minterType);
+    });
+
+    it("emits an event for GenArt721FilteredMinterETHAuction", async function () {
+      const minterType = "GenArt721FilteredMinterETHAuction";
+      await expect(
+        this.minterFilter
+          .connect(this.accounts.deployer)
+          .addApprovedMinter(this.minterETHAuction.address)
+      )
+        .to.emit(this.minterFilter, "MinterApproved")
+        .withArgs(this.minterETHAuction.address, minterType);
     });
   });
 
