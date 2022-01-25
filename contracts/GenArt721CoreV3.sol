@@ -8,7 +8,7 @@ import "./libs/0.5.x/Strings.sol";
 import "./interfaces/0.5.x/IRandomizer.sol";
 import "./interfaces/0.5.x/IGenArt721CoreContract.sol";
 
-pragma solidity ^0.5.0;
+pragma solidity ^0.5.17;
 
 /**
  * @title Art Blocks ERC-721 core contract, V3.
@@ -26,6 +26,13 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContract {
         uint256 indexed _tokenId,
         uint256 indexed _projectId
     );
+
+    /**
+     * @notice currentMinter updated to `_currentMinter`.
+     * @dev Implemented starting with V3 core
+     * @dev NatSpec for events not supported in Solidity ^0.5.0
+     */
+    event MinterUpdated(address indexed _currentMinter);
 
     /// randomizer contract
     IRandomizer public randomizerContract;
@@ -74,8 +81,9 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContract {
     address public admin;
     /// true if address is whitelisted
     mapping(address => bool) public isWhitelisted;
-    /// true if minter is whitelisted
-    mapping(address => bool) public isMintWhitelisted;
+
+    /// single minter allowed for this core contract
+    address public minterContract;
 
     /// next project ID to be created
     uint256 public nextProjectId = 0;
@@ -148,8 +156,8 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContract {
         address _by
     ) external returns (uint256 _tokenId) {
         require(
-            isMintWhitelisted[msg.sender],
-            "Must mint from whitelisted minter contract."
+            msg.sender == minterContract,
+            "Must mint from the allowed minter contract."
         );
         require(
             projects[_projectId].invocations.add(1) <=
@@ -248,17 +256,11 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContract {
     }
 
     /**
-     * @notice Whitelists minter `_address`.
+     * @notice updates minter to `_address`.
      */
-    function addMintWhitelisted(address _address) public onlyAdmin {
-        isMintWhitelisted[_address] = true;
-    }
-
-    /**
-     * @notice Revokes whitelisting of minter `_address`.
-     */
-    function removeMintWhitelisted(address _address) public onlyAdmin {
-        isMintWhitelisted[_address] = false;
+    function updateMinterContract(address _address) public onlyAdmin {
+        minterContract = _address;
+        emit MinterUpdated(_address);
     }
 
     /**
