@@ -13,6 +13,9 @@ interface IGenArt721CoreContract {
     // getter function of public variable
     function admin() external view returns (address);
 
+    // getter function of public variable
+    function nextProjectId() external view returns (uint256);
+
     // getter function of public mapping
     function tokenIdToProjectId(uint256 tokenId)
         external

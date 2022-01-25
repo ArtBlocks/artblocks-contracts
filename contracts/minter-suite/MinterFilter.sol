@@ -38,6 +38,14 @@ contract MinterFilter is IMinterFilter {
         _;
     }
 
+    modifier projectExists(uint256 _projectId) {
+        require(
+            _projectId < artblocksContract.nextProjectId(),
+            "Only existing projects"
+        );
+        _;
+    }
+
     modifier usingApprovedMinter(address _minterAddress) {
         require(
             isApprovedMinter[_minterAddress],
@@ -89,6 +97,7 @@ contract MinterFilter is IMinterFilter {
         external
         onlyCoreWhitelistedOrArtist(_projectId)
         usingApprovedMinter(_minterAddress)
+        projectExists(_projectId)
     {
         minterForProject[_projectId] = _minterAddress;
         emit ProjectMinterRegistered(_projectId, _minterAddress);
