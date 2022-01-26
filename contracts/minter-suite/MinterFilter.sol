@@ -193,12 +193,30 @@ contract MinterFilter is IMinterFilter {
     }
 
     /**
+     * @notice Gets the assigned minter for project `_projectId`.
+     * @param _projectId Project ID to query.
+     * @return address Minter address assigned to project `_projectId`
+     * @dev requires project to have an assigned minter
+     */
+    function getMinterForProject(uint256 _projectId)
+        external
+        view
+        returns (address)
+    {
+        (bool _hasMinter, address _currentMinter) = minterForProject.tryGet(
+            _projectId
+        );
+        require(_hasMinter, "No minter assigned");
+        return _currentMinter;
+    }
+
+    /**
      * @notice Queries if project `_projectId` has an assigned minter.
      * @param _projectId Project ID to query.
      * @return bool true if project has an assigned minter, else false
      * @dev requires project to have an assigned minter
      */
-    function projectHasMinter(uint256 _projectId) public view returns (bool) {
+    function projectHasMinter(uint256 _projectId) external view returns (bool) {
         (bool _hasMinter, ) = minterForProject.tryGet(_projectId);
         return _hasMinter;
     }
