@@ -184,7 +184,8 @@ contract MinterFilter is IMinterFilter {
     ) external returns (uint256 _tokenId) {
         // minter is the project's minter
         require(
-            msg.sender == minterForProject.get(_projectId), "Only assigned minter"
+            msg.sender == minterForProject.get(_projectId),
+            "Only assigned minter"
         );
         // mint
         uint256 tokenId = artblocksContract.mint(_to, _projectId, sender);

@@ -105,8 +105,7 @@ describe("MinterPermissionsEvents", async function () {
 
   describe("`removeMinterForProject`", async function () {
     const permissionErrorMessage = "Only Core whitelisted or Artist";
-    const minterNotAssignedErrorMessage =
-      "Only projects with an assigned minter";
+    const minterNotAssignedErrorMessage = "EnumerableMap: nonexistent key";
 
     it("is not able to remove unassigned minters' EOA", async function () {
       await expectRevert(
@@ -220,8 +219,8 @@ describe("MinterPermissionsEvents", async function () {
 
   describe("`mint`", async function () {
     const onlyApprovedErrorMessage = "Only approved minters";
-    const permissionErrorMessage = "Only assigned minter for project";
-    const unassignedErrorMessage = "Only projects with an assigned minter";
+    const permissionErrorMessage = "Only assigned minter";
+    const unassignedErrorMessage = "EnumerableMap: nonexistent key";
     const pricePerTokenInWei = ethers.utils.parseEther("1");
 
     it("is *not* callable when minter not configured", async function () {
@@ -231,7 +230,7 @@ describe("MinterPermissionsEvents", async function () {
           value: pricePerTokenInWei,
           gasPrice: 1,
         }),
-        onlyApprovedErrorMessage
+        unassignedErrorMessage
       );
       // approve minter, but don't assign to project
       await this.minterFilter
@@ -307,17 +306,17 @@ describe("MinterPermissionsEvents", async function () {
         }),
         permissionErrorMessage
       );
-      // revoke permission for minterA
+      // remove A from project
       await this.minterFilter
         .connect(this.accounts.deployer)
-        .removeApprovedMinter(minterA.address);
-      // revert when minting from minterA
+        .removeMinterForProject(0);
+      // revert when minting from stale minterA
       await expectRevert(
         minterA.connect(this.accounts.artist).purchase(0, {
           value: pricePerTokenInWei,
           gasPrice: 1,
         }),
-        onlyApprovedErrorMessage
+        unassignedErrorMessage
       );
     });
 
@@ -338,7 +337,7 @@ describe("MinterPermissionsEvents", async function () {
             0,
             this.accounts.deployer.address
           ),
-        onlyApprovedErrorMessage
+        permissionErrorMessage
       );
     });
 
@@ -355,11 +354,11 @@ describe("MinterPermissionsEvents", async function () {
         this.minterFilter
           .connect(this.accounts.artist)
           .mint(this.accounts.artist.address, 0, this.accounts.artist.address),
-        onlyApprovedErrorMessage
+        permissionErrorMessage
       );
     });
 
-    it("is *not* directly callable by EOA", async function () {
+    it("is *not* directly callable by misc EOA", async function () {
       // approve and assign minter
       await this.minterFilter
         .connect(this.accounts.deployer)
@@ -372,7 +371,7 @@ describe("MinterPermissionsEvents", async function () {
         this.minterFilter
           .connect(this.accounts.misc)
           .mint(this.accounts.misc.address, 0, this.accounts.misc.address),
-        onlyApprovedErrorMessage
+        permissionErrorMessage
       );
     });
   });
