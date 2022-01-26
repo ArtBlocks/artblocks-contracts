@@ -137,29 +137,35 @@ contract MinterFilter is IMinterFilter {
         external
         onlyCoreWhitelistedOrArtist(_projectId)
     {
-        // remove existing minter for project and emit
-        numProjectsUsingMinter[getMinterForProject(_projectId)]--;
-        minterForProject.remove(_projectId);
-        emit ProjectMinterRemoved(_projectId);
+        _removeMinterForProject(_projectId);
     }
 
     /**
      * @notice Updates an array of project IDs to have no configured minter.
-     * @param _projectIds Project IDs to remove minter.
+     * @param _projectIds Array of project IDs to remove minters for.
      * @dev requires all project IDs to have an assigned minter
      * @dev caution with respect to single tx gas limits
-     * limits
      */
     function removeMinterForProjects(uint256[] calldata _projectIds)
         external
         onlyCoreWhitelisted
     {
-        for (uint256 i; i < _projectIds.length; i++) {
-            // remove minter for project and emit
-            numProjectsUsingMinter[getMinterForProject(_projectIds[i])]--;
-            minterForProject.remove(_projectIds[i]);
-            emit ProjectMinterRemoved(_projectIds[i]);
+        uint256 numProjects = _projectIds.length;
+        for (uint256 i; i < numProjects; i++) {
+            _removeMinterForProject(_projectIds[i]);
         }
+    }
+
+    /**
+     * @notice Updates project `_projectId` to have no configured minter.
+     * @param _projectId Project ID to remove minter.
+     * @dev requires project to have an assigned minter
+     */
+    function _removeMinterForProject(uint256 _projectId) private {
+        // remove minter for project and emit
+        numProjectsUsingMinter[getMinterForProject(_projectId)]--;
+        minterForProject.remove(_projectId);
+        emit ProjectMinterRemoved(_projectId);
     }
 
     /**
