@@ -26,4 +26,8 @@ interface IMinterFilter {
         uint256 _projectId,
         address sender
     ) external returns (uint256);
+
+    function getMinterForProject(uint256) external;
+    
+    function projectHasMinter(uint256) external;
 }
