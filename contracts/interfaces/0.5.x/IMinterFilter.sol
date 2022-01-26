@@ -4,7 +4,10 @@
 pragma solidity ^0.5.0;
 
 interface IMinterFilter {
-    event MinterApproved(address indexed _minterAddress);
+    event MinterApproved(
+        address indexed _minterAddress,
+        string indexed _minterType
+    );
 
     event MinterRevoked(address indexed _minterAddress);
 
@@ -12,7 +15,8 @@ interface IMinterFilter {
 
     event ProjectMinterRegistered(
         uint256 indexed _projectId,
-        address indexed _minterAddress
+        address indexed _minterAddress,
+        string indexed _minterType
     );
 
     function setMinterForProject(uint256, address) external;

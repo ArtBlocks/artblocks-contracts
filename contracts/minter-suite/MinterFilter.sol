@@ -125,7 +125,11 @@ contract MinterFilter is IMinterFilter {
         // add new minter
         numProjectsUsingMinter[_minterAddress]++;
         minterForProject.set(_projectId, _minterAddress);
-        emit ProjectMinterRegistered(_projectId, _minterAddress);
+        emit ProjectMinterRegistered(
+            _projectId,
+            _minterAddress,
+            IFilteredMinter(_minterAddress).minterType()
+        );
     }
 
     /**
