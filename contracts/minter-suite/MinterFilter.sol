@@ -146,7 +146,7 @@ contract MinterFilter is IMinterFilter {
      * @dev requires all project IDs to have an assigned minter
      * @dev caution with respect to single tx gas limits
      */
-    function removeMinterForProjects(uint256[] calldata _projectIds)
+    function removeMintersForProjects(uint256[] calldata _projectIds)
         external
         onlyCoreWhitelisted
     {
