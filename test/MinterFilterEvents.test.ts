@@ -120,6 +120,7 @@ describe("MinterFilterEvents", async function () {
   });
 
   describe("setMinterForProject", async function () {
+    const minterType = "GenArt721FilteredMinter";
     it("emits an event", async function () {
       await expect(
         this.minterFilter
@@ -127,7 +128,7 @@ describe("MinterFilterEvents", async function () {
           .setMinterForProject(0, this.minter.address)
       )
         .to.emit(this.minterFilter, "ProjectMinterRegistered")
-        .withArgs(0, this.minter.address);
+        .withArgs(0, this.minter.address, minterType);
       // add project 1
       await this.genArt721Core
         .connect(this.accounts.deployer)
@@ -139,7 +140,7 @@ describe("MinterFilterEvents", async function () {
           .setMinterForProject(1, this.minter.address)
       )
         .to.emit(this.minterFilter, "ProjectMinterRegistered")
-        .withArgs(1, this.minter.address);
+        .withArgs(1, this.minter.address, minterType);
     });
   });
 });
