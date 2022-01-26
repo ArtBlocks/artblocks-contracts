@@ -163,7 +163,7 @@ contract MinterFilter is IMinterFilter {
      */
     function _removeMinterForProject(uint256 _projectId) private {
         // remove minter for project and emit
-        numProjectsUsingMinter[getMinterForProject(_projectId)]--;
+        numProjectsUsingMinter[minterForProject.get(_projectId)]--;
         minterForProject.remove(_projectId);
         emit ProjectMinterRemoved(_projectId);
     }
@@ -175,7 +175,7 @@ contract MinterFilter is IMinterFilter {
      * @param _projectId Project ID to mint a new token on.
      * @param sender Address purchasing a new token.
      * @return _tokenId Token ID of minted token
-     * @dev guaranteed that minter for any project is an approved minter
+     * @dev reverts w/nonexistent key error when project has no assigned minter
      */
     function mint(
         address _to,
@@ -184,30 +184,11 @@ contract MinterFilter is IMinterFilter {
     ) external returns (uint256 _tokenId) {
         // minter is the project's minter
         require(
-            msg.sender == getMinterForProject(_projectId),
-            "Only assigned minter for project"
+            msg.sender == minterForProject.get(_projectId), "Only assigned minter"
         );
         // mint
         uint256 tokenId = artblocksContract.mint(_to, _projectId, sender);
         return tokenId;
-    }
-
-    /**
-     * @notice Gets the assigned minter for project `_projectId`.
-     * @param _projectId Project ID to query.
-     * @return address Minter address assigned to project `_projectId`
-     * @dev requires project to have an assigned minter
-     */
-    function getMinterForProject(uint256 _projectId)
-        public
-        view
-        returns (address)
-    {
-        (bool _hasMinter, address _currentMinter) = minterForProject.tryGet(
-            _projectId
-        );
-        require(_hasMinter, "Only projects with an assigned minter");
-        return _currentMinter;
     }
 
     /**
