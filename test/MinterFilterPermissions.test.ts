@@ -160,6 +160,68 @@ describe("MinterPermissionsEvents", async function () {
     });
   });
 
+  describe("removeMintersForProjects", async function () {
+    const permissionErrorMessage = "Only Core whitelisted";
+    const minterNotAssignedErrorMessage = "EnumerableMap: nonexistent key";
+
+    it("is not able to remove unassigned minters' EOA", async function () {
+      await expectRevert(
+        this.minterFilter
+          .connect(this.accounts.deployer)
+          .removeMintersForProjects([0]),
+        minterNotAssignedErrorMessage
+      );
+    });
+
+    it("is callable by 'whitelisted' EOA", async function () {
+      // approve and assign minter
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .addApprovedMinter(this.minter.address);
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .setMinterForProject(0, this.minter.address);
+      // whitelisted calls
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .removeMintersForProjects([0]);
+    });
+
+    it("is *not* callable by 'artist' EOA", async function () {
+      // approve and assign minter
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .addApprovedMinter(this.minter.address);
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .setMinterForProject(0, this.minter.address);
+      // artist calls
+      await expectRevert(
+        this.minterFilter
+          .connect(this.accounts.artist)
+          .removeMintersForProjects([0]),
+        permissionErrorMessage
+      );
+    });
+
+    it("is *not* callable by 'misc' EOA", async function () {
+      // approve and assign minter
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .addApprovedMinter(this.minter.address);
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .setMinterForProject(0, this.minter.address);
+      // misc. EOA calls
+      await expectRevert(
+        this.minterFilter
+          .connect(this.accounts.misc)
+          .removeMintersForProjects([0]),
+        permissionErrorMessage
+      );
+    });
+  });
+
   describe("`setMinterForProject`", async function () {
     const permissionErrorMessage = "Only Core whitelisted or Artist";
     const approvedMinterErrorMessage = "Only approved minters are allowed";
