@@ -2,7 +2,11 @@
 
 ## Mainnet
 
-TBD
+**GenArt721CoreV2:** https://etherscan.io/address/TODO#code
+**GenArt721Minter:** https://etherscan.io/address/TODO#code
+
+`0x0a690B298f84D12414F5c8dB7de1EcE5a4605877` set as minter owner, whitelisted on core contract, and admin of core contract.
+
 
 ## Ropsten
 
