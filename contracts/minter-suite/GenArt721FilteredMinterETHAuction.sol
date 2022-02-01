@@ -192,8 +192,7 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
             "Auction length must be at least minimumAuctionLengthSeconds"
         );
         require(
-            _auctionPriceStart >
-                _auctionPriceEnd,
+            _auctionPriceStart > _auctionPriceEnd,
             "Auction start price must be greater than auction end price"
         );
         projectAuctionParameters[_projectId] = AuctionParameters(
