@@ -100,15 +100,16 @@ async function main() {
   console.log(`Transferred Core contract admin to: ${pbabTransferAddress}.`);
 
   // Output instructions for manual Etherscan verification.
+  const networkName = network.name == "homestead" ? "mainnet" : network.name;
   const standardVerify =
     "yarn hardhat verify --contract <path to .sol>:<contract name>";
   console.log(`Verify GenArt721CoreV2 deployment with:`);
   console.log(
-    `${standardVerify} --network ${network.name} ${genArt721Core.address} "${pbabTokenName}" "${pbabTokenTicker}" ${randomizer.address}`
+    `${standardVerify} --network ${networkName} ${genArt721Core.address} "${pbabTokenName}" "${pbabTokenTicker}" ${randomizer.address}`
   );
   console.log(`Verify GenArt721Minter deployment with:`);
   console.log(
-    `${standardVerify} --network ${network.name} ${genArt721Minter.address} ${genArt721Core.address}`
+    `${standardVerify} --network ${networkName} ${genArt721Minter.address} ${genArt721Core.address}`
   );
 
   //////////////////////////////////////////////////////////////////////////////
