@@ -15,6 +15,13 @@ pragma solidity 0.8.9;
  * @author Art Blocks Inc.
  */
 contract MinterFilter is IMinterFilter {
+    /**
+     * @notice This minter is to be considered `_coreContractAddress`'s
+     * canonical minter.
+     * @dev may be vestigial after migrating to V3 core contracts
+     */
+    event IsCanonicalMinter(address indexed _coreContractAddress);
+
     // add Enumerable Map methods
     using EnumerableMap for EnumerableMap.UintToAddressMap;
 
@@ -64,6 +71,14 @@ contract MinterFilter is IMinterFilter {
         _;
     }
 
+    modifier onlyMintWhitelisted() {
+        require(
+            artblocksContract.isMintWhitelisted(address(this)),
+            "Only mint allowlisted"
+        );
+        _;
+    }
+
     /**
      * @notice Initializes contract to be a Minter for `_genArt721Address`.
      * @param _genArt721Address Art Blocks core contract address
@@ -71,6 +86,19 @@ contract MinterFilter is IMinterFilter {
      */
     constructor(address _genArt721Address) {
         artblocksContract = IGenArt721CoreContract(_genArt721Address);
+    }
+
+    /**
+     * @notice Emits event notifying indexers that this is core contract's
+     * canonical minter filter.
+     * @dev may be vestigial after migrating to V3 core contracts
+     */
+    function alertAsCanonicalMinter()
+        external
+        onlyCoreWhitelisted
+        onlyMintWhitelisted
+    {
+        emit IsCanonicalMinter(address(artblocksContract));
     }
 
     /**
