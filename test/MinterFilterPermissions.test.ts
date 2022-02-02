@@ -103,28 +103,30 @@ describe("MinterPermissionsEvents", async function () {
     });
   });
 
-  describe("alertAsCanonicalMinter", async function () {
+  describe("alertAsCanonicalMinterFilter", async function () {
     const permissionErrorMessage = "Only Core whitelisted";
     const onlyMintAllowlistedErrorMessage = "Only mint allowlisted";
 
     it("is callable by 'whitelisted' EOA", async function () {
       await this.minterFilter
         .connect(this.accounts.deployer)
-        .alertAsCanonicalMinter();
+        .alertAsCanonicalMinterFilter();
     });
 
     it("is *not* callable by 'artist' EOA", async function () {
       await expectRevert(
         this.minterFilter
           .connect(this.accounts.artist)
-          .alertAsCanonicalMinter(),
+          .alertAsCanonicalMinterFilter(),
         permissionErrorMessage
       );
     });
 
     it("is *not* callable by 'misc' EOA", async function () {
       await expectRevert(
-        this.minterFilter.connect(this.accounts.misc).alertAsCanonicalMinter(),
+        this.minterFilter
+          .connect(this.accounts.misc)
+          .alertAsCanonicalMinterFilter(),
         permissionErrorMessage
       );
     });
@@ -137,7 +139,7 @@ describe("MinterPermissionsEvents", async function () {
       await expectRevert(
         this.minterFilter
           .connect(this.accounts.deployer)
-          .alertAsCanonicalMinter(),
+          .alertAsCanonicalMinterFilter(),
         onlyMintAllowlistedErrorMessage
       );
     });

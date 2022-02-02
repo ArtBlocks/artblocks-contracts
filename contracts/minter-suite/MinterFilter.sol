@@ -20,7 +20,7 @@ contract MinterFilter is IMinterFilter {
      * canonical minter.
      * @dev may be vestigial after migrating to V3 core contracts
      */
-    event IsCanonicalMinter(address indexed _coreContractAddress);
+    event IsCanonicalMinterFilter(address indexed _coreContractAddress);
 
     // add Enumerable Map methods
     using EnumerableMap for EnumerableMap.UintToAddressMap;
@@ -93,12 +93,12 @@ contract MinterFilter is IMinterFilter {
      * canonical minter filter.
      * @dev may be vestigial after migrating to V3 core contracts
      */
-    function alertAsCanonicalMinter()
+    function alertAsCanonicalMinterFilter()
         external
         onlyCoreWhitelisted
         onlyMintWhitelisted
     {
-        emit IsCanonicalMinter(address(artblocksContract));
+        emit IsCanonicalMinterFilter(address(artblocksContract));
     }
 
     /**
