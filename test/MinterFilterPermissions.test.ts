@@ -103,6 +103,46 @@ describe("MinterPermissionsEvents", async function () {
     });
   });
 
+  describe("alertAsCanonicalMinter", async function () {
+    const permissionErrorMessage = "Only Core whitelisted";
+    const onlyMintAllowlistedErrorMessage = "Only mint allowlisted";
+
+    it("is callable by 'whitelisted' EOA", async function () {
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .alertAsCanonicalMinter();
+    });
+
+    it("is *not* callable by 'artist' EOA", async function () {
+      await expectRevert(
+        this.minterFilter
+          .connect(this.accounts.artist)
+          .alertAsCanonicalMinter(),
+        permissionErrorMessage
+      );
+    });
+
+    it("is *not* callable by 'misc' EOA", async function () {
+      await expectRevert(
+        this.minterFilter.connect(this.accounts.misc).alertAsCanonicalMinter(),
+        permissionErrorMessage
+      );
+    });
+
+    it("is *not* callable when not mint allowlisted on core", async function () {
+      // remove minter from core allowlist by switching minter to null
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateMinterContract(this.accounts.misc.address);
+      await expectRevert(
+        this.minterFilter
+          .connect(this.accounts.deployer)
+          .alertAsCanonicalMinter(),
+        onlyMintAllowlistedErrorMessage
+      );
+    });
+  });
+
   describe("`removeMinterForProject`", async function () {
     const permissionErrorMessage = "Only Core whitelisted or Artist";
     const minterNotAssignedErrorMessage = "EnumerableMap: nonexistent key";

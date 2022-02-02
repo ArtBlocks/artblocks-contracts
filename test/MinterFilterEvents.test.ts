@@ -143,4 +143,21 @@ describe("MinterFilterEvents", async function () {
         .withArgs(1, this.minter.address, minterType);
     });
   });
+
+  describe("alertAsCanonicalMinter", async function () {
+    it("emits event alerting as canonical minter", async function () {
+      // allowlist MinterFilter on core
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateMinterContract(this.minterFilter.address);
+      // expect proper event
+      await expect(
+        this.minterFilter
+          .connect(this.accounts.deployer)
+          .alertAsCanonicalMinter()
+      )
+        .to.emit(this.minterFilter, "IsCanonicalMinter")
+        .withArgs(this.genArt721Core.address);
+    });
+  });
 });
