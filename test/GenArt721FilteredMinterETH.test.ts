@@ -17,6 +17,7 @@ describe("MinterFilter", async function () {
   const secondTokenId = new BN("3000001");
 
   const pricePerTokenInWei = ethers.utils.parseEther("1");
+  const higherPricePerTokenInWei = ethers.utils.parseEther("1.1");
   const projectOne = 0;
   const projectTwo = 1;
   const projectThree = 2;
@@ -58,17 +59,11 @@ describe("MinterFilter", async function () {
       this.minterFilter.address
     );
 
-    await this.token
-      .connect(snowfro)
-      .addProject("project1", artist.address, pricePerTokenInWei);
+    await this.token.connect(snowfro).addProject("project1", artist.address, 0);
 
-    await this.token
-      .connect(snowfro)
-      .addProject("project2", artist.address, pricePerTokenInWei);
+    await this.token.connect(snowfro).addProject("project2", artist.address, 0);
 
-    await this.token
-      .connect(snowfro)
-      .addProject("project3", artist.address, pricePerTokenInWei);
+    await this.token.connect(snowfro).addProject("project3", artist.address, 0);
 
     await this.token.connect(snowfro).toggleProjectIsActive(projectOne);
     await this.token.connect(snowfro).toggleProjectIsActive(projectTwo);
@@ -115,6 +110,98 @@ describe("MinterFilter", async function () {
       .connect(this.accounts.snowfro)
       .setMinterForProject(projectTwo, this.minter2.address);
     // We leave project three with no minter on purpose
+
+    // set token price for first two projects on minter one
+    await this.minter1
+      .connect(artist)
+      .updatePricePerTokenInWei(projectOne, pricePerTokenInWei);
+    await this.minter1
+      .connect(artist)
+      .updatePricePerTokenInWei(projectTwo, pricePerTokenInWei);
+  });
+
+  describe("updatePricePerTokenInWei", async function () {
+    it("only allows artist to update price", async function () {
+      const onlyArtistErrorMessage = "Only Artist";
+      // doesn't allow owner
+      await expectRevert(
+        this.minter1
+          .connect(this.accounts.owner)
+          .updatePricePerTokenInWei(projectOne, higherPricePerTokenInWei),
+        onlyArtistErrorMessage
+      );
+      // doesn't allow snowfro
+      await expectRevert(
+        this.minter1
+          .connect(this.accounts.snowfro)
+          .updatePricePerTokenInWei(projectOne, higherPricePerTokenInWei),
+        onlyArtistErrorMessage
+      );
+      // doesn't allow additional
+      await expectRevert(
+        this.minter1
+          .connect(this.accounts.additional)
+          .updatePricePerTokenInWei(projectOne, higherPricePerTokenInWei),
+        onlyArtistErrorMessage
+      );
+      // does allow artist
+      await this.minter1
+        .connect(this.accounts.artist)
+        .updatePricePerTokenInWei(projectOne, higherPricePerTokenInWei);
+    });
+
+    it("enforces price update", async function () {
+      const needMoreValueErrorMessage = "Must send minimum value to mint!";
+      // artist increases price
+      await this.minter1
+        .connect(this.accounts.artist)
+        .updatePricePerTokenInWei(projectOne, higherPricePerTokenInWei);
+      // cannot purchase token at lower price
+      await expectRevert(
+        this.minter1.connect(this.accounts.owner).purchase(projectOne, {
+          value: pricePerTokenInWei,
+        }),
+        needMoreValueErrorMessage
+      );
+      // can purchase token at higher price
+      await this.minter1.connect(this.accounts.owner).purchase(projectOne, {
+        value: higherPricePerTokenInWei,
+      });
+    });
+
+    it("enforces price update only on desired project", async function () {
+      const needMoreValueErrorMessage = "Must send minimum value to mint!";
+      // update project two to use minter one
+      await this.minterFilter
+        .connect(this.accounts.snowfro)
+        .setMinterForProject(projectTwo, this.minter1.address);
+      // artist increases price of project one
+      await this.minter1
+        .connect(this.accounts.artist)
+        .updatePricePerTokenInWei(projectOne, higherPricePerTokenInWei);
+      // cannot purchase project one token at lower price
+      await expectRevert(
+        this.minter1.connect(this.accounts.owner).purchase(projectOne, {
+          value: pricePerTokenInWei,
+        }),
+        needMoreValueErrorMessage
+      );
+      // can purchase project two token at lower price
+      await this.minter1.connect(this.accounts.owner).purchase(projectTwo, {
+        value: pricePerTokenInWei,
+      });
+    });
+
+    it("emits event upon price update", async function () {
+      // artist increases price
+      await expect(
+        this.minter1
+          .connect(this.accounts.artist)
+          .updatePricePerTokenInWei(projectOne, higherPricePerTokenInWei)
+      )
+        .to.emit(this.minter1, "PricePerTokenInWeiUpdated")
+        .withArgs(projectOne, higherPricePerTokenInWei);
+    });
   });
 
   describe("purchase", async function () {
