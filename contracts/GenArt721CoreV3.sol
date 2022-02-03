@@ -62,8 +62,6 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContract {
 
     //All financial functions are stripped from struct for visibility
     mapping(uint256 => address) public projectIdToArtistAddress;
-    mapping(uint256 => string) public projectIdToCurrencySymbol;
-    mapping(uint256 => address) public projectIdToCurrencyAddress;
     mapping(uint256 => address) public projectIdToAdditionalPayee;
     mapping(uint256 => uint256) public projectIdToAdditionalPayeePercentage;
     mapping(uint256 => uint256)
@@ -325,27 +323,10 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContract {
         uint256 projectId = nextProjectId;
         projectIdToArtistAddress[projectId] = _artistAddress;
         projects[projectId].name = _projectName;
-        projectIdToCurrencySymbol[projectId] = "ETH";
         projects[projectId].paused = true;
         projects[projectId].maxInvocations = ONE_MILLION;
 
         nextProjectId = nextProjectId.add(1);
-    }
-
-    /**
-     * @notice Updates payment currency of project `_projectId` to be
-     * `_currencySymbol`.
-     * @param _projectId Project ID to update.
-     * @param _currencySymbol Currency symbol.
-     * @param _currencyAddress Currency address.
-     */
-    function updateProjectCurrencyInfo(
-        uint256 _projectId,
-        string memory _currencySymbol,
-        address _currencyAddress
-    ) public onlyArtist(_projectId) {
-        projectIdToCurrencySymbol[_projectId] = _currencySymbol;
-        projectIdToCurrencyAddress[_projectId] = _currencyAddress;
     }
 
     /**
@@ -571,15 +552,17 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContract {
      * @param _projectId Project to be queried.
      * @return artistAddress Project Artist's address
      * @return pricePerTokenInWei Price to mint a token, in Wei - zero if no
-     * minter configured.
+     * minter configured for project
      * @return invocations Current number of invocations
      * @return maxInvocations Maximum allowed invocations
      * @return active Boolean representing if project is currently active
      * @return additionalPayee Additional payee address
      * @return additionalPayeePercentage Percentage of artist revenue
      * to be sent to the additional payee's address
-     * @return currency Symbol of project's currency
-     * @return currencyAddress Address of project's currency
+     * @return currency Symbol of project's currency, "UNDEFINED" if no
+     * minter configured for project
+     * @return currencyAddress Address of project's currency, null addrress if
+     * no minter configured for project
      */
     function projectTokenInfo(uint256 _projectId)
         public
@@ -605,8 +588,8 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContract {
         additionalPayeePercentage = projectIdToAdditionalPayeePercentage[
             _projectId
         ];
-        currency = projectIdToCurrencySymbol[_projectId];
-        currencyAddress = projectIdToCurrencyAddress[_projectId];
+        currency = projectIdToCurrencySymbol(_projectId);
+        currencyAddress = projectIdToCurrencyAddress(_projectId);
     }
 
     /**
@@ -678,7 +661,7 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContract {
     }
 
     /**
-     * @notice Returns price per token in wei for project `_projectId`, if the
+     * @notice Returns price per token in wei for project `_projectId` if the
      * project has a minter defined. Zero if no minter defined.
      * @dev reverts if currentMinter does not support
      * projectHasMinter(_projectId) and getMinterForProject(_projectId) methods
@@ -700,6 +683,56 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContract {
                 ).getPrice(_projectId);
         }
         return 0;
+    }
+
+    /**
+     * @notice Returns currency symbol for `_projectId` if the
+     * project has a minter defined. "UNDEFINED" if no minter defined.
+     * @dev reverts if currentMinter does not support
+     * projectHasMinter(_projectId) and getMinterForProject(_projectId) methods
+     */
+    function projectIdToCurrencySymbol(uint256 _projectId)
+        public
+        view
+        returns (string memory currencySymbol)
+    {
+        if (minterContract == address(0)) {
+            return "UNDEFINED";
+        }
+        if (IMinterFilter(minterContract).projectHasMinter(_projectId)) {
+            return
+                IFilteredMinter(
+                    IMinterFilter(minterContract).getMinterForProject(
+                        _projectId
+                    )
+                ).getCurrencySymbol(_projectId);
+        }
+        return "UNDEFINED";
+    }
+
+    /**
+     * @notice Returns currency address for `_projectId` if the
+     * project has a minter defined, null address if no minter defined.
+     * @dev reverts if currentMinter does not support
+     * projectHasMinter(_projectId) and getMinterForProject(_projectId) methods
+     */
+    function projectIdToCurrencyAddress(uint256 _projectId)
+        public
+        view
+        returns (address currencyAddress)
+    {
+        if (minterContract == address(0)) {
+            return address(0);
+        }
+        if (IMinterFilter(minterContract).projectHasMinter(_projectId)) {
+            return
+                IFilteredMinter(
+                    IMinterFilter(minterContract).getMinterForProject(
+                        _projectId
+                    )
+                ).getCurrencyAddress(_projectId);
+        }
+        return address(0);
     }
 
     /**

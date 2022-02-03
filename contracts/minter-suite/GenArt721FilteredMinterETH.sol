@@ -147,7 +147,7 @@ contract GenArt721FilteredMinterETH is IFilteredMinter {
     function updatePricePerTokenInWei(
         uint256 _projectId,
         uint256 _pricePerTokenInWei
-    ) public onlyArtist(_projectId) {
+    ) external onlyArtist(_projectId) {
         projectIdToPricePerTokenInWei[_projectId] = _pricePerTokenInWei;
         emit PricePerTokenInWeiUpdated(_projectId, _pricePerTokenInWei);
     }
@@ -203,16 +203,6 @@ contract GenArt721FilteredMinterETH is IFilteredMinter {
             );
             projectMintCounter[msg.sender][_projectId]++;
         }
-
-        // project currency must be ETH
-        require(
-            keccak256(
-                abi.encodePacked(
-                    artblocksContract.projectIdToCurrencySymbol(_projectId)
-                )
-            ) == keccak256(abi.encodePacked("ETH")),
-            "Project currency must be ETH"
-        );
 
         require(
             msg.value >= projectIdToPricePerTokenInWei[_projectId],
@@ -290,5 +280,23 @@ contract GenArt721FilteredMinterETH is IFilteredMinter {
      */
     function getPrice(uint256 _projectId) public view returns (uint256) {
         return projectIdToPricePerTokenInWei[_projectId];
+    }
+
+    /**
+     * @notice Gets currency symbol "ETH" - this is an ETH-only minter.
+     */
+    function getCurrencySymbol(
+        uint256 /*_projectId*/
+    ) external pure returns (string memory) {
+        return "ETH";
+    }
+
+    /**
+     * @notice Gets null address - this is an ETH-only minter.
+     */
+    function getCurrencyAddress(
+        uint256 /*_projectId*/
+    ) external pure returns (address) {
+        return address(0);
     }
 }

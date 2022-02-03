@@ -23,6 +23,15 @@ contract GenArt721FilteredMinter is IFilteredMinter {
         uint256 indexed _projectId,
         uint256 indexed _pricePerTokenInWei
     );
+    /**
+     * @notice Currency updated for project `_projectId` to symbol
+     * `_currencySymbol` and address `_currencyAddress`.
+     */
+    event ProjectCurrencyInfoUpdated(
+        uint256 indexed _projectId,
+        string indexed _currencySymbol,
+        address indexed _currencyAddress
+    );
 
     /// Art Blocks core contract this minter may interact with.
     IGenArt721CoreContract public artblocksContract;
@@ -47,7 +56,11 @@ contract GenArt721FilteredMinter is IFilteredMinter {
     /// projectId => project's maximum number of invocations
     mapping(uint256 => uint256) public projectMaxInvocations;
     /// projectId => price per token in wei - supersedes any defined core price
-    mapping(uint256 => uint256) public projectIdToPricePerTokenInWei;
+    mapping(uint256 => uint256) private projectIdToPricePerTokenInWei;
+    /// projectId => currency symbol - supersedes any defined core value
+    mapping(uint256 => string) private projectIdToCurrencySymbol;
+    /// projectId => currency address - supersedes any defined core value
+    mapping(uint256 => address) private projectIdToCurrencyAddress;
 
     modifier onlyCoreWhitelisted() {
         require(
@@ -91,9 +104,9 @@ contract GenArt721FilteredMinter is IFilteredMinter {
         view
         returns (uint256 balance)
     {
-        balance = IERC20(
-            artblocksContract.projectIdToCurrencyAddress(_projectId)
-        ).balanceOf(msg.sender);
+        balance = IERC20(projectIdToCurrencyAddress[_projectId]).balanceOf(
+            msg.sender
+        );
         return balance;
     }
 
@@ -109,9 +122,10 @@ contract GenArt721FilteredMinter is IFilteredMinter {
         view
         returns (uint256 remaining)
     {
-        remaining = IERC20(
-            artblocksContract.projectIdToCurrencyAddress(_projectId)
-        ).allowance(msg.sender, address(this));
+        remaining = IERC20(projectIdToCurrencyAddress[_projectId]).allowance(
+            msg.sender,
+            address(this)
+        );
         return remaining;
     }
 
@@ -185,9 +199,37 @@ contract GenArt721FilteredMinter is IFilteredMinter {
     function updatePricePerTokenInWei(
         uint256 _projectId,
         uint256 _pricePerTokenInWei
-    ) public onlyArtist(_projectId) {
+    ) external onlyArtist(_projectId) {
         projectIdToPricePerTokenInWei[_projectId] = _pricePerTokenInWei;
         emit PricePerTokenInWeiUpdated(_projectId, _pricePerTokenInWei);
+    }
+
+    /**
+     * @notice Updates payment currency of project `_projectId` to be
+     * `_currencySymbol`.
+     * @param _projectId Project ID to update.
+     * @param _currencySymbol Currency symbol.
+     * @param _currencyAddress Currency address.
+     */
+    function updateProjectCurrencyInfo(
+        uint256 _projectId,
+        string memory _currencySymbol,
+        address _currencyAddress
+    ) external onlyArtist(_projectId) {
+        // require null address if symbol is "ETH"
+        require(
+            (keccak256(abi.encodePacked(_currencySymbol)) ==
+                keccak256(abi.encodePacked("ETH"))) ==
+                (_currencyAddress == address(0)),
+            "ETH must be null address"
+        );
+        projectIdToCurrencySymbol[_projectId] = _currencySymbol;
+        projectIdToCurrencyAddress[_projectId] = _currencyAddress;
+        emit ProjectCurrencyInfoUpdated(
+            _projectId,
+            _currencySymbol,
+            _currencyAddress
+        );
     }
 
     /**
@@ -242,27 +284,22 @@ contract GenArt721FilteredMinter is IFilteredMinter {
             projectMintCounter[msg.sender][_projectId]++;
         }
 
-        if (
-            keccak256(
-                abi.encodePacked(
-                    artblocksContract.projectIdToCurrencySymbol(_projectId)
-                )
-            ) != keccak256(abi.encodePacked("ETH"))
-        ) {
+        if (projectIdToCurrencyAddress[_projectId] != address(0)) {
             require(
                 msg.value == 0,
                 "this project accepts a different currency and cannot accept ETH"
             );
             require(
-                IERC20(artblocksContract.projectIdToCurrencyAddress(_projectId))
-                    .allowance(msg.sender, address(this)) >=
-                    projectIdToPricePerTokenInWei[_projectId],
+                IERC20(projectIdToCurrencyAddress[_projectId]).allowance(
+                    msg.sender,
+                    address(this)
+                ) >= projectIdToPricePerTokenInWei[_projectId],
                 "Insufficient Funds Approved for TX"
             );
             require(
-                IERC20(artblocksContract.projectIdToCurrencyAddress(_projectId))
-                    .balanceOf(msg.sender) >=
-                    projectIdToPricePerTokenInWei[_projectId],
+                IERC20(projectIdToCurrencyAddress[_projectId]).balanceOf(
+                    msg.sender
+                ) >= projectIdToPricePerTokenInWei[_projectId],
                 "Insufficient balance."
             );
             _splitFundsERC20(_projectId);
@@ -345,12 +382,11 @@ contract GenArt721FilteredMinter is IFilteredMinter {
         uint256 foundationAmount = (pricePerTokenInWei / 100) *
             artblocksContract.artblocksPercentage();
         if (foundationAmount > 0) {
-            IERC20(artblocksContract.projectIdToCurrencyAddress(_projectId))
-                .transferFrom(
-                    msg.sender,
-                    artblocksContract.artblocksAddress(),
-                    foundationAmount
-                );
+            IERC20(projectIdToCurrencyAddress[_projectId]).transferFrom(
+                msg.sender,
+                artblocksContract.artblocksAddress(),
+                foundationAmount
+            );
         }
         uint256 projectFunds = pricePerTokenInWei - foundationAmount;
         uint256 additionalPayeeAmount;
@@ -364,24 +400,20 @@ contract GenArt721FilteredMinter is IFilteredMinter {
                     _projectId
                 );
             if (additionalPayeeAmount > 0) {
-                IERC20(artblocksContract.projectIdToCurrencyAddress(_projectId))
-                    .transferFrom(
-                        msg.sender,
-                        artblocksContract.projectIdToAdditionalPayee(
-                            _projectId
-                        ),
-                        additionalPayeeAmount
-                    );
+                IERC20(projectIdToCurrencyAddress[_projectId]).transferFrom(
+                    msg.sender,
+                    artblocksContract.projectIdToAdditionalPayee(_projectId),
+                    additionalPayeeAmount
+                );
             }
         }
         uint256 creatorFunds = projectFunds - additionalPayeeAmount;
         if (creatorFunds > 0) {
-            IERC20(artblocksContract.projectIdToCurrencyAddress(_projectId))
-                .transferFrom(
-                    msg.sender,
-                    artblocksContract.projectIdToArtistAddress(_projectId),
-                    creatorFunds
-                );
+            IERC20(projectIdToCurrencyAddress[_projectId]).transferFrom(
+                msg.sender,
+                artblocksContract.projectIdToArtistAddress(_projectId),
+                creatorFunds
+            );
         }
     }
 
@@ -392,5 +424,33 @@ contract GenArt721FilteredMinter is IFilteredMinter {
      */
     function getPrice(uint256 _projectId) public view returns (uint256) {
         return projectIdToPricePerTokenInWei[_projectId];
+    }
+
+    /**
+     * @notice Gets currency symbol for project `_projectId`.
+     * @param _projectId Project ID to get currency symbol of.
+     * @dev uninitialized default return value is "ETH"
+     */
+    function getCurrencySymbol(uint256 _projectId)
+        external
+        view
+        returns (string memory)
+    {
+        if (projectIdToCurrencyAddress[_projectId] == address(0)) {
+            return "ETH";
+        }
+        return projectIdToCurrencySymbol[_projectId];
+    }
+
+    /**
+     * @notice Gets currency address for project `_projectId`.
+     * @dev uninitialized default return value is null address
+     */
+    function getCurrencyAddress(uint256 _projectId)
+        external
+        view
+        returns (address)
+    {
+        return projectIdToCurrencyAddress[_projectId];
     }
 }

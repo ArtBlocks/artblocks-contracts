@@ -252,16 +252,6 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
             require(msg.sender == _to, "No `purchaseTo` Allowed");
         }
 
-        // project currency must be ETH
-        require(
-            keccak256(
-                abi.encodePacked(
-                    artblocksContract.projectIdToCurrencySymbol(_projectId)
-                )
-            ) == keccak256(abi.encodePacked("ETH")),
-            "Project currency must be ETH"
-        );
-
         uint256 currentPriceInWei = getPrice(_projectId);
         require(
             msg.value >= currentPriceInWei,
@@ -399,5 +389,23 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
         ];
         require(isAuctionLive(_projectId), "auction is not currently live");
         return auctionParams.timestampEnd - block.timestamp;
+    }
+
+    /**
+     * @notice Gets currency symbol "ETH" - this is an ETH-only minter.
+     */
+    function getCurrencySymbol(
+        uint256 /*_projectId*/
+    ) external pure returns (string memory) {
+        return "ETH";
+    }
+
+    /**
+     * @notice Gets null address - this is an ETH-only minter.
+     */
+    function getCurrencyAddress(
+        uint256 /*_projectId*/
+    ) external pure returns (address) {
+        return address(0);
     }
 }
