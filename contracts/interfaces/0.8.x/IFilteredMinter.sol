@@ -13,6 +13,16 @@ interface IFilteredMinter {
         uint256 indexed _pricePerTokenInWei
     );
 
+    /**
+     * @notice Currency updated for project `_projectId` to symbol
+     * `_currencySymbol` and address `_currencyAddress`.
+     */
+    event ProjectCurrencyInfoUpdated(
+        uint256 indexed _projectId,
+        string indexed _currencySymbol,
+        address indexed _currencyAddress
+    );
+
     /// togglePurchaseToDisabled updated
     event PurchaseToDisabledUpdated(
         uint256 _projectId,
