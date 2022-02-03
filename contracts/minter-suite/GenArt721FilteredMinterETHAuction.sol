@@ -19,7 +19,7 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
         uint256 _auctionTimestampStart,
         uint256 _auctionTimestampEnd,
         uint256 _auctionPriceStart,
-        uint256 _auctionPriceEnd
+        uint256 _auctionPriceBase
     );
 
     /// Minimum allowed auction length updated
@@ -173,14 +173,14 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
      * @param _auctionTimestampStart Timestamp at which to start the auction.
      * @param _auctionTimestampEnd Timestamp at which to end the auction.
      * @param _auctionPriceStart Price at which to start the auction, in Wei.
-     * @param _auctionPriceEnd Resting price of the auction, in Wei.
+     * @param _auctionPriceBase Resting price of the auction, in Wei.
      */
     function setAuctionDetails(
         uint256 _projectId,
         uint256 _auctionTimestampStart,
         uint256 _auctionTimestampEnd,
         uint256 _auctionPriceStart,
-        uint256 _auctionPriceEnd
+        uint256 _auctionPriceBase
     ) external onlyCoreWhitelistedOrArtist(_projectId) {
         require(
             _auctionTimestampEnd > _auctionTimestampStart,
@@ -192,21 +192,21 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
             "Auction length must be at least minimumAuctionLengthSeconds"
         );
         require(
-            _auctionPriceStart > _auctionPriceEnd,
+            _auctionPriceStart > _auctionPriceBase,
             "Auction start price must be greater than auction end price"
         );
         projectAuctionParameters[_projectId] = AuctionParameters(
             _auctionTimestampStart,
             _auctionTimestampEnd,
             _auctionPriceStart,
-            _auctionPriceEnd
+            _auctionPriceBase
         );
         emit SetAuctionDetails(
             _projectId,
             _auctionTimestampStart,
             _auctionTimestampEnd,
             _auctionPriceStart,
-            _auctionPriceEnd
+            _auctionPriceBase
         );
     }
 

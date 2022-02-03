@@ -12,6 +12,15 @@ pragma solidity 0.8.9;
  * @author Art Blocks Inc.
  */
 contract GenArt721FilteredMinterETH is IFilteredMinter {
+    /**
+     * @notice Price per token in wei updated for project `_projectId` to
+     * `_pricePerTokenInWei`.
+     */
+    event PricePerTokenInWeiUpdated(
+        uint256 indexed _projectId,
+        uint256 indexed _pricePerTokenInWei
+    );
+
     /// Art Blocks core contract this minter may interact with.
     IGenArt721CoreContract public artblocksContract;
     /// Minter filter this minter may interact with.
@@ -34,11 +43,22 @@ contract GenArt721FilteredMinterETH is IFilteredMinter {
     mapping(uint256 => bool) public projectMaxHasBeenInvoked;
     /// projectId => project's maximum number of invocations
     mapping(uint256 => uint256) public projectMaxInvocations;
+    /// projectId => price per token in wei - supersedes any defined core price
+    mapping(uint256 => uint256) public projectIdToPricePerTokenInWei;
 
     modifier onlyCoreWhitelisted() {
         require(
             artblocksContract.isWhitelisted(msg.sender),
             "Only Core whitelisted"
+        );
+        _;
+    }
+
+    modifier onlyArtist(uint256 _projectId) {
+        require(
+            msg.sender ==
+                artblocksContract.projectIdToArtistAddress(_projectId),
+            "Only Artist"
         );
         _;
     }
@@ -120,6 +140,19 @@ contract GenArt721FilteredMinterETH is IFilteredMinter {
     }
 
     /**
+     * @notice Updates this minter's price per token of project `_projectId`
+     * to be '_pricePerTokenInWei`, in Wei.
+     * This price supersedes any legacy core contract price per token value.
+     */
+    function updatePricePerTokenInWei(
+        uint256 _projectId,
+        uint256 _pricePerTokenInWei
+    ) public onlyArtist(_projectId) {
+        projectIdToPricePerTokenInWei[_projectId] = _pricePerTokenInWei;
+        emit PricePerTokenInWeiUpdated(_projectId, _pricePerTokenInWei);
+    }
+
+    /**
      * @notice Purchases a token from project `_projectId`.
      * @param _projectId Project ID to mint a token on.
      * @return tokenId Token ID of minted token
@@ -161,6 +194,16 @@ contract GenArt721FilteredMinterETH is IFilteredMinter {
             require(msg.sender == _to, "No `purchaseTo` Allowed");
         }
 
+        // limit mints per address by project
+        if (projectMintLimit[_projectId] > 0) {
+            require(
+                projectMintCounter[msg.sender][_projectId] <
+                    projectMintLimit[_projectId],
+                "Reached minting limit"
+            );
+            projectMintCounter[msg.sender][_projectId]++;
+        }
+
         // project currency must be ETH
         require(
             keccak256(
@@ -172,20 +215,9 @@ contract GenArt721FilteredMinterETH is IFilteredMinter {
         );
 
         require(
-            msg.value >=
-                artblocksContract.projectIdToPricePerTokenInWei(_projectId),
+            msg.value >= projectIdToPricePerTokenInWei[_projectId],
             "Must send minimum value to mint!"
         );
-
-        // limit mints per address by project
-        if (projectMintLimit[_projectId] > 0) {
-            require(
-                projectMintCounter[msg.sender][_projectId] <
-                    projectMintLimit[_projectId],
-                "Reached minting limit"
-            );
-            projectMintCounter[msg.sender][_projectId]++;
-        }
 
         _splitFundsETH(_projectId);
 
@@ -212,8 +244,9 @@ contract GenArt721FilteredMinterETH is IFilteredMinter {
      */
     function _splitFundsETH(uint256 _projectId) internal {
         if (msg.value > 0) {
-            uint256 pricePerTokenInWei = artblocksContract
-                .projectIdToPricePerTokenInWei(_projectId);
+            uint256 pricePerTokenInWei = projectIdToPricePerTokenInWei[
+                _projectId
+            ];
             uint256 refund = msg.value - pricePerTokenInWei;
             if (refund > 0) {
                 payable(msg.sender).transfer(refund);
