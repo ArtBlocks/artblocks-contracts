@@ -35,7 +35,7 @@ contract GenArt721FilteredMinterETH is IFilteredMinter {
     /// projectId => project's maximum number of invocations
     mapping(uint256 => uint256) public projectMaxInvocations;
     /// projectId => price per token in wei - supersedes any defined core price
-    mapping(uint256 => uint256) public projectIdToPricePerTokenInWei;
+    mapping(uint256 => uint256) private projectIdToPricePerTokenInWei;
 
     modifier onlyCoreWhitelisted() {
         require(
