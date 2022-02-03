@@ -59,11 +59,11 @@ describe("MinterFilter", async function () {
       this.minterFilter.address
     );
 
-    await this.token.connect(snowfro).addProject("project1", artist.address, 0);
+    await this.token.connect(snowfro).addProject("project1", artist.address);
 
-    await this.token.connect(snowfro).addProject("project2", artist.address, 0);
+    await this.token.connect(snowfro).addProject("project2", artist.address);
 
-    await this.token.connect(snowfro).addProject("project3", artist.address, 0);
+    await this.token.connect(snowfro).addProject("project3", artist.address);
 
     await this.token.connect(snowfro).toggleProjectIsActive(projectOne);
     await this.token.connect(snowfro).toggleProjectIsActive(projectTwo);

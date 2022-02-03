@@ -41,11 +41,7 @@ describe("MinterPermissionsEvents", async function () {
     // Project setup
     await this.genArt721Core
       .connect(deployer)
-      .addProject(
-        "Test Project",
-        this.accounts.artist.address,
-        pricePerTokenInWei
-      );
+      .addProject("Test Project", this.accounts.artist.address);
 
     await this.genArt721Core.connect(artist).updateProjectMaxInvocations(0, 15);
     await this.genArt721Core

@@ -47,9 +47,9 @@ describe("GenArt721FilteredMinter", async function () {
       this.minterFilter.address
     );
 
-    await this.token.connect(snowfro).addProject("project0", artist.address, 0);
+    await this.token.connect(snowfro).addProject("project0", artist.address);
 
-    await this.token.connect(snowfro).addProject("project1", artist.address, 0);
+    await this.token.connect(snowfro).addProject("project1", artist.address);
 
     await this.token.connect(snowfro).toggleProjectIsActive(projectZero);
     await this.token.connect(snowfro).toggleProjectIsActive(projectOne);

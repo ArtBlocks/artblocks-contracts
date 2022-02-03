@@ -57,9 +57,7 @@ describe("GenArt721MinterEthAuction", async function () {
       this.minterFilter.address
     );
 
-    await this.token
-      .connect(snowfro)
-      .addProject("project1", artist.address, pricePerTokenInWei);
+    await this.token.connect(snowfro).addProject("project1", artist.address);
 
     await this.token.connect(snowfro).toggleProjectIsActive(projectOne);
 
