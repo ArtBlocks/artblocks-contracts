@@ -4,6 +4,15 @@
 pragma solidity ^0.5.0;
 
 interface IFilteredMinter {
+    /**
+     * @notice Price per token in wei updated for project `_projectId` to
+     * `_pricePerTokenInWei`.
+     */
+    event PricePerTokenInWeiUpdated(
+        uint256 indexed _projectId,
+        uint256 indexed _pricePerTokenInWei
+    );
+
     /// togglePurchaseToDisabled updated
     event PurchaseToDisabledUpdated(
         uint256 _projectId,

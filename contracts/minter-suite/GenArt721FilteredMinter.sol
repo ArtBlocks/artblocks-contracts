@@ -23,6 +23,7 @@ contract GenArt721FilteredMinter is IFilteredMinter {
         uint256 indexed _projectId,
         uint256 indexed _pricePerTokenInWei
     );
+    
     /**
      * @notice Currency updated for project `_projectId` to symbol
      * `_currencySymbol` and address `_currencyAddress`.
