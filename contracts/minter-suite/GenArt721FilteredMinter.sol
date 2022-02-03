@@ -15,15 +15,6 @@ pragma solidity 0.8.9;
  * @author Art Blocks Inc.
  */
 contract GenArt721FilteredMinter is IFilteredMinter {
-    /**
-     * @notice Price per token in wei updated for project `_projectId` to
-     * `_pricePerTokenInWei`.
-     */
-    event PricePerTokenInWeiUpdated(
-        uint256 indexed _projectId,
-        uint256 indexed _pricePerTokenInWei
-    );
-
     /// Art Blocks core contract this minter may interact with.
     IGenArt721CoreContract public artblocksContract;
     /// Minter filter this minter may interact with.
