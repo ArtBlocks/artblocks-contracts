@@ -37,4 +37,17 @@ interface IFilteredMinter {
 
     // Gets current price of minting a token, assuming this is project's minter
     function getPrice(uint256 _projectId) external returns (uint256);
+
+    // Gets currency symbol for project, assuming this is project's minter
+    function getCurrencySymbol(uint256 _projectId)
+        external
+        view
+        returns (string memory);
+
+    // Gets currency address for project, assuming this is project's minter
+    // Must return null address if project currency is ETH.
+    function getCurrencyAddress(uint256 _projectId)
+        external
+        view
+        returns (address);
 }
