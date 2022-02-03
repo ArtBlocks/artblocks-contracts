@@ -350,17 +350,6 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContract {
     }
 
     /**
-     * @notice Updates price per token of project `_projectId` to be
-     * '_pricePerTokenInWei`, in Wei.
-     */
-    function updateProjectPricePerTokenInWei(
-        uint256 _projectId,
-        uint256 _pricePerTokenInWei
-    ) public onlyArtist(_projectId) {
-        projectIdToPricePerTokenInWei[_projectId] = _pricePerTokenInWei;
-    }
-
-    /**
      * @notice Updates name of project `_projectId` to be `_projectName`.
      */
     function updateProjectName(uint256 _projectId, string memory _projectName)
