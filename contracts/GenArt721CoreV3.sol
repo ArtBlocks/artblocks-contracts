@@ -7,6 +7,8 @@ import "./libs/0.5.x/Strings.sol";
 
 import "./interfaces/0.5.x/IRandomizer.sol";
 import "./interfaces/0.5.x/IGenArt721CoreContract.sol";
+import "./interfaces/0.5.x/IMinterFilter.sol";
+import "./interfaces/0.5.x/IFilteredMinter.sol";
 
 pragma solidity ^0.5.17;
 
@@ -62,7 +64,6 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContract {
     mapping(uint256 => address) public projectIdToArtistAddress;
     mapping(uint256 => string) public projectIdToCurrencySymbol;
     mapping(uint256 => address) public projectIdToCurrencyAddress;
-    mapping(uint256 => uint256) public projectIdToPricePerTokenInWei;
     mapping(uint256 => address) public projectIdToAdditionalPayee;
     mapping(uint256 => uint256) public projectIdToAdditionalPayeePercentage;
     mapping(uint256 => uint256)
@@ -315,18 +316,16 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContract {
      * @notice Adds new project `_projectName` by `_artistAddress`.
      * @param _projectName Project name.
      * @param _artistAddress Artist's address.
-     * @param _pricePerTokenInWei Price to mint a token, in Wei.
+     * @dev token price now stored on minter
      */
-    function addProject(
-        string memory _projectName,
-        address _artistAddress,
-        uint256 _pricePerTokenInWei
-    ) public onlyWhitelisted {
+    function addProject(string memory _projectName, address _artistAddress)
+        public
+        onlyWhitelisted
+    {
         uint256 projectId = nextProjectId;
         projectIdToArtistAddress[projectId] = _artistAddress;
         projects[projectId].name = _projectName;
         projectIdToCurrencySymbol[projectId] = "ETH";
-        projectIdToPricePerTokenInWei[projectId] = _pricePerTokenInWei;
         projects[projectId].paused = true;
         projects[projectId].maxInvocations = ONE_MILLION;
 
@@ -571,7 +570,8 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContract {
      * @notice Returns project token information for project `_projectId`.
      * @param _projectId Project to be queried.
      * @return artistAddress Project Artist's address
-     * @return pricePerTokenInWei Price to mint a token, in Wei
+     * @return pricePerTokenInWei Price to mint a token, in Wei - zero if no
+     * minter configured.
      * @return invocations Current number of invocations
      * @return maxInvocations Maximum allowed invocations
      * @return active Boolean representing if project is currently active
@@ -597,7 +597,7 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContract {
         )
     {
         artistAddress = projectIdToArtistAddress[_projectId];
-        pricePerTokenInWei = projectIdToPricePerTokenInWei[_projectId];
+        pricePerTokenInWei = projectIdToPricePerTokenInWei(_projectId);
         invocations = projects[_projectId].invocations;
         maxInvocations = projects[_projectId].maxInvocations;
         active = projects[_projectId].active;
@@ -619,7 +619,7 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContract {
      * @return paused Boolean representing if project is paused
      */
     function projectScriptInfo(uint256 _projectId)
-        public
+        external
         view
         returns (
             string memory scriptJSON,
@@ -675,6 +675,31 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContract {
      */
     function isMintWhitelisted(address _minter) external view returns (bool) {
         return (minterContract == _minter);
+    }
+
+    /**
+     * @notice Returns price per token in wei for project `_projectId`, if the
+     * project has a minter defined. Zero if no minter defined.
+     * @dev reverts if currentMinter does not support
+     * projectHasMinter(_projectId) and getMinterForProject(_projectId) methods
+     */
+    function projectIdToPricePerTokenInWei(uint256 _projectId)
+        public
+        view
+        returns (uint256 pricePerTokenInWei)
+    {
+        if (minterContract == address(0)) {
+            return 0;
+        }
+        if (IMinterFilter(minterContract).projectHasMinter(_projectId)) {
+            return
+                IFilteredMinter(
+                    IMinterFilter(minterContract).getMinterForProject(
+                        _projectId
+                    )
+                ).getPrice(_projectId);
+        }
+        return 0;
     }
 
     /**

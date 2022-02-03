@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.5.0;
 
 interface IFilteredMinter {
     /// togglePurchaseToDisabled updated
@@ -36,5 +36,5 @@ interface IFilteredMinter {
     function setProjectMaxInvocations(uint256 _projectId) external;
 
     // Gets current price of minting a token, assuming this is project's minter
-    function getPrice(uint256 _projectId) external returns (uint256);
+    function getPrice(uint256 _projectId) external view returns (uint256);
 }

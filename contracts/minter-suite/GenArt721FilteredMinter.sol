@@ -384,4 +384,13 @@ contract GenArt721FilteredMinter is IFilteredMinter {
                 );
         }
     }
+
+    /**
+     * @notice Gets price of minting a token on project `_projectId`,
+     * assuming this is project's minter.
+     * @param _projectId Project ID to get price of token in wei.
+     */
+    function getPrice(uint256 _projectId) public view returns (uint256) {
+        return projectIdToPricePerTokenInWei[_projectId];
+    }
 }
