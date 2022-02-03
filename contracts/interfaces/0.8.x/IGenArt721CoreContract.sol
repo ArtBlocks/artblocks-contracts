@@ -42,11 +42,6 @@ interface IGenArt721CoreContract {
         view
         returns (address payable);
 
-    function projectIdToPricePerTokenInWei(uint256 _projectId)
-        external
-        view
-        returns (uint256);
-
     function projectIdToAdditionalPayee(uint256 _projectId)
         external
         view

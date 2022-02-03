@@ -568,10 +568,9 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContract {
 
     /**
      * @notice Returns project token information for project `_projectId`.
-     * @param _projectId Project to be queried.
+     * @param _projectId Project to be queried
      * @return artistAddress Project Artist's address
-     * @return pricePerTokenInWei Price to mint a token, in Wei - zero if no
-     * minter configured.
+     * @return pricePerTokenInWei (deprecated) - please view on minter
      * @return invocations Current number of invocations
      * @return maxInvocations Maximum allowed invocations
      * @return active Boolean representing if project is currently active
@@ -597,7 +596,7 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContract {
         )
     {
         artistAddress = projectIdToArtistAddress[_projectId];
-        pricePerTokenInWei = projectIdToPricePerTokenInWei(_projectId);
+        pricePerTokenInWei = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
         invocations = projects[_projectId].invocations;
         maxInvocations = projects[_projectId].maxInvocations;
         active = projects[_projectId].active;
@@ -675,31 +674,6 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContract {
      */
     function isMintWhitelisted(address _minter) external view returns (bool) {
         return (minterContract == _minter);
-    }
-
-    /**
-     * @notice Returns price per token in wei for project `_projectId`, if the
-     * project has a minter defined. Zero if no minter defined.
-     * @dev reverts if currentMinter does not support
-     * projectHasMinter(_projectId) and getMinterForProject(_projectId) methods
-     */
-    function projectIdToPricePerTokenInWei(uint256 _projectId)
-        public
-        view
-        returns (uint256 pricePerTokenInWei)
-    {
-        if (minterContract == address(0)) {
-            return 0;
-        }
-        if (IMinterFilter(minterContract).projectHasMinter(_projectId)) {
-            return
-                IFilteredMinter(
-                    IMinterFilter(minterContract).getMinterForProject(
-                        _projectId
-                    )
-                ).getPrice(_projectId);
-        }
-        return 0;
     }
 
     /**
