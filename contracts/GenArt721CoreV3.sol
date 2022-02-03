@@ -662,7 +662,7 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContract {
 
     /**
      * @notice Returns price per token in wei for project `_projectId` if the
-     * project has a minter defined. Zero if no minter defined.
+     * project has a minter defined. Zero if no minter defined for project.
      * @dev reverts if currentMinter does not support
      * projectHasMinter(_projectId) and getMinterForProject(_projectId) methods
      */
@@ -687,7 +687,8 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContract {
 
     /**
      * @notice Returns currency symbol for `_projectId` if the
-     * project has a minter defined. "UNDEFINED" if no minter defined.
+     * project has a minter defined. "UNDEFINED" if no minter defined for
+     * project.
      * @dev reverts if currentMinter does not support
      * projectHasMinter(_projectId) and getMinterForProject(_projectId) methods
      */
@@ -712,7 +713,8 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContract {
 
     /**
      * @notice Returns currency address for `_projectId` if the
-     * project has a minter defined, null address if no minter defined.
+     * project has a minter defined, null address if no minter defined for
+     * project.
      * @dev reverts if currentMinter does not support
      * projectHasMinter(_projectId) and getMinterForProject(_projectId) methods
      */

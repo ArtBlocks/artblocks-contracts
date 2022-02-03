@@ -279,4 +279,199 @@ describe("GenArt721CoreV3", async function () {
       });
     });
   });
+
+  describe("projectIdToPricePerTokenInWei", function () {
+    it("reverts when invalid minter set on core", async function () {
+      const noFunctionSelectorErrorMessage =
+        "Transaction reverted: function selector was not recognized and there's no fallback function";
+      // update core to a filtered minter, not a minter filter (invalid)
+      await this.token
+        .connect(this.accounts.snowfro)
+        .updateMinterContract(this.minter.address);
+      await expectRevert(
+        this.token
+          .connect(this.accounts.snowfro)
+          .projectIdToPricePerTokenInWei(projectZero),
+        noFunctionSelectorErrorMessage
+      );
+    });
+
+    it("returns expected value when no minter set for project", async function () {
+      await this.minterFilter
+        .connect(this.accounts.artist)
+        .removeMinterForProject(projectZero);
+      const result = await this.token
+        .connect(this.accounts.snowfro)
+        .projectIdToPricePerTokenInWei(projectZero);
+      expect(result).to.be.equal(0);
+    });
+
+    it("returns expected value when null address is core's minter", async function () {
+      await this.token
+        .connect(this.accounts.snowfro)
+        .updateMinterContract(constants.ZERO_ADDRESS);
+      const result = await this.token
+        .connect(this.accounts.snowfro)
+        .projectIdToPricePerTokenInWei(projectZero);
+      expect(result).to.be.equal(0);
+    });
+
+    it("returns expected value when minter set for project", async function () {
+      const result = await this.token
+        .connect(this.accounts.snowfro)
+        .projectIdToPricePerTokenInWei(projectZero);
+      expect(result).to.be.equal(pricePerTokenInWei);
+    });
+  });
+
+  describe("projectIdToCurrencySymbol", function () {
+    it("reverts when invalid minter set on core", async function () {
+      const noFunctionSelectorErrorMessage =
+        "Transaction reverted: function selector was not recognized and there's no fallback function";
+      // update core to a filtered minter, not a minter filter (invalid)
+      await this.token
+        .connect(this.accounts.snowfro)
+        .updateMinterContract(this.minter.address);
+      await expectRevert(
+        this.token
+          .connect(this.accounts.snowfro)
+          .projectIdToCurrencySymbol(projectZero),
+        noFunctionSelectorErrorMessage
+      );
+    });
+
+    it("returns expected value when no minter set for project", async function () {
+      await this.minterFilter
+        .connect(this.accounts.artist)
+        .removeMinterForProject(projectZero);
+      const result = await this.token
+        .connect(this.accounts.snowfro)
+        .projectIdToCurrencySymbol(projectZero);
+      expect(result).to.be.equal("UNDEFINED");
+    });
+
+    it("returns expected value when null address is core's minter", async function () {
+      await this.token
+        .connect(this.accounts.snowfro)
+        .updateMinterContract(constants.ZERO_ADDRESS);
+      const result = await this.token
+        .connect(this.accounts.snowfro)
+        .projectIdToCurrencySymbol(projectZero);
+      expect(result).to.be.equal("UNDEFINED");
+    });
+
+    it("returns expected value when ETH minter set for project", async function () {
+      const result = await this.token
+        .connect(this.accounts.snowfro)
+        .projectIdToCurrencySymbol(projectZero);
+      expect(result).to.be.equal("ETH");
+    });
+
+    it("returns expected value when ERC20 minter set for project", async function () {
+      const tokenSymbol = "MOCK";
+      // mock ERC20 token
+      const ERC20Factory = await ethers.getContractFactory("MockToken");
+      const ERC20Mock = await ERC20Factory.deploy(
+        ethers.utils.parseEther("100")
+      );
+      // change minter to an ERC20
+      const minterERC20Factory = await ethers.getContractFactory(
+        "GenArt721FilteredMinter"
+      );
+      const minterERC20 = await minterERC20Factory.deploy(
+        this.token.address,
+        this.minterFilter.address
+      );
+      await this.minterFilter
+        .connect(this.accounts.snowfro)
+        .addApprovedMinter(minterERC20.address);
+      await this.minterFilter
+        .connect(this.accounts.artist)
+        .setMinterForProject(projectZero, minterERC20.address);
+      await minterERC20
+        .connect(this.accounts.artist)
+        .updateProjectCurrencyInfo(projectZero, tokenSymbol, ERC20Mock.address);
+      // expect mock ERC20 token address
+      const result = await this.token
+        .connect(this.accounts.snowfro)
+        .projectIdToCurrencySymbol(projectZero);
+      expect(result).to.be.equal(tokenSymbol);
+    });
+  });
+
+  describe("projectIdToCurrencyAddress", function () {
+    it("reverts when invalid minter set on core", async function () {
+      const noFunctionSelectorErrorMessage =
+        "Transaction reverted: function selector was not recognized and there's no fallback function";
+      // update core to a filtered minter, not a minter filter (invalid)
+      await this.token
+        .connect(this.accounts.snowfro)
+        .updateMinterContract(this.minter.address);
+      await expectRevert(
+        this.token
+          .connect(this.accounts.snowfro)
+          .projectIdToCurrencyAddress(projectZero),
+        noFunctionSelectorErrorMessage
+      );
+    });
+
+    it("returns expected value when no minter set for project", async function () {
+      await this.minterFilter
+        .connect(this.accounts.artist)
+        .removeMinterForProject(projectZero);
+      const result = await this.token
+        .connect(this.accounts.snowfro)
+        .projectIdToCurrencyAddress(projectZero);
+      expect(result).to.be.equal(constants.ZERO_ADDRESS);
+    });
+
+    it("returns expected value when null address is core's minter", async function () {
+      await this.token
+        .connect(this.accounts.snowfro)
+        .updateMinterContract(constants.ZERO_ADDRESS);
+      const result = await this.token
+        .connect(this.accounts.snowfro)
+        .projectIdToCurrencyAddress(projectZero);
+      expect(result).to.be.equal(constants.ZERO_ADDRESS);
+    });
+
+    it("returns expected value when ETH minter set for project", async function () {
+      // expect zero address when ETH is minter's currency
+      const result = await this.token
+        .connect(this.accounts.snowfro)
+        .projectIdToCurrencyAddress(projectZero);
+      expect(result).to.be.equal(constants.ZERO_ADDRESS);
+      // expect MOCK ERC20 address when token is minter's currency
+    });
+
+    it("returns expected value when ERC20 minter set for project", async function () {
+      // mock ERC20 token
+      const ERC20Factory = await ethers.getContractFactory("MockToken");
+      const ERC20Mock = await ERC20Factory.deploy(
+        ethers.utils.parseEther("100")
+      );
+      // change minter to an ERC20
+      const minterERC20Factory = await ethers.getContractFactory(
+        "GenArt721FilteredMinter"
+      );
+      const minterERC20 = await minterERC20Factory.deploy(
+        this.token.address,
+        this.minterFilter.address
+      );
+      await this.minterFilter
+        .connect(this.accounts.snowfro)
+        .addApprovedMinter(minterERC20.address);
+      await this.minterFilter
+        .connect(this.accounts.artist)
+        .setMinterForProject(projectZero, minterERC20.address);
+      await minterERC20
+        .connect(this.accounts.artist)
+        .updateProjectCurrencyInfo(projectZero, "MOCK", ERC20Mock.address);
+      // expect mock ERC20 token address
+      const result = await this.token
+        .connect(this.accounts.snowfro)
+        .projectIdToCurrencyAddress(projectZero);
+      expect(result).to.be.equal(ERC20Mock.address);
+    });
+  });
 });
