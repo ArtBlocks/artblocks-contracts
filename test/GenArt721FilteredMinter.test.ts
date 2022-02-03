@@ -85,6 +85,10 @@ describe("GenArt721FilteredMinter", async function () {
     await this.minter
       .connect(this.accounts.artist)
       .updatePricePerTokenInWei(projectOne, pricePerTokenInWei);
+
+    // mock ERC20 token
+    const ERC20Factory = await ethers.getContractFactory("MockToken");
+    this.ERC20Mock = await ERC20Factory.deploy(ethers.utils.parseEther("100"));
   });
 
   describe("updatePricePerTokenInWei", async function () {
@@ -164,6 +168,113 @@ describe("GenArt721FilteredMinter", async function () {
       )
         .to.emit(this.minter, "PricePerTokenInWeiUpdated")
         .withArgs(projectZero, higherPricePerTokenInWei);
+    });
+  });
+
+  describe("updateProjectCurrencyInfo", async function () {
+    it("only allows artist to update currency info", async function () {
+      const onlyArtistErrorMessage = "Only Artist";
+      // doesn't allow owner
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.owner)
+          .updateProjectCurrencyInfo(
+            projectZero,
+            "ETH",
+            constants.ZERO_ADDRESS
+          ),
+        onlyArtistErrorMessage
+      );
+      // doesn't allow snowfro
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.snowfro)
+          .updateProjectCurrencyInfo(
+            projectZero,
+            "ETH",
+            constants.ZERO_ADDRESS
+          ),
+        onlyArtistErrorMessage
+      );
+      // doesn't allow additional
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.additional)
+          .updateProjectCurrencyInfo(
+            projectZero,
+            "ETH",
+            constants.ZERO_ADDRESS
+          ),
+        onlyArtistErrorMessage
+      );
+      // does allow artist
+      await this.minter
+        .connect(this.accounts.artist)
+        .updateProjectCurrencyInfo(projectZero, "ETH", constants.ZERO_ADDRESS);
+    });
+
+    it("enforces currency info update and allows purchases", async function () {
+      // artist changes to Mock ERC20 token
+      await this.minter
+        .connect(this.accounts.artist)
+        .updateProjectCurrencyInfo(projectZero, "MOCK", this.ERC20Mock.address);
+      // cannot purchase token with ETH
+      await expectRevert(
+        this.minter.connect(this.accounts.owner).purchase(projectZero, {
+          value: pricePerTokenInWei,
+        }),
+        "this project accepts a different currency and cannot accept ETH"
+      );
+      // approve contract and able to mint with Mock token
+      await this.ERC20Mock.connect(this.accounts.owner).approve(
+        this.minter.address,
+        ethers.utils.parseEther("100")
+      );
+      await this.minter.connect(this.accounts.owner).purchase(projectZero);
+      // cannot purchase token with ERC20 token when insufficient balance
+      await this.ERC20Mock.connect(this.accounts.owner).transfer(
+        this.accounts.artist.address,
+        ethers.utils.parseEther("100").sub(pricePerTokenInWei)
+      );
+      await expectRevert(
+        this.minter.connect(this.accounts.owner).purchase(projectZero),
+        "Insufficient balance"
+      );
+      // artist changes back to ETH
+      await this.minter
+        .connect(this.accounts.artist)
+        .updateProjectCurrencyInfo(projectZero, "ETH", constants.ZERO_ADDRESS);
+      // able to mint with ETH
+      await this.minter.connect(this.accounts.owner).purchase(projectZero, {
+        value: pricePerTokenInWei,
+      });
+    });
+
+    it("enforces currency update only on desired project", async function () {
+      const needMoreValueErrorMessage = "Must send minimum value to mint!";
+      // artist changes currency info for project zero
+      await this.minter
+        .connect(this.accounts.artist)
+        .updateProjectCurrencyInfo(projectZero, "MOCK", this.ERC20Mock.address);
+      // can purchase project one token with ETH
+      await this.minter.connect(this.accounts.owner).purchase(projectOne, {
+        value: pricePerTokenInWei,
+      });
+    });
+
+    it("emits event upon currency update", async function () {
+      // artist changes currency info
+      await expect(
+        this.minter
+          .connect(this.accounts.artist)
+          .updateProjectCurrencyInfo(
+            projectZero,
+            "MOCK",
+            this.ERC20Mock.address
+          )
+      )
+        .to.emit(this.minter, "ProjectCurrencyInfoUpdated")
+        .withArgs(projectZero, "MOCK", this.ERC20Mock.address);
     });
   });
 
@@ -328,6 +439,22 @@ describe("GenArt721FilteredMinter", async function () {
       )
         .to.emit(this.minter, "PurchaseToDisabledUpdated")
         .withArgs(projectOne, false);
+    });
+  });
+
+  describe("currency info hooks", async function () {
+    it("reports default currency as ETH", async function () {
+      const currencySymbol = await this.minter
+        .connect(this.accounts.artist)
+        .getCurrencySymbol(projectOne);
+      expect(currencySymbol).to.be.equal("ETH");
+    });
+
+    it("reports default currency address as null address", async function () {
+      const currencyAddress = await this.minter
+        .connect(this.accounts.artist)
+        .getCurrencyAddress(projectOne);
+      expect(currencyAddress).to.be.equal(constants.ZERO_ADDRESS);
     });
   });
 });

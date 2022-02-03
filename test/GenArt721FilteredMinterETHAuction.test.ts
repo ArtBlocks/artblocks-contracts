@@ -314,24 +314,19 @@ describe("GenArt721MinterEthAuction", async function () {
     });
   });
 
-  describe("only allow ETH", async function () {
-    it("disallows non-ETH projects", async function () {
-      await this.token
+  describe("currency info hooks", async function () {
+    it("reports currency as ETH", async function () {
+      const currencySymbol = await this.minter
         .connect(this.accounts.artist)
-        .updateProjectCurrencyInfo(
-          projectOne,
-          "USDC",
-          "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
-        );
+        .getCurrencySymbol(projectOne);
+      expect(currencySymbol).to.be.equal("ETH");
+    });
 
-      await expectRevert(
-        this.minter
-          .connect(this.accounts.owner)
-          .purchaseTo(this.accounts.additional.address, projectOne, {
-            value: startingPrice,
-          }),
-        "Project currency must be ETH"
-      );
+    it("reports currency address as null address", async function () {
+      const currencyAddress = await this.minter
+        .connect(this.accounts.artist)
+        .getCurrencyAddress(projectOne);
+      expect(currencyAddress).to.be.equal(constants.ZERO_ADDRESS);
     });
   });
 });
