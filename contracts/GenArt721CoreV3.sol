@@ -583,6 +583,8 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContract {
         additionalPayeePercentage = projectIdToAdditionalPayeePercentage[
             _projectId
         ];
+        currency = "";
+        currencyAddress = address(0);
     }
 
     /**
