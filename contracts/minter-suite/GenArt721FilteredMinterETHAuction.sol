@@ -18,8 +18,8 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
         uint256 indexed projectId,
         uint256 _auctionTimestampStart,
         uint256 _auctionTimestampEnd,
-        uint256 _auctionPriceStart,
-        uint256 _auctionPriceBase
+        uint256 _startPrice,
+        uint256 _basePrice
     );
 
     /// Minimum allowed auction length updated
@@ -174,15 +174,15 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
      * @param _projectId Project ID to set auction details for.
      * @param _auctionTimestampStart Timestamp at which to start the auction.
      * @param _auctionTimestampEnd Timestamp at which to end the auction.
-     * @param _auctionPriceStart Price at which to start the auction, in Wei.
-     * @param _auctionPriceBase Resting price of the auction, in Wei.
+     * @param _startPrice Price at which to start the auction, in Wei.
+     * @param _basePrice Resting price of the auction, in Wei.
      */
     function setAuctionDetails(
         uint256 _projectId,
         uint256 _auctionTimestampStart,
         uint256 _auctionTimestampEnd,
-        uint256 _auctionPriceStart,
-        uint256 _auctionPriceBase
+        uint256 _startPrice,
+        uint256 _basePrice
     ) external onlyCoreWhitelistedOrArtist(_projectId) {
         require(
             _auctionTimestampEnd > _auctionTimestampStart,
@@ -194,22 +194,22 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
             "Auction length must be at least minimumAuctionLengthSeconds"
         );
         require(
-            _auctionPriceStart > _auctionPriceBase,
+            _startPrice > _basePrice,
             "Auction start price must be greater than auction end price"
         );
         projectAuctionParameters[_projectId] = AuctionParameters(
             _auctionTimestampStart,
             _auctionTimestampEnd,
-            _auctionPriceStart,
-            _auctionPriceBase
+            _startPrice,
+            _basePrice
         );
         projectIdToPriceIsConfigured[_projectId] = true;
         emit SetAuctionDetails(
             _projectId,
             _auctionTimestampStart,
             _auctionTimestampEnd,
-            _auctionPriceStart,
-            _auctionPriceBase
+            _startPrice,
+            _basePrice
         );
     }
 
