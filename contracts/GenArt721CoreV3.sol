@@ -60,8 +60,6 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContract {
 
     //All financial functions are stripped from struct for visibility
     mapping(uint256 => address) public projectIdToArtistAddress;
-    mapping(uint256 => string) public projectIdToCurrencySymbol;
-    mapping(uint256 => address) public projectIdToCurrencyAddress;
     mapping(uint256 => address) public projectIdToAdditionalPayee;
     mapping(uint256 => uint256) public projectIdToAdditionalPayeePercentage;
     mapping(uint256 => uint256)
@@ -323,27 +321,10 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContract {
         uint256 projectId = nextProjectId;
         projectIdToArtistAddress[projectId] = _artistAddress;
         projects[projectId].name = _projectName;
-        projectIdToCurrencySymbol[projectId] = "ETH";
         projects[projectId].paused = true;
         projects[projectId].maxInvocations = ONE_MILLION;
 
         nextProjectId = nextProjectId.add(1);
-    }
-
-    /**
-     * @notice Updates payment currency of project `_projectId` to be
-     * `_currencySymbol`.
-     * @param _projectId Project ID to update.
-     * @param _currencySymbol Currency symbol.
-     * @param _currencyAddress Currency address.
-     */
-    function updateProjectCurrencyInfo(
-        uint256 _projectId,
-        string memory _currencySymbol,
-        address _currencyAddress
-    ) public onlyArtist(_projectId) {
-        projectIdToCurrencySymbol[_projectId] = _currencySymbol;
-        projectIdToCurrencyAddress[_projectId] = _currencyAddress;
     }
 
     /**
@@ -575,8 +556,8 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContract {
      * @return additionalPayee Additional payee address
      * @return additionalPayeePercentage Percentage of artist revenue
      * to be sent to the additional payee's address
-     * @return currency Symbol of project's currency
-     * @return currencyAddress Address of project's currency
+     * @return currency (deprecated) - please view on minter
+     * @return currencyAddress (deprecated) - please view on minter
      */
     function projectTokenInfo(uint256 _projectId)
         public
@@ -602,8 +583,6 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContract {
         additionalPayeePercentage = projectIdToAdditionalPayeePercentage[
             _projectId
         ];
-        currency = projectIdToCurrencySymbol[_projectId];
-        currencyAddress = projectIdToCurrencyAddress[_projectId];
     }
 
     /**
@@ -637,7 +616,7 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContract {
      * @notice Returns script for project `_projectId` at script index `_index`.
      */
     function projectScriptByIndex(uint256 _projectId, uint256 _index)
-        public
+        external
         view
         returns (string memory)
     {
@@ -648,7 +627,7 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContract {
      * @notice Returns base URI for project `_projectId`.
      */
     function projectURIInfo(uint256 _projectId)
-        public
+        external
         view
         returns (string memory projectBaseURI)
     {

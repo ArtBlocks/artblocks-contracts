@@ -41,6 +41,10 @@ contract GenArt721FilteredMinter is IFilteredMinter {
     mapping(uint256 => uint256) private projectIdToPricePerTokenInWei;
     /// projectId => price per token has been configured on this minter
     mapping(uint256 => bool) private projectIdToPriceIsConfigured;
+    /// projectId => currency symbol - supersedes any defined core value
+    mapping(uint256 => string) private projectIdToCurrencySymbol;
+    /// projectId => currency address - supersedes any defined core value
+    mapping(uint256 => address) private projectIdToCurrencyAddress;
 
     modifier onlyCoreWhitelisted() {
         require(
@@ -84,9 +88,9 @@ contract GenArt721FilteredMinter is IFilteredMinter {
         view
         returns (uint256 balance)
     {
-        balance = IERC20(
-            artblocksContract.projectIdToCurrencyAddress(_projectId)
-        ).balanceOf(msg.sender);
+        balance = IERC20(projectIdToCurrencyAddress[_projectId]).balanceOf(
+            msg.sender
+        );
         return balance;
     }
 
@@ -102,9 +106,10 @@ contract GenArt721FilteredMinter is IFilteredMinter {
         view
         returns (uint256 remaining)
     {
-        remaining = IERC20(
-            artblocksContract.projectIdToCurrencyAddress(_projectId)
-        ).allowance(msg.sender, address(this));
+        remaining = IERC20(projectIdToCurrencyAddress[_projectId]).allowance(
+            msg.sender,
+            address(this)
+        );
         return remaining;
     }
 
@@ -185,6 +190,34 @@ contract GenArt721FilteredMinter is IFilteredMinter {
     }
 
     /**
+     * @notice Updates payment currency of project `_projectId` to be
+     * `_currencySymbol` at address `_currencyAddress`.
+     * @param _projectId Project ID to update.
+     * @param _currencySymbol Currency symbol.
+     * @param _currencyAddress Currency address.
+     */
+    function updateProjectCurrencyInfo(
+        uint256 _projectId,
+        string memory _currencySymbol,
+        address _currencyAddress
+    ) external onlyArtist(_projectId) {
+        // require null address if symbol is "ETH"
+        require(
+            (keccak256(abi.encodePacked(_currencySymbol)) ==
+                keccak256(abi.encodePacked("ETH"))) ==
+                (_currencyAddress == address(0)),
+            "ETH is only null address"
+        );
+        projectIdToCurrencySymbol[_projectId] = _currencySymbol;
+        projectIdToCurrencyAddress[_projectId] = _currencyAddress;
+        emit ProjectCurrencyInfoUpdated(
+            _projectId,
+            _currencySymbol,
+            _currencyAddress
+        );
+    }
+
+    /**
      * @notice Purchases a token from project `_projectId`.
      * @param _projectId Project ID to mint a token on.
      * @return tokenId Token ID of minted token
@@ -242,27 +275,22 @@ contract GenArt721FilteredMinter is IFilteredMinter {
             projectMintCounter[msg.sender][_projectId]++;
         }
 
-        if (
-            keccak256(
-                abi.encodePacked(
-                    artblocksContract.projectIdToCurrencySymbol(_projectId)
-                )
-            ) != keccak256(abi.encodePacked("ETH"))
-        ) {
+        if (projectIdToCurrencyAddress[_projectId] != address(0)) {
             require(
                 msg.value == 0,
                 "this project accepts a different currency and cannot accept ETH"
             );
             require(
-                IERC20(artblocksContract.projectIdToCurrencyAddress(_projectId))
-                    .allowance(msg.sender, address(this)) >=
-                    projectIdToPricePerTokenInWei[_projectId],
+                IERC20(projectIdToCurrencyAddress[_projectId]).allowance(
+                    msg.sender,
+                    address(this)
+                ) >= projectIdToPricePerTokenInWei[_projectId],
                 "Insufficient Funds Approved for TX"
             );
             require(
-                IERC20(artblocksContract.projectIdToCurrencyAddress(_projectId))
-                    .balanceOf(msg.sender) >=
-                    projectIdToPricePerTokenInWei[_projectId],
+                IERC20(projectIdToCurrencyAddress[_projectId]).balanceOf(
+                    msg.sender
+                ) >= projectIdToPricePerTokenInWei[_projectId],
                 "Insufficient balance."
             );
             _splitFundsERC20(_projectId);
@@ -345,12 +373,11 @@ contract GenArt721FilteredMinter is IFilteredMinter {
         uint256 foundationAmount = (pricePerTokenInWei / 100) *
             artblocksContract.artblocksPercentage();
         if (foundationAmount > 0) {
-            IERC20(artblocksContract.projectIdToCurrencyAddress(_projectId))
-                .transferFrom(
-                    msg.sender,
-                    artblocksContract.artblocksAddress(),
-                    foundationAmount
-                );
+            IERC20(projectIdToCurrencyAddress[_projectId]).transferFrom(
+                msg.sender,
+                artblocksContract.artblocksAddress(),
+                foundationAmount
+            );
         }
         uint256 projectFunds = pricePerTokenInWei - foundationAmount;
         uint256 additionalPayeeAmount;
@@ -364,42 +391,55 @@ contract GenArt721FilteredMinter is IFilteredMinter {
                     _projectId
                 );
             if (additionalPayeeAmount > 0) {
-                IERC20(artblocksContract.projectIdToCurrencyAddress(_projectId))
-                    .transferFrom(
-                        msg.sender,
-                        artblocksContract.projectIdToAdditionalPayee(
-                            _projectId
-                        ),
-                        additionalPayeeAmount
-                    );
+                IERC20(projectIdToCurrencyAddress[_projectId]).transferFrom(
+                    msg.sender,
+                    artblocksContract.projectIdToAdditionalPayee(_projectId),
+                    additionalPayeeAmount
+                );
             }
         }
         uint256 creatorFunds = projectFunds - additionalPayeeAmount;
         if (creatorFunds > 0) {
-            IERC20(artblocksContract.projectIdToCurrencyAddress(_projectId))
-                .transferFrom(
-                    msg.sender,
-                    artblocksContract.projectIdToArtistAddress(_projectId),
-                    creatorFunds
-                );
+            IERC20(projectIdToCurrencyAddress[_projectId]).transferFrom(
+                msg.sender,
+                artblocksContract.projectIdToArtistAddress(_projectId),
+                creatorFunds
+            );
         }
     }
 
     /**
-     * @notice Gets if price of token is configured, and price of minting a
-     * token on project `_projectId`.
-     * @param _projectId Project ID to get price of token in wei.
+     * @notice Gets if price of token is configured, price of minting a
+     * token on project `_projectId`, and currency symbol and address to be
+     * used as payment. Supersedes any core contract price information.
+     * @param _projectId Project ID to get price information for.
      * @return isConfigured true only if token price has been configured on
      * this minter
      * @return tokenPriceInWei current price of token on this minter - invalid
      * if price has not yet been configured
+     * @return currencySymbol currency symbol for purchases of project on this
+     * minter. "ETH" reserved for ether.
+     * @return currencyAddress currency address for purchases of project on
+     * this minter. Null address reserved for ether.
      */
     function getPriceInfo(uint256 _projectId)
         external
         view
-        returns (bool isConfigured, uint256 tokenPriceInWei)
+        returns (
+            bool isConfigured,
+            uint256 tokenPriceInWei,
+            string memory currencySymbol,
+            address currencyAddress
+        )
     {
         isConfigured = projectIdToPriceIsConfigured[_projectId];
         tokenPriceInWei = projectIdToPricePerTokenInWei[_projectId];
+        currencyAddress = projectIdToCurrencyAddress[_projectId];
+        if (currencyAddress == address(0)) {
+            // defaults to ETH
+            currencySymbol = "ETH";
+        } else {
+            currencySymbol = projectIdToCurrencySymbol[_projectId];
+        }
     }
 }

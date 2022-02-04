@@ -51,16 +51,14 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
     mapping(uint256 => uint256) public projectMaxInvocations;
     /// Minimum auction length in seconds
     uint256 public minimumAuctionLengthSeconds = 3600;
-    /// projectId => price per token has been configured on this minter
-    mapping(uint256 => bool) private projectIdToPriceIsConfigured;
 
     /// projectId => auction parameters
     mapping(uint256 => AuctionParameters) public projectAuctionParameters;
     struct AuctionParameters {
         uint256 timestampStart;
         uint256 timestampEnd;
-        uint256 priceStart;
-        uint256 priceEnd;
+        uint256 startPrice;
+        uint256 basePrice;
     }
 
     modifier onlyCoreWhitelisted() {
@@ -203,7 +201,6 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
             _startPrice,
             _basePrice
         );
-        projectIdToPriceIsConfigured[_projectId] = true;
         emit SetAuctionDetails(
             _projectId,
             _auctionTimestampStart,
@@ -256,16 +253,6 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
         if (purchaseToDisabled[_projectId]) {
             require(msg.sender == _to, "No `purchaseTo` Allowed");
         }
-
-        // project currency must be ETH
-        require(
-            keccak256(
-                abi.encodePacked(
-                    artblocksContract.projectIdToCurrencySymbol(_projectId)
-                )
-            ) == keccak256(abi.encodePacked("ETH")),
-            "Project currency must be ETH"
-        );
 
         uint256 currentPriceInWei = getPrice(_projectId);
         require(
@@ -360,17 +347,17 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
             _projectId
         ];
         if (block.timestamp <= auctionParams.timestampStart) {
-            return auctionParams.priceStart;
+            return auctionParams.startPrice;
         } else if (block.timestamp >= auctionParams.timestampEnd) {
-            return auctionParams.priceEnd;
+            return auctionParams.basePrice;
         }
         uint256 elapsedTime = block.timestamp - auctionParams.timestampStart;
         uint256 duration = auctionParams.timestampEnd -
             auctionParams.timestampStart;
-        uint256 startToEndDiff = auctionParams.priceStart -
-            auctionParams.priceEnd;
+        uint256 startToEndDiff = auctionParams.startPrice -
+            auctionParams.basePrice;
         return
-            auctionParams.priceStart -
+            auctionParams.startPrice -
             ((elapsedTime * startToEndDiff) / duration);
     }
 
@@ -407,20 +394,35 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
     }
 
     /**
-     * @notice Gets if price of token is configured, and price of minting a
-     * token on project `_projectId`.
-     * @param _projectId Project ID to get price of token in wei.
+     * @notice Gets if price of token is configured, price of minting a
+     * token on project `_projectId`, and currency symbol and address to be
+     * used as payment. Supersedes any core contract price information.
+     * @param _projectId Project ID to get price information for.
      * @return isConfigured true only if project's auction parameters have been
      * configured on this minter
      * @return tokenPriceInWei current price of token on this minter - invalid
      * if auction has not yet been configured
+     * @return currencySymbol currency symbol for purchases of project on this
+     * minter. This minter always returns "ETH"
+     * @return currencyAddress currency address for purchases of project on
+     * this minter. This minter always returns null address, reserved for ether
      */
     function getPriceInfo(uint256 _projectId)
         external
         view
-        returns (bool isConfigured, uint256 tokenPriceInWei)
+        returns (
+            bool isConfigured,
+            uint256 tokenPriceInWei,
+            string memory currencySymbol,
+            address currencyAddress
+        )
     {
-        isConfigured = projectIdToPriceIsConfigured[_projectId];
+        AuctionParameters memory auctionParams = projectAuctionParameters[
+            _projectId
+        ];
+        isConfigured = (auctionParams.startPrice > 0);
         tokenPriceInWei = getPrice(_projectId);
+        currencySymbol = "ETH";
+        currencyAddress = address(0);
     }
 }

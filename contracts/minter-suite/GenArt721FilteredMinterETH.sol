@@ -204,16 +204,6 @@ contract GenArt721FilteredMinterETH is IFilteredMinter {
             projectMintCounter[msg.sender][_projectId]++;
         }
 
-        // project currency must be ETH
-        require(
-            keccak256(
-                abi.encodePacked(
-                    artblocksContract.projectIdToCurrencySymbol(_projectId)
-                )
-            ) == keccak256(abi.encodePacked("ETH")),
-            "Project currency must be ETH"
-        );
-
         require(
             msg.value >= projectIdToPricePerTokenInWei[_projectId],
             "Must send minimum value to mint!"
@@ -284,20 +274,32 @@ contract GenArt721FilteredMinterETH is IFilteredMinter {
     }
 
     /**
-     * @notice Gets if price of token is configured, and price of minting a
-     * token on project `_projectId`.
-     * @param _projectId Project ID to get price of token in wei.
+     * @notice Gets if price of token is configured, price of minting a
+     * token on project `_projectId`, and currency symbol and address to be
+     * used as payment. Supersedes any core contract price information.
+     * @param _projectId Project ID to get price information for.
      * @return isConfigured true only if token price has been configured on
      * this minter
      * @return tokenPriceInWei current price of token on this minter - invalid
      * if price has not yet been configured
+     * @return currencySymbol currency symbol for purchases of project on this
+     * minter. This minter always returns "ETH"
+     * @return currencyAddress currency address for purchases of project on
+     * this minter. This minter always returns null address, reserved for ether
      */
     function getPriceInfo(uint256 _projectId)
         external
         view
-        returns (bool isConfigured, uint256 tokenPriceInWei)
+        returns (
+            bool isConfigured,
+            uint256 tokenPriceInWei,
+            string memory currencySymbol,
+            address currencyAddress
+        )
     {
         isConfigured = projectIdToPriceIsConfigured[_projectId];
         tokenPriceInWei = projectIdToPricePerTokenInWei[_projectId];
+        currencySymbol = "ETH";
+        currencyAddress = address(0);
     }
 }

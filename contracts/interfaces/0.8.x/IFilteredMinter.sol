@@ -13,6 +13,16 @@ interface IFilteredMinter {
         uint256 indexed _pricePerTokenInWei
     );
 
+    /**
+     * @notice Currency updated for project `_projectId` to symbol
+     * `_currencySymbol` and address `_currencyAddress`.
+     */
+    event ProjectCurrencyInfoUpdated(
+        uint256 indexed _projectId,
+        string indexed _currencySymbol,
+        address indexed _currencyAddress
+    );
+
     /// togglePurchaseToDisabled updated
     event PurchaseToDisabledUpdated(
         uint256 _projectId,
@@ -44,10 +54,16 @@ interface IFilteredMinter {
     // given project.
     function setProjectMaxInvocations(uint256 _projectId) external;
 
-    // Gets isConfigured and price of minting a token, assuming this is
-    // project's minter. Supersedes any defined core price.
+    // Gets if token price is configured, token price in wei, currency symbol,
+    // and currency address, assuming this is project's minter.
+    // Supersedes any defined core price.
     function getPriceInfo(uint256 _projectId)
         external
         view
-        returns (bool, uint256);
+        returns (
+            bool isConfigured,
+            uint256 tokenPriceInWei,
+            string memory currencySymbol,
+            address currencyAddress
+        );
 }
