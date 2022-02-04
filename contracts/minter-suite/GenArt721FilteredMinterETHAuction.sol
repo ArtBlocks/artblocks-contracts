@@ -51,6 +51,8 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
     mapping(uint256 => uint256) public projectMaxInvocations;
     /// Minimum auction length in seconds
     uint256 public minimumAuctionLengthSeconds = 3600;
+    /// projectId => price per token has been configured on this minter
+    mapping(uint256 => bool) private projectIdToPriceIsConfigured;
 
     /// projectId => auction parameters
     mapping(uint256 => AuctionParameters) public projectAuctionParameters;
@@ -201,6 +203,7 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
             _auctionPriceStart,
             _auctionPriceBase
         );
+        projectIdToPriceIsConfigured[_projectId] = true;
         emit SetAuctionDetails(
             _projectId,
             _auctionTimestampStart,
@@ -240,6 +243,8 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
             !projectMaxHasBeenInvoked[_projectId],
             "Maximum number of invocations reached"
         );
+
+        // no need to check if price is configured - auction init values fail
 
         // if contract filter is off, allow calls from another contract
         if (!contractMintable[_projectId]) {
@@ -350,7 +355,7 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
      * @param _projectId Project ID to get price of token for.
      * @return current price of token in Wei
      */
-    function getPrice(uint256 _projectId) public view returns (uint256) {
+    function getPrice(uint256 _projectId) private view returns (uint256) {
         AuctionParameters memory auctionParams = projectAuctionParameters[
             _projectId
         ];
@@ -399,5 +404,23 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
         ];
         require(isAuctionLive(_projectId), "auction is not currently live");
         return auctionParams.timestampEnd - block.timestamp;
+    }
+
+    /**
+     * @notice Gets if price of token is configured, and price of minting a
+     * token on project `_projectId`.
+     * @param _projectId Project ID to get price of token in wei.
+     * @return isConfigured true only if project's auction parameters have been
+     * configured on this minter
+     * @return tokenPriceInWei current price of token on this minter - invalid
+     * if auction has not yet been configured
+     */
+    function getPriceInfo(uint256 _projectId)
+        external
+        view
+        returns (bool isConfigured, uint256 tokenPriceInWei)
+    {
+        isConfigured = projectIdToPriceIsConfigured[_projectId];
+        tokenPriceInWei = getPrice(_projectId);
     }
 }

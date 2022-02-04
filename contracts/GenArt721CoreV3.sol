@@ -7,8 +7,6 @@ import "./libs/0.5.x/Strings.sol";
 
 import "./interfaces/0.5.x/IRandomizer.sol";
 import "./interfaces/0.5.x/IGenArt721CoreContract.sol";
-import "./interfaces/0.5.x/IMinterFilter.sol";
-import "./interfaces/0.5.x/IFilteredMinter.sol";
 
 pragma solidity ^0.5.17;
 

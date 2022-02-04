@@ -44,6 +44,10 @@ interface IFilteredMinter {
     // given project.
     function setProjectMaxInvocations(uint256 _projectId) external;
 
-    // Gets current price of minting a token, assuming this is project's minter
-    function getPrice(uint256 _projectId) external returns (uint256);
+    // Gets isConfigured and price of minting a token, assuming this is
+    // project's minter. Supersedes any defined core price.
+    function getPriceInfo(uint256 _projectId)
+        external
+        view
+        returns (bool, uint256);
 }

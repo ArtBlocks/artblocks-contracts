@@ -38,7 +38,9 @@ contract GenArt721FilteredMinter is IFilteredMinter {
     /// projectId => project's maximum number of invocations
     mapping(uint256 => uint256) public projectMaxInvocations;
     /// projectId => price per token in wei - supersedes any defined core price
-    mapping(uint256 => uint256) public projectIdToPricePerTokenInWei;
+    mapping(uint256 => uint256) private projectIdToPricePerTokenInWei;
+    /// projectId => price per token has been configured on this minter
+    mapping(uint256 => bool) private projectIdToPriceIsConfigured;
 
     modifier onlyCoreWhitelisted() {
         require(
@@ -110,8 +112,8 @@ contract GenArt721FilteredMinter is IFilteredMinter {
      * @notice Sets the mint limit of a single purchaser for project
      * `_projectId` to `_limit`.
      * @param _projectId Project ID to set the mint limit for.
-     * @param _limit Number of times a given address may mint the project's
-     * tokens.
+     * @param _limit Number of times a given address may mint the
+     * project's tokens.
      */
     function setProjectMintLimit(uint256 _projectId, uint8 _limit)
         external
@@ -178,6 +180,7 @@ contract GenArt721FilteredMinter is IFilteredMinter {
         uint256 _pricePerTokenInWei
     ) public onlyArtist(_projectId) {
         projectIdToPricePerTokenInWei[_projectId] = _pricePerTokenInWei;
+        projectIdToPriceIsConfigured[_projectId] = true;
         emit PricePerTokenInWeiUpdated(_projectId, _pricePerTokenInWei);
     }
 
@@ -210,6 +213,12 @@ contract GenArt721FilteredMinter is IFilteredMinter {
         require(
             !projectMaxHasBeenInvoked[_projectId],
             "Maximum number of invocations reached"
+        );
+
+        // require artist to have configured price of token on this minter
+        require(
+            projectIdToPriceIsConfigured[_projectId],
+            "Price not configured"
         );
 
         // if contract filter is off, allow calls from another contract
@@ -377,11 +386,20 @@ contract GenArt721FilteredMinter is IFilteredMinter {
     }
 
     /**
-     * @notice Gets price of minting a token on project `_projectId`,
-     * assuming this is project's minter.
+     * @notice Gets if price of token is configured, and price of minting a
+     * token on project `_projectId`.
      * @param _projectId Project ID to get price of token in wei.
+     * @return isConfigured true only if token price has been configured on
+     * this minter
+     * @return tokenPriceInWei current price of token on this minter - invalid
+     * if price has not yet been configured
      */
-    function getPrice(uint256 _projectId) public view returns (uint256) {
-        return projectIdToPricePerTokenInWei[_projectId];
+    function getPriceInfo(uint256 _projectId)
+        external
+        view
+        returns (bool isConfigured, uint256 tokenPriceInWei)
+    {
+        isConfigured = projectIdToPriceIsConfigured[_projectId];
+        tokenPriceInWei = projectIdToPricePerTokenInWei[_projectId];
     }
 }
