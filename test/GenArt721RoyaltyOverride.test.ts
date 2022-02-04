@@ -127,6 +127,13 @@ describe("GenArt721RoyaltyOverride", async function () {
       .setMinterForProject(projectOne, this.minterA.address);
 
     await this.minterA
+      .connect(this.accounts.artist0)
+      .updatePricePerTokenInWei(projectZero, pricePerTokenInWei);
+    await this.minterA
+      .connect(this.accounts.artist1)
+      .updatePricePerTokenInWei(projectOne, pricePerTokenInWei);
+
+    await this.minterA
       .connect(this.accounts.anyone)
       .purchase(projectZero, { value: pricePerTokenInWei });
 
@@ -195,6 +202,13 @@ describe("GenArt721RoyaltyOverride", async function () {
     await this.minterFilterB
       .connect(this.accounts.adminB)
       .setMinterForProject(projectOne, this.minterB.address);
+
+    await this.minterB
+      .connect(this.accounts.artist0)
+      .updatePricePerTokenInWei(projectZero, pricePerTokenInWei);
+    await this.minterB
+      .connect(this.accounts.artist1)
+      .updatePricePerTokenInWei(projectOne, pricePerTokenInWei);
 
     await this.minterB
       .connect(this.accounts.anyone)

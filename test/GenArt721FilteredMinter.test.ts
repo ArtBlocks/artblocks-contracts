@@ -20,6 +20,7 @@ describe("GenArt721FilteredMinter", async function () {
   const higherPricePerTokenInWei = ethers.utils.parseEther("1.1");
   const projectZero = 0;
   const projectOne = 1;
+  const projectTwo = 2;
 
   beforeEach(async function () {
     const [owner, newOwner, artist, additional, snowfro] =
@@ -33,16 +34,23 @@ describe("GenArt721FilteredMinter", async function () {
     };
     const randomizerFactory = await ethers.getContractFactory("Randomizer");
     this.randomizer = await randomizerFactory.deploy();
+
     const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV3");
     this.token = await artblocksFactory
       .connect(snowfro)
       .deploy(name, symbol, this.randomizer.address);
+
     const minterFilterFactory = await ethers.getContractFactory("MinterFilter");
     this.minterFilter = await minterFilterFactory.deploy(this.token.address);
+
     const minterFactory = await ethers.getContractFactory(
       "GenArt721FilteredMinter"
     );
     this.minter = await minterFactory.deploy(
+      this.token.address,
+      this.minterFilter.address
+    );
+    this.minter3 = await minterFactory.deploy(
       this.token.address,
       this.minterFilter.address
     );
@@ -51,8 +59,11 @@ describe("GenArt721FilteredMinter", async function () {
 
     await this.token.connect(snowfro).addProject("project1", artist.address);
 
+    await this.token.connect(snowfro).addProject("project2", artist.address);
+
     await this.token.connect(snowfro).toggleProjectIsActive(projectZero);
     await this.token.connect(snowfro).toggleProjectIsActive(projectOne);
+    await this.token.connect(snowfro).toggleProjectIsActive(projectTwo);
 
     await this.token
       .connect(snowfro)
@@ -64,9 +75,13 @@ describe("GenArt721FilteredMinter", async function () {
     await this.token
       .connect(artist)
       .updateProjectMaxInvocations(projectOne, 15);
+    await this.token
+      .connect(artist)
+      .updateProjectMaxInvocations(projectTwo, 15);
 
     this.token.connect(this.accounts.artist).toggleProjectIsPaused(projectZero);
     this.token.connect(this.accounts.artist).toggleProjectIsPaused(projectOne);
+    this.token.connect(this.accounts.artist).toggleProjectIsPaused(projectTwo);
 
     await this.minterFilter
       .connect(this.accounts.snowfro)
@@ -77,8 +92,11 @@ describe("GenArt721FilteredMinter", async function () {
     await this.minterFilter
       .connect(this.accounts.snowfro)
       .setMinterForProject(projectOne, this.minter.address);
+    await this.minterFilter
+      .connect(this.accounts.snowfro)
+      .setMinterForProject(projectTwo, this.minter.address);
 
-    // set token price for both projects on minter
+    // set token price for projects zero and one on minter
     await this.minter
       .connect(this.accounts.artist)
       .updatePricePerTokenInWei(projectZero, pricePerTokenInWei);
@@ -168,6 +186,15 @@ describe("GenArt721FilteredMinter", async function () {
   });
 
   describe("purchase", async function () {
+    it("does not allow purchase prior to configuring price", async function () {
+      await expectRevert(
+        this.minter.connect(this.accounts.owner).purchase(projectTwo, {
+          value: pricePerTokenInWei,
+        }),
+        "Price not configured"
+      );
+    });
+
     it("does nothing if setProjectMaxInvocations is not called (fails correctly)", async function () {
       for (let i = 0; i < 15; i++) {
         await this.minter.connect(this.accounts.owner).purchase(projectZero, {
@@ -283,6 +310,17 @@ describe("GenArt721FilteredMinter", async function () {
   });
 
   describe("purchaseTo", async function () {
+    it("does not allow purchase prior to configuring price", async function () {
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.owner)
+          .purchaseTo(this.accounts.additional.address, projectTwo, {
+            value: pricePerTokenInWei,
+          }),
+        "Price not configured"
+      );
+    });
+
     it("allows `purchaseTo` by default", async function () {
       await this.minter
         .connect(this.accounts.owner)

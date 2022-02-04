@@ -111,9 +111,9 @@ describe("GenArt721MinterEthAuction", async function () {
         );
         let t = ethers.BigNumber.from(a.toString());
         let price = startingPrice.sub(t.div(7200000));
-        let contractPrice = await this.minter
+        let contractPriceInfo = await this.minter
           .connect(this.accounts.owner)
-          .getPrice(projectOne);
+          .getPriceInfo(projectOne);
         await ethers.provider.send("evm_setNextBlockTimestamp", [
           this.startTime + i * 480000,
         ]);
@@ -133,7 +133,8 @@ describe("GenArt721MinterEthAuction", async function () {
         let ownerDelta = (await this.accounts.owner.getBalance()).sub(
           ownerBalance
         );
-        expect(ownerDelta.mul("-1").lte(contractPrice)).to.be.true;
+        expect(ownerDelta.mul("-1").lte(contractPriceInfo.tokenPriceInWei)).to
+          .be.true;
       }
     });
 
@@ -150,10 +151,10 @@ describe("GenArt721MinterEthAuction", async function () {
           pricePerTokenInWeiAuctionResting
         );
 
-      let contractPrice = await this.minter
+      let contractPriceInfo = await this.minter
         .connect(this.accounts.owner)
-        .getPrice(projectOne);
-      expect(contractPrice).to.be.equal(startingPrice);
+        .getPriceInfo(projectOne);
+      expect(contractPriceInfo.tokenPriceInWei).to.be.equal(startingPrice);
     });
 
     it("calculates the price after correctly ", async function () {
@@ -171,10 +172,12 @@ describe("GenArt721MinterEthAuction", async function () {
           pricePerTokenInWeiAuctionResting
         );
 
-      let contractPrice = await this.minter
+      let contractPriceInfo = await this.minter
         .connect(this.accounts.owner)
-        .getPrice(projectOne);
-      expect(contractPrice).to.be.equal(pricePerTokenInWeiAuctionResting);
+        .getPriceInfo(projectOne);
+      expect(contractPriceInfo.tokenPriceInWei).to.be.equal(
+        pricePerTokenInWeiAuctionResting
+      );
     });
   });
 

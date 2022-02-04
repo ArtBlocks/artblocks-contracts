@@ -205,12 +205,27 @@ describe("MinterFilter", async function () {
   });
 
   describe("purchase", async function () {
+    it("does not allow purchase prior to configuring price", async function () {
+      await this.minterFilter
+        .connect(this.accounts.snowfro)
+        .setMinterForProject(projectThree, this.minter3.address);
+      await expectRevert(
+        this.minter3.connect(this.accounts.owner).purchase(projectThree, {
+          value: pricePerTokenInWei,
+        }),
+        "Price not configured"
+      );
+    });
+
     it("allows purchases through the correct minter", async function () {
       for (let i = 0; i < 15; i++) {
         await this.minter1.connect(this.accounts.owner).purchase(projectOne, {
           value: pricePerTokenInWei,
         });
       }
+      await this.minter2
+        .connect(this.accounts.artist)
+        .updatePricePerTokenInWei(projectTwo, pricePerTokenInWei);
       for (let i = 0; i < 15; i++) {
         await this.minter2.connect(this.accounts.owner).purchase(projectTwo, {
           value: pricePerTokenInWei,
@@ -221,44 +236,70 @@ describe("MinterFilter", async function () {
     it("blocks purchases through the incorrect minter", async function () {
       const noAssignedMinterErrorMessage = "EnumerableMap: nonexistent key";
       const OnlyAssignedMinterErrorMessage = "Only assigned minter";
+      // project one on minter two
+      await this.minter2
+        .connect(this.accounts.artist)
+        .updatePricePerTokenInWei(projectOne, pricePerTokenInWei);
       await expectRevert(
         this.minter2.connect(this.accounts.owner).purchase(projectOne, {
           value: pricePerTokenInWei,
         }),
         OnlyAssignedMinterErrorMessage
       );
+      // project two on minter one
+      await this.minter1
+        .connect(this.accounts.artist)
+        .updatePricePerTokenInWei(projectTwo, pricePerTokenInWei);
       await expectRevert(
         this.minter1.connect(this.accounts.owner).purchase(projectTwo, {
           value: pricePerTokenInWei,
         }),
         OnlyAssignedMinterErrorMessage
       );
-
+      // project three on minter one
+      await this.minter1
+        .connect(this.accounts.artist)
+        .updatePricePerTokenInWei(projectThree, pricePerTokenInWei);
       await expectRevert(
         this.minter1.connect(this.accounts.owner).purchase(projectThree, {
           value: pricePerTokenInWei,
         }),
         noAssignedMinterErrorMessage
       );
+      // project three on minter two
+      await this.minter2
+        .connect(this.accounts.artist)
+        .updatePricePerTokenInWei(projectThree, pricePerTokenInWei);
       await expectRevert(
         this.minter2.connect(this.accounts.owner).purchase(projectThree, {
           value: pricePerTokenInWei,
         }),
         noAssignedMinterErrorMessage
       );
-
+      // project three on minter three
+      await this.minter3
+        .connect(this.accounts.artist)
+        .updatePricePerTokenInWei(projectOne, pricePerTokenInWei);
       await expectRevert(
         this.minter3.connect(this.accounts.owner).purchase(projectOne, {
           value: pricePerTokenInWei,
         }),
         OnlyAssignedMinterErrorMessage
       );
+      // project two on minter three
+      await this.minter3
+        .connect(this.accounts.artist)
+        .updatePricePerTokenInWei(projectTwo, pricePerTokenInWei);
       await expectRevert(
         this.minter3.connect(this.accounts.owner).purchase(projectTwo, {
           value: pricePerTokenInWei,
         }),
         OnlyAssignedMinterErrorMessage
       );
+      // project three on minter three
+      await this.minter3
+        .connect(this.accounts.artist)
+        .updatePricePerTokenInWei(projectThree, pricePerTokenInWei);
       await expectRevert(
         this.minter3.connect(this.accounts.owner).purchase(projectThree, {
           value: pricePerTokenInWei,
@@ -269,6 +310,20 @@ describe("MinterFilter", async function () {
   });
 
   describe("purchaseTo", async function () {
+    it("does not allow purchase prior to configuring price", async function () {
+      await this.minterFilter
+        .connect(this.accounts.snowfro)
+        .setMinterForProject(projectThree, this.minter3.address);
+      await expectRevert(
+        this.minter3
+          .connect(this.accounts.owner)
+          .purchaseTo(this.accounts.additional.address, projectThree, {
+            value: pricePerTokenInWei,
+          }),
+        "Price not configured"
+      );
+    });
+
     it("allows `purchaseTo` by default", async function () {
       await this.minter1
         .connect(this.accounts.owner)
@@ -319,6 +374,9 @@ describe("MinterFilter", async function () {
 
   describe("only allow ETH", async function () {
     it("disallows non-ETH projects", async function () {
+      await this.minter1
+        .connect(this.accounts.artist)
+        .updatePricePerTokenInWei(projectOne, pricePerTokenInWei);
       await this.token
         .connect(this.accounts.artist)
         .updateProjectCurrencyInfo(

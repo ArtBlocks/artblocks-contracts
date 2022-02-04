@@ -321,9 +321,37 @@ describe("MinterPermissionsEvents", async function () {
     const onlyApprovedErrorMessage = "Only approved minters";
     const permissionErrorMessage = "Only assigned minter";
     const unassignedErrorMessage = "EnumerableMap: nonexistent key";
+    const priceNotConfiguredErrorMessage = "Price not configured";
     const pricePerTokenInWei = ethers.utils.parseEther("1");
 
+    it("is *not* callable when price not configured", async function () {
+      // minter not approved
+      await expectRevert(
+        this.minter.connect(this.accounts.artist).purchase(0, {
+          value: pricePerTokenInWei,
+          gasPrice: 1,
+        }),
+        priceNotConfiguredErrorMessage
+      );
+      // approve minter, but don't assign to project
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .addApprovedMinter(this.minter.address);
+      // deployer call project with unassigned minter
+      await expectRevert(
+        this.minter.connect(this.accounts.artist).purchase(0, {
+          value: pricePerTokenInWei,
+          gasPrice: 1,
+        }),
+        priceNotConfiguredErrorMessage
+      );
+    });
+
     it("is *not* callable when minter not configured", async function () {
+      // configure price
+      await this.minter
+        .connect(this.accounts.artist)
+        .updatePricePerTokenInWei(0, pricePerTokenInWei);
       // minter not approved
       await expectRevert(
         this.minter.connect(this.accounts.artist).purchase(0, {
@@ -354,6 +382,10 @@ describe("MinterPermissionsEvents", async function () {
       await this.minterFilter
         .connect(this.accounts.deployer)
         .setMinterForProject(0, this.minter.address);
+      // configure price
+      await this.minter
+        .connect(this.accounts.artist)
+        .updatePricePerTokenInWei(0, pricePerTokenInWei);
       // successfully mint
       await this.minter.connect(this.accounts.artist).purchase(0, {
         value: pricePerTokenInWei,
@@ -382,6 +414,10 @@ describe("MinterPermissionsEvents", async function () {
       await this.minterFilter
         .connect(this.accounts.deployer)
         .setMinterForProject(0, minterA.address);
+      // configure price on minter A
+      await minterA
+        .connect(this.accounts.artist)
+        .updatePricePerTokenInWei(0, pricePerTokenInWei);
       // deploy and approve minter B
       const minterFactory = await ethers.getContractFactory(
         "GenArt721FilteredMinter"
@@ -393,6 +429,10 @@ describe("MinterPermissionsEvents", async function () {
       await this.minterFilter
         .connect(this.accounts.deployer)
         .addApprovedMinter(minterB.address);
+      // configure price on minter B
+      await minterB
+        .connect(this.accounts.artist)
+        .updatePricePerTokenInWei(0, pricePerTokenInWei);
       // success when minting from minterA
       await minterA.connect(this.accounts.artist).purchase(0, {
         value: pricePerTokenInWei,
