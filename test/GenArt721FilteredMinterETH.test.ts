@@ -372,27 +372,45 @@ describe("MinterFilter", async function () {
     });
   });
 
-  describe("only allow ETH", async function () {
-    it("disallows non-ETH projects", async function () {
-      await this.minter1
-        .connect(this.accounts.artist)
-        .updatePricePerTokenInWei(projectOne, pricePerTokenInWei);
-      await this.token
-        .connect(this.accounts.artist)
-        .updateProjectCurrencyInfo(
-          projectOne,
-          "USDC",
-          "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
-        );
+  describe("currency info hooks", async function () {
+    const unconfiguredProjectNumber = 99;
 
-      await expectRevert(
-        this.minter1
-          .connect(this.accounts.owner)
-          .purchaseTo(this.accounts.additional.address, projectOne, {
-            value: pricePerTokenInWei,
-          }),
-        "Project currency must be ETH"
-      );
+    it("reports expected price per token", async function () {
+      let currencyInfo = await this.minter1
+        .connect(this.accounts.artist)
+        .getPriceInfo(projectOne);
+      expect(currencyInfo.tokenPriceInWei).to.be.equal(pricePerTokenInWei);
+      // returns zero for unconfigured project price
+      currencyInfo = await this.minter1
+        .connect(this.accounts.artist)
+        .getPriceInfo(unconfiguredProjectNumber);
+      expect(currencyInfo.tokenPriceInWei).to.be.equal(0);
+    });
+
+    it("reports expected isConfigured", async function () {
+      let currencyInfo = await this.minter1
+        .connect(this.accounts.artist)
+        .getPriceInfo(projectOne);
+      expect(currencyInfo.isConfigured).to.be.equal(true);
+      // false for unconfigured project
+      currencyInfo = await this.minter1
+        .connect(this.accounts.artist)
+        .getPriceInfo(unconfiguredProjectNumber);
+      expect(currencyInfo.isConfigured).to.be.equal(false);
+    });
+
+    it("reports currency as ETH", async function () {
+      const priceInfo = await this.minter1
+        .connect(this.accounts.artist)
+        .getPriceInfo(projectOne);
+      expect(priceInfo.currencySymbol).to.be.equal("ETH");
+    });
+
+    it("reports currency address as null address", async function () {
+      const priceInfo = await this.minter1
+        .connect(this.accounts.artist)
+        .getPriceInfo(projectOne);
+      expect(priceInfo.currencyAddress).to.be.equal(constants.ZERO_ADDRESS);
     });
   });
 });

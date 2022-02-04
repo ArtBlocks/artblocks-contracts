@@ -279,4 +279,19 @@ describe("GenArt721CoreV3", async function () {
       });
     });
   });
+
+  describe("projectTokenInfo", function () {
+    it("returns expected deprecated values", async function () {
+      const tokenInfo = await this.token
+        .connect(this.accounts.snowfro)
+        .projectTokenInfo(0);
+      expect(tokenInfo.pricePerTokenInWei.toString()).to.be.equal(
+        new BN(
+          "115792089237316195423570985008687907853269984665640564039457584007913129639935"
+        ).toString()
+      );
+      expect(tokenInfo.currency).to.be.equal("");
+      expect(tokenInfo.currencyAddress).to.be.equal(constants.ZERO_ADDRESS);
+    });
+  });
 });
