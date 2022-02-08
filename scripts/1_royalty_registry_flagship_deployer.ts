@@ -58,7 +58,7 @@ async function main() {
   // DEPLOY NEW CORE & SET ADMIN
   const tokenName = "Token Placeholder";
   const tokenTicker = "TOKN";
-  const artistAddress = "0x18579FBCe9152A1342663678FA970DcA4AE654fF";
+  const artistAddress = "0x48631d49245185cB38C01a31E0AFFfA75c133d9a";   // deployer = artist
   const artblocksRoyaltiesAddress = "0xdddD4e84E9B742236543Bc497F0b3fd2a47f34D8"
   const genArt721CoreFactory = new GenArt721CoreV3__factory(deployer);
   const coreToken = await genArt721CoreFactory.deploy(
@@ -66,34 +66,36 @@ async function main() {
     tokenTicker,
     randomizer.address
   );
+  console.log(`Core token deployed at ${coreToken.address}`);
 
   //CREATE AND POPULATE NEW PROJECT - WITHOUT THIS, NO TOKEN PAYMENTS TO TEST AGAINST?
   await coreToken.connect(deployer).addProject("test_project", artistAddress, ethers.utils.parseEther("0.10"));
   await coreToken.connect(deployer).updateProjectSecondaryMarketRoyaltyPercentage(0, 5);
-  await coreToken.connect(deployer).updateArtblocksRoyaltyAddressForContract()
   await coreToken.connect(deployer).updateProjectAdditionalPayeeInfo(0, "0x24CdEE54439D3f25DE4cddE43e41B19FdAA90cE8", 20);
 
   const minterFilterFactory = await ethers.getContractFactory("MinterFilter");
   const minterFilter = await minterFilterFactory.deploy(coreToken.address);
+  console.log(`Minter filter deployed at ${minterFilter.address}`);
   const minterFactory = await ethers.getContractFactory(
     "GenArt721FilteredMinter"
   );
-  // const minter = await minterFactory.deploy(
-  //   coreToken.address,
-  //   minterFilter.address
-  // );
+  const minter = await minterFactory.deploy(
+    coreToken.address,
+    minterFilter.address
+  );
+  console.log(`Minter  deployed at ${minter.address}`);
 
   await coreToken.connect(deployer).toggleProjectIsActive(0);
 
-  await coreToken.connect(deployer).addMintWhitelisted(this.minterFilterA.address);
+  await coreToken.connect(deployer).addMintWhitelisted(minterFilter.address);
 
   await coreToken.connect(deployer).updateProjectMaxInvocations(0, 15);
 
-  coreToken.connect(artistAddress).toggleProjectIsPaused(0);
+  await coreToken.connect(artistAddress).toggleProjectIsPaused(0);
 
-  await minterFilter.connect(deployer).addApprovedMinter(this.minterA.address);
+  await minterFilter.connect(deployer).addApprovedMinter(minter.address);
   
-  await minterFilter.connect(deployer).setMinterForProject(0, this.minterA.address);
+  await minterFilter.connect(deployer).setMinterForProject(0, minter.address);
 
 
 
@@ -119,11 +121,16 @@ async function main() {
     coreToken.address,
     artblocksRoyaltiesAddress
   )
-  // last step should be - Manifold registry override = AB GenArt721RoyaltyOverride.getRoyalties() ??
 
-  // await this.minterA.connect(deployer).purchase(0, { value: ethers.utils.parseEther("0.10") });
-  // await this.minterA.connect(deployer).purchase(0, { value: ethers.utils.parseEther("0.10") });
-  // await this.minterA.connect(deployer).purchase(0, { value: ethers.utils.parseEther("0.10") });
+  await minter.connect(deployer).purchase(0, { value: ethers.utils.parseEther("0.10") });
+
+  //VERIFY THAT IT WORKED
+    //call RoyaltyRegistryEngine --> check for royalties result. should give me BPS and addresses
+  const res = await RoyaltyRegistryContract.connect(deployer).getRoyaltiesView();
+
+  console.log(res);
+
+  
 }
 
 

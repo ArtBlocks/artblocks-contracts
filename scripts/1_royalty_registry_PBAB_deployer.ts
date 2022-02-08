@@ -31,12 +31,12 @@ async function main() {
     return;
   }
 
-    // GET ROYALTY REGISTRY CONTRACT TO SET OVERRIDE ADDRESS
-    const RoyaltyRegistryAddress = getRoyaltyRegistryAddress(network.name);
-    const RoyaltyRegistryContract = await ethers.getContractAt(
-      royaltyRegistryABI,
-      RoyaltyRegistryAddress
-    );
+  // GET ROYALTY REGISTRY CONTRACT TO SET OVERRIDE ADDRESS
+  const RoyaltyRegistryAddress = getRoyaltyRegistryAddress(network.name);
+  const RoyaltyRegistryContract = await ethers.getContractAt(
+    royaltyRegistryABI,
+    RoyaltyRegistryAddress
+  );
 
   //////////////////////////////////////////////////////////////////////////////
   // DEPLOYMENT BEGINS HERE
@@ -97,32 +97,6 @@ async function main() {
     .updateRenderProviderAddress(rendererProviderAddress);
   console.log(`Updated the renderer provider to: ${rendererProviderAddress}.`);
 
-  // Set Minter owner.
-  await genArt721MinterPBAB.connect(deployer).setOwnerAddress(pbabTransferAddress);
-  console.log(`Set the Minter owner to: ${pbabTransferAddress}.`);
-
-  // Allowlist AB staff (testnet only)
-  if (network.name == "ropsten" || network.name == "rinkeby") {
-    // purplehat
-    await coreTokenPBAB
-      .connect(deployer)
-      .addWhitelisted("0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63");
-    // dogbot
-    await coreTokenPBAB
-      .connect(deployer)
-      .addWhitelisted("0x3c3cAb03C83E48e2E773ef5FC86F52aD2B15a5b0");
-    // ben_thank_you
-    await coreTokenPBAB
-      .connect(deployer)
-      .addWhitelisted("0x0B7917b62BC98967e06e80EFBa9aBcAcCF3d4928");
-    // mikespellcheck
-    await coreTokenPBAB
-      .connect(deployer)
-      .addWhitelisted("0x48631d49245185cB38C01a31E0AFFfA75c133d9a");
-    console.log(`Performing ${network.name} deployment, allowlisted AB staff.`);
-  }
-
-  // PBAB - should I be setting myself as the admin? deploy a new PBAB project on token?
   await coreTokenPBAB.connect(deployer).addProject("test_project", artistAddressPBAB, ethers.utils.parseEther("0.10"));
   await coreTokenPBAB.connect(deployer).updateProjectSecondaryMarketRoyaltyPercentage(0, 5);
   await coreTokenPBAB.connect(deployer).updateArtblocksRoyaltyAddressForContract()
@@ -145,19 +119,15 @@ async function main() {
   const overrideFactoryPBAB = new GenArt721RoyaltyOverridePBAB__factory(deployer);
   const overridePBAB = await overrideFactoryPBAB.deploy();
 
-  // set override on Royalty Registry
-  const royaltyOverrideAddress_PBAB = getRoyaltyOverrideAddress_PBAB(
-    network.name
-  );
 
   //SETS THE MANIFOLD REGISTRY TO LOOKUP AB ROYALTY OVERRIDE FOR AB CORE
   await RoyaltyRegistryContract.connect(deployer).setRoyaltyLookupAddress(
     coreTokenPBAB.address, // token address
-    royaltyOverrideAddress_PBAB // royalty override address
+    overridePBAB.address // royalty override address
   );
   console.log(
     `Royalty Registry override for new GenArt721Core set to: ` +
-      `${royaltyOverrideAddress_PBAB}`
+      `${overridePBAB.address}`
   );
 
   // set platform royalty payment address
@@ -171,9 +141,16 @@ async function main() {
     console.log(
       `Platform Royalty Payment Address for newly deployed GenArt721Core ` +
         `set to: ${platformRoyaltyPaymentAddress} \n    (on the PBAB royalty ` +
-        `override contract at ${royaltyOverrideAddress_PBAB})`
+        `override contract at ${overridePBAB.address})`
     );
 
+    await genArt721MinterPBAB.connect(deployer).purchase(0, { value: ethers.utils.parseEther("0.10") });
+
+      //VERIFY THAT IT WORKED
+    //call RoyaltyRegistryEngine --> check for royalties result. should give me BPS and addresses
+  const res = await RoyaltyRegistryContract.connect(deployer).getRoyaltiesView();
+
+  console.log(res);
 }
 
 
