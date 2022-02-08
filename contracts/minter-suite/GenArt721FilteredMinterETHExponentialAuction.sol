@@ -362,6 +362,7 @@ contract GenArt721FilteredMinterETHExponentialAuction is IFilteredMinter {
             // Not a single decay interval has passed.
             return auctionParams.startPrice;
         }
+        uint256 currentPrice = auctionParams.startPrice;
         uint256 elapsedDecayIntervals = elapsedTimeMinutes /
             auctionParams.decayIntervalMinutes;
         uint256 i = 0;
@@ -371,7 +372,6 @@ contract GenArt721FilteredMinterETHExponentialAuction is IFilteredMinter {
                 currentPrice -
                 (currentPrice / auctionParams.decayDenominator);
         }
-        uint256 currentPrice = auctionParams.startPrice;
         if (currentPrice < auctionParams.basePrice) {
             // Do not allow price to go lower than `basePrice`.
             return auctionParams.basePrice;
