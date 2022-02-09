@@ -59,7 +59,7 @@ describe("GenArt721FilteredMinter", async function () {
 
     await this.token
       .connect(snowfro)
-      .addMintWhitelisted(this.minterFilter.address);
+      .updateMinterContract(this.minterFilter.address);
 
     await this.token
       .connect(artist)

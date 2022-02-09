@@ -104,7 +104,7 @@ describe("GenArt721RoyaltyOverride", async function () {
 
     await this.tokenA
       .connect(adminA)
-      .addMintWhitelisted(this.minterFilterA.address);
+      .updateMinterContract(this.minterFilterA.address);
 
     await this.tokenA
       .connect(artist0)
@@ -178,7 +178,7 @@ describe("GenArt721RoyaltyOverride", async function () {
 
     await this.tokenB
       .connect(adminB)
-      .addMintWhitelisted(this.minterFilterB.address);
+      .updateMinterContract(this.minterFilterB.address);
 
     await this.tokenB
       .connect(artist0)

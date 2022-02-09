@@ -104,13 +104,18 @@ describe("MinterFilterEvents", async function () {
 
   describe("removeMinterForProject", async function () {
     it("emits an event", async function () {
+      // assign a minter
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .setMinterForProject(0, this.minter.address);
+      // verify event when removing minter for project
       await expect(
         this.minterFilter
           .connect(this.accounts.deployer)
           .removeMinterForProject(0)
       )
-        .to.emit(this.minterFilter, "ProjectMinterRegistered")
-        .withArgs(0, ethers.constants.AddressZero);
+        .to.emit(this.minterFilter, "ProjectMinterRemoved")
+        .withArgs(0);
     });
   });
 

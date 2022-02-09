@@ -47,7 +47,7 @@ describe("GenArt721CoreV3", async function () {
     this.projectZeroInfo = await this.token.projectTokenInfo(projectZero);
 
     await this.token.connect(snowfro).toggleProjectIsActive(projectZero);
-    await this.token.connect(snowfro).addMintWhitelisted(this.minter.address);
+    await this.token.connect(snowfro).updateMinterContract(this.minter.address);
     await this.token
       .connect(artist)
       .updateProjectMaxInvocations(projectZero, 15);
@@ -235,6 +235,32 @@ describe("GenArt721CoreV3", async function () {
         expect(
           (await this.accounts.artist.getBalance()).sub(artistBalance)
         ).to.equal(ethers.utils.parseEther("0"));
+      });
+    });
+
+    describe("handles updating minter", async function () {
+      it("emits event when updating minter", async function () {
+        await expect(
+          this.token
+            .connect(this.accounts.snowfro)
+            .updateMinterContract(this.minter.address)
+        )
+          .to.emit(this.token, "MinterUpdated")
+          .withArgs(this.minter.address);
+      });
+
+      it("only allows admin/whitelisted to update minter", async function () {
+        // allows admin to update minter
+        await this.token
+          .connect(this.accounts.snowfro)
+          .updateMinterContract(this.minter.address);
+        // does not allow random to update minter
+        await expectRevert(
+          this.token
+            .connect(this.accounts.artist)
+            .updateMinterContract(this.minter.address),
+          "Only admin"
+        );
       });
     });
   });
