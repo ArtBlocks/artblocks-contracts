@@ -24,7 +24,7 @@ async function main() {
     return;
   }
 
-    // GET ROYALTY REGISTRY CONTRACT TO SET OVERRIDE ADDRESS
+    // GET ROYALTY REGISTRY & ENGINE CONTRACTS
     const RoyaltyRegistryAddress = getRoyaltyAddress(network.name, 'registry');
     const RoyaltyEngineAddress = getRoyaltyAddress(network.name, 'engine');
     const RoyaltyRegistryContract = await ethers.getContractAt(
@@ -36,10 +36,11 @@ async function main() {
       RoyaltyEngineAddress
     );
 
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+
   //////////////////////////////////////////////////////////////////////////////
   // DEPLOYMENT BEGINS HERE
   //////////////////////////////////////////////////////////////////////////////
-
 
   // Deploy Randomizer contract.
   const randomizerFactory = new Randomizer__factory(deployer);
@@ -48,22 +49,16 @@ async function main() {
   await randomizer.deployed();
   console.log(`Randomizer deployed at ${randomizer.address}`);
 
-  
-  
-  ///////////////////////////////////////
-  // Art Blocks Flagship
 
-  /////// UNCOMMENT THIS FOR MAINNET - SET GenArt721Core CONTRACT TO CONST genArt721Core
-  // const genArt721Core = await ethers.getContractAt(
+  /////// UNCOMMENT THIS (FOR MAINNET DEPLOYMENT)
+  // const coreToken = await ethers.getContractAt(
   //   genArt721CoreV3RegistryABI,
   //   '0xa7d8d9ef8D8Ce8992Df33D8b8CF4Aebabd5bD270'
   // );
-  //attach() --> need this to interact with prod-deployed contract & update the registry
-  // 1. ABroyaltiesaddress...I need this. 2. core contract is deployed so use existing info & remove core deployment
 
 
-  /////// UNCOMMENT THIS FOR TESTNET DEPLOYMENT & TESTING
-  // DEPLOY NEW CORE & SET ADMIN
+  /////// COMMENT THIS OUT (FOR MAINNET DEPLOYMENT)  VV
+  // DEPLOY NEW CORE & CREATE PROJECT FOR TEST TOKEN MINTING
   const tokenName = "Token Placeholder";
   const tokenTicker = "TOKN";
   const artblocksRoyaltiesAddress = "0xdddD4e84E9B742236543Bc497F0b3fd2a47f34D8"
@@ -76,10 +71,10 @@ async function main() {
   console.log(`Core token deployed at ${coreToken.address}`);
 
 
-  //CREATE AND POPULATE NEW PROJECT - WITHOUT THIS, NO TOKEN PAYMENTS TO TEST AGAINST?
+  //CREATE AND POPULATE NEW PROJECT - WITHOUT THIS, NO TOKEN PAYMENTS TO TEST AGAINST
   await coreToken.connect(deployer).addProject("test_project", deployer.address, ethers.utils.parseEther("0.01"));
-  await coreToken.connect(deployer).updateProjectSecondaryMarketRoyaltyPercentage(0, 5, { gasLimit: 500000 });
-  await coreToken.connect(deployer).updateProjectAdditionalPayeeInfo(0, "0x24CdEE54439D3f25DE4cddE43e41B19FdAA90cE8", 20, { gasLimit: 500000 });
+  await coreToken.connect(deployer).updateProjectSecondaryMarketRoyaltyPercentage(0, 0, { gasLimit: 500000 });
+  await coreToken.connect(deployer).updateProjectAdditionalPayeeInfo(0, "0x24CdEE54439D3f25DE4cddE43e41B19FdAA90cE8", 0, { gasLimit: 500000 });
 
   const minterFilterFactory = await ethers.getContractFactory("MinterFilter");
   const minterFilter = await minterFilterFactory.deploy(coreToken.address);
@@ -104,8 +99,8 @@ async function main() {
   await minterFilter.connect(deployer).addApprovedMinter(minter.address, { gasLimit: 500000 });
   
   await minterFilter.connect(deployer).setMinterForProject(0, minter.address, { gasLimit: 500000 });
+  /////// COMMENT THIS OUT (FOR MAINNET DEPLOYMENT)  ^^
 
-  const sleep = ms => new Promise(r => setTimeout(r, ms));
 
   ///////////////////////////////////////
   // Royalty Override
@@ -133,20 +128,16 @@ async function main() {
     { gasLimit: 500000 }
   )
 
-
   const token = await minter.connect(deployer).purchase(0, { gasLimit: 500000 });
 
   console.log('Minted token: ', token);
 
   await sleep(20000);
 
-  //VERIFY THAT IT WORKED
-    //call RoyaltyRegistryEngine --> check for royalties result. should give me BPS and addresses
+  //CALL REGISTRY & VERIFY THE DEPLOYMENT WAS SUCCESSFUL
   const res = await RoyaltyEngineContract.connect(deployer).getRoyaltyView(coreToken.address, 0, ethers.utils.parseEther("1"), { gasLimit: 500000 });
 
-  console.log('Royalty payouts for a token minted for 1 ETH: ', res);
-
-  
+  console.log('Royalty payouts for a token minted for 1 ETH: ', res); 
 }
 
 

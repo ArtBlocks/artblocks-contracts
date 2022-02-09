@@ -34,6 +34,8 @@ async function main() {
     return;
   }
 
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+
   // GET ROYALTY REGISTRY CONTRACT TO SET OVERRIDE ADDRESS
   const RoyaltyRegistryAddress = getRoyaltyAddress(network.name, 'registry');
   const RoyaltyEngineAddress = getRoyaltyAddress(network.name, 'engine');
@@ -50,7 +52,6 @@ async function main() {
   // DEPLOYMENT BEGINS HERE
   //////////////////////////////////////////////////////////////////////////////
 
-
   // Deploy Randomizer contract.
   const randomizerFactory = new Randomizer__factory(deployer);
   const randomizer = await randomizerFactory.deploy();
@@ -59,17 +60,19 @@ async function main() {
   console.log(`Randomizer deployed at ${randomizer.address}`);
 
 
+  /////// UNCOMMENT THIS (FOR MAINNET DEPLOYMENT)
+  // const coreTokenPBAB = await ethers.getContractAt(
+  //   genArt721CoreV2_PBAB_ABI,
+  //   PBAB_client_core_contract_address
+  // );
 
 
-  ///////////////////////////////////////
-  //PBAB TESTING
-
+  /////// COMMENT THIS OUT (FOR MAINNET DEPLOYMENT)  VV
   const tokenNamePBAB = "Token Placeholder";
   const tokenTickerPBAB = "TOKN";
   const rendererProviderAddress = "0x1ea6EFF00AB9E00160214e641A24FCa30A83DF87"; // dummy AB royalties address
   const platformRoyaltyPaymentAddress = "0x4Ee9e3fc2Cb7bE2daF4e91f1b9b9F5DB3F225d53";
 
-  /////// UNCOMMENT THIS FOR TESTNET DEPLOYMENT & TESTING
   // Deploy Core contract.
   const genArt721CoreFactoryPBAB = new GenArt721CoreV2PBAB__factory(deployer);
   const coreTokenPBAB = await genArt721CoreFactoryPBAB.deploy(
@@ -111,8 +114,8 @@ async function main() {
   await coreTokenPBAB.connect(deployer).updateProjectMaxInvocations(0, 15, { gasLimit: 500000 });
 
   await coreTokenPBAB.connect(deployer).toggleProjectIsPaused(0, { gasLimit: 500000 });
+  /////// COMMENT THIS OUT (FOR MAINNET DEPLOYMENT)  ^^
 
-  const sleep = ms => new Promise(r => setTimeout(r, ms));
 
   
   ///////////////////////////////////////
@@ -155,8 +158,7 @@ async function main() {
 
     await sleep(20000);
 
-      //VERIFY THAT IT WORKED
-    //call RoyaltyRegistryEngine --> check for royalties result. should give me BPS and addresses
+  //CALL REGISTRY & VERIFY THE DEPLOYMENT WAS SUCCESSFUL
   const res = await RoyaltyEngineContract.connect(deployer).getRoyaltyView(coreTokenPBAB.address, 0, ethers.utils.parseEther("1"), { gasLimit: 500000 });
 
   console.log(res);
