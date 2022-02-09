@@ -379,41 +379,6 @@ contract GenArt721FilteredMinterETHExponentialAuction is IFilteredMinter {
     }
 
     /**
-     * @notice Returns if auction for project `_projectId` is live (i.e.
-     * current timestamp is greater than starting timestamp and the derived
-     * "calculated price" has not decayed beyond the base price).
-     * @param _projectId Project ID to be checked.
-     * @return true if auction is live, false otherwise
-     */
-    function isAuctionLive(uint256 _projectId) public view returns (bool) {
-        AuctionParameters memory auctionParams = projectAuctionParameters[
-            _projectId
-        ];
-        return (block.timestamp > auctionParams.timestampStart &&
-            getPrice(_projectId) > auctionParams.basePrice);
-    }
-
-    /**
-     * @notice Returns how often and by how much the price decays for project
-     * `_projectId`.
-     * @param _projectId Project ID to be checked.
-     * @return decayDenominator the amount the price decays every decay interval
-     * @return decayIntervalMinutes the frequency with which the price decays
-     */
-    function auctionDecayDetails(uint256 _projectId)
-        external
-        view
-        returns (uint256 decayDenominator, uint256 decayIntervalMinutes)
-    {
-        AuctionParameters memory auctionParams = projectAuctionParameters[
-            _projectId
-        ];
-        require(isAuctionLive(_projectId), "auction is not currently live");
-        decayDenominator = auctionParams.decayDenominator;
-        decayIntervalMinutes = auctionParams.decayIntervalMinutes;
-    }
-
-    /**
      * @notice Gets if price of token is configured, price of minting a
      * token on project `_projectId`, and currency symbol and address to be
      * used as payment. Supersedes any core contract price information.
