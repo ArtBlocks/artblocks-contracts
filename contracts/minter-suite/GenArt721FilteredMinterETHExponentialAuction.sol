@@ -17,10 +17,15 @@ contract GenArt721FilteredMinterETHExponentialAuction is IFilteredMinter {
     event SetAuctionDetails(
         uint256 indexed projectId,
         uint256 _auctionTimestampStart,
-        uint256 _decayDenominator,
-        uint256 _decayIntervalMinutes,
+        uint256 _priceDecayHalfLifeSeconds,
         uint256 _startPrice,
         uint256 _basePrice
+    );
+
+    /// Maximum and minimum allowed price decay half lifes updated.
+    event AuctionHalfLifeRangeSecondsUpdated(
+        uint256 _minimumPriceDecayHalfLifeSeconds,
+        uint256 _maximumPriceDecayHalfLifeSeconds
     );
 
     /// Art Blocks core contract this minter may interact with.
@@ -47,25 +52,18 @@ contract GenArt721FilteredMinterETHExponentialAuction is IFilteredMinter {
     /// projectId => project's maximum number of invocations
     mapping(uint256 => uint256) public projectMaxInvocations;
 
-    /// Minimum decay denominator: price must decay by _at least_ this much per
-    /// minute, e.g. must decay by at least 1% per minute.
-    uint256 public minimumDecayDenominator = 100;
-    /// Maximum decay denominator: price may decay by _no more than_ this much
-    /// per minute, e.g. may decay by no more than 10% per minute.
-    uint256 public maximumDecayDenominator = 10;
-    /// Minimum decay interval: price must decay at least this often (at least
-    /// every N minutes).
-    uint256 public minimumDecayIntervalMinutes = 1;
-    /// Maximum decay interval: price may decay no more than this often (at most
-    /// every N minutes).
-    uint256 public maximumDecayIntervalMinutes = 10;
+    /// Minimum price decay half life: price must decay with a half life of at
+    /// least this amount (must cut in half at least every N seconds).
+    uint256 public minimumPriceDecayHalfLifeSeconds = 300; // 5 minutes
+    /// Maximum price decay half life: price may decay with a half life of no
+    /// more than this amount (may cut in half at no more than every N seconds).
+    uint256 public maximumPriceDecayHalfLifeSeconds = 1200; // 20 minutes
 
     /// projectId => auction parameters
     mapping(uint256 => AuctionParameters) public projectAuctionParameters;
     struct AuctionParameters {
         uint256 timestampStart;
-        uint256 decayDenominator;
-        uint256 decayIntervalMinutes;
+        uint256 priceDecayHalfLifeSeconds;
         uint256 startPrice;
         uint256 basePrice;
     }
@@ -163,21 +161,45 @@ contract GenArt721FilteredMinterETHExponentialAuction is IFilteredMinter {
         );
     }
 
+    /**
+     * @notice Sets the minimum and maximum values that are settable for
+     * `_priceDecayHalfLifeSeconds` across all projects.
+     * @param _minimumPriceDecayHalfLifeSeconds Minimum price decay half life
+     * (in seconds).
+     * @param _maximumPriceDecayHalfLifeSeconds Maximum price decay half life
+     * (in seconds).
+     */
+    function setAllowablePriceDecayHalfLifeRangeSeconds(
+        uint256 _minimumPriceDecayHalfLifeSeconds,
+        uint256 _maximumPriceDecayHalfLifeSeconds
+    ) external onlyCoreWhitelisted {
+        require(
+            _maximumPriceDecayHalfLifeSeconds >
+                _minimumPriceDecayHalfLifeSeconds,
+            "Maximum half life must be greater than minimum"
+        );
+        minimumPriceDecayHalfLifeSeconds = _minimumPriceDecayHalfLifeSeconds;
+        maximumPriceDecayHalfLifeSeconds = _maximumPriceDecayHalfLifeSeconds;
+        emit AuctionHalfLifeRangeSecondsUpdated(
+            _minimumPriceDecayHalfLifeSeconds,
+            _maximumPriceDecayHalfLifeSeconds
+        );
+    }
+
     ////// Auction Functions
     /**
      * @notice Sets auction details for project `_projectId`.
      * @param _projectId Project ID to set auction details for.
      * @param _auctionTimestampStart Timestamp at which to start the auction.
-     * @param _decayDenominator The amount to decay the price each decrement.
-     * @param _decayIntervalMinutes The frequency with which to decay the price.
+     * @param _priceDecayHalfLifeSeconds The half life with which to decay the
+     *  price (in seconds).
      * @param _startPrice Price at which to start the auction, in Wei.
      * @param _basePrice Resting price of the auction, in Wei.
      */
     function setAuctionDetails(
         uint256 _projectId,
         uint256 _auctionTimestampStart,
-        uint256 _decayDenominator,
-        uint256 _decayIntervalMinutes,
+        uint256 _priceDecayHalfLifeSeconds,
         uint256 _startPrice,
         uint256 _basePrice
     ) external onlyCoreWhitelistedOrArtist(_projectId) {
@@ -190,27 +212,21 @@ contract GenArt721FilteredMinterETHExponentialAuction is IFilteredMinter {
             "Auction start price must be greater than auction end price"
         );
         require(
-            (_decayDenominator <= minimumDecayDenominator) &&
-                (_decayDenominator >= maximumDecayDenominator),
-            "Price decay denominator must fall between minimum and maximum allowable values"
-        );
-        require(
-            (_decayIntervalMinutes >= minimumDecayIntervalMinutes) &&
-                (_decayIntervalMinutes <= maximumDecayIntervalMinutes),
-            "Price decay interval must fall between minimum and maximum allowable values"
+            (_priceDecayHalfLifeSeconds >= minimumPriceDecayHalfLifeSeconds) &&
+                (_priceDecayHalfLifeSeconds <=
+                    maximumPriceDecayHalfLifeSeconds),
+            "Price decay half life must fall between min and max allowable values"
         );
         projectAuctionParameters[_projectId] = AuctionParameters(
             _auctionTimestampStart,
-            _decayDenominator,
-            _decayIntervalMinutes,
+            _priceDecayHalfLifeSeconds,
             _startPrice,
             _basePrice
         );
         emit SetAuctionDetails(
             _projectId,
             _auctionTimestampStart,
-            _decayDenominator,
-            _decayIntervalMinutes,
+            _priceDecayHalfLifeSeconds,
             _startPrice,
             _basePrice
         );
@@ -356,26 +372,25 @@ contract GenArt721FilteredMinterETHExponentialAuction is IFilteredMinter {
             // The auction has not yet started.
             return auctionParams.startPrice;
         }
-        // If the auction has began, but not a single decay interval has passed,
-        // we will end up skipping the for-loop below, and ultimately returning
-        // the `startPrice`, so an explicit check for this case is not needed.
-        uint256 elapsedTimeMinutes = (block.timestamp -
-            auctionParams.timestampStart) / 60;
-        uint256 currentPrice = auctionParams.startPrice;
-        uint256 elapsedDecayIntervals = elapsedTimeMinutes /
-            auctionParams.decayIntervalMinutes;
-        uint256 i = 0;
-        for (i = 0; i < elapsedDecayIntervals; i++) {
-            // Perform iterative exponential decay.
-            currentPrice =
-                currentPrice -
-                (currentPrice / auctionParams.decayDenominator);
-        }
-        if (currentPrice < auctionParams.basePrice) {
-            // Do not allow price to go lower than `basePrice`.
+        uint256 elapsedHalfLives = auctionParams.timestampStart %
+            auctionParams.priceDecayHalfLifeSeconds;
+        uint256 decayedPrice = auctionParams.startPrice;
+        decayedPrice >>=
+            auctionParams.timestampStart /
+            auctionParams.priceDecayHalfLifeSeconds;
+        decayedPrice -=
+            (decayedPrice * elapsedHalfLives) /
+            auctionParams.priceDecayHalfLifeSeconds /
+            2;
+        if (decayedPrice < auctionParams.basePrice) {
+            // Price may not decay below stay `basePrice`.
             return auctionParams.basePrice;
         }
-        return currentPrice;
+        if (decayedPrice > auctionParams.startPrice) {
+            // Guard against `startPrice` to protect from underflow.
+            return auctionParams.basePrice;
+        }
+        return decayedPrice;
     }
 
     /**
