@@ -51,7 +51,7 @@ describe("GenArt721Minter", async function () {
     await this.token.connect(snowfro).toggleProjectIsActive(projectZero);
     await this.token.connect(snowfro).toggleProjectIsActive(projectOne);
 
-    await this.token.connect(snowfro).addMintWhitelisted(this.minter.address);
+    await this.token.connect(snowfro).updateMinterContract(this.minter.address);
 
     await this.token
       .connect(artist)
