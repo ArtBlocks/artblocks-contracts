@@ -26,6 +26,11 @@ interface IMinterFilter {
         address indexed _minterAddress
     );
 
+    /**
+     * @notice Any active minter removed for project `_projectId`.
+     */
+    event ProjectMinterRemoved(uint256 indexed _projectId);
+
     function setMinterForProject(uint256, address) external;
 
     function removeMinterForProject(uint256) external;

@@ -136,45 +136,45 @@ describe("MinterFilter", async function () {
         this.minter2.connect(this.accounts.owner).purchase(projectOne, {
           value: pricePerTokenInWei,
         }),
-        "Not sent from correct minter for project"
+        "Only assigned minter for project"
       );
       await expectRevert(
         this.minter1.connect(this.accounts.owner).purchase(projectTwo, {
           value: pricePerTokenInWei,
         }),
-        "Not sent from correct minter for project"
+        "Only assigned minter for project"
       );
 
       await expectRevert(
         this.minter1.connect(this.accounts.owner).purchase(projectThree, {
           value: pricePerTokenInWei,
         }),
-        "Not sent from correct minter for project"
+        "Only projects with an assigned minter"
       );
       await expectRevert(
         this.minter2.connect(this.accounts.owner).purchase(projectThree, {
           value: pricePerTokenInWei,
         }),
-        "Not sent from correct minter for project"
+        "Only projects with an assigned minter"
       );
 
       await expectRevert(
         this.minter3.connect(this.accounts.owner).purchase(projectOne, {
           value: pricePerTokenInWei,
         }),
-        "Not sent from correct minter for project"
+        "Only assigned minter for project"
       );
       await expectRevert(
         this.minter3.connect(this.accounts.owner).purchase(projectTwo, {
           value: pricePerTokenInWei,
         }),
-        "Not sent from correct minter for project"
+        "Only assigned minter for project"
       );
       await expectRevert(
         this.minter3.connect(this.accounts.owner).purchase(projectThree, {
           value: pricePerTokenInWei,
         }),
-        "Not sent from correct minter for project"
+        "Only projects with an assigned minter"
       );
     });
   });

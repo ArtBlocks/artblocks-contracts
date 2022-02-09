@@ -5,6 +5,8 @@ import "../interfaces/0.8.x/IMinterFilter.sol";
 import "../interfaces/0.8.x/IFilteredMinter.sol";
 import "../interfaces/0.8.x/IGenArt721CoreContract.sol";
 
+import "../libs/0.8.x/EnumerableMap.sol";
+
 pragma solidity 0.8.9;
 
 /**
@@ -13,11 +15,15 @@ pragma solidity 0.8.9;
  * @author Art Blocks Inc.
  */
 contract MinterFilter is IMinterFilter {
+    // add Enumerable Map methods
+    using EnumerableMap for EnumerableMap.UintToAddressMap;
+
     /// Art Blocks core contract this minter may interact with.
     IGenArt721CoreContract public artblocksContract;
 
     /// projectId => minter address
-    mapping(uint256 => address) public minterForProject;
+    EnumerableMap.UintToAddressMap private minterForProject;
+
     /// minter address => is an approved minter?
     mapping(address => bool) public isApprovedMinter;
 
@@ -103,20 +109,27 @@ contract MinterFilter is IMinterFilter {
         usingApprovedMinter(_minterAddress)
         projectExists(_projectId)
     {
-        minterForProject[_projectId] = _minterAddress;
+        minterForProject.set(_projectId, _minterAddress);
         emit ProjectMinterRegistered(_projectId, _minterAddress);
     }
 
     /**
      * @notice Updates project `_projectId` to have no configured minter.
      * @param _projectId Project ID to remove minter.
+     * @dev requires project to have assigned minter (de-clutter event noise)
      */
     function removeMinterForProject(uint256 _projectId)
         external
         onlyCoreWhitelistedOrArtist(_projectId)
     {
-        minterForProject[_projectId] = address(0);
-        emit ProjectMinterRegistered(_projectId, address(0));
+        // only projects with assigned minters
+        require(
+            projectHasMinter(_projectId),
+            "Only projects with an assigned minter"
+        );
+        // remove minter for project and emit
+        minterForProject.remove(_projectId);
+        emit ProjectMinterRemoved(_projectId);
     }
 
     /**
@@ -132,11 +145,73 @@ contract MinterFilter is IMinterFilter {
         uint256 _projectId,
         address sender
     ) external returns (uint256 _tokenId) {
+        // validate minter
         require(
-            msg.sender == minterForProject[_projectId],
-            "Not sent from correct minter for project"
+            msg.sender == getMinterForProject(_projectId),
+            "Only assigned minter for project"
         );
+        // mint
         uint256 tokenId = artblocksContract.mint(_to, _projectId, sender);
         return tokenId;
+    }
+
+    /**
+     * @notice Gets the assigned minter for project `_projectId`.
+     * @param _projectId Project ID to query.
+     * @return address Minter address assigned to project `_projectId`
+     * @dev requires project to have an assigned minter
+     */
+    function getMinterForProject(uint256 _projectId)
+        public
+        view
+        returns (address)
+    {
+        (bool _hasMinter, address _currentMinter) = minterForProject.tryGet(
+            _projectId
+        );
+        require(_hasMinter, "Only projects with an assigned minter");
+        return _currentMinter;
+    }
+
+    /**
+     * @notice Queries if project `_projectId` has an assigned minter.
+     * @param _projectId Project ID to query.
+     * @return bool true if project has an assigned minter, else false
+     * @dev requires project to have an assigned minter
+     */
+    function projectHasMinter(uint256 _projectId) public view returns (bool) {
+        (bool _hasMinter, ) = minterForProject.tryGet(_projectId);
+        return _hasMinter;
+    }
+
+    /**
+     * @notice Gets quantity of projects that have assigned minters.
+     * @return uint256 quantity of projects that have assigned minters
+     */
+    function getNumProjectsWithMinters() external view returns (uint256) {
+        return minterForProject.length();
+    }
+
+    /**
+     * @notice Get project ID and minter address at index `_index` of
+     * enumerable map.
+     * @param _index enumerable map index to query.
+     * @return projectId project ID at index `_index`
+     * @return minterAddress minter address for project at index `_index`
+     * @return minterType minter type of minter at minterAddress
+     * @dev index must be < quantity of projects that have assigned minters
+     */
+    function getProjectAndMinterInfoAt(uint256 _index)
+        external
+        view
+        returns (
+            uint256 projectId,
+            address minterAddress,
+            string memory minterType
+        )
+    {
+        (projectId, minterAddress) = minterForProject.at(_index);
+        minterType = IFilteredMinter(minterAddress).minterType();
+        return (projectId, minterAddress, minterType);
     }
 }

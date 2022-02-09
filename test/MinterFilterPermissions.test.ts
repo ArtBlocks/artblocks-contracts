@@ -99,20 +99,55 @@ describe("MinterPermissionsEvents", async function () {
 
   describe("`removeMinterForProject`", async function () {
     const permissionErrorMessage = "Only Core whitelisted or Artist";
+    const minterNotAssignedErrorMessage =
+      "Only projects with an assigned minter";
+
+    it("is not able to remove unassigned minters' EOA", async function () {
+      await expectRevert(
+        this.minterFilter
+          .connect(this.accounts.deployer)
+          .removeMinterForProject(0),
+        minterNotAssignedErrorMessage
+      );
+    });
 
     it("is callable by 'whitelisted' EOA", async function () {
+      // approve and assign minter
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .addApprovedMinter(this.minter.address);
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .setMinterForProject(0, this.minter.address);
+      // whitelisted calls
       await this.minterFilter
         .connect(this.accounts.deployer)
         .removeMinterForProject(0);
     });
 
     it("is callable by 'artist' EOA", async function () {
+      // approve and assign minter
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .addApprovedMinter(this.minter.address);
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .setMinterForProject(0, this.minter.address);
+      // artist calls
       await this.minterFilter
         .connect(this.accounts.artist)
         .removeMinterForProject(0);
     });
 
     it("is *not* callable by 'misc' EOA", async function () {
+      // approve and assign minter
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .addApprovedMinter(this.minter.address);
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .setMinterForProject(0, this.minter.address);
+      // misc. EOA calls
       await expectRevert(
         this.minterFilter.connect(this.accounts.misc).removeMinterForProject(0),
         permissionErrorMessage
@@ -178,10 +213,58 @@ describe("MinterPermissionsEvents", async function () {
   });
 
   describe("`mint`", async function () {
-    const permissionErrorMessage = "Not sent from correct minter for project";
+    const permissionErrorMessage = "Only assigned minter for project";
+    const unassignedErrorMessage = "Only projects with an assigned minter";
     const pricePerTokenInWei = ethers.utils.parseEther("1");
 
+    it("is *not* callable when minter not configured", async function () {
+      // deployer call project with unassigned minter
+      await expectRevert(
+        this.minterFilter
+          .connect(this.accounts.artist)
+          .mint(
+            this.accounts.deployer.address,
+            0,
+            this.accounts.artist.address
+          ),
+        unassignedErrorMessage
+      );
+    });
+
+    it("is *not* callable *after* is minter removed", async function () {
+      // approve and assign minter
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .addApprovedMinter(this.minter.address);
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .setMinterForProject(0, this.minter.address);
+      // remove minter from project
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .removeMinterForProject(0);
+      // deployer call project with unassigned minter
+      await expectRevert(
+        this.minterFilter
+          .connect(this.accounts.artist)
+          .mint(
+            this.accounts.deployer.address,
+            0,
+            this.accounts.artist.address
+          ),
+        unassignedErrorMessage
+      );
+    });
+
     it("is *not* callable by 'whitelisted' EOA", async function () {
+      // approve and assign minter
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .addApprovedMinter(this.minter.address);
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .setMinterForProject(0, this.minter.address);
+      // call from deployer
       await expectRevert(
         this.minterFilter
           .connect(this.accounts.deployer)
@@ -195,6 +278,14 @@ describe("MinterPermissionsEvents", async function () {
     });
 
     it("is *not* callable by 'artist' EOA", async function () {
+      // approve and assign minter
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .addApprovedMinter(this.minter.address);
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .setMinterForProject(0, this.minter.address);
+      // call from artist
       await expectRevert(
         this.minterFilter
           .connect(this.accounts.artist)
@@ -204,6 +295,14 @@ describe("MinterPermissionsEvents", async function () {
     });
 
     it("is *not* callable by 'minter' EOA", async function () {
+      // approve and assign minter
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .addApprovedMinter(this.minter.address);
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .setMinterForProject(0, this.minter.address);
+      // call from misc
       await expectRevert(
         this.minterFilter
           .connect(this.accounts.misc)
