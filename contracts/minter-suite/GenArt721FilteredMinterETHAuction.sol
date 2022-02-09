@@ -362,38 +362,6 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
     }
 
     /**
-     * @notice Returns if auction for project `_projectId` is live (i.e.
-     * current timestamp is between start and end timestamp).
-     * @param _projectId Project ID to be checked.
-     * @return true if auction is live, false otherwise
-     */
-    function isAuctionLive(uint256 _projectId) public view returns (bool) {
-        AuctionParameters memory auctionParams = projectAuctionParameters[
-            _projectId
-        ];
-        return (block.timestamp < auctionParams.timestampEnd &&
-            block.timestamp > auctionParams.timestampStart);
-    }
-
-    /**
-     * @notice Returns time remaining until end of auction for project
-     * `_projectId`.
-     * @param _projectId Project ID to be checked.
-     * @return seconds remaining until end of auction
-     */
-    function auctionTimeRemaining(uint256 _projectId)
-        external
-        view
-        returns (uint256)
-    {
-        AuctionParameters memory auctionParams = projectAuctionParameters[
-            _projectId
-        ];
-        require(isAuctionLive(_projectId), "auction is not currently live");
-        return auctionParams.timestampEnd - block.timestamp;
-    }
-
-    /**
      * @notice Gets if price of token is configured, price of minting a
      * token on project `_projectId`, and currency symbol and address to be
      * used as payment. Supersedes any core contract price information.
