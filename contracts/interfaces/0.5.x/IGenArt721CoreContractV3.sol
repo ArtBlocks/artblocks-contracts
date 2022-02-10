@@ -3,7 +3,7 @@
 
 pragma solidity ^0.5.0;
 
-interface IGenArt721CoreContract {
+interface IGenArt721CoreContractV3 {
     event Mint(
         address indexed _to,
         uint256 indexed _tokenId,
