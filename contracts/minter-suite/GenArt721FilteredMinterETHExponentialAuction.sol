@@ -98,6 +98,10 @@ contract GenArt721FilteredMinterETHExponentialAuction is IFilteredMinter {
     constructor(address _genArt721Address, address _minterFilter) {
         genArtCoreContract = IGenArt721CoreContractV3(_genArt721Address);
         minterFilter = IMinterFilter(_minterFilter);
+        require(
+            minterFilter.genArtCoreContract() == genArtCoreContract,
+            "Illegal contract pairing"
+        );
     }
 
     /**
