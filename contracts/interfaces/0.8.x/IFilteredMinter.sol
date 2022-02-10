@@ -25,7 +25,7 @@ interface IFilteredMinter {
 
     /// togglePurchaseToDisabled updated
     event PurchaseToDisabledUpdated(
-        uint256 _projectId,
+        uint256 indexed _projectId,
         bool _purchaseToDisabled
     );
 

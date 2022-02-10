@@ -189,12 +189,13 @@ contract MinterFilter is IMinterFilter {
     }
 
     /**
-     * @notice Updates project `_projectId` to have no configured minter.
+     * @notice Updates project `_projectId` to have no configured minter
+     * (reverts tx if project does not have an assigned minter).
      * @param _projectId Project ID to remove minter.
-     * @dev requires project to have an assigned minter
      */
     function _removeMinterForProject(uint256 _projectId) private {
         // remove minter for project and emit
+        // `minterForProject.get()` reverts tx if no minter set for project
         numProjectsUsingMinter[minterForProject.get(_projectId)]--;
         minterForProject.remove(_projectId);
         emit ProjectMinterRemoved(_projectId);
