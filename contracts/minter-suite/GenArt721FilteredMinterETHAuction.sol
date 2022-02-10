@@ -240,6 +240,14 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
         payable
         returns (uint256 tokenId)
     {
+        AuctionParameters memory auctionParams = projectAuctionParameters[
+            _projectId
+        ];
+        require(
+            block.timestamp > auctionParams.timestampStart,
+            "Auction not yet started"
+        );
+
         require(
             !projectMaxHasBeenInvoked[_projectId],
             "Maximum number of invocations reached"
