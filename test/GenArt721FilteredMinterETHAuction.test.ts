@@ -98,6 +98,31 @@ describe("GenArt721MinterEthAuction", async function () {
       );
   });
 
+  describe("constructor", async function () {
+    it("reverts when given incorrect minter filter and core addresses", async function () {
+      const artblocksFactory = await ethers.getContractFactory(
+        "GenArt721CoreV3"
+      );
+      const token2 = await artblocksFactory
+        .connect(this.accounts.snowfro)
+        .deploy(name, symbol, this.randomizer.address);
+
+      const minterFilterFactory = await ethers.getContractFactory(
+        "MinterFilter"
+      );
+      const minterFilter = await minterFilterFactory.deploy(token2.address);
+
+      const minterFactory = await ethers.getContractFactory(
+        "GenArt721FilteredMinter"
+      );
+      // fails when combine new minterFilter with the old token in constructor
+      await expectRevert(
+        minterFactory.deploy(this.token.address, minterFilter.address),
+        "Illegal contract pairing"
+      );
+    });
+  });
+
   describe("purchase", async function () {
     it("calculates the price correctly", async function () {
       await ethers.provider.send("evm_setNextBlockTimestamp", [this.startTime]);

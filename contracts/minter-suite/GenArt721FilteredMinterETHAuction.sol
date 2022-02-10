@@ -91,6 +91,10 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
     constructor(address _genArt721Address, address _minterFilter) {
         artblocksContract = IGenArt721CoreContract(_genArt721Address);
         minterFilter = IMinterFilter(_minterFilter);
+        require(
+            minterFilter.artblocksContract() == artblocksContract,
+            "Illegal contract pairing"
+        );
     }
 
     /**

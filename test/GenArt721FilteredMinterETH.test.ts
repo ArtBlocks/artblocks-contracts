@@ -120,6 +120,31 @@ describe("MinterFilter", async function () {
       .updatePricePerTokenInWei(projectTwo, pricePerTokenInWei);
   });
 
+  describe("constructor", async function () {
+    it("reverts when given incorrect minter filter and core addresses", async function () {
+      const artblocksFactory = await ethers.getContractFactory(
+        "GenArt721CoreV3"
+      );
+      const token2 = await artblocksFactory
+        .connect(this.accounts.snowfro)
+        .deploy(name, symbol, this.randomizer.address);
+
+      const minterFilterFactory = await ethers.getContractFactory(
+        "MinterFilter"
+      );
+      const minterFilter = await minterFilterFactory.deploy(token2.address);
+
+      const minterFactory = await ethers.getContractFactory(
+        "GenArt721FilteredMinter"
+      );
+      // fails when combine new minterFilter with the old token in constructor
+      await expectRevert(
+        minterFactory.deploy(this.token.address, minterFilter.address),
+        "Illegal contract pairing"
+      );
+    });
+  });
+
   describe("updatePricePerTokenInWei", async function () {
     it("only allows artist to update price", async function () {
       const onlyArtistErrorMessage = "Only Artist";
