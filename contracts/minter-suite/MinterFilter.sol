@@ -3,7 +3,7 @@
 
 import "../interfaces/0.8.x/IMinterFilter.sol";
 import "../interfaces/0.8.x/IFilteredMinter.sol";
-import "../interfaces/0.8.x/IGenArt721CoreContract.sol";
+import "../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
 
 import "../libs/0.8.x/EnumerableMap.sol";
 
@@ -26,7 +26,7 @@ contract MinterFilter is IMinterFilter {
     using EnumerableMap for EnumerableMap.UintToAddressMap;
 
     /// Art Blocks core contract this minter may interact with.
-    IGenArt721CoreContract public genArtCoreContract;
+    IGenArt721CoreContractV3 public genArtCoreContract;
 
     /// projectId => minter address
     EnumerableMap.UintToAddressMap private minterForProject;
@@ -85,7 +85,7 @@ contract MinterFilter is IMinterFilter {
      * this contract will be a minter for. Can never be updated.
      */
     constructor(address _genArt721Address) {
-        genArtCoreContract = IGenArt721CoreContract(_genArt721Address);
+        genArtCoreContract = IGenArt721CoreContractV3(_genArt721Address);
     }
 
     /**

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../interfaces/0.8.x/IGenArt721CoreContract.sol";
+import "../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
 import "../interfaces/0.8.x/IMinterFilter.sol";
 import "../interfaces/0.8.x/IFilteredMinter.sol";
 
@@ -13,7 +13,7 @@ pragma solidity 0.8.9;
  */
 contract GenArt721FilteredMinterETH is IFilteredMinter {
     /// Art Blocks core contract this minter may interact with.
-    IGenArt721CoreContract public genArtCoreContract;
+    IGenArt721CoreContractV3 public genArtCoreContract;
     /// Minter filter this minter may interact with.
     IMinterFilter public minterFilter;
 
@@ -66,7 +66,7 @@ contract GenArt721FilteredMinterETH is IFilteredMinter {
      * filtered minter.
      */
     constructor(address _genArt721Address, address _minterFilter) {
-        genArtCoreContract = IGenArt721CoreContract(_genArt721Address);
+        genArtCoreContract = IGenArt721CoreContractV3(_genArt721Address);
         minterFilter = IMinterFilter(_minterFilter);
         require(
             minterFilter.genArtCoreContract() == genArtCoreContract,
