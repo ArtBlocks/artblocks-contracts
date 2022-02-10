@@ -44,7 +44,6 @@ interface IGenArt721CoreContractV3 {
 
     // @dev new function in V3 (deprecated projectTokenInfo)
     function projectInfo(uint256 _projectId)
-
         external
         view
         returns (
