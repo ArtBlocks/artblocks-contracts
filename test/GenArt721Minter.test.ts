@@ -36,22 +36,28 @@ describe("GenArt721Minter", async function () {
     this.token = await artblocksFactory
       .connect(snowfro)
       .deploy(name, symbol, this.randomizer.address);
+    // deploy and configure minter filter and minter
+    const minterFilterFactory = await ethers.getContractFactory("MinterFilter");
+    this.minterFilter = await minterFilterFactory.deploy(this.token.address);
     const minterFactory = await ethers.getContractFactory(
-      "GenArt721LegacyMinter"
+      "GenArt721FilteredMinterETH"
     );
-    this.minter = await minterFactory.deploy(this.token.address);
-
+    this.minter = await minterFactory.deploy(
+      this.token.address,
+      this.minterFilter.address
+    );
+    await this.minterFilter
+      .connect(snowfro)
+      .addApprovedMinter(this.minter.address);
     await this.token
       .connect(snowfro)
-      .addProject("project1", artist.address, pricePerTokenInWei);
-    await this.token
-      .connect(snowfro)
-      .addProject("project2", artist.address, pricePerTokenInWei);
+      .updateMinterContract(this.minterFilter.address);
+    // add projects
+    await this.token.connect(snowfro).addProject("project1", artist.address);
+    await this.token.connect(snowfro).addProject("project2", artist.address);
 
     await this.token.connect(snowfro).toggleProjectIsActive(projectZero);
     await this.token.connect(snowfro).toggleProjectIsActive(projectOne);
-
-    await this.token.connect(snowfro).updateMinterContract(this.minter.address);
 
     await this.token
       .connect(artist)
@@ -62,6 +68,20 @@ describe("GenArt721Minter", async function () {
 
     this.token.connect(this.accounts.artist).toggleProjectIsPaused(projectZero);
     this.token.connect(this.accounts.artist).toggleProjectIsPaused(projectOne);
+
+    // set project minters and prices
+    await this.minter
+      .connect(artist)
+      .updatePricePerTokenInWei(projectZero, pricePerTokenInWei);
+    await this.minter
+      .connect(artist)
+      .updatePricePerTokenInWei(projectOne, pricePerTokenInWei);
+    await this.minterFilter
+      .connect(artist)
+      .setMinterForProject(projectZero, this.minter.address);
+    await this.minterFilter
+      .connect(artist)
+      .setMinterForProject(projectOne, this.minter.address);
   });
 
   describe("purchase", async function () {

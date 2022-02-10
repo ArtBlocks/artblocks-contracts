@@ -17,8 +17,10 @@ describe("GenArt721FilteredMinter", async function () {
   const secondTokenId = new BN("3000001");
 
   const pricePerTokenInWei = ethers.utils.parseEther("1");
+  const higherPricePerTokenInWei = ethers.utils.parseEther("1.1");
   const projectZero = 0;
   const projectOne = 1;
+  const projectTwo = 2;
 
   beforeEach(async function () {
     const [owner, newOwner, artist, additional, snowfro] =
@@ -32,12 +34,15 @@ describe("GenArt721FilteredMinter", async function () {
     };
     const randomizerFactory = await ethers.getContractFactory("Randomizer");
     this.randomizer = await randomizerFactory.deploy();
+
     const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV3");
     this.token = await artblocksFactory
       .connect(snowfro)
       .deploy(name, symbol, this.randomizer.address);
+
     const minterFilterFactory = await ethers.getContractFactory("MinterFilter");
     this.minterFilter = await minterFilterFactory.deploy(this.token.address);
+
     const minterFactory = await ethers.getContractFactory(
       "GenArt721FilteredMinter"
     );
@@ -45,17 +50,20 @@ describe("GenArt721FilteredMinter", async function () {
       this.token.address,
       this.minterFilter.address
     );
+    this.minter3 = await minterFactory.deploy(
+      this.token.address,
+      this.minterFilter.address
+    );
 
-    await this.token
-      .connect(snowfro)
-      .addProject("project1", artist.address, pricePerTokenInWei);
+    await this.token.connect(snowfro).addProject("project0", artist.address);
 
-    await this.token
-      .connect(snowfro)
-      .addProject("project2", artist.address, pricePerTokenInWei);
+    await this.token.connect(snowfro).addProject("project1", artist.address);
+
+    await this.token.connect(snowfro).addProject("project2", artist.address);
 
     await this.token.connect(snowfro).toggleProjectIsActive(projectZero);
     await this.token.connect(snowfro).toggleProjectIsActive(projectOne);
+    await this.token.connect(snowfro).toggleProjectIsActive(projectTwo);
 
     await this.token
       .connect(snowfro)
@@ -67,9 +75,13 @@ describe("GenArt721FilteredMinter", async function () {
     await this.token
       .connect(artist)
       .updateProjectMaxInvocations(projectOne, 15);
+    await this.token
+      .connect(artist)
+      .updateProjectMaxInvocations(projectTwo, 15);
 
     this.token.connect(this.accounts.artist).toggleProjectIsPaused(projectZero);
     this.token.connect(this.accounts.artist).toggleProjectIsPaused(projectOne);
+    this.token.connect(this.accounts.artist).toggleProjectIsPaused(projectTwo);
 
     await this.minterFilter
       .connect(this.accounts.snowfro)
@@ -80,9 +92,220 @@ describe("GenArt721FilteredMinter", async function () {
     await this.minterFilter
       .connect(this.accounts.snowfro)
       .setMinterForProject(projectOne, this.minter.address);
+    await this.minterFilter
+      .connect(this.accounts.snowfro)
+      .setMinterForProject(projectTwo, this.minter.address);
+
+    // set token price for projects zero and one on minter
+    await this.minter
+      .connect(this.accounts.artist)
+      .updatePricePerTokenInWei(projectZero, pricePerTokenInWei);
+    await this.minter
+      .connect(this.accounts.artist)
+      .updatePricePerTokenInWei(projectOne, pricePerTokenInWei);
+
+    // mock ERC20 token
+    const ERC20Factory = await ethers.getContractFactory("MockToken");
+    this.ERC20Mock = await ERC20Factory.deploy(ethers.utils.parseEther("100"));
+  });
+
+  describe("updatePricePerTokenInWei", async function () {
+    it("only allows artist to update price", async function () {
+      const onlyArtistErrorMessage = "Only Artist";
+      // doesn't allow owner
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.owner)
+          .updatePricePerTokenInWei(projectZero, higherPricePerTokenInWei),
+        onlyArtistErrorMessage
+      );
+      // doesn't allow snowfro
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.snowfro)
+          .updatePricePerTokenInWei(projectZero, higherPricePerTokenInWei),
+        onlyArtistErrorMessage
+      );
+      // doesn't allow additional
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.additional)
+          .updatePricePerTokenInWei(projectZero, higherPricePerTokenInWei),
+        onlyArtistErrorMessage
+      );
+      // does allow artist
+      await this.minter
+        .connect(this.accounts.artist)
+        .updatePricePerTokenInWei(projectZero, higherPricePerTokenInWei);
+    });
+
+    it("enforces price update", async function () {
+      const needMoreValueErrorMessage = "Must send minimum value to mint!";
+      // artist increases price
+      await this.minter
+        .connect(this.accounts.artist)
+        .updatePricePerTokenInWei(projectZero, higherPricePerTokenInWei);
+      // cannot purchase token at lower price
+      await expectRevert(
+        this.minter.connect(this.accounts.owner).purchase(projectZero, {
+          value: pricePerTokenInWei,
+        }),
+        needMoreValueErrorMessage
+      );
+      // can purchase token at higher price
+      await this.minter.connect(this.accounts.owner).purchase(projectZero, {
+        value: higherPricePerTokenInWei,
+      });
+    });
+
+    it("enforces price update only on desired project", async function () {
+      const needMoreValueErrorMessage = "Must send minimum value to mint!";
+      // artist increases price of project zero
+      await this.minter
+        .connect(this.accounts.artist)
+        .updatePricePerTokenInWei(projectZero, higherPricePerTokenInWei);
+      // cannot purchase project zero token at lower price
+      await expectRevert(
+        this.minter.connect(this.accounts.owner).purchase(projectZero, {
+          value: pricePerTokenInWei,
+        }),
+        needMoreValueErrorMessage
+      );
+      // can purchase project one token at lower price
+      await this.minter.connect(this.accounts.owner).purchase(projectOne, {
+        value: pricePerTokenInWei,
+      });
+    });
+
+    it("emits event upon price update", async function () {
+      // artist increases price
+      await expect(
+        this.minter
+          .connect(this.accounts.artist)
+          .updatePricePerTokenInWei(projectZero, higherPricePerTokenInWei)
+      )
+        .to.emit(this.minter, "PricePerTokenInWeiUpdated")
+        .withArgs(projectZero, higherPricePerTokenInWei);
+    });
+  });
+
+  describe("updateProjectCurrencyInfo", async function () {
+    it("only allows artist to update currency info", async function () {
+      const onlyArtistErrorMessage = "Only Artist";
+      // doesn't allow owner
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.owner)
+          .updateProjectCurrencyInfo(
+            projectZero,
+            "ETH",
+            constants.ZERO_ADDRESS
+          ),
+        onlyArtistErrorMessage
+      );
+      // doesn't allow snowfro
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.snowfro)
+          .updateProjectCurrencyInfo(
+            projectZero,
+            "ETH",
+            constants.ZERO_ADDRESS
+          ),
+        onlyArtistErrorMessage
+      );
+      // doesn't allow additional
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.additional)
+          .updateProjectCurrencyInfo(
+            projectZero,
+            "ETH",
+            constants.ZERO_ADDRESS
+          ),
+        onlyArtistErrorMessage
+      );
+      // does allow artist
+      await this.minter
+        .connect(this.accounts.artist)
+        .updateProjectCurrencyInfo(projectZero, "ETH", constants.ZERO_ADDRESS);
+    });
+
+    it("enforces currency info update and allows purchases", async function () {
+      // artist changes to Mock ERC20 token
+      await this.minter
+        .connect(this.accounts.artist)
+        .updateProjectCurrencyInfo(projectZero, "MOCK", this.ERC20Mock.address);
+      // cannot purchase token with ETH
+      await expectRevert(
+        this.minter.connect(this.accounts.owner).purchase(projectZero, {
+          value: pricePerTokenInWei,
+        }),
+        "this project accepts a different currency and cannot accept ETH"
+      );
+      // approve contract and able to mint with Mock token
+      await this.ERC20Mock.connect(this.accounts.owner).approve(
+        this.minter.address,
+        ethers.utils.parseEther("100")
+      );
+      await this.minter.connect(this.accounts.owner).purchase(projectZero);
+      // cannot purchase token with ERC20 token when insufficient balance
+      await this.ERC20Mock.connect(this.accounts.owner).transfer(
+        this.accounts.artist.address,
+        ethers.utils.parseEther("100").sub(pricePerTokenInWei)
+      );
+      await expectRevert(
+        this.minter.connect(this.accounts.owner).purchase(projectZero),
+        "Insufficient balance"
+      );
+      // artist changes back to ETH
+      await this.minter
+        .connect(this.accounts.artist)
+        .updateProjectCurrencyInfo(projectZero, "ETH", constants.ZERO_ADDRESS);
+      // able to mint with ETH
+      await this.minter.connect(this.accounts.owner).purchase(projectZero, {
+        value: pricePerTokenInWei,
+      });
+    });
+
+    it("enforces currency update only on desired project", async function () {
+      const needMoreValueErrorMessage = "Must send minimum value to mint!";
+      // artist changes currency info for project zero
+      await this.minter
+        .connect(this.accounts.artist)
+        .updateProjectCurrencyInfo(projectZero, "MOCK", this.ERC20Mock.address);
+      // can purchase project one token with ETH
+      await this.minter.connect(this.accounts.owner).purchase(projectOne, {
+        value: pricePerTokenInWei,
+      });
+    });
+
+    it("emits event upon currency update", async function () {
+      // artist changes currency info
+      await expect(
+        this.minter
+          .connect(this.accounts.artist)
+          .updateProjectCurrencyInfo(
+            projectZero,
+            "MOCK",
+            this.ERC20Mock.address
+          )
+      )
+        .to.emit(this.minter, "ProjectCurrencyInfoUpdated")
+        .withArgs(projectZero, "MOCK", this.ERC20Mock.address);
+    });
   });
 
   describe("purchase", async function () {
+    it("does not allow purchase prior to configuring price", async function () {
+      await expectRevert(
+        this.minter.connect(this.accounts.owner).purchase(projectTwo, {
+          value: pricePerTokenInWei,
+        }),
+        "Price not configured"
+      );
+    });
+
     it("does nothing if setProjectMaxInvocations is not called (fails correctly)", async function () {
       for (let i = 0; i < 15; i++) {
         await this.minter.connect(this.accounts.owner).purchase(projectZero, {
@@ -198,6 +421,17 @@ describe("GenArt721FilteredMinter", async function () {
   });
 
   describe("purchaseTo", async function () {
+    it("does not allow purchase prior to configuring price", async function () {
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.owner)
+          .purchaseTo(this.accounts.additional.address, projectTwo, {
+            value: pricePerTokenInWei,
+          }),
+        "Price not configured"
+      );
+    });
+
     it("allows `purchaseTo` by default", async function () {
       await this.minter
         .connect(this.accounts.owner)
@@ -244,5 +478,70 @@ describe("GenArt721FilteredMinter", async function () {
         .to.emit(this.minter, "PurchaseToDisabledUpdated")
         .withArgs(projectOne, false);
     });
+  });
+
+  describe("currency info hooks", async function () {
+    const unconfiguredProjectNumber = 99;
+
+    it("reports expected price per token", async function () {
+      let currencyInfo = await this.minter
+        .connect(this.accounts.artist)
+        .getPriceInfo(projectOne);
+      expect(currencyInfo.tokenPriceInWei).to.be.equal(pricePerTokenInWei);
+      // returns zero for unconfigured project price
+      currencyInfo = await this.minter
+        .connect(this.accounts.artist)
+        .getPriceInfo(unconfiguredProjectNumber);
+      expect(currencyInfo.tokenPriceInWei).to.be.equal(0);
+    });
+
+    it("reports expected isConfigured", async function () {
+      let currencyInfo = await this.minter
+        .connect(this.accounts.artist)
+        .getPriceInfo(projectOne);
+      expect(currencyInfo.isConfigured).to.be.equal(true);
+      // false for unconfigured project
+      currencyInfo = await this.minter
+        .connect(this.accounts.artist)
+        .getPriceInfo(unconfiguredProjectNumber);
+      expect(currencyInfo.isConfigured).to.be.equal(false);
+    });
+
+    it("reports default currency as ETH", async function () {
+      let currencyInfo = await this.minter
+        .connect(this.accounts.artist)
+        .getPriceInfo(projectOne);
+      expect(currencyInfo.currencySymbol).to.be.equal("ETH");
+      // should also report ETH for unconfigured project
+      currencyInfo = await this.minter
+        .connect(this.accounts.artist)
+        .getPriceInfo(unconfiguredProjectNumber);
+      expect(currencyInfo.currencySymbol).to.be.equal("ETH");
+    });
+
+    it("reports default currency address as null address", async function () {
+      let currencyInfo = await this.minter
+        .connect(this.accounts.artist)
+        .getPriceInfo(projectOne);
+      expect(currencyInfo.currencyAddress).to.be.equal(constants.ZERO_ADDRESS);
+      // should also report ETH for unconfigured project
+      currencyInfo = await this.minter
+        .connect(this.accounts.artist)
+        .getPriceInfo(unconfiguredProjectNumber);
+      expect(currencyInfo.currencyAddress).to.be.equal(constants.ZERO_ADDRESS);
+    });
+  });
+
+  it("reports ERC20 token symbol and address if set", async function () {
+    // artist changes to Mock ERC20 token
+    await this.minter
+      .connect(this.accounts.artist)
+      .updateProjectCurrencyInfo(projectZero, "MOCK", this.ERC20Mock.address);
+    // reports ERC20 updated price information
+    const currencyInfo = await this.minter
+      .connect(this.accounts.artist)
+      .getPriceInfo(projectZero);
+    expect(currencyInfo.currencySymbol).to.be.equal("MOCK");
+    expect(currencyInfo.currencyAddress).to.be.equal(this.ERC20Mock.address);
   });
 });

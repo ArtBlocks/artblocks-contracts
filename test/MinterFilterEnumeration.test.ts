@@ -41,11 +41,7 @@ describe("MinterFilterEnumeration", async function () {
     // Project setup
     await this.genArt721Core
       .connect(deployer)
-      .addProject(
-        "Test Project",
-        this.accounts.artist.address,
-        pricePerTokenInWei
-      );
+      .addProject("Test Project", this.accounts.artist.address);
   });
 
   describe("Enumerable Map: minterForProject", async function () {
@@ -139,11 +135,7 @@ describe("MinterFilterEnumeration", async function () {
       // Project 1 setup
       await this.genArt721Core
         .connect(this.accounts.deployer)
-        .addProject(
-          "Test Project One",
-          this.accounts.artist.address,
-          pricePerTokenInWei
-        );
+        .addProject("Test Project One", this.accounts.artist.address);
     });
 
     describe("keeps count while add/remove minter for project", async function () {

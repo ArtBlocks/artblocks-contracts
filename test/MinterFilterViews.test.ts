@@ -41,19 +41,11 @@ describe("MinterFilterViews", async function () {
     // Project setup
     await this.genArt721Core
       .connect(deployer)
-      .addProject(
-        "Test Project",
-        this.accounts.artist.address,
-        pricePerTokenInWei
-      );
+      .addProject("Test Project", this.accounts.artist.address);
     // Project 1 setup
     await this.genArt721Core
       .connect(this.accounts.deployer)
-      .addProject(
-        "Test Project One",
-        this.accounts.artist.address,
-        pricePerTokenInWei
-      );
+      .addProject("Test Project One", this.accounts.artist.address);
   });
 
   describe("projectHasMinter", async function () {

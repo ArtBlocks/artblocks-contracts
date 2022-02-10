@@ -60,9 +60,6 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContract {
 
     //All financial functions are stripped from struct for visibility
     mapping(uint256 => address) public projectIdToArtistAddress;
-    mapping(uint256 => string) public projectIdToCurrencySymbol;
-    mapping(uint256 => address) public projectIdToCurrencyAddress;
-    mapping(uint256 => uint256) public projectIdToPricePerTokenInWei;
     mapping(uint256 => address) public projectIdToAdditionalPayee;
     mapping(uint256 => uint256) public projectIdToAdditionalPayeePercentage;
     mapping(uint256 => uint256)
@@ -315,49 +312,19 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContract {
      * @notice Adds new project `_projectName` by `_artistAddress`.
      * @param _projectName Project name.
      * @param _artistAddress Artist's address.
-     * @param _pricePerTokenInWei Price to mint a token, in Wei.
+     * @dev token price now stored on minter
      */
-    function addProject(
-        string memory _projectName,
-        address _artistAddress,
-        uint256 _pricePerTokenInWei
-    ) public onlyWhitelisted {
+    function addProject(string memory _projectName, address _artistAddress)
+        public
+        onlyWhitelisted
+    {
         uint256 projectId = nextProjectId;
         projectIdToArtistAddress[projectId] = _artistAddress;
         projects[projectId].name = _projectName;
-        projectIdToCurrencySymbol[projectId] = "ETH";
-        projectIdToPricePerTokenInWei[projectId] = _pricePerTokenInWei;
         projects[projectId].paused = true;
         projects[projectId].maxInvocations = ONE_MILLION;
 
         nextProjectId = nextProjectId.add(1);
-    }
-
-    /**
-     * @notice Updates payment currency of project `_projectId` to be
-     * `_currencySymbol`.
-     * @param _projectId Project ID to update.
-     * @param _currencySymbol Currency symbol.
-     * @param _currencyAddress Currency address.
-     */
-    function updateProjectCurrencyInfo(
-        uint256 _projectId,
-        string memory _currencySymbol,
-        address _currencyAddress
-    ) public onlyArtist(_projectId) {
-        projectIdToCurrencySymbol[_projectId] = _currencySymbol;
-        projectIdToCurrencyAddress[_projectId] = _currencyAddress;
-    }
-
-    /**
-     * @notice Updates price per token of project `_projectId` to be
-     * '_pricePerTokenInWei`, in Wei.
-     */
-    function updateProjectPricePerTokenInWei(
-        uint256 _projectId,
-        uint256 _pricePerTokenInWei
-    ) public onlyArtist(_projectId) {
-        projectIdToPricePerTokenInWei[_projectId] = _pricePerTokenInWei;
     }
 
     /**
@@ -580,17 +547,17 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContract {
 
     /**
      * @notice Returns project token information for project `_projectId`.
-     * @param _projectId Project to be queried.
+     * @param _projectId Project to be queried
      * @return artistAddress Project Artist's address
-     * @return pricePerTokenInWei Price to mint a token, in Wei
+     * @return pricePerTokenInWei (deprecated) - please view on minter
      * @return invocations Current number of invocations
      * @return maxInvocations Maximum allowed invocations
      * @return active Boolean representing if project is currently active
      * @return additionalPayee Additional payee address
      * @return additionalPayeePercentage Percentage of artist revenue
      * to be sent to the additional payee's address
-     * @return currency Symbol of project's currency
-     * @return currencyAddress Address of project's currency
+     * @return currency (deprecated) - please view on minter
+     * @return currencyAddress (deprecated) - please view on minter
      */
     function projectTokenInfo(uint256 _projectId)
         public
@@ -608,7 +575,7 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContract {
         )
     {
         artistAddress = projectIdToArtistAddress[_projectId];
-        pricePerTokenInWei = projectIdToPricePerTokenInWei[_projectId];
+        pricePerTokenInWei = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
         invocations = projects[_projectId].invocations;
         maxInvocations = projects[_projectId].maxInvocations;
         active = projects[_projectId].active;
@@ -616,8 +583,8 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContract {
         additionalPayeePercentage = projectIdToAdditionalPayeePercentage[
             _projectId
         ];
-        currency = projectIdToCurrencySymbol[_projectId];
-        currencyAddress = projectIdToCurrencyAddress[_projectId];
+        currency = "";
+        currencyAddress = address(0);
     }
 
     /**
@@ -630,7 +597,7 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContract {
      * @return paused Boolean representing if project is paused
      */
     function projectScriptInfo(uint256 _projectId)
-        public
+        external
         view
         returns (
             string memory scriptJSON,
@@ -651,7 +618,7 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContract {
      * @notice Returns script for project `_projectId` at script index `_index`.
      */
     function projectScriptByIndex(uint256 _projectId, uint256 _index)
-        public
+        external
         view
         returns (string memory)
     {
@@ -662,7 +629,7 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContract {
      * @notice Returns base URI for project `_projectId`.
      */
     function projectURIInfo(uint256 _projectId)
-        public
+        external
         view
         returns (string memory projectBaseURI)
     {

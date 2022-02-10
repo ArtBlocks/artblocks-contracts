@@ -23,7 +23,7 @@ describe("MinterFilterEvents", async function () {
       .deploy("Test Contract", "TEST", this.randomizer.address);
     await this.genArt721Core
       .connect(deployer)
-      .addProject("project0", deployer.address, 1);
+      .addProject("project0", deployer.address);
     const minterFilterFactory = await ethers.getContractFactory("MinterFilter");
     this.minterFilter = await minterFilterFactory.deploy(
       this.genArt721Core.address
@@ -132,7 +132,7 @@ describe("MinterFilterEvents", async function () {
       // add project 1
       await this.genArt721Core
         .connect(this.accounts.deployer)
-        .addProject("project1", this.accounts.deployer.address, 1);
+        .addProject("project1", this.accounts.deployer.address);
       // set minter for project 1
       await expect(
         this.minterFilter

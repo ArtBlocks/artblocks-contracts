@@ -66,13 +66,9 @@ describe("GenArt721RoyaltyOverride", async function () {
       .deploy(name, symbol, this.randomizer.address);
 
     // add projects for artists 0 and 1
-    await this.tokenA
-      .connect(adminA)
-      .addProject("project0_a", artist0.address, pricePerTokenInWei);
+    await this.tokenA.connect(adminA).addProject("project0_a", artist0.address);
 
-    await this.tokenA
-      .connect(adminA)
-      .addProject("project1_a", artist1.address, pricePerTokenInWei);
+    await this.tokenA.connect(adminA).addProject("project1_a", artist1.address);
 
     // artist0 set royalty info (with additional payee)
     await this.tokenA
@@ -131,6 +127,13 @@ describe("GenArt721RoyaltyOverride", async function () {
       .setMinterForProject(projectOne, this.minterA.address);
 
     await this.minterA
+      .connect(this.accounts.artist0)
+      .updatePricePerTokenInWei(projectZero, pricePerTokenInWei);
+    await this.minterA
+      .connect(this.accounts.artist1)
+      .updatePricePerTokenInWei(projectOne, pricePerTokenInWei);
+
+    await this.minterA
       .connect(this.accounts.anyone)
       .purchase(projectZero, { value: pricePerTokenInWei });
 
@@ -144,13 +147,9 @@ describe("GenArt721RoyaltyOverride", async function () {
       .deploy(name, symbol, this.randomizer.address);
 
     // add projects for artists 0 and 1
-    await this.tokenB
-      .connect(adminB)
-      .addProject("project0_b", artist0.address, pricePerTokenInWei);
+    await this.tokenB.connect(adminB).addProject("project0_b", artist0.address);
 
-    await this.tokenB
-      .connect(adminB)
-      .addProject("project1_b", artist1.address, pricePerTokenInWei);
+    await this.tokenB.connect(adminB).addProject("project1_b", artist1.address);
 
     // artist0 set royalty info (with additional payee)
     await this.tokenB
@@ -203,6 +202,13 @@ describe("GenArt721RoyaltyOverride", async function () {
     await this.minterFilterB
       .connect(this.accounts.adminB)
       .setMinterForProject(projectOne, this.minterB.address);
+
+    await this.minterB
+      .connect(this.accounts.artist0)
+      .updatePricePerTokenInWei(projectZero, pricePerTokenInWei);
+    await this.minterB
+      .connect(this.accounts.artist1)
+      .updatePricePerTokenInWei(projectOne, pricePerTokenInWei);
 
     await this.minterB
       .connect(this.accounts.anyone)

@@ -5,7 +5,7 @@ import "./libs/0.5.x/SafeMath.sol";
 import "./libs/0.5.x/Strings.sol";
 import "./libs/0.5.x/IERC20.sol";
 
-import "./interfaces/0.5.x/IGenArt721CoreContract.sol";
+import "./interfaces/0.5.x/IGenArt721CoreContractV1.sol";
 import "./interfaces/0.5.x/IBonusContract.sol";
 
 pragma solidity ^0.5.0;
@@ -13,7 +13,7 @@ pragma solidity ^0.5.0;
 contract GenArt721LegacyMinter {
     using SafeMath for uint256;
 
-    IGenArt721CoreContract public artblocksContract;
+    IGenArt721CoreContractV1 public artblocksContract;
 
     uint256 constant ONE_MILLION = 1_000_000;
 
@@ -26,7 +26,7 @@ contract GenArt721LegacyMinter {
     mapping(uint256 => uint256) public projectMaxInvocations;
 
     constructor(address _genArt721Address) public {
-        artblocksContract = IGenArt721CoreContract(_genArt721Address);
+        artblocksContract = IGenArt721CoreContractV1(_genArt721Address);
     }
 
     function getYourBalanceOfProjectERC20(uint256 _projectId)

@@ -4,6 +4,25 @@
 pragma solidity ^0.8.0;
 
 interface IFilteredMinter {
+    /**
+     * @notice Price per token in wei updated for project `_projectId` to
+     * `_pricePerTokenInWei`.
+     */
+    event PricePerTokenInWeiUpdated(
+        uint256 indexed _projectId,
+        uint256 indexed _pricePerTokenInWei
+    );
+
+    /**
+     * @notice Currency updated for project `_projectId` to symbol
+     * `_currencySymbol` and address `_currencyAddress`.
+     */
+    event ProjectCurrencyInfoUpdated(
+        uint256 indexed _projectId,
+        string indexed _currencySymbol,
+        address indexed _currencyAddress
+    );
+
     /// togglePurchaseToDisabled updated
     event PurchaseToDisabledUpdated(
         uint256 indexed _projectId,
@@ -34,4 +53,17 @@ interface IFilteredMinter {
     // Called to make the minter contract aware of the max invocations for a
     // given project.
     function setProjectMaxInvocations(uint256 _projectId) external;
+
+    // Gets if token price is configured, token price in wei, currency symbol,
+    // and currency address, assuming this is project's minter.
+    // Supersedes any defined core price.
+    function getPriceInfo(uint256 _projectId)
+        external
+        view
+        returns (
+            bool isConfigured,
+            uint256 tokenPriceInWei,
+            string memory currencySymbol,
+            address currencyAddress
+        );
 }

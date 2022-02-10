@@ -35,22 +35,37 @@ describe("GenArt721CoreV3", async function () {
     this.token = await artblocksFactory
       .connect(snowfro)
       .deploy(name, symbol, this.randomizer.address);
+    // deploy and configure minter filter and minter
+    const minterFilterFactory = await ethers.getContractFactory("MinterFilter");
+    this.minterFilter = await minterFilterFactory.deploy(this.token.address);
     const minterFactory = await ethers.getContractFactory(
-      "GenArt721LegacyMinter"
+      "GenArt721FilteredMinterETH"
     );
-    this.minter = await minterFactory.deploy(this.token.address);
-
+    this.minter = await minterFactory.deploy(
+      this.token.address,
+      this.minterFilter.address
+    );
+    await this.minterFilter
+      .connect(snowfro)
+      .addApprovedMinter(this.minter.address);
     await this.token
       .connect(snowfro)
-      .addProject("name", artist.address, pricePerTokenInWei);
-
-    this.projectZeroInfo = await this.token.projectTokenInfo(projectZero);
-
+      .updateMinterContract(this.minterFilter.address);
+    // add project
+    await this.token.connect(snowfro).addProject("name", artist.address);
     await this.token.connect(snowfro).toggleProjectIsActive(projectZero);
-    await this.token.connect(snowfro).updateMinterContract(this.minter.address);
     await this.token
       .connect(artist)
       .updateProjectMaxInvocations(projectZero, 15);
+    // set project's minter and price
+    await this.minter
+      .connect(artist)
+      .updatePricePerTokenInWei(projectZero, pricePerTokenInWei);
+    await this.minterFilter
+      .connect(artist)
+      .setMinterForProject(projectZero, this.minter.address);
+    // get project's info
+    this.projectZeroInfo = await this.token.projectTokenInfo(projectZero);
   });
 
   describe("has whitelisted owner", function () {
@@ -262,6 +277,21 @@ describe("GenArt721CoreV3", async function () {
           "Only admin"
         );
       });
+    });
+  });
+
+  describe("projectTokenInfo", function () {
+    it("returns expected deprecated values", async function () {
+      const tokenInfo = await this.token
+        .connect(this.accounts.snowfro)
+        .projectTokenInfo(0);
+      expect(tokenInfo.pricePerTokenInWei.toString()).to.be.equal(
+        new BN(
+          "115792089237316195423570985008687907853269984665640564039457584007913129639935"
+        ).toString()
+      );
+      expect(tokenInfo.currency).to.be.equal("");
+      expect(tokenInfo.currencyAddress).to.be.equal(constants.ZERO_ADDRESS);
     });
   });
 });
