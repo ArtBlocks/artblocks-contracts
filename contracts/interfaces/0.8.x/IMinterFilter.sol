@@ -34,7 +34,7 @@ interface IMinterFilter {
      */
     event ProjectMinterRemoved(uint256 indexed _projectId);
 
-    function artblocksContract() external returns (IGenArt721CoreContract);
+    function genArtCoreContract() external returns (IGenArt721CoreContract);
 
     function setMinterForProject(uint256, address) external;
 
