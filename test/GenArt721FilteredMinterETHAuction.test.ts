@@ -124,12 +124,25 @@ describe("GenArt721MinterEthAuction", async function () {
   });
 
   describe("purchase", async function () {
+    it("disallows purchase before auction begins", async function () {
+      await ethers.provider.send("evm_setNextBlockTimestamp", [
+        this.startTime - 60,
+      ]);
+      await expectRevert(
+        this.minter.connect(this.accounts.owner).purchase(projectOne, {
+          value: startingPrice.toString(),
+          gasPrice: 0,
+        }),
+        "Auction not yet started"
+      );
+    });
+
     it("calculates the price correctly", async function () {
       await ethers.provider.send("evm_setNextBlockTimestamp", [this.startTime]);
       const duration = ONE_HOUR * 2; // 2 hours
       const step = ONE_MINUTE * 8; // 480 seconds
 
-      for (let i = 0; i < 15; i++) {
+      for (let i = 1; i < 15; i++) {
         let ownerBalance = await this.accounts.owner.getBalance();
         let a = ethers.BigNumber.from(i * step).mul(
           startingPrice.sub(pricePerTokenInWeiAuctionResting).toString()
@@ -208,6 +221,9 @@ describe("GenArt721MinterEthAuction", async function () {
 
   describe("purchaseTo", async function () {
     it("allows `purchaseTo` by default", async function () {
+      await ethers.provider.send("evm_setNextBlockTimestamp", [
+        this.startTime + 1,
+      ]);
       await this.minter
         .connect(this.accounts.owner)
         .purchaseTo(this.accounts.additional.address, projectOne, {
@@ -216,6 +232,9 @@ describe("GenArt721MinterEthAuction", async function () {
     });
 
     it("disallows `purchaseTo` if disallowed explicitly", async function () {
+      await ethers.provider.send("evm_setNextBlockTimestamp", [
+        this.startTime + 1,
+      ]);
       await this.minter
         .connect(this.accounts.snowfro)
         .togglePurchaseToDisabled(projectOne);
