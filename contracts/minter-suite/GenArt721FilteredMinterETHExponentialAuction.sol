@@ -365,6 +365,9 @@ contract GenArt721FilteredMinterETHExponentialAuction is IFilteredMinter {
      * the project's AuctionParameters and current block timestamp.
      * @param _projectId Project ID to get price of token for.
      * @return current price of token in Wei
+     * @dev This method calculates price decay using a linear interpolation
+     * of exponential decay based on the artist-provided half-life for price
+     * decay, `_priceDecayHalfLifeSeconds`.
      */
     function getPrice(uint256 _projectId) private view returns (uint256) {
         AuctionParameters memory auctionParams = projectAuctionParameters[
@@ -374,14 +377,20 @@ contract GenArt721FilteredMinterETHExponentialAuction is IFilteredMinter {
             // The auction has not yet started.
             return auctionParams.startPrice;
         }
-        uint256 elapsedHalfLives = auctionParams.timestampStart %
-            auctionParams.priceDecayHalfLifeSeconds;
         uint256 decayedPrice = auctionParams.startPrice;
+        uint256 elapsedTimeSeconds = block.timestamp -
+            auctionParams.timestampStart;
+        // Divide by two (via bit-shifting) for the number of entirely completed
+        // half-lives that have elapsed since auction start time.
         decayedPrice >>=
-            auctionParams.timestampStart /
+            elapsedTimeSeconds /
             auctionParams.priceDecayHalfLifeSeconds;
+        // Perform a linear interpolation between partial half-life points, to
+        // approximate the current place on a perfect exponential decay curve.
         decayedPrice -=
-            (decayedPrice * elapsedHalfLives) /
+            (decayedPrice *
+                (elapsedTimeSeconds %
+                    auctionParams.priceDecayHalfLifeSeconds)) /
             auctionParams.priceDecayHalfLifeSeconds /
             2;
         if (decayedPrice < auctionParams.basePrice) {
