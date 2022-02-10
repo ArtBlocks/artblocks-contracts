@@ -65,7 +65,7 @@ describe("GenArt721CoreV3", async function () {
       .connect(artist)
       .setMinterForProject(projectZero, this.minter.address);
     // get project's info
-    this.projectZeroInfo = await this.token.projectTokenInfo(projectZero);
+    this.projectZeroInfo = await this.token.projectInfo(projectZero);
   });
 
   describe("has whitelisted owner", function () {
@@ -151,7 +151,7 @@ describe("GenArt721CoreV3", async function () {
           });
         //expectEvent(tx, 'Transfer', {from: constants.ZERO_ADDRESS, to: owner, tokenId: firstTokenId});
 
-        this.projectZeroInfo = await this.token.projectTokenInfo(projectZero);
+        this.projectZeroInfo = await this.token.projectInfo(projectZero);
         expect(this.projectZeroInfo.invocations).to.equal("1");
         expect(
           (await this.accounts.snowfro.getBalance()).sub(snowfroBalance)
@@ -190,7 +190,7 @@ describe("GenArt721CoreV3", async function () {
           });
         //expectEvent(tx, 'Transfer', {from: constants.ZERO_ADDRESS, to: owner, tokenId: firstTokenId});
 
-        this.projectZeroInfo = await this.token.projectTokenInfo(projectZero);
+        this.projectZeroInfo = await this.token.projectInfo(projectZero);
         // expect(this.projectZeroInfo.invocations).to.equal('1');
 
         expect(
@@ -235,7 +235,7 @@ describe("GenArt721CoreV3", async function () {
           });
         //expectEvent(tx, 'Transfer', {from: constants.ZERO_ADDRESS, to: owner, tokenId: firstTokenId});
 
-        this.projectZeroInfo = await this.token.projectTokenInfo(projectZero);
+        this.projectZeroInfo = await this.token.projectInfo(projectZero);
         expect(this.projectZeroInfo.invocations).to.equal("1");
 
         expect(
@@ -280,18 +280,13 @@ describe("GenArt721CoreV3", async function () {
     });
   });
 
-  describe("projectTokenInfo", function () {
+  describe("projectInfo", function () {
     it("returns expected deprecated values", async function () {
       const tokenInfo = await this.token
         .connect(this.accounts.snowfro)
-        .projectTokenInfo(0);
-      expect(tokenInfo.pricePerTokenInWei.toString()).to.be.equal(
-        new BN(
-          "115792089237316195423570985008687907853269984665640564039457584007913129639935"
-        ).toString()
-      );
-      expect(tokenInfo.currency).to.be.equal("");
-      expect(tokenInfo.currencyAddress).to.be.equal(constants.ZERO_ADDRESS);
+        .projectInfo(0);
+      expect(tokenInfo.invocations).to.be.equal(0);
+      expect(tokenInfo.maxInvocations).to.be.equal(15);
     });
   });
 });

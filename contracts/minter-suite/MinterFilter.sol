@@ -25,8 +25,11 @@ contract MinterFilter is IMinterFilter {
     // add Enumerable Map methods
     using EnumerableMap for EnumerableMap.UintToAddressMap;
 
-    /// Art Blocks core contract this minter may interact with.
-    IGenArt721CoreContractV3 public genArtCoreContract;
+    /// Core contract address this minter interacts with
+    address public immutable genArt721CoreAddress;
+
+    /// This contract only uses the portion of V3 interface also on V1 core
+    IGenArt721CoreContractV3 private immutable genArtCoreContract;
 
     /// projectId => minter address
     EnumerableMap.UintToAddressMap private minterForProject;
@@ -39,6 +42,7 @@ contract MinterFilter is IMinterFilter {
 
     modifier onlyCoreWhitelisted() {
         require(
+            // `isWhitelisted` is valid for V3 and V1 interfaces
             genArtCoreContract.isWhitelisted(msg.sender),
             "Only Core whitelisted"
         );
@@ -46,6 +50,8 @@ contract MinterFilter is IMinterFilter {
     }
 
     modifier onlyCoreWhitelistedOrArtist(uint256 _projectId) {
+        // `isWhitelisted` is valid for V3 and V1 interfaces
+        // projectIdToArtistAddress is valid for V3 and V1 interfaces
         require(
             (genArtCoreContract.isWhitelisted(msg.sender) ||
                 msg.sender ==
@@ -56,6 +62,7 @@ contract MinterFilter is IMinterFilter {
     }
 
     modifier projectExists(uint256 _projectId) {
+        // `nextProjectId` is valid for V3 and V1 interfaces
         require(
             _projectId < genArtCoreContract.nextProjectId(),
             "Only existing projects"
@@ -72,6 +79,7 @@ contract MinterFilter is IMinterFilter {
     }
 
     modifier onlyMintWhitelisted() {
+        // `isMintWhitelisted` is valid for V3 and V1 interfaces
         require(
             genArtCoreContract.isMintWhitelisted(address(this)),
             "Only mint allowlisted"
@@ -85,6 +93,8 @@ contract MinterFilter is IMinterFilter {
      * this contract will be a minter for. Can never be updated.
      */
     constructor(address _genArt721Address) {
+        genArt721CoreAddress = _genArt721Address;
+        // supports V3 and V1 core contract interfaces
         genArtCoreContract = IGenArt721CoreContractV3(_genArt721Address);
     }
 
@@ -98,7 +108,7 @@ contract MinterFilter is IMinterFilter {
         onlyCoreWhitelisted
         onlyMintWhitelisted
     {
-        emit IsCanonicalMinterFilter(address(genArtCoreContract));
+        emit IsCanonicalMinterFilter(genArt721CoreAddress);
     }
 
     /**
@@ -220,7 +230,7 @@ contract MinterFilter is IMinterFilter {
             msg.sender == minterForProject.get(_projectId),
             "Only assigned minter"
         );
-        // mint
+        // mint - `mint` is valid for V3 and V1 interfaces
         uint256 tokenId = genArtCoreContract.mint(_to, _projectId, sender);
         return tokenId;
     }

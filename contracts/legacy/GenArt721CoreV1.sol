@@ -3,12 +3,13 @@
  * https://etherscan.io/address/0xa7d8d9ef8d8ce8992df33d8b8cf4aebabd5bd270#code
  * REPO-ONLY MODIFICATIONS relative to deployed contract source code:
  * - use IRandomizer to avoid namespace nuisance with `Randomizer` interface
- * - add `is IGenArt721CoreContractV1` to core contract to ensure repo
- *   maintains conforming V1 core contract interface
+ * - add `is IGenArt721CoreContractV1, IGenArt721CoreContractV1V3` to core
+ * contract to ensure repo maintains conforming V1 core contract interface
  */
 
 import "../interfaces/0.5.x/IRandomizer.sol";
 import "../interfaces/0.5.x/IGenArt721CoreContractV1.sol";
+import "../interfaces/0.5.x/IGenArt721CoreContractV1V3.sol";
 
 /// -----------------------------------------------------
 /**
@@ -1001,7 +1002,11 @@ pragma solidity ^0.5.0;
 
 /// REPO-ONLY - add is IGenArt721CoreContractV1 to ensure repo has conforming
 /// interface for V1 contract
-contract GenArt721CoreV1 is CustomERC721Metadata, IGenArt721CoreContractV1 {
+contract GenArt721CoreV1 is
+    CustomERC721Metadata,
+    IGenArt721CoreContractV1,
+    IGenArt721CoreContractV1V3
+{
     using SafeMath for uint256;
 
     event Mint(

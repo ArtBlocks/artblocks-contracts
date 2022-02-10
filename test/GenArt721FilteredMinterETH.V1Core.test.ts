@@ -9,7 +9,11 @@ import {
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
-describe("MinterFilter", async function () {
+/**
+ * These tests intended to ensure Filtered Minter integrates properly with V1
+ * core contract. Nearly identical tests as the V3 core.
+ */
+describe("GenArt721MinterEthAuction_V1Core", async function () {
   const name = "Non Fungible Token";
   const symbol = "NFT";
 
@@ -18,9 +22,11 @@ describe("MinterFilter", async function () {
 
   const pricePerTokenInWei = ethers.utils.parseEther("1");
   const higherPricePerTokenInWei = ethers.utils.parseEther("1.1");
-  const projectOne = 0;
-  const projectTwo = 1;
-  const projectThree = 2;
+  const projectOne = 3; // V1 core starts at project 3
+  const projectTwo = 4;
+  const projectThree = 5;
+
+  const projectMaxInvocations = 15;
 
   beforeEach(async function () {
     const [owner, newOwner, artist, additional, snowfro] =
@@ -35,7 +41,7 @@ describe("MinterFilter", async function () {
     const randomizerFactory = await ethers.getContractFactory("Randomizer");
     this.randomizer = await randomizerFactory.deploy();
 
-    const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV3");
+    const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV1");
     this.token = await artblocksFactory
       .connect(snowfro)
       .deploy(name, symbol, this.randomizer.address);
@@ -59,11 +65,17 @@ describe("MinterFilter", async function () {
       this.minterFilter.address
     );
 
-    await this.token.connect(snowfro).addProject("project1", artist.address);
+    await this.token
+      .connect(snowfro)
+      .addProject("project1", artist.address, 0, false);
 
-    await this.token.connect(snowfro).addProject("project2", artist.address);
+    await this.token
+      .connect(snowfro)
+      .addProject("project2", artist.address, 0, false);
 
-    await this.token.connect(snowfro).addProject("project3", artist.address);
+    await this.token
+      .connect(snowfro)
+      .addProject("project3", artist.address, 0, false);
 
     await this.token.connect(snowfro).toggleProjectIsActive(projectOne);
     await this.token.connect(snowfro).toggleProjectIsActive(projectTwo);
@@ -71,27 +83,21 @@ describe("MinterFilter", async function () {
 
     await this.token
       .connect(snowfro)
-      .updateMinterContract(this.minterFilter.address);
+      .addMintWhitelisted(this.minterFilter.address);
 
     await this.token
       .connect(artist)
-      .updateProjectMaxInvocations(projectOne, 15);
+      .updateProjectMaxInvocations(projectOne, projectMaxInvocations);
     await this.token
       .connect(artist)
-      .updateProjectMaxInvocations(projectTwo, 15);
+      .updateProjectMaxInvocations(projectTwo, projectMaxInvocations);
     await this.token
       .connect(artist)
-      .updateProjectMaxInvocations(projectThree, 15);
+      .updateProjectMaxInvocations(projectThree, projectMaxInvocations);
 
-    await this.token
-      .connect(this.accounts.artist)
-      .toggleProjectIsPaused(projectOne);
-    await this.token
-      .connect(this.accounts.artist)
-      .toggleProjectIsPaused(projectTwo);
-    await this.token
-      .connect(this.accounts.artist)
-      .toggleProjectIsPaused(projectThree);
+    await this.token.connect(artist).toggleProjectIsPaused(projectOne);
+    await this.token.connect(artist).toggleProjectIsPaused(projectTwo);
+    await this.token.connect(artist).toggleProjectIsPaused(projectThree);
 
     await this.minterFilter
       .connect(this.accounts.snowfro)
@@ -123,7 +129,7 @@ describe("MinterFilter", async function () {
   describe("constructor", async function () {
     it("reverts when given incorrect minter filter and core addresses", async function () {
       const artblocksFactory = await ethers.getContractFactory(
-        "GenArt721CoreV3"
+        "GenArt721CoreV1"
       );
       const token2 = await artblocksFactory
         .connect(this.accounts.snowfro)
@@ -394,6 +400,47 @@ describe("MinterFilter", async function () {
       )
         .to.emit(this.minter1, "PurchaseToDisabledUpdated")
         .withArgs(projectOne, false);
+    });
+  });
+
+  describe("setProjectMaxInvocations", async function () {
+    it("handles getting tokenInfo invocation info with V1 core", async function () {
+      await this.minter1
+        .connect(this.accounts.snowfro)
+        .setProjectMaxInvocations(projectOne);
+      // minter should update storage with accurate projectMaxInvocations
+      await this.minter1
+        .connect(this.accounts.snowfro)
+        .setProjectMaxInvocations(projectOne);
+      let maxInvocations = await this.minter1
+        .connect(this.accounts.snowfro)
+        .projectMaxInvocations(projectOne);
+      expect(maxInvocations).to.be.equal(projectMaxInvocations);
+      // ensure hasMaxBeenReached did not unexpectedly get set as true
+      let hasMaxBeenInvoked = await this.minter1
+        .connect(this.accounts.snowfro)
+        .projectMaxHasBeenInvoked(projectOne);
+      expect(hasMaxBeenInvoked).to.be.false;
+      // ensure minter2 gives same results
+      await this.minter2
+        .connect(this.accounts.snowfro)
+        .setProjectMaxInvocations(projectTwo);
+      await this.minter2
+        .connect(this.accounts.snowfro)
+        .setProjectMaxInvocations(projectTwo);
+      maxInvocations = await this.minter2
+        .connect(this.accounts.snowfro)
+        .projectMaxInvocations(projectTwo);
+      expect(maxInvocations).to.be.equal(projectMaxInvocations);
+      // should also support unconfigured project projectMaxInvocations
+      // e.g. projectOne on minter3 - still update to accurate max invocations
+      await this.minter3
+        .connect(this.accounts.snowfro)
+        .setProjectMaxInvocations(projectOne);
+      maxInvocations = await this.minter3
+        .connect(this.accounts.snowfro)
+        .projectMaxInvocations(projectOne);
+      expect(maxInvocations).to.be.equal(projectMaxInvocations);
     });
   });
 

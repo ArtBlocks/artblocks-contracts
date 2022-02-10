@@ -22,6 +22,8 @@ describe("GenArt721FilteredMinter", async function () {
   const projectOne = 1;
   const projectTwo = 2;
 
+  const projectMaxInvocations = 15;
+
   beforeEach(async function () {
     const [owner, newOwner, artist, additional, snowfro] =
       await ethers.getSigners();
@@ -71,13 +73,13 @@ describe("GenArt721FilteredMinter", async function () {
 
     await this.token
       .connect(artist)
-      .updateProjectMaxInvocations(projectZero, 15);
+      .updateProjectMaxInvocations(projectZero, projectMaxInvocations);
     await this.token
       .connect(artist)
-      .updateProjectMaxInvocations(projectOne, 15);
+      .updateProjectMaxInvocations(projectOne, projectMaxInvocations);
     await this.token
       .connect(artist)
-      .updateProjectMaxInvocations(projectTwo, 15);
+      .updateProjectMaxInvocations(projectTwo, projectMaxInvocations);
 
     this.token.connect(this.accounts.artist).toggleProjectIsPaused(projectZero);
     this.token.connect(this.accounts.artist).toggleProjectIsPaused(projectOne);
@@ -502,6 +504,36 @@ describe("GenArt721FilteredMinter", async function () {
       )
         .to.emit(this.minter, "PurchaseToDisabledUpdated")
         .withArgs(projectOne, false);
+    });
+  });
+
+  describe("setProjectMaxInvocations", async function () {
+    it("handles getting tokenInfo invocation info with V3 core", async function () {
+      await this.minter
+        .connect(this.accounts.snowfro)
+        .setProjectMaxInvocations(projectOne);
+      // minter should update storage with accurate projectMaxInvocations
+      await this.minter
+        .connect(this.accounts.snowfro)
+        .setProjectMaxInvocations(projectOne);
+      let maxInvocations = await this.minter
+        .connect(this.accounts.snowfro)
+        .projectMaxInvocations(projectOne);
+      expect(maxInvocations).to.be.equal(projectMaxInvocations);
+      // ensure hasMaxBeenReached did not unexpectedly get set as true
+      let hasMaxBeenInvoked = await this.minter
+        .connect(this.accounts.snowfro)
+        .projectMaxHasBeenInvoked(projectOne);
+      expect(hasMaxBeenInvoked).to.be.false;
+      // should also support unconfigured project projectMaxInvocations
+      // e.g. project 99, which does not yet exist
+      await this.minter
+        .connect(this.accounts.snowfro)
+        .setProjectMaxInvocations(99);
+      maxInvocations = await this.minter3
+        .connect(this.accounts.snowfro)
+        .projectMaxInvocations(99);
+      expect(maxInvocations).to.be.equal(0);
     });
   });
 

@@ -1,9 +1,13 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-pragma solidity ^0.5.0;
+pragma solidity ^0.8.0;
 
-interface IGenArt721CoreContractV3 {
+/**
+ * @title This represents a common interface for V1 and V3 core contracts.
+ * @author Art Blocks Inc.
+ */
+interface IGenArt721CoreContractV1V3 {
     event Mint(
         address indexed _to,
         uint256 indexed _tokenId,
@@ -41,19 +45,6 @@ interface IGenArt721CoreContractV3 {
         external
         view
         returns (uint256);
-
-    // @dev new function in V3 (deprecated projectTokenInfo)
-    function projectInfo(uint256 _projectId)
-        external
-        view
-        returns (
-            address,
-            uint256,
-            uint256,
-            bool,
-            address,
-            uint256
-        );
 
     function artblocksAddress() external view returns (address payable);
 
