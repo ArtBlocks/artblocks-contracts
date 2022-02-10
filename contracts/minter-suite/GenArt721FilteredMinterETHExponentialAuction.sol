@@ -386,10 +386,6 @@ contract GenArt721FilteredMinterETHExponentialAuction is IFilteredMinter {
             // Price may not decay below stay `basePrice`.
             return auctionParams.basePrice;
         }
-        if (decayedPrice > auctionParams.startPrice) {
-            // Guard against `startPrice` to protect from underflow.
-            return auctionParams.basePrice;
-        }
         return decayedPrice;
     }
 
