@@ -18,7 +18,8 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
         uint256 indexed projectId,
         uint256 _auctionTimestampStart,
         uint256 _auctionTimestampEnd,
-        uint256 _auctionPriceStart
+        uint256 _auctionPriceStart,
+        uint256 _auctionPriceEnd
     );
 
     /// Minimum allowed auction length updated
@@ -57,6 +58,7 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
         uint256 timestampStart;
         uint256 timestampEnd;
         uint256 priceStart;
+        uint256 priceEnd;
     }
 
     modifier onlyCoreWhitelisted() {
@@ -171,12 +173,14 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
      * @param _auctionTimestampStart Timestamp at which to start the auction.
      * @param _auctionTimestampEnd Timestamp at which to end the auction.
      * @param _auctionPriceStart Price at which to start the auction, in Wei.
+     * @param _auctionPriceEnd Resting price of the auction, in Wei.
      */
     function setAuctionDetails(
         uint256 _projectId,
         uint256 _auctionTimestampStart,
         uint256 _auctionTimestampEnd,
-        uint256 _auctionPriceStart
+        uint256 _auctionPriceStart,
+        uint256 _auctionPriceEnd
     ) external onlyCoreWhitelistedOrArtist(_projectId) {
         require(
             _auctionTimestampEnd > _auctionTimestampStart,
@@ -188,20 +192,21 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
             "Auction length must be at least minimumAuctionLengthSeconds"
         );
         require(
-            _auctionPriceStart >
-                artblocksContract.projectIdToPricePerTokenInWei(_projectId),
+            _auctionPriceStart > _auctionPriceEnd,
             "Auction start price must be greater than auction end price"
         );
         projectAuctionParameters[_projectId] = AuctionParameters(
             _auctionTimestampStart,
             _auctionTimestampEnd,
-            _auctionPriceStart
+            _auctionPriceStart,
+            _auctionPriceEnd
         );
         emit SetAuctionDetails(
             _projectId,
             _auctionTimestampStart,
             _auctionTimestampEnd,
-            _auctionPriceStart
+            _auctionPriceStart,
+            _auctionPriceEnd
         );
     }
 
@@ -352,13 +357,13 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
         if (block.timestamp <= auctionParams.timestampStart) {
             return auctionParams.priceStart;
         } else if (block.timestamp >= auctionParams.timestampEnd) {
-            return artblocksContract.projectIdToPricePerTokenInWei(_projectId);
+            return auctionParams.priceEnd;
         }
         uint256 elapsedTime = block.timestamp - auctionParams.timestampStart;
         uint256 duration = auctionParams.timestampEnd -
             auctionParams.timestampStart;
         uint256 startToEndDiff = auctionParams.priceStart -
-            artblocksContract.projectIdToPricePerTokenInWei(_projectId);
+            auctionParams.priceEnd;
         return
             auctionParams.priceStart -
             ((elapsedTime * startToEndDiff) / duration);
