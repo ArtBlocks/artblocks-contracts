@@ -27,6 +27,16 @@ interface IGenArt721CoreContract {
     // @dev this is not available in V0
     function isMintWhitelisted(address minter) external view returns (bool);
 
+    function projectIdToCurrencySymbol(uint256 _projectId)
+        external
+        view
+        returns (string memory);
+
+    function projectIdToCurrencyAddress(uint256 _projectId)
+        external
+        view
+        returns (address);
+
     function projectIdToArtistAddress(uint256 _projectId)
         external
         view

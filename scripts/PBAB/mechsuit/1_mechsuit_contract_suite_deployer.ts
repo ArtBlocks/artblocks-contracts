@@ -1,16 +1,16 @@
 import { ethers } from "hardhat";
-import { RandomizerArtCode__factory } from "../../contracts/factories/RandomizerArtCode__factory";
-import { GenArt721CoreV2ArtCode__factory } from "../../contracts/factories/GenArt721CoreV2ArtCode__factory";
-import { GenArt721MinterArtCode__factory } from "../../contracts/factories/GenArt721MinterArtCode__factory";
+import { RandomizerMechSuit__factory } from "../../contracts/factories/RandomizerMechSuit__factory";
+import { GenArt721CoreV2MechSuit__factory } from "../../contracts/factories/GenArt721CoreV2MechSuit__factory";
+import { GenArt721MinterMechSuit__factory } from "../../contracts/factories/GenArt721MinterMechSuit__factory";
 
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG BEGINS HERE
 // TODO: Update and verify the below configuration items before deploying!
 //////////////////////////////////////////////////////////////////////////////
-const pbabTokenName = "ARTCODE";
-const pbabTokenTicker = "ARTCODE";
-const pbabTransferAddress = "0x0a690B298f84D12414F5c8dB7de1EcE5a4605877";
-const rendererProviderAddress = "0x538eaf2A7002d2120F3F7B1e22d36b1Db7A65988";
+const pbabTokenName = "MECHSUIT";
+const pbabTokenTicker = "MECH";
+const pbabTransferAddress = "0x5343bFA1BBe40456f890354a39fAE17Ac4A7B95B";
+const rendererProviderAddress = "0x89E0cCE4Bc79D9CB0cEFA4785783Ad6e66978527";
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG ENDS HERE
 //////////////////////////////////////////////////////////////////////////////
@@ -23,14 +23,14 @@ async function main() {
   //////////////////////////////////////////////////////////////////////////////
 
   // Deploy Randomizer contract.
-  const randomizerFactory = new RandomizerArtCode__factory(deployer);
+  const randomizerFactory = new RandomizerMechSuit__factory(deployer);
   const randomizer = await randomizerFactory.deploy();
 
   await randomizer.deployed();
   console.log(`Randomizer deployed at ${randomizer.address}`);
 
   // Deploy Core contract.
-  const genArt721CoreFactory = new GenArt721CoreV2ArtCode__factory(deployer);
+  const genArt721CoreFactory = new GenArt721CoreV2MechSuit__factory(deployer);
   const genArt721Core = await genArt721CoreFactory.deploy(
     pbabTokenName,
     pbabTokenTicker,
@@ -41,7 +41,7 @@ async function main() {
   console.log(`GenArt721Core deployed at ${genArt721Core.address}`);
 
   // Deploy Minter contract.
-  const genArt721MinterFactory = new GenArt721MinterArtCode__factory(deployer);
+  const genArt721MinterFactory = new GenArt721MinterMechSuit__factory(deployer);
   const genArt721Minter = await genArt721MinterFactory.deploy(
     genArt721Core.address
   );
@@ -100,15 +100,16 @@ async function main() {
   console.log(`Transferred Core contract admin to: ${pbabTransferAddress}.`);
 
   // Output instructions for manual Etherscan verification.
+  const networkName = network.name == "homestead" ? "mainnet" : network.name;
   const standardVerify =
     "yarn hardhat verify --contract <path to .sol>:<contract name>";
   console.log(`Verify GenArt721CoreV2 deployment with:`);
   console.log(
-    `${standardVerify} --network ${network.name} ${genArt721Core.address} "${pbabTokenName}" "${pbabTokenTicker}" ${randomizer.address}`
+    `${standardVerify} --network ${networkName} ${genArt721Core.address} "${pbabTokenName}" "${pbabTokenTicker}" ${randomizer.address}`
   );
   console.log(`Verify GenArt721Minter deployment with:`);
   console.log(
-    `${standardVerify} --network ${network.name} ${genArt721Minter.address} ${genArt721Core.address}`
+    `${standardVerify} --network ${networkName} ${genArt721Minter.address} ${genArt721Core.address}`
   );
 
   //////////////////////////////////////////////////////////////////////////////
