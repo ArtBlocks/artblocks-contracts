@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Creatd By: Art Blocks Inc.
 
+import "./IGenArt721CoreContract.sol";
+
 pragma solidity ^0.5.0;
 
 interface IMinterFilter {
@@ -18,6 +20,8 @@ interface IMinterFilter {
         address indexed _minterAddress,
         string indexed _minterType
     );
+
+    function artblocksContract() external returns (IGenArt721CoreContract);
 
     function setMinterForProject(uint256, address) external;
 
