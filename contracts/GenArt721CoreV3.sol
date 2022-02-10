@@ -681,6 +681,14 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContract {
     }
 
     /**
+     * @notice Backwards-compatible (pre-V3) function returning if `_minter` is
+     * minterContract.
+     */
+    function isMintWhitelisted(address _minter) external view returns (bool) {
+        return (minterContract == _minter);
+    }
+
+    /**
      * @notice Gets royalty data for token ID `_tokenId`.
      * @param _tokenId Token ID to be queried.
      * @return artistAddress Artist's payment address

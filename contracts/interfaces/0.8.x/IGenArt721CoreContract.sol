@@ -24,6 +24,9 @@ interface IGenArt721CoreContract {
 
     function isWhitelisted(address sender) external view returns (bool);
 
+    // @dev this is not available in V0
+    function isMintWhitelisted(address minter) external view returns (bool);
+
     function projectIdToCurrencySymbol(uint256 _projectId)
         external
         view
