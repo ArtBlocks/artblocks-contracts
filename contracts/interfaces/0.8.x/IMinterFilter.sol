@@ -18,12 +18,13 @@ interface IMinterFilter {
     event MinterRevoked(address indexed _minterAddress);
 
     /**
-     * @notice Minter `_minterAddress` registered for project
-     * `_projectId`.
+     * @notice Minter `_minterAddress` of type `_minterType`
+     * registered for project `_projectId`.
      */
     event ProjectMinterRegistered(
         uint256 indexed _projectId,
-        address indexed _minterAddress
+        address indexed _minterAddress,
+        string indexed _minterType
     );
 
     /**
@@ -40,4 +41,8 @@ interface IMinterFilter {
         uint256 _projectId,
         address sender
     ) external returns (uint256);
+
+    function getMinterForProject(uint256) external view returns (address);
+
+    function projectHasMinter(uint256) external view returns (bool);
 }

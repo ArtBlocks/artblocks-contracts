@@ -132,49 +132,51 @@ describe("MinterFilter", async function () {
     });
 
     it("blocks purchases through the incorrect minter", async function () {
+      const noAssignedMinterErrorMessage = "EnumerableMap: nonexistent key";
+      const OnlyAssignedMinterErrorMessage = "Only assigned minter";
       await expectRevert(
         this.minter2.connect(this.accounts.owner).purchase(projectOne, {
           value: pricePerTokenInWei,
         }),
-        "Only assigned minter for project"
+        OnlyAssignedMinterErrorMessage
       );
       await expectRevert(
         this.minter1.connect(this.accounts.owner).purchase(projectTwo, {
           value: pricePerTokenInWei,
         }),
-        "Only assigned minter for project"
+        OnlyAssignedMinterErrorMessage
       );
 
       await expectRevert(
         this.minter1.connect(this.accounts.owner).purchase(projectThree, {
           value: pricePerTokenInWei,
         }),
-        "Only projects with an assigned minter"
+        noAssignedMinterErrorMessage
       );
       await expectRevert(
         this.minter2.connect(this.accounts.owner).purchase(projectThree, {
           value: pricePerTokenInWei,
         }),
-        "Only projects with an assigned minter"
+        noAssignedMinterErrorMessage
       );
 
       await expectRevert(
         this.minter3.connect(this.accounts.owner).purchase(projectOne, {
           value: pricePerTokenInWei,
         }),
-        "Only assigned minter for project"
+        OnlyAssignedMinterErrorMessage
       );
       await expectRevert(
         this.minter3.connect(this.accounts.owner).purchase(projectTwo, {
           value: pricePerTokenInWei,
         }),
-        "Only assigned minter for project"
+        OnlyAssignedMinterErrorMessage
       );
       await expectRevert(
         this.minter3.connect(this.accounts.owner).purchase(projectThree, {
           value: pricePerTokenInWei,
         }),
-        "Only projects with an assigned minter"
+        noAssignedMinterErrorMessage
       );
     });
   });
