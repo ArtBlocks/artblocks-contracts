@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../interfaces/0.8.x/IGenArt721CoreContract.sol";
+import "../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
 import "../interfaces/0.8.x/IMinterFilter.sol";
 import "../interfaces/0.8.x/IFilteredMinter.sol";
 
@@ -29,7 +29,7 @@ contract GenArt721FilteredMinterETHExponentialAuction is IFilteredMinter {
     );
 
     /// Art Blocks core contract this minter may interact with.
-    IGenArt721CoreContract public artblocksContract;
+    IGenArt721CoreContractV3 public genArtCoreContract;
     /// Minter filter this minter may interact with.
     IMinterFilter public minterFilter;
 
@@ -70,7 +70,7 @@ contract GenArt721FilteredMinterETHExponentialAuction is IFilteredMinter {
 
     modifier onlyCoreWhitelisted() {
         require(
-            artblocksContract.isWhitelisted(msg.sender),
+            genArtCoreContract.isWhitelisted(msg.sender),
             "Only Core whitelisted"
         );
         _;
@@ -78,9 +78,9 @@ contract GenArt721FilteredMinterETHExponentialAuction is IFilteredMinter {
 
     modifier onlyCoreWhitelistedOrArtist(uint256 _projectId) {
         require(
-            (artblocksContract.isWhitelisted(msg.sender) ||
+            (genArtCoreContract.isWhitelisted(msg.sender) ||
                 msg.sender ==
-                artblocksContract.projectIdToArtistAddress(_projectId)),
+                genArtCoreContract.projectIdToArtistAddress(_projectId)),
             "Only Core whitelisted or Artist"
         );
         _;
@@ -96,7 +96,7 @@ contract GenArt721FilteredMinterETHExponentialAuction is IFilteredMinter {
      * this will a filtered minter.
      */
     constructor(address _genArt721Address, address _minterFilter) {
-        artblocksContract = IGenArt721CoreContract(_genArt721Address);
+        genArtCoreContract = IGenArt721CoreContractV3(_genArt721Address);
         minterFilter = IMinterFilter(_minterFilter);
     }
 
@@ -125,7 +125,7 @@ contract GenArt721FilteredMinterETHExponentialAuction is IFilteredMinter {
     {
         uint256 maxInvocations;
         uint256 invocations;
-        (, , invocations, maxInvocations, , , , , ) = artblocksContract
+        (, , invocations, maxInvocations, , , , , ) = genArtCoreContract
             .projectTokenInfo(_projectId);
         projectMaxInvocations[_projectId] = maxInvocations;
         if (invocations < maxInvocations) {
@@ -327,33 +327,35 @@ contract GenArt721FilteredMinterETHExponentialAuction is IFilteredMinter {
                 payable(msg.sender).transfer(refund);
             }
             uint256 foundationAmount = (_currentPriceInWei / 100) *
-                artblocksContract.artblocksPercentage();
+                genArtCoreContract.artblocksPercentage();
             if (foundationAmount > 0) {
-                artblocksContract.artblocksAddress().transfer(foundationAmount);
+                genArtCoreContract.artblocksAddress().transfer(
+                    foundationAmount
+                );
             }
             uint256 projectFunds = _currentPriceInWei - foundationAmount;
             uint256 additionalPayeeAmount;
             if (
-                artblocksContract.projectIdToAdditionalPayeePercentage(
+                genArtCoreContract.projectIdToAdditionalPayeePercentage(
                     _projectId
                 ) > 0
             ) {
                 additionalPayeeAmount =
                     (projectFunds / 100) *
-                    artblocksContract.projectIdToAdditionalPayeePercentage(
+                    genArtCoreContract.projectIdToAdditionalPayeePercentage(
                         _projectId
                     );
                 if (additionalPayeeAmount > 0) {
-                    artblocksContract
+                    genArtCoreContract
                         .projectIdToAdditionalPayee(_projectId)
                         .transfer(additionalPayeeAmount);
                 }
             }
             uint256 creatorFunds = projectFunds - additionalPayeeAmount;
             if (creatorFunds > 0) {
-                artblocksContract.projectIdToArtistAddress(_projectId).transfer(
-                        creatorFunds
-                    );
+                genArtCoreContract
+                    .projectIdToArtistAddress(_projectId)
+                    .transfer(creatorFunds);
             }
         }
     }
