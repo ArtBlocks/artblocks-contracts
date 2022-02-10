@@ -57,7 +57,7 @@ contract GenArt721FilteredMinterETHExponentialAuction is IFilteredMinter {
     uint256 public minimumPriceDecayHalfLifeSeconds = 300; // 5 minutes
     /// Maximum price decay half life: price may decay with a half life of no
     /// more than this amount (may cut in half at no more than every N seconds).
-    uint256 public maximumPriceDecayHalfLifeSeconds = 1200; // 20 minutes
+    uint256 public maximumPriceDecayHalfLifeSeconds = 3600; // 60 minutes
 
     /// projectId => auction parameters
     mapping(uint256 => AuctionParameters) public projectAuctionParameters;
