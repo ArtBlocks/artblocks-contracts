@@ -27,14 +27,11 @@ contract GenArt721FilteredMinterETHAuctionV0 is IFilteredMinterV0 {
         uint256 _minimumAuctionLengthSeconds
     );
 
-    /// Art Blocks core contract address this minter interacts with
-    address public immutable genArt721CoreAddress;
-
     /// This contract handles cores with interface IV1
     IGenArt721CoreContractV1 private immutable genArtCoreContract;
 
     /// Minter filter this minter may interact with.
-    IMinterFilterV0 public minterFilter;
+    IMinterFilterV0 public immutable minterFilter;
 
     /// minterType for this minter
     string public constant minterType = "GenArt721FilteredMinterETHAuctionV0";
@@ -93,7 +90,6 @@ contract GenArt721FilteredMinterETHAuctionV0 is IFilteredMinterV0 {
      * this will a filtered minter.
      */
     constructor(address _genArt721Address, address _minterFilter) {
-        genArt721CoreAddress = _genArt721Address;
         genArtCoreContract = IGenArt721CoreContractV1(_genArt721Address);
         minterFilter = IMinterFilterV0(_minterFilter);
         require(
