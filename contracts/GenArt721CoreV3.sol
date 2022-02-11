@@ -56,9 +56,9 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
     uint256 constant ONE_MILLION = 1_000_000;
     mapping(uint256 => Project) projects;
 
-    //All financial functions are stripped from struct for visibility
-    mapping(uint256 => address) public projectIdToArtistAddress;
-    mapping(uint256 => address) public projectIdToAdditionalPayee;
+    // All financial functions are stripped from struct for visibility
+    mapping(uint256 => address payable) public projectIdToArtistAddress;
+    mapping(uint256 => address payable) public projectIdToAdditionalPayee;
     mapping(uint256 => uint256) public projectIdToAdditionalPayeePercentage;
     mapping(uint256 => uint256)
         public projectIdToSecondaryMarketRoyaltyPercentage;

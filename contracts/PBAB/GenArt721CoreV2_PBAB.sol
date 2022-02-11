@@ -50,11 +50,11 @@ contract GenArt721CoreV2_PBAB is CustomERC721Metadata, IGenArt721CoreV2_PBAB {
     mapping(uint256 => Project) projects;
 
     //All financial functions are stripped from struct for visibility
-    mapping(uint256 => address) public projectIdToArtistAddress;
+    mapping(uint256 => address payable) public projectIdToArtistAddress;
     mapping(uint256 => string) public projectIdToCurrencySymbol;
     mapping(uint256 => address) public projectIdToCurrencyAddress;
     mapping(uint256 => uint256) public projectIdToPricePerTokenInWei;
-    mapping(uint256 => address) public projectIdToAdditionalPayee;
+    mapping(uint256 => address payable) public projectIdToAdditionalPayee;
     mapping(uint256 => uint256) public projectIdToAdditionalPayeePercentage;
     mapping(uint256 => uint256)
         public projectIdToSecondaryMarketRoyaltyPercentage;
