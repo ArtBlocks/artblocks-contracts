@@ -394,6 +394,7 @@ contract GenArt721FilteredMinterETHExponentialAuction is IFilteredMinter {
     /**
      * @notice Gets price of minting a token on project `_projectId` given
      * the project's AuctionParameters and current block timestamp.
+     * Reverts if auction has not yet started or auction is unconfigured.
      * @param _projectId Project ID to get price of token for.
      * @return current price of token in Wei
      * @dev This method calculates price decay using a linear interpolation
