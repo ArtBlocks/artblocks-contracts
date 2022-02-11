@@ -49,5 +49,8 @@
     "typescript": "^4.2.3"
   },
   "author": "Art Blocks, Inc",
-  "license": "LGPL-3.0-only"
+  "license": "LGPL-3.0-only",
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.5.0"
+  }
 }
