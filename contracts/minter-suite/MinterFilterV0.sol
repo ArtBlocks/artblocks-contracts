@@ -42,7 +42,6 @@ contract MinterFilterV0 is IMinterFilterV0 {
 
     modifier onlyCoreWhitelisted() {
         require(
-            // `isWhitelisted` is valid for V3 and V1 interfaces
             genArtCoreContract.isWhitelisted(msg.sender),
             "Only Core whitelisted"
         );
@@ -50,8 +49,6 @@ contract MinterFilterV0 is IMinterFilterV0 {
     }
 
     modifier onlyCoreWhitelistedOrArtist(uint256 _projectId) {
-        // `isWhitelisted` is valid for V3 and V1 interfaces
-        // projectIdToArtistAddress is valid for V3 and V1 interfaces
         require(
             (genArtCoreContract.isWhitelisted(msg.sender) ||
                 msg.sender ==
@@ -62,7 +59,6 @@ contract MinterFilterV0 is IMinterFilterV0 {
     }
 
     modifier projectExists(uint256 _projectId) {
-        // `nextProjectId` is valid for V3 and V1 interfaces
         require(
             _projectId < genArtCoreContract.nextProjectId(),
             "Only existing projects"
@@ -79,7 +75,6 @@ contract MinterFilterV0 is IMinterFilterV0 {
     }
 
     modifier onlyMintWhitelisted() {
-        // `isMintWhitelisted` is valid for V3 and V1 interfaces
         require(
             genArtCoreContract.isMintWhitelisted(address(this)),
             "Only mint allowlisted"
@@ -94,7 +89,6 @@ contract MinterFilterV0 is IMinterFilterV0 {
      */
     constructor(address _genArt721Address) {
         genArt721CoreAddress = _genArt721Address;
-        // supports V3 and V1 core contract interfaces
         genArtCoreContract = IGenArt721CoreContractV1(_genArt721Address);
     }
 
@@ -230,7 +224,6 @@ contract MinterFilterV0 is IMinterFilterV0 {
             msg.sender == minterForProject.get(_projectId),
             "Only assigned minter"
         );
-        // mint - `mint` is valid for V3 and V1 interfaces
         uint256 tokenId = genArtCoreContract.mint(_to, _projectId, sender);
         return tokenId;
     }
