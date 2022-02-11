@@ -3,7 +3,7 @@
 
 import "../interfaces/0.8.x/IMinterFilter.sol";
 import "../interfaces/0.8.x/IFilteredMinter.sol";
-import "../interfaces/0.8.x/IGenArt721CoreContract.sol";
+import "../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
 
 import "../libs/0.8.x/EnumerableMap.sol";
 
@@ -26,7 +26,7 @@ contract MinterFilter is IMinterFilter {
     using EnumerableMap for EnumerableMap.UintToAddressMap;
 
     /// Art Blocks core contract this minter may interact with.
-    IGenArt721CoreContract public artblocksContract;
+    IGenArt721CoreContractV3 public genArtCoreContract;
 
     /// projectId => minter address
     EnumerableMap.UintToAddressMap private minterForProject;
@@ -39,7 +39,7 @@ contract MinterFilter is IMinterFilter {
 
     modifier onlyCoreWhitelisted() {
         require(
-            artblocksContract.isWhitelisted(msg.sender),
+            genArtCoreContract.isWhitelisted(msg.sender),
             "Only Core whitelisted"
         );
         _;
@@ -47,9 +47,9 @@ contract MinterFilter is IMinterFilter {
 
     modifier onlyCoreWhitelistedOrArtist(uint256 _projectId) {
         require(
-            (artblocksContract.isWhitelisted(msg.sender) ||
+            (genArtCoreContract.isWhitelisted(msg.sender) ||
                 msg.sender ==
-                artblocksContract.projectIdToArtistAddress(_projectId)),
+                genArtCoreContract.projectIdToArtistAddress(_projectId)),
             "Only Core whitelisted or Artist"
         );
         _;
@@ -57,7 +57,7 @@ contract MinterFilter is IMinterFilter {
 
     modifier projectExists(uint256 _projectId) {
         require(
-            _projectId < artblocksContract.nextProjectId(),
+            _projectId < genArtCoreContract.nextProjectId(),
             "Only existing projects"
         );
         _;
@@ -73,7 +73,7 @@ contract MinterFilter is IMinterFilter {
 
     modifier onlyMintWhitelisted() {
         require(
-            artblocksContract.isMintWhitelisted(address(this)),
+            genArtCoreContract.isMintWhitelisted(address(this)),
             "Only mint allowlisted"
         );
         _;
@@ -85,7 +85,7 @@ contract MinterFilter is IMinterFilter {
      * this contract will be a minter for. Can never be updated.
      */
     constructor(address _genArt721Address) {
-        artblocksContract = IGenArt721CoreContract(_genArt721Address);
+        genArtCoreContract = IGenArt721CoreContractV3(_genArt721Address);
     }
 
     /**
@@ -98,7 +98,7 @@ contract MinterFilter is IMinterFilter {
         onlyCoreWhitelisted
         onlyMintWhitelisted
     {
-        emit IsCanonicalMinterFilter(address(artblocksContract));
+        emit IsCanonicalMinterFilter(address(genArtCoreContract));
     }
 
     /**
@@ -221,7 +221,7 @@ contract MinterFilter is IMinterFilter {
             "Only assigned minter"
         );
         // mint
-        uint256 tokenId = artblocksContract.mint(_to, _projectId, sender);
+        uint256 tokenId = genArtCoreContract.mint(_to, _projectId, sender);
         return tokenId;
     }
 
