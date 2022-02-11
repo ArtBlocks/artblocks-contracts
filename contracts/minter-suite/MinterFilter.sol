@@ -5,7 +5,7 @@ import "../interfaces/0.8.x/IMinterFilter.sol";
 import "../interfaces/0.8.x/IFilteredMinter.sol";
 import "../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
 
-import "../libs/0.8.x/EnumerableMap.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 
 pragma solidity 0.8.9;
 

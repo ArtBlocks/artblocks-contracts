@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../libs/0.8.x/CustomERC721Metadata.sol";
-import "../libs/0.8.x/SafeMath.sol";
-import "../libs/0.8.x/Strings.sol";
-
 import "../interfaces/0.8.x/IRandomizer.sol";
 import "../interfaces/0.8.x/IGenArt721CoreV2_PBAB.sol";
+
+import "@openzeppelin/contracts/utils/Strings.sol";
+
+import "../libs/0.8.x/CustomERC721Metadata.sol";
 
 pragma solidity 0.8.9;
 
@@ -15,8 +15,6 @@ pragma solidity 0.8.9;
  * @author Art Blocks Inc.
  */
 contract GenArt721CoreV2_PBAB is CustomERC721Metadata, IGenArt721CoreV2_PBAB {
-    using SafeMath for uint256;
-
     /**
      * @notice Token ID `_tokenId` minted on project ID `_projectId` to `_to`.
      * @dev NatSpec for events not supported in Solidity ^0.5.0

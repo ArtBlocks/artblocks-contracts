@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../libs/0.8.x/SafeMath.sol";
-import "../libs/0.8.x/Strings.sol";
-import "../libs/0.8.x/IERC20.sol";
-
 import "../interfaces/0.8.x/IGenArt721CoreV2_PBAB.sol";
 import "../interfaces/0.8.x/IBonusContract.sol";
+
+import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts/interfaces/IERC20.sol";
 
 pragma solidity 0.8.9;
 
@@ -16,8 +15,6 @@ pragma solidity 0.8.9;
  * @author Art Blocks Inc.
  */
 contract GenArt721Minter_PBAB {
-    using SafeMath for uint256;
-
     /// PBAB core contract this minter may interact with.
     IGenArt721CoreV2_PBAB public genArtCoreContract;
 

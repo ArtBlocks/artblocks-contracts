@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../libs/0.8.x/IERC20.sol";
-
 import "../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
 import "../interfaces/0.8.x/IMinterFilter.sol";
 import "../interfaces/0.8.x/IFilteredMinter.sol";
+
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 pragma solidity 0.8.9;
 
