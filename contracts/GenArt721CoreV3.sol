@@ -130,7 +130,7 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
         string memory _tokenName,
         string memory _tokenSymbol,
         address _randomizerContract
-    ) public CustomERC721Metadata(_tokenName, _tokenSymbol) {
+    ) CustomERC721Metadata(_tokenName, _tokenSymbol) {
         admin = msg.sender;
         isWhitelisted[msg.sender] = true;
         artblocksAddress = msg.sender;

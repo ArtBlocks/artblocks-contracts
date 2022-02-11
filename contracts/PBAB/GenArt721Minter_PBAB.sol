@@ -35,7 +35,7 @@ contract GenArt721Minter_PBAB {
      * @notice Initializes contract to be a Minter for PBAB core contract at
      * address `_genArt721Address`.
      */
-    constructor(address _genArt721Address) public {
+    constructor(address _genArt721Address) {
         genArtCoreContract = IGenArt721CoreV2_PBAB(_genArt721Address);
     }
 

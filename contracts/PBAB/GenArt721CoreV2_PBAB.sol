@@ -59,7 +59,7 @@ contract GenArt721CoreV2_PBAB is CustomERC721Metadata, IGenArt721CoreV2_PBAB {
     mapping(uint256 => uint256)
         public projectIdToSecondaryMarketRoyaltyPercentage;
 
-    address public renderProviderAddress;
+    address payable public renderProviderAddress;
     /// Percentage of mint revenue allocated to render provider
     uint256 public renderProviderPercentage = 10;
 
@@ -124,10 +124,10 @@ contract GenArt721CoreV2_PBAB is CustomERC721Metadata, IGenArt721CoreV2_PBAB {
         string memory _tokenName,
         string memory _tokenSymbol,
         address _randomizerContract
-    ) public CustomERC721Metadata(_tokenName, _tokenSymbol) {
+    ) CustomERC721Metadata(_tokenName, _tokenSymbol) {
         admin = msg.sender;
         isWhitelisted[msg.sender] = true;
-        renderProviderAddress = msg.sender;
+        renderProviderAddress = payable(msg.sender);
         randomizerContract = IRandomizer(_randomizerContract);
     }
 
@@ -208,7 +208,7 @@ contract GenArt721CoreV2_PBAB is CustomERC721Metadata, IGenArt721CoreV2_PBAB {
     /**
      * @notice Updates render provider address to `_renderProviderAddress`.
      */
-    function updateRenderProviderAddress(address _renderProviderAddress)
+    function updateRenderProviderAddress(address payable _renderProviderAddress)
         public
         onlyAdmin
     {
