@@ -22,7 +22,7 @@ abstract contract CustomERC721Metadata is ERC165, ERC721, ERC721Enumerable {
     /**
      * @dev Constructor function
      */
-    constructor(string memory name, string memory symbol) public {
+    constructor(string memory name, string memory symbol) {
         _name = name;
         _symbol = symbol;
     }

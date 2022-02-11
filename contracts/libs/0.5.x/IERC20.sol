@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: MIT
 // OpenZeppelin Contracts v4.4.0 (token/ERC20/IERC20.sol)
 
+// **Please Note**: This library is not necessary for ^0.8.0 contracts and thus
+//                  only exists for posterity reasons for compatibility with
+//                  existing already-deployed ^0.5.0 PBAB contracts.
+
 pragma solidity ^0.5.0;
 
 /**

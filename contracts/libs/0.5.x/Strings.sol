@@ -1,8 +1,13 @@
+// SPDX-License-Identifier: MIT
 // File: contracts/Strings.sol
+// Source: https://github.com/oraclize/ethereum-api/blob/master/oraclizeAPI_0.5.sol
+
+// **Please Note**: This library is not necessary for ^0.8.0 contracts and thus
+//                  only exists for posterity reasons for compatibility with
+//                  existing already-deployed ^0.5.0 PBAB contracts.
 
 pragma solidity ^0.5.0;
 
-//https://github.com/oraclize/ethereum-api/blob/master/oraclizeAPI_0.5.sol
 library Strings {
     function strConcat(string memory _a, string memory _b)
         internal
