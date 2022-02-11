@@ -88,7 +88,7 @@ describe("GenArt721FilteredMinterETHExponentialAuction", async function () {
       this.startTime = Date.now();
     }
 
-    await ethers.provider.send("evm_mine", [this.startTime - ONE_HOUR]);
+    await ethers.provider.send("evm_setNextBlockTimestamp", [this.startTime]);
     await this.minter
       .connect(this.accounts.deployer)
       .setAuctionDetails(
@@ -98,7 +98,6 @@ describe("GenArt721FilteredMinterETHExponentialAuction", async function () {
         startingPrice,
         basePrice
       );
-    await ethers.provider.send("evm_mine", [this.startTime]);
   });
 
   describe("constructor", async function () {
