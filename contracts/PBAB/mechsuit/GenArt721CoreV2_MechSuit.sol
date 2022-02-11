@@ -1,40 +1,27 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-// Created By: Art Blocks Inc.
+// Creatd By: Art Blocks Inc.
 
-import "./libs/0.5.x/CustomERC721Metadata.sol";
-import "./libs/0.5.x/SafeMath.sol";
-import "./libs/0.5.x/Strings.sol";
+import "../../libs/0.5.x/CustomERC721Metadata.sol";
+import "../../libs/0.5.x/SafeMath.sol";
+import "../../libs/0.5.x/Strings.sol";
 
-import "./interfaces/0.5.x/IRandomizer.sol";
-import "./interfaces/0.5.x/IGenArt721CoreContractV3.sol";
+import "../../interfaces/0.5.x/IRandomizer.sol";
+import "../../interfaces/0.5.x/IGenArt721CoreV2_PBAB.sol";
 
-pragma solidity ^0.5.17;
+pragma solidity ^0.5.0;
 
-/**
- * @title Art Blocks ERC-721 core contract, V3.
- * @author Art Blocks Inc.
- */
-contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
+contract GenArt721CoreV2_MechSuit is
+    CustomERC721Metadata,
+    IGenArt721CoreV2_PBAB
+{
     using SafeMath for uint256;
 
-    /**
-     * @notice Token ID `_tokenId` minted on project ID `_projectId` to `_to`.
-     * @dev NatSpec for events not supported in Solidity ^0.5.0
-     */
     event Mint(
         address indexed _to,
         uint256 indexed _tokenId,
         uint256 indexed _projectId
     );
 
-    /**
-     * @notice currentMinter updated to `_currentMinter`.
-     * @dev Implemented starting with V3 core
-     * @dev NatSpec for events not supported in Solidity ^0.5.0
-     */
-    event MinterUpdated(address indexed _currentMinter);
-
-    /// randomizer contract
     IRandomizer public randomizerContract;
 
     struct Project {
@@ -60,29 +47,25 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
 
     //All financial functions are stripped from struct for visibility
     mapping(uint256 => address) public projectIdToArtistAddress;
+    mapping(uint256 => string) public projectIdToCurrencySymbol;
+    mapping(uint256 => address) public projectIdToCurrencyAddress;
+    mapping(uint256 => uint256) public projectIdToPricePerTokenInWei;
     mapping(uint256 => address) public projectIdToAdditionalPayee;
     mapping(uint256 => uint256) public projectIdToAdditionalPayeePercentage;
     mapping(uint256 => uint256)
         public projectIdToSecondaryMarketRoyaltyPercentage;
 
-    address public artblocksAddress;
-    /// Percentage of mint revenue allocated to Art Blocks
-    uint256 public artblocksPercentage = 10;
+    address public renderProviderAddress;
+    uint256 public renderProviderPercentage = 10;
 
     mapping(uint256 => uint256) public tokenIdToProjectId;
-    //mapping(uint256 => uint256[]) internal projectIdToTokenIds;
     mapping(uint256 => bytes32) public tokenIdToHash;
     mapping(bytes32 => uint256) public hashToTokenId;
 
-    /// admin for contract
     address public admin;
-    /// true if address is whitelisted
     mapping(address => bool) public isWhitelisted;
+    mapping(address => bool) public isMintWhitelisted;
 
-    /// single minter allowed for this core contract
-    address public minterContract;
-
-    /// next project ID to be created
     uint256 public nextProjectId = 0;
 
     modifier onlyValidTokenId(uint256 _tokenId) {
@@ -122,12 +105,6 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
         _;
     }
 
-    /**
-     * @notice Initializes contract.
-     * @param _tokenName Name of token.
-     * @param _tokenSymbol Token symbol.
-     * @param _randomizerContract Randomizer contract.
-     */
     constructor(
         string memory _tokenName,
         string memory _tokenSymbol,
@@ -135,26 +112,18 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
     ) public CustomERC721Metadata(_tokenName, _tokenSymbol) {
         admin = msg.sender;
         isWhitelisted[msg.sender] = true;
-        artblocksAddress = msg.sender;
+        renderProviderAddress = msg.sender;
         randomizerContract = IRandomizer(_randomizerContract);
     }
 
-    /**
-     * @notice Mints a token from project `_projectId` and sets the
-     * token's owner to `_to`.
-     * @param _to Address to be the minted token's owner.
-     * @param _projectId Project ID to mint a token on.
-     * @param _by Purchaser of minted token.
-     * @dev sender must be a whitelisted minter
-     */
     function mint(
         address _to,
         uint256 _projectId,
         address _by
     ) external returns (uint256 _tokenId) {
         require(
-            msg.sender == minterContract,
-            "Must mint from the allowed minter contract."
+            isMintWhitelisted[msg.sender],
+            "Must mint from whitelisted minter contract."
         );
         require(
             projects[_projectId].invocations.add(1) <=
@@ -202,67 +171,47 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
         _mint(_to, tokenIdToBe);
 
         tokenIdToProjectId[tokenIdToBe] = _projectId;
-        //projectIdToTokenIds[_projectId].push(tokenIdToBe);
 
         emit Mint(_to, tokenIdToBe, _projectId);
 
         return tokenIdToBe;
     }
 
-    /**
-     * @notice Updates contract admin to `_adminAddress`.
-     */
     function updateAdmin(address _adminAddress) public onlyAdmin {
         admin = _adminAddress;
     }
 
-    /**
-     * @notice Updates artblocksAddress to `_artblocksAddress`.
-     */
-    function updateArtblocksAddress(address _artblocksAddress)
+    function updateRenderProviderAddress(address _renderProviderAddress)
         public
         onlyAdmin
     {
-        artblocksAddress = _artblocksAddress;
+        renderProviderAddress = _renderProviderAddress;
     }
 
-    /**
-     * @notice Updates Art Blocks mint revenue percentage to
-     * `_artblocksPercentage`.
-     */
-    function updateArtblocksPercentage(uint256 _artblocksPercentage)
+    function updateRenderProviderPercentage(uint256 _renderProviderPercentage)
         public
         onlyAdmin
     {
-        require(_artblocksPercentage <= 25, "Max of 25%");
-        artblocksPercentage = _artblocksPercentage;
+        require(_renderProviderPercentage <= 25, "Max of 25%");
+        renderProviderPercentage = _renderProviderPercentage;
     }
 
-    /**
-     * @notice Whitelists `_address`.
-     */
     function addWhitelisted(address _address) public onlyAdmin {
         isWhitelisted[_address] = true;
     }
 
-    /**
-     * @notice Revokes whitelisting of `_address`.
-     */
     function removeWhitelisted(address _address) public onlyAdmin {
         isWhitelisted[_address] = false;
     }
 
-    /**
-     * @notice updates minter to `_address`.
-     */
-    function updateMinterContract(address _address) public onlyAdmin {
-        minterContract = _address;
-        emit MinterUpdated(_address);
+    function addMintWhitelisted(address _address) public onlyAdmin {
+        isMintWhitelisted[_address] = true;
     }
 
-    /**
-     * @notice Updates randomizer to `_randomizerAddress`.
-     */
+    function removeMintWhitelisted(address _address) public onlyAdmin {
+        isMintWhitelisted[_address] = false;
+    }
+
     function updateRandomizerAddress(address _randomizerAddress)
         public
         onlyWhitelisted
@@ -270,9 +219,6 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
         randomizerContract = IRandomizer(_randomizerAddress);
     }
 
-    /**
-     * @notice Locks project `_projectId`.
-     */
     function toggleProjectIsLocked(uint256 _projectId)
         public
         onlyWhitelisted
@@ -281,16 +227,10 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
         projects[_projectId].locked = true;
     }
 
-    /**
-     * @notice Toggles project `_projectId` as active/inactive.
-     */
     function toggleProjectIsActive(uint256 _projectId) public onlyWhitelisted {
         projects[_projectId].active = !projects[_projectId].active;
     }
 
-    /**
-     * @notice Updates artist of project `_projectId` to `_artistAddress`.
-     */
     function updateProjectArtistAddress(
         uint256 _projectId,
         address _artistAddress
@@ -298,9 +238,6 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
         projectIdToArtistAddress[_projectId] = _artistAddress;
     }
 
-    /**
-     * @notice Toggles paused state of project `_projectId`.
-     */
     function toggleProjectIsPaused(uint256 _projectId)
         public
         onlyArtist(_projectId)
@@ -308,28 +245,37 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
         projects[_projectId].paused = !projects[_projectId].paused;
     }
 
-    /**
-     * @notice Adds new project `_projectName` by `_artistAddress`.
-     * @param _projectName Project name.
-     * @param _artistAddress Artist's address.
-     * @dev token price now stored on minter
-     */
-    function addProject(string memory _projectName, address _artistAddress)
-        public
-        onlyWhitelisted
-    {
+    function addProject(
+        string memory _projectName,
+        address _artistAddress,
+        uint256 _pricePerTokenInWei
+    ) public onlyWhitelisted {
         uint256 projectId = nextProjectId;
         projectIdToArtistAddress[projectId] = _artistAddress;
         projects[projectId].name = _projectName;
+        projectIdToCurrencySymbol[projectId] = "ETH";
+        projectIdToPricePerTokenInWei[projectId] = _pricePerTokenInWei;
         projects[projectId].paused = true;
         projects[projectId].maxInvocations = ONE_MILLION;
-
         nextProjectId = nextProjectId.add(1);
     }
 
-    /**
-     * @notice Updates name of project `_projectId` to be `_projectName`.
-     */
+    function updateProjectCurrencyInfo(
+        uint256 _projectId,
+        string memory _currencySymbol,
+        address _currencyAddress
+    ) public onlyArtist(_projectId) {
+        projectIdToCurrencySymbol[_projectId] = _currencySymbol;
+        projectIdToCurrencyAddress[_projectId] = _currencyAddress;
+    }
+
+    function updateProjectPricePerTokenInWei(
+        uint256 _projectId,
+        uint256 _pricePerTokenInWei
+    ) public onlyArtist(_projectId) {
+        projectIdToPricePerTokenInWei[_projectId] = _pricePerTokenInWei;
+    }
+
     function updateProjectName(uint256 _projectId, string memory _projectName)
         public
         onlyUnlocked(_projectId)
@@ -338,10 +284,6 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
         projects[_projectId].name = _projectName;
     }
 
-    /**
-     * @notice Updates artist name for project `_projectId` to be
-     * `_projectArtistName`.
-     */
     function updateProjectArtistName(
         uint256 _projectId,
         string memory _projectArtistName
@@ -349,11 +291,6 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
         projects[_projectId].artist = _projectArtistName;
     }
 
-    /**
-     * @notice Updates additional payee for project `_projectId` to be
-     * `_additionalPayee`, receiving `_additionalPayeePercentage` percent
-     * of artist mint and royalty revenues.
-     */
     function updateProjectAdditionalPayeeInfo(
         uint256 _projectId,
         address _additionalPayee,
@@ -366,10 +303,6 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
         ] = _additionalPayeePercentage;
     }
 
-    /**
-     * @notice Updates artist secondary market royalties for project
-     * `_projectId` to be `_secondMarketRoyalty` percent.
-     */
     function updateProjectSecondaryMarketRoyaltyPercentage(
         uint256 _projectId,
         uint256 _secondMarketRoyalty
@@ -380,9 +313,6 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
         ] = _secondMarketRoyalty;
     }
 
-    /**
-     * @notice Updates description of project `_projectId`.
-     */
     function updateProjectDescription(
         uint256 _projectId,
         string memory _projectDescription
@@ -390,9 +320,6 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
         projects[_projectId].description = _projectDescription;
     }
 
-    /**
-     * @notice Updates website of project `_projectId` to be `_projectWebsite`.
-     */
     function updateProjectWebsite(
         uint256 _projectId,
         string memory _projectWebsite
@@ -400,9 +327,6 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
         projects[_projectId].website = _projectWebsite;
     }
 
-    /**
-     * @notice Updates license for project `_projectId`.
-     */
     function updateProjectLicense(
         uint256 _projectId,
         string memory _projectLicense
@@ -410,10 +334,6 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
         projects[_projectId].license = _projectLicense;
     }
 
-    /**
-     * @notice Updates maximum invocations for project `_projectId` to
-     * `_maxInvocations`.
-     */
     function updateProjectMaxInvocations(
         uint256 _projectId,
         uint256 _maxInvocations
@@ -431,11 +351,6 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
         projects[_projectId].maxInvocations = _maxInvocations;
     }
 
-    /**
-     * @notice Adds a script to project `_projectId`.
-     * @param _projectId Project to be updated.
-     * @param _script Script to be added.
-     */
     function addProjectScript(uint256 _projectId, string memory _script)
         public
         onlyUnlocked(_projectId)
@@ -449,12 +364,6 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
         );
     }
 
-    /**
-     * @notice Updates script for project `_projectId` at script ID `_scriptId`.
-     * @param _projectId Project to be updated.
-     * @param _scriptId Script ID to be updated.
-     * @param _script Script to be added.
-     */
     function updateProjectScript(
         uint256 _projectId,
         uint256 _scriptId,
@@ -467,9 +376,6 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
         projects[_projectId].scripts[_scriptId] = _script;
     }
 
-    /**
-     * @notice Removes last script from project `_projectId`.
-     */
     function removeProjectLastScript(uint256 _projectId)
         public
         onlyUnlocked(_projectId)
@@ -487,9 +393,6 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
         );
     }
 
-    /**
-     * @notice Updates script json for project `_projectId`.
-     */
     function updateProjectScriptJSON(
         uint256 _projectId,
         string memory _projectScriptJSON
@@ -497,9 +400,6 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
         projects[_projectId].scriptJSON = _projectScriptJSON;
     }
 
-    /**
-     * @notice Updates ipfs hash for project `_projectId`.
-     */
     function updateProjectIpfsHash(uint256 _projectId, string memory _ipfsHash)
         public
         onlyUnlocked(_projectId)
@@ -508,9 +408,6 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
         projects[_projectId].ipfsHash = _ipfsHash;
     }
 
-    /**
-     * @notice Updates base URI for project `_projectId` to `_newBaseURI`.
-     */
     function updateProjectBaseURI(uint256 _projectId, string memory _newBaseURI)
         public
         onlyArtist(_projectId)
@@ -518,15 +415,6 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
         projects[_projectId].projectBaseURI = _newBaseURI;
     }
 
-    /**
-     * @notice Returns project details for project `_projectId`.
-     * @param _projectId Project to be queried.
-     * @return projectName Name of project
-     * @return artist Artist of project
-     * @return description Project description
-     * @return website Project website
-     * @return license Project license
-     */
     function projectDetails(uint256 _projectId)
         public
         view
@@ -545,20 +433,6 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
         license = projects[_projectId].license;
     }
 
-    /**
-     * @notice Returns project token information for project `_projectId`.
-     * @param _projectId Project to be queried
-     * @return artistAddress Project Artist's address
-     * @return pricePerTokenInWei (deprecated) - please view on minter
-     * @return invocations Current number of invocations
-     * @return maxInvocations Maximum allowed invocations
-     * @return active Boolean representing if project is currently active
-     * @return additionalPayee Additional payee address
-     * @return additionalPayeePercentage Percentage of artist revenue
-     * to be sent to the additional payee's address
-     * @return currency (deprecated) - please view on minter
-     * @return currencyAddress (deprecated) - please view on minter
-     */
     function projectTokenInfo(uint256 _projectId)
         public
         view
@@ -575,7 +449,7 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
         )
     {
         artistAddress = projectIdToArtistAddress[_projectId];
-        pricePerTokenInWei = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
+        pricePerTokenInWei = projectIdToPricePerTokenInWei[_projectId];
         invocations = projects[_projectId].invocations;
         maxInvocations = projects[_projectId].maxInvocations;
         active = projects[_projectId].active;
@@ -583,21 +457,12 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
         additionalPayeePercentage = projectIdToAdditionalPayeePercentage[
             _projectId
         ];
-        currency = "";
-        currencyAddress = address(0);
+        currency = projectIdToCurrencySymbol[_projectId];
+        currencyAddress = projectIdToCurrencyAddress[_projectId];
     }
 
-    /**
-     * @notice Returns script information for project `_projectId`.
-     * @param _projectId Project to be queried.
-     * @return scriptJSON Project's script json
-     * @return scriptCount Count of scripts for project
-     * @return ipfsHash IPFS hash for project
-     * @return locked Boolean representing if project is locked
-     * @return paused Boolean representing if project is paused
-     */
     function projectScriptInfo(uint256 _projectId)
-        external
+        public
         view
         returns (
             string memory scriptJSON,
@@ -614,31 +479,22 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
         paused = projects[_projectId].paused;
     }
 
-    /**
-     * @notice Returns script for project `_projectId` at script index `_index`.
-     */
     function projectScriptByIndex(uint256 _projectId, uint256 _index)
-        external
+        public
         view
         returns (string memory)
     {
         return projects[_projectId].scripts[_index];
     }
 
-    /**
-     * @notice Returns base URI for project `_projectId`.
-     */
     function projectURIInfo(uint256 _projectId)
-        external
+        public
         view
         returns (string memory projectBaseURI)
     {
         projectBaseURI = projects[_projectId].projectBaseURI;
     }
 
-    /**
-     * @notice Gets tokens of `owner`.
-     */
     function tokensOfOwner(address owner)
         external
         view
@@ -647,24 +503,6 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
         return _tokensOfOwner(owner);
     }
 
-    /**
-     * @notice Backwards-compatible (pre-V3) function returning if `_minter` is
-     * minterContract.
-     */
-    function isMintWhitelisted(address _minter) external view returns (bool) {
-        return (minterContract == _minter);
-    }
-
-    /**
-     * @notice Gets royalty data for token ID `_tokenId`.
-     * @param _tokenId Token ID to be queried.
-     * @return artistAddress Artist's payment address
-     * @return additionalPayee Additional payee's payment address
-     * @return additionalPayeePercentage Percentage of artist revenue
-     * to be sent to the additional payee's address
-     * @return royaltyFeeByID Total royalty percentage to be sent to
-     * combination of artist and additional payee
-     */
     function getRoyaltyData(uint256 _tokenId)
         public
         view
@@ -687,9 +525,6 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
         ];
     }
 
-    /**
-     * @notice Gets token URI for token ID `_tokenId`.
-     */
     function tokenURI(uint256 _tokenId)
         external
         view

@@ -4,7 +4,7 @@
 import "../libs/0.8.x/ERC165.sol";
 
 import "../interfaces/0.8.x/IArtblocksRoyaltyOverride.sol";
-import "../interfaces/0.8.x/IGenArt721CoreContract.sol";
+import "../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
 
 pragma solidity 0.8.9;
 
@@ -49,7 +49,7 @@ contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
 
     modifier onlyAdminOnContract(address _tokenContract) {
         require(
-            IGenArt721CoreContract(_tokenContract).admin() == msg.sender,
+            IGenArt721CoreContractV3(_tokenContract).admin() == msg.sender,
             "Only core admin for specified token contract"
         );
         _;
@@ -149,7 +149,7 @@ contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
             address additionalPayee,
             uint256 additionalPayeePercentage,
             uint256 royaltyFeeByID
-        ) = IGenArt721CoreContract(_tokenAddress).getRoyaltyData(_tokenId);
+        ) = IGenArt721CoreContractV3(_tokenAddress).getRoyaltyData(_tokenId);
         // translate to desired output
         recipients_[0] = payable(artistAddress);
         bps[0] = (uint256(100) - additionalPayeePercentage) * royaltyFeeByID;
