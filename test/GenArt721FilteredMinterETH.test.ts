@@ -11,7 +11,7 @@ import { ethers } from "hardhat";
 
 /**
  * These tests intended to ensure Filtered Minter integrates properly with V1
- * core contract. Nearly identical tests as the V3 core.
+ * core contract.
  */
 describe("GenArt721MinterEthAuction_V1Core", async function () {
   const name = "Non Fungible Token";
