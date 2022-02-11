@@ -104,7 +104,7 @@ contract GenArt721FilteredMinterETHExponentialAuctionV0 is IFilteredMinterV0 {
         genArtCoreContract = IGenArt721CoreContractV1(_genArt721Address);
         minterFilter = IMinterFilterV0(_minterFilter);
         require(
-            minterFilter.genArt721CoreAddress() == genArt721CoreAddress,
+            minterFilter.genArt721CoreAddress() == _genArt721Address,
             "Illegal contract pairing"
         );
     }
@@ -112,6 +112,7 @@ contract GenArt721FilteredMinterETHExponentialAuctionV0 is IFilteredMinterV0 {
     /**
      * @notice Sets the mint limit of a single purchaser for project
      * `_projectId` to `_limit`.
+     * @param _projectId Project ID to set the mint limit for.
      * @param _limit Number of times a given address may mint the
      * project's tokens.
      */
@@ -127,15 +128,18 @@ contract GenArt721FilteredMinterETHExponentialAuctionV0 is IFilteredMinterV0 {
      * on the value currently defined in the core contract.
      * @param _projectId Project ID to set the maximum invocations for.
      * @dev also checks and may refresh projectMaxHasBeenInvoked for project
+     * @dev this enables gas reduction after maxInvocations have been reached -
+     * core contracts shall still enforce a maxInvocation check during mint.
      */
     function setProjectMaxInvocations(uint256 _projectId)
         external
         onlyCoreWhitelisted
     {
-        uint256 maxInvocations;
         uint256 invocations;
+        uint256 maxInvocations;
         (, , invocations, maxInvocations, , , , , ) = genArtCoreContract
             .projectTokenInfo(_projectId);
+        // update storage with results
         projectMaxInvocations[_projectId] = maxInvocations;
         if (invocations < maxInvocations) {
             projectMaxHasBeenInvoked[_projectId] = false;
