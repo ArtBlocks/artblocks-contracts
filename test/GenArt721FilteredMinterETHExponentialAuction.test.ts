@@ -129,6 +129,17 @@ describe("GenArt721FilteredMinterETHExponentialAuction", async function () {
   });
 
   describe("purchase", async function () {
+    it("disallows purchase before auction begins", async function () {
+      await ethers.provider.send("evm_mine", [this.startTime + ONE_HOUR / 2]);
+      await expectRevert(
+        this.minter.connect(this.accounts.owner).purchase(projectOne, {
+          value: startingPrice.toString(),
+          gasPrice: 0,
+        }),
+        "Auction not yet started"
+      );
+    });
+
     it("calculates the price correctly", async function () {
       for (let i = 1; i <= 5; i++) {
         let ownerBalance = await this.accounts.owner.getBalance();
@@ -199,6 +210,9 @@ describe("GenArt721FilteredMinterETHExponentialAuction", async function () {
 
   describe("purchaseTo", async function () {
     it("allows `purchaseTo` by default", async function () {
+      await ethers.provider.send("evm_mine", [
+        this.startTime + auctionStartTimeOffset,
+      ]);
       await this.minter
         .connect(this.accounts.owner)
         .purchaseTo(this.accounts.additional.address, projectOne, {
@@ -207,6 +221,9 @@ describe("GenArt721FilteredMinterETHExponentialAuction", async function () {
     });
 
     it("disallows `purchaseTo` if disallowed explicitly", async function () {
+      await ethers.provider.send("evm_mine", [
+        this.startTime + auctionStartTimeOffset,
+      ]);
       await this.minter
         .connect(this.accounts.deployer)
         .togglePurchaseToDisabled(projectOne);
