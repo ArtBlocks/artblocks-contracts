@@ -23,7 +23,7 @@ describe("GenArt721MinterEthAuction", async function () {
 
   const projectOne = 0;
 
-  const ONE_MINUTE = 60000;
+  const ONE_MINUTE = 60;
   const ONE_HOUR = ONE_MINUTE * 60;
   const ONE_DAY = ONE_HOUR * 24;
 
@@ -80,15 +80,14 @@ describe("GenArt721MinterEthAuction", async function () {
       .connect(this.accounts.deployer)
       .setMinterForProject(projectOne, this.minter.address);
 
-    if (this.hasOwnProperty("startTime") && this.startTime) {
-      this.startTime = this.startTime + ONE_DAY;
-    } else {
-      this.startTime = Date.now();
+    if (!this.startTime) {
+      const blockNumber = await ethers.provider.getBlockNumber();
+      const block = await ethers.provider.getBlock(blockNumber);
+      this.startTime = block.timestamp;
     }
+    this.startTime = this.startTime + ONE_DAY;
 
-    await ethers.provider.send("evm_setNextBlockTimestamp", [
-      this.startTime - 60,
-    ]);
+    await ethers.provider.send("evm_mine", [this.startTime - ONE_MINUTE]);
     await this.minter
       .connect(this.accounts.deployer)
       .setAuctionDetails(
@@ -136,11 +135,11 @@ describe("GenArt721MinterEthAuction", async function () {
           startingPrice.sub(basePrice).toString()
         );
         let t = ethers.BigNumber.from(a.toString());
-        let price = startingPrice.sub(t.div(7200000));
+        let price = startingPrice.sub(t.div(7200));
         let contractPriceInfo = await this.minter
           .connect(this.accounts.owner)
           .getPriceInfo(projectOne);
-        await ethers.provider.send("evm_mine", [this.startTime + i * 480000]);
+        await ethers.provider.send("evm_mine", [this.startTime + i * 480]);
         await this.minter.connect(this.accounts.owner).purchase(projectOne, {
           value: price.toString(),
           gasPrice: 0,
@@ -254,7 +253,7 @@ describe("GenArt721MinterEthAuction", async function () {
         .connect(this.accounts.deployer)
         .setAuctionDetails(
           projectOne,
-          this.startTime + 60000,
+          this.startTime + ONE_MINUTE,
           this.startTime + 2 * ONE_HOUR,
           startingPrice,
           basePrice
@@ -266,7 +265,7 @@ describe("GenArt721MinterEthAuction", async function () {
         .connect(this.accounts.artist)
         .setAuctionDetails(
           projectOne,
-          this.startTime + 60000,
+          this.startTime + ONE_MINUTE,
           this.startTime + 2 * ONE_HOUR,
           startingPrice,
           basePrice
@@ -279,7 +278,7 @@ describe("GenArt721MinterEthAuction", async function () {
           .connect(this.accounts.additional)
           .setAuctionDetails(
             projectOne,
-            this.startTime + 60000,
+            this.startTime + ONE_MINUTE,
             this.startTime + 2 * ONE_HOUR,
             startingPrice,
             basePrice
@@ -294,7 +293,7 @@ describe("GenArt721MinterEthAuction", async function () {
           .connect(this.accounts.deployer)
           .setAuctionDetails(
             projectOne,
-            this.startTime + 60000,
+            this.startTime + ONE_MINUTE,
             this.startTime + 2 * ONE_HOUR,
             basePrice,
             startingPrice

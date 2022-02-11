@@ -83,13 +83,14 @@ describe("GenArt721FilteredMinterETHExponentialAuction", async function () {
       .connect(this.accounts.deployer)
       .setMinterForProject(projectOne, this.minter.address);
 
-    if (this.hasOwnProperty("startTime") && this.startTime) {
-      this.startTime = this.startTime + ONE_DAY;
-    } else {
-      this.startTime = Date.now();
+    if (!this.startTime) {
+      const blockNumber = await ethers.provider.getBlockNumber();
+      const block = await ethers.provider.getBlock(blockNumber);
+      this.startTime = block.timestamp;
     }
+    this.startTime = this.startTime + ONE_DAY;
 
-    await ethers.provider.send("evm_mine", [this.startTime]);
+    await ethers.provider.send("evm_mine", [this.startTime - ONE_MINUTE]);
     await this.minter
       .connect(this.accounts.deployer)
       .setAuctionDetails(
@@ -99,6 +100,7 @@ describe("GenArt721FilteredMinterETHExponentialAuction", async function () {
         startingPrice,
         basePrice
       );
+    await ethers.provider.send("evm_mine", [this.startTime]);
   });
 
   describe("constructor", async function () {
