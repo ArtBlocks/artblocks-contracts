@@ -3,7 +3,7 @@
 
 import "../interfaces/0.8.x/IMinterFilter.sol";
 import "../interfaces/0.8.x/IFilteredMinter.sol";
-import "../interfaces/0.8.x/IGenArt721CoreContract.sol";
+import "../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
 
 import "../libs/0.8.x/EnumerableMap.sol";
 
@@ -15,21 +15,31 @@ pragma solidity 0.8.9;
  * @author Art Blocks Inc.
  */
 contract MinterFilter is IMinterFilter {
+    /**
+     * @notice This minter is to be considered `_coreContractAddress`'s
+     * canonical minter.
+     * @dev may be vestigial after migrating to V3 core contracts
+     */
+    event IsCanonicalMinterFilter(address indexed _coreContractAddress);
+
     // add Enumerable Map methods
     using EnumerableMap for EnumerableMap.UintToAddressMap;
 
     /// Art Blocks core contract this minter may interact with.
-    IGenArt721CoreContract public artblocksContract;
+    IGenArt721CoreContractV3 public genArtCoreContract;
 
     /// projectId => minter address
     EnumerableMap.UintToAddressMap private minterForProject;
+
+    /// minter address => qty projects currently using minter
+    mapping(address => uint256) public numProjectsUsingMinter;
 
     /// minter address => is an approved minter?
     mapping(address => bool) public isApprovedMinter;
 
     modifier onlyCoreWhitelisted() {
         require(
-            artblocksContract.isWhitelisted(msg.sender),
+            genArtCoreContract.isWhitelisted(msg.sender),
             "Only Core whitelisted"
         );
         _;
@@ -37,9 +47,9 @@ contract MinterFilter is IMinterFilter {
 
     modifier onlyCoreWhitelistedOrArtist(uint256 _projectId) {
         require(
-            (artblocksContract.isWhitelisted(msg.sender) ||
+            (genArtCoreContract.isWhitelisted(msg.sender) ||
                 msg.sender ==
-                artblocksContract.projectIdToArtistAddress(_projectId)),
+                genArtCoreContract.projectIdToArtistAddress(_projectId)),
             "Only Core whitelisted or Artist"
         );
         _;
@@ -47,7 +57,7 @@ contract MinterFilter is IMinterFilter {
 
     modifier projectExists(uint256 _projectId) {
         require(
-            _projectId < artblocksContract.nextProjectId(),
+            _projectId < genArtCoreContract.nextProjectId(),
             "Only existing projects"
         );
         _;
@@ -61,13 +71,34 @@ contract MinterFilter is IMinterFilter {
         _;
     }
 
+    modifier onlyMintWhitelisted() {
+        require(
+            genArtCoreContract.isMintWhitelisted(address(this)),
+            "Only mint allowlisted"
+        );
+        _;
+    }
+
     /**
      * @notice Initializes contract to be a Minter for `_genArt721Address`.
      * @param _genArt721Address Art Blocks core contract address
      * this contract will be a minter for. Can never be updated.
      */
     constructor(address _genArt721Address) {
-        artblocksContract = IGenArt721CoreContract(_genArt721Address);
+        genArtCoreContract = IGenArt721CoreContractV3(_genArt721Address);
+    }
+
+    /**
+     * @notice Emits event notifying indexers that this is core contract's
+     * canonical minter filter.
+     * @dev may be vestigial after migrating to V3 core contracts
+     */
+    function alertAsCanonicalMinterFilter()
+        external
+        onlyCoreWhitelisted
+        onlyMintWhitelisted
+    {
+        emit IsCanonicalMinterFilter(address(genArtCoreContract));
     }
 
     /**
@@ -93,6 +124,10 @@ contract MinterFilter is IMinterFilter {
         external
         onlyCoreWhitelisted
     {
+        require(
+            numProjectsUsingMinter[_minterAddress] == 0,
+            "Only unused minters"
+        );
         isApprovedMinter[_minterAddress] = false;
         emit MinterRevoked(_minterAddress);
     }
@@ -109,25 +144,59 @@ contract MinterFilter is IMinterFilter {
         usingApprovedMinter(_minterAddress)
         projectExists(_projectId)
     {
+        // decrement number of projects using a previous minter
+        (bool hasPreviousMinter, address previousMinter) = minterForProject
+            .tryGet(_projectId);
+        if (hasPreviousMinter) {
+            numProjectsUsingMinter[previousMinter]--;
+        }
+        // add new minter
+        numProjectsUsingMinter[_minterAddress]++;
         minterForProject.set(_projectId, _minterAddress);
-        emit ProjectMinterRegistered(_projectId, _minterAddress);
+        emit ProjectMinterRegistered(
+            _projectId,
+            _minterAddress,
+            IFilteredMinter(_minterAddress).minterType()
+        );
     }
 
     /**
      * @notice Updates project `_projectId` to have no configured minter.
      * @param _projectId Project ID to remove minter.
-     * @dev requires project to have assigned minter (de-clutter event noise)
+     * @dev requires project to have an assigned minter
      */
     function removeMinterForProject(uint256 _projectId)
         external
         onlyCoreWhitelistedOrArtist(_projectId)
     {
-        // only projects with assigned minters
-        require(
-            projectHasMinter(_projectId),
-            "Only projects with an assigned minter"
-        );
+        _removeMinterForProject(_projectId);
+    }
+
+    /**
+     * @notice Updates an array of project IDs to have no configured minter.
+     * @param _projectIds Array of project IDs to remove minters for.
+     * @dev requires all project IDs to have an assigned minter
+     * @dev caution with respect to single tx gas limits
+     */
+    function removeMintersForProjects(uint256[] calldata _projectIds)
+        external
+        onlyCoreWhitelisted
+    {
+        uint256 numProjects = _projectIds.length;
+        for (uint256 i; i < numProjects; i++) {
+            _removeMinterForProject(_projectIds[i]);
+        }
+    }
+
+    /**
+     * @notice Updates project `_projectId` to have no configured minter
+     * (reverts tx if project does not have an assigned minter).
+     * @param _projectId Project ID to remove minter.
+     */
+    function _removeMinterForProject(uint256 _projectId) private {
         // remove minter for project and emit
+        // `minterForProject.get()` reverts tx if no minter set for project
+        numProjectsUsingMinter[minterForProject.get(_projectId)]--;
         minterForProject.remove(_projectId);
         emit ProjectMinterRemoved(_projectId);
     }
@@ -139,19 +208,20 @@ contract MinterFilter is IMinterFilter {
      * @param _projectId Project ID to mint a new token on.
      * @param sender Address purchasing a new token.
      * @return _tokenId Token ID of minted token
+     * @dev reverts w/nonexistent key error when project has no assigned minter
      */
     function mint(
         address _to,
         uint256 _projectId,
         address sender
     ) external returns (uint256 _tokenId) {
-        // validate minter
+        // minter is the project's minter
         require(
-            msg.sender == getMinterForProject(_projectId),
-            "Only assigned minter for project"
+            msg.sender == minterForProject.get(_projectId),
+            "Only assigned minter"
         );
         // mint
-        uint256 tokenId = artblocksContract.mint(_to, _projectId, sender);
+        uint256 tokenId = genArtCoreContract.mint(_to, _projectId, sender);
         return tokenId;
     }
 
@@ -162,14 +232,14 @@ contract MinterFilter is IMinterFilter {
      * @dev requires project to have an assigned minter
      */
     function getMinterForProject(uint256 _projectId)
-        public
+        external
         view
         returns (address)
     {
         (bool _hasMinter, address _currentMinter) = minterForProject.tryGet(
             _projectId
         );
-        require(_hasMinter, "Only projects with an assigned minter");
+        require(_hasMinter, "No minter assigned");
         return _currentMinter;
     }
 
@@ -179,7 +249,7 @@ contract MinterFilter is IMinterFilter {
      * @return bool true if project has an assigned minter, else false
      * @dev requires project to have an assigned minter
      */
-    function projectHasMinter(uint256 _projectId) public view returns (bool) {
+    function projectHasMinter(uint256 _projectId) external view returns (bool) {
         (bool _hasMinter, ) = minterForProject.tryGet(_projectId);
         return _hasMinter;
     }

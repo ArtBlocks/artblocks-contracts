@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../interfaces/0.8.x/IGenArt721CoreContract.sol";
+import "../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
 import "../interfaces/0.8.x/IMinterFilter.sol";
 import "../interfaces/0.8.x/IFilteredMinter.sol";
 
@@ -13,7 +13,7 @@ pragma solidity 0.8.9;
  */
 contract GenArt721FilteredMinterETH is IFilteredMinter {
     /// Art Blocks core contract this minter may interact with.
-    IGenArt721CoreContract public artblocksContract;
+    IGenArt721CoreContractV3 public genArtCoreContract;
     /// Minter filter this minter may interact with.
     IMinterFilter public minterFilter;
 
@@ -34,11 +34,24 @@ contract GenArt721FilteredMinterETH is IFilteredMinter {
     mapping(uint256 => bool) public projectMaxHasBeenInvoked;
     /// projectId => project's maximum number of invocations
     mapping(uint256 => uint256) public projectMaxInvocations;
+    /// projectId => price per token in wei - supersedes any defined core price
+    mapping(uint256 => uint256) private projectIdToPricePerTokenInWei;
+    /// projectId => price per token has been configured on this minter
+    mapping(uint256 => bool) private projectIdToPriceIsConfigured;
 
     modifier onlyCoreWhitelisted() {
         require(
-            artblocksContract.isWhitelisted(msg.sender),
+            genArtCoreContract.isWhitelisted(msg.sender),
             "Only Core whitelisted"
+        );
+        _;
+    }
+
+    modifier onlyArtist(uint256 _projectId) {
+        require(
+            msg.sender ==
+                genArtCoreContract.projectIdToArtistAddress(_projectId),
+            "Only Artist"
         );
         _;
     }
@@ -53,8 +66,12 @@ contract GenArt721FilteredMinterETH is IFilteredMinter {
      * filtered minter.
      */
     constructor(address _genArt721Address, address _minterFilter) {
-        artblocksContract = IGenArt721CoreContract(_genArt721Address);
+        genArtCoreContract = IGenArt721CoreContractV3(_genArt721Address);
         minterFilter = IMinterFilter(_minterFilter);
+        require(
+            minterFilter.genArtCoreContract() == genArtCoreContract,
+            "Illegal contract pairing"
+        );
     }
 
     /**
@@ -83,7 +100,7 @@ contract GenArt721FilteredMinterETH is IFilteredMinter {
     {
         uint256 maxInvocations;
         uint256 invocations;
-        (, , invocations, maxInvocations, , , , , ) = artblocksContract
+        (, , invocations, maxInvocations, , , , , ) = genArtCoreContract
             .projectTokenInfo(_projectId);
         projectMaxInvocations[_projectId] = maxInvocations;
         if (invocations < maxInvocations) {
@@ -120,6 +137,20 @@ contract GenArt721FilteredMinterETH is IFilteredMinter {
     }
 
     /**
+     * @notice Updates this minter's price per token of project `_projectId`
+     * to be '_pricePerTokenInWei`, in Wei.
+     * This price supersedes any legacy core contract price per token value.
+     */
+    function updatePricePerTokenInWei(
+        uint256 _projectId,
+        uint256 _pricePerTokenInWei
+    ) external onlyArtist(_projectId) {
+        projectIdToPricePerTokenInWei[_projectId] = _pricePerTokenInWei;
+        projectIdToPriceIsConfigured[_projectId] = true;
+        emit PricePerTokenInWeiUpdated(_projectId, _pricePerTokenInWei);
+    }
+
+    /**
      * @notice Purchases a token from project `_projectId`.
      * @param _projectId Project ID to mint a token on.
      * @return tokenId Token ID of minted token
@@ -150,6 +181,12 @@ contract GenArt721FilteredMinterETH is IFilteredMinter {
             "Maximum number of invocations reached"
         );
 
+        // require artist to have configured price of token on this minter
+        require(
+            projectIdToPriceIsConfigured[_projectId],
+            "Price not configured"
+        );
+
         // if contract filter is off, allow calls from another contract
         if (!contractMintable[_projectId]) {
             require(msg.sender == tx.origin, "No Contract Buys");
@@ -161,22 +198,6 @@ contract GenArt721FilteredMinterETH is IFilteredMinter {
             require(msg.sender == _to, "No `purchaseTo` Allowed");
         }
 
-        // project currency must be ETH
-        require(
-            keccak256(
-                abi.encodePacked(
-                    artblocksContract.projectIdToCurrencySymbol(_projectId)
-                )
-            ) == keccak256(abi.encodePacked("ETH")),
-            "Project currency must be ETH"
-        );
-
-        require(
-            msg.value >=
-                artblocksContract.projectIdToPricePerTokenInWei(_projectId),
-            "Must send minimum value to mint!"
-        );
-
         // limit mints per address by project
         if (projectMintLimit[_projectId] > 0) {
             require(
@@ -186,6 +207,11 @@ contract GenArt721FilteredMinterETH is IFilteredMinter {
             );
             projectMintCounter[msg.sender][_projectId]++;
         }
+
+        require(
+            msg.value >= projectIdToPricePerTokenInWei[_projectId],
+            "Must send minimum value to mint!"
+        );
 
         _splitFundsETH(_projectId);
 
@@ -212,41 +238,74 @@ contract GenArt721FilteredMinterETH is IFilteredMinter {
      */
     function _splitFundsETH(uint256 _projectId) internal {
         if (msg.value > 0) {
-            uint256 pricePerTokenInWei = artblocksContract
-                .projectIdToPricePerTokenInWei(_projectId);
+            uint256 pricePerTokenInWei = projectIdToPricePerTokenInWei[
+                _projectId
+            ];
             uint256 refund = msg.value - pricePerTokenInWei;
             if (refund > 0) {
                 payable(msg.sender).transfer(refund);
             }
             uint256 foundationAmount = (pricePerTokenInWei / 100) *
-                artblocksContract.artblocksPercentage();
+                genArtCoreContract.artblocksPercentage();
             if (foundationAmount > 0) {
-                artblocksContract.artblocksAddress().transfer(foundationAmount);
+                genArtCoreContract.artblocksAddress().transfer(
+                    foundationAmount
+                );
             }
             uint256 projectFunds = pricePerTokenInWei - foundationAmount;
             uint256 additionalPayeeAmount;
             if (
-                artblocksContract.projectIdToAdditionalPayeePercentage(
+                genArtCoreContract.projectIdToAdditionalPayeePercentage(
                     _projectId
                 ) > 0
             ) {
                 additionalPayeeAmount =
                     (projectFunds / 100) *
-                    artblocksContract.projectIdToAdditionalPayeePercentage(
+                    genArtCoreContract.projectIdToAdditionalPayeePercentage(
                         _projectId
                     );
                 if (additionalPayeeAmount > 0) {
-                    artblocksContract
+                    genArtCoreContract
                         .projectIdToAdditionalPayee(_projectId)
                         .transfer(additionalPayeeAmount);
                 }
             }
             uint256 creatorFunds = projectFunds - additionalPayeeAmount;
             if (creatorFunds > 0) {
-                artblocksContract.projectIdToArtistAddress(_projectId).transfer(
-                        creatorFunds
-                    );
+                genArtCoreContract
+                    .projectIdToArtistAddress(_projectId)
+                    .transfer(creatorFunds);
             }
         }
+    }
+
+    /**
+     * @notice Gets if price of token is configured, price of minting a
+     * token on project `_projectId`, and currency symbol and address to be
+     * used as payment. Supersedes any core contract price information.
+     * @param _projectId Project ID to get price information for.
+     * @return isConfigured true only if token price has been configured on
+     * this minter
+     * @return tokenPriceInWei current price of token on this minter - invalid
+     * if price has not yet been configured
+     * @return currencySymbol currency symbol for purchases of project on this
+     * minter. This minter always returns "ETH"
+     * @return currencyAddress currency address for purchases of project on
+     * this minter. This minter always returns null address, reserved for ether
+     */
+    function getPriceInfo(uint256 _projectId)
+        external
+        view
+        returns (
+            bool isConfigured,
+            uint256 tokenPriceInWei,
+            string memory currencySymbol,
+            address currencyAddress
+        )
+    {
+        isConfigured = projectIdToPriceIsConfigured[_projectId];
+        tokenPriceInWei = projectIdToPricePerTokenInWei[_projectId];
+        currencySymbol = "ETH";
+        currencyAddress = address(0);
     }
 }

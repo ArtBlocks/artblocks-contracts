@@ -17,6 +17,7 @@ describe("MinterFilter", async function () {
   const secondTokenId = new BN("3000001");
 
   const pricePerTokenInWei = ethers.utils.parseEther("1");
+  const higherPricePerTokenInWei = ethers.utils.parseEther("1.1");
   const projectOne = 0;
   const projectTwo = 1;
   const projectThree = 2;
@@ -58,17 +59,11 @@ describe("MinterFilter", async function () {
       this.minterFilter.address
     );
 
-    await this.token
-      .connect(snowfro)
-      .addProject("project1", artist.address, pricePerTokenInWei);
+    await this.token.connect(snowfro).addProject("project1", artist.address);
 
-    await this.token
-      .connect(snowfro)
-      .addProject("project2", artist.address, pricePerTokenInWei);
+    await this.token.connect(snowfro).addProject("project2", artist.address);
 
-    await this.token
-      .connect(snowfro)
-      .addProject("project3", artist.address, pricePerTokenInWei);
+    await this.token.connect(snowfro).addProject("project3", artist.address);
 
     await this.token.connect(snowfro).toggleProjectIsActive(projectOne);
     await this.token.connect(snowfro).toggleProjectIsActive(projectTwo);
@@ -115,15 +110,147 @@ describe("MinterFilter", async function () {
       .connect(this.accounts.snowfro)
       .setMinterForProject(projectTwo, this.minter2.address);
     // We leave project three with no minter on purpose
+
+    // set token price for first two projects on minter one
+    await this.minter1
+      .connect(artist)
+      .updatePricePerTokenInWei(projectOne, pricePerTokenInWei);
+    await this.minter1
+      .connect(artist)
+      .updatePricePerTokenInWei(projectTwo, pricePerTokenInWei);
+  });
+
+  describe("constructor", async function () {
+    it("reverts when given incorrect minter filter and core addresses", async function () {
+      const artblocksFactory = await ethers.getContractFactory(
+        "GenArt721CoreV3"
+      );
+      const token2 = await artblocksFactory
+        .connect(this.accounts.snowfro)
+        .deploy(name, symbol, this.randomizer.address);
+
+      const minterFilterFactory = await ethers.getContractFactory(
+        "MinterFilter"
+      );
+      const minterFilter = await minterFilterFactory.deploy(token2.address);
+
+      const minterFactory = await ethers.getContractFactory(
+        "GenArt721FilteredMinter"
+      );
+      // fails when combine new minterFilter with the old token in constructor
+      await expectRevert(
+        minterFactory.deploy(this.token.address, minterFilter.address),
+        "Illegal contract pairing"
+      );
+    });
+  });
+
+  describe("updatePricePerTokenInWei", async function () {
+    it("only allows artist to update price", async function () {
+      const onlyArtistErrorMessage = "Only Artist";
+      // doesn't allow owner
+      await expectRevert(
+        this.minter1
+          .connect(this.accounts.owner)
+          .updatePricePerTokenInWei(projectOne, higherPricePerTokenInWei),
+        onlyArtistErrorMessage
+      );
+      // doesn't allow snowfro
+      await expectRevert(
+        this.minter1
+          .connect(this.accounts.snowfro)
+          .updatePricePerTokenInWei(projectOne, higherPricePerTokenInWei),
+        onlyArtistErrorMessage
+      );
+      // doesn't allow additional
+      await expectRevert(
+        this.minter1
+          .connect(this.accounts.additional)
+          .updatePricePerTokenInWei(projectOne, higherPricePerTokenInWei),
+        onlyArtistErrorMessage
+      );
+      // does allow artist
+      await this.minter1
+        .connect(this.accounts.artist)
+        .updatePricePerTokenInWei(projectOne, higherPricePerTokenInWei);
+    });
+
+    it("enforces price update", async function () {
+      const needMoreValueErrorMessage = "Must send minimum value to mint!";
+      // artist increases price
+      await this.minter1
+        .connect(this.accounts.artist)
+        .updatePricePerTokenInWei(projectOne, higherPricePerTokenInWei);
+      // cannot purchase token at lower price
+      await expectRevert(
+        this.minter1.connect(this.accounts.owner).purchase(projectOne, {
+          value: pricePerTokenInWei,
+        }),
+        needMoreValueErrorMessage
+      );
+      // can purchase token at higher price
+      await this.minter1.connect(this.accounts.owner).purchase(projectOne, {
+        value: higherPricePerTokenInWei,
+      });
+    });
+
+    it("enforces price update only on desired project", async function () {
+      const needMoreValueErrorMessage = "Must send minimum value to mint!";
+      // update project two to use minter one
+      await this.minterFilter
+        .connect(this.accounts.snowfro)
+        .setMinterForProject(projectTwo, this.minter1.address);
+      // artist increases price of project one
+      await this.minter1
+        .connect(this.accounts.artist)
+        .updatePricePerTokenInWei(projectOne, higherPricePerTokenInWei);
+      // cannot purchase project one token at lower price
+      await expectRevert(
+        this.minter1.connect(this.accounts.owner).purchase(projectOne, {
+          value: pricePerTokenInWei,
+        }),
+        needMoreValueErrorMessage
+      );
+      // can purchase project two token at lower price
+      await this.minter1.connect(this.accounts.owner).purchase(projectTwo, {
+        value: pricePerTokenInWei,
+      });
+    });
+
+    it("emits event upon price update", async function () {
+      // artist increases price
+      await expect(
+        this.minter1
+          .connect(this.accounts.artist)
+          .updatePricePerTokenInWei(projectOne, higherPricePerTokenInWei)
+      )
+        .to.emit(this.minter1, "PricePerTokenInWeiUpdated")
+        .withArgs(projectOne, higherPricePerTokenInWei);
+    });
   });
 
   describe("purchase", async function () {
+    it("does not allow purchase prior to configuring price", async function () {
+      await this.minterFilter
+        .connect(this.accounts.snowfro)
+        .setMinterForProject(projectThree, this.minter3.address);
+      await expectRevert(
+        this.minter3.connect(this.accounts.owner).purchase(projectThree, {
+          value: pricePerTokenInWei,
+        }),
+        "Price not configured"
+      );
+    });
+
     it("allows purchases through the correct minter", async function () {
       for (let i = 0; i < 15; i++) {
         await this.minter1.connect(this.accounts.owner).purchase(projectOne, {
           value: pricePerTokenInWei,
         });
       }
+      await this.minter2
+        .connect(this.accounts.artist)
+        .updatePricePerTokenInWei(projectTwo, pricePerTokenInWei);
       for (let i = 0; i < 15; i++) {
         await this.minter2.connect(this.accounts.owner).purchase(projectTwo, {
           value: pricePerTokenInWei,
@@ -132,54 +259,96 @@ describe("MinterFilter", async function () {
     });
 
     it("blocks purchases through the incorrect minter", async function () {
+      const noAssignedMinterErrorMessage = "EnumerableMap: nonexistent key";
+      const OnlyAssignedMinterErrorMessage = "Only assigned minter";
+      // project one on minter two
+      await this.minter2
+        .connect(this.accounts.artist)
+        .updatePricePerTokenInWei(projectOne, pricePerTokenInWei);
       await expectRevert(
         this.minter2.connect(this.accounts.owner).purchase(projectOne, {
           value: pricePerTokenInWei,
         }),
-        "Only assigned minter for project"
+        OnlyAssignedMinterErrorMessage
       );
+      // project two on minter one
+      await this.minter1
+        .connect(this.accounts.artist)
+        .updatePricePerTokenInWei(projectTwo, pricePerTokenInWei);
       await expectRevert(
         this.minter1.connect(this.accounts.owner).purchase(projectTwo, {
           value: pricePerTokenInWei,
         }),
-        "Only assigned minter for project"
+        OnlyAssignedMinterErrorMessage
       );
-
+      // project three on minter one
+      await this.minter1
+        .connect(this.accounts.artist)
+        .updatePricePerTokenInWei(projectThree, pricePerTokenInWei);
       await expectRevert(
         this.minter1.connect(this.accounts.owner).purchase(projectThree, {
           value: pricePerTokenInWei,
         }),
-        "Only projects with an assigned minter"
+        noAssignedMinterErrorMessage
       );
+      // project three on minter two
+      await this.minter2
+        .connect(this.accounts.artist)
+        .updatePricePerTokenInWei(projectThree, pricePerTokenInWei);
       await expectRevert(
         this.minter2.connect(this.accounts.owner).purchase(projectThree, {
           value: pricePerTokenInWei,
         }),
-        "Only projects with an assigned minter"
+        noAssignedMinterErrorMessage
       );
-
+      // project three on minter three
+      await this.minter3
+        .connect(this.accounts.artist)
+        .updatePricePerTokenInWei(projectOne, pricePerTokenInWei);
       await expectRevert(
         this.minter3.connect(this.accounts.owner).purchase(projectOne, {
           value: pricePerTokenInWei,
         }),
-        "Only assigned minter for project"
+        OnlyAssignedMinterErrorMessage
       );
+      // project two on minter three
+      await this.minter3
+        .connect(this.accounts.artist)
+        .updatePricePerTokenInWei(projectTwo, pricePerTokenInWei);
       await expectRevert(
         this.minter3.connect(this.accounts.owner).purchase(projectTwo, {
           value: pricePerTokenInWei,
         }),
-        "Only assigned minter for project"
+        OnlyAssignedMinterErrorMessage
       );
+      // project three on minter three
+      await this.minter3
+        .connect(this.accounts.artist)
+        .updatePricePerTokenInWei(projectThree, pricePerTokenInWei);
       await expectRevert(
         this.minter3.connect(this.accounts.owner).purchase(projectThree, {
           value: pricePerTokenInWei,
         }),
-        "Only projects with an assigned minter"
+        noAssignedMinterErrorMessage
       );
     });
   });
 
   describe("purchaseTo", async function () {
+    it("does not allow purchase prior to configuring price", async function () {
+      await this.minterFilter
+        .connect(this.accounts.snowfro)
+        .setMinterForProject(projectThree, this.minter3.address);
+      await expectRevert(
+        this.minter3
+          .connect(this.accounts.owner)
+          .purchaseTo(this.accounts.additional.address, projectThree, {
+            value: pricePerTokenInWei,
+          }),
+        "Price not configured"
+      );
+    });
+
     it("allows `purchaseTo` by default", async function () {
       await this.minter1
         .connect(this.accounts.owner)
@@ -228,24 +397,45 @@ describe("MinterFilter", async function () {
     });
   });
 
-  describe("only allow ETH", async function () {
-    it("disallows non-ETH projects", async function () {
-      await this.token
-        .connect(this.accounts.artist)
-        .updateProjectCurrencyInfo(
-          projectOne,
-          "USDC",
-          "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
-        );
+  describe("currency info hooks", async function () {
+    const unconfiguredProjectNumber = 99;
 
-      await expectRevert(
-        this.minter1
-          .connect(this.accounts.owner)
-          .purchaseTo(this.accounts.additional.address, projectOne, {
-            value: pricePerTokenInWei,
-          }),
-        "Project currency must be ETH"
-      );
+    it("reports expected price per token", async function () {
+      let currencyInfo = await this.minter1
+        .connect(this.accounts.artist)
+        .getPriceInfo(projectOne);
+      expect(currencyInfo.tokenPriceInWei).to.be.equal(pricePerTokenInWei);
+      // returns zero for unconfigured project price
+      currencyInfo = await this.minter1
+        .connect(this.accounts.artist)
+        .getPriceInfo(unconfiguredProjectNumber);
+      expect(currencyInfo.tokenPriceInWei).to.be.equal(0);
+    });
+
+    it("reports expected isConfigured", async function () {
+      let currencyInfo = await this.minter1
+        .connect(this.accounts.artist)
+        .getPriceInfo(projectOne);
+      expect(currencyInfo.isConfigured).to.be.equal(true);
+      // false for unconfigured project
+      currencyInfo = await this.minter1
+        .connect(this.accounts.artist)
+        .getPriceInfo(unconfiguredProjectNumber);
+      expect(currencyInfo.isConfigured).to.be.equal(false);
+    });
+
+    it("reports currency as ETH", async function () {
+      const priceInfo = await this.minter1
+        .connect(this.accounts.artist)
+        .getPriceInfo(projectOne);
+      expect(priceInfo.currencySymbol).to.be.equal("ETH");
+    });
+
+    it("reports currency address as null address", async function () {
+      const priceInfo = await this.minter1
+        .connect(this.accounts.artist)
+        .getPriceInfo(projectOne);
+      expect(priceInfo.currencyAddress).to.be.equal(constants.ZERO_ADDRESS);
     });
   });
 });

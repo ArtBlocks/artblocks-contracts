@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../interfaces/0.8.x/IGenArt721CoreContract.sol";
+import "../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
 import "../interfaces/0.8.x/IMinterFilter.sol";
 import "../interfaces/0.8.x/IFilteredMinter.sol";
 
@@ -18,7 +18,8 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
         uint256 indexed projectId,
         uint256 _auctionTimestampStart,
         uint256 _auctionTimestampEnd,
-        uint256 _auctionPriceStart
+        uint256 _startPrice,
+        uint256 _basePrice
     );
 
     /// Minimum allowed auction length updated
@@ -27,7 +28,7 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
     );
 
     /// Art Blocks core contract this minter may interact with.
-    IGenArt721CoreContract public artblocksContract;
+    IGenArt721CoreContractV3 public genArtCoreContract;
     /// Minter filter this minter may interact with.
     IMinterFilter public minterFilter;
 
@@ -56,12 +57,13 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
     struct AuctionParameters {
         uint256 timestampStart;
         uint256 timestampEnd;
-        uint256 priceStart;
+        uint256 startPrice;
+        uint256 basePrice;
     }
 
     modifier onlyCoreWhitelisted() {
         require(
-            artblocksContract.isWhitelisted(msg.sender),
+            genArtCoreContract.isWhitelisted(msg.sender),
             "Only Core whitelisted"
         );
         _;
@@ -69,9 +71,9 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
 
     modifier onlyCoreWhitelistedOrArtist(uint256 _projectId) {
         require(
-            (artblocksContract.isWhitelisted(msg.sender) ||
+            (genArtCoreContract.isWhitelisted(msg.sender) ||
                 msg.sender ==
-                artblocksContract.projectIdToArtistAddress(_projectId)),
+                genArtCoreContract.projectIdToArtistAddress(_projectId)),
             "Only Core whitelisted or Artist"
         );
         _;
@@ -87,8 +89,12 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
      * this will a filtered minter.
      */
     constructor(address _genArt721Address, address _minterFilter) {
-        artblocksContract = IGenArt721CoreContract(_genArt721Address);
+        genArtCoreContract = IGenArt721CoreContractV3(_genArt721Address);
         minterFilter = IMinterFilter(_minterFilter);
+        require(
+            minterFilter.genArtCoreContract() == genArtCoreContract,
+            "Illegal contract pairing"
+        );
     }
 
     /**
@@ -116,7 +122,7 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
     {
         uint256 maxInvocations;
         uint256 invocations;
-        (, , invocations, maxInvocations, , , , , ) = artblocksContract
+        (, , invocations, maxInvocations, , , , , ) = genArtCoreContract
             .projectTokenInfo(_projectId);
         projectMaxInvocations[_projectId] = maxInvocations;
         if (invocations < maxInvocations) {
@@ -170,13 +176,15 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
      * @param _projectId Project ID to set auction details for.
      * @param _auctionTimestampStart Timestamp at which to start the auction.
      * @param _auctionTimestampEnd Timestamp at which to end the auction.
-     * @param _auctionPriceStart Price at which to start the auction, in Wei.
+     * @param _startPrice Price at which to start the auction, in Wei.
+     * @param _basePrice Resting price of the auction, in Wei.
      */
     function setAuctionDetails(
         uint256 _projectId,
         uint256 _auctionTimestampStart,
         uint256 _auctionTimestampEnd,
-        uint256 _auctionPriceStart
+        uint256 _startPrice,
+        uint256 _basePrice
     ) external onlyCoreWhitelistedOrArtist(_projectId) {
         require(
             _auctionTimestampEnd > _auctionTimestampStart,
@@ -188,20 +196,21 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
             "Auction length must be at least minimumAuctionLengthSeconds"
         );
         require(
-            _auctionPriceStart >
-                artblocksContract.projectIdToPricePerTokenInWei(_projectId),
+            _startPrice > _basePrice,
             "Auction start price must be greater than auction end price"
         );
         projectAuctionParameters[_projectId] = AuctionParameters(
             _auctionTimestampStart,
             _auctionTimestampEnd,
-            _auctionPriceStart
+            _startPrice,
+            _basePrice
         );
         emit SetAuctionDetails(
             _projectId,
             _auctionTimestampStart,
             _auctionTimestampEnd,
-            _auctionPriceStart
+            _startPrice,
+            _basePrice
         );
     }
 
@@ -236,6 +245,8 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
             "Maximum number of invocations reached"
         );
 
+        // no need to check if price is configured - auction init values fail
+
         // if contract filter is off, allow calls from another contract
         if (!contractMintable[_projectId]) {
             require(msg.sender == tx.origin, "No Contract Buys");
@@ -246,16 +257,6 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
         if (purchaseToDisabled[_projectId]) {
             require(msg.sender == _to, "No `purchaseTo` Allowed");
         }
-
-        // project currency must be ETH
-        require(
-            keccak256(
-                abi.encodePacked(
-                    artblocksContract.projectIdToCurrencySymbol(_projectId)
-                )
-            ) == keccak256(abi.encodePacked("ETH")),
-            "Project currency must be ETH"
-        );
 
         uint256 currentPriceInWei = getPrice(_projectId);
         require(
@@ -308,33 +309,35 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
                 payable(msg.sender).transfer(refund);
             }
             uint256 foundationAmount = (_currentPriceInWei / 100) *
-                artblocksContract.artblocksPercentage();
+                genArtCoreContract.artblocksPercentage();
             if (foundationAmount > 0) {
-                artblocksContract.artblocksAddress().transfer(foundationAmount);
+                genArtCoreContract.artblocksAddress().transfer(
+                    foundationAmount
+                );
             }
             uint256 projectFunds = _currentPriceInWei - foundationAmount;
             uint256 additionalPayeeAmount;
             if (
-                artblocksContract.projectIdToAdditionalPayeePercentage(
+                genArtCoreContract.projectIdToAdditionalPayeePercentage(
                     _projectId
                 ) > 0
             ) {
                 additionalPayeeAmount =
                     (projectFunds / 100) *
-                    artblocksContract.projectIdToAdditionalPayeePercentage(
+                    genArtCoreContract.projectIdToAdditionalPayeePercentage(
                         _projectId
                     );
                 if (additionalPayeeAmount > 0) {
-                    artblocksContract
+                    genArtCoreContract
                         .projectIdToAdditionalPayee(_projectId)
                         .transfer(additionalPayeeAmount);
                 }
             }
             uint256 creatorFunds = projectFunds - additionalPayeeAmount;
             if (creatorFunds > 0) {
-                artblocksContract.projectIdToArtistAddress(_projectId).transfer(
-                        creatorFunds
-                    );
+                genArtCoreContract
+                    .projectIdToArtistAddress(_projectId)
+                    .transfer(creatorFunds);
             }
         }
     }
@@ -345,22 +348,22 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
      * @param _projectId Project ID to get price of token for.
      * @return current price of token in Wei
      */
-    function getPrice(uint256 _projectId) public view returns (uint256) {
+    function getPrice(uint256 _projectId) private view returns (uint256) {
         AuctionParameters memory auctionParams = projectAuctionParameters[
             _projectId
         ];
         if (block.timestamp <= auctionParams.timestampStart) {
-            return auctionParams.priceStart;
+            return auctionParams.startPrice;
         } else if (block.timestamp >= auctionParams.timestampEnd) {
-            return artblocksContract.projectIdToPricePerTokenInWei(_projectId);
+            return auctionParams.basePrice;
         }
         uint256 elapsedTime = block.timestamp - auctionParams.timestampStart;
         uint256 duration = auctionParams.timestampEnd -
             auctionParams.timestampStart;
-        uint256 startToEndDiff = auctionParams.priceStart -
-            artblocksContract.projectIdToPricePerTokenInWei(_projectId);
+        uint256 startToEndDiff = auctionParams.startPrice -
+            auctionParams.basePrice;
         return
-            auctionParams.priceStart -
+            auctionParams.startPrice -
             ((elapsedTime * startToEndDiff) / duration);
     }
 
@@ -394,5 +397,38 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
         ];
         require(isAuctionLive(_projectId), "auction is not currently live");
         return auctionParams.timestampEnd - block.timestamp;
+    }
+
+    /**
+     * @notice Gets if price of token is configured, price of minting a
+     * token on project `_projectId`, and currency symbol and address to be
+     * used as payment. Supersedes any core contract price information.
+     * @param _projectId Project ID to get price information for.
+     * @return isConfigured true only if project's auction parameters have been
+     * configured on this minter
+     * @return tokenPriceInWei current price of token on this minter - invalid
+     * if auction has not yet been configured
+     * @return currencySymbol currency symbol for purchases of project on this
+     * minter. This minter always returns "ETH"
+     * @return currencyAddress currency address for purchases of project on
+     * this minter. This minter always returns null address, reserved for ether
+     */
+    function getPriceInfo(uint256 _projectId)
+        external
+        view
+        returns (
+            bool isConfigured,
+            uint256 tokenPriceInWei,
+            string memory currencySymbol,
+            address currencyAddress
+        )
+    {
+        AuctionParameters memory auctionParams = projectAuctionParameters[
+            _projectId
+        ];
+        isConfigured = (auctionParams.startPrice > 0);
+        tokenPriceInWei = getPrice(_projectId);
+        currencySymbol = "ETH";
+        currencyAddress = address(0);
     }
 }

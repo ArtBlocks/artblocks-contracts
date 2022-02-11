@@ -16,7 +16,11 @@ describe("GenArt721MinterEthAuction", async function () {
   const firstTokenId = new BN("30000000");
   const secondTokenId = new BN("3000001");
 
+  const startingPrice = ethers.utils.parseEther("1");
   const pricePerTokenInWei = ethers.utils.parseEther("0.1");
+  // purposefully different price per token on core contract (tracked separately)
+  const pricePerTokenInWeiAuctionResting = ethers.utils.parseEther("0.05");
+
   const projectOne = 0;
 
   const ONE_MINUTE = 60000;
@@ -53,9 +57,7 @@ describe("GenArt721MinterEthAuction", async function () {
       this.minterFilter.address
     );
 
-    await this.token
-      .connect(snowfro)
-      .addProject("project1", artist.address, pricePerTokenInWei);
+    await this.token.connect(snowfro).addProject("project1", artist.address);
 
     await this.token.connect(snowfro).toggleProjectIsActive(projectOne);
 
@@ -91,8 +93,34 @@ describe("GenArt721MinterEthAuction", async function () {
         projectOne,
         this.startTime,
         startTimePlusMinuteAndTwoHours,
-        ethers.utils.parseEther("1")
+        startingPrice,
+        pricePerTokenInWeiAuctionResting
       );
+  });
+
+  describe("constructor", async function () {
+    it("reverts when given incorrect minter filter and core addresses", async function () {
+      const artblocksFactory = await ethers.getContractFactory(
+        "GenArt721CoreV3"
+      );
+      const token2 = await artblocksFactory
+        .connect(this.accounts.snowfro)
+        .deploy(name, symbol, this.randomizer.address);
+
+      const minterFilterFactory = await ethers.getContractFactory(
+        "MinterFilter"
+      );
+      const minterFilter = await minterFilterFactory.deploy(token2.address);
+
+      const minterFactory = await ethers.getContractFactory(
+        "GenArt721FilteredMinter"
+      );
+      // fails when combine new minterFilter with the old token in constructor
+      await expectRevert(
+        minterFactory.deploy(this.token.address, minterFilter.address),
+        "Illegal contract pairing"
+      );
+    });
   });
 
   describe("purchase", async function () {
@@ -100,19 +128,17 @@ describe("GenArt721MinterEthAuction", async function () {
       await ethers.provider.send("evm_setNextBlockTimestamp", [this.startTime]);
       const duration = ONE_HOUR * 2; // 2 hours
       const step = ONE_MINUTE * 8; // 480 seconds
-      const startingPrice = ethers.utils.parseEther("1");
-      const endingPrice = ethers.utils.parseEther("0.1");
 
       for (let i = 0; i < 15; i++) {
         let ownerBalance = await this.accounts.owner.getBalance();
         let a = ethers.BigNumber.from(i * step).mul(
-          ethers.utils.parseEther("0.9")
+          startingPrice.sub(pricePerTokenInWeiAuctionResting).toString()
         );
         let t = ethers.BigNumber.from(a.toString());
         let price = startingPrice.sub(t.div(7200000));
-        let contractPrice = await this.minter
+        let contractPriceInfo = await this.minter
           .connect(this.accounts.owner)
-          .getPrice(projectOne);
+          .getPriceInfo(projectOne);
         await ethers.provider.send("evm_setNextBlockTimestamp", [
           this.startTime + i * 480000,
         ]);
@@ -132,7 +158,8 @@ describe("GenArt721MinterEthAuction", async function () {
         let ownerDelta = (await this.accounts.owner.getBalance()).sub(
           ownerBalance
         );
-        expect(ownerDelta.mul("-1").lte(contractPrice)).to.be.true;
+        expect(ownerDelta.mul("-1").lte(contractPriceInfo.tokenPriceInWei)).to
+          .be.true;
       }
     });
 
@@ -145,15 +172,14 @@ describe("GenArt721MinterEthAuction", async function () {
           projectOne,
           this.startTime + 60000,
           this.startTime + 2 * ONE_HOUR,
-          ethers.utils.parseEther("1")
+          startingPrice,
+          pricePerTokenInWeiAuctionResting
         );
 
-      const startingPrice = ethers.utils.parseEther("1");
-      const endingPrice = ethers.utils.parseEther("0.1");
-      let contractPrice = await this.minter
+      let contractPriceInfo = await this.minter
         .connect(this.accounts.owner)
-        .getPrice(projectOne);
-      expect(contractPrice).to.be.equal(startingPrice);
+        .getPriceInfo(projectOne);
+      expect(contractPriceInfo.tokenPriceInWei).to.be.equal(startingPrice);
     });
 
     it("calculates the price after correctly ", async function () {
@@ -167,26 +193,25 @@ describe("GenArt721MinterEthAuction", async function () {
           projectOne,
           this.startTime + 60000,
           this.startTime + 2 * ONE_HOUR,
-          ethers.utils.parseEther("1")
+          startingPrice,
+          pricePerTokenInWeiAuctionResting
         );
 
-      const startingPrice = ethers.utils.parseEther("1");
-      const endingPrice = ethers.utils.parseEther("0.1");
-      let contractPrice = await this.minter
+      let contractPriceInfo = await this.minter
         .connect(this.accounts.owner)
-        .getPrice(projectOne);
-      expect(contractPrice).to.be.equal(endingPrice);
+        .getPriceInfo(projectOne);
+      expect(contractPriceInfo.tokenPriceInWei).to.be.equal(
+        pricePerTokenInWeiAuctionResting
+      );
     });
   });
 
   describe("purchaseTo", async function () {
-    const maxPrice = ethers.utils.parseEther("1");
-
     it("allows `purchaseTo` by default", async function () {
       await this.minter
         .connect(this.accounts.owner)
         .purchaseTo(this.accounts.additional.address, projectOne, {
-          value: maxPrice,
+          value: startingPrice,
         });
     });
 
@@ -198,7 +223,7 @@ describe("GenArt721MinterEthAuction", async function () {
         this.minter
           .connect(this.accounts.owner)
           .purchaseTo(this.accounts.additional.address, projectOne, {
-            value: maxPrice,
+            value: startingPrice,
           }),
         "No `purchaseTo` Allowed"
       );
@@ -206,7 +231,7 @@ describe("GenArt721MinterEthAuction", async function () {
       await this.minter
         .connect(this.accounts.owner)
         .purchaseTo(this.accounts.owner.address, projectOne, {
-          value: maxPrice,
+          value: startingPrice,
         });
     });
 
@@ -231,8 +256,6 @@ describe("GenArt721MinterEthAuction", async function () {
   });
 
   describe("setAuctionDetails", async function () {
-    const maxPrice = ethers.utils.parseEther("1");
-
     it("allows whitelisted to set auction details", async function () {
       await this.minter
         .connect(this.accounts.snowfro)
@@ -240,7 +263,8 @@ describe("GenArt721MinterEthAuction", async function () {
           projectOne,
           this.startTime + 60000,
           this.startTime + 2 * ONE_HOUR,
-          maxPrice
+          startingPrice,
+          pricePerTokenInWeiAuctionResting
         );
     });
 
@@ -251,7 +275,8 @@ describe("GenArt721MinterEthAuction", async function () {
           projectOne,
           this.startTime + 60000,
           this.startTime + 2 * ONE_HOUR,
-          maxPrice
+          startingPrice,
+          pricePerTokenInWeiAuctionResting
         );
     });
 
@@ -263,9 +288,25 @@ describe("GenArt721MinterEthAuction", async function () {
             projectOne,
             this.startTime + 60000,
             this.startTime + 2 * ONE_HOUR,
-            maxPrice
+            startingPrice,
+            pricePerTokenInWeiAuctionResting
           ),
         "Only Core whitelisted or Artist"
+      );
+    });
+
+    it("disallows higher resting price than starting price", async function () {
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.snowfro)
+          .setAuctionDetails(
+            projectOne,
+            this.startTime + 60000,
+            this.startTime + 2 * ONE_HOUR,
+            pricePerTokenInWeiAuctionResting,
+            startingPrice
+          ),
+        "Auction start price must be greater than auction end price"
       );
     });
   });
@@ -277,7 +318,13 @@ describe("GenArt721MinterEthAuction", async function () {
       await expectRevert(
         this.minter
           .connect(this.accounts.snowfro)
-          .setAuctionDetails(0, 0, 60, pricePerTokenInWei),
+          .setAuctionDetails(
+            0,
+            0,
+            60,
+            startingPrice,
+            pricePerTokenInWeiAuctionResting
+          ),
         "Auction length must be at least minimumAuctionLengthSeconds"
       );
     });
@@ -295,26 +342,41 @@ describe("GenArt721MinterEthAuction", async function () {
     });
   });
 
-  describe("only allow ETH", async function () {
-    const maxPrice = ethers.utils.parseEther("1");
+  describe("currency info hooks", async function () {
+    const unconfiguredProjectNumber = 99;
 
-    it("disallows non-ETH projects", async function () {
-      await this.token
+    it("reports expected price per token", async function () {
+      // returns zero for unconfigured project price
+      const currencyInfo = await this.minter
         .connect(this.accounts.artist)
-        .updateProjectCurrencyInfo(
-          projectOne,
-          "USDC",
-          "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48"
-        );
+        .getPriceInfo(unconfiguredProjectNumber);
+      expect(currencyInfo.tokenPriceInWei).to.be.equal(0);
+    });
 
-      await expectRevert(
-        this.minter
-          .connect(this.accounts.owner)
-          .purchaseTo(this.accounts.additional.address, projectOne, {
-            value: maxPrice,
-          }),
-        "Project currency must be ETH"
-      );
+    it("reports expected isConfigured", async function () {
+      let currencyInfo = await this.minter
+        .connect(this.accounts.artist)
+        .getPriceInfo(projectOne);
+      expect(currencyInfo.isConfigured).to.be.equal(true);
+      // false for unconfigured project
+      currencyInfo = await this.minter
+        .connect(this.accounts.artist)
+        .getPriceInfo(unconfiguredProjectNumber);
+      expect(currencyInfo.isConfigured).to.be.equal(false);
+    });
+
+    it("reports currency as ETH", async function () {
+      const priceInfo = await this.minter
+        .connect(this.accounts.artist)
+        .getPriceInfo(projectOne);
+      expect(priceInfo.currencySymbol).to.be.equal("ETH");
+    });
+
+    it("reports currency address as null address", async function () {
+      const priceInfo = await this.minter
+        .connect(this.accounts.artist)
+        .getPriceInfo(projectOne);
+      expect(priceInfo.currencyAddress).to.be.equal(constants.ZERO_ADDRESS);
     });
   });
 });

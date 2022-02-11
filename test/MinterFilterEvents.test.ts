@@ -23,7 +23,7 @@ describe("MinterFilterEvents", async function () {
       .deploy("Test Contract", "TEST", this.randomizer.address);
     await this.genArt721Core
       .connect(deployer)
-      .addProject("project0", deployer.address, 1);
+      .addProject("project0", deployer.address);
     const minterFilterFactory = await ethers.getContractFactory("MinterFilter");
     this.minterFilter = await minterFilterFactory.deploy(
       this.genArt721Core.address
@@ -120,6 +120,7 @@ describe("MinterFilterEvents", async function () {
   });
 
   describe("setMinterForProject", async function () {
+    const minterType = "GenArt721FilteredMinter";
     it("emits an event", async function () {
       await expect(
         this.minterFilter
@@ -127,11 +128,11 @@ describe("MinterFilterEvents", async function () {
           .setMinterForProject(0, this.minter.address)
       )
         .to.emit(this.minterFilter, "ProjectMinterRegistered")
-        .withArgs(0, this.minter.address);
+        .withArgs(0, this.minter.address, minterType);
       // add project 1
       await this.genArt721Core
         .connect(this.accounts.deployer)
-        .addProject("project1", this.accounts.deployer.address, 1);
+        .addProject("project1", this.accounts.deployer.address);
       // set minter for project 1
       await expect(
         this.minterFilter
@@ -139,7 +140,24 @@ describe("MinterFilterEvents", async function () {
           .setMinterForProject(1, this.minter.address)
       )
         .to.emit(this.minterFilter, "ProjectMinterRegistered")
-        .withArgs(1, this.minter.address);
+        .withArgs(1, this.minter.address, minterType);
+    });
+  });
+
+  describe("alertAsCanonicalMinterFilter", async function () {
+    it("emits event alerting as canonical minter", async function () {
+      // allowlist MinterFilter on core
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateMinterContract(this.minterFilter.address);
+      // expect proper event
+      await expect(
+        this.minterFilter
+          .connect(this.accounts.deployer)
+          .alertAsCanonicalMinterFilter()
+      )
+        .to.emit(this.minterFilter, "IsCanonicalMinterFilter")
+        .withArgs(this.genArt721Core.address);
     });
   });
 });

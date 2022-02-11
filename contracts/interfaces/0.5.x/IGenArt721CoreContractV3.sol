@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-// Creatd By: Art Blocks Inc.
+// Created By: Art Blocks Inc.
 
 pragma solidity ^0.5.0;
 
-interface IGenArt721CoreContract {
+interface IGenArt721CoreContractV3 {
     event Mint(
         address indexed _to,
         uint256 indexed _tokenId,
@@ -24,25 +24,13 @@ interface IGenArt721CoreContract {
 
     function isWhitelisted(address sender) external view returns (bool);
 
-    function projectIdToCurrencySymbol(uint256 _projectId)
-        external
-        view
-        returns (string memory);
-
-    function projectIdToCurrencyAddress(uint256 _projectId)
-        external
-        view
-        returns (address);
+    // @dev this is not available in V0
+    function isMintWhitelisted(address minter) external view returns (bool);
 
     function projectIdToArtistAddress(uint256 _projectId)
         external
         view
         returns (address payable);
-
-    function projectIdToPricePerTokenInWei(uint256 _projectId)
-        external
-        view
-        returns (uint256);
 
     function projectIdToAdditionalPayee(uint256 _projectId)
         external
