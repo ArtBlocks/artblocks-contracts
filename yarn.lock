@@ -867,6 +867,11 @@
     ethers "^4.0.0-beta.1"
     source-map-support "^0.5.19"
 
+"@openzeppelin-0.5/contracts@npm:@openzeppelin/contracts@2.5.1":
+  version "2.5.1"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-2.5.1.tgz#c76e3fc57aa224da3718ec351812a4251289db31"
+  integrity sha512-qIy6tLx8rtybEsIOAlrM4J/85s2q2nPkDqj/Rx46VakBZ0LwtFhXIVub96LXHczQX0vaqmAueDqNPXtbSXSaYQ==
+
 "@openzeppelin/contract-loader@^0.6.2":
   version "0.6.3"
   resolved "https://registry.yarnpkg.com/@openzeppelin/contract-loader/-/contract-loader-0.6.3.tgz#61a7b44de327e40b7d53f39e0fb59bbf847335c3"

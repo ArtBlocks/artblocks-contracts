@@ -149,7 +149,7 @@ contract GenArt721CoreV2_PBAB is CustomERC721Metadata, IGenArt721CoreV2_PBAB {
             "Must mint from whitelisted minter contract."
         );
         require(
-            projects[_projectId].invocations.add(1) <=
+            projects[_projectId].invocations + 1 <=
                 projects[_projectId].maxInvocations,
             "Must not exceed max invocations"
         );
@@ -176,9 +176,7 @@ contract GenArt721CoreV2_PBAB is CustomERC721Metadata, IGenArt721CoreV2_PBAB {
         uint256 tokenIdToBe = (_projectId * ONE_MILLION) +
             projects[_projectId].invocations;
 
-        projects[_projectId].invocations = projects[_projectId].invocations.add(
-            1
-        );
+        projects[_projectId].invocations = projects[_projectId].invocations + 1;
 
         bytes32 hash = keccak256(
             abi.encodePacked(
@@ -323,7 +321,7 @@ contract GenArt721CoreV2_PBAB is CustomERC721Metadata, IGenArt721CoreV2_PBAB {
         projectIdToPricePerTokenInWei[projectId] = _pricePerTokenInWei;
         projects[projectId].paused = true;
         projects[projectId].maxInvocations = ONE_MILLION;
-        nextProjectId = nextProjectId.add(1);
+        nextProjectId = nextProjectId + 1;
     }
 
     /**
@@ -470,9 +468,7 @@ contract GenArt721CoreV2_PBAB is CustomERC721Metadata, IGenArt721CoreV2_PBAB {
         projects[_projectId].scripts[
             projects[_projectId].scriptCount
         ] = _script;
-        projects[_projectId].scriptCount = projects[_projectId].scriptCount.add(
-            1
-        );
+        projects[_projectId].scriptCount = projects[_projectId].scriptCount + 1;
     }
 
     /**
@@ -508,9 +504,7 @@ contract GenArt721CoreV2_PBAB is CustomERC721Metadata, IGenArt721CoreV2_PBAB {
         delete projects[_projectId].scripts[
             projects[_projectId].scriptCount - 1
         ];
-        projects[_projectId].scriptCount = projects[_projectId].scriptCount.sub(
-            1
-        );
+        projects[_projectId].scriptCount = projects[_projectId].scriptCount - 1;
     }
 
     /**
@@ -663,17 +657,6 @@ contract GenArt721CoreV2_PBAB is CustomERC721Metadata, IGenArt721CoreV2_PBAB {
     }
 
     /**
-     * @notice Gets tokens of `owner`.
-     */
-    function tokensOfOwner(address owner)
-        external
-        view
-        returns (uint256[] memory)
-    {
-        return _tokensOfOwner(owner);
-    }
-
-    /**
      * @notice Gets royalty data for token ID `_tokenId`.
      * @param _tokenId Token ID to be queried.
      * @return artistAddress Artist's payment address
@@ -715,9 +698,11 @@ contract GenArt721CoreV2_PBAB is CustomERC721Metadata, IGenArt721CoreV2_PBAB {
         returns (string memory)
     {
         return
-            Strings.strConcat(
-                projects[tokenIdToProjectId[_tokenId]].projectBaseURI,
-                Strings.uint2str(_tokenId)
+            string(
+                abi.encodePacked(
+                    projects[tokenIdToProjectId[_tokenId]].projectBaseURI,
+                    Strings.toString(_tokenId)
+                )
             );
     }
 }

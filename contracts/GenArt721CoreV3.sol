@@ -155,7 +155,7 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
             "Must mint from the allowed minter contract."
         );
         require(
-            projects[_projectId].invocations.add(1) <=
+            projects[_projectId].invocations + 1 <=
                 projects[_projectId].maxInvocations,
             "Must not exceed max invocations"
         );
@@ -182,9 +182,7 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
         uint256 tokenIdToBe = (_projectId * ONE_MILLION) +
             projects[_projectId].invocations;
 
-        projects[_projectId].invocations = projects[_projectId].invocations.add(
-            1
-        );
+        projects[_projectId].invocations = projects[_projectId].invocations + 1;
 
         bytes32 hash = keccak256(
             abi.encodePacked(
@@ -322,7 +320,7 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
         projects[projectId].paused = true;
         projects[projectId].maxInvocations = ONE_MILLION;
 
-        nextProjectId = nextProjectId.add(1);
+        nextProjectId = nextProjectId + 1;
     }
 
     /**
@@ -442,9 +440,7 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
         projects[_projectId].scripts[
             projects[_projectId].scriptCount
         ] = _script;
-        projects[_projectId].scriptCount = projects[_projectId].scriptCount.add(
-            1
-        );
+        projects[_projectId].scriptCount = projects[_projectId].scriptCount + 1;
     }
 
     /**
@@ -480,9 +476,7 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
         delete projects[_projectId].scripts[
             projects[_projectId].scriptCount - 1
         ];
-        projects[_projectId].scriptCount = projects[_projectId].scriptCount.sub(
-            1
-        );
+        projects[_projectId].scriptCount = projects[_projectId].scriptCount - 1;
     }
 
     /**
@@ -635,17 +629,6 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
     }
 
     /**
-     * @notice Gets tokens of `owner`.
-     */
-    function tokensOfOwner(address owner)
-        external
-        view
-        returns (uint256[] memory)
-    {
-        return _tokensOfOwner(owner);
-    }
-
-    /**
      * @notice Backwards-compatible (pre-V3) function returning if `_minter` is
      * minterContract.
      */
@@ -695,9 +678,11 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
         returns (string memory)
     {
         return
-            Strings.strConcat(
-                projects[tokenIdToProjectId[_tokenId]].projectBaseURI,
-                Strings.uint2str(_tokenId)
+            string(
+                abi.encodePacked(
+                    projects[tokenIdToProjectId[_tokenId]].projectBaseURI,
+                    Strings.toString(_tokenId)
+                )
             );
     }
 }

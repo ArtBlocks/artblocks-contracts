@@ -1,4 +1,5 @@
-// File: contracts/CustomERC721Metadata.sol
+// SPDX-License-Identifier: LGPL-3.0-only
+// Created By: Art Blocks Inc.
 
 pragma solidity ^0.8.0;
 
@@ -9,7 +10,7 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 /**
  * ERC721 base contract without the concept of tokenUri as this is managed by the parent
  */
-contract CustomERC721Metadata is ERC165, ERC721, ERC721Enumerable {
+abstract contract CustomERC721Metadata is ERC165, ERC721, ERC721Enumerable {
     // Token name
     string private _name;
 
@@ -24,9 +25,21 @@ contract CustomERC721Metadata is ERC165, ERC721, ERC721Enumerable {
     constructor(string memory name, string memory symbol) public {
         _name = name;
         _symbol = symbol;
+    }
 
-        // register the supported interfaces to conform to ERC721 via ERC165
-        _registerInterface(_INTERFACE_ID_ERC721_METADATA);
+    /**
+     * @dev Implementation of the {IERC165} interface.
+     */
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override
+        returns (bool)
+    {
+        return
+            interfaceId == _INTERFACE_ID_ERC721_METADATA ||
+            super.supportsInterface(interfaceId);
     }
 
     /**

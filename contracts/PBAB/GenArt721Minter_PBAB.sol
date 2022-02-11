@@ -296,51 +296,47 @@ contract GenArt721Minter_PBAB {
         if (msg.value > 0) {
             uint256 pricePerTokenInWei = genArtCoreContract
                 .projectIdToPricePerTokenInWei(_projectId);
-            uint256 refund = msg.value.sub(
-                genArtCoreContract.projectIdToPricePerTokenInWei(_projectId)
-            );
+            uint256 refund = msg.value -
+                genArtCoreContract.projectIdToPricePerTokenInWei(_projectId);
             if (refund > 0) {
-                msg.sender.transfer(refund);
+                payable(msg.sender).transfer(refund);
             }
-            uint256 renderProviderAmount = pricePerTokenInWei.div(100).mul(
-                genArtCoreContract.renderProviderPercentage()
-            );
+            uint256 renderProviderAmount = (pricePerTokenInWei / 100) *
+                genArtCoreContract.renderProviderPercentage();
             if (renderProviderAmount > 0) {
                 genArtCoreContract.renderProviderAddress().transfer(
                     renderProviderAmount
                 );
             }
 
-            uint256 remainingFunds = pricePerTokenInWei.sub(
-                renderProviderAmount
-            );
+            uint256 remainingFunds = pricePerTokenInWei - renderProviderAmount;
 
-            uint256 ownerFunds = remainingFunds.div(100).mul(ownerPercentage);
+            uint256 ownerFunds = (remainingFunds / 100) * ownerPercentage;
             if (ownerFunds > 0) {
                 ownerAddress.transfer(ownerFunds);
             }
 
-            uint256 projectFunds = pricePerTokenInWei
-                .sub(renderProviderAmount)
-                .sub(ownerFunds);
+            uint256 projectFunds = pricePerTokenInWei -
+                renderProviderAmount -
+                ownerFunds;
             uint256 additionalPayeeAmount;
             if (
                 genArtCoreContract.projectIdToAdditionalPayeePercentage(
                     _projectId
                 ) > 0
             ) {
-                additionalPayeeAmount = projectFunds.div(100).mul(
+                additionalPayeeAmount =
+                    (projectFunds / 100) *
                     genArtCoreContract.projectIdToAdditionalPayeePercentage(
                         _projectId
-                    )
-                );
+                    );
                 if (additionalPayeeAmount > 0) {
                     genArtCoreContract
                         .projectIdToAdditionalPayee(_projectId)
                         .transfer(additionalPayeeAmount);
                 }
             }
-            uint256 creatorFunds = projectFunds.sub(additionalPayeeAmount);
+            uint256 creatorFunds = projectFunds - additionalPayeeAmount;
             if (creatorFunds > 0) {
                 genArtCoreContract
                     .projectIdToArtistAddress(_projectId)
@@ -357,9 +353,8 @@ contract GenArt721Minter_PBAB {
     function _splitFundsERC20(uint256 _projectId) internal {
         uint256 pricePerTokenInWei = genArtCoreContract
             .projectIdToPricePerTokenInWei(_projectId);
-        uint256 renderProviderAmount = pricePerTokenInWei.div(100).mul(
-            genArtCoreContract.renderProviderPercentage()
-        );
+        uint256 renderProviderAmount = (pricePerTokenInWei / 100) *
+            genArtCoreContract.renderProviderPercentage();
         if (renderProviderAmount > 0) {
             IERC20(genArtCoreContract.projectIdToCurrencyAddress(_projectId))
                 .transferFrom(
@@ -368,28 +363,28 @@ contract GenArt721Minter_PBAB {
                     renderProviderAmount
                 );
         }
-        uint256 remainingFunds = pricePerTokenInWei.sub(renderProviderAmount);
+        uint256 remainingFunds = pricePerTokenInWei - renderProviderAmount;
 
-        uint256 ownerFunds = remainingFunds.div(100).mul(ownerPercentage);
+        uint256 ownerFunds = (remainingFunds / 100) * ownerPercentage;
         if (ownerFunds > 0) {
             IERC20(genArtCoreContract.projectIdToCurrencyAddress(_projectId))
                 .transferFrom(msg.sender, ownerAddress, ownerFunds);
         }
 
-        uint256 projectFunds = pricePerTokenInWei.sub(renderProviderAmount).sub(
-            ownerFunds
-        );
+        uint256 projectFunds = pricePerTokenInWei -
+            renderProviderAmount -
+            ownerFunds;
         uint256 additionalPayeeAmount;
         if (
             genArtCoreContract.projectIdToAdditionalPayeePercentage(
                 _projectId
             ) > 0
         ) {
-            additionalPayeeAmount = projectFunds.div(100).mul(
+            additionalPayeeAmount =
+                (projectFunds / 100) *
                 genArtCoreContract.projectIdToAdditionalPayeePercentage(
                     _projectId
-                )
-            );
+                );
             if (additionalPayeeAmount > 0) {
                 IERC20(
                     genArtCoreContract.projectIdToCurrencyAddress(_projectId)
@@ -402,7 +397,7 @@ contract GenArt721Minter_PBAB {
                     );
             }
         }
-        uint256 creatorFunds = projectFunds.sub(additionalPayeeAmount);
+        uint256 creatorFunds = projectFunds - additionalPayeeAmount;
         if (creatorFunds > 0) {
             IERC20(genArtCoreContract.projectIdToCurrencyAddress(_projectId))
                 .transferFrom(
