@@ -386,6 +386,33 @@ describe("GenArt721FilteredMinterETHExponentialAuction", async function () {
         "Only Core whitelisted"
       );
     });
+
+    it("invalidates unpaused, ongoing auction (prevents price of zero)", async function () {
+      // prove projectOne is mintable
+      await ethers.provider.send("evm_mine", [
+        this.startTime + auctionStartTimeOffset,
+      ]);
+      await this.minter.connect(this.accounts.owner).purchase(projectOne, {
+        value: startingPrice,
+      });
+      // resetAuctionDetails for projectOne
+      await this.minter
+        .connect(this.accounts.deployer)
+        .resetAuctionDetails(projectOne);
+      // prove projectOne is no longer mintable
+      await expectRevert(
+        this.minter.connect(this.accounts.owner).purchase(projectOne, {
+          value: startingPrice,
+        }),
+        "Only configured auctions"
+      );
+      // prove projectOne is no longer mintable with zero value
+      // (always true given prior check, but paranoid so adding test)
+      await expectRevert(
+        this.minter.connect(this.accounts.owner).purchase(projectOne),
+        "Only configured auctions"
+      );
+    });
   });
 
   describe("enforce and broadcasts auction half-life", async function () {

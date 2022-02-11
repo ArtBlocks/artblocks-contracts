@@ -343,6 +343,63 @@ describe("GenArt721MinterEthAuction_V1Core", async function () {
     });
   });
 
+  describe("resetAuctionDetails", async function () {
+    it("allows whitelisted to reset auction details", async function () {
+      await expect(
+        this.minter
+          .connect(this.accounts.deployer)
+          .resetAuctionDetails(projectOne)
+      )
+        .to.emit(this.minter, "SetAuctionDetails")
+        .withArgs(projectOne, 0, 0, 0, 0);
+    });
+
+    it("disallows artist to reset auction details", async function () {
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.artist)
+          .resetAuctionDetails(projectOne),
+        "Only Core whitelisted"
+      );
+    });
+
+    it("disallows non-whitelisted non-artist to reset auction details", async function () {
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.additional)
+          .resetAuctionDetails(projectOne),
+        "Only Core whitelisted"
+      );
+    });
+
+    it("invalidates unpaused, ongoing auction (prevents price of zero)", async function () {
+      // prove projectOne is mintable
+      await ethers.provider.send("evm_mine", [
+        this.startTime + auctionStartTimeOffset,
+      ]);
+      await this.minter.connect(this.accounts.owner).purchase(projectOne, {
+        value: startingPrice,
+      });
+      // resetAuctionDetails for projectOne
+      await this.minter
+        .connect(this.accounts.deployer)
+        .resetAuctionDetails(projectOne);
+      // prove projectOne is no longer mintable
+      await expectRevert(
+        this.minter.connect(this.accounts.owner).purchase(projectOne, {
+          value: startingPrice,
+        }),
+        "Only configured auctions"
+      );
+      // prove projectOne is no longer mintable with zero value
+      // (always true given prior check, but paranoid so adding test)
+      await expectRevert(
+        this.minter.connect(this.accounts.owner).purchase(projectOne),
+        "Only configured auctions"
+      );
+    });
+  });
+
   describe("enforce and broadcasts min auction length", async function () {
     it("enforces min auction length constraint", async function () {
       const invalidLengthSeconds = 60;

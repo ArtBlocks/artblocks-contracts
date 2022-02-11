@@ -315,6 +315,7 @@ contract GenArt721FilteredMinterETHExponentialAuctionV0 is IFilteredMinterV0 {
             require(msg.sender == _to, "No `purchaseTo` Allowed");
         }
 
+        // _getPrice reverts if auction is unconfigured or has not started
         uint256 currentPriceInWei = _getPrice(_projectId);
         require(
             msg.value >= currentPriceInWei,
@@ -402,6 +403,7 @@ contract GenArt721FilteredMinterETHExponentialAuctionV0 is IFilteredMinterV0 {
     /**
      * @notice Gets price of minting a token on project `_projectId` given
      * the project's AuctionParameters and current block timestamp.
+     * Reverts if auction has not yet started or auction is unconfigured.
      * @param _projectId Project ID to get price of token for.
      * @return current price of token in Wei
      * @dev This method calculates price decay using a linear interpolation
@@ -416,10 +418,10 @@ contract GenArt721FilteredMinterETHExponentialAuctionV0 is IFilteredMinterV0 {
             block.timestamp > auctionParams.timestampStart,
             "Auction not yet started"
         );
-        if (auctionParams.priceDecayHalfLifeSeconds == 0) {
-            // Prevent revert in divide-by-zero case of unconfigured auctions.
-            return 0;
-        }
+        require(
+            auctionParams.priceDecayHalfLifeSeconds > 0,
+            "Only configured auctions"
+        );
         uint256 decayedPrice = auctionParams.startPrice;
         uint256 elapsedTimeSeconds = block.timestamp -
             auctionParams.timestampStart;
@@ -475,6 +477,10 @@ contract GenArt721FilteredMinterETHExponentialAuctionV0 is IFilteredMinterV0 {
             // Provide a reasonable value for `tokenPriceInWei` when it would
             // otherwise revert, using the starting price before auction starts.
             tokenPriceInWei = auctionParams.startPrice;
+        } else if (auctionParams.startPrice == 0) {
+            // In the case of unconfigured auction, return price of zero when
+            // it would otherwise revert
+            tokenPriceInWei = 0;
         } else {
             tokenPriceInWei = _getPrice(_projectId);
         }

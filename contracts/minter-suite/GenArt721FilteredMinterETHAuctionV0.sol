@@ -293,6 +293,7 @@ contract GenArt721FilteredMinterETHAuctionV0 is IFilteredMinterV0 {
             require(msg.sender == _to, "No `purchaseTo` Allowed");
         }
 
+        // _getPrice reverts if auction is unconfigured or has not started
         uint256 currentPriceInWei = _getPrice(_projectId);
         require(
             msg.value >= currentPriceInWei,
@@ -380,6 +381,7 @@ contract GenArt721FilteredMinterETHAuctionV0 is IFilteredMinterV0 {
     /**
      * @notice Gets price of minting a token on project `_projectId` given
      * the project's AuctionParameters and current block timestamp.
+     * Reverts if auction has not yet started or auction is unconfigured.
      * @param _projectId Project ID to get price of token for.
      * @return current price of token in Wei
      */
@@ -392,6 +394,7 @@ contract GenArt721FilteredMinterETHAuctionV0 is IFilteredMinterV0 {
             "Auction not yet started"
         );
         if (block.timestamp >= auctionParams.timestampEnd) {
+            require(auctionParams.timestampEnd > 0, "Only configured auctions");
             return auctionParams.basePrice;
         }
         uint256 elapsedTime = block.timestamp - auctionParams.timestampStart;
@@ -436,6 +439,10 @@ contract GenArt721FilteredMinterETHAuctionV0 is IFilteredMinterV0 {
             // Provide a reasonable value for `tokenPriceInWei` when it would
             // otherwise revert, using the starting price before auction starts.
             tokenPriceInWei = auctionParams.startPrice;
+        } else if (auctionParams.timestampEnd == 0) {
+            // In the case of unconfigured auction, return price of zero when
+            // it would otherwise revert
+            tokenPriceInWei = 0;
         } else {
             tokenPriceInWei = _getPrice(_projectId);
         }
