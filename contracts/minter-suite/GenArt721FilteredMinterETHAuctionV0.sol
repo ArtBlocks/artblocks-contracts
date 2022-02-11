@@ -28,7 +28,7 @@ contract GenArt721FilteredMinterETHAuctionV0 is IFilteredMinterV0 {
     );
 
     /// This contract handles cores with interface IV1
-    IGenArt721CoreContractV1 private immutable genArtCoreContract;
+    IGenArt721CoreContractV1 public immutable genArtCoreContract;
 
     /// Minter filter this minter may interact with.
     IMinterFilterV0 public immutable minterFilter;
