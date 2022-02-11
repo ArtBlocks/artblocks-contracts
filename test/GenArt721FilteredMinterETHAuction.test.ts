@@ -33,6 +33,8 @@ describe("GenArt721MinterEthAuction_V1Core", async function () {
   const ONE_HOUR = ONE_MINUTE * 60;
   const ONE_DAY = ONE_HOUR * 24;
 
+  const auctionStartTimeOffset = ONE_HOUR;
+
   beforeEach(async function () {
     const [owner, newOwner, artist, additional, snowfro] =
       await ethers.getSigners();
@@ -99,8 +101,8 @@ describe("GenArt721MinterEthAuction_V1Core", async function () {
       .connect(this.accounts.snowfro)
       .setAuctionDetails(
         projectOne,
-        this.startTime,
-        startTimePlusMinuteAndTwoHours,
+        this.startTime + auctionStartTimeOffset,
+        this.startTime + auctionStartTimeOffset + ONE_HOUR * 2,
         startingPrice,
         pricePerTokenInWeiAuctionResting
       );
@@ -132,23 +134,36 @@ describe("GenArt721MinterEthAuction_V1Core", async function () {
   });
 
   describe("purchase", async function () {
-    it("calculates the price correctly", async function () {
-      await ethers.provider.send("evm_setNextBlockTimestamp", [this.startTime]);
-      const duration = ONE_HOUR * 2; // 2 hours
-      const step = ONE_MINUTE * 8; // 480 seconds
+    it("disallows purchase before auction begins", async function () {
+      await ethers.provider.send("evm_mine", [this.startTime + ONE_HOUR / 2]);
+      await expectRevert(
+        this.minter.connect(this.accounts.owner).purchase(projectOne, {
+          value: startingPrice.toString(),
+          gasPrice: 0,
+        }),
+        "Auction not yet started"
+      );
+    });
 
-      for (let i = 0; i < 15; i++) {
+    it("calculates the price correctly", async function () {
+      await ethers.provider.send("evm_mine", [
+        this.startTime + auctionStartTimeOffset,
+      ]);
+
+      const step = ONE_MINUTE * 8; // 480 seconds
+      const numSteps = 15;
+      for (let i = 1; i < numSteps; i++) {
         let ownerBalance = await this.accounts.owner.getBalance();
         let a = ethers.BigNumber.from(i * step).mul(
           startingPrice.sub(pricePerTokenInWeiAuctionResting).toString()
         );
         let t = ethers.BigNumber.from(a.toString());
-        let price = startingPrice.sub(t.div(7200000));
+        let price = startingPrice.sub(t.div(step * numSteps));
         let contractPriceInfo = await this.minter
           .connect(this.accounts.owner)
           .getPriceInfo(projectOne);
-        await ethers.provider.send("evm_setNextBlockTimestamp", [
-          this.startTime + i * 480000,
+        await ethers.provider.send("evm_mine", [
+          this.startTime + auctionStartTimeOffset + i * step,
         ]);
         await this.minter.connect(this.accounts.owner).purchase(projectOne, {
           value: price.toString(),
@@ -205,6 +220,9 @@ describe("GenArt721MinterEthAuction_V1Core", async function () {
           pricePerTokenInWeiAuctionResting
         );
 
+      await ethers.provider.send("evm_mine", [
+        this.startTime + auctionStartTimeOffset + 2 * ONE_HOUR,
+      ]);
       let contractPriceInfo = await this.minter
         .connect(this.accounts.owner)
         .getPriceInfo(projectOne);
@@ -216,6 +234,9 @@ describe("GenArt721MinterEthAuction_V1Core", async function () {
 
   describe("purchaseTo", async function () {
     it("allows `purchaseTo` by default", async function () {
+      await ethers.provider.send("evm_mine", [
+        this.startTime + auctionStartTimeOffset,
+      ]);
       await this.minter
         .connect(this.accounts.owner)
         .purchaseTo(this.accounts.additional.address, projectOne, {
@@ -224,6 +245,9 @@ describe("GenArt721MinterEthAuction_V1Core", async function () {
     });
 
     it("disallows `purchaseTo` if disallowed explicitly", async function () {
+      await ethers.provider.send("evm_mine", [
+        this.startTime + auctionStartTimeOffset,
+      ]);
       await this.minter
         .connect(this.accounts.snowfro)
         .togglePurchaseToDisabled(projectOne);

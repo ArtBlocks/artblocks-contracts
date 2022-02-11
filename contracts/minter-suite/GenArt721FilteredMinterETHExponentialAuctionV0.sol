@@ -311,7 +311,7 @@ contract GenArt721FilteredMinterETHExponentialAuctionV0 is IFilteredMinterV0 {
             require(msg.sender == _to, "No `purchaseTo` Allowed");
         }
 
-        uint256 currentPriceInWei = getPrice(_projectId);
+        uint256 currentPriceInWei = _getPrice(_projectId);
         require(
             msg.value >= currentPriceInWei,
             "Must send minimum value to mint!"
@@ -404,14 +404,14 @@ contract GenArt721FilteredMinterETHExponentialAuctionV0 is IFilteredMinterV0 {
      * of exponential decay based on the artist-provided half-life for price
      * decay, `_priceDecayHalfLifeSeconds`.
      */
-    function getPrice(uint256 _projectId) private view returns (uint256) {
+    function _getPrice(uint256 _projectId) private view returns (uint256) {
         AuctionParameters memory auctionParams = projectAuctionParameters[
             _projectId
         ];
-        if (block.timestamp <= auctionParams.timestampStart) {
-            // The auction has not yet started.
-            return auctionParams.startPrice;
-        }
+        require(
+            block.timestamp > auctionParams.timestampStart,
+            "Auction not yet started"
+        );
         if (auctionParams.priceDecayHalfLifeSeconds == 0) {
             // Prevent revert in divide-by-zero case of unconfigured auctions.
             return 0;
@@ -467,7 +467,13 @@ contract GenArt721FilteredMinterETHExponentialAuctionV0 is IFilteredMinterV0 {
             _projectId
         ];
         isConfigured = (auctionParams.startPrice > 0);
-        tokenPriceInWei = getPrice(_projectId);
+        if (block.timestamp <= auctionParams.timestampStart) {
+            // Provide a reasonable value for `tokenPriceInWei` when it would
+            // otherwise revert, using the starting price before auction starts.
+            tokenPriceInWei = auctionParams.startPrice;
+        } else {
+            tokenPriceInWei = _getPrice(_projectId);
+        }
         currencySymbol = "ETH";
         currencyAddress = address(0);
     }
