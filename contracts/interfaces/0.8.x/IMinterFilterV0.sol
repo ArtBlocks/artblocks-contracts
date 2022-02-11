@@ -3,7 +3,7 @@
 
 pragma solidity ^0.8.0;
 
-interface IMinterFilter {
+interface IMinterFilterV0 {
     /**
      * @notice Approved minter `_minterAddress`.
      */

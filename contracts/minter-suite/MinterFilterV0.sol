@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../interfaces/0.8.x/IMinterFilter.sol";
-import "../interfaces/0.8.x/IFilteredMinter.sol";
-import "../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
+import "../interfaces/0.8.x/IMinterFilterV0.sol";
+import "../interfaces/0.8.x/IFilteredMinterV0.sol";
+import "../interfaces/0.8.x/IGenArt721CoreContractV1.sol";
 
 import "../libs/0.8.x/EnumerableMap.sol";
 
@@ -14,7 +14,7 @@ pragma solidity 0.8.9;
  * on a per-project basis.
  * @author Art Blocks Inc.
  */
-contract MinterFilter is IMinterFilter {
+contract MinterFilter is IMinterFilterV0 {
     /**
      * @notice This minter is to be considered `_coreContractAddress`'s
      * canonical minter.
@@ -29,7 +29,7 @@ contract MinterFilter is IMinterFilter {
     address public immutable genArt721CoreAddress;
 
     /// This contract only uses the portion of V3 interface also on V1 core
-    IGenArt721CoreContractV3 private immutable genArtCoreContract;
+    IGenArt721CoreContractV1 private immutable genArtCoreContract;
 
     /// projectId => minter address
     EnumerableMap.UintToAddressMap private minterForProject;
@@ -95,7 +95,7 @@ contract MinterFilter is IMinterFilter {
     constructor(address _genArt721Address) {
         genArt721CoreAddress = _genArt721Address;
         // supports V3 and V1 core contract interfaces
-        genArtCoreContract = IGenArt721CoreContractV3(_genArt721Address);
+        genArtCoreContract = IGenArt721CoreContractV1(_genArt721Address);
     }
 
     /**
@@ -122,7 +122,7 @@ contract MinterFilter is IMinterFilter {
         isApprovedMinter[_minterAddress] = true;
         emit MinterApproved(
             _minterAddress,
-            IFilteredMinter(_minterAddress).minterType()
+            IFilteredMinterV0(_minterAddress).minterType()
         );
     }
 
@@ -166,7 +166,7 @@ contract MinterFilter is IMinterFilter {
         emit ProjectMinterRegistered(
             _projectId,
             _minterAddress,
-            IFilteredMinter(_minterAddress).minterType()
+            IFilteredMinterV0(_minterAddress).minterType()
         );
     }
 
@@ -291,7 +291,7 @@ contract MinterFilter is IMinterFilter {
         )
     {
         (projectId, minterAddress) = minterForProject.at(_index);
-        minterType = IFilteredMinter(minterAddress).minterType();
+        minterType = IFilteredMinterV0(minterAddress).minterType();
         return (projectId, minterAddress, minterType);
     }
 }
