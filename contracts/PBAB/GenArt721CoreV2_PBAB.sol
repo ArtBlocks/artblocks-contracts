@@ -8,7 +8,7 @@ import "../libs/0.5.x/Strings.sol";
 import "../interfaces/0.5.x/IRandomizer.sol";
 import "../interfaces/0.5.x/IGenArt721CoreV2_PBAB.sol";
 
-pragma solidity ^0.5.0;
+pragma solidity 0.8.9;
 
 /**
  * @title Powered by Art Blocks ERC-721 core contract.

@@ -8,7 +8,7 @@ import "./libs/0.5.x/Strings.sol";
 import "./interfaces/0.5.x/IRandomizer.sol";
 import "./interfaces/0.5.x/IGenArt721CoreContractV3.sol";
 
-pragma solidity ^0.5.17;
+pragma solidity 0.8.9;
 
 /**
  * @title Art Blocks ERC-721 core contract, V3.

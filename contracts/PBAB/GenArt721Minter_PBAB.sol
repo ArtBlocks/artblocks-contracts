@@ -8,7 +8,7 @@ import "../libs/0.5.x/IERC20.sol";
 import "../interfaces/0.5.x/IGenArt721CoreV2_PBAB.sol";
 import "../interfaces/0.5.x/IBonusContract.sol";
 
-pragma solidity ^0.5.0;
+pragma solidity 0.8.9;
 
 /**
  * @title Powered by Art Blocks minter contract that allows tokens to be
@@ -353,8 +353,8 @@ contract GenArt721Minter_PBAB {
     }
 
     /**
-     * @dev splits ERC-20 funds between render provider, owner, artist, and 
-     * artist's additional payee, for a token purchased on project 
+     * @dev splits ERC-20 funds between render provider, owner, artist, and
+     * artist's additional payee, for a token purchased on project
      `_projectId`.
      */
     function _splitFundsERC20(uint256 _projectId) internal {
