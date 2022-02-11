@@ -28,6 +28,7 @@ describe("GenArt721FilteredMinterETHExponentialAuction", async function () {
   const ONE_DAY = ONE_HOUR * 24;
 
   const defaultHalfLife = ONE_HOUR / 2;
+  const auctionStartTimeOffset = ONE_HOUR;
 
   beforeEach(async function () {
     const [owner, newOwner, artist, additional, deployer] =
@@ -88,12 +89,12 @@ describe("GenArt721FilteredMinterETHExponentialAuction", async function () {
       this.startTime = Date.now();
     }
 
-    await ethers.provider.send("evm_setNextBlockTimestamp", [this.startTime]);
+    await ethers.provider.send("evm_mine", [this.startTime]);
     await this.minter
       .connect(this.accounts.deployer)
       .setAuctionDetails(
         projectOne,
-        this.startTime,
+        this.startTime + auctionStartTimeOffset,
         defaultHalfLife,
         startingPrice,
         basePrice
@@ -135,7 +136,7 @@ describe("GenArt721FilteredMinterETHExponentialAuction", async function () {
         }
 
         await ethers.provider.send("evm_setNextBlockTimestamp", [
-          this.startTime + i * defaultHalfLife,
+          this.startTime + auctionStartTimeOffset + i * defaultHalfLife,
         ]);
         await this.minter.connect(this.accounts.owner).purchase(projectOne, {
           value: price.toString(),
@@ -162,7 +163,7 @@ describe("GenArt721FilteredMinterETHExponentialAuction", async function () {
         .connect(this.accounts.deployer)
         .setAuctionDetails(
           projectOne,
-          this.startTime + ONE_HOUR,
+          this.startTime + auctionStartTimeOffset,
           defaultHalfLife,
           startingPrice,
           basePrice
@@ -179,7 +180,7 @@ describe("GenArt721FilteredMinterETHExponentialAuction", async function () {
         .connect(this.accounts.deployer)
         .setAuctionDetails(
           projectOne,
-          this.startTime + ONE_HOUR,
+          this.startTime + auctionStartTimeOffset,
           defaultHalfLife,
           startingPrice,
           basePrice
@@ -249,7 +250,7 @@ describe("GenArt721FilteredMinterETHExponentialAuction", async function () {
         .connect(this.accounts.deployer)
         .setAuctionDetails(
           projectOne,
-          this.startTime + ONE_HOUR,
+          this.startTime + auctionStartTimeOffset,
           defaultHalfLife,
           startingPrice,
           basePrice
@@ -261,7 +262,7 @@ describe("GenArt721FilteredMinterETHExponentialAuction", async function () {
         .connect(this.accounts.artist)
         .setAuctionDetails(
           projectOne,
-          this.startTime + ONE_HOUR,
+          this.startTime + auctionStartTimeOffset,
           defaultHalfLife,
           startingPrice,
           basePrice
@@ -274,7 +275,7 @@ describe("GenArt721FilteredMinterETHExponentialAuction", async function () {
           .connect(this.accounts.additional)
           .setAuctionDetails(
             projectOne,
-            this.startTime + ONE_HOUR,
+            this.startTime + auctionStartTimeOffset,
             defaultHalfLife,
             startingPrice,
             basePrice
@@ -289,7 +290,7 @@ describe("GenArt721FilteredMinterETHExponentialAuction", async function () {
           .connect(this.accounts.deployer)
           .setAuctionDetails(
             projectOne,
-            this.startTime + ONE_HOUR,
+            this.startTime + auctionStartTimeOffset,
             defaultHalfLife,
             basePrice,
             startingPrice
@@ -308,7 +309,7 @@ describe("GenArt721FilteredMinterETHExponentialAuction", async function () {
           .connect(this.accounts.deployer)
           .setAuctionDetails(
             0,
-            this.startTime + ONE_HOUR,
+            this.startTime + auctionStartTimeOffset,
             invalidHalfLifeSecondsMin,
             startingPrice,
             basePrice
@@ -323,7 +324,7 @@ describe("GenArt721FilteredMinterETHExponentialAuction", async function () {
           .connect(this.accounts.deployer)
           .setAuctionDetails(
             0,
-            this.startTime + ONE_HOUR,
+            this.startTime + auctionStartTimeOffset,
             invalidHalfLifeSecondsMax,
             startingPrice,
             basePrice
