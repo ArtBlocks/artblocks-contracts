@@ -93,6 +93,9 @@ describe("GenArt721FilteredMinterETHExponentialAuction", async function () {
     await ethers.provider.send("evm_mine", [this.startTime - ONE_MINUTE]);
     await this.minter
       .connect(this.accounts.deployer)
+      .resetAuctionDetails(projectOne);
+    await this.minter
+      .connect(this.accounts.deployer)
       .setAuctionDetails(
         projectOne,
         this.startTime + auctionStartTimeOffset,
@@ -163,6 +166,9 @@ describe("GenArt721FilteredMinterETHExponentialAuction", async function () {
     it("calculates the price before correctly", async function () {
       await this.minter
         .connect(this.accounts.deployer)
+        .resetAuctionDetails(projectOne);
+      await this.minter
+        .connect(this.accounts.deployer)
         .setAuctionDetails(
           projectOne,
           this.startTime + auctionStartTimeOffset,
@@ -178,6 +184,9 @@ describe("GenArt721FilteredMinterETHExponentialAuction", async function () {
     });
 
     it("calculates the price after correctly ", async function () {
+      await this.minter
+        .connect(this.accounts.deployer)
+        .resetAuctionDetails(projectOne);
       await this.minter
         .connect(this.accounts.deployer)
         .setAuctionDetails(
@@ -247,7 +256,28 @@ describe("GenArt721FilteredMinterETHExponentialAuction", async function () {
   });
 
   describe("setAuctionDetails", async function () {
+    it("cannot be modified mid-auction", async function () {
+      await ethers.provider.send("evm_mine", [
+        this.startTime + 2 * auctionStartTimeOffset,
+      ]);
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.deployer)
+          .setAuctionDetails(
+            projectOne,
+            this.startTime + auctionStartTimeOffset,
+            defaultHalfLife,
+            startingPrice,
+            basePrice
+          ),
+        "No modifications mid-auction"
+      );
+    });
+
     it("allows whitelisted to set auction details", async function () {
+      await this.minter
+        .connect(this.accounts.deployer)
+        .resetAuctionDetails(projectOne);
       await this.minter
         .connect(this.accounts.deployer)
         .setAuctionDetails(
@@ -261,6 +291,9 @@ describe("GenArt721FilteredMinterETHExponentialAuction", async function () {
 
     it("allows artist to set auction details", async function () {
       await this.minter
+        .connect(this.accounts.deployer)
+        .resetAuctionDetails(projectOne);
+      await this.minter
         .connect(this.accounts.artist)
         .setAuctionDetails(
           projectOne,
@@ -272,6 +305,9 @@ describe("GenArt721FilteredMinterETHExponentialAuction", async function () {
     });
 
     it("disallows non-whitelisted non-artist to set auction details", async function () {
+      await this.minter
+        .connect(this.accounts.deployer)
+        .resetAuctionDetails(projectOne);
       await expectRevert(
         this.minter
           .connect(this.accounts.additional)
@@ -287,6 +323,9 @@ describe("GenArt721FilteredMinterETHExponentialAuction", async function () {
     });
 
     it("disallows higher resting price than starting price", async function () {
+      await this.minter
+        .connect(this.accounts.deployer)
+        .resetAuctionDetails(projectOne);
       await expectRevert(
         this.minter
           .connect(this.accounts.deployer)
@@ -302,8 +341,41 @@ describe("GenArt721FilteredMinterETHExponentialAuction", async function () {
     });
   });
 
+  describe("resetAuctionDetails", async function () {
+    it("allows whitelisted to reset auction details", async function () {
+      await expect(
+        this.minter
+          .connect(this.accounts.deployer)
+          .resetAuctionDetails(projectOne)
+      )
+        .to.emit(this.minter, "SetAuctionDetails")
+        .withArgs(projectOne, 0, 0, 0, 0);
+    });
+
+    it("disallows artist to reset auction details", async function () {
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.artist)
+          .resetAuctionDetails(projectOne),
+        "Only Core whitelisted"
+      );
+    });
+
+    it("disallows non-whitelisted non-artist to reset auction details", async function () {
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.additional)
+          .resetAuctionDetails(projectOne),
+        "Only Core whitelisted"
+      );
+    });
+  });
+
   describe("enforce and broadcasts auction half-life", async function () {
     it("enforces half-life min/max constraint", async function () {
+      await this.minter
+        .connect(this.accounts.deployer)
+        .resetAuctionDetails(projectOne);
       // expect revert when creating a new project with
       const invalidHalfLifeSecondsMin = ONE_MINUTE;
       await expectRevert(
