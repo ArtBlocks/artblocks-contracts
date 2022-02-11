@@ -284,7 +284,7 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
             require(msg.sender == _to, "No `purchaseTo` Allowed");
         }
 
-        uint256 currentPriceInWei = getPrice(_projectId);
+        uint256 currentPriceInWei = _getPrice(_projectId);
         require(
             msg.value >= currentPriceInWei,
             "Must send minimum value to mint!"
@@ -374,13 +374,15 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
      * @param _projectId Project ID to get price of token for.
      * @return current price of token in Wei
      */
-    function getPrice(uint256 _projectId) private view returns (uint256) {
+    function _getPrice(uint256 _projectId) private view returns (uint256) {
         AuctionParameters memory auctionParams = projectAuctionParameters[
             _projectId
         ];
-        if (block.timestamp <= auctionParams.timestampStart) {
-            return auctionParams.startPrice;
-        } else if (block.timestamp >= auctionParams.timestampEnd) {
+        require(
+            block.timestamp > auctionParams.timestampStart,
+            "Auction not yet started"
+        );
+        if (block.timestamp >= auctionParams.timestampEnd) {
             return auctionParams.basePrice;
         }
         uint256 elapsedTime = block.timestamp - auctionParams.timestampStart;
@@ -421,7 +423,13 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
             _projectId
         ];
         isConfigured = (auctionParams.startPrice > 0);
-        tokenPriceInWei = getPrice(_projectId);
+        if (block.timestamp <= auctionParams.timestampStart) {
+            // Provide a reasonable value for `tokenPriceInWei` when it would
+            // otherwise revert, using the starting price before auction starts.
+            tokenPriceInWei = auctionParams.startPrice;
+        } else {
+            tokenPriceInWei = _getPrice(_projectId);
+        }
         currencySymbol = "ETH";
         currencyAddress = address(0);
     }
