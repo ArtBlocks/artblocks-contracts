@@ -3,7 +3,7 @@
  * https://etherscan.io/address/0xa7d8d9ef8d8ce8992df33d8b8cf4aebabd5bd270#code
  * REPO-ONLY MODIFICATIONS relative to deployed contract source code:
  * - use IRandomizer to avoid namespace nuisance with `Randomizer` interface
- * - add `is IGenArt721CoreContractV1` to core contract to ensure repo 
+ * - add `is IGenArt721CoreContractV1` to core contract to ensure repo
  *   maintains conforming V1 core contract interface
  */
 
