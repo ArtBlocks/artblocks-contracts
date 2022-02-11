@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.5.0;
 
-interface IGenArt721CoreContract {
+interface IGenArt721CoreContractV1 {
     event Mint(
         address indexed _to,
         uint256 indexed _tokenId,
