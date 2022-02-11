@@ -11,9 +11,7 @@ import { ethers } from "hardhat";
 
 /**
  * These tests are intended to check integration of the MinterFilter suite
- * with the V1 core contract. This is how the MinterFilter suite will be
- * originally deployed.
- * Only the deprecated function projectTokenInfo is included in tests.
+ * with the V1 core contract.
  */
 describe("GenArt721CoreV1", async function () {
   const name = "Non Fungible Token";
@@ -44,10 +42,12 @@ describe("GenArt721CoreV1", async function () {
       .connect(snowfro)
       .deploy(name, symbol, this.randomizer.address);
     // deploy and configure minter filter and minter
-    const minterFilterFactory = await ethers.getContractFactory("MinterFilter");
+    const minterFilterFactory = await ethers.getContractFactory(
+      "MinterFilterV0"
+    );
     this.minterFilter = await minterFilterFactory.deploy(this.token.address);
     const minterFactory = await ethers.getContractFactory(
-      "GenArt721FilteredMinterETH"
+      "GenArt721FilteredMinterETHV0"
     );
     this.minter = await minterFactory.deploy(
       this.token.address,

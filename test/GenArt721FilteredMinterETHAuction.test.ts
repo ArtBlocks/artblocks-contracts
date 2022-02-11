@@ -9,11 +9,7 @@ import {
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
-/**
- * These tests intended to ensure Filtered Minter integrates properly with V1
- * core contract. Nearly identical tests as the V3 core.
- */
-describe("GenArt721MinterEthAuction_V1Core", async function () {
+describe("GenArt721MinterEthAuction", async function () {
   const name = "Non Fungible Token";
   const symbol = "NFT";
 
@@ -23,27 +19,25 @@ describe("GenArt721MinterEthAuction_V1Core", async function () {
   const startingPrice = ethers.utils.parseEther("1");
   const pricePerTokenInWei = ethers.utils.parseEther("0.1");
   // purposefully different price per token on core contract (tracked separately)
-  const pricePerTokenInWeiAuctionResting = ethers.utils.parseEther("0.05");
+  const basePrice = ethers.utils.parseEther("0.05");
 
   const projectOne = 3; // V1 core starts at project 3
 
-  const projectMaxInvocations = 15;
-
-  const ONE_MINUTE = 60000;
+  const ONE_MINUTE = 60;
   const ONE_HOUR = ONE_MINUTE * 60;
   const ONE_DAY = ONE_HOUR * 24;
 
   const auctionStartTimeOffset = ONE_HOUR;
 
   beforeEach(async function () {
-    const [owner, newOwner, artist, additional, snowfro] =
+    const [owner, newOwner, artist, additional, deployer] =
       await ethers.getSigners();
     this.accounts = {
       owner: owner,
       newOwner: newOwner,
       artist: artist,
       additional: additional,
-      snowfro: snowfro,
+      deployer: deployer,
     };
 
     const randomizerFactory = await ethers.getContractFactory("Randomizer");
@@ -51,14 +45,16 @@ describe("GenArt721MinterEthAuction_V1Core", async function () {
 
     const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV1");
     this.token = await artblocksFactory
-      .connect(snowfro)
+      .connect(deployer)
       .deploy(name, symbol, this.randomizer.address);
 
-    const minterFilterFactory = await ethers.getContractFactory("MinterFilter");
+    const minterFilterFactory = await ethers.getContractFactory(
+      "MinterFilterV0"
+    );
     this.minterFilter = await minterFilterFactory.deploy(this.token.address);
 
     const minterFactory = await ethers.getContractFactory(
-      "GenArt721FilteredMinterETHAuction"
+      "GenArt721FilteredMinterETHAuctionV0"
     );
     this.minter = await minterFactory.deploy(
       this.token.address,
@@ -66,46 +62,51 @@ describe("GenArt721MinterEthAuction_V1Core", async function () {
     );
 
     await this.token
-      .connect(snowfro)
+      .connect(deployer)
       .addProject("project1", artist.address, 0, false);
 
-    await this.token.connect(snowfro).toggleProjectIsActive(projectOne);
+    await this.token.connect(deployer).toggleProjectIsActive(projectOne);
 
     await this.token
-      .connect(snowfro)
+      .connect(deployer)
       .addMintWhitelisted(this.minterFilter.address);
 
     await this.token
       .connect(artist)
-      .updateProjectMaxInvocations(projectOne, projectMaxInvocations);
+      .updateProjectMaxInvocations(projectOne, 15);
 
     await this.token
       .connect(this.accounts.artist)
       .toggleProjectIsPaused(projectOne);
 
     await this.minterFilter
-      .connect(this.accounts.snowfro)
+      .connect(this.accounts.deployer)
       .addApprovedMinter(this.minter.address);
     await this.minterFilter
-      .connect(this.accounts.snowfro)
+      .connect(this.accounts.deployer)
       .setMinterForProject(projectOne, this.minter.address);
 
-    if (this.hasOwnProperty("startTime") && this.startTime) {
-      this.startTime = this.startTime + ONE_DAY;
-    } else {
-      this.startTime = Date.now();
+    if (!this.startTime) {
+      const blockNumber = await ethers.provider.getBlockNumber();
+      const block = await ethers.provider.getBlock(blockNumber);
+      this.startTime = block.timestamp;
     }
+    this.startTime = this.startTime + ONE_DAY;
 
-    const startTimePlusMinuteAndTwoHours = this.startTime + ONE_HOUR * 2;
+    await ethers.provider.send("evm_mine", [this.startTime - ONE_MINUTE]);
     await this.minter
-      .connect(this.accounts.snowfro)
+      .connect(this.accounts.deployer)
+      .resetAuctionDetails(projectOne);
+    await this.minter
+      .connect(this.accounts.deployer)
       .setAuctionDetails(
         projectOne,
         this.startTime + auctionStartTimeOffset,
         this.startTime + auctionStartTimeOffset + ONE_HOUR * 2,
         startingPrice,
-        pricePerTokenInWeiAuctionResting
+        basePrice
       );
+    await ethers.provider.send("evm_mine", [this.startTime]);
   });
 
   describe("constructor", async function () {
@@ -114,16 +115,16 @@ describe("GenArt721MinterEthAuction_V1Core", async function () {
         "GenArt721CoreV1"
       );
       const token2 = await artblocksFactory
-        .connect(this.accounts.snowfro)
+        .connect(this.accounts.deployer)
         .deploy(name, symbol, this.randomizer.address);
 
       const minterFilterFactory = await ethers.getContractFactory(
-        "MinterFilter"
+        "MinterFilterV0"
       );
       const minterFilter = await minterFilterFactory.deploy(token2.address);
 
       const minterFactory = await ethers.getContractFactory(
-        "GenArt721FilteredMinter"
+        "GenArt721FilteredMinterV0"
       );
       // fails when combine new minterFilter with the old token in constructor
       await expectRevert(
@@ -155,7 +156,7 @@ describe("GenArt721MinterEthAuction_V1Core", async function () {
       for (let i = 1; i < numSteps; i++) {
         let ownerBalance = await this.accounts.owner.getBalance();
         let a = ethers.BigNumber.from(i * step).mul(
-          startingPrice.sub(pricePerTokenInWeiAuctionResting).toString()
+          startingPrice.sub(basePrice).toString()
         );
         let t = ethers.BigNumber.from(a.toString());
         let price = startingPrice.sub(t.div(step * numSteps));
@@ -187,16 +188,17 @@ describe("GenArt721MinterEthAuction_V1Core", async function () {
     });
 
     it("calculates the price before correctly", async function () {
-      await ethers.provider.send("evm_setNextBlockTimestamp", [this.startTime]);
-
       await this.minter
-        .connect(this.accounts.snowfro)
+        .connect(this.accounts.deployer)
+        .resetAuctionDetails(projectOne);
+      await this.minter
+        .connect(this.accounts.deployer)
         .setAuctionDetails(
           projectOne,
-          this.startTime + 60000,
+          this.startTime + ONE_HOUR,
           this.startTime + 2 * ONE_HOUR,
           startingPrice,
-          pricePerTokenInWeiAuctionResting
+          basePrice
         );
 
       let contractPriceInfo = await this.minter
@@ -206,29 +208,27 @@ describe("GenArt721MinterEthAuction_V1Core", async function () {
     });
 
     it("calculates the price after correctly ", async function () {
-      await ethers.provider.send("evm_setNextBlockTimestamp", [
-        this.startTime + 5 * ONE_HOUR,
-      ]);
-
       await this.minter
-        .connect(this.accounts.snowfro)
+        .connect(this.accounts.deployer)
+        .resetAuctionDetails(projectOne);
+      await this.minter
+        .connect(this.accounts.deployer)
         .setAuctionDetails(
           projectOne,
-          this.startTime + 60000,
+          this.startTime + ONE_HOUR,
           this.startTime + 2 * ONE_HOUR,
           startingPrice,
-          pricePerTokenInWeiAuctionResting
+          basePrice
         );
 
       await ethers.provider.send("evm_mine", [
         this.startTime + auctionStartTimeOffset + 2 * ONE_HOUR,
       ]);
+
       let contractPriceInfo = await this.minter
         .connect(this.accounts.owner)
         .getPriceInfo(projectOne);
-      expect(contractPriceInfo.tokenPriceInWei).to.be.equal(
-        pricePerTokenInWeiAuctionResting
-      );
+      expect(contractPriceInfo.tokenPriceInWei).to.be.equal(basePrice);
     });
   });
 
@@ -249,7 +249,7 @@ describe("GenArt721MinterEthAuction_V1Core", async function () {
         this.startTime + auctionStartTimeOffset,
       ]);
       await this.minter
-        .connect(this.accounts.snowfro)
+        .connect(this.accounts.deployer)
         .togglePurchaseToDisabled(projectOne);
       await expectRevert(
         this.minter
@@ -271,7 +271,7 @@ describe("GenArt721MinterEthAuction_V1Core", async function () {
       // emits true when changed from initial value of false
       await expect(
         this.minter
-          .connect(this.accounts.snowfro)
+          .connect(this.accounts.deployer)
           .togglePurchaseToDisabled(projectOne)
       )
         .to.emit(this.minter, "PurchaseToDisabledUpdated")
@@ -279,7 +279,7 @@ describe("GenArt721MinterEthAuction_V1Core", async function () {
       // emits false when changed from initial value of true
       await expect(
         this.minter
-          .connect(this.accounts.snowfro)
+          .connect(this.accounts.deployer)
           .togglePurchaseToDisabled(projectOne)
       )
         .to.emit(this.minter, "PurchaseToDisabledUpdated")
@@ -288,54 +288,82 @@ describe("GenArt721MinterEthAuction_V1Core", async function () {
   });
 
   describe("setAuctionDetails", async function () {
+    it("cannot be modified mid-auction", async function () {
+      await ethers.provider.send("evm_mine", [this.startTime + ONE_HOUR]);
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.deployer)
+          .setAuctionDetails(
+            projectOne,
+            this.startTime + ONE_MINUTE,
+            this.startTime + 2 * ONE_HOUR,
+            startingPrice,
+            basePrice
+          ),
+        "No modifications mid-auction"
+      );
+    });
+
     it("allows whitelisted to set auction details", async function () {
       await this.minter
-        .connect(this.accounts.snowfro)
+        .connect(this.accounts.deployer)
+        .resetAuctionDetails(projectOne);
+      await this.minter
+        .connect(this.accounts.deployer)
         .setAuctionDetails(
           projectOne,
-          this.startTime + 60000,
+          this.startTime + ONE_MINUTE,
           this.startTime + 2 * ONE_HOUR,
           startingPrice,
-          pricePerTokenInWeiAuctionResting
+          basePrice
         );
     });
 
     it("allows artist to set auction details", async function () {
       await this.minter
+        .connect(this.accounts.deployer)
+        .resetAuctionDetails(projectOne);
+      await this.minter
         .connect(this.accounts.artist)
         .setAuctionDetails(
           projectOne,
-          this.startTime + 60000,
+          this.startTime + ONE_MINUTE,
           this.startTime + 2 * ONE_HOUR,
           startingPrice,
-          pricePerTokenInWeiAuctionResting
+          basePrice
         );
     });
 
     it("disallows non-whitelisted non-artist to set auction details", async function () {
+      await this.minter
+        .connect(this.accounts.deployer)
+        .resetAuctionDetails(projectOne);
       await expectRevert(
         this.minter
           .connect(this.accounts.additional)
           .setAuctionDetails(
             projectOne,
-            this.startTime + 60000,
+            this.startTime + ONE_MINUTE,
             this.startTime + 2 * ONE_HOUR,
             startingPrice,
-            pricePerTokenInWeiAuctionResting
+            basePrice
           ),
         "Only Core whitelisted or Artist"
       );
     });
 
     it("disallows higher resting price than starting price", async function () {
+      await this.minter
+        .connect(this.accounts.deployer)
+        .resetAuctionDetails(projectOne);
       await expectRevert(
         this.minter
-          .connect(this.accounts.snowfro)
+          .connect(this.accounts.deployer)
           .setAuctionDetails(
             projectOne,
-            this.startTime + 60000,
+            this.startTime + ONE_MINUTE,
             this.startTime + 2 * ONE_HOUR,
-            pricePerTokenInWeiAuctionResting,
+            basePrice,
             startingPrice
           ),
         "Auction start price must be greater than auction end price"
@@ -401,18 +429,40 @@ describe("GenArt721MinterEthAuction_V1Core", async function () {
   });
 
   describe("enforce and broadcasts min auction length", async function () {
-    it("enforces min auction length constraint", async function () {
-      const invalidLengthSeconds = 60;
-      // expect revert when creating a new project with
+    it("enforces min/max auction length constraint", async function () {
+      await this.minter
+        .connect(this.accounts.deployer)
+        .resetAuctionDetails(projectOne);
+      // expect revert when creating a new project with min/max reversed
       await expectRevert(
         this.minter
-          .connect(this.accounts.snowfro)
+          .connect(this.accounts.deployer)
           .setAuctionDetails(
             0,
-            0,
-            60,
+            this.startTime + ONE_HOUR * 2,
+            this.startTime + ONE_HOUR,
             startingPrice,
-            pricePerTokenInWeiAuctionResting
+            basePrice
+          ),
+        "Auction end must be greater than auction start"
+      );
+    });
+
+    it("enforces min auction length constraint", async function () {
+      await this.minter
+        .connect(this.accounts.deployer)
+        .resetAuctionDetails(projectOne);
+      // expect revert when creating a new project with
+      const invalidLengthSeconds = 60;
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.deployer)
+          .setAuctionDetails(
+            0,
+            this.startTime + ONE_HOUR,
+            this.startTime + ONE_HOUR + invalidLengthSeconds,
+            startingPrice,
+            basePrice
           ),
         "Auction length must be at least minimumAuctionLengthSeconds"
       );
@@ -423,32 +473,20 @@ describe("GenArt721MinterEthAuction_V1Core", async function () {
       // emits event when minimum auction length is updated
       await expect(
         this.minter
-          .connect(this.accounts.snowfro)
+          .connect(this.accounts.deployer)
           .setMinimumAuctionLengthSeconds(newLengthSeconds)
       )
         .to.emit(this.minter, "MinimumAuctionLengthSecondsUpdated")
         .withArgs(newLengthSeconds);
     });
-  });
 
-  describe("setProjectMaxInvocations", async function () {
-    it("handles getting tokenInfo invocation info with V1 core", async function () {
-      await this.minter
-        .connect(this.accounts.snowfro)
-        .setProjectMaxInvocations(projectOne);
-      // minter should update storage with accurate projectMaxInvocations
-      await this.minter
-        .connect(this.accounts.snowfro)
-        .setProjectMaxInvocations(projectOne);
-      let maxInvocations = await this.minter
-        .connect(this.accounts.snowfro)
-        .projectMaxInvocations(projectOne);
-      expect(maxInvocations).to.be.equal(projectMaxInvocations);
-      // ensure hasMaxBeenReached did not unexpectedly get set as true
-      let hasMaxBeenInvoked = await this.minter
-        .connect(this.accounts.snowfro)
-        .projectMaxHasBeenInvoked(projectOne);
-      expect(hasMaxBeenInvoked).to.be.false;
+    it("validate setMinimumAuctionLengthSeconds ACL", async function () {
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.additional)
+          .setMinimumAuctionLengthSeconds(600),
+        "Only Core whitelisted"
+      );
     });
   });
 

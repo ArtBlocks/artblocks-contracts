@@ -14,7 +14,7 @@ pragma solidity 0.8.9;
  * on a per-project basis.
  * @author Art Blocks Inc.
  */
-contract MinterFilter is IMinterFilterV0 {
+contract MinterFilterV0 is IMinterFilterV0 {
     /**
      * @notice This minter is to be considered `_coreContractAddress`'s
      * canonical minter.

@@ -13,7 +13,7 @@ import { ethers } from "hardhat";
  * These tests intended to ensure Filtered Minter integrates properly with V1
  * core contract. Nearly identical tests as the V3 core.
  */
-describe("GenArt721FilteredMinter", async function () {
+describe("GenArt721FilteredMinterV0", async function () {
   const name = "Non Fungible Token";
   const symbol = "NFT";
 
@@ -46,11 +46,13 @@ describe("GenArt721FilteredMinter", async function () {
       .connect(snowfro)
       .deploy(name, symbol, this.randomizer.address);
 
-    const minterFilterFactory = await ethers.getContractFactory("MinterFilter");
+    const minterFilterFactory = await ethers.getContractFactory(
+      "MinterFilterV0"
+    );
     this.minterFilter = await minterFilterFactory.deploy(this.token.address);
 
     const minterFactory = await ethers.getContractFactory(
-      "GenArt721FilteredMinter"
+      "GenArt721FilteredMinterV0"
     );
     this.minter = await minterFactory.deploy(
       this.token.address,
@@ -131,12 +133,12 @@ describe("GenArt721FilteredMinter", async function () {
         .deploy(name, symbol, this.randomizer.address);
 
       const minterFilterFactory = await ethers.getContractFactory(
-        "MinterFilter"
+        "MinterFilterV0"
       );
       const minterFilter = await minterFilterFactory.deploy(token2.address);
 
       const minterFactory = await ethers.getContractFactory(
-        "GenArt721FilteredMinter"
+        "GenArt721FilteredMinterV0"
       );
       // fails when combine new minterFilter with the old token in constructor
       await expectRevert(
