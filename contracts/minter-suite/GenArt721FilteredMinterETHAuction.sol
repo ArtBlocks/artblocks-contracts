@@ -187,6 +187,10 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
         uint256 _basePrice
     ) external onlyCoreWhitelistedOrArtist(_projectId) {
         require(
+            block.timestamp < _auctionTimestampStart,
+            "Only future auctions"
+        );
+        require(
             _auctionTimestampEnd > _auctionTimestampStart,
             "Auction end must be greater than auction start"
         );

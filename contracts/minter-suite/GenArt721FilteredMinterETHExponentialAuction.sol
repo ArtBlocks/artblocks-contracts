@@ -182,6 +182,10 @@ contract GenArt721FilteredMinterETHExponentialAuction is IFilteredMinter {
                 _minimumPriceDecayHalfLifeSeconds,
             "Maximum half life must be greater than minimum"
         );
+        require(
+            _minimumPriceDecayHalfLifeSeconds > 0,
+            "Half life of zero not allowed"
+        );
         minimumPriceDecayHalfLifeSeconds = _minimumPriceDecayHalfLifeSeconds;
         maximumPriceDecayHalfLifeSeconds = _maximumPriceDecayHalfLifeSeconds;
         emit AuctionHalfLifeRangeSecondsUpdated(
@@ -380,6 +384,10 @@ contract GenArt721FilteredMinterETHExponentialAuction is IFilteredMinter {
         if (block.timestamp <= auctionParams.timestampStart) {
             // The auction has not yet started.
             return auctionParams.startPrice;
+        }
+        if (auctionParams.priceDecayHalfLifeSeconds == 0) {
+            // Prevent revert in divide-by-zero case of unconfigured auctions.
+            return 0;
         }
         uint256 decayedPrice = auctionParams.startPrice;
         uint256 elapsedTimeSeconds = block.timestamp -

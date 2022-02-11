@@ -9,23 +9,25 @@ import {
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
-describe("GenArt721MinterEthAuction", async function () {
+describe("GenArt721FilteredMinterETHExponentialAuction", async function () {
   const name = "Non Fungible Token";
   const symbol = "NFT";
 
   const firstTokenId = new BN("30000000");
   const secondTokenId = new BN("3000001");
 
-  const startingPrice = ethers.utils.parseEther("1");
+  const startingPrice = ethers.utils.parseEther("10");
   const pricePerTokenInWei = ethers.utils.parseEther("0.1");
   // purposefully different price per token on core contract (tracked separately)
   const basePrice = ethers.utils.parseEther("0.05");
 
   const projectOne = 0;
 
-  const ONE_MINUTE = 60000;
+  const ONE_MINUTE = 60;
   const ONE_HOUR = ONE_MINUTE * 60;
   const ONE_DAY = ONE_HOUR * 24;
+
+  const defaultHalfLife = ONE_HOUR / 2;
 
   beforeEach(async function () {
     const [owner, newOwner, artist, additional, deployer] =
@@ -50,7 +52,7 @@ describe("GenArt721MinterEthAuction", async function () {
     this.minterFilter = await minterFilterFactory.deploy(this.token.address);
 
     const minterFactory = await ethers.getContractFactory(
-      "GenArt721FilteredMinterETHAuction"
+      "GenArt721FilteredMinterETHExponentialAuction"
     );
     this.minter = await minterFactory.deploy(
       this.token.address,
@@ -87,13 +89,12 @@ describe("GenArt721MinterEthAuction", async function () {
     }
 
     await ethers.provider.send("evm_mine", [this.startTime - ONE_HOUR]);
-    const startTimePlusMinuteAndTwoHours = this.startTime + ONE_HOUR * 2;
     await this.minter
       .connect(this.accounts.deployer)
       .setAuctionDetails(
         projectOne,
         this.startTime,
-        startTimePlusMinuteAndTwoHours,
+        defaultHalfLife,
         startingPrice,
         basePrice
       );
@@ -127,19 +128,16 @@ describe("GenArt721MinterEthAuction", async function () {
 
   describe("purchase", async function () {
     it("calculates the price correctly", async function () {
-      const step = ONE_MINUTE * 8; // 480 seconds
-
-      for (let i = 1; i < 15; i++) {
+      for (let i = 1; i <= 5; i++) {
         let ownerBalance = await this.accounts.owner.getBalance();
-        let a = ethers.BigNumber.from(i * step).mul(
-          startingPrice.sub(basePrice).toString()
-        );
-        let t = ethers.BigNumber.from(a.toString());
-        let price = startingPrice.sub(t.div(7200000));
-        let contractPriceInfo = await this.minter
-          .connect(this.accounts.owner)
-          .getPriceInfo(projectOne);
-        await ethers.provider.send("evm_mine", [this.startTime + i * 480000]);
+        let price = startingPrice;
+        for (let j = 0; j < i; j++) {
+          price = price.div(2);
+        }
+
+        await ethers.provider.send("evm_setNextBlockTimestamp", [
+          this.startTime + i * defaultHalfLife,
+        ]);
         await this.minter.connect(this.accounts.owner).purchase(projectOne, {
           value: price.toString(),
           gasPrice: 0,
@@ -156,8 +154,7 @@ describe("GenArt721MinterEthAuction", async function () {
         let ownerDelta = (await this.accounts.owner.getBalance()).sub(
           ownerBalance
         );
-        expect(ownerDelta.mul("-1").lte(contractPriceInfo.tokenPriceInWei)).to
-          .be.true;
+        expect(ownerDelta.mul("-1").lte(price)).to.be.true;
       }
     });
 
@@ -167,7 +164,7 @@ describe("GenArt721MinterEthAuction", async function () {
         .setAuctionDetails(
           projectOne,
           this.startTime + ONE_HOUR,
-          this.startTime + 2 * ONE_HOUR,
+          defaultHalfLife,
           startingPrice,
           basePrice
         );
@@ -184,12 +181,12 @@ describe("GenArt721MinterEthAuction", async function () {
         .setAuctionDetails(
           projectOne,
           this.startTime + ONE_HOUR,
-          this.startTime + 2 * ONE_HOUR,
+          defaultHalfLife,
           startingPrice,
           basePrice
         );
 
-      await ethers.provider.send("evm_mine", [this.startTime + 2 * ONE_HOUR]);
+      await ethers.provider.send("evm_mine", [this.startTime + 5 * ONE_HOUR]);
 
       let contractPriceInfo = await this.minter
         .connect(this.accounts.owner)
@@ -253,8 +250,8 @@ describe("GenArt721MinterEthAuction", async function () {
         .connect(this.accounts.deployer)
         .setAuctionDetails(
           projectOne,
-          this.startTime + 60000,
-          this.startTime + 2 * ONE_HOUR,
+          this.startTime + ONE_HOUR,
+          defaultHalfLife,
           startingPrice,
           basePrice
         );
@@ -265,8 +262,8 @@ describe("GenArt721MinterEthAuction", async function () {
         .connect(this.accounts.artist)
         .setAuctionDetails(
           projectOne,
-          this.startTime + 60000,
-          this.startTime + 2 * ONE_HOUR,
+          this.startTime + ONE_HOUR,
+          defaultHalfLife,
           startingPrice,
           basePrice
         );
@@ -278,8 +275,8 @@ describe("GenArt721MinterEthAuction", async function () {
           .connect(this.accounts.additional)
           .setAuctionDetails(
             projectOne,
-            this.startTime + 60000,
-            this.startTime + 2 * ONE_HOUR,
+            this.startTime + ONE_HOUR,
+            defaultHalfLife,
             startingPrice,
             basePrice
           ),
@@ -293,8 +290,8 @@ describe("GenArt721MinterEthAuction", async function () {
           .connect(this.accounts.deployer)
           .setAuctionDetails(
             projectOne,
-            this.startTime + 60000,
-            this.startTime + 2 * ONE_HOUR,
+            this.startTime + ONE_HOUR,
+            defaultHalfLife,
             basePrice,
             startingPrice
           ),
@@ -303,57 +300,75 @@ describe("GenArt721MinterEthAuction", async function () {
     });
   });
 
-  describe("enforce and broadcasts min auction length", async function () {
-    it("enforces min/max auction length constraint", async function () {
-      // expect revert when creating a new project with min/max reversed
-      await expectRevert(
-        this.minter
-          .connect(this.accounts.deployer)
-          .setAuctionDetails(
-            0,
-            this.startTime + ONE_HOUR * 2,
-            this.startTime + ONE_HOUR,
-            startingPrice,
-            basePrice
-          ),
-        "Auction end must be greater than auction start"
-      );
-    });
-
-    it("enforces min auction length constraint", async function () {
+  describe("enforce and broadcasts auction half-life", async function () {
+    it("enforces half-life min/max constraint", async function () {
       // expect revert when creating a new project with
-      const invalidLengthSeconds = 60;
+      const invalidHalfLifeSecondsMin = ONE_MINUTE;
       await expectRevert(
         this.minter
           .connect(this.accounts.deployer)
           .setAuctionDetails(
             0,
             this.startTime + ONE_HOUR,
-            this.startTime + ONE_HOUR + invalidLengthSeconds,
+            invalidHalfLifeSecondsMin,
             startingPrice,
             basePrice
           ),
-        "Auction length must be at least minimumAuctionLengthSeconds"
+        "Price decay half life must fall between min and max allowable values"
+      );
+
+      // expect revert when creating a new project with
+      const invalidHalfLifeSecondsMax = ONE_DAY;
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.deployer)
+          .setAuctionDetails(
+            0,
+            this.startTime + ONE_HOUR,
+            invalidHalfLifeSecondsMax,
+            startingPrice,
+            basePrice
+          ),
+        "Price decay half life must fall between min and max allowable values"
       );
     });
 
-    it("emits event when min auction length is updated", async function () {
-      const newLengthSeconds = 3601;
-      // emits event when minimum auction length is updated
+    it("emits event when allowable half life range is updated", async function () {
+      const newMinSeconds = 60;
+      const newMaxSeconds = 6000;
+      // emits event when allowable half life range is updated
       await expect(
         this.minter
           .connect(this.accounts.deployer)
-          .setMinimumAuctionLengthSeconds(newLengthSeconds)
+          .setAllowablePriceDecayHalfLifeRangeSeconds(
+            newMinSeconds,
+            newMaxSeconds
+          )
       )
-        .to.emit(this.minter, "MinimumAuctionLengthSecondsUpdated")
-        .withArgs(newLengthSeconds);
+        .to.emit(this.minter, "AuctionHalfLifeRangeSecondsUpdated")
+        .withArgs(newMinSeconds, newMaxSeconds);
     });
 
-    it("validate setMinimumAuctionLengthSeconds ACL", async function () {
+    it("validate setAllowablePriceDecayHalfLifeRangeSeconds guards", async function () {
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.deployer)
+          .setAllowablePriceDecayHalfLifeRangeSeconds(600, 60),
+        "Maximum half life must be greater than minimum"
+      );
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.deployer)
+          .setAllowablePriceDecayHalfLifeRangeSeconds(0, 600),
+        "Half life of zero not allowed"
+      );
+    });
+
+    it("validate setAllowablePriceDecayHalfLifeRangeSeconds ACL", async function () {
       await expectRevert(
         this.minter
           .connect(this.accounts.additional)
-          .setMinimumAuctionLengthSeconds(600),
+          .setAllowablePriceDecayHalfLifeRangeSeconds(60, 600),
         "Only Core whitelisted"
       );
     });
