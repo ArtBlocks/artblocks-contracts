@@ -211,6 +211,14 @@ contract GenArt721FilteredMinterETHExponentialAuction is IFilteredMinter {
         uint256 _startPrice,
         uint256 _basePrice
     ) external onlyCoreWhitelistedOrArtist(_projectId) {
+        AuctionParameters memory auctionParams = projectAuctionParameters[
+            _projectId
+        ];
+        require(
+            auctionParams.timestampStart == 0 ||
+                block.timestamp < auctionParams.timestampStart,
+            "No modifications mid-auction"
+        );
         require(
             block.timestamp < _auctionTimestampStart,
             "Only future auctions"
@@ -238,6 +246,20 @@ contract GenArt721FilteredMinterETHExponentialAuction is IFilteredMinter {
             _startPrice,
             _basePrice
         );
+    }
+
+    /**
+     * @notice Resets auction details for project `_projectId`, zero-ing out all
+     * relevant auction fields. Not intended to be used in normal auction
+     * operation, but rather only in case of the need to halt an auction.
+     * @param _projectId Project ID to set auction details for.
+     */
+    function resetAuctionDetails(uint256 _projectId)
+        external
+        onlyCoreWhitelisted
+    {
+        delete projectAuctionParameters[_projectId];
+        emit SetAuctionDetails(_projectId, 0, 0, 0, 0);
     }
 
     /**
