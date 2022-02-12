@@ -1,27 +1,25 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../libs/0.8.x/IERC20.sol";
-
-import "../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
-import "../interfaces/0.8.x/IMinterFilter.sol";
-import "../interfaces/0.8.x/IFilteredMinter.sol";
+import "../interfaces/0.8.x/IGenArt721CoreContractV1.sol";
+import "../interfaces/0.8.x/IMinterFilterV0.sol";
+import "../interfaces/0.8.x/IFilteredMinterV0.sol";
 
 pragma solidity 0.8.9;
 
 /**
- * @title Filtered Minter contract that allows tokens to be minted with ETH
- * or any ERC-20 token.
+ * @title Filtered Minter contract that allows tokens to be minted with ETH.
  * @author Art Blocks Inc.
  */
-contract GenArt721FilteredMinter is IFilteredMinter {
-    /// Art Blocks core contract this minter may interact with.
-    IGenArt721CoreContractV3 public genArtCoreContract;
+contract GenArt721FilteredMinterETHV0 is IFilteredMinterV0 {
+    /// This contract handles cores with interface IV1
+    IGenArt721CoreContractV1 public immutable genArtCoreContract;
+
     /// Minter filter this minter may interact with.
-    IMinterFilter public minterFilter;
+    IMinterFilterV0 public immutable minterFilter;
 
     /// minterType for this minter
-    string public constant minterType = "GenArt721FilteredMinter";
+    string public constant minterType = "GenArt721FilteredMinterETHV0";
 
     uint256 constant ONE_MILLION = 1_000_000;
 
@@ -41,10 +39,6 @@ contract GenArt721FilteredMinter is IFilteredMinter {
     mapping(uint256 => uint256) private projectIdToPricePerTokenInWei;
     /// projectId => price per token has been configured on this minter
     mapping(uint256 => bool) private projectIdToPriceIsConfigured;
-    /// projectId => currency symbol - supersedes any defined core value
-    mapping(uint256 => string) private projectIdToCurrencySymbol;
-    /// projectId => currency address - supersedes any defined core value
-    mapping(uint256 => address) private projectIdToCurrencyAddress;
 
     modifier onlyCoreWhitelisted() {
         require(
@@ -67,54 +61,18 @@ contract GenArt721FilteredMinter is IFilteredMinter {
      * @notice Initializes contract to be a Filtered Minter for
      * `_minterFilter`, integrated with Art Blocks core contract
      * at address `_genArt721Address`.
-     * @param _genArt721Address Art Blocks core contract for which this
-     * contract will be a minter.
-     * @param _minterFilter Minter filter for which
-     * this will a filtered minter.
+     * @param _genArt721Address Art Blocks core contract address for
+     * which this contract will be a minter.
+     * @param _minterFilter Minter filter for whichccthis will a
+     * filtered minter.
      */
     constructor(address _genArt721Address, address _minterFilter) {
-        genArtCoreContract = IGenArt721CoreContractV3(_genArt721Address);
-        minterFilter = IMinterFilter(_minterFilter);
+        genArtCoreContract = IGenArt721CoreContractV1(_genArt721Address);
+        minterFilter = IMinterFilterV0(_minterFilter);
         require(
-            minterFilter.genArtCoreContract() == genArtCoreContract,
+            minterFilter.genArt721CoreAddress() == _genArt721Address,
             "Illegal contract pairing"
         );
-    }
-
-    /**
-     * @notice Gets your balance of the ERC-20 token currently set
-     * as the payment currency for project `_projectId`.
-     * @param _projectId Project ID to be queried.
-     * @return balance Balance of ERC-20
-     */
-    function getYourBalanceOfProjectERC20(uint256 _projectId)
-        external
-        view
-        returns (uint256 balance)
-    {
-        balance = IERC20(projectIdToCurrencyAddress[_projectId]).balanceOf(
-            msg.sender
-        );
-        return balance;
-    }
-
-    /**
-     * @notice Gets your allowance for this minter of the ERC-20
-     * token currently set as the payment currency for project
-     * `_projectId`.
-     * @param _projectId Project ID to be queried.
-     * @return remaining Remaining allowance of ERC-20
-     */
-    function checkYourAllowanceOfProjectERC20(uint256 _projectId)
-        external
-        view
-        returns (uint256 remaining)
-    {
-        remaining = IERC20(projectIdToCurrencyAddress[_projectId]).allowance(
-            msg.sender,
-            address(this)
-        );
-        return remaining;
     }
 
     /**
@@ -136,15 +94,18 @@ contract GenArt721FilteredMinter is IFilteredMinter {
      * on the value currently defined in the core contract.
      * @param _projectId Project ID to set the maximum invocations for.
      * @dev also checks and may refresh projectMaxHasBeenInvoked for project
+     * @dev this enables gas reduction after maxInvocations have been reached -
+     * core contracts shall still enforce a maxInvocation check during mint.
      */
     function setProjectMaxInvocations(uint256 _projectId)
         external
         onlyCoreWhitelisted
     {
-        uint256 maxInvocations;
         uint256 invocations;
+        uint256 maxInvocations;
         (, , invocations, maxInvocations, , , , , ) = genArtCoreContract
             .projectTokenInfo(_projectId);
+        // update storage with results
         projectMaxInvocations[_projectId] = maxInvocations;
         if (invocations < maxInvocations) {
             projectMaxHasBeenInvoked[_projectId] = false;
@@ -191,34 +152,6 @@ contract GenArt721FilteredMinter is IFilteredMinter {
         projectIdToPricePerTokenInWei[_projectId] = _pricePerTokenInWei;
         projectIdToPriceIsConfigured[_projectId] = true;
         emit PricePerTokenInWeiUpdated(_projectId, _pricePerTokenInWei);
-    }
-
-    /**
-     * @notice Updates payment currency of project `_projectId` to be
-     * `_currencySymbol` at address `_currencyAddress`.
-     * @param _projectId Project ID to update.
-     * @param _currencySymbol Currency symbol.
-     * @param _currencyAddress Currency address.
-     */
-    function updateProjectCurrencyInfo(
-        uint256 _projectId,
-        string memory _currencySymbol,
-        address _currencyAddress
-    ) external onlyArtist(_projectId) {
-        // require null address if symbol is "ETH"
-        require(
-            (keccak256(abi.encodePacked(_currencySymbol)) ==
-                keccak256(abi.encodePacked("ETH"))) ==
-                (_currencyAddress == address(0)),
-            "ETH is only null address"
-        );
-        projectIdToCurrencySymbol[_projectId] = _currencySymbol;
-        projectIdToCurrencyAddress[_projectId] = _currencyAddress;
-        emit ProjectCurrencyInfoUpdated(
-            _projectId,
-            _currencySymbol,
-            _currencyAddress
-        );
     }
 
     /**
@@ -279,32 +212,12 @@ contract GenArt721FilteredMinter is IFilteredMinter {
             projectMintCounter[msg.sender][_projectId]++;
         }
 
-        if (projectIdToCurrencyAddress[_projectId] != address(0)) {
-            require(
-                msg.value == 0,
-                "this project accepts a different currency and cannot accept ETH"
-            );
-            require(
-                IERC20(projectIdToCurrencyAddress[_projectId]).allowance(
-                    msg.sender,
-                    address(this)
-                ) >= projectIdToPricePerTokenInWei[_projectId],
-                "Insufficient Funds Approved for TX"
-            );
-            require(
-                IERC20(projectIdToCurrencyAddress[_projectId]).balanceOf(
-                    msg.sender
-                ) >= projectIdToPricePerTokenInWei[_projectId],
-                "Insufficient balance."
-            );
-            _splitFundsERC20(_projectId);
-        } else {
-            require(
-                msg.value >= projectIdToPricePerTokenInWei[_projectId],
-                "Must send minimum value to mint!"
-            );
-            _splitFundsETH(_projectId);
-        }
+        require(
+            msg.value >= projectIdToPricePerTokenInWei[_projectId],
+            "Must send minimum value to mint!"
+        );
+
+        _splitFundsETH(_projectId);
 
         tokenId = minterFilter.mint(_to, _projectId, msg.sender);
         // what if projectMaxInvocations[_projectId] is 0 (default value)?
@@ -371,51 +284,6 @@ contract GenArt721FilteredMinter is IFilteredMinter {
     }
 
     /**
-     * @dev splits ERC-20 funds between foundation, artist, and artist's
-     * additional payee, for a token purchased on project `_projectId`.
-     */
-    function _splitFundsERC20(uint256 _projectId) internal {
-        uint256 pricePerTokenInWei = projectIdToPricePerTokenInWei[_projectId];
-        uint256 foundationAmount = (pricePerTokenInWei / 100) *
-            genArtCoreContract.artblocksPercentage();
-        if (foundationAmount > 0) {
-            IERC20(projectIdToCurrencyAddress[_projectId]).transferFrom(
-                msg.sender,
-                genArtCoreContract.artblocksAddress(),
-                foundationAmount
-            );
-        }
-        uint256 projectFunds = pricePerTokenInWei - foundationAmount;
-        uint256 additionalPayeeAmount;
-        if (
-            genArtCoreContract.projectIdToAdditionalPayeePercentage(
-                _projectId
-            ) > 0
-        ) {
-            additionalPayeeAmount =
-                (projectFunds / 100) *
-                genArtCoreContract.projectIdToAdditionalPayeePercentage(
-                    _projectId
-                );
-            if (additionalPayeeAmount > 0) {
-                IERC20(projectIdToCurrencyAddress[_projectId]).transferFrom(
-                    msg.sender,
-                    genArtCoreContract.projectIdToAdditionalPayee(_projectId),
-                    additionalPayeeAmount
-                );
-            }
-        }
-        uint256 creatorFunds = projectFunds - additionalPayeeAmount;
-        if (creatorFunds > 0) {
-            IERC20(projectIdToCurrencyAddress[_projectId]).transferFrom(
-                msg.sender,
-                genArtCoreContract.projectIdToArtistAddress(_projectId),
-                creatorFunds
-            );
-        }
-    }
-
-    /**
      * @notice Gets if price of token is configured, price of minting a
      * token on project `_projectId`, and currency symbol and address to be
      * used as payment. Supersedes any core contract price information.
@@ -425,9 +293,9 @@ contract GenArt721FilteredMinter is IFilteredMinter {
      * @return tokenPriceInWei current price of token on this minter - invalid
      * if price has not yet been configured
      * @return currencySymbol currency symbol for purchases of project on this
-     * minter. "ETH" reserved for ether.
+     * minter. This minter always returns "ETH"
      * @return currencyAddress currency address for purchases of project on
-     * this minter. Null address reserved for ether.
+     * this minter. This minter always returns null address, reserved for ether
      */
     function getPriceInfo(uint256 _projectId)
         external
@@ -441,12 +309,7 @@ contract GenArt721FilteredMinter is IFilteredMinter {
     {
         isConfigured = projectIdToPriceIsConfigured[_projectId];
         tokenPriceInWei = projectIdToPricePerTokenInWei[_projectId];
-        currencyAddress = projectIdToCurrencyAddress[_projectId];
-        if (currencyAddress == address(0)) {
-            // defaults to ETH
-            currencySymbol = "ETH";
-        } else {
-            currencySymbol = projectIdToCurrencySymbol[_projectId];
-        }
+        currencySymbol = "ETH";
+        currencyAddress = address(0);
     }
 }

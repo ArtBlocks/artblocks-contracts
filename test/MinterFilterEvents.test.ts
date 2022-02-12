@@ -17,19 +17,21 @@ describe("MinterFilterEvents", async function () {
     };
     const randomizerFactory = await ethers.getContractFactory("Randomizer");
     this.randomizer = await randomizerFactory.deploy();
-    const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV3");
+    const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV1");
     this.genArt721Core = await artblocksFactory
       .connect(deployer)
       .deploy("Test Contract", "TEST", this.randomizer.address);
     await this.genArt721Core
       .connect(deployer)
-      .addProject("project0", deployer.address);
-    const minterFilterFactory = await ethers.getContractFactory("MinterFilter");
+      .addProject("project0", deployer.address, 0, false);
+    const minterFilterFactory = await ethers.getContractFactory(
+      "MinterFilterV0"
+    );
     this.minterFilter = await minterFilterFactory.deploy(
       this.genArt721Core.address
     );
     const minterFactory = await ethers.getContractFactory(
-      "GenArt721FilteredMinter"
+      "GenArt721FilteredMinterV0"
     );
     this.minter = await minterFactory.deploy(
       this.genArt721Core.address,
@@ -40,14 +42,14 @@ describe("MinterFilterEvents", async function () {
       .addApprovedMinter(this.minter.address);
     // deploy all types of filtered minters
     const minterFactoryETH = await ethers.getContractFactory(
-      "GenArt721FilteredMinterETH"
+      "GenArt721FilteredMinterETHV0"
     );
     this.minterETH = await minterFactoryETH.deploy(
       this.genArt721Core.address,
       this.minterFilter.address
     );
     const minterFactoryETHAuction = await ethers.getContractFactory(
-      "GenArt721FilteredMinterETHAuction"
+      "GenArt721FilteredMinterETHAuctionV0"
     );
     this.minterETHAuction = await minterFactoryETHAuction.deploy(
       this.genArt721Core.address,
@@ -57,7 +59,7 @@ describe("MinterFilterEvents", async function () {
 
   describe("addApprovedMinter", async function () {
     it("emits an event for GenArt721FilteredMinter", async function () {
-      const minterType = "GenArt721FilteredMinter";
+      const minterType = "GenArt721FilteredMinterV0";
       await expect(
         this.minterFilter
           .connect(this.accounts.deployer)
@@ -68,7 +70,7 @@ describe("MinterFilterEvents", async function () {
     });
 
     it("emits an event for GenArt721FilteredMinterETH", async function () {
-      const minterType = "GenArt721FilteredMinterETH";
+      const minterType = "GenArt721FilteredMinterETHV0";
       await expect(
         this.minterFilter
           .connect(this.accounts.deployer)
@@ -79,7 +81,7 @@ describe("MinterFilterEvents", async function () {
     });
 
     it("emits an event for GenArt721FilteredMinterETHAuction", async function () {
-      const minterType = "GenArt721FilteredMinterETHAuction";
+      const minterType = "GenArt721FilteredMinterETHAuctionV0";
       await expect(
         this.minterFilter
           .connect(this.accounts.deployer)
@@ -120,7 +122,7 @@ describe("MinterFilterEvents", async function () {
   });
 
   describe("setMinterForProject", async function () {
-    const minterType = "GenArt721FilteredMinter";
+    const minterType = "GenArt721FilteredMinterV0";
     it("emits an event", async function () {
       await expect(
         this.minterFilter
@@ -132,7 +134,7 @@ describe("MinterFilterEvents", async function () {
       // add project 1
       await this.genArt721Core
         .connect(this.accounts.deployer)
-        .addProject("project1", this.accounts.deployer.address);
+        .addProject("project1", this.accounts.deployer.address, 0, false);
       // set minter for project 1
       await expect(
         this.minterFilter
@@ -149,7 +151,7 @@ describe("MinterFilterEvents", async function () {
       // allowlist MinterFilter on core
       await this.genArt721Core
         .connect(this.accounts.deployer)
-        .updateMinterContract(this.minterFilter.address);
+        .addMintWhitelisted(this.minterFilter.address);
       // expect proper event
       await expect(
         this.minterFilter

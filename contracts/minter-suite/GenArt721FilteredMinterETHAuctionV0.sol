@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
-import "../interfaces/0.8.x/IMinterFilter.sol";
-import "../interfaces/0.8.x/IFilteredMinter.sol";
+import "../interfaces/0.8.x/IGenArt721CoreContractV1.sol";
+import "../interfaces/0.8.x/IMinterFilterV0.sol";
+import "../interfaces/0.8.x/IFilteredMinterV0.sol";
 
 pragma solidity 0.8.9;
 
@@ -12,7 +12,7 @@ pragma solidity 0.8.9;
  * Pricing is achieved using an automated Dutch-auction mechanism.
  * @author Art Blocks Inc.
  */
-contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
+contract GenArt721FilteredMinterETHAuctionV0 is IFilteredMinterV0 {
     /// Auction details updated for project `projectId`.
     event SetAuctionDetails(
         uint256 indexed projectId,
@@ -27,13 +27,14 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
         uint256 _minimumAuctionLengthSeconds
     );
 
-    /// Art Blocks core contract this minter may interact with.
-    IGenArt721CoreContractV3 public genArtCoreContract;
+    /// This contract handles cores with interface IV1
+    IGenArt721CoreContractV1 public immutable genArtCoreContract;
+
     /// Minter filter this minter may interact with.
-    IMinterFilter public minterFilter;
+    IMinterFilterV0 public immutable minterFilter;
 
     /// minterType for this minter
-    string public constant minterType = "GenArt721FilteredMinterETHAuction";
+    string public constant minterType = "GenArt721FilteredMinterETHAuctionV0";
 
     uint256 constant ONE_MILLION = 1_000_000;
 
@@ -89,10 +90,10 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
      * this will a filtered minter.
      */
     constructor(address _genArt721Address, address _minterFilter) {
-        genArtCoreContract = IGenArt721CoreContractV3(_genArt721Address);
-        minterFilter = IMinterFilter(_minterFilter);
+        genArtCoreContract = IGenArt721CoreContractV1(_genArt721Address);
+        minterFilter = IMinterFilterV0(_minterFilter);
         require(
-            minterFilter.genArtCoreContract() == genArtCoreContract,
+            minterFilter.genArt721CoreAddress() == _genArt721Address,
             "Illegal contract pairing"
         );
     }
@@ -100,6 +101,7 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
     /**
      * @notice Sets the mint limit of a single purchaser for project
      * `_projectId` to `_limit`.
+     * @param _projectId Project ID to set the mint limit for.
      * @param _limit Number of times a given address may mint the
      * project's tokens.
      */
@@ -115,15 +117,18 @@ contract GenArt721FilteredMinterETHAuction is IFilteredMinter {
      * on the value currently defined in the core contract.
      * @param _projectId Project ID to set the maximum invocations for.
      * @dev also checks and may refresh projectMaxHasBeenInvoked for project
+     * @dev this enables gas reduction after maxInvocations have been reached -
+     * core contracts shall still enforce a maxInvocation check during mint.
      */
     function setProjectMaxInvocations(uint256 _projectId)
         external
         onlyCoreWhitelisted
     {
-        uint256 maxInvocations;
         uint256 invocations;
+        uint256 maxInvocations;
         (, , invocations, maxInvocations, , , , , ) = genArtCoreContract
             .projectTokenInfo(_projectId);
+        // update storage with results
         projectMaxInvocations[_projectId] = maxInvocations;
         if (invocations < maxInvocations) {
             projectMaxHasBeenInvoked[_projectId] = false;

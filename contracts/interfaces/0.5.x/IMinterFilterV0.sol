@@ -5,7 +5,7 @@ import "./IGenArt721CoreContractV3.sol";
 
 pragma solidity ^0.5.0;
 
-interface IMinterFilter {
+interface IMinterFilterV0 {
     event MinterApproved(
         address indexed _minterAddress,
         string indexed _minterType

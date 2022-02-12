@@ -549,33 +549,27 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
      * @notice Returns project token information for project `_projectId`.
      * @param _projectId Project to be queried
      * @return artistAddress Project Artist's address
-     * @return pricePerTokenInWei (deprecated) - please view on minter
      * @return invocations Current number of invocations
      * @return maxInvocations Maximum allowed invocations
      * @return active Boolean representing if project is currently active
      * @return additionalPayee Additional payee address
      * @return additionalPayeePercentage Percentage of artist revenue
      * to be sent to the additional payee's address
-     * @return currency (deprecated) - please view on minter
-     * @return currencyAddress (deprecated) - please view on minter
+     * @dev price and currency info are located on minter contracts
      */
-    function projectTokenInfo(uint256 _projectId)
+    function projectInfo(uint256 _projectId)
         public
         view
         returns (
             address artistAddress,
-            uint256 pricePerTokenInWei,
             uint256 invocations,
             uint256 maxInvocations,
             bool active,
             address additionalPayee,
-            uint256 additionalPayeePercentage,
-            string memory currency,
-            address currencyAddress
+            uint256 additionalPayeePercentage
         )
     {
         artistAddress = projectIdToArtistAddress[_projectId];
-        pricePerTokenInWei = 0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff;
         invocations = projects[_projectId].invocations;
         maxInvocations = projects[_projectId].maxInvocations;
         active = projects[_projectId].active;
@@ -583,8 +577,6 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
         additionalPayeePercentage = projectIdToAdditionalPayeePercentage[
             _projectId
         ];
-        currency = "";
-        currencyAddress = address(0);
     }
 
     /**
