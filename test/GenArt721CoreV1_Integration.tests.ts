@@ -46,9 +46,7 @@ describe("GenArt721CoreV1", async function () {
       "MinterFilterV0"
     );
     this.minterFilter = await minterFilterFactory.deploy(this.token.address);
-    const minterFactory = await ethers.getContractFactory(
-      "GenArt721FilteredMinterETHV0"
-    );
+    const minterFactory = await ethers.getContractFactory("MinterSetPriceV0");
     this.minter = await minterFactory.deploy(
       this.token.address,
       this.minterFilter.address

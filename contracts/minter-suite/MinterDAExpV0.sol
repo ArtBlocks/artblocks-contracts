@@ -12,7 +12,7 @@ pragma solidity 0.8.9;
  * Pricing is achieved using an automated Dutch-auction mechanism.
  * @author Art Blocks Inc.
  */
-contract GenArt721FilteredMinterETHExponentialAuctionV0 is IFilteredMinterV0 {
+contract MinterDAExpV0 is IFilteredMinterV0 {
     /// Auction details updated for project `projectId`.
     event SetAuctionDetails(
         uint256 indexed projectId,
@@ -35,8 +35,7 @@ contract GenArt721FilteredMinterETHExponentialAuctionV0 is IFilteredMinterV0 {
     IMinterFilterV0 public immutable minterFilter;
 
     /// minterType for this minter
-    string public constant minterType =
-        "GenArt721FilteredMinterETHExponentialAuctionV0";
+    string public constant minterType = "MinterDAExpV0";
 
     uint256 constant ONE_MILLION = 1_000_000;
 

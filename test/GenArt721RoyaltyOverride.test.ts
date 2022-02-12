@@ -94,7 +94,7 @@ describe("GenArt721RoyaltyOverride", async function () {
     );
     this.minterFilterA = await minterFilterFactory.deploy(this.tokenA.address);
     const minterFactory = await ethers.getContractFactory(
-      "GenArt721FilteredMinterV0"
+      "MinterSetPriceERC20V0"
     );
     this.minterA = await minterFactory.deploy(
       this.tokenA.address,
