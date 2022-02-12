@@ -13,7 +13,7 @@ import { ethers } from "hardhat";
  * These tests intended to ensure Filtered Minter integrates properly with V1
  * core contract.
  */
-describe("GenArt721FilteredMinterV0", async function () {
+describe("MinterSetPriceERC20V0", async function () {
   const name = "Non Fungible Token";
   const symbol = "NFT";
 
@@ -52,7 +52,7 @@ describe("GenArt721FilteredMinterV0", async function () {
     this.minterFilter = await minterFilterFactory.deploy(this.token.address);
 
     const minterFactory = await ethers.getContractFactory(
-      "GenArt721FilteredMinterV0"
+      "MinterSetPriceERC20V0"
     );
     this.minter = await minterFactory.deploy(
       this.token.address,
@@ -138,7 +138,7 @@ describe("GenArt721FilteredMinterV0", async function () {
       const minterFilter = await minterFilterFactory.deploy(token2.address);
 
       const minterFactory = await ethers.getContractFactory(
-        "GenArt721FilteredMinterV0"
+        "MinterSetPriceERC20V0"
       );
       // fails when combine new minterFilter with the old token in constructor
       await expectRevert(

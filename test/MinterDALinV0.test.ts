@@ -53,9 +53,7 @@ describe("GenArt721MinterEthAuction", async function () {
     );
     this.minterFilter = await minterFilterFactory.deploy(this.token.address);
 
-    const minterFactory = await ethers.getContractFactory(
-      "GenArt721FilteredMinterETHAuctionV0"
-    );
+    const minterFactory = await ethers.getContractFactory("MinterDALinV0");
     this.minter = await minterFactory.deploy(
       this.token.address,
       this.minterFilter.address
@@ -124,7 +122,7 @@ describe("GenArt721MinterEthAuction", async function () {
       const minterFilter = await minterFilterFactory.deploy(token2.address);
 
       const minterFactory = await ethers.getContractFactory(
-        "GenArt721FilteredMinterV0"
+        "MinterSetPriceERC20V0"
       );
       // fails when combine new minterFilter with the old token in constructor
       await expectRevert(
