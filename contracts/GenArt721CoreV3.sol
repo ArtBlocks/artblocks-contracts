@@ -15,23 +15,6 @@ pragma solidity 0.8.9;
  * @author Art Blocks Inc.
  */
 contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
-    /**
-     * @notice Token ID `_tokenId` minted on project ID `_projectId` to `_to`.
-     * @dev NatSpec for events not supported in Solidity ^0.5.0
-     */
-    event Mint(
-        address indexed _to,
-        uint256 indexed _tokenId,
-        uint256 indexed _projectId
-    );
-
-    /**
-     * @notice currentMinter updated to `_currentMinter`.
-     * @dev Implemented starting with V3 core
-     * @dev NatSpec for events not supported in Solidity ^0.5.0
-     */
-    event MinterUpdated(address indexed _currentMinter);
-
     /// randomizer contract
     IRandomizer public randomizerContract;
 
@@ -63,7 +46,7 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
     mapping(uint256 => uint256)
         public projectIdToSecondaryMarketRoyaltyPercentage;
 
-    address public artblocksAddress;
+    address payable public artblocksAddress;
     /// Percentage of mint revenue allocated to Art Blocks
     uint256 public artblocksPercentage = 10;
 
@@ -133,7 +116,7 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
     ) CustomERC721Metadata(_tokenName, _tokenSymbol) {
         admin = msg.sender;
         isWhitelisted[msg.sender] = true;
-        artblocksAddress = msg.sender;
+        artblocksAddress = payable(msg.sender);
         randomizerContract = IRandomizer(_randomizerContract);
     }
 
@@ -215,7 +198,7 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
     /**
      * @notice Updates artblocksAddress to `_artblocksAddress`.
      */
-    function updateArtblocksAddress(address _artblocksAddress)
+    function updateArtblocksAddress(address payable _artblocksAddress)
         public
         onlyAdmin
     {
@@ -289,7 +272,7 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
      */
     function updateProjectArtistAddress(
         uint256 _projectId,
-        address _artistAddress
+        address payable _artistAddress
     ) public onlyArtistOrWhitelisted(_projectId) {
         projectIdToArtistAddress[_projectId] = _artistAddress;
     }
@@ -310,10 +293,10 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
      * @param _artistAddress Artist's address.
      * @dev token price now stored on minter
      */
-    function addProject(string memory _projectName, address _artistAddress)
-        public
-        onlyWhitelisted
-    {
+    function addProject(
+        string memory _projectName,
+        address payable _artistAddress
+    ) public onlyWhitelisted {
         uint256 projectId = nextProjectId;
         projectIdToArtistAddress[projectId] = _artistAddress;
         projects[projectId].name = _projectName;
@@ -352,7 +335,7 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
      */
     function updateProjectAdditionalPayeeInfo(
         uint256 _projectId,
-        address _additionalPayee,
+        address payable _additionalPayee,
         uint256 _additionalPayeePercentage
     ) public onlyArtist(_projectId) {
         require(_additionalPayeePercentage <= 100, "Max of 100%");
@@ -672,8 +655,9 @@ contract GenArt721CoreV3 is CustomERC721Metadata, IGenArt721CoreContractV3 {
      * @notice Gets token URI for token ID `_tokenId`.
      */
     function tokenURI(uint256 _tokenId)
-        external
+        public
         view
+        override
         onlyValidTokenId(_tokenId)
         returns (string memory)
     {

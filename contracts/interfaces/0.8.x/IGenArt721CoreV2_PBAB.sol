@@ -4,6 +4,10 @@
 pragma solidity ^0.8.0;
 
 interface IGenArt721CoreV2_PBAB {
+    /**
+     * @notice Token ID `_tokenId` minted on project ID `_projectId` to `_to`.
+     * @dev NatSpec for events not supported in Solidity ^0.5.0
+     */
     event Mint(
         address indexed _to,
         uint256 indexed _tokenId,

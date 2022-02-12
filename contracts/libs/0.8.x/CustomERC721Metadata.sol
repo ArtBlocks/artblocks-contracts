@@ -4,13 +4,13 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 
 /**
  * ERC721 base contract without the concept of tokenUri as this is managed by the parent
  */
-abstract contract CustomERC721Metadata is ERC165, ERC721, ERC721Enumerable {
+abstract contract CustomERC721Metadata is ERC165, ERC721Enumerable {
     // Token name
     string private _name;
 

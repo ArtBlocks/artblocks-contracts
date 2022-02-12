@@ -15,16 +15,6 @@ pragma solidity 0.8.9;
  * @author Art Blocks Inc.
  */
 contract GenArt721CoreV2_PBAB is CustomERC721Metadata, IGenArt721CoreV2_PBAB {
-    /**
-     * @notice Token ID `_tokenId` minted on project ID `_projectId` to `_to`.
-     * @dev NatSpec for events not supported in Solidity ^0.5.0
-     */
-    event Mint(
-        address indexed _to,
-        uint256 indexed _tokenId,
-        uint256 indexed _projectId
-    );
-
     /// randomizer contract
     IRandomizer public randomizerContract;
 
@@ -288,7 +278,7 @@ contract GenArt721CoreV2_PBAB is CustomERC721Metadata, IGenArt721CoreV2_PBAB {
      */
     function updateProjectArtistAddress(
         uint256 _projectId,
-        address _artistAddress
+        address payable _artistAddress
     ) public onlyArtistOrWhitelisted(_projectId) {
         projectIdToArtistAddress[_projectId] = _artistAddress;
     }
@@ -311,7 +301,7 @@ contract GenArt721CoreV2_PBAB is CustomERC721Metadata, IGenArt721CoreV2_PBAB {
      */
     function addProject(
         string memory _projectName,
-        address _artistAddress,
+        address payable _artistAddress,
         uint256 _pricePerTokenInWei
     ) public onlyWhitelisted {
         uint256 projectId = nextProjectId;
@@ -380,7 +370,7 @@ contract GenArt721CoreV2_PBAB is CustomERC721Metadata, IGenArt721CoreV2_PBAB {
      */
     function updateProjectAdditionalPayeeInfo(
         uint256 _projectId,
-        address _additionalPayee,
+        address payable _additionalPayee,
         uint256 _additionalPayeePercentage
     ) public onlyArtist(_projectId) {
         require(_additionalPayeePercentage <= 100, "Max of 100%");
@@ -692,8 +682,9 @@ contract GenArt721CoreV2_PBAB is CustomERC721Metadata, IGenArt721CoreV2_PBAB {
      * @notice Gets token URI for token ID `_tokenId`.
      */
     function tokenURI(uint256 _tokenId)
-        external
+        public
         view
+        override
         onlyValidTokenId(_tokenId)
         returns (string memory)
     {

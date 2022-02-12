@@ -4,11 +4,22 @@
 pragma solidity ^0.8.0;
 
 interface IGenArt721CoreContractV3 {
+    /**
+     * @notice Token ID `_tokenId` minted on project ID `_projectId` to `_to`.
+     * @dev NatSpec for events not supported in Solidity ^0.5.0
+     */
     event Mint(
         address indexed _to,
         uint256 indexed _tokenId,
         uint256 indexed _projectId
     );
+
+    /**
+     * @notice currentMinter updated to `_currentMinter`.
+     * @dev Implemented starting with V3 core
+     * @dev NatSpec for events not supported in Solidity ^0.5.0
+     */
+    event MinterUpdated(address indexed _currentMinter);
 
     // getter function of public variable
     function admin() external view returns (address);
