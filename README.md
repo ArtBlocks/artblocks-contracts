@@ -50,6 +50,17 @@ Core contracts use the versioning schema below:
 | PBAB Cores | V2 | All PBAB | Various - see PBAB directory [DEPLOYMENTS.md files](https://github.com/search?q=repo%3AArtBlocks%2Fartblocks-contracts+extension%3Amd+filename%3ADEPLOYMENTS&type=Code&ref=advsearch&l=&l=) |
 | Current Draft AB Core | V3 | (TBR) | - |
 
+### MinterFilter Suite Compatibility Chart
+- We like new minters
+- Minters have to iteract with (at least one) core contract
+
+**Thus:** The minter suite compatability chart!
+
+| Minter Suite Version | Compatible Core Contract Version | Comments |
+| --- | --- | --- |
+| V0 | V1 | expect `projectTokenInfo()` to change in future core contract versions (since price & currency data is now stored on V0 minters) |
+
+
 ### Active Minting Contract(s)
 
 This is the Smart contract that receives funds, and splits them between the artist(s) and the platform. Artists receive funds directly from this contract.

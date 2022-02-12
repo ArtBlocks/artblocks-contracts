@@ -17,8 +17,8 @@ describe("GenArt721Minter", async function () {
   const secondTokenId = new BN("3000001");
 
   const pricePerTokenInWei = ethers.utils.parseEther("1");
-  const projectZero = 0;
-  const projectOne = 1;
+  const projectZero = 3; // V1 core starts at project 3
+  const projectOne = 4;
 
   beforeEach(async function () {
     const [owner, newOwner, artist, additional, snowfro] =
@@ -32,16 +32,16 @@ describe("GenArt721Minter", async function () {
     };
     const randomizerFactory = await ethers.getContractFactory("Randomizer");
     this.randomizer = await randomizerFactory.deploy();
-    const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV3");
+    const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV1");
     this.token = await artblocksFactory
       .connect(snowfro)
       .deploy(name, symbol, this.randomizer.address);
     // deploy and configure minter filter and minter
-    const minterFilterFactory = await ethers.getContractFactory("MinterFilter");
-    this.minterFilter = await minterFilterFactory.deploy(this.token.address);
-    const minterFactory = await ethers.getContractFactory(
-      "GenArt721FilteredMinterETH"
+    const minterFilterFactory = await ethers.getContractFactory(
+      "MinterFilterV0"
     );
+    this.minterFilter = await minterFilterFactory.deploy(this.token.address);
+    const minterFactory = await ethers.getContractFactory("MinterSetPriceV0");
     this.minter = await minterFactory.deploy(
       this.token.address,
       this.minterFilter.address
@@ -51,10 +51,14 @@ describe("GenArt721Minter", async function () {
       .addApprovedMinter(this.minter.address);
     await this.token
       .connect(snowfro)
-      .updateMinterContract(this.minterFilter.address);
+      .addMintWhitelisted(this.minterFilter.address);
     // add projects
-    await this.token.connect(snowfro).addProject("project1", artist.address);
-    await this.token.connect(snowfro).addProject("project2", artist.address);
+    await this.token
+      .connect(snowfro)
+      .addProject("project1", artist.address, 0, false);
+    await this.token
+      .connect(snowfro)
+      .addProject("project2", artist.address, 0, false);
 
     await this.token.connect(snowfro).toggleProjectIsActive(projectZero);
     await this.token.connect(snowfro).toggleProjectIsActive(projectOne);

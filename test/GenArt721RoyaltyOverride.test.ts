@@ -25,12 +25,12 @@ describe("GenArt721RoyaltyOverride", async function () {
   const name = "Non Fungible Token";
   const symbol = "NFT";
 
-  const tokenIdProject0 = "0000000";
-  const tokenIdProject1 = "1000000";
+  const tokenIdProject0 = "3000000";
+  const tokenIdProject1 = "4000000";
 
   const pricePerTokenInWei = ethers.utils.parseEther("1");
-  const projectZero = 0;
-  const projectOne = 1;
+  const projectZero = 3; // V1 core starts at project 3
+  const projectOne = 4;
 
   const addressZero = "0x0000000000000000000000000000000000000000";
   const defaultBps = 250;
@@ -60,15 +60,19 @@ describe("GenArt721RoyaltyOverride", async function () {
     };
     const randomizerFactory = await ethers.getContractFactory("Randomizer");
     this.randomizer = await randomizerFactory.deploy();
-    const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV3");
+    const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV1");
     this.tokenA = await artblocksFactory
       .connect(adminA)
       .deploy(name, symbol, this.randomizer.address);
 
     // add projects for artists 0 and 1
-    await this.tokenA.connect(adminA).addProject("project0_a", artist0.address);
+    await this.tokenA
+      .connect(adminA)
+      .addProject("project0_a", artist0.address, 0, false);
 
-    await this.tokenA.connect(adminA).addProject("project1_a", artist1.address);
+    await this.tokenA
+      .connect(adminA)
+      .addProject("project1_a", artist1.address, 0, false);
 
     // artist0 set royalty info (with additional payee)
     await this.tokenA
@@ -85,10 +89,12 @@ describe("GenArt721RoyaltyOverride", async function () {
 
     // mint a token on each project because accurate royalties may only be looked
     // up for existing (core returns royalties for tokenId=0 on non-existant tokens)
-    const minterFilterFactory = await ethers.getContractFactory("MinterFilter");
+    const minterFilterFactory = await ethers.getContractFactory(
+      "MinterFilterV0"
+    );
     this.minterFilterA = await minterFilterFactory.deploy(this.tokenA.address);
     const minterFactory = await ethers.getContractFactory(
-      "GenArt721FilteredMinter"
+      "MinterSetPriceERC20V0"
     );
     this.minterA = await minterFactory.deploy(
       this.tokenA.address,
@@ -100,7 +106,7 @@ describe("GenArt721RoyaltyOverride", async function () {
 
     await this.tokenA
       .connect(adminA)
-      .updateMinterContract(this.minterFilterA.address);
+      .addMintWhitelisted(this.minterFilterA.address);
 
     await this.tokenA
       .connect(artist0)
@@ -147,9 +153,13 @@ describe("GenArt721RoyaltyOverride", async function () {
       .deploy(name, symbol, this.randomizer.address);
 
     // add projects for artists 0 and 1
-    await this.tokenB.connect(adminB).addProject("project0_b", artist0.address);
+    await this.tokenB
+      .connect(adminB)
+      .addProject("project0_b", artist0.address, 0, false);
 
-    await this.tokenB.connect(adminB).addProject("project1_b", artist1.address);
+    await this.tokenB
+      .connect(adminB)
+      .addProject("project1_b", artist1.address, 0, false);
 
     // artist0 set royalty info (with additional payee)
     await this.tokenB
@@ -177,7 +187,7 @@ describe("GenArt721RoyaltyOverride", async function () {
 
     await this.tokenB
       .connect(adminB)
-      .updateMinterContract(this.minterFilterB.address);
+      .addMintWhitelisted(this.minterFilterB.address);
 
     await this.tokenB
       .connect(artist0)

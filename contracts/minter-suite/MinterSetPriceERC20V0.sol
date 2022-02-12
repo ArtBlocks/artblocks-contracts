@@ -14,14 +14,15 @@ pragma solidity 0.8.9;
  * or any ERC-20 token.
  * @author Art Blocks Inc.
  */
-contract GenArt721FilteredMinter is IFilteredMinter {
-    /// Art Blocks core contract this minter may interact with.
-    IGenArt721CoreContractV3 public genArtCoreContract;
+contract MinterSetPriceERC20V0 is IFilteredMinterV0 {
+    /// This contract handles cores with interface IV1
+    IGenArt721CoreContractV1 public immutable genArtCoreContract;
+
     /// Minter filter this minter may interact with.
-    IMinterFilter public minterFilter;
+    IMinterFilterV0 public immutable minterFilter;
 
     /// minterType for this minter
-    string public constant minterType = "GenArt721FilteredMinter";
+    string public constant minterType = "MinterSetPriceERC20V0";
 
     uint256 constant ONE_MILLION = 1_000_000;
 
@@ -73,10 +74,10 @@ contract GenArt721FilteredMinter is IFilteredMinter {
      * this will a filtered minter.
      */
     constructor(address _genArt721Address, address _minterFilter) {
-        genArtCoreContract = IGenArt721CoreContractV3(_genArt721Address);
-        minterFilter = IMinterFilter(_minterFilter);
+        genArtCoreContract = IGenArt721CoreContractV1(_genArt721Address);
+        minterFilter = IMinterFilterV0(_minterFilter);
         require(
-            minterFilter.genArtCoreContract() == genArtCoreContract,
+            minterFilter.genArt721CoreAddress() == _genArt721Address,
             "Illegal contract pairing"
         );
     }
@@ -136,15 +137,18 @@ contract GenArt721FilteredMinter is IFilteredMinter {
      * on the value currently defined in the core contract.
      * @param _projectId Project ID to set the maximum invocations for.
      * @dev also checks and may refresh projectMaxHasBeenInvoked for project
+     * @dev this enables gas reduction after maxInvocations have been reached -
+     * core contracts shall still enforce a maxInvocation check during mint.
      */
     function setProjectMaxInvocations(uint256 _projectId)
         external
         onlyCoreWhitelisted
     {
-        uint256 maxInvocations;
         uint256 invocations;
+        uint256 maxInvocations;
         (, , invocations, maxInvocations, , , , , ) = genArtCoreContract
             .projectTokenInfo(_projectId);
+        // update storage with results
         projectMaxInvocations[_projectId] = maxInvocations;
         if (invocations < maxInvocations) {
             projectMaxHasBeenInvoked[_projectId] = false;

@@ -21,7 +21,7 @@ describe("GenArt721MinterEthAuction", async function () {
   // purposefully different price per token on core contract (tracked separately)
   const basePrice = ethers.utils.parseEther("0.05");
 
-  const projectOne = 0;
+  const projectOne = 3; // V1 core starts at project 3
 
   const ONE_MINUTE = 60;
   const ONE_HOUR = ONE_MINUTE * 60;
@@ -43,29 +43,31 @@ describe("GenArt721MinterEthAuction", async function () {
     const randomizerFactory = await ethers.getContractFactory("Randomizer");
     this.randomizer = await randomizerFactory.deploy();
 
-    const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV3");
+    const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV1");
     this.token = await artblocksFactory
       .connect(deployer)
       .deploy(name, symbol, this.randomizer.address);
 
-    const minterFilterFactory = await ethers.getContractFactory("MinterFilter");
+    const minterFilterFactory = await ethers.getContractFactory(
+      "MinterFilterV0"
+    );
     this.minterFilter = await minterFilterFactory.deploy(this.token.address);
 
-    const minterFactory = await ethers.getContractFactory(
-      "GenArt721FilteredMinterETHAuction"
-    );
+    const minterFactory = await ethers.getContractFactory("MinterDALinV0");
     this.minter = await minterFactory.deploy(
       this.token.address,
       this.minterFilter.address
     );
 
-    await this.token.connect(deployer).addProject("project1", artist.address);
+    await this.token
+      .connect(deployer)
+      .addProject("project1", artist.address, 0, false);
 
     await this.token.connect(deployer).toggleProjectIsActive(projectOne);
 
     await this.token
       .connect(deployer)
-      .updateMinterContract(this.minterFilter.address);
+      .addMintWhitelisted(this.minterFilter.address);
 
     await this.token
       .connect(artist)
@@ -108,19 +110,19 @@ describe("GenArt721MinterEthAuction", async function () {
   describe("constructor", async function () {
     it("reverts when given incorrect minter filter and core addresses", async function () {
       const artblocksFactory = await ethers.getContractFactory(
-        "GenArt721CoreV3"
+        "GenArt721CoreV1"
       );
       const token2 = await artblocksFactory
         .connect(this.accounts.deployer)
         .deploy(name, symbol, this.randomizer.address);
 
       const minterFilterFactory = await ethers.getContractFactory(
-        "MinterFilter"
+        "MinterFilterV0"
       );
       const minterFilter = await minterFilterFactory.deploy(token2.address);
 
       const minterFactory = await ethers.getContractFactory(
-        "GenArt721FilteredMinter"
+        "MinterSetPriceERC20V0"
       );
       // fails when combine new minterFilter with the old token in constructor
       await expectRevert(

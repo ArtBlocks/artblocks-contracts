@@ -53,19 +53,17 @@ interface IGenArt721CoreContractV3 {
         view
         returns (uint256);
 
-    function projectTokenInfo(uint256 _projectId)
+    // @dev new function in V3 (deprecated projectTokenInfo)
+    function projectInfo(uint256 _projectId)
         external
         view
         returns (
             address,
             uint256,
             uint256,
-            uint256,
             bool,
             address,
-            uint256,
-            string memory,
-            address
+            uint256
         );
 
     function artblocksAddress() external view returns (address payable);

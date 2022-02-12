@@ -3,7 +3,7 @@
 
 pragma solidity ^0.8.0;
 
-interface IFilteredMinter {
+interface IFilteredMinterV0 {
     /**
      * @notice Price per token in wei updated for project `_projectId` to
      * `_pricePerTokenInWei`.

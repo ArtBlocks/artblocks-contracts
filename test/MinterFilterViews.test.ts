@@ -22,16 +22,18 @@ describe("MinterFilterViews", async function () {
     };
     const randomizerFactory = await ethers.getContractFactory("Randomizer");
     this.randomizer = await randomizerFactory.deploy();
-    const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV3");
+    const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV1");
     this.genArt721Core = await artblocksFactory
       .connect(deployer)
       .deploy("Test Contract", "TEST", this.randomizer.address);
-    const minterFilterFactory = await ethers.getContractFactory("MinterFilter");
+    const minterFilterFactory = await ethers.getContractFactory(
+      "MinterFilterV0"
+    );
     this.minterFilter = await minterFilterFactory.deploy(
       this.genArt721Core.address
     );
     const minterFactory = await ethers.getContractFactory(
-      "GenArt721FilteredMinter"
+      "MinterSetPriceERC20V0"
     );
     this.minter = await minterFactory.deploy(
       this.genArt721Core.address,
@@ -41,11 +43,11 @@ describe("MinterFilterViews", async function () {
     // Project setup
     await this.genArt721Core
       .connect(deployer)
-      .addProject("Test Project", this.accounts.artist.address);
+      .addProject("Test Project", this.accounts.artist.address, 0, false);
     // Project 1 setup
     await this.genArt721Core
       .connect(this.accounts.deployer)
-      .addProject("Test Project One", this.accounts.artist.address);
+      .addProject("Test Project One", this.accounts.artist.address, 0, false);
   });
 
   describe("projectHasMinter", async function () {
