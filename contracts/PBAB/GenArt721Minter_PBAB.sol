@@ -181,7 +181,7 @@ contract GenArt721Minter_PBAB {
     /**
      * @notice Purchases a token from project `_projectId`.
      * @param _projectId Project ID to mint a token on.
-     * @return tokenId Token ID of minted token
+     * @return _tokenId Token ID of minted token
      */
     function purchase(uint256 _projectId)
         public
@@ -268,7 +268,10 @@ contract GenArt721Minter_PBAB {
         // That is intended, so that by default the minter allows infinite
         // transactions, allowing the `genArtCoreContract` to stop minting
         // `uint256 tokenInvocation = tokenId % ONE_MILLION;`
-        if (tokenId % ONE_MILLION == projectMaxInvocations[_projectId] - 1) {
+        if (
+            projectMaxInvocations[_projectId] > 0 &&
+            tokenId % ONE_MILLION == projectMaxInvocations[_projectId] - 1
+        ) {
             projectMaxHasBeenInvoked[_projectId] = true;
         }
 

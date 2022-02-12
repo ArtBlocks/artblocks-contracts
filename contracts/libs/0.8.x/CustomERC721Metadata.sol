@@ -22,9 +22,11 @@ abstract contract CustomERC721Metadata is ERC165, ERC721Enumerable {
     /**
      * @dev Constructor function
      */
-    constructor(string memory name, string memory symbol) ERC721(name, symbol) {
-        _name = name;
-        _symbol = symbol;
+    constructor(string memory name_, string memory symbol_)
+        ERC721(name_, symbol_)
+    {
+        _name = name_;
+        _symbol = symbol_;
     }
 
     /**
@@ -34,7 +36,7 @@ abstract contract CustomERC721Metadata is ERC165, ERC721Enumerable {
         public
         view
         virtual
-        override
+        override(ERC165, ERC721Enumerable)
         returns (bool)
     {
         return
@@ -46,7 +48,7 @@ abstract contract CustomERC721Metadata is ERC165, ERC721Enumerable {
      * @dev Gets the token name
      * @return string representing the token name
      */
-    function name() external view returns (string memory) {
+    function name() public view override returns (string memory) {
         return _name;
     }
 
@@ -54,7 +56,7 @@ abstract contract CustomERC721Metadata is ERC165, ERC721Enumerable {
      * @dev Gets the token symbol
      * @return string representing the token symbol
      */
-    function symbol() external view returns (string memory) {
+    function symbol() public view override returns (string memory) {
         return _symbol;
     }
 }
