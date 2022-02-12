@@ -14,7 +14,7 @@ pragma solidity 0.8.9;
  * or any ERC-20 token.
  * @author Art Blocks Inc.
  */
-contract GenArt721FilteredMinterV0 is IFilteredMinterV0 {
+contract MinterSetPriceERC20V0 is IFilteredMinterV0 {
     /// This contract handles cores with interface IV1
     IGenArt721CoreContractV1 public immutable genArtCoreContract;
 
@@ -22,7 +22,7 @@ contract GenArt721FilteredMinterV0 is IFilteredMinterV0 {
     IMinterFilterV0 public immutable minterFilter;
 
     /// minterType for this minter
-    string public constant minterType = "GenArt721FilteredMinterV0";
+    string public constant minterType = "MinterSetPriceERC20V0";
 
     uint256 constant ONE_MILLION = 1_000_000;
 

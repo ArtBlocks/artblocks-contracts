@@ -31,7 +31,7 @@ describe("MinterFilterEvents", async function () {
       this.genArt721Core.address
     );
     const minterFactory = await ethers.getContractFactory(
-      "GenArt721FilteredMinterV0"
+      "MinterSetPriceERC20V0"
     );
     this.minter = await minterFactory.deploy(
       this.genArt721Core.address,
@@ -42,14 +42,14 @@ describe("MinterFilterEvents", async function () {
       .addApprovedMinter(this.minter.address);
     // deploy all types of filtered minters
     const minterFactoryETH = await ethers.getContractFactory(
-      "GenArt721FilteredMinterETHV0"
+      "MinterSetPriceV0"
     );
     this.minterETH = await minterFactoryETH.deploy(
       this.genArt721Core.address,
       this.minterFilter.address
     );
     const minterFactoryETHAuction = await ethers.getContractFactory(
-      "GenArt721FilteredMinterETHAuctionV0"
+      "MinterDALinV0"
     );
     this.minterETHAuction = await minterFactoryETHAuction.deploy(
       this.genArt721Core.address,
@@ -58,8 +58,8 @@ describe("MinterFilterEvents", async function () {
   });
 
   describe("addApprovedMinter", async function () {
-    it("emits an event for GenArt721FilteredMinter", async function () {
-      const minterType = "GenArt721FilteredMinterV0";
+    it("emits an event for MinterSetPriceERC20V0", async function () {
+      const minterType = "MinterSetPriceERC20V0";
       await expect(
         this.minterFilter
           .connect(this.accounts.deployer)
@@ -69,8 +69,8 @@ describe("MinterFilterEvents", async function () {
         .withArgs(this.minter.address, minterType);
     });
 
-    it("emits an event for GenArt721FilteredMinterETH", async function () {
-      const minterType = "GenArt721FilteredMinterETHV0";
+    it("emits an event for MinterSetPriceV0", async function () {
+      const minterType = "MinterSetPriceV0";
       await expect(
         this.minterFilter
           .connect(this.accounts.deployer)
@@ -80,8 +80,8 @@ describe("MinterFilterEvents", async function () {
         .withArgs(this.minterETH.address, minterType);
     });
 
-    it("emits an event for GenArt721FilteredMinterETHAuction", async function () {
-      const minterType = "GenArt721FilteredMinterETHAuctionV0";
+    it("emits an event for MinterDALinV0", async function () {
+      const minterType = "MinterDALinV0";
       await expect(
         this.minterFilter
           .connect(this.accounts.deployer)
@@ -122,7 +122,7 @@ describe("MinterFilterEvents", async function () {
   });
 
   describe("setMinterForProject", async function () {
-    const minterType = "GenArt721FilteredMinterV0";
+    const minterType = "MinterSetPriceERC20V0";
     it("emits an event", async function () {
       await expect(
         this.minterFilter

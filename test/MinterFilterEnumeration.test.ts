@@ -33,7 +33,7 @@ describe("MinterFilterEnumeration", async function () {
       this.genArt721Core.address
     );
     const minterFactory = await ethers.getContractFactory(
-      "GenArt721FilteredMinterV0"
+      "MinterSetPriceERC20V0"
     );
     this.minter = await minterFactory.deploy(
       this.genArt721Core.address,
