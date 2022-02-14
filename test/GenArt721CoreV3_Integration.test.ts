@@ -40,38 +40,15 @@ describe("GenArt721CoreV3", async function () {
     this.token = await artblocksFactory
       .connect(snowfro)
       .deploy(name, symbol, this.randomizer.address);
+
     // TBD - V3 DOES NOT CURRENTLY HAVE A WORKING MINTER
-    // deploy and configure minter filter and minter
-    // const minterFilterFactory = await ethers.getContractFactory("MinterFilterVX");
-    // this.minterFilter = await minterFilterFactory.deploy(this.token.address);
-    // const minterFactory = await ethers.getContractFactory(
-    //   "GenArt721FilteredMinterETHVTBD"
-    // );
-    // this.minter = await minterFactory.deploy(
-    //   this.token.address,
-    //   this.minterFilter.address
-    // );
-    // await this.minterFilter
-    //   .connect(snowfro)
-    //   .addApprovedMinter(this.minter.address);
-    // await this.token
-    //   .connect(snowfro)
-    //   .updateMinterContract(this.minterFilter.address);
+
     // add project
     await this.token.connect(snowfro).addProject("name", artist.address);
     await this.token.connect(snowfro).toggleProjectIsActive(projectZero);
     await this.token
       .connect(artist)
       .updateProjectMaxInvocations(projectZero, 15);
-    // set project's minter and price
-    // await this.minter
-    //   .connect(artist)
-    //   .updatePricePerTokenInWei(projectZero, pricePerTokenInWei);
-    // await this.minterFilter
-    //   .connect(artist)
-    //   .setMinterForProject(projectZero, this.minter.address);
-    // // get project's info
-    // this.projectZeroInfo = await this.token.projectInfo(projectZero);
   });
 
   describe("has whitelisted owner", function () {
@@ -120,171 +97,7 @@ describe("GenArt721CoreV3", async function () {
         );
       });
     });
-
-    //   describe("purchase", async function () {
-    //     it("reverts if below min amount", async function () {
-    //       await expectRevert(
-    //         this.minter.connect(this.accounts.artist).purchase(projectZero, {
-    //           value: 0,
-    //         }),
-    //         "Must send minimum value to mint!"
-    //       );
-    //     });
-
-    //     it("reverts if project not active", async function () {
-    //       await expectRevert(
-    //         this.minter.connect(this.accounts.snowfro).purchase(projectZero, {
-    //           value: pricePerTokenInWei,
-    //         }),
-    //         "Purchases are paused."
-    //       );
-    //     });
-
-    //     it("can create a token then funds distributed (no additional payee)", async function () {
-    //       const artistBalance = await this.accounts.artist.getBalance();
-    //       const ownerBalance = await this.accounts.owner.getBalance();
-    //       const snowfroBalance = await this.accounts.snowfro.getBalance();
-
-    //       this.token
-    //         .connect(this.accounts.artist)
-    //         .toggleProjectIsPaused(projectZero);
-
-    //       // pricePerTokenInWei setup above to be 1 ETH
-    //       const tx = await this.minter
-    //         .connect(this.accounts.owner)
-    //         .purchase(projectZero, {
-    //           value: pricePerTokenInWei,
-    //         });
-    //       //expectEvent(tx, 'Transfer', {from: constants.ZERO_ADDRESS, to: owner, tokenId: firstTokenId});
-
-    //       this.projectZeroInfo = await this.token.projectInfo(projectZero);
-    //       expect(this.projectZeroInfo.invocations).to.equal("1");
-    //       expect(
-    //         (await this.accounts.snowfro.getBalance()).sub(snowfroBalance)
-    //       ).to.equal(ethers.utils.parseEther("0.1"));
-    //       expect(
-    //         (await this.accounts.artist.getBalance()).sub(artistBalance)
-    //       ).to.equal(ethers.utils.parseEther("0.9"));
-    //       expect(
-    //         (await this.accounts.owner.getBalance()).sub(ownerBalance)
-    //       ).to.equal(ethers.utils.parseEther("1").mul("-1")); // spent 1 ETH
-    //     });
-
-    //     it("can create a token then funds distributed (with additional payee)", async function () {
-    //       const additionalBalance = await this.accounts.additional.getBalance();
-    //       const artistBalance = await this.accounts.artist.getBalance();
-    //       const ownerBalance = await this.accounts.owner.getBalance();
-    //       const snowfroBalance = await this.accounts.snowfro.getBalance();
-
-    //       const additionalPayeePercentage = 10;
-    //       this.token
-    //         .connect(this.accounts.artist)
-    //         .updateProjectAdditionalPayeeInfo(
-    //           projectZero,
-    //           this.accounts.additional.address,
-    //           additionalPayeePercentage
-    //         );
-    //       this.token
-    //         .connect(this.accounts.artist)
-    //         .toggleProjectIsPaused(projectZero);
-
-    //       // pricePerTokenInWei setup above to be 1 ETH
-    //       const tx = await this.minter
-    //         .connect(this.accounts.owner)
-    //         .purchase(projectZero, {
-    //           value: pricePerTokenInWei,
-    //         });
-    //       //expectEvent(tx, 'Transfer', {from: constants.ZERO_ADDRESS, to: owner, tokenId: firstTokenId});
-
-    //       this.projectZeroInfo = await this.token.projectInfo(projectZero);
-    //       // expect(this.projectZeroInfo.invocations).to.equal('1');
-
-    //       expect(
-    //         (await this.accounts.snowfro.getBalance()).sub(snowfroBalance)
-    //       ).to.equal(ethers.utils.parseEther("0.1"));
-    //       expect(
-    //         (await this.accounts.additional.getBalance()).sub(additionalBalance)
-    //       ).to.equal(ethers.utils.parseEther("0.09"));
-    //       expect(
-    //         (await this.accounts.owner.getBalance()).sub(ownerBalance)
-    //       ).to.equal(ethers.utils.parseEther("1").mul("-1")); // spent 1 ETH
-    //       expect(
-    //         (await this.accounts.artist.getBalance()).sub(artistBalance)
-    //       ).to.equal(
-    //         ethers.utils.parseEther("0.9").sub(ethers.utils.parseEther("0.09"))
-    //       );
-    //     });
-
-    //     it("can create a token then funds distributed (with additional payee getting 100%)", async function () {
-    //       const additionalBalance = await this.accounts.additional.getBalance();
-    //       const artistBalance = await this.accounts.artist.getBalance();
-    //       const ownerBalance = await this.accounts.owner.getBalance();
-    //       const snowfroBalance = await this.accounts.snowfro.getBalance();
-
-    //       const additionalPayeePercentage = 100;
-    //       this.token
-    //         .connect(this.accounts.artist)
-    //         .updateProjectAdditionalPayeeInfo(
-    //           projectZero,
-    //           this.accounts.additional.address,
-    //           additionalPayeePercentage
-    //         );
-    //       this.token
-    //         .connect(this.accounts.artist)
-    //         .toggleProjectIsPaused(projectZero);
-
-    //       // pricePerTokenInWei setup above to be 1 ETH
-    //       const tx = await this.minter
-    //         .connect(this.accounts.owner)
-    //         .purchase(projectZero, {
-    //           value: pricePerTokenInWei,
-    //         });
-    //       //expectEvent(tx, 'Transfer', {from: constants.ZERO_ADDRESS, to: owner, tokenId: firstTokenId});
-
-    //       this.projectZeroInfo = await this.token.projectInfo(projectZero);
-    //       expect(this.projectZeroInfo.invocations).to.equal("1");
-
-    //       expect(
-    //         (await this.accounts.snowfro.getBalance()).sub(snowfroBalance)
-    //       ).to.equal(ethers.utils.parseEther("0.1"));
-    //       expect(
-    //         (await this.accounts.additional.getBalance()).sub(additionalBalance)
-    //       ).to.equal(ethers.utils.parseEther("0.9"));
-    //       expect(
-    //         (await this.accounts.owner.getBalance()).sub(ownerBalance)
-    //       ).to.equal(ethers.utils.parseEther("1").mul("-1")); // spent 1 ETH
-    //       expect(
-    //         (await this.accounts.artist.getBalance()).sub(artistBalance)
-    //       ).to.equal(ethers.utils.parseEther("0"));
-    //     });
   });
-
-  //   describe("handles updating minter", async function () {
-  //     it("emits event when updating minter", async function () {
-  //       await expect(
-  //         this.token
-  //           .connect(this.accounts.snowfro)
-  //           .updateMinterContract(this.minter.address)
-  //       )
-  //         .to.emit(this.token, "MinterUpdated")
-  //         .withArgs(this.minter.address);
-  //     });
-
-  //     it("only allows admin/whitelisted to update minter", async function () {
-  //       // allows admin to update minter
-  //       await this.token
-  //         .connect(this.accounts.snowfro)
-  //         .updateMinterContract(this.minter.address);
-  //       // does not allow random to update minter
-  //       await expectRevert(
-  //         this.token
-  //           .connect(this.accounts.artist)
-  //           .updateMinterContract(this.minter.address),
-  //         "Only admin"
-  //       );
-  //     });
-  //   });
-  // });
 
   describe("projectInfo", function () {
     it("returns expected deprecated values", async function () {
