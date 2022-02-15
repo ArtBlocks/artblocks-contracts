@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Creatd By: Art Blocks Inc.
 
-import "./interfaces/0.5.x/IRandomizer.sol";
+import "./interfaces/0.8.x/IRandomizer.sol";
 
-pragma solidity ^0.5.0;
+pragma solidity 0.8.9;
 
 contract Randomizer is IRandomizer {
     function returnValue() public view returns (bytes32) {

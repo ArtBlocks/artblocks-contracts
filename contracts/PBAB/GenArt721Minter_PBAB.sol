@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../libs/0.5.x/SafeMath.sol";
-import "../libs/0.5.x/Strings.sol";
-import "../libs/0.5.x/IERC20.sol";
+import "../interfaces/0.8.x/IGenArt721CoreV2_PBAB.sol";
+import "../interfaces/0.8.x/IBonusContract.sol";
 
-import "../interfaces/0.5.x/IGenArt721CoreV2_PBAB.sol";
-import "../interfaces/0.5.x/IBonusContract.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts/interfaces/IERC20.sol";
 
-pragma solidity ^0.5.0;
+pragma solidity 0.8.9;
 
 /**
  * @title Powered by Art Blocks minter contract that allows tokens to be
@@ -16,8 +15,6 @@ pragma solidity ^0.5.0;
  * @author Art Blocks Inc.
  */
 contract GenArt721Minter_PBAB {
-    using SafeMath for uint256;
-
     /// PBAB core contract this minter may interact with.
     IGenArt721CoreV2_PBAB public genArtCoreContract;
 
@@ -38,7 +35,7 @@ contract GenArt721Minter_PBAB {
      * @notice Initializes contract to be a Minter for PBAB core contract at
      * address `_genArt721Address`.
      */
-    constructor(address _genArt721Address) public {
+    constructor(address _genArt721Address) {
         genArtCoreContract = IGenArt721CoreV2_PBAB(_genArt721Address);
     }
 
@@ -184,7 +181,7 @@ contract GenArt721Minter_PBAB {
     /**
      * @notice Purchases a token from project `_projectId`.
      * @param _projectId Project ID to mint a token on.
-     * @return tokenId Token ID of minted token
+     * @return _tokenId Token ID of minted token
      */
     function purchase(uint256 _projectId)
         public
@@ -271,7 +268,10 @@ contract GenArt721Minter_PBAB {
         // That is intended, so that by default the minter allows infinite
         // transactions, allowing the `genArtCoreContract` to stop minting
         // `uint256 tokenInvocation = tokenId % ONE_MILLION;`
-        if (tokenId % ONE_MILLION == projectMaxInvocations[_projectId] - 1) {
+        if (
+            projectMaxInvocations[_projectId] > 0 &&
+            tokenId % ONE_MILLION == projectMaxInvocations[_projectId] - 1
+        ) {
             projectMaxHasBeenInvoked[_projectId] = true;
         }
 
@@ -299,51 +299,47 @@ contract GenArt721Minter_PBAB {
         if (msg.value > 0) {
             uint256 pricePerTokenInWei = genArtCoreContract
                 .projectIdToPricePerTokenInWei(_projectId);
-            uint256 refund = msg.value.sub(
-                genArtCoreContract.projectIdToPricePerTokenInWei(_projectId)
-            );
+            uint256 refund = msg.value -
+                genArtCoreContract.projectIdToPricePerTokenInWei(_projectId);
             if (refund > 0) {
-                msg.sender.transfer(refund);
+                payable(msg.sender).transfer(refund);
             }
-            uint256 renderProviderAmount = pricePerTokenInWei.div(100).mul(
-                genArtCoreContract.renderProviderPercentage()
-            );
+            uint256 renderProviderAmount = (pricePerTokenInWei / 100) *
+                genArtCoreContract.renderProviderPercentage();
             if (renderProviderAmount > 0) {
                 genArtCoreContract.renderProviderAddress().transfer(
                     renderProviderAmount
                 );
             }
 
-            uint256 remainingFunds = pricePerTokenInWei.sub(
-                renderProviderAmount
-            );
+            uint256 remainingFunds = pricePerTokenInWei - renderProviderAmount;
 
-            uint256 ownerFunds = remainingFunds.div(100).mul(ownerPercentage);
+            uint256 ownerFunds = (remainingFunds / 100) * ownerPercentage;
             if (ownerFunds > 0) {
                 ownerAddress.transfer(ownerFunds);
             }
 
-            uint256 projectFunds = pricePerTokenInWei
-                .sub(renderProviderAmount)
-                .sub(ownerFunds);
+            uint256 projectFunds = pricePerTokenInWei -
+                renderProviderAmount -
+                ownerFunds;
             uint256 additionalPayeeAmount;
             if (
                 genArtCoreContract.projectIdToAdditionalPayeePercentage(
                     _projectId
                 ) > 0
             ) {
-                additionalPayeeAmount = projectFunds.div(100).mul(
+                additionalPayeeAmount =
+                    (projectFunds / 100) *
                     genArtCoreContract.projectIdToAdditionalPayeePercentage(
                         _projectId
-                    )
-                );
+                    );
                 if (additionalPayeeAmount > 0) {
                     genArtCoreContract
                         .projectIdToAdditionalPayee(_projectId)
                         .transfer(additionalPayeeAmount);
                 }
             }
-            uint256 creatorFunds = projectFunds.sub(additionalPayeeAmount);
+            uint256 creatorFunds = projectFunds - additionalPayeeAmount;
             if (creatorFunds > 0) {
                 genArtCoreContract
                     .projectIdToArtistAddress(_projectId)
@@ -353,16 +349,15 @@ contract GenArt721Minter_PBAB {
     }
 
     /**
-     * @dev splits ERC-20 funds between render provider, owner, artist, and 
-     * artist's additional payee, for a token purchased on project 
+     * @dev splits ERC-20 funds between render provider, owner, artist, and
+     * artist's additional payee, for a token purchased on project
      `_projectId`.
      */
     function _splitFundsERC20(uint256 _projectId) internal {
         uint256 pricePerTokenInWei = genArtCoreContract
             .projectIdToPricePerTokenInWei(_projectId);
-        uint256 renderProviderAmount = pricePerTokenInWei.div(100).mul(
-            genArtCoreContract.renderProviderPercentage()
-        );
+        uint256 renderProviderAmount = (pricePerTokenInWei / 100) *
+            genArtCoreContract.renderProviderPercentage();
         if (renderProviderAmount > 0) {
             IERC20(genArtCoreContract.projectIdToCurrencyAddress(_projectId))
                 .transferFrom(
@@ -371,28 +366,28 @@ contract GenArt721Minter_PBAB {
                     renderProviderAmount
                 );
         }
-        uint256 remainingFunds = pricePerTokenInWei.sub(renderProviderAmount);
+        uint256 remainingFunds = pricePerTokenInWei - renderProviderAmount;
 
-        uint256 ownerFunds = remainingFunds.div(100).mul(ownerPercentage);
+        uint256 ownerFunds = (remainingFunds / 100) * ownerPercentage;
         if (ownerFunds > 0) {
             IERC20(genArtCoreContract.projectIdToCurrencyAddress(_projectId))
                 .transferFrom(msg.sender, ownerAddress, ownerFunds);
         }
 
-        uint256 projectFunds = pricePerTokenInWei.sub(renderProviderAmount).sub(
-            ownerFunds
-        );
+        uint256 projectFunds = pricePerTokenInWei -
+            renderProviderAmount -
+            ownerFunds;
         uint256 additionalPayeeAmount;
         if (
             genArtCoreContract.projectIdToAdditionalPayeePercentage(
                 _projectId
             ) > 0
         ) {
-            additionalPayeeAmount = projectFunds.div(100).mul(
+            additionalPayeeAmount =
+                (projectFunds / 100) *
                 genArtCoreContract.projectIdToAdditionalPayeePercentage(
                     _projectId
-                )
-            );
+                );
             if (additionalPayeeAmount > 0) {
                 IERC20(
                     genArtCoreContract.projectIdToCurrencyAddress(_projectId)
@@ -405,7 +400,7 @@ contract GenArt721Minter_PBAB {
                     );
             }
         }
-        uint256 creatorFunds = projectFunds.sub(additionalPayeeAmount);
+        uint256 creatorFunds = projectFunds - additionalPayeeAmount;
         if (creatorFunds > 0) {
             IERC20(genArtCoreContract.projectIdToCurrencyAddress(_projectId))
                 .transferFrom(

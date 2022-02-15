@@ -2,7 +2,6 @@
 // Creatd By: Art Blocks Inc.
 
 import "../../libs/0.5.x/CustomERC721Metadata.sol";
-import "../../libs/0.5.x/SafeMath.sol";
 import "../../libs/0.5.x/Strings.sol";
 
 import "../../interfaces/0.5.x/IRandomizer.sol";

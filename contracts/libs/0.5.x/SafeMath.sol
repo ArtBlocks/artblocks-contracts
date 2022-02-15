@@ -1,4 +1,9 @@
+// SPDX-License-Identifier: MIT
 // File: openzeppelin-solidity/contracts/math/SafeMath.sol
+
+// **Please Note**: This library is not necessary for ^0.8.0 contracts and thus
+//                  only exists for posterity reasons for compatibility with
+//                  existing already-deployed ^0.5.0 PBAB contracts.
 
 pragma solidity ^0.5.0;
 

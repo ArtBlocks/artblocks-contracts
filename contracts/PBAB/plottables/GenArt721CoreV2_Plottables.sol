@@ -4,7 +4,6 @@
 pragma solidity ^0.5.0;
 
 import "../../libs/0.5.x/CustomERC721Metadata.sol";
-import "../../libs/0.5.x/SafeMath.sol";
 import "../../libs/0.5.x/Strings.sol";
 
 interface IRandomizer {

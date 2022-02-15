@@ -119,7 +119,7 @@ describe("MinterSetPriceERC20V0", async function () {
       .updatePricePerTokenInWei(projectOne, pricePerTokenInWei);
 
     // mock ERC20 token
-    const ERC20Factory = await ethers.getContractFactory("MockToken");
+    const ERC20Factory = await ethers.getContractFactory("ERC20Mock");
     this.ERC20Mock = await ERC20Factory.deploy(ethers.utils.parseEther("100"));
   });
 

@@ -1,10 +1,11 @@
-// File: contracts/CustomERC721Metadata.sol
+// SPDX-License-Identifier: LGPL-3.0-only
+// Created By: Art Blocks Inc.
 
 pragma solidity ^0.5.0;
 
-import "./ERC165.sol";
-import "./ERC721.sol";
-import "./ERC721Enumerable.sol";
+import "@openzeppelin-0.5/contracts/introspection/ERC165.sol";
+import "@openzeppelin-0.5/contracts/token/ERC721/ERC721.sol";
+import "@openzeppelin-0.5/contracts/token/ERC721/ERC721Enumerable.sol";
 
 /**
  * ERC721 base contract without the concept of tokenUri as this is managed by the parent
