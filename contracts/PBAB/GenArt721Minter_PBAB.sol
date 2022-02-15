@@ -4,6 +4,7 @@
 import "../interfaces/0.8.x/IGenArt721CoreV2_PBAB.sol";
 import "../interfaces/0.8.x/IBonusContract.sol";
 
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/interfaces/IERC20.sol";
 
@@ -14,7 +15,7 @@ pragma solidity 0.8.9;
  * minted with ETH or any ERC-20 token.
  * @author Art Blocks Inc.
  */
-contract GenArt721Minter_PBAB {
+contract GenArt721Minter_PBAB is ReentrancyGuard {
     /// PBAB core contract this minter may interact with.
     IGenArt721CoreV2_PBAB public genArtCoreContract;
 
@@ -313,9 +314,9 @@ contract GenArt721Minter_PBAB {
             uint256 renderProviderAmount = (pricePerTokenInWei / 100) *
                 genArtCoreContract.renderProviderPercentage();
             if (renderProviderAmount > 0) {
-                (bool success_, ) = genArtCoreContract.renderProviderAddress().call{
-                    value: renderProviderAmount
-                }("");
+                (bool success_, ) = genArtCoreContract
+                    .renderProviderAddress()
+                    .call{value: renderProviderAmount}("");
                 require(success_, "Renderer payment failed");
             }
 
@@ -323,9 +324,7 @@ contract GenArt721Minter_PBAB {
 
             uint256 ownerFunds = (remainingFunds / 100) * ownerPercentage;
             if (ownerFunds > 0) {
-                (bool success_, ) = ownerAddress.call{
-                    value: ownerFunds
-                }("");
+                (bool success_, ) = ownerAddress.call{value: ownerFunds}("");
                 require(success_, "Owner payment failed");
             }
 
