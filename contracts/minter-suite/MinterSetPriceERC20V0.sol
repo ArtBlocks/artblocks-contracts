@@ -251,6 +251,7 @@ contract MinterSetPriceERC20V0 is IFilteredMinterV0 {
         payable
         returns (uint256 tokenId)
     {
+        // CHECKS
         require(
             !projectMaxHasBeenInvoked[_projectId],
             "Maximum number of invocations reached"
@@ -280,9 +281,23 @@ contract MinterSetPriceERC20V0 is IFilteredMinterV0 {
                     projectMintLimit[_projectId],
                 "Reached minting limit"
             );
+            // EFFECTS
             projectMintCounter[msg.sender][_projectId]++;
         }
 
+        tokenId = minterFilter.mint(_to, _projectId, msg.sender);
+        // what if projectMaxInvocations[_projectId] is 0 (default value)?
+        // that is intended, so that by default the minter allows infinite transactions,
+        // allowing the artblocks contract to stop minting
+        // uint256 tokenInvocation = tokenId % ONE_MILLION;
+        if (
+            projectMaxInvocations[_projectId] > 0 &&
+            tokenId % ONE_MILLION == projectMaxInvocations[_projectId] - 1
+        ) {
+            projectMaxHasBeenInvoked[_projectId] = true;
+        }
+
+        // INTERACTIONS
         if (projectIdToCurrencyAddress[_projectId] != address(0)) {
             require(
                 msg.value == 0,
@@ -309,18 +324,7 @@ contract MinterSetPriceERC20V0 is IFilteredMinterV0 {
             );
             _splitFundsETH(_projectId);
         }
-
-        tokenId = minterFilter.mint(_to, _projectId, msg.sender);
-        // what if projectMaxInvocations[_projectId] is 0 (default value)?
-        // that is intended, so that by default the minter allows infinite transactions,
-        // allowing the artblocks contract to stop minting
-        // uint256 tokenInvocation = tokenId % ONE_MILLION;
-        if (
-            projectMaxInvocations[_projectId] > 0 &&
-            tokenId % ONE_MILLION == projectMaxInvocations[_projectId] - 1
-        ) {
-            projectMaxHasBeenInvoked[_projectId] = true;
-        }
+        
         return tokenId;
     }
 
