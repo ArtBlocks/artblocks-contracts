@@ -181,7 +181,7 @@ contract GenArt721Minter_PBAB {
     /**
      * @notice Purchases a token from project `_projectId`.
      * @param _projectId Project ID to mint a token on.
-     * @return tokenId Token ID of minted token
+     * @return _tokenId Token ID of minted token
      */
     function purchase(uint256 _projectId)
         public
