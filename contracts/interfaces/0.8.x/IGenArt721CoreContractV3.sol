@@ -6,7 +6,6 @@ pragma solidity ^0.8.0;
 interface IGenArt721CoreContractV3 {
     /**
      * @notice Token ID `_tokenId` minted on project ID `_projectId` to `_to`.
-     * @dev NatSpec for events not supported in Solidity ^0.5.0
      */
     event Mint(
         address indexed _to,
@@ -17,7 +16,6 @@ interface IGenArt721CoreContractV3 {
     /**
      * @notice currentMinter updated to `_currentMinter`.
      * @dev Implemented starting with V3 core
-     * @dev NatSpec for events not supported in Solidity ^0.5.0
      */
     event MinterUpdated(address indexed _currentMinter);
 
