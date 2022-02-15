@@ -5,6 +5,8 @@ import "../interfaces/0.8.x/IGenArt721CoreContractV1.sol";
 import "../interfaces/0.8.x/IMinterFilterV0.sol";
 import "../interfaces/0.8.x/IFilteredMinterV0.sol";
 
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+
 pragma solidity 0.8.9;
 
 /**
@@ -12,7 +14,7 @@ pragma solidity 0.8.9;
  * Pricing is achieved using an automated Dutch-auction mechanism.
  * @author Art Blocks Inc.
  */
-contract MinterDAExpV0 is IFilteredMinterV0 {
+contract MinterDAExpV0 is ReentrancyGuard, IFilteredMinterV0 {
     /// Auction details updated for project `projectId`.
     event SetAuctionDetails(
         uint256 indexed projectId,
@@ -290,6 +292,7 @@ contract MinterDAExpV0 is IFilteredMinterV0 {
     function purchaseTo(address _to, uint256 _projectId)
         public
         payable
+        nonReentrant
         returns (uint256 tokenId)
     {
         // CHECKS

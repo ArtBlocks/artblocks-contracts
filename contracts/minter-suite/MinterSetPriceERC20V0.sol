@@ -6,6 +6,7 @@ import "../interfaces/0.8.x/IMinterFilterV0.sol";
 import "../interfaces/0.8.x/IFilteredMinterV0.sol";
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
 pragma solidity 0.8.9;
 
@@ -14,7 +15,7 @@ pragma solidity 0.8.9;
  * or any ERC-20 token.
  * @author Art Blocks Inc.
  */
-contract MinterSetPriceERC20V0 is IFilteredMinterV0 {
+contract MinterSetPriceERC20V0 is ReentrancyGuard, IFilteredMinterV0 {
     /// This contract handles cores with interface IV1
     IGenArt721CoreContractV1 public immutable genArtCoreContract;
 
@@ -249,6 +250,7 @@ contract MinterSetPriceERC20V0 is IFilteredMinterV0 {
     function purchaseTo(address _to, uint256 _projectId)
         public
         payable
+        nonReentrant
         returns (uint256 tokenId)
     {
         // CHECKS

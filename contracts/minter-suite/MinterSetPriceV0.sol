@@ -5,13 +5,15 @@ import "../interfaces/0.8.x/IGenArt721CoreContractV1.sol";
 import "../interfaces/0.8.x/IMinterFilterV0.sol";
 import "../interfaces/0.8.x/IFilteredMinterV0.sol";
 
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+
 pragma solidity 0.8.9;
 
 /**
  * @title Filtered Minter contract that allows tokens to be minted with ETH.
  * @author Art Blocks Inc.
  */
-contract MinterSetPriceV0 is IFilteredMinterV0 {
+contract MinterSetPriceV0 is ReentrancyGuard, IFilteredMinterV0 {
     /// This contract handles cores with interface IV1
     IGenArt721CoreContractV1 public immutable genArtCoreContract;
 
@@ -178,6 +180,7 @@ contract MinterSetPriceV0 is IFilteredMinterV0 {
     function purchaseTo(address _to, uint256 _projectId)
         public
         payable
+        nonReentrant
         returns (uint256 tokenId)
     {
         // CHECKS
