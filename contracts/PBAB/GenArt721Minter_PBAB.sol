@@ -202,6 +202,7 @@ contract GenArt721Minter_PBAB is ReentrancyGuard {
     function purchaseTo(address _to, uint256 _projectId)
         public
         payable
+        nonReentrant
         returns (uint256 _tokenId)
     {
         // CHECKS
