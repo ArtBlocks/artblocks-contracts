@@ -324,7 +324,7 @@ contract MinterSetPriceERC20V0 is IFilteredMinterV0 {
             );
             _splitFundsETH(_projectId);
         }
-        
+
         return tokenId;
     }
 
@@ -342,14 +342,16 @@ contract MinterSetPriceERC20V0 is IFilteredMinterV0 {
             ];
             uint256 refund = msg.value - pricePerTokenInWei;
             if (refund > 0) {
-                payable(msg.sender).transfer(refund);
+                (bool success_, ) = msg.sender.call{value: refund}("");
+                require(success_, "Refund failed");
             }
             uint256 foundationAmount = (pricePerTokenInWei / 100) *
                 genArtCoreContract.artblocksPercentage();
             if (foundationAmount > 0) {
-                genArtCoreContract.artblocksAddress().transfer(
-                    foundationAmount
-                );
+                (bool success_, ) = genArtCoreContract.artblocksAddress().call{
+                    value: foundationAmount
+                }("");
+                require(success_, "Foundation payment failed");
             }
             uint256 projectFunds = pricePerTokenInWei - foundationAmount;
             uint256 additionalPayeeAmount;
@@ -364,16 +366,18 @@ contract MinterSetPriceERC20V0 is IFilteredMinterV0 {
                         _projectId
                     );
                 if (additionalPayeeAmount > 0) {
-                    genArtCoreContract
+                    (bool success_, ) = genArtCoreContract
                         .projectIdToAdditionalPayee(_projectId)
-                        .transfer(additionalPayeeAmount);
+                        .call{value: additionalPayeeAmount}("");
+                    require(success_, "Additional payment failed");
                 }
             }
             uint256 creatorFunds = projectFunds - additionalPayeeAmount;
             if (creatorFunds > 0) {
-                genArtCoreContract
+                (bool success_, ) = genArtCoreContract
                     .projectIdToArtistAddress(_projectId)
-                    .transfer(creatorFunds);
+                    .call{value: creatorFunds}("");
+                require(success_, "Artist payment failed");
             }
         }
     }

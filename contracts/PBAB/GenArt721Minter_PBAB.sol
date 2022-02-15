@@ -307,21 +307,26 @@ contract GenArt721Minter_PBAB {
             uint256 refund = msg.value -
                 genArtCoreContract.projectIdToPricePerTokenInWei(_projectId);
             if (refund > 0) {
-                payable(msg.sender).transfer(refund);
+                (bool success_, ) = msg.sender.call{value: refund}("");
+                require(success_, "Refund failed");
             }
             uint256 renderProviderAmount = (pricePerTokenInWei / 100) *
                 genArtCoreContract.renderProviderPercentage();
             if (renderProviderAmount > 0) {
-                genArtCoreContract.renderProviderAddress().transfer(
-                    renderProviderAmount
-                );
+                (bool success_, ) = genArtCoreContract.renderProviderAddress().call{
+                    value: renderProviderAmount
+                }("");
+                require(success_, "Renderer payment failed");
             }
 
             uint256 remainingFunds = pricePerTokenInWei - renderProviderAmount;
 
             uint256 ownerFunds = (remainingFunds / 100) * ownerPercentage;
             if (ownerFunds > 0) {
-                ownerAddress.transfer(ownerFunds);
+                (bool success_, ) = ownerAddress.call{
+                    value: ownerFunds
+                }("");
+                require(success_, "Owner payment failed");
             }
 
             uint256 projectFunds = pricePerTokenInWei -
@@ -339,16 +344,18 @@ contract GenArt721Minter_PBAB {
                         _projectId
                     );
                 if (additionalPayeeAmount > 0) {
-                    genArtCoreContract
+                    (bool success_, ) = genArtCoreContract
                         .projectIdToAdditionalPayee(_projectId)
-                        .transfer(additionalPayeeAmount);
+                        .call{value: additionalPayeeAmount}("");
+                    require(success_, "Additional payment failed");
                 }
             }
             uint256 creatorFunds = projectFunds - additionalPayeeAmount;
             if (creatorFunds > 0) {
-                genArtCoreContract
+                (bool success_, ) = genArtCoreContract
                     .projectIdToArtistAddress(_projectId)
-                    .transfer(creatorFunds);
+                    .call{value: creatorFunds}("");
+                require(success_, "Artist payment failed");
             }
         }
     }
