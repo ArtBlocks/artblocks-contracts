@@ -324,7 +324,7 @@ contract MinterSetPriceERC20V0 is IFilteredMinterV0 {
             );
             _splitFundsETH(_projectId);
         }
-        
+
         return tokenId;
     }
 
