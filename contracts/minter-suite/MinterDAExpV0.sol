@@ -97,7 +97,9 @@ contract MinterDAExpV0 is ReentrancyGuard, IFilteredMinterV0 {
      * @param _minterFilter Minter filter for which
      * this will a filtered minter.
      */
-    constructor(address _genArt721Address, address _minterFilter) {
+    constructor(address _genArt721Address, address _minterFilter)
+        ReentrancyGuard()
+    {
         genArtCoreContract = IGenArt721CoreContractV1(_genArt721Address);
         minterFilter = IMinterFilterV0(_minterFilter);
         require(

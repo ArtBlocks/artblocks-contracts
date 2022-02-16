@@ -36,7 +36,7 @@ contract GenArt721Minter_PBAB is ReentrancyGuard {
      * @notice Initializes contract to be a Minter for PBAB core contract at
      * address `_genArt721Address`.
      */
-    constructor(address _genArt721Address) {
+    constructor(address _genArt721Address) ReentrancyGuard() {
         genArtCoreContract = IGenArt721CoreV2_PBAB(_genArt721Address);
     }
 
