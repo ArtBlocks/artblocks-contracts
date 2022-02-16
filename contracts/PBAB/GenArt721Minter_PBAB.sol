@@ -203,10 +203,53 @@ contract GenArt721Minter_PBAB {
         payable
         returns (uint256 _tokenId)
     {
+        // CHECKS
         require(
             !projectMaxHasBeenInvoked[_projectId],
             "Maximum number of invocations reached"
         );
+        // if contract filter is active prevent calls from another contract
+        if (contractFilterProject[_projectId]) {
+            require(msg.sender == tx.origin, "No Contract Buys");
+        }
+
+        // limit mints per address by project
+        if (projectMintLimit[_projectId] > 0) {
+            require(
+                projectMintCounter[msg.sender][_projectId] <
+                    projectMintLimit[_projectId],
+                "Reached minting limit"
+            );
+            // EFFECTS
+            projectMintCounter[msg.sender][_projectId]++;
+        }
+
+        uint256 tokenId = genArtCoreContract.mint(_to, _projectId, msg.sender);
+
+        // What if this overflows, since default value of uint256 is 0?
+        // That is intended, so that by default the minter allows infinite
+        // transactions, allowing the `genArtCoreContract` to stop minting
+        // `uint256 tokenInvocation = tokenId % ONE_MILLION;`
+        if (
+            projectMaxInvocations[_projectId] > 0 &&
+            tokenId % ONE_MILLION == projectMaxInvocations[_projectId] - 1
+        ) {
+            projectMaxHasBeenInvoked[_projectId] = true;
+        }
+
+        // INTERACTIONS
+        // bonus contract
+        if (projectIdToBonus[_projectId]) {
+            require(
+                IBonusContract(projectIdToBonusContractAddress[_projectId])
+                    .bonusIsActive(),
+                "bonus must be active"
+            );
+            IBonusContract(projectIdToBonusContractAddress[_projectId])
+                .triggerBonus(msg.sender);
+        }
+
+        // validate and split funds
         if (
             keccak256(
                 abi.encodePacked(
@@ -246,43 +289,6 @@ contract GenArt721Minter_PBAB {
                 "Must send minimum value to mint!"
             );
             _splitFundsETH(_projectId);
-        }
-
-        // if contract filter is active prevent calls from another contract
-        if (contractFilterProject[_projectId])
-            require(msg.sender == tx.origin, "No Contract Buys");
-
-        // limit mints per address by project
-        if (projectMintLimit[_projectId] > 0) {
-            require(
-                projectMintCounter[msg.sender][_projectId] <
-                    projectMintLimit[_projectId],
-                "Reached minting limit"
-            );
-            projectMintCounter[msg.sender][_projectId]++;
-        }
-
-        uint256 tokenId = genArtCoreContract.mint(_to, _projectId, msg.sender);
-
-        // What if this overflows, since default value of uint256 is 0?
-        // That is intended, so that by default the minter allows infinite
-        // transactions, allowing the `genArtCoreContract` to stop minting
-        // `uint256 tokenInvocation = tokenId % ONE_MILLION;`
-        if (
-            projectMaxInvocations[_projectId] > 0 &&
-            tokenId % ONE_MILLION == projectMaxInvocations[_projectId] - 1
-        ) {
-            projectMaxHasBeenInvoked[_projectId] = true;
-        }
-
-        if (projectIdToBonus[_projectId]) {
-            require(
-                IBonusContract(projectIdToBonusContractAddress[_projectId])
-                    .bonusIsActive(),
-                "bonus must be active"
-            );
-            IBonusContract(projectIdToBonusContractAddress[_projectId])
-                .triggerBonus(msg.sender);
         }
 
         return tokenId;

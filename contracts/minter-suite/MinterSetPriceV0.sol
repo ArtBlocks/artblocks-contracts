@@ -180,6 +180,7 @@ contract MinterSetPriceV0 is IFilteredMinterV0 {
         payable
         returns (uint256 tokenId)
     {
+        // CHECKS
         require(
             !projectMaxHasBeenInvoked[_projectId],
             "Maximum number of invocations reached"
@@ -202,6 +203,11 @@ contract MinterSetPriceV0 is IFilteredMinterV0 {
             require(msg.sender == _to, "No `purchaseTo` Allowed");
         }
 
+        require(
+            msg.value >= projectIdToPricePerTokenInWei[_projectId],
+            "Must send minimum value to mint!"
+        );
+
         // limit mints per address by project
         if (projectMintLimit[_projectId] > 0) {
             require(
@@ -209,15 +215,9 @@ contract MinterSetPriceV0 is IFilteredMinterV0 {
                     projectMintLimit[_projectId],
                 "Reached minting limit"
             );
+            // EFFECTS
             projectMintCounter[msg.sender][_projectId]++;
         }
-
-        require(
-            msg.value >= projectIdToPricePerTokenInWei[_projectId],
-            "Must send minimum value to mint!"
-        );
-
-        _splitFundsETH(_projectId);
 
         tokenId = minterFilter.mint(_to, _projectId, msg.sender);
         // what if projectMaxInvocations[_projectId] is 0 (default value)?
@@ -230,6 +230,10 @@ contract MinterSetPriceV0 is IFilteredMinterV0 {
         ) {
             projectMaxHasBeenInvoked[_projectId] = true;
         }
+
+        // INTERACTIONS
+        _splitFundsETH(_projectId);
+
         return tokenId;
     }
 

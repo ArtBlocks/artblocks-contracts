@@ -219,11 +219,13 @@ contract MinterFilterV0 is IMinterFilterV0 {
         uint256 _projectId,
         address sender
     ) external returns (uint256 _tokenId) {
+        // CHECKS
         // minter is the project's minter
         require(
             msg.sender == minterForProject.get(_projectId),
             "Only assigned minter"
         );
+        // EFFECTS
         uint256 tokenId = genArtCoreContract.mint(_to, _projectId, sender);
         return tokenId;
     }

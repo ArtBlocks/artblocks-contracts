@@ -271,6 +271,7 @@ contract MinterDALinV0 is IFilteredMinterV0 {
         payable
         returns (uint256 tokenId)
     {
+        // CHECKS
         require(
             !projectMaxHasBeenInvoked[_projectId],
             "Maximum number of invocations reached"
@@ -303,10 +304,9 @@ contract MinterDALinV0 is IFilteredMinterV0 {
                     projectMintLimit[_projectId],
                 "Reached minting limit"
             );
+            // EFFECTS
             projectMintCounter[msg.sender][_projectId]++;
         }
-
-        _splitFundsETHAuction(_projectId, currentPriceInWei);
 
         tokenId = minterFilter.mint(_to, _projectId, msg.sender);
         // what if projectMaxInvocations[_projectId] is 0 (default value)?
@@ -319,6 +319,10 @@ contract MinterDALinV0 is IFilteredMinterV0 {
         ) {
             projectMaxHasBeenInvoked[_projectId] = true;
         }
+
+        // INTERACTIONS
+        _splitFundsETHAuction(_projectId, currentPriceInWei);
+
         return tokenId;
     }
 
