@@ -7,6 +7,7 @@ import {
   ether,
 } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
+import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 
 /**
@@ -21,7 +22,9 @@ describe("MinterSetPriceERC20V0", async function () {
   const secondTokenId = new BN("3000001");
 
   const pricePerTokenInWei = ethers.utils.parseEther("1");
-  const higherPricePerTokenInWei = ethers.utils.parseEther("1.1");
+  const higherPricePerTokenInWei = pricePerTokenInWei.add(
+    ethers.utils.parseEther("0.1")
+  );
   const projectZero = 3; // V1 core starts at project 3
   const projectOne = 4;
   const projectTwo = 5;
@@ -612,5 +615,56 @@ describe("MinterSetPriceERC20V0", async function () {
       .getPriceInfo(projectZero);
     expect(currencyInfo.currencySymbol).to.be.equal("MOCK");
     expect(currencyInfo.currencyAddress).to.be.equal(this.ERC20Mock.address);
+  });
+
+  describe("reentrancy attack", async function () {
+    it("does not allow reentrant purchaseTo", async function () {
+      // admin allows contract buys
+      await this.minter
+        .connect(this.accounts.snowfro)
+        .toggleContractMintable(projectOne);
+      // attacker deploys reentrancy contract
+      const reentrancyMockFactory = await ethers.getContractFactory(
+        "ReentrancyMock"
+      );
+      const reentrancyMock = await reentrancyMockFactory
+        .connect(this.accounts.snowfro)
+        .deploy();
+      // attacker should see revert when performing reentrancy attack
+      const totalTokensToMint = 2;
+      let numTokensToMint = BigNumber.from(totalTokensToMint.toString());
+      let totalValue = higherPricePerTokenInWei.mul(numTokensToMint);
+      await expectRevert(
+        reentrancyMock
+          .connect(this.accounts.snowfro)
+          .attack(
+            numTokensToMint,
+            this.minter.address,
+            projectOne,
+            higherPricePerTokenInWei,
+            {
+              value: totalValue,
+            }
+          ),
+        // failure message occurs during refund, where attack reentrency occurs
+        "Refund failed"
+      );
+      // attacker should be able to purchase ONE token at a time w/refunds
+      numTokensToMint = BigNumber.from("1");
+      totalValue = higherPricePerTokenInWei.mul(numTokensToMint);
+      for (let i = 0; i < totalTokensToMint; i++) {
+        await reentrancyMock
+          .connect(this.accounts.snowfro)
+          .attack(
+            numTokensToMint,
+            this.minter.address,
+            projectOne,
+            higherPricePerTokenInWei,
+            {
+              value: higherPricePerTokenInWei,
+            }
+          );
+      }
+    });
   });
 });
