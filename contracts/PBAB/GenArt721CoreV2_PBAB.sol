@@ -6,7 +6,7 @@ import "../interfaces/0.8.x/IGenArt721CoreV2_PBAB.sol";
 
 import "@openzeppelin/contracts/utils/Strings.sol";
 
-import "../libs/0.8.x/CustomERC721Metadata.sol";
+import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 
 pragma solidity 0.8.9;
 
@@ -14,7 +14,7 @@ pragma solidity 0.8.9;
  * @title Powered by Art Blocks ERC-721 core contract.
  * @author Art Blocks Inc.
  */
-contract GenArt721CoreV2_PBAB is CustomERC721Metadata, IGenArt721CoreV2_PBAB {
+contract GenArt721CoreV2_PBAB is ERC721Enumerable, IGenArt721CoreV2_PBAB {
     /// randomizer contract
     IRandomizer public randomizerContract;
 
@@ -114,7 +114,7 @@ contract GenArt721CoreV2_PBAB is CustomERC721Metadata, IGenArt721CoreV2_PBAB {
         string memory _tokenName,
         string memory _tokenSymbol,
         address _randomizerContract
-    ) CustomERC721Metadata(_tokenName, _tokenSymbol) {
+    ) ERC721(_tokenName, _tokenSymbol) {
         admin = msg.sender;
         isWhitelisted[msg.sender] = true;
         renderProviderAddress = payable(msg.sender);
