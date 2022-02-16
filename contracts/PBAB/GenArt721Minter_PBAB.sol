@@ -211,8 +211,9 @@ contract GenArt721Minter_PBAB is ReentrancyGuard {
             "Maximum number of invocations reached"
         );
         // if contract filter is active prevent calls from another contract
-        if (contractFilterProject[_projectId])
+        if (contractFilterProject[_projectId]) {
             require(msg.sender == tx.origin, "No Contract Buys");
+        }
 
         // limit mints per address by project
         if (projectMintLimit[_projectId] > 0) {
