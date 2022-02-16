@@ -5,6 +5,8 @@ import "../interfaces/0.8.x/IGenArt721CoreContractV1.sol";
 import "../interfaces/0.8.x/IMinterFilterV0.sol";
 import "../interfaces/0.8.x/IFilteredMinterV0.sol";
 
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+
 pragma solidity 0.8.9;
 
 /**
@@ -12,7 +14,7 @@ pragma solidity 0.8.9;
  * Pricing is achieved using an automated Dutch-auction mechanism.
  * @author Art Blocks Inc.
  */
-contract MinterDALinV0 is IFilteredMinterV0 {
+contract MinterDALinV0 is ReentrancyGuard, IFilteredMinterV0 {
     /// Auction details updated for project `projectId`.
     event SetAuctionDetails(
         uint256 indexed projectId,
@@ -89,7 +91,9 @@ contract MinterDALinV0 is IFilteredMinterV0 {
      * @param _minterFilter Minter filter for which
      * this will a filtered minter.
      */
-    constructor(address _genArt721Address, address _minterFilter) {
+    constructor(address _genArt721Address, address _minterFilter)
+        ReentrancyGuard()
+    {
         genArtCoreContract = IGenArt721CoreContractV1(_genArt721Address);
         minterFilter = IMinterFilterV0(_minterFilter);
         require(
@@ -269,6 +273,7 @@ contract MinterDALinV0 is IFilteredMinterV0 {
     function purchaseTo(address _to, uint256 _projectId)
         public
         payable
+        nonReentrant
         returns (uint256 tokenId)
     {
         // CHECKS
@@ -342,14 +347,16 @@ contract MinterDALinV0 is IFilteredMinterV0 {
         if (msg.value > 0) {
             uint256 refund = msg.value - _currentPriceInWei;
             if (refund > 0) {
-                payable(msg.sender).transfer(refund);
+                (bool success_, ) = msg.sender.call{value: refund}("");
+                require(success_, "Refund failed");
             }
             uint256 foundationAmount = (_currentPriceInWei / 100) *
                 genArtCoreContract.artblocksPercentage();
             if (foundationAmount > 0) {
-                genArtCoreContract.artblocksAddress().transfer(
-                    foundationAmount
-                );
+                (bool success_, ) = genArtCoreContract.artblocksAddress().call{
+                    value: foundationAmount
+                }("");
+                require(success_, "Foundation payment failed");
             }
             uint256 projectFunds = _currentPriceInWei - foundationAmount;
             uint256 additionalPayeeAmount;
@@ -364,16 +371,18 @@ contract MinterDALinV0 is IFilteredMinterV0 {
                         _projectId
                     );
                 if (additionalPayeeAmount > 0) {
-                    genArtCoreContract
+                    (bool success_, ) = genArtCoreContract
                         .projectIdToAdditionalPayee(_projectId)
-                        .transfer(additionalPayeeAmount);
+                        .call{value: additionalPayeeAmount}("");
+                    require(success_, "Additional payment failed");
                 }
             }
             uint256 creatorFunds = projectFunds - additionalPayeeAmount;
             if (creatorFunds > 0) {
-                genArtCoreContract
+                (bool success_, ) = genArtCoreContract
                     .projectIdToArtistAddress(_projectId)
-                    .transfer(creatorFunds);
+                    .call{value: creatorFunds}("");
+                require(success_, "Artist payment failed");
             }
         }
     }
