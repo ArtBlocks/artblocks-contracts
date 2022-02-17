@@ -63,9 +63,19 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
     mapping(uint256 => bool) public projectMaxHasBeenInvoked;
     /// projectId => project's maximum number of invocations
     mapping(uint256 => uint256) public projectMaxInvocations;
-    /// projectId => net price of all refundable purchases
-    mapping(uint256 => uint256) public projectRefundableBasePrice;
-    /// projectId => qty of invocations on this minter
+    /// purchaserAddr => projectId => total amount paid on refundable purchases
+    mapping(address => mapping(uint256 => uint256))
+        public userRefundableTotalPaid;
+    /// purchaserAddr => projectID => total refundable invocations
+    mapping(address => mapping(uint256 => uint256))
+        public userRefundableInvocations;
+    /// purchaserAddr => projectID => refund has been claimed
+    mapping(address => mapping(uint256 => bool)) public userRefundClaimed;
+
+    // Refundable DA mappings
+    /// projectId => net price of each refundable purchase
+    mapping(uint256 => uint256) public projectRefundBasePrice;
+    /// projectId => qty of refundable invocations on this minter
     mapping(uint256 => uint256) public projectRefundableInvocations;
     /// projectId => bool admin locked in refundBasePrice, refunds available
     mapping(uint256 => bool) public projectRefundsAvailable;
@@ -295,29 +305,29 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
      * artist, which is highly unexpected. Must be called prior to approving
      * refunds.
      * @param _projectId Project ID to override min purchase price for
-     * @param _refundableBasePriceOverride Override base price, in Wei. Must be
+     * @param _refundBasePriceOverride Override base price, in Wei. Must be
      * less than recorded min purchase price (i.e. only allow admin to increase
      * user refund amounts)
      */
     function adminOverrideReduceRefundableBasePrice(
         uint256 _projectId,
-        uint256 _refundableBasePriceOverride
+        uint256 _refundBasePriceOverride
     ) external onlyCoreWhitelisted {
         require(!projectRefundsAvailable[_projectId], "Only before refunds");
         require(
-            _refundableBasePriceOverride < projectRefundableBasePrice[_projectId],
+            _refundBasePriceOverride < projectRefundBasePrice[_projectId],
             "Only reduce min purchase price"
         );
-        projectRefundableBasePrice[_projectId] = _refundableBasePriceOverride;
+        projectRefundBasePrice[_projectId] = _refundBasePriceOverride;
     }
 
     /**
-     * @notice Must be called by admin to lock in refundable base price, and
-     * unlock refunds. This, in combination with 
+     * @notice Must be called by admin to lock in refund base price, and
+     * unlock refunds. This, in combination with
      * adminOverrideReduceRefundableBasePrice, divides power between artist and
      * admin to prevent purchasers from being maliciously under-refunded.
      * After this function is invoked for a project, purchase price is locked
-     * at the refundable base price (on this minter).
+     * at the refund base price (on this minter).
      * @param _projectId Project ID to unlock refunds and finalize refund base
      * price.
      */
@@ -325,13 +335,13 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
         external
         onlyCoreWhitelisted
     {
-        // No longer allow changes to projectRefundableBasePrice[_projectId]
+        // No longer allow changes to projectRefundBasePrice[_projectId]
         // No longer allow changes to projectRefundableInvocations[_projectId]
         projectRefundsAvailable[_projectId] = true;
         // emit event with relevant info
         emit ProjectRefundsAvailable(
             _projectId,
-            projectRefundableBasePrice[_projectId],
+            projectRefundBasePrice[_projectId],
             projectRefundableInvocations[_projectId]
         );
     }
@@ -363,7 +373,6 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
         nonReentrant
         returns (uint256 tokenId)
     {
-        // TODO - determine if refunds are available or not?
         // CHECKS
         require(
             !projectMaxHasBeenInvoked[_projectId],
@@ -401,6 +410,19 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
             projectMintCounter[msg.sender][_projectId]++;
         }
 
+        // account refund details if base price not yet locked
+        if (!projectRefundsAvailable[_projectId]) {
+            projectRefundableInvocations[_projectId]++;
+            userRefundableTotalPaid[msg.sender][
+                _projectId
+            ] += currentPriceInWei;
+            userRefundableTotalPaid[msg.sender][_projectId]++;
+            // reduce refund base price if applicable
+            if (currentPriceInWei < projectRefundBasePrice[_projectId]) {
+                projectRefundBasePrice[_projectId] = currentPriceInWei;
+            }
+        }
+
         tokenId = minterFilter.mint(_to, _projectId, msg.sender);
         // what if projectMaxInvocations[_projectId] is 0 (default value)?
         // that is intended, so that by default the minter allows infinite transactions,
@@ -416,6 +438,65 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
         // INTERACTIONS
         _splitFundsETHAuction(_projectId, currentPriceInWei);
         return tokenId;
+    }
+
+    /**
+     * @notice Allows purchasers of project `_projectId` to collect refund
+     * once refunds become available.
+     * @param _projectId Project ID that msg.sender wants to collect refunds
+     * for.
+     */
+    function collectRefund(uint256 _projectId) external {
+        // CHECKS
+        require(projectRefundsAvailable[_projectId], "Refunds not available");
+        require(
+            !userRefundClaimed[msg.sender][_projectId],
+            "Refund already claimed"
+        );
+        uint256 _refundableInvocations = userRefundableInvocations[msg.sender][
+            _projectId
+        ];
+        require(_refundableInvocations > 0, "No user refundable purchases");
+        // EFFECTS
+        userRefundClaimed[msg.sender][_projectId] = true;
+        // INTERACTIONS
+        // calc and send refund amount to msg.sender
+        uint256 _refundAmount = userRefundableTotalPaid[msg.sender][
+            _projectId
+        ] - (_refundableInvocations * projectRefundBasePrice[_projectId]);
+        (bool success_, ) = msg.sender.call{value: _refundAmount}("");
+        require(success_, "Refund failed");
+    }
+
+    /**
+     * @notice TODO - UPDATE! Allows artist of project `_projectId` to collect refundable
+     * purchase sales once refunds become available. Uses current split of
+     * artist and additional payee.
+     * @param _projectId Project ID that artist wants to collect refunds
+     * for.
+     */
+    function _collectRefundSalesArtist(uint256 _projectId) private {
+        // CHECKS
+        require(projectRefundsAvailable[_projectId], "Refunds not available");
+        // TODO - change the following to split to artist, additional, and platform
+        // TODO - we should call this in the finalize auction call :)
+        require(
+            !userRefundClaimed[msg.sender][_projectId],
+            "Refund already claimed"
+        );
+        uint256 _refundableInvocations = userRefundableInvocations[msg.sender][
+            _projectId
+        ];
+        require(_refundableInvocations > 0, "No user refundable purchases");
+        // EFFECTS
+        userRefundClaimed[msg.sender][_projectId] = true;
+        // INTERACTIONS
+        // calc and send refund amount to msg.sender
+        uint256 _refundAmount = userRefundableTotalPaid[msg.sender][
+            _projectId
+        ] - (_refundableInvocations * projectRefundBasePrice[_projectId]);
+        (bool success_, ) = msg.sender.call{value: _refundAmount}("");
+        require(success_, "Refund failed");
     }
 
     /**
@@ -478,7 +559,7 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
      * @notice Gets price of minting a token on project `_projectId` given
      * the project's AuctionParameters and current block timestamp.
      * Reverts if auction has not yet started or auction is unconfigured.
-     * Returns project's refundable base price if refunds are available.
+     * Returns project's refund base price if refunds are available.
      * @param _projectId Project ID to get price of token for.
      * @return current price of token in Wei
      * @dev This method calculates price decay using a linear interpolation
@@ -486,9 +567,9 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
      * decay, `_priceDecayHalfLifeSeconds`.
      */
     function _getPrice(uint256 _projectId) private view returns (uint256) {
-        // if refunds available, only price at locked-in refundable base price
+        // if refunds available, only price at locked-in refund base price
         if (projectRefundsAvailable[_projectId]) {
-            return projectRefundableBasePrice[_projectId];
+            return projectRefundBasePrice[_projectId];
         }
         // typical price calculation
         AuctionParameters memory auctionParams = projectAuctionParameters[
