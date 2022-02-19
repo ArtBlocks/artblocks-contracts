@@ -24,6 +24,9 @@ contract MinterDALinV0 is ReentrancyGuard, IFilteredMinterV0 {
         uint256 _basePrice
     );
 
+    /// Auction details cleared for project `projectId`.
+    event ResetAuctionDetails(uint256 indexed projectId);
+
     /// Minimum allowed auction length updated
     event MinimumAuctionLengthSecondsUpdated(
         uint256 _minimumAuctionLengthSeconds
@@ -246,7 +249,7 @@ contract MinterDALinV0 is ReentrancyGuard, IFilteredMinterV0 {
         onlyCoreWhitelisted
     {
         delete projectAuctionParameters[_projectId];
-        emit SetAuctionDetails(_projectId, 0, 0, 0, 0);
+        emit ResetAuctionDetails(_projectId);
     }
 
     /**

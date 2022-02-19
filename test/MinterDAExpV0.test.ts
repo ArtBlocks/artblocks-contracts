@@ -370,8 +370,8 @@ describe("MinterDAExpV0", async function () {
           .connect(this.accounts.deployer)
           .resetAuctionDetails(projectOne)
       )
-        .to.emit(this.minter, "SetAuctionDetails")
-        .withArgs(projectOne, 0, 0, 0, 0);
+        .to.emit(this.minter, "ResetAuctionDetails")
+        .withArgs(projectOne);
     });
 
     it("disallows artist to reset auction details", async function () {
