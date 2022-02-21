@@ -313,8 +313,8 @@ contract GenArt721Minter_PBAB is ReentrancyGuard {
                 (bool success_, ) = msg.sender.call{value: refund}("");
                 require(success_, "Refund failed");
             }
-            uint256 renderProviderAmount = (pricePerTokenInWei / 100) *
-                genArtCoreContract.renderProviderPercentage();
+            uint256 renderProviderAmount = (pricePerTokenInWei *
+                genArtCoreContract.renderProviderPercentage()) / 100;
             if (renderProviderAmount > 0) {
                 (bool success_, ) = genArtCoreContract
                     .renderProviderAddress()
@@ -324,7 +324,7 @@ contract GenArt721Minter_PBAB is ReentrancyGuard {
 
             uint256 remainingFunds = pricePerTokenInWei - renderProviderAmount;
 
-            uint256 ownerFunds = (remainingFunds / 100) * ownerPercentage;
+            uint256 ownerFunds = (remainingFunds * ownerPercentage) / 100;
             if (ownerFunds > 0) {
                 (bool success_, ) = ownerAddress.call{value: ownerFunds}("");
                 require(success_, "Owner payment failed");
@@ -340,10 +340,11 @@ contract GenArt721Minter_PBAB is ReentrancyGuard {
                 ) > 0
             ) {
                 additionalPayeeAmount =
-                    (projectFunds / 100) *
-                    genArtCoreContract.projectIdToAdditionalPayeePercentage(
-                        _projectId
-                    );
+                    (projectFunds *
+                        genArtCoreContract.projectIdToAdditionalPayeePercentage(
+                            _projectId
+                        )) /
+                    100;
                 if (additionalPayeeAmount > 0) {
                     (bool success_, ) = genArtCoreContract
                         .projectIdToAdditionalPayee(_projectId)
@@ -369,8 +370,8 @@ contract GenArt721Minter_PBAB is ReentrancyGuard {
     function _splitFundsERC20(uint256 _projectId) internal {
         uint256 pricePerTokenInWei = genArtCoreContract
             .projectIdToPricePerTokenInWei(_projectId);
-        uint256 renderProviderAmount = (pricePerTokenInWei / 100) *
-            genArtCoreContract.renderProviderPercentage();
+        uint256 renderProviderAmount = (pricePerTokenInWei *
+            genArtCoreContract.renderProviderPercentage()) / 100;
         if (renderProviderAmount > 0) {
             IERC20(genArtCoreContract.projectIdToCurrencyAddress(_projectId))
                 .transferFrom(
@@ -381,7 +382,7 @@ contract GenArt721Minter_PBAB is ReentrancyGuard {
         }
         uint256 remainingFunds = pricePerTokenInWei - renderProviderAmount;
 
-        uint256 ownerFunds = (remainingFunds / 100) * ownerPercentage;
+        uint256 ownerFunds = (remainingFunds * ownerPercentage) / 100;
         if (ownerFunds > 0) {
             IERC20(genArtCoreContract.projectIdToCurrencyAddress(_projectId))
                 .transferFrom(msg.sender, ownerAddress, ownerFunds);
@@ -397,10 +398,11 @@ contract GenArt721Minter_PBAB is ReentrancyGuard {
             ) > 0
         ) {
             additionalPayeeAmount =
-                (projectFunds / 100) *
-                genArtCoreContract.projectIdToAdditionalPayeePercentage(
-                    _projectId
-                );
+                (projectFunds *
+                    genArtCoreContract.projectIdToAdditionalPayeePercentage(
+                        _projectId
+                    )) /
+                100;
             if (additionalPayeeAmount > 0) {
                 IERC20(
                     genArtCoreContract.projectIdToCurrencyAddress(_projectId)
