@@ -79,6 +79,8 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
     mapping(uint256 => uint256) public projectRefundableInvocations;
     /// projectId => bool admin locked in refundBasePrice, refunds available
     mapping(uint256 => bool) public projectRefundsAvailable;
+    /// projectId => bool project sales revenues claimed
+    mapping(uint256 => bool) public projectRevenuesClaimed;
 
     /// Minimum price decay half life: price must decay with a half life of at
     /// least this amount (must cut in half at least every N seconds).
@@ -335,8 +337,8 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
         external
         onlyCoreWhitelisted
     {
-        // No longer allow changes to projectRefundBasePrice[_projectId]
-        // No longer allow changes to projectRefundableInvocations[_projectId]
+        // No longer allows changes to projectRefundBasePrice[_projectId]
+        // No longer allows changes to projectRefundableInvocations[_projectId]
         projectRefundsAvailable[_projectId] = true;
         // emit event with relevant info
         emit ProjectRefundsAvailable(
@@ -446,7 +448,7 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
      * @param _projectId Project ID that msg.sender wants to collect refunds
      * for.
      */
-    function collectRefund(uint256 _projectId) external {
+    function collectRefund(uint256 _projectId) external nonReentrant {
         // CHECKS
         require(projectRefundsAvailable[_projectId], "Refunds not available");
         require(
@@ -469,42 +471,87 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
     }
 
     /**
-     * @notice TODO - UPDATE! Allows artist of project `_projectId` to collect refundable
-     * purchase sales once refunds become available. Uses current split of
-     * artist and additional payee.
-     * @param _projectId Project ID that artist wants to collect refunds
-     * for.
+     * @notice Splits and sends uncollected sales revenues to artist,
+     * additional payee, and foundation based on current splits defined in core
+     * contract.
+     * @param _projectId Project ID to be collected.
+     * @dev Artist and foundation revenues sent in same tx because each group's
+     * payment amount is a function of AB percentage and additional payee
+     * percentage.
      */
-    function _collectRefundSalesArtist(uint256 _projectId) private {
+    function collectSalesRevenues(uint256 _projectId)
+        external
+        nonReentrant
+        onlyCoreWhitelistedOrArtist(_projectId)
+    {
         // CHECKS
         require(projectRefundsAvailable[_projectId], "Refunds not available");
-        // TODO - change the following to split to artist, additional, and platform
-        // TODO - we should call this in the finalize auction call :)
         require(
-            !userRefundClaimed[msg.sender][_projectId],
-            "Refund already claimed"
+            projectRevenuesClaimed[_projectId] == false,
+            "Revenues already claimed"
         );
-        uint256 _refundableInvocations = userRefundableInvocations[msg.sender][
-            _projectId
-        ];
-        require(_refundableInvocations > 0, "No user refundable purchases");
         // EFFECTS
-        userRefundClaimed[msg.sender][_projectId] = true;
+        projectRevenuesClaimed[_projectId] = true;
         // INTERACTIONS
-        // calc and send refund amount to msg.sender
-        uint256 _refundAmount = userRefundableTotalPaid[msg.sender][
-            _projectId
-        ] - (_refundableInvocations * projectRefundBasePrice[_projectId]);
-        (bool success_, ) = msg.sender.call{value: _refundAmount}("");
-        require(success_, "Refund failed");
+        // split revenues between appropriate parties
+        _splitSalesRevenue(
+            _projectId,
+            projectRefundableInvocations[_projectId] *
+                projectRefundBasePrice[_projectId]
+        );
+    }
+
+    /**
+     * @notice Splits ETH sales revenue for project `_projectId` between,
+     * additional payee, and admin.
+     * @param _projectId Project ID for which funds shall be split.
+     * @param _amountInWei Amount of ETH to be split between parties.
+     * @dev very similar to _splitFundsETHAuction, but no refund to purchaser
+     * has to be considered.
+     */
+    function _splitSalesRevenue(uint256 _projectId, uint256 _amountInWei)
+        internal
+    {
+        uint256 foundationAmount = (_amountInWei / 100) *
+            genArtCoreContract.artblocksPercentage();
+        if (foundationAmount > 0) {
+            (bool success_, ) = genArtCoreContract.artblocksAddress().call{
+                value: foundationAmount
+            }("");
+            require(success_, "Foundation payment failed");
+        }
+        uint256 projectFunds = _amountInWei - foundationAmount;
+        uint256 additionalPayeeAmount;
+        if (
+            genArtCoreContract.projectIdToAdditionalPayeePercentage(
+                _projectId
+            ) > 0
+        ) {
+            additionalPayeeAmount =
+                (projectFunds / 100) *
+                genArtCoreContract.projectIdToAdditionalPayeePercentage(
+                    _projectId
+                );
+            if (additionalPayeeAmount > 0) {
+                (bool success_, ) = genArtCoreContract
+                    .projectIdToAdditionalPayee(_projectId)
+                    .call{value: additionalPayeeAmount}("");
+                require(success_, "Additional payment failed");
+            }
+        }
+        uint256 creatorFunds = projectFunds - additionalPayeeAmount;
+        if (creatorFunds > 0) {
+            (bool success_, ) = genArtCoreContract
+                .projectIdToArtistAddress(_projectId)
+                .call{value: creatorFunds}("");
+            require(success_, "Artist payment failed");
+        }
     }
 
     /**
      * @dev splits ETH funds between sender (if refund), foundation,
      * artist, and artist's additional payee for a token purchased on
      * project `_projectId`.
-     * @dev utilizes transfer() to send ETH, which may fail if access
-     * lists are not properly populated when purchasing tokens.
      * @param _projectId Project ID for which funds shall be split.
      * @param _currentPriceInWei Current price of token, in Wei.
      */
