@@ -558,7 +558,10 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
     function collectRefundForProject(uint256 _projectId) public nonReentrant {
         // CHECKS
         // project must have refunds available
-        require(projectRefundsAvailable[_projectId], "Proj refunds not yet available");
+        require(
+            projectRefundsAvailable[_projectId],
+            "Proj refunds not yet available"
+        );
         // EFFECTS
         // remove project from user's set of projects with uncollected refunds
         // @dev `remove` returns false and reverts if _projectId not in set;
