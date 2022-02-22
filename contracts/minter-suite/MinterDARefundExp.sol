@@ -41,6 +41,26 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
         uint256 _maximumPriceDecayHalfLifeSeconds
     );
 
+    /// Admin override reduced project refund base price
+    event AdminReducedBasePrice(
+        uint256 indexed _projectId,
+        uint256 _refundBasePrice
+    );
+
+    /// Refundable purchase completed by user
+    event RefundablePurchase(
+        address indexed _purchaserAddress,
+        uint256 indexed _projectId,
+        uint256 _pricePaid
+    );
+
+    /// Refund for project collected by user
+    event RefundCollected(
+        address indexed _refundedAddress,
+        uint256 indexed _projectId,
+        uint256 _refundAmount
+    );
+
     // add Enumerable Set methods
     using EnumerableSet for EnumerableSet.UintSet;
 
@@ -323,9 +343,10 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
         require(!projectRefundsAvailable[_projectId], "Only before refunds");
         require(
             _refundBasePriceOverride < projectRefundBasePrice[_projectId],
-            "Only reduce min purchase price"
+            "Only reduce refund base price"
         );
         projectRefundBasePrice[_projectId] = _refundBasePriceOverride;
+        emit AdminReducedBasePrice(_projectId, _refundBasePriceOverride);
     }
 
     /**
@@ -496,6 +517,8 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
             userRefundableTotalPaid[msg.sender][
                 _projectId
             ] += currentPriceInWei;
+            // event for indexing
+            emit RefundablePurchase(msg.sender, _projectId, currentPriceInWei);
             // reduce project's refund base price if applicable
             if (currentPriceInWei < projectRefundBasePrice[_projectId]) {
                 projectRefundBasePrice[_projectId] = currentPriceInWei;
@@ -542,14 +565,15 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
             userToProjectsWithUncollectedRefunds[msg.sender].remove(_projectId),
             "No project refunds available"
         );
-        // User uncollected refunds, guarantees userRefundableInvocations > 0
-        // INTERACTIONS
-        // calc and send project refund amount to msg.sender
+        // calc refund amount and emit event
         uint256 _refundAmount = userRefundableTotalPaid[msg.sender][
             _projectId
         ] -
             (userRefundableInvocations[msg.sender][_projectId] *
                 projectRefundBasePrice[_projectId]);
+        emit RefundCollected(msg.sender, _projectId, _refundAmount);
+        // INTERACTIONS
+        // send refund amount to msg.sender
         (bool success_, ) = msg.sender.call{value: _refundAmount}("");
         require(success_, "Refund send failed");
     }
@@ -582,9 +606,9 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
         uint256[] memory projectIds = userToProjectsWithUncollectedRefunds[
             msg.sender
         ].values();
-        uint256 arrayLen = projectIds.length;
+        uint256 arrayLength = projectIds.length;
         bool didCollect = false;
-        for (uint256 i = 0; i < arrayLen; ++i) {
+        for (uint256 i = 0; i < arrayLength; ++i) {
             if (projectRefundsAvailable[projectIds[i]]) {
                 didCollect = true;
                 collectRefundForProject(projectIds[i]);
