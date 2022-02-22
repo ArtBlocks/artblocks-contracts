@@ -529,7 +529,7 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
      * @param _projectId Project ID that msg.sender wants to collect refunds
      * for.
      */
-    function collectRefundForProject(uint256 _projectId) external nonReentrant {
+    function collectRefundForProject(uint256 _projectId) public nonReentrant {
         // CHECKS
         // project must have refunds available
         require(projectRefundsAvailable[_projectId], "Refunds not available");
@@ -552,6 +552,43 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
                 projectRefundBasePrice[_projectId]);
         (bool success_, ) = msg.sender.call{value: _refundAmount}("");
         require(success_, "Refund send failed");
+    }
+
+    /**
+     * @notice Allows a user to collect refunds for multiple projects. 
+     * Note that ALL projects must have uncollected refunds available to avoid
+     * tx reverting. Also note that block gas limits may limit the number of 
+     * feasible projects to collect in a single transaction.
+     * @param _projectIds Array of project IDs that msg.sender wants to collect
+     * refunds for.
+     */
+    function collectRefundForProjects(uint256[] calldata _projectIds) external {
+        uint256 arrayLen = _projectIds.length;
+        for (uint256 i = 0; i < arrayLen; ++i) {
+            collectRefundForProject(_projectIds[i]);
+        }
+    }
+
+    /**
+     * @notice Allows a user to collect refunds for all projects with available
+     * refunds projects. Less gas efficient that calling
+     * `collectRefundForProjects` with valid inputs. User must have uncollected
+     * refunds on one or more projects with refunds currently available, or tx
+     * will revert. Note that in rare cases, block gas limits may make this
+     * uncallable if user has many projects to collect - please use
+     * collectRefundForProjects in that case.
+     */
+    function collectAllAvailableRefunds() external {
+        uint256[] memory projectIds = userToProjectsWithUncollectedRefunds[msg.sender].values();
+        uint256 arrayLen = projectIds.length;
+        bool didCollect = false;
+        for (uint256 i = 0; i < arrayLen; ++i) {
+            if (projectRefundsAvailable[projectIds[i]]) {
+                didCollect = true;
+                collectRefundForProject(projectIds[i]);
+            }
+        }
+        require(didCollect, "No refunds available");
     }
 
     /**
