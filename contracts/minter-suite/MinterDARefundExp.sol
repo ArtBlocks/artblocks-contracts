@@ -6,6 +6,7 @@ import "../interfaces/0.8.x/IMinterFilterV0.sol";
 import "../interfaces/0.8.x/IFilteredMinterV0.sol";
 
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 pragma solidity 0.8.9;
 
@@ -40,6 +41,9 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
         uint256 _maximumPriceDecayHalfLifeSeconds
     );
 
+    // add Enumerable Set methods
+    using EnumerableSet for EnumerableSet.UintSet;
+
     /// This contract handles cores with interface IV1
     IGenArt721CoreContractV1 public immutable genArtCoreContract;
 
@@ -69,8 +73,6 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
     /// purchaserAddr => projectID => total refundable invocations
     mapping(address => mapping(uint256 => uint256))
         public userRefundableInvocations;
-    /// purchaserAddr => projectID => refund has been claimed
-    mapping(address => mapping(uint256 => bool)) public userRefundClaimed;
 
     // Refundable DA mappings
     /// projectId => net price of each refundable purchase
@@ -81,6 +83,9 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
     mapping(uint256 => bool) public projectRefundsAvailable;
     /// projectId => bool project sales revenues claimed
     mapping(uint256 => bool) public projectRevenuesClaimed;
+    /// refundable purchases on (may or may not have refunds available)
+    mapping(address => EnumerableSet.UintSet)
+        private userToProjectsWithUncollectedRefunds;
 
     /// Minimum price decay half life: price must decay with a half life of at
     /// least this amount (must cut in half at least every N seconds).
@@ -481,12 +486,17 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
 
         // account refund details if base price not yet locked
         if (!projectRefundsAvailable[_projectId]) {
+            // increment project's qty of refundable invocations
             projectRefundableInvocations[_projectId]++;
+            // increment user's qty of refundable invocations on this project
             userRefundableInvocations[msg.sender][_projectId]++;
+            // add project to user's set of projects w/refundable invocations
+            userToProjectsWithUncollectedRefunds[msg.sender].add(_projectId);
+            // add current price to user's total refundable paid for project
             userRefundableTotalPaid[msg.sender][
                 _projectId
             ] += currentPriceInWei;
-            // reduce refund base price if applicable
+            // reduce project's refund base price if applicable
             if (currentPriceInWei < projectRefundBasePrice[_projectId]) {
                 projectRefundBasePrice[_projectId] = currentPriceInWei;
             }
@@ -502,7 +512,7 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
             tokenId % ONE_MILLION == projectMaxInvocations[_projectId] - 1
         ) {
             projectMaxHasBeenInvoked[_projectId] = true;
-            // lock in refundable base price to enable refunds
+            // sold out: lock in refundable base price to enable refunds
             if (!projectRefundsAvailable[_projectId]) {
                 _lockRefundableBasePrice(_projectId);
             }
@@ -521,24 +531,27 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
      */
     function collectRefundForProject(uint256 _projectId) external nonReentrant {
         // CHECKS
+        // project must have refunds available
         require(projectRefundsAvailable[_projectId], "Refunds not available");
-        require(
-            !userRefundClaimed[msg.sender][_projectId],
-            "Refund already claimed"
-        );
-        uint256 _refundableInvocations = userRefundableInvocations[msg.sender][
-            _projectId
-        ];
-        require(_refundableInvocations > 0, "No user refundable purchases");
         // EFFECTS
-        userRefundClaimed[msg.sender][_projectId] = true;
+        // remove project from user's set of projects with uncollected refunds
+        // @dev `remove` returns false and reverts if _projectId not in set;
+        // enforces requirement that project must be in set of user's projects
+        // with uncollected refunds.
+        require(
+            userToProjectsWithUncollectedRefunds[msg.sender].remove(_projectId),
+            "No project refunds available"
+        );
+        // User uncollected refunds, guarantees userRefundableInvocations > 0
         // INTERACTIONS
-        // calc and send refund amount to msg.sender
+        // calc and send project refund amount to msg.sender
         uint256 _refundAmount = userRefundableTotalPaid[msg.sender][
             _projectId
-        ] - (_refundableInvocations * projectRefundBasePrice[_projectId]);
+        ] -
+            (userRefundableInvocations[msg.sender][_projectId] *
+                projectRefundBasePrice[_projectId]);
         (bool success_, ) = msg.sender.call{value: _refundAmount}("");
-        require(success_, "Refund failed");
+        require(success_, "Refund send failed");
     }
 
     /**
