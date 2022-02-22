@@ -635,8 +635,8 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
     function _splitSalesRevenue(uint256 _projectId, uint256 _amountInWei)
         internal
     {
-        uint256 foundationAmount = (_amountInWei / 100) *
-            genArtCoreContract.artblocksPercentage();
+        uint256 foundationAmount = (_amountInWei *
+            genArtCoreContract.artblocksPercentage()) / 100;
         if (foundationAmount > 0) {
             (bool success_, ) = genArtCoreContract.artblocksAddress().call{
                 value: foundationAmount
@@ -651,10 +651,11 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
             ) > 0
         ) {
             additionalPayeeAmount =
-                (projectFunds / 100) *
-                genArtCoreContract.projectIdToAdditionalPayeePercentage(
-                    _projectId
-                );
+                (projectFunds *
+                    genArtCoreContract.projectIdToAdditionalPayeePercentage(
+                        _projectId
+                    )) /
+                100;
             if (additionalPayeeAmount > 0) {
                 (bool success_, ) = genArtCoreContract
                     .projectIdToAdditionalPayee(_projectId)
@@ -688,8 +689,8 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
                 (bool success_, ) = msg.sender.call{value: refund}("");
                 require(success_, "Refund failed");
             }
-            uint256 foundationAmount = (_currentPriceInWei / 100) *
-                genArtCoreContract.artblocksPercentage();
+            uint256 foundationAmount = (_currentPriceInWei *
+                genArtCoreContract.artblocksPercentage()) / 100;
             if (foundationAmount > 0) {
                 (bool success_, ) = genArtCoreContract.artblocksAddress().call{
                     value: foundationAmount
@@ -704,10 +705,11 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
                 ) > 0
             ) {
                 additionalPayeeAmount =
-                    (projectFunds / 100) *
-                    genArtCoreContract.projectIdToAdditionalPayeePercentage(
-                        _projectId
-                    );
+                    (projectFunds *
+                        genArtCoreContract.projectIdToAdditionalPayeePercentage(
+                            _projectId
+                        )) /
+                    100;
                 if (additionalPayeeAmount > 0) {
                     (bool success_, ) = genArtCoreContract
                         .projectIdToAdditionalPayee(_projectId)
