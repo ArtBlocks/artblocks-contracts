@@ -285,7 +285,7 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
     }
 
     /**
-     * @notice Resets auction details for project `_projectId`, zero-ing out all
+     * @notice Resets auction details for project `_projectId`, zero-ing out
      * relevant auction fields. Not intended to be used in normal auction
      * operation, but rather only in case of the need to halt an auction.
      * @param _projectId Project ID to set auction details for.
@@ -301,11 +301,11 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
 
     /**
      * @notice Allows admin to manually reduce the minimum
-     * purchase price for project `_projectId` to remove artist's ability
-     * to unexpectedly cut auction short at a price higher than resting price,
-     * affecting fair refund amounts. Only would be used in case of malicious
-     * artist, which is highly unexpected. Must be called prior to approving
-     * refunds.
+     * purchase price for project `_projectId` to override a malicious artist
+     * who changed auction terms in a way that resulted in artificially high
+     * refundable base price. Only used in case of malicious artist,
+     * which is highly unexpected. Must be called prior to locking
+     * refundable base price.
      * @param _projectId Project ID to override min purchase price for
      * @param _refundBasePriceOverride Override base price, in Wei. Must be
      * less than recorded min purchase price (i.e. only allow admin to increase
@@ -324,12 +324,10 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
     }
 
     /**
-     * @notice Must be called by admin to lock in refund base price, and
-     * unlock refunds. This, in combination with
-     * adminOverrideReduceRefundableBasePrice, divides power between artist and
-     * admin to prevent purchasers from being maliciously under-refunded.
-     * After this function is invoked for a project, purchase price is locked
-     * at the refund base price (on this minter).
+     * @notice Can be called by admin to lock in refund base price, and
+     * unlock refunds. Requires project to have a configured auction that has
+     * reached its base price. Used to enable refunds when a valid auction has
+     * reached base price, but did not sell out.
      * @param _projectId Project ID to unlock refunds and finalize refund base
      * price.
      */
@@ -337,6 +335,35 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
         external
         onlyCoreWhitelisted
     {
+        // only lock previously unlocked projects
+        require(
+            !projectRefundsAvailable[_projectId],
+            "Only projects with refunds unlocked"
+        );
+        // only lock projects with a configured auction
+        // (prevent accidental calls)
+        require(
+            projectAuctionParameters[_projectId].priceDecayHalfLifeSeconds > 0,
+            "Only configured auctions"
+        );
+        // only lock auctions that have reached their base price
+        // (prevent accidental calls)
+        require(
+            _getPrice(_projectId) ==
+                projectAuctionParameters[_projectId].basePrice,
+            "Only completed auctions"
+        );
+        // lock the project's refundable base price
+        _lockRefundableBasePrice(_projectId);
+    }
+
+    /**
+     * @notice Unlocks refunds and locks refundable base price (on this minter)
+     * for project `_projectId`.
+     * @param _projectId Project ID to unlock refunds and finalize refund base
+     * price.
+     */
+    function _lockRefundableBasePrice(uint256 _projectId) private {
         // No longer allows changes to projectRefundBasePrice[_projectId]
         // No longer allows changes to projectRefundableInvocations[_projectId]
         projectRefundsAvailable[_projectId] = true;
@@ -415,10 +442,10 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
         // account refund details if base price not yet locked
         if (!projectRefundsAvailable[_projectId]) {
             projectRefundableInvocations[_projectId]++;
+            userRefundableInvocations[msg.sender][_projectId]++;
             userRefundableTotalPaid[msg.sender][
                 _projectId
             ] += currentPriceInWei;
-            userRefundableTotalPaid[msg.sender][_projectId]++;
             // reduce refund base price if applicable
             if (currentPriceInWei < projectRefundBasePrice[_projectId]) {
                 projectRefundBasePrice[_projectId] = currentPriceInWei;
@@ -435,6 +462,10 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
             tokenId % ONE_MILLION == projectMaxInvocations[_projectId] - 1
         ) {
             projectMaxHasBeenInvoked[_projectId] = true;
+            // lock in refundable base price to enable refunds
+            if (!projectRefundsAvailable[_projectId]) {
+                _lockRefundableBasePrice(_projectId);
+            }
         }
 
         // INTERACTIONS
@@ -606,7 +637,6 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
      * @notice Gets price of minting a token on project `_projectId` given
      * the project's AuctionParameters and current block timestamp.
      * Reverts if auction has not yet started or auction is unconfigured.
-     * Returns project's refund base price if refunds are available.
      * @param _projectId Project ID to get price of token for.
      * @return current price of token in Wei
      * @dev This method calculates price decay using a linear interpolation
@@ -614,10 +644,6 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
      * decay, `_priceDecayHalfLifeSeconds`.
      */
     function _getPrice(uint256 _projectId) private view returns (uint256) {
-        // if refunds available, only price at locked-in refund base price
-        if (projectRefundsAvailable[_projectId]) {
-            return projectRefundBasePrice[_projectId];
-        }
         // typical price calculation
         AuctionParameters memory auctionParams = projectAuctionParameters[
             _projectId
@@ -690,6 +716,8 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
             // it would otherwise revert
             tokenPriceInWei = 0;
         } else {
+            // If project sells out prior to base price being reached,
+            // this returns what price *would* be at this block's timestamp
             tokenPriceInWei = _getPrice(_projectId);
         }
         currencySymbol = "ETH";
