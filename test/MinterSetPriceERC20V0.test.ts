@@ -41,7 +41,9 @@ describe("MinterSetPriceERC20V0", async function () {
       additional: additional,
       snowfro: snowfro,
     };
-    const randomizerFactory = await ethers.getContractFactory("Randomizer");
+    const randomizerFactory = await ethers.getContractFactory(
+      "BasicRandomizer"
+    );
     this.randomizer = await randomizerFactory.deploy();
 
     const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV1");

@@ -44,7 +44,9 @@ describe("MinterDAExpV0", async function () {
       deployer: deployer,
     };
 
-    const randomizerFactory = await ethers.getContractFactory("Randomizer");
+    const randomizerFactory = await ethers.getContractFactory(
+      "BasicRandomizer"
+    );
     this.randomizer = await randomizerFactory.deploy();
 
     const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV1");

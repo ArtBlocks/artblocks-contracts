@@ -2,7 +2,7 @@
 // Created By: Art Blocks Inc.
 
 import { ethers } from "hardhat";
-import { PBABRandomizer__factory } from "../contracts/factories/PBABRandomizer__factory";
+import { BasicRandomizer__factory } from "../contracts/factories/BasicRandomizer__factory";
 
 async function main() {
   const [deployer] = await ethers.getSigners();
@@ -12,7 +12,7 @@ async function main() {
   //////////////////////////////////////////////////////////////////////////////
 
   // Deploy Randomizer contract.
-  const randomizerFactory = new PBABRandomizer__factory(deployer);
+  const randomizerFactory = new BasicRandomizer__factory(deployer);
   const randomizer = await randomizerFactory.deploy();
 
   await randomizer.deployed();

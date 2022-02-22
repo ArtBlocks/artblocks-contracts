@@ -34,7 +34,9 @@ describe("GenArt721CoreV3", async function () {
       additional: additional,
       snowfro: snowfro,
     };
-    const randomizerFactory = await ethers.getContractFactory("Randomizer");
+    const randomizerFactory = await ethers.getContractFactory(
+      "BasicRandomizer"
+    );
     this.randomizer = await randomizerFactory.deploy();
     const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV3");
     this.token = await artblocksFactory
