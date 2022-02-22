@@ -349,8 +349,8 @@ contract MinterSetPriceERC20V0 is ReentrancyGuard, IFilteredMinterV0 {
                 (bool success_, ) = msg.sender.call{value: refund}("");
                 require(success_, "Refund failed");
             }
-            uint256 foundationAmount = (pricePerTokenInWei / 100) *
-                genArtCoreContract.artblocksPercentage();
+            uint256 foundationAmount = (pricePerTokenInWei *
+                genArtCoreContract.artblocksPercentage()) / 100;
             if (foundationAmount > 0) {
                 (bool success_, ) = genArtCoreContract.artblocksAddress().call{
                     value: foundationAmount
@@ -365,10 +365,11 @@ contract MinterSetPriceERC20V0 is ReentrancyGuard, IFilteredMinterV0 {
                 ) > 0
             ) {
                 additionalPayeeAmount =
-                    (projectFunds / 100) *
-                    genArtCoreContract.projectIdToAdditionalPayeePercentage(
-                        _projectId
-                    );
+                    (projectFunds *
+                        genArtCoreContract.projectIdToAdditionalPayeePercentage(
+                            _projectId
+                        )) /
+                    100;
                 if (additionalPayeeAmount > 0) {
                     (bool success_, ) = genArtCoreContract
                         .projectIdToAdditionalPayee(_projectId)
@@ -392,8 +393,8 @@ contract MinterSetPriceERC20V0 is ReentrancyGuard, IFilteredMinterV0 {
      */
     function _splitFundsERC20(uint256 _projectId) internal {
         uint256 pricePerTokenInWei = projectIdToPricePerTokenInWei[_projectId];
-        uint256 foundationAmount = (pricePerTokenInWei / 100) *
-            genArtCoreContract.artblocksPercentage();
+        uint256 foundationAmount = (pricePerTokenInWei *
+            genArtCoreContract.artblocksPercentage()) / 100;
         if (foundationAmount > 0) {
             IERC20(projectIdToCurrencyAddress[_projectId]).transferFrom(
                 msg.sender,
@@ -409,10 +410,11 @@ contract MinterSetPriceERC20V0 is ReentrancyGuard, IFilteredMinterV0 {
             ) > 0
         ) {
             additionalPayeeAmount =
-                (projectFunds / 100) *
-                genArtCoreContract.projectIdToAdditionalPayeePercentage(
-                    _projectId
-                );
+                (projectFunds *
+                    genArtCoreContract.projectIdToAdditionalPayeePercentage(
+                        _projectId
+                    )) /
+                100;
             if (additionalPayeeAmount > 0) {
                 IERC20(projectIdToCurrencyAddress[_projectId]).transferFrom(
                     msg.sender,
