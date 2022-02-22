@@ -25,6 +25,9 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
         uint256 _basePrice
     );
 
+    /// Auction details cleared for project `projectId`.
+    event ResetAuctionDetails(uint256 indexed projectId);
+
     /// Auction refunds now available
     event ProjectRefundsAvailable(
         uint256 indexed projectId,
@@ -321,7 +324,7 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
         onlyCoreWhitelisted
     {
         delete projectAuctionParameters[_projectId];
-        emit SetAuctionDetails(_projectId, 0, 0, 0, 0);
+        emit ResetAuctionDetails(_projectId);
     }
 
     /**
@@ -555,7 +558,7 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
     function collectRefundForProject(uint256 _projectId) public nonReentrant {
         // CHECKS
         // project must have refunds available
-        require(projectRefundsAvailable[_projectId], "Refunds not available");
+        require(projectRefundsAvailable[_projectId], "Proj refunds not yet available");
         // EFFECTS
         // remove project from user's set of projects with uncollected refunds
         // @dev `remove` returns false and reverts if _projectId not in set;
@@ -563,7 +566,7 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
         // with uncollected refunds.
         require(
             userToProjectsWithUncollectedRefunds[msg.sender].remove(_projectId),
-            "No project refunds available"
+            "No user refunds for project"
         );
         // calc refund amount and emit event
         uint256 _refundAmount = userRefundableTotalPaid[msg.sender][
@@ -634,7 +637,7 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
         // CHECKS
         require(projectRefundsAvailable[_projectId], "Refunds not available");
         require(
-            projectRevenuesClaimed[_projectId] == false,
+            !projectRevenuesClaimed[_projectId],
             "Revenues already claimed"
         );
         // EFFECTS
