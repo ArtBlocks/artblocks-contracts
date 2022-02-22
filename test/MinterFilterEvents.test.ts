@@ -15,7 +15,9 @@ describe("MinterFilterEvents", async function () {
     this.accounts = {
       deployer: deployer,
     };
-    const randomizerFactory = await ethers.getContractFactory("Randomizer");
+    const randomizerFactory = await ethers.getContractFactory(
+      "BasicRandomizer"
+    );
     this.randomizer = await randomizerFactory.deploy();
     const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV1");
     this.genArt721Core = await artblocksFactory

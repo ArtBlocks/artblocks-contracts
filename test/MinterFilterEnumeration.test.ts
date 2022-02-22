@@ -20,7 +20,9 @@ describe("MinterFilterEnumeration", async function () {
       artist: artist,
       misc: misc,
     };
-    const randomizerFactory = await ethers.getContractFactory("Randomizer");
+    const randomizerFactory = await ethers.getContractFactory(
+      "BasicRandomizer"
+    );
     this.randomizer = await randomizerFactory.deploy();
     const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV1");
     this.genArt721Core = await artblocksFactory

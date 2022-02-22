@@ -259,8 +259,8 @@ contract MinterSetPriceV0 is ReentrancyGuard, IFilteredMinterV0 {
                 (bool success_, ) = msg.sender.call{value: refund}("");
                 require(success_, "Refund failed");
             }
-            uint256 foundationAmount = (pricePerTokenInWei / 100) *
-                genArtCoreContract.artblocksPercentage();
+            uint256 foundationAmount = (pricePerTokenInWei *
+                genArtCoreContract.artblocksPercentage()) / 100;
             if (foundationAmount > 0) {
                 (bool success_, ) = genArtCoreContract.artblocksAddress().call{
                     value: foundationAmount
@@ -275,10 +275,11 @@ contract MinterSetPriceV0 is ReentrancyGuard, IFilteredMinterV0 {
                 ) > 0
             ) {
                 additionalPayeeAmount =
-                    (projectFunds / 100) *
-                    genArtCoreContract.projectIdToAdditionalPayeePercentage(
-                        _projectId
-                    );
+                    (projectFunds *
+                        genArtCoreContract.projectIdToAdditionalPayeePercentage(
+                            _projectId
+                        )) /
+                    100;
                 if (additionalPayeeAmount > 0) {
                     (bool success_, ) = genArtCoreContract
                         .projectIdToAdditionalPayee(_projectId)

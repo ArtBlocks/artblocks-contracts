@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../interfaces/0.8.x/IGenArt721CoreV2_PBAB.sol";
-import "../interfaces/0.8.x/IBonusContract.sol";
+import "../../interfaces/0.8.x/IGenArt721CoreV2_PBAB.sol";
+import "../../interfaces/0.8.x/IBonusContract.sol";
 
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
@@ -15,7 +15,7 @@ pragma solidity 0.8.9;
  * minted with ETH or any ERC-20 token.
  * @author Art Blocks Inc.
  */
-contract GenArt721Minter_PBAB is ReentrancyGuard {
+contract GenArt721Minter_LegendsOfMetaterra is ReentrancyGuard {
     /// PBAB core contract this minter may interact with.
     IGenArt721CoreV2_PBAB public genArtCoreContract;
 

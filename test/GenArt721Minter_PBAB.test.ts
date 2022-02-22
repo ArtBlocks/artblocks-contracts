@@ -39,7 +39,9 @@ describe("GenArt721Minter_PBAB", async function () {
       additional: additional,
       deployer: deployer,
     };
-    const randomizerFactory = await ethers.getContractFactory("Randomizer");
+    const randomizerFactory = await ethers.getContractFactory(
+      "BasicRandomizer"
+    );
     this.randomizer = await randomizerFactory.deploy();
 
     const PBABFactory = await ethers.getContractFactory("GenArt721CoreV2_PBAB");
