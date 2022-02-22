@@ -376,6 +376,25 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
     }
 
     /**
+     * @notice Purchases a token from project `_projectId`. Requires the
+     * purchase to be refundable up to eventual refund base price.
+     * @param _projectId Project ID to mint a token on.
+     * @return tokenId Token ID of minted token
+     */
+    function purchaseRefundable(uint256 _projectId)
+        external
+        payable
+        returns (uint256 tokenId)
+    {
+        require(
+            !projectRefundsAvailable[_projectId],
+            "Refundable purchases complete"
+        );
+        tokenId = purchaseTo(msg.sender, _projectId);
+        return tokenId;
+    }
+
+    /**
      * @notice Purchases a token from project `_projectId`.
      * @param _projectId Project ID to mint a token on.
      * @return tokenId Token ID of minted token
@@ -386,6 +405,27 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
         returns (uint256 tokenId)
     {
         tokenId = purchaseTo(msg.sender, _projectId);
+        return tokenId;
+    }
+
+    /**
+     * @notice Purchases a token from project `_projectId` and sets
+     * the token's owner to `_to`. Requires the purchase to be
+     * refundable up to eventual refund base price.
+     * @param _to Address to be the new token's owner.
+     * @param _projectId Project ID to mint a token on.
+     * @return tokenId Token ID of minted token
+     */
+    function purchaseToRefundable(address _to, uint256 _projectId)
+        external
+        payable
+        returns (uint256 tokenId)
+    {
+        require(
+            !projectRefundsAvailable[_projectId],
+            "Refundable purchases complete"
+        );
+        tokenId = purchaseTo(_to, _projectId);
         return tokenId;
     }
 
@@ -474,12 +514,12 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
     }
 
     /**
-     * @notice Allows purchasers of project `_projectId` to collect refund
-     * once refunds become available.
+     * @notice Allows a purchaser of project `_projectId` to collect refunds
+     * associated with the project if refunds are enabled and available.
      * @param _projectId Project ID that msg.sender wants to collect refunds
      * for.
      */
-    function collectRefund(uint256 _projectId) external nonReentrant {
+    function collectRefundForProject(uint256 _projectId) external nonReentrant {
         // CHECKS
         require(projectRefundsAvailable[_projectId], "Refunds not available");
         require(
