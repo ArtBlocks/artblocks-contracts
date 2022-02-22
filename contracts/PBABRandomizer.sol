@@ -5,7 +5,7 @@ import "./interfaces/0.8.x/IRandomizer.sol";
 
 pragma solidity 0.8.9;
 
-contract Randomizer is IRandomizer {
+contract PBABRandomizer is IRandomizer {
     function returnValue() public view returns (bytes32) {
         uint256 time = block.timestamp;
         uint256 extra = (time % 200) + 1;
