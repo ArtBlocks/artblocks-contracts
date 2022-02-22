@@ -555,9 +555,9 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
     }
 
     /**
-     * @notice Allows a user to collect refunds for multiple projects. 
+     * @notice Allows a user to collect refunds for multiple projects.
      * Note that ALL projects must have uncollected refunds available to avoid
-     * tx reverting. Also note that block gas limits may limit the number of 
+     * tx reverting. Also note that block gas limits may limit the number of
      * feasible projects to collect in a single transaction.
      * @param _projectIds Array of project IDs that msg.sender wants to collect
      * refunds for.
@@ -579,7 +579,9 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
      * collectRefundForProjects in that case.
      */
     function collectAllAvailableRefunds() external {
-        uint256[] memory projectIds = userToProjectsWithUncollectedRefunds[msg.sender].values();
+        uint256[] memory projectIds = userToProjectsWithUncollectedRefunds[
+            msg.sender
+        ].values();
         uint256 arrayLen = projectIds.length;
         bool didCollect = false;
         for (uint256 i = 0; i < arrayLen; ++i) {
@@ -767,6 +769,42 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
             return auctionParams.basePrice;
         }
         return decayedPrice;
+    }
+
+    /**
+     * @notice Gets quantity of projects that a user has uncollected refunds.
+     * Note that some projects with uncollected refunds may not yet have
+     * refund collection enabled (project must sell out or admin approval).
+     * @return uint256 quantity of projects that user has uncollected refunds
+     * on.
+     */
+    function getNumProjectsWithUncollectedRefunds()
+        external
+        view
+        returns (uint256)
+    {
+        return userToProjectsWithUncollectedRefunds[msg.sender].length();
+    }
+
+    /**
+     * @notice Get project ID and minter address at index `_index` of
+     * enumerable map.
+     * @param _index enumerable map index to query.
+     * @return projectId_ project ID at index `_index`
+     * @return projectRefundsAvailable_ are project refunds currently enabled
+     * @dev index must be < quantity of projects that user has uncollected
+     * refunds (see function `getNumProjectsWithUncollectedRefunds()`)
+     */
+    function getProjectWithUncollectedRefund(uint256 _index)
+        external
+        view
+        returns (uint256 projectId_, bool projectRefundsAvailable_)
+    {
+        projectId_ = userToProjectsWithUncollectedRefunds[msg.sender].at(
+            _index
+        );
+        projectRefundsAvailable_ = projectRefundsAvailable[projectId_];
+        return (projectId_, projectRefundsAvailable_);
     }
 
     /**
