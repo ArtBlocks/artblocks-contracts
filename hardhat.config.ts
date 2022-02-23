@@ -53,7 +53,7 @@ module.exports = {
     mainnet: {
       url: MAINNET_JSON_RPC_PROVIDER_URL,
       accounts: [`0x${MAINNET_PRIVATE_KEY}`],
-      gasPrice: 100000000000, // 100 gwei
+      gasPrice: 115000000000, // 115 gwei
     },
     ropsten: {
       url: ROPSTEN_JSON_RPC_PROVIDER_URL,

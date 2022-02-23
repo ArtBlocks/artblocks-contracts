@@ -95,8 +95,8 @@ Art Blocks supports lookups of all mainnet flagship and PBAB tokens on the [Roya
 These contracts delegate all permissions to the core contracts. The following Royalty Registry override contracts are deployed at:
 
 - **mainnet (AB deployed):**
-  - PBAB royalty override: <0xTBD>
-  - AB Flagship royalty override: <0xTBD>
+  - AB Flagship royalty override: https://etherscan.io/address/0x7b5369c24a47a72ecf932bf6974f506dde4d5eb1#code
+  - PBAB royalty override: https://etherscan.io/address/0x31e1cc72e6f9e27c2ecbb500d978de1691173f5f#code
 
 - **mainnet (RR deployed):**
   - RoyaltyRegistry: https://etherscan.io/address/0xad2184fb5dbcfc05d8f056542fb25b04fa32a95d#code

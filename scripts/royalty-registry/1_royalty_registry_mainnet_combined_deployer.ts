@@ -42,7 +42,7 @@ async function main() {
   const pbabOverride = await pbabOverrideFactory.deploy();
   await pbabOverride.deployed();
   console.log(
-    `Royalty Registry override contract for AB core has been deployed at: ` +
+    `Royalty Registry override contract for PBAB has been deployed at: ` +
       `${pbabOverride.address}`
   );
   console.log(`Verify this override deployment with:`);
@@ -51,7 +51,7 @@ async function main() {
   );
 
   console.log(
-    `Please remember to configure your Royalty Registry override contract by following the instructions here:`
+    `Please remember to configure your Royalty Registry override contracts by following the instructions here:`
   );
   console.log(
     `https://github.com/ArtBlocks/artblocks-contracts#royalty-registry-overrides`
