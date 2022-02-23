@@ -71,8 +71,8 @@ For deployed PBAB minting contracts, see PBAB directory [DEPLOYMENTS.md files](h
 
 ### Shared PBAB Randomizers
 
-Ropsten: https://ropsten.etherscan.io/address/0x7ba972189ED3C527847170453fC108707F62755a
-Mainnet: TBD
+Ropsten: https://ropsten.etherscan.io/address/0x7ba972189ED3C527847170453fC108707F62755a#code
+Mainnet: https://etherscan.io/address/0x088098f7438773182b703625c4128aff85fcffc4#code
 
 ## Contract Documentation
 Documenation for contracts may be generated via `yarn docgen`. Some Art Blocks contracts use [NatSpec](https://docs.soliditylang.org/en/v0.8.9/natspec-format.html#documentation-example) comments to automatically enrich generated documentation. Some contracts use [dynamic expressions](https://docs.soliditylang.org/en/v0.8.9/natspec-format.html#dynamic-expressions) to improve user experience.
