@@ -71,8 +71,11 @@ For deployed PBAB minting contracts, see PBAB directory [DEPLOYMENTS.md files](h
 
 ### Shared PBAB Randomizers
 
-Ropsten: https://ropsten.etherscan.io/address/0x7ba972189ED3C527847170453fC108707F62755a
-Mainnet: TBD
+- Ropsten: https://ropsten.etherscan.io/address/0x7ba972189ED3C527847170453fC108707F62755a#code
+- Mainnet: https://etherscan.io/address/0x088098f7438773182b703625c4128aff85fcffc4#code
+
+## Contract Documentation
+Documenation for contracts may be generated via `yarn docgen`. Some Art Blocks contracts use [NatSpec](https://docs.soliditylang.org/en/v0.8.9/natspec-format.html#documentation-example) comments to automatically enrich generated documentation. Some contracts use [dynamic expressions](https://docs.soliditylang.org/en/v0.8.9/natspec-format.html#dynamic-expressions) to improve user experience.
 
 ### Old contracts/addresses:
 * **Primary Sales and Minting Contract (no longer in use) [0x059edd72cd353df5106d2b9cc5ab83a52287ac3a](https://etherscan.io/address/0x059edd72cd353df5106d2b9cc5ab83a52287ac3a)**
@@ -86,32 +89,26 @@ Mainnet: TBD
   * [0x0E8BD86663e3c2418900178e96E14c51B2859957](https://etherscan.io/address/0x0E8BD86663e3c2418900178e96E14c51B2859957)
   * These are the Smart contract that received funds from primary sales and split them between the artist(s) and the platform. Artists received funds directly from this contract.These minter contracts are no longer in use.
 
-## Contract Documentation
-Documenation for contracts may be generated via `yarn docgen`. Some Art Blocks contracts use [NatSpec](https://docs.soliditylang.org/en/v0.8.9/natspec-format.html#documentation-example) comments to automatically enrich generated documentation. Some contracts use [dynamic expressions](https://docs.soliditylang.org/en/v0.8.9/natspec-format.html#dynamic-expressions) to improve user experience.
-
 ## Royalty Registry Overrides
-Art Blocks supports lookups of all mainnet flagship and PBAB tokens on the [Royalty Registry](https://royaltyregistry.xyz/lookup).[^1]
+Art Blocks supports lookups of all mainnet flagship and PBAB tokens on the [Royalty Registry](https://royaltyregistry.xyz/lookup).
 
-The following Royalty Registry override contracts are [to be[^1]] deployed:
+These contracts delegate all permissions to the core contracts. The following Royalty Registry override contracts are deployed at:
 
-- **mainnet:**
-  - PBAB royalty override: <0xTBD [^1]>
-  - AB Flagship royalty override: <0xTBD [^1]>
-- **ropsten:**
-  - PBAB royalty override: <0xTBD [^1]>
-  - AB Flagship royalty override: <0xTBD [^1]>
+- **mainnet (AB deployed):**
+  - AB Flagship royalty override: https://etherscan.io/address/0x7b5369c24a47a72ecf932bf6974f506dde4d5eb1#code
+  - PBAB royalty override: https://etherscan.io/address/0x31e1cc72e6f9e27c2ecbb500d978de1691173f5f#code
 
-
-These contracts delegate all permissions to the core contracts.
+- **mainnet (RR deployed):**
+  - RoyaltyRegistry: https://etherscan.io/address/0xad2184fb5dbcfc05d8f056542fb25b04fa32a95d#code
+  - RoyaltyEngineV1: https://etherscan.io/address/0x0385603ab55642cb4dd5de3ae9e306809991804f#code
 
 ### Configuring PBAB Royalty Override (REQUIRED)
 Upon deploying a PBAB contract, the following steps must be taken:
->Tasks denoted by (scripted) are included in `scripts/1_reference_pbab_suite_deployer.ts`[^1]
+>Tasks denoted by (scripted) are included in `scripts/1_reference_pbab_suite_deployer.ts`, and scripted for newly deployed PBAB projects as of 03/2022.
 
 - **(scripted), REQUIRED** Set the royalty lookup address on the royalty registry for the newly deployed contract
   - Go to the [Royalty Registry](https://royaltyregistry.xyz/lookup) and call the following function on the Royalty Registry smart contract:
     - `setRoyaltyLookupAddress(<new_PBAB_coreAddr>, <PBAB_royaltyOverrideContract>)`
-    >note: `PBAB_royaltyOverrideContract` will be known after [^1]
 - **(scripted), REQUIRED** Set Platform royalty payment address for the new core contract in PBAB royalty override contract
     >note: This step is optional in the PBAB deployer script in case platform royalty payment address is not known at time of deployment, but must be completed before royalty lookups will work
   - `admin` of the PBAB core contract must call the following function on the PBAB royalty override contract:
@@ -131,7 +128,6 @@ Upon deploying a new Art Blocks flagship core contract, the following steps must
 - **REQUIRED** Set the royalty lookup address on the royalty registry for the newly deployed contract
   - Go to the [Royalty Registry](https://royaltyregistry.xyz/lookup) to call the following function on the Royalty Registry smart contract:
     - `setRoyaltyLookupAddress(<new_coreAddr>, <ArtBlocks_royaltyOverrideContract>)`
-    >note: `ArtBlocks_royaltyOverrideContract` will be known after [^1]
 - **REQUIRED** Set Art Blocks royalty payment address for the new core contract in the royalty override contract
   - `admin` of core contract must call:
     - `updateArtblocksRoyaltyAddressForContract(<new_coreAddr>, <ArtBlocksRoyaltyPaymentAddress>)`
@@ -141,8 +137,3 @@ Additionally, the following settings may be configured/changed by a core contrac
     - Royalty [BPS](https://www.investopedia.com/terms/b/basispoint.asp) may be changed from default values of 2.5% to any value less than or equal to the default (cannot be increased above default). This can be configured by a core contract's `admin` via the  override contract's function `updateArtblocksBpsForContract`.
 - **Change Art Blocks Royalty Payment Address**
     - The address to receive Art Blocks royalty payments may be updated by a core contract's admin via the royalty override contract's function `updateArtblocksRoyaltyAddressForContract`.
-
-
-
-
-[^1]: Pending merge of manifoldxyz/royalty-registry-solidity#11
