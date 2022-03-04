@@ -223,8 +223,8 @@ contract MinterSetPriceERC20V0 is ReentrancyGuard, IFilteredMinterV0 {
         projectIdToCurrencyAddress[_projectId] = _currencyAddress;
         emit ProjectCurrencyInfoUpdated(
             _projectId,
-            _currencySymbol,
-            _currencyAddress
+            _currencyAddress,
+            _currencySymbol
         );
     }
 
