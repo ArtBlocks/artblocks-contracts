@@ -9,7 +9,7 @@ interface IMinterFilterV0 {
      */
     event MinterApproved(
         address indexed _minterAddress,
-        string indexed _minterType
+        string _minterType
     );
 
     /**
@@ -24,7 +24,7 @@ interface IMinterFilterV0 {
     event ProjectMinterRegistered(
         uint256 indexed _projectId,
         address indexed _minterAddress,
-        string indexed _minterType
+        string _minterType
     );
 
     /**

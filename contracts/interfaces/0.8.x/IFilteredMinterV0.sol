@@ -19,7 +19,7 @@ interface IFilteredMinterV0 {
      */
     event ProjectCurrencyInfoUpdated(
         uint256 indexed _projectId,
-        string indexed _currencySymbol,
+        string _currencySymbol,
         address indexed _currencyAddress
     );
 
