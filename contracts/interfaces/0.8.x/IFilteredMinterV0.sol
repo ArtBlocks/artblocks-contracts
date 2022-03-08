@@ -19,8 +19,8 @@ interface IFilteredMinterV0 {
      */
     event ProjectCurrencyInfoUpdated(
         uint256 indexed _projectId,
-        string indexed _currencySymbol,
-        address indexed _currencyAddress
+        address indexed _currencyAddress,
+        string _currencySymbol
     );
 
     /// togglePurchaseToDisabled updated

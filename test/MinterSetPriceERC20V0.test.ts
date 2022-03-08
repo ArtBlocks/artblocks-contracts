@@ -336,7 +336,7 @@ describe("MinterSetPriceERC20V0", async function () {
           )
       )
         .to.emit(this.minter, "ProjectCurrencyInfoUpdated")
-        .withArgs(projectZero, "MOCK", this.ERC20Mock.address);
+        .withArgs(projectZero, this.ERC20Mock.address, "MOCK");
     });
   });
 
