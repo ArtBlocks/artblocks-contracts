@@ -32,6 +32,10 @@ interface IFilteredMinterV0 {
     // getter function of public variable
     function minterType() external view returns (string memory);
 
+    function genArt721CoreAddress() external returns (address);
+
+    function minterFilterAddress() external returns (address);
+
     // Triggers a purchase of a token from the desired project, to the
     // TX-sending address.
     function purchase(uint256 _projectId)

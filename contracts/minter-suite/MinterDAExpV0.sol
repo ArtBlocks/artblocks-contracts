@@ -33,11 +33,17 @@ contract MinterDAExpV0 is ReentrancyGuard, IFilteredMinterV0 {
         uint256 _maximumPriceDecayHalfLifeSeconds
     );
 
+    /// Core contract address this minter interacts with
+    address public immutable genArt721CoreAddress;
+
     /// This contract handles cores with interface IV1
-    IGenArt721CoreContractV1 public immutable genArtCoreContract;
+    IGenArt721CoreContractV1 private immutable genArtCoreContract;
+
+    /// Minter filter address this minter interacts with
+    address public immutable minterFilterAddress;
 
     /// Minter filter this minter may interact with.
-    IMinterFilterV0 public immutable minterFilter;
+    IMinterFilterV0 private immutable minterFilter;
 
     /// minterType for this minter
     string public constant minterType = "MinterDAExpV0";
@@ -103,7 +109,9 @@ contract MinterDAExpV0 is ReentrancyGuard, IFilteredMinterV0 {
     constructor(address _genArt721Address, address _minterFilter)
         ReentrancyGuard()
     {
+        genArt721CoreAddress = _genArt721Address;
         genArtCoreContract = IGenArt721CoreContractV1(_genArt721Address);
+        minterFilterAddress = _minterFilter;
         minterFilter = IMinterFilterV0(_minterFilter);
         require(
             minterFilter.genArt721CoreAddress() == _genArt721Address,
