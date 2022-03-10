@@ -37,7 +37,7 @@ contract MinterDAExpV0 is ReentrancyGuard, IFilteredMinterV0 {
     address public immutable genArt721CoreAddress;
 
     /// This contract handles cores with interface IV1
-    IGenArt721CoreContractV1 public immutable genArtCoreContract;
+    IGenArt721CoreContractV1 private immutable genArtCoreContract;
 
     /// Minter filter address this minter interacts with
     address public immutable minterFilterAddress;
