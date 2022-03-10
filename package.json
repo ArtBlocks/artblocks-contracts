@@ -13,7 +13,8 @@
     "generate:typechain": "typechain --target ethers-v5 --outDir ./scripts/contracts './artifacts/contracts/**/!(*.dbg)*.json'",
     "test": "hardhat test",
     "format": "prettier --write 'contracts/**/*.sol' && prettier --write 'scripts/**/*.ts' && prettier --write 'test/**/*.ts'",
-    "lint": "prettier --check 'contracts/**/*.sol' && prettier --check 'scripts/**/*.ts' && prettier --check 'test/**/*.ts'"
+    "lint": "prettier --check 'contracts/**/*.sol' && prettier --check 'scripts/**/*.ts' && prettier --check 'test/**/*.ts'",
+    "remix": "remixd -s ./ --remix-ide https://remix.ethereum.org"
   },
   "husky": {
     "hooks": {
@@ -29,6 +30,7 @@
     "@nomiclabs/hardhat-waffle": "^2.0.1",
     "@nomiclabs/hardhat-web3": "^2.0.0",
     "@openzeppelin/test-helpers": "^0.5.6",
+    "@remix-project/remixd": "^0.5.6",
     "@typechain/ethers-v5": "^6.0.5",
     "@types/jest": "^27.0.3",
     "chai": "^4.3.4",
