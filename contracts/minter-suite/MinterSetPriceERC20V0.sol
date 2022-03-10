@@ -16,8 +16,14 @@ pragma solidity 0.8.9;
  * @author Art Blocks Inc.
  */
 contract MinterSetPriceERC20V0 is ReentrancyGuard, IFilteredMinterV0 {
+    /// Core contract address this minter interacts with
+    address public immutable genArt721CoreAddress;
+
     /// This contract handles cores with interface IV1
     IGenArt721CoreContractV1 public immutable genArtCoreContract;
+
+    /// Minter filter address this minter interacts with
+    address public immutable minterFilterAddress;
 
     /// Minter filter this minter may interact with.
     IMinterFilterV0 public immutable minterFilter;
@@ -77,7 +83,9 @@ contract MinterSetPriceERC20V0 is ReentrancyGuard, IFilteredMinterV0 {
     constructor(address _genArt721Address, address _minterFilter)
         ReentrancyGuard()
     {
+        genArt721CoreAddress = _genArt721Address;
         genArtCoreContract = IGenArt721CoreContractV1(_genArt721Address);
+        minterFilterAddress = _minterFilter;
         minterFilter = IMinterFilterV0(_minterFilter);
         require(
             minterFilter.genArt721CoreAddress() == _genArt721Address,
