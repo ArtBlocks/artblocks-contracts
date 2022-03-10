@@ -42,7 +42,7 @@ contract MinterDALinV0 is ReentrancyGuard, IFilteredMinterV0 {
     address public immutable minterFilterAddress;
 
     /// Minter filter this minter may interact with.
-    IMinterFilterV0 public immutable minterFilter;
+    IMinterFilterV0 private immutable minterFilter;
 
     /// minterType for this minter
     string public constant minterType = "MinterDALinV0";
