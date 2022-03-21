@@ -81,12 +81,11 @@ contract MinterDALinV0 is ReentrancyGuard, IFilteredMinterV0 {
         _;
     }
 
-    modifier onlyCoreWhitelistedOrArtist(uint256 _projectId) {
+    modifier onlyArtist(uint256 _projectId) {
         require(
-            (genArtCoreContract.isWhitelisted(msg.sender) ||
-                msg.sender ==
-                genArtCoreContract.projectIdToArtistAddress(_projectId)),
-            "Only Core whitelisted or Artist"
+            msg.sender ==
+                genArtCoreContract.projectIdToArtistAddress(_projectId),
+            "Only Artist"
         );
         _;
     }
@@ -205,7 +204,7 @@ contract MinterDALinV0 is ReentrancyGuard, IFilteredMinterV0 {
         uint256 _auctionTimestampEnd,
         uint256 _startPrice,
         uint256 _basePrice
-    ) external onlyCoreWhitelistedOrArtist(_projectId) {
+    ) external onlyArtist(_projectId) {
         AuctionParameters memory auctionParams = projectAuctionParameters[
             _projectId
         ];
