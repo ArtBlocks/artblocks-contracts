@@ -102,7 +102,7 @@ describe("MinterDAExpV0", async function () {
       .connect(this.accounts.deployer)
       .resetAuctionDetails(projectOne);
     await this.minter
-      .connect(this.accounts.deployer)
+      .connect(this.accounts.artist)
       .setAuctionDetails(
         projectOne,
         this.startTime + auctionStartTimeOffset,
@@ -186,7 +186,7 @@ describe("MinterDAExpV0", async function () {
         .connect(this.accounts.deployer)
         .resetAuctionDetails(projectOne);
       await this.minter
-        .connect(this.accounts.deployer)
+        .connect(this.accounts.artist)
         .setAuctionDetails(
           projectOne,
           this.startTime + auctionStartTimeOffset,
@@ -206,7 +206,7 @@ describe("MinterDAExpV0", async function () {
         .connect(this.accounts.deployer)
         .resetAuctionDetails(projectOne);
       await this.minter
-        .connect(this.accounts.deployer)
+        .connect(this.accounts.artist)
         .setAuctionDetails(
           projectOne,
           this.startTime + auctionStartTimeOffset,
@@ -286,7 +286,7 @@ describe("MinterDAExpV0", async function () {
       ]);
       await expectRevert(
         this.minter
-          .connect(this.accounts.deployer)
+          .connect(this.accounts.artist)
           .setAuctionDetails(
             projectOne,
             this.startTime + auctionStartTimeOffset,
@@ -296,21 +296,6 @@ describe("MinterDAExpV0", async function () {
           ),
         "No modifications mid-auction"
       );
-    });
-
-    it("allows whitelisted to set auction details", async function () {
-      await this.minter
-        .connect(this.accounts.deployer)
-        .resetAuctionDetails(projectOne);
-      await this.minter
-        .connect(this.accounts.deployer)
-        .setAuctionDetails(
-          projectOne,
-          this.startTime + auctionStartTimeOffset,
-          defaultHalfLife,
-          startingPrice,
-          basePrice
-        );
     });
 
     it("allows artist to set auction details", async function () {
@@ -328,7 +313,7 @@ describe("MinterDAExpV0", async function () {
         );
     });
 
-    it("disallows non-whitelisted non-artist to set auction details", async function () {
+    it("disallows whitelisted and non-artist to set auction details", async function () {
       await this.minter
         .connect(this.accounts.deployer)
         .resetAuctionDetails(projectOne);
@@ -342,7 +327,23 @@ describe("MinterDAExpV0", async function () {
             startingPrice,
             basePrice
           ),
-        "Only Core whitelisted or Artist"
+        "Only Artist"
+      );
+
+      await this.minter
+        .connect(this.accounts.deployer)
+        .resetAuctionDetails(projectOne);
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.deployer)
+          .setAuctionDetails(
+            projectOne,
+            this.startTime + auctionStartTimeOffset,
+            defaultHalfLife,
+            startingPrice,
+            basePrice
+          ),
+        "Only Artist"
       );
     });
 
@@ -352,7 +353,7 @@ describe("MinterDAExpV0", async function () {
         .resetAuctionDetails(projectOne);
       await expectRevert(
         this.minter
-          .connect(this.accounts.deployer)
+          .connect(this.accounts.artist)
           .setAuctionDetails(
             projectOne,
             this.startTime + auctionStartTimeOffset,
@@ -431,7 +432,7 @@ describe("MinterDAExpV0", async function () {
       const invalidHalfLifeSecondsMin = ONE_MINUTE;
       await expectRevert(
         this.minter
-          .connect(this.accounts.deployer)
+          .connect(this.accounts.artist)
           .setAuctionDetails(
             0,
             this.startTime + auctionStartTimeOffset,
@@ -446,7 +447,7 @@ describe("MinterDAExpV0", async function () {
       const invalidHalfLifeSecondsMax = ONE_DAY;
       await expectRevert(
         this.minter
-          .connect(this.accounts.deployer)
+          .connect(this.accounts.artist)
           .setAuctionDetails(
             0,
             this.startTime + auctionStartTimeOffset,
