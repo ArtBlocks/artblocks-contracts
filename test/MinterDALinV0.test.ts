@@ -10,7 +10,7 @@ import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 
-describe("GenArt721MinterEthAuction", async function () {
+describe("MinterDALinV0", async function () {
   const name = "Non Fungible Token";
   const symbol = "NFT";
 
@@ -66,7 +66,7 @@ describe("GenArt721MinterEthAuction", async function () {
 
     await this.token
       .connect(deployer)
-      .addProject("project1", artist.address, 0, false);
+      .addProject("project1", this.accounts.artist.address, 0, false);
 
     await this.token.connect(deployer).toggleProjectIsActive(projectOne);
 
@@ -442,7 +442,7 @@ describe("GenArt721MinterEthAuction", async function () {
         this.minter
           .connect(this.accounts.artist)
           .setAuctionDetails(
-            0,
+            projectOne,
             this.startTime + ONE_HOUR * 2,
             this.startTime + ONE_HOUR,
             startingPrice,
@@ -462,7 +462,7 @@ describe("GenArt721MinterEthAuction", async function () {
         this.minter
           .connect(this.accounts.artist)
           .setAuctionDetails(
-            0,
+            projectOne,
             this.startTime + ONE_HOUR,
             this.startTime + ONE_HOUR + invalidLengthSeconds,
             startingPrice,

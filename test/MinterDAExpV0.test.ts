@@ -67,7 +67,7 @@ describe("MinterDAExpV0", async function () {
 
     await this.token
       .connect(deployer)
-      .addProject("project1", artist.address, 0, false);
+      .addProject("project1", this.accounts.artist.address, 0, false);
 
     await this.token.connect(deployer).toggleProjectIsActive(projectOne);
 
@@ -434,7 +434,7 @@ describe("MinterDAExpV0", async function () {
         this.minter
           .connect(this.accounts.artist)
           .setAuctionDetails(
-            0,
+            projectOne,
             this.startTime + auctionStartTimeOffset,
             invalidHalfLifeSecondsMin,
             startingPrice,
@@ -449,7 +449,7 @@ describe("MinterDAExpV0", async function () {
         this.minter
           .connect(this.accounts.artist)
           .setAuctionDetails(
-            0,
+            projectOne,
             this.startTime + auctionStartTimeOffset,
             invalidHalfLifeSecondsMax,
             startingPrice,

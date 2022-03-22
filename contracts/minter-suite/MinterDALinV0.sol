@@ -83,8 +83,8 @@ contract MinterDALinV0 is ReentrancyGuard, IFilteredMinterV0 {
 
     modifier onlyArtist(uint256 _projectId) {
         require(
-            msg.sender ==
-                genArtCoreContract.projectIdToArtistAddress(_projectId),
+            (msg.sender ==
+                genArtCoreContract.projectIdToArtistAddress(_projectId)),
             "Only Artist"
         );
         _;
