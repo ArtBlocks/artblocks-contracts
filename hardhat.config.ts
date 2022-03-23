@@ -11,6 +11,7 @@ import "hardhat-docgen";
 const MAINNET_JSON_RPC_PROVIDER_URL = process.env.MAINNET_JSON_RPC_PROVIDER_URL;
 const ROPSTEN_JSON_RPC_PROVIDER_URL = process.env.ROPSTEN_JSON_RPC_PROVIDER_URL;
 const RINKEBY_JSON_RPC_PROVIDER_URL = process.env.RINKEBY_JSON_RPC_PROVIDER_URL;
+const KOVAN_JSON_RPC_PROVIDER_URL = process.env.KOVAN_JSON_RPC_PROVIDER_URL;
 const MAINNET_PRIVATE_KEY = process.env.MAINNET_PRIVATE_KEY;
 const TESTNET_PRIVATE_KEY = process.env.TESTNET_PRIVATE_KEY;
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
@@ -61,6 +62,10 @@ module.exports = {
     },
     rinkeby: {
       url: RINKEBY_JSON_RPC_PROVIDER_URL,
+      accounts: [`0x${TESTNET_PRIVATE_KEY}`],
+    },
+    kovan: {
+      url: KOVAN_JSON_RPC_PROVIDER_URL,
       accounts: [`0x${TESTNET_PRIVATE_KEY}`],
     },
     coverage: {
