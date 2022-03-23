@@ -2,7 +2,6 @@
 // Created By: Art Blocks Inc.
 
 import { ethers } from "hardhat";
-import { Randomizer__factory } from "./contracts/factories/Randomizer__factory";
 import { GenArt721CoreV2PBAB__factory } from "./contracts/factories/GenArt721CoreV2PBAB__factory";
 import { GenArt721MinterPBAB__factory } from "./contracts/factories/GenArt721MinterPBAB__factory";
 import royaltyRegistryABI from "../contracts/libs/abi/RoyaltyRegistry.json";
@@ -181,7 +180,7 @@ async function main() {
     "yarn hardhat verify --contract <path to .sol>:<contract name>";
   console.log(`Verify GenArt721CoreV2 deployment with:`);
   console.log(
-    `${standardVerify} --network ${networkName} ${genArt721Core.address} "${pbabTokenName}" "${pbabTokenTicker}" ${randomizer.address}`
+    `${standardVerify} --network ${networkName} ${genArt721Core.address} "${pbabTokenName}" "${pbabTokenTicker}" ${randomizerAddress}`
   );
   console.log(`Verify GenArt721Minter deployment with:`);
   console.log(
