@@ -8,7 +8,7 @@ import { GenArt721MinterPBAB__factory } from "./contracts/factories/GenArt721Min
 import royaltyRegistryABI from "../contracts/libs/abi/RoyaltyRegistry.json";
 import { GenArt721RoyaltyOverridePBAB__factory } from "./contracts/factories/GenArt721RoyaltyOverridePBAB__factory";
 
-var DEAD = "0x000000000000000000000000000000000000dEaD";
+const DEAD = "0x000000000000000000000000000000000000dEaD";
 
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG BEGINS HERE
