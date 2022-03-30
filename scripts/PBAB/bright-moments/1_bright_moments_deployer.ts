@@ -11,9 +11,9 @@ import { GenArt721MinterBrightMoments__factory } from "../../contracts/factories
 //////////////////////////////////////////////////////////////////////////////
 const pbabTokenName = "Bright Moments";
 const pbabTokenTicker = "MOMENT";
-const pbabTransferAddress = "0x1040259f6Fe4f1C6ed1044b9Df6a8A4eBD2d3511";
-const rendererProviderAddress = "0x000000000000000000000000000000000000dEaD";
-const randomizerAddress = "0x3b30d421a6dA95694EaaE09971424F15Eb375269";
+const pbabTransferAddress = "0xB96E81f80b3AEEf65CB6d0E280b15FD5DBE71937";
+const rendererProviderAddress = "0x43A7D26a271F5801b8092d94DFd5b36EA5D01F5f";
+const randomizerAddress = "0x088098f7438773182b703625c4128aff85fcffc4";
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG ENDS HERE
 //////////////////////////////////////////////////////////////////////////////

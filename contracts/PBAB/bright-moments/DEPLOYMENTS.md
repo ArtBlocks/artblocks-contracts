@@ -2,7 +2,8 @@
 
 ## Mainnet
 
-TBD
+**GenArt721CoreV2:** https://etherscan.io/address/0x0A1BBD57033F57E7B6743621b79fCB9Eb2CE3676#code
+**GenArt721Minter:** https://etherscan.io/address/0x7b9a45E278b5B374bb2d96C65665d4360C97BF01#code
 
 ## Ropsten
 
