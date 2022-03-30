@@ -10,7 +10,7 @@ import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 
-describe("GenArt721MinterEthAuction", async function () {
+describe("MinterDALinV0", async function () {
   const name = "Non Fungible Token";
   const symbol = "NFT";
 
@@ -66,7 +66,7 @@ describe("GenArt721MinterEthAuction", async function () {
 
     await this.token
       .connect(deployer)
-      .addProject("project1", artist.address, 0, false);
+      .addProject("project1", this.accounts.artist.address, 0, false);
 
     await this.token.connect(deployer).toggleProjectIsActive(projectOne);
 
@@ -101,7 +101,7 @@ describe("GenArt721MinterEthAuction", async function () {
       .connect(this.accounts.deployer)
       .resetAuctionDetails(projectOne);
     await this.minter
-      .connect(this.accounts.deployer)
+      .connect(this.accounts.artist)
       .setAuctionDetails(
         projectOne,
         this.startTime + auctionStartTimeOffset,
@@ -195,7 +195,7 @@ describe("GenArt721MinterEthAuction", async function () {
         .connect(this.accounts.deployer)
         .resetAuctionDetails(projectOne);
       await this.minter
-        .connect(this.accounts.deployer)
+        .connect(this.accounts.artist)
         .setAuctionDetails(
           projectOne,
           this.startTime + ONE_HOUR,
@@ -215,7 +215,7 @@ describe("GenArt721MinterEthAuction", async function () {
         .connect(this.accounts.deployer)
         .resetAuctionDetails(projectOne);
       await this.minter
-        .connect(this.accounts.deployer)
+        .connect(this.accounts.artist)
         .setAuctionDetails(
           projectOne,
           this.startTime + ONE_HOUR,
@@ -295,7 +295,7 @@ describe("GenArt721MinterEthAuction", async function () {
       await ethers.provider.send("evm_mine", [this.startTime + ONE_HOUR]);
       await expectRevert(
         this.minter
-          .connect(this.accounts.deployer)
+          .connect(this.accounts.artist)
           .setAuctionDetails(
             projectOne,
             this.startTime + ONE_MINUTE,
@@ -305,21 +305,6 @@ describe("GenArt721MinterEthAuction", async function () {
           ),
         "No modifications mid-auction"
       );
-    });
-
-    it("allows whitelisted to set auction details", async function () {
-      await this.minter
-        .connect(this.accounts.deployer)
-        .resetAuctionDetails(projectOne);
-      await this.minter
-        .connect(this.accounts.deployer)
-        .setAuctionDetails(
-          projectOne,
-          this.startTime + ONE_MINUTE,
-          this.startTime + 2 * ONE_HOUR,
-          startingPrice,
-          basePrice
-        );
     });
 
     it("allows artist to set auction details", async function () {
@@ -337,7 +322,7 @@ describe("GenArt721MinterEthAuction", async function () {
         );
     });
 
-    it("disallows non-whitelisted non-artist to set auction details", async function () {
+    it("disallows whitelisted and non-artist to set auction details", async function () {
       await this.minter
         .connect(this.accounts.deployer)
         .resetAuctionDetails(projectOne);
@@ -351,7 +336,23 @@ describe("GenArt721MinterEthAuction", async function () {
             startingPrice,
             basePrice
           ),
-        "Only Core whitelisted or Artist"
+        "Only Artist"
+      );
+
+      await this.minter
+        .connect(this.accounts.deployer)
+        .resetAuctionDetails(projectOne);
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.deployer)
+          .setAuctionDetails(
+            projectOne,
+            this.startTime + ONE_MINUTE,
+            this.startTime + 2 * ONE_HOUR,
+            startingPrice,
+            basePrice
+          ),
+        "Only Artist"
       );
     });
 
@@ -361,7 +362,7 @@ describe("GenArt721MinterEthAuction", async function () {
         .resetAuctionDetails(projectOne);
       await expectRevert(
         this.minter
-          .connect(this.accounts.deployer)
+          .connect(this.accounts.artist)
           .setAuctionDetails(
             projectOne,
             this.startTime + ONE_MINUTE,
@@ -439,9 +440,9 @@ describe("GenArt721MinterEthAuction", async function () {
       // expect revert when creating a new project with min/max reversed
       await expectRevert(
         this.minter
-          .connect(this.accounts.deployer)
+          .connect(this.accounts.artist)
           .setAuctionDetails(
-            0,
+            projectOne,
             this.startTime + ONE_HOUR * 2,
             this.startTime + ONE_HOUR,
             startingPrice,
@@ -459,9 +460,9 @@ describe("GenArt721MinterEthAuction", async function () {
       const invalidLengthSeconds = 60;
       await expectRevert(
         this.minter
-          .connect(this.accounts.deployer)
+          .connect(this.accounts.artist)
           .setAuctionDetails(
-            0,
+            projectOne,
             this.startTime + ONE_HOUR,
             this.startTime + ONE_HOUR + invalidLengthSeconds,
             startingPrice,
