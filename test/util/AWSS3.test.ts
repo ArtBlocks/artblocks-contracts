@@ -37,9 +37,13 @@ describe("Create S3 Bucket for PBAB", () => {
     const pbabTokenName = "Foobar PBAB Bucket";
     const result = await createPBABBuckets(s3ClientMock as any, pbabTokenName);
     assert(result !== null);
-    assert(result?.["staging"]["Location"] === createPBABBucketsResponse["staging"]["Location"]);
     assert(
-      result?.["production"]["Location"] === createPBABBucketsResponse["production"]["Location"]
+      result?.["staging"]["Location"] ===
+        createPBABBucketsResponse["staging"]["Location"]
+    );
+    assert(
+      result?.["production"]["Location"] ===
+        createPBABBucketsResponse["production"]["Location"]
     );
   });
 });
@@ -51,5 +55,3 @@ describe("Format bucket name", () => {
     assert(bucketName === "foobar-pbab-bucket");
   });
 });
-
-// TOOD: check usage of current bucket naming conventions to upload assets
