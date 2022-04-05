@@ -40,67 +40,78 @@ import {
       );
       this.randomizer = await randomizerFactory.deploy();
       const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV1");
-      this.token = await artblocksFactory
+      this.exponentialToken = await artblocksFactory
         .connect(snowfro)
         .deploy(name, symbol, this.randomizer.address);
       // deploy and configure minter filter and minter
       const minterFilterFactory = await ethers.getContractFactory(
         "MinterFilterV0"
       );
-      this.minterFilter = await minterFilterFactory.deploy(this.token.address);
-      const minterSetETHPriceFactory = await ethers.getContractFactory("MinterSetPriceV0");
-      this.minterETH = await minterSetETHPriceFactory.deploy(
-        this.token.address,
+
+      this.minterFilter = await minterFilterFactory.deploy(this.exponentialToken.address);
+      const minterSetExpDAPriceFactory = await ethers.getContractFactory("MinterDAExpV0");
+      this.minterExponentialDA = await minterSetExpDAPriceFactory.deploy(
+        this.exponentialToken.address,
         this.minterFilter.address
       );
 
-      /////// TEST NEW MINTERS
-      this.ERC20token = await artblocksFactory
-        .connect(snowfro)
-        .deploy(name, symbol, this.randomizer.address);
 
-      this.ERC20MinterFilter = await minterFilterFactory.deploy(this.ERC20token.address);
-      const minterSetERC20PriceFactory = await ethers.getContractFactory("MinterSetPriceERC20V0");
-      this.minterERC20 = await minterSetERC20PriceFactory.deploy(
-        this.ERC20token.address,
-        this.ERC20MinterFilter.address
-      );
+    await this.minterFilter
+      .connect(snowfro)
+      .addApprovedMinter(this.minterExponentialDA.address);
+    await this.exponentialToken
+      .connect(snowfro)
+      .addMintWhitelisted(this.minterFilter.address);
+    // add project
+    await this.exponentialToken
+      .connect(snowfro)
+      .addProject("name", artist.address, 0, false);
+    await this.exponentialToken.connect(snowfro).toggleProjectIsActive(projectZero);
+    await this.exponentialToken.connect(artist).toggleProjectIsPaused(projectZero);
+    await this.exponentialToken
+      .connect(artist)
+      .updateProjectMaxInvocations(projectZero, maxInvocations);
+    // set project's minter and price
+    // await this.minterExponentialDA
+    //   .connect(artist)
+    //   .updatePricePerTokenInWei(projectZero, pricePerTokenInWei);
+    await this.minterFilter
+      .connect(artist)
+      .setMinterForProject(projectZero, this.minterExponentialDA.address);
+      console.log('project: ', await this.exponentialToken.connect(snowfro).projectDetails(3))
+    // get project's info
+    this.projectZeroInfo = await this.exponentialToken.projectTokenInfo(projectZero);
+    });
 
-    //   const minterSetDALinearFactory = await ethers.getContractFactory("MinterDALinV0");
-    //   this.minterDALinear = await minterSetDALinearFactory.deploy(
-    //     this.token.address,
-    //     this.minterFilter.address
-    //   );
+    //TEST GAS COSTS FOR MINTER
 
-    //   const minterSetDAExponentialFactory = await ethers.getContractFactory("MinterDAExpV0");
-    //   this.minterDAExponential = await minterSetDAExponentialFactory.deploy(
-    //     this.token.address,
-    //     this.minterFilter.address
-    //   );
+    describe("GAS TEST | EXPONENTIAL DA: ", async function () {
+      it("mints and calculates gas values", async function () {
+        // Try without setProjectMaxInvocations, store gas cost
+        const ownerBalanceNoMaxSet = await this.accounts.owner.getBalance();
+        console.log(ownerBalanceNoMaxSet.toString())
+        const price = await this.minterExponentialDA.connect(this.accounts.owner)._getPrice(projectZero);
+        console.log('price is: ', price)
 
-      await this.minterFilter
-        .connect(snowfro)
-        .addApprovedMinter(this.minterETH.address);
-      await this.token
-        .connect(snowfro)
-        .addMintWhitelisted(this.minterFilter.address);
-      // add project
-      await this.token
-        .connect(snowfro)
-        .addProject("name", artist.address, 0, false);
-      await this.token.connect(snowfro).toggleProjectIsActive(projectZero);
-      await this.token
-        .connect(artist)
-        .updateProjectMaxInvocations(projectZero, maxInvocations);
-      // set project's minter and price
-      await this.minter
-        .connect(artist)
-        .updatePricePerTokenInWei(projectZero, pricePerTokenInWei);
-      await this.minterFilter
-        .connect(artist)
-        .setMinterForProject(projectZero, this.minterETH.address);
-      // get project's info
-      this.projectZeroInfo = await this.token.projectTokenInfo(projectZero);
+        for (let i = 0; i < 15; i++) {
+          console.log('entered FOR loop')
+          await this.minterExponentialDA.connect(this.accounts.owner).purchase(projectZero, {
+            value: price,
+            gasPrice: 1,
+          });
+        }
+        // Add back in mint costs to get only gas costs
+        const ownerDeltaNoMaxSet = (await this.accounts.owner.getBalance())
+          .sub(ownerBalanceNoMaxSet)
+          .add(pricePerTokenInWei.mul(15));
+
+          console.log(
+            "Gas cost for 15 successful mints without setProjectMaxInvocations: ",
+            ownerDeltaNoMaxSet.toString()
+          );
+
+          expect(parseInt(ownerDeltaNoMaxSet.toString())).to.be.lessThan(0);
+      })
     });
   
   });
