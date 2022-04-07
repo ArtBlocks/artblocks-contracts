@@ -1,6 +1,6 @@
 import { formatTitleCaseToKebabCase } from "./format";
 const { S3Client, CreateBucketCommand } = require("@aws-sdk/client-s3");
-const { fromEnv } = require("@aws-sdk/crednetial-providers");
+const { fromEnv } = require("@aws-sdk/credential-providers");
 
 // Docs: https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-s3/index.html
 
