@@ -11,12 +11,12 @@ const createBucketResponse = {
   Location: "/foobar-pbab-bucket",
 };
 
-const createPBABBucketsResponse = {
+const expectedCreatePBABBucketsResponse = {
   staging: {
-    Location: "/foobar-pbab-bucket-staging",
+    Location: "/foobar-pbab-bucket",
   },
   production: {
-    Location: "/foobar-pbab-bucket-mainnet",
+    Location: "/foobar-pbab-bucket",
   },
 };
 
@@ -39,11 +39,11 @@ describe("Create S3 Bucket for PBAB", () => {
     assert(result !== null);
     assert(
       result?.["staging"]["Location"] ===
-        createPBABBucketsResponse["staging"]["Location"]
+        expectedCreatePBABBucketsResponse["staging"]["Location"]
     );
     assert(
       result?.["production"]["Location"] ===
-        createPBABBucketsResponse["production"]["Location"]
+        expectedCreatePBABBucketsResponse["production"]["Location"]
     );
   });
 });
