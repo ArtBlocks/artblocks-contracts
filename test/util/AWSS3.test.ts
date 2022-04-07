@@ -28,14 +28,14 @@ describe("Create S3 Bucket for PBAB", () => {
 
   it("creates s3 bucket", async () => {
     const pbabBucketName = "foobar-pbab-bucket";
-    const result = await createBucket(s3ClientMock as any, pbabBucketName);
+    const result = await createBucket(pbabBucketName, s3ClientMock as any);
     assert(result !== null);
     assert(result?.["Location"] === "/foobar-pbab-bucket");
   });
 
   it("creates s3 bucket for staging and prod", async () => {
     const pbabTokenName = "Foobar PBAB Bucket";
-    const result = await createPBABBuckets(s3ClientMock as any, pbabTokenName);
+    const result = await createPBABBuckets(pbabTokenName, s3ClientMock as any);
     assert(result !== null);
     assert(
       result?.["staging"]["Location"] ===
