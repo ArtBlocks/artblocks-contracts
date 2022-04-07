@@ -1,12 +1,12 @@
 import { formatTitleCaseToKebabCase } from "./format";
 const { S3Client, CreateBucketCommand } = require("@aws-sdk/client-s3");
-const { fromEnv } require("@aws-sdk/crednetial-providers");
+const { fromEnv } = require("@aws-sdk/crednetial-providers");
 
 // Docs: https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-s3/index.html
 
 const s3Client = new S3Client({
   region: "us-east-1",
-  credentials: fromEnv()
+  credentials: fromEnv(),
 });
 
 const createBucket = async (bucketName: string, client: any) => {
@@ -17,7 +17,10 @@ const createBucket = async (bucketName: string, client: any) => {
   return await client.send(command);
 };
 
-const createPBABBuckets = async (pbabTokenName: string, client: any = s3Client) => {
+const createPBABBuckets = async (
+  pbabTokenName: string,
+  client: any = s3Client
+) => {
   let payload = {};
   const key = formatTitleCaseToKebabCase(pbabTokenName);
 
