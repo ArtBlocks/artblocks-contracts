@@ -85,4 +85,9 @@ module.exports = {
     clear: true,
     runOnCompile: true,
   },
+  gasReporter: {
+    currency: "USD",
+    gasPrice: 0,
+    enabled: true
+  }
 };

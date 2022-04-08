@@ -244,24 +244,25 @@ describe("MinterDALinV0", async function () {
       ]);
 
       await this.minter.connect(this.accounts.owner).purchase(projectOne, {
-        value: startingPrice
+        value: startingPrice,
       });
 
-      let remainingBalance = await this.accounts.owner.getBalance()
+      let remainingBalance = await this.accounts.owner.getBalance();
 
-      const formattedPrice = ethers.utils.formatUnits(startingPrice, 'wei')
+      const formattedPrice = ethers.utils.formatUnits(startingPrice, "wei");
 
       // Add back in mint costs to get only gas costs
-      const ownerTxCost = ownerBalanceNoMaxSet - remainingBalance - parseFloat(formattedPrice)
-      
-        console.log(
-          "Gas cost for a successful LinearDA mint: ",
-          ownerTxCost.toString()
-        );
+      const ownerTxCost =
+        ownerBalanceNoMaxSet - remainingBalance - parseFloat(formattedPrice);
 
-        expect(parseInt(ownerTxCost.toString())).to.be.lessThan(0);
-    })
-  })
+      console.log(
+        "Gas cost for a successful LinearDA mint: ",
+        ownerTxCost.toString()
+      );
+
+      expect(parseInt(ownerTxCost.toString())).to.be.lessThan(0);
+    });
+  });
 
   describe("purchaseTo", async function () {
     it("allows `purchaseTo` by default", async function () {
