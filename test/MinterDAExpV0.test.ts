@@ -238,7 +238,7 @@ describe("MinterDAExpV0", async function () {
 
       const remainingBalance = await this.accounts.owner.getBalance()
 
-      const formattedPrice = ethers.utils.formatEther(startingPrice)
+      const formattedPrice = ethers.utils.formatUnits(startingPrice, "wei")
       // Add back in mint costs to get only gas costs
       const ownerTxCost = ownerBalanceNoMaxSet - remainingBalance - parseInt(formattedPrice)
 
@@ -247,7 +247,7 @@ describe("MinterDAExpV0", async function () {
           ownerTxCost.toString()
         );
 
-        expect(parseInt(ownerTxCost.toString())).to.be.greaterThan(0);
+        expect(parseInt(ownerTxCost.toString())).to.be.lessThan(0);
     })
   })
 
