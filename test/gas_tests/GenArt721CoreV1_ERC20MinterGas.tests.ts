@@ -91,19 +91,27 @@ import {
         // Try without setProjectMaxInvocations, store gas cost
         const ownerBalanceNoMaxSet = await this.accounts.owner.getBalance();
   
-        for (let i = 0; i < 15; i++) {
+        // for (let i = 0; i < 15; i++) {
           await this.minterERC20.connect(this.accounts.owner).purchase(projectZero, {
             value: pricePerTokenInWei,
-            gasPrice: 1,
+            // gasPrice: 1,
           });
-        }
+        // }
+
+        const currentBal = await this.accounts.owner.getBalance()
+        const formattedPrice = ethers.utils.formatUnits(pricePerTokenInWei, 'wei')
+
+        console.log("OG balance: ", ownerBalanceNoMaxSet.toString(), 
+      "minus tx cost: ", formattedPrice.toString(),  //wei
+      "remaining: ", currentBal.toString()   //wei
+      )
+
+
         // Add back in mint costs to get only gas costs
-        const ownerDeltaNoMaxSet = (await this.accounts.owner.getBalance())
-          .sub(ownerBalanceNoMaxSet)
-          .add(pricePerTokenInWei.mul(15));
+        const ownerDeltaNoMaxSet = ownerBalanceNoMaxSet - currentBal - parseFloat(formattedPrice)
 
           console.log(
-            "Gas cost for 15 successful mints without setProjectMaxInvocations: ",
+            "Gas cost for a successful mint: ",
             ownerDeltaNoMaxSet.toString()
           );
 

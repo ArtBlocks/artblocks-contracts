@@ -8,6 +8,7 @@ import {
   } from "@openzeppelin/test-helpers";
   import { expect } from "chai";
   import { ethers } from "hardhat";
+  import { BigNumber } from "ethers";
   
   /**
    * These tests are intended to check the average gas costs of each minter filter
@@ -71,48 +72,66 @@ import {
     await this.exponentialToken
       .connect(artist)
       .updateProjectMaxInvocations(projectZero, maxInvocations);
-    // set project's minter and price
+    // set project's minter
     // await this.minterExponentialDA
     //   .connect(artist)
     //   .updatePricePerTokenInWei(projectZero, pricePerTokenInWei);
     await this.minterFilter
       .connect(artist)
       .setMinterForProject(projectZero, this.minterExponentialDA.address);
+    await this.minterExponentialDA.connect(snowfro).toggleContractMintable(projectZero)
       console.log('project: ', await this.exponentialToken.connect(snowfro).projectDetails(3))
+
+      console.log('here? ', BigNumber.from(1000000000000000))
+    // set dutch auction details
+    await this.minterExponentialDA.connect(snowfro).setAuctionDetails(
+      projectZero,
+      Date.now() + 100,     //future date
+      301,
+      '2000000000000000',
+      '1000000000000000'
+      )
+
+      console.log('did it get here?')
+      
+
+    //jump to a time past the start time of the auction
+
     // get project's info
     this.projectZeroInfo = await this.exponentialToken.projectTokenInfo(projectZero);
     });
 
     //TEST GAS COSTS FOR MINTER
 
-    describe("GAS TEST | EXPONENTIAL DA: ", async function () {
-      it("mints and calculates gas values", async function () {
-        // Try without setProjectMaxInvocations, store gas cost
-        const ownerBalanceNoMaxSet = await this.accounts.owner.getBalance();
-        console.log(ownerBalanceNoMaxSet.toString())
-        const price = await this.minterExponentialDA.connect(this.accounts.owner)._getPrice(projectZero);
-        console.log('price is: ', price)
+    // describe("GAS TEST | EXPONENTIAL DA: ", async function () {
+    //   it("mints and calculates gas values", async function () {
+    //     // Try without setProjectMaxInvocations, store gas cost
+    //     const ownerBalanceNoMaxSet = await this.accounts.owner.getBalance();
 
-        for (let i = 0; i < 15; i++) {
-          console.log('entered FOR loop')
-          await this.minterExponentialDA.connect(this.accounts.owner).purchase(projectZero, {
-            value: price,
-            gasPrice: 1,
-          });
-        }
-        // Add back in mint costs to get only gas costs
-        const ownerDeltaNoMaxSet = (await this.accounts.owner.getBalance())
-          .sub(ownerBalanceNoMaxSet)
-          .add(pricePerTokenInWei.mul(15));
+    //     const price = await this.minterExponentialDA.connect(this.accounts.owner).getPriceInfo(projectZero);
+    //     console.log('price is: ', price[1].toString())
 
-          console.log(
-            "Gas cost for 15 successful mints without setProjectMaxInvocations: ",
-            ownerDeltaNoMaxSet.toString()
-          );
+    //     for (let i = 0; i < 15; i++) {
+    //       console.log('entered FOR loop')
+    //       console.log(BigInt(1000000000000000))
+    //       await this.minterExponentialDA.connect(this.accounts.owner).purchase(projectZero, {
+    //         value: price[1],
+    //         gasPrice: 1,
+    //       });
+    //     }
+    //     // Add back in mint costs to get only gas costs
+    //     const ownerDeltaNoMaxSet = (await this.accounts.owner.getBalance())
+    //       .sub(ownerBalanceNoMaxSet)
+    //       .add(pricePerTokenInWei.mul(15));
 
-          expect(parseInt(ownerDeltaNoMaxSet.toString())).to.be.lessThan(0);
-      })
-    });
+    //       console.log(
+    //         "Gas cost for 15 successful mints without setProjectMaxInvocations: ",
+    //         ownerDeltaNoMaxSet.toString()
+    //       );
+
+    //       expect(parseInt(ownerDeltaNoMaxSet.toString())).to.be.lessThan(0);
+    //   })
+    // });
   
   });
   

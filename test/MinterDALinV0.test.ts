@@ -235,6 +235,52 @@ describe("MinterDALinV0", async function () {
     });
   });
 
+  describe("calculate gas", async function () {
+    it("mints and calculates gas values", async function () {
+      // Try without setProjectMaxInvocations, store gas cost
+      const ownerBalanceNoMaxSet = await this.accounts.owner.getBalance();
+
+      console.log('HEYHEYHEY')
+      let price = startingPrice;
+
+      await ethers.provider.send("evm_mine", [
+        this.startTime + auctionStartTimeOffset
+        // + ONE_MINUTE * 8
+        ,
+      ]);
+
+      console.log('is this low for some reason?', startingPrice.toString())
+
+      await this.minter.connect(this.accounts.owner).purchase(projectOne, {
+        value: startingPrice
+      });
+
+      let remainingBalance = await this.accounts.owner.getBalance()
+      
+      console.log("OG balance: ", ownerBalanceNoMaxSet.toString(), 
+      "minus tx cost: ", startingPrice.toString(),  //wei
+      "remaining: ", remainingBalance.toString(),   //wei
+      'with formatting: ', parseFloat(ethers.utils.formatUnits(startingPrice, 'wei'))) //wei
+
+      const formattedPrice = ethers.utils.formatUnits(startingPrice, 'wei')
+      console.log('formatted price: ', formattedPrice)
+      // if ((remainingBalance + formattedPrice) > ownerBalanceNoMaxSet) {
+      //   remainingBalance = ownerBalanceNoMaxSet
+      // }
+      // Add back in mint costs to get only gas costs
+      const ownerTxCost = ownerBalanceNoMaxSet - remainingBalance - Math.abs(parseFloat(formattedPrice))
+
+      console.log('remainder: ', ownerTxCost, Math.abs(ownerTxCost))
+      
+        console.log(
+          "Gas cost for a successful mint: ",
+          ownerTxCost.toString()
+        );
+
+        expect(parseInt(ownerTxCost.toString())).to.be.greaterThan(0);
+    })
+  })
+
   describe("purchaseTo", async function () {
     it("allows `purchaseTo` by default", async function () {
       await ethers.provider.send("evm_mine", [
