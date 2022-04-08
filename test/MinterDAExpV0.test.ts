@@ -226,13 +226,10 @@ describe("MinterDAExpV0", async function () {
 
   describe("calculate gas", async function () {
     it("mints and calculates gas values", async function () {
-      // Try without setProjectMaxInvocations, store gas cost
       const ownerBalanceNoMaxSet = await this.accounts.owner.getBalance();
 
-      let price = startingPrice;
-
-      await ethers.provider.send("evm_setNextBlockTimestamp", [
-        this.startTime + auctionStartTimeOffset * defaultHalfLife,
+      await ethers.provider.send("evm_mine", [
+        this.startTime + auctionStartTimeOffset,
       ]);
 
       await this.minter.connect(this.accounts.owner).purchase(projectOne, {
@@ -240,17 +237,13 @@ describe("MinterDAExpV0", async function () {
       });
 
       const remainingBalance = await this.accounts.owner.getBalance()
-      
-      // console.log("OG balance: ", ownerBalanceNoMaxSet.toString(), 
-      // "minus tx cost: ", startingPrice.toString(),
-      // "remaining: ", remainingBalance.toString())
 
       const formattedPrice = ethers.utils.formatEther(startingPrice)
       // Add back in mint costs to get only gas costs
       const ownerTxCost = ownerBalanceNoMaxSet - remainingBalance - parseInt(formattedPrice)
 
         console.log(
-          "Gas cost for a successful mint: ",
+          "Gas cost for a successful ExpDA mint: ",
           ownerTxCost.toString()
         );
 

@@ -464,6 +464,30 @@ describe("MinterSetPriceERC20V0", async function () {
     });
   });
 
+  describe('calculates gas', async function () {
+    it("mints and calculates gas values", async function () {
+      const ownerBalanceNoMaxSet = await this.accounts.owner.getBalance();
+
+      await this.minter.connect(this.accounts.owner).purchase(projectOne, {
+        value: pricePerTokenInWei
+      });
+
+      const remainingBalance = await this.accounts.owner.getBalance()
+
+      const formattedPrice = ethers.utils.formatUnits(pricePerTokenInWei, 'wei')
+
+      // Add back in mint costs to get only gas costs
+      const ownerTxCost = ownerBalanceNoMaxSet - remainingBalance - parseInt(formattedPrice)
+
+        console.log(
+          "Gas cost for a successful ERC20 mint: ",
+          ownerTxCost.toString()
+        );
+
+        expect(parseInt(ownerTxCost.toString())).to.be.lessThan(0);
+    })
+  })
+
   describe("purchaseTo", async function () {
     it("does not allow purchase prior to configuring price", async function () {
       await expectRevert(
