@@ -4,7 +4,7 @@
 import { ethers } from "hardhat";
 import { GenArt721CoreV2PBAB__factory } from "./contracts/factories/GenArt721CoreV2PBAB__factory";
 import { GenArt721MinterPBAB__factory } from "./contracts/factories/GenArt721MinterPBAB__factory";
-import { createPBABBuckets } from "./util/aws_s3";
+import { createPBABBucket } from "./util/aws_s3";
 import royaltyRegistryABI from "../contracts/libs/abi/RoyaltyRegistry.json";
 import { GenArt721RoyaltyOverridePBAB__factory } from "./contracts/factories/GenArt721RoyaltyOverridePBAB__factory";
 
@@ -65,7 +65,7 @@ async function main() {
     randomizerAddress
   );
 
-  await createPBABBuckets(pbabTokenName);
+  await createPBABBucket(pbabTokenName);
 
   await genArt721Core.deployed();
   console.log(`GenArt721Core deployed at ${genArt721Core.address}`);
