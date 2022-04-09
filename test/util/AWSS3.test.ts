@@ -2,8 +2,11 @@ import { assert } from "chai";
 const { mockClient } = require("aws-sdk-client-mock");
 const { S3Client, CreateBucketCommand } = require("@aws-sdk/client-s3");
 import { createPBABBucket, createBucket } from "../../scripts/util/aws_s3";
-import { formatTitleCaseToKebabCase, getBucketURL, getPBABBucketName } from "../../scripts/util/format";
-
+import {
+  formatTitleCaseToKebabCase,
+  getBucketURL,
+  getPBABBucketName,
+} from "../../scripts/util/format";
 
 require("dotenv").config();
 const environment = process.env.environment || "development";
@@ -12,16 +15,16 @@ const environment = process.env.environment || "development";
 const s3ClientMock = mockClient(new S3Client({}));
 
 const pbabTokenName = "Foobar PBAB Bucket";
-const pbabBucketName = getPBABBucketName(pbabTokenName)
-const pbabBucketURL = getBucketURL(pbabBucketName)
+const pbabBucketName = getPBABBucketName(pbabTokenName);
+const pbabBucketURL = getBucketURL(pbabBucketName);
 
 const createBucketResponse = {
-  Location: `/${pbabBucketName}`
+  Location: `/${pbabBucketName}`,
 };
 
 const expectedCreatePBABBucketResponse = {
   url: pbabBucketURL,
-  response: createBucketResponse
+  response: createBucketResponse,
 };
 
 describe("Create S3 Bucket for PBAB", () => {
@@ -40,11 +43,9 @@ describe("Create S3 Bucket for PBAB", () => {
     const result = await createPBABBucket(pbabTokenName, s3ClientMock as any);
     assert(
       result?.["response"]["Location"] ===
-      expectedCreatePBABBucketResponse["response"]["Location"]
+        expectedCreatePBABBucketResponse["response"]["Location"]
     );
-    assert(
-      result?.["url"] === expectedCreatePBABBucketResponse["url"]
-    );
+    assert(result?.["url"] === expectedCreatePBABBucketResponse["url"]);
   });
 });
 
@@ -57,9 +58,12 @@ describe("Format PBAB token name into S3 bucket name and url", () => {
 
   it("formats PBAB bucket name to full url", () => {
     const pbabTokenName = "Foobar PBAB Bucket";
-    const pbabBucketName = getPBABBucketName(pbabTokenName)
-    const pbabBucketURL = getBucketURL(pbabBucketName)
-    assert(pbabBucketName.split('-')[pbabBucketName.split('-').length-1] === environment);
-    assert(pbabBucketURL === `https://${pbabBucketName}.s3.amazonaws.com`)
+    const pbabBucketName = getPBABBucketName(pbabTokenName);
+    const pbabBucketURL = getBucketURL(pbabBucketName);
+    assert(
+      pbabBucketName.split("-")[pbabBucketName.split("-").length - 1] ===
+        environment
+    );
+    assert(pbabBucketURL === `https://${pbabBucketName}.s3.amazonaws.com`);
   });
 });
