@@ -1,12 +1,19 @@
-import { formatTitleCaseToKebabCase } from "./format";
+import { getPBABBucketName, getBucketURL } from "./format";
 const { S3Client, CreateBucketCommand } = require("@aws-sdk/client-s3");
-const { fromEnv } = require("@aws-sdk/credential-providers");
 
 // Docs: https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-s3/index.html
 
+require("dotenv").config();
+
+const awsCreds = {
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID as string,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY as string,
+  sessionToken: process.env.AWS_SESSION_TOKEN as string,
+};
+
 const s3Client = new S3Client({
   region: "us-east-1",
-  credentials: fromEnv(),
+  credentials: awsCreds,
 });
 
 const createBucket = async (bucketName: string, client: any) => {
@@ -17,26 +24,21 @@ const createBucket = async (bucketName: string, client: any) => {
   return await client.send(command);
 };
 
-const createPBABBuckets = async (
+const createPBABBucket = async (
   pbabTokenName: string,
   client: any = s3Client
 ) => {
   let payload = {};
-  const key = formatTitleCaseToKebabCase(pbabTokenName);
 
-  // Create PBAB bucket for staging
-  const stagingBucketName = `${key}-staging`;
-  const stagingBucketResponse = await createBucket(stagingBucketName, client);
-  payload["staging"] = stagingBucketResponse;
-  console.log(`Created s3 bucket for ${stagingBucketName}`);
+  const bucketName = getPBABBucketName(pbabTokenName);
+  const bucketURL = getBucketURL(bucketName);
+  const bucketResponse = await createBucket(bucketName, client);
 
-  // Create PBAB bucket for prod
-  const prodBucketName = `${key}-mainnet`;
-  const prodBucketResponse = await createBucket(prodBucketName, client);
-  payload["production"] = prodBucketResponse;
-  console.log(`Created s3 bucket for ${prodBucketName}`);
+  payload["response"] = bucketResponse;
+  payload["url"] = bucketURL;
+  console.log(`Created s3 bucket for ${bucketURL}`);
 
   return payload;
 };
 
-export { createPBABBuckets, createBucket };
+export { createPBABBucket, createBucket };
