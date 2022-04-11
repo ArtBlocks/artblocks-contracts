@@ -21,7 +21,8 @@ const randomizerAddress = "0x000000000000000000000000000000000000dEaD";
 
 async function main() {
   const [deployer] = await ethers.getSigners();
-
+  const network = await ethers.provider.getNetwork();
+  const networkName = network.name == "homestead" ? "mainnet" : network.name;
   //////////////////////////////////////////////////////////////////////////////
   // DEPLOYMENT BEGINS HERE
   //////////////////////////////////////////////////////////////////////////////
@@ -73,7 +74,6 @@ async function main() {
   console.log(`Set the Minter owner to: ${pbabTransferAddress}.`);
 
   // Allowlist AB staff (testnet only)
-  const network = await ethers.provider.getNetwork();
   if (network.name == "ropsten" || network.name == "rinkeby") {
     // purplehat
     await genArt721Core
@@ -99,7 +99,6 @@ async function main() {
   console.log(`Transferred Core contract admin to: ${pbabTransferAddress}.`);
 
   // Output instructions for manual Etherscan verification.
-  const networkName = network.name == "homestead" ? "mainnet" : network.name;
   const standardVerify =
     "yarn hardhat verify --contract <path to .sol>:<contract name>";
   console.log(`Verify GenArt721CoreV2 deployment with:`);

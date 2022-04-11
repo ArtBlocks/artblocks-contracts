@@ -3,8 +3,6 @@ const { S3Client, CreateBucketCommand } = require("@aws-sdk/client-s3");
 
 // Docs: https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-s3/index.html
 
-require("dotenv").config();
-
 const awsCreds = {
   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
@@ -25,17 +23,27 @@ const createBucket = async (bucketName: string, client: any) => {
 
 const createPBABBucket = async (
   pbabTokenName: string,
-  client: any = s3Client
+  networkName: string,
+  client: any = s3Client,
+  isTest: boolean = false
 ) => {
   let payload = {};
+  payload["response"] = {};
+  payload["url"] = "";
 
-  const bucketName = getPBABBucketName(pbabTokenName);
-  const bucketURL = getBucketURL(bucketName);
-  const bucketResponse = await createBucket(bucketName, client);
+  if (
+    networkName === "mainnet" ||
+    networkName === "ropsten" ||
+    isTest === true
+  ) {
+    const bucketName = getPBABBucketName(pbabTokenName, networkName);
+    const bucketURL = getBucketURL(bucketName);
+    const bucketResponse = await createBucket(bucketName, client);
 
-  payload["response"] = bucketResponse;
-  payload["url"] = bucketURL;
-  console.log(`Created s3 bucket for ${bucketURL}`);
+    payload["response"] = bucketResponse;
+    payload["url"] = bucketURL;
+    console.log(`Created s3 bucket for ${bucketURL}`);
+  }
 
   return payload;
 };

@@ -8,14 +8,12 @@ import {
   getPBABBucketName,
 } from "../../scripts/util/format";
 
-require("dotenv").config();
-const environment = process.env.environment || "development";
-
 // Mock client documentation: https://www.npmjs.com/package/aws-sdk-client-mock
 const s3ClientMock = mockClient(new S3Client({}));
 
 const pbabTokenName = "Foobar PBAB Bucket";
-const pbabBucketName = getPBABBucketName(pbabTokenName);
+const networkName = "rinkeby";
+const pbabBucketName = getPBABBucketName(pbabTokenName, networkName);
 const pbabBucketURL = getBucketURL(pbabBucketName);
 
 const createBucketResponse = {
@@ -40,7 +38,13 @@ describe("Create S3 Bucket for PBAB", () => {
 
   it("creates s3 bucket with pbab naming conventions", async () => {
     const pbabTokenName = "Foobar PBAB Bucket";
-    const result = await createPBABBucket(pbabTokenName, s3ClientMock as any);
+    const isTest = true;
+    const result = await createPBABBucket(
+      pbabTokenName,
+      networkName,
+      s3ClientMock as any,
+      isTest
+    );
     assert(
       result?.["response"]["Location"] ===
         expectedCreatePBABBucketResponse["response"]["Location"]
@@ -58,11 +62,12 @@ describe("Format PBAB token name into S3 bucket name and url", () => {
 
   it("formats PBAB bucket name to full url", () => {
     const pbabTokenName = "Foobar PBAB Bucket";
-    const pbabBucketName = getPBABBucketName(pbabTokenName);
+    const networkName = "rinkeby";
+    const pbabBucketName = getPBABBucketName(pbabTokenName, networkName);
     const pbabBucketURL = getBucketURL(pbabBucketName);
     assert(
       pbabBucketName.split("-")[pbabBucketName.split("-").length - 1] ===
-        environment
+        networkName
     );
     assert(pbabBucketURL === `https://${pbabBucketName}.s3.amazonaws.com`);
   });

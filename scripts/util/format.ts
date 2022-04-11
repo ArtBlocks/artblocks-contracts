@@ -1,19 +1,10 @@
-require("dotenv").config();
-
-const environment = process.env.environment || "development";
-
 const formatTitleCaseToKebabCase = (str: string) => {
   return str.toLowerCase().replace(/\s/g, "-");
 };
 
-const getPBABBucketName = (pbabToken: string) => {
-  const envSuffix = {
-    development: "-development",
-    staging: "-staging",
-    production: "-mainnet",
-  };
+const getPBABBucketName = (pbabToken: string, networkName: string) => {
   const base = formatTitleCaseToKebabCase(pbabToken);
-  return `${base}${envSuffix[environment]}`;
+  return `${base}-${networkName}`;
 };
 
 const getBucketURL = (pbabBucketName: string) => {
