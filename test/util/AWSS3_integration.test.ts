@@ -4,9 +4,8 @@ const { S3Client, ListBucketsCommand } = require("@aws-sdk/client-s3");
 require("dotenv").config();
 
 const awsCreds = {
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID as string,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY as string,
-  sessionToken: process.env.AWS_SESSION_TOKEN as string,
+  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
 };
 
 describe("Integration Test of AWS SDK Client to Create S3 Bucket", () => {
