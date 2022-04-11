@@ -4,14 +4,6 @@ orbs:
   node: circleci/node@4.7
   aws-cli: circleci/aws-cli@3.0.0
 
-parameters:
-  aws-access-id-key:
-    default: $AWS_ACCESS_KEY_ID
-    type: env_var_name
-  aws-secret-access-key:
-    default: $AWS_SECRET_ACCESS_KEY
-    type: env_var_name
-
 jobs:
   lint-and-test:
     docker:
