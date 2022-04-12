@@ -1,7 +1,7 @@
 {
-    "compilerOptions": {
-        // enable import of .json (e.g. abi.json)
-        "esModuleInterop": true,
-        "resolveJsonModule": true
-      }
+  "compilerOptions": {
+    // enable import of .json (e.g. abi.json)
+    "esModuleInterop": true,
+    "resolveJsonModule": true
+  }
 }
