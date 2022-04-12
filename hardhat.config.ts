@@ -85,4 +85,10 @@ module.exports = {
     clear: true,
     runOnCompile: true,
   },
+  gasReporter: {
+    currency: "USD",
+    gasPrice: 30,
+    enabled: true,
+    coinmarketcap: process.env.COINMARKETCAP_API_KEY
+  }
 };

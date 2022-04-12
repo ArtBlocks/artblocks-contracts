@@ -235,6 +235,35 @@ describe("MinterDALinV0", async function () {
     });
   });
 
+  describe("calculate gas", async function () {
+    it("mints and calculates gas values", async function () {
+      const ownerBalanceNoMaxSet = await this.accounts.owner.getBalance();
+
+      await ethers.provider.send("evm_mine", [
+        this.startTime + auctionStartTimeOffset,
+      ]);
+
+      await this.minter.connect(this.accounts.owner).purchase(projectOne, {
+        value: startingPrice,
+      });
+
+      let remainingBalance = await this.accounts.owner.getBalance();
+
+      const formattedPrice = ethers.utils.formatUnits(startingPrice, "wei");
+
+      // Add back in mint costs to get only gas costs
+      const ownerTxCost =
+        ownerBalanceNoMaxSet - remainingBalance - parseFloat(formattedPrice);
+
+      console.log(
+        "Gas cost for a successful LinearDA mint: ",
+        ownerTxCost.toString()
+      );
+
+      expect(parseInt(ownerTxCost.toString())).to.equal(-131944444854272);
+    });
+  });
+
   describe("purchaseTo", async function () {
     it("allows `purchaseTo` by default", async function () {
       await ethers.provider.send("evm_mine", [
