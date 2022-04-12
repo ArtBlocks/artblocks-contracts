@@ -488,7 +488,7 @@ describe("MinterSetPriceERC20V0", async function () {
         ownerTxCost.toString()
       );
 
-      expect(parseInt(ownerTxCost.toString())).to.be.lessThan(0);
+      expect(parseInt(ownerTxCost.toString())).to.equal(-262144);
     });
   });
 

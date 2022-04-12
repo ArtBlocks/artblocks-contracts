@@ -248,7 +248,7 @@ describe("MinterDAExpV0", async function () {
         ownerTxCost.toString()
       );
 
-      expect(parseInt(ownerTxCost.toString())).to.be.lessThan(0);
+      expect(parseInt(ownerTxCost.toString())).to.equal(-2777777776885760);
     });
   });
 
