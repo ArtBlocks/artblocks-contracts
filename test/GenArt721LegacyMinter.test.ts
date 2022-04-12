@@ -21,7 +21,6 @@ import {
     const projectOne = 4;
   
     beforeEach(async function () {
-        console.log(1);
       const [owner, newOwner, artist, additional, snowfro] =
         await ethers.getSigners();
       this.accounts = {
@@ -34,34 +33,18 @@ import {
       const randomizerFactory = await ethers.getContractFactory(
         "BasicRandomizer"
       );
-      console.log(2);
       this.randomizer = await randomizerFactory.deploy();
       const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV1");
       this.token = await artblocksFactory
         .connect(snowfro)
         .deploy(name, symbol, this.randomizer.address);
-      // deploy and configure minter filter and minter
-      const minterFilterFactory = await ethers.getContractFactory(
-        "MinterFilterV0"
-      );
-      console.log(3);
-      this.minterFilter = await minterFilterFactory.deploy(this.token.address);
-      console.log(3);
+      // deploy minter
       const minterFactory = await ethers.getContractFactory("GenArt721LegacyMinter");
-      console.log(3);
       this.minter = await minterFactory.deploy(
         this.token.address
       );
 
-      console.log(4);
-      await this.minterFilter
-        .connect(snowfro)
-        .addApprovedMinter(this.minter.address);
-      await this.token
-        .connect(snowfro)
-        .addMintWhitelisted(this.minterFilter.address);
       // add projects
-      console.log(5);
       await this.token
         .connect(snowfro)
         .addProject("project1", artist.address, 0, false);
@@ -69,149 +52,137 @@ import {
         .connect(snowfro)
         .addProject("project2", artist.address, 0, false);
   
-        console.log(6);
       await this.token.connect(snowfro).toggleProjectIsActive(projectZero);
       await this.token.connect(snowfro).toggleProjectIsActive(projectOne);
   
-    //   await this.token
-    //     .connect(artist)
-    //     .updateProjectMaxInvocations(projectZero, 15);
-    //   await this.token
-    //     .connect(artist)
-    //     .updateProjectMaxInvocations(projectOne, 15);
+      await this.token
+      .connect(snowfro)
+      .addMintWhitelisted(this.minter.address);
+
+      await this.token
+        .connect(artist)
+        .updateProjectMaxInvocations(projectZero, 15);
+      await this.token
+        .connect(artist)
+        .updateProjectMaxInvocations(projectOne, 15);
   
       this.token.connect(this.accounts.artist).toggleProjectIsPaused(projectZero);
       this.token.connect(this.accounts.artist).toggleProjectIsPaused(projectOne);
-  
-      console.log(8);
-      // set project minters and prices
-    //   await this.minter
-    //     .connect(artist)
-    //     .updatePricePerTokenInWei(projectZero, pricePerTokenInWei);
-    //   await this.minter
-    //     .connect(artist)
-    //     .updatePricePerTokenInWei(projectOne, pricePerTokenInWei);
-      await this.minterFilter
-        .connect(artist)
-        .setMinterForProject(projectZero, this.minter.address);
-      await this.minterFilter
-        .connect(artist)
-        .setMinterForProject(projectOne, this.minter.address);
     });
   
-    describe("(LEGACY) purchase", async function () {
-      it("does nothing if setProjectMaxInvocations is not called (fails correctly)", async function () {
-        for (let i = 0; i < 15; i++) {
-          await this.minter.connect(this.accounts.owner).purchase(projectZero, {
-            value: pricePerTokenInWei,
-          });
-        }
-  
-        const ownerBalance = await this.accounts.owner.getBalance();
-        await expectRevert(
-          this.minter.connect(this.accounts.owner).purchase(projectZero, {
-            value: pricePerTokenInWei,
-          }),
-          "Must not exceed max invocations"
-        );
+    describe("purchase", async function () {
+        it("does nothing if setProjectMaxInvocations is not called (fails correctly)", async function () {
+          for (let i = 0; i < 15; i++) {
+            await this.minter.connect(this.accounts.owner).purchase(projectZero, {
+              value: pricePerTokenInWei,
+            });
+          }
+    
+          const ownerBalance = await this.accounts.owner.getBalance();
+          await expectRevert(
+            this.minter.connect(this.accounts.owner).purchase(projectZero, {
+              value: pricePerTokenInWei,
+            }),
+            "Must not exceed max invocations"
+          );
+        });
+    
+        it("doesnt add too much gas if setProjectMaxInvocations is set", async function () {
+          // Try without setProjectMaxInvocations, store gas cost
+          const ownerBalanceNoMaxSet = await this.accounts.owner.getBalance();
+          for (let i = 0; i < 15; i++) {
+            await this.minter.connect(this.accounts.owner).purchase(projectZero, {
+              value: pricePerTokenInWei,
+              gasPrice: 1,
+            });
+          }
+          // Add back in mint costs to get only gas costs
+          const ownerDeltaNoMaxSet = (await this.accounts.owner.getBalance())
+            .sub(ownerBalanceNoMaxSet)
+            .add(pricePerTokenInWei.mul(15));
+    
+          // Try with setProjectMaxInvocations, store gas cost
+          await this.minter
+            .connect(this.accounts.snowfro)
+            .setProjectMaxInvocations(projectOne);
+          const ownerBalanceMaxSet = await this.accounts.owner.getBalance();
+          for (let i = 0; i < 15; i++) {
+            await this.minter.connect(this.accounts.owner).purchase(projectOne, {
+              value: pricePerTokenInWei,
+              gasPrice: 1,
+            });
+          }
+          // Add back in mint costs to get only gas costs
+          const ownerDeltaMaxSet = (await this.accounts.owner.getBalance())
+            .sub(ownerBalanceMaxSet)
+            .add(pricePerTokenInWei.mul(15));
+    
+          console.log(
+            "Gas cost for 15 successful mints with setProjectMaxInvocations: ",
+            ownerDeltaMaxSet.toString()
+          );
+          console.log(
+            "Gas cost for 15 successful mints without setProjectMaxInvocations: ",
+            ownerDeltaNoMaxSet.toString()
+          );
+    
+          // Check that with setProjectMaxInvocations it's not too much moer expensive
+          expect(
+            ownerDeltaMaxSet.abs().lt(ownerDeltaNoMaxSet.abs().mul(110).div(100))
+          ).to.be.true;
+        });
+    
+        it("fails more cheaply if setProjectMaxInvocations is set", async function () {
+          // Try without setProjectMaxInvocations, store gas cost
+          for (let i = 0; i < 15; i++) {
+            await this.minter.connect(this.accounts.owner).purchase(projectZero, {
+              value: pricePerTokenInWei,
+            });
+          }
+          const ownerBalanceNoMaxSet = await this.accounts.owner.getBalance();
+          await expectRevert(
+            this.minter.connect(this.accounts.owner).purchase(projectZero, {
+              value: pricePerTokenInWei,
+              gasPrice: 1,
+            }),
+            "Must not exceed max invocations"
+          );
+          const ownerDeltaNoMaxSet = (await this.accounts.owner.getBalance()).sub(
+            ownerBalanceNoMaxSet
+          );
+    
+          // Try with setProjectMaxInvocations, store gas cost
+          await this.minter
+            .connect(this.accounts.snowfro)
+            .setProjectMaxInvocations(projectOne);
+          for (let i = 0; i < 15; i++) {
+            await this.minter.connect(this.accounts.owner).purchase(projectOne, {
+              value: pricePerTokenInWei,
+            });
+          }
+          const ownerBalanceMaxSet = await this.accounts.owner.getBalance();
+          await expectRevert(
+            this.minter.connect(this.accounts.owner).purchase(projectOne, {
+              value: pricePerTokenInWei,
+              gasPrice: 1,
+            }),
+            "Maximum number of invocations reached"
+          );
+          const ownerDeltaMaxSet = (await this.accounts.owner.getBalance()).sub(
+            ownerBalanceMaxSet
+          );
+    
+          console.log(
+            "Gas cost with setProjectMaxInvocations: ",
+            ownerDeltaMaxSet.toString()
+          );
+          console.log(
+            "Gas cost without setProjectMaxInvocations: ",
+            ownerDeltaNoMaxSet.toString()
+          );
+    
+          expect(ownerDeltaMaxSet.abs().lt(ownerDeltaNoMaxSet.abs())).to.be.true;
+        });
       });
-  
-    //   it("doesnt add too much gas if setProjectMaxInvocations is set", async function () {
-    //     // Try without setProjectMaxInvocations, store gas cost
-    //     const ownerBalanceNoMaxSet = await this.accounts.owner.getBalance();
-    //     for (let i = 0; i < 15; i++) {
-    //       await this.minter.connect(this.accounts.owner).purchase(projectZero, {
-    //         value: pricePerTokenInWei,
-    //         gasPrice: 1,
-    //       });
-    //     }
-    //     // Add back in mint costs to get only gas costs
-    //     const ownerDeltaNoMaxSet = (await this.accounts.owner.getBalance())
-    //       .sub(ownerBalanceNoMaxSet)
-    //       .add(pricePerTokenInWei.mul(15));
-  
-    //     // Try with setProjectMaxInvocations, store gas cost
-    //     await this.minter
-    //       .connect(this.accounts.snowfro)
-    //       .setProjectMaxInvocations(projectOne);
-    //     const ownerBalanceMaxSet = await this.accounts.owner.getBalance();
-    //     for (let i = 0; i < 15; i++) {
-    //       await this.minter.connect(this.accounts.owner).purchase(projectOne, {
-    //         value: pricePerTokenInWei,
-    //         gasPrice: 1,
-    //       });
-    //     }
-    //     // Add back in mint costs to get only gas costs
-    //     const ownerDeltaMaxSet = (await this.accounts.owner.getBalance())
-    //       .sub(ownerBalanceMaxSet)
-    //       .add(pricePerTokenInWei.mul(15));
-  
-    //     console.log(
-    //       "Gas cost for 15 successful mints with setProjectMaxInvocations: ",
-    //       ownerDeltaMaxSet.toString()
-    //     );
-    //     console.log(
-    //       "Gas cost for 15 successful mints without setProjectMaxInvocations: ",
-    //       ownerDeltaNoMaxSet.toString()
-    //     );
-  
-    //     // Check that with setProjectMaxInvocations it's not too much moer expensive
-    //     expect(
-    //       ownerDeltaMaxSet.abs().lt(ownerDeltaNoMaxSet.abs().mul(110).div(100))
-    //     ).to.be.true;
-    //   });
-  
-    //   it("fails more cheaply if setProjectMaxInvocations is set", async function () {
-    //     // Try without setProjectMaxInvocations, store gas cost
-    //     for (let i = 0; i < 15; i++) {
-    //       await this.minter.connect(this.accounts.owner).purchase(projectZero, {
-    //         value: pricePerTokenInWei,
-    //       });
-    //     }
-    //     const ownerBalanceNoMaxSet = await this.accounts.owner.getBalance();
-    //     await expectRevert(
-    //       this.minter.connect(this.accounts.owner).purchase(projectZero, {
-    //         value: pricePerTokenInWei,
-    //         gasPrice: 1,
-    //       }),
-    //       "Must not exceed max invocations"
-    //     );
-    //     const ownerDeltaNoMaxSet = (await this.accounts.owner.getBalance()).sub(
-    //       ownerBalanceNoMaxSet
-    //     );
-  
-    //     // Try with setProjectMaxInvocations, store gas cost
-    //     await this.minter
-    //       .connect(this.accounts.snowfro)
-    //       .setProjectMaxInvocations(projectOne);
-    //     for (let i = 0; i < 15; i++) {
-    //       await this.minter.connect(this.accounts.owner).purchase(projectOne, {
-    //         value: pricePerTokenInWei,
-    //       });
-    //     }
-    //     const ownerBalanceMaxSet = await this.accounts.owner.getBalance();
-    //     await expectRevert(
-    //       this.minter.connect(this.accounts.owner).purchase(projectOne, {
-    //         value: pricePerTokenInWei,
-    //         gasPrice: 1,
-    //       }),
-    //       "Maximum number of invocations reached"
-    //     );
-    //     const ownerDeltaMaxSet = (await this.accounts.owner.getBalance()).sub(
-    //       ownerBalanceMaxSet
-    //     );
-  
-    //     console.log(
-    //       "Gas cost with setProjectMaxInvocations: ",
-    //       ownerDeltaMaxSet.toString()
-    //     );
-    //     console.log(
-    //       "Gas cost without setProjectMaxInvocations: ",
-    //       ownerDeltaNoMaxSet.toString()
-    //     );
-  
-    //     expect(ownerDeltaMaxSet.abs().lt(ownerDeltaNoMaxSet.abs())).to.be.true;
-    //   });
-    });
   });
   
