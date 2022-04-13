@@ -40,9 +40,7 @@ async function main() {
 
   // Deploy legacy Minter for gas comparison test
   const legacyMinterFactory = new GenArt721LegacyMinter__factory(deployer);
-  const legacyMinter = await legacyMinterFactory.deploy(
-    CORE_CONTRACT_ADDRESS
-  );
+  const legacyMinter = await legacyMinterFactory.deploy(CORE_CONTRACT_ADDRESS);
   await legacyMinter.deployed();
   console.log(`Legacy Minter deployed at ${legacyMinter.address}`);
 
