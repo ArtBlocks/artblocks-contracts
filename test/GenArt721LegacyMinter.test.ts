@@ -47,10 +47,10 @@ describe("GenArt721Minter", async function () {
     // add projects
     await this.token
       .connect(snowfro)
-      .addProject("project1", artist.address, 0, false);
+      .addProject("project1", artist.address, pricePerTokenInWei, false);
     await this.token
       .connect(snowfro)
-      .addProject("project2", artist.address, 0, false);
+      .addProject("project2", artist.address, pricePerTokenInWei, false);
 
     await this.token.connect(snowfro).toggleProjectIsActive(projectZero);
     await this.token.connect(snowfro).toggleProjectIsActive(projectOne);
@@ -68,35 +68,35 @@ describe("GenArt721Minter", async function () {
     this.token.connect(this.accounts.artist).toggleProjectIsPaused(projectOne);
   });
 
-  describe("(LEGACY MINTER) purchase method", async function () {
-    it("mints and calculates gas values", async function () {
-      let ownerBalanceNoMaxSet = await this.accounts.owner.getBalance();
-      ownerBalanceNoMaxSet = BigInt(ownerBalanceNoMaxSet.toString())
+//   describe("(LEGACY MINTER) purchase method", async function () {
+//     it("mints and calculates gas values", async function () {
+//       let ownerBalanceNoMaxSet = await this.accounts.owner.getBalance();
+//       ownerBalanceNoMaxSet = BigInt(ownerBalanceNoMaxSet.toString())
 
-      await this.minter.connect(this.accounts.owner).purchase(projectOne, {
-        value: pricePerTokenInWei,
-      });
+//       await this.minter.connect(this.accounts.owner).purchase(projectZero, {
+//         value: pricePerTokenInWei,
+//       });
 
-      let remainingBalance = await this.accounts.owner.getBalance();
-      remainingBalance = BigInt(remainingBalance.toString())
+//       let remainingBalance = await this.accounts.owner.getBalance();
+//       remainingBalance = BigInt(remainingBalance.toString())
 
-      const formattedPrice = BigInt(ethers.utils.formatUnits(
-        pricePerTokenInWei,
-        "wei"
-      ).toString());
+//       const formattedPrice = BigInt(ethers.utils.formatUnits(
+//         pricePerTokenInWei,
+//         "wei"
+//       ).toString());
 
-      // Add back in mint costs to get only gas costs
-      const ownerTxCost =
-        ownerBalanceNoMaxSet - remainingBalance - (formattedPrice as any);
+//       // Add back in mint costs to get only gas costs
+//       const ownerTxCost =
+//         ownerBalanceNoMaxSet - remainingBalance - (formattedPrice as any);
 
-        console.log(ownerBalanceNoMaxSet, remainingBalance, formattedPrice);
-      console.log(
-        "Gas cost for a successful Ether mint (legacy minter):  ",
-        ownerTxCost.toString()
-      );
+//         console.log(ownerBalanceNoMaxSet, remainingBalance, formattedPrice);
+//       console.log(
+//         "Gas cost for a successful Ether mint (legacy minter):  ",
+//         ownerTxCost.toString()
+//       );
 
-      expect(parseInt(ownerTxCost.toString())).to.equal(-1000000000000000000);
-    });
+//       expect(parseInt(ownerTxCost.toString())).to.equal(367673000000000);
+//     });
 
     it("does nothing if setProjectMaxInvocations is not called (fails correctly)", async function () {
       for (let i = 0; i < 15; i++) {
