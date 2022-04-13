@@ -7,7 +7,6 @@ import { MinterSetPriceERC20V0__factory } from "./contracts/factories/MinterSetP
 import { MinterSetPriceV0__factory } from "./contracts/factories/MinterSetPriceV0__factory";
 import { MinterDALinV0__factory } from "./contracts/factories/MinterDALinV0__factory";
 import { MinterDAExpV0__factory } from "./contracts/factories/MinterDAExpV0__factory";
-import { GenArt721LegacyMinter__factory } from "./contracts";
 
 const CORE_CONTRACT_ADDRESS = "0x87c6E93Fc0B149ec59AD595e2E187a4e1d7fDC25";
 
@@ -37,12 +36,6 @@ async function main() {
   console.log(
     `MinterSetPriceERC20V0 deployed at ${minterSetPriceERC20V0.address}`
   );
-
-  // Deploy legacy Minter for gas comparison test
-  const legacyMinterFactory = new GenArt721LegacyMinter__factory(deployer);
-  const legacyMinter = await legacyMinterFactory.deploy(CORE_CONTRACT_ADDRESS);
-  await legacyMinter.deployed();
-  console.log(`Legacy Minter deployed at ${legacyMinter.address}`);
 
   // Deploy basic Minter contract that **only** supports ETH, as an optimization,
   // and thus _does not_ support custom ERC20 minting.
@@ -93,9 +86,6 @@ async function main() {
   console.log(`Verify each of the Minter deployments with:`);
   console.log(
     `${standardVerify} --network ${networkName} ${minterSetPriceERC20V0.address} ${CORE_CONTRACT_ADDRESS} ${minterFilter.address}`
-  );
-  console.log(
-    `${standardVerify} --network ${networkName} ${legacyMinter.address} ${CORE_CONTRACT_ADDRESS} ${minterFilter.address}`
   );
   console.log(
     `${standardVerify} --network ${networkName} ${minterSetPriceV0.address} ${CORE_CONTRACT_ADDRESS} ${minterFilter.address}`

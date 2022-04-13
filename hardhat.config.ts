@@ -48,10 +48,10 @@ module.exports = {
   },
   networks: {
     hardhat: {
-      gasPrice: 0,
       initialBaseFeePerGas: 0,
+      gasPrice: 0,
       // gas: "auto",
-      // gasPrice: "auto",
+      // gasPrice: 100000000000, // 100 gwei
     },
     mainnet: {
       url: MAINNET_JSON_RPC_PROVIDER_URL,
@@ -61,8 +61,6 @@ module.exports = {
     ropsten: {
       url: ROPSTEN_JSON_RPC_PROVIDER_URL,
       accounts: [`0x${TESTNET_PRIVATE_KEY}`],
-      // gas: "auto",
-      // gasPrice: "auto",
     },
     rinkeby: {
       url: RINKEBY_JSON_RPC_PROVIDER_URL,

@@ -8,6 +8,7 @@ import {
 } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
+import { BigNumber } from "ethers";
 
 describe("GenArt721Minter", async function () {
   const name = "Non Fungible Token";
@@ -70,32 +71,19 @@ describe("GenArt721Minter", async function () {
 
   describe("(LEGACY MINTER) purchase method", async function () {
     // it("mints and calculates gas values", async function () {
-    //   let ownerBalanceNoMaxSet = await this.accounts.owner.getBalance();
-    //   ownerBalanceNoMaxSet = BigInt(ownerBalanceNoMaxSet.toString())
-
     //   await this.minter.connect(this.accounts.owner).purchase(projectZero, {
     //     value: pricePerTokenInWei,
     //   });
 
-    //   let remainingBalance = await this.accounts.owner.getBalance();
-    //   remainingBalance = BigInt(remainingBalance.toString())
+    //   const tx = await this.minter.connect(this.accounts.owner).purchase(projectOne, {
+    //     value: pricePerTokenInWei,
+    //   });
 
-    //   const formattedPrice = BigInt(ethers.utils.formatUnits(
-    //     pricePerTokenInWei,
-    //     "wei"
-    //   ).toString());
+    //   const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+    //   const txCost = receipt.effectiveGasPrice.mul(receipt.gasUsed).toString();
+    //   console.log('Gas cost for a successful (LEGACY) Ether mint: ', txCost);
 
-    //   // Add back in mint costs to get only gas costs
-    //   const ownerTxCost =
-    //     ownerBalanceNoMaxSet - remainingBalance - (formattedPrice as any);
-
-    //     console.log(ownerBalanceNoMaxSet, remainingBalance, formattedPrice);
-    //   console.log(
-    //     "Gas cost for a successful Ether mint (legacy minter):  ",
-    //     ownerTxCost.toString()
-    //   );
-
-    //   expect(parseInt(ownerTxCost.toString())).to.equal(367673000000000);
+    //   expect(txCost.toString()).to.equal("35617300000000000");      // assuming a cost of 100 GWEI
     // });
 
     it("does nothing if setProjectMaxInvocations is not called (fails correctly)", async function () {

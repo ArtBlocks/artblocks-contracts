@@ -347,31 +347,15 @@ describe("GenArt721MinterEthAuction_V1Core", async function () {
 
   // describe("calculates gas", async function () {
   //   it("mints and calculates gas values", async function () {
-  //     let ownerBalanceNoMaxSet = await this.accounts.owner.getBalance();
-  //     ownerBalanceNoMaxSet = BigInt(ownerBalanceNoMaxSet.toString())
-
-  //     await this.minter1.connect(this.accounts.owner).purchase(projectOne, {
+  //     const tx = await this.minter1.connect(this.accounts.owner).purchase(projectOne, {
   //       value: pricePerTokenInWei,
   //     });
 
-  //     let remainingBalance = await this.accounts.owner.getBalance();
-  //     remainingBalance = BigInt(remainingBalance.toString())
+  //     const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+  //     const txCost = receipt.effectiveGasPrice.mul(receipt.gasUsed).toString();
+  //     console.log('Gas cost for a successful Ether mint: ', txCost);
 
-  //     const formattedPrice = BigInt(ethers.utils.formatUnits(
-  //       pricePerTokenInWei,
-  //       "wei"
-  //     ).toString());
-
-  //     // Add back in mint costs to get only gas costs
-  //     const ownerTxCost =
-  //       ownerBalanceNoMaxSet - remainingBalance - (formattedPrice as any);
-
-  //     console.log(
-  //       "Gas cost for a successful Ether mint: ",
-  //       ownerTxCost.toString()
-  //     );
-
-  //     expect(parseInt(ownerTxCost.toString())).to.be.equal(368459000000000);
+  //     expect(txCost.toString()).to.equal("36845900000000000");      // assuming a cost of 100 GWEI
   //   });
   // });
 

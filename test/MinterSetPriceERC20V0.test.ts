@@ -466,31 +466,15 @@ describe("MinterSetPriceERC20V0", async function () {
 
   // describe("calculates gas", async function () {
   //   it("mints and calculates gas values", async function () {
-  //     let ownerBalanceNoMaxSet = await this.accounts.owner.getBalance();
-  //     ownerBalanceNoMaxSet = BigInt(ownerBalanceNoMaxSet.toString());
-
-  //     await this.minter.connect(this.accounts.owner).purchase(projectOne, {
+  //     const tx = await this.minter.connect(this.accounts.owner).purchase(projectOne, {
   //       value: pricePerTokenInWei,
   //     });
 
-  //     let remainingBalance = await this.accounts.owner.getBalance();
-  //     remainingBalance = BigInt(remainingBalance.toString());
+  //     const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+  //     const txCost = receipt.effectiveGasPrice.mul(receipt.gasUsed).toString();
 
-  //     let formattedPrice = BigInt(ethers.utils.formatUnits(
-  //       pricePerTokenInWei,
-  //       "wei"
-  //     ).toString());
-
-  //     // Add back in mint costs to get only gas costs
-  //     const ownerTxCost =
-  //       ownerBalanceNoMaxSet - remainingBalance - (formattedPrice as any);
-
-  //     console.log(
-  //       "Gas cost for a successful ERC20 mint: ",
-  //       ownerTxCost.toString()
-  //     );
-
-  //     expect(parseInt(ownerTxCost.toString())).to.equal(370574000000000);
+  //     console.log('Gas cost for a successful ERC20 mint: ', txCost);
+  //     expect(txCost.toString()).to.equal("37057400000000000");
   //   });
   // });
 
