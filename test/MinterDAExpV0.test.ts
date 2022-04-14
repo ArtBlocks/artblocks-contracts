@@ -226,29 +226,19 @@ describe("MinterDAExpV0", async function () {
 
   describe("calculate gas", async function () {
     it("mints and calculates gas values", async function () {
-      const ownerBalanceNoMaxSet = await this.accounts.owner.getBalance();
-
       await ethers.provider.send("evm_mine", [
         this.startTime + auctionStartTimeOffset,
       ]);
 
-      await this.minter.connect(this.accounts.owner).purchase(projectOne, {
+      const tx = await this.minter.connect(this.accounts.owner).purchase(projectOne, {
         value: startingPrice,
       });
 
-      const remainingBalance = await this.accounts.owner.getBalance();
+      const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+      const txCost = receipt.effectiveGasPrice.mul(receipt.gasUsed).toString();
+      console.log('Gas cost for a successful Exponential DA mint: ', txCost);
 
-      const formattedPrice = ethers.utils.formatUnits(startingPrice, "wei");
-      // Add back in mint costs to get only gas costs
-      const ownerTxCost =
-        ownerBalanceNoMaxSet - remainingBalance - parseInt(formattedPrice);
-
-      console.log(
-        "Gas cost for a successful ExpDA mint: ",
-        ownerTxCost.toString()
-      );
-
-      expect(parseInt(ownerTxCost.toString())).to.equal(-2777777776885760);
+      expect(txCost.toString()).to.equal("38010700000000000");      // assuming a cost of 100 GWEI
     });
   });
 

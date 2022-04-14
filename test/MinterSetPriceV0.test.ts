@@ -347,29 +347,15 @@ describe("GenArt721MinterEthAuction_V1Core", async function () {
 
   describe("calculates gas", async function () {
     it("mints and calculates gas values", async function () {
-      const ownerBalanceNoMaxSet = await this.accounts.owner.getBalance();
-
-      await this.minter1.connect(this.accounts.owner).purchase(projectOne, {
+      const tx = await this.minter1.connect(this.accounts.owner).purchase(projectOne, {
         value: pricePerTokenInWei,
       });
 
-      const remainingBalance = await this.accounts.owner.getBalance();
+      const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+      const txCost = receipt.effectiveGasPrice.mul(receipt.gasUsed).toString();
+      console.log('Gas cost for a successful Ether mint: ', txCost);
 
-      const formattedPrice = ethers.utils.formatUnits(
-        pricePerTokenInWei,
-        "wei"
-      );
-
-      // Add back in mint costs to get only gas costs
-      const ownerTxCost =
-        ownerBalanceNoMaxSet - remainingBalance - parseInt(formattedPrice);
-
-      console.log(
-        "Gas cost for a successful Ether mint: ",
-        ownerTxCost.toString()
-      );
-
-      expect(parseInt(ownerTxCost.toString())).to.equal(-262144);
+      expect(txCost.toString()).to.equal("36845900000000000");      // assuming a cost of 100 GWEI
     });
   });
 

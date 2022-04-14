@@ -48,7 +48,7 @@ module.exports = {
   },
   networks: {
     hardhat: {
-      gasPrice: 0,
+      gasPrice: 100000000000, // 100 gwei
       initialBaseFeePerGas: 0,
     },
     mainnet: {
