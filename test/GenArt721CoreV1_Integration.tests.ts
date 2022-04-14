@@ -226,9 +226,7 @@ describe("GenArt721CoreV1", async function () {
         ).to.equal(ethers.utils.parseEther("1.0382189").mul("-1")); // spent 1 ETH
         expect(
           (await this.accounts.artist.getBalance()).sub(artistBalance)
-        ).to.equal(
-          ethers.utils.parseEther("0.8002491")
-        );
+        ).to.equal(ethers.utils.parseEther("0.8002491"));
       });
 
       it("can create a token then funds distributed (with additional payee getting 100%)", async function () {

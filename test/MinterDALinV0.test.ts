@@ -241,16 +241,18 @@ describe("MinterDALinV0", async function () {
         this.startTime + auctionStartTimeOffset,
       ]);
 
-      const tx = await this.minter.connect(this.accounts.owner).purchase(projectOne, {
-        value: startingPrice,
-      });
+      const tx = await this.minter
+        .connect(this.accounts.owner)
+        .purchase(projectOne, {
+          value: startingPrice,
+        });
 
       const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
       const txCost = receipt.effectiveGasPrice.mul(receipt.gasUsed).toString();
 
-      console.log('Gas cost for a successful Linear DA mint: ', txCost);
+      console.log("Gas cost for a successful Linear DA mint: ", txCost);
 
-      expect(txCost.toString()).to.equal("38004600000000000");      // assuming a cost of 100 GWEI
+      expect(txCost.toString()).to.equal("38004600000000000"); // assuming a cost of 100 GWEI
     });
   });
 

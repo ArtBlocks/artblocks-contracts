@@ -466,14 +466,16 @@ describe("MinterSetPriceERC20V0", async function () {
 
   describe("calculates gas", async function () {
     it("mints and calculates gas values", async function () {
-      const tx = await this.minter.connect(this.accounts.owner).purchase(projectOne, {
-        value: pricePerTokenInWei,
-      });
+      const tx = await this.minter
+        .connect(this.accounts.owner)
+        .purchase(projectOne, {
+          value: pricePerTokenInWei,
+        });
 
       const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
       const txCost = receipt.effectiveGasPrice.mul(receipt.gasUsed).toString();
 
-      console.log('Gas cost for a successful ERC20 mint: ', txCost);
+      console.log("Gas cost for a successful ERC20 mint: ", txCost);
       expect(txCost.toString()).to.equal("37057400000000000");
     });
   });
