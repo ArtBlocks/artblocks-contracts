@@ -70,21 +70,23 @@ describe("GenArt721Minter", async function () {
   });
 
   describe("(LEGACY MINTER) purchase method", async function () {
-    // it("mints and calculates gas values", async function () {
-    //   await this.minter.connect(this.accounts.owner).purchase(projectZero, {
-    //     value: pricePerTokenInWei,
-    //   });
+    it("mints and calculates gas values", async function () {
+      await this.minter.connect(this.accounts.owner).purchase(projectZero, {
+        value: pricePerTokenInWei,
+      });
 
-    //   const tx = await this.minter.connect(this.accounts.owner).purchase(projectOne, {
-    //     value: pricePerTokenInWei,
-    //   });
+      const tx = await this.minter
+        .connect(this.accounts.owner)
+        .purchase(projectOne, {
+          value: pricePerTokenInWei,
+        });
 
-    //   const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
-    //   const txCost = receipt.effectiveGasPrice.mul(receipt.gasUsed).toString();
-    //   console.log('Gas cost for a successful (LEGACY) Ether mint: ', txCost);
+      const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+      const txCost = receipt.effectiveGasPrice.mul(receipt.gasUsed).toString();
+      console.log("Gas cost for a successful (LEGACY) Ether mint: ", txCost);
 
-    //   expect(txCost.toString()).to.equal("35617300000000000");      // assuming a cost of 100 GWEI
-    // });
+      expect(txCost.toString()).to.equal("35617300000000000"); // assuming a cost of 100 GWEI
+    });
 
     it("does nothing if setProjectMaxInvocations is not called (fails correctly)", async function () {
       for (let i = 0; i < 15; i++) {
