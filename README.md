@@ -138,3 +138,16 @@ Additionally, the following settings may be configured/changed by a core contrac
     - Royalty [BPS](https://www.investopedia.com/terms/b/basispoint.asp) may be changed from default values of 2.5% to any value less than or equal to the default (cannot be increased above default). This can be configured by a core contract's `admin` via the  override contract's function `updateArtblocksBpsForContract`.
 - **Change Art Blocks Royalty Payment Address**
     - The address to receive Art Blocks royalty payments may be updated by a core contract's admin via the royalty override contract's function `updateArtblocksRoyaltyAddressForContract`.
+
+### Running Gas Reports for Solidity Methods & Deployments
+Your `.env` file should contain a `COINMARKETCAP_API_KEY` param in order to calculate ethereum gas costs. The key value can be found in the Engineering team's shared 1Password acccount. Additionally, you'll need to add the following object within the `module.exports` key in hardhat.config.ts:
+```
+  gasReporter: {
+    currency: "USD",
+    gasPrice: 100,
+    enabled: true,
+    coinmarketcap: process.env.COINMARKETCAP_API_KEY
+  }
+```
+After this config is finished, you'll notice a `usd (avg)` column in the auto-generated table that's printed when you run unit tests with `yarn test`.
+(note: gasPrice is a variable param that reflects the gwei/gas cost of a tx)

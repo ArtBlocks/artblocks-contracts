@@ -42,6 +42,21 @@ interface IGenArt721CoreContractV1 {
         view
         returns (uint256);
 
+    function projectIdToCurrencySymbol(uint256 _projectId)
+        external
+        view
+        returns (string memory);
+
+    function projectIdToCurrencyAddress(uint256 _projectId)
+        external
+        view
+        returns (address);
+
+    function projectIdToPricePerTokenInWei(uint256 _projectId)
+        external
+        view
+        returns (uint256);
+
     function projectTokenInfo(uint256 _projectId)
         external
         view
