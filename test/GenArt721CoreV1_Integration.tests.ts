@@ -274,7 +274,7 @@ describe("GenArt721CoreV1", async function () {
         ).to.equal(ethers.utils.parseEther("1.0369584").mul("-1")); // spent 1 ETH
         expect(
           (await this.accounts.artist.getBalance()).sub(artistBalance)
-        ).to.equal("-9750900000000000");
+        ).to.equal(ethers.utils.parseEther("0.0097509").mul("-1"));
       });
     });
   });

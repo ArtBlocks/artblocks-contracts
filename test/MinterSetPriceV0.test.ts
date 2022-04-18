@@ -355,9 +355,12 @@ describe("GenArt721MinterEthAuction_V1Core", async function () {
 
       const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
       const txCost = receipt.effectiveGasPrice.mul(receipt.gasUsed).toString();
-      console.log("Gas cost for a successful Ether mint: ", txCost);
+      console.log(
+        "Gas cost for a successful Ether mint: ",
+        ethers.utils.parseUnits(txCost, "wei")
+      );
 
-      expect(txCost.toString()).to.equal("36845900000000000"); // assuming a cost of 100 GWEI
+      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0368459")); // assuming a cost of 100 GWEI
     });
   });
 

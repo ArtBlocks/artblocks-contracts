@@ -250,9 +250,12 @@ describe("MinterDALinV0", async function () {
       const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
       const txCost = receipt.effectiveGasPrice.mul(receipt.gasUsed).toString();
 
-      console.log("Gas cost for a successful Linear DA mint: ", txCost);
+      console.log(
+        "Gas cost for a successful Linear DA mint: ",
+        ethers.utils.parseUnits(txCost, "wei")
+      );
 
-      expect(txCost.toString()).to.equal("38004600000000000"); // assuming a cost of 100 GWEI
+      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0380046")); // assuming a cost of 100 GWEI
     });
   });
 
