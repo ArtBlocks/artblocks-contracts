@@ -345,6 +345,25 @@ describe("GenArt721MinterEthAuction_V1Core", async function () {
     });
   });
 
+  describe("calculates gas", async function () {
+    it("mints and calculates gas values", async function () {
+      const tx = await this.minter1
+        .connect(this.accounts.owner)
+        .purchase(projectOne, {
+          value: pricePerTokenInWei,
+        });
+
+      const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+      const txCost = receipt.effectiveGasPrice.mul(receipt.gasUsed).toString();
+      console.log(
+        "Gas cost for a successful Ether mint: ",
+        ethers.utils.formatUnits(txCost, "ether").toString()
+      );
+
+      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0368459")); // assuming a cost of 100 GWEI
+    });
+  });
+
   describe("purchaseTo", async function () {
     it("does not allow purchase prior to configuring price", async function () {
       await this.minterFilter

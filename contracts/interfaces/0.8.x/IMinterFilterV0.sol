@@ -7,10 +7,7 @@ interface IMinterFilterV0 {
     /**
      * @notice Approved minter `_minterAddress`.
      */
-    event MinterApproved(
-        address indexed _minterAddress,
-        string indexed _minterType
-    );
+    event MinterApproved(address indexed _minterAddress, string _minterType);
 
     /**
      * @notice Revoked approval for minter `_minterAddress`
@@ -24,7 +21,7 @@ interface IMinterFilterV0 {
     event ProjectMinterRegistered(
         uint256 indexed _projectId,
         address indexed _minterAddress,
-        string indexed _minterType
+        string _minterType
     );
 
     /**

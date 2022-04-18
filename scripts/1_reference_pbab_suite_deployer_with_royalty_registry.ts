@@ -5,6 +5,10 @@ import { ethers } from "hardhat";
 import { GenArt721CoreV2PBAB__factory } from "./contracts/factories/GenArt721CoreV2PBAB__factory";
 import { GenArt721MinterPBAB__factory } from "./contracts/factories/GenArt721MinterPBAB__factory";
 import { createPBABBucket } from "./util/aws_s3";
+import royaltyRegistryABI from "../contracts/libs/abi/RoyaltyRegistry.json";
+import { GenArt721RoyaltyOverridePBAB__factory } from "./contracts/factories/GenArt721RoyaltyOverridePBAB__factory";
+
+const DEAD = "0x000000000000000000000000000000000000dEaD";
 
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG BEGINS HERE
@@ -15,9 +19,36 @@ const pbabTokenTicker = "TODO";
 const pbabTransferAddress = "0x000000000000000000000000000000000000dEaD";
 const rendererProviderAddress = "0x000000000000000000000000000000000000dEaD";
 const randomizerAddress = "0x000000000000000000000000000000000000dEaD";
+// The following is not required, but if not set, must be set later by platform
+// for Royalty Registry to work (will be ignored of set to "0x0...dEaD")
+const platformRoyaltyPaymentAddress =
+  "0x000000000000000000000000000000000000dEaD";
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG ENDS HERE
 //////////////////////////////////////////////////////////////////////////////
+
+function getRoyaltyRegistryAddress(networkName: string): string {
+  // ref: https://royaltyregistry.xyz/lookup)
+  if (networkName == "ropsten") {
+    return "0x9cac159ec266E76ed7377b801f3b5d2cC7bcf40d";
+  }
+  if (networkName == "rinkeby") {
+    return "0xc9198CbbB57708CF31e0caBCe963c98e60d333c3";
+  }
+  // return address on ETH mainnet
+  return "0xaD2184FB5DBcfC05d8f056542fB25b04fa32A95D";
+}
+
+function getRoyaltyOverrideAddress_PBAB(networkName: string): string {
+  if (networkName == "ropsten") {
+    return "0xEC5DaE4b11213290B2dBe5295093f75920bD2982";
+  }
+  if (networkName == "rinkeby") {
+    return "0xCe9E591314046011d141Bf77AFf7706c1CA1fC67";
+  }
+  // return address on ETH mainnet
+  return "0x000000000000000000000000000000000000dEaD";
+}
 
 async function main() {
   const [deployer] = await ethers.getSigners();
@@ -35,7 +66,7 @@ async function main() {
     randomizerAddress
   );
 
-  await createPBABBucket(pbabTokenName);
+  await createPBABBucket(pbabTokenName, networkName);
 
   await genArt721Core.deployed();
   console.log(`GenArt721Core deployed at ${genArt721Core.address}`);
@@ -89,6 +120,54 @@ async function main() {
       .addWhitelisted("0x0B7917b62BC98967e06e80EFBa9aBcAcCF3d4928");
     console.log(`Performing ${network.name} deployment, allowlisted AB staff.`);
   }
+
+  // TODO - un-comment this block once mainnet PBAB royalty override contract is deployed
+  /*
+  // set override on Royalty Registry
+  const royaltyOverrideAddress_PBAB = getRoyaltyOverrideAddress_PBAB(
+    network.name
+  );
+  const RoyaltyRegistryAddress = getRoyaltyRegistryAddress(network.name);
+  const RoyaltyRegistryContract = await ethers.getContractAt(
+    royaltyRegistryABI,
+    RoyaltyRegistryAddress
+  );
+  await RoyaltyRegistryContract.connect(deployer).setRoyaltyLookupAddress(
+    genArt721Core.address, // token address
+    royaltyOverrideAddress_PBAB // royalty override address
+  );
+  console.log(
+    `Royalty Registry override for new GenArt721Core set to: ` +
+      `${royaltyOverrideAddress_PBAB}`
+  );
+
+  // set platform royalty payment address if defined, else display reminder
+  if (platformRoyaltyPaymentAddress == DEAD) {
+    // warn - platform royalty payment address not configured at this time
+    console.warn(
+      `REMINDER: PBAB platform admin must call updatePlatformRoyaltyAddressForContract ` +
+        `on ${royaltyOverrideAddress_PBAB} for Royalty Registry to work!`
+    );
+  } else {
+    // configure platform royalty payment address so Royalty Registry works
+    const RoyaltyOverrideFactory_PBAB =
+      new GenArt721RoyaltyOverridePBAB__factory();
+    const RoyaltyOverride_PBAB = RoyaltyOverrideFactory_PBAB.attach(
+      royaltyOverrideAddress_PBAB
+    );
+    await RoyaltyOverride_PBAB.connect(
+      deployer
+    ).updatePlatformRoyaltyAddressForContract(
+      genArt721Core.address, // token address
+      platformRoyaltyPaymentAddress // platform royalty payment address
+    );
+    console.log(
+      `Platform Royalty Payment Address for newly deployed GenArt721Core ` +
+        `set to: ${platformRoyaltyPaymentAddress} \n    (on the PBAB royalty ` +
+        `override contract at ${royaltyOverrideAddress_PBAB})`
+    );
+  }
+  */
 
   // Allowlist new PBAB owner.
   await genArt721Core.connect(deployer).addWhitelisted(pbabTransferAddress);

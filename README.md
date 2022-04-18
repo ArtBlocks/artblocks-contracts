@@ -60,7 +60,6 @@ Core contracts use the versioning schema below:
 | --- | --- | --- |
 | V0 | V1 | expect `projectTokenInfo()` to change in future core contract versions (since price & currency data is now stored on V0 minters) |
 
-
 ### Active Minting Contract(s)
 
 This is the Smart contract that receives funds, and splits them between the artist(s) and the platform. Artists receive funds directly from this contract.
@@ -72,10 +71,12 @@ For deployed PBAB minting contracts, see PBAB directory [DEPLOYMENTS.md files](h
 ### Shared PBAB Randomizers
 
 - Ropsten: https://ropsten.etherscan.io/address/0x7ba972189ED3C527847170453fC108707F62755a#code
+- Rinkeby: https://rinkeby.etherscan.io/address/0x3b30d421a6dA95694EaaE09971424F15Eb375269#code
+- Kovan: https://kovan.etherscan.io/address/0x3b30d421a6dA95694EaaE09971424F15Eb375269#code
 - Mainnet: https://etherscan.io/address/0x088098f7438773182b703625c4128aff85fcffc4#code
 
 ## Contract Documentation
-Documenation for contracts may be generated via `yarn docgen`. Some Art Blocks contracts use [NatSpec](https://docs.soliditylang.org/en/v0.8.9/natspec-format.html#documentation-example) comments to automatically enrich generated documentation. Some contracts use [dynamic expressions](https://docs.soliditylang.org/en/v0.8.9/natspec-format.html#dynamic-expressions) to improve user experience.
+Documentation for contracts may be generated via `yarn docgen`. Some Art Blocks contracts use [NatSpec](https://docs.soliditylang.org/en/v0.8.9/natspec-format.html#documentation-example) comments to automatically enrich generated documentation. Some contracts use [dynamic expressions](https://docs.soliditylang.org/en/v0.8.9/natspec-format.html#dynamic-expressions) to improve user experience.
 
 ### Old contracts/addresses:
 * **Primary Sales and Minting Contract (no longer in use) [0x059edd72cd353df5106d2b9cc5ab83a52287ac3a](https://etherscan.io/address/0x059edd72cd353df5106d2b9cc5ab83a52287ac3a)**
@@ -137,3 +138,16 @@ Additionally, the following settings may be configured/changed by a core contrac
     - Royalty [BPS](https://www.investopedia.com/terms/b/basispoint.asp) may be changed from default values of 2.5% to any value less than or equal to the default (cannot be increased above default). This can be configured by a core contract's `admin` via the  override contract's function `updateArtblocksBpsForContract`.
 - **Change Art Blocks Royalty Payment Address**
     - The address to receive Art Blocks royalty payments may be updated by a core contract's admin via the royalty override contract's function `updateArtblocksRoyaltyAddressForContract`.
+
+### Running Gas Reports for Solidity Methods & Deployments
+Your `.env` file should contain a `COINMARKETCAP_API_KEY` param in order to calculate ethereum gas costs. The key value can be found in the Engineering team's shared 1Password acccount. Additionally, you'll need to add the following object within the `module.exports` key in hardhat.config.ts:
+```
+  gasReporter: {
+    currency: "USD",
+    gasPrice: 100,
+    enabled: true,
+    coinmarketcap: process.env.COINMARKETCAP_API_KEY
+  }
+```
+After this config is finished, you'll notice a `usd (avg)` column in the auto-generated table that's printed when you run unit tests with `yarn test`.
+(note: gasPrice is a variable param that reflects the gwei/gas cost of a tx)

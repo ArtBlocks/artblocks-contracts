@@ -19,8 +19,8 @@ interface IFilteredMinterV0 {
      */
     event ProjectCurrencyInfoUpdated(
         uint256 indexed _projectId,
-        string indexed _currencySymbol,
-        address indexed _currencyAddress
+        address indexed _currencyAddress,
+        string _currencySymbol
     );
 
     /// togglePurchaseToDisabled updated
@@ -31,6 +31,10 @@ interface IFilteredMinterV0 {
 
     // getter function of public variable
     function minterType() external view returns (string memory);
+
+    function genArt721CoreAddress() external returns (address);
+
+    function minterFilterAddress() external returns (address);
 
     // Triggers a purchase of a token from the desired project, to the
     // TX-sending address.

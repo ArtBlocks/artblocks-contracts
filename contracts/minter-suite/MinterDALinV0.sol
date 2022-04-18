@@ -32,11 +32,17 @@ contract MinterDALinV0 is ReentrancyGuard, IFilteredMinterV0 {
         uint256 _minimumAuctionLengthSeconds
     );
 
+    /// Core contract address this minter interacts with
+    address public immutable genArt721CoreAddress;
+
     /// This contract handles cores with interface IV1
-    IGenArt721CoreContractV1 public immutable genArtCoreContract;
+    IGenArt721CoreContractV1 private immutable genArtCoreContract;
+
+    /// Minter filter address this minter interacts with
+    address public immutable minterFilterAddress;
 
     /// Minter filter this minter may interact with.
-    IMinterFilterV0 public immutable minterFilter;
+    IMinterFilterV0 private immutable minterFilter;
 
     /// minterType for this minter
     string public constant minterType = "MinterDALinV0";
@@ -75,12 +81,11 @@ contract MinterDALinV0 is ReentrancyGuard, IFilteredMinterV0 {
         _;
     }
 
-    modifier onlyCoreWhitelistedOrArtist(uint256 _projectId) {
+    modifier onlyArtist(uint256 _projectId) {
         require(
-            (genArtCoreContract.isWhitelisted(msg.sender) ||
-                msg.sender ==
+            (msg.sender ==
                 genArtCoreContract.projectIdToArtistAddress(_projectId)),
-            "Only Core whitelisted or Artist"
+            "Only Artist"
         );
         _;
     }
@@ -97,7 +102,9 @@ contract MinterDALinV0 is ReentrancyGuard, IFilteredMinterV0 {
     constructor(address _genArt721Address, address _minterFilter)
         ReentrancyGuard()
     {
+        genArt721CoreAddress = _genArt721Address;
         genArtCoreContract = IGenArt721CoreContractV1(_genArt721Address);
+        minterFilterAddress = _minterFilter;
         minterFilter = IMinterFilterV0(_minterFilter);
         require(
             minterFilter.genArt721CoreAddress() == _genArt721Address,
@@ -197,7 +204,7 @@ contract MinterDALinV0 is ReentrancyGuard, IFilteredMinterV0 {
         uint256 _auctionTimestampEnd,
         uint256 _startPrice,
         uint256 _basePrice
-    ) external onlyCoreWhitelistedOrArtist(_projectId) {
+    ) external onlyArtist(_projectId) {
         AuctionParameters memory auctionParams = projectAuctionParameters[
             _projectId
         ];

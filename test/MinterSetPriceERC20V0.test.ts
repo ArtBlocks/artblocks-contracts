@@ -336,7 +336,7 @@ describe("MinterSetPriceERC20V0", async function () {
           )
       )
         .to.emit(this.minter, "ProjectCurrencyInfoUpdated")
-        .withArgs(projectZero, "MOCK", this.ERC20Mock.address);
+        .withArgs(projectZero, this.ERC20Mock.address, "MOCK");
     });
   });
 
@@ -461,6 +461,25 @@ describe("MinterSetPriceERC20V0", async function () {
       );
 
       expect(ownerDeltaMaxSet.abs().lt(ownerDeltaNoMaxSet.abs())).to.be.true;
+    });
+  });
+
+  describe("calculates gas", async function () {
+    it("mints and calculates gas values", async function () {
+      const tx = await this.minter
+        .connect(this.accounts.owner)
+        .purchase(projectOne, {
+          value: pricePerTokenInWei,
+        });
+
+      const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+      const txCost = receipt.effectiveGasPrice.mul(receipt.gasUsed).toString();
+
+      console.log(
+        "Gas cost for a successful ERC20 mint: ",
+        ethers.utils.formatUnits(txCost, "ether").toString()
+      );
+      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0370574"));
     });
   });
 
