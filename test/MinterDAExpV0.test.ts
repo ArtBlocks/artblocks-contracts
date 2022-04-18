@@ -240,7 +240,7 @@ describe("MinterDAExpV0", async function () {
       const txCost = receipt.effectiveGasPrice.mul(receipt.gasUsed).toString();
       console.log(
         "Gas cost for a successful Exponential DA mint: ",
-        ethers.utils.parseUnits(txCost, "wei")
+        ethers.utils.formatUnits(txCost, "ether").toString()
       );
 
       expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0380107")); // assuming a cost of 100 GWEI

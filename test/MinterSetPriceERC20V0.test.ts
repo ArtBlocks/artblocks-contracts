@@ -477,7 +477,7 @@ describe("MinterSetPriceERC20V0", async function () {
 
       console.log(
         "Gas cost for a successful ERC20 mint: ",
-        ethers.utils.parseUnits(txCost, "wei")
+        ethers.utils.formatUnits(txCost, "ether").toString()
       );
       expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0370574"));
     });

@@ -85,7 +85,7 @@ describe("GenArt721Minter", async function () {
       const txCost = receipt.effectiveGasPrice.mul(receipt.gasUsed).toString();
       console.log(
         "Gas cost for a successful (LEGACY) Ether mint: ",
-        ethers.utils.parseUnits(txCost, "wei")
+        ethers.utils.formatUnits(txCost, "ether").toString()
       );
 
       expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0356173")); // assuming a cost of 100 GWEI

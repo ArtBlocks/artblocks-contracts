@@ -252,7 +252,7 @@ describe("MinterDALinV0", async function () {
 
       console.log(
         "Gas cost for a successful Linear DA mint: ",
-        ethers.utils.parseUnits(txCost, "wei")
+        ethers.utils.formatUnits(txCost, "ether").toString()
       );
 
       expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0380046")); // assuming a cost of 100 GWEI
