@@ -67,14 +67,20 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
     // add Enumerable Set methods
     using EnumerableSet for EnumerableSet.UintSet;
 
+    /// Core contract address this minter interacts with
+    address public immutable genArt721CoreAddress;
+
     /// This contract handles cores with interface IV1
-    IGenArt721CoreContractV1 public immutable genArtCoreContract;
+    IGenArt721CoreContractV1 private immutable genArtCoreContract;
+
+    /// Minter filter address this minter interacts with
+    address public immutable minterFilterAddress;
 
     /// Minter filter this minter may interact with.
-    IMinterFilterV0 public immutable minterFilter;
+    IMinterFilterV0 private immutable minterFilter;
 
     /// minterType for this minter
-    string public constant minterType = "MinterDAExpV0";
+    string public constant minterType = "MinterDAExpRefundV0";
 
     uint256 constant ONE_MILLION = 1_000_000;
 
@@ -151,12 +157,14 @@ contract MinterDARefundExpV0 is ReentrancyGuard, IFilteredMinterV0 {
      * @param _genArt721Address Art Blocks core contract address for
      * which this contract will be a minter.
      * @param _minterFilter Minter filter for which
-     * this will a filtered minter.
+     * this will be a filtered minter.
      */
     constructor(address _genArt721Address, address _minterFilter)
         ReentrancyGuard()
     {
+        genArt721CoreAddress = _genArt721Address;
         genArtCoreContract = IGenArt721CoreContractV1(_genArt721Address);
+        minterFilterAddress = _minterFilter;
         minterFilter = IMinterFilterV0(_minterFilter);
         require(
             minterFilter.genArt721CoreAddress() == _genArt721Address,
