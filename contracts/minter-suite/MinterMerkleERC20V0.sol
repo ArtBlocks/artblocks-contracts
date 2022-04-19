@@ -100,7 +100,7 @@ contract MinterMerkleERC20V0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
      * @param _root root of Merkle tree defining addresses allowed to mint
      * on project `_projectId`.
      */
-    function updateProjectMerkleRoot(uint256 _projectId, bytes32 _root)
+    function updateMerkleRoot(uint256 _projectId, bytes32 _root)
         external
         onlyArtist(_projectId)
     {
@@ -367,6 +367,7 @@ contract MinterMerkleERC20V0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
                 projectMintLimit[_projectId],
             "Reached minting limit"
         );
+
         // EFFECTS
         projectMintCounter[msg.sender][_projectId]++;
 
