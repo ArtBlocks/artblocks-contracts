@@ -16,7 +16,7 @@ pragma solidity 0.8.9;
  * or any ERC-20 token that are contained in a merkle allowlist.
  * @author Art Blocks Inc.
  */
-contract MinterMerkleERC20V0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
+contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
     /// Core contract address this minter interacts with
     address public immutable genArt721CoreAddress;
 
@@ -30,7 +30,7 @@ contract MinterMerkleERC20V0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
     IMinterFilterV0 private immutable minterFilter;
 
     /// minterType for this minter
-    string public constant minterType = "MinterMerkleERC20V0";
+    string public constant minterType = "MinterMerkleV0";
 
     uint256 constant ONE_MILLION = 1_000_000;
 
