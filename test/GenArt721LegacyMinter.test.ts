@@ -85,7 +85,8 @@ describe("GenArt721Minter", async function () {
       const txCost = receipt.effectiveGasPrice.mul(receipt.gasUsed).toString();
       console.log(
         "Gas cost for a successful (LEGACY) Ether mint: ",
-        ethers.utils.formatUnits(txCost, "ether").toString(), 'ETH'
+        ethers.utils.formatUnits(txCost, "ether").toString(),
+        "ETH"
       );
 
       expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0356173")); // assuming a cost of 100 GWEI
@@ -144,11 +145,13 @@ describe("GenArt721Minter", async function () {
 
       console.log(
         "Gas cost for successful mint with setProjectMaxInvocations: ",
-        gasCostMaxInvocations.toString(), 'ETH'
+        gasCostMaxInvocations.toString(),
+        "ETH"
       );
       console.log(
         "Gas cost for successful mint without setProjectMaxInvocations: ",
-        gasCostNoMaxInvocations.toString(), 'ETH'
+        gasCostNoMaxInvocations.toString(),
+        "ETH"
       );
 
       // Check that with setProjectMaxInvocations it's cheaper or not too much more expensive
@@ -198,11 +201,13 @@ describe("GenArt721Minter", async function () {
 
       console.log(
         "Gas cost with setProjectMaxInvocations: ",
-        ethers.utils.formatUnits(ownerDeltaMaxSet, "ether").toString(), 'ETH'
+        ethers.utils.formatUnits(ownerDeltaMaxSet, "ether").toString(),
+        "ETH"
       );
       console.log(
         "Gas cost without setProjectMaxInvocations: ",
-        ethers.utils.formatUnits(ownerDeltaNoMaxSet, "ether").toString(), 'ETH'
+        ethers.utils.formatUnits(ownerDeltaNoMaxSet, "ether").toString(),
+        "ETH"
       );
 
       expect(ownerDeltaMaxSet.lt(ownerDeltaNoMaxSet)).to.be.true;

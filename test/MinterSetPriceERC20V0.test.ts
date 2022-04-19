@@ -367,26 +367,30 @@ describe("MinterSetPriceERC20V0", async function () {
     });
 
     it("doesnt add too much gas if setProjectMaxInvocations is set", async function () {
-        const tx = await this.minter.connect(this.accounts.owner).purchase(projectZero, {
+      const tx = await this.minter
+        .connect(this.accounts.owner)
+        .purchase(projectZero, {
           value: pricePerTokenInWei,
         });
-      
-        const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
-        let gasCostNoMaxInvocations: any = receipt.effectiveGasPrice
-          .mul(receipt.gasUsed)
-          .toString();
-        gasCostNoMaxInvocations = parseFloat(
-          ethers.utils.formatUnits(gasCostNoMaxInvocations, "ether")
-        );
+
+      const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+      let gasCostNoMaxInvocations: any = receipt.effectiveGasPrice
+        .mul(receipt.gasUsed)
+        .toString();
+      gasCostNoMaxInvocations = parseFloat(
+        ethers.utils.formatUnits(gasCostNoMaxInvocations, "ether")
+      );
 
       // Try with setProjectMaxInvocations, store gas cost
       await this.minter
         .connect(this.accounts.snowfro)
         .setProjectMaxInvocations(projectOne);
-      
-      const maxSetTx = await this.minter.connect(this.accounts.owner).purchase(projectOne, {
-        value: pricePerTokenInWei,
-      });
+
+      const maxSetTx = await this.minter
+        .connect(this.accounts.owner)
+        .purchase(projectOne, {
+          value: pricePerTokenInWei,
+        });
       const receipt2 = await ethers.provider.getTransactionReceipt(
         maxSetTx.hash
       );
@@ -399,11 +403,13 @@ describe("MinterSetPriceERC20V0", async function () {
 
       console.log(
         "Gas cost for a successful mint with setProjectMaxInvocations: ",
-        gasCostMaxInvocations.toString(), 'ETH'
+        gasCostMaxInvocations.toString(),
+        "ETH"
       );
       console.log(
         "Gas cost for a successful mint without setProjectMaxInvocations: ",
-        gasCostNoMaxInvocations.toString(), 'ETH'
+        gasCostNoMaxInvocations.toString(),
+        "ETH"
       );
 
       // Check that with setProjectMaxInvocations it's not too much moer expensive
@@ -455,11 +461,13 @@ describe("MinterSetPriceERC20V0", async function () {
 
       console.log(
         "Gas cost with setProjectMaxInvocations: ",
-        ethers.utils.formatUnits(ownerDeltaMaxSet, "ether").toString(), 'ETH'
+        ethers.utils.formatUnits(ownerDeltaMaxSet, "ether").toString(),
+        "ETH"
       );
       console.log(
         "Gas cost without setProjectMaxInvocations: ",
-        ethers.utils.formatUnits(ownerDeltaNoMaxSet, "ether").toString(), 'ETH'
+        ethers.utils.formatUnits(ownerDeltaNoMaxSet, "ether").toString(),
+        "ETH"
       );
 
       expect(ownerDeltaMaxSet.lt(ownerDeltaNoMaxSet)).to.be.true;
@@ -479,7 +487,8 @@ describe("MinterSetPriceERC20V0", async function () {
 
       console.log(
         "Gas cost for a successful ERC20 mint: ",
-        ethers.utils.formatUnits(txCost, "ether").toString(), 'ETH'
+        ethers.utils.formatUnits(txCost, "ether").toString(),
+        "ETH"
       );
       expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0370574"));
     });
