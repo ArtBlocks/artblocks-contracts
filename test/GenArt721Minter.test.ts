@@ -145,11 +145,11 @@ describe("GenArt721Minter", async function () {
 
       console.log(
         "Gas cost for a mint with setProjectMaxInvocations: ",
-        gasCostMaxInvocations.toString()
+        gasCostMaxInvocations.toString(), 'ETH'
       );
       console.log(
         "Gas cost for a mint without setProjectMaxInvocations: ",
-        gasCostNoMaxInvocations.toString()
+        gasCostNoMaxInvocations.toString(), 'ETH'
       );
 
       // Check that with setProjectMaxInvocations it's cheaper or not too much more expensive
@@ -201,11 +201,11 @@ describe("GenArt721Minter", async function () {
 
       console.log(
         "Gas cost with setProjectMaxInvocations: ",
-        ethers.utils.formatUnits(ownerDeltaMaxSet, "ether").toString()
+        ethers.utils.formatUnits(ownerDeltaMaxSet, "ether").toString(), 'ETH'
       );
       console.log(
         "Gas cost without setProjectMaxInvocations: ",
-        ethers.utils.formatUnits(ownerDeltaNoMaxSet, "ether").toString()
+        ethers.utils.formatUnits(ownerDeltaNoMaxSet, "ether").toString(), 'ETH'
       );
 
       expect(ownerDeltaMaxSet.lt(ownerDeltaNoMaxSet)).to.be.true;

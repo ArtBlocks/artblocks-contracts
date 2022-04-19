@@ -325,12 +325,12 @@ describe("GenArt721Minter_PBAB", async function () {
       );
 
       console.log(
-        "Gas cost for 15 successful mints with setProjectMaxInvocations: ",
-        gasCostMaxInvocations.toString()
+        "Gas cost for a successful mint with setProjectMaxInvocations: ",
+        gasCostMaxInvocations.toString(), 'ETH'
       );
       console.log(
-        "Gas cost for 15 successful mints without setProjectMaxInvocations: ",
-        gasCostNoMaxInvocations.toString()
+        "Gas cost for a successful mint without setProjectMaxInvocations: ",
+        gasCostNoMaxInvocations.toString(), 'ETH'
       );
 
       // Check that with setProjectMaxInvocations it's not too much more expensive
@@ -380,11 +380,11 @@ describe("GenArt721Minter_PBAB", async function () {
 
       console.log(
         "Gas cost with setProjectMaxInvocations: ",
-        ethers.utils.formatUnits(ownerDeltaMaxSet, "ether").toString()
+        ethers.utils.formatUnits(ownerDeltaMaxSet, "ether").toString(), 'ETH'
       );
       console.log(
         "Gas cost without setProjectMaxInvocations: ",
-        ethers.utils.formatUnits(ownerDeltaNoMaxSet, "ether").toString()
+        ethers.utils.formatUnits(ownerDeltaNoMaxSet, "ether").toString(), 'ETH'
       );
 
       expect(ownerDeltaMaxSet.lt(ownerDeltaNoMaxSet)).to.be.true;
