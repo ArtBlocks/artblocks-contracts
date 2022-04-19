@@ -17,7 +17,7 @@ pragma solidity 0.8.9;
  * per ERC-721 NFT.
  * @author Art Blocks Inc.
  */
-contract MinterHolderERC20V0 is ReentrancyGuard, IFilteredMinterHolderV0 {
+contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
     /// Core contract address this minter interacts with
     address public immutable genArt721CoreAddress;
 
@@ -31,7 +31,7 @@ contract MinterHolderERC20V0 is ReentrancyGuard, IFilteredMinterHolderV0 {
     IMinterFilterV0 private immutable minterFilter;
 
     /// minterType for this minter
-    string public constant minterType = "MinterHolderERC20V0";
+    string public constant minterType = "MinterHolderV0";
 
     uint256 constant ONE_MILLION = 1_000_000;
 
