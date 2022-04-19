@@ -288,6 +288,25 @@ contract MinterMerkleERC20V0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
     }
 
     /**
+     * @notice Inactive function - requires Merkle proof to purchase.
+     */
+    function purchase(uint256) external payable returns (uint256) {
+        revert("Must provide Merkle proof");
+    }
+
+    /**
+     * @notice Inactive function - requires Merkle proof to purchase.
+     */
+    function purchaseTo(address, uint256)
+        public
+        payable
+        nonReentrant
+        returns (uint256)
+    {
+        revert("Must provide Merkle proof");
+    }
+
+    /**
      * @notice Purchases a token from project `_projectId`.
      * @param _projectId Project ID to mint a token on.
      * @param _proof Merkle proof.
