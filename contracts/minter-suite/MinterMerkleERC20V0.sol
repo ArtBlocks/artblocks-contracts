@@ -3,7 +3,7 @@
 
 import "../interfaces/0.8.x/IGenArt721CoreContractV1.sol";
 import "../interfaces/0.8.x/IMinterFilterV0.sol";
-import "../interfaces/0.8.x/IFilteredMinterV0.sol";
+import "../interfaces/0.8.x/IFilteredMinterMerkleV0.sol";
 
 import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -16,7 +16,7 @@ pragma solidity 0.8.9;
  * or any ERC-20 token that are contained in a merkle allowlist.
  * @author Art Blocks Inc.
  */
-contract MinterMerkleERC20V0 is ReentrancyGuard, IFilteredMinterV0 {
+contract MinterMerkleERC20V0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
     /// Core contract address this minter interacts with
     address public immutable genArt721CoreAddress;
 
@@ -34,6 +34,8 @@ contract MinterMerkleERC20V0 is ReentrancyGuard, IFilteredMinterV0 {
 
     uint256 constant ONE_MILLION = 1_000_000;
 
+    /// projectId => merkle root
+    mapping(uint256 => bytes32) public projectMerkleRoot;
     /// projectId => are tokens allowed to be minted to other addresses?
     mapping(uint256 => bool) public purchaseToDisabled;
     /// purchaser address => projectId => number of mints purchased
@@ -93,25 +95,65 @@ contract MinterMerkleERC20V0 is ReentrancyGuard, IFilteredMinterV0 {
     }
 
     /**
-     * @notice wrapper for OpenZeppelin MerkleProof verify function
+     * @notice Update the Merkle root for project `_projectId`.
+     * @param _projectId Project ID to be updated.
+     * @param _root root of Merkle tree defining addresses allowed to mint
+     * on project `_projectId`.
      */
-    function verify(
-        bytes32[] memory proof,
-        bytes32 root,
-        bytes32 leaf
-    ) public pure returns (bool) {
-        return MerkleProof.verify(proof, root, leaf);
+    function updateProjectMerkleRoot(uint256 _projectId, bytes32 _root)
+        external
+        onlyArtist(_projectId)
+    {
+        projectMerkleRoot[_projectId] = _root;
     }
 
     /**
-     * @notice wrapper for OpenZeppelin processProof procesProof function
+     * @notice Verify address is allowed to mint on project `_projectId`.
+     * @param _projectId Project ID to be checked.
+     * @param _proof Merkle proof for address.
+     * @param _address Address to check.
      */
-    function processProof(bytes32[] memory proof, bytes32 leaf)
+    function verifyAddress(
+        uint256 _projectId,
+        bytes32[] memory _proof,
+        address _address
+    ) public view returns (bool) {
+        bytes32 _leafHash = keccak256(abi.encode(_address));
+        return
+            MerkleProof.verify(
+                _proof,
+                projectMerkleRoot[_projectId],
+                _leafHash
+            );
+    }
+
+    /**
+     * @notice Process proof for an address. Returns Merkle root.
+     * @param _proof Merkle proof for address.
+     * @param _address Address to process.
+     * @return merkleRoot Merkle root for `_address` and `_proof`
+     */
+    function processProofForAddress(bytes32[] memory _proof, address _address)
         public
         pure
         returns (bytes32)
     {
-        return MerkleProof.processProof(proof, leaf);
+        bytes32 _leafHash = keccak256(abi.encode(_address));
+        return MerkleProof.processProof(_proof, _leafHash);
+    }
+
+    /**
+     * @notice Wrapper for OpenZeppelin procesProof function.
+     * @param _proof Merkle proof.
+     * @param _leafHash keccak256 hash of address on leaf.
+     * @return merkleRoot Merkle root for `_leafHash` and `_proof`
+     */
+    function processProof(bytes32[] memory _proof, bytes32 _leafHash)
+        public
+        pure
+        returns (bytes32)
+    {
+        return MerkleProof.processProof(_proof, _leafHash);
     }
 
     /**
@@ -248,14 +290,15 @@ contract MinterMerkleERC20V0 is ReentrancyGuard, IFilteredMinterV0 {
     /**
      * @notice Purchases a token from project `_projectId`.
      * @param _projectId Project ID to mint a token on.
+     * @param _proof Merkle proof.
      * @return tokenId Token ID of minted token
      */
-    function purchase(uint256 _projectId)
+    function purchase(uint256 _projectId, bytes32[] memory _proof)
         external
         payable
         returns (uint256 tokenId)
     {
-        tokenId = purchaseTo(msg.sender, _projectId);
+        tokenId = purchaseTo(msg.sender, _projectId, _proof);
         return tokenId;
     }
 
@@ -264,18 +307,24 @@ contract MinterMerkleERC20V0 is ReentrancyGuard, IFilteredMinterV0 {
      * the token's owner to `_to`.
      * @param _to Address to be the new token's owner.
      * @param _projectId Project ID to mint a token on.
+     * @param _proof Merkle proof.
      * @return tokenId Token ID of minted token
      */
-    function purchaseTo(address _to, uint256 _projectId)
-        public
-        payable
-        nonReentrant
-        returns (uint256 tokenId)
-    {
+    function purchaseTo(
+        address _to,
+        uint256 _projectId,
+        bytes32[] memory _proof
+    ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
         require(
             !projectMaxHasBeenInvoked[_projectId],
             "Maximum number of invocations reached"
+        );
+
+        // require artist
+        require(
+            verifyAddress(_projectId, _proof, msg.sender),
+            "Invalid Merkle proof"
         );
 
         // require artist to have configured price of token on this minter
