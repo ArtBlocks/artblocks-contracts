@@ -109,6 +109,15 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
     }
 
     /**
+     * @notice Returns hashed address (to be used as merkle tree leaf)
+     * @param _address address to be hashed
+     * @return bytes32 hashed address, via keccak256 (using encodePacked)
+     */
+    function hashAddress(address _address) public pure returns (bytes32) {
+        return keccak256(abi.encodePacked(_address));
+    }
+
+    /**
      * @notice Verify address is allowed to mint on project `_projectId`.
      * @param _projectId Project ID to be checked.
      * @param _proof Merkle proof for address.
@@ -119,12 +128,11 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         bytes32[] memory _proof,
         address _address
     ) public view returns (bool) {
-        bytes32 _leafHash = keccak256(abi.encode(_address));
         return
             MerkleProof.verify(
                 _proof,
                 projectMerkleRoot[_projectId],
-                _leafHash
+                hashAddress(_address)
             );
     }
 
@@ -139,8 +147,7 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         pure
         returns (bytes32)
     {
-        bytes32 _leafHash = keccak256(abi.encode(_address));
-        return MerkleProof.processProof(_proof, _leafHash);
+        return MerkleProof.processProof(_proof, hashAddress(_address));
     }
 
     /**
@@ -202,7 +209,7 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
      */
     function setProjectMintLimit(uint256 _projectId, uint8 _limit)
         external
-        onlyCoreWhitelisted
+        onlyArtist(_projectId)
     {
         projectMintLimit[_projectId] = _limit;
     }
