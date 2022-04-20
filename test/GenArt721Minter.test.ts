@@ -8,6 +8,7 @@ import {
 } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
+import { BigNumber } from "ethers";
 
 describe("GenArt721Minter", async function () {
   const name = "Non Fungible Token";
@@ -108,48 +109,54 @@ describe("GenArt721Minter", async function () {
     });
 
     it("doesnt add too much gas if setProjectMaxInvocations is set", async function () {
-      // Try without setProjectMaxInvocations, store gas cost
-      const ownerBalanceNoMaxSet = await this.accounts.owner.getBalance();
-      for (let i = 0; i < 15; i++) {
-        await this.minter.connect(this.accounts.owner).purchase(projectZero, {
+      const tx = await this.minter
+        .connect(this.accounts.owner)
+        .purchase(projectZero, {
           value: pricePerTokenInWei,
-          gasPrice: 1,
         });
-      }
-      // Add back in mint costs to get only gas costs
-      const ownerDeltaNoMaxSet = (await this.accounts.owner.getBalance())
-        .sub(ownerBalanceNoMaxSet)
-        .add(pricePerTokenInWei.mul(15));
+
+      const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+      let gasCostNoMaxInvocations: any = receipt.effectiveGasPrice
+        .mul(receipt.gasUsed)
+        .toString();
+      gasCostNoMaxInvocations = parseFloat(
+        ethers.utils.formatUnits(gasCostNoMaxInvocations, "ether")
+      );
 
       // Try with setProjectMaxInvocations, store gas cost
       await this.minter
         .connect(this.accounts.snowfro)
         .setProjectMaxInvocations(projectOne);
-      const ownerBalanceMaxSet = await this.accounts.owner.getBalance();
-      for (let i = 0; i < 15; i++) {
-        await this.minter.connect(this.accounts.owner).purchase(projectOne, {
+
+      const maxSetTx = await this.minter
+        .connect(this.accounts.owner)
+        .purchase(projectOne, {
           value: pricePerTokenInWei,
-          gasPrice: 1,
         });
-      }
-      // Add back in mint costs to get only gas costs
-      const ownerDeltaMaxSet = (await this.accounts.owner.getBalance())
-        .sub(ownerBalanceMaxSet)
-        .add(pricePerTokenInWei.mul(15));
-
-      console.log(
-        "Gas cost for 15 successful mints with setProjectMaxInvocations: ",
-        ownerDeltaMaxSet.toString()
+      const receipt2 = await ethers.provider.getTransactionReceipt(
+        maxSetTx.hash
       );
-      console.log(
-        "Gas cost for 15 successful mints without setProjectMaxInvocations: ",
-        ownerDeltaNoMaxSet.toString()
+      let gasCostMaxInvocations: any = receipt2.effectiveGasPrice
+        .mul(receipt2.gasUsed)
+        .toString();
+      gasCostMaxInvocations = parseFloat(
+        ethers.utils.formatUnits(gasCostMaxInvocations, "ether")
       );
 
-      // Check that with setProjectMaxInvocations it's not too much moer expensive
-      expect(
-        ownerDeltaMaxSet.abs().lt(ownerDeltaNoMaxSet.abs().mul(110).div(100))
-      ).to.be.true;
+      console.log(
+        "Gas cost for a mint with setProjectMaxInvocations: ",
+        gasCostMaxInvocations.toString(),
+        "ETH"
+      );
+      console.log(
+        "Gas cost for a mint without setProjectMaxInvocations: ",
+        gasCostNoMaxInvocations.toString(),
+        "ETH"
+      );
+
+      // Check that with setProjectMaxInvocations it's cheaper or not too much more expensive
+      expect(gasCostMaxInvocations < (gasCostNoMaxInvocations * 110) / 100).to
+        .be.true;
     });
 
     it("fails more cheaply if setProjectMaxInvocations is set", async function () {
@@ -159,16 +166,17 @@ describe("GenArt721Minter", async function () {
           value: pricePerTokenInWei,
         });
       }
-      const ownerBalanceNoMaxSet = await this.accounts.owner.getBalance();
+      const ownerBalanceNoMaxSet = BigNumber.from(
+        await this.accounts.owner.getBalance()
+      );
       await expectRevert(
         this.minter.connect(this.accounts.owner).purchase(projectZero, {
           value: pricePerTokenInWei,
-          gasPrice: 1,
         }),
         "Must not exceed max invocations"
       );
-      const ownerDeltaNoMaxSet = (await this.accounts.owner.getBalance()).sub(
-        ownerBalanceNoMaxSet
+      const ownerDeltaNoMaxSet = ownerBalanceNoMaxSet.sub(
+        BigNumber.from(await this.accounts.owner.getBalance())
       );
 
       // Try with setProjectMaxInvocations, store gas cost
@@ -180,28 +188,31 @@ describe("GenArt721Minter", async function () {
           value: pricePerTokenInWei,
         });
       }
-      const ownerBalanceMaxSet = await this.accounts.owner.getBalance();
+      const ownerBalanceMaxSet = BigNumber.from(
+        await this.accounts.owner.getBalance()
+      );
       await expectRevert(
         this.minter.connect(this.accounts.owner).purchase(projectOne, {
           value: pricePerTokenInWei,
-          gasPrice: 1,
         }),
         "Maximum number of invocations reached"
       );
-      const ownerDeltaMaxSet = (await this.accounts.owner.getBalance()).sub(
-        ownerBalanceMaxSet
+      const ownerDeltaMaxSet = ownerBalanceMaxSet.sub(
+        BigNumber.from(await this.accounts.owner.getBalance())
       );
 
       console.log(
         "Gas cost with setProjectMaxInvocations: ",
-        ownerDeltaMaxSet.toString()
+        ethers.utils.formatUnits(ownerDeltaMaxSet, "ether").toString(),
+        "ETH"
       );
       console.log(
         "Gas cost without setProjectMaxInvocations: ",
-        ownerDeltaNoMaxSet.toString()
+        ethers.utils.formatUnits(ownerDeltaNoMaxSet, "ether").toString(),
+        "ETH"
       );
 
-      expect(ownerDeltaMaxSet.abs().lt(ownerDeltaNoMaxSet.abs())).to.be.true;
+      expect(ownerDeltaMaxSet.lt(ownerDeltaNoMaxSet)).to.be.true;
     });
   });
 });
