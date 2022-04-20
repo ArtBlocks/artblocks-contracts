@@ -105,6 +105,7 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         onlyArtist(_projectId)
     {
         projectMerkleRoot[_projectId] = _root;
+        // TODO: emit event upon update
     }
 
     /**
@@ -297,12 +298,7 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
     /**
      * @notice Inactive function - requires Merkle proof to purchase.
      */
-    function purchaseTo(address, uint256)
-        public
-        payable
-        nonReentrant
-        returns (uint256)
-    {
+    function purchaseTo(address, uint256) public payable returns (uint256) {
         revert("Must provide Merkle proof");
     }
 
