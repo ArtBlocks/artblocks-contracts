@@ -452,6 +452,53 @@ describe("MinterMerkleV0", async function () {
     });
   });
 
+  describe("setProjectMintLimit", async function () {
+    it("only allows artist to set project mint limit", async function () {
+      // owner not allowed
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.owner)
+          .setProjectMintLimit(projectZero, 1),
+        "Only Artist"
+      );
+      // additional not allowed
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.additional)
+          .setProjectMintLimit(projectZero, 1),
+        "Only Artist"
+      );
+      // artist allowed
+      await this.minter
+        .connect(this.accounts.artist)
+        .setProjectMintLimit(projectZero, 1);
+    });
+  });
+
+  describe("updateMerkleRoot", async function () {
+    it("only allows artist to update merkle root", async function () {
+      const newMerkleRoot = merkleTreeZero.getHexRoot();
+      // owner not allowed
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.owner)
+          .updateMerkleRoot(projectZero, newMerkleRoot),
+        "Only Artist"
+      );
+      // additional not allowed
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.additional)
+          .updateMerkleRoot(projectZero, newMerkleRoot),
+        "Only Artist"
+      );
+      // artist allowed
+      await this.minter
+        .connect(this.accounts.artist)
+        .updateMerkleRoot(projectZero, newMerkleRoot);
+    });
+  });
+
   describe("purchase", async function () {
     beforeEach(async function () {
       this.ownerMerkleProofZero = merkleTreeZero.getHexProof(
@@ -505,6 +552,102 @@ describe("MinterMerkleV0", async function () {
       );
     });
 
+    it("does not allow purchase prior to mint limit being configured", async function () {
+      // calc and update merkle root for project two
+      const merkleRootTwo = merkleTreeTwo.getHexRoot();
+      await this.minter
+        .connect(this.accounts.artist)
+        .updateMerkleRoot(projectTwo, merkleRootTwo);
+      // configure price per token
+      await this.minter
+        .connect(this.accounts.artist)
+        .updatePricePerTokenInWei(projectTwo, pricePerTokenInWei);
+      // expect revert due to price not being configured
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.additional)
+          ["purchase(uint256,bytes32[])"](
+            projectTwo,
+            this.additionalMerkleProofTwo,
+            {
+              value: pricePerTokenInWei,
+            }
+          ),
+        "Mint limit not configured"
+      );
+    });
+
+    it("does allow purchase with a price of zero when intentionally configured", async function () {
+      // calc and update merkle root for project two
+      const merkleRootTwo = merkleTreeTwo.getHexRoot();
+      await this.minter
+        .connect(this.accounts.artist)
+        .updateMerkleRoot(projectTwo, merkleRootTwo);
+      // configure price per token
+      await this.minter
+        .connect(this.accounts.artist)
+        .updatePricePerTokenInWei(projectTwo, 0);
+      // configure num allowed mints
+      await this.minter
+        .connect(this.accounts.artist)
+        .setProjectMintLimit(projectTwo, 1);
+      // allow purchase when intentionally configured price of zero
+      await this.minter
+        .connect(this.accounts.additional)
+        ["purchase(uint256,bytes32[])"](
+          projectTwo,
+          this.additionalMerkleProofTwo
+        );
+    });
+
+    it("restricts user to defined minting limit", async function () {
+      const reducedLimit = 10;
+      await this.minter
+        .connect(this.accounts.artist)
+        .setProjectMintLimit(projectZero, reducedLimit);
+      for (let i = 0; i < reducedLimit; i++) {
+        await this.minter
+          .connect(this.accounts.owner)
+          ["purchase(uint256,bytes32[])"](
+            projectZero,
+            this.ownerMerkleProofZero,
+            {
+              value: pricePerTokenInWei,
+            }
+          );
+      }
+      // expect revert after account hits minting limit
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.owner)
+          ["purchase(uint256,bytes32[])"](
+            projectZero,
+            this.ownerMerkleProofZero,
+            {
+              value: pricePerTokenInWei,
+            }
+          ),
+        "Reached minting limit"
+      );
+    });
+
+    it("rejects invalid merkle proofs", async function () {
+      // expect revert when providing an invalid proof
+      // (e.g. providing proof for valid address, but different tree)
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.owner)
+          ["purchase(uint256,bytes32[])"](
+            projectZero,
+            this.ownerMerkleProofOne,
+            {
+              value: pricePerTokenInWei,
+            }
+          ),
+        "Invalid Merkle proof"
+      );
+    });
+
     it("does nothing if setProjectMaxInvocations is not called (fails correctly)", async function () {
       for (let i = 0; i < 15; i++) {
         await this.minter
@@ -518,7 +661,7 @@ describe("MinterMerkleV0", async function () {
           );
       }
 
-      const ownerBalance = await this.accounts.owner.getBalance();
+      // expect revert after project hits max invocations
       await expectRevert(
         this.minter
           .connect(this.accounts.owner)
