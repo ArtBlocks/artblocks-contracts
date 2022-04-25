@@ -3,15 +3,17 @@ import { ethers } from "hardhat";
 import { GenArt721CoreV2LegendsOfMetaterra__factory } from "../../contracts/factories/GenArt721CoreV2LegendsOfMetaterra__factory";
 import { GenArt721MinterLegendsOfMetaterra__factory } from "../../contracts/factories/GenArt721MinterLegendsOfMetaterra__factory";
 
+import { createPBABBucket } from "../../util/aws_s3";
+
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG BEGINS HERE
 // TODO: Update and verify the below configuration items before deploying!
 //////////////////////////////////////////////////////////////////////////////
-const pbabTokenName = "Legends of Metaterra";
-const pbabTokenTicker = "LEGENDS";
-const pbabTransferAddress = "0xe18Fc96ba325Ef22746aDA9A82d521845a2c16f8";
+const pbabTokenName = "Legends of Metaterra PBAB";
+const pbabTokenTicker = "LOM";
+const pbabTransferAddress = "0x78DE7DcFA6fdF63A1BcF2584Cc1CACC6F6635F4E";
 const rendererProviderAddress = "0xf5a5fabF99890c44E15BC2481b5080ccc1155e64";
-const randomizerContractAddress = "0x7ba972189ED3C527847170453fC108707F62755a";
+const randomizerContractAddress = "0x088098f7438773182b703625c4128aff85fcffc4";
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG ENDS HERE
 //////////////////////////////////////////////////////////////////////////////
@@ -19,9 +21,14 @@ const randomizerContractAddress = "0x7ba972189ED3C527847170453fC108707F62755a";
 async function main() {
   const [deployer] = await ethers.getSigners();
 
+  const network = await ethers.provider.getNetwork();
+  const networkName = network.name == "homestead" ? "mainnet" : network.name;
+
   //////////////////////////////////////////////////////////////////////////////
   // DEPLOYMENT BEGINS HERE
   //////////////////////////////////////////////////////////////////////////////
+
+  await createPBABBucket(pbabTokenName, networkName);
 
   // Deploy Core contract.
   console.log(`Using Randomizer deployed at ${randomizerContractAddress}`);
@@ -73,7 +80,6 @@ async function main() {
   console.log(`Set the Minter owner to: ${pbabTransferAddress}.`);
 
   // Allowlist AB staff (testnet only)
-  const network = await ethers.provider.getNetwork();
   if (network.name == "ropsten") {
     // purplehat
     await genArt721Core
@@ -99,7 +105,6 @@ async function main() {
   console.log(`Transferred Core contract admin to: ${pbabTransferAddress}.`);
 
   // Output instructions for manual Etherscan verification.
-  const networkName = network.name == "homestead" ? "mainnet" : network.name;
   const standardVerify =
     "yarn hardhat verify --contract <path to .sol>:<contract name>";
   console.log(`Verify GenArt721CoreV2 deployment with:`);
