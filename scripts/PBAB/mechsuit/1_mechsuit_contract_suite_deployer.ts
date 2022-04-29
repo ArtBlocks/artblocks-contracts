@@ -11,6 +11,7 @@ const pbabTokenName = "MECHSUIT";
 const pbabTokenTicker = "MECH";
 const pbabTransferAddress = "0x5343bFA1BBe40456f890354a39fAE17Ac4A7B95B";
 const rendererProviderAddress = "0x89E0cCE4Bc79D9CB0cEFA4785783Ad6e66978527";
+const randomizerContractAddress = "0x3b30d421a6dA95694EaaE09971424F15Eb375269";
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG ENDS HERE
 //////////////////////////////////////////////////////////////////////////////
@@ -22,19 +23,13 @@ async function main() {
   // DEPLOYMENT BEGINS HERE
   //////////////////////////////////////////////////////////////////////////////
 
-  // Deploy Randomizer contract.
-  const randomizerFactory = new RandomizerMechSuit__factory(deployer);
-  const randomizer = await randomizerFactory.deploy();
-
-  await randomizer.deployed();
-  console.log(`Randomizer deployed at ${randomizer.address}`);
-
   // Deploy Core contract.
+  console.log(`Using Randomizer deployed at ${randomizerContractAddress}`);
   const genArt721CoreFactory = new GenArt721CoreV2MechSuit__factory(deployer);
   const genArt721Core = await genArt721CoreFactory.deploy(
     pbabTokenName,
     pbabTokenTicker,
-    randomizer.address
+    randomizerContractAddress
   );
 
   await genArt721Core.deployed();
@@ -105,7 +100,7 @@ async function main() {
     "yarn hardhat verify --contract <path to .sol>:<contract name>";
   console.log(`Verify GenArt721CoreV2 deployment with:`);
   console.log(
-    `${standardVerify} --network ${networkName} ${genArt721Core.address} "${pbabTokenName}" "${pbabTokenTicker}" ${randomizer.address}`
+    `${standardVerify} --network ${networkName} ${genArt721Core.address} "${pbabTokenName}" "${pbabTokenTicker}" ${randomizerContractAddress}`
   );
   console.log(`Verify GenArt721Minter deployment with:`);
   console.log(
