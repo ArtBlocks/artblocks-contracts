@@ -29,15 +29,19 @@ const createBucket = async (bucketName: string, client: any) => {
 };
 
 const updateBucketCors = async (bucketName: string, client: any) => {
-  const corsRules = {
-    AllowedMethods: ["GET", "PUT", "POST"],
-    AllowedOrigins: ["*"],
-    AllowedHeaders: ["*"],
-    ExposeHeaders: ["ETag"],
-  };
+  const corsRules = [
+    {
+      AllowedMethods: ["GET", "PUT", "POST"],
+      AllowedOrigins: ["*"],
+      AllowedHeaders: ["*"],
+      ExposeHeaders: ["ETag"],
+    },
+  ];
   const input = {
     Bucket: bucketName,
-    CORSConfiguration: corsRules,
+    CORSConfiguration: {
+      CORSRules: corsRules,
+    },
   };
   const command = new PutBucketCorsCommand(input);
   return await client.send(command);
@@ -71,4 +75,4 @@ const createPBABBucket = async (
   return payload;
 };
 
-export { createPBABBucket, createBucket };
+export { createPBABBucket, createBucket, updateBucketCors };
