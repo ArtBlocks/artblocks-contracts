@@ -1,5 +1,9 @@
 import { getPBABBucketName, getBucketURL } from "./format";
-const { S3Client, CreateBucketCommand, PutBucketCorsCommand } = require("@aws-sdk/client-s3");
+const {
+  S3Client,
+  CreateBucketCommand,
+  PutBucketCorsCommand,
+} = require("@aws-sdk/client-s3");
 
 // Docs: https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-s3/index.html
 
@@ -30,14 +34,14 @@ const updateBucketCors = async (bucketName: string, client: any) => {
     AllowedOrigins: ["*"],
     AllowedHeaders: ["*"],
     ExposeHeaders: ["ETag"],
-  }
+  };
   const input = {
     Bucket: bucketName,
     CORSConfiguration: corsRules,
   };
   const command = new PutBucketCorsCommand(input);
   return await client.send(command);
-}
+};
 
 const createPBABBucket = async (
   pbabTokenName: string,
