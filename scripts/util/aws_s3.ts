@@ -16,6 +16,9 @@ const s3Client = new S3Client({
 const createBucket = async (bucketName: string, client: any) => {
   const input = {
     Bucket: bucketName,
+    ACL: "public-read",
+    ObjectLockEnabledForBucket: false,
+    ObjectOwnership: "ObjectWriter",
   };
   const command = new CreateBucketCommand(input);
   return await client.send(command);
