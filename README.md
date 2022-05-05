@@ -62,9 +62,28 @@ Core contracts use the versioning schema below:
 
 ### Active Minting Contract(s)
 
-This is the Smart contract that receives funds, and splits them between the artist(s) and the platform. Artists receive funds directly from this contract.
+These are the smart contracts that receive funds, and split them between the artist(s) and the platform. Artists receive funds directly from these contracts.
 
-Current minting contract: [0x47e312d99c09ce61a866c83cbbbbed5a4b9d33e7](https://etherscan.io/address/0x47e312d99c09ce61a866c83cbbbbed5a4b9d33e7).
+#### MinterSetPrice
+- V0: [0x1DEC9E52f1320F7Deb29cBCd7B7d67f3dF785142](https://etherscan.io/address/0x1DEC9E52f1320F7Deb29cBCd7B7d67f3dF785142#code)
+- V1: []()
+
+#### MinterSetPriceERC20
+- V0: [0x48742D38a0809135EFd643c1150BfC13768C3907](https://etherscan.io/address/0x48742D38a0809135EFd643c1150BfC13768C3907#code)
+- V1: []()
+
+#### MinterDALin
+- V0: [0xd219f61Bb5A3ffDeCB4362610977F1dAB3930eE2](https://etherscan.io/address/0xd219f61Bb5A3ffDeCB4362610977F1dAB3930eE2#code)
+- V1: []()
+
+#### MinterDAExp
+- V0: [0xFc74fD0f2c7EaD04f1E5E9fd82Aef55620710D7C](https://etherscan.io/address/0xFc74fD0f2c7EaD04f1E5E9fd82Aef55620710D7C#code)
+- V1: []()
+
+### Other Minter Contracts
+MinterFilterV0: [0x4aafCE293b9B0faD169c78049A81e400f518E199](https://etherscan.io/address/0x4aafCE293b9B0faD169c78049A81e400f518E199#code).
+
+Legacy minting contract: [0x47e312d99c09ce61a866c83cbbbbed5a4b9d33e7](https://etherscan.io/address/0x47e312d99c09ce61a866c83cbbbbed5a4b9d33e7).
 
 For deployed PBAB minting contracts, see PBAB directory [DEPLOYMENTS.md files](https://github.com/search?q=repo%3AArtBlocks%2Fartblocks-contracts+extension%3Amd+filename%3ADEPLOYMENTS&type=Code&ref=advsearch&l=&l=).
 
