@@ -147,6 +147,7 @@ contract MinterDALinV1 is ReentrancyGuard, IFilteredMinterV0 {
 
     /**
      * @notice Warning: Disabling purchaseTo is not supported on this minter.
+     * This method exists purely for interface-conformance purposes.
      */
     function togglePurchaseToDisabled(uint256 _projectId)
         external
