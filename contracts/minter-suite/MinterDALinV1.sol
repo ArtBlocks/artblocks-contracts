@@ -149,7 +149,8 @@ contract MinterDALinV1 is ReentrancyGuard, IFilteredMinterV0 {
      * @notice Warning: Disabling purchaseTo is not supported on this minter.
      */
     function togglePurchaseToDisabled(uint256 _projectId)
-        external view
+        external
+        view
         onlyArtist(_projectId)
     {
         revert("Action not supported");
