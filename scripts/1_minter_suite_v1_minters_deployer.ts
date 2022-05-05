@@ -8,13 +8,13 @@ import { MinterSetPriceV1__factory } from "./contracts/factories/MinterSetPriceV
 import { MinterDALinV1__factory } from "./contracts/factories/MinterDALinV1__factory";
 import { MinterDAExpV1__factory } from "./contracts/factories/MinterDAExpV1__factory";
 
-// ROPSTEN ADDRESSSES BEGIN
-// const CORE_CONTRACT_ADDRESS = "0x1cd623a86751d4c4f20c96000fec763941f098a2";
-// const FILTER_CONTRACT_ADDRESS = "0xF3d2a642640c928A33a087545939e5df3d0d657f";
+// ROPSTEN (ARTIST-STAGING) ADDRESSSES
+const CORE_CONTRACT_ADDRESS = "0x1cd623a86751d4c4f20c96000fec763941f098a2";
+const FILTER_CONTRACT_ADDRESS = "0xF3d2a642640c928A33a087545939e5df3d0d657f";
 
 // MAINNET ADDRESSES
-const CORE_CONTRACT_ADDRESS = "0xa7d8d9ef8D8Ce8992Df33D8b8CF4Aebabd5bD270";
-const FILTER_CONTRACT_ADDRESS = "0x4aafCE293b9B0faD169c78049A81e400f518E199";
+// const CORE_CONTRACT_ADDRESS = "0xa7d8d9ef8D8Ce8992Df33D8b8CF4Aebabd5bD270";
+// const FILTER_CONTRACT_ADDRESS = "0x4aafCE293b9B0faD169c78049A81e400f518E199";
 
 async function main() {
   const [deployer] = await ethers.getSigners();
