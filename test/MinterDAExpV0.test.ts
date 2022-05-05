@@ -10,7 +10,11 @@ import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 
-describe("MinterDAExpV0", async function () {
+/**
+ * These tests intended to ensure this Filtered Minter integrates properly with
+ * V1 core contract.
+ */
+describe("MinterDAExpV0_V1Core", async function () {
   const name = "Non Fungible Token";
   const symbol = "NFT";
 

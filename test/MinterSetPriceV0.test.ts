@@ -11,10 +11,10 @@ import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 
 /**
- * These tests intended to ensure Filtered Minter integrates properly with V1
- * core contract.
+ * These tests intended to ensure this Filtered Minter integrates properly with
+ * V1 core contract.
  */
-describe("GenArt721MinterEthAuction_V1Core", async function () {
+describe("MinterSetPriceV0_V1Core", async function () {
   const name = "Non Fungible Token";
   const symbol = "NFT";
 
