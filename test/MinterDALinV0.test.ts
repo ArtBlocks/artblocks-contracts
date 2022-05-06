@@ -10,7 +10,11 @@ import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 
-describe("MinterDALinV0", async function () {
+/**
+ * These tests intended to ensure this Filtered Minter integrates properly with
+ * V1 core contract.
+ */
+describe("MinterDALinV0_V1Core", async function () {
   const name = "Non Fungible Token";
   const symbol = "NFT";
 
@@ -252,7 +256,8 @@ describe("MinterDALinV0", async function () {
 
       console.log(
         "Gas cost for a successful Linear DA mint: ",
-        ethers.utils.formatUnits(txCost, "ether").toString()
+        ethers.utils.formatUnits(txCost, "ether").toString(),
+        "ETH"
       );
 
       expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0380046")); // assuming a cost of 100 GWEI
