@@ -14,7 +14,7 @@ import { ethers } from "hardhat";
  * These tests intended to ensure this Filtered Minter integrates properly with
  * V1 core contract.
  */
-describe("MinterDAExpV0_V1Core", async function () {
+describe("MinterDAExpV1_V1Core", async function () {
   const name = "Non Fungible Token";
   const symbol = "NFT";
 
@@ -63,7 +63,7 @@ describe("MinterDAExpV0_V1Core", async function () {
     );
     this.minterFilter = await minterFilterFactory.deploy(this.token.address);
 
-    const minterFactory = await ethers.getContractFactory("MinterDAExpV0");
+    const minterFactory = await ethers.getContractFactory("MinterDAExpV1");
     this.minter = await minterFactory.deploy(
       this.token.address,
       this.minterFilter.address
@@ -132,7 +132,7 @@ describe("MinterDAExpV0_V1Core", async function () {
       const minterFilter = await minterFilterFactory.deploy(token2.address);
 
       const minterFactory = await ethers.getContractFactory(
-        "MinterSetPriceERC20V0"
+        "MinterSetPriceERC20V1"
       );
       // fails when combine new minterFilter with the old token in constructor
       await expectRevert(
@@ -248,7 +248,7 @@ describe("MinterDAExpV0_V1Core", async function () {
         "ETH"
       );
 
-      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0380107")); // assuming a cost of 100 GWEI
+      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0375684")); // assuming a cost of 100 GWEI
     });
   });
 
@@ -264,46 +264,31 @@ describe("MinterDAExpV0_V1Core", async function () {
         });
     });
 
-    it("disallows `purchaseTo` if disallowed explicitly", async function () {
+    it("does not support toggling of `purchaseToDisabled`", async function () {
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.artist)
+          .togglePurchaseToDisabled(projectOne),
+        "Action not supported"
+      );
+      // still allows `purchaseTo`.
       await ethers.provider.send("evm_mine", [
         this.startTime + auctionStartTimeOffset,
       ]);
       await this.minter
-        .connect(this.accounts.deployer)
-        .togglePurchaseToDisabled(projectOne);
-      await expectRevert(
-        this.minter
-          .connect(this.accounts.owner)
-          .purchaseTo(this.accounts.additional.address, projectOne, {
-            value: startingPrice,
-          }),
-        "No `purchaseTo` Allowed"
-      );
-      // still allows `purchaseTo` if destination matches sender.
-      await this.minter
         .connect(this.accounts.owner)
-        .purchaseTo(this.accounts.owner.address, projectOne, {
+        .purchaseTo(this.accounts.artist.address, projectOne, {
           value: startingPrice,
         });
     });
 
-    it("emits event when `purchaseTo` is toggled", async function () {
-      // emits true when changed from initial value of false
-      await expect(
+    it("doesn't support `purchaseTo` toggling", async function () {
+      await expectRevert(
         this.minter
-          .connect(this.accounts.deployer)
-          .togglePurchaseToDisabled(projectOne)
-      )
-        .to.emit(this.minter, "PurchaseToDisabledUpdated")
-        .withArgs(projectOne, true);
-      // emits false when changed from initial value of true
-      await expect(
-        this.minter
-          .connect(this.accounts.deployer)
-          .togglePurchaseToDisabled(projectOne)
-      )
-        .to.emit(this.minter, "PurchaseToDisabledUpdated")
-        .withArgs(projectOne, false);
+          .connect(this.accounts.artist)
+          .togglePurchaseToDisabled(projectOne),
+        "Action not supported"
+      );
     });
   });
 
@@ -568,11 +553,6 @@ describe("MinterDAExpV0_V1Core", async function () {
 
   describe("reentrancy attack", async function () {
     it("does not allow reentrant purchaseTo", async function () {
-      // admin allows contract buys
-      await this.minter
-        .connect(this.accounts.deployer)
-        .toggleContractMintable(projectOne);
-      // advance to time when auction is active
       await ethers.provider.send("evm_mine", [
         this.startTime + auctionStartTimeOffset,
       ]);

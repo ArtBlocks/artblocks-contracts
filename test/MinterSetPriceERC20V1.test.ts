@@ -14,7 +14,7 @@ import { ethers } from "hardhat";
  * These tests intended to ensure this Filtered Minter integrates properly with
  * V1 core contract.
  */
-describe("MinterSetPriceERC20V0_V1Core", async function () {
+describe("MinterSetPriceERC20V1_V1Core", async function () {
   const name = "Non Fungible Token";
   const symbol = "NFT";
 
@@ -57,7 +57,7 @@ describe("MinterSetPriceERC20V0_V1Core", async function () {
     this.minterFilter = await minterFilterFactory.deploy(this.token.address);
 
     const minterFactory = await ethers.getContractFactory(
-      "MinterSetPriceERC20V0"
+      "MinterSetPriceERC20V1"
     );
     this.minter = await minterFactory.deploy(
       this.token.address,
@@ -143,7 +143,7 @@ describe("MinterSetPriceERC20V0_V1Core", async function () {
       const minterFilter = await minterFilterFactory.deploy(token2.address);
 
       const minterFactory = await ethers.getContractFactory(
-        "MinterSetPriceERC20V0"
+        "MinterSetPriceERC20V1"
       );
       // fails when combine new minterFilter with the old token in constructor
       await expectRevert(
@@ -490,7 +490,7 @@ describe("MinterSetPriceERC20V0_V1Core", async function () {
         ethers.utils.formatUnits(txCost, "ether").toString(),
         "ETH"
       );
-      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0370574"));
+      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0366239"));
     });
   });
 
@@ -514,43 +514,28 @@ describe("MinterSetPriceERC20V0_V1Core", async function () {
         });
     });
 
-    it("disallows `purchaseTo` if disallowed explicitly", async function () {
-      await this.minter
-        .connect(this.accounts.snowfro)
-        .togglePurchaseToDisabled(projectOne);
+    it("does not support toggling of `purchaseToDisabled`", async function () {
       await expectRevert(
         this.minter
-          .connect(this.accounts.owner)
-          .purchaseTo(this.accounts.additional.address, projectOne, {
-            value: pricePerTokenInWei,
-          }),
-        "No `purchaseTo` Allowed"
+          .connect(this.accounts.artist)
+          .togglePurchaseToDisabled(projectOne),
+        "Action not supported"
       );
-      // still allows `purchaseTo` if destination matches sender.
+      // still allows `purchaseTo`.
       await this.minter
         .connect(this.accounts.owner)
-        .purchaseTo(this.accounts.owner.address, projectOne, {
+        .purchaseTo(this.accounts.artist.address, projectOne, {
           value: pricePerTokenInWei,
         });
     });
 
-    it("emits event when `purchaseTo` is toggled", async function () {
-      // emits true when changed from initial value of false
-      await expect(
+    it("doesn't support `purchaseTo` toggling", async function () {
+      await expectRevert(
         this.minter
-          .connect(this.accounts.snowfro)
-          .togglePurchaseToDisabled(projectOne)
-      )
-        .to.emit(this.minter, "PurchaseToDisabledUpdated")
-        .withArgs(projectOne, true);
-      // emits false when changed from initial value of true
-      await expect(
-        this.minter
-          .connect(this.accounts.snowfro)
-          .togglePurchaseToDisabled(projectOne)
-      )
-        .to.emit(this.minter, "PurchaseToDisabledUpdated")
-        .withArgs(projectOne, false);
+          .connect(this.accounts.artist)
+          .togglePurchaseToDisabled(projectOne),
+        "Action not supported"
+      );
     });
   });
 
@@ -651,10 +636,6 @@ describe("MinterSetPriceERC20V0_V1Core", async function () {
 
   describe("reentrancy attack", async function () {
     it("does not allow reentrant purchaseTo", async function () {
-      // admin allows contract buys
-      await this.minter
-        .connect(this.accounts.snowfro)
-        .toggleContractMintable(projectOne);
       // attacker deploys reentrancy contract
       const reentrancyMockFactory = await ethers.getContractFactory(
         "ReentrancyMock"
