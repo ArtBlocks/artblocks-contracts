@@ -1,7 +1,15 @@
 import { assert } from "chai";
 const { mockClient } = require("aws-sdk-client-mock");
-const { S3Client, CreateBucketCommand } = require("@aws-sdk/client-s3");
-import { createPBABBucket, createBucket } from "../../scripts/util/aws_s3";
+const {
+  S3Client,
+  CreateBucketCommand,
+  PutBucketCorsCommand,
+} = require("@aws-sdk/client-s3");
+import {
+  createPBABBucket,
+  createBucket,
+  updateBucketCors,
+} from "../../scripts/util/aws_s3";
 import {
   formatTitleCaseToKebabCase,
   getBucketURL,
@@ -16,24 +24,42 @@ const networkName = "rinkeby";
 const pbabBucketName = getPBABBucketName(pbabTokenName, networkName);
 const pbabBucketURL = getBucketURL(pbabBucketName);
 
-const createBucketResponse = {
+const expectedCreateBucketResponse = {
   Location: `/${pbabBucketName}`,
 };
 
 const expectedCreatePBABBucketResponse = {
   url: pbabBucketURL,
-  response: createBucketResponse,
+  response: expectedCreateBucketResponse,
+};
+
+const expectedUpdateCorsResponse = {
+  $metadata: {
+    httpStatusCode: 200,
+    requestId: undefined,
+    extendedRequestId: "ab123",
+    cfId: undefined,
+    attempts: 1,
+    totalRetryDelay: 0,
+  },
 };
 
 describe("Create S3 Bucket for PBAB", () => {
   beforeEach(() => {
     s3ClientMock.reset();
-    s3ClientMock.on(CreateBucketCommand).resolves(createBucketResponse);
+    s3ClientMock.on(CreateBucketCommand).resolves(expectedCreateBucketResponse);
+    s3ClientMock.on(PutBucketCorsCommand).resolves(expectedUpdateCorsResponse);
   });
 
   it("creates s3 bucket", async () => {
     const result = await createBucket(pbabBucketName, s3ClientMock as any);
     assert(result?.["Location"] === `/${pbabBucketName}`);
+  });
+
+  it("updates bucket cors", async () => {
+    const result = await updateBucketCors(pbabBucketName, s3ClientMock as any);
+    assert(result?.["$metadata"]["httpStatusCode"] === 200);
+    assert(result?.["$metadata"]["extendedRequestId"] === "ab123");
   });
 
   it("creates s3 bucket with pbab naming conventions", async () => {
