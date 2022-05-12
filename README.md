@@ -62,9 +62,28 @@ Core contracts use the versioning schema below:
 
 ### Active Minting Contract(s)
 
-This is the Smart contract that receives funds, and splits them between the artist(s) and the platform. Artists receive funds directly from this contract.
+These are the smart contracts that receive funds, and split them between the artist(s) and the platform. Artists receive funds directly from these contracts.
 
-Current minting contract: [0x47e312d99c09ce61a866c83cbbbbed5a4b9d33e7](https://etherscan.io/address/0x47e312d99c09ce61a866c83cbbbbed5a4b9d33e7).
+#### MinterSetPrice
+- V0: [0x1DEC9E52f1320F7Deb29cBCd7B7d67f3dF785142](https://etherscan.io/address/0x1DEC9E52f1320F7Deb29cBCd7B7d67f3dF785142#code)
+- V1: [0xee724b45087cb2ee9256084a1575cccfb469a7d5](https://etherscan.io/address/0xee724b45087cb2ee9256084a1575cccfb469a7d5#code)
+
+#### MinterSetPriceERC20
+- V0: [0x48742D38a0809135EFd643c1150BfC13768C3907](https://etherscan.io/address/0x48742D38a0809135EFd643c1150BfC13768C3907#code)
+- V1: [0xa3f443283f715ba8dddf5e9401cfc99372409a33](https://etherscan.io/address/0xa3f443283f715ba8dddf5e9401cfc99372409a33#code)
+
+#### MinterDALin
+- V0: [0xd219f61Bb5A3ffDeCB4362610977F1dAB3930eE2](https://etherscan.io/address/0xd219f61Bb5A3ffDeCB4362610977F1dAB3930eE2#code)
+- V1: [0x2541a8cf865fc2ace86cd5fa9a9d879418c944c3](https://etherscan.io/address/0x2541a8cf865fc2ace86cd5fa9a9d879418c944c3#code)
+
+#### MinterDAExp
+- V0: [0xFc74fD0f2c7EaD04f1E5E9fd82Aef55620710D7C](https://etherscan.io/address/0xFc74fD0f2c7EaD04f1E5E9fd82Aef55620710D7C#code)
+- V1: [0x8878b2dc85528e39f7363f05284c509f4936a0cf](https://etherscan.io/address/0x8878b2dc85528e39f7363f05284c509f4936a0cf#code)
+
+### Other Minter Contracts
+MinterFilterV0: [0x4aafCE293b9B0faD169c78049A81e400f518E199](https://etherscan.io/address/0x4aafCE293b9B0faD169c78049A81e400f518E199#code).
+
+Legacy minting contract: [0x47e312d99c09ce61a866c83cbbbbed5a4b9d33e7](https://etherscan.io/address/0x47e312d99c09ce61a866c83cbbbbed5a4b9d33e7).
 
 For deployed PBAB minting contracts, see PBAB directory [DEPLOYMENTS.md files](https://github.com/search?q=repo%3AArtBlocks%2Fartblocks-contracts+extension%3Amd+filename%3ADEPLOYMENTS&type=Code&ref=advsearch&l=&l=).
 
