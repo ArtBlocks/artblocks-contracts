@@ -9,6 +9,10 @@ import {
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
+import EthersAdapter from "@gnosis.pm/safe-ethers-lib";
+import Safe from "@gnosis.pm/safe-core-sdk";
+import { SafeTransactionDataPartial } from "@gnosis.pm/safe-core-sdk-types";
+import { getGnosisSafe } from "./util/GnosisSafeNetwork";
 
 /**
  * These tests intended to ensure this Filtered Minter integrates properly with
@@ -598,6 +602,69 @@ describe("MinterDAExpV1_V1Core", async function () {
             }
           );
       }
+    });
+  });
+
+  describe("gnosis safe", async function () {
+    it("allows gnosis safe to purchase in ETH", async function () {
+      // advance to time when auction is active
+      await ethers.provider.send("evm_mine", [
+        this.startTime + auctionStartTimeOffset,
+      ]);
+
+      // deploy new Gnosis Safe
+      const safeSdk: Safe = await getGnosisSafe(
+        this.accounts.artist,
+        this.accounts.additional,
+        this.accounts.owner
+      );
+      const safeAddress = safeSdk.getAddress();
+
+      // create a transaction
+      const unsignedTx = await this.minter.populateTransaction.purchase(
+        projectOne
+      );
+      const transaction: SafeTransactionDataPartial = {
+        to: this.minter.address,
+        data: unsignedTx.data,
+        value: higherPricePerTokenInWei.toHexString(),
+      };
+      const safeTransaction = await safeSdk.createTransaction(transaction);
+
+      // signers sign and execute the transaction
+      // artist signs
+      await safeSdk.signTransaction(safeTransaction);
+      // additional signs
+      const ethAdapterOwner2 = new EthersAdapter({
+        ethers,
+        signer: this.accounts.additional,
+      });
+      const safeSdk2 = await safeSdk.connect({
+        ethAdapter: ethAdapterOwner2,
+        safeAddress,
+      });
+      const txHash = await safeSdk2.getTransactionHash(safeTransaction);
+      const approveTxResponse = await safeSdk2.approveTransactionHash(txHash);
+      await approveTxResponse.transactionResponse?.wait();
+
+      // fund the safe and execute transaction
+      await this.accounts.artist.sendTransaction({
+        to: safeAddress,
+        value: higherPricePerTokenInWei,
+      });
+      const projectTokenInfoBefore = await this.token.projectTokenInfo(
+        projectOne
+      );
+      const executeTxResponse = await safeSdk2.executeTransaction(
+        safeTransaction
+      );
+      await executeTxResponse.transactionResponse?.wait();
+      const projectTokenInfoAfter = await this.token.projectTokenInfo(
+        projectOne
+      );
+      expect(projectTokenInfoAfter.invocations).to.be.equal(
+        projectTokenInfoBefore.invocations.add(1)
+      );
     });
   });
 });
