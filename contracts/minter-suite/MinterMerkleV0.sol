@@ -13,10 +13,19 @@ pragma solidity 0.8.9;
 
 /**
  * @title Filtered Minter contract that allows tokens to be minted with ETH
- * or any ERC-20 token that are contained in a merkle allowlist.
+ * for addresses in a Merkle allowlist.
  * @author Art Blocks Inc.
  */
 contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
+    /// Merkle root updated for project `projectId`.
+    event UpdateMerkleRoot(uint256 indexed projectId, bytes32 _root);
+
+    // Mint limiter toggled for project `projectId`
+    event MintLimiterUpdated(
+        uint256 indexed projectId,
+        bool _projectMintLimiterDisabled
+    );
+
     /// Core contract address this minter interacts with
     address public immutable genArt721CoreAddress;
 
@@ -38,10 +47,10 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
     mapping(uint256 => bytes32) public projectMerkleRoot;
     /// projectId => are tokens allowed to be minted to other addresses?
     mapping(uint256 => bool) public purchaseToDisabled;
-    /// purchaser address => projectId => number of mints purchased
-    mapping(address => mapping(uint256 => uint256)) public projectMintCounter;
-    /// projectId => maximum number of mints a given address may invoke
-    mapping(uint256 => uint256) public projectMintLimit;
+    /// projectId => purchaser address => has purchased one or more mints
+    mapping(uint256 => mapping(address => bool)) public projectMintedBy;
+    /// projectId => are addresses limited to one mint each?
+    mapping(uint256 => bool) public projectMintLimiterDisabled;
     /// projectId => has project reached its maximum number of invocations?
     mapping(uint256 => bool) public projectMaxHasBeenInvoked;
     /// projectId => project's maximum number of invocations
@@ -50,10 +59,6 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
     mapping(uint256 => uint256) private projectIdToPricePerTokenInWei;
     /// projectId => price per token has been configured on this minter
     mapping(uint256 => bool) private projectIdToPriceIsConfigured;
-    /// projectId => currency symbol - supersedes any defined core value
-    mapping(uint256 => string) private projectIdToCurrencySymbol;
-    /// projectId => currency address - supersedes any defined core value
-    mapping(uint256 => address) private projectIdToCurrencyAddress;
 
     modifier onlyCoreWhitelisted() {
         require(
@@ -105,7 +110,7 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         onlyArtist(_projectId)
     {
         projectMerkleRoot[_projectId] = _root;
-        // TODO: emit event upon update
+        emit UpdateMerkleRoot(_projectId, _root);
     }
 
     /**
@@ -143,7 +148,7 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
      * @return merkleRoot Merkle root for `_address` and `_proof`
      */
     function processProofForAddress(bytes32[] memory _proof, address _address)
-        public
+        external
         pure
         returns (bytes32)
     {
@@ -157,7 +162,7 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
      * @return merkleRoot Merkle root for `_leafHash` and `_proof`
      */
     function processProof(bytes32[] memory _proof, bytes32 _leafHash)
-        public
+        internal
         pure
         returns (bytes32)
     {
@@ -165,53 +170,21 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
     }
 
     /**
-     * @notice Gets your balance of the ERC-20 token currently set
-     * as the payment currency for project `_projectId`.
-     * @param _projectId Project ID to be queried.
-     * @return balance Balance of ERC-20
+     * @notice Toggles mint limit of one per address for project `_projectId`.
+     * If mint limit is disabled, unlimited mints per address are allowed.
+     * @param _projectId Project ID to toggle the mint limit.
      */
-    function getYourBalanceOfProjectERC20(uint256 _projectId)
-        external
-        view
-        returns (uint256 balance)
-    {
-        balance = IERC20(projectIdToCurrencyAddress[_projectId]).balanceOf(
-            msg.sender
-        );
-        return balance;
-    }
-
-    /**
-     * @notice Gets your allowance for this minter of the ERC-20
-     * token currently set as the payment currency for project
-     * `_projectId`.
-     * @param _projectId Project ID to be queried.
-     * @return remaining Remaining allowance of ERC-20
-     */
-    function checkYourAllowanceOfProjectERC20(uint256 _projectId)
-        external
-        view
-        returns (uint256 remaining)
-    {
-        remaining = IERC20(projectIdToCurrencyAddress[_projectId]).allowance(
-            msg.sender,
-            address(this)
-        );
-        return remaining;
-    }
-
-    /**
-     * @notice Sets the mint limit of a single purchaser for project
-     * `_projectId` to `_limit`.
-     * @param _projectId Project ID to set the mint limit for.
-     * @param _limit Number of times a given address may mint the
-     * project's tokens.
-     */
-    function setProjectMintLimit(uint256 _projectId, uint8 _limit)
+    function toggleProjectMintLimiter(uint256 _projectId)
         external
         onlyArtist(_projectId)
     {
-        projectMintLimit[_projectId] = _limit;
+        projectMintLimiterDisabled[_projectId] = !projectMintLimiterDisabled[
+            _projectId
+        ];
+        emit MintLimiterUpdated(
+            _projectId,
+            projectMintLimiterDisabled[_projectId]
+        );
     }
 
     /**
@@ -244,7 +217,7 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
      */
     function togglePurchaseToDisabled(uint256 _projectId)
         external
-        onlyCoreWhitelisted
+        onlyArtist(_projectId)
     {
         purchaseToDisabled[_projectId] = !purchaseToDisabled[_projectId];
         emit PurchaseToDisabledUpdated(
@@ -265,34 +238,6 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         projectIdToPricePerTokenInWei[_projectId] = _pricePerTokenInWei;
         projectIdToPriceIsConfigured[_projectId] = true;
         emit PricePerTokenInWeiUpdated(_projectId, _pricePerTokenInWei);
-    }
-
-    /**
-     * @notice Updates payment currency of project `_projectId` to be
-     * `_currencySymbol` at address `_currencyAddress`.
-     * @param _projectId Project ID to update.
-     * @param _currencySymbol Currency symbol.
-     * @param _currencyAddress Currency address.
-     */
-    function updateProjectCurrencyInfo(
-        uint256 _projectId,
-        string memory _currencySymbol,
-        address _currencyAddress
-    ) external onlyArtist(_projectId) {
-        // require null address if symbol is "ETH"
-        require(
-            (keccak256(abi.encodePacked(_currencySymbol)) ==
-                keccak256(abi.encodePacked("ETH"))) ==
-                (_currencyAddress == address(0)),
-            "ETH is only null address"
-        );
-        projectIdToCurrencySymbol[_projectId] = _currencySymbol;
-        projectIdToCurrencyAddress[_projectId] = _currencyAddress;
-        emit ProjectCurrencyInfoUpdated(
-            _projectId,
-            _currencyAddress,
-            _currencySymbol
-        );
     }
 
     /**
@@ -343,7 +288,12 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
             "Maximum number of invocations reached"
         );
 
-        // require artist
+        require(
+            msg.value >= projectIdToPricePerTokenInWei[_projectId],
+            "Must send minimum value to mint!"
+        );
+
+        // require valid Merkle proof
         require(
             verifyAddress(_projectId, _proof, msg.sender),
             "Invalid Merkle proof"
@@ -360,19 +310,19 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         // if purchaseTo is disabled, enforce purchase destination to be the TX
         // sending address.
         if (purchaseToDisabled[_projectId]) {
-            require(msg.sender == _to, "No `purchaseTo` Allowed");
+            require(msg.sender == _to, "No `purchaseTo` allowed");
         }
 
         // limit mints per address by project
-        require(projectMintLimit[_projectId] > 0, "Mint limit not configured");
-        require(
-            projectMintCounter[msg.sender][_projectId] <
-                projectMintLimit[_projectId],
-            "Reached minting limit"
-        );
-
-        // EFFECTS
-        projectMintCounter[msg.sender][_projectId]++;
+        if (projectMintedBy[_projectId][msg.sender]) {
+            require(
+                projectMintLimiterDisabled[_projectId],
+                "Limit 1 mint per address"
+            );
+        } else {
+            // EFFECTS
+            projectMintedBy[_projectId][msg.sender] = true;
+        }
 
         tokenId = minterFilter.mint(_to, _projectId, msg.sender);
         // what if projectMaxInvocations[_projectId] is 0 (default value)?
@@ -387,32 +337,7 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         }
 
         // INTERACTIONS
-        if (projectIdToCurrencyAddress[_projectId] != address(0)) {
-            require(
-                msg.value == 0,
-                "this project accepts a different currency and cannot accept ETH"
-            );
-            require(
-                IERC20(projectIdToCurrencyAddress[_projectId]).allowance(
-                    msg.sender,
-                    address(this)
-                ) >= projectIdToPricePerTokenInWei[_projectId],
-                "Insufficient Funds Approved for TX"
-            );
-            require(
-                IERC20(projectIdToCurrencyAddress[_projectId]).balanceOf(
-                    msg.sender
-                ) >= projectIdToPricePerTokenInWei[_projectId],
-                "Insufficient balance."
-            );
-            _splitFundsERC20(_projectId);
-        } else {
-            require(
-                msg.value >= projectIdToPricePerTokenInWei[_projectId],
-                "Must send minimum value to mint!"
-            );
-            _splitFundsETH(_projectId);
-        }
+        _splitFundsETH(_projectId);
 
         return tokenId;
     }
@@ -473,52 +398,6 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
     }
 
     /**
-     * @dev splits ERC-20 funds between foundation, artist, and artist's
-     * additional payee, for a token purchased on project `_projectId`.
-     */
-    function _splitFundsERC20(uint256 _projectId) internal {
-        uint256 pricePerTokenInWei = projectIdToPricePerTokenInWei[_projectId];
-        uint256 foundationAmount = (pricePerTokenInWei *
-            genArtCoreContract.artblocksPercentage()) / 100;
-        if (foundationAmount > 0) {
-            IERC20(projectIdToCurrencyAddress[_projectId]).transferFrom(
-                msg.sender,
-                genArtCoreContract.artblocksAddress(),
-                foundationAmount
-            );
-        }
-        uint256 projectFunds = pricePerTokenInWei - foundationAmount;
-        uint256 additionalPayeeAmount;
-        if (
-            genArtCoreContract.projectIdToAdditionalPayeePercentage(
-                _projectId
-            ) > 0
-        ) {
-            additionalPayeeAmount =
-                (projectFunds *
-                    genArtCoreContract.projectIdToAdditionalPayeePercentage(
-                        _projectId
-                    )) /
-                100;
-            if (additionalPayeeAmount > 0) {
-                IERC20(projectIdToCurrencyAddress[_projectId]).transferFrom(
-                    msg.sender,
-                    genArtCoreContract.projectIdToAdditionalPayee(_projectId),
-                    additionalPayeeAmount
-                );
-            }
-        }
-        uint256 creatorFunds = projectFunds - additionalPayeeAmount;
-        if (creatorFunds > 0) {
-            IERC20(projectIdToCurrencyAddress[_projectId]).transferFrom(
-                msg.sender,
-                genArtCoreContract.projectIdToArtistAddress(_projectId),
-                creatorFunds
-            );
-        }
-    }
-
-    /**
      * @notice Gets if price of token is configured, price of minting a
      * token on project `_projectId`, and currency symbol and address to be
      * used as payment. Supersedes any core contract price information.
@@ -528,9 +407,9 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
      * @return tokenPriceInWei current price of token on this minter - invalid
      * if price has not yet been configured
      * @return currencySymbol currency symbol for purchases of project on this
-     * minter. "ETH" reserved for ether.
+     * minter. This minter always returns "ETH"
      * @return currencyAddress currency address for purchases of project on
-     * this minter. Null address reserved for ether.
+     * this minter. This minter always returns null address, reserved for ether
      */
     function getPriceInfo(uint256 _projectId)
         external
@@ -544,12 +423,7 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
     {
         isConfigured = projectIdToPriceIsConfigured[_projectId];
         tokenPriceInWei = projectIdToPricePerTokenInWei[_projectId];
-        currencyAddress = projectIdToCurrencyAddress[_projectId];
-        if (currencyAddress == address(0)) {
-            // defaults to ETH
-            currencySymbol = "ETH";
-        } else {
-            currencySymbol = projectIdToCurrencySymbol[_projectId];
-        }
+        currencySymbol = "ETH";
+        currencyAddress = address(0);
     }
 }
