@@ -50,6 +50,7 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
     /// projectId => purchaser address => has purchased one or more mints
     mapping(uint256 => mapping(address => bool)) public projectMintedBy;
     /// projectId => are addresses limited to one mint each?
+    /// (default behavior is limit one mint per address)
     mapping(uint256 => bool) public projectMintLimiterDisabled;
     /// projectId => has project reached its maximum number of invocations?
     mapping(uint256 => bool) public projectMaxHasBeenInvoked;
@@ -123,10 +124,12 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
     }
 
     /**
-     * @notice Verify address is allowed to mint on project `_projectId`.
+     * @notice Verify if address is allowed to mint on project `_projectId`.
      * @param _projectId Project ID to be checked.
      * @param _proof Merkle proof for address.
      * @param _address Address to check.
+     * @return inAllowlist true only if address is allowed to mint and valid
+     * Merkle proof was provided
      */
     function verifyAddress(
         uint256 _projectId,
@@ -152,11 +155,11 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         pure
         returns (bytes32)
     {
-        return MerkleProof.processProof(_proof, hashAddress(_address));
+        return processProof(_proof, hashAddress(_address));
     }
 
     /**
-     * @notice Wrapper for OpenZeppelin procesProof function.
+     * @notice Wrapper for OpenZeppelin processProof function.
      * @param _proof Merkle proof.
      * @param _leafHash keccak256 hash of address on leaf.
      * @return merkleRoot Merkle root for `_leafHash` and `_proof`
@@ -293,12 +296,6 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
             "Must send minimum value to mint!"
         );
 
-        // require valid Merkle proof
-        require(
-            verifyAddress(_projectId, _proof, msg.sender),
-            "Invalid Merkle proof"
-        );
-
         // require artist to have configured price of token on this minter
         require(
             projectIdToPriceIsConfigured[_projectId],
@@ -312,6 +309,12 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         if (purchaseToDisabled[_projectId]) {
             require(msg.sender == _to, "No `purchaseTo` allowed");
         }
+
+        // require valid Merkle proof
+        require(
+            verifyAddress(_projectId, _proof, msg.sender),
+            "Invalid Merkle proof"
+        );
 
         // limit mints per address by project
         if (projectMintedBy[_projectId][msg.sender]) {

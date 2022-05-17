@@ -6,7 +6,7 @@ import "../interfaces/0.8.x/IFilteredMinterMerkleV0.sol";
 pragma solidity ^0.8.0;
 
 /**
- * @dev This contract is tailored to attacks our merkle allowlist minter with a
+ * @dev This contract is tailored to attack our Merkle allowlist minter with a
  * reentrency attack. It simulates the case where an artist allowlists a
  * malicious contract.
  * @dev Note that a simple contract like this assumes a specific Merkle proof

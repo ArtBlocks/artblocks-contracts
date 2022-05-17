@@ -56,14 +56,14 @@ describe("MinterMerkleV0", async function () {
   let merkleTreeTwo;
 
   beforeEach(async function () {
-    const [owner, newOwner, artist, additional, snowfro] =
+    const [owner, newOwner, artist, additional, deployer] =
       await ethers.getSigners();
     this.accounts = {
       owner: owner,
       newOwner: newOwner,
       artist: artist,
       additional: additional,
-      snowfro: snowfro,
+      deployer: deployer,
     };
     const randomizerFactory = await ethers.getContractFactory(
       "BasicRandomizer"
@@ -72,7 +72,7 @@ describe("MinterMerkleV0", async function () {
 
     const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV1");
     this.token = await artblocksFactory
-      .connect(this.accounts.snowfro)
+      .connect(this.accounts.deployer)
       .deploy(name, symbol, this.randomizer.address);
 
     const minterFilterFactory = await ethers.getContractFactory(
@@ -91,29 +91,29 @@ describe("MinterMerkleV0", async function () {
     );
 
     await this.token
-      .connect(this.accounts.snowfro)
+      .connect(this.accounts.deployer)
       .addProject("project0", this.accounts.artist.address, 0, false);
 
     await this.token
-      .connect(this.accounts.snowfro)
+      .connect(this.accounts.deployer)
       .addProject("project1", this.accounts.artist.address, 0, false);
 
     await this.token
-      .connect(this.accounts.snowfro)
+      .connect(this.accounts.deployer)
       .addProject("project2", this.accounts.artist.address, 0, false);
 
     await this.token
-      .connect(this.accounts.snowfro)
+      .connect(this.accounts.deployer)
       .toggleProjectIsActive(projectZero);
     await this.token
-      .connect(this.accounts.snowfro)
+      .connect(this.accounts.deployer)
       .toggleProjectIsActive(projectOne);
     await this.token
-      .connect(this.accounts.snowfro)
+      .connect(this.accounts.deployer)
       .toggleProjectIsActive(projectTwo);
 
     await this.token
-      .connect(this.accounts.snowfro)
+      .connect(this.accounts.deployer)
       .addMintWhitelisted(this.minterFilter.address);
 
     await this.token
@@ -131,16 +131,16 @@ describe("MinterMerkleV0", async function () {
     this.token.connect(this.accounts.artist).toggleProjectIsPaused(projectTwo);
 
     await this.minterFilter
-      .connect(this.accounts.snowfro)
+      .connect(this.accounts.deployer)
       .addApprovedMinter(this.minter.address);
     await this.minterFilter
-      .connect(this.accounts.snowfro)
+      .connect(this.accounts.deployer)
       .setMinterForProject(projectZero, this.minter.address);
     await this.minterFilter
-      .connect(this.accounts.snowfro)
+      .connect(this.accounts.deployer)
       .setMinterForProject(projectOne, this.minter.address);
     await this.minterFilter
-      .connect(this.accounts.snowfro)
+      .connect(this.accounts.deployer)
       .setMinterForProject(projectTwo, this.minter.address);
 
     // set token price for projects zero and one on minter
@@ -157,7 +157,7 @@ describe("MinterMerkleV0", async function () {
     const elementsProjectTwo = [];
 
     elementsProjectZero.push(
-      this.accounts.snowfro.address,
+      this.accounts.deployer.address,
       this.accounts.artist.address,
       this.accounts.additional.address,
       this.accounts.owner.address,
@@ -211,7 +211,7 @@ describe("MinterMerkleV0", async function () {
         "GenArt721CoreV1"
       );
       const token2 = await artblocksFactory
-        .connect(this.accounts.snowfro)
+        .connect(this.accounts.deployer)
         .deploy(name, symbol, this.randomizer.address);
 
       const minterFilterFactory = await ethers.getContractFactory(
@@ -238,10 +238,10 @@ describe("MinterMerkleV0", async function () {
           .updatePricePerTokenInWei(projectZero, higherPricePerTokenInWei),
         onlyArtistErrorMessage
       );
-      // doesn't allow snowfro
+      // doesn't allow deployer
       await expectRevert(
         this.minter
-          .connect(this.accounts.snowfro)
+          .connect(this.accounts.deployer)
           .updatePricePerTokenInWei(projectZero, higherPricePerTokenInWei),
         onlyArtistErrorMessage
       );
@@ -439,6 +439,11 @@ describe("MinterMerkleV0", async function () {
     });
 
     it("does not allow purchase prior to setting Merkle root (results in invalid proof)", async function () {
+      // configure price per token
+      await this.minter
+        .connect(this.accounts.artist)
+        .updatePricePerTokenInWei(projectTwo, 0);
+      // expect revert because Merkle root has not been set
       await expectRevert(
         this.minter
           .connect(this.accounts.additional)
@@ -454,11 +459,6 @@ describe("MinterMerkleV0", async function () {
     });
 
     it("does not allow purchase prior to configuring price", async function () {
-      // calc and update merkle root for project two
-      const merkleRootTwo = merkleTreeTwo.getHexRoot();
-      await this.minter
-        .connect(this.accounts.artist)
-        .updateMerkleRoot(projectTwo, merkleRootTwo);
       // expect revert due to price not being configured
       await expectRevert(
         this.minter
@@ -607,7 +607,7 @@ describe("MinterMerkleV0", async function () {
 
       // Try with setProjectMaxInvocations, store gas cost
       await this.minter
-        .connect(this.accounts.snowfro)
+        .connect(this.accounts.deployer)
         .setProjectMaxInvocations(projectOne);
       const maxSetTx = await this.minter
         .connect(this.accounts.owner)
@@ -675,7 +675,7 @@ describe("MinterMerkleV0", async function () {
 
       // Try with setProjectMaxInvocations, store gas cost
       await this.minter
-        .connect(this.accounts.snowfro)
+        .connect(this.accounts.deployer)
         .setProjectMaxInvocations(projectOne);
       await this.minter
         .connect(this.accounts.artist)
@@ -846,28 +846,28 @@ describe("MinterMerkleV0", async function () {
   describe("setProjectMaxInvocations", async function () {
     it("handles getting tokenInfo invocation info with V1 core", async function () {
       await this.minter
-        .connect(this.accounts.snowfro)
+        .connect(this.accounts.deployer)
         .setProjectMaxInvocations(projectOne);
       // minter should update storage with accurate projectMaxInvocations
       await this.minter
-        .connect(this.accounts.snowfro)
+        .connect(this.accounts.deployer)
         .setProjectMaxInvocations(projectOne);
       let maxInvocations = await this.minter
-        .connect(this.accounts.snowfro)
+        .connect(this.accounts.deployer)
         .projectMaxInvocations(projectOne);
       expect(maxInvocations).to.be.equal(projectMaxInvocations);
       // ensure hasMaxBeenReached did not unexpectedly get set as true
       let hasMaxBeenInvoked = await this.minter
-        .connect(this.accounts.snowfro)
+        .connect(this.accounts.deployer)
         .projectMaxHasBeenInvoked(projectOne);
       expect(hasMaxBeenInvoked).to.be.false;
       // should also support unconfigured project projectMaxInvocations
       // e.g. project 99, which does not yet exist
       await this.minter
-        .connect(this.accounts.snowfro)
+        .connect(this.accounts.deployer)
         .setProjectMaxInvocations(99);
       maxInvocations = await this.minter3
-        .connect(this.accounts.snowfro)
+        .connect(this.accounts.deployer)
         .projectMaxInvocations(99);
       expect(maxInvocations).to.be.equal(0);
     });
@@ -933,7 +933,7 @@ describe("MinterMerkleV0", async function () {
         "ReentrancyMerkleMock"
       );
       const reentrancyMock = await reentrancyMockFactory
-        .connect(this.accounts.snowfro)
+        .connect(this.accounts.deployer)
         .deploy();
 
       // artist generates a Merkle tree that includes malicious contract
@@ -942,7 +942,7 @@ describe("MinterMerkleV0", async function () {
       const elementsProjectOneWithAttacker = [];
 
       elementsProjectOneWithAttacker.push(
-        this.accounts.snowfro.address,
+        this.accounts.deployer.address,
         this.accounts.artist.address,
         attackerAddress,
         this.accounts.owner.address,
@@ -973,7 +973,7 @@ describe("MinterMerkleV0", async function () {
       let totalValue = higherPricePerTokenInWei.mul(numTokensToMint);
       await expectRevert(
         reentrancyMock
-          .connect(this.accounts.snowfro)
+          .connect(this.accounts.deployer)
           .attack(
             numTokensToMint,
             this.minter.address,
@@ -993,7 +993,7 @@ describe("MinterMerkleV0", async function () {
       totalValue = higherPricePerTokenInWei.mul(numTokensToMint);
       for (let i = 0; i < totalTokensToMint; i++) {
         await reentrancyMock
-          .connect(this.accounts.snowfro)
+          .connect(this.accounts.deployer)
           .attack(
             numTokensToMint,
             this.minter.address,
@@ -1017,7 +1017,7 @@ describe("MinterMerkleV0", async function () {
         "ReentrancyMerkleMock"
       );
       const reentrancyMock = await reentrancyMockFactory
-        .connect(this.accounts.snowfro)
+        .connect(this.accounts.deployer)
         .deploy();
 
       // artist generates a Merkle tree that includes malicious contract
@@ -1026,7 +1026,7 @@ describe("MinterMerkleV0", async function () {
       const elementsProjectOneWithAttacker = [];
 
       elementsProjectOneWithAttacker.push(
-        this.accounts.snowfro.address,
+        this.accounts.deployer.address,
         this.accounts.artist.address,
         attackerAddress,
         this.accounts.owner.address,
@@ -1057,7 +1057,7 @@ describe("MinterMerkleV0", async function () {
       let totalValue = higherPricePerTokenInWei.mul(numTokensToMint);
       await expectRevert(
         reentrancyMock
-          .connect(this.accounts.snowfro)
+          .connect(this.accounts.deployer)
           .attack(
             numTokensToMint,
             this.minter.address,
@@ -1076,7 +1076,7 @@ describe("MinterMerkleV0", async function () {
       totalValue = higherPricePerTokenInWei.mul(numTokensToMint);
       for (let i = 0; i < totalTokensToMint; i++) {
         await reentrancyMock
-          .connect(this.accounts.snowfro)
+          .connect(this.accounts.deployer)
           .attack(
             numTokensToMint,
             this.minter.address,
