@@ -178,8 +178,7 @@ async function main() {
   console.log(`Transferred Core contract admin to: ${pbabTransferAddress}.`);
 
   // Output instructions for manual Etherscan verification.
-  const standardVerify =
-    "yarn hardhat verify --contract <path to .sol>:<contract name>";
+  const standardVerify = "yarn hardhat verify";
   console.log(`Verify GenArt721CoreV2 deployment with:`);
   console.log(
     `${standardVerify} --network ${networkName} ${genArt721Core.address} "${pbabTokenName}" "${pbabTokenTicker}" ${randomizerAddress}`
