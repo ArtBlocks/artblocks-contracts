@@ -20,8 +20,7 @@ pragma solidity 0.8.9;
  */
 contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
     // TODO - ADD TESTS FOR THIS MINTER
-    // TODO - DISCUSS REQUIREMENT TO ENUMERATE ALLOWLISTED HOLDER PROJECTS ON-CHAIN
-    // TODO - ADD ENUMERATION FUNCTIONS TO THIS MINTER (AS APPLICABLE)
+    // TODO - ADD ENUMERATION FUNCTIONS TO THIS MINTER FOR _allowedNftAddresses
     /**
      * @notice Allowlisted holders of NFTs at address `_nftAddress` to be
      * considered for minting.
@@ -56,7 +55,6 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
 
     // add Enumerable Set methods
     using EnumerableSet for EnumerableSet.AddressSet;
-    using EnumerableSet for EnumerableSet.UintSet;
 
     /// Core contract address this minter interacts with
     address public immutable genArt721CoreAddress;
@@ -86,24 +84,12 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
     /// projectId => price per token has been configured on this minter
     mapping(uint256 => bool) private projectIdToPriceIsConfigured;
 
-    // alternate method to define allowedProjectHolders (not enumerable on-chain)
-    // (may be cheaper enumerable map, but should double check)
-    // /// keccak256(abi.encodePacked(projectIdToMint,ownedNftAddress,ownedNftProjectId)) => bool
-    // /// may holders of a specific project purchase a token on
-    // mapping(bytes32 => bool) public allowedProjectHolders;
-
-    // alternate method to define allowedProjectHodlers (not enumerable on-chain)
-    // /// projectId => ownedNftAddress => ownedNftProjectId => bool
-    // /// may holders of a specific project purchase a token on `projectId`
-    // mapping(uint256 => mapping(address => mapping(uint256 => bool))) public allowedProjectHolders;
-
     /**
-     * projectId => ownedNftAddress => ownedNftProjectIds
-     * Enumerable set of project IDs whose holders are allowed to purchase a
-     * token on `projectId`
+     * projectId => ownedNftAddress => ownedNftProjectIds => bool
+     * projects whose holders are allowed to purchase a token on `projectId`
      */
-    mapping(uint256 => mapping(address => EnumerableSet.UintSet))
-        private _allowedProjectHolders;
+    mapping(uint256 => mapping(address => mapping(uint256 => bool)))
+        public allowedProjectHolders;
 
     modifier onlyCoreWhitelisted() {
         require(
@@ -191,9 +177,9 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
             _allowedNftAddresses.contains(_ownedNftAddress),
             "Only Allowed NFT Addresses"
         );
-        _allowedProjectHolders[_projectId][_ownedNftAddress].add(
+        allowedProjectHolders[_projectId][_ownedNftAddress][
             _ownedNftProjectId
-        );
+        ] = true;
         emit AllowHoldersOfProject(
             _projectId,
             _ownedNftAddress,
@@ -216,9 +202,9 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
         address _ownedNftAddress,
         uint256 _ownedNftProjectId
     ) external onlyArtist(_projectId) {
-        _allowedProjectHolders[_projectId][_ownedNftAddress].remove(
+        allowedProjectHolders[_projectId][_ownedNftAddress][
             _ownedNftProjectId
-        );
+        ] = false;
         emit RemovedHoldersOfProject(
             _projectId,
             _ownedNftAddress,
@@ -239,12 +225,11 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
         address _ownedNftAddress,
         uint256 _ownedNftTokenId
     ) public view returns (bool) {
-        // mapping(uint256 => EnumerableMap.AddressToUintMap) private allowedProjectHolders;
-        // mapping(uint256 => mapping(address => EnumerableSet.UintSet)) private _allowedProjectHolders;
+        uint256 ownedNftProjectId = _ownedNftTokenId / ONE_MILLION;
         return
-            _allowedProjectHolders[_projectId][_ownedNftAddress].contains(
-                _ownedNftTokenId / ONE_MILLION
-            );
+            allowedProjectHolders[_projectId][_ownedNftAddress][
+                ownedNftProjectId
+            ];
     }
 
     /**
