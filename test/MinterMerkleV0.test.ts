@@ -744,7 +744,7 @@ describe("MinterMerkleV0", async function () {
         ethers.utils.formatUnits(txCost, "ether").toString(),
         "ETH"
       );
-      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0389824"));
+      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0389827"));
     });
   });
 

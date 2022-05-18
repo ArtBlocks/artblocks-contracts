@@ -26,6 +26,8 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         bool _projectMintLimiterDisabled
     );
 
+    using MerkleProof for bytes32[];
+
     /// Core contract address this minter interacts with
     address public immutable genArt721CoreAddress;
 
@@ -139,39 +141,7 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         address _address
     ) public view returns (bool) {
         return
-            MerkleProof.verify(
-                _proof,
-                projectMerkleRoot[_projectId],
-                hashAddress(_address)
-            );
-    }
-
-    /**
-     * @notice Process proof for an address. Returns Merkle root.
-     * @param _proof Merkle proof for address.
-     * @param _address Address to process.
-     * @return merkleRoot Merkle root for `_address` and `_proof`
-     */
-    function processProofForAddress(bytes32[] memory _proof, address _address)
-        external
-        pure
-        returns (bytes32)
-    {
-        return processProof(_proof, hashAddress(_address));
-    }
-
-    /**
-     * @notice Wrapper for OpenZeppelin processProof function.
-     * @param _proof Merkle proof.
-     * @param _leafHash keccak256 hash of address on leaf.
-     * @return merkleRoot Merkle root for `_leafHash` and `_proof`
-     */
-    function processProof(bytes32[] memory _proof, bytes32 _leafHash)
-        internal
-        pure
-        returns (bytes32)
-    {
-        return MerkleProof.processProof(_proof, _leafHash);
+            _proof.verify(projectMerkleRoot[_projectId], hashAddress(_address));
     }
 
     /**
@@ -400,6 +370,21 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
                 require(success_, "Artist payment failed");
             }
         }
+    }
+
+    /**
+     * @notice Process proof for an address. Returns Merkle root. Included to
+     * enable users to easily verify a proof's validity.
+     * @param _proof Merkle proof for address.
+     * @param _address Address to process.
+     * @return merkleRoot Merkle root for `_address` and `_proof`
+     */
+    function processProofForAddress(bytes32[] memory _proof, address _address)
+        external
+        pure
+        returns (bytes32)
+    {
+        return _proof.processProof(hashAddress(_address));
     }
 
     /**
