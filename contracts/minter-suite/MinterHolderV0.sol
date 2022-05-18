@@ -8,16 +8,56 @@ import "../interfaces/0.8.x/IFilteredMinterHolderV0.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
 
 pragma solidity 0.8.9;
 
 /**
  * @title Filtered Minter contract that allows tokens to be minted with ETH
- * or any ERC-20 token when purchaser owns an allowlisted ERC-721 NFT. One mint
- * per ERC-721 NFT.
+ * when purchaser owns an allowlisted ERC-721 NFT.
  * @author Art Blocks Inc.
  */
 contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
+    // TODO - ADD TESTS FOR THIS MINTER
+    // TODO - DISCUSS REQUIREMENT TO ENUMERATE ALLOWLISTED HOLDER PROJECTS ON-CHAIN
+    // TODO - ADD ENUMERATION FUNCTIONS TO THIS MINTER (AS APPLICABLE)
+    /**
+     * @notice Allowlisted holders of NFTs at address `_nftAddress` to be
+     * considered for minting.
+     */
+    event AllowlistedNftAddress(address indexed _nftAddress);
+
+    /**
+     * @notice Removed holders of NFTs at address `_nftAddress` to be
+     * considered for minting.
+     */
+    event RemovedNftAddress(address indexed _nftAddress);
+
+    /**
+     * @notice Allow holders of NFTs at address `_ownedNftAddress`, project ID
+     * `_ownedNftProjectId` to mint on project `_projectId`.
+     */
+    event AllowHoldersOfProject(
+        uint256 indexed _projectId,
+        address _ownedNftAddress,
+        uint256 _ownedNftProjectId
+    );
+
+    /**
+     * @notice Allow holders of NFTs at address `_ownedNftAddress`, project ID
+     * `_ownedNftProjectId` to mint on project `_projectId`.
+     */
+    event RemovedHoldersOfProject(
+        uint256 indexed _projectId,
+        address _ownedNftAddress,
+        uint256 _ownedNftProjectId
+    );
+
+    // add Enumerable Set methods
+    using EnumerableSet for EnumerableSet.AddressSet;
+    using EnumerableSet for EnumerableSet.UintSet;
+
     /// Core contract address this minter interacts with
     address public immutable genArt721CoreAddress;
 
@@ -35,10 +75,8 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
 
     uint256 constant ONE_MILLION = 1_000_000;
 
-    /// projectId => are contracts allowed to mint?
-    mapping(uint256 => bool) public contractMintable;
-    /// projectId => are tokens allowed to be minted to other addresses?
-    mapping(uint256 => bool) public purchaseToDisabled;
+    /// Set of core contracts allowed to be queried for token holders
+    EnumerableSet.AddressSet private _allowedNftAddresses;
     /// projectId => has project reached its maximum number of invocations?
     mapping(uint256 => bool) public projectMaxHasBeenInvoked;
     /// projectId => project's maximum number of invocations
@@ -47,20 +85,25 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
     mapping(uint256 => uint256) private projectIdToPricePerTokenInWei;
     /// projectId => price per token has been configured on this minter
     mapping(uint256 => bool) private projectIdToPriceIsConfigured;
-    /// projectId => currency symbol - supersedes any defined core value
-    mapping(uint256 => string) private projectIdToCurrencySymbol;
-    /// projectId => currency address - supersedes any defined core value
-    mapping(uint256 => address) private projectIdToCurrencyAddress;
-    /// projectId => tokenAddress => tokenId => bool has been used to purchase?
-    mapping(uint256 => mapping(address => mapping(uint256 => bool)))
-        public projectTokenRedeemed;
-    /// projectId => AllowedNfts ERC-721 tokens whose holders may mint
-    mapping(uint256 => AllowedNfts) public allowedNfts;
-    struct AllowedNfts {
-        address tokenAddress;
-        uint256 minTokenId; // inclusive
-        uint256 maxTokenId; // inclusive
-    }
+
+    // alternate method to define allowedProjectHolders (not enumerable on-chain)
+    // (may be cheaper enumerable map, but should double check)
+    // /// keccak256(abi.encodePacked(projectIdToMint,ownedNftAddress,ownedNftProjectId)) => bool
+    // /// may holders of a specific project purchase a token on
+    // mapping(bytes32 => bool) public allowedProjectHolders;
+
+    // alternate method to define allowedProjectHodlers (not enumerable on-chain)
+    // /// projectId => ownedNftAddress => ownedNftProjectId => bool
+    // /// may holders of a specific project purchase a token on `projectId`
+    // mapping(uint256 => mapping(address => mapping(uint256 => bool))) public allowedProjectHolders;
+
+    /**
+     * projectId => ownedNftAddress => ownedNftProjectIds
+     * Enumerable set of project IDs whose holders are allowed to purchase a
+     * token on `projectId`
+     */
+    mapping(uint256 => mapping(address => EnumerableSet.UintSet))
+        private _allowedProjectHolders;
 
     modifier onlyCoreWhitelisted() {
         require(
@@ -102,58 +145,106 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
     }
 
     /**
+     *
+     * @notice Allowlists holders of NFTs at address `_nftAddress` to be
+     * considered for minting. New core address is assumed to follow syntax of:
+     * `projectId = tokenId / 1_000_000`
+     * @param _nftAddress NFT core address to be allowlisted
+     */
+    function allowlistNftAddress(address _nftAddress)
+        external
+        onlyCoreWhitelisted
+    {
+        _allowedNftAddresses.add(_nftAddress);
+        emit AllowlistedNftAddress(_nftAddress);
+    }
+
+    /**
+     *
+     * @notice Removes holders of NFTs at address `_nftAddress` to be
+     * considered for adding to future allowlists.
+     * @param _nftAddress NFT core address to be removed from allowlist.
+     */
+    function removeNftAddress(address _nftAddress)
+        external
+        onlyCoreWhitelisted
+    {
+        _allowedNftAddresses.remove(_nftAddress);
+        emit RemovedNftAddress(_nftAddress);
+    }
+
+    /**
+     * @notice Allows holders of NFTs at address `_ownedNftAddress`, project ID
+     * `_ownedNftProjectId` to mint on project `_projectId`.
+     * @param _projectId Project ID to enable minting on.
+     * @param _ownedNftAddress NFT core address of project to be allowlisted.
+     * @param _ownedNftProjectId Project ID on `_ownedNftAddress` whose holders shall be
+     * allowlisted to mint project `_projectId`.
+     */
+    function allowHoldersOfProject(
+        uint256 _projectId,
+        address _ownedNftAddress,
+        uint256 _ownedNftProjectId
+    ) external onlyArtist(_projectId) {
+        // require _ownedNftAddress be allowlisted
+        require(
+            _allowedNftAddresses.contains(_ownedNftAddress),
+            "Only Allowed NFT Addresses"
+        );
+        _allowedProjectHolders[_projectId][_ownedNftAddress].add(
+            _ownedNftProjectId
+        );
+        emit AllowHoldersOfProject(
+            _projectId,
+            _ownedNftAddress,
+            _ownedNftProjectId
+        );
+    }
+
+    /**
+     * @notice Removes holders of NFTs at address `_ownedNftAddress`, project
+     * ID `_ownedNftProjectId` to mint on project `_projectId`. If other
+     * projects owned by a holder are still allowed to mint, holder will
+     * maintain ability to purchase.
+     * @param _projectId Project ID to enable minting on.
+     * @param _ownedNftAddress NFT core address of project to be allowlisted.
+     * @param _ownedNftProjectId Project ID on `_ownedNftAddress` whose holders shall be
+     * allowlisted to mint project `_projectId`.
+     */
+    function removeHoldersOfProject(
+        uint256 _projectId,
+        address _ownedNftAddress,
+        uint256 _ownedNftProjectId
+    ) external onlyArtist(_projectId) {
+        _allowedProjectHolders[_projectId][_ownedNftAddress].remove(
+            _ownedNftProjectId
+        );
+        emit RemovedHoldersOfProject(
+            _projectId,
+            _ownedNftAddress,
+            _ownedNftProjectId
+        );
+    }
+
+    /**
      * @notice Returns if token is an allowlisted NFT for project `_projectId`.
      * @param _projectId Project ID to be checked.
-     * @param _nftAddress ERC-721 NFT token address to be checked.
-     * @param _nftTokenId ERC-721 NFT token ID to be checked.
+     * @param _ownedNftAddress ERC-721 NFT token address to be checked.
+     * @param _ownedNftTokenId ERC-721 NFT token ID to be checked.
      * @return bool Token is allowlisted
      * @dev does not check if token has been used to purchase
      */
     function isAllowlistedNFT(
         uint256 _projectId,
-        address _nftAddress,
-        uint256 _nftTokenId
+        address _ownedNftAddress,
+        uint256 _ownedNftTokenId
     ) public view returns (bool) {
-        AllowedNfts memory _allowedNfts = allowedNfts[_projectId];
-        return (_allowedNfts.tokenAddress == _nftAddress &&
-            _nftTokenId >= _allowedNfts.minTokenId &&
-            _nftTokenId <= _allowedNfts.maxTokenId);
-    }
-
-    /**
-     * @notice Gets your balance of the ERC-20 token currently set
-     * as the payment currency for project `_projectId`.
-     * @param _projectId Project ID to be queried.
-     * @return balance Balance of ERC-20
-     */
-    function getYourBalanceOfProjectERC20(uint256 _projectId)
-        external
-        view
-        returns (uint256 balance)
-    {
-        balance = IERC20(projectIdToCurrencyAddress[_projectId]).balanceOf(
-            msg.sender
-        );
-        return balance;
-    }
-
-    /**
-     * @notice Gets your allowance for this minter of the ERC-20
-     * token currently set as the payment currency for project
-     * `_projectId`.
-     * @param _projectId Project ID to be queried.
-     * @return remaining Remaining allowance of ERC-20
-     */
-    function checkYourAllowanceOfProjectERC20(uint256 _projectId)
-        external
-        view
-        returns (uint256 remaining)
-    {
-        remaining = IERC20(projectIdToCurrencyAddress[_projectId]).allowance(
-            msg.sender,
-            address(this)
-        );
-        return remaining;
+        // mapping(uint256 => EnumerableMap.AddressToUintMap) private allowedProjectHolders;
+        // mapping(uint256 => mapping(address => EnumerableSet.UintSet)) private _allowedProjectHolders;
+        return
+            _allowedProjectHolders[_projectId][_ownedNftAddress].contains(
+                _ownedNftTokenId / ONE_MILLION
+            );
     }
 
     /**
@@ -179,46 +270,16 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
         }
     }
 
-    function updateAllowlistedNFTs(
-        uint256 _projectId,
-        address _nftAddress,
-        uint256 _minTokenId,
-        uint256 _maxTokenId
-    ) external onlyArtist(_projectId) {
-        allowedNfts[_projectId] = AllowedNfts(
-            _nftAddress,
-            _minTokenId,
-            _maxTokenId
-        );
-        // TODO: emit event if we use this style of allowlisting
-    }
-
     /**
-     * @notice Toggles if contracts are allowed to mint tokens for
-     * project `_projectId`.
-     * @param _projectId Project ID to be toggled.
-     */
-    function toggleContractMintable(uint256 _projectId)
-        external
-        onlyCoreWhitelisted
-    {
-        contractMintable[_projectId] = !contractMintable[_projectId];
-    }
-
-    /**
-     * @notice Toggles if purchases to other address are enabled for
-     * project `_projectId`.
-     * @param _projectId Project ID to be toggled.
+     * @notice Warning: Disabling purchaseTo is not supported on this minter.
+     * This method exists purely for interface-conformance purposes.
      */
     function togglePurchaseToDisabled(uint256 _projectId)
         external
-        onlyCoreWhitelisted
+        view
+        onlyArtist(_projectId)
     {
-        purchaseToDisabled[_projectId] = !purchaseToDisabled[_projectId];
-        emit PurchaseToDisabledUpdated(
-            _projectId,
-            purchaseToDisabled[_projectId]
-        );
+        revert("Action not supported");
     }
 
     /**
@@ -233,34 +294,6 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
         projectIdToPricePerTokenInWei[_projectId] = _pricePerTokenInWei;
         projectIdToPriceIsConfigured[_projectId] = true;
         emit PricePerTokenInWeiUpdated(_projectId, _pricePerTokenInWei);
-    }
-
-    /**
-     * @notice Updates payment currency of project `_projectId` to be
-     * `_currencySymbol` at address `_currencyAddress`.
-     * @param _projectId Project ID to update.
-     * @param _currencySymbol Currency symbol.
-     * @param _currencyAddress Currency address.
-     */
-    function updateProjectCurrencyInfo(
-        uint256 _projectId,
-        string memory _currencySymbol,
-        address _currencyAddress
-    ) external onlyArtist(_projectId) {
-        // require null address if symbol is "ETH"
-        require(
-            (keccak256(abi.encodePacked(_currencySymbol)) ==
-                keccak256(abi.encodePacked("ETH"))) ==
-                (_currencyAddress == address(0)),
-            "ETH is only null address"
-        );
-        projectIdToCurrencySymbol[_projectId] = _currencySymbol;
-        projectIdToCurrencyAddress[_projectId] = _currencyAddress;
-        emit ProjectCurrencyInfoUpdated(
-            _projectId,
-            _currencyAddress,
-            _currencySymbol
-        );
     }
 
     /**
@@ -280,19 +313,23 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
     /**
      * @notice Purchases a token from project `_projectId`.
      * @param _projectId Project ID to mint a token on.
-     * @param _nftAddress ERC-721 NFT address owned by msg.sender being used to
-     * claim right to purchase.
-     * @param _nftTokenId ERC-721 NFT token ID owned by msg.sender being used
-     * to claim right to purchase. Must have not yet been used to claim a mint
-     * on project `_projectId`.
+     * @param _ownedNftAddress ERC-721 NFT address owned by msg.sender being used to
+     * prove right to purchase.
+     * @param _ownedNftTokenId ERC-721 NFT token ID owned by msg.sender being used
+     * to prove right to purchase.
      * @return tokenId Token ID of minted token
      */
     function purchase(
         uint256 _projectId,
-        address _nftAddress,
-        uint256 _nftTokenId
+        address _ownedNftAddress,
+        uint256 _ownedNftTokenId
     ) external payable returns (uint256 tokenId) {
-        tokenId = purchaseTo(msg.sender, _projectId, _nftAddress, _nftTokenId);
+        tokenId = purchaseTo(
+            msg.sender,
+            _projectId,
+            _ownedNftAddress,
+            _ownedNftTokenId
+        );
         return tokenId;
     }
 
@@ -301,9 +338,9 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
      * the token's owner to `_to`.
      * @param _to Address to be the new token's owner.
      * @param _projectId Project ID to mint a token on.
-     * @param _nftAddress ERC-721 NFT address owned by msg.sender being used to
+     * @param _ownedNftAddress ERC-721 NFT address owned by msg.sender being used to
      * claim right to purchase.
-     * @param _nftTokenId ERC-721 NFT token ID owned by msg.sender being used
+     * @param _ownedNftTokenId ERC-721 NFT token ID owned by msg.sender being used
      * to claim right to purchase. Must have not yet been used to claim a mint
      * on project `_projectId`.
      * @return tokenId Token ID of minted token
@@ -311,8 +348,8 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
     function purchaseTo(
         address _to,
         uint256 _projectId,
-        address _nftAddress,
-        uint256 _nftTokenId
+        address _ownedNftAddress,
+        uint256 _ownedNftTokenId
     ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
         require(
@@ -320,16 +357,9 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
             "Maximum number of invocations reached"
         );
 
-        // require token used to claim to be in set of allowlisted NFTs
         require(
-            isAllowlistedNFT(_projectId, _nftAddress, _nftTokenId),
-            "Only allowlisted NFTs"
-        );
-
-        // require token used to claim to has not been used for this project
-        require(
-            !projectTokenRedeemed[_projectId][_nftAddress][_nftTokenId],
-            "NFT already used to claim"
+            msg.value >= projectIdToPricePerTokenInWei[_projectId],
+            "Must send minimum value to mint!"
         );
 
         // require artist to have configured price of token on this minter
@@ -338,22 +368,13 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
             "Price not configured"
         );
 
-        // if contract filter is off, allow calls from another contract
-        if (!contractMintable[_projectId]) {
-            require(msg.sender == tx.origin, "No Contract Buys");
-        }
-
-        // if purchaseTo is disabled, enforce purchase destination to be the TX
-        // sending address.
-        if (purchaseToDisabled[_projectId]) {
-            require(msg.sender == _to, "No `purchaseTo` Allowed");
-        }
+        // require token used to claim to be in set of allowlisted NFTs
+        require(
+            isAllowlistedNFT(_projectId, _ownedNftAddress, _ownedNftTokenId),
+            "Only allowlisted NFTs"
+        );
 
         // EFFECTS
-        projectTokenRedeemed[_projectId][_nftAddress][_nftTokenId] = true;
-        // TODO: (optional) we could emit an event here to enable subgraph to
-        //       more easily index which NFTs have been used to redeem
-
         tokenId = minterFilter.mint(_to, _projectId, msg.sender);
         // what if projectMaxInvocations[_projectId] is 0 (default value)?
         // that is intended, so that by default the minter allows infinite transactions,
@@ -369,37 +390,12 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
         // INTERACTIONS
         // require sender to own NFT used to redeem
         require(
-            IERC721(_nftAddress).ownerOf(_nftTokenId) == msg.sender,
+            IERC721(_ownedNftAddress).ownerOf(_ownedNftTokenId) == msg.sender,
             "Only owner of NFT"
         );
 
         // split funds
-        if (projectIdToCurrencyAddress[_projectId] != address(0)) {
-            require(
-                msg.value == 0,
-                "this project accepts a different currency and cannot accept ETH"
-            );
-            require(
-                IERC20(projectIdToCurrencyAddress[_projectId]).allowance(
-                    msg.sender,
-                    address(this)
-                ) >= projectIdToPricePerTokenInWei[_projectId],
-                "Insufficient Funds Approved for TX"
-            );
-            require(
-                IERC20(projectIdToCurrencyAddress[_projectId]).balanceOf(
-                    msg.sender
-                ) >= projectIdToPricePerTokenInWei[_projectId],
-                "Insufficient balance."
-            );
-            _splitFundsERC20(_projectId);
-        } else {
-            require(
-                msg.value >= projectIdToPricePerTokenInWei[_projectId],
-                "Must send minimum value to mint!"
-            );
-            _splitFundsETH(_projectId);
-        }
+        _splitFundsETH(_projectId);
 
         return tokenId;
     }
@@ -460,52 +456,6 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
     }
 
     /**
-     * @dev splits ERC-20 funds between foundation, artist, and artist's
-     * additional payee, for a token purchased on project `_projectId`.
-     */
-    function _splitFundsERC20(uint256 _projectId) internal {
-        uint256 pricePerTokenInWei = projectIdToPricePerTokenInWei[_projectId];
-        uint256 foundationAmount = (pricePerTokenInWei *
-            genArtCoreContract.artblocksPercentage()) / 100;
-        if (foundationAmount > 0) {
-            IERC20(projectIdToCurrencyAddress[_projectId]).transferFrom(
-                msg.sender,
-                genArtCoreContract.artblocksAddress(),
-                foundationAmount
-            );
-        }
-        uint256 projectFunds = pricePerTokenInWei - foundationAmount;
-        uint256 additionalPayeeAmount;
-        if (
-            genArtCoreContract.projectIdToAdditionalPayeePercentage(
-                _projectId
-            ) > 0
-        ) {
-            additionalPayeeAmount =
-                (projectFunds *
-                    genArtCoreContract.projectIdToAdditionalPayeePercentage(
-                        _projectId
-                    )) /
-                100;
-            if (additionalPayeeAmount > 0) {
-                IERC20(projectIdToCurrencyAddress[_projectId]).transferFrom(
-                    msg.sender,
-                    genArtCoreContract.projectIdToAdditionalPayee(_projectId),
-                    additionalPayeeAmount
-                );
-            }
-        }
-        uint256 creatorFunds = projectFunds - additionalPayeeAmount;
-        if (creatorFunds > 0) {
-            IERC20(projectIdToCurrencyAddress[_projectId]).transferFrom(
-                msg.sender,
-                genArtCoreContract.projectIdToArtistAddress(_projectId),
-                creatorFunds
-            );
-        }
-    }
-
-    /**
      * @notice Gets if price of token is configured, price of minting a
      * token on project `_projectId`, and currency symbol and address to be
      * used as payment. Supersedes any core contract price information.
@@ -515,9 +465,9 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
      * @return tokenPriceInWei current price of token on this minter - invalid
      * if price has not yet been configured
      * @return currencySymbol currency symbol for purchases of project on this
-     * minter. "ETH" reserved for ether.
+     * minter. This minter always returns "ETH"
      * @return currencyAddress currency address for purchases of project on
-     * this minter. Null address reserved for ether.
+     * this minter. This minter always returns null address, reserved for ether
      */
     function getPriceInfo(uint256 _projectId)
         external
@@ -531,12 +481,7 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
     {
         isConfigured = projectIdToPriceIsConfigured[_projectId];
         tokenPriceInWei = projectIdToPricePerTokenInWei[_projectId];
-        currencyAddress = projectIdToCurrencyAddress[_projectId];
-        if (currencyAddress == address(0)) {
-            // defaults to ETH
-            currencySymbol = "ETH";
-        } else {
-            currencySymbol = projectIdToCurrencySymbol[_projectId];
-        }
+        currencySymbol = "ETH";
+        currencyAddress = address(0);
     }
 }
