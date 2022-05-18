@@ -115,7 +115,9 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
     }
 
     /**
-     * @notice Returns hashed address (to be used as merkle tree leaf)
+     * @notice Returns hashed address (to be used as merkle tree leaf).
+     * Included as a public function to enable users to calculate their hashed
+     * address in Solidity when generating proofs off-chain.
      * @param _address address to be hashed
      * @return bytes32 hashed address, via keccak256 (using encodePacked)
      */
