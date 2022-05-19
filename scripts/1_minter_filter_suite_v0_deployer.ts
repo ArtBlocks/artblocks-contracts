@@ -77,8 +77,7 @@ async function main() {
   // Output instructions for manual Etherscan verification.
   const network = await ethers.provider.getNetwork();
   const networkName = network.name == "homestead" ? "mainnet" : network.name;
-  const standardVerify =
-    "yarn hardhat verify --contract <path to .sol>:<contract name>";
+  const standardVerify = "yarn hardhat verify";
   console.log(`Verify MinterFilter deployment with:`);
   console.log(
     `${standardVerify} --network ${networkName} ${minterFilter.address} ${CORE_CONTRACT_ADDRESS}`

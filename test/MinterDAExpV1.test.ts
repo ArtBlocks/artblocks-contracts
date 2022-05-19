@@ -252,7 +252,7 @@ describe("MinterDAExpV1_V1Core", async function () {
         "ETH"
       );
 
-      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0375684")); // assuming a cost of 100 GWEI
+      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0373542")); // assuming a cost of 100 GWEI
     });
   });
 
