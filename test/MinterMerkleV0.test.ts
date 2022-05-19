@@ -10,12 +10,14 @@ import {
 } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { BigNumber } from "ethers";
-import { ethers } from "hardhat";
 import EthersAdapter from "@gnosis.pm/safe-ethers-lib";
 import Safe from "@gnosis.pm/safe-core-sdk";
 import { SafeTransactionDataPartial } from "@gnosis.pm/safe-core-sdk-types";
 import { getGnosisSafe } from "./util/GnosisSafeNetwork";
 import { toUtf8CodePoints } from "ethers/lib/utils";
+import { ethers } from "hardhat";
+// Suppress "Duplicate definition" error logs
+ethers.utils.Logger.setLogLevel(ethers.utils.Logger.levels.ERROR);
 
 /**
  * @notice This returns the same result as solidity:
@@ -28,6 +30,11 @@ function hashAddress(_address) {
     "hex"
   );
 }
+
+const CONFIG_MERKLE_ROOT = ethers.utils.formatBytes32String("merkleRoot");
+const CONFIG_MINT_LIMITER_DISABLED = ethers.utils.formatBytes32String(
+  "mintLimiterDisabled"
+);
 
 /**
  * These tests intended to ensure Filtered Minter integrates properly with V1
@@ -379,8 +386,8 @@ describe("MinterMerkleV0", async function () {
           .connect(this.accounts.artist)
           .updateMerkleRoot(projectZero, newMerkleRoot)
       )
-        .to.emit(this.minter, "UpdateMerkleRoot")
-        .withArgs(projectZero, newMerkleRoot);
+        .to.emit(this.minter, "ConfigSetValue(uint256,bytes32,bytes32)")
+        .withArgs(projectZero, CONFIG_MERKLE_ROOT, newMerkleRoot);
     });
   });
 
@@ -413,15 +420,15 @@ describe("MinterMerkleV0", async function () {
           .connect(this.accounts.artist)
           .toggleProjectMintLimiter(projectZero)
       )
-        .to.emit(this.minter, "MintLimiterUpdated")
-        .withArgs(projectZero, true);
+        .to.emit(this.minter, "ConfigSetValue(uint256,bytes32,bool)")
+        .withArgs(projectZero, CONFIG_MINT_LIMITER_DISABLED, true);
       await expect(
         this.minter
           .connect(this.accounts.artist)
           .toggleProjectMintLimiter(projectZero)
       )
-        .to.emit(this.minter, "MintLimiterUpdated")
-        .withArgs(projectZero, false);
+        .to.emit(this.minter, "ConfigSetValue(uint256,bytes32,bool)")
+        .withArgs(projectZero, CONFIG_MINT_LIMITER_DISABLED, false);
     });
   });
 

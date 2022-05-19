@@ -17,15 +17,6 @@ pragma solidity 0.8.9;
  * @author Art Blocks Inc.
  */
 contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
-    /// Merkle root updated for project `projectId`.
-    event UpdateMerkleRoot(uint256 indexed projectId, bytes32 _root);
-
-    // Mint limiter toggled for project `projectId`
-    event MintLimiterUpdated(
-        uint256 indexed projectId,
-        bool _projectMintLimiterDisabled
-    );
-
     using MerkleProof for bytes32[];
 
     /// Core contract address this minter interacts with
@@ -42,6 +33,11 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
 
     /// minterType for this minter
     string public constant minterType = "MinterMerkleV0";
+
+    /// project minter configuration keys used by this minter
+    bytes32 private constant CONFIG_MERKLE_ROOT = bytes32(bytes("merkleRoot"));
+    bytes32 private constant CONFIG_MINT_LIMITER_DISABLED =
+        bytes32(bytes("mintLimiterDisabled"));
 
     uint256 constant ONE_MILLION = 1_000_000;
 
@@ -113,7 +109,7 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         onlyArtist(_projectId)
     {
         projectMerkleRoot[_projectId] = _root;
-        emit UpdateMerkleRoot(_projectId, _root);
+        emit ConfigSetValue(_projectId, CONFIG_MERKLE_ROOT, _root);
     }
 
     /**
@@ -156,8 +152,9 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         projectMintLimiterDisabled[_projectId] = !projectMintLimiterDisabled[
             _projectId
         ];
-        emit MintLimiterUpdated(
+        emit ConfigSetValue(
             _projectId,
+            CONFIG_MINT_LIMITER_DISABLED,
             projectMintLimiterDisabled[_projectId]
         );
     }
