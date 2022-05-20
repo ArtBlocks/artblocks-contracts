@@ -50,10 +50,6 @@ contract MinterDAExpV1 is ReentrancyGuard, IFilteredMinterV0 {
 
     uint256 constant ONE_MILLION = 1_000_000;
 
-    /// purchaser address => projectId => number of mints purchased
-    mapping(address => mapping(uint256 => uint256)) public projectMintCounter;
-    /// projectId => maximum number of mints a given address may invoke
-    mapping(uint256 => uint256) public projectMintLimit;
     /// projectId => has project reached its maximum number of invocations?
     mapping(uint256 => bool) public projectMaxHasBeenInvoked;
     /// projectId => project's maximum number of invocations
@@ -112,20 +108,6 @@ contract MinterDAExpV1 is ReentrancyGuard, IFilteredMinterV0 {
             minterFilter.genArt721CoreAddress() == _genArt721Address,
             "Illegal contract pairing"
         );
-    }
-
-    /**
-     * @notice Sets the mint limit of a single purchaser for project
-     * `_projectId` to `_limit`.
-     * @param _projectId Project ID to set the mint limit for.
-     * @param _limit Number of times a given address may mint the
-     * project's tokens.
-     */
-    function setProjectMintLimit(uint256 _projectId, uint8 _limit)
-        external
-        onlyCoreWhitelisted
-    {
-        projectMintLimit[_projectId] = _limit;
     }
 
     /**
@@ -293,8 +275,6 @@ contract MinterDAExpV1 is ReentrancyGuard, IFilteredMinterV0 {
             "Maximum number of invocations reached"
         );
 
-        // no need to check if price is configured - auction init values fail
-
         // _getPrice reverts if auction is unconfigured or has not started
         uint256 currentPriceInWei = _getPrice(_projectId);
         require(
@@ -302,17 +282,7 @@ contract MinterDAExpV1 is ReentrancyGuard, IFilteredMinterV0 {
             "Must send minimum value to mint!"
         );
 
-        // limit mints per address by project
-        if (projectMintLimit[_projectId] > 0) {
-            require(
-                projectMintCounter[msg.sender][_projectId] <
-                    projectMintLimit[_projectId],
-                "Reached minting limit"
-            );
-            // EFFECTS
-            projectMintCounter[msg.sender][_projectId]++;
-        }
-
+        // EFFECTS
         tokenId = minterFilter.mint(_to, _projectId, msg.sender);
         // what if projectMaxInvocations[_projectId] is 0 (default value)?
         // that is intended, so that by default the minter allows infinite transactions,
