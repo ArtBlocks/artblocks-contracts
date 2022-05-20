@@ -386,7 +386,7 @@ describe("MinterMerkleV0", async function () {
           .connect(this.accounts.artist)
           .updateMerkleRoot(projectZero, newMerkleRoot)
       )
-        .to.emit(this.minter, "ConfigSetValue(uint256,bytes32,bytes32)")
+        .to.emit(this.minter, "ConfigValueSet(uint256,bytes32,bytes32)")
         .withArgs(projectZero, CONFIG_MERKLE_ROOT, newMerkleRoot);
     });
   });
@@ -420,14 +420,14 @@ describe("MinterMerkleV0", async function () {
           .connect(this.accounts.artist)
           .toggleProjectMintLimiter(projectZero)
       )
-        .to.emit(this.minter, "ConfigSetValue(uint256,bytes32,bool)")
+        .to.emit(this.minter, "ConfigValueSet(uint256,bytes32,bool)")
         .withArgs(projectZero, CONFIG_MINT_LIMITER_DISABLED, true);
       await expect(
         this.minter
           .connect(this.accounts.artist)
           .toggleProjectMintLimiter(projectZero)
       )
-        .to.emit(this.minter, "ConfigSetValue(uint256,bytes32,bool)")
+        .to.emit(this.minter, "ConfigValueSet(uint256,bytes32,bool)")
         .withArgs(projectZero, CONFIG_MINT_LIMITER_DISABLED, false);
     });
   });

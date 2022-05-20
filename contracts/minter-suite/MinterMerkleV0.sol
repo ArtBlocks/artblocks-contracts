@@ -109,7 +109,7 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         onlyArtist(_projectId)
     {
         projectMerkleRoot[_projectId] = _root;
-        emit ConfigSetValue(_projectId, CONFIG_MERKLE_ROOT, _root);
+        emit ConfigValueSet(_projectId, CONFIG_MERKLE_ROOT, _root);
     }
 
     /**
@@ -152,7 +152,7 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         projectMintLimiterDisabled[_projectId] = !projectMintLimiterDisabled[
             _projectId
         ];
-        emit ConfigSetValue(
+        emit ConfigValueSet(
             _projectId,
             CONFIG_MINT_LIMITER_DISABLED,
             projectMintLimiterDisabled[_projectId]

@@ -18,34 +18,13 @@ interface IFilteredMinterV1 is IFilteredMinterV0 {
      * @notice Generic project minter configuration event. Sets value of key
      * `_key` to `_value` for project `_projectId`.
      */
-    event ConfigSetValue(uint256 indexed _projectId, bytes32 _key, bool _value);
+    event ConfigValueSet(uint256 indexed _projectId, bytes32 _key, bool _value);
 
     /**
      * @notice Generic project minter configuration event. Removes key `_key`
      * from project `_projectId`'s project minter configuration.
      */
-    event ConfigRemoveValue(
-        uint256 indexed _projectId,
-        bytes32 _key,
-        bool _value
-    );
-
-    /**
-     * @notice Generic project minter configuration event. Adds value `_value`
-     * to the set of values at key `_key` for project `_projectId`.
-     */
-    event ConfigAddValueToSet(
-        uint256 indexed _projectId,
-        bytes32 _key,
-        bool _value
-    );
-
-    /**
-     * @notice Generic project minter configuration event. Removes value
-     * `_value` from the set of values at key `_key` for project `_projectId`.
-     * Value may or may not already exist in the set.
-     */
-    event ConfigRemoveValueFromSet(
+    event ConfigValueRemoved(
         uint256 indexed _projectId,
         bytes32 _key,
         bool _value
@@ -56,7 +35,7 @@ interface IFilteredMinterV1 is IFilteredMinterV0 {
      * @notice Generic project minter configuration event. Sets value of key
      * `_key` to `_value` for project `_projectId`.
      */
-    event ConfigSetValue(
+    event ConfigValueSet(
         uint256 indexed _projectId,
         bytes32 _key,
         uint256 _value
@@ -66,28 +45,7 @@ interface IFilteredMinterV1 is IFilteredMinterV0 {
      * @notice Generic project minter configuration event. Removes key `_key`
      * from project `_projectId`'s project minter configuration.
      */
-    event ConfigRemoveValue(
-        uint256 indexed _projectId,
-        bytes32 _key,
-        uint256 _value
-    );
-
-    /**
-     * @notice Generic project minter configuration event. Adds value `_value`
-     * to the set of values at key `_key` for project `_projectId`.
-     */
-    event ConfigAddValueToSet(
-        uint256 indexed _projectId,
-        bytes32 _key,
-        uint256 _value
-    );
-
-    /**
-     * @notice Generic project minter configuration event. Removes value
-     * `_value` from the set of values at key `_key` for project `_projectId`.
-     * Value may or may not already exist in the set.
-     */
-    event ConfigRemoveValueFromSet(
+    event ConfigValueRemoved(
         uint256 indexed _projectId,
         bytes32 _key,
         uint256 _value
@@ -98,7 +56,7 @@ interface IFilteredMinterV1 is IFilteredMinterV0 {
      * @notice Generic project minter configuration event. Sets value of key
      * `_key` to `_value` for project `_projectId`.
      */
-    event ConfigSetValue(
+    event ConfigValueSet(
         uint256 indexed _projectId,
         bytes32 _key,
         address _value
@@ -108,28 +66,7 @@ interface IFilteredMinterV1 is IFilteredMinterV0 {
      * @notice Generic project minter configuration event. Removes key `_key`
      * from project `_projectId`'s project minter configuration.
      */
-    event ConfigRemoveValue(
-        uint256 indexed _projectId,
-        bytes32 _key,
-        address _value
-    );
-
-    /**
-     * @notice Generic project minter configuration event. Adds value `_value`
-     * to the set of values at key `_key` for project `_projectId`.
-     */
-    event ConfigAddValueToSet(
-        uint256 indexed _projectId,
-        bytes32 _key,
-        address _value
-    );
-
-    /**
-     * @notice Generic project minter configuration event. Removes value
-     * `_value` from the set of values at key `_key` for project `_projectId`.
-     * Value may or may not already exist in the set.
-     */
-    event ConfigRemoveValueFromSet(
+    event ConfigValueRemoved(
         uint256 indexed _projectId,
         bytes32 _key,
         address _value
@@ -140,7 +77,7 @@ interface IFilteredMinterV1 is IFilteredMinterV0 {
      * @notice Generic project minter configuration event. Sets value of key
      * `_key` to `_value` for project `_projectId`.
      */
-    event ConfigSetValue(
+    event ConfigValueSet(
         uint256 indexed _projectId,
         bytes32 _key,
         bytes32 _value
@@ -150,28 +87,7 @@ interface IFilteredMinterV1 is IFilteredMinterV0 {
      * @notice Generic project minter configuration event. Removes key `_key`
      * from project `_projectId`'s project minter configuration.
      */
-    event ConfigRemoveValue(
-        uint256 indexed _projectId,
-        bytes32 _key,
-        bytes32 _value
-    );
-
-    /**
-     * @notice Generic project minter configuration event. Adds value `_value`
-     * to the set of values at key `_key` for project `_projectId`.
-     */
-    event ConfigAddValueToSet(
-        uint256 indexed _projectId,
-        bytes32 _key,
-        bytes32 _value
-    );
-
-    /**
-     * @notice Generic project minter configuration event. Removes value
-     * `_value` from the set of values at key `_key` for project `_projectId`.
-     * Value may or may not already exist in the set.
-     */
-    event ConfigRemoveValueFromSet(
+    event ConfigValueRemoved(
         uint256 indexed _projectId,
         bytes32 _key,
         bytes32 _value
@@ -182,7 +98,7 @@ interface IFilteredMinterV1 is IFilteredMinterV0 {
      * @notice Generic project minter configuration event. Sets value of key
      * `_key` to `_value` for project `_projectId`.
      */
-    event ConfigSetValue(
+    event ConfigValueSet(
         uint256 indexed _projectId,
         bytes32 _key,
         string _value
@@ -192,30 +108,34 @@ interface IFilteredMinterV1 is IFilteredMinterV0 {
      * @notice Generic project minter configuration event. Removes key `_key`
      * from project `_projectId`'s project minter configuration.
      */
-    event ConfigRemoveValue(
+    event ConfigValueRemoved(
         uint256 indexed _projectId,
         bytes32 _key,
         string _value
     );
 
+    /// PROJECT SETS
     /**
-     * @notice Generic project minter configuration event. Adds value `_value`
-     * to the set of values at key `_key` for project `_projectId`.
+     * @notice Generic project minter configuration event. Adds projectId of
+     * `_tokenAddress`-`_tokenId` to the set of projectIds at `_key` for
+     * project `_projectId`.
      */
-    event ConfigAddValueToSet(
+    event ConfigValueAddedToSet(
         uint256 indexed _projectId,
         bytes32 _key,
-        string _value
+        address _tokenAddress,
+        uint256 _tokenId
     );
 
     /**
-     * @notice Generic project minter configuration event. Removes value
-     * `_value` from the set of values at key `_key` for project `_projectId`.
-     * Value may or may not already exist in the set.
+     * @notice Generic project minter configuration event. Removes projectId of
+     * `_tokenAddress`-`_tokenId` to the set of projectIds at `_key` for
+     * project `_projectId`.
      */
-    event ConfigRemoveValueFromSet(
+    event ConfigValueRemovedFromSet(
         uint256 indexed _projectId,
         bytes32 _key,
-        string _value
+        address _tokenAddress,
+        uint256 _tokenId
     );
 }
