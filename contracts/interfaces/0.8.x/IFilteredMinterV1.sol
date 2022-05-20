@@ -51,6 +51,26 @@ interface IFilteredMinterV1 is IFilteredMinterV0 {
         uint256 _value
     );
 
+    /**
+     * @notice Generic project minter configuration event. Adds value `_value`
+     * to the set of uint256 at key `_key` for project `_projectId`.
+     */
+    event ConfigValueAddedToSet(
+        uint256 indexed _projectId,
+        bytes32 _key,
+        uint256 _value
+    );
+
+    /**
+     * @notice Generic project minter configuration event. Removes value
+     * `_value` to the set of uint256 at key `_key` for project `_projectId`.
+     */
+    event ConfigValueRemovedFromSet(
+        uint256 indexed _projectId,
+        bytes32 _key,
+        uint256 _value
+    );
+
     /// ADDRESS
     /**
      * @notice Generic project minter configuration event. Sets value of key
@@ -67,6 +87,26 @@ interface IFilteredMinterV1 is IFilteredMinterV0 {
      * from project `_projectId`'s project minter configuration.
      */
     event ConfigValueRemoved(
+        uint256 indexed _projectId,
+        bytes32 _key,
+        address _value
+    );
+
+    /**
+     * @notice Generic project minter configuration event. Adds value `_value`
+     * to the set of addresses at key `_key` for project `_projectId`.
+     */
+    event ConfigValueAddedToSet(
+        uint256 indexed _projectId,
+        bytes32 _key,
+        address _value
+    );
+
+    /**
+     * @notice Generic project minter configuration event. Removes value
+     * `_value` to the set of addresses at key `_key` for project `_projectId`.
+     */
+    event ConfigValueRemovedFromSet(
         uint256 indexed _projectId,
         bytes32 _key,
         address _value
@@ -93,6 +133,26 @@ interface IFilteredMinterV1 is IFilteredMinterV0 {
         bytes32 _value
     );
 
+    /**
+     * @notice Generic project minter configuration event. Adds value `_value`
+     * to the set of bytes32 at key `_key` for project `_projectId`.
+     */
+    event ConfigValueAddedToSet(
+        uint256 indexed _projectId,
+        bytes32 _key,
+        bytes32 _value
+    );
+
+    /**
+     * @notice Generic project minter configuration event. Removes value
+     * `_value` to the set of bytes32 at key `_key` for project `_projectId`.
+     */
+    event ConfigValueRemovedFromSet(
+        uint256 indexed _projectId,
+        bytes32 _key,
+        bytes32 _value
+    );
+
     /// STRING
     /**
      * @notice Generic project minter configuration event. Sets value of key
@@ -113,6 +173,11 @@ interface IFilteredMinterV1 is IFilteredMinterV0 {
         bytes32 _key,
         string _value
     );
+
+    /**
+     * @dev Sets of strings not supported. Recommend conversion of strings to
+     * bytes32 and using sets of bytes32 to reduce gas costs.
+     */
 
     /// PROJECT SETS
     /**
