@@ -10,14 +10,14 @@ import {
 } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { BigNumber } from "ethers";
+import { ethers } from "hardhat";
 import EthersAdapter from "@gnosis.pm/safe-ethers-lib";
 import Safe from "@gnosis.pm/safe-core-sdk";
 import { SafeTransactionDataPartial } from "@gnosis.pm/safe-core-sdk-types";
 import { getGnosisSafe } from "./util/GnosisSafeNetwork";
-import { toUtf8CodePoints } from "ethers/lib/utils";
-import { ethers } from "hardhat";
-// Suppress "Duplicate definition" error logs
-ethers.utils.Logger.setLogLevel(ethers.utils.Logger.levels.ERROR);
+import { Logger } from "@ethersproject/logger";
+// hide nuisance logs about event overloading
+Logger.setLogLevel(Logger.levels.ERROR);
 
 /**
  * @notice This returns the same result as solidity:
