@@ -182,25 +182,25 @@ interface IFilteredMinterV1 is IFilteredMinterV0 {
     /// PROJECT SETS
     /**
      * @notice Generic project minter configuration event. Adds projectId of
-     * `_tokenAddress`-`_tokenId` to the set of projectIds at `_key` for
+     * `_tokenAddressValue`-`_projectIdValue` to the set of projectIds at `_key` for
      * project `_projectId`.
      */
     event ConfigValueAddedToSet(
         uint256 indexed _projectId,
         bytes32 _key,
-        address _tokenAddress,
-        uint256 _tokenId
+        address _tokenAddressValue,
+        uint256 _projectIdValue
     );
 
     /**
      * @notice Generic project minter configuration event. Removes projectId of
-     * `_tokenAddress`-`_tokenId` to the set of projectIds at `_key` for
+     * `_tokenAddressValue`-`_projectIdValue` to the set of projectIds at `_key` for
      * project `_projectId`.
      */
     event ConfigValueRemovedFromSet(
         uint256 indexed _projectId,
         bytes32 _key,
-        address _tokenAddress,
-        uint256 _tokenId
+        address _tokenAddressValue,
+        uint256 _projectIdValue
     );
 }
