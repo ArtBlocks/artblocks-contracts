@@ -36,7 +36,8 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
 
     /// project minter configuration keys used by this minter
     bytes32 private constant CONFIG_MERKLE_ROOT = "merkleRoot";
-    bytes32 private constant CONFIG_MINT_LIMITER_DISABLED = "mintLimiterDisabled";
+    bytes32 private constant CONFIG_MINT_LIMITER_DISABLED =
+        "mintLimiterDisabled";
 
     uint256 constant ONE_MILLION = 1_000_000;
 
