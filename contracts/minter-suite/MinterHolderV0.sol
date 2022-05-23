@@ -20,7 +20,6 @@ pragma solidity 0.8.9;
  */
 contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
     // TODO - ADD TESTS FOR THIS MINTER
-    // TODO - ADD ENUMERATION FUNCTIONS TO THIS MINTER FOR _allowedNftAddresses
     /**
      * @notice Allowlisted holders of NFTs at address `_nftAddress` to be
      * considered for minting.
@@ -438,6 +437,29 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
                 require(success_, "Artist payment failed");
             }
         }
+    }
+
+    /**
+     * @notice Gets quantity of NFT addresses allowlisted on this minter.
+     * @return uint256 quantity of NFT addresses allowlisted
+     */
+    function getNumAllowedNftAddresses() external view returns (uint256) {
+        return _allowedNftAddresses.length();
+    }
+
+    /**
+     * @notice Get allowlisted NFT core contract address at index `_index` of
+     * enumerable set.
+     * @param _index enumerable set index to query.
+     * @return nftAddress NFT core contract address at index `_index`
+     * @dev index must be < quantity of allowlisted NFT addresses
+     */
+    function getAllowedNftAddressAt(uint256 _index)
+        external
+        view
+        returns (address nftAddress)
+    {
+        return _allowedNftAddresses.at(_index);
     }
 
     /**
