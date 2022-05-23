@@ -43,8 +43,6 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
 
     /// projectId => merkle root
     mapping(uint256 => bytes32) public projectMerkleRoot;
-    /// projectId => are tokens allowed to be minted to other addresses?
-    mapping(uint256 => bool) public purchaseToDisabled;
     /// projectId => purchaser address => has purchased one or more mints
     mapping(uint256 => mapping(address => bool)) public projectMintedBy;
     /// projectId => are addresses limited to one mint each?
@@ -183,19 +181,15 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
     }
 
     /**
-     * @notice Toggles if purchases to other address are enabled for
-     * project `_projectId`.
-     * @param _projectId Project ID to be toggled.
+     * @notice Warning: Disabling purchaseTo is not supported on this minter.
+     * This method exists purely for interface-conformance purposes.
      */
     function togglePurchaseToDisabled(uint256 _projectId)
         external
+        view
         onlyArtist(_projectId)
     {
-        purchaseToDisabled[_projectId] = !purchaseToDisabled[_projectId];
-        emit PurchaseToDisabledUpdated(
-            _projectId,
-            purchaseToDisabled[_projectId]
-        );
+        revert("Action not supported");
     }
 
     /**
@@ -271,13 +265,7 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
             "Price not configured"
         );
 
-        // no contract filter since merkle tree controls allowed addresses
-
-        // if purchaseTo is disabled, enforce purchase destination to be the TX
-        // sending address.
-        if (purchaseToDisabled[_projectId]) {
-            require(msg.sender == _to, "No `purchaseTo` allowed");
-        }
+        // no contract filter since Merkle tree controls allowed addresses
 
         // require valid Merkle proof
         require(

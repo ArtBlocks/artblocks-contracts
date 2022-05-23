@@ -751,7 +751,7 @@ describe("MinterMerkleV0", async function () {
         ethers.utils.formatUnits(txCost, "ether").toString(),
         "ETH"
       );
-      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0389827"));
+      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0387635"));
     });
   });
 
@@ -769,8 +769,7 @@ describe("MinterMerkleV0", async function () {
       await expectRevert(
         this.minter
           .connect(this.accounts.additional)
-          ["purchaseTo(address,uint256,bytes32[])"](
-            this.accounts.additional.address,
+          ["purchase(uint256,bytes32[])"](
             projectTwo,
             additionalMerkleProofTwo,
             {
@@ -797,56 +796,13 @@ describe("MinterMerkleV0", async function () {
         );
     });
 
-    it("disallows `purchaseTo` if disallowed explicitly", async function () {
-      const ownerMerkleProofOne = merkleTreeOne.getHexProof(
-        hashAddress(this.accounts.owner.address)
-      );
-      await this.minter
-        .connect(this.accounts.artist)
-        .togglePurchaseToDisabled(projectOne);
+    it("does not support toggling of `purchaseTo`", async function () {
       await expectRevert(
         this.minter
-          .connect(this.accounts.owner)
-          ["purchaseTo(address,uint256,bytes32[])"](
-            this.accounts.additional.address,
-            projectOne,
-            ownerMerkleProofOne,
-            {
-              value: pricePerTokenInWei,
-            }
-          ),
-        "No `purchaseTo` allowed"
+          .connect(this.accounts.artist)
+          .togglePurchaseToDisabled(projectOne),
+        "Action not supported"
       );
-      // still allows `purchaseTo` if destination matches sender.
-      await this.minter
-        .connect(this.accounts.owner)
-        ["purchaseTo(address,uint256,bytes32[])"](
-          this.accounts.owner.address,
-          projectOne,
-          ownerMerkleProofOne,
-          {
-            value: pricePerTokenInWei,
-          }
-        );
-    });
-
-    it("emits event when `purchaseTo` is toggled", async function () {
-      // emits true when changed from initial value of false
-      await expect(
-        this.minter
-          .connect(this.accounts.artist)
-          .togglePurchaseToDisabled(projectOne)
-      )
-        .to.emit(this.minter, "PurchaseToDisabledUpdated")
-        .withArgs(projectOne, true);
-      // emits false when changed from initial value of true
-      await expect(
-        this.minter
-          .connect(this.accounts.artist)
-          .togglePurchaseToDisabled(projectOne)
-      )
-        .to.emit(this.minter, "PurchaseToDisabledUpdated")
-        .withArgs(projectOne, false);
     });
   });
 
