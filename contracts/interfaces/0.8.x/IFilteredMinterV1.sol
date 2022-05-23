@@ -157,6 +157,8 @@ interface IFilteredMinterV1 is IFilteredMinterV0 {
     /**
      * @notice Generic project minter configuration event. Sets value of key
      * `_key` to `_value` for project `_projectId`.
+     * @dev if possible, recommending using bytes32 instead of string values to
+     * reduce gas costs.
      */
     event ConfigValueSet(
         uint256 indexed _projectId,
@@ -167,6 +169,8 @@ interface IFilteredMinterV1 is IFilteredMinterV0 {
     /**
      * @notice Generic project minter configuration event. Removes key `_key`
      * from project `_projectId`'s project minter configuration.
+     * @dev if possible, recommending using bytes32 instead of string values to
+     * reduce gas costs.
      */
     event ConfigValueRemoved(
         uint256 indexed _projectId,
@@ -178,29 +182,4 @@ interface IFilteredMinterV1 is IFilteredMinterV0 {
      * @dev Sets of strings not supported. Recommend conversion of strings to
      * bytes32 and using sets of bytes32 to reduce gas costs.
      */
-
-    /// PROJECT SETS
-    /**
-     * @notice Generic project minter configuration event. Adds projectId of
-     * `_tokenAddressValue`-`_projectIdValue` to the set of projectIds at `_key` for
-     * project `_projectId`.
-     */
-    event ConfigValueAddedToSet(
-        uint256 indexed _projectId,
-        bytes32 _key,
-        address _tokenAddressValue,
-        uint256 _projectIdValue
-    );
-
-    /**
-     * @notice Generic project minter configuration event. Removes projectId of
-     * `_tokenAddressValue`-`_projectIdValue` to the set of projectIds at `_key` for
-     * project `_projectId`.
-     */
-    event ConfigValueRemovedFromSet(
-        uint256 indexed _projectId,
-        bytes32 _key,
-        address _tokenAddressValue,
-        uint256 _projectIdValue
-    );
 }
