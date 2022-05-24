@@ -153,33 +153,8 @@ interface IFilteredMinterV1 is IFilteredMinterV0 {
         bytes32 _value
     );
 
-    /// STRING
     /**
-     * @notice Generic project minter configuration event. Sets value of key
-     * `_key` to `_value` for project `_projectId`.
-     * @dev if possible, recommending using bytes32 instead of string values to
-     * reduce gas costs.
-     */
-    event ConfigValueSet(
-        uint256 indexed _projectId,
-        bytes32 _key,
-        string _value
-    );
-
-    /**
-     * @notice Generic project minter configuration event. Removes key `_key`
-     * from project `_projectId`'s project minter configuration.
-     * @dev if possible, recommending using bytes32 instead of string values to
-     * reduce gas costs.
-     */
-    event ConfigValueRemoved(
-        uint256 indexed _projectId,
-        bytes32 _key,
-        string _value
-    );
-
-    /**
-     * @dev Sets of strings not supported. Recommend conversion of strings to
-     * bytes32 and using sets of bytes32 to reduce gas costs.
+     * @dev Strings not supported. Recommend conversion of (short) strings to
+     * bytes32 to remain gas-efficient.
      */
 }
