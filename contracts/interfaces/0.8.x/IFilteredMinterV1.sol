@@ -8,11 +8,18 @@ pragma solidity ^0.8.0;
 /**
  * @title This interface extends the IFilteredMinterV0 interface in order to
  * add support for generic project minter configuration updates.
- * @dev key values represent strings of finite length encoded in 32 bytes to
- * minimize gas.
+ * @dev keys represent strings of finite length encoded in bytes32 to minimize
+ * gas.
  * @author Art Blocks Inc.
  */
 interface IFilteredMinterV1 is IFilteredMinterV0 {
+    /// ANY
+    /**
+     * @notice Generic project minter configuration event. Removes key `_key`
+     * for project `_projectId`.
+     */
+    event ConfigKeyRemoved(uint256 indexed _projectId, bytes32 _key);
+
     /// BOOL
     /**
      * @notice Generic project minter configuration event. Sets value of key
@@ -20,32 +27,12 @@ interface IFilteredMinterV1 is IFilteredMinterV0 {
      */
     event ConfigValueSet(uint256 indexed _projectId, bytes32 _key, bool _value);
 
-    /**
-     * @notice Generic project minter configuration event. Removes key `_key`
-     * from project `_projectId`'s project minter configuration.
-     */
-    event ConfigValueRemoved(
-        uint256 indexed _projectId,
-        bytes32 _key,
-        bool _value
-    );
-
     /// UINT256
     /**
      * @notice Generic project minter configuration event. Sets value of key
      * `_key` to `_value` for project `_projectId`.
      */
     event ConfigValueSet(
-        uint256 indexed _projectId,
-        bytes32 _key,
-        uint256 _value
-    );
-
-    /**
-     * @notice Generic project minter configuration event. Removes key `_key`
-     * from project `_projectId`'s project minter configuration.
-     */
-    event ConfigValueRemoved(
         uint256 indexed _projectId,
         bytes32 _key,
         uint256 _value
@@ -83,16 +70,6 @@ interface IFilteredMinterV1 is IFilteredMinterV0 {
     );
 
     /**
-     * @notice Generic project minter configuration event. Removes key `_key`
-     * from project `_projectId`'s project minter configuration.
-     */
-    event ConfigValueRemoved(
-        uint256 indexed _projectId,
-        bytes32 _key,
-        address _value
-    );
-
-    /**
      * @notice Generic project minter configuration event. Adds value `_value`
      * to the set of addresses at key `_key` for project `_projectId`.
      */
@@ -118,16 +95,6 @@ interface IFilteredMinterV1 is IFilteredMinterV0 {
      * `_key` to `_value` for project `_projectId`.
      */
     event ConfigValueSet(
-        uint256 indexed _projectId,
-        bytes32 _key,
-        bytes32 _value
-    );
-
-    /**
-     * @notice Generic project minter configuration event. Removes key `_key`
-     * from project `_projectId`'s project minter configuration.
-     */
-    event ConfigValueRemoved(
         uint256 indexed _projectId,
         bytes32 _key,
         bytes32 _value
