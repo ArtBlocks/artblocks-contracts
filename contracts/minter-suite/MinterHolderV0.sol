@@ -19,7 +19,6 @@ pragma solidity 0.8.9;
  * @author Art Blocks Inc.
  */
 contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
-    // TODO - ADD TESTS FOR THIS MINTER
     /**
      * @notice Allowlisted holders of NFTs at address `_nftAddress` to be
      * considered for minting.
@@ -218,6 +217,7 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
      * @param _ownedNftTokenId ERC-721 NFT token ID to be checked.
      * @return bool Token is allowlisted
      * @dev does not check if token has been used to purchase
+     * @dev assumes project ID can be derived from tokenId / 1_000_000
      */
     function isAllowlistedNFT(
         uint256 _projectId,
