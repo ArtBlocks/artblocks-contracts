@@ -87,7 +87,7 @@ Legacy minting contract: [0x47e312d99c09ce61a866c83cbbbbed5a4b9d33e7](https://et
 
 For deployed PBAB minting contracts, see PBAB directory [DEPLOYMENTS.md files](https://github.com/search?q=repo%3AArtBlocks%2Fartblocks-contracts+extension%3Amd+filename%3ADEPLOYMENTS&type=Code&ref=advsearch&l=&l=).
 
-### Shared PBAB Randomizers
+### Shared Randomizers
 
 - Ropsten: https://ropsten.etherscan.io/address/0x7ba972189ED3C527847170453fC108707F62755a#code
 - Rinkeby: https://rinkeby.etherscan.io/address/0x3b30d421a6dA95694EaaE09971424F15Eb375269#code
