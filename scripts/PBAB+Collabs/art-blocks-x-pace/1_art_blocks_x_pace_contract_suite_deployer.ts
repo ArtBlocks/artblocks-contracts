@@ -5,10 +5,10 @@ import { GenArt721CoreV2ArtBlocksXPace__factory } from "../../contracts/factorie
 
 // MinterSuite
 import { MinterFilterV0PRTNR__factory } from "../../contracts/factories/MinterFilterV0PRTNR__factory";
-import { MinterSetPriceERC20V0PRTNR__factory } from "../../contracts/factories/MinterSetPriceERC20V0PRTNR__factory";
-import { MinterSetPriceV0PRTNR__factory } from "../../contracts/factories/MinterSetPriceV0PRTNR__factory";
-import { MinterDALinV0PRTNR__factory } from "../../contracts/factories/MinterDALinV0PRTNR__factory";
-import { MinterDAExpV0PRTNR__factory } from "../../contracts/factories/MinterDAExpV0PRTNR__factory";
+import { MinterSetPriceERC20V1PRTNR__factory } from "../../contracts/factories/MinterSetPriceERC20V1PRTNR__factory";
+import { MinterSetPriceV1PRTNR__factory } from "../../contracts/factories/MinterSetPriceV1PRTNR__factory";
+import { MinterDALinV1PRTNR__factory } from "../../contracts/factories/MinterDALinV1PRTNR__factory";
+import { MinterDAExpV1PRTNR__factory } from "../../contracts/factories/MinterDAExpV1PRTNR__factory";
 
 import { createPBABBucket } from "../../util/aws_s3";
 
@@ -60,7 +60,7 @@ async function main() {
 
   // Deploy basic Minter contract (functionally equivalent to the current
   // standard Minter contract).
-  const minterSetPriceERC20V0Factory = new MinterSetPriceERC20V0PRTNR__factory(
+  const minterSetPriceERC20V0Factory = new MinterSetPriceERC20V1PRTNR__factory(
     deployer
   );
   const minterSetPriceERC20V0 = await minterSetPriceERC20V0Factory.deploy(
@@ -74,7 +74,7 @@ async function main() {
 
   // Deploy basic Minter contract that **only** supports ETH, as an optimization,
   // and thus _does not_ support custom ERC20 minting.
-  const minterSetPriceV0Factory = new MinterSetPriceV0PRTNR__factory(deployer);
+  const minterSetPriceV0Factory = new MinterSetPriceV1PRTNR__factory(deployer);
   const minterSetPriceV0 = await minterSetPriceV0Factory.deploy(
     genArt721Core.address,
     minterFilter.address
@@ -83,7 +83,7 @@ async function main() {
   console.log(`MinterSetPriceV0_PRTNR deployed at ${minterSetPriceV0.address}`);
 
   // Deploy automated linear-decay DA Minter contract that **only** supports ETH.
-  const minterDALinV0Factory = new MinterDALinV0PRTNR__factory(deployer);
+  const minterDALinV0Factory = new MinterDALinV1PRTNR__factory(deployer);
   const minterDALinV0 = await minterDALinV0Factory.deploy(
     genArt721Core.address,
     minterFilter.address
@@ -92,7 +92,7 @@ async function main() {
   console.log(`MinterDALinV0_PRTNR deployed at ${minterDALinV0.address}`);
 
   // Deploy automated exponential-decay DA Minter contract that **only** supports ETH.
-  const minterDAExpV0Factory = new MinterDAExpV0PRTNR__factory(deployer);
+  const minterDAExpV0Factory = new MinterDAExpV1PRTNR__factory(deployer);
   const minterDAExpV0 = await minterDAExpV0Factory.deploy(
     genArt721Core.address,
     minterFilter.address

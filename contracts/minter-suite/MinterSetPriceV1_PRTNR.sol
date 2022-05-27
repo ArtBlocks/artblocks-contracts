@@ -13,7 +13,7 @@ pragma solidity 0.8.9;
  * @title Filtered Minter contract that allows tokens to be minted with ETH.
  * @author Art Blocks Inc.
  */
-contract MinterSetPriceERC20V1_PRTNR is ReentrancyGuard, IFilteredMinterV0 {
+contract MinterSetPriceV1_PRTNR is ReentrancyGuard, IFilteredMinterV0 {
     /// Core contract address this minter interacts with
     address public immutable genArt721CoreAddress;
 
