@@ -4,7 +4,7 @@ import { ethers } from "hardhat";
 import { GenArt721CoreV2ArtBlocksXPace__factory } from "../../contracts/factories/GenArt721CoreV2ArtBlocksXPace__factory";
 
 // MinterSuite
-import { MinterFilterV0__factory } from "../../contracts/factories/MinterFilterV0__factory";
+import { MinterFilterV0PRTNR__factory } from "../../contracts/factories/MinterFilterV0PRTNR__factory";
 import { MinterSetPriceERC20V0PRTNR__factory } from "../../contracts/factories/MinterSetPriceERC20V0PRTNR__factory";
 import { MinterSetPriceV0PRTNR__factory } from "../../contracts/factories/MinterSetPriceV0PRTNR__factory";
 import { MinterDALinV0PRTNR__factory } from "../../contracts/factories/MinterDALinV0PRTNR__factory";
@@ -53,10 +53,10 @@ async function main() {
   console.log(`GenArt721Core deployed at ${genArt721Core.address}`);
 
   // Deploy Minter Filter contract.
-  const minterFilterFactory = new MinterFilterV0__factory(deployer);
+  const minterFilterFactory = new MinterFilterV0PRTNR__factory(deployer);
   const minterFilter = await minterFilterFactory.deploy(genArt721Core.address);
   await minterFilter.deployed();
-  console.log(`MinterFilterV0 deployed at ${minterFilter.address}`);
+  console.log(`MinterFilterV0_PRTNR deployed at ${minterFilter.address}`);
 
   // Deploy basic Minter contract (functionally equivalent to the current
   // standard Minter contract).

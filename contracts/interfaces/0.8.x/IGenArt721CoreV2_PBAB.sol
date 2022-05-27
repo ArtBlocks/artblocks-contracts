@@ -27,6 +27,8 @@ interface IGenArt721CoreV2_PBAB {
 
     function isWhitelisted(address sender) external view returns (bool);
 
+    function isMintWhitelisted(address minter) external view returns (bool);
+
     function projectIdToCurrencySymbol(uint256 _projectId)
         external
         view
