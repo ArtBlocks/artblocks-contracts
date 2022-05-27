@@ -117,6 +117,7 @@ These contracts delegate all permissions to the core contracts. The following Ro
 - **mainnet (AB deployed):**
   - AB Flagship royalty override: https://etherscan.io/address/0x7b5369c24a47a72ecf932bf6974f506dde4d5eb1#code
   - PBAB royalty override: https://etherscan.io/address/0x31e1cc72e6f9e27c2ecbb500d978de1691173f5f#code
+  - PRTNR royalty override: <TBD>
 
 - **mainnet (RR deployed):**
   - RoyaltyRegistry: https://etherscan.io/address/0xad2184fb5dbcfc05d8f056542fb25b04fa32a95d#code
@@ -139,6 +140,20 @@ Additionally, the following settings may be configured/changed by a PBAB core co
     - `renderProvider` or `platform` Royalty [BPS](https://www.investopedia.com/terms/b/basispoint.asp) may be changed from default values of 2.5% to any value. This can be configured by a PBAB core contract's `admin` via the PBAB override contract's functions `updateRenderProviderBpsForContract` and `updatePlatformBpsForContract`.
 - **Change Platform Royalty Payment Address**
     - The address to receive platform royalty payments may be updated by a PBAB core contract's admin via the PBAB override contract's function `updatePlatformRoyaltyAddressForContract`.
+- **Change Render Provider Royalty Payment Address**
+    - The address to receive render provider royalty payments is delegated to the token core contract, and defined as the public variable `renderProviderAddress`.
+
+### Configuring PRTNR Royalty Override (REQUIRED)
+Upon deploying a Partner (PRTNR) contract, the following steps must be taken.
+>Note that the only difference between a PRTNR and PBAB override is that PRTNR override contracts assume no platform payment address or percentage.
+
+- **REQUIRED** Set the royalty lookup address on the royalty registry for the newly deployed contract
+  - Go to the [Royalty Registry](https://royaltyregistry.xyz/lookup) and call the following function on the Royalty Registry smart contract:
+    - `setRoyaltyLookupAddress(<new_PRTNR_coreAddr>, <PRTNR_royaltyOverrideContract>)`
+
+Additionally, the following settings may be configured/changed by a the PRTNR core contract's `admin` at any time:
+- **Change Royalty Percentages**
+    - `renderProvider` Royalty [BPS](https://www.investopedia.com/terms/b/basispoint.asp) may be changed from default values of 2.5% to any value. This can be configured by a PRTNR core contract's `admin` via the PRTNR override contract's function `updateRenderProviderBpsForContract`.
 - **Change Render Provider Royalty Payment Address**
     - The address to receive render provider royalty payments is delegated to the token core contract, and defined as the public variable `renderProviderAddress`.
 
