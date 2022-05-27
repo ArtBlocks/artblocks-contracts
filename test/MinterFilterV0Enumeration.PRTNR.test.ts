@@ -9,7 +9,11 @@ import {
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
-describe("MinterFilterV0_PRTNREnumeration", async function () {
+/**
+ * @notice This tests MinterFilter enumeration when integrating with a V2_PRTNR
+ * core contract.
+ */
+describe("MinterFilterV0Enumeration_V2PRTNRCore", async function () {
   const pricePerTokenInWei = ethers.utils.parseEther("1");
 
   beforeEach(async function () {
@@ -24,18 +28,20 @@ describe("MinterFilterV0_PRTNREnumeration", async function () {
       "BasicRandomizer"
     );
     this.randomizer = await randomizerFactory.deploy();
-    const coreFactory = await ethers.getContractFactory("GenArt721CoreV2_PBAB");
+    const coreFactory = await ethers.getContractFactory(
+      "GenArt721CoreV2_PRTNR"
+    );
     this.genArt721Core = await coreFactory
       .connect(deployer)
       .deploy("Test Contract", "TEST", this.randomizer.address);
     const minterFilterFactory = await ethers.getContractFactory(
-      "MinterFilterV0_PRTNR"
+      "MinterFilterV0"
     );
     this.minterFilter = await minterFilterFactory.deploy(
       this.genArt721Core.address
     );
     const minterFactory = await ethers.getContractFactory(
-      "MinterSetPriceERC20V1_PRTNR"
+      "MinterSetPriceERC20V1"
     );
     this.minter = await minterFactory.deploy(
       this.genArt721Core.address,

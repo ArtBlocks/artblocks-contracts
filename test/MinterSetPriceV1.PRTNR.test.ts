@@ -16,9 +16,9 @@ import { getGnosisSafe } from "./util/GnosisSafeNetwork";
 
 /**
  * These tests intended to ensure this Filtered Minter integrates properly with
- * V2 (PBAB) core contract.
+ * V2 PRTNR core contract.
  */
-describe("MinterSetPriceV1_PRTNR_V2Core", async function () {
+describe("MinterSetPriceV1_V2PRTNRCore", async function () {
   const name = "Non Fungible Token";
   const symbol = "NFT";
 
@@ -50,19 +50,19 @@ describe("MinterSetPriceV1_PRTNR_V2Core", async function () {
     );
     this.randomizer = await randomizerFactory.deploy();
 
-    const coreFactory = await ethers.getContractFactory("GenArt721CoreV2_PBAB");
+    const coreFactory = await ethers.getContractFactory(
+      "GenArt721CoreV2_PRTNR"
+    );
     this.token = await coreFactory
       .connect(deployer)
       .deploy(name, symbol, this.randomizer.address);
 
     const minterFilterFactory = await ethers.getContractFactory(
-      "MinterFilterV0_PRTNR"
+      "MinterFilterV0"
     );
     this.minterFilter = await minterFilterFactory.deploy(this.token.address);
 
-    const minterFactory = await ethers.getContractFactory(
-      "MinterSetPriceV1_PRTNR"
-    );
+    const minterFactory = await ethers.getContractFactory("MinterSetPriceV1");
     this.minter1 = await minterFactory.deploy(
       this.token.address,
       this.minterFilter.address
@@ -147,12 +147,12 @@ describe("MinterSetPriceV1_PRTNR_V2Core", async function () {
         .deploy(name, symbol, this.randomizer.address);
 
       const minterFilterFactory = await ethers.getContractFactory(
-        "MinterFilterV0_PRTNR"
+        "MinterFilterV0"
       );
       const minterFilter = await minterFilterFactory.deploy(token2.address);
 
       const minterFactory = await ethers.getContractFactory(
-        "MinterSetPriceERC20V1_PRTNR"
+        "MinterSetPriceERC20V1"
       );
       // fails when combine new minterFilter with the old token in constructor
       await expectRevert(
@@ -367,7 +367,7 @@ describe("MinterSetPriceV1_PRTNR_V2Core", async function () {
         "ETH"
       );
 
-      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0217018")); // assuming a cost of 100 GWEI
+      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0216789")); // assuming a cost of 100 GWEI
     });
 
     it("mints and calculates gas values for project two", async function () {
@@ -388,7 +388,7 @@ describe("MinterSetPriceV1_PRTNR_V2Core", async function () {
         "ETH"
       );
 
-      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.029663")); // assuming a cost of 100 GWEI
+      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0296401")); // assuming a cost of 100 GWEI
     });
   });
 

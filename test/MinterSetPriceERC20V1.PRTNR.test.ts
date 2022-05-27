@@ -16,9 +16,9 @@ import { getGnosisSafe } from "./util/GnosisSafeNetwork";
 
 /**
  * These tests intended to ensure this Filtered Minter integrates properly with
- * V2 (PBAB) core contract.
+ * V2 PRTNR core contract.
  */
-describe("MinterSetPriceERC20V1_PRTNR_V2Core", async function () {
+describe("MinterSetPriceERC20V1_V2PRTNRCore", async function () {
   const name = "Non Fungible Token";
   const symbol = "NFT";
 
@@ -50,18 +50,20 @@ describe("MinterSetPriceERC20V1_PRTNR_V2Core", async function () {
     );
     this.randomizer = await randomizerFactory.deploy();
 
-    const coreFactory = await ethers.getContractFactory("GenArt721CoreV2_PBAB");
+    const coreFactory = await ethers.getContractFactory(
+      "GenArt721CoreV2_PRTNR"
+    );
     this.token = await coreFactory
       .connect(deployer)
       .deploy(name, symbol, this.randomizer.address);
 
     const minterFilterFactory = await ethers.getContractFactory(
-      "MinterFilterV0_PRTNR"
+      "MinterFilterV0"
     );
     this.minterFilter = await minterFilterFactory.deploy(this.token.address);
 
     const minterFactory = await ethers.getContractFactory(
-      "MinterSetPriceERC20V1_PRTNR"
+      "MinterSetPriceERC20V1"
     );
     this.minter = await minterFactory.deploy(
       this.token.address,
@@ -142,12 +144,12 @@ describe("MinterSetPriceERC20V1_PRTNR_V2Core", async function () {
         .deploy(name, symbol, this.randomizer.address);
 
       const minterFilterFactory = await ethers.getContractFactory(
-        "MinterFilterV0_PRTNR"
+        "MinterFilterV0"
       );
       const minterFilter = await minterFilterFactory.deploy(token2.address);
 
       const minterFactory = await ethers.getContractFactory(
-        "MinterSetPriceERC20V1_PRTNR"
+        "MinterSetPriceERC20V1"
       );
       // fails when combine new minterFilter with the old token in constructor
       await expectRevert(
@@ -494,7 +496,7 @@ describe("MinterSetPriceERC20V1_PRTNR_V2Core", async function () {
         ethers.utils.formatUnits(txCost, "ether").toString(),
         "ETH"
       );
-      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0298833"));
+      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0298604"));
     });
   });
 

@@ -10,8 +10,8 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 
 /**
- * These tests are intended to check integration of the MinterFilter_PRTNR
- * suite with the V2 PBAB core contract.
+ * These tests are intended to check integration of the MinterFilter suite with
+ * the V2 PRTNR core contract.
  * Some basic core tests, and basic functional tests to ensure purchase
  * does in fact mint tokens to purchaser.
  */
@@ -40,18 +40,18 @@ describe("GenArt721CoreV2_PRTNR_Integration", async function () {
       "BasicRandomizer"
     );
     this.randomizer = await randomizerFactory.deploy();
-    const coreFactory = await ethers.getContractFactory("GenArt721CoreV2_PBAB");
+    const coreFactory = await ethers.getContractFactory(
+      "GenArt721CoreV2_PRTNR"
+    );
     this.token = await coreFactory
       .connect(deployer)
       .deploy(name, symbol, this.randomizer.address);
     // deploy and configure minter filter and minter
     const minterFilterFactory = await ethers.getContractFactory(
-      "MinterFilterV0_PRTNR"
+      "MinterFilterV0"
     );
     this.minterFilter = await minterFilterFactory.deploy(this.token.address);
-    const minterFactory = await ethers.getContractFactory(
-      "MinterSetPriceV1_PRTNR"
-    );
+    const minterFactory = await ethers.getContractFactory("MinterSetPriceV1");
     this.minter = await minterFactory.deploy(
       this.token.address,
       this.minterFilter.address
@@ -177,7 +177,7 @@ describe("GenArt721CoreV2_PRTNR_Integration", async function () {
         ).to.equal(ethers.utils.parseEther("0.8971195"));
         expect(
           (await this.accounts.owner.getBalance()).sub(ownerBalance)
-        ).to.equal(ethers.utils.parseEther("1.0217018").mul("-1")); // spent 1 ETH
+        ).to.equal(ethers.utils.parseEther("1.0216789").mul("-1")); // spent 1 ETH
       });
 
       it("can create a token then funds distributed (with additional payee)", async function () {
@@ -222,7 +222,7 @@ describe("GenArt721CoreV2_PRTNR_Integration", async function () {
         ).to.equal(ethers.utils.parseEther("0.09"));
         expect(
           (await this.accounts.owner.getBalance()).sub(ownerBalance)
-        ).to.equal(ethers.utils.parseEther("1.0230966").mul("-1")); // spent 1 ETH
+        ).to.equal(ethers.utils.parseEther("1.0230737").mul("-1")); // spent 1 ETH
         expect(
           (await this.accounts.artist.getBalance()).sub(artistBalance)
         ).to.equal(ethers.utils.parseEther("0.8002442"));
@@ -270,7 +270,7 @@ describe("GenArt721CoreV2_PRTNR_Integration", async function () {
         ).to.equal(ethers.utils.parseEther("0.9"));
         expect(
           (await this.accounts.owner.getBalance()).sub(ownerBalance)
-        ).to.equal(ethers.utils.parseEther("1.0218374").mul("-1")); // spent 1 ETH
+        ).to.equal(ethers.utils.parseEther("1.0218145").mul("-1")); // spent 1 ETH
         expect(
           (await this.accounts.artist.getBalance()).sub(artistBalance)
         ).to.equal(ethers.utils.parseEther("0.0097558").mul("-1"));

@@ -29,7 +29,7 @@ describe("MinterFilterV0Enumeration", async function () {
       .connect(deployer)
       .deploy("Test Contract", "TEST", this.randomizer.address);
     const minterFilterFactory = await ethers.getContractFactory(
-      "MinterFilterV0_PRTNR"
+      "MinterFilterV0"
     );
     this.minterFilter = await minterFilterFactory.deploy(
       this.genArt721Core.address
