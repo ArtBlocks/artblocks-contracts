@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../../interfaces/0.8.x/IRandomizer.sol";
-import "../../interfaces/0.8.x/IGenArt721CoreV2_PBAB.sol";
-import "../../interfaces/0.8.x/IGenArt721CoreContractV1.sol";
+import "../interfaces/0.8.x/IRandomizer.sol";
+import "../interfaces/0.8.x/IGenArt721CoreV2_PBAB.sol";
+import "../interfaces/0.8.x/IGenArt721CoreContractV1.sol";
 
 import "@openzeppelin/contracts/utils/Strings.sol";
 
@@ -16,7 +16,7 @@ pragma solidity 0.8.9;
  * @author Art Blocks Inc.
  * @dev conforms to V1 and V2_PBAB interfaces
  */
-contract GenArt721CoreV2_ArtBlocksXPace is
+contract GenArt721CoreV2_PRTNR is
     ERC721Enumerable,
     IGenArt721CoreV2_PBAB,
     IGenArt721CoreContractV1
