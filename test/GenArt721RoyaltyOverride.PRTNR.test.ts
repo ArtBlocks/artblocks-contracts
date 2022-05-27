@@ -22,15 +22,15 @@ const assertRoyaltiesResponse = async (
 };
 
 /**
- * @notice This ensures responses from a _PRTNR royalty override are as
- * expected.
+ * @notice This ensures responses from a flagship royalty override are as
+ * expected when integrating with a GenArt721CoreV2_PRTNR core contract.
  * @dev Note that tokens are minted with the classic PBAB minter. This is
  * acceptable because the intent of this test is in no way validating any
  * minter functionality - it is entirely testing to validate royalty query
- * responses when using the GenArt721RoyaltyOverride_PRTNR override contract.
+ * responses when using the GenArt721RoyaltyOverride override contract.
  */
-describe("GenArt721RoyaltyOverride_PRTNR", async function () {
-  const name = "Non Fungible Token PBAB";
+describe("GenArt721RoyaltyOverride_V2PRTNRCore", async function () {
+  const name = "Non Fungible Token PRTNR";
   const symbol = "NFT_PRTNR";
 
   const tokenIdProject0 = "0000000";
@@ -70,10 +70,10 @@ describe("GenArt721RoyaltyOverride_PRTNR", async function () {
       "BasicRandomizer"
     );
     this.randomizer = await randomizerFactory.deploy();
-    const artblocksFactory_PBAB = await ethers.getContractFactory(
-      "GenArt721CoreV2_PBAB"
+    const coreFactory_PRTNR = await ethers.getContractFactory(
+      "GenArt721CoreV2_PRTNR"
     );
-    this.tokenA = await artblocksFactory_PBAB
+    this.tokenA = await coreFactory_PRTNR
       .connect(adminA)
       .deploy(name, symbol, this.randomizer.address);
 
@@ -142,7 +142,7 @@ describe("GenArt721RoyaltyOverride_PRTNR", async function () {
       .purchase(projectOne, { value: pricePerTokenInWei });
 
     // deploy second core contract with two more projects
-    this.tokenB = await artblocksFactory_PBAB
+    this.tokenB = await coreFactory_PRTNR
       .connect(adminB)
       .deploy(name, symbol, this.randomizer.address);
 
@@ -374,7 +374,7 @@ describe("GenArt721RoyaltyOverride_PRTNR", async function () {
     });
   });
 
-  describe("core PBAB contract enforces limits on artist's updated royalties", async function () {
+  describe("core PRTNR contract enforces limits on artist's updated royalties", async function () {
     it("enforces limits when artist changes their royalty percentage", async function () {
       // does not revert when setting secondary market royalty to 100%
       await this.tokenA
