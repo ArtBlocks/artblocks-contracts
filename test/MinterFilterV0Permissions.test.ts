@@ -9,7 +9,7 @@ import {
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
-describe("MinterPermissionsEvents", async function () {
+describe("MinterFilterV0PermissionsEvents", async function () {
   const pricePerTokenInWei = ethers.utils.parseEther("1");
 
   const projectZero = 3; // V1 core begins at project 3

@@ -9,7 +9,7 @@ import {
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
-describe("MinterFilterViews", async function () {
+describe("MinterFilterV0Views", async function () {
   const pricePerTokenInWei = ethers.utils.parseEther("1");
 
   beforeEach(async function () {

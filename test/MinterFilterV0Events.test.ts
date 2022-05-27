@@ -9,7 +9,7 @@ import {
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
-describe("MinterFilterEvents", async function () {
+describe("MinterFilterV0Events", async function () {
   beforeEach(async function () {
     const [deployer] = await ethers.getSigners();
     this.accounts = {

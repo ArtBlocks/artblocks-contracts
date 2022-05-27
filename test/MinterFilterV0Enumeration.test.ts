@@ -9,7 +9,7 @@ import {
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
-describe("MinterFilterEnumeration", async function () {
+describe("MinterFilterV0Enumeration", async function () {
   const pricePerTokenInWei = ethers.utils.parseEther("1");
 
   beforeEach(async function () {
@@ -29,7 +29,7 @@ describe("MinterFilterEnumeration", async function () {
       .connect(deployer)
       .deploy("Test Contract", "TEST", this.randomizer.address);
     const minterFilterFactory = await ethers.getContractFactory(
-      "MinterFilterV0"
+      "MinterFilterV0_PRTNR"
     );
     this.minterFilter = await minterFilterFactory.deploy(
       this.genArt721Core.address
