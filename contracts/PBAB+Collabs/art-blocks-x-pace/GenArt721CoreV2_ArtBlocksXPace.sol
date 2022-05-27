@@ -92,12 +92,7 @@ contract GenArt721CoreV2_ArtBlocksXPace is
         public
         override(IGenArt721CoreContractV1, IGenArt721CoreV2_PBAB) isWhitelisted;
     /// true if minter is whitelisted
-    mapping(address => bool)
-        public
-        override(
-            IGenArt721CoreContractV1,
-            IGenArt721CoreV2_PBAB
-        ) isMintWhitelisted;
+    mapping(address => bool) public isMintWhitelisted;
 
     /// next project ID to be created
     uint256
