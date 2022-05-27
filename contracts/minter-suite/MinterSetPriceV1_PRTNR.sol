@@ -17,7 +17,7 @@ contract MinterSetPriceV1_PRTNR is ReentrancyGuard, IFilteredMinterV0 {
     /// Core contract address this minter interacts with
     address public immutable genArt721CoreAddress;
 
-    /// This contract handles cores with interface IV1
+    /// This contract handles cores with interface IV2
     IGenArt721CoreV2_PBAB private immutable genArtCoreContract;
 
     /// Minter filter address this minter interacts with
