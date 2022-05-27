@@ -47,7 +47,7 @@ Core contracts use the versioning schema below:
 |:-----------:|:-------:|:-------------:|:----------------|
 | Original AB Core | V0 | 0-2 | 0x059EDD72Cd353dF5106D2B9cC5ab83a52287aC3a |
 | Revised AB Core | V1 | 3+ | 0xa7d8d9ef8D8Ce8992Df33D8b8CF4Aebabd5bD270 |
-| PBAB Cores | V2 | All PBAB | Various - see PBAB directory [DEPLOYMENTS.md files](https://github.com/search?q=repo%3AArtBlocks%2Fartblocks-contracts+extension%3Amd+filename%3ADEPLOYMENTS&type=Code&ref=advsearch&l=&l=) |
+| PBAB/PRTNR Cores | V2 | All PBAB, All PRTNR | Various - see PBAB directory [DEPLOYMENTS.md files](https://github.com/search?q=repo%3AArtBlocks%2Fartblocks-contracts+extension%3Amd+filename%3ADEPLOYMENTS&type=Code&ref=advsearch&l=&l=) |
 | Current Draft AB Core | V3 | (TBR) | - |
 
 ### MinterFilter Suite Compatibility Chart
@@ -58,7 +58,9 @@ Core contracts use the versioning schema below:
 
 | Minter Suite Version | Compatible Core Contract Version | Comments |
 | --- | --- | --- |
-| V0 | V1 | expect `projectTokenInfo()` to change in future core contract versions (since price & currency data is now stored on V0 minters) |
+| *V0 | V1 | expect `projectTokenInfo()` to change in future core contract versions (since price & currency data is now stored on V0 minters) |
+| *V1 | V1 | expect `projectTokenInfo()` to change in future core contract versions (since price & currency data is now stored on V0 minters) |
+| *V1_PRTNR | V2_PBAB | expect `projectTokenInfo()` to change in future core contract versions (since price & currency data is now stored on V0 minters) |
 
 ### Active Minting Contract(s)
 
@@ -67,25 +69,29 @@ These are the smart contracts that receive funds, and split them between the art
 #### MinterSetPrice
 - V0: [0x1DEC9E52f1320F7Deb29cBCd7B7d67f3dF785142](https://etherscan.io/address/0x1DEC9E52f1320F7Deb29cBCd7B7d67f3dF785142#code)
 - V1: [0x934cdc04C434b8dBf3E1265F4f198D70566f7355](https://etherscan.io/address/0x934cdc04C434b8dBf3E1265F4f198D70566f7355#code)
+- V1_PBAB: [TBR](#)
 
 #### MinterSetPriceERC20
 - V0: [0x48742D38a0809135EFd643c1150BfC13768C3907](https://etherscan.io/address/0x48742D38a0809135EFd643c1150BfC13768C3907#code)
 - V1: [0x0BbB93c5d118D1dee49e96BCAdc161403f4F8612](https://etherscan.io/address/0x0BbB93c5d118D1dee49e96BCAdc161403f4F8612#code)
+- V1_PBAB: [TBR](#)
 
 #### MinterDALin
 - V0: [0xd219f61Bb5A3ffDeCB4362610977F1dAB3930eE2](https://etherscan.io/address/0xd219f61Bb5A3ffDeCB4362610977F1dAB3930eE2#code)
 - V1: [0x32710950B014c2D29EA24f480Dd02c7e4610663b](https://etherscan.io/address/0x32710950B014c2D29EA24f480Dd02c7e4610663b#code)
+- V1_PBAB: [TBR](#)
 
 #### MinterDAExp
 - V0: [0xFc74fD0f2c7EaD04f1E5E9fd82Aef55620710D7C](https://etherscan.io/address/0xFc74fD0f2c7EaD04f1E5E9fd82Aef55620710D7C#code)
 - V1: [0xD94C7060808f3c876824E57e685702f3834D2e13](https://etherscan.io/address/0xD94C7060808f3c876824E57e685702f3834D2e13#code)
+- V1_PBAB: [TBR](#)
 
 ### Other Minter Contracts
 MinterFilterV0: [0x4aafCE293b9B0faD169c78049A81e400f518E199](https://etherscan.io/address/0x4aafCE293b9B0faD169c78049A81e400f518E199#code).
 
 Legacy minting contract: [0x47e312d99c09ce61a866c83cbbbbed5a4b9d33e7](https://etherscan.io/address/0x47e312d99c09ce61a866c83cbbbbed5a4b9d33e7).
 
-For deployed PBAB minting contracts, see PBAB directory [DEPLOYMENTS.md files](https://github.com/search?q=repo%3AArtBlocks%2Fartblocks-contracts+extension%3Amd+filename%3ADEPLOYMENTS&type=Code&ref=advsearch&l=&l=).
+For deployed PBAB/PRTNR minting contracts, see PBAB directory [DEPLOYMENTS.md files](https://github.com/search?q=repo%3AArtBlocks%2Fartblocks-contracts+extension%3Amd+filename%3ADEPLOYMENTS&type=Code&ref=advsearch&l=&l=).
 
 ### Shared Randomizers
 
