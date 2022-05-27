@@ -4,11 +4,11 @@ import { ethers } from "hardhat";
 import { GenArt721CoreV2ArtBlocksXPace__factory } from "../../contracts/factories/GenArt721CoreV2ArtBlocksXPace__factory";
 
 // MinterSuite
-import { MinterFilterV0PRTNR__factory } from "../../contracts/factories/MinterFilterV0PRTNR__factory";
-import { MinterSetPriceERC20V1PRTNR__factory } from "../../contracts/factories/MinterSetPriceERC20V1PRTNR__factory";
-import { MinterSetPriceV1PRTNR__factory } from "../../contracts/factories/MinterSetPriceV1PRTNR__factory";
-import { MinterDALinV1PRTNR__factory } from "../../contracts/factories/MinterDALinV1PRTNR__factory";
-import { MinterDAExpV1PRTNR__factory } from "../../contracts/factories/MinterDAExpV1PRTNR__factory";
+import { MinterFilterV0__factory } from "../../contracts/factories/MinterFilterV0__factory";
+import { MinterSetPriceERC20V1__factory } from "../../contracts/factories/MinterSetPriceERC20V1__factory";
+import { MinterSetPriceV1__factory } from "../../contracts/factories/MinterSetPriceV1__factory";
+import { MinterDALinV1__factory } from "../../contracts/factories/MinterDALinV1__factory";
+import { MinterDAExpV1__factory } from "../../contracts/factories/MinterDAExpV1__factory";
 
 import { createPBABBucket } from "../../util/aws_s3";
 
@@ -53,52 +53,52 @@ async function main() {
   console.log(`GenArt721Core deployed at ${genArt721Core.address}`);
 
   // Deploy Minter Filter contract.
-  const minterFilterFactory = new MinterFilterV0PRTNR__factory(deployer);
+  const minterFilterFactory = new MinterFilterV0__factory(deployer);
   const minterFilter = await minterFilterFactory.deploy(genArt721Core.address);
   await minterFilter.deployed();
-  console.log(`MinterFilterV0_PRTNR deployed at ${minterFilter.address}`);
+  console.log(`MinterFilterV0 deployed at ${minterFilter.address}`);
 
   // Deploy basic Minter contract (functionally equivalent to the current
   // standard Minter contract).
-  const minterSetPriceERC20V0Factory = new MinterSetPriceERC20V1PRTNR__factory(
+  const minterSetPriceERC20V1Factory = new MinterSetPriceERC20V1__factory(
     deployer
   );
-  const minterSetPriceERC20V0 = await minterSetPriceERC20V0Factory.deploy(
+  const minterSetPriceERC20V1 = await minterSetPriceERC20V1Factory.deploy(
     genArt721Core.address,
     minterFilter.address
   );
-  await minterSetPriceERC20V0.deployed();
+  await minterSetPriceERC20V1.deployed();
   console.log(
-    `MinterSetPriceERC20V0_PRTNR deployed at ${minterSetPriceERC20V0.address}`
+    `MinterSetPriceERC20V1 deployed at ${minterSetPriceERC20V1.address}`
   );
 
   // Deploy basic Minter contract that **only** supports ETH, as an optimization,
   // and thus _does not_ support custom ERC20 minting.
-  const minterSetPriceV0Factory = new MinterSetPriceV1PRTNR__factory(deployer);
-  const minterSetPriceV0 = await minterSetPriceV0Factory.deploy(
+  const minterSetPriceV1Factory = new MinterSetPriceV1__factory(deployer);
+  const minterSetPriceV1 = await minterSetPriceV1Factory.deploy(
     genArt721Core.address,
     minterFilter.address
   );
-  await minterSetPriceV0.deployed();
-  console.log(`MinterSetPriceV0_PRTNR deployed at ${minterSetPriceV0.address}`);
+  await minterSetPriceV1.deployed();
+  console.log(`MinterSetPriceV1 deployed at ${minterSetPriceV1.address}`);
 
   // Deploy automated linear-decay DA Minter contract that **only** supports ETH.
-  const minterDALinV0Factory = new MinterDALinV1PRTNR__factory(deployer);
-  const minterDALinV0 = await minterDALinV0Factory.deploy(
+  const minterDALinV1Factory = new MinterDALinV1__factory(deployer);
+  const minterDALinV1 = await minterDALinV1Factory.deploy(
     genArt721Core.address,
     minterFilter.address
   );
-  await minterDALinV0.deployed();
-  console.log(`MinterDALinV0_PRTNR deployed at ${minterDALinV0.address}`);
+  await minterDALinV1.deployed();
+  console.log(`MinterDALinV1 deployed at ${minterDALinV1.address}`);
 
   // Deploy automated exponential-decay DA Minter contract that **only** supports ETH.
-  const minterDAExpV0Factory = new MinterDAExpV1PRTNR__factory(deployer);
-  const minterDAExpV0 = await minterDAExpV0Factory.deploy(
+  const minterDAExpV1Factory = new MinterDAExpV1__factory(deployer);
+  const minterDAExpV1 = await minterDAExpV1Factory.deploy(
     genArt721Core.address,
     minterFilter.address
   );
-  await minterDAExpV0.deployed();
-  console.log(`MinterDAExpV0_PRTNR deployed at ${minterDAExpV0.address}`);
+  await minterDAExpV1.deployed();
+  console.log(`MinterDAExpV1 deployed at ${minterDAExpV1.address}`);
 
   //////////////////////////////////////////////////////////////////////////////
   // DEPLOYMENT ENDS HERE
@@ -161,16 +161,16 @@ async function main() {
   );
   console.log(`Verify each of the Minter deployments with:`);
   console.log(
-    `${standardVerify} --network ${networkName} ${minterSetPriceERC20V0.address} ${genArt721Core.address} ${minterFilter.address}`
+    `${standardVerify} --network ${networkName} ${minterSetPriceERC20V1.address} ${genArt721Core.address} ${minterFilter.address}`
   );
   console.log(
-    `${standardVerify} --network ${networkName} ${minterSetPriceV0.address} ${genArt721Core.address} ${minterFilter.address}`
+    `${standardVerify} --network ${networkName} ${minterSetPriceV1.address} ${genArt721Core.address} ${minterFilter.address}`
   );
   console.log(
-    `${standardVerify} --network ${networkName} ${minterDALinV0.address} ${genArt721Core.address} ${minterFilter.address}`
+    `${standardVerify} --network ${networkName} ${minterDALinV1.address} ${genArt721Core.address} ${minterFilter.address}`
   );
   console.log(
-    `${standardVerify} --network ${networkName} ${minterDAExpV0.address} ${genArt721Core.address} ${minterFilter.address}`
+    `${standardVerify} --network ${networkName} ${minterDAExpV1.address} ${genArt721Core.address} ${minterFilter.address}`
   );
 
   //////////////////////////////////////////////////////////////////////////////
