@@ -47,7 +47,8 @@ Core contracts use the versioning schema below:
 |:-----------:|:-------:|:-------------:|:----------------|
 | Original AB Core | V0 | 0-2 | 0x059EDD72Cd353dF5106D2B9cC5ab83a52287aC3a |
 | Revised AB Core | V1 | 3+ | 0xa7d8d9ef8D8Ce8992Df33D8b8CF4Aebabd5bD270 |
-| PBAB/PRTNR Cores | V2 | All PBAB, All PRTNR | Various - see PBAB directory [DEPLOYMENTS.md files](https://github.com/search?q=repo%3AArtBlocks%2Fartblocks-contracts+extension%3Amd+filename%3ADEPLOYMENTS&type=Code&ref=advsearch&l=&l=) |
+| PBAB Cores | V2_PBAB | All PBAB | Various - see PBAB+Collabs directory [DEPLOYMENTS.md files](https://github.com/search?q=repo%3AArtBlocks%2Fartblocks-contracts+extension%3Amd+filename%3ADEPLOYMENTS&type=Code&ref=advsearch&l=&l=) |
+| PRTNR Cores | V2_PRTNR | All PRTNR | Various - see PBAB+Collabs directory [DEPLOYMENTS.md files](https://github.com/search?q=repo%3AArtBlocks%2Fartblocks-contracts+extension%3Amd+filename%3ADEPLOYMENTS&type=Code&ref=advsearch&l=&l=) |
 | Current Draft AB Core | V3 | (TBR) | - |
 
 ### MinterFilter Suite Compatibility Chart
@@ -58,9 +59,8 @@ Core contracts use the versioning schema below:
 
 | Minter Suite Version | Compatible Core Contract Version | Comments |
 | --- | --- | --- |
-| *V0 | V1 | expect `projectTokenInfo()` to change in future core contract versions (since price & currency data is now stored on V0 minters) |
-| *V1 | V1 | expect `projectTokenInfo()` to change in future core contract versions (since price & currency data is now stored on V0 minters) |
-| *V1_PRTNR | V2_PBAB | expect `projectTokenInfo()` to change in future core contract versions (since price & currency data is now stored on V0 minters) |
+| V0 | V1, V2_PRTNR | expect `projectTokenInfo()` to change in future core contract versions (since price & currency data is now stored on V0 minters) |
+| V1 | V1, V2_PRTNR | expect `projectTokenInfo()` to change in future core contract versions (since price & currency data is now stored on V0 minters) |
 
 ### Active Minting Contract(s)
 
@@ -69,22 +69,18 @@ These are the smart contracts that receive funds, and split them between the art
 #### MinterSetPrice
 - V0: [0x1DEC9E52f1320F7Deb29cBCd7B7d67f3dF785142](https://etherscan.io/address/0x1DEC9E52f1320F7Deb29cBCd7B7d67f3dF785142#code)
 - V1: [0x934cdc04C434b8dBf3E1265F4f198D70566f7355](https://etherscan.io/address/0x934cdc04C434b8dBf3E1265F4f198D70566f7355#code)
-- V1_PBAB: [TBR](#)
 
 #### MinterSetPriceERC20
 - V0: [0x48742D38a0809135EFd643c1150BfC13768C3907](https://etherscan.io/address/0x48742D38a0809135EFd643c1150BfC13768C3907#code)
 - V1: [0x0BbB93c5d118D1dee49e96BCAdc161403f4F8612](https://etherscan.io/address/0x0BbB93c5d118D1dee49e96BCAdc161403f4F8612#code)
-- V1_PBAB: [TBR](#)
 
 #### MinterDALin
 - V0: [0xd219f61Bb5A3ffDeCB4362610977F1dAB3930eE2](https://etherscan.io/address/0xd219f61Bb5A3ffDeCB4362610977F1dAB3930eE2#code)
 - V1: [0x32710950B014c2D29EA24f480Dd02c7e4610663b](https://etherscan.io/address/0x32710950B014c2D29EA24f480Dd02c7e4610663b#code)
-- V1_PBAB: [TBR](#)
 
 #### MinterDAExp
 - V0: [0xFc74fD0f2c7EaD04f1E5E9fd82Aef55620710D7C](https://etherscan.io/address/0xFc74fD0f2c7EaD04f1E5E9fd82Aef55620710D7C#code)
 - V1: [0xD94C7060808f3c876824E57e685702f3834D2e13](https://etherscan.io/address/0xD94C7060808f3c876824E57e685702f3834D2e13#code)
-- V1_PBAB: [TBR](#)
 
 ### Other Minter Contracts
 MinterFilterV0: [0x4aafCE293b9B0faD169c78049A81e400f518E199](https://etherscan.io/address/0x4aafCE293b9B0faD169c78049A81e400f518E199#code).
@@ -116,14 +112,13 @@ Documentation for contracts may be generated via `yarn docgen`. Some Art Blocks 
   * These are the Smart contract that received funds from primary sales and split them between the artist(s) and the platform. Artists received funds directly from this contract.These minter contracts are no longer in use.
 
 ## Royalty Registry Overrides
-Art Blocks supports lookups of all mainnet flagship and PBAB tokens on the [Royalty Registry](https://royaltyregistry.xyz/lookup).
+Art Blocks supports lookups of all mainnet flagship, partnership, and PBAB tokens on the [Royalty Registry](https://royaltyregistry.xyz/lookup).
 
 These contracts delegate all permissions to the core contracts. The following Royalty Registry override contracts are deployed at:
 
 - **mainnet (AB deployed):**
-  - AB Flagship royalty override: https://etherscan.io/address/0x7b5369c24a47a72ecf932bf6974f506dde4d5eb1#code
+  - AB Flagship + Partner (PRTNR) royalty override: https://etherscan.io/address/0x7b5369c24a47a72ecf932bf6974f506dde4d5eb1#code
   - PBAB royalty override: https://etherscan.io/address/0x31e1cc72e6f9e27c2ecbb500d978de1691173f5f#code
-  - PRTNR royalty override: <TBD>
 
 - **mainnet (RR deployed):**
   - RoyaltyRegistry: https://etherscan.io/address/0xad2184fb5dbcfc05d8f056542fb25b04fa32a95d#code
@@ -149,22 +144,8 @@ Additionally, the following settings may be configured/changed by a PBAB core co
 - **Change Render Provider Royalty Payment Address**
     - The address to receive render provider royalty payments is delegated to the token core contract, and defined as the public variable `renderProviderAddress`.
 
-### Configuring PRTNR Royalty Override (REQUIRED)
-Upon deploying a Partner (PRTNR) contract, the following steps must be taken.
->Note that the only difference between a PRTNR and PBAB override is that PRTNR override contracts assume no platform payment address or percentage.
-
-- **REQUIRED** Set the royalty lookup address on the royalty registry for the newly deployed contract
-  - Go to the [Royalty Registry](https://royaltyregistry.xyz/lookup) and call the following function on the Royalty Registry smart contract:
-    - `setRoyaltyLookupAddress(<new_PRTNR_coreAddr>, <PRTNR_royaltyOverrideContract>)`
-
-Additionally, the following settings may be configured/changed by a the PRTNR core contract's `admin` at any time:
-- **Change Royalty Percentages**
-    - `renderProvider` Royalty [BPS](https://www.investopedia.com/terms/b/basispoint.asp) may be changed from default values of 2.5% to any value. This can be configured by a PRTNR core contract's `admin` via the PRTNR override contract's function `updateRenderProviderBpsForContract`.
-- **Change Render Provider Royalty Payment Address**
-    - The address to receive render provider royalty payments is delegated to the token core contract, and defined as the public variable `renderProviderAddress`.
-
-### Configuring Art Blocks Flagship Royalty Override  (REQUIRED)
-Upon deploying a new Art Blocks flagship core contract, the following steps must be taken (NOT scripted):
+### Configuring Art Blocks Flagship **OR** Partner (PRTNR) Royalty Override (REQUIRED)
+Upon deploying a new Art Blocks flagship core contract or Partner (PRTNR) core contract, the following steps must be taken (NOT scripted):
 
 - **REQUIRED** Set the royalty lookup address on the royalty registry for the newly deployed contract
   - Go to the [Royalty Registry](https://royaltyregistry.xyz/lookup) to call the following function on the Royalty Registry smart contract:
