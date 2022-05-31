@@ -15,13 +15,18 @@ import { createPBABBucket } from "../../util/aws_s3";
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG BEGINS HERE
 //////////////////////////////////////////////////////////////////////////////
-const pbabTokenName = "Art Blocks x Pace";
-const pbabTokenTicker = "ABXPACE";
-// AB multi-sig wallet
-const pbabTransferAddress = "0xCF00eC2B327BCfA2bee2D8A5Aee0A7671d08A283";
-// AB primary sales wallet
-const rendererProviderAddress = "0xf7A55108A6E830a809e88e74cbf5f5DE9D930153";
-const randomizerContractAddress = "0x088098f7438773182b703625c4128aff85fcffc4";
+const pbabTokenName = "Art Blocks x Pace"; // mainnet & ropsten
+const pbabTokenTicker = "ABXPACE"; // mainnet & ropsten
+// const randomizerContractAddress = "0x088098f7438773182b703625c4128aff85fcffc4"; // mainnet
+// // AB multi-sig wallet
+// const pbabTransferAddress = "0xCF00eC2B327BCfA2bee2D8A5Aee0A7671d08A283"; // mainnet
+// // AB primary sales wallet
+// const rendererProviderAddress = "0xf7A55108A6E830a809e88e74cbf5f5DE9D930153"; // mainnet
+const randomizerContractAddress = "0x7ba972189ED3C527847170453fC108707F62755a"; // ropsten
+// Deployer wallet
+const pbabTransferAddress = "0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63"; // ropsten
+// Deployer wallet
+const rendererProviderAddress = "0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63"; // ropsten
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG ENDS HERE
 //////////////////////////////////////////////////////////////////////////////
