@@ -125,10 +125,6 @@ async function main() {
     .updateRenderProviderAddress(rendererProviderAddress);
   console.log(`Updated the renderer provider to: ${rendererProviderAddress}.`);
 
-  // Call `alertAsCanonicalMinterFilter`.
-  await minterFilter.connect(deployer).alertAsCanonicalMinterFilter();
-  console.log(`Called 'alertAsCanonicalMinterFilter' from MinterFilter.`);
-
   // Allowlist AB staff (testnet only)
   if (network.name == "ropsten") {
     // purplehat
@@ -176,6 +172,9 @@ async function main() {
   );
   console.log(
     `${standardVerify} --network ${networkName} ${minterDAExpV1.address} ${genArt721Core.address} ${minterFilter.address}`
+  );
+  console.log(
+    `Reminder: call 'alertAsCanonicalMinterFilter' from MinterFilter!`
   );
 
   //////////////////////////////////////////////////////////////////////////////
