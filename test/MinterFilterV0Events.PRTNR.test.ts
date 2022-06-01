@@ -9,7 +9,11 @@ import {
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
-describe("MinterFilterEvents", async function () {
+/**
+ * @notice This tests MinterFilter events when integrating with a V2_PRTNR
+ * core contract.
+ */
+describe("MinterFilterV0Events_V2PRTNRCore", async function () {
   beforeEach(async function () {
     const [deployer] = await ethers.getSigners();
     this.accounts = {
@@ -19,13 +23,15 @@ describe("MinterFilterEvents", async function () {
       "BasicRandomizer"
     );
     this.randomizer = await randomizerFactory.deploy();
-    const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV1");
-    this.genArt721Core = await artblocksFactory
+    const coreFactory = await ethers.getContractFactory(
+      "GenArt721CoreV2_PRTNR"
+    );
+    this.genArt721Core = await coreFactory
       .connect(deployer)
       .deploy("Test Contract", "TEST", this.randomizer.address);
     await this.genArt721Core
       .connect(deployer)
-      .addProject("project0", deployer.address, 0, false);
+      .addProject("project0", deployer.address, 0);
     const minterFilterFactory = await ethers.getContractFactory(
       "MinterFilterV0"
     );
@@ -33,7 +39,7 @@ describe("MinterFilterEvents", async function () {
       this.genArt721Core.address
     );
     const minterFactory = await ethers.getContractFactory(
-      "MinterSetPriceERC20V0"
+      "MinterSetPriceERC20V1"
     );
     this.minter = await minterFactory.deploy(
       this.genArt721Core.address,
@@ -60,8 +66,8 @@ describe("MinterFilterEvents", async function () {
   });
 
   describe("addApprovedMinter", async function () {
-    it("emits an event for MinterSetPriceERC20V0", async function () {
-      const minterType = "MinterSetPriceERC20V0";
+    it("emits an event for MinterSetPriceERC20V1", async function () {
+      const minterType = "MinterSetPriceERC20V1";
       await expect(
         this.minterFilter
           .connect(this.accounts.deployer)
@@ -124,7 +130,7 @@ describe("MinterFilterEvents", async function () {
   });
 
   describe("setMinterForProject", async function () {
-    const minterType = "MinterSetPriceERC20V0";
+    const minterType = "MinterSetPriceERC20V1";
     it("emits an event", async function () {
       await expect(
         this.minterFilter
@@ -136,7 +142,7 @@ describe("MinterFilterEvents", async function () {
       // add project 1
       await this.genArt721Core
         .connect(this.accounts.deployer)
-        .addProject("project1", this.accounts.deployer.address, 0, false);
+        .addProject("project1", this.accounts.deployer.address, 0);
       // set minter for project 1
       await expect(
         this.minterFilter
