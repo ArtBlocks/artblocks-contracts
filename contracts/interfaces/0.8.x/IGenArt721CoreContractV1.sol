@@ -4,12 +4,6 @@
 pragma solidity ^0.8.0;
 
 interface IGenArt721CoreContractV1 {
-    event Mint(
-        address indexed _to,
-        uint256 indexed _tokenId,
-        uint256 indexed _projectId
-    );
-
     // getter function of public variable
     function admin() external view returns (address);
 
