@@ -1,4 +1,3 @@
-import { network } from "hardhat";
 import { getPBABBucketName, getBucketURL } from "./format";
 const {
   S3Client,
