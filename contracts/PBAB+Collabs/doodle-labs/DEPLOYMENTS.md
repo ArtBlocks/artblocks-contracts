@@ -21,7 +21,17 @@ This was removed at ref tx: [`0xed39aa299451e44b123cb4cbffc746f53f011c77cd2e334f
 
 Additionally due to complexity of `.transfer()` out of gas errors caused by the changes in EIP-2930, the "renderer payment address" for Art Blocks was updated to be hardware wallet `0x66c5bfa1c8C8352eACb1E8dD22E3575f804f51df` for the second mint onward. The original multi-sig wallet only has 0.1 MOOK in it.
 
-## Ropsten
+
+## Goerli
+
+### Upload 0
+
+**GenArt721CoreV2:** https://goerli.etherscan.io/address/0x5503a3B96D845f33F135429AB18C03C79477B14f#code
+**GenArt721Minter:** https://goerli.etherscan.io/address/0x078fc67512A0533d8D1c28100D962135C05208Fd#code
+
+`0x95DcB7b8e99B7B8FCb1DCb9e82Bb12183b2bbE02.` set as minter owner, whitelisted on core contract, and admin of core contract.
+
+## Ropsten (depreciated)
 
 ### Upload 0
 
