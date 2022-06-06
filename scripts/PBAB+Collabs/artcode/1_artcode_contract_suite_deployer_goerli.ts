@@ -3,6 +3,8 @@ import { RandomizerArtCode__factory } from "../../contracts/factories/Randomizer
 import { GenArt721CoreV2ArtCode__factory } from "../../contracts/factories/GenArt721CoreV2ArtCode__factory";
 import { GenArt721MinterArtCode__factory } from "../../contracts/factories/GenArt721MinterArtCode__factory";
 
+import { createPBABBucket } from "../../util/aws_s3";
+
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG BEGINS HERE
 // TODO: Update and verify the below configuration items before deploying!
@@ -96,6 +98,9 @@ async function main() {
   // Transfer Core contract to new PBAB owner.
   await genArt721Core.connect(deployer).updateAdmin(pbabTransferAddress);
   console.log(`Transferred Core contract admin to: ${pbabTransferAddress}.`);
+
+  // // Create PBAB Bucket
+  // await createPBABBucket(pbabTokenName, network.name);
 
   // Output instructions for manual Etherscan verification.
   const standardVerify =
