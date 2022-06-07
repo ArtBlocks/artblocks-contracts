@@ -7,7 +7,17 @@
 
 `0xB96E81f80b3AEEf65CB6d0E280b15FD5DBE71937` set as minter owner, whitelisted on core contract, and admin of core contract.
 
-## Ropsten
+
+## Goerli
+
+### Upload 0
+
+**GenArt721CoreV2:** https://goerli.etherscan.io/address/0xfA89AB6211273f84E3Aa0235B1Ae37a2ED37cfc6#code
+**GenArt721Minter:** https://goerli.etherscan.io/address/0xd8a90CbD15381fc0226Be61AC522fee97f6C2Ed9#code
+
+`0x1040259f6Fe4f1C6ed1044b9Df6a8A4eBD2d3511` set as minter owner, whitelisted on core contract, and admin of core contract.
+
+## Ropsten (depreciated)
 
 ### Upload 0
 
