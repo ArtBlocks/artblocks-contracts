@@ -54,6 +54,7 @@ Core contracts use the versioning schema below:
 ### MinterFilter Suite Compatibility Chart
 - We like new minters
 - Minters have to iteract with (at least one) core contract
+- **Note:** while the whole end-to-end MinterFilter+FilteredMinter architecture is likely not the ideal fit for PBAB partners due to the infrastructure complexity required for partners integrating with it, any of the individual minters from within the minter suite can readily be adapted to work with PBAB core contracts–if you are a PBAB partner and there is a minter in the suite that this would be appealing for, please file a Github issue requesting this!
 
 **Thus:** The minter suite compatability chart!
 
