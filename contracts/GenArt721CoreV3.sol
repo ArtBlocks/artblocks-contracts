@@ -163,7 +163,7 @@ contract GenArt721CoreV3 is ERC721Enumerable, IGenArt721CoreContractV3 {
         uint256 nextTokenId = (_projectId * ONE_MILLION) +
             projects[_projectId].invocations;
 
-        projects[_projectId].invocations = projects[_projectId].invocations + 1;
+        projects[_projectId].invocations++;
 
         bytes32 tokenHash = keccak256(
             abi.encodePacked(
