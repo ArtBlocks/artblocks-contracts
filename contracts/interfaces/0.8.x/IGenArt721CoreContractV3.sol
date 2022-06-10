@@ -7,7 +7,7 @@ interface IGenArt721CoreContractV3 {
     /**
      * @notice Token ID `_tokenId` minted to `_to`.
      */
-    event MintToken(address indexed _to, uint256 indexed _tokenId);
+    event Mint(address indexed _to, uint256 indexed _tokenId);
 
     /**
      * @notice currentMinter updated to `_currentMinter`.
