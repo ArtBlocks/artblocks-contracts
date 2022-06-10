@@ -32,9 +32,7 @@ async function main() {
 
   // Deploy Core contract.
   console.log(`Using Randomizer deployed at ${randomizerContractAddress}`);
-  const genArt721CoreFactory = new GenArt721CoreV2Fireworks__factory(
-    deployer
-  );
+  const genArt721CoreFactory = new GenArt721CoreV2Fireworks__factory(deployer);
   const genArt721Core = await genArt721CoreFactory.deploy(
     pbabTokenName,
     pbabTokenTicker,
