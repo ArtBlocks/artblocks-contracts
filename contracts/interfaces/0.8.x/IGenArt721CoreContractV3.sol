@@ -5,13 +5,9 @@ pragma solidity ^0.8.0;
 
 interface IGenArt721CoreContractV3 {
     /**
-     * @notice Token ID `_tokenId` minted on project ID `_projectId` to `_to`.
+     * @notice Token ID `_tokenId` minted to `_to`.
      */
-    event Mint(
-        address indexed _to,
-        uint256 indexed _tokenId,
-        uint256 indexed _projectId
-    );
+    event MintToken(address indexed _to, uint256 indexed _tokenId);
 
     /**
      * @notice currentMinter updated to `_currentMinter`.
