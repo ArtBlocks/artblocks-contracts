@@ -51,7 +51,6 @@ contract GenArt721CoreV3 is ERC721Enumerable, IGenArt721CoreContractV3 {
     uint256 public artblocksPercentage = 10;
 
     mapping(uint256 => bytes32) public tokenIdToHash;
-    mapping(bytes32 => uint256) public hashToTokenId;
 
     /// admin for contract
     address public admin;
@@ -168,14 +167,12 @@ contract GenArt721CoreV3 is ERC721Enumerable, IGenArt721CoreContractV3 {
         bytes32 tokenHash = keccak256(
             abi.encodePacked(
                 projects[_projectId].invocations,
-                block.number,
                 blockhash(block.number - 1),
                 randomizerContract.returnValue()
             )
         );
 
         tokenIdToHash[nextTokenId] = tokenHash;
-        hashToTokenId[tokenHash] = nextTokenId;
 
         _mint(_to, nextTokenId);
 
