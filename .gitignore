@@ -39,9 +39,12 @@ coverageEnv
 .env
 node_modules
 
-#Hardhat files
+# Hardhat files
 cache
 artifacts
 
 # Typechain generated files
 scripts/contracts
+
+# Python env files
+env/

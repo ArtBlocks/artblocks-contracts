@@ -1,12 +1,15 @@
 require("dotenv").config();
+
 import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-truffle5";
-import "hardhat-gas-reporter";
-import "solidity-coverage";
 import "@nomiclabs/hardhat-solhint";
-import "hardhat-contract-sizer";
+// Currently disabled due to: https://github.com/NomicFoundation/hardhat/issues/2812
+// import "@nomiclabs/hardhat-vyper";
 import "@nomiclabs/hardhat-etherscan";
+import "hardhat-gas-reporter";
+import "hardhat-contract-sizer";
 import "hardhat-docgen";
+import "solidity-coverage";
 
 const MAINNET_JSON_RPC_PROVIDER_URL = process.env.MAINNET_JSON_RPC_PROVIDER_URL;
 const GOERLI_JSON_RPC_PROVIDER_URL = process.env.GOERLI_JSON_RPC_PROVIDER_URL;
@@ -47,6 +50,12 @@ module.exports = {
       },
     ],
   },
+  // Currently disabled due to: https://github.com/NomicFoundation/hardhat/issues/2812
+  // vyper: {
+  //   compilers: [
+  //     { version: "0.3.3" }
+  //   ],
+  // },
   networks: {
     hardhat: {
       gasPrice: 100000000000, // 100 gwei
