@@ -14,8 +14,7 @@
     "test": "hardhat test",
     "format": "prettier --write 'contracts/**/*.sol' && prettier --write 'scripts/**/*.ts' && prettier --write 'test/**/*.ts'",
     "lint": "prettier --check 'contracts/**/*.sol' && prettier --check 'scripts/**/*.ts' && prettier --check 'test/**/*.ts'",
-    "remix": "remixd -s ./ --remix-ide https://remix.ethereum.org",
-    "vyper-install": "python3 -m venv env && source env/bin/activate && pip install -r requirements.txt"
+    "remix": "remixd -s ./ --remix-ide https://remix.ethereum.org"
   },
   "husky": {
     "hooks": {
