@@ -630,25 +630,13 @@ contract GenArt721CoreV3 is ERC721Enumerable, IGenArt721CoreContractV3 {
             uint256 royaltyFeeByID
         )
     {
-        uint256 projectId = tokenIdToProjectId(_tokenId);
+        uint256 projectId = _tokenId / ONE_MILLION;
         artistAddress = projectIdToArtistAddress[projectId];
         additionalPayee = projectIdToAdditionalPayee[projectId];
         additionalPayeePercentage = projectIdToAdditionalPayeePercentage[
             projectId
         ];
         royaltyFeeByID = projectIdToSecondaryMarketRoyaltyPercentage[projectId];
-    }
-
-    /**
-     * @notice Derives the `projectId` for a given `_tokenId`, for convenience
-     * purposes.
-     */
-    function tokenIdToProjectId(uint256 _tokenId)
-        public
-        view
-        returns (uint256 _projectId)
-    {
-        return _tokenId - (_tokenId % ONE_MILLION);
     }
 
     /**
@@ -664,7 +652,7 @@ contract GenArt721CoreV3 is ERC721Enumerable, IGenArt721CoreContractV3 {
         return
             string(
                 abi.encodePacked(
-                    projects[tokenIdToProjectId(_tokenId)].projectBaseURI,
+                    projects[_tokenId / ONE_MILLION].projectBaseURI,
                     Strings.toString(_tokenId)
                 )
             );
