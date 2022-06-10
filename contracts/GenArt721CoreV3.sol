@@ -138,7 +138,7 @@ contract GenArt721CoreV3 is ERC721Enumerable, IGenArt721CoreContractV3 {
             "Must mint from the allowed minter contract."
         );
         require(
-            projects[_projectId].invocations + 1 <=
+            projects[_projectId].invocations <
                 projects[_projectId].maxInvocations,
             "Must not exceed max invocations"
         );
@@ -153,9 +153,7 @@ contract GenArt721CoreV3 is ERC721Enumerable, IGenArt721CoreContractV3 {
             "Purchases are paused."
         );
 
-        uint256 tokenId = _mintToken(_to, _projectId);
-
-        return tokenId;
+        return _mintToken(_to, _projectId);
     }
 
     function _mintToken(address _to, uint256 _projectId)
