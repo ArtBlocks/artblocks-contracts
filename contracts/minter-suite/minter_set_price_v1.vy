@@ -146,8 +146,6 @@ def updatePricePerTokenInWei(_projectId: uint256, _pricePerTokenInWei: uint256):
     self.projectIdToPriceIsConfigured[_projectId] = True
     log PricePerTokenInWeiUpdated(_projectId, _pricePerTokenInWei)
 
-
-
 @internal
 @payable
 def _splitFundsETH(_projectId: uint256):
