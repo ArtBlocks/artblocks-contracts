@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "./interfaces/0.8.x/IRandomizer.sol";
-import "./interfaces/0.8.x/IGenArt721CoreContractV3.sol";
+import "../../interfaces/0.8.x/IRandomizer.sol";
+import "../../interfaces/0.8.x/IGenArt721CoreV2_PBAB.sol";
 
 import "@openzeppelin/contracts/utils/Strings.sol";
 
@@ -11,10 +11,10 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 pragma solidity 0.8.9;
 
 /**
- * @title Art Blocks ERC-721 core contract, V3.
+ * @title Powered by Art Blocks ERC-721 core contract.
  * @author Art Blocks Inc.
  */
-contract GenArt721CoreV3 is ERC721Enumerable, IGenArt721CoreContractV3 {
+contract GenArt721CoreV2_Fireworks is ERC721Enumerable, IGenArt721CoreV2_PBAB {
     /// randomizer contract
     IRandomizer public randomizerContract;
 
@@ -39,19 +39,21 @@ contract GenArt721CoreV3 is ERC721Enumerable, IGenArt721CoreContractV3 {
     uint256 constant ONE_MILLION = 1_000_000;
     mapping(uint256 => Project) projects;
 
-    // All financial functions are stripped from struct for visibility
+    //All financial functions are stripped from struct for visibility
     mapping(uint256 => address payable) public projectIdToArtistAddress;
+    mapping(uint256 => string) public projectIdToCurrencySymbol;
+    mapping(uint256 => address) public projectIdToCurrencyAddress;
+    mapping(uint256 => uint256) public projectIdToPricePerTokenInWei;
     mapping(uint256 => address payable) public projectIdToAdditionalPayee;
     mapping(uint256 => uint256) public projectIdToAdditionalPayeePercentage;
     mapping(uint256 => uint256)
         public projectIdToSecondaryMarketRoyaltyPercentage;
 
-    address payable public artblocksAddress;
-    /// Percentage of mint revenue allocated to Art Blocks
-    uint256 public artblocksPercentage = 10;
+    address payable public renderProviderAddress;
+    /// Percentage of mint revenue allocated to render provider
+    uint256 public renderProviderPercentage = 10;
 
     mapping(uint256 => uint256) public tokenIdToProjectId;
-    //mapping(uint256 => uint256[]) internal projectIdToTokenIds;
     mapping(uint256 => bytes32) public tokenIdToHash;
     mapping(bytes32 => uint256) public hashToTokenId;
 
@@ -59,9 +61,8 @@ contract GenArt721CoreV3 is ERC721Enumerable, IGenArt721CoreContractV3 {
     address public admin;
     /// true if address is whitelisted
     mapping(address => bool) public isWhitelisted;
-
-    /// single minter allowed for this core contract
-    address public minterContract;
+    /// true if minter is whitelisted
+    mapping(address => bool) public isMintWhitelisted;
 
     /// next project ID to be created
     uint256 public nextProjectId = 0;
@@ -116,7 +117,7 @@ contract GenArt721CoreV3 is ERC721Enumerable, IGenArt721CoreContractV3 {
     ) ERC721(_tokenName, _tokenSymbol) {
         admin = msg.sender;
         isWhitelisted[msg.sender] = true;
-        artblocksAddress = payable(msg.sender);
+        renderProviderAddress = payable(msg.sender);
         randomizerContract = IRandomizer(_randomizerContract);
     }
 
@@ -134,11 +135,11 @@ contract GenArt721CoreV3 is ERC721Enumerable, IGenArt721CoreContractV3 {
         address _by
     ) external returns (uint256 _tokenId) {
         require(
-            msg.sender == minterContract,
-            "Must mint from the allowed minter contract."
+            isMintWhitelisted[msg.sender],
+            "Must mint from whitelisted minter contract."
         );
         require(
-            projects[_projectId].invocations <
+            projects[_projectId].invocations + 1 <=
                 projects[_projectId].maxInvocations,
             "Must not exceed max invocations"
         );
@@ -153,7 +154,9 @@ contract GenArt721CoreV3 is ERC721Enumerable, IGenArt721CoreContractV3 {
             "Purchases are paused."
         );
 
-        return _mintToken(_to, _projectId);
+        uint256 tokenId = _mintToken(_to, _projectId);
+
+        return tokenId;
     }
 
     function _mintToken(address _to, uint256 _projectId)
@@ -179,7 +182,6 @@ contract GenArt721CoreV3 is ERC721Enumerable, IGenArt721CoreContractV3 {
         _mint(_to, tokenIdToBe);
 
         tokenIdToProjectId[tokenIdToBe] = _projectId;
-        //projectIdToTokenIds[_projectId].push(tokenIdToBe);
 
         emit Mint(_to, tokenIdToBe, _projectId);
 
@@ -194,25 +196,25 @@ contract GenArt721CoreV3 is ERC721Enumerable, IGenArt721CoreContractV3 {
     }
 
     /**
-     * @notice Updates artblocksAddress to `_artblocksAddress`.
+     * @notice Updates render provider address to `_renderProviderAddress`.
      */
-    function updateArtblocksAddress(address payable _artblocksAddress)
+    function updateRenderProviderAddress(address payable _renderProviderAddress)
         public
         onlyAdmin
     {
-        artblocksAddress = _artblocksAddress;
+        renderProviderAddress = _renderProviderAddress;
     }
 
     /**
-     * @notice Updates Art Blocks mint revenue percentage to
-     * `_artblocksPercentage`.
+     * @notice Updates render provider mint revenue percentage to
+     * `_renderProviderPercentage`.
      */
-    function updateArtblocksPercentage(uint256 _artblocksPercentage)
+    function updateRenderProviderPercentage(uint256 _renderProviderPercentage)
         public
         onlyAdmin
     {
-        require(_artblocksPercentage <= 25, "Max of 25%");
-        artblocksPercentage = _artblocksPercentage;
+        require(_renderProviderPercentage <= 25, "Max of 25%");
+        renderProviderPercentage = _renderProviderPercentage;
     }
 
     /**
@@ -230,11 +232,17 @@ contract GenArt721CoreV3 is ERC721Enumerable, IGenArt721CoreContractV3 {
     }
 
     /**
-     * @notice updates minter to `_address`.
+     * @notice Whitelists minter `_address`.
      */
-    function updateMinterContract(address _address) public onlyAdmin {
-        minterContract = _address;
-        emit MinterUpdated(_address);
+    function addMintWhitelisted(address _address) public onlyAdmin {
+        isMintWhitelisted[_address] = true;
+    }
+
+    /**
+     * @notice Revokes whitelisting of minter `_address`.
+     */
+    function removeMintWhitelisted(address _address) public onlyAdmin {
+        isMintWhitelisted[_address] = false;
     }
 
     /**
@@ -289,19 +297,48 @@ contract GenArt721CoreV3 is ERC721Enumerable, IGenArt721CoreContractV3 {
      * @notice Adds new project `_projectName` by `_artistAddress`.
      * @param _projectName Project name.
      * @param _artistAddress Artist's address.
-     * @dev token price now stored on minter
+     * @param _pricePerTokenInWei Price to mint a token, in Wei.
      */
     function addProject(
         string memory _projectName,
-        address payable _artistAddress
+        address payable _artistAddress,
+        uint256 _pricePerTokenInWei
     ) public onlyWhitelisted {
         uint256 projectId = nextProjectId;
         projectIdToArtistAddress[projectId] = _artistAddress;
         projects[projectId].name = _projectName;
+        projectIdToCurrencySymbol[projectId] = "ETH";
+        projectIdToPricePerTokenInWei[projectId] = _pricePerTokenInWei;
         projects[projectId].paused = true;
         projects[projectId].maxInvocations = ONE_MILLION;
-
         nextProjectId = nextProjectId + 1;
+    }
+
+    /**
+     * @notice Updates payment currency of project `_projectId` to be
+     * `_currencySymbol`.
+     * @param _projectId Project ID to update.
+     * @param _currencySymbol Currency symbol.
+     * @param _currencyAddress Currency address.
+     */
+    function updateProjectCurrencyInfo(
+        uint256 _projectId,
+        string memory _currencySymbol,
+        address _currencyAddress
+    ) public onlyArtist(_projectId) {
+        projectIdToCurrencySymbol[_projectId] = _currencySymbol;
+        projectIdToCurrencyAddress[_projectId] = _currencyAddress;
+    }
+
+    /**
+     * @notice Updates price per token of project `_projectId` to be
+     * '_pricePerTokenInWei`, in Wei.
+     */
+    function updateProjectPricePerTokenInWei(
+        uint256 _projectId,
+        uint256 _pricePerTokenInWei
+    ) public onlyArtist(_projectId) {
+        projectIdToPricePerTokenInWei[_projectId] = _pricePerTokenInWei;
     }
 
     /**
@@ -520,29 +557,35 @@ contract GenArt721CoreV3 is ERC721Enumerable, IGenArt721CoreContractV3 {
 
     /**
      * @notice Returns project token information for project `_projectId`.
-     * @param _projectId Project to be queried
+     * @param _projectId Project to be queried.
      * @return artistAddress Project Artist's address
+     * @return pricePerTokenInWei Price to mint a token, in Wei
      * @return invocations Current number of invocations
      * @return maxInvocations Maximum allowed invocations
      * @return active Boolean representing if project is currently active
      * @return additionalPayee Additional payee address
      * @return additionalPayeePercentage Percentage of artist revenue
      * to be sent to the additional payee's address
-     * @dev price and currency info are located on minter contracts
+     * @return currency Symbol of project's currency
+     * @return currencyAddress Address of project's currency
      */
-    function projectInfo(uint256 _projectId)
+    function projectTokenInfo(uint256 _projectId)
         public
         view
         returns (
             address artistAddress,
+            uint256 pricePerTokenInWei,
             uint256 invocations,
             uint256 maxInvocations,
             bool active,
             address additionalPayee,
-            uint256 additionalPayeePercentage
+            uint256 additionalPayeePercentage,
+            string memory currency,
+            address currencyAddress
         )
     {
         artistAddress = projectIdToArtistAddress[_projectId];
+        pricePerTokenInWei = projectIdToPricePerTokenInWei[_projectId];
         invocations = projects[_projectId].invocations;
         maxInvocations = projects[_projectId].maxInvocations;
         active = projects[_projectId].active;
@@ -550,6 +593,8 @@ contract GenArt721CoreV3 is ERC721Enumerable, IGenArt721CoreContractV3 {
         additionalPayeePercentage = projectIdToAdditionalPayeePercentage[
             _projectId
         ];
+        currency = projectIdToCurrencySymbol[_projectId];
+        currencyAddress = projectIdToCurrencyAddress[_projectId];
     }
 
     /**
@@ -562,7 +607,7 @@ contract GenArt721CoreV3 is ERC721Enumerable, IGenArt721CoreContractV3 {
      * @return paused Boolean representing if project is paused
      */
     function projectScriptInfo(uint256 _projectId)
-        external
+        public
         view
         returns (
             string memory scriptJSON,
@@ -583,7 +628,7 @@ contract GenArt721CoreV3 is ERC721Enumerable, IGenArt721CoreContractV3 {
      * @notice Returns script for project `_projectId` at script index `_index`.
      */
     function projectScriptByIndex(uint256 _projectId, uint256 _index)
-        external
+        public
         view
         returns (string memory)
     {
@@ -594,19 +639,11 @@ contract GenArt721CoreV3 is ERC721Enumerable, IGenArt721CoreContractV3 {
      * @notice Returns base URI for project `_projectId`.
      */
     function projectURIInfo(uint256 _projectId)
-        external
+        public
         view
         returns (string memory projectBaseURI)
     {
         projectBaseURI = projects[_projectId].projectBaseURI;
-    }
-
-    /**
-     * @notice Backwards-compatible (pre-V3) function returning if `_minter` is
-     * minterContract.
-     */
-    function isMintWhitelisted(address _minter) external view returns (bool) {
-        return (minterContract == _minter);
     }
 
     /**
