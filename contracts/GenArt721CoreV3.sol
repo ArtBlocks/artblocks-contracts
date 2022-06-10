@@ -142,15 +142,16 @@ contract GenArt721CoreV3 is ERC721Enumerable, IGenArt721CoreContractV3 {
                 projects[_projectId].maxInvocations,
             "Must not exceed max invocations"
         );
-        // Only perform active + paused checks if minting from
-        // a wallet that **is not** the artist.
-        if (_by != projectIdToArtistAddress[_projectId]) {
-            require(
-                projects[_projectId].active,
-                "Project must exist and be active"
-            );
-            require(!projects[_projectId].paused, "Purchases are paused.");
-        }
+        require(
+            projects[_projectId].active ||
+                _by == projectIdToArtistAddress[_projectId],
+            "Project must exist and be active"
+        );
+        require(
+            !projects[_projectId].paused ||
+                _by == projectIdToArtistAddress[_projectId],
+            "Purchases are paused."
+        );
 
         return _mintToken(_to, _projectId);
     }
