@@ -149,10 +149,7 @@ contract GenArt721CoreV3 is ERC721Enumerable, IGenArt721CoreContractV3 {
                 projects[_projectId].active,
                 "Project must exist and be active"
             );
-            require(
-                !projects[_projectId].paused,
-                "Purchases are paused."
-            );         
+            require(!projects[_projectId].paused, "Purchases are paused.");
         }
 
         return _mintToken(_to, _projectId);
