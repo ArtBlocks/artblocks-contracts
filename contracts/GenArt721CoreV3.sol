@@ -635,6 +635,17 @@ contract GenArt721CoreV3 is ERC721Enumerable, IGenArt721CoreContractV3 {
         ];
         royaltyFeeByID = projectIdToSecondaryMarketRoyaltyPercentage[projectId];
     }
+    
+    /**
+     * @notice Gets the project ID for a given `_tokenId`.
+     */
+    function tokenIdToProjectId(uint256 _tokenId) 
+        public
+        view
+        returns (uint256 _projectId)
+    {
+        return _tokenId / ONE_MILLION
+    }
 
     /**
      * @notice Gets token URI for token ID `_tokenId`.
