@@ -638,8 +638,8 @@ contract GenArt721CoreV3 is ERC721Enumerable, IGenArt721CoreContractV3 {
      * @notice Gets the project ID for a given `_tokenId`.
      */
     function tokenIdToProjectId(uint256 _tokenId)
-        public
-        view
+        external
+        pure
         returns (uint256 _projectId)
     {
         return _tokenId / ONE_MILLION;
