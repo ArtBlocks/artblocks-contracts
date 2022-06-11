@@ -176,7 +176,7 @@ contract GenArt721CoreV3 is ERC721Enumerable, IGenArt721CoreContractV3 {
 
         // Do not need to also log `projectId` in event, as the `projectId` for
         // a given token can be derived from the `tokenId` with:
-        //   projectId = tokenId - (tokenId % 1_000_000)
+        //   projectId = tokenId / 1_000_000
         emit Mint(_to, nextTokenId);
 
         return nextTokenId;
