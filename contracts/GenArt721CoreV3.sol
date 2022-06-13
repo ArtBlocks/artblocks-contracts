@@ -50,10 +50,7 @@ contract GenArt721CoreV3 is ERC721Enumerable, IGenArt721CoreContractV3 {
     /// Percentage of mint revenue allocated to Art Blocks
     uint256 public artblocksPercentage = 10;
 
-    mapping(uint256 => uint256) public tokenIdToProjectId;
-    //mapping(uint256 => uint256[]) internal projectIdToTokenIds;
     mapping(uint256 => bytes32) public tokenIdToHash;
-    mapping(bytes32 => uint256) public hashToTokenId;
 
     /// admin for contract
     address public admin;
@@ -160,30 +157,29 @@ contract GenArt721CoreV3 is ERC721Enumerable, IGenArt721CoreContractV3 {
         internal
         returns (uint256 _tokenId)
     {
-        uint256 tokenIdToBe = (_projectId * ONE_MILLION) +
+        uint256 nextTokenId = (_projectId * ONE_MILLION) +
             projects[_projectId].invocations;
 
-        projects[_projectId].invocations = projects[_projectId].invocations + 1;
+        projects[_projectId].invocations++;
 
-        bytes32 hash = keccak256(
+        bytes32 tokenHash = keccak256(
             abi.encodePacked(
                 projects[_projectId].invocations,
-                block.number,
                 blockhash(block.number - 1),
                 randomizerContract.returnValue()
             )
         );
-        tokenIdToHash[tokenIdToBe] = hash;
-        hashToTokenId[hash] = tokenIdToBe;
 
-        _mint(_to, tokenIdToBe);
+        tokenIdToHash[nextTokenId] = tokenHash;
 
-        tokenIdToProjectId[tokenIdToBe] = _projectId;
-        //projectIdToTokenIds[_projectId].push(tokenIdToBe);
+        _mint(_to, nextTokenId);
 
-        emit Mint(_to, tokenIdToBe, _projectId);
+        // Do not need to also log `projectId` in event, as the `projectId` for
+        // a given token can be derived from the `tokenId` with:
+        //   projectId = tokenId / 1_000_000
+        emit Mint(_to, nextTokenId);
 
-        return tokenIdToBe;
+        return nextTokenId;
     }
 
     /**
@@ -629,16 +625,24 @@ contract GenArt721CoreV3 is ERC721Enumerable, IGenArt721CoreContractV3 {
             uint256 royaltyFeeByID
         )
     {
-        artistAddress = projectIdToArtistAddress[tokenIdToProjectId[_tokenId]];
-        additionalPayee = projectIdToAdditionalPayee[
-            tokenIdToProjectId[_tokenId]
-        ];
+        uint256 projectId = _tokenId / ONE_MILLION;
+        artistAddress = projectIdToArtistAddress[projectId];
+        additionalPayee = projectIdToAdditionalPayee[projectId];
         additionalPayeePercentage = projectIdToAdditionalPayeePercentage[
-            tokenIdToProjectId[_tokenId]
+            projectId
         ];
-        royaltyFeeByID = projectIdToSecondaryMarketRoyaltyPercentage[
-            tokenIdToProjectId[_tokenId]
-        ];
+        royaltyFeeByID = projectIdToSecondaryMarketRoyaltyPercentage[projectId];
+    }
+
+    /**
+     * @notice Gets the project ID for a given `_tokenId`.
+     */
+    function tokenIdToProjectId(uint256 _tokenId)
+        external
+        pure
+        returns (uint256 _projectId)
+    {
+        return _tokenId / ONE_MILLION;
     }
 
     /**
@@ -654,7 +658,7 @@ contract GenArt721CoreV3 is ERC721Enumerable, IGenArt721CoreContractV3 {
         return
             string(
                 abi.encodePacked(
-                    projects[tokenIdToProjectId[_tokenId]].projectBaseURI,
+                    projects[_tokenId / ONE_MILLION].projectBaseURI,
                     Strings.toString(_tokenId)
                 )
             );
