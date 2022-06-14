@@ -82,7 +82,7 @@ describe("Create S3 Bucket for PBAB", () => {
 describe("Format PBAB token name into S3 bucket name and url", () => {
   it("formats PBAB token name to hyphened lowercase", () => {
     const pbabTokenName = "Foobar PBAB Bucket";
-    const bucketName = formatTitleCaseToKebabCase(pbabTokenName);
+    const bucketName = formatTitleCaseToKebabCase(pbabTokenName, networkName);
     assert(bucketName === "foobar-pbab-bucket");
   });
 

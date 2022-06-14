@@ -7,6 +7,8 @@ const {
 
 // Docs: https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-s3/index.html
 
+const supportedNetworks = ["mainnet", "ropsten", "goerli"];
+
 const awsCreds = {
   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
   secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
@@ -57,19 +59,17 @@ const createPBABBucket = async (
   payload["response"] = {};
   payload["url"] = "";
 
-  if (
-    networkName === "mainnet" ||
-    networkName === "ropsten" ||
-    isTest === true
-  ) {
+  if (supportedNetworks.includes(networkName) || isTest === true) {
     const bucketName = getPBABBucketName(pbabTokenName, networkName);
     const bucketURL = getBucketURL(bucketName);
     const bucketResponse = await createBucket(bucketName, client);
-    const corsResponse = await updateBucketCors(bucketName, client);
+    await updateBucketCors(bucketName, client);
 
     payload["response"] = bucketResponse;
     payload["url"] = bucketURL;
     console.log(`Created s3 bucket for ${bucketURL}`);
+  } else {
+    throw new Error("Unsupported network");
   }
 
   return payload;

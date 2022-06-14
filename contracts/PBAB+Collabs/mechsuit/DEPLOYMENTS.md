@@ -4,7 +4,17 @@
 
 TBD
 
-## Ropsten
+
+## Goerli
+
+### Upload 0
+
+**GenArt721CoreV2:** https://goerli.etherscan.io/address/0x81236b5A105d3ad6B56aC41a03E1Fd8893A08859#code
+**GenArt721Minter:** https://goerli.etherscan.io/address/0x1ae33d3B90d3ee4f3B60bcAeceD6B1211e22b4B9#code
+
+`0x5343bFA1BBe40456f890354a39fAE17Ac4A7B95B.` set as minter owner, whitelisted on core contract, and admin of core contract.
+
+## Ropsten (depreciated)
 
 ### Upload 0
 
