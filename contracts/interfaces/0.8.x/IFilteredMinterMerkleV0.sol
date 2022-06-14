@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "./IFilteredMinterV0.sol";
+import "./IFilteredMinterV1.sol";
 
 pragma solidity ^0.8.0;
 
 /**
- * @title This interface extends the IFilteredMinterV0 interface in order to
+ * @title This interface extends the IFilteredMinterV1 interface in order to
  * add support for including Merkle proofs when purchasing.
  * @author Art Blocks Inc.
  */
-interface IFilteredMinterMerkleV0 is IFilteredMinterV0 {
+interface IFilteredMinterMerkleV0 is IFilteredMinterV1 {
     // Triggers a purchase of a token from the desired project, to the
     // TX-sending address. Requires Merkle proof.
     function purchase(uint256 _projectId, bytes32[] memory _proof)
