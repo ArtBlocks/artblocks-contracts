@@ -325,8 +325,7 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
      * @param _ownedNftAddress ERC-721 NFT address owned by msg.sender being used to
      * claim right to purchase.
      * @param _ownedNftTokenId ERC-721 NFT token ID owned by msg.sender being used
-     * to claim right to purchase. Must have not yet been used to claim a mint
-     * on project `_projectId`.
+     * to claim right to purchase.
      * @return tokenId Token ID of minted token
      */
     function purchaseTo(
