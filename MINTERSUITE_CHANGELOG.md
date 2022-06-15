@@ -19,5 +19,8 @@
 - V0: Initial release
 - V1: Change to always allow contracts to purchase, and always allow purchaseTo.
 
+### MinterHolder
+- V0: Initial release
+
 ### MinterMerkle
 - V0: Initial release
