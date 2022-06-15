@@ -165,7 +165,7 @@ describe("MinterHolderV0", async function () {
       .setMinterForProject(projectZero, this.minter.address);
     await this.minter
       .connect(this.accounts.deployer)
-      .allowlistNftAddress(this.token.address);
+      .registerNFTAddress(this.token.address);
     await this.minter
       .connect(this.accounts.artist)
       .allowHoldersOfProject(projectZero, this.token.address, projectZero);
@@ -667,7 +667,7 @@ describe("MinterHolderV0", async function () {
         ethers.utils.formatUnits(txCost, "ether").toString(),
         "ETH"
       );
-      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0319898"));
+      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0319919"));
     });
   });
 
@@ -803,58 +803,60 @@ describe("MinterHolderV0", async function () {
     });
   });
 
-  describe("allowed NFT address enumeration", async function () {
-    it("reports expected number of allowed NFT addresses after add/remove", async function () {
-      const numAllowedNftAddresses = await this.minter
+  describe("registered NFT address enumeration", async function () {
+    it("reports expected number of registered NFT addresses after add/remove", async function () {
+      const numRegisteredNFTAddresses = await this.minter
         .connect(this.accounts.additional)
-        .getNumAllowedNftAddresses();
-      expect(numAllowedNftAddresses).to.be.equal(BigNumber.from("1"));
+        .getNumRegisteredNFTAddresses();
+      expect(numRegisteredNFTAddresses).to.be.equal(BigNumber.from("1"));
       // allow a different NFT address
       await this.minter
         .connect(this.accounts.deployer)
-        .allowlistNftAddress(this.accounts.deployer.address); // dummy address
-      // expect number of allowed NFT addresses to be increased by one
-      const newNumAllowedNftAddresses = await this.minter
+        .registerNFTAddress(this.accounts.deployer.address); // dummy address
+      // expect number of registered NFT addresses to be increased by one
+      const newNumRegisteredNFTAddresses = await this.minter
         .connect(this.accounts.additional)
-        .getNumAllowedNftAddresses();
-      expect(numAllowedNftAddresses.add(1)).to.be.equal(
-        newNumAllowedNftAddresses
+        .getNumRegisteredNFTAddresses();
+      expect(numRegisteredNFTAddresses.add(1)).to.be.equal(
+        newNumRegisteredNFTAddresses
       );
       // deny an NFT address
       await this.minter
         .connect(this.accounts.deployer)
-        .removeNftAddress(this.accounts.deployer.address);
-      // expect number of allowed NFT addresses to be increased by one
-      const removedNumAllowedNftAddresses = await this.minter
+        .unregisterNFTAddress(this.accounts.deployer.address);
+      // expect number of registered NFT addresses to be increased by one
+      const removedNumRegisteredNFTAddresses = await this.minter
         .connect(this.accounts.additional)
-        .getNumAllowedNftAddresses();
-      expect(numAllowedNftAddresses).to.be.equal(removedNumAllowedNftAddresses);
+        .getNumRegisteredNFTAddresses();
+      expect(numRegisteredNFTAddresses).to.be.equal(
+        removedNumRegisteredNFTAddresses
+      );
     });
 
-    it("gets allowed NFT address at index", async function () {
-      // allow another NFT address
+    it("gets registered NFT address at index", async function () {
+      // register another NFT address
       await this.minter
         .connect(this.accounts.deployer)
-        .allowlistNftAddress(this.accounts.deployer.address); // dummy address
+        .registerNFTAddress(this.accounts.deployer.address); // dummy address
       // expect NFT address at index zero to be token
-      let nftAddressAtZero = await this.minter
+      let NFTAddressAtZero = await this.minter
         .connect(this.accounts.additional)
-        .getAllowedNftAddressAt(0);
-      expect(nftAddressAtZero).to.be.equal(this.token.address);
+        .getRegisteredNFTAddressAt(0);
+      expect(NFTAddressAtZero).to.be.equal(this.token.address);
       // expect NFT address at index one to be deployer
-      const nftAddressAtOne = await this.minter
+      const NFTAddressAtOne = await this.minter
         .connect(this.accounts.additional)
-        .getAllowedNftAddressAt(1);
-      expect(nftAddressAtOne).to.be.equal(this.accounts.deployer.address);
-      // remove an token NFT address
+        .getRegisteredNFTAddressAt(1);
+      expect(NFTAddressAtOne).to.be.equal(this.accounts.deployer.address);
+      // unregister an token NFT address
       await this.minter
         .connect(this.accounts.deployer)
-        .removeNftAddress(this.token.address);
+        .unregisterNFTAddress(this.token.address);
       // expect NFT address at index zero to be deployer
-      nftAddressAtZero = await this.minter
+      NFTAddressAtZero = await this.minter
         .connect(this.accounts.additional)
-        .getAllowedNftAddressAt(0);
-      expect(nftAddressAtZero).to.be.equal(this.accounts.deployer.address);
+        .getRegisteredNFTAddressAt(0);
+      expect(NFTAddressAtZero).to.be.equal(this.accounts.deployer.address);
     });
   });
 
