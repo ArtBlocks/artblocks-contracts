@@ -5,7 +5,16 @@
 **GenArt721CoreV2:** https://etherscan.io/address/0x0A1BBD57033F57E7B6743621b79fCB9Eb2CE3676#code
 **GenArt721Minter:** https://etherscan.io/address/0x7b9a45E278b5B374bb2d96C65665d4360C97BF01#code
 
-## Ropsten
+## Goerli
+
+### Upload 0
+
+**GenArt721CoreV2:** https://goerli.etherscan.io/address/0xe745243b82ebC46E5c23d9B1B968612c65d45f3d#code
+**GenArt721Minter:** https://goerli.etherscan.io/address/0x9F19DC02Fe3FdF5C9242812c355226186Cf3b71B#code
+
+`0x18B7511938FBe2EE08ADf3d4A24edB00A5C9B783` set as minter owner, whitelisted on core contract, and admin of core contract.
+
+## Ropsten (depreciated)
 
 ### Upload 0
 

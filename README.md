@@ -54,6 +54,7 @@ Core contracts use the versioning schema below:
 ### MinterFilter Suite Compatibility Chart
 - We like new minters
 - Minters have to iteract with (at least one) core contract
+- **Note:** while the whole end-to-end MinterFilter+FilteredMinter architecture is likely not the ideal fit for PBAB partners due to the infrastructure complexity required for partners integrating with it, any of the individual minters from within the minter suite can readily be adapted to work with PBAB core contracts–if you are a PBAB partner and there is a minter in the suite that this would be appealing for, please contact your account manager!
 
 **Thus:** The minter suite compatability chart!
 
@@ -91,10 +92,17 @@ For deployed PBAB/PRTNR minting contracts, see PBAB directory [DEPLOYMENTS.md fi
 
 ### Shared Randomizers
 
+- Goerli: https://goerli.etherscan.io/address/0xec5dae4b11213290b2dbe5295093f75920bd2982#code
 - Ropsten: https://ropsten.etherscan.io/address/0x7ba972189ED3C527847170453fC108707F62755a#code
 - Rinkeby: https://rinkeby.etherscan.io/address/0x3b30d421a6dA95694EaaE09971424F15Eb375269#code
 - Kovan: https://kovan.etherscan.io/address/0x3b30d421a6dA95694EaaE09971424F15Eb375269#code
 - Mainnet: https://etherscan.io/address/0x088098f7438773182b703625c4128aff85fcffc4#code
+
+### Testnet Core Contracts
+The following represent the current set of flagship core contracts deployed on the Goerli testnet:
+- Art Blocks Artist Staging (Goerli): https://goerli.etherscan.io/address/0xDa62f67BE7194775A75BE91CBF9FEeDcC5776D4b
+- Art Blocks Dev (Goerli): https://goerli.etherscan.io/address/0x1Bf03F29c4FEFFFe4eE26704aaA31d85c026aCE6
+>For deployed PBAB/PRTNR core contracts, see PBAB+Collabs directory DEPLOYMENTS.md files.
 
 ## Contract Documentation
 Documentation for contracts may be generated via `yarn docgen`. Some Art Blocks contracts use [NatSpec](https://docs.soliditylang.org/en/v0.8.9/natspec-format.html#documentation-example) comments to automatically enrich generated documentation. Some contracts use [dynamic expressions](https://docs.soliditylang.org/en/v0.8.9/natspec-format.html#dynamic-expressions) to improve user experience.
