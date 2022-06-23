@@ -45,3 +45,6 @@ artifacts
 
 # Typechain generated files
 scripts/contracts
+
+# Any local dev scripts
+scripts/.local/
