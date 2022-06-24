@@ -46,6 +46,9 @@ contract GenArt721MinterBurner_PBAB is ReentrancyGuard {
 
     /// ERC20 address => burn during purchase
     mapping(address => bool) public burnERC20DuringPurchase;
+    // don't rely on optional ERC20 burn() to burn tokens, send here instead
+    address internal constant ERC20_BURN_ADDRESS =
+        0x000000000000000000000000000000000000dEaD;
 
     /**
      * @notice Initializes contract to be a Minter for PBAB core contract at
@@ -412,7 +415,7 @@ contract GenArt721MinterBurner_PBAB is ReentrancyGuard {
         if (burnERC20DuringPurchase[_tokenAddress]) {
             IERC20(_tokenAddress).transferFrom(
                 msg.sender,
-                address(0),
+                ERC20_BURN_ADDRESS,
                 pricePerTokenInWei
             );
             return;
