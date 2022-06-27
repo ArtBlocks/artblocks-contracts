@@ -10,7 +10,7 @@ import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 
-import { GenArt721Minter_PBAB_Base } from "./GenArt721Minter_PBAB_Base.test";
+import { GenArt721Minter_PBAB_Common } from "./GenArt721Minter_PBAB.common";
 
 /**
  * These tests intended to ensure the PBAB MinterBurner integrates properly
@@ -19,8 +19,7 @@ import { GenArt721Minter_PBAB_Base } from "./GenArt721Minter_PBAB_Base.test";
 const minter = "GenArt721MinterBurner_PBAB";
 describe(minter, async function () {
   // base tests
-  // TODO - uncomment next line
-  // GenArt721Minter_PBAB_Base(minter);
+  GenArt721Minter_PBAB_Common(minter);
   // additional tests
   const name = "Non Fungible Token";
   const symbol = "NFT";

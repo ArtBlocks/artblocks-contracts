@@ -12,9 +12,9 @@ import { ethers } from "hardhat";
 
 /**
  * These tests ensure PBAB minters integrates properly with the PBAB core
- * contract. Some minters may need additional tests beyond these base tests.
+ * contract. Some minters may need additional tests beyond these common tests.
  */
-export const GenArt721Minter_PBAB_Base = async (minter: string) => {
+export const GenArt721Minter_PBAB_Common = async (minter: string) => {
   describe(`Base tests for minter ${minter}`, async function () {
     const name = "Non Fungible Token";
     const symbol = "NFT";
