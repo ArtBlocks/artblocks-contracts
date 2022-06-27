@@ -12,13 +12,13 @@ import { ethers } from "hardhat";
 import EthersAdapter from "@gnosis.pm/safe-ethers-lib";
 import Safe from "@gnosis.pm/safe-core-sdk";
 import { SafeTransactionDataPartial } from "@gnosis.pm/safe-core-sdk-types";
-import { getGnosisSafe } from "./util/GnosisSafeNetwork";
+import { getGnosisSafe } from "../../util/GnosisSafeNetwork";
 
 /**
  * These tests intended to ensure this Filtered Minter integrates properly with
  * V1 core contract.
  */
-describe("MinterSetPriceERC20V1_V1Core", async function () {
+describe("MinterSetPriceERC20V0_V1Core", async function () {
   const name = "Non Fungible Token";
   const symbol = "NFT";
 
@@ -61,7 +61,7 @@ describe("MinterSetPriceERC20V1_V1Core", async function () {
     this.minterFilter = await minterFilterFactory.deploy(this.token.address);
 
     const minterFactory = await ethers.getContractFactory(
-      "MinterSetPriceERC20V1"
+      "MinterSetPriceERC20V0"
     );
     this.minter = await minterFactory.deploy(
       this.token.address,
@@ -147,7 +147,7 @@ describe("MinterSetPriceERC20V1_V1Core", async function () {
       const minterFilter = await minterFilterFactory.deploy(token2.address);
 
       const minterFactory = await ethers.getContractFactory(
-        "MinterSetPriceERC20V1"
+        "MinterSetPriceERC20V0"
       );
       // fails when combine new minterFilter with the old token in constructor
       await expectRevert(
@@ -494,7 +494,7 @@ describe("MinterSetPriceERC20V1_V1Core", async function () {
         ethers.utils.formatUnits(txCost, "ether").toString(),
         "ETH"
       );
-      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.036402"));
+      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0370574"));
     });
   });
 
@@ -518,28 +518,43 @@ describe("MinterSetPriceERC20V1_V1Core", async function () {
         });
     });
 
-    it("does not support toggling of `purchaseToDisabled`", async function () {
+    it("disallows `purchaseTo` if disallowed explicitly", async function () {
+      await this.minter
+        .connect(this.accounts.snowfro)
+        .togglePurchaseToDisabled(projectOne);
       await expectRevert(
         this.minter
-          .connect(this.accounts.artist)
-          .togglePurchaseToDisabled(projectOne),
-        "Action not supported"
+          .connect(this.accounts.owner)
+          .purchaseTo(this.accounts.additional.address, projectOne, {
+            value: pricePerTokenInWei,
+          }),
+        "No `purchaseTo` Allowed"
       );
-      // still allows `purchaseTo`.
+      // still allows `purchaseTo` if destination matches sender.
       await this.minter
         .connect(this.accounts.owner)
-        .purchaseTo(this.accounts.artist.address, projectOne, {
+        .purchaseTo(this.accounts.owner.address, projectOne, {
           value: pricePerTokenInWei,
         });
     });
 
-    it("doesn't support `purchaseTo` toggling", async function () {
-      await expectRevert(
+    it("emits event when `purchaseTo` is toggled", async function () {
+      // emits true when changed from initial value of false
+      await expect(
         this.minter
-          .connect(this.accounts.artist)
-          .togglePurchaseToDisabled(projectOne),
-        "Action not supported"
-      );
+          .connect(this.accounts.snowfro)
+          .togglePurchaseToDisabled(projectOne)
+      )
+        .to.emit(this.minter, "PurchaseToDisabledUpdated")
+        .withArgs(projectOne, true);
+      // emits false when changed from initial value of true
+      await expect(
+        this.minter
+          .connect(this.accounts.snowfro)
+          .togglePurchaseToDisabled(projectOne)
+      )
+        .to.emit(this.minter, "PurchaseToDisabledUpdated")
+        .withArgs(projectOne, false);
     });
   });
 
@@ -640,6 +655,10 @@ describe("MinterSetPriceERC20V1_V1Core", async function () {
 
   describe("reentrancy attack", async function () {
     it("does not allow reentrant purchaseTo", async function () {
+      // admin allows contract buys
+      await this.minter
+        .connect(this.accounts.snowfro)
+        .toggleContractMintable(projectOne);
       // attacker deploys reentrancy contract
       const reentrancyMockFactory = await ethers.getContractFactory(
         "ReentrancyMock"
@@ -687,6 +706,11 @@ describe("MinterSetPriceERC20V1_V1Core", async function () {
 
   describe("gnosis safe", async function () {
     it("allows gnosis safe to purchase in ETH", async function () {
+      // admin allows contract buys
+      await this.minter
+        .connect(this.accounts.snowfro)
+        .toggleContractMintable(projectOne);
+
       // deploy new Gnosis Safe
       const safeSdk: Safe = await getGnosisSafe(
         this.accounts.artist,
@@ -743,6 +767,10 @@ describe("MinterSetPriceERC20V1_V1Core", async function () {
     });
 
     it("allows gnosis safe to purchase in ERC20", async function () {
+      // admin allows contract buys
+      await this.minter
+        .connect(this.accounts.snowfro)
+        .toggleContractMintable(projectOne);
       // artist changes to Mock ERC20 token
       await this.minter
         .connect(this.accounts.artist)

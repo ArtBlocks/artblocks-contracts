@@ -12,7 +12,7 @@ import { ethers } from "hardhat";
 import EthersAdapter from "@gnosis.pm/safe-ethers-lib";
 import Safe from "@gnosis.pm/safe-core-sdk";
 import { SafeTransactionDataPartial } from "@gnosis.pm/safe-core-sdk-types";
-import { getGnosisSafe } from "./util/GnosisSafeNetwork";
+import { getGnosisSafe } from "../../util/GnosisSafeNetwork";
 
 /**
  * These tests intended to ensure this Filtered Minter integrates properly with

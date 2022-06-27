@@ -12,18 +12,18 @@ import { ethers } from "hardhat";
 import EthersAdapter from "@gnosis.pm/safe-ethers-lib";
 import Safe from "@gnosis.pm/safe-core-sdk";
 import { SafeTransactionDataPartial } from "@gnosis.pm/safe-core-sdk-types";
-import { getGnosisSafe } from "./util/GnosisSafeNetwork";
+import { getGnosisSafe } from "../../util/GnosisSafeNetwork";
 
 /**
  * These tests intended to ensure this Filtered Minter integrates properly with
- * V1 core contract.
+ * V2 PRTNR core contract.
  */
-describe("MinterDALinV0_V1Core", async function () {
+describe("MinterDALinV1_V2PRTNRCore", async function () {
   const name = "Non Fungible Token";
   const symbol = "NFT";
 
-  const firstTokenId = new BN("30000000");
-  const secondTokenId = new BN("3000001");
+  const firstTokenId = new BN("0");
+  const secondTokenId = new BN("1");
 
   const startingPrice = ethers.utils.parseEther("1");
   const higherPricePerTokenInWei = startingPrice.add(
@@ -32,7 +32,7 @@ describe("MinterDALinV0_V1Core", async function () {
   // purposefully different price per token on core contract (tracked separately)
   const basePrice = ethers.utils.parseEther("0.05");
 
-  const projectOne = 3; // V1 core starts at project 3
+  const projectOne = 0;
 
   const ONE_MINUTE = 60;
   const ONE_HOUR = ONE_MINUTE * 60;
@@ -56,8 +56,10 @@ describe("MinterDALinV0_V1Core", async function () {
     );
     this.randomizer = await randomizerFactory.deploy();
 
-    const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV1");
-    this.token = await artblocksFactory
+    const coreFactory = await ethers.getContractFactory(
+      "GenArt721CoreV2_PRTNR"
+    );
+    this.token = await coreFactory
       .connect(deployer)
       .deploy(name, symbol, this.randomizer.address);
 
@@ -66,7 +68,7 @@ describe("MinterDALinV0_V1Core", async function () {
     );
     this.minterFilter = await minterFilterFactory.deploy(this.token.address);
 
-    const minterFactory = await ethers.getContractFactory("MinterDALinV0");
+    const minterFactory = await ethers.getContractFactory("MinterDALinV1");
     this.minter = await minterFactory.deploy(
       this.token.address,
       this.minterFilter.address
@@ -74,7 +76,7 @@ describe("MinterDALinV0_V1Core", async function () {
 
     await this.token
       .connect(deployer)
-      .addProject("project1", this.accounts.artist.address, 0, false);
+      .addProject("project1", this.accounts.artist.address, 0);
 
     await this.token.connect(deployer).toggleProjectIsActive(projectOne);
 
@@ -135,7 +137,7 @@ describe("MinterDALinV0_V1Core", async function () {
       const minterFilter = await minterFilterFactory.deploy(token2.address);
 
       const minterFactory = await ethers.getContractFactory(
-        "MinterSetPriceERC20V0"
+        "MinterSetPriceERC20V1"
       );
       // fails when combine new minterFilter with the old token in constructor
       await expectRevert(
@@ -264,7 +266,7 @@ describe("MinterDALinV0_V1Core", async function () {
         "ETH"
       );
 
-      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0380046")); // assuming a cost of 100 GWEI
+      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0228453")); // assuming a cost of 100 GWEI
     });
   });
 
@@ -280,46 +282,31 @@ describe("MinterDALinV0_V1Core", async function () {
         });
     });
 
-    it("disallows `purchaseTo` if disallowed explicitly", async function () {
+    it("does not support toggling of `purchaseToDisabled`", async function () {
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.artist)
+          .togglePurchaseToDisabled(projectOne),
+        "Action not supported"
+      );
+      // still allows `purchaseTo`.
       await ethers.provider.send("evm_mine", [
         this.startTime + auctionStartTimeOffset,
       ]);
       await this.minter
-        .connect(this.accounts.deployer)
-        .togglePurchaseToDisabled(projectOne);
-      await expectRevert(
-        this.minter
-          .connect(this.accounts.owner)
-          .purchaseTo(this.accounts.additional.address, projectOne, {
-            value: startingPrice,
-          }),
-        "No `purchaseTo` Allowed"
-      );
-      // still allows `purchaseTo` if destination matches sender.
-      await this.minter
         .connect(this.accounts.owner)
-        .purchaseTo(this.accounts.owner.address, projectOne, {
+        .purchaseTo(this.accounts.artist.address, projectOne, {
           value: startingPrice,
         });
     });
 
-    it("emits event when `purchaseTo` is toggled", async function () {
-      // emits true when changed from initial value of false
-      await expect(
+    it("doesn't support `purchaseTo` toggling", async function () {
+      await expectRevert(
         this.minter
-          .connect(this.accounts.deployer)
-          .togglePurchaseToDisabled(projectOne)
-      )
-        .to.emit(this.minter, "PurchaseToDisabledUpdated")
-        .withArgs(projectOne, true);
-      // emits false when changed from initial value of true
-      await expect(
-        this.minter
-          .connect(this.accounts.deployer)
-          .togglePurchaseToDisabled(projectOne)
-      )
-        .to.emit(this.minter, "PurchaseToDisabledUpdated")
-        .withArgs(projectOne, false);
+          .connect(this.accounts.artist)
+          .togglePurchaseToDisabled(projectOne),
+        "Action not supported"
+      );
     });
   });
 
@@ -567,10 +554,6 @@ describe("MinterDALinV0_V1Core", async function () {
 
   describe("reentrancy attack", async function () {
     it("does not allow reentrant purchaseTo", async function () {
-      // admin allows contract buys
-      await this.minter
-        .connect(this.accounts.deployer)
-        .toggleContractMintable(projectOne);
       // advance to time when auction is active
       await ethers.provider.send("evm_mine", [
         this.startTime + auctionStartTimeOffset,
@@ -622,10 +605,6 @@ describe("MinterDALinV0_V1Core", async function () {
 
   describe("gnosis safe", async function () {
     it("allows gnosis safe to purchase in ETH", async function () {
-      // admin allows contract buys
-      await this.minter
-        .connect(this.accounts.deployer)
-        .toggleContractMintable(projectOne);
       // advance to time when auction is active
       await ethers.provider.send("evm_mine", [
         this.startTime + auctionStartTimeOffset,

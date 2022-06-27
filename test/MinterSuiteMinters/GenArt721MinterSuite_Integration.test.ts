@@ -10,7 +10,7 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { BigNumber } from "ethers";
 
-describe("GenArt721Minter", async function () {
+describe("Minter Suite Integration", async function () {
   const name = "Non Fungible Token";
   const symbol = "NFT";
 

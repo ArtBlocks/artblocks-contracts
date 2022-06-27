@@ -12,49 +12,47 @@ import { ethers } from "hardhat";
 import EthersAdapter from "@gnosis.pm/safe-ethers-lib";
 import Safe from "@gnosis.pm/safe-core-sdk";
 import { SafeTransactionDataPartial } from "@gnosis.pm/safe-core-sdk-types";
-import { getGnosisSafe } from "./util/GnosisSafeNetwork";
+import { getGnosisSafe } from "../../util/GnosisSafeNetwork";
 
 /**
  * These tests intended to ensure this Filtered Minter integrates properly with
- * V2 PRTNR core contract.
+ * V1 core contract.
  */
-describe("MinterSetPriceV1_V2PRTNRCore", async function () {
+describe("MinterSetPriceV0_V1Core", async function () {
   const name = "Non Fungible Token";
   const symbol = "NFT";
 
-  const firstTokenId = new BN("0");
-  const secondTokenId = new BN("1");
+  const firstTokenId = new BN("30000000");
+  const secondTokenId = new BN("3000001");
 
   const pricePerTokenInWei = ethers.utils.parseEther("1");
   const higherPricePerTokenInWei = pricePerTokenInWei.add(
     ethers.utils.parseEther("0.1")
   );
-  const projectOne = 0;
-  const projectTwo = 1;
-  const projectThree = 2;
+  const projectOne = 3; // V1 core starts at project 3
+  const projectTwo = 4;
+  const projectThree = 5;
 
   const projectMaxInvocations = 15;
 
   beforeEach(async function () {
-    const [owner, newOwner, artist, additional, deployer] =
+    const [owner, newOwner, artist, additional, snowfro] =
       await ethers.getSigners();
     this.accounts = {
       owner: owner,
       newOwner: newOwner,
       artist: artist,
       additional: additional,
-      deployer: deployer,
+      snowfro: snowfro,
     };
     const randomizerFactory = await ethers.getContractFactory(
       "BasicRandomizer"
     );
     this.randomizer = await randomizerFactory.deploy();
 
-    const coreFactory = await ethers.getContractFactory(
-      "GenArt721CoreV2_PRTNR"
-    );
-    this.token = await coreFactory
-      .connect(deployer)
+    const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV1");
+    this.token = await artblocksFactory
+      .connect(snowfro)
       .deploy(name, symbol, this.randomizer.address);
 
     const minterFilterFactory = await ethers.getContractFactory(
@@ -62,7 +60,7 @@ describe("MinterSetPriceV1_V2PRTNRCore", async function () {
     );
     this.minterFilter = await minterFilterFactory.deploy(this.token.address);
 
-    const minterFactory = await ethers.getContractFactory("MinterSetPriceV1");
+    const minterFactory = await ethers.getContractFactory("MinterSetPriceV0");
     this.minter1 = await minterFactory.deploy(
       this.token.address,
       this.minterFilter.address
@@ -77,23 +75,23 @@ describe("MinterSetPriceV1_V2PRTNRCore", async function () {
     );
 
     await this.token
-      .connect(deployer)
-      .addProject("project1", artist.address, 0);
+      .connect(snowfro)
+      .addProject("project1", artist.address, 0, false);
 
     await this.token
-      .connect(deployer)
-      .addProject("project2", artist.address, 0);
+      .connect(snowfro)
+      .addProject("project2", artist.address, 0, false);
 
     await this.token
-      .connect(deployer)
-      .addProject("project3", artist.address, 0);
+      .connect(snowfro)
+      .addProject("project3", artist.address, 0, false);
 
-    await this.token.connect(deployer).toggleProjectIsActive(projectOne);
-    await this.token.connect(deployer).toggleProjectIsActive(projectTwo);
-    await this.token.connect(deployer).toggleProjectIsActive(projectThree);
+    await this.token.connect(snowfro).toggleProjectIsActive(projectOne);
+    await this.token.connect(snowfro).toggleProjectIsActive(projectTwo);
+    await this.token.connect(snowfro).toggleProjectIsActive(projectThree);
 
     await this.token
-      .connect(deployer)
+      .connect(snowfro)
       .addMintWhitelisted(this.minterFilter.address);
 
     await this.token
@@ -111,20 +109,20 @@ describe("MinterSetPriceV1_V2PRTNRCore", async function () {
     await this.token.connect(artist).toggleProjectIsPaused(projectThree);
 
     await this.minterFilter
-      .connect(this.accounts.deployer)
+      .connect(this.accounts.snowfro)
       .addApprovedMinter(this.minter1.address);
     await this.minterFilter
-      .connect(this.accounts.deployer)
+      .connect(this.accounts.snowfro)
       .addApprovedMinter(this.minter2.address);
     await this.minterFilter
-      .connect(this.accounts.deployer)
+      .connect(this.accounts.snowfro)
       .addApprovedMinter(this.minter3.address);
 
     await this.minterFilter
-      .connect(this.accounts.deployer)
+      .connect(this.accounts.snowfro)
       .setMinterForProject(projectOne, this.minter1.address);
     await this.minterFilter
-      .connect(this.accounts.deployer)
+      .connect(this.accounts.snowfro)
       .setMinterForProject(projectTwo, this.minter2.address);
     // We leave project three with no minter on purpose
 
@@ -143,7 +141,7 @@ describe("MinterSetPriceV1_V2PRTNRCore", async function () {
         "GenArt721CoreV1"
       );
       const token2 = await artblocksFactory
-        .connect(this.accounts.deployer)
+        .connect(this.accounts.snowfro)
         .deploy(name, symbol, this.randomizer.address);
 
       const minterFilterFactory = await ethers.getContractFactory(
@@ -152,7 +150,7 @@ describe("MinterSetPriceV1_V2PRTNRCore", async function () {
       const minterFilter = await minterFilterFactory.deploy(token2.address);
 
       const minterFactory = await ethers.getContractFactory(
-        "MinterSetPriceERC20V1"
+        "MinterSetPriceERC20V0"
       );
       // fails when combine new minterFilter with the old token in constructor
       await expectRevert(
@@ -172,10 +170,10 @@ describe("MinterSetPriceV1_V2PRTNRCore", async function () {
           .updatePricePerTokenInWei(projectOne, higherPricePerTokenInWei),
         onlyArtistErrorMessage
       );
-      // doesn't allow deployer
+      // doesn't allow snowfro
       await expectRevert(
         this.minter1
-          .connect(this.accounts.deployer)
+          .connect(this.accounts.snowfro)
           .updatePricePerTokenInWei(projectOne, higherPricePerTokenInWei),
         onlyArtistErrorMessage
       );
@@ -215,7 +213,7 @@ describe("MinterSetPriceV1_V2PRTNRCore", async function () {
       const needMoreValueErrorMessage = "Must send minimum value to mint!";
       // update project two to use minter one
       await this.minterFilter
-        .connect(this.accounts.deployer)
+        .connect(this.accounts.snowfro)
         .setMinterForProject(projectTwo, this.minter1.address);
       // artist increases price of project one
       await this.minter1
@@ -249,7 +247,7 @@ describe("MinterSetPriceV1_V2PRTNRCore", async function () {
   describe("purchase", async function () {
     it("does not allow purchase prior to configuring price", async function () {
       await this.minterFilter
-        .connect(this.accounts.deployer)
+        .connect(this.accounts.snowfro)
         .setMinterForProject(projectThree, this.minter3.address);
       await expectRevert(
         this.minter3.connect(this.accounts.owner).purchase(projectThree, {
@@ -367,35 +365,14 @@ describe("MinterSetPriceV1_V2PRTNRCore", async function () {
         "ETH"
       );
 
-      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0216789")); // assuming a cost of 100 GWEI
-    });
-
-    it("mints and calculates gas values for project two", async function () {
-      await this.minter2
-        .connect(this.accounts.artist)
-        .updatePricePerTokenInWei(projectTwo, pricePerTokenInWei);
-      const tx = await this.minter2
-        .connect(this.accounts.owner)
-        .purchase(projectTwo, {
-          value: pricePerTokenInWei,
-        });
-
-      const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
-      const txCost = receipt.effectiveGasPrice.mul(receipt.gasUsed).toString();
-      console.log(
-        "Gas cost for a successful Ether mint: ",
-        ethers.utils.formatUnits(txCost, "ether").toString(),
-        "ETH"
-      );
-
-      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0296401")); // assuming a cost of 100 GWEI
+      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0368459")); // assuming a cost of 100 GWEI
     });
   });
 
   describe("purchaseTo", async function () {
     it("does not allow purchase prior to configuring price", async function () {
       await this.minterFilter
-        .connect(this.accounts.deployer)
+        .connect(this.accounts.snowfro)
         .setMinterForProject(projectThree, this.minter3.address);
       await expectRevert(
         this.minter3
@@ -415,67 +392,82 @@ describe("MinterSetPriceV1_V2PRTNRCore", async function () {
         });
     });
 
-    it("does not support toggling of `purchaseToDisabled`", async function () {
+    it("disallows `purchaseTo` if disallowed explicitly", async function () {
+      await this.minter1
+        .connect(this.accounts.snowfro)
+        .togglePurchaseToDisabled(projectOne);
       await expectRevert(
         this.minter1
-          .connect(this.accounts.artist)
-          .togglePurchaseToDisabled(projectOne),
-        "Action not supported"
+          .connect(this.accounts.owner)
+          .purchaseTo(this.accounts.additional.address, projectOne, {
+            value: pricePerTokenInWei,
+          }),
+        "No `purchaseTo` Allowed"
       );
-      // still allows `purchaseTo`.
+      // still allows `purchaseTo` if destination matches sender.
       await this.minter1
         .connect(this.accounts.owner)
-        .purchaseTo(this.accounts.artist.address, projectOne, {
+        .purchaseTo(this.accounts.owner.address, projectOne, {
           value: pricePerTokenInWei,
         });
     });
 
-    it("doesn't support `purchaseTo` toggling", async function () {
-      await expectRevert(
+    it("emits event when `purchaseTo` is toggled", async function () {
+      // emits true when changed from initial value of false
+      await expect(
         this.minter1
-          .connect(this.accounts.artist)
-          .togglePurchaseToDisabled(projectOne),
-        "Action not supported"
-      );
+          .connect(this.accounts.snowfro)
+          .togglePurchaseToDisabled(projectOne)
+      )
+        .to.emit(this.minter1, "PurchaseToDisabledUpdated")
+        .withArgs(projectOne, true);
+      // emits false when changed from initial value of true
+      await expect(
+        this.minter1
+          .connect(this.accounts.snowfro)
+          .togglePurchaseToDisabled(projectOne)
+      )
+        .to.emit(this.minter1, "PurchaseToDisabledUpdated")
+        .withArgs(projectOne, false);
     });
   });
 
   describe("setProjectMaxInvocations", async function () {
-    it("handles getting tokenInfo invocation info with V2 core", async function () {
+    it("handles getting tokenInfo invocation info with V1 core", async function () {
       await this.minter1
-        .connect(this.accounts.deployer)
+        .connect(this.accounts.snowfro)
         .setProjectMaxInvocations(projectOne);
       // minter should update storage with accurate projectMaxInvocations
       await this.minter1
-        .connect(this.accounts.deployer)
+        .connect(this.accounts.snowfro)
         .setProjectMaxInvocations(projectOne);
       let maxInvocations = await this.minter1
-        .connect(this.accounts.deployer)
+        .connect(this.accounts.snowfro)
         .projectMaxInvocations(projectOne);
       expect(maxInvocations).to.be.equal(projectMaxInvocations);
       // ensure hasMaxBeenReached did not unexpectedly get set as true
       let hasMaxBeenInvoked = await this.minter1
-        .connect(this.accounts.deployer)
+        .connect(this.accounts.snowfro)
         .projectMaxHasBeenInvoked(projectOne);
       expect(hasMaxBeenInvoked).to.be.false;
       // ensure minter2 gives same results
       await this.minter2
-        .connect(this.accounts.deployer)
+        .connect(this.accounts.snowfro)
         .setProjectMaxInvocations(projectTwo);
       await this.minter2
-        .connect(this.accounts.deployer)
+        .connect(this.accounts.snowfro)
         .setProjectMaxInvocations(projectTwo);
       maxInvocations = await this.minter2
-        .connect(this.accounts.deployer)
+        .connect(this.accounts.snowfro)
         .projectMaxInvocations(projectTwo);
       expect(maxInvocations).to.be.equal(projectMaxInvocations);
       // should also support unconfigured project projectMaxInvocations
       // e.g. projectOne on minter3 - still update to accurate max invocations
       await this.minter3
-        .connect(this.accounts.deployer)
+        .connect(this.accounts.snowfro)
         .setProjectMaxInvocations(projectOne);
       maxInvocations = await this.minter3
-        .connect(this.accounts.deployer)
+        .connect(this.accounts.snowfro)
         .projectMaxInvocations(projectOne);
       expect(maxInvocations).to.be.equal(projectMaxInvocations);
     });
@@ -525,12 +517,16 @@ describe("MinterSetPriceV1_V2PRTNRCore", async function () {
 
   describe("reentrancy attack", async function () {
     it("does not allow reentrant purchaseTo", async function () {
+      // admin allows contract buys
+      await this.minter1
+        .connect(this.accounts.snowfro)
+        .toggleContractMintable(projectOne);
       // attacker deploys reentrancy contract
       const reentrancyMockFactory = await ethers.getContractFactory(
         "ReentrancyMock"
       );
       const reentrancyMock = await reentrancyMockFactory
-        .connect(this.accounts.deployer)
+        .connect(this.accounts.snowfro)
         .deploy();
       // attacker should see revert when performing reentrancy attack
       const totalTokensToMint = 2;
@@ -538,7 +534,7 @@ describe("MinterSetPriceV1_V2PRTNRCore", async function () {
       let totalValue = higherPricePerTokenInWei.mul(numTokensToMint);
       await expectRevert(
         reentrancyMock
-          .connect(this.accounts.deployer)
+          .connect(this.accounts.snowfro)
           .attack(
             numTokensToMint,
             this.minter1.address,
@@ -556,7 +552,7 @@ describe("MinterSetPriceV1_V2PRTNRCore", async function () {
       totalValue = higherPricePerTokenInWei.mul(numTokensToMint);
       for (let i = 0; i < totalTokensToMint; i++) {
         await reentrancyMock
-          .connect(this.accounts.deployer)
+          .connect(this.accounts.snowfro)
           .attack(
             numTokensToMint,
             this.minter1.address,
@@ -572,6 +568,11 @@ describe("MinterSetPriceV1_V2PRTNRCore", async function () {
 
   describe("gnosis safe", async function () {
     it("allows gnosis safe to purchase in ETH", async function () {
+      // admin allows contract buys
+      await this.minter1
+        .connect(this.accounts.snowfro)
+        .toggleContractMintable(projectOne);
+
       // deploy new Gnosis Safe
       const safeSdk: Safe = await getGnosisSafe(
         this.accounts.artist,
