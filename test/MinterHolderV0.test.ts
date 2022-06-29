@@ -304,7 +304,7 @@ describe("MinterHolderV0", async function () {
         );
     });
 
-    it("emits event when update allowed holders", async function () {
+    it("emits event when update allowed holders for a single project", async function () {
       await expect(
         this.minter
           .connect(this.accounts.artist)
@@ -317,9 +317,27 @@ describe("MinterHolderV0", async function () {
         .to.emit(this.minter, "AllowedHoldersOfProjects")
         .withArgs(projectZero, [this.token.address], [projectOne]);
     });
+
+    it("emits event when update allowed holders for a multiple projects", async function () {
+      await expect(
+        this.minter
+          .connect(this.accounts.artist)
+          .allowHoldersOfProjects(
+            projectZero,
+            [this.token.address, this.token.address],
+            [projectOne, projectTwo]
+          )
+      )
+        .to.emit(this.minter, "AllowedHoldersOfProjects")
+        .withArgs(
+          projectZero,
+          [this.token.address, this.token.address],
+          [projectOne, projectTwo]
+        );
+    });
   });
 
-  describe("removeHoldersOfProject", async function () {
+  describe("removeHoldersOfProjects", async function () {
     it("only allows artist to update allowed holders", async function () {
       // owner not allowed
       await expectRevert(
@@ -353,7 +371,7 @@ describe("MinterHolderV0", async function () {
         );
     });
 
-    it("emits event when removing allowed holders", async function () {
+    it("emits event when removing allowed holders for a single project", async function () {
       await expect(
         this.minter
           .connect(this.accounts.artist)
@@ -365,6 +383,135 @@ describe("MinterHolderV0", async function () {
       )
         .to.emit(this.minter, "RemovedHoldersOfProjects")
         .withArgs(projectZero, [this.token.address], [projectOne]);
+    });
+
+    it("emits event when removing allowed holders for multiple projects", async function () {
+      await expect(
+        this.minter
+          .connect(this.accounts.artist)
+          .removeHoldersOfProjects(
+            projectZero,
+            [this.token.address, this.token.address],
+            [projectOne, projectTwo]
+          )
+      )
+        .to.emit(this.minter, "RemovedHoldersOfProjects")
+        .withArgs(
+          projectZero,
+          [this.token.address, this.token.address],
+          [projectOne, projectTwo]
+        );
+    });
+  });
+
+  describe("allowRemoveHoldersOfProjects", async function () {
+    it("only allows artist to update allowed holders", async function () {
+      // owner not allowed
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.owner)
+          .allowRemoveHoldersOfProjects(
+            projectZero,
+            [this.token.address],
+            [projectOne],
+            [this.token.address],
+            [projectOne]
+          ),
+        "Only Artist"
+      );
+      // additional not allowed
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.additional)
+          .allowRemoveHoldersOfProjects(
+            projectZero,
+            [this.token.address],
+            [projectOne],
+            [this.token.address],
+            [projectOne]
+          ),
+        "Only Artist"
+      );
+      // artist allowed
+      await this.minter
+        .connect(this.accounts.artist)
+        .allowRemoveHoldersOfProjects(
+          projectZero,
+          [this.token.address],
+          [projectOne],
+          [this.token.address],
+          [projectOne]
+        );
+    });
+
+    it("emits event when removing allowed holders for a single project", async function () {
+      await expect(
+        this.minter
+          .connect(this.accounts.artist)
+          .allowRemoveHoldersOfProjects(
+            projectZero,
+            [this.token.address],
+            [projectOne],
+            [this.token.address],
+            [projectOne]
+          )
+      )
+        .to.emit(this.minter, "AllowedHoldersOfProjects")
+        .withArgs(projectZero, [this.token.address], [projectOne]);
+      // remove event (for same operation, since multiple events)
+      await expect(
+        this.minter
+          .connect(this.accounts.artist)
+          .allowRemoveHoldersOfProjects(
+            projectZero,
+            [this.token.address],
+            [projectOne],
+            [this.token.address],
+            [projectOne]
+          )
+      )
+        .to.emit(this.minter, "RemovedHoldersOfProjects")
+        .withArgs(projectZero, [this.token.address], [projectOne]);
+    });
+
+    it("emits event when adding allowed holders for multiple projects", async function () {
+      await expect(
+        this.minter
+          .connect(this.accounts.artist)
+          .allowRemoveHoldersOfProjects(
+            projectZero,
+            [this.token.address, this.token.address],
+            [projectOne, projectTwo],
+            [],
+            []
+          )
+      )
+        .to.emit(this.minter, "AllowedHoldersOfProjects")
+        .withArgs(
+          projectZero,
+          [this.token.address, this.token.address],
+          [projectOne, projectTwo]
+        );
+    });
+
+    it("emits event when removing allowed holders for multiple projects", async function () {
+      await expect(
+        this.minter
+          .connect(this.accounts.artist)
+          .allowRemoveHoldersOfProjects(
+            projectZero,
+            [],
+            [],
+            [this.token.address, this.token.address],
+            [projectOne, projectTwo]
+          )
+      )
+        .to.emit(this.minter, "RemovedHoldersOfProjects")
+        .withArgs(
+          projectZero,
+          [this.token.address, this.token.address],
+          [projectOne, projectTwo]
+        );
     });
   });
 
@@ -449,20 +596,83 @@ describe("MinterHolderV0", async function () {
       );
     });
 
-    it("does not allow purchase when using token of unallowed project", async function () {
-      // allow holders of projectOne to purchase tokens on projectTwo
-      await this.minter
-        .connect(this.accounts.artist)
-        .allowHoldersOfProjects(projectTwo, [this.token.address], [projectOne]);
-      // configure price per token to be zero
-      await this.minter
-        .connect(this.accounts.artist)
-        .updatePricePerTokenInWei(projectTwo, 0);
-      // do not allow purchase when holder token in projectZero is used as pass
-      await this.minter;
-      await expectRevert(
-        this.minter
-          .connect(this.accounts.additional)
+    describe("allows/disallows based on allowed project holder configuration", async function () {
+      it("does not allow purchase when using token of unallowed project", async function () {
+        // allow holders of projectOne to purchase tokens on projectTwo
+        await this.minter
+          .connect(this.accounts.artist)
+          .allowHoldersOfProjects(
+            projectTwo,
+            [this.token.address],
+            [projectOne]
+          );
+        // configure price per token to be zero
+        await this.minter
+          .connect(this.accounts.artist)
+          .updatePricePerTokenInWei(projectTwo, 0);
+        // do not allow purchase when holder token in projectZero is used as pass
+        await expectRevert(
+          this.minter
+            .connect(this.accounts.additional)
+            ["purchase(uint256,address,uint256)"](
+              projectTwo,
+              this.token.address,
+              projectZeroTokenZero,
+              {
+                value: pricePerTokenInWei,
+              }
+            ),
+          "Only allowlisted NFTs"
+        );
+      });
+
+      it("does not allow purchase when using token of allowed then unallowed project", async function () {
+        // allow holders of projectZero and projectOne, then remove projectZero
+        await this.minter
+          .connect(this.accounts.artist)
+          .allowRemoveHoldersOfProjects(
+            projectTwo,
+            [this.token.address, this.token.address],
+            [projectZero, projectOne],
+            [this.token.address],
+            [projectZero]
+          );
+        // configure price per token to be zero
+        await this.minter
+          .connect(this.accounts.artist)
+          .updatePricePerTokenInWei(projectTwo, 0);
+        // do not allow purchase when holder token in projectZero is used as pass
+        await expectRevert(
+          this.minter
+            .connect(this.accounts.additional)
+            ["purchase(uint256,address,uint256)"](
+              projectTwo,
+              this.token.address,
+              projectZeroTokenZero,
+              {
+                value: pricePerTokenInWei,
+              }
+            ),
+          "Only allowlisted NFTs"
+        );
+      });
+
+      it("does allow purchase when using token of allowed project", async function () {
+        // allow holders of projectZero to purchase tokens on projectTwo
+        await this.minter
+          .connect(this.accounts.artist)
+          .allowHoldersOfProjects(
+            projectTwo,
+            [this.token.address],
+            [projectZero]
+          );
+        // configure price per token to be zero
+        await this.minter
+          .connect(this.accounts.artist)
+          .updatePricePerTokenInWei(projectTwo, 0);
+        // does allow purchase when holder token in projectZero is used as pass
+        await this.minter
+          .connect(this.accounts.artist)
           ["purchase(uint256,address,uint256)"](
             projectTwo,
             this.token.address,
@@ -470,9 +680,65 @@ describe("MinterHolderV0", async function () {
             {
               value: pricePerTokenInWei,
             }
-          ),
-        "Only allowlisted NFTs"
-      );
+          );
+      });
+
+      it("does allow purchase when using token of allowed project (when set in bulk)", async function () {
+        // allow holders of projectOne and projectZero to purchase tokens on projectTwo
+        await this.minter
+          .connect(this.accounts.artist)
+          .allowRemoveHoldersOfProjects(
+            projectTwo,
+            [this.token.address, this.token.address],
+            [projectOne, projectZero],
+            [],
+            []
+          );
+        // configure price per token to be zero
+        await this.minter
+          .connect(this.accounts.artist)
+          .updatePricePerTokenInWei(projectTwo, 0);
+        // does allow purchase when holder token in projectZero is used as pass
+        await this.minter
+          .connect(this.accounts.artist)
+          ["purchase(uint256,address,uint256)"](
+            projectTwo,
+            this.token.address,
+            projectZeroTokenZero,
+            {
+              value: pricePerTokenInWei,
+            }
+          );
+      });
+
+      it("does not allow purchase when using token not owned", async function () {
+        // allow holders of projectZero to purchase tokens on projectTwo
+        await this.minter
+          .connect(this.accounts.artist)
+          .allowHoldersOfProjects(
+            projectTwo,
+            [this.token.address],
+            [projectZero]
+          );
+        // configure price per token to be zero
+        await this.minter
+          .connect(this.accounts.artist)
+          .updatePricePerTokenInWei(projectTwo, 0);
+        // does allow purchase when holder token in projectZero is used as pass
+        await expectRevert(
+          this.minter
+            .connect(this.accounts.additional)
+            ["purchase(uint256,address,uint256)"](
+              projectTwo,
+              this.token.address,
+              projectZeroTokenZero,
+              {
+                value: pricePerTokenInWei,
+              }
+            ),
+          "Only owner of NFT"
+        );
+      });
     });
 
     it("does allow purchase with a price of zero when intentionally configured", async function () {
@@ -711,7 +977,7 @@ describe("MinterHolderV0", async function () {
         ethers.utils.formatUnits(txCost, "ether").toString(),
         "ETH"
       );
-      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0319919"));
+      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0319931"));
     });
   });
 
