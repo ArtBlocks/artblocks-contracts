@@ -168,7 +168,7 @@ describe("MinterHolderV0", async function () {
       .registerNFTAddress(this.token.address);
     await this.minter
       .connect(this.accounts.artist)
-      .allowHoldersOfProject(projectZero, this.token.address, projectZero);
+      .allowHoldersOfProjects(projectZero, [this.token.address], [projectZero]);
   });
 
   describe("constructor", async function () {
@@ -270,36 +270,52 @@ describe("MinterHolderV0", async function () {
     });
   });
 
-  describe("allowHoldersOfProject", async function () {
+  describe("allowHoldersOfProjects", async function () {
     it("only allows artist to update allowed holders", async function () {
       // owner not allowed
       await expectRevert(
         this.minter
           .connect(this.accounts.owner)
-          .allowHoldersOfProject(projectZero, this.token.address, projectOne),
+          .allowHoldersOfProjects(
+            projectZero,
+            [this.token.address],
+            [projectOne]
+          ),
         "Only Artist"
       );
       // additional not allowed
       await expectRevert(
         this.minter
           .connect(this.accounts.additional)
-          .allowHoldersOfProject(projectZero, this.token.address, projectOne),
+          .allowHoldersOfProjects(
+            projectZero,
+            [this.token.address],
+            [projectOne]
+          ),
         "Only Artist"
       );
       // artist allowed
       await this.minter
         .connect(this.accounts.artist)
-        .allowHoldersOfProject(projectZero, this.token.address, projectOne);
+        .allowHoldersOfProjects(
+          projectZero,
+          [this.token.address],
+          [projectOne]
+        );
     });
 
     it("emits event when update allowed holders", async function () {
       await expect(
         this.minter
           .connect(this.accounts.artist)
-          .allowHoldersOfProject(projectZero, this.token.address, projectOne)
+          .allowHoldersOfProjects(
+            projectZero,
+            [this.token.address],
+            [projectOne]
+          )
       )
-        .to.emit(this.minter, "AllowHoldersOfProject")
-        .withArgs(projectZero, this.token.address, projectOne);
+        .to.emit(this.minter, "AllowedHoldersOfProjects")
+        .withArgs(projectZero, [this.token.address], [projectOne]);
     });
   });
 
@@ -309,30 +325,46 @@ describe("MinterHolderV0", async function () {
       await expectRevert(
         this.minter
           .connect(this.accounts.owner)
-          .removeHoldersOfProject(projectZero, this.token.address, projectOne),
+          .removeHoldersOfProjects(
+            projectZero,
+            [this.token.address],
+            [projectOne]
+          ),
         "Only Artist"
       );
       // additional not allowed
       await expectRevert(
         this.minter
           .connect(this.accounts.additional)
-          .removeHoldersOfProject(projectZero, this.token.address, projectOne),
+          .removeHoldersOfProjects(
+            projectZero,
+            [this.token.address],
+            [projectOne]
+          ),
         "Only Artist"
       );
       // artist allowed
       await this.minter
         .connect(this.accounts.artist)
-        .removeHoldersOfProject(projectZero, this.token.address, projectOne);
+        .removeHoldersOfProjects(
+          projectZero,
+          [this.token.address],
+          [projectOne]
+        );
     });
 
     it("emits event when removing allowed holders", async function () {
       await expect(
         this.minter
           .connect(this.accounts.artist)
-          .removeHoldersOfProject(projectZero, this.token.address, projectOne)
+          .removeHoldersOfProjects(
+            projectZero,
+            [this.token.address],
+            [projectOne]
+          )
       )
-        .to.emit(this.minter, "RemovedHoldersOfProject")
-        .withArgs(projectZero, this.token.address, projectOne);
+        .to.emit(this.minter, "RemovedHoldersOfProjects")
+        .withArgs(projectZero, [this.token.address], [projectOne]);
     });
   });
 
@@ -421,7 +453,7 @@ describe("MinterHolderV0", async function () {
       // allow holders of projectOne to purchase tokens on projectTwo
       await this.minter
         .connect(this.accounts.artist)
-        .allowHoldersOfProject(projectTwo, this.token.address, projectOne);
+        .allowHoldersOfProjects(projectTwo, [this.token.address], [projectOne]);
       // configure price per token to be zero
       await this.minter
         .connect(this.accounts.artist)
@@ -447,7 +479,11 @@ describe("MinterHolderV0", async function () {
       // allow holders of projectZero to purchase tokens on projectTwo
       await this.minter
         .connect(this.accounts.artist)
-        .allowHoldersOfProject(projectTwo, this.token.address, projectZero);
+        .allowHoldersOfProjects(
+          projectTwo,
+          [this.token.address],
+          [projectZero]
+        );
       // configure price per token to be zero
       await this.minter
         .connect(this.accounts.artist)
@@ -469,7 +505,11 @@ describe("MinterHolderV0", async function () {
       // allow holders of project zero to mint on project one
       await this.minter
         .connect(this.accounts.artist)
-        .allowHoldersOfProject(projectOne, this.token.address, projectZero);
+        .allowHoldersOfProjects(
+          projectOne,
+          [this.token.address],
+          [projectZero]
+        );
       for (let i = 0; i < projectMaxInvocations; i++) {
         await this.minter
           .connect(this.accounts.artist)
@@ -595,7 +635,11 @@ describe("MinterHolderV0", async function () {
       // Try with setProjectMaxInvocations, store gas cost
       await this.minter
         .connect(this.accounts.artist)
-        .allowHoldersOfProject(projectOne, this.token.address, projectZero);
+        .allowHoldersOfProjects(
+          projectOne,
+          [this.token.address],
+          [projectZero]
+        );
       await this.minter
         .connect(this.accounts.deployer)
         .setProjectMaxInvocations(projectOne);
@@ -667,7 +711,7 @@ describe("MinterHolderV0", async function () {
         ethers.utils.formatUnits(txCost, "ether").toString(),
         "ETH"
       );
-      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0319931"));
+      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0319919"));
     });
   });
 
