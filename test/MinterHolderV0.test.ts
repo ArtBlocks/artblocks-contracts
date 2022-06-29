@@ -977,7 +977,7 @@ describe("MinterHolderV0", async function () {
         ethers.utils.formatUnits(txCost, "ether").toString(),
         "ETH"
       );
-      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0319931"));
+      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0319919"));
     });
   });
 
