@@ -232,6 +232,11 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
      * allowlisted.
      * @param _ownedNFTProjectIdsAdd Project IDs on `_ownedNFTAddressesAdd`
      * whose holders shall be allowlisted to mint project `_projectId`.
+     * @param _ownedNFTAddressesRemove NFT core addresses of projects to be
+     * removed from allowlist.
+     * @param _ownedNFTProjectIdsRemove Project IDs on
+     * `_ownedNFTAddressesRemove` whose holders will be removed from allowlist
+     * to mint project `_projectId`.
      * @dev if a project is included in both add and remove arrays, it will be
      * removed.
      */
