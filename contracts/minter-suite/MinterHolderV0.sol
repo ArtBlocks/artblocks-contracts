@@ -32,16 +32,6 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
     event UnregisteredNFTAddress(address indexed _NFTAddress);
 
     /**
-     * @notice Allow holders of NFTs at address `_ownedNFTAddress`, project ID
-     * `_ownedNFTProjectId` to mint on project `_projectId`.
-     */
-    event AllowHoldersOfProject(
-        uint256 indexed _projectId,
-        address _ownedNFTAddress,
-        uint256 _ownedNFTProjectId
-    );
-
-    /**
      * @notice Allow holders of NFTs at addresses `_ownedNFTAddresses`, project
      * IDs `_ownedNFTProjectIds` to mint on project `_projectId`.
      */
@@ -49,16 +39,6 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
         uint256 indexed _projectId,
         address[] _ownedNFTAddresses,
         uint256[] _ownedNFTProjectIds
-    );
-
-    /**
-     * @notice Remove holders of NFTs at address `_ownedNFTAddress`, project ID
-     * `_ownedNFTProjectId` to mint on project `_projectId`.
-     */
-    event RemovedHoldersOfProject(
-        uint256 indexed _projectId,
-        address _ownedNFTAddress,
-        uint256 _ownedNFTProjectId
     );
 
     /**
@@ -198,10 +178,15 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
         allowedProjectHolders[_projectId][_ownedNFTAddress][
             _ownedNFTProjectId
         ] = true;
-        emit AllowHoldersOfProject(
+        // convert to arrays and emit event
+        address[] memory _ownedNFTAddresses = new address[](1);
+        _ownedNFTAddresses[0] = _ownedNFTAddress;
+        uint256[] memory _ownedNFTProjectIds = new uint256[](1);
+        _ownedNFTProjectIds[0] = _ownedNFTProjectId;
+        emit AllowHoldersOfProjects(
             _projectId,
-            _ownedNFTAddress,
-            _ownedNFTProjectId
+            _ownedNFTAddresses,
+            _ownedNFTProjectIds
         );
     }
 
@@ -294,10 +279,15 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
         allowedProjectHolders[_projectId][_ownedNFTAddress][
             _ownedNFTProjectId
         ] = false;
-        emit RemovedHoldersOfProject(
+        // convert to arrays and emit event
+        address[] memory _ownedNFTAddresses = new address[](1);
+        _ownedNFTAddresses[0] = _ownedNFTAddress;
+        uint256[] memory _ownedNFTProjectIds = new uint256[](1);
+        _ownedNFTProjectIds[0] = _ownedNFTProjectId;
+        emit RemovedHoldersOfProjects(
             _projectId,
-            _ownedNFTAddress,
-            _ownedNFTProjectId
+            _ownedNFTAddresses,
+            _ownedNFTProjectIds
         );
     }
 
