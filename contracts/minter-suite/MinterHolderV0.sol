@@ -35,7 +35,7 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
      * @notice Allow holders of NFTs at addresses `_ownedNFTAddresses`, project
      * IDs `_ownedNFTProjectIds` to mint on project `_projectId`.
      */
-    event AllowHoldersOfProjects(
+    event AllowedHoldersOfProjects(
         uint256 indexed _projectId,
         address[] _ownedNFTAddresses,
         uint256[] _ownedNFTProjectIds
@@ -158,32 +158,38 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
     }
 
     /**
-     * @notice Allows holders of NFTs at address `_ownedNFTAddress`, project ID
-     * `_ownedNFTProjectId` to mint on project `_projectId`.
+     * @notice Allows holders of NFTs at addresses `_ownedNFTAddresses`,
+     * project IDs `_ownedNFTProjectIds` to mint on project `_projectId`.
      * @param _projectId Project ID to enable minting on.
-     * @param _ownedNFTAddress NFT core address of project to be allowlisted.
-     * @param _ownedNFTProjectId Project ID on `_ownedNFTAddress` whose
+     * @param _ownedNFTAddresses NFT core addresses of projects to be
+     * allowlisted.
+     * @param _ownedNFTProjectIds Project IDs on `_ownedNFTAddresses` whose
      * holders shall be allowlisted to mint project `_projectId`.
      */
     function allowHoldersOfProject(
         uint256 _projectId,
-        address _ownedNFTAddress,
-        uint256 _ownedNFTProjectId
-    ) external onlyArtist(_projectId) {
-        // require _ownedNFTAddress be registered
+        address[] memory _ownedNFTAddresses,
+        uint256[] memory _ownedNFTProjectIds
+    ) public onlyArtist(_projectId) {
+        // require same length arrays
         require(
-            _registeredNFTAddresses.contains(_ownedNFTAddress),
-            "Only Registered NFT Addresses"
+            _ownedNFTAddresses.length == _ownedNFTProjectIds.length,
+            "Length of add arrays must match"
         );
-        allowedProjectHolders[_projectId][_ownedNFTAddress][
-            _ownedNFTProjectId
-        ] = true;
-        // convert to arrays and emit event
-        address[] memory _ownedNFTAddresses = new address[](1);
-        _ownedNFTAddresses[0] = _ownedNFTAddress;
-        uint256[] memory _ownedNFTProjectIds = new uint256[](1);
-        _ownedNFTProjectIds[0] = _ownedNFTProjectId;
-        emit AllowHoldersOfProjects(
+        // for each approved project
+        for (uint256 i = 0; i < _ownedNFTAddresses.length; i++) {
+            // ensure registered address
+            require(
+                _registeredNFTAddresses.contains(_ownedNFTAddresses[i]),
+                "Only Registered NFT Addresses"
+            );
+            // approve
+            allowedProjectHolders[_projectId][_ownedNFTAddresses[i]][
+                _ownedNFTProjectIds[i]
+            ] = true;
+        }
+        // emit approve event
+        emit AllowedHoldersOfProjects(
             _projectId,
             _ownedNFTAddresses,
             _ownedNFTProjectIds
@@ -191,29 +197,34 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
     }
 
     /**
-     * @notice Removes holders of NFTs at address `_ownedNFTAddress`, project
-     * ID `_ownedNFTProjectId` to mint on project `_projectId`. If other
-     * projects owned by a holder are still allowed to mint, holder will
+     * @notice Removes holders of NFTs at addresses `_ownedNFTAddresses`,
+     * project IDs `_ownedNFTProjectIds` to mint on project `_projectId`. If
+     * other projects owned by a holder are still allowed to mint, holder will
      * maintain ability to purchase.
      * @param _projectId Project ID to enable minting on.
-     * @param _ownedNFTAddress NFT core address of project to be removed from
-     * allowlist.
-     * @param _ownedNFTProjectId Project ID on `_ownedNFTAddress` whose holders
+     * @param _ownedNFTAddresses NFT core addresses of projects to be removed
+     * from allowlist.
+     * @param _ownedNFTProjectIds Project IDs on `_ownedNFTAddresses` whose holders
      * will be removed from allowlist to mint project `_projectId`.
      */
-    function removeHoldersOfProject(
+    function removeHoldersOfProjects(
         uint256 _projectId,
-        address _ownedNFTAddress,
-        uint256 _ownedNFTProjectId
-    ) external onlyArtist(_projectId) {
-        allowedProjectHolders[_projectId][_ownedNFTAddress][
-            _ownedNFTProjectId
-        ] = false;
-        // convert to arrays and emit event
-        address[] memory _ownedNFTAddresses = new address[](1);
-        _ownedNFTAddresses[0] = _ownedNFTAddress;
-        uint256[] memory _ownedNFTProjectIds = new uint256[](1);
-        _ownedNFTProjectIds[0] = _ownedNFTProjectId;
+        address[] memory _ownedNFTAddresses,
+        uint256[] memory _ownedNFTProjectIds
+    ) public onlyArtist(_projectId) {
+        // require same length arrays
+        require(
+            _ownedNFTAddresses.length == _ownedNFTProjectIds.length,
+            "Length of remove arrays must match"
+        );
+        // for each removed project
+        for (uint256 i = 0; i < _ownedNFTAddresses.length; i++) {
+            // revoke
+            allowedProjectHolders[_projectId][_ownedNFTAddresses[i]][
+                _ownedNFTProjectIds[i]
+            ] = false;
+        }
+        // emit removed event
         emit RemovedHoldersOfProjects(
             _projectId,
             _ownedNFTAddresses,
@@ -247,53 +258,16 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
         address[] memory _ownedNFTAddressesRemove,
         uint256[] memory _ownedNFTProjectIdsRemove
     ) external onlyArtist(_projectId) {
-        // add projects to allowlist
-        // require same length arrays
-        require(
-            _ownedNFTAddressesAdd.length == _ownedNFTProjectIdsAdd.length,
-            "Length of Add Arrays must match"
+        allowHoldersOfProject(
+            _projectId,
+            _ownedNFTAddressesAdd,
+            _ownedNFTProjectIdsAdd
         );
-        require(
-            _ownedNFTAddressesRemove.length == _ownedNFTProjectIdsRemove.length,
-            "Length of Remove Arrays must match"
+        removeHoldersOfProjects(
+            _projectId,
+            _ownedNFTAddressesRemove,
+            _ownedNFTProjectIdsRemove
         );
-
-        // for each approved project
-        for (uint256 i = 0; i < _ownedNFTAddressesAdd.length; i++) {
-            // ensure registered address
-            require(
-                _registeredNFTAddresses.contains(_ownedNFTAddressesAdd[i]),
-                "Only Registered NFT Addresses"
-            );
-            // add to mapping
-            allowedProjectHolders[_projectId][_ownedNFTAddressesAdd[i]][
-                _ownedNFTProjectIdsAdd[i]
-            ] = true;
-        }
-        // emit approve event
-        if (_ownedNFTAddressesAdd.length > 0) {
-            emit AllowHoldersOfProjects(
-                _projectId,
-                _ownedNFTAddressesAdd,
-                _ownedNFTProjectIdsAdd
-            );
-        }
-
-        // for each removed project
-        for (uint256 i = 0; i < _ownedNFTAddressesRemove.length; i++) {
-            // remove from mapping
-            allowedProjectHolders[_projectId][_ownedNFTAddressesRemove[i]][
-                _ownedNFTProjectIdsRemove[i]
-            ] = false;
-        }
-        // emit removed event
-        if (_ownedNFTAddressesRemove.length > 0) {
-            emit RemovedHoldersOfProjects(
-                _projectId,
-                _ownedNFTAddressesRemove,
-                _ownedNFTProjectIdsRemove
-            );
-        }
     }
 
     /**
