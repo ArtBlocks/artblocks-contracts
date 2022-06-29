@@ -166,7 +166,7 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
      * @param _ownedNFTProjectIds Project IDs on `_ownedNFTAddresses` whose
      * holders shall be allowlisted to mint project `_projectId`.
      */
-    function allowHoldersOfProject(
+    function allowHoldersOfProjects(
         uint256 _projectId,
         address[] memory _ownedNFTAddresses,
         uint256[] memory _ownedNFTProjectIds
@@ -258,7 +258,7 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
         address[] memory _ownedNFTAddressesRemove,
         uint256[] memory _ownedNFTProjectIdsRemove
     ) external onlyArtist(_projectId) {
-        allowHoldersOfProject(
+        allowHoldersOfProjects(
             _projectId,
             _ownedNFTAddressesAdd,
             _ownedNFTProjectIdsAdd
