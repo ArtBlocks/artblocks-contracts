@@ -42,13 +42,33 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
     );
 
     /**
-     * @notice Allow holders of NFTs at address `_ownedNFTAddress`, project ID
+     * @notice Allow holders of NFTs at addresses `_ownedNFTAddresses`, project
+     * IDs `_ownedNFTProjectIds` to mint on project `_projectId`.
+     */
+    event AllowHoldersOfProjects(
+        uint256 indexed _projectId,
+        address[] _ownedNFTAddresses,
+        uint256[] _ownedNFTProjectIds
+    );
+
+    /**
+     * @notice Remove holders of NFTs at address `_ownedNFTAddress`, project ID
      * `_ownedNFTProjectId` to mint on project `_projectId`.
      */
     event RemovedHoldersOfProject(
         uint256 indexed _projectId,
         address _ownedNFTAddress,
         uint256 _ownedNFTProjectId
+    );
+
+    /**
+     * @notice Remove holders of NFTs at addresses `_ownedNFTAddresses`,
+     * project IDs `_ownedNFTProjectIds` to mint on project `_projectId`.
+     */
+    event RemovedHoldersOfProjects(
+        uint256 indexed _projectId,
+        address[] _ownedNFTAddresses,
+        uint256[] _ownedNFTProjectIds
     );
 
     // add Enumerable Set methods
@@ -183,6 +203,76 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
             _ownedNFTAddress,
             _ownedNFTProjectId
         );
+    }
+
+    /**
+     * @notice Allows holders of NFTs at addresses `_ownedNFTAddressesAdd`,
+     * project IDs `_ownedNFTProjectIdsAdd` to mint on project `_projectId`.
+     * Also removes holders of NFTs at addresses `_ownedNFTAddressesRemove`,
+     * project IDs `_ownedNFTProjectIdsRemove` from minting on project
+     * `_projectId`.
+     * @param _projectId Project ID to enable minting on.
+     * @param _ownedNFTAddressesAdd NFT core addresses of projects to be
+     * allowlisted.
+     * @param _ownedNFTProjectIdsAdd Project IDs on `_ownedNFTAddressesAdd`
+     * whose holders shall be allowlisted to mint project `_projectId`.
+     * @dev if a project is included in both add and remove arrays, it will be
+     * removed.
+     */
+    function allowRemoveHoldersOfProjects(
+        uint256 _projectId,
+        address[] memory _ownedNFTAddressesAdd,
+        uint256[] memory _ownedNFTProjectIdsAdd,
+        address[] memory _ownedNFTAddressesRemove,
+        uint256[] memory _ownedNFTProjectIdsRemove
+    ) external onlyArtist(_projectId) {
+        // add projects to allowlist
+        // require same length arrays
+        require(
+            _ownedNFTAddressesAdd.length == _ownedNFTProjectIdsAdd.length,
+            "Length of Add Arrays must match"
+        );
+        require(
+            _ownedNFTAddressesRemove.length == _ownedNFTProjectIdsRemove.length,
+            "Length of Remove Arrays must match"
+        );
+
+        // for each approved project
+        for (uint256 i = 0; i < _ownedNFTAddressesAdd.length; i++) {
+            // ensure registered address
+            require(
+                _registeredNFTAddresses.contains(_ownedNFTAddressesAdd[i]),
+                "Only Registered NFT Addresses"
+            );
+            // add to mapping
+            allowedProjectHolders[_projectId][_ownedNFTAddressesAdd[i]][
+                _ownedNFTProjectIdsAdd[i]
+            ] = true;
+        }
+        // emit approve event
+        if (_ownedNFTAddressesAdd.length > 0) {
+            emit AllowHoldersOfProjects(
+                _projectId,
+                _ownedNFTAddressesAdd,
+                _ownedNFTProjectIdsAdd
+            );
+        }
+
+        // for each removed project
+        for (uint256 i = 0; i < _ownedNFTAddressesRemove.length; i++) {
+            // remove from mapping
+            allowedProjectHolders[_projectId][_ownedNFTAddressesRemove[i]][
+                _ownedNFTProjectIdsRemove[i]
+            ] = false;
+        }
+        // emit removed event
+        if (_ownedNFTAddressesRemove.length > 0) {
+            emit RemovedHoldersOfProjects(
+                _projectId,
+                _ownedNFTAddressesRemove,
+                _ownedNFTProjectIdsRemove
+            );
+        }
     }
 
     /**
