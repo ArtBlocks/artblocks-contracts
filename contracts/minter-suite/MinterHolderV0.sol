@@ -191,6 +191,37 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
     }
 
     /**
+     * @notice Removes holders of NFTs at address `_ownedNFTAddress`, project
+     * ID `_ownedNFTProjectId` to mint on project `_projectId`. If other
+     * projects owned by a holder are still allowed to mint, holder will
+     * maintain ability to purchase.
+     * @param _projectId Project ID to enable minting on.
+     * @param _ownedNFTAddress NFT core address of project to be removed from
+     * allowlist.
+     * @param _ownedNFTProjectId Project ID on `_ownedNFTAddress` whose holders
+     * will be removed from allowlist to mint project `_projectId`.
+     */
+    function removeHoldersOfProject(
+        uint256 _projectId,
+        address _ownedNFTAddress,
+        uint256 _ownedNFTProjectId
+    ) external onlyArtist(_projectId) {
+        allowedProjectHolders[_projectId][_ownedNFTAddress][
+            _ownedNFTProjectId
+        ] = false;
+        // convert to arrays and emit event
+        address[] memory _ownedNFTAddresses = new address[](1);
+        _ownedNFTAddresses[0] = _ownedNFTAddress;
+        uint256[] memory _ownedNFTProjectIds = new uint256[](1);
+        _ownedNFTProjectIds[0] = _ownedNFTProjectId;
+        emit RemovedHoldersOfProjects(
+            _projectId,
+            _ownedNFTAddresses,
+            _ownedNFTProjectIds
+        );
+    }
+
+    /**
      * @notice Allows holders of NFTs at addresses `_ownedNFTAddressesAdd`,
      * project IDs `_ownedNFTProjectIdsAdd` to mint on project `_projectId`.
      * Also removes holders of NFTs at addresses `_ownedNFTAddressesRemove`,
@@ -258,37 +289,6 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
                 _ownedNFTProjectIdsRemove
             );
         }
-    }
-
-    /**
-     * @notice Removes holders of NFTs at address `_ownedNFTAddress`, project
-     * ID `_ownedNFTProjectId` to mint on project `_projectId`. If other
-     * projects owned by a holder are still allowed to mint, holder will
-     * maintain ability to purchase.
-     * @param _projectId Project ID to enable minting on.
-     * @param _ownedNFTAddress NFT core address of project to be removed from
-     * allowlist.
-     * @param _ownedNFTProjectId Project ID on `_ownedNFTAddress` whose holders
-     * will be removed from allowlist to mint project `_projectId`.
-     */
-    function removeHoldersOfProject(
-        uint256 _projectId,
-        address _ownedNFTAddress,
-        uint256 _ownedNFTProjectId
-    ) external onlyArtist(_projectId) {
-        allowedProjectHolders[_projectId][_ownedNFTAddress][
-            _ownedNFTProjectId
-        ] = false;
-        // convert to arrays and emit event
-        address[] memory _ownedNFTAddresses = new address[](1);
-        _ownedNFTAddresses[0] = _ownedNFTAddress;
-        uint256[] memory _ownedNFTProjectIds = new uint256[](1);
-        _ownedNFTProjectIds[0] = _ownedNFTProjectId;
-        emit RemovedHoldersOfProjects(
-            _projectId,
-            _ownedNFTAddresses,
-            _ownedNFTProjectIds
-        );
     }
 
     /**
