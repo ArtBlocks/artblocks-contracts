@@ -7,12 +7,17 @@ import {
   ether,
 } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
-import { BigNumber } from "ethers";
+import { BigNumber, Contract } from "ethers";
 import { ethers } from "hardhat";
 import EthersAdapter from "@gnosis.pm/safe-ethers-lib";
 import Safe from "@gnosis.pm/safe-core-sdk";
 import { SafeTransactionDataPartial } from "@gnosis.pm/safe-core-sdk-types";
 import { getGnosisSafe } from "./util/GnosisSafeNetwork";
+
+type T_PBAB = {
+  pbabToken: Contract;
+  pbabMinter: Contract;
+};
 
 /**
  * These tests intended to ensure Filtered Minter integrates properly with V1
@@ -42,6 +47,35 @@ describe("MinterHolderV0", async function () {
   let merkleTreeZero;
   let merkleTreeOne;
   let merkleTreeTwo;
+
+  async function deployAndGetPBAB(): Promise<T_PBAB> {
+    const PBABFactory = await ethers.getContractFactory("GenArt721CoreV2_PBAB");
+    const pbabToken = await PBABFactory.connect(this.accounts.deployer).deploy(
+      name,
+      symbol,
+      this.randomizer.address
+    );
+    const minterFactory = await ethers.getContractFactory(
+      "GenArt721Minter_PBAB"
+    );
+    const pbabMinter = await minterFactory.deploy(pbabToken.address);
+    await pbabToken
+      .connect(this.accounts.deployer)
+      .addProject(
+        "project0_PBAB",
+        this.accounts.artist.address,
+        pricePerTokenInWei
+      );
+    await pbabToken.connect(this.accounts.deployer).toggleProjectIsActive(0);
+    await pbabToken
+      .connect(this.accounts.deployer)
+      .addMintWhitelisted(pbabMinter.address);
+    await pbabToken
+      .connect(this.accounts.artist)
+      .updateProjectMaxInvocations(0, projectMaxInvocations);
+    await pbabToken.connect(this.accounts.artist).toggleProjectIsPaused(0);
+    return { pbabToken, pbabMinter };
+  }
 
   beforeEach(async function () {
     const [owner, newOwner, artist, additional, deployer] =
@@ -334,6 +368,32 @@ describe("MinterHolderV0", async function () {
           [this.token.address, this.token.address],
           [projectOne, projectTwo]
         );
+    });
+
+    it("does not allow allowlisting a project on an unregistered contract", async function () {
+      // deploy different contract (for this case, use PBAB contract)
+      const { pbabToken, pbabMinter } = await deployAndGetPBAB.bind(this)();
+      await pbabMinter
+        .connect(this.accounts.artist)
+        .purchaseTo(this.accounts.additional.address, 0, {
+          value: pricePerTokenInWei,
+        });
+
+      // set token price for projects zero and one on our minter
+      await this.token
+        .connect(this.accounts.artist)
+        .updateProjectPricePerTokenInWei(projectZero, pricePerTokenInWei);
+      // allow holders of PBAB project 0 to purchase tokens on projectTwo
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.artist)
+          .allowHoldersOfProjects(
+            projectTwo,
+            [pbabToken.address],
+            [projectZero]
+          ),
+        "Only Registered NFT Addresses"
+      );
     });
   });
 
@@ -739,6 +799,80 @@ describe("MinterHolderV0", async function () {
           "Only owner of NFT"
         );
       });
+
+      it("does not allow purchase when using token of an unallowed project on a different contract", async function () {
+        const { pbabToken, pbabMinter } = await deployAndGetPBAB.bind(this)();
+        await pbabMinter
+          .connect(this.accounts.artist)
+          .purchaseTo(this.accounts.additional.address, 0, {
+            value: pricePerTokenInWei,
+          });
+
+        // set token price for projects zero and one on our minter
+        await this.token
+          .connect(this.accounts.artist)
+          .updateProjectPricePerTokenInWei(projectZero, pricePerTokenInWei);
+        // register the PBAB token on our minter
+        await this.minter
+          .connect(this.accounts.deployer)
+          .registerNFTAddress(pbabToken.address);
+        // configure price per token to be zero
+        await this.minter
+          .connect(this.accounts.artist)
+          .updatePricePerTokenInWei(projectTwo, 0);
+        // expect failure when using PBAB token because it is not allowlisted for projectTwo
+        await expectRevert(
+          this.minter
+            .connect(this.accounts.additional)
+            ["purchase(uint256,address,uint256)"](
+              projectTwo,
+              pbabToken.address,
+              0,
+              {
+                value: pricePerTokenInWei,
+              }
+            ),
+          "Only allowlisted NFTs"
+        );
+      });
+
+      it("does allow purchase when using token of allowed project on a different contract", async function () {
+        // deploy different contract (for this case, use PBAB contract)
+        const { pbabToken, pbabMinter } = await deployAndGetPBAB.bind(this)();
+        await pbabMinter
+          .connect(this.accounts.artist)
+          .purchaseTo(this.accounts.additional.address, 0, {
+            value: pricePerTokenInWei,
+          });
+
+        // set token price for projects zero and one on our minter
+        await this.token
+          .connect(this.accounts.artist)
+          .updateProjectPricePerTokenInWei(projectZero, pricePerTokenInWei);
+        // register the PBAB token on our minter
+        await this.minter
+          .connect(this.accounts.deployer)
+          .registerNFTAddress(pbabToken.address);
+        // allow holders of PBAB project 0 to purchase tokens on projectTwo
+        await this.minter
+          .connect(this.accounts.artist)
+          .allowHoldersOfProjects(projectTwo, [pbabToken.address], [0]);
+        // configure price per token to be zero
+        await this.minter
+          .connect(this.accounts.artist)
+          .updatePricePerTokenInWei(projectTwo, 0);
+        // does allow purchase when holder of token in PBAB projectZero is used as pass
+        await this.minter
+          .connect(this.accounts.additional)
+          ["purchase(uint256,address,uint256)"](
+            projectTwo,
+            pbabToken.address,
+            0,
+            {
+              value: pricePerTokenInWei,
+            }
+          );
+      });
     });
 
     it("does allow purchase with a price of zero when intentionally configured", async function () {
@@ -977,7 +1111,7 @@ describe("MinterHolderV0", async function () {
         ethers.utils.formatUnits(txCost, "ether").toString(),
         "ETH"
       );
-      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0319919"));
+      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0319931"));
     });
   });
 
