@@ -15,6 +15,7 @@ import { ethers } from "hardhat";
  * with the V1 or V2_PRTNR core contract.
  * Some basic core tests, and basic functional tests to ensure purchase
  * does in fact mint tokens to purchaser.
+ * @dev assumes common BeforeEach to populate accounts, constants, and setup
  */
 export const GenArt721MinterV1V2_Common = async () => {
   describe("has whitelisted owner", function () {

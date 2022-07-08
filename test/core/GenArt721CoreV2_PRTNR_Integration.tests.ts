@@ -1,3 +1,4 @@
+import { Coder } from "@ethersproject/abi/lib/coders/abstract-coder";
 import {
   BN,
   constants,
@@ -9,7 +10,14 @@ import {
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
+import {
+  getAccounts,
+  assignDefaultConstants,
+  deployAndGet,
+  deployCoreWithMinterFilter,
+} from "../util/common";
 import { GenArt721MinterV1V2_Common } from "./GenArt721CoreV1V2.common";
+
 /**
  * These tests are intended to check integration of the MinterFilter suite with
  * the V2 PRTNR core contract.
@@ -18,64 +26,39 @@ import { GenArt721MinterV1V2_Common } from "./GenArt721CoreV1V2.common";
  */
 describe("GenArt721CoreV2_PRTNR_Integration", async function () {
   beforeEach(async function () {
-    // accounts
-    const [owner, newOwner, artist, additional, deployer] =
-      await ethers.getSigners();
-    this.accounts = {
-      owner: owner,
-      newOwner: newOwner,
-      artist: artist,
-      additional: additional,
-      deployer: deployer,
-    };
-    // constants
-    this.projectZero = 0;
-    this.name = "Non Fungible Token";
-    this.symbol = "NFT";
-    this.firstTokenId = new BN(this.projectZero.toString()).mul(
-      new BN("1000000")
-    );
-    this.pricePerTokenInWei = ethers.utils.parseEther("1");
-    this.maxInvocations = 15;
-    // setup
-    const randomizerFactory = await ethers.getContractFactory(
-      "BasicRandomizer"
-    );
-    this.randomizer = await randomizerFactory.deploy();
-    const coreFactory = await ethers.getContractFactory(
-      "GenArt721CoreV2_PRTNR"
-    );
-    this.token = await coreFactory
-      .connect(deployer)
-      .deploy(this.name, this.symbol, this.randomizer.address);
+    // standard accounts and constants
+    this.accounts = await getAccounts.call(this);
+    await assignDefaultConstants.call(this);
     // deploy and configure minter filter and minter
-    const minterFilterFactory = await ethers.getContractFactory(
-      "MinterFilterV0"
-    );
-    this.minterFilter = await minterFilterFactory.deploy(this.token.address);
-    const minterFactory = await ethers.getContractFactory("MinterSetPriceV1");
-    this.minter = await minterFactory.deploy(
+    ({ token: this.token, minterFilter: this.minterFilter } =
+      await deployCoreWithMinterFilter.call(
+        this,
+        "GenArt721CoreV2_PRTNR",
+        "MinterFilterV0"
+      ));
+    this.minter = await deployAndGet.call(this, "MinterSetPriceV1", [
       this.token.address,
-      this.minterFilter.address
-    );
+      this.minterFilter.address,
+    ]);
     await this.minterFilter
-      .connect(deployer)
+      .connect(this.accounts.deployer)
       .addApprovedMinter(this.minter.address);
-    await this.token
-      .connect(deployer)
-      .addMintWhitelisted(this.minterFilter.address);
     // add project
-    await this.token.connect(deployer).addProject("name", artist.address, 0);
-    await this.token.connect(deployer).toggleProjectIsActive(this.projectZero);
     await this.token
-      .connect(artist)
+      .connect(this.accounts.deployer)
+      .addProject("name", this.accounts.artist.address, 0);
+    await this.token
+      .connect(this.accounts.deployer)
+      .toggleProjectIsActive(this.projectZero);
+    await this.token
+      .connect(this.accounts.artist)
       .updateProjectMaxInvocations(this.projectZero, this.maxInvocations);
     // set project's minter and price
     await this.minter
-      .connect(artist)
+      .connect(this.accounts.artist)
       .updatePricePerTokenInWei(this.projectZero, this.pricePerTokenInWei);
     await this.minterFilter
-      .connect(artist)
+      .connect(this.accounts.artist)
       .setMinterForProject(this.projectZero, this.minter.address);
     // get project's info
     this.projectZeroInfo = await this.token.projectTokenInfo(this.projectZero);
@@ -88,7 +71,7 @@ describe("GenArt721CoreV2_PRTNR_Integration", async function () {
   describe("purchase payments and gas", async function () {
     it("can create a token then funds distributed (no additional payee)", async function () {
       const artistBalance = await this.accounts.artist.getBalance();
-      const ownerBalance = await this.accounts.owner.getBalance();
+      const ownerBalance = await this.accounts.user.getBalance();
       const deployerBalance = await this.accounts.deployer.getBalance();
 
       this.token
@@ -97,14 +80,14 @@ describe("GenArt721CoreV2_PRTNR_Integration", async function () {
 
       // pricePerTokenInWei setup above to be 1 ETH
       await expect(
-        this.minter.connect(this.accounts.owner).purchase(this.projectZero, {
+        this.minter.connect(this.accounts.user).purchase(this.projectZero, {
           value: this.pricePerTokenInWei,
         })
       )
         .to.emit(this.token, "Transfer")
         .withArgs(
           constants.ZERO_ADDRESS,
-          this.accounts.owner.address,
+          this.accounts.user.address,
           this.firstTokenId
         );
 
@@ -119,14 +102,14 @@ describe("GenArt721CoreV2_PRTNR_Integration", async function () {
         (await this.accounts.artist.getBalance()).sub(artistBalance)
       ).to.equal(ethers.utils.parseEther("0.8971195"));
       expect(
-        (await this.accounts.owner.getBalance()).sub(ownerBalance)
+        (await this.accounts.user.getBalance()).sub(ownerBalance)
       ).to.equal(ethers.utils.parseEther("1.0216789").mul("-1")); // spent 1 ETH
     });
 
     it("can create a token then funds distributed (with additional payee)", async function () {
       const additionalBalance = await this.accounts.additional.getBalance();
       const artistBalance = await this.accounts.artist.getBalance();
-      const ownerBalance = await this.accounts.owner.getBalance();
+      const ownerBalance = await this.accounts.user.getBalance();
       const deployerBalance = await this.accounts.deployer.getBalance();
 
       const additionalPayeePercentage = 10;
@@ -143,14 +126,14 @@ describe("GenArt721CoreV2_PRTNR_Integration", async function () {
 
       // pricePerTokenInWei setup above to be 1 ETH
       await expect(
-        this.minter.connect(this.accounts.owner).purchase(this.projectZero, {
+        this.minter.connect(this.accounts.user).purchase(this.projectZero, {
           value: this.pricePerTokenInWei,
         })
       )
         .to.emit(this.token, "Transfer")
         .withArgs(
           constants.ZERO_ADDRESS,
-          this.accounts.owner.address,
+          this.accounts.user.address,
           this.firstTokenId
         );
 
@@ -166,7 +149,7 @@ describe("GenArt721CoreV2_PRTNR_Integration", async function () {
         (await this.accounts.additional.getBalance()).sub(additionalBalance)
       ).to.equal(ethers.utils.parseEther("0.09"));
       expect(
-        (await this.accounts.owner.getBalance()).sub(ownerBalance)
+        (await this.accounts.user.getBalance()).sub(ownerBalance)
       ).to.equal(ethers.utils.parseEther("1.0230737").mul("-1")); // spent 1 ETH
       expect(
         (await this.accounts.artist.getBalance()).sub(artistBalance)
@@ -176,7 +159,7 @@ describe("GenArt721CoreV2_PRTNR_Integration", async function () {
     it("can create a token then funds distributed (with additional payee getting 100%)", async function () {
       const additionalBalance = await this.accounts.additional.getBalance();
       const artistBalance = await this.accounts.artist.getBalance();
-      const ownerBalance = await this.accounts.owner.getBalance();
+      const ownerBalance = await this.accounts.user.getBalance();
       const deployerBalance = await this.accounts.deployer.getBalance();
 
       const additionalPayeePercentage = 100;
@@ -193,14 +176,14 @@ describe("GenArt721CoreV2_PRTNR_Integration", async function () {
 
       // pricePerTokenInWei setup above to be 1 ETH
       await expect(
-        this.minter.connect(this.accounts.owner).purchase(this.projectZero, {
+        this.minter.connect(this.accounts.user).purchase(this.projectZero, {
           value: this.pricePerTokenInWei,
         })
       )
         .to.emit(this.token, "Transfer")
         .withArgs(
           constants.ZERO_ADDRESS,
-          this.accounts.owner.address,
+          this.accounts.user.address,
           this.firstTokenId
         );
 
@@ -216,7 +199,7 @@ describe("GenArt721CoreV2_PRTNR_Integration", async function () {
         (await this.accounts.additional.getBalance()).sub(additionalBalance)
       ).to.equal(ethers.utils.parseEther("0.9"));
       expect(
-        (await this.accounts.owner.getBalance()).sub(ownerBalance)
+        (await this.accounts.user.getBalance()).sub(ownerBalance)
       ).to.equal(ethers.utils.parseEther("1.0218145").mul("-1")); // spent 1 ETH
       expect(
         (await this.accounts.artist.getBalance()).sub(artistBalance)
