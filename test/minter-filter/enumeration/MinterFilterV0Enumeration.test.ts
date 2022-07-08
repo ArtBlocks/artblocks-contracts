@@ -10,7 +10,7 @@ describe("MinterFilterV0Enumeration", async function () {
   beforeEach(async function () {
     // standard accounts and constants
     this.accounts = await getAccounts.call(this);
-    await assignDefaultConstants.call(this);
+    await assignDefaultConstants.call(this, 3); // projectZero = 3 on V1 core
     // deploy and configure minter filter and minter
     ({ genArt721Core: this.genArt721Core, minterFilter: this.minterFilter } =
       await deployCoreWithMinterFilter.call(
