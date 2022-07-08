@@ -87,7 +87,7 @@ describe("GenArt721CoreV1 Integration", async function () {
         .withArgs(
           constants.ZERO_ADDRESS,
           this.accounts.user.address,
-          this.firstTokenId
+          this.projectZeroTokenZero
         );
 
       this.projectZeroInfo = await this.token.projectTokenInfo(
@@ -133,7 +133,7 @@ describe("GenArt721CoreV1 Integration", async function () {
         .withArgs(
           constants.ZERO_ADDRESS,
           this.accounts.user.address,
-          this.firstTokenId
+          this.projectZeroTokenZero
         );
 
       this.projectZeroInfo = await this.token.projectTokenInfo(
@@ -183,7 +183,7 @@ describe("GenArt721CoreV1 Integration", async function () {
         .withArgs(
           constants.ZERO_ADDRESS,
           this.accounts.user.address,
-          this.firstTokenId
+          this.projectZeroTokenZero
         );
 
       this.projectZeroInfo = await this.token.projectTokenInfo(

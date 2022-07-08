@@ -8,11 +8,20 @@ import { TestAccountsArtBlocks } from "./util/common";
 declare module "mocha" {
   export interface Context {
     accounts: TestAccountsArtBlocks;
-    projectZero: Number;
-    name: String;
-    symbol: String;
-    firstTokenId: BigNumber;
+    name: string;
+    symbol: string;
     pricePerTokenInWei: BigNumber;
     maxInvocations: Number;
+    // project IDs
+    projectZero: number;
+    projectOne: number;
+    projectTwo: number;
+    // token IDs
+    projectZeroTokenZero: BigNumber;
+    projectZeroTokenOne: BigNumber;
+    projectOneTokenZero: BigNumber;
+    projectOneTokenOne: BigNumber;
+    projectTwoTokenZero: BigNumber;
+    projectTwoTokenOne: BigNumber;
   }
 }

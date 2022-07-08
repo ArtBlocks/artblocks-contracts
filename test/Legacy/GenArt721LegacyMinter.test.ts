@@ -10,35 +10,25 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { BigNumber } from "ethers";
 
+import {
+  getAccounts,
+  assignDefaultConstants,
+  deployAndGet,
+  deployCoreWithMinterFilter,
+} from "../util/common";
+
 describe("GenArt721Minter", async function () {
-  const name = "Non Fungible Token";
-  const symbol = "NFT";
-
-  const firstTokenId = new BN("30000000");
-  const secondTokenId = new BN("3000001");
-
-  const pricePerTokenInWei = ethers.utils.parseEther("1");
-  const projectZero = 3; // V1 core starts at project 3
-  const projectOne = 4;
-
   beforeEach(async function () {
-    const [owner, newOwner, artist, additional, snowfro] =
-      await ethers.getSigners();
-    this.accounts = {
-      owner: owner,
-      newOwner: newOwner,
-      artist: artist,
-      additional: additional,
-      snowfro: snowfro,
-    };
+    this.accounts = await getAccounts.call(this);
+    await assignDefaultConstants.call(this, 3);
     const randomizerFactory = await ethers.getContractFactory(
       "BasicRandomizer"
     );
     this.randomizer = await randomizerFactory.deploy();
     const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV1");
     this.token = await artblocksFactory
-      .connect(snowfro)
-      .deploy(name, symbol, this.randomizer.address);
+      .connect(this.accounts.deployer)
+      .deploy(this.name, this.symbol, this.randomizer.address);
     // deploy minter
     const minterFactory = await ethers.getContractFactory(
       "GenArt721LegacyMinter"
@@ -47,38 +37,58 @@ describe("GenArt721Minter", async function () {
 
     // add projects
     await this.token
-      .connect(snowfro)
-      .addProject("project1", artist.address, pricePerTokenInWei, false);
+      .connect(this.accounts.deployer)
+      .addProject(
+        "project1",
+        this.accounts.artist.address,
+        this.pricePerTokenInWei,
+        false
+      );
     await this.token
-      .connect(snowfro)
-      .addProject("project2", artist.address, pricePerTokenInWei, false);
-
-    await this.token.connect(snowfro).toggleProjectIsActive(projectZero);
-    await this.token.connect(snowfro).toggleProjectIsActive(projectOne);
-
-    await this.token.connect(snowfro).addMintWhitelisted(this.minter.address);
+      .connect(this.accounts.deployer)
+      .addProject(
+        "project2",
+        this.accounts.artist.address,
+        this.pricePerTokenInWei,
+        false
+      );
 
     await this.token
-      .connect(artist)
-      .updateProjectMaxInvocations(projectZero, 15);
+      .connect(this.accounts.deployer)
+      .toggleProjectIsActive(this.projectZero);
     await this.token
-      .connect(artist)
-      .updateProjectMaxInvocations(projectOne, 15);
+      .connect(this.accounts.deployer)
+      .toggleProjectIsActive(this.projectOne);
 
-    this.token.connect(this.accounts.artist).toggleProjectIsPaused(projectZero);
-    this.token.connect(this.accounts.artist).toggleProjectIsPaused(projectOne);
+    await this.token
+      .connect(this.accounts.deployer)
+      .addMintWhitelisted(this.minter.address);
+
+    await this.token
+      .connect(this.accounts.artist)
+      .updateProjectMaxInvocations(this.projectZero, 15);
+    await this.token
+      .connect(this.accounts.artist)
+      .updateProjectMaxInvocations(this.projectOne, 15);
+
+    this.token
+      .connect(this.accounts.artist)
+      .toggleProjectIsPaused(this.projectZero);
+    this.token
+      .connect(this.accounts.artist)
+      .toggleProjectIsPaused(this.projectOne);
   });
 
   describe("(LEGACY MINTER) purchase method", async function () {
     it("mints and calculates gas values", async function () {
-      await this.minter.connect(this.accounts.owner).purchase(projectZero, {
-        value: pricePerTokenInWei,
+      await this.minter.connect(this.accounts.user).purchase(this.projectZero, {
+        value: this.pricePerTokenInWei,
       });
 
       const tx = await this.minter
-        .connect(this.accounts.owner)
-        .purchase(projectOne, {
-          value: pricePerTokenInWei,
+        .connect(this.accounts.user)
+        .purchase(this.projectOne, {
+          value: this.pricePerTokenInWei,
         });
 
       const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
@@ -94,15 +104,17 @@ describe("GenArt721Minter", async function () {
 
     it("does nothing if setProjectMaxInvocations is not called (fails correctly)", async function () {
       for (let i = 0; i < 15; i++) {
-        await this.minter.connect(this.accounts.owner).purchase(projectZero, {
-          value: pricePerTokenInWei,
-        });
+        await this.minter
+          .connect(this.accounts.user)
+          .purchase(this.projectZero, {
+            value: this.pricePerTokenInWei,
+          });
       }
 
-      const ownerBalance = await this.accounts.owner.getBalance();
+      const userBalance = await this.accounts.user.getBalance();
       await expectRevert(
-        this.minter.connect(this.accounts.owner).purchase(projectZero, {
-          value: pricePerTokenInWei,
+        this.minter.connect(this.accounts.user).purchase(this.projectZero, {
+          value: this.pricePerTokenInWei,
         }),
         "Must not exceed max invocations"
       );
@@ -111,9 +123,9 @@ describe("GenArt721Minter", async function () {
     it("doesnt add too much gas if setProjectMaxInvocations is set", async function () {
       // Try without setProjectMaxInvocations, store gas cost
       const tx = await this.minter
-        .connect(this.accounts.owner)
-        .purchase(projectZero, {
-          value: pricePerTokenInWei,
+        .connect(this.accounts.user)
+        .purchase(this.projectZero, {
+          value: this.pricePerTokenInWei,
         });
 
       const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
@@ -126,12 +138,12 @@ describe("GenArt721Minter", async function () {
 
       // Try with setProjectMaxInvocations, store gas cost
       await this.minter
-        .connect(this.accounts.snowfro)
-        .setProjectMaxInvocations(projectOne);
+        .connect(this.accounts.deployer)
+        .setProjectMaxInvocations(this.projectOne);
       const maxSetTx = await this.minter
-        .connect(this.accounts.owner)
-        .purchase(projectOne, {
-          value: pricePerTokenInWei,
+        .connect(this.accounts.user)
+        .purchase(this.projectOne, {
+          value: this.pricePerTokenInWei,
         });
       const receipt2 = await ethers.provider.getTransactionReceipt(
         maxSetTx.hash
@@ -162,55 +174,59 @@ describe("GenArt721Minter", async function () {
     it("fails more cheaply if setProjectMaxInvocations is set", async function () {
       // Try without setProjectMaxInvocations, store gas cost
       for (let i = 0; i < 15; i++) {
-        await this.minter.connect(this.accounts.owner).purchase(projectZero, {
-          value: pricePerTokenInWei,
-        });
+        await this.minter
+          .connect(this.accounts.user)
+          .purchase(this.projectZero, {
+            value: this.pricePerTokenInWei,
+          });
       }
-      const ownerBalanceNoMaxSet = await this.accounts.owner.getBalance();
+      const userBalanceNoMaxSet = await this.accounts.user.getBalance();
       await expectRevert(
-        this.minter.connect(this.accounts.owner).purchase(projectZero, {
-          value: pricePerTokenInWei,
+        this.minter.connect(this.accounts.user).purchase(this.projectZero, {
+          value: this.pricePerTokenInWei,
         }),
         "Must not exceed max invocations"
       );
-      const ownerDeltaNoMaxSet = ownerBalanceNoMaxSet.sub(
-        BigNumber.from(await this.accounts.owner.getBalance())
+      const userDeltaNoMaxSet = userBalanceNoMaxSet.sub(
+        BigNumber.from(await this.accounts.user.getBalance())
       );
 
       // Try with setProjectMaxInvocations, store gas cost
       await this.minter
-        .connect(this.accounts.snowfro)
-        .setProjectMaxInvocations(projectOne);
+        .connect(this.accounts.deployer)
+        .setProjectMaxInvocations(this.projectOne);
       for (let i = 0; i < 15; i++) {
-        await this.minter.connect(this.accounts.owner).purchase(projectOne, {
-          value: pricePerTokenInWei,
-        });
+        await this.minter
+          .connect(this.accounts.user)
+          .purchase(this.projectOne, {
+            value: this.pricePerTokenInWei,
+          });
       }
-      const ownerBalanceMaxSet = BigNumber.from(
-        await this.accounts.owner.getBalance()
+      const userBalanceMaxSet = BigNumber.from(
+        await this.accounts.user.getBalance()
       );
       await expectRevert(
-        this.minter.connect(this.accounts.owner).purchase(projectOne, {
-          value: pricePerTokenInWei,
+        this.minter.connect(this.accounts.user).purchase(this.projectOne, {
+          value: this.pricePerTokenInWei,
         }),
         "Maximum number of invocations reached"
       );
-      const ownerDeltaMaxSet = ownerBalanceMaxSet.sub(
-        BigNumber.from(await this.accounts.owner.getBalance())
+      const userDeltaMaxSet = userBalanceMaxSet.sub(
+        BigNumber.from(await this.accounts.user.getBalance())
       );
 
       console.log(
         "Gas cost with setProjectMaxInvocations: ",
-        ethers.utils.formatUnits(ownerDeltaMaxSet, "ether").toString(),
+        ethers.utils.formatUnits(userDeltaMaxSet, "ether").toString(),
         "ETH"
       );
       console.log(
         "Gas cost without setProjectMaxInvocations: ",
-        ethers.utils.formatUnits(ownerDeltaNoMaxSet, "ether").toString(),
+        ethers.utils.formatUnits(userDeltaNoMaxSet, "ether").toString(),
         "ETH"
       );
 
-      expect(ownerDeltaMaxSet.lt(ownerDeltaNoMaxSet)).to.be.true;
+      expect(userDeltaMaxSet.lt(userDeltaNoMaxSet)).to.be.true;
     });
   });
 });

@@ -47,14 +47,23 @@ export async function getAccounts(): Promise<TestAccountsArtBlocks> {
 }
 
 export async function assignDefaultConstants(
-  projectZero: Number = 0
+  projectZero: number = 0
 ): Promise<void> {
-  this.projectZero = projectZero;
   this.name = "Non Fungible Token";
   this.symbol = "NFT";
-  this.firstTokenId = new BN(projectZero.toString()).mul(new BN("1000000"));
   this.pricePerTokenInWei = ethers.utils.parseEther("1");
   this.maxInvocations = 15;
+  // project IDs
+  this.projectZero = projectZero;
+  this.projectOne = projectZero + 1;
+  this.projectThree = projectZero + 2;
+  // token IDs
+  this.projectZeroTokenZero = new BN(this.projectZero).mul(new BN("1000000"));
+  this.projectZeroTokenOne = this.projectZeroTokenZero.add(new BN("1"));
+  this.projectOneTokenZero = new BN(this.projectOne).mul(new BN("1000000"));
+  this.projectOneTokenOne = this.projectOneTokenZero.add(new BN("1"));
+  this.projectTwoTokenZero = new BN(this.projectTwo).mul(new BN("1000000"));
+  this.projectTwoTokenOne = this.projectTwoTokenZero.add(new BN("1"));
 }
 
 // utility function to simplify code when deploying any contract from factory
