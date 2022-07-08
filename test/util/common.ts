@@ -97,3 +97,19 @@ export async function deployCoreWithMinterFilter(
     .addMintWhitelisted(minterFilter.address);
   return { randomizer, token, minterFilter };
 }
+
+// utility function to call addProject on core for either flagship or PBAB/PRTNR
+// (used because flagship has four args, PBAB/PRTNR has three)
+export async function safeAddProject(
+  core: Contract,
+  caller: SignerWithAddress,
+  artistAddress: string
+) {
+  try {
+    await core.connect(caller).addProject("TestProject", artistAddress, 0);
+  } catch {
+    await core
+      .connect(caller)
+      .addProject("TestProject", artistAddress, 0, false);
+  }
+}

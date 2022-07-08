@@ -1,14 +1,5 @@
-import {
-  BN,
-  constants,
-  expectEvent,
-  expectRevert,
-  balance,
-  ether,
-} from "@openzeppelin/test-helpers";
+import { BN, constants, expectRevert } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
-import { BigNumber } from "ethers";
-import { ethers } from "hardhat";
 
 /**
  * These tests are intended to check integration of the MinterFilter suite

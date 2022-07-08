@@ -1,53 +1,13 @@
-import {
-  BN,
-  constants,
-  expectEvent,
-  expectRevert,
-  balance,
-  ether,
-} from "@openzeppelin/test-helpers";
+import { expectRevert } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
-import { ethers } from "hardhat";
+import { safeAddProject } from "../../util/common";
 
-describe("MinterFilterV0Enumeration", async function () {
-  const pricePerTokenInWei = ethers.utils.parseEther("1");
-
-  beforeEach(async function () {
-    // Deployment
-    const [deployer, artist, misc] = await ethers.getSigners();
-    this.accounts = {
-      deployer: deployer,
-      artist: artist,
-      misc: misc,
-    };
-    const randomizerFactory = await ethers.getContractFactory(
-      "BasicRandomizer"
-    );
-    this.randomizer = await randomizerFactory.deploy();
-    const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV1");
-    this.genArt721Core = await artblocksFactory
-      .connect(deployer)
-      .deploy("Test Contract", "TEST", this.randomizer.address);
-    const minterFilterFactory = await ethers.getContractFactory(
-      "MinterFilterV0"
-    );
-    this.minterFilter = await minterFilterFactory.deploy(
-      this.genArt721Core.address
-    );
-    const minterFactory = await ethers.getContractFactory(
-      "MinterSetPriceERC20V0"
-    );
-    this.minter = await minterFactory.deploy(
-      this.genArt721Core.address,
-      this.minterFilter.address
-    );
-
-    // Project setup
-    await this.genArt721Core
-      .connect(deployer)
-      .addProject("Test Project", this.accounts.artist.address, 0, false);
-  });
-
+/**
+ * These tests are intended to check common Enumeration behaviors of
+ * MinterFilter contracts.
+ * @dev assumes common BeforeEach to populate accounts, constants, and setup
+ */
+export const MinterFilterEnumeration_Common = async () => {
   describe("Enumerable Map: minterForProject", async function () {
     describe("no projects configured", async function () {
       const indexErrorMessage =
@@ -137,9 +97,11 @@ describe("MinterFilterV0Enumeration", async function () {
   describe("mapping: numProjectsUsingMinter", async function () {
     beforeEach(async function () {
       // Project 1 setup
-      await this.genArt721Core
-        .connect(this.accounts.deployer)
-        .addProject("Test Project One", this.accounts.artist.address, 0, false);
+      await safeAddProject(
+        this.token,
+        this.accounts.deployer,
+        this.accounts.artist.address
+      );
     });
 
     describe("keeps count while add/remove minter for project", async function () {
@@ -449,4 +411,4 @@ describe("MinterFilterV0Enumeration", async function () {
       });
     });
   });
-});
+};
