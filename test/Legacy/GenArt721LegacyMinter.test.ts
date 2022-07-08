@@ -26,17 +26,17 @@ describe("GenArt721Minter", async function () {
     );
     this.randomizer = await randomizerFactory.deploy();
     const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV1");
-    this.token = await artblocksFactory
+    this.genArt721Core = await artblocksFactory
       .connect(this.accounts.deployer)
       .deploy(this.name, this.symbol, this.randomizer.address);
     // deploy minter
     const minterFactory = await ethers.getContractFactory(
       "GenArt721LegacyMinter"
     );
-    this.minter = await minterFactory.deploy(this.token.address);
+    this.minter = await minterFactory.deploy(this.genArt721Core.address);
 
     // add projects
-    await this.token
+    await this.genArt721Core
       .connect(this.accounts.deployer)
       .addProject(
         "project1",
@@ -44,7 +44,7 @@ describe("GenArt721Minter", async function () {
         this.pricePerTokenInWei,
         false
       );
-    await this.token
+    await this.genArt721Core
       .connect(this.accounts.deployer)
       .addProject(
         "project2",
@@ -53,28 +53,28 @@ describe("GenArt721Minter", async function () {
         false
       );
 
-    await this.token
+    await this.genArt721Core
       .connect(this.accounts.deployer)
       .toggleProjectIsActive(this.projectZero);
-    await this.token
+    await this.genArt721Core
       .connect(this.accounts.deployer)
       .toggleProjectIsActive(this.projectOne);
 
-    await this.token
+    await this.genArt721Core
       .connect(this.accounts.deployer)
       .addMintWhitelisted(this.minter.address);
 
-    await this.token
+    await this.genArt721Core
       .connect(this.accounts.artist)
       .updateProjectMaxInvocations(this.projectZero, 15);
-    await this.token
+    await this.genArt721Core
       .connect(this.accounts.artist)
       .updateProjectMaxInvocations(this.projectOne, 15);
 
-    this.token
+    this.genArt721Core
       .connect(this.accounts.artist)
       .toggleProjectIsPaused(this.projectZero);
-    this.token
+    this.genArt721Core
       .connect(this.accounts.artist)
       .toggleProjectIsPaused(this.projectOne);
   });

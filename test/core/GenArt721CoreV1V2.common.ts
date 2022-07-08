@@ -11,31 +11,31 @@ import { expect } from "chai";
 export const GenArt721MinterV1V2_Common = async () => {
   describe("has whitelisted owner", function () {
     it("has an admin", async function () {
-      expect(await this.token.artblocksAddress()).to.be.equal(
+      expect(await this.genArt721Core.artblocksAddress()).to.be.equal(
         this.accounts.deployer.address
       );
     });
 
     it("has an admin", async function () {
-      expect(await this.token.admin()).to.be.equal(
+      expect(await this.genArt721Core.admin()).to.be.equal(
         this.accounts.deployer.address
       );
     });
 
     it("has a whitelisted account", async function () {
       expect(
-        await this.token.isWhitelisted(this.accounts.deployer.address)
+        await this.genArt721Core.isWhitelisted(this.accounts.deployer.address)
       ).to.be.equal(true);
     });
   });
 
   describe("reverts on project locked", async function () {
     it("reverts if try to modify script", async function () {
-      await this.token
+      await this.genArt721Core
         .connect(this.accounts.deployer)
         .toggleProjectIsLocked(this.projectZero);
       await expectRevert(
-        this.token
+        this.genArt721Core
           .connect(this.accounts.artist)
           .updateProjectScriptJSON(this.projectZero, "lorem ipsum"),
         "Only if unlocked"
@@ -65,12 +65,12 @@ export const GenArt721MinterV1V2_Common = async () => {
   describe("handles updating minter", async function () {
     it("only allows admin/whitelisted to update minter", async function () {
       // allows admin to update minter
-      await this.token
+      await this.genArt721Core
         .connect(this.accounts.deployer)
         .addMintWhitelisted(this.minter.address);
       // does not allow random to update minter
       await expectRevert(
-        this.token
+        this.genArt721Core
           .connect(this.accounts.artist)
           .addMintWhitelisted(this.minter.address),
         "Only admin"
@@ -80,7 +80,7 @@ export const GenArt721MinterV1V2_Common = async () => {
 
   describe("projectTokenInfo", function () {
     it("returns expected values", async function () {
-      const tokenInfo = await this.token
+      const tokenInfo = await this.genArt721Core
         .connect(this.accounts.deployer)
         .projectTokenInfo(this.projectZero);
       expect(tokenInfo.invocations).to.be.equal(0);

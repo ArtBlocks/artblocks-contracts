@@ -39,60 +39,64 @@ describe("GenArt721CoreV3", async function () {
     );
     this.randomizer = await randomizerFactory.deploy();
     const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV3");
-    this.token = await artblocksFactory
+    this.genArt721Core = await artblocksFactory
       .connect(snowfro)
       .deploy(name, symbol, this.randomizer.address);
 
     // TBD - V3 DOES NOT CURRENTLY HAVE A WORKING MINTER
 
     // add project
-    await this.token.connect(snowfro).addProject("name", artist.address);
-    await this.token.connect(snowfro).toggleProjectIsActive(projectZero);
-    await this.token
+    await this.genArt721Core
+      .connect(snowfro)
+      .addProject("name", artist.address);
+    await this.genArt721Core
+      .connect(snowfro)
+      .toggleProjectIsActive(projectZero);
+    await this.genArt721Core
       .connect(artist)
       .updateProjectMaxInvocations(projectZero, 15);
   });
 
   describe("has whitelisted owner", function () {
     it("has an admin", async function () {
-      expect(await this.token.artblocksAddress()).to.be.equal(
+      expect(await this.genArt721Core.artblocksAddress()).to.be.equal(
         this.accounts.snowfro.address
       );
     });
 
     it("has an admin", async function () {
-      expect(await this.token.admin()).to.be.equal(
+      expect(await this.genArt721Core.admin()).to.be.equal(
         this.accounts.snowfro.address
       );
     });
 
     describe("has whitelisted owner", function () {
       it("has an admin", async function () {
-        expect(await this.token.artblocksAddress()).to.be.equal(
+        expect(await this.genArt721Core.artblocksAddress()).to.be.equal(
           this.accounts.snowfro.address
         );
       });
 
       it("has an admin", async function () {
-        expect(await this.token.admin()).to.be.equal(
+        expect(await this.genArt721Core.admin()).to.be.equal(
           this.accounts.snowfro.address
         );
       });
 
       it("has a whitelisted account", async function () {
         expect(
-          await this.token.isWhitelisted(this.accounts.snowfro.address)
+          await this.genArt721Core.isWhitelisted(this.accounts.snowfro.address)
         ).to.be.equal(true);
       });
     });
 
     describe("reverts on project locked", async function () {
       it("reverts if try to modify script", async function () {
-        await this.token
+        await this.genArt721Core
           .connect(this.accounts.snowfro)
           .toggleProjectIsLocked(projectZero);
         await expectRevert(
-          this.token
+          this.genArt721Core
             .connect(this.accounts.artist)
             .updateProjectScriptJSON(projectZero, "lorem ipsum"),
           "Only if unlocked"
@@ -103,7 +107,7 @@ describe("GenArt721CoreV3", async function () {
 
   describe("projectInfo", function () {
     it("returns expected deprecated values", async function () {
-      const tokenInfo = await this.token
+      const tokenInfo = await this.genArt721Core
         .connect(this.accounts.snowfro)
         .projectInfo(0);
       expect(tokenInfo.invocations).to.be.equal(0);

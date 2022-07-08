@@ -98,7 +98,7 @@ export const MinterFilterEnumeration_Common = async () => {
     beforeEach(async function () {
       // Project 1 setup
       await safeAddProject(
-        this.token,
+        this.genArt721Core,
         this.accounts.deployer,
         this.accounts.artist.address
       );

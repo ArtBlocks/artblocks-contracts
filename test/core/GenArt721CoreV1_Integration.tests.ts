@@ -29,27 +29,27 @@ describe("GenArt721CoreV1 Integration", async function () {
     this.accounts = await getAccounts.call(this);
     await assignDefaultConstants.call(this, 3); // projectZero = 3 on V1 core
     // deploy and configure minter filter and minter
-    ({ token: this.token, minterFilter: this.minterFilter } =
+    ({ genArt721Core: this.genArt721Core, minterFilter: this.minterFilter } =
       await deployCoreWithMinterFilter.call(
         this,
         "GenArt721CoreV1",
         "MinterFilterV0"
       ));
     this.minter = await deployAndGet.call(this, "MinterSetPriceV1", [
-      this.token.address,
+      this.genArt721Core.address,
       this.minterFilter.address,
     ]);
     await this.minterFilter
       .connect(this.accounts.deployer)
       .addApprovedMinter(this.minter.address);
     // add project
-    await this.token
+    await this.genArt721Core
       .connect(this.accounts.deployer)
       .addProject("name", this.accounts.artist.address, 0, false);
-    await this.token
+    await this.genArt721Core
       .connect(this.accounts.deployer)
       .toggleProjectIsActive(this.projectZero);
-    await this.token
+    await this.genArt721Core
       .connect(this.accounts.artist)
       .updateProjectMaxInvocations(this.projectZero, this.maxInvocations);
     // set project's minter and price
@@ -60,7 +60,9 @@ describe("GenArt721CoreV1 Integration", async function () {
       .connect(this.accounts.artist)
       .setMinterForProject(this.projectZero, this.minter.address);
     // get project's info
-    this.projectZeroInfo = await this.token.projectTokenInfo(this.projectZero);
+    this.projectZeroInfo = await this.genArt721Core.projectTokenInfo(
+      this.projectZero
+    );
   });
 
   describe("common tests", async function () {
@@ -73,7 +75,7 @@ describe("GenArt721CoreV1 Integration", async function () {
       const ownerBalance = await this.accounts.user.getBalance();
       const deployerBalance = await this.accounts.deployer.getBalance();
 
-      this.token
+      this.genArt721Core
         .connect(this.accounts.artist)
         .toggleProjectIsPaused(this.projectZero);
 
@@ -83,14 +85,14 @@ describe("GenArt721CoreV1 Integration", async function () {
           value: this.pricePerTokenInWei,
         })
       )
-        .to.emit(this.token, "Transfer")
+        .to.emit(this.genArt721Core, "Transfer")
         .withArgs(
           constants.ZERO_ADDRESS,
           this.accounts.user.address,
           this.projectZeroTokenZero
         );
 
-      this.projectZeroInfo = await this.token.projectTokenInfo(
+      this.projectZeroInfo = await this.genArt721Core.projectTokenInfo(
         this.projectZero
       );
       expect(this.projectZeroInfo.invocations).to.equal("1");
@@ -112,14 +114,14 @@ describe("GenArt721CoreV1 Integration", async function () {
       const deployerBalance = await this.accounts.deployer.getBalance();
 
       const additionalPayeePercentage = 10;
-      this.token
+      this.genArt721Core
         .connect(this.accounts.artist)
         .updateProjectAdditionalPayeeInfo(
           this.projectZero,
           this.accounts.additional.address,
           additionalPayeePercentage
         );
-      this.token
+      this.genArt721Core
         .connect(this.accounts.artist)
         .toggleProjectIsPaused(this.projectZero);
 
@@ -129,14 +131,14 @@ describe("GenArt721CoreV1 Integration", async function () {
           value: this.pricePerTokenInWei,
         })
       )
-        .to.emit(this.token, "Transfer")
+        .to.emit(this.genArt721Core, "Transfer")
         .withArgs(
           constants.ZERO_ADDRESS,
           this.accounts.user.address,
           this.projectZeroTokenZero
         );
 
-      this.projectZeroInfo = await this.token.projectTokenInfo(
+      this.projectZeroInfo = await this.genArt721Core.projectTokenInfo(
         this.projectZero
       );
       expect(this.projectZeroInfo.invocations).to.equal("1");
@@ -162,14 +164,14 @@ describe("GenArt721CoreV1 Integration", async function () {
       const deployerBalance = await this.accounts.deployer.getBalance();
 
       const additionalPayeePercentage = 100;
-      this.token
+      this.genArt721Core
         .connect(this.accounts.artist)
         .updateProjectAdditionalPayeeInfo(
           this.projectZero,
           this.accounts.additional.address,
           additionalPayeePercentage
         );
-      this.token
+      this.genArt721Core
         .connect(this.accounts.artist)
         .toggleProjectIsPaused(this.projectZero);
 
@@ -179,14 +181,14 @@ describe("GenArt721CoreV1 Integration", async function () {
           value: this.pricePerTokenInWei,
         })
       )
-        .to.emit(this.token, "Transfer")
+        .to.emit(this.genArt721Core, "Transfer")
         .withArgs(
           constants.ZERO_ADDRESS,
           this.accounts.user.address,
           this.projectZeroTokenZero
         );
 
-      this.projectZeroInfo = await this.token.projectTokenInfo(
+      this.projectZeroInfo = await this.genArt721Core.projectTokenInfo(
         this.projectZero
       );
       expect(this.projectZeroInfo.invocations).to.equal("1");

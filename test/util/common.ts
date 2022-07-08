@@ -19,7 +19,7 @@ export type TestAccountsArtBlocks = {
 
 export type CoreWithMinterSuite = {
   randomizer: Contract;
-  token: Contract;
+  genArt721Core: Contract;
   minterFilter: Contract;
 };
 
@@ -83,19 +83,19 @@ export async function deployCoreWithMinterFilter(
   minterFilterName: string
 ): Promise<CoreWithMinterSuite> {
   const randomizer = await deployAndGet.call(this, "BasicRandomizer", []);
-  const token = await deployAndGet.call(this, coreContractName, [
+  const genArt721Core = await deployAndGet.call(this, coreContractName, [
     this.name,
     this.symbol,
     randomizer.address,
   ]);
   const minterFilter = await deployAndGet.call(this, minterFilterName, [
-    token.address,
+    genArt721Core.address,
   ]);
   // allowlist minterFilter on the core contract
-  await token
+  await genArt721Core
     .connect(this.accounts.deployer)
     .addMintWhitelisted(minterFilter.address);
-  return { randomizer, token, minterFilter };
+  return { randomizer, genArt721Core, minterFilter };
 }
 
 // utility function to call addProject on core for either flagship or PBAB/PRTNR

@@ -4,7 +4,7 @@ import {
   deployAndGet,
   deployCoreWithMinterFilter,
 } from "../../util/common";
-import { MinterFilterEnumeration_Common } from "./MinterFilterV0Enumeration.common";
+import { MinterFilterEnumeration_Common } from "./MinterFilterEnumeration.common";
 
 describe("MinterFilterV0Enumeration", async function () {
   beforeEach(async function () {
@@ -12,19 +12,19 @@ describe("MinterFilterV0Enumeration", async function () {
     this.accounts = await getAccounts.call(this);
     await assignDefaultConstants.call(this);
     // deploy and configure minter filter and minter
-    ({ token: this.token, minterFilter: this.minterFilter } =
+    ({ genArt721Core: this.genArt721Core, minterFilter: this.minterFilter } =
       await deployCoreWithMinterFilter.call(
         this,
         "GenArt721CoreV2_PRTNR",
         "MinterFilterV0"
       ));
     this.minter = await deployAndGet.call(this, "MinterSetPriceERC20V1", [
-      this.token.address,
+      this.genArt721Core.address,
       this.minterFilter.address,
     ]);
 
     // Project setup
-    await this.token
+    await this.genArt721Core
       .connect(this.accounts.deployer)
       .addProject("Test Project", this.accounts.artist.address, 0);
   });
