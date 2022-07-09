@@ -27,7 +27,7 @@ import { GenArt721MinterV1V2_Common } from "./GenArt721CoreV1V2.common";
 describe("GenArt721CoreV2_PRTNR_Integration", async function () {
   beforeEach(async function () {
     // standard accounts and constants
-    this.accounts = await getAccounts.call(this);
+    this.accounts = await getAccounts();
     await assignDefaultConstants.call(this);
     // deploy and configure minter filter and minter
     ({ genArt721Core: this.genArt721Core, minterFilter: this.minterFilter } =

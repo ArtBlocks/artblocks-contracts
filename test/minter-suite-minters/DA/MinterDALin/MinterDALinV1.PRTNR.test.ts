@@ -28,7 +28,7 @@ import { MinterDAV1_Common } from "../MinterDAV1.common";
 describe("MinterDALinV1_V2PRTNRCore", async function () {
   beforeEach(async function () {
     // standard accounts and constants
-    this.accounts = await getAccounts.call(this);
+    this.accounts = await getAccounts();
     await assignDefaultConstants.call(this);
     this.startingPrice = ethers.utils.parseEther("10");
     this.higherPricePerTokenInWei = this.startingPrice.add(

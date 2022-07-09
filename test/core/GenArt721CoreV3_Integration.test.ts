@@ -24,7 +24,7 @@ import {
 describe("GenArt721CoreV3", async function () {
   beforeEach(async function () {
     // standard accounts and constants
-    this.accounts = await getAccounts.call(this);
+    this.accounts = await getAccounts();
     await assignDefaultConstants.call(this);
 
     const randomizerFactory = await ethers.getContractFactory(

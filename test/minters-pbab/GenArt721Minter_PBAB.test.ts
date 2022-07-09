@@ -10,7 +10,7 @@ import { GenArt721Minter_PBAB_Common } from "./GenArt721Minter_PBAB.common";
 describe("GenArt721Minter_PBAB", async function () {
   beforeEach(async function () {
     // standard accounts and constants
-    this.accounts = await getAccounts.call(this);
+    this.accounts = await getAccounts();
     await assignDefaultConstants.call(this);
     this.higherPricePerTokenInWei = ethers.utils.parseEther("1.1");
     // deploy and configure contracts

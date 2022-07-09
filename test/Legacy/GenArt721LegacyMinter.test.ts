@@ -19,7 +19,7 @@ import {
 
 describe("GenArt721Minter", async function () {
   beforeEach(async function () {
-    this.accounts = await getAccounts.call(this);
+    this.accounts = await getAccounts();
     await assignDefaultConstants.call(this, 3);
     const randomizerFactory = await ethers.getContractFactory(
       "BasicRandomizer"

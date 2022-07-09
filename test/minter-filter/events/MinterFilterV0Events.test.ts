@@ -11,7 +11,7 @@ import { MinterFilterEvents_Common } from "./MinterFilterEvents.common";
 describe("MinterFilterV0Events", async function () {
   beforeEach(async function () {
     // standard accounts and constants
-    this.accounts = await getAccounts.call(this);
+    this.accounts = await getAccounts();
     await assignDefaultConstants.call(this, 3); // projectZero = 3 on V1 core
     // deploy and configure minter filter and minter
     ({ genArt721Core: this.genArt721Core, minterFilter: this.minterFilter } =

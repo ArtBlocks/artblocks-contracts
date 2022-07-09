@@ -9,7 +9,7 @@ import { MinterFilterEnumeration_Common } from "./MinterFilterEnumeration.common
 describe("MinterFilterV0Enumeration_V2PRTNRCore", async function () {
   beforeEach(async function () {
     // standard accounts and constants
-    this.accounts = await getAccounts.call(this);
+    this.accounts = await getAccounts();
     await assignDefaultConstants.call(this);
     // deploy and configure minter filter and minter
     ({ genArt721Core: this.genArt721Core, minterFilter: this.minterFilter } =
