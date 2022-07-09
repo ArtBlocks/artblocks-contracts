@@ -4,9 +4,9 @@ import {
   deployAndGet,
   deployCoreWithMinterFilter,
 } from "../../util/common";
+import { ethers } from "hardhat";
 
 import { MinterFilterEvents_Common } from "./MinterFilterEvents.common";
-import { ethers } from "hardhat";
 
 describe("MinterFilterV0Events", async function () {
   beforeEach(async function () {

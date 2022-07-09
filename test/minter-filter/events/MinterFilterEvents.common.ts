@@ -1,9 +1,8 @@
-import { expectRevert } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { safeAddProject } from "../../util/common";
 
 /**
- * These tests are intended to check common Enumeration behaviors of
+ * These tests are intended to check common Event behaviors of
  * MinterFilter contracts.
  * @dev assumes common BeforeEach to populate accounts, constants, and setup
  */
