@@ -3,7 +3,7 @@
  * we use in our tests
  */
 import { BigNumber } from "ethers";
-import { TestAccountsArtBlocks } from "./util/common";
+import { TestAccountsArtBlocks } from "./test/util/common";
 
 declare module "mocha" {
   export interface Context {
