@@ -38,7 +38,7 @@ describe("MinterSetPriceERC20V1_V2PRTNRCore", async function () {
   beforeEach(async function () {
     const [owner, newOwner, artist, additional, deployer] =
       await ethers.getSigners();
-    this.accounts = {
+    this.accountsTODO = {
       owner: owner,
       newOwner: newOwner,
       artist: artist,
@@ -104,29 +104,35 @@ describe("MinterSetPriceERC20V1_V2PRTNRCore", async function () {
       .connect(artist)
       .updateProjectMaxInvocations(projectTwo, projectMaxInvocations);
 
-    this.token.connect(this.accounts.artist).toggleProjectIsPaused(projectZero);
-    this.token.connect(this.accounts.artist).toggleProjectIsPaused(projectOne);
-    this.token.connect(this.accounts.artist).toggleProjectIsPaused(projectTwo);
+    this.token
+      .connect(this.accountsTODO.artist)
+      .toggleProjectIsPaused(projectZero);
+    this.token
+      .connect(this.accountsTODO.artist)
+      .toggleProjectIsPaused(projectOne);
+    this.token
+      .connect(this.accountsTODO.artist)
+      .toggleProjectIsPaused(projectTwo);
 
     await this.minterFilter
-      .connect(this.accounts.deployer)
+      .connect(this.accountsTODO.deployer)
       .addApprovedMinter(this.minter.address);
     await this.minterFilter
-      .connect(this.accounts.deployer)
+      .connect(this.accountsTODO.deployer)
       .setMinterForProject(projectZero, this.minter.address);
     await this.minterFilter
-      .connect(this.accounts.deployer)
+      .connect(this.accountsTODO.deployer)
       .setMinterForProject(projectOne, this.minter.address);
     await this.minterFilter
-      .connect(this.accounts.deployer)
+      .connect(this.accountsTODO.deployer)
       .setMinterForProject(projectTwo, this.minter.address);
 
     // set token price for projects zero and one on minter
     await this.minter
-      .connect(this.accounts.artist)
+      .connect(this.accountsTODO.artist)
       .updatePricePerTokenInWei(projectZero, pricePerTokenInWei);
     await this.minter
-      .connect(this.accounts.artist)
+      .connect(this.accountsTODO.artist)
       .updatePricePerTokenInWei(projectOne, pricePerTokenInWei);
 
     // mock ERC20 token
@@ -140,7 +146,7 @@ describe("MinterSetPriceERC20V1_V2PRTNRCore", async function () {
         "GenArt721CoreV1"
       );
       const token2 = await artblocksFactory
-        .connect(this.accounts.deployer)
+        .connect(this.accountsTODO.deployer)
         .deploy(name, symbol, this.randomizer.address);
 
       const minterFilterFactory = await ethers.getContractFactory(
@@ -165,27 +171,27 @@ describe("MinterSetPriceERC20V1_V2PRTNRCore", async function () {
       // doesn't allow owner
       await expectRevert(
         this.minter
-          .connect(this.accounts.owner)
+          .connect(this.accountsTODO.owner)
           .updatePricePerTokenInWei(projectZero, higherPricePerTokenInWei),
         onlyArtistErrorMessage
       );
       // doesn't allow deployer
       await expectRevert(
         this.minter
-          .connect(this.accounts.deployer)
+          .connect(this.accountsTODO.deployer)
           .updatePricePerTokenInWei(projectZero, higherPricePerTokenInWei),
         onlyArtistErrorMessage
       );
       // doesn't allow additional
       await expectRevert(
         this.minter
-          .connect(this.accounts.additional)
+          .connect(this.accountsTODO.additional)
           .updatePricePerTokenInWei(projectZero, higherPricePerTokenInWei),
         onlyArtistErrorMessage
       );
       // does allow artist
       await this.minter
-        .connect(this.accounts.artist)
+        .connect(this.accountsTODO.artist)
         .updatePricePerTokenInWei(projectZero, higherPricePerTokenInWei);
     });
 
@@ -193,17 +199,17 @@ describe("MinterSetPriceERC20V1_V2PRTNRCore", async function () {
       const needMoreValueErrorMessage = "Must send minimum value to mint!";
       // artist increases price
       await this.minter
-        .connect(this.accounts.artist)
+        .connect(this.accountsTODO.artist)
         .updatePricePerTokenInWei(projectZero, higherPricePerTokenInWei);
       // cannot purchase token at lower price
       await expectRevert(
-        this.minter.connect(this.accounts.owner).purchase(projectZero, {
+        this.minter.connect(this.accountsTODO.owner).purchase(projectZero, {
           value: pricePerTokenInWei,
         }),
         needMoreValueErrorMessage
       );
       // can purchase token at higher price
-      await this.minter.connect(this.accounts.owner).purchase(projectZero, {
+      await this.minter.connect(this.accountsTODO.owner).purchase(projectZero, {
         value: higherPricePerTokenInWei,
       });
     });
@@ -212,17 +218,17 @@ describe("MinterSetPriceERC20V1_V2PRTNRCore", async function () {
       const needMoreValueErrorMessage = "Must send minimum value to mint!";
       // artist increases price of project zero
       await this.minter
-        .connect(this.accounts.artist)
+        .connect(this.accountsTODO.artist)
         .updatePricePerTokenInWei(projectZero, higherPricePerTokenInWei);
       // cannot purchase project zero token at lower price
       await expectRevert(
-        this.minter.connect(this.accounts.owner).purchase(projectZero, {
+        this.minter.connect(this.accountsTODO.owner).purchase(projectZero, {
           value: pricePerTokenInWei,
         }),
         needMoreValueErrorMessage
       );
       // can purchase project one token at lower price
-      await this.minter.connect(this.accounts.owner).purchase(projectOne, {
+      await this.minter.connect(this.accountsTODO.owner).purchase(projectOne, {
         value: pricePerTokenInWei,
       });
     });
@@ -231,7 +237,7 @@ describe("MinterSetPriceERC20V1_V2PRTNRCore", async function () {
       // artist increases price
       await expect(
         this.minter
-          .connect(this.accounts.artist)
+          .connect(this.accountsTODO.artist)
           .updatePricePerTokenInWei(projectZero, higherPricePerTokenInWei)
       )
         .to.emit(this.minter, "PricePerTokenInWeiUpdated")
@@ -245,7 +251,7 @@ describe("MinterSetPriceERC20V1_V2PRTNRCore", async function () {
       // doesn't allow owner
       await expectRevert(
         this.minter
-          .connect(this.accounts.owner)
+          .connect(this.accountsTODO.owner)
           .updateProjectCurrencyInfo(
             projectZero,
             "ETH",
@@ -256,7 +262,7 @@ describe("MinterSetPriceERC20V1_V2PRTNRCore", async function () {
       // doesn't allow deployer
       await expectRevert(
         this.minter
-          .connect(this.accounts.deployer)
+          .connect(this.accountsTODO.deployer)
           .updateProjectCurrencyInfo(
             projectZero,
             "ETH",
@@ -267,7 +273,7 @@ describe("MinterSetPriceERC20V1_V2PRTNRCore", async function () {
       // doesn't allow additional
       await expectRevert(
         this.minter
-          .connect(this.accounts.additional)
+          .connect(this.accountsTODO.additional)
           .updateProjectCurrencyInfo(
             projectZero,
             "ETH",
@@ -277,43 +283,43 @@ describe("MinterSetPriceERC20V1_V2PRTNRCore", async function () {
       );
       // does allow artist
       await this.minter
-        .connect(this.accounts.artist)
+        .connect(this.accountsTODO.artist)
         .updateProjectCurrencyInfo(projectZero, "ETH", constants.ZERO_ADDRESS);
     });
 
     it("enforces currency info update and allows purchases", async function () {
       // artist changes to Mock ERC20 token
       await this.minter
-        .connect(this.accounts.artist)
+        .connect(this.accountsTODO.artist)
         .updateProjectCurrencyInfo(projectZero, "MOCK", this.ERC20Mock.address);
       // cannot purchase token with ETH
       await expectRevert(
-        this.minter.connect(this.accounts.owner).purchase(projectZero, {
+        this.minter.connect(this.accountsTODO.owner).purchase(projectZero, {
           value: pricePerTokenInWei,
         }),
         "this project accepts a different currency and cannot accept ETH"
       );
       // approve contract and able to mint with Mock token
-      await this.ERC20Mock.connect(this.accounts.owner).approve(
+      await this.ERC20Mock.connect(this.accountsTODO.owner).approve(
         this.minter.address,
         ethers.utils.parseEther("100")
       );
-      await this.minter.connect(this.accounts.owner).purchase(projectZero);
+      await this.minter.connect(this.accountsTODO.owner).purchase(projectZero);
       // cannot purchase token with ERC20 token when insufficient balance
-      await this.ERC20Mock.connect(this.accounts.owner).transfer(
-        this.accounts.artist.address,
+      await this.ERC20Mock.connect(this.accountsTODO.owner).transfer(
+        this.accountsTODO.artist.address,
         ethers.utils.parseEther("100").sub(pricePerTokenInWei)
       );
       await expectRevert(
-        this.minter.connect(this.accounts.owner).purchase(projectZero),
+        this.minter.connect(this.accountsTODO.owner).purchase(projectZero),
         "Insufficient balance"
       );
       // artist changes back to ETH
       await this.minter
-        .connect(this.accounts.artist)
+        .connect(this.accountsTODO.artist)
         .updateProjectCurrencyInfo(projectZero, "ETH", constants.ZERO_ADDRESS);
       // able to mint with ETH
-      await this.minter.connect(this.accounts.owner).purchase(projectZero, {
+      await this.minter.connect(this.accountsTODO.owner).purchase(projectZero, {
         value: pricePerTokenInWei,
       });
     });
@@ -322,10 +328,10 @@ describe("MinterSetPriceERC20V1_V2PRTNRCore", async function () {
       const needMoreValueErrorMessage = "Must send minimum value to mint!";
       // artist changes currency info for project zero
       await this.minter
-        .connect(this.accounts.artist)
+        .connect(this.accountsTODO.artist)
         .updateProjectCurrencyInfo(projectZero, "MOCK", this.ERC20Mock.address);
       // can purchase project one token with ETH
-      await this.minter.connect(this.accounts.owner).purchase(projectOne, {
+      await this.minter.connect(this.accountsTODO.owner).purchase(projectOne, {
         value: pricePerTokenInWei,
       });
     });
@@ -334,7 +340,7 @@ describe("MinterSetPriceERC20V1_V2PRTNRCore", async function () {
       // artist changes currency info
       await expect(
         this.minter
-          .connect(this.accounts.artist)
+          .connect(this.accountsTODO.artist)
           .updateProjectCurrencyInfo(
             projectZero,
             "MOCK",
@@ -349,7 +355,7 @@ describe("MinterSetPriceERC20V1_V2PRTNRCore", async function () {
   describe("purchase", async function () {
     it("does not allow purchase prior to configuring price", async function () {
       await expectRevert(
-        this.minter.connect(this.accounts.owner).purchase(projectTwo, {
+        this.minter.connect(this.accountsTODO.owner).purchase(projectTwo, {
           value: pricePerTokenInWei,
         }),
         "Price not configured"
@@ -358,14 +364,16 @@ describe("MinterSetPriceERC20V1_V2PRTNRCore", async function () {
 
     it("does nothing if setProjectMaxInvocations is not called (fails correctly)", async function () {
       for (let i = 0; i < 15; i++) {
-        await this.minter.connect(this.accounts.owner).purchase(projectZero, {
-          value: pricePerTokenInWei,
-        });
+        await this.minter
+          .connect(this.accountsTODO.owner)
+          .purchase(projectZero, {
+            value: pricePerTokenInWei,
+          });
       }
 
-      const ownerBalance = await this.accounts.owner.getBalance();
+      const ownerBalance = await this.accountsTODO.owner.getBalance();
       await expectRevert(
-        this.minter.connect(this.accounts.owner).purchase(projectZero, {
+        this.minter.connect(this.accountsTODO.owner).purchase(projectZero, {
           value: pricePerTokenInWei,
         }),
         "Must not exceed max invocations"
@@ -374,7 +382,7 @@ describe("MinterSetPriceERC20V1_V2PRTNRCore", async function () {
 
     it("doesnt add too much gas if setProjectMaxInvocations is set", async function () {
       const tx = await this.minter
-        .connect(this.accounts.owner)
+        .connect(this.accountsTODO.owner)
         .purchase(projectOne, {
           value: pricePerTokenInWei,
         });
@@ -389,11 +397,11 @@ describe("MinterSetPriceERC20V1_V2PRTNRCore", async function () {
 
       // Try with setProjectMaxInvocations, store gas cost
       await this.minter
-        .connect(this.accounts.deployer)
+        .connect(this.accountsTODO.deployer)
         .setProjectMaxInvocations(projectOne);
 
       const maxSetTx = await this.minter
-        .connect(this.accounts.owner)
+        .connect(this.accountsTODO.owner)
         .purchase(projectOne, {
           value: pricePerTokenInWei,
         });
@@ -426,43 +434,47 @@ describe("MinterSetPriceERC20V1_V2PRTNRCore", async function () {
     it("fails more cheaply if setProjectMaxInvocations is set", async function () {
       // Try without setProjectMaxInvocations, store gas cost
       for (let i = 0; i < 15; i++) {
-        await this.minter.connect(this.accounts.owner).purchase(projectZero, {
-          value: pricePerTokenInWei,
-        });
+        await this.minter
+          .connect(this.accountsTODO.owner)
+          .purchase(projectZero, {
+            value: pricePerTokenInWei,
+          });
       }
       const ownerBalanceNoMaxSet = BigNumber.from(
-        await this.accounts.owner.getBalance()
+        await this.accountsTODO.owner.getBalance()
       );
       await expectRevert(
-        this.minter.connect(this.accounts.owner).purchase(projectZero, {
+        this.minter.connect(this.accountsTODO.owner).purchase(projectZero, {
           value: pricePerTokenInWei,
         }),
         "Must not exceed max invocations"
       );
       const ownerDeltaNoMaxSet = ownerBalanceNoMaxSet.sub(
-        BigNumber.from(await this.accounts.owner.getBalance())
+        BigNumber.from(await this.accountsTODO.owner.getBalance())
       );
 
       // Try with setProjectMaxInvocations, store gas cost
       await this.minter
-        .connect(this.accounts.deployer)
+        .connect(this.accountsTODO.deployer)
         .setProjectMaxInvocations(projectOne);
       for (let i = 0; i < 15; i++) {
-        await this.minter.connect(this.accounts.owner).purchase(projectOne, {
-          value: pricePerTokenInWei,
-        });
+        await this.minter
+          .connect(this.accountsTODO.owner)
+          .purchase(projectOne, {
+            value: pricePerTokenInWei,
+          });
       }
       const ownerBalanceMaxSet = BigNumber.from(
-        await this.accounts.owner.getBalance()
+        await this.accountsTODO.owner.getBalance()
       );
       await expectRevert(
-        this.minter.connect(this.accounts.owner).purchase(projectOne, {
+        this.minter.connect(this.accountsTODO.owner).purchase(projectOne, {
           value: pricePerTokenInWei,
         }),
         "Maximum number of invocations reached"
       );
       const ownerDeltaMaxSet = ownerBalanceMaxSet.sub(
-        BigNumber.from(await this.accounts.owner.getBalance())
+        BigNumber.from(await this.accountsTODO.owner.getBalance())
       );
 
       console.log(
@@ -483,7 +495,7 @@ describe("MinterSetPriceERC20V1_V2PRTNRCore", async function () {
   describe("calculates gas", async function () {
     it("mints and calculates gas values", async function () {
       const tx = await this.minter
-        .connect(this.accounts.owner)
+        .connect(this.accountsTODO.owner)
         .purchase(projectOne, {
           value: pricePerTokenInWei,
         });
@@ -504,8 +516,8 @@ describe("MinterSetPriceERC20V1_V2PRTNRCore", async function () {
     it("does not allow purchase prior to configuring price", async function () {
       await expectRevert(
         this.minter
-          .connect(this.accounts.owner)
-          .purchaseTo(this.accounts.additional.address, projectTwo, {
+          .connect(this.accountsTODO.owner)
+          .purchaseTo(this.accountsTODO.additional.address, projectTwo, {
             value: pricePerTokenInWei,
           }),
         "Price not configured"
@@ -514,8 +526,8 @@ describe("MinterSetPriceERC20V1_V2PRTNRCore", async function () {
 
     it("allows `purchaseTo` by default", async function () {
       await this.minter
-        .connect(this.accounts.owner)
-        .purchaseTo(this.accounts.additional.address, projectOne, {
+        .connect(this.accountsTODO.owner)
+        .purchaseTo(this.accountsTODO.additional.address, projectOne, {
           value: pricePerTokenInWei,
         });
     });
@@ -523,14 +535,14 @@ describe("MinterSetPriceERC20V1_V2PRTNRCore", async function () {
     it("does not support toggling of `purchaseToDisabled`", async function () {
       await expectRevert(
         this.minter
-          .connect(this.accounts.artist)
+          .connect(this.accountsTODO.artist)
           .togglePurchaseToDisabled(projectOne),
         "Action not supported"
       );
       // still allows `purchaseTo`.
       await this.minter
-        .connect(this.accounts.owner)
-        .purchaseTo(this.accounts.artist.address, projectOne, {
+        .connect(this.accountsTODO.owner)
+        .purchaseTo(this.accountsTODO.artist.address, projectOne, {
           value: pricePerTokenInWei,
         });
     });
@@ -538,7 +550,7 @@ describe("MinterSetPriceERC20V1_V2PRTNRCore", async function () {
     it("doesn't support `purchaseTo` toggling", async function () {
       await expectRevert(
         this.minter
-          .connect(this.accounts.artist)
+          .connect(this.accountsTODO.artist)
           .togglePurchaseToDisabled(projectOne),
         "Action not supported"
       );
@@ -548,28 +560,28 @@ describe("MinterSetPriceERC20V1_V2PRTNRCore", async function () {
   describe("setProjectMaxInvocations", async function () {
     it("handles getting tokenInfo invocation info with V2 core", async function () {
       await this.minter
-        .connect(this.accounts.deployer)
+        .connect(this.accountsTODO.deployer)
         .setProjectMaxInvocations(projectOne);
       // minter should update storage with accurate projectMaxInvocations
       await this.minter
-        .connect(this.accounts.deployer)
+        .connect(this.accountsTODO.deployer)
         .setProjectMaxInvocations(projectOne);
       let maxInvocations = await this.minter
-        .connect(this.accounts.deployer)
+        .connect(this.accountsTODO.deployer)
         .projectMaxInvocations(projectOne);
       expect(maxInvocations).to.be.equal(projectMaxInvocations);
       // ensure hasMaxBeenReached did not unexpectedly get set as true
       let hasMaxBeenInvoked = await this.minter
-        .connect(this.accounts.deployer)
+        .connect(this.accountsTODO.deployer)
         .projectMaxHasBeenInvoked(projectOne);
       expect(hasMaxBeenInvoked).to.be.false;
       // should also support unconfigured project projectMaxInvocations
       // e.g. project 99, which does not yet exist
       await this.minter
-        .connect(this.accounts.deployer)
+        .connect(this.accountsTODO.deployer)
         .setProjectMaxInvocations(99);
       maxInvocations = await this.minter3
-        .connect(this.accounts.deployer)
+        .connect(this.accountsTODO.deployer)
         .projectMaxInvocations(99);
       expect(maxInvocations).to.be.equal(0);
     });
@@ -580,48 +592,48 @@ describe("MinterSetPriceERC20V1_V2PRTNRCore", async function () {
 
     it("reports expected price per token", async function () {
       let currencyInfo = await this.minter
-        .connect(this.accounts.artist)
+        .connect(this.accountsTODO.artist)
         .getPriceInfo(projectOne);
       expect(currencyInfo.tokenPriceInWei).to.be.equal(pricePerTokenInWei);
       // returns zero for unconfigured project price
       currencyInfo = await this.minter
-        .connect(this.accounts.artist)
+        .connect(this.accountsTODO.artist)
         .getPriceInfo(unconfiguredProjectNumber);
       expect(currencyInfo.tokenPriceInWei).to.be.equal(0);
     });
 
     it("reports expected isConfigured", async function () {
       let currencyInfo = await this.minter
-        .connect(this.accounts.artist)
+        .connect(this.accountsTODO.artist)
         .getPriceInfo(projectOne);
       expect(currencyInfo.isConfigured).to.be.equal(true);
       // false for unconfigured project
       currencyInfo = await this.minter
-        .connect(this.accounts.artist)
+        .connect(this.accountsTODO.artist)
         .getPriceInfo(unconfiguredProjectNumber);
       expect(currencyInfo.isConfigured).to.be.equal(false);
     });
 
     it("reports default currency as ETH", async function () {
       let currencyInfo = await this.minter
-        .connect(this.accounts.artist)
+        .connect(this.accountsTODO.artist)
         .getPriceInfo(projectOne);
       expect(currencyInfo.currencySymbol).to.be.equal("ETH");
       // should also report ETH for unconfigured project
       currencyInfo = await this.minter
-        .connect(this.accounts.artist)
+        .connect(this.accountsTODO.artist)
         .getPriceInfo(unconfiguredProjectNumber);
       expect(currencyInfo.currencySymbol).to.be.equal("ETH");
     });
 
     it("reports default currency address as null address", async function () {
       let currencyInfo = await this.minter
-        .connect(this.accounts.artist)
+        .connect(this.accountsTODO.artist)
         .getPriceInfo(projectOne);
       expect(currencyInfo.currencyAddress).to.be.equal(constants.ZERO_ADDRESS);
       // should also report ETH for unconfigured project
       currencyInfo = await this.minter
-        .connect(this.accounts.artist)
+        .connect(this.accountsTODO.artist)
         .getPriceInfo(unconfiguredProjectNumber);
       expect(currencyInfo.currencyAddress).to.be.equal(constants.ZERO_ADDRESS);
     });
@@ -630,11 +642,11 @@ describe("MinterSetPriceERC20V1_V2PRTNRCore", async function () {
   it("reports ERC20 token symbol and address if set", async function () {
     // artist changes to Mock ERC20 token
     await this.minter
-      .connect(this.accounts.artist)
+      .connect(this.accountsTODO.artist)
       .updateProjectCurrencyInfo(projectZero, "MOCK", this.ERC20Mock.address);
     // reports ERC20 updated price information
     const currencyInfo = await this.minter
-      .connect(this.accounts.artist)
+      .connect(this.accountsTODO.artist)
       .getPriceInfo(projectZero);
     expect(currencyInfo.currencySymbol).to.be.equal("MOCK");
     expect(currencyInfo.currencyAddress).to.be.equal(this.ERC20Mock.address);
@@ -647,7 +659,7 @@ describe("MinterSetPriceERC20V1_V2PRTNRCore", async function () {
         "ReentrancyMock"
       );
       const reentrancyMock = await reentrancyMockFactory
-        .connect(this.accounts.deployer)
+        .connect(this.accountsTODO.deployer)
         .deploy();
       // attacker should see revert when performing reentrancy attack
       const totalTokensToMint = 2;
@@ -655,7 +667,7 @@ describe("MinterSetPriceERC20V1_V2PRTNRCore", async function () {
       let totalValue = higherPricePerTokenInWei.mul(numTokensToMint);
       await expectRevert(
         reentrancyMock
-          .connect(this.accounts.deployer)
+          .connect(this.accountsTODO.deployer)
           .attack(
             numTokensToMint,
             this.minter.address,
@@ -673,7 +685,7 @@ describe("MinterSetPriceERC20V1_V2PRTNRCore", async function () {
       totalValue = higherPricePerTokenInWei.mul(numTokensToMint);
       for (let i = 0; i < totalTokensToMint; i++) {
         await reentrancyMock
-          .connect(this.accounts.deployer)
+          .connect(this.accountsTODO.deployer)
           .attack(
             numTokensToMint,
             this.minter.address,
@@ -691,9 +703,9 @@ describe("MinterSetPriceERC20V1_V2PRTNRCore", async function () {
     it("allows gnosis safe to purchase in ETH", async function () {
       // deploy new Gnosis Safe
       const safeSdk: Safe = await getGnosisSafe(
-        this.accounts.artist,
-        this.accounts.additional,
-        this.accounts.owner
+        this.accountsTODO.artist,
+        this.accountsTODO.additional,
+        this.accountsTODO.owner
       );
       const safeAddress = safeSdk.getAddress();
 
@@ -714,7 +726,7 @@ describe("MinterSetPriceERC20V1_V2PRTNRCore", async function () {
       // additional signs
       const ethAdapterOwner2 = new EthersAdapter({
         ethers,
-        signer: this.accounts.additional,
+        signer: this.accountsTODO.additional,
       });
       const safeSdk2 = await safeSdk.connect({
         ethAdapter: ethAdapterOwner2,
@@ -725,7 +737,7 @@ describe("MinterSetPriceERC20V1_V2PRTNRCore", async function () {
       await approveTxResponse.transactionResponse?.wait();
 
       // fund the safe and execute transaction
-      await this.accounts.artist.sendTransaction({
+      await this.accountsTODO.artist.sendTransaction({
         to: safeAddress,
         value: pricePerTokenInWei,
       });
@@ -747,13 +759,13 @@ describe("MinterSetPriceERC20V1_V2PRTNRCore", async function () {
     it("allows gnosis safe to purchase in ERC20", async function () {
       // artist changes to Mock ERC20 token
       await this.minter
-        .connect(this.accounts.artist)
+        .connect(this.accountsTODO.artist)
         .updateProjectCurrencyInfo(projectOne, "MOCK", this.ERC20Mock.address);
       // deploy new Gnosis Safe
       const safeSdk: Safe = await getGnosisSafe(
-        this.accounts.artist,
-        this.accounts.additional,
-        this.accounts.owner
+        this.accountsTODO.artist,
+        this.accountsTODO.additional,
+        this.accountsTODO.owner
       );
       const safeAddress = safeSdk.getAddress();
       // create a transaction to approve contract to spend ERC20
@@ -776,7 +788,7 @@ describe("MinterSetPriceERC20V1_V2PRTNRCore", async function () {
       // additional signs
       const ethAdapterOwner2 = new EthersAdapter({
         ethers,
-        signer: this.accounts.additional,
+        signer: this.accountsTODO.additional,
       });
       const safeSdk2 = await safeSdk.connect({
         ethAdapter: ethAdapterOwner2,
@@ -790,7 +802,7 @@ describe("MinterSetPriceERC20V1_V2PRTNRCore", async function () {
       );
       await approveTxApproveResponse.transactionResponse?.wait();
       // fund the safe and execute transaction
-      await this.ERC20Mock.connect(this.accounts.owner).transfer(
+      await this.ERC20Mock.connect(this.accountsTODO.owner).transfer(
         safeAddress,
         pricePerTokenInWei
       );
