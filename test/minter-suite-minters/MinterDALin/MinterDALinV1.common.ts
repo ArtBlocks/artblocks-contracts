@@ -8,16 +8,16 @@ import Safe from "@gnosis.pm/safe-core-sdk";
 import { SafeTransactionDataPartial } from "@gnosis.pm/safe-core-sdk-types";
 import { getGnosisSafe } from "../../util/GnosisSafeNetwork";
 
-import { MinterDAExp_Common } from "./MinterDAExp.common";
+import { MinterDALin_Common } from "./MinterDALin.common";
 
 /**
- * These tests are intended to check common DAExpV1 functionality.
- * The tests are intended to be run on the DAExpV1 contract (not the V0 contract).
+ * These tests are intended to check common DALinV1 functionality.
+ * The tests are intended to be run on the DALinV1 contract (not the V0 contract).
  * @dev assumes common BeforeEach to populate accounts, constants, and setup
  */
-export const MinterDAExpV1_Common = async () => {
-  describe("common DAExp tests", async () => {
-    MinterDAExp_Common();
+export const MinterDALinV1_Common = async () => {
+  describe("common DALin tests", async () => {
+    MinterDALin_Common();
   });
 
   describe("purchaseTo", async function () {

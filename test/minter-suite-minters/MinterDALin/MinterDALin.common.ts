@@ -7,10 +7,10 @@ import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../util/constants";
 import { Minter_Common } from "../Minter.common";
 
 /**
- * These tests are intended to check common DAExp functionality.
+ * These tests are intended to check common DALin functionality.
  * @dev assumes common BeforeEach to populate accounts, constants, and setup
  */
-export const MinterDAExp_Common = async () => {
+export const MinterDALin_Common = async () => {
   describe("common minter tests", async () => {
     Minter_Common();
   });
@@ -28,17 +28,24 @@ export const MinterDAExp_Common = async () => {
     });
 
     it("calculates the price correctly", async function () {
-      for (let i = 1; i <= 5; i++) {
-        let ownerBalance = await this.accounts.user.getBalance();
-        let price = this.startingPrice;
-        for (let j = 0; j < i; j++) {
-          price = price.div(2);
-        }
+      await ethers.provider.send("evm_mine", [
+        this.startTime + this.auctionStartTimeOffset,
+      ]);
 
-        await ethers.provider.send("evm_setNextBlockTimestamp", [
-          this.startTime +
-            this.auctionStartTimeOffset +
-            i * this.defaultHalfLife,
+      const step = ONE_MINUTE * 8; // 480 seconds
+      const numSteps = 15;
+      for (let i = 1; i < numSteps; i++) {
+        let userBalance = await this.accounts.user.getBalance();
+        let a = ethers.BigNumber.from(i * step).mul(
+          this.startingPrice.sub(this.basePrice).toString()
+        );
+        let t = ethers.BigNumber.from(a.toString());
+        let price = this.startingPrice.sub(t.div(step * numSteps));
+        let contractPriceInfo = await this.minter
+          .connect(this.accounts.user)
+          .getPriceInfo(this.projectZero);
+        await ethers.provider.send("evm_mine", [
+          this.startTime + this.auctionStartTimeOffset + i * step,
         ]);
         await this.minter
           .connect(this.accounts.user)
@@ -55,10 +62,11 @@ export const MinterDAExp_Common = async () => {
           }),
           "Must send minimum value to mint!"
         );
-        let ownerDelta = (await this.accounts.user.getBalance()).sub(
-          ownerBalance
+        let userDelta = (await this.accounts.user.getBalance()).sub(
+          userBalance
         );
-        expect(ownerDelta.mul("-1").lte(price)).to.be.true;
+        expect(userDelta.mul("-1").lte(contractPriceInfo.tokenPriceInWei)).to.be
+          .true;
       }
     });
 
@@ -70,8 +78,8 @@ export const MinterDAExp_Common = async () => {
         .connect(this.accounts.artist)
         .setAuctionDetails(
           this.projectZero,
-          this.startTime + this.auctionStartTimeOffset,
-          this.defaultHalfLife,
+          this.startTime + ONE_HOUR,
+          this.startTime + 2 * ONE_HOUR,
           this.startingPrice,
           this.basePrice
         );
@@ -90,13 +98,15 @@ export const MinterDAExp_Common = async () => {
         .connect(this.accounts.artist)
         .setAuctionDetails(
           this.projectZero,
-          this.startTime + this.auctionStartTimeOffset,
-          this.defaultHalfLife,
+          this.startTime + ONE_HOUR,
+          this.startTime + 2 * ONE_HOUR,
           this.startingPrice,
           this.basePrice
         );
 
-      await ethers.provider.send("evm_mine", [this.startTime + 5 * ONE_HOUR]);
+      await ethers.provider.send("evm_mine", [
+        this.startTime + this.auctionStartTimeOffset + 2 * ONE_HOUR,
+      ]);
 
       let contractPriceInfo = await this.minter
         .connect(this.accounts.user)
@@ -107,16 +117,14 @@ export const MinterDAExp_Common = async () => {
 
   describe("setAuctionDetails", async function () {
     it("cannot be modified mid-auction", async function () {
-      await ethers.provider.send("evm_mine", [
-        this.startTime + 2 * this.auctionStartTimeOffset,
-      ]);
+      await ethers.provider.send("evm_mine", [this.startTime + ONE_HOUR]);
       await expectRevert(
         this.minter
           .connect(this.accounts.artist)
           .setAuctionDetails(
             this.projectZero,
-            this.startTime + this.auctionStartTimeOffset,
-            this.defaultHalfLife,
+            this.startTime + ONE_MINUTE,
+            this.startTime + 2 * ONE_HOUR,
             this.startingPrice,
             this.basePrice
           ),
@@ -132,8 +140,8 @@ export const MinterDAExp_Common = async () => {
         .connect(this.accounts.artist)
         .setAuctionDetails(
           this.projectZero,
-          this.startTime + this.auctionStartTimeOffset,
-          this.defaultHalfLife,
+          this.startTime + ONE_MINUTE,
+          this.startTime + 2 * ONE_HOUR,
           this.startingPrice,
           this.basePrice
         );
@@ -148,8 +156,8 @@ export const MinterDAExp_Common = async () => {
           .connect(this.accounts.additional)
           .setAuctionDetails(
             this.projectZero,
-            this.startTime + this.auctionStartTimeOffset,
-            this.defaultHalfLife,
+            this.startTime + ONE_MINUTE,
+            this.startTime + 2 * ONE_HOUR,
             this.startingPrice,
             this.basePrice
           ),
@@ -164,8 +172,8 @@ export const MinterDAExp_Common = async () => {
           .connect(this.accounts.deployer)
           .setAuctionDetails(
             this.projectZero,
-            this.startTime + this.auctionStartTimeOffset,
-            this.defaultHalfLife,
+            this.startTime + ONE_MINUTE,
+            this.startTime + 2 * ONE_HOUR,
             this.startingPrice,
             this.basePrice
           ),
@@ -182,8 +190,8 @@ export const MinterDAExp_Common = async () => {
           .connect(this.accounts.artist)
           .setAuctionDetails(
             this.projectZero,
-            this.startTime + this.auctionStartTimeOffset,
-            this.defaultHalfLife,
+            this.startTime + ONE_MINUTE,
+            this.startTime + 2 * ONE_HOUR,
             this.basePrice,
             this.startingPrice
           ),
@@ -249,78 +257,63 @@ export const MinterDAExp_Common = async () => {
     });
   });
 
-  describe("enforce and broadcasts auction half-life", async function () {
-    it("enforces half-life min/max constraint", async function () {
+  describe("enforce and broadcasts min auction length", async function () {
+    it("enforces min/max auction length constraint", async function () {
+      await this.minter
+        .connect(this.accounts.deployer)
+        .resetAuctionDetails(this.projectZero);
+      // expect revert when creating a new project with min/max reversed
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.artist)
+          .setAuctionDetails(
+            this.projectZero,
+            this.startTime + ONE_HOUR * 2,
+            this.startTime + ONE_HOUR,
+            this.startingPrice,
+            this.basePrice
+          ),
+        "Auction end must be greater than auction start"
+      );
+    });
+
+    it("enforces min auction length constraint", async function () {
       await this.minter
         .connect(this.accounts.deployer)
         .resetAuctionDetails(this.projectZero);
       // expect revert when creating a new project with
-      const invalidHalfLifeSecondsMin = ONE_MINUTE;
+      const invalidLengthSeconds = 60;
       await expectRevert(
         this.minter
           .connect(this.accounts.artist)
           .setAuctionDetails(
             this.projectZero,
-            this.startTime + this.auctionStartTimeOffset,
-            invalidHalfLifeSecondsMin,
+            this.startTime + ONE_HOUR,
+            this.startTime + ONE_HOUR + invalidLengthSeconds,
             this.startingPrice,
             this.basePrice
           ),
-        "Price decay half life must fall between min and max allowable values"
-      );
-
-      // expect revert when creating a new project with
-      const invalidHalfLifeSecondsMax = ONE_DAY;
-      await expectRevert(
-        this.minter
-          .connect(this.accounts.artist)
-          .setAuctionDetails(
-            this.projectZero,
-            this.startTime + this.auctionStartTimeOffset,
-            invalidHalfLifeSecondsMax,
-            this.startingPrice,
-            this.basePrice
-          ),
-        "Price decay half life must fall between min and max allowable values"
+        "Auction length must be at least minimumAuctionLengthSeconds"
       );
     });
 
-    it("emits event when allowable half life range is updated", async function () {
-      const newMinSeconds = 60;
-      const newMaxSeconds = 6000;
-      // emits event when allowable half life range is updated
+    it("emits event when min auction length is updated", async function () {
+      const newLengthSeconds = 3601;
+      // emits event when minimum auction length is updated
       await expect(
         this.minter
           .connect(this.accounts.deployer)
-          .setAllowablePriceDecayHalfLifeRangeSeconds(
-            newMinSeconds,
-            newMaxSeconds
-          )
+          .setMinimumAuctionLengthSeconds(newLengthSeconds)
       )
-        .to.emit(this.minter, "AuctionHalfLifeRangeSecondsUpdated")
-        .withArgs(newMinSeconds, newMaxSeconds);
+        .to.emit(this.minter, "MinimumAuctionLengthSecondsUpdated")
+        .withArgs(newLengthSeconds);
     });
 
-    it("validate setAllowablePriceDecayHalfLifeRangeSeconds guards", async function () {
-      await expectRevert(
-        this.minter
-          .connect(this.accounts.deployer)
-          .setAllowablePriceDecayHalfLifeRangeSeconds(600, 60),
-        "Maximum half life must be greater than minimum"
-      );
-      await expectRevert(
-        this.minter
-          .connect(this.accounts.deployer)
-          .setAllowablePriceDecayHalfLifeRangeSeconds(0, 600),
-        "Half life of zero not allowed"
-      );
-    });
-
-    it("validate setAllowablePriceDecayHalfLifeRangeSeconds ACL", async function () {
+    it("validate setMinimumAuctionLengthSeconds ACL", async function () {
       await expectRevert(
         this.minter
           .connect(this.accounts.additional)
-          .setAllowablePriceDecayHalfLifeRangeSeconds(60, 600),
+          .setMinimumAuctionLengthSeconds(600),
         "Only Core whitelisted"
       );
     });
