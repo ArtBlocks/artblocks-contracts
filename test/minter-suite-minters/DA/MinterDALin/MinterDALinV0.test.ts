@@ -6,30 +6,30 @@ import {
   balance,
   ether,
 } from "@openzeppelin/test-helpers";
-
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
+
+import EthersAdapter from "@gnosis.pm/safe-ethers-lib";
+import Safe from "@gnosis.pm/safe-core-sdk";
+import { SafeTransactionDataPartial } from "@gnosis.pm/safe-core-sdk-types";
+import { getGnosisSafe } from "../../../util/GnosisSafeNetwork";
 
 import {
   getAccounts,
   assignDefaultConstants,
   deployAndGet,
   deployCoreWithMinterFilter,
-} from "../../util/common";
-import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../util/constants";
-import { MinterDAExp_Common } from "./MinterDAExp.common";
-
-import EthersAdapter from "@gnosis.pm/safe-ethers-lib";
-import Safe from "@gnosis.pm/safe-core-sdk";
-import { SafeTransactionDataPartial } from "@gnosis.pm/safe-core-sdk-types";
-import { getGnosisSafe } from "../../util/GnosisSafeNetwork";
+  safeAddProject,
+} from "../../../util/common";
+import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../util/constants";
+import { MinterDALin_Common } from "./MinterDALin.common";
 
 /**
  * These tests intended to ensure this Filtered Minter integrates properly with
  * V1 core contract.
  */
-describe("MinterDAExpV0_V1Core", async function () {
+describe("MinterDALinV0_V1Core", async function () {
   beforeEach(async function () {
     // standard accounts and constants
     this.accounts = await getAccounts.call(this);
@@ -39,7 +39,7 @@ describe("MinterDAExpV0_V1Core", async function () {
       ethers.utils.parseEther("0.1")
     );
     this.basePrice = ethers.utils.parseEther("0.05");
-    this.defaultHalfLife = ONE_HOUR / 2;
+
     this.auctionStartTimeOffset = ONE_HOUR;
 
     // deploy and configure minter filter and minter
@@ -53,7 +53,7 @@ describe("MinterDAExpV0_V1Core", async function () {
       "MinterFilterV0"
     ));
 
-    this.minter = await deployAndGet.call(this, "MinterDAExpV0", [
+    this.minter = await deployAndGet.call(this, "MinterDALinV0", [
       this.genArt721Core.address,
       this.minterFilter.address,
     ]);
@@ -101,7 +101,7 @@ describe("MinterDAExpV0_V1Core", async function () {
       .setAuctionDetails(
         this.projectZero,
         this.startTime + this.auctionStartTimeOffset,
-        this.defaultHalfLife,
+        this.startTime + this.auctionStartTimeOffset + ONE_HOUR * 2,
         this.startingPrice,
         this.basePrice
       );
@@ -109,7 +109,7 @@ describe("MinterDAExpV0_V1Core", async function () {
   });
 
   describe("common tests", async function () {
-    MinterDAExp_Common();
+    MinterDALin_Common();
   });
 
   describe("calculate gas", async function () {
@@ -126,13 +126,14 @@ describe("MinterDAExpV0_V1Core", async function () {
 
       const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
       const txCost = receipt.effectiveGasPrice.mul(receipt.gasUsed).toString();
+
       console.log(
-        "Gas cost for a successful Exponential DA mint: ",
+        "Gas cost for a successful Linear DA mint: ",
         ethers.utils.formatUnits(txCost, "ether").toString(),
         "ETH"
       );
 
-      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0380107")); // assuming a cost of 100 GWEI
+      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0380046")); // assuming a cost of 100 GWEI
     });
   });
 

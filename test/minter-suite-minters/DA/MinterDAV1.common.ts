@@ -8,18 +8,13 @@ import Safe from "@gnosis.pm/safe-core-sdk";
 import { SafeTransactionDataPartial } from "@gnosis.pm/safe-core-sdk-types";
 import { getGnosisSafe } from "../../util/GnosisSafeNetwork";
 
-import { MinterDALin_Common } from "./MinterDALin.common";
-
 /**
- * These tests are intended to check common DALinV1 functionality.
- * The tests are intended to be run on the DALinV1 contract (not the V0 contract).
+ * These tests are intended to check common DA V1 functionality.
+ * The tests are intended to be run on the any DA Ve contract (not the V0 contracts).
  * @dev assumes common BeforeEach to populate accounts, constants, and setup
+ * @dev does not call specific type of DA common tests (e.g MinterDALin_Common)
  */
-export const MinterDALinV1_Common = async () => {
-  describe("common DALin tests", async () => {
-    MinterDALin_Common();
-  });
-
+export const MinterDAV1_Common = async () => {
   describe("purchaseTo", async function () {
     it("allows `purchaseTo` by default", async function () {
       await ethers.provider.send("evm_mine", [
