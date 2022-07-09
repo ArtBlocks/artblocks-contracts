@@ -14,17 +14,17 @@ import { getGnosisSafe } from "../../util/GnosisSafeNetwork";
  * (this includes V1ERC20 contracts)
  * @dev assumes common BeforeEach to populate accounts, constants, and setup
  */
-export const MinterSetPriceV1_ETH_Common = async () => {
+export const MinterSetPriceV1_Common = async () => {
   describe("purchaseTo", async function () {
     it("does not support toggling of `purchaseToDisabled`", async function () {
       await expectRevert(
-        this.minter1
+        this.minter
           .connect(this.accounts.artist)
           .togglePurchaseToDisabled(this.projectZero),
         "Action not supported"
       );
       // still allows `purchaseTo`.
-      await this.minter1
+      await this.minter
         .connect(this.accounts.user)
         .purchaseTo(this.accounts.artist.address, this.projectZero, {
           value: this.pricePerTokenInWei,
@@ -33,7 +33,7 @@ export const MinterSetPriceV1_ETH_Common = async () => {
 
     it("doesn't support `purchaseTo` toggling", async function () {
       await expectRevert(
-        this.minter1
+        this.minter
           .connect(this.accounts.artist)
           .togglePurchaseToDisabled(this.projectZero),
         "Action not supported"
@@ -59,7 +59,7 @@ export const MinterSetPriceV1_ETH_Common = async () => {
           .connect(this.accounts.deployer)
           .attack(
             numTokensToMint,
-            this.minter1.address,
+            this.minter.address,
             this.projectZero,
             this.higherPricePerTokenInWei,
             {
@@ -77,7 +77,7 @@ export const MinterSetPriceV1_ETH_Common = async () => {
           .connect(this.accounts.deployer)
           .attack(
             numTokensToMint,
-            this.minter1.address,
+            this.minter.address,
             this.projectZero,
             this.higherPricePerTokenInWei,
             {
@@ -99,11 +99,11 @@ export const MinterSetPriceV1_ETH_Common = async () => {
       const safeAddress = safeSdk.getAddress();
 
       // create a transaction
-      const unsignedTx = await this.minter1.populateTransaction.purchase(
+      const unsignedTx = await this.minter.populateTransaction.purchase(
         this.projectZero
       );
       const transaction: SafeTransactionDataPartial = {
-        to: this.minter1.address,
+        to: this.minter.address,
         data: unsignedTx.data,
         value: this.pricePerTokenInWei.toHexString(),
       };

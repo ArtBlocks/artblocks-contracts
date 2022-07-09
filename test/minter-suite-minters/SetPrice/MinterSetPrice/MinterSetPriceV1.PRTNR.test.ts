@@ -18,7 +18,7 @@ import {
 } from "../../../util/common";
 
 import { MinterSetPrice_ETH_Common } from "./MinterSetPrice.common";
-import { MinterSetPriceV1_ETH_Common } from "../MinterSetPriceV1.common";
+import { MinterSetPriceV1_Common } from "../MinterSetPriceV1.common";
 
 /**
  * These tests intended to ensure this Filtered Minter integrates properly with
@@ -140,7 +140,7 @@ describe("MinterSetPriceV1_V2PRTNRCore", async function () {
   });
 
   describe("common MinterSetPrice V1 tests", async function () {
-    MinterSetPriceV1_ETH_Common();
+    MinterSetPriceV1_Common();
   });
 
   describe("calculates gas", async function () {
