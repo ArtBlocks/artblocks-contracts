@@ -49,7 +49,8 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
       platformRoyaltyAddr1,
       platformRoyaltyAddr2,
     ] = await ethers.getSigners();
-    this.accounts = {
+    // use something other than this.accounts to bypass typical naming convention
+    this.royaltyAccounts = {
       adminA: adminA,
       adminB: adminB,
       artist0: artist0,
@@ -77,7 +78,7 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
     await this.tokenA
       .connect(adminA)
       .updateRenderProviderAddress(
-        this.accounts.renderProviderRoyaltyAddr1.address
+        this.royaltyAccounts.renderProviderRoyaltyAddr1.address
       );
 
     // add projects for artists 0 and 1
@@ -123,18 +124,18 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
       .updateProjectMaxInvocations(projectOne, 15);
 
     this.tokenA
-      .connect(this.accounts.artist0)
+      .connect(this.royaltyAccounts.artist0)
       .toggleProjectIsPaused(projectZero);
     this.tokenA
-      .connect(this.accounts.artist1)
+      .connect(this.royaltyAccounts.artist1)
       .toggleProjectIsPaused(projectOne);
 
     await this.minterA
-      .connect(this.accounts.anyone)
+      .connect(this.royaltyAccounts.anyone)
       .purchase(projectZero, { value: pricePerTokenInWei });
 
     await this.minterA
-      .connect(this.accounts.anyone)
+      .connect(this.royaltyAccounts.anyone)
       .purchase(projectOne, { value: pricePerTokenInWei });
 
     // deploy second core contract with two more projects
@@ -146,7 +147,7 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
     await this.tokenB
       .connect(adminB)
       .updateRenderProviderAddress(
-        this.accounts.renderProviderRoyaltyAddr1.address
+        this.royaltyAccounts.renderProviderRoyaltyAddr1.address
       );
 
     // add projects for artists 0 and 1
@@ -188,18 +189,18 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
       .updateProjectMaxInvocations(projectOne, 15);
 
     this.tokenB
-      .connect(this.accounts.artist0)
+      .connect(this.royaltyAccounts.artist0)
       .toggleProjectIsPaused(projectZero);
     this.tokenB
-      .connect(this.accounts.artist1)
+      .connect(this.royaltyAccounts.artist1)
       .toggleProjectIsPaused(projectOne);
 
     await this.minterB
-      .connect(this.accounts.anyone)
+      .connect(this.royaltyAccounts.anyone)
       .purchase(projectZero, { value: pricePerTokenInWei });
 
     await this.minterB
-      .connect(this.accounts.anyone)
+      .connect(this.royaltyAccounts.anyone)
       .purchase(projectOne, { value: pricePerTokenInWei });
 
     // deploy PBAB royalty override
@@ -211,7 +212,7 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
       .deploy();
     // set platform royalty addr on token A
     await this.royaltyOverride
-      .connect(this.accounts.adminA)
+      .connect(this.royaltyAccounts.adminA)
       .updatePlatformRoyaltyAddressForContract(
         this.tokenA.address,
         platformRoyaltyAddr1.address
@@ -222,7 +223,7 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
     it("supports getRoyalties(address,uint256) interface", async function () {
       expect(
         await this.royaltyOverride
-          .connect(this.accounts.anyone)
+          .connect(this.royaltyAccounts.anyone)
           .supportsInterface("0x9ca7dc7a")
       ).to.be.true;
     });
@@ -230,7 +231,7 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
     it("does not support invalid interface", async function () {
       expect(
         await this.royaltyOverride
-          .connect(this.accounts.anyone)
+          .connect(this.royaltyAccounts.anyone)
           .supportsInterface("0xffffffff")
       ).to.be.false;
     });
@@ -240,71 +241,71 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
     it("returns correct initial royalties", async function () {
       // tokenA, project 0
       let response = await this.royaltyOverride
-        .connect(this.accounts.anyone)
+        .connect(this.royaltyAccounts.anyone)
         .getRoyalties(this.tokenA.address, tokenIdProject0);
       assertRoyaltiesResponse(
         response,
         [
-          this.accounts.artist0.address,
-          this.accounts.additional0.address,
-          this.accounts.platformRoyaltyAddr1.address,
-          this.accounts.renderProviderRoyaltyAddr1.address,
+          this.royaltyAccounts.artist0.address,
+          this.royaltyAccounts.additional0.address,
+          this.royaltyAccounts.platformRoyaltyAddr1.address,
+          this.royaltyAccounts.renderProviderRoyaltyAddr1.address,
         ],
         [new BN(400), new BN(100), new BN(defaultBps), new BN(defaultBps)]
       );
       // tokenA, project 1
       response = await this.royaltyOverride
-        .connect(this.accounts.anyone)
+        .connect(this.royaltyAccounts.anyone)
         .getRoyalties(this.tokenA.address, tokenIdProject1);
       assertRoyaltiesResponse(
         response,
         [
-          this.accounts.artist1.address,
+          this.royaltyAccounts.artist1.address,
           addressZero,
-          this.accounts.platformRoyaltyAddr1.address,
-          this.accounts.renderProviderRoyaltyAddr1.address,
+          this.royaltyAccounts.platformRoyaltyAddr1.address,
+          this.royaltyAccounts.renderProviderRoyaltyAddr1.address,
         ],
         [new BN(500), new BN(0), new BN(defaultBps), new BN(defaultBps)]
       );
       // tokenB - no contract override set, expect revert
       await expectRevert(
         this.royaltyOverride
-          .connect(this.accounts.anyone)
+          .connect(this.royaltyAccounts.anyone)
           .getRoyalties(this.tokenB.address, tokenIdProject0),
         "Platform royalty address must be defined for contract"
       );
       // set royalty override for B and ensure project defaults initialized
       await this.royaltyOverride
-        .connect(this.accounts.adminB)
+        .connect(this.royaltyAccounts.adminB)
         .updatePlatformRoyaltyAddressForContract(
           this.tokenB.address,
-          this.accounts.platformRoyaltyAddr1.address
+          this.royaltyAccounts.platformRoyaltyAddr1.address
         );
       // tokenB, project0
       response = await this.royaltyOverride
-        .connect(this.accounts.anyone)
+        .connect(this.royaltyAccounts.anyone)
         .getRoyalties(this.tokenB.address, tokenIdProject0);
       assertRoyaltiesResponse(
         response,
         [
-          this.accounts.artist0.address,
-          this.accounts.additional0.address,
-          this.accounts.platformRoyaltyAddr1.address,
-          this.accounts.renderProviderRoyaltyAddr1.address,
+          this.royaltyAccounts.artist0.address,
+          this.royaltyAccounts.additional0.address,
+          this.royaltyAccounts.platformRoyaltyAddr1.address,
+          this.royaltyAccounts.renderProviderRoyaltyAddr1.address,
         ],
         [new BN(400), new BN(600), new BN(defaultBps), new BN(defaultBps)]
       );
       // tokenB, project 1
       response = await this.royaltyOverride
-        .connect(this.accounts.anyone)
+        .connect(this.royaltyAccounts.anyone)
         .getRoyalties(this.tokenB.address, tokenIdProject1);
       assertRoyaltiesResponse(
         response,
         [
-          this.accounts.artist1.address,
+          this.royaltyAccounts.artist1.address,
           addressZero,
-          this.accounts.platformRoyaltyAddr1.address,
-          this.accounts.renderProviderRoyaltyAddr1.address,
+          this.royaltyAccounts.platformRoyaltyAddr1.address,
+          this.royaltyAccounts.renderProviderRoyaltyAddr1.address,
         ],
         [new BN(1000), new BN(0), new BN(defaultBps), new BN(defaultBps)]
       );
@@ -315,37 +316,37 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
     it("reflects artist setting their royalties to zero and back", async function () {
       // artist set royalties to zero
       await this.tokenA
-        .connect(this.accounts.artist0)
+        .connect(this.royaltyAccounts.artist0)
         .updateProjectSecondaryMarketRoyaltyPercentage(projectZero, 0);
       // check royalties response tokenA, project 0
       let response = await this.royaltyOverride
-        .connect(this.accounts.anyone)
+        .connect(this.royaltyAccounts.anyone)
         .getRoyalties(this.tokenA.address, tokenIdProject0);
       assertRoyaltiesResponse(
         response,
         [
-          this.accounts.artist0.address,
-          this.accounts.additional0.address,
-          this.accounts.platformRoyaltyAddr1.address,
-          this.accounts.renderProviderRoyaltyAddr1.address,
+          this.royaltyAccounts.artist0.address,
+          this.royaltyAccounts.additional0.address,
+          this.royaltyAccounts.platformRoyaltyAddr1.address,
+          this.royaltyAccounts.renderProviderRoyaltyAddr1.address,
         ],
         [new BN(0), new BN(0), new BN(defaultBps), new BN(defaultBps)]
       );
       // artist set royalties to non-zero (10 percent)
       await this.tokenA
-        .connect(this.accounts.artist0)
+        .connect(this.royaltyAccounts.artist0)
         .updateProjectSecondaryMarketRoyaltyPercentage(projectZero, 10);
       // check royalties response tokenA, project 0
       response = await this.royaltyOverride
-        .connect(this.accounts.anyone)
+        .connect(this.royaltyAccounts.anyone)
         .getRoyalties(this.tokenA.address, tokenIdProject0);
       assertRoyaltiesResponse(
         response,
         [
-          this.accounts.artist0.address,
-          this.accounts.additional0.address,
-          this.accounts.platformRoyaltyAddr1.address,
-          this.accounts.renderProviderRoyaltyAddr1.address,
+          this.royaltyAccounts.artist0.address,
+          this.royaltyAccounts.additional0.address,
+          this.royaltyAccounts.platformRoyaltyAddr1.address,
+          this.royaltyAccounts.renderProviderRoyaltyAddr1.address,
         ],
         [new BN(800), new BN(200), new BN(defaultBps), new BN(defaultBps)]
       );
@@ -354,45 +355,45 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
     it("reflects artist changing their secondary payee amount", async function () {
       // artist set different secondary payee to 100 percent
       await this.tokenA
-        .connect(this.accounts.artist0)
+        .connect(this.royaltyAccounts.artist0)
         .updateProjectAdditionalPayeeInfo(
           projectZero,
-          this.accounts.additional1.address,
+          this.royaltyAccounts.additional1.address,
           100
         );
       // check royalties response tokenA, project 0
       let response = await this.royaltyOverride
-        .connect(this.accounts.anyone)
+        .connect(this.royaltyAccounts.anyone)
         .getRoyalties(this.tokenA.address, tokenIdProject0);
       assertRoyaltiesResponse(
         response,
         [
-          this.accounts.artist0.address,
-          this.accounts.additional1.address,
-          this.accounts.platformRoyaltyAddr1.address,
-          this.accounts.renderProviderRoyaltyAddr1.address,
+          this.royaltyAccounts.artist0.address,
+          this.royaltyAccounts.additional1.address,
+          this.royaltyAccounts.platformRoyaltyAddr1.address,
+          this.royaltyAccounts.renderProviderRoyaltyAddr1.address,
         ],
         [new BN(0), new BN(500), new BN(defaultBps), new BN(defaultBps)]
       );
       // artist set different secondary payee to 0 percent
       await this.tokenA
-        .connect(this.accounts.artist0)
+        .connect(this.royaltyAccounts.artist0)
         .updateProjectAdditionalPayeeInfo(
           projectZero,
-          this.accounts.additional1.address,
+          this.royaltyAccounts.additional1.address,
           0
         );
       // check royalties response tokenA, project 0
       response = await this.royaltyOverride
-        .connect(this.accounts.anyone)
+        .connect(this.royaltyAccounts.anyone)
         .getRoyalties(this.tokenA.address, tokenIdProject0);
       assertRoyaltiesResponse(
         response,
         [
-          this.accounts.artist0.address,
-          this.accounts.additional1.address,
-          this.accounts.platformRoyaltyAddr1.address,
-          this.accounts.renderProviderRoyaltyAddr1.address,
+          this.royaltyAccounts.artist0.address,
+          this.royaltyAccounts.additional1.address,
+          this.royaltyAccounts.platformRoyaltyAddr1.address,
+          this.royaltyAccounts.renderProviderRoyaltyAddr1.address,
         ],
         [new BN(500), new BN(0), new BN(defaultBps), new BN(defaultBps)]
       );
@@ -403,12 +404,12 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
     it("enforces limits when artist changes their royalty percentage", async function () {
       // does not revert when setting secondary market royalty to 100%
       await this.tokenA
-        .connect(this.accounts.artist0)
+        .connect(this.royaltyAccounts.artist0)
         .updateProjectSecondaryMarketRoyaltyPercentage(projectZero, 0);
       // reverts when setting secondary market royalty to >100%
       await expectRevert(
         this.tokenA
-          .connect(this.accounts.artist0)
+          .connect(this.royaltyAccounts.artist0)
           .updateProjectSecondaryMarketRoyaltyPercentage(projectZero, 101),
         "Max of 100%"
       );
@@ -417,19 +418,19 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
     it("enforces limits when artist changes additional payee percentage", async function () {
       // does not revert when setting additional payee percentage to 100%
       await this.tokenA
-        .connect(this.accounts.artist0)
+        .connect(this.royaltyAccounts.artist0)
         .updateProjectAdditionalPayeeInfo(
           projectZero,
-          this.accounts.additional1.address,
+          this.royaltyAccounts.additional1.address,
           100
         );
       // reverts when setting additional payee market royalty to >100%
       await expectRevert(
         this.tokenA
-          .connect(this.accounts.artist0)
+          .connect(this.royaltyAccounts.artist0)
           .updateProjectAdditionalPayeeInfo(
             projectZero,
-            this.accounts.additional1.address,
+            this.royaltyAccounts.additional1.address,
             101
           ),
         "Max of 100%"
@@ -442,20 +443,20 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
       // reverts when non-admin tries to update payment addr for contract
       await expectRevert(
         this.royaltyOverride
-          .connect(this.accounts.adminA)
+          .connect(this.royaltyAccounts.adminA)
           .updatePlatformRoyaltyAddressForContract(
             this.tokenB.address,
-            this.accounts.platformRoyaltyAddr2.address
+            this.royaltyAccounts.platformRoyaltyAddr2.address
           ),
         "Only core admin for specified token contract"
       );
       // emits event when admin updates platform payment addr for contract
       await expect(
         this.royaltyOverride
-          .connect(this.accounts.adminB)
+          .connect(this.royaltyAccounts.adminB)
           .updatePlatformRoyaltyAddressForContract(
             this.tokenB.address,
-            this.accounts.platformRoyaltyAddr2.address
+            this.royaltyAccounts.platformRoyaltyAddr2.address
           )
       )
         .to.emit(
@@ -464,36 +465,36 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
         )
         .withArgs(
           this.tokenB.address,
-          this.accounts.platformRoyaltyAddr2.address
+          this.royaltyAccounts.platformRoyaltyAddr2.address
         );
     });
 
     it("reflects updated platform royalty address for contract", async function () {
       // initialize payment address for tokenB
       await this.royaltyOverride
-        .connect(this.accounts.adminB)
+        .connect(this.royaltyAccounts.adminB)
         .updatePlatformRoyaltyAddressForContract(
           this.tokenB.address,
-          this.accounts.platformRoyaltyAddr1.address
+          this.royaltyAccounts.platformRoyaltyAddr1.address
         );
       // update contract's payment address
       await this.royaltyOverride
-        .connect(this.accounts.adminB)
+        .connect(this.royaltyAccounts.adminB)
         .updatePlatformRoyaltyAddressForContract(
           this.tokenB.address,
-          this.accounts.platformRoyaltyAddr2.address
+          this.royaltyAccounts.platformRoyaltyAddr2.address
         );
       // ensure update is reflected in getRoyalties call
       let response = await this.royaltyOverride
-        .connect(this.accounts.anyone)
+        .connect(this.royaltyAccounts.anyone)
         .getRoyalties(this.tokenB.address, tokenIdProject0);
       assertRoyaltiesResponse(
         response,
         [
-          this.accounts.artist0.address,
-          this.accounts.additional0.address,
-          this.accounts.platformRoyaltyAddr2.address,
-          this.accounts.renderProviderRoyaltyAddr1.address,
+          this.royaltyAccounts.artist0.address,
+          this.royaltyAccounts.additional0.address,
+          this.royaltyAccounts.platformRoyaltyAddr2.address,
+          this.royaltyAccounts.renderProviderRoyaltyAddr1.address,
         ],
         [new BN(400), new BN(600), new BN(defaultBps), new BN(defaultBps)]
       );
@@ -505,38 +506,38 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
       // reverts when non-admin tries to update render provider addr
       await expectRevert(
         this.tokenA
-          .connect(this.accounts.anyone)
+          .connect(this.royaltyAccounts.anyone)
           .updateRenderProviderAddress(
-            this.accounts.renderProviderRoyaltyAddr2.address
+            this.royaltyAccounts.renderProviderRoyaltyAddr2.address
           ),
         "Only admin"
       );
       // core allows admin to update render provider addr
       await this.tokenA
-        .connect(this.accounts.adminA)
+        .connect(this.royaltyAccounts.adminA)
         .updateRenderProviderAddress(
-          this.accounts.renderProviderRoyaltyAddr2.address
+          this.royaltyAccounts.renderProviderRoyaltyAddr2.address
         );
     });
 
     it("reflects updated core render provider address", async function () {
       // core allows admin to update render provider addr
       await this.tokenA
-        .connect(this.accounts.adminA)
+        .connect(this.royaltyAccounts.adminA)
         .updateRenderProviderAddress(
-          this.accounts.renderProviderRoyaltyAddr2.address
+          this.royaltyAccounts.renderProviderRoyaltyAddr2.address
         );
       // ensure update is reflected in getRoyalties call
       let response = await this.royaltyOverride
-        .connect(this.accounts.anyone)
+        .connect(this.royaltyAccounts.anyone)
         .getRoyalties(this.tokenA.address, tokenIdProject0);
       assertRoyaltiesResponse(
         response,
         [
-          this.accounts.artist0.address,
-          this.accounts.additional0.address,
-          this.accounts.platformRoyaltyAddr1.address,
-          this.accounts.renderProviderRoyaltyAddr2.address,
+          this.royaltyAccounts.artist0.address,
+          this.royaltyAccounts.additional0.address,
+          this.royaltyAccounts.platformRoyaltyAddr1.address,
+          this.royaltyAccounts.renderProviderRoyaltyAddr2.address,
         ],
         [new BN(400), new BN(100), new BN(defaultBps), new BN(defaultBps)]
       );
@@ -552,14 +553,14 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
       // reverts when non-admin tries to update bps for contract
       await expectRevert(
         this.royaltyOverride
-          .connect(this.accounts.adminA)
+          .connect(this.royaltyAccounts.adminA)
           .updateRenderProviderBpsForContract(this.tokenB.address, legalBps),
         "Only core admin for specified token contract"
       );
       // emits event when admin updates bps for contract
       await expect(
         this.royaltyOverride
-          .connect(this.accounts.adminB)
+          .connect(this.royaltyAccounts.adminB)
           .updateRenderProviderBpsForContract(this.tokenB.address, legalBps)
       )
         .to.emit(this.royaltyOverride, "RenderProviderBpsForContractUpdated")
@@ -567,14 +568,14 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
       // reverts when non-admin tries to clear bps for contract
       await expectRevert(
         this.royaltyOverride
-          .connect(this.accounts.adminA)
+          .connect(this.royaltyAccounts.adminA)
           .clearRenderProviderBpsForContract(this.tokenB.address),
         "Only core admin for specified token contract"
       );
       // emits event when admin clears bps for contract
       await expect(
         this.royaltyOverride
-          .connect(this.accounts.adminB)
+          .connect(this.royaltyAccounts.adminB)
           .clearRenderProviderBpsForContract(this.tokenB.address)
       )
         .to.emit(this.royaltyOverride, "RenderProviderBpsForContractUpdated")
@@ -584,37 +585,37 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
     it("reflects updated render provider bps for contract", async function () {
       // update contract's bps
       await this.royaltyOverride
-        .connect(this.accounts.adminA)
+        .connect(this.royaltyAccounts.adminA)
         .updateRenderProviderBpsForContract(this.tokenA.address, legalBps);
       // ensure update is reflected in getRoyalties call
       let response = await this.royaltyOverride
-        .connect(this.accounts.anyone)
+        .connect(this.royaltyAccounts.anyone)
         .getRoyalties(this.tokenA.address, tokenIdProject0);
       assertRoyaltiesResponse(
         response,
         [
-          this.accounts.artist0.address,
-          this.accounts.additional0.address,
-          this.accounts.platformRoyaltyAddr1.address,
-          this.accounts.renderProviderRoyaltyAddr1.address,
+          this.royaltyAccounts.artist0.address,
+          this.royaltyAccounts.additional0.address,
+          this.royaltyAccounts.platformRoyaltyAddr1.address,
+          this.royaltyAccounts.renderProviderRoyaltyAddr1.address,
         ],
         [new BN(400), new BN(100), new BN(defaultBps), new BN(legalBps)]
       );
       // clear contract's bps
       await this.royaltyOverride
-        .connect(this.accounts.adminA)
+        .connect(this.royaltyAccounts.adminA)
         .clearRenderProviderBpsForContract(this.tokenA.address);
       // ensure update is reflected in getRoyalties call
       response = await this.royaltyOverride
-        .connect(this.accounts.anyone)
+        .connect(this.royaltyAccounts.anyone)
         .getRoyalties(this.tokenA.address, tokenIdProject0);
       assertRoyaltiesResponse(
         response,
         [
-          this.accounts.artist0.address,
-          this.accounts.additional0.address,
-          this.accounts.platformRoyaltyAddr1.address,
-          this.accounts.renderProviderRoyaltyAddr1.address,
+          this.royaltyAccounts.artist0.address,
+          this.royaltyAccounts.additional0.address,
+          this.royaltyAccounts.platformRoyaltyAddr1.address,
+          this.royaltyAccounts.renderProviderRoyaltyAddr1.address,
         ],
         [new BN(400), new BN(100), new BN(defaultBps), new BN(defaultBps)]
       );
@@ -623,44 +624,44 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
     it("enforces constraints when updating render provider bps for contract", async function () {
       // update contract's bps to minimum value
       await this.royaltyOverride
-        .connect(this.accounts.adminA)
+        .connect(this.royaltyAccounts.adminA)
         .updateRenderProviderBpsForContract(this.tokenA.address, zeroBps);
       // ensure update is reflected in getRoyalties call
       let response = await this.royaltyOverride
-        .connect(this.accounts.anyone)
+        .connect(this.royaltyAccounts.anyone)
         .getRoyalties(this.tokenA.address, tokenIdProject0);
       assertRoyaltiesResponse(
         response,
         [
-          this.accounts.artist0.address,
-          this.accounts.additional0.address,
-          this.accounts.platformRoyaltyAddr1.address,
-          this.accounts.renderProviderRoyaltyAddr1.address,
+          this.royaltyAccounts.artist0.address,
+          this.royaltyAccounts.additional0.address,
+          this.royaltyAccounts.platformRoyaltyAddr1.address,
+          this.royaltyAccounts.renderProviderRoyaltyAddr1.address,
         ],
         [new BN(400), new BN(100), new BN(defaultBps), new BN(zeroBps)]
       );
       // update contract's bps to max legal value
       await this.royaltyOverride
-        .connect(this.accounts.adminA)
+        .connect(this.royaltyAccounts.adminA)
         .updateRenderProviderBpsForContract(this.tokenA.address, maxLegalBps);
       // ensure update is reflected in getRoyalties call
       response = await this.royaltyOverride
-        .connect(this.accounts.anyone)
+        .connect(this.royaltyAccounts.anyone)
         .getRoyalties(this.tokenA.address, tokenIdProject0);
       assertRoyaltiesResponse(
         response,
         [
-          this.accounts.artist0.address,
-          this.accounts.additional0.address,
-          this.accounts.platformRoyaltyAddr1.address,
-          this.accounts.renderProviderRoyaltyAddr1.address,
+          this.royaltyAccounts.artist0.address,
+          this.royaltyAccounts.additional0.address,
+          this.royaltyAccounts.platformRoyaltyAddr1.address,
+          this.royaltyAccounts.renderProviderRoyaltyAddr1.address,
         ],
         [new BN(400), new BN(100), new BN(defaultBps), new BN(maxLegalBps)]
       );
       // expect revert when contract's bps is updated to illegal value
       await expectRevert(
         this.royaltyOverride
-          .connect(this.accounts.adminA)
+          .connect(this.royaltyAccounts.adminA)
           .updateRenderProviderBpsForContract(this.tokenA.address, illegalBps),
         "invalid bps"
       );
@@ -675,14 +676,14 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
       // reverts when non-admin tries to update bps for contract
       await expectRevert(
         this.royaltyOverride
-          .connect(this.accounts.adminA)
+          .connect(this.royaltyAccounts.adminA)
           .updatePlatformBpsForContract(this.tokenB.address, legalBps),
         "Only core admin for specified token contract"
       );
       // emits event when admin updates bps for contract
       await expect(
         this.royaltyOverride
-          .connect(this.accounts.adminB)
+          .connect(this.royaltyAccounts.adminB)
           .updatePlatformBpsForContract(this.tokenB.address, legalBps)
       )
         .to.emit(this.royaltyOverride, "PlatformBpsForContractUpdated")
@@ -690,14 +691,14 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
       // reverts when non-admin tries to clear bps for contract
       await expectRevert(
         this.royaltyOverride
-          .connect(this.accounts.adminA)
+          .connect(this.royaltyAccounts.adminA)
           .clearPlatformBpsForContract(this.tokenB.address),
         "Only core admin for specified token contract"
       );
       // emits event when admin clears bps for contract
       await expect(
         this.royaltyOverride
-          .connect(this.accounts.adminB)
+          .connect(this.royaltyAccounts.adminB)
           .clearPlatformBpsForContract(this.tokenB.address)
       )
         .to.emit(this.royaltyOverride, "PlatformBpsForContractUpdated")
@@ -707,37 +708,37 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
     it("reflects updated platform provider bps for contract", async function () {
       // update contract's bps
       await this.royaltyOverride
-        .connect(this.accounts.adminA)
+        .connect(this.royaltyAccounts.adminA)
         .updatePlatformBpsForContract(this.tokenA.address, legalBps);
       // ensure update is reflected in getRoyalties call
       let response = await this.royaltyOverride
-        .connect(this.accounts.anyone)
+        .connect(this.royaltyAccounts.anyone)
         .getRoyalties(this.tokenA.address, tokenIdProject0);
       assertRoyaltiesResponse(
         response,
         [
-          this.accounts.artist0.address,
-          this.accounts.additional0.address,
-          this.accounts.platformRoyaltyAddr1.address,
-          this.accounts.renderProviderRoyaltyAddr1.address,
+          this.royaltyAccounts.artist0.address,
+          this.royaltyAccounts.additional0.address,
+          this.royaltyAccounts.platformRoyaltyAddr1.address,
+          this.royaltyAccounts.renderProviderRoyaltyAddr1.address,
         ],
         [new BN(400), new BN(100), new BN(legalBps), new BN(defaultBps)]
       );
       // clear contract's bps
       await this.royaltyOverride
-        .connect(this.accounts.adminA)
+        .connect(this.royaltyAccounts.adminA)
         .clearPlatformBpsForContract(this.tokenA.address);
       // ensure update is reflected in getRoyalties call
       response = await this.royaltyOverride
-        .connect(this.accounts.anyone)
+        .connect(this.royaltyAccounts.anyone)
         .getRoyalties(this.tokenA.address, tokenIdProject0);
       assertRoyaltiesResponse(
         response,
         [
-          this.accounts.artist0.address,
-          this.accounts.additional0.address,
-          this.accounts.platformRoyaltyAddr1.address,
-          this.accounts.renderProviderRoyaltyAddr1.address,
+          this.royaltyAccounts.artist0.address,
+          this.royaltyAccounts.additional0.address,
+          this.royaltyAccounts.platformRoyaltyAddr1.address,
+          this.royaltyAccounts.renderProviderRoyaltyAddr1.address,
         ],
         [new BN(400), new BN(100), new BN(defaultBps), new BN(defaultBps)]
       );
@@ -746,44 +747,44 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
     it("enforces constraints when updating platform bps for contract", async function () {
       // update contract's bps to minimum value
       await this.royaltyOverride
-        .connect(this.accounts.adminA)
+        .connect(this.royaltyAccounts.adminA)
         .updatePlatformBpsForContract(this.tokenA.address, zeroBps);
       // ensure update is reflected in getRoyalties call
       let response = await this.royaltyOverride
-        .connect(this.accounts.anyone)
+        .connect(this.royaltyAccounts.anyone)
         .getRoyalties(this.tokenA.address, tokenIdProject0);
       assertRoyaltiesResponse(
         response,
         [
-          this.accounts.artist0.address,
-          this.accounts.additional0.address,
-          this.accounts.platformRoyaltyAddr1.address,
-          this.accounts.renderProviderRoyaltyAddr1.address,
+          this.royaltyAccounts.artist0.address,
+          this.royaltyAccounts.additional0.address,
+          this.royaltyAccounts.platformRoyaltyAddr1.address,
+          this.royaltyAccounts.renderProviderRoyaltyAddr1.address,
         ],
         [new BN(400), new BN(100), new BN(zeroBps), new BN(defaultBps)]
       );
       // update contract's bps to max legal value
       await this.royaltyOverride
-        .connect(this.accounts.adminA)
+        .connect(this.royaltyAccounts.adminA)
         .updatePlatformBpsForContract(this.tokenA.address, maxLegalBps);
       // ensure update is reflected in getRoyalties call
       response = await this.royaltyOverride
-        .connect(this.accounts.anyone)
+        .connect(this.royaltyAccounts.anyone)
         .getRoyalties(this.tokenA.address, tokenIdProject0);
       assertRoyaltiesResponse(
         response,
         [
-          this.accounts.artist0.address,
-          this.accounts.additional0.address,
-          this.accounts.platformRoyaltyAddr1.address,
-          this.accounts.renderProviderRoyaltyAddr1.address,
+          this.royaltyAccounts.artist0.address,
+          this.royaltyAccounts.additional0.address,
+          this.royaltyAccounts.platformRoyaltyAddr1.address,
+          this.royaltyAccounts.renderProviderRoyaltyAddr1.address,
         ],
         [new BN(400), new BN(100), new BN(maxLegalBps), new BN(defaultBps)]
       );
       // expect revert when contract's bps is updated to illegal value
       await expectRevert(
         this.royaltyOverride
-          .connect(this.accounts.adminA)
+          .connect(this.royaltyAccounts.adminA)
           .updatePlatformBpsForContract(this.tokenA.address, illegalBps),
         "invalid bps"
       );
