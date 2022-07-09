@@ -56,7 +56,7 @@ export async function assignDefaultConstants(
   // project IDs
   this.projectZero = projectZero;
   this.projectOne = projectZero + 1;
-  this.projectThree = projectZero + 2;
+  this.projectTwo = projectZero + 2;
   // token IDs
   this.projectZeroTokenZero = new BN(this.projectZero).mul(new BN("1000000"));
   this.projectZeroTokenOne = this.projectZeroTokenZero.add(new BN("1"));
