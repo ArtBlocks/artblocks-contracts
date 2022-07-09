@@ -19,6 +19,17 @@ import { Logger } from "@ethersproject/logger";
 // hide nuisance logs about event overloading
 Logger.setLogLevel(Logger.levels.ERROR);
 
+import {
+  getAccounts,
+  assignDefaultConstants,
+  deployAndGet,
+  deployCoreWithMinterFilter,
+  safeAddProject,
+} from "../../util/common";
+import { CONFIG_MERKLE_ROOT, CONFIG_MINT_LIMITER_DISABLED } from "./constants";
+
+import { MinterMerkle_Common } from "./MinterMerkleV0.common";
+
 /**
  * @notice This returns the same result as solidity:
  * `keccak256(abi.encodePacked(_address));`
@@ -31,132 +42,100 @@ function hashAddress(_address) {
   );
 }
 
-const CONFIG_MERKLE_ROOT = ethers.utils.formatBytes32String("merkleRoot");
-const CONFIG_MINT_LIMITER_DISABLED = ethers.utils.formatBytes32String(
-  "mintLimiterDisabled"
-);
-
 /**
  * These tests intended to ensure Filtered Minter integrates properly with V1
  * core contract.
  */
 describe("MinterMerkleV0", async function () {
-  const name = "Non Fungible Token";
-  const symbol = "NFT";
-
-  const firstTokenId = new BN("30000000");
-  const secondTokenId = new BN("3000001");
-
-  const pricePerTokenInWei = ethers.utils.parseEther("1");
-  const higherPricePerTokenInWei = pricePerTokenInWei.add(
-    ethers.utils.parseEther("0.1")
-  );
-  const projectZero = 3; // V1 core starts at project 3
-  const projectOne = 4;
-  const projectTwo = 5;
-
-  const projectMaxInvocations = 15;
-
-  // Merkle trees (populated beforeEach)
-  let merkleTreeZero;
-  let merkleTreeOne;
-  let merkleTreeTwo;
-
   beforeEach(async function () {
-    const [owner, newOwner, artist, additional, deployer] =
-      await ethers.getSigners();
-    this.accounts = {
-      owner: owner,
-      newOwner: newOwner,
-      artist: artist,
-      additional: additional,
-      deployer: deployer,
-    };
-    const randomizerFactory = await ethers.getContractFactory(
-      "BasicRandomizer"
+    // standard accounts and constants
+    this.accounts = await getAccounts();
+    await assignDefaultConstants.call(this, 3); // this.this.projectZero = 3 on V1 core
+    this.higherPricePerTokenInWei = this.pricePerTokenInWei.add(
+      ethers.utils.parseEther("0.1")
     );
-    this.randomizer = await randomizerFactory.deploy();
-
-    const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV1");
-    this.token = await artblocksFactory
-      .connect(this.accounts.deployer)
-      .deploy(name, symbol, this.randomizer.address);
-
-    const minterFilterFactory = await ethers.getContractFactory(
+    // deploy and configure minter filter and minter
+    ({
+      genArt721Core: this.genArt721Core,
+      minterFilter: this.minterFilter,
+      randomizer: this.randomizer,
+    } = await deployCoreWithMinterFilter.call(
+      this,
+      "GenArt721CoreV1",
       "MinterFilterV0"
-    );
-    this.minterFilter = await minterFilterFactory.deploy(this.token.address);
+    ));
 
-    const minterFactory = await ethers.getContractFactory("MinterMerkleV0");
-    this.minter = await minterFactory.deploy(
-      this.token.address,
-      this.minterFilter.address
-    );
-    this.minter3 = await minterFactory.deploy(
-      this.token.address,
-      this.minterFilter.address
-    );
+    this.minter = await deployAndGet.call(this, "MinterMerkleV0", [
+      this.genArt721Core.address,
+      this.minterFilter.address,
+    ]);
 
-    await this.token
+    await this.genArt721Core
       .connect(this.accounts.deployer)
       .addProject("project0", this.accounts.artist.address, 0, false);
 
-    await this.token
+    await this.genArt721Core
       .connect(this.accounts.deployer)
       .addProject("project1", this.accounts.artist.address, 0, false);
 
-    await this.token
+    await this.genArt721Core
       .connect(this.accounts.deployer)
       .addProject("project2", this.accounts.artist.address, 0, false);
 
-    await this.token
+    await this.genArt721Core
       .connect(this.accounts.deployer)
-      .toggleProjectIsActive(projectZero);
-    await this.token
+      .toggleProjectIsActive(this.projectZero);
+    await this.genArt721Core
       .connect(this.accounts.deployer)
-      .toggleProjectIsActive(projectOne);
-    await this.token
+      .toggleProjectIsActive(this.projectOne);
+    await this.genArt721Core
       .connect(this.accounts.deployer)
-      .toggleProjectIsActive(projectTwo);
+      .toggleProjectIsActive(this.projectTwo);
 
-    await this.token
+    await this.genArt721Core
       .connect(this.accounts.deployer)
       .addMintWhitelisted(this.minterFilter.address);
 
-    await this.token
+    await this.genArt721Core
       .connect(this.accounts.artist)
-      .updateProjectMaxInvocations(projectZero, projectMaxInvocations);
-    await this.token
+      .updateProjectMaxInvocations(this.projectZero, this.maxInvocations);
+    await this.genArt721Core
       .connect(this.accounts.artist)
-      .updateProjectMaxInvocations(projectOne, projectMaxInvocations);
-    await this.token
+      .updateProjectMaxInvocations(this.projectOne, this.maxInvocations);
+    await this.genArt721Core
       .connect(this.accounts.artist)
-      .updateProjectMaxInvocations(projectTwo, projectMaxInvocations);
+      .updateProjectMaxInvocations(this.projectTwo, this.maxInvocations);
 
-    this.token.connect(this.accounts.artist).toggleProjectIsPaused(projectZero);
-    this.token.connect(this.accounts.artist).toggleProjectIsPaused(projectOne);
-    this.token.connect(this.accounts.artist).toggleProjectIsPaused(projectTwo);
+    this.genArt721Core
+      .connect(this.accounts.artist)
+      .toggleProjectIsPaused(this.projectZero);
+    this.genArt721Core
+      .connect(this.accounts.artist)
+      .toggleProjectIsPaused(this.projectOne);
+    this.genArt721Core
+      .connect(this.accounts.artist)
+      .toggleProjectIsPaused(this.projectTwo);
 
     await this.minterFilter
       .connect(this.accounts.deployer)
       .addApprovedMinter(this.minter.address);
     await this.minterFilter
       .connect(this.accounts.deployer)
-      .setMinterForProject(projectZero, this.minter.address);
+      .setMinterForProject(this.projectZero, this.minter.address);
     await this.minterFilter
       .connect(this.accounts.deployer)
-      .setMinterForProject(projectOne, this.minter.address);
+      .setMinterForProject(this.projectOne, this.minter.address);
     await this.minterFilter
       .connect(this.accounts.deployer)
-      .setMinterForProject(projectTwo, this.minter.address);
+      .setMinterForProject(this.projectTwo, this.minter.address);
 
-    // set token price for projects zero and one on minter
+    // set genArt721Core price for projects zero and one on minter
     await this.minter
       .connect(this.accounts.artist)
-      .updatePricePerTokenInWei(projectZero, pricePerTokenInWei);
+      .updatePricePerTokenInWei(this.projectZero, this.pricePerTokenInWei);
     await this.minter
       .connect(this.accounts.artist)
-      .updatePricePerTokenInWei(projectOne, pricePerTokenInWei);
+      .updatePricePerTokenInWei(this.projectOne, this.pricePerTokenInWei);
 
     // populate Merkle elements for projects zero, one, and two
     const elementsProjectZero = [];
@@ -167,28 +146,28 @@ describe("MinterMerkleV0", async function () {
       this.accounts.deployer.address,
       this.accounts.artist.address,
       this.accounts.additional.address,
-      this.accounts.owner.address,
-      this.accounts.newOwner.address
+      this.accounts.user.address,
+      this.accounts.user2.address
     );
-    elementsProjectOne.push(this.accounts.owner.address);
+    elementsProjectOne.push(this.accounts.user.address);
     elementsProjectTwo.push(this.accounts.additional.address);
 
     // build Merkle trees for projects zero, one, and two
-    merkleTreeZero = new MerkleTree(
+    this.merkleTreeZero = new MerkleTree(
       elementsProjectZero.map((_addr) => hashAddress(_addr)),
       keccak256,
       {
         sortPairs: true,
       }
     );
-    merkleTreeOne = new MerkleTree(
+    this.merkleTreeOne = new MerkleTree(
       elementsProjectOne.map((_addr) => hashAddress(_addr)),
       keccak256,
       {
         sortPairs: true,
       }
     );
-    merkleTreeTwo = new MerkleTree(
+    this.merkleTreeTwo = new MerkleTree(
       elementsProjectTwo.map((_addr) => hashAddress(_addr)),
       keccak256,
       {
@@ -197,127 +176,134 @@ describe("MinterMerkleV0", async function () {
     );
 
     // update Merkle root for projects zero and one on minter
-    const merkleRootZero = merkleTreeZero.getHexRoot();
-    const merkleRootOne = merkleTreeOne.getHexRoot();
+    const merkleRootZero = this.merkleTreeZero.getHexRoot();
+    const merkleRootOne = this.merkleTreeOne.getHexRoot();
     // Merkle root two intentionally not set
     await this.minter
       .connect(this.accounts.artist)
-      .updateMerkleRoot(projectZero, merkleRootZero);
+      .updateMerkleRoot(this.projectZero, merkleRootZero);
     await this.minter
       .connect(this.accounts.artist)
-      .updateMerkleRoot(projectOne, merkleRootOne);
+      .updateMerkleRoot(this.projectOne, merkleRootOne);
 
-    // mock ERC20 token
+    // mock ERC20 genArt721Core
     const ERC20Factory = await ethers.getContractFactory("ERC20Mock");
     this.ERC20Mock = await ERC20Factory.deploy(ethers.utils.parseEther("100"));
   });
 
-  describe("constructor", async function () {
-    it("reverts when given incorrect minter filter and core addresses", async function () {
-      const artblocksFactory = await ethers.getContractFactory(
-        "GenArt721CoreV1"
-      );
-      const token2 = await artblocksFactory
-        .connect(this.accounts.deployer)
-        .deploy(name, symbol, this.randomizer.address);
-
-      const minterFilterFactory = await ethers.getContractFactory(
-        "MinterFilterV0"
-      );
-      const minterFilter = await minterFilterFactory.deploy(token2.address);
-
-      const minterFactory = await ethers.getContractFactory("MinterMerkleV0");
-      // fails when combine new minterFilter with the old token in constructor
-      await expectRevert(
-        minterFactory.deploy(this.token.address, minterFilter.address),
-        "Illegal contract pairing"
-      );
-    });
+  describe("common MinterHolder tests", async () => {
+    MinterMerkle_Common();
   });
 
   describe("updatePricePerTokenInWei", async function () {
     it("only allows artist to update price", async function () {
       const onlyArtistErrorMessage = "Only Artist";
-      // doesn't allow owner
+      // doesn't allow user
       await expectRevert(
         this.minter
-          .connect(this.accounts.owner)
-          .updatePricePerTokenInWei(projectZero, higherPricePerTokenInWei),
+          .connect(this.accounts.user)
+          .updatePricePerTokenInWei(
+            this.projectZero,
+            this.higherPricePerTokenInWei
+          ),
         onlyArtistErrorMessage
       );
       // doesn't allow deployer
       await expectRevert(
         this.minter
           .connect(this.accounts.deployer)
-          .updatePricePerTokenInWei(projectZero, higherPricePerTokenInWei),
+          .updatePricePerTokenInWei(
+            this.projectZero,
+            this.higherPricePerTokenInWei
+          ),
         onlyArtistErrorMessage
       );
       // doesn't allow additional
       await expectRevert(
         this.minter
           .connect(this.accounts.additional)
-          .updatePricePerTokenInWei(projectZero, higherPricePerTokenInWei),
+          .updatePricePerTokenInWei(
+            this.projectZero,
+            this.higherPricePerTokenInWei
+          ),
         onlyArtistErrorMessage
       );
       // does allow artist
       await this.minter
         .connect(this.accounts.artist)
-        .updatePricePerTokenInWei(projectZero, higherPricePerTokenInWei);
+        .updatePricePerTokenInWei(
+          this.projectZero,
+          this.higherPricePerTokenInWei
+        );
     });
 
     it("enforces price update", async function () {
       const needMoreValueErrorMessage = "Must send minimum value to mint!";
-      const ownerMerkleProofZero = merkleTreeZero.getHexProof(
-        hashAddress(this.accounts.owner.address)
+      const userMerkleProofZero = this.merkleTreeZero.getHexProof(
+        hashAddress(this.accounts.user.address)
       );
       // artist increases price
       await this.minter
         .connect(this.accounts.artist)
-        .updatePricePerTokenInWei(projectZero, higherPricePerTokenInWei);
-      // cannot purchase token at lower price
+        .updatePricePerTokenInWei(
+          this.projectZero,
+          this.higherPricePerTokenInWei
+        );
+      // cannot purchase genArt721Core at lower price
       // note: purchase function is overloaded, so requires full signature
       await expectRevert(
         this.minter
-          .connect(this.accounts.owner)
-          ["purchase(uint256,bytes32[])"](projectZero, ownerMerkleProofZero, {
-            value: pricePerTokenInWei,
-          }),
+          .connect(this.accounts.user)
+          ["purchase(uint256,bytes32[])"](
+            this.projectZero,
+            userMerkleProofZero,
+            {
+              value: this.pricePerTokenInWei,
+            }
+          ),
         needMoreValueErrorMessage
       );
-      // can purchase token at higher price
+      // can purchase genArt721Core at higher price
       await this.minter
-        .connect(this.accounts.owner)
-        ["purchase(uint256,bytes32[])"](projectZero, ownerMerkleProofZero, {
-          value: higherPricePerTokenInWei,
+        .connect(this.accounts.user)
+        ["purchase(uint256,bytes32[])"](this.projectZero, userMerkleProofZero, {
+          value: this.higherPricePerTokenInWei,
         });
     });
 
     it("enforces price update only on desired project", async function () {
       const needMoreValueErrorMessage = "Must send minimum value to mint!";
-      const ownerMerkleProofZero = merkleTreeZero.getHexProof(
-        hashAddress(this.accounts.owner.address)
+      const userMerkleProofZero = this.merkleTreeZero.getHexProof(
+        hashAddress(this.accounts.user.address)
       );
-      const ownerMerkleProofOne = merkleTreeOne.getHexProof(
-        hashAddress(this.accounts.owner.address)
+      const userMerkleProofOne = this.merkleTreeOne.getHexProof(
+        hashAddress(this.accounts.user.address)
       );
       // artist increases price of project zero
       await this.minter
         .connect(this.accounts.artist)
-        .updatePricePerTokenInWei(projectZero, higherPricePerTokenInWei);
-      // cannot purchase project zero token at lower price
+        .updatePricePerTokenInWei(
+          this.projectZero,
+          this.higherPricePerTokenInWei
+        );
+      // cannot purchase project zero genArt721Core at lower price
       await expectRevert(
         this.minter
-          .connect(this.accounts.owner)
-          ["purchase(uint256,bytes32[])"](projectZero, ownerMerkleProofZero, {
-            value: pricePerTokenInWei,
-          }),
+          .connect(this.accounts.user)
+          ["purchase(uint256,bytes32[])"](
+            this.projectZero,
+            userMerkleProofZero,
+            {
+              value: this.pricePerTokenInWei,
+            }
+          ),
         needMoreValueErrorMessage
       );
-      // can purchase project one token at lower price
+      // can purchase project one genArt721Core at lower price
       await this.minter
-        .connect(this.accounts.owner)
-        ["purchase(uint256,bytes32[])"](projectOne, ownerMerkleProofOne, {
-          value: pricePerTokenInWei,
+        .connect(this.accounts.user)
+        ["purchase(uint256,bytes32[])"](this.projectOne, userMerkleProofOne, {
+          value: this.pricePerTokenInWei,
         });
     });
 
@@ -326,139 +312,142 @@ describe("MinterMerkleV0", async function () {
       await expect(
         this.minter
           .connect(this.accounts.artist)
-          .updatePricePerTokenInWei(projectZero, higherPricePerTokenInWei)
+          .updatePricePerTokenInWei(
+            this.projectZero,
+            this.higherPricePerTokenInWei
+          )
       )
         .to.emit(this.minter, "PricePerTokenInWeiUpdated")
-        .withArgs(projectZero, higherPricePerTokenInWei);
+        .withArgs(this.projectZero, this.higherPricePerTokenInWei);
     });
   });
 
   describe("toggleProjectMintLimiter", async function () {
     it("only allows artist to toggle mint limiter", async function () {
-      // owner not allowed
+      // user not allowed
       await expectRevert(
         this.minter
-          .connect(this.accounts.owner)
-          .toggleProjectMintLimiter(projectZero),
+          .connect(this.accounts.user)
+          .toggleProjectMintLimiter(this.projectZero),
         "Only Artist"
       );
       // additional not allowed
       await expectRevert(
         this.minter
           .connect(this.accounts.additional)
-          .toggleProjectMintLimiter(projectZero),
+          .toggleProjectMintLimiter(this.projectZero),
         "Only Artist"
       );
       // artist allowed
       await this.minter
         .connect(this.accounts.artist)
-        .toggleProjectMintLimiter(projectZero);
+        .toggleProjectMintLimiter(this.projectZero);
     });
   });
 
   describe("updateMerkleRoot", async function () {
     it("only allows artist to update merkle root", async function () {
-      const newMerkleRoot = merkleTreeZero.getHexRoot();
-      // owner not allowed
+      const newMerkleRoot = this.merkleTreeZero.getHexRoot();
+      // user not allowed
       await expectRevert(
         this.minter
-          .connect(this.accounts.owner)
-          .updateMerkleRoot(projectZero, newMerkleRoot),
+          .connect(this.accounts.user)
+          .updateMerkleRoot(this.projectZero, newMerkleRoot),
         "Only Artist"
       );
       // additional not allowed
       await expectRevert(
         this.minter
           .connect(this.accounts.additional)
-          .updateMerkleRoot(projectZero, newMerkleRoot),
+          .updateMerkleRoot(this.projectZero, newMerkleRoot),
         "Only Artist"
       );
       // artist allowed
       await this.minter
         .connect(this.accounts.artist)
-        .updateMerkleRoot(projectZero, newMerkleRoot);
+        .updateMerkleRoot(this.projectZero, newMerkleRoot);
     });
 
     it("emits event when update merkle root", async function () {
-      const newMerkleRoot = merkleTreeZero.getHexRoot();
+      const newMerkleRoot = this.merkleTreeZero.getHexRoot();
       await expect(
         this.minter
           .connect(this.accounts.artist)
-          .updateMerkleRoot(projectZero, newMerkleRoot)
+          .updateMerkleRoot(this.projectZero, newMerkleRoot)
       )
         .to.emit(this.minter, "ConfigValueSet(uint256,bytes32,bytes32)")
-        .withArgs(projectZero, CONFIG_MERKLE_ROOT, newMerkleRoot);
+        .withArgs(this.projectZero, CONFIG_MERKLE_ROOT, newMerkleRoot);
     });
   });
 
   describe("toggleProjectMintLimiter", async function () {
     it("only allows artist to toggle mint limiter", async function () {
-      const newMerkleRoot = merkleTreeZero.getHexRoot();
-      // owner not allowed
+      const newMerkleRoot = this.merkleTreeZero.getHexRoot();
+      // user not allowed
       await expectRevert(
         this.minter
-          .connect(this.accounts.owner)
-          .toggleProjectMintLimiter(projectZero),
+          .connect(this.accounts.user)
+          .toggleProjectMintLimiter(this.projectZero),
         "Only Artist"
       );
       // additional not allowed
       await expectRevert(
         this.minter
           .connect(this.accounts.additional)
-          .toggleProjectMintLimiter(projectZero),
+          .toggleProjectMintLimiter(this.projectZero),
         "Only Artist"
       );
       // artist allowed
       await this.minter
         .connect(this.accounts.artist)
-        .toggleProjectMintLimiter(projectZero);
+        .toggleProjectMintLimiter(this.projectZero);
     });
 
     it("emits event when toggling mint limiter", async function () {
       await expect(
         this.minter
           .connect(this.accounts.artist)
-          .toggleProjectMintLimiter(projectZero)
+          .toggleProjectMintLimiter(this.projectZero)
       )
         .to.emit(this.minter, "ConfigValueSet(uint256,bytes32,bool)")
-        .withArgs(projectZero, CONFIG_MINT_LIMITER_DISABLED, true);
+        .withArgs(this.projectZero, CONFIG_MINT_LIMITER_DISABLED, true);
       await expect(
         this.minter
           .connect(this.accounts.artist)
-          .toggleProjectMintLimiter(projectZero)
+          .toggleProjectMintLimiter(this.projectZero)
       )
         .to.emit(this.minter, "ConfigValueSet(uint256,bytes32,bool)")
-        .withArgs(projectZero, CONFIG_MINT_LIMITER_DISABLED, false);
+        .withArgs(this.projectZero, CONFIG_MINT_LIMITER_DISABLED, false);
     });
   });
 
   describe("purchase", async function () {
     beforeEach(async function () {
-      this.ownerMerkleProofZero = merkleTreeZero.getHexProof(
-        hashAddress(this.accounts.owner.address)
+      this.userMerkleProofZero = this.merkleTreeZero.getHexProof(
+        hashAddress(this.accounts.user.address)
       );
-      this.ownerMerkleProofOne = merkleTreeOne.getHexProof(
-        hashAddress(this.accounts.owner.address)
+      this.userMerkleProofOne = this.merkleTreeOne.getHexProof(
+        hashAddress(this.accounts.user.address)
       );
-      this.additionalMerkleProofTwo = merkleTreeTwo.getHexProof(
+      this.additionalMerkleProofTwo = this.merkleTreeTwo.getHexProof(
         hashAddress(this.accounts.additional.address)
       );
     });
 
     it("does not allow purchase prior to setting Merkle root (results in invalid proof)", async function () {
-      // configure price per token
+      // configure price per genArt721Core
       await this.minter
         .connect(this.accounts.artist)
-        .updatePricePerTokenInWei(projectTwo, 0);
+        .updatePricePerTokenInWei(this.projectTwo, 0);
       // expect revert because Merkle root has not been set
       await expectRevert(
         this.minter
           .connect(this.accounts.additional)
           ["purchase(uint256,bytes32[])"](
-            projectTwo,
+            this.projectTwo,
             this.additionalMerkleProofTwo,
             {
-              value: pricePerTokenInWei,
+              value: this.pricePerTokenInWei,
             }
           ),
         "Invalid Merkle proof"
@@ -471,10 +460,10 @@ describe("MinterMerkleV0", async function () {
         this.minter
           .connect(this.accounts.additional)
           ["purchase(uint256,bytes32[])"](
-            projectTwo,
+            this.projectTwo,
             this.additionalMerkleProofTwo,
             {
-              value: pricePerTokenInWei,
+              value: this.pricePerTokenInWei,
             }
           ),
         "Price not configured"
@@ -483,42 +472,42 @@ describe("MinterMerkleV0", async function () {
 
     it("does allow purchase with a price of zero when intentionally configured", async function () {
       // calc and update merkle root for project two
-      const merkleRootTwo = merkleTreeTwo.getHexRoot();
+      const merkleRootTwo = this.merkleTreeTwo.getHexRoot();
       await this.minter
         .connect(this.accounts.artist)
-        .updateMerkleRoot(projectTwo, merkleRootTwo);
-      // configure price per token
+        .updateMerkleRoot(this.projectTwo, merkleRootTwo);
+      // configure price per genArt721Core
       await this.minter
         .connect(this.accounts.artist)
-        .updatePricePerTokenInWei(projectTwo, 0);
+        .updatePricePerTokenInWei(this.projectTwo, 0);
       // allow purchase when intentionally configured price of zero
       await this.minter
         .connect(this.accounts.additional)
         ["purchase(uint256,bytes32[])"](
-          projectTwo,
+          this.projectTwo,
           this.additionalMerkleProofTwo
         );
     });
 
     it("enforces mint limiter when limiter on", async function () {
       await this.minter
-        .connect(this.accounts.owner)
+        .connect(this.accounts.user)
         ["purchase(uint256,bytes32[])"](
-          projectZero,
-          this.ownerMerkleProofZero,
+          this.projectZero,
+          this.userMerkleProofZero,
           {
-            value: pricePerTokenInWei,
+            value: this.pricePerTokenInWei,
           }
         );
       // expect revert after account hits minting limit
       await expectRevert(
         this.minter
-          .connect(this.accounts.owner)
+          .connect(this.accounts.user)
           ["purchase(uint256,bytes32[])"](
-            projectZero,
-            this.ownerMerkleProofZero,
+            this.projectZero,
+            this.userMerkleProofZero,
             {
-              value: pricePerTokenInWei,
+              value: this.pricePerTokenInWei,
             }
           ),
         "Limit 1 mint per address"
@@ -529,16 +518,16 @@ describe("MinterMerkleV0", async function () {
       // toggle mint limiter to be off
       await this.minter
         .connect(this.accounts.artist)
-        .toggleProjectMintLimiter(projectZero);
+        .toggleProjectMintLimiter(this.projectZero);
       // mint 15 times from a single address without failure
       for (let i = 0; i < 15; i++) {
         await this.minter
-          .connect(this.accounts.owner)
+          .connect(this.accounts.user)
           ["purchase(uint256,bytes32[])"](
-            projectZero,
-            this.ownerMerkleProofZero,
+            this.projectZero,
+            this.userMerkleProofZero,
             {
-              value: pricePerTokenInWei,
+              value: this.pricePerTokenInWei,
             }
           );
       }
@@ -549,12 +538,12 @@ describe("MinterMerkleV0", async function () {
       // (e.g. providing proof for valid address, but different tree)
       await expectRevert(
         this.minter
-          .connect(this.accounts.owner)
+          .connect(this.accounts.user)
           ["purchase(uint256,bytes32[])"](
-            projectZero,
-            this.ownerMerkleProofOne,
+            this.projectZero,
+            this.userMerkleProofOne,
             {
-              value: pricePerTokenInWei,
+              value: this.pricePerTokenInWei,
             }
           ),
         "Invalid Merkle proof"
@@ -564,15 +553,15 @@ describe("MinterMerkleV0", async function () {
     it("does nothing if setProjectMaxInvocations is not called (fails correctly)", async function () {
       await this.minter
         .connect(this.accounts.artist)
-        .toggleProjectMintLimiter(projectZero);
+        .toggleProjectMintLimiter(this.projectZero);
       for (let i = 0; i < 15; i++) {
         await this.minter
-          .connect(this.accounts.owner)
+          .connect(this.accounts.user)
           ["purchase(uint256,bytes32[])"](
-            projectZero,
-            this.ownerMerkleProofZero,
+            this.projectZero,
+            this.userMerkleProofZero,
             {
-              value: pricePerTokenInWei,
+              value: this.pricePerTokenInWei,
             }
           );
       }
@@ -580,12 +569,12 @@ describe("MinterMerkleV0", async function () {
       // expect revert after project hits max invocations
       await expectRevert(
         this.minter
-          .connect(this.accounts.owner)
+          .connect(this.accounts.user)
           ["purchase(uint256,bytes32[])"](
-            projectZero,
-            this.ownerMerkleProofZero,
+            this.projectZero,
+            this.userMerkleProofZero,
             {
-              value: pricePerTokenInWei,
+              value: this.pricePerTokenInWei,
             }
           ),
         "Must not exceed max invocations"
@@ -595,12 +584,12 @@ describe("MinterMerkleV0", async function () {
     it("doesnt add too much gas if setProjectMaxInvocations is set", async function () {
       // Try without setProjectMaxInvocations, store gas cost
       const tx = await this.minter
-        .connect(this.accounts.owner)
+        .connect(this.accounts.user)
         ["purchase(uint256,bytes32[])"](
-          projectZero,
-          this.ownerMerkleProofZero,
+          this.projectZero,
+          this.userMerkleProofZero,
           {
-            value: pricePerTokenInWei,
+            value: this.pricePerTokenInWei,
           }
         );
 
@@ -615,12 +604,16 @@ describe("MinterMerkleV0", async function () {
       // Try with setProjectMaxInvocations, store gas cost
       await this.minter
         .connect(this.accounts.deployer)
-        .setProjectMaxInvocations(projectOne);
+        .setProjectMaxInvocations(this.projectOne);
       const maxSetTx = await this.minter
-        .connect(this.accounts.owner)
-        ["purchase(uint256,bytes32[])"](projectOne, this.ownerMerkleProofOne, {
-          value: pricePerTokenInWei,
-        });
+        .connect(this.accounts.user)
+        ["purchase(uint256,bytes32[])"](
+          this.projectOne,
+          this.userMerkleProofOne,
+          {
+            value: this.pricePerTokenInWei,
+          }
+        );
       const receipt2 = await ethers.provider.getTransactionReceipt(
         maxSetTx.hash
       );
@@ -650,97 +643,97 @@ describe("MinterMerkleV0", async function () {
     it("fails more cheaply if setProjectMaxInvocations is set", async function () {
       await this.minter
         .connect(this.accounts.artist)
-        .toggleProjectMintLimiter(projectZero);
+        .toggleProjectMintLimiter(this.projectZero);
       // Try without setProjectMaxInvocations, store gas cost
       for (let i = 0; i < 15; i++) {
         await this.minter
-          .connect(this.accounts.owner)
+          .connect(this.accounts.user)
           ["purchase(uint256,bytes32[])"](
-            projectZero,
-            this.ownerMerkleProofZero,
+            this.projectZero,
+            this.userMerkleProofZero,
             {
-              value: pricePerTokenInWei,
+              value: this.pricePerTokenInWei,
             }
           );
       }
-      const ownerBalanceNoMaxSet = await this.accounts.owner.getBalance();
+      const userBalanceNoMaxSet = await this.accounts.user.getBalance();
       await expectRevert(
         this.minter
-          .connect(this.accounts.owner)
+          .connect(this.accounts.user)
           ["purchase(uint256,bytes32[])"](
-            projectZero,
-            this.ownerMerkleProofZero,
+            this.projectZero,
+            this.userMerkleProofZero,
             {
-              value: pricePerTokenInWei,
+              value: this.pricePerTokenInWei,
             }
           ),
         "Must not exceed max invocations"
       );
-      const ownerDeltaNoMaxSet = ownerBalanceNoMaxSet.sub(
-        BigNumber.from(await this.accounts.owner.getBalance())
+      const userDeltaNoMaxSet = userBalanceNoMaxSet.sub(
+        BigNumber.from(await this.accounts.user.getBalance())
       );
 
       // Try with setProjectMaxInvocations, store gas cost
       await this.minter
         .connect(this.accounts.deployer)
-        .setProjectMaxInvocations(projectOne);
+        .setProjectMaxInvocations(this.projectOne);
       await this.minter
         .connect(this.accounts.artist)
-        .toggleProjectMintLimiter(projectOne);
+        .toggleProjectMintLimiter(this.projectOne);
       for (let i = 0; i < 15; i++) {
         await this.minter
-          .connect(this.accounts.owner)
+          .connect(this.accounts.user)
           ["purchase(uint256,bytes32[])"](
-            projectOne,
-            this.ownerMerkleProofOne,
+            this.projectOne,
+            this.userMerkleProofOne,
             {
-              value: pricePerTokenInWei,
+              value: this.pricePerTokenInWei,
             }
           );
       }
-      const ownerBalanceMaxSet = BigNumber.from(
-        await this.accounts.owner.getBalance()
+      const userBalanceMaxSet = BigNumber.from(
+        await this.accounts.user.getBalance()
       );
       await expectRevert(
         this.minter
-          .connect(this.accounts.owner)
+          .connect(this.accounts.user)
           ["purchase(uint256,bytes32[])"](
-            projectOne,
-            this.ownerMerkleProofOne,
+            this.projectOne,
+            this.userMerkleProofOne,
             {
-              value: pricePerTokenInWei,
+              value: this.pricePerTokenInWei,
             }
           ),
         "Maximum number of invocations reached"
       );
-      const ownerDeltaMaxSet = ownerBalanceMaxSet.sub(
-        BigNumber.from(await this.accounts.owner.getBalance())
+      const userDeltaMaxSet = userBalanceMaxSet.sub(
+        BigNumber.from(await this.accounts.user.getBalance())
       );
 
       console.log(
         "Gas cost with setProjectMaxInvocations: ",
-        ethers.utils.formatUnits(ownerDeltaMaxSet, "ether").toString(),
+        ethers.utils.formatUnits(userDeltaMaxSet, "ether").toString(),
         "ETH"
       );
       console.log(
         "Gas cost without setProjectMaxInvocations: ",
-        ethers.utils.formatUnits(ownerDeltaNoMaxSet, "ether").toString(),
+        ethers.utils.formatUnits(userDeltaNoMaxSet, "ether").toString(),
         "ETH"
       );
 
-      expect(ownerDeltaMaxSet.lt(ownerDeltaNoMaxSet)).to.be.true;
+      expect(userDeltaMaxSet.lt(userDeltaNoMaxSet)).to.be.true;
     });
   });
 
   describe("calculates gas", async function () {
     it("mints and calculates gas values", async function () {
-      const ownerMerkleProofOne = merkleTreeOne.getHexProof(
-        hashAddress(this.accounts.owner.address)
+      const userMerkleProofOne = this.merkleTreeOne.getHexProof(
+        hashAddress(this.accounts.user.address)
       );
       const tx = await this.minter
-        .connect(this.accounts.owner)
-        ["purchase(uint256,bytes32[])"](projectOne, ownerMerkleProofOne, {
-          value: pricePerTokenInWei,
+        .connect(this.accounts.user)
+        ["purchase(uint256,bytes32[])"](this.projectOne, userMerkleProofOne, {
+          value: this.pricePerTokenInWei,
         });
 
       const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
@@ -758,22 +751,22 @@ describe("MinterMerkleV0", async function () {
   describe("purchaseTo", async function () {
     it("does not allow purchase prior to configuring price", async function () {
       // calc and update merkle root for project two
-      const merkleRootTwo = merkleTreeTwo.getHexRoot();
+      const merkleRootTwo = this.merkleTreeTwo.getHexRoot();
       await this.minter
         .connect(this.accounts.artist)
-        .updateMerkleRoot(projectTwo, merkleRootTwo);
+        .updateMerkleRoot(this.projectTwo, merkleRootTwo);
       // get merkle proof and try purchasing
-      const additionalMerkleProofTwo = merkleTreeTwo.getHexProof(
+      const additionalMerkleProofTwo = this.merkleTreeTwo.getHexProof(
         hashAddress(this.accounts.additional.address)
       );
       await expectRevert(
         this.minter
           .connect(this.accounts.additional)
           ["purchase(uint256,bytes32[])"](
-            projectTwo,
+            this.projectTwo,
             additionalMerkleProofTwo,
             {
-              value: pricePerTokenInWei,
+              value: this.pricePerTokenInWei,
             }
           ),
         "Price not configured"
@@ -781,17 +774,17 @@ describe("MinterMerkleV0", async function () {
     });
 
     it("allows `purchaseTo` by default", async function () {
-      const ownerMerkleProofOne = merkleTreeOne.getHexProof(
-        hashAddress(this.accounts.owner.address)
+      const userMerkleProofOne = this.merkleTreeOne.getHexProof(
+        hashAddress(this.accounts.user.address)
       );
       await this.minter
-        .connect(this.accounts.owner)
+        .connect(this.accounts.user)
         ["purchaseTo(address,uint256,bytes32[])"](
           this.accounts.additional.address,
-          projectOne,
-          ownerMerkleProofOne,
+          this.projectOne,
+          userMerkleProofOne,
           {
-            value: pricePerTokenInWei,
+            value: this.pricePerTokenInWei,
           }
         );
     });
@@ -800,91 +793,39 @@ describe("MinterMerkleV0", async function () {
       await expectRevert(
         this.minter
           .connect(this.accounts.artist)
-          .togglePurchaseToDisabled(projectOne),
+          .togglePurchaseToDisabled(this.projectOne),
         "Action not supported"
       );
     });
   });
 
   describe("setProjectMaxInvocations", async function () {
-    it("handles getting tokenInfo invocation info with V1 core", async function () {
+    it("handles getting genArt721CoreInfo invocation info with V1 core", async function () {
       await this.minter
         .connect(this.accounts.deployer)
-        .setProjectMaxInvocations(projectOne);
+        .setProjectMaxInvocations(this.projectOne);
       // minter should update storage with accurate projectMaxInvocations
       await this.minter
         .connect(this.accounts.deployer)
-        .setProjectMaxInvocations(projectOne);
+        .setProjectMaxInvocations(this.projectOne);
       let maxInvocations = await this.minter
         .connect(this.accounts.deployer)
-        .projectMaxInvocations(projectOne);
-      expect(maxInvocations).to.be.equal(projectMaxInvocations);
+        .projectMaxInvocations(this.projectOne);
+      expect(maxInvocations).to.be.equal(this.maxInvocations);
       // ensure hasMaxBeenReached did not unexpectedly get set as true
       let hasMaxBeenInvoked = await this.minter
         .connect(this.accounts.deployer)
-        .projectMaxHasBeenInvoked(projectOne);
+        .projectMaxHasBeenInvoked(this.projectOne);
       expect(hasMaxBeenInvoked).to.be.false;
       // should also support unconfigured project projectMaxInvocations
       // e.g. project 99, which does not yet exist
       await this.minter
         .connect(this.accounts.deployer)
         .setProjectMaxInvocations(99);
-      maxInvocations = await this.minter3
+      maxInvocations = await this.minter
         .connect(this.accounts.deployer)
         .projectMaxInvocations(99);
       expect(maxInvocations).to.be.equal(0);
-    });
-  });
-
-  describe("currency info hooks", async function () {
-    const unconfiguredProjectNumber = 99;
-
-    it("reports expected price per token", async function () {
-      let currencyInfo = await this.minter
-        .connect(this.accounts.artist)
-        .getPriceInfo(projectOne);
-      expect(currencyInfo.tokenPriceInWei).to.be.equal(pricePerTokenInWei);
-      // returns zero for unconfigured project price
-      currencyInfo = await this.minter
-        .connect(this.accounts.artist)
-        .getPriceInfo(unconfiguredProjectNumber);
-      expect(currencyInfo.tokenPriceInWei).to.be.equal(0);
-    });
-
-    it("reports expected isConfigured", async function () {
-      let currencyInfo = await this.minter
-        .connect(this.accounts.artist)
-        .getPriceInfo(projectOne);
-      expect(currencyInfo.isConfigured).to.be.equal(true);
-      // false for unconfigured project
-      currencyInfo = await this.minter
-        .connect(this.accounts.artist)
-        .getPriceInfo(unconfiguredProjectNumber);
-      expect(currencyInfo.isConfigured).to.be.equal(false);
-    });
-
-    it("reports default currency as ETH", async function () {
-      let currencyInfo = await this.minter
-        .connect(this.accounts.artist)
-        .getPriceInfo(projectOne);
-      expect(currencyInfo.currencySymbol).to.be.equal("ETH");
-      // should also report ETH for unconfigured project
-      currencyInfo = await this.minter
-        .connect(this.accounts.artist)
-        .getPriceInfo(unconfiguredProjectNumber);
-      expect(currencyInfo.currencySymbol).to.be.equal("ETH");
-    });
-
-    it("reports default currency address as null address", async function () {
-      let currencyInfo = await this.minter
-        .connect(this.accounts.artist)
-        .getPriceInfo(projectOne);
-      expect(currencyInfo.currencyAddress).to.be.equal(constants.ZERO_ADDRESS);
-      // should also report ETH for unconfigured project
-      currencyInfo = await this.minter
-        .connect(this.accounts.artist)
-        .getPriceInfo(unconfiguredProjectNumber);
-      expect(currencyInfo.currencyAddress).to.be.equal(constants.ZERO_ADDRESS);
     });
   });
 
@@ -908,12 +849,12 @@ describe("MinterMerkleV0", async function () {
         this.accounts.deployer.address,
         this.accounts.artist.address,
         attackerAddress,
-        this.accounts.owner.address,
-        this.accounts.newOwner.address
+        this.accounts.user.address,
+        this.accounts.user2.address
       );
 
       // build Merkle trees for projects zero, one, and two
-      merkleTreeOne = new MerkleTree(
+      this.merkleTreeOne = new MerkleTree(
         elementsProjectOneWithAttacker.map((_addr) => hashAddress(_addr)),
         keccak256,
         {
@@ -924,24 +865,24 @@ describe("MinterMerkleV0", async function () {
       // artists updates project Merkle root
       await this.minter
         .connect(this.accounts.artist)
-        .updateMerkleRoot(projectOne, merkleTreeOne.getHexRoot());
+        .updateMerkleRoot(this.projectOne, this.merkleTreeOne.getHexRoot());
 
       // attacker calculates Merkle proof for malicious contract
-      const attackerMerkleProofOne = merkleTreeOne.getHexProof(
+      const attackerMerkleProofOne = this.merkleTreeOne.getHexProof(
         hashAddress(attackerAddress)
       );
       // attacker should see revert when performing reentrancy attack
       let totalTokensToMint = 2;
       let numTokensToMint = BigNumber.from(totalTokensToMint.toString());
-      let totalValue = higherPricePerTokenInWei.mul(numTokensToMint);
+      let totalValue = this.higherPricePerTokenInWei.mul(numTokensToMint);
       await expectRevert(
         reentrancyMock
           .connect(this.accounts.deployer)
           .attack(
             numTokensToMint,
             this.minter.address,
-            projectOne,
-            higherPricePerTokenInWei,
+            this.projectOne,
+            this.higherPricePerTokenInWei,
             attackerMerkleProofOne,
             {
               value: totalValue,
@@ -950,21 +891,21 @@ describe("MinterMerkleV0", async function () {
         // failure message occurs during refund, where attack reentrency occurs
         "Refund failed"
       );
-      // attacker should be able to purchase ONE token w/refunds
+      // attacker should be able to purchase ONE genArt721Core w/refunds
       totalTokensToMint = 1;
       numTokensToMint = BigNumber.from("1");
-      totalValue = higherPricePerTokenInWei.mul(numTokensToMint);
+      totalValue = this.higherPricePerTokenInWei.mul(numTokensToMint);
       for (let i = 0; i < totalTokensToMint; i++) {
         await reentrancyMock
           .connect(this.accounts.deployer)
           .attack(
             numTokensToMint,
             this.minter.address,
-            projectOne,
-            higherPricePerTokenInWei,
+            this.projectOne,
+            this.higherPricePerTokenInWei,
             attackerMerkleProofOne,
             {
-              value: higherPricePerTokenInWei,
+              value: this.higherPricePerTokenInWei,
             }
           );
       }
@@ -973,7 +914,7 @@ describe("MinterMerkleV0", async function () {
     it("does not allow reentrant purchaseTo, when mint limiter off", async function () {
       await this.minter
         .connect(this.accounts.artist)
-        .toggleProjectMintLimiter(projectOne);
+        .toggleProjectMintLimiter(this.projectOne);
       // contract buys are always allowed by default if in merkle tree
       // attacker deploys reentrancy contract specifically for Merkle minter(s)
       const reentrancyMockFactory = await ethers.getContractFactory(
@@ -992,12 +933,12 @@ describe("MinterMerkleV0", async function () {
         this.accounts.deployer.address,
         this.accounts.artist.address,
         attackerAddress,
-        this.accounts.owner.address,
-        this.accounts.newOwner.address
+        this.accounts.user.address,
+        this.accounts.user2.address
       );
 
       // build Merkle trees for projects zero, one, and two
-      merkleTreeOne = new MerkleTree(
+      this.merkleTreeOne = new MerkleTree(
         elementsProjectOneWithAttacker.map((_addr) => hashAddress(_addr)),
         keccak256,
         {
@@ -1008,24 +949,24 @@ describe("MinterMerkleV0", async function () {
       // artists updates project Merkle root
       await this.minter
         .connect(this.accounts.artist)
-        .updateMerkleRoot(projectOne, merkleTreeOne.getHexRoot());
+        .updateMerkleRoot(this.projectOne, this.merkleTreeOne.getHexRoot());
 
       // attacker calculates Merkle proof for malicious contract
-      const attackerMerkleProofOne = merkleTreeOne.getHexProof(
+      const attackerMerkleProofOne = this.merkleTreeOne.getHexProof(
         hashAddress(attackerAddress)
       );
       // attacker should see revert when performing reentrancy attack
       const totalTokensToMint = 2;
       let numTokensToMint = BigNumber.from(totalTokensToMint.toString());
-      let totalValue = higherPricePerTokenInWei.mul(numTokensToMint);
+      let totalValue = this.higherPricePerTokenInWei.mul(numTokensToMint);
       await expectRevert(
         reentrancyMock
           .connect(this.accounts.deployer)
           .attack(
             numTokensToMint,
             this.minter.address,
-            projectOne,
-            higherPricePerTokenInWei,
+            this.projectOne,
+            this.higherPricePerTokenInWei,
             attackerMerkleProofOne,
             {
               value: totalValue,
@@ -1034,20 +975,20 @@ describe("MinterMerkleV0", async function () {
         // failure message occurs during refund, where attack reentrency occurs
         "Refund failed"
       );
-      // attacker should be able to purchase ONE token at a time w/refunds
+      // attacker should be able to purchase ONE genArt721Core at a time w/refunds
       numTokensToMint = BigNumber.from("1");
-      totalValue = higherPricePerTokenInWei.mul(numTokensToMint);
+      totalValue = this.higherPricePerTokenInWei.mul(numTokensToMint);
       for (let i = 0; i < totalTokensToMint; i++) {
         await reentrancyMock
           .connect(this.accounts.deployer)
           .attack(
             numTokensToMint,
             this.minter.address,
-            projectOne,
-            higherPricePerTokenInWei,
+            this.projectOne,
+            this.higherPricePerTokenInWei,
             attackerMerkleProofOne,
             {
-              value: higherPricePerTokenInWei,
+              value: this.higherPricePerTokenInWei,
             }
           );
       }
@@ -1060,13 +1001,13 @@ describe("MinterMerkleV0", async function () {
       const safeSdk: Safe = await getGnosisSafe(
         this.accounts.artist,
         this.accounts.additional,
-        this.accounts.owner
+        this.accounts.user
       );
       const safeAddress = safeSdk.getAddress();
 
       // build Merkle tree that includes safeAddress, update root
       const _allowlist = [this.accounts.artist.address, safeAddress];
-      merkleTreeOne = new MerkleTree(
+      this.merkleTreeOne = new MerkleTree(
         _allowlist.map((_addr) => hashAddress(_addr)),
         keccak256,
         {
@@ -1075,21 +1016,21 @@ describe("MinterMerkleV0", async function () {
       );
       await this.minter
         .connect(this.accounts.artist)
-        .updateMerkleRoot(projectOne, merkleTreeOne.getHexRoot());
+        .updateMerkleRoot(this.projectOne, this.merkleTreeOne.getHexRoot());
 
       // calculate Merkle proof for safeAddress
-      const safeMerkleProofOne = merkleTreeOne.getHexProof(
+      const safeMerkleProofOne = this.merkleTreeOne.getHexProof(
         hashAddress(safeAddress)
       );
 
       // create a transaction
       const unsignedTx = await this.minter.populateTransaction[
         "purchase(uint256,bytes32[])"
-      ](projectOne, safeMerkleProofOne);
+      ](this.projectOne, safeMerkleProofOne);
       const transaction: SafeTransactionDataPartial = {
         to: this.minter.address,
         data: unsignedTx.data,
-        value: pricePerTokenInWei.toHexString(),
+        value: this.pricePerTokenInWei.toHexString(),
       };
       const safeTransaction = await safeSdk.createTransaction(transaction);
 
@@ -1112,17 +1053,17 @@ describe("MinterMerkleV0", async function () {
       // fund the safe and execute transaction
       await this.accounts.artist.sendTransaction({
         to: safeAddress,
-        value: pricePerTokenInWei,
+        value: this.pricePerTokenInWei,
       });
-      const projectTokenInfoBefore = await this.token.projectTokenInfo(
-        projectOne
+      const projectTokenInfoBefore = await this.genArt721Core.projectTokenInfo(
+        this.projectOne
       );
       const executeTxResponse = await safeSdk2.executeTransaction(
         safeTransaction
       );
       await executeTxResponse.transactionResponse?.wait();
-      const projectTokenInfoAfter = await this.token.projectTokenInfo(
-        projectOne
+      const projectTokenInfoAfter = await this.genArt721Core.projectTokenInfo(
+        this.projectOne
       );
       expect(projectTokenInfoAfter.invocations).to.be.equal(
         projectTokenInfoBefore.invocations.add(1)
