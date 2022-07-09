@@ -11,7 +11,7 @@ declare module "mocha" {
     name: string;
     symbol: string;
     pricePerTokenInWei: BigNumber;
-    maxInvocations: Number;
+    maxInvocations: number;
     // project IDs
     projectZero: number;
     projectOne: number;

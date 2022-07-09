@@ -14,6 +14,16 @@ import Safe from "@gnosis.pm/safe-core-sdk";
 import { SafeTransactionDataPartial } from "@gnosis.pm/safe-core-sdk-types";
 import { getGnosisSafe } from "../../util/GnosisSafeNetwork";
 
+import {
+  getAccounts,
+  assignDefaultConstants,
+  deployAndGet,
+  deployCoreWithMinterFilter,
+  safeAddProject,
+} from "../../util/common";
+
+import { MinterHolder_Common } from "./MinterHolder.common";
+
 type T_PBAB = {
   pbabToken: Contract;
   pbabMinter: Contract;
@@ -24,35 +34,11 @@ type T_PBAB = {
  * core contract.
  */
 describe("MinterHolderV0", async function () {
-  const name = "Non Fungible Token";
-  const symbol = "NFT";
-
-  const firstTokenId = new BN("30000000");
-  const secondTokenId = new BN("3000001");
-
-  const pricePerTokenInWei = ethers.utils.parseEther("1");
-  const higherPricePerTokenInWei = pricePerTokenInWei.add(
-    ethers.utils.parseEther("0.1")
-  );
-  const projectZero = 3; // V1 core starts at project 3
-  const projectZeroTokenZero = 3000000;
-  const projectOne = 4;
-  const projectOneTokenZero = 4000000;
-  const projectTwo = 5;
-  const projectTwoTokenZero = 5000000;
-
-  const projectMaxInvocations = 15;
-
-  // Merkle trees (populated beforeEach)
-  let merkleTreeZero;
-  let merkleTreeOne;
-  let merkleTreeTwo;
-
   async function deployAndGetPBAB(): Promise<T_PBAB> {
     const PBABFactory = await ethers.getContractFactory("GenArt721CoreV2_PBAB");
     const pbabToken = await PBABFactory.connect(this.accounts.deployer).deploy(
-      name,
-      symbol,
+      this.name,
+      this.symbol,
       this.randomizer.address
     );
     const minterFactory = await ethers.getContractFactory(
@@ -64,7 +50,7 @@ describe("MinterHolderV0", async function () {
       .addProject(
         "project0_PBAB",
         this.accounts.artist.address,
-        pricePerTokenInWei
+        this.pricePerTokenInWei
       );
     await pbabToken.connect(this.accounts.deployer).toggleProjectIsActive(0);
     await pbabToken
@@ -72,113 +58,107 @@ describe("MinterHolderV0", async function () {
       .addMintWhitelisted(pbabMinter.address);
     await pbabToken
       .connect(this.accounts.artist)
-      .updateProjectMaxInvocations(0, projectMaxInvocations);
+      .updateProjectMaxInvocations(0, this.maxInvocations);
     await pbabToken.connect(this.accounts.artist).toggleProjectIsPaused(0);
     return { pbabToken, pbabMinter };
   }
 
   beforeEach(async function () {
-    const [owner, newOwner, artist, additional, deployer] =
-      await ethers.getSigners();
-    this.accounts = {
-      owner: owner,
-      newOwner: newOwner,
-      artist: artist,
-      additional: additional,
-      deployer: deployer,
-    };
-    const randomizerFactory = await ethers.getContractFactory(
-      "BasicRandomizer"
+    // standard accounts and constants
+    this.accounts = await getAccounts();
+    await assignDefaultConstants.call(this, 3); // this.projectZero = 3 on V1 core
+    this.higherPricePerTokenInWei = this.pricePerTokenInWei.add(
+      ethers.utils.parseEther("0.1")
     );
-    this.randomizer = await randomizerFactory.deploy();
-
-    const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV1");
-    this.token = await artblocksFactory
-      .connect(this.accounts.deployer)
-      .deploy(name, symbol, this.randomizer.address);
-
-    const minterFilterFactory = await ethers.getContractFactory(
+    // deploy and configure minter filter and minter
+    ({
+      genArt721Core: this.genArt721Core,
+      minterFilter: this.minterFilter,
+      randomizer: this.randomizer,
+    } = await deployCoreWithMinterFilter.call(
+      this,
+      "GenArt721CoreV1",
       "MinterFilterV0"
-    );
-    this.minterFilter = await minterFilterFactory.deploy(this.token.address);
+    ));
 
-    const minterFactory = await ethers.getContractFactory("MinterHolderV0");
-    this.minter = await minterFactory.deploy(
-      this.token.address,
-      this.minterFilter.address
-    );
-    this.minter3 = await minterFactory.deploy(
-      this.token.address,
-      this.minterFilter.address
-    );
+    this.minter = await deployAndGet.call(this, "MinterHolderV0", [
+      this.genArt721Core.address,
+      this.minterFilter.address,
+    ]);
 
-    await this.token
+    await this.genArt721Core
       .connect(this.accounts.deployer)
       .addProject("project0", this.accounts.artist.address, 0, false);
 
-    await this.token
+    await this.genArt721Core
       .connect(this.accounts.deployer)
       .addProject("project1", this.accounts.artist.address, 0, false);
 
-    await this.token
+    await this.genArt721Core
       .connect(this.accounts.deployer)
       .addProject("project2", this.accounts.artist.address, 0, false);
 
-    await this.token
+    await this.genArt721Core
       .connect(this.accounts.deployer)
-      .toggleProjectIsActive(projectZero);
-    await this.token
+      .toggleProjectIsActive(this.projectZero);
+    await this.genArt721Core
       .connect(this.accounts.deployer)
-      .toggleProjectIsActive(projectOne);
-    await this.token
+      .toggleProjectIsActive(this.projectOne);
+    await this.genArt721Core
       .connect(this.accounts.deployer)
-      .toggleProjectIsActive(projectTwo);
+      .toggleProjectIsActive(this.projectTwo);
 
-    await this.token
+    await this.genArt721Core
       .connect(this.accounts.deployer)
       .addMintWhitelisted(this.minterFilter.address);
 
-    await this.token
+    await this.genArt721Core
       .connect(this.accounts.artist)
-      .updateProjectMaxInvocations(projectZero, projectMaxInvocations);
-    await this.token
+      .updateProjectMaxInvocations(this.projectZero, this.maxInvocations);
+    await this.genArt721Core
       .connect(this.accounts.artist)
-      .updateProjectMaxInvocations(projectOne, projectMaxInvocations);
-    await this.token
+      .updateProjectMaxInvocations(this.projectOne, this.maxInvocations);
+    await this.genArt721Core
       .connect(this.accounts.artist)
-      .updateProjectMaxInvocations(projectTwo, projectMaxInvocations);
+      .updateProjectMaxInvocations(this.projectTwo, this.maxInvocations);
 
-    this.token.connect(this.accounts.artist).toggleProjectIsPaused(projectZero);
-    this.token.connect(this.accounts.artist).toggleProjectIsPaused(projectOne);
-    this.token.connect(this.accounts.artist).toggleProjectIsPaused(projectTwo);
+    this.genArt721Core
+      .connect(this.accounts.artist)
+      .toggleProjectIsPaused(this.projectZero);
+    this.genArt721Core
+      .connect(this.accounts.artist)
+      .toggleProjectIsPaused(this.projectOne);
+    this.genArt721Core
+      .connect(this.accounts.artist)
+      .toggleProjectIsPaused(this.projectTwo);
 
     await this.minterFilter
       .connect(this.accounts.deployer)
       .addApprovedMinter(this.minter.address);
     await this.minterFilter
       .connect(this.accounts.deployer)
-      .setMinterForProject(projectZero, this.minter.address);
+      .setMinterForProject(this.projectZero, this.minter.address);
     await this.minterFilter
       .connect(this.accounts.deployer)
-      .setMinterForProject(projectOne, this.minter.address);
+      .setMinterForProject(this.projectOne, this.minter.address);
     await this.minterFilter
       .connect(this.accounts.deployer)
-      .setMinterForProject(projectTwo, this.minter.address);
+      .setMinterForProject(this.projectTwo, this.minter.address);
 
     // set token price for projects zero and one on minter
     await this.minter
       .connect(this.accounts.artist)
-      .updatePricePerTokenInWei(projectZero, pricePerTokenInWei);
+      .updatePricePerTokenInWei(this.projectZero, this.pricePerTokenInWei);
     await this.minter
       .connect(this.accounts.artist)
-      .updatePricePerTokenInWei(projectOne, pricePerTokenInWei);
+      .updatePricePerTokenInWei(this.projectOne, this.pricePerTokenInWei);
 
-    // artist mints a token on projectZero to use as proof of ownership
+    // artist mints a token on this.projectZero to use as proof of ownership
     const minterFactorySetPrice = await ethers.getContractFactory(
       "MinterSetPriceV1"
     );
     this.minterSetPrice = await minterFactorySetPrice.deploy(
-      this.token.address,
+      this.genArt721Core.address,
       this.minterFilter.address
     );
     await this.minterFilter
@@ -186,76 +166,73 @@ describe("MinterHolderV0", async function () {
       .addApprovedMinter(this.minterSetPrice.address);
     await this.minterFilter
       .connect(this.accounts.deployer)
-      .setMinterForProject(projectZero, this.minterSetPrice.address);
+      .setMinterForProject(this.projectZero, this.minterSetPrice.address);
     await this.minterSetPrice
-      .connect(artist)
-      .updatePricePerTokenInWei(projectZero, pricePerTokenInWei);
+      .connect(this.accounts.artist)
+      .updatePricePerTokenInWei(this.projectZero, this.pricePerTokenInWei);
     await this.minterSetPrice
-      .connect(artist)
-      .purchase(projectZero, { value: pricePerTokenInWei });
-    // switch projectZero back to MinterHolderV0
+      .connect(this.accounts.artist)
+      .purchase(this.projectZero, { value: this.pricePerTokenInWei });
+    // switch this.projectZero back to MinterHolderV0
     await this.minterFilter
       .connect(this.accounts.deployer)
-      .setMinterForProject(projectZero, this.minter.address);
+      .setMinterForProject(this.projectZero, this.minter.address);
     await this.minter
       .connect(this.accounts.deployer)
-      .registerNFTAddress(this.token.address);
+      .registerNFTAddress(this.genArt721Core.address);
     await this.minter
       .connect(this.accounts.artist)
-      .allowHoldersOfProjects(projectZero, [this.token.address], [projectZero]);
+      .allowHoldersOfProjects(
+        this.projectZero,
+        [this.genArt721Core.address],
+        [this.projectZero]
+      );
   });
 
-  describe("constructor", async function () {
-    it("reverts when given incorrect minter filter and core addresses", async function () {
-      const artblocksFactory = await ethers.getContractFactory(
-        "GenArt721CoreV1"
-      );
-      const token2 = await artblocksFactory
-        .connect(this.accounts.deployer)
-        .deploy(name, symbol, this.randomizer.address);
-
-      const minterFilterFactory = await ethers.getContractFactory(
-        "MinterFilterV0"
-      );
-      const minterFilter = await minterFilterFactory.deploy(token2.address);
-
-      const minterFactory = await ethers.getContractFactory("MinterHolderV0");
-      // fails when combine new minterFilter with the old token in constructor
-      await expectRevert(
-        minterFactory.deploy(this.token.address, minterFilter.address),
-        "Illegal contract pairing"
-      );
-    });
+  describe("common MinterHolder tests", async () => {
+    MinterHolder_Common();
   });
 
   describe("updatePricePerTokenInWei", async function () {
     it("only allows artist to update price", async function () {
       const onlyArtistErrorMessage = "Only Artist";
-      // doesn't allow owner
+      // doesn't allow user
       await expectRevert(
         this.minter
-          .connect(this.accounts.owner)
-          .updatePricePerTokenInWei(projectZero, higherPricePerTokenInWei),
+          .connect(this.accounts.user)
+          .updatePricePerTokenInWei(
+            this.projectZero,
+            this.higherPricePerTokenInWei
+          ),
         onlyArtistErrorMessage
       );
       // doesn't allow deployer
       await expectRevert(
         this.minter
           .connect(this.accounts.deployer)
-          .updatePricePerTokenInWei(projectZero, higherPricePerTokenInWei),
+          .updatePricePerTokenInWei(
+            this.projectZero,
+            this.higherPricePerTokenInWei
+          ),
         onlyArtistErrorMessage
       );
       // doesn't allow additional
       await expectRevert(
         this.minter
           .connect(this.accounts.additional)
-          .updatePricePerTokenInWei(projectZero, higherPricePerTokenInWei),
+          .updatePricePerTokenInWei(
+            this.projectZero,
+            this.higherPricePerTokenInWei
+          ),
         onlyArtistErrorMessage
       );
       // does allow artist
       await this.minter
         .connect(this.accounts.artist)
-        .updatePricePerTokenInWei(projectZero, higherPricePerTokenInWei);
+        .updatePricePerTokenInWei(
+          this.projectZero,
+          this.higherPricePerTokenInWei
+        );
     });
 
     it("enforces price update", async function () {
@@ -263,18 +240,21 @@ describe("MinterHolderV0", async function () {
       // artist increases price
       await this.minter
         .connect(this.accounts.artist)
-        .updatePricePerTokenInWei(projectZero, higherPricePerTokenInWei);
+        .updatePricePerTokenInWei(
+          this.projectZero,
+          this.higherPricePerTokenInWei
+        );
       // cannot purchase token at lower price
       // note: purchase function is overloaded, so requires full signature
       await expectRevert(
         this.minter
           .connect(this.accounts.artist)
           ["purchase(uint256,address,uint256)"](
-            projectZero,
-            this.token.address,
-            projectZeroTokenZero,
+            this.projectZero,
+            this.genArt721Core.address,
+            this.projectZeroTokenZero.toNumber(),
             {
-              value: pricePerTokenInWei,
+              value: this.pricePerTokenInWei,
             }
           ),
         needMoreValueErrorMessage
@@ -283,11 +263,11 @@ describe("MinterHolderV0", async function () {
       await this.minter
         .connect(this.accounts.artist)
         ["purchase(uint256,address,uint256)"](
-          projectZero,
-          this.token.address,
-          projectZeroTokenZero,
+          this.projectZero,
+          this.genArt721Core.address,
+          this.projectZeroTokenZero.toNumber(),
           {
-            value: higherPricePerTokenInWei,
+            value: this.higherPricePerTokenInWei,
           }
         );
     });
@@ -297,23 +277,26 @@ describe("MinterHolderV0", async function () {
       await expect(
         this.minter
           .connect(this.accounts.artist)
-          .updatePricePerTokenInWei(projectZero, higherPricePerTokenInWei)
+          .updatePricePerTokenInWei(
+            this.projectZero,
+            this.higherPricePerTokenInWei
+          )
       )
         .to.emit(this.minter, "PricePerTokenInWeiUpdated")
-        .withArgs(projectZero, higherPricePerTokenInWei);
+        .withArgs(this.projectZero, this.higherPricePerTokenInWei);
     });
   });
 
   describe("allowHoldersOfProjects", async function () {
     it("only allows artist to update allowed holders", async function () {
-      // owner not allowed
+      // user not allowed
       await expectRevert(
         this.minter
-          .connect(this.accounts.owner)
+          .connect(this.accounts.user)
           .allowHoldersOfProjects(
-            projectZero,
-            [this.token.address],
-            [projectOne]
+            this.projectZero,
+            [this.genArt721Core.address],
+            [this.projectOne]
           ),
         "Only Artist"
       );
@@ -322,9 +305,9 @@ describe("MinterHolderV0", async function () {
         this.minter
           .connect(this.accounts.additional)
           .allowHoldersOfProjects(
-            projectZero,
-            [this.token.address],
-            [projectOne]
+            this.projectZero,
+            [this.genArt721Core.address],
+            [this.projectOne]
           ),
         "Only Artist"
       );
@@ -332,9 +315,9 @@ describe("MinterHolderV0", async function () {
       await this.minter
         .connect(this.accounts.artist)
         .allowHoldersOfProjects(
-          projectZero,
-          [this.token.address],
-          [projectOne]
+          this.projectZero,
+          [this.genArt721Core.address],
+          [this.projectOne]
         );
     });
 
@@ -343,13 +326,17 @@ describe("MinterHolderV0", async function () {
         this.minter
           .connect(this.accounts.artist)
           .allowHoldersOfProjects(
-            projectZero,
-            [this.token.address],
-            [projectOne]
+            this.projectZero,
+            [this.genArt721Core.address],
+            [this.projectOne]
           )
       )
         .to.emit(this.minter, "AllowedHoldersOfProjects")
-        .withArgs(projectZero, [this.token.address], [projectOne]);
+        .withArgs(
+          this.projectZero,
+          [this.genArt721Core.address],
+          [this.projectOne]
+        );
     });
 
     it("emits event when update allowed holders for a multiple projects", async function () {
@@ -357,16 +344,16 @@ describe("MinterHolderV0", async function () {
         this.minter
           .connect(this.accounts.artist)
           .allowHoldersOfProjects(
-            projectZero,
-            [this.token.address, this.token.address],
-            [projectOne, projectTwo]
+            this.projectZero,
+            [this.genArt721Core.address, this.genArt721Core.address],
+            [this.projectOne, this.projectTwo]
           )
       )
         .to.emit(this.minter, "AllowedHoldersOfProjects")
         .withArgs(
-          projectZero,
-          [this.token.address, this.token.address],
-          [projectOne, projectTwo]
+          this.projectZero,
+          [this.genArt721Core.address, this.genArt721Core.address],
+          [this.projectOne, this.projectTwo]
         );
     });
 
@@ -376,21 +363,24 @@ describe("MinterHolderV0", async function () {
       await pbabMinter
         .connect(this.accounts.artist)
         .purchaseTo(this.accounts.additional.address, 0, {
-          value: pricePerTokenInWei,
+          value: this.pricePerTokenInWei,
         });
 
       // set token price for projects zero and one on our minter
-      await this.token
+      await this.genArt721Core
         .connect(this.accounts.artist)
-        .updateProjectPricePerTokenInWei(projectZero, pricePerTokenInWei);
-      // allow holders of PBAB project 0 to purchase tokens on projectTwo
+        .updateProjectPricePerTokenInWei(
+          this.projectZero,
+          this.pricePerTokenInWei
+        );
+      // allow holders of PBAB project 0 to purchase tokens on this.projectTwo
       await expectRevert(
         this.minter
           .connect(this.accounts.artist)
           .allowHoldersOfProjects(
-            projectTwo,
+            this.projectTwo,
             [pbabToken.address],
-            [projectZero]
+            [this.projectZero]
           ),
         "Only Registered NFT Addresses"
       );
@@ -399,14 +389,14 @@ describe("MinterHolderV0", async function () {
 
   describe("removeHoldersOfProjects", async function () {
     it("only allows artist to update allowed holders", async function () {
-      // owner not allowed
+      // user not allowed
       await expectRevert(
         this.minter
-          .connect(this.accounts.owner)
+          .connect(this.accounts.user)
           .removeHoldersOfProjects(
-            projectZero,
-            [this.token.address],
-            [projectOne]
+            this.projectZero,
+            [this.genArt721Core.address],
+            [this.projectOne]
           ),
         "Only Artist"
       );
@@ -415,9 +405,9 @@ describe("MinterHolderV0", async function () {
         this.minter
           .connect(this.accounts.additional)
           .removeHoldersOfProjects(
-            projectZero,
-            [this.token.address],
-            [projectOne]
+            this.projectZero,
+            [this.genArt721Core.address],
+            [this.projectOne]
           ),
         "Only Artist"
       );
@@ -425,9 +415,9 @@ describe("MinterHolderV0", async function () {
       await this.minter
         .connect(this.accounts.artist)
         .removeHoldersOfProjects(
-          projectZero,
-          [this.token.address],
-          [projectOne]
+          this.projectZero,
+          [this.genArt721Core.address],
+          [this.projectOne]
         );
     });
 
@@ -436,13 +426,17 @@ describe("MinterHolderV0", async function () {
         this.minter
           .connect(this.accounts.artist)
           .removeHoldersOfProjects(
-            projectZero,
-            [this.token.address],
-            [projectOne]
+            this.projectZero,
+            [this.genArt721Core.address],
+            [this.projectOne]
           )
       )
         .to.emit(this.minter, "RemovedHoldersOfProjects")
-        .withArgs(projectZero, [this.token.address], [projectOne]);
+        .withArgs(
+          this.projectZero,
+          [this.genArt721Core.address],
+          [this.projectOne]
+        );
     });
 
     it("emits event when removing allowed holders for multiple projects", async function () {
@@ -450,32 +444,32 @@ describe("MinterHolderV0", async function () {
         this.minter
           .connect(this.accounts.artist)
           .removeHoldersOfProjects(
-            projectZero,
-            [this.token.address, this.token.address],
-            [projectOne, projectTwo]
+            this.projectZero,
+            [this.genArt721Core.address, this.genArt721Core.address],
+            [this.projectOne, this.projectTwo]
           )
       )
         .to.emit(this.minter, "RemovedHoldersOfProjects")
         .withArgs(
-          projectZero,
-          [this.token.address, this.token.address],
-          [projectOne, projectTwo]
+          this.projectZero,
+          [this.genArt721Core.address, this.genArt721Core.address],
+          [this.projectOne, this.projectTwo]
         );
     });
   });
 
   describe("allowRemoveHoldersOfProjects", async function () {
     it("only allows artist to update allowed holders", async function () {
-      // owner not allowed
+      // user not allowed
       await expectRevert(
         this.minter
-          .connect(this.accounts.owner)
+          .connect(this.accounts.user)
           .allowRemoveHoldersOfProjects(
-            projectZero,
-            [this.token.address],
-            [projectOne],
-            [this.token.address],
-            [projectOne]
+            this.projectZero,
+            [this.genArt721Core.address],
+            [this.projectOne],
+            [this.genArt721Core.address],
+            [this.projectOne]
           ),
         "Only Artist"
       );
@@ -484,11 +478,11 @@ describe("MinterHolderV0", async function () {
         this.minter
           .connect(this.accounts.additional)
           .allowRemoveHoldersOfProjects(
-            projectZero,
-            [this.token.address],
-            [projectOne],
-            [this.token.address],
-            [projectOne]
+            this.projectZero,
+            [this.genArt721Core.address],
+            [this.projectOne],
+            [this.genArt721Core.address],
+            [this.projectOne]
           ),
         "Only Artist"
       );
@@ -496,11 +490,11 @@ describe("MinterHolderV0", async function () {
       await this.minter
         .connect(this.accounts.artist)
         .allowRemoveHoldersOfProjects(
-          projectZero,
-          [this.token.address],
-          [projectOne],
-          [this.token.address],
-          [projectOne]
+          this.projectZero,
+          [this.genArt721Core.address],
+          [this.projectOne],
+          [this.genArt721Core.address],
+          [this.projectOne]
         );
     });
 
@@ -509,29 +503,37 @@ describe("MinterHolderV0", async function () {
         this.minter
           .connect(this.accounts.artist)
           .allowRemoveHoldersOfProjects(
-            projectZero,
-            [this.token.address],
-            [projectOne],
-            [this.token.address],
-            [projectOne]
+            this.projectZero,
+            [this.genArt721Core.address],
+            [this.projectOne],
+            [this.genArt721Core.address],
+            [this.projectOne]
           )
       )
         .to.emit(this.minter, "AllowedHoldersOfProjects")
-        .withArgs(projectZero, [this.token.address], [projectOne]);
+        .withArgs(
+          this.projectZero,
+          [this.genArt721Core.address],
+          [this.projectOne]
+        );
       // remove event (for same operation, since multiple events)
       await expect(
         this.minter
           .connect(this.accounts.artist)
           .allowRemoveHoldersOfProjects(
-            projectZero,
-            [this.token.address],
-            [projectOne],
-            [this.token.address],
-            [projectOne]
+            this.projectZero,
+            [this.genArt721Core.address],
+            [this.projectOne],
+            [this.genArt721Core.address],
+            [this.projectOne]
           )
       )
         .to.emit(this.minter, "RemovedHoldersOfProjects")
-        .withArgs(projectZero, [this.token.address], [projectOne]);
+        .withArgs(
+          this.projectZero,
+          [this.genArt721Core.address],
+          [this.projectOne]
+        );
     });
 
     it("emits event when adding allowed holders for multiple projects", async function () {
@@ -539,18 +541,18 @@ describe("MinterHolderV0", async function () {
         this.minter
           .connect(this.accounts.artist)
           .allowRemoveHoldersOfProjects(
-            projectZero,
-            [this.token.address, this.token.address],
-            [projectOne, projectTwo],
+            this.projectZero,
+            [this.genArt721Core.address, this.genArt721Core.address],
+            [this.projectOne, this.projectTwo],
             [],
             []
           )
       )
         .to.emit(this.minter, "AllowedHoldersOfProjects")
         .withArgs(
-          projectZero,
-          [this.token.address, this.token.address],
-          [projectOne, projectTwo]
+          this.projectZero,
+          [this.genArt721Core.address, this.genArt721Core.address],
+          [this.projectOne, this.projectTwo]
         );
     });
 
@@ -559,18 +561,18 @@ describe("MinterHolderV0", async function () {
         this.minter
           .connect(this.accounts.artist)
           .allowRemoveHoldersOfProjects(
-            projectZero,
+            this.projectZero,
             [],
             [],
-            [this.token.address, this.token.address],
-            [projectOne, projectTwo]
+            [this.genArt721Core.address, this.genArt721Core.address],
+            [this.projectOne, this.projectTwo]
           )
       )
         .to.emit(this.minter, "RemovedHoldersOfProjects")
         .withArgs(
-          projectZero,
-          [this.token.address, this.token.address],
-          [projectOne, projectTwo]
+          this.projectZero,
+          [this.genArt721Core.address, this.genArt721Core.address],
+          [this.projectOne, this.projectTwo]
         );
     });
   });
@@ -580,9 +582,9 @@ describe("MinterHolderV0", async function () {
       const isAllowlisted = await this.minter
         .connect(this.accounts.additional)
         .isAllowlistedNFT(
-          projectZero,
-          this.token.address,
-          projectZeroTokenZero
+          this.projectZero,
+          this.genArt721Core.address,
+          this.projectZeroTokenZero.toNumber()
         );
       expect(isAllowlisted).to.be.true;
     });
@@ -590,7 +592,11 @@ describe("MinterHolderV0", async function () {
     it("returns false when queried NFT is not allowlisted", async function () {
       const isAllowlisted = await this.minter
         .connect(this.accounts.additional)
-        .isAllowlistedNFT(projectZero, this.token.address, projectOneTokenZero);
+        .isAllowlistedNFT(
+          this.projectZero,
+          this.genArt721Core.address,
+          this.projectOneTokenZero.toNumber()
+        );
       expect(isAllowlisted).to.be.false;
     });
   });
@@ -601,8 +607,8 @@ describe("MinterHolderV0", async function () {
       await expectRevert(
         this.minter
           .connect(this.accounts.additional)
-          ["purchase(uint256)"](projectZero, {
-            value: pricePerTokenInWei,
+          ["purchase(uint256)"](this.projectZero, {
+            value: this.pricePerTokenInWei,
           }),
         "Must claim NFT ownership"
       );
@@ -614,11 +620,11 @@ describe("MinterHolderV0", async function () {
         this.minter
           .connect(this.accounts.additional)
           ["purchase(uint256,address,uint256)"](
-            projectTwo,
-            this.token.address,
-            projectTwoTokenZero,
+            this.projectTwo,
+            this.genArt721Core.address,
+            this.projectTwoTokenZero.toNumber(),
             {
-              value: pricePerTokenInWei,
+              value: this.pricePerTokenInWei,
             }
           ),
         "Price not configured"
@@ -631,9 +637,9 @@ describe("MinterHolderV0", async function () {
         this.minter
           .connect(this.accounts.additional)
           ["purchase(uint256,address,uint256)"](
-            projectOne,
-            this.token.address,
-            projectZeroTokenZero,
+            this.projectOne,
+            this.genArt721Core.address,
+            this.projectZeroTokenZero.toNumber(),
             {
               value: 0,
             }
@@ -645,11 +651,11 @@ describe("MinterHolderV0", async function () {
         this.minter
           .connect(this.accounts.additional)
           ["purchase(uint256,address,uint256)"](
-            projectOne,
-            this.token.address,
-            projectZeroTokenZero,
+            this.projectOne,
+            this.genArt721Core.address,
+            this.projectZeroTokenZero.toNumber(),
             {
-              value: pricePerTokenInWei.sub(1),
+              value: this.pricePerTokenInWei.sub(1),
             }
           ),
         "Must send minimum value to mint"
@@ -658,28 +664,28 @@ describe("MinterHolderV0", async function () {
 
     describe("allows/disallows based on allowed project holder configuration", async function () {
       it("does not allow purchase when using token of unallowed project", async function () {
-        // allow holders of projectOne to purchase tokens on projectTwo
+        // allow holders of this.projectOne to purchase tokens on this.projectTwo
         await this.minter
           .connect(this.accounts.artist)
           .allowHoldersOfProjects(
-            projectTwo,
-            [this.token.address],
-            [projectOne]
+            this.projectTwo,
+            [this.genArt721Core.address],
+            [this.projectOne]
           );
         // configure price per token to be zero
         await this.minter
           .connect(this.accounts.artist)
-          .updatePricePerTokenInWei(projectTwo, 0);
-        // do not allow purchase when holder token in projectZero is used as pass
+          .updatePricePerTokenInWei(this.projectTwo, 0);
+        // do not allow purchase when holder token in this.projectZero is used as pass
         await expectRevert(
           this.minter
             .connect(this.accounts.additional)
             ["purchase(uint256,address,uint256)"](
-              projectTwo,
-              this.token.address,
-              projectZeroTokenZero,
+              this.projectTwo,
+              this.genArt721Core.address,
+              this.projectZeroTokenZero.toNumber(),
               {
-                value: pricePerTokenInWei,
+                value: this.pricePerTokenInWei,
               }
             ),
           "Only allowlisted NFTs"
@@ -687,30 +693,30 @@ describe("MinterHolderV0", async function () {
       });
 
       it("does not allow purchase when using token of allowed then unallowed project", async function () {
-        // allow holders of projectZero and projectOne, then remove projectZero
+        // allow holders of this.projectZero and this.projectOne, then remove this.projectZero
         await this.minter
           .connect(this.accounts.artist)
           .allowRemoveHoldersOfProjects(
-            projectTwo,
-            [this.token.address, this.token.address],
-            [projectZero, projectOne],
-            [this.token.address],
-            [projectZero]
+            this.projectTwo,
+            [this.genArt721Core.address, this.genArt721Core.address],
+            [this.projectZero, this.projectOne],
+            [this.genArt721Core.address],
+            [this.projectZero]
           );
         // configure price per token to be zero
         await this.minter
           .connect(this.accounts.artist)
-          .updatePricePerTokenInWei(projectTwo, 0);
-        // do not allow purchase when holder token in projectZero is used as pass
+          .updatePricePerTokenInWei(this.projectTwo, 0);
+        // do not allow purchase when holder token in this.projectZero is used as pass
         await expectRevert(
           this.minter
             .connect(this.accounts.additional)
             ["purchase(uint256,address,uint256)"](
-              projectTwo,
-              this.token.address,
-              projectZeroTokenZero,
+              this.projectTwo,
+              this.genArt721Core.address,
+              this.projectZeroTokenZero.toNumber(),
               {
-                value: pricePerTokenInWei,
+                value: this.pricePerTokenInWei,
               }
             ),
           "Only allowlisted NFTs"
@@ -718,82 +724,82 @@ describe("MinterHolderV0", async function () {
       });
 
       it("does allow purchase when using token of allowed project", async function () {
-        // allow holders of projectZero to purchase tokens on projectTwo
+        // allow holders of this.projectZero to purchase tokens on this.projectTwo
         await this.minter
           .connect(this.accounts.artist)
           .allowHoldersOfProjects(
-            projectTwo,
-            [this.token.address],
-            [projectZero]
+            this.projectTwo,
+            [this.genArt721Core.address],
+            [this.projectZero]
           );
         // configure price per token to be zero
         await this.minter
           .connect(this.accounts.artist)
-          .updatePricePerTokenInWei(projectTwo, 0);
-        // does allow purchase when holder token in projectZero is used as pass
+          .updatePricePerTokenInWei(this.projectTwo, 0);
+        // does allow purchase when holder token in this.projectZero is used as pass
         await this.minter
           .connect(this.accounts.artist)
           ["purchase(uint256,address,uint256)"](
-            projectTwo,
-            this.token.address,
-            projectZeroTokenZero,
+            this.projectTwo,
+            this.genArt721Core.address,
+            this.projectZeroTokenZero.toNumber(),
             {
-              value: pricePerTokenInWei,
+              value: this.pricePerTokenInWei,
             }
           );
       });
 
       it("does allow purchase when using token of allowed project (when set in bulk)", async function () {
-        // allow holders of projectOne and projectZero to purchase tokens on projectTwo
+        // allow holders of this.projectOne and this.projectZero to purchase tokens on this.projectTwo
         await this.minter
           .connect(this.accounts.artist)
           .allowRemoveHoldersOfProjects(
-            projectTwo,
-            [this.token.address, this.token.address],
-            [projectOne, projectZero],
+            this.projectTwo,
+            [this.genArt721Core.address, this.genArt721Core.address],
+            [this.projectOne, this.projectZero],
             [],
             []
           );
         // configure price per token to be zero
         await this.minter
           .connect(this.accounts.artist)
-          .updatePricePerTokenInWei(projectTwo, 0);
-        // does allow purchase when holder token in projectZero is used as pass
+          .updatePricePerTokenInWei(this.projectTwo, 0);
+        // does allow purchase when holder token in this.projectZero is used as pass
         await this.minter
           .connect(this.accounts.artist)
           ["purchase(uint256,address,uint256)"](
-            projectTwo,
-            this.token.address,
-            projectZeroTokenZero,
+            this.projectTwo,
+            this.genArt721Core.address,
+            this.projectZeroTokenZero.toNumber(),
             {
-              value: pricePerTokenInWei,
+              value: this.pricePerTokenInWei,
             }
           );
       });
 
       it("does not allow purchase when using token not owned", async function () {
-        // allow holders of projectZero to purchase tokens on projectTwo
+        // allow holders of this.projectZero to purchase tokens on this.projectTwo
         await this.minter
           .connect(this.accounts.artist)
           .allowHoldersOfProjects(
-            projectTwo,
-            [this.token.address],
-            [projectZero]
+            this.projectTwo,
+            [this.genArt721Core.address],
+            [this.projectZero]
           );
         // configure price per token to be zero
         await this.minter
           .connect(this.accounts.artist)
-          .updatePricePerTokenInWei(projectTwo, 0);
-        // does allow purchase when holder token in projectZero is used as pass
+          .updatePricePerTokenInWei(this.projectTwo, 0);
+        // does allow purchase when holder token in this.projectZero is used as pass
         await expectRevert(
           this.minter
             .connect(this.accounts.additional)
             ["purchase(uint256,address,uint256)"](
-              projectTwo,
-              this.token.address,
-              projectZeroTokenZero,
+              this.projectTwo,
+              this.genArt721Core.address,
+              this.projectZeroTokenZero.toNumber(),
               {
-                value: pricePerTokenInWei,
+                value: this.pricePerTokenInWei,
               }
             ),
           "Only owner of NFT"
@@ -805,13 +811,16 @@ describe("MinterHolderV0", async function () {
         await pbabMinter
           .connect(this.accounts.artist)
           .purchaseTo(this.accounts.additional.address, 0, {
-            value: pricePerTokenInWei,
+            value: this.pricePerTokenInWei,
           });
 
         // set token price for projects zero and one on our minter
-        await this.token
+        await this.genArt721Core
           .connect(this.accounts.artist)
-          .updateProjectPricePerTokenInWei(projectZero, pricePerTokenInWei);
+          .updateProjectPricePerTokenInWei(
+            this.projectZero,
+            this.pricePerTokenInWei
+          );
         // register the PBAB token on our minter
         await this.minter
           .connect(this.accounts.deployer)
@@ -819,17 +828,17 @@ describe("MinterHolderV0", async function () {
         // configure price per token to be zero
         await this.minter
           .connect(this.accounts.artist)
-          .updatePricePerTokenInWei(projectTwo, 0);
-        // expect failure when using PBAB token because it is not allowlisted for projectTwo
+          .updatePricePerTokenInWei(this.projectTwo, 0);
+        // expect failure when using PBAB token because it is not allowlisted for this.projectTwo
         await expectRevert(
           this.minter
             .connect(this.accounts.additional)
             ["purchase(uint256,address,uint256)"](
-              projectTwo,
+              this.projectTwo,
               pbabToken.address,
               0,
               {
-                value: pricePerTokenInWei,
+                value: this.pricePerTokenInWei,
               }
             ),
           "Only allowlisted NFTs"
@@ -842,61 +851,64 @@ describe("MinterHolderV0", async function () {
         await pbabMinter
           .connect(this.accounts.artist)
           .purchaseTo(this.accounts.additional.address, 0, {
-            value: pricePerTokenInWei,
+            value: this.pricePerTokenInWei,
           });
 
         // set token price for projects zero and one on our minter
-        await this.token
+        await this.genArt721Core
           .connect(this.accounts.artist)
-          .updateProjectPricePerTokenInWei(projectZero, pricePerTokenInWei);
+          .updateProjectPricePerTokenInWei(
+            this.projectZero,
+            this.pricePerTokenInWei
+          );
         // register the PBAB token on our minter
         await this.minter
           .connect(this.accounts.deployer)
           .registerNFTAddress(pbabToken.address);
-        // allow holders of PBAB project 0 to purchase tokens on projectTwo
+        // allow holders of PBAB project 0 to purchase tokens on this.projectTwo
         await this.minter
           .connect(this.accounts.artist)
-          .allowHoldersOfProjects(projectTwo, [pbabToken.address], [0]);
+          .allowHoldersOfProjects(this.projectTwo, [pbabToken.address], [0]);
         // configure price per token to be zero
         await this.minter
           .connect(this.accounts.artist)
-          .updatePricePerTokenInWei(projectTwo, 0);
-        // does allow purchase when holder of token in PBAB projectZero is used as pass
+          .updatePricePerTokenInWei(this.projectTwo, 0);
+        // does allow purchase when holder of token in PBAB this.projectZero is used as pass
         await this.minter
           .connect(this.accounts.additional)
           ["purchase(uint256,address,uint256)"](
-            projectTwo,
+            this.projectTwo,
             pbabToken.address,
             0,
             {
-              value: pricePerTokenInWei,
+              value: this.pricePerTokenInWei,
             }
           );
       });
     });
 
     it("does allow purchase with a price of zero when intentionally configured", async function () {
-      // allow holders of projectZero to purchase tokens on projectTwo
+      // allow holders of this.projectZero to purchase tokens on this.projectTwo
       await this.minter
         .connect(this.accounts.artist)
         .allowHoldersOfProjects(
-          projectTwo,
-          [this.token.address],
-          [projectZero]
+          this.projectTwo,
+          [this.genArt721Core.address],
+          [this.projectZero]
         );
       // configure price per token to be zero
       await this.minter
         .connect(this.accounts.artist)
-        .updatePricePerTokenInWei(projectTwo, 0);
+        .updatePricePerTokenInWei(this.projectTwo, 0);
       // allow purchase when intentionally configured price of zero
       await this.minter
         .connect(this.accounts.artist)
         ["purchase(uint256,address,uint256)"](
-          projectTwo,
-          this.token.address,
-          projectZeroTokenZero,
+          this.projectTwo,
+          this.genArt721Core.address,
+          this.projectZeroTokenZero.toNumber(),
           {
-            value: pricePerTokenInWei,
+            value: this.pricePerTokenInWei,
           }
         );
     });
@@ -906,19 +918,19 @@ describe("MinterHolderV0", async function () {
       await this.minter
         .connect(this.accounts.artist)
         .allowHoldersOfProjects(
-          projectOne,
-          [this.token.address],
-          [projectZero]
+          this.projectOne,
+          [this.genArt721Core.address],
+          [this.projectZero]
         );
-      for (let i = 0; i < projectMaxInvocations; i++) {
+      for (let i = 0; i < this.maxInvocations; i++) {
         await this.minter
           .connect(this.accounts.artist)
           ["purchase(uint256,address,uint256)"](
-            projectOne,
-            this.token.address,
-            projectZeroTokenZero,
+            this.projectOne,
+            this.genArt721Core.address,
+            this.projectZeroTokenZero.toNumber(),
             {
-              value: pricePerTokenInWei,
+              value: this.pricePerTokenInWei,
             }
           );
       }
@@ -928,11 +940,11 @@ describe("MinterHolderV0", async function () {
         this.minter
           .connect(this.accounts.artist)
           ["purchase(uint256,address,uint256)"](
-            projectOne,
-            this.token.address,
-            projectZeroTokenZero,
+            this.projectOne,
+            this.genArt721Core.address,
+            this.projectZeroTokenZero.toNumber(),
             {
-              value: pricePerTokenInWei,
+              value: this.pricePerTokenInWei,
             }
           ),
         "Must not exceed max invocations"
@@ -944,11 +956,11 @@ describe("MinterHolderV0", async function () {
       const tx = await this.minter
         .connect(this.accounts.artist)
         ["purchase(uint256,address,uint256)"](
-          projectZero,
-          this.token.address,
-          projectZeroTokenZero,
+          this.projectZero,
+          this.genArt721Core.address,
+          this.projectZeroTokenZero.toNumber(),
           {
-            value: pricePerTokenInWei,
+            value: this.pricePerTokenInWei,
           }
         );
 
@@ -963,15 +975,15 @@ describe("MinterHolderV0", async function () {
       // Try with setProjectMaxInvocations, store gas cost
       await this.minter
         .connect(this.accounts.deployer)
-        .setProjectMaxInvocations(projectZero);
+        .setProjectMaxInvocations(this.projectZero);
       const maxSetTx = await this.minter
         .connect(this.accounts.artist)
         ["purchase(uint256,address,uint256)"](
-          projectZero,
-          this.token.address,
-          projectZeroTokenZero,
+          this.projectZero,
+          this.genArt721Core.address,
+          this.projectZeroTokenZero.toNumber(),
           {
-            value: pricePerTokenInWei,
+            value: this.pricePerTokenInWei,
           }
         );
       const receipt2 = await ethers.provider.getTransactionReceipt(
@@ -1002,15 +1014,15 @@ describe("MinterHolderV0", async function () {
 
     it("fails more cheaply if setProjectMaxInvocations is set", async function () {
       // Try without setProjectMaxInvocations, store gas cost
-      for (let i = 0; i < projectMaxInvocations - 1; i++) {
+      for (let i = 0; i < this.maxInvocations - 1; i++) {
         await this.minter
           .connect(this.accounts.artist)
           ["purchase(uint256,address,uint256)"](
-            projectZero,
-            this.token.address,
-            projectZeroTokenZero,
+            this.projectZero,
+            this.genArt721Core.address,
+            this.projectZeroTokenZero.toNumber(),
             {
-              value: pricePerTokenInWei,
+              value: this.pricePerTokenInWei,
             }
           );
       }
@@ -1019,11 +1031,11 @@ describe("MinterHolderV0", async function () {
         this.minter
           .connect(this.accounts.artist)
           ["purchase(uint256,address,uint256)"](
-            projectZero,
-            this.token.address,
-            projectZeroTokenZero,
+            this.projectZero,
+            this.genArt721Core.address,
+            this.projectZeroTokenZero.toNumber(),
             {
-              value: pricePerTokenInWei,
+              value: this.pricePerTokenInWei,
             }
           ),
         "Must not exceed max invocations"
@@ -1036,22 +1048,22 @@ describe("MinterHolderV0", async function () {
       await this.minter
         .connect(this.accounts.artist)
         .allowHoldersOfProjects(
-          projectOne,
-          [this.token.address],
-          [projectZero]
+          this.projectOne,
+          [this.genArt721Core.address],
+          [this.projectZero]
         );
       await this.minter
         .connect(this.accounts.deployer)
-        .setProjectMaxInvocations(projectOne);
-      for (let i = 0; i < projectMaxInvocations; i++) {
+        .setProjectMaxInvocations(this.projectOne);
+      for (let i = 0; i < this.maxInvocations; i++) {
         await this.minter
           .connect(this.accounts.artist)
           ["purchase(uint256,address,uint256)"](
-            projectOne,
-            this.token.address,
-            projectZeroTokenZero,
+            this.projectOne,
+            this.genArt721Core.address,
+            this.projectZeroTokenZero.toNumber(),
             {
-              value: pricePerTokenInWei,
+              value: this.pricePerTokenInWei,
             }
           );
       }
@@ -1062,11 +1074,11 @@ describe("MinterHolderV0", async function () {
         this.minter
           .connect(this.accounts.artist)
           ["purchase(uint256,address,uint256)"](
-            projectOne,
-            this.token.address,
-            projectZeroTokenZero,
+            this.projectOne,
+            this.genArt721Core.address,
+            this.projectZeroTokenZero.toNumber(),
             {
-              value: pricePerTokenInWei,
+              value: this.pricePerTokenInWei,
             }
           ),
         "Maximum number of invocations reached"
@@ -1095,11 +1107,11 @@ describe("MinterHolderV0", async function () {
       const tx = await this.minter
         .connect(this.accounts.artist)
         ["purchase(uint256,address,uint256)"](
-          projectZero,
-          this.token.address,
-          projectZeroTokenZero,
+          this.projectZero,
+          this.genArt721Core.address,
+          this.projectZeroTokenZero.toNumber(),
           {
-            value: pricePerTokenInWei,
+            value: this.pricePerTokenInWei,
           }
         );
 
@@ -1123,9 +1135,9 @@ describe("MinterHolderV0", async function () {
           .connect(this.accounts.additional)
           ["purchaseTo(address,uint256)"](
             this.accounts.additional.address,
-            projectZero,
+            this.projectZero,
             {
-              value: pricePerTokenInWei,
+              value: this.pricePerTokenInWei,
             }
           ),
         "Must claim NFT ownership"
@@ -1137,11 +1149,11 @@ describe("MinterHolderV0", async function () {
         .connect(this.accounts.artist)
         ["purchaseTo(address,uint256,address,uint256)"](
           this.accounts.additional.address,
-          projectZero,
-          this.token.address,
-          projectZeroTokenZero,
+          this.projectZero,
+          this.genArt721Core.address,
+          this.projectZeroTokenZero.toNumber(),
           {
-            value: pricePerTokenInWei,
+            value: this.pricePerTokenInWei,
           }
         );
     });
@@ -1150,7 +1162,7 @@ describe("MinterHolderV0", async function () {
       await expectRevert(
         this.minter
           .connect(this.accounts.artist)
-          .togglePurchaseToDisabled(projectOne),
+          .togglePurchaseToDisabled(this.projectOne),
         "Action not supported"
       );
       // still allows `purchaseTo`.
@@ -1158,11 +1170,11 @@ describe("MinterHolderV0", async function () {
         .connect(this.accounts.artist)
         ["purchaseTo(address,uint256,address,uint256)"](
           this.accounts.additional.address,
-          projectZero,
-          this.token.address,
-          projectZeroTokenZero,
+          this.projectZero,
+          this.genArt721Core.address,
+          this.projectZeroTokenZero.toNumber(),
           {
-            value: pricePerTokenInWei,
+            value: this.pricePerTokenInWei,
           }
         );
     });
@@ -1172,18 +1184,18 @@ describe("MinterHolderV0", async function () {
     it("handles getting tokenInfo invocation info with V1 core", async function () {
       await this.minter
         .connect(this.accounts.deployer)
-        .setProjectMaxInvocations(projectOne);
-      // minter should update storage with accurate projectMaxInvocations
+        .setProjectMaxInvocations(this.projectOne);
+      // minter should update storage with accurate this.maxInvocations
       let maxInvocations = await this.minter
         .connect(this.accounts.deployer)
-        .projectMaxInvocations(projectOne);
-      expect(maxInvocations).to.be.equal(projectMaxInvocations);
+        .projectMaxInvocations(this.projectOne);
+      expect(maxInvocations).to.be.equal(this.maxInvocations);
       // ensure hasMaxBeenReached did not unexpectedly get set as true
       let hasMaxBeenInvoked = await this.minter
         .connect(this.accounts.deployer)
-        .projectMaxHasBeenInvoked(projectOne);
+        .projectMaxHasBeenInvoked(this.projectOne);
       expect(hasMaxBeenInvoked).to.be.false;
-      // should also support unconfigured project projectMaxInvocations
+      // should also support unconfigured project this.maxInvocations
       // e.g. project 99, which does not yet exist
       await this.minter
         .connect(this.accounts.deployer)
@@ -1192,58 +1204,6 @@ describe("MinterHolderV0", async function () {
         .connect(this.accounts.deployer)
         .projectMaxInvocations(99);
       expect(maxInvocations).to.be.equal(0);
-    });
-  });
-
-  describe("currency info hooks", async function () {
-    const unconfiguredProjectNumber = 99;
-
-    it("reports expected price per token", async function () {
-      let currencyInfo = await this.minter
-        .connect(this.accounts.artist)
-        .getPriceInfo(projectOne);
-      expect(currencyInfo.tokenPriceInWei).to.be.equal(pricePerTokenInWei);
-      // returns zero for unconfigured project price
-      currencyInfo = await this.minter
-        .connect(this.accounts.artist)
-        .getPriceInfo(unconfiguredProjectNumber);
-      expect(currencyInfo.tokenPriceInWei).to.be.equal(0);
-    });
-
-    it("reports expected isConfigured", async function () {
-      let currencyInfo = await this.minter
-        .connect(this.accounts.artist)
-        .getPriceInfo(projectOne);
-      expect(currencyInfo.isConfigured).to.be.equal(true);
-      // false for unconfigured project
-      currencyInfo = await this.minter
-        .connect(this.accounts.artist)
-        .getPriceInfo(unconfiguredProjectNumber);
-      expect(currencyInfo.isConfigured).to.be.equal(false);
-    });
-
-    it("reports default currency as ETH", async function () {
-      let currencyInfo = await this.minter
-        .connect(this.accounts.artist)
-        .getPriceInfo(projectOne);
-      expect(currencyInfo.currencySymbol).to.be.equal("ETH");
-      // should also report ETH for unconfigured project
-      currencyInfo = await this.minter
-        .connect(this.accounts.artist)
-        .getPriceInfo(unconfiguredProjectNumber);
-      expect(currencyInfo.currencySymbol).to.be.equal("ETH");
-    });
-
-    it("reports default currency address as null address", async function () {
-      let currencyInfo = await this.minter
-        .connect(this.accounts.artist)
-        .getPriceInfo(projectOne);
-      expect(currencyInfo.currencyAddress).to.be.equal(constants.ZERO_ADDRESS);
-      // should also report ETH for unconfigured project
-      currencyInfo = await this.minter
-        .connect(this.accounts.artist)
-        .getPriceInfo(unconfiguredProjectNumber);
-      expect(currencyInfo.currencyAddress).to.be.equal(constants.ZERO_ADDRESS);
     });
   });
 
@@ -1286,7 +1246,7 @@ describe("MinterHolderV0", async function () {
       let NFTAddressAtZero = await this.minter
         .connect(this.accounts.additional)
         .getRegisteredNFTAddressAt(0);
-      expect(NFTAddressAtZero).to.be.equal(this.token.address);
+      expect(NFTAddressAtZero).to.be.equal(this.genArt721Core.address);
       // expect NFT address at index one to be deployer
       const NFTAddressAtOne = await this.minter
         .connect(this.accounts.additional)
@@ -1295,7 +1255,7 @@ describe("MinterHolderV0", async function () {
       // unregister an token NFT address
       await this.minter
         .connect(this.accounts.deployer)
-        .unregisterNFTAddress(this.token.address);
+        .unregisterNFTAddress(this.genArt721Core.address);
       // expect NFT address at index zero to be deployer
       NFTAddressAtZero = await this.minter
         .connect(this.accounts.additional)
@@ -1315,28 +1275,28 @@ describe("MinterHolderV0", async function () {
         .deploy();
 
       // artist sents token zero of project zero to reentrant contract
-      await this.token
+      await this.genArt721Core
         .connect(this.accounts.artist)
         .transferFrom(
           this.accounts.artist.address,
           reentrancyMock.address,
-          projectZeroTokenZero
+          this.projectZeroTokenZero.toNumber()
         );
 
       // attacker should see revert when performing reentrancy attack
       let totalTokensToMint = 2;
       let numTokensToMint = BigNumber.from(totalTokensToMint.toString());
-      let totalValue = higherPricePerTokenInWei.mul(numTokensToMint);
+      let totalValue = this.higherPricePerTokenInWei.mul(numTokensToMint);
       await expectRevert(
         reentrancyMock
           .connect(this.accounts.deployer)
           .attack(
             numTokensToMint,
             this.minter.address,
-            projectZero,
-            higherPricePerTokenInWei,
-            this.token.address,
-            projectZeroTokenZero,
+            this.projectZero,
+            this.higherPricePerTokenInWei,
+            this.genArt721Core.address,
+            this.projectZeroTokenZero.toNumber(),
             {
               value: totalValue,
             }
@@ -1347,19 +1307,19 @@ describe("MinterHolderV0", async function () {
       // attacker should be able to purchase ONE token w/refunds
       totalTokensToMint = 1;
       numTokensToMint = BigNumber.from("1");
-      totalValue = higherPricePerTokenInWei.mul(numTokensToMint);
+      totalValue = this.higherPricePerTokenInWei.mul(numTokensToMint);
       for (let i = 0; i < totalTokensToMint; i++) {
         await reentrancyMock
           .connect(this.accounts.deployer)
           .attack(
             numTokensToMint,
             this.minter.address,
-            projectZero,
-            higherPricePerTokenInWei,
-            this.token.address,
-            projectZeroTokenZero,
+            this.projectZero,
+            this.higherPricePerTokenInWei,
+            this.genArt721Core.address,
+            this.projectZeroTokenZero.toNumber(),
             {
-              value: higherPricePerTokenInWei,
+              value: this.higherPricePerTokenInWei,
             }
           );
       }
@@ -1372,27 +1332,31 @@ describe("MinterHolderV0", async function () {
       const safeSdk: Safe = await getGnosisSafe(
         this.accounts.artist,
         this.accounts.additional,
-        this.accounts.owner
+        this.accounts.user
       );
       const safeAddress = safeSdk.getAddress();
 
       // artist sents token zero of project zero to safe
-      await this.token
+      await this.genArt721Core
         .connect(this.accounts.artist)
         .transferFrom(
           this.accounts.artist.address,
           safeAddress,
-          projectZeroTokenZero
+          this.projectZeroTokenZero.toNumber()
         );
 
       // create a transaction
       const unsignedTx = await this.minter.populateTransaction[
         "purchase(uint256,address,uint256)"
-      ](projectZero, this.token.address, projectZeroTokenZero);
+      ](
+        this.projectZero,
+        this.genArt721Core.address,
+        this.projectZeroTokenZero.toNumber()
+      );
       const transaction: SafeTransactionDataPartial = {
         to: this.minter.address,
         data: unsignedTx.data,
-        value: pricePerTokenInWei.toHexString(),
+        value: this.pricePerTokenInWei.toHexString(),
       };
       const safeTransaction = await safeSdk.createTransaction(transaction);
       // signers sign and execute the transaction
@@ -1413,17 +1377,17 @@ describe("MinterHolderV0", async function () {
       // fund the safe and execute transaction
       await this.accounts.artist.sendTransaction({
         to: safeAddress,
-        value: pricePerTokenInWei,
+        value: this.pricePerTokenInWei,
       });
-      const projectTokenInfoBefore = await this.token.projectTokenInfo(
-        projectZero
+      const projectTokenInfoBefore = await this.genArt721Core.projectTokenInfo(
+        this.projectZero
       );
       const executeTxResponse = await safeSdk2.executeTransaction(
         safeTransaction
       );
       await executeTxResponse.transactionResponse?.wait();
-      const projectTokenInfoAfter = await this.token.projectTokenInfo(
-        projectZero
+      const projectTokenInfoAfter = await this.genArt721Core.projectTokenInfo(
+        this.projectZero
       );
       expect(projectTokenInfoAfter.invocations).to.be.equal(
         projectTokenInfoBefore.invocations.add(1)
