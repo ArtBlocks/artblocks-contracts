@@ -36,6 +36,11 @@ contract GenArt721CoreV2_PBAB is ERC721Enumerable, IGenArt721CoreV2_PBAB {
         bool paused;
     }
 
+    struct ExternalAssetDependancyType {
+        CDN,
+        IPFS,
+        ARWEAVE
+    }
     struct ExternalAssetDependancy {
         string location;
         string locationType;
