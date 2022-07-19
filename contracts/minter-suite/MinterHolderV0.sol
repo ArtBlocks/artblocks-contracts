@@ -5,11 +5,11 @@ import "../interfaces/0.8.x/IGenArt721CoreContractV1.sol";
 import "../interfaces/0.8.x/IMinterFilterV0.sol";
 import "../interfaces/0.8.x/IFilteredMinterHolderV0.sol";
 
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
+import "@openzeppelin-4.5/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin-4.5/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin-4.5/contracts/utils/structs/EnumerableSet.sol";
+import "@openzeppelin-4.5/contracts/utils/structs/EnumerableMap.sol";
 
 pragma solidity 0.8.9;
 
