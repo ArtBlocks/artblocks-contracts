@@ -24,7 +24,7 @@ import {
   assignDefaultConstants,
   deployAndGet,
   deployCoreWithMinterFilter,
-  safeAddProject,
+  compareBN,
 } from "../../util/common";
 import { CONFIG_MERKLE_ROOT, CONFIG_MINT_LIMITER_DISABLED } from "./constants";
 
@@ -745,6 +745,48 @@ describe("MinterMerkleV0", async function () {
         "ETH"
       );
       expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0387635"));
+    });
+
+    it("is gas performant at 1k length allowlist", async function () {
+      // build new Merkle tree from 1k addresses, including user's address
+      const _allowlist = [this.accounts.user.address];
+      const crypto = require("crypto");
+      for (let i = 1; i < 1000; i++) {
+        const _pk = crypto.randomBytes(32).toString("hex");
+        const _addr = ethers.utils.computeAddress("0x" + _pk);
+        _allowlist.push(_addr);
+      }
+      const _merkleTree = new MerkleTree(
+        _allowlist.map((_addr) => hashAddress(_addr)),
+        keccak256,
+        {
+          sortPairs: true,
+        }
+      );
+      // update Merkle root
+      await this.minter
+        .connect(this.accounts.artist)
+        .updateMerkleRoot(this.projectOne, _merkleTree.getRoot());
+      // user mint with new Merkle proof
+      const userMerkleProof = _merkleTree.getHexProof(
+        hashAddress(this.accounts.user.address)
+      );
+      const tx = await this.minter
+        .connect(this.accounts.user)
+        ["purchase(uint256,bytes32[])"](this.projectOne, userMerkleProof, {
+          value: this.pricePerTokenInWei,
+        });
+
+      const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+      const txCost = receipt.effectiveGasPrice.mul(receipt.gasUsed);
+      console.log(
+        "Gas cost for a successful 1k allowlist mint: ",
+        ethers.utils.formatUnits(txCost, "ether").toString(),
+        "ETH"
+      );
+      // the following is not much more than the gas cost with a very small allowlist
+      expect(compareBN(txCost, ethers.utils.parseEther("0.0396386"), 1)).to.be
+        .true;
     });
   });
 

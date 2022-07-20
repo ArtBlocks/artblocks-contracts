@@ -4,7 +4,7 @@
 import { BN } from "@openzeppelin/test-helpers";
 import { ethers } from "hardhat";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { Contract } from "ethers";
+import { Contract, BigNumber } from "ethers";
 
 export type TestAccountsArtBlocks = {
   deployer: SignerWithAddress;
@@ -112,4 +112,15 @@ export async function safeAddProject(
       .connect(caller)
       .addProject("TestProject", artistAddress, 0, false);
   }
+}
+
+// utility funciton to compare Big Numbers, expecting them to be within x%, +/-
+export function compareBN(
+  actual: BigNumber,
+  expected: BigNumber,
+  tolerancePercent: number = 1
+): boolean {
+  const diff = actual.sub(expected);
+  const percentDiff = diff.mul(BigNumber.from("100")).div(expected);
+  return percentDiff.abs().lte(BigNumber.from(tolerancePercent.toString()));
 }
