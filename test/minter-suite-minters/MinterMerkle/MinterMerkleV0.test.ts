@@ -737,14 +737,15 @@ describe("MinterMerkleV0", async function () {
         });
 
       const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
-      const txCost = receipt.effectiveGasPrice.mul(receipt.gasUsed).toString();
+      const txCost = receipt.effectiveGasPrice.mul(receipt.gasUsed);
 
       console.log(
         "Gas cost for a successful ERC20 mint: ",
-        ethers.utils.formatUnits(txCost, "ether").toString(),
+        ethers.utils.formatUnits(txCost.toString(), "ether").toString(),
         "ETH"
       );
-      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0387635"));
+      expect(compareBN(txCost, ethers.utils.parseEther("0.03874"), 1)).to.be
+        .true;
     });
 
     it("is gas performant at 1k length allowlist", async function () {
@@ -785,7 +786,7 @@ describe("MinterMerkleV0", async function () {
         "ETH"
       );
       // the following is not much more than the gas cost with a very small allowlist
-      expect(compareBN(txCost, ethers.utils.parseEther("0.0396386"), 1)).to.be
+      expect(compareBN(txCost, ethers.utils.parseEther("0.03957"), 1)).to.be
         .true;
     });
   });
