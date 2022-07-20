@@ -4,9 +4,9 @@
 import "./interfaces/0.8.x/IRandomizer.sol";
 import "./interfaces/0.8.x/IGenArt721CoreContractV3.sol";
 
-import "@openzeppelin-4.5/contracts/utils/Strings.sol";
+import "@openzeppelin-4.7/contracts/utils/Strings.sol";
 
-import "@openzeppelin-4.5/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import "@openzeppelin-4.7/contracts/token/ERC721/ERC721.sol";
 
 pragma solidity 0.8.9;
 
@@ -14,7 +14,7 @@ pragma solidity 0.8.9;
  * @title Art Blocks ERC-721 core contract, V3.
  * @author Art Blocks Inc.
  */
-contract GenArt721CoreV3 is ERC721Enumerable, IGenArt721CoreContractV3 {
+contract GenArt721CoreV3 is ERC721, IGenArt721CoreContractV3 {
     /// randomizer contract
     IRandomizer public randomizerContract;
 
