@@ -15,6 +15,9 @@ interface IGenArt721CoreContractV3 {
      */
     event MinterUpdated(address indexed _currentMinter);
 
+    // version of the core contract
+    function coreVersion() external view returns (string memory);
+
     // getter function of public variable
     function admin() external view returns (address);
 
