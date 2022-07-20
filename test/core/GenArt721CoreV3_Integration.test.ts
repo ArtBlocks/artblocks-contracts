@@ -98,6 +98,15 @@ describe("GenArt721CoreV3", async function () {
     });
   });
 
+  describe("coreVersion", function () {
+    it("returns expected value", async function () {
+      const coreVersion = await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .coreVersion();
+      expect(coreVersion).to.be.equal("v3.0.0");
+    });
+  });
+
   describe("projectInfo", function () {
     it("returns expected deprecated values", async function () {
       const tokenInfo = await this.genArt721Core

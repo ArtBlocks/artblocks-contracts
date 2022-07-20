@@ -63,8 +63,8 @@ contract GenArt721CoreV3 is ERC721, IGenArt721CoreContractV3 {
     /// next project ID to be created
     uint256 public nextProjectId = 0;
 
-    /// version for this core contract
-    string public constant coreVersion = "3.0.0";
+    /// version of this core contract
+    string public constant coreVersion = "v3.0.0";
 
     modifier onlyValidTokenId(uint256 _tokenId) {
         require(_exists(_tokenId), "Token ID does not exist");
