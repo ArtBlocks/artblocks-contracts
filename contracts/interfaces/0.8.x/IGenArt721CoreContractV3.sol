@@ -18,7 +18,10 @@ interface IGenArt721CoreContractV3 {
     // version of the core contract
     function coreVersion() external view returns (string memory);
 
-    // getter function of public variable
+    // owner (pre-V3 was named admin) of contract
+    function owner() external view returns (address);
+
+    // backwards-compatible admin - equal to owner()
     function admin() external view returns (address);
 
     // getter function of public variable

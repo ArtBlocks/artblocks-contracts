@@ -116,4 +116,22 @@ describe("GenArt721CoreV3", async function () {
       expect(tokenInfo.maxInvocations).to.be.equal(15);
     });
   });
+
+  describe("owner", function () {
+    it("returns expected owner", async function () {
+      const ownerAddress = await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .owner();
+      expect(ownerAddress).to.be.equal(this.accounts.deployer.address);
+    });
+  });
+
+  describe("admin", function () {
+    it("returns expected backwards-compatible admin (owner)", async function () {
+      const adminAddress = await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .owner();
+      expect(adminAddress).to.be.equal(this.accounts.deployer.address);
+    });
+  });
 });

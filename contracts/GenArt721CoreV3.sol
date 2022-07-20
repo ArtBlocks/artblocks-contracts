@@ -5,7 +5,7 @@ import "./interfaces/0.8.x/IRandomizer.sol";
 import "./interfaces/0.8.x/IGenArt721CoreContractV3.sol";
 
 import "@openzeppelin-4.7/contracts/utils/Strings.sol";
-
+import "@openzeppelin-4.7/contracts/access/Ownable.sol";
 import "@openzeppelin-4.7/contracts/token/ERC721/ERC721.sol";
 
 pragma solidity 0.8.9;
@@ -14,7 +14,7 @@ pragma solidity 0.8.9;
  * @title Art Blocks ERC-721 core contract, V3.
  * @author Art Blocks Inc.
  */
-contract GenArt721CoreV3 is ERC721, IGenArt721CoreContractV3 {
+contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     /// randomizer contract
     IRandomizer public randomizerContract;
 
@@ -52,8 +52,6 @@ contract GenArt721CoreV3 is ERC721, IGenArt721CoreContractV3 {
 
     mapping(uint256 => bytes32) public tokenIdToHash;
 
-    /// admin for contract
-    address public admin;
     /// true if address is whitelisted
     mapping(address => bool) public isWhitelisted;
 
@@ -84,11 +82,6 @@ contract GenArt721CoreV3 is ERC721, IGenArt721CoreContractV3 {
         _;
     }
 
-    modifier onlyAdmin() {
-        require(msg.sender == admin, "Only admin");
-        _;
-    }
-
     modifier onlyWhitelisted() {
         require(isWhitelisted[msg.sender], "Only whitelisted");
         _;
@@ -114,7 +107,6 @@ contract GenArt721CoreV3 is ERC721, IGenArt721CoreContractV3 {
         string memory _tokenSymbol,
         address _randomizerContract
     ) ERC721(_tokenName, _tokenSymbol) {
-        admin = msg.sender;
         isWhitelisted[msg.sender] = true;
         artblocksAddress = payable(msg.sender);
         randomizerContract = IRandomizer(_randomizerContract);
@@ -186,18 +178,11 @@ contract GenArt721CoreV3 is ERC721, IGenArt721CoreContractV3 {
     }
 
     /**
-     * @notice Updates contract admin to `_adminAddress`.
-     */
-    function updateAdmin(address _adminAddress) public onlyAdmin {
-        admin = _adminAddress;
-    }
-
-    /**
      * @notice Updates artblocksAddress to `_artblocksAddress`.
      */
     function updateArtblocksAddress(address payable _artblocksAddress)
         public
-        onlyAdmin
+        onlyOwner
     {
         artblocksAddress = _artblocksAddress;
     }
@@ -208,7 +193,7 @@ contract GenArt721CoreV3 is ERC721, IGenArt721CoreContractV3 {
      */
     function updateArtblocksPercentage(uint256 _artblocksPercentage)
         public
-        onlyAdmin
+        onlyOwner
     {
         require(_artblocksPercentage <= 25, "Max of 25%");
         artblocksPercentage = _artblocksPercentage;
@@ -217,21 +202,21 @@ contract GenArt721CoreV3 is ERC721, IGenArt721CoreContractV3 {
     /**
      * @notice Whitelists `_address`.
      */
-    function addWhitelisted(address _address) public onlyAdmin {
+    function addWhitelisted(address _address) public onlyOwner {
         isWhitelisted[_address] = true;
     }
 
     /**
      * @notice Revokes whitelisting of `_address`.
      */
-    function removeWhitelisted(address _address) public onlyAdmin {
+    function removeWhitelisted(address _address) public onlyOwner {
         isWhitelisted[_address] = false;
     }
 
     /**
      * @notice updates minter to `_address`.
      */
-    function updateMinterContract(address _address) public onlyAdmin {
+    function updateMinterContract(address _address) public onlyOwner {
         minterContract = _address;
         emit MinterUpdated(_address);
     }
@@ -665,5 +650,22 @@ contract GenArt721CoreV3 is ERC721, IGenArt721CoreContractV3 {
                     Strings.toString(_tokenId)
                 )
             );
+    }
+
+    function owner()
+        public
+        view
+        override(Ownable, IGenArt721CoreContractV3)
+        returns (address)
+    {
+        return Ownable.owner();
+    }
+
+    /**
+     * @notice Backwards-compatible (pre-V3) getter returning contract admin
+     * @return admin_ Address of contract owner
+     */
+    function admin() public view returns (address) {
+        return owner();
     }
 }
