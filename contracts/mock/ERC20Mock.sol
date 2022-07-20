@@ -2,7 +2,7 @@
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin-4.5/contracts/token/ERC20/ERC20.sol";
 
 contract ERC20Mock is ERC20 {
     constructor(uint256 initialSupply) ERC20("Mock Token", "MOCK") {

@@ -4,9 +4,9 @@
 import "../../interfaces/0.8.x/IRandomizer.sol";
 import "../../interfaces/0.8.x/IGenArt721CoreV2_PBAB.sol";
 
-import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin-4.5/contracts/utils/Strings.sol";
 
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import "@openzeppelin-4.5/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 
 pragma solidity 0.8.9;
 

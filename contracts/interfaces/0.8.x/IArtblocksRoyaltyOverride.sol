@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import "@openzeppelin-4.5/contracts/utils/introspection/IERC165.sol";
 
 pragma solidity ^0.8.0;
 

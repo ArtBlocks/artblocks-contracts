@@ -4,9 +4,9 @@
 import "../../interfaces/0.8.x/IGenArt721CoreV2_PBAB.sol";
 import "../../interfaces/0.8.x/IBonusContract.sol";
 
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
-import "@openzeppelin/contracts/interfaces/IERC20.sol";
+import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin-4.5/contracts/utils/Strings.sol";
+import "@openzeppelin-4.5/contracts/interfaces/IERC20.sol";
 
 pragma solidity 0.8.9;
 
