@@ -36,19 +36,20 @@ contract GenArt721CoreV2_PBAB is ERC721Enumerable, IGenArt721CoreV2_PBAB {
         bool paused;
     }
 
-    struct ExternalAssetDependancyType {
-        CDN,
+    uint256 constant MAX_EXTERNAL_ASSET_DEPENDANCIES = 10;
+    enum ExternalAssetDependancyType {
         IPFS,
         ARWEAVE
     }
     struct ExternalAssetDependancy {
-        string location;
-        string locationType;
+        string cid;
+        ExternalAssetDependancyType dependencyType;
     }
     mapping(uint256 => ExternalAssetDependancy[])
         public projectIdToExternalAssetDependencies;
 
     string public preferredIPFSGateway;
+    string public preferredArweaveGateway;
 
     uint256 constant ONE_MILLION = 1_000_000;
     mapping(uint256 => Project) projects;
@@ -501,15 +502,28 @@ contract GenArt721CoreV2_PBAB is ERC721Enumerable, IGenArt721CoreV2_PBAB {
      */
     function updateProjectExternalAssetDependencies(
         uint256 _projectId,
-        string memory location,
-        string memory locationType
+        string[] memory cids,
+        ExternalAssetDependancyType[] memory dependencyTypes
     ) public onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) {
-        projectIdToExternalAssetDependencies[
-            _projectId
-        ] = ExternalAssetDependancy({
-            location: location,
-            locationType: locationType
-        });
+        require(
+            cids.length == dependencyTypes.length,
+            "The number of external assets provided must match the number of asset types provided"
+        );
+
+        require(
+            cids.length <= MAX_EXTERNAL_ASSET_DEPENDANCIES,
+            "Too many external assets"
+        );
+
+        ExternalAssetDependency[] memory updatedAssets;
+        for (uint256 i = 0; i < cids.length; i++) {
+            ExternalAssetDependency asset = new ExternalAssetDependancy({
+                cid: cids[i],
+                locationType: dependencyTypes[i]
+            });
+            assetsToAdd.push(asset);
+            projectIdToExternalAssetDependencies[_projectId] = updatedAssets;
+        }
     }
 
     /**
