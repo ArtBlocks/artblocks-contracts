@@ -1123,7 +1123,6 @@ describe("MinterHolderV0", async function () {
         ethers.utils.formatUnits(txCost.toString(), "ether").toString(),
         "ETH"
       );
-
       expect(compareBN(txCost, ethers.utils.parseEther("0.03199"), 1)).to.be
         .true;
     });

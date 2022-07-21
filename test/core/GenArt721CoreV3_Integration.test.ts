@@ -106,6 +106,15 @@ describe("GenArt721CoreV3", async function () {
       expect(coreVersion).to.be.equal("v3.0.0");
     });
   });
+  
+  describe("coreType", function () {
+    it("returns expected value", async function () {
+      const coreType = await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .coreType();
+      expect(coreType).to.be.equal("GenArt721CoreV3");
+    });
+  });
 
   describe("projectScriptInfo", function () {
     it("returns expected default values", async function () {

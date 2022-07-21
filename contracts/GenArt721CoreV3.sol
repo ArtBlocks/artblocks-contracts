@@ -63,8 +63,9 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     /// next project ID to be created
     uint256 public nextProjectId = 0;
 
-    /// version of this core contract
+    /// version & type of this core contract
     string public constant coreVersion = "v3.0.0";
+    string public constant coreType = "GenArt721CoreV3";
 
     modifier onlyValidTokenId(uint256 _tokenId) {
         require(_exists(_tokenId), "Token ID does not exist");
@@ -675,6 +676,12 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
             );
     }
 
+    /**
+     * @notice Returns contract owner. Set to deployer's address by default on
+     * contract deployment.
+     * @dev ref: https://docs.openzeppelin.com/contracts/4.x/api/access#Ownable
+     * @dev owner role was called `admin` prior to V3 core contract
+     */
     function owner()
         public
         view
