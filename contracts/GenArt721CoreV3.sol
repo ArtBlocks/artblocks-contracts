@@ -653,6 +653,12 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
             );
     }
 
+    /**
+     * @notice Returns contract owner. Set to deployer's address by default on
+     * contract deployment.
+     * @dev ref: https://docs.openzeppelin.com/contracts/4.x/api/access#Ownable
+     * @dev owner role was called `admin` prior to V3 core contract
+     */
     function owner()
         public
         view
