@@ -15,8 +15,12 @@ interface IGenArt721CoreContractV3 {
      */
     event MinterUpdated(address indexed _currentMinter);
 
-    // version of the core contract
+    // version and type of the core contract
+    // coreVersion is a string of the form "0.x.y"
     function coreVersion() external view returns (string memory);
+
+    // coreType is a string of the form "GenArt721CoreV3"
+    function coreType() external view returns (string memory);
 
     // getter function of public variable
     function admin() external view returns (address);
