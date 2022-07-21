@@ -2,7 +2,7 @@
 
 pragma solidity ^0.5.0;
 
-import "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import "@openzeppelin-4.5/contracts/token/ERC721/IERC721Receiver.sol";
 
 contract ERC721ReceiverMock is IERC721Receiver {
     bytes4 private _retval;

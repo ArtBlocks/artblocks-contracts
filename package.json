@@ -41,6 +41,7 @@
     "@remix-project/remixd": "^0.6.2",
     "@typechain/ethers-v5": "^6.0.5",
     "@types/jest": "^27.0.3",
+    "@types/mocha": "^9.1.1",
     "aws-sdk-client-mock": "^0.6.2",
     "chai": "^4.3.4",
     "dotenv": "^8.2.0",
@@ -65,6 +66,7 @@
   "license": "LGPL-3.0-only",
   "dependencies": {
     "@openzeppelin-0.5/contracts": "npm:@openzeppelin/contracts@2.5.1",
-    "@openzeppelin/contracts": "^4.5.0"
+    "@openzeppelin-4.5/contracts": "npm:@openzeppelin/contracts@4.5.0",
+    "@openzeppelin-4.7/contracts": "npm:@openzeppelin/contracts@4.7.0"
   }
 }

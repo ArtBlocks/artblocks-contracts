@@ -4,7 +4,7 @@
 import "../interfaces/0.8.x/IArtblocksRoyaltyOverride.sol";
 import "../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
 
-import "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import "@openzeppelin-4.5/contracts/utils/introspection/ERC165.sol";
 
 pragma solidity 0.8.9;
 

@@ -48,3 +48,6 @@ scripts/contracts
 
 # Python env files
 env/
+
+# Any local dev scripts
+scripts/.local/

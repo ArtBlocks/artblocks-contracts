@@ -5,11 +5,11 @@ import "../interfaces/0.8.x/IGenArt721CoreContractV1.sol";
 import "../interfaces/0.8.x/IMinterFilterV0.sol";
 import "../interfaces/0.8.x/IFilteredMinterHolderV0.sol";
 
-import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
-import "@openzeppelin/contracts/utils/structs/EnumerableMap.sol";
+import "@openzeppelin-4.5/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin-4.5/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin-4.5/contracts/utils/structs/EnumerableSet.sol";
+import "@openzeppelin-4.5/contracts/utils/structs/EnumerableMap.sol";
 
 pragma solidity 0.8.9;
 
@@ -20,35 +20,41 @@ pragma solidity 0.8.9;
  */
 contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
     /**
-     * @notice Allowlisted holders of NFTs at address `_NFTAddress` to be
+     * @notice Registered holders of NFTs at address `_NFTAddress` to be
      * considered for minting.
      */
     event RegisteredNFTAddress(address indexed _NFTAddress);
 
     /**
-     * @notice Removed holders of NFTs at address `_NFTAddress` to be
+     * @notice Unregistered holders of NFTs at address `_NFTAddress` to be
      * considered for minting.
      */
     event UnregisteredNFTAddress(address indexed _NFTAddress);
 
     /**
-     * @notice Allow holders of NFTs at address `_ownedNFTAddress`, project ID
-     * `_ownedNFTProjectId` to mint on project `_projectId`.
+     * @notice Allow holders of NFTs at addresses `_ownedNFTAddresses`, project
+     * IDs `_ownedNFTProjectIds` to mint on project `_projectId`.
+     * `_ownedNFTAddresses` assumed to be aligned with `_ownedNFTProjectIds`.
+     * e.g. Allows holders of project `_ownedNFTProjectIds[0]` on token
+     * contract `_ownedNFTAddresses[0]` to mint.
      */
-    event AllowHoldersOfProject(
+    event AllowedHoldersOfProjects(
         uint256 indexed _projectId,
-        address _ownedNFTAddress,
-        uint256 _ownedNFTProjectId
+        address[] _ownedNFTAddresses,
+        uint256[] _ownedNFTProjectIds
     );
 
     /**
-     * @notice Allow holders of NFTs at address `_ownedNFTAddress`, project ID
-     * `_ownedNFTProjectId` to mint on project `_projectId`.
+     * @notice Remove holders of NFTs at addresses `_ownedNFTAddresses`,
+     * project IDs `_ownedNFTProjectIds` to mint on project `_projectId`.
+     * `_ownedNFTAddresses` assumed to be aligned with `_ownedNFTProjectIds`.
+     * e.g. Removes holders of project `_ownedNFTProjectIds[0]` on token
+     * contract `_ownedNFTAddresses[0]` from mint allowlist.
      */
-    event RemovedHoldersOfProject(
+    event RemovedHoldersOfProjects(
         uint256 indexed _projectId,
-        address _ownedNFTAddress,
-        uint256 _ownedNFTProjectId
+        address[] _ownedNFTAddresses,
+        uint256[] _ownedNFTProjectIds
     );
 
     // add Enumerable Set methods
@@ -158,56 +164,132 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
     }
 
     /**
-     * @notice Allows holders of NFTs at address `_ownedNFTAddress`, project ID
-     * `_ownedNFTProjectId` to mint on project `_projectId`.
+     * @notice Allows holders of NFTs at addresses `_ownedNFTAddresses`,
+     * project IDs `_ownedNFTProjectIds` to mint on project `_projectId`.
+     * `_ownedNFTAddresses` assumed to be aligned with `_ownedNFTProjectIds`.
+     * e.g. Allows holders of project `_ownedNFTProjectIds[0]` on token
+     * contract `_ownedNFTAddresses[0]` to mint `_projectId`.
      * @param _projectId Project ID to enable minting on.
-     * @param _ownedNFTAddress NFT core address of project to be allowlisted.
-     * @param _ownedNFTProjectId Project ID on `_ownedNFTAddress` whose
-     * holders shall be allowlisted to mint project `_projectId`.
+     * @param _ownedNFTAddresses NFT core addresses of projects to be
+     * allowlisted. Indexes must align with `_ownedNFTProjectIds`.
+     * @param _ownedNFTProjectIds Project IDs on `_ownedNFTAddresses` whose
+     * holders shall be allowlisted to mint project `_projectId`. Indexes must
+     * align with `_ownedNFTAddresses`.
      */
-    function allowHoldersOfProject(
+    function allowHoldersOfProjects(
         uint256 _projectId,
-        address _ownedNFTAddress,
-        uint256 _ownedNFTProjectId
-    ) external onlyArtist(_projectId) {
-        // require _ownedNFTAddress be registered
+        address[] memory _ownedNFTAddresses,
+        uint256[] memory _ownedNFTProjectIds
+    ) public onlyArtist(_projectId) {
+        // require same length arrays
         require(
-            _registeredNFTAddresses.contains(_ownedNFTAddress),
-            "Only Registered NFT Addresses"
+            _ownedNFTAddresses.length == _ownedNFTProjectIds.length,
+            "Length of add arrays must match"
         );
-        allowedProjectHolders[_projectId][_ownedNFTAddress][
-            _ownedNFTProjectId
-        ] = true;
-        emit AllowHoldersOfProject(
+        // for each approved project
+        for (uint256 i = 0; i < _ownedNFTAddresses.length; i++) {
+            // ensure registered address
+            require(
+                _registeredNFTAddresses.contains(_ownedNFTAddresses[i]),
+                "Only Registered NFT Addresses"
+            );
+            // approve
+            allowedProjectHolders[_projectId][_ownedNFTAddresses[i]][
+                _ownedNFTProjectIds[i]
+            ] = true;
+        }
+        // emit approve event
+        emit AllowedHoldersOfProjects(
             _projectId,
-            _ownedNFTAddress,
-            _ownedNFTProjectId
+            _ownedNFTAddresses,
+            _ownedNFTProjectIds
         );
     }
 
     /**
-     * @notice Removes holders of NFTs at address `_ownedNFTAddress`, project
-     * ID `_ownedNFTProjectId` to mint on project `_projectId`. If other
-     * projects owned by a holder are still allowed to mint, holder will
+     * @notice Removes holders of NFTs at addresses `_ownedNFTAddresses`,
+     * project IDs `_ownedNFTProjectIds` to mint on project `_projectId`. If
+     * other projects owned by a holder are still allowed to mint, holder will
      * maintain ability to purchase.
+     * `_ownedNFTAddresses` assumed to be aligned with `_ownedNFTProjectIds`.
+     * e.g. Removes holders of project `_ownedNFTProjectIds[0]` on token
+     * contract `_ownedNFTAddresses[0]` from mint allowlist of `_projectId`.
      * @param _projectId Project ID to enable minting on.
-     * @param _ownedNFTAddress NFT core address of project to be removed from
-     * allowlist.
-     * @param _ownedNFTProjectId Project ID on `_ownedNFTAddress` whose holders
-     * will be removed from allowlist to mint project `_projectId`.
+     * @param _ownedNFTAddresses NFT core addresses of projects to be removed
+     * from allowlist. Indexes must align with `_ownedNFTProjectIds`.
+     * @param _ownedNFTProjectIds Project IDs on `_ownedNFTAddresses` whose
+     * holders will be removed from allowlist to mint project `_projectId`.
+     * Indexes must align with `_ownedNFTAddresses`.
      */
-    function removeHoldersOfProject(
+    function removeHoldersOfProjects(
         uint256 _projectId,
-        address _ownedNFTAddress,
-        uint256 _ownedNFTProjectId
-    ) external onlyArtist(_projectId) {
-        allowedProjectHolders[_projectId][_ownedNFTAddress][
-            _ownedNFTProjectId
-        ] = false;
-        emit RemovedHoldersOfProject(
+        address[] memory _ownedNFTAddresses,
+        uint256[] memory _ownedNFTProjectIds
+    ) public onlyArtist(_projectId) {
+        // require same length arrays
+        require(
+            _ownedNFTAddresses.length == _ownedNFTProjectIds.length,
+            "Length of remove arrays must match"
+        );
+        // for each removed project
+        for (uint256 i = 0; i < _ownedNFTAddresses.length; i++) {
+            // revoke
+            allowedProjectHolders[_projectId][_ownedNFTAddresses[i]][
+                _ownedNFTProjectIds[i]
+            ] = false;
+        }
+        // emit removed event
+        emit RemovedHoldersOfProjects(
             _projectId,
-            _ownedNFTAddress,
-            _ownedNFTProjectId
+            _ownedNFTAddresses,
+            _ownedNFTProjectIds
+        );
+    }
+
+    /**
+     * @notice Allows holders of NFTs at addresses `_ownedNFTAddressesAdd`,
+     * project IDs `_ownedNFTProjectIdsAdd` to mint on project `_projectId`.
+     * Also removes holders of NFTs at addresses `_ownedNFTAddressesRemove`,
+     * project IDs `_ownedNFTProjectIdsRemove` from minting on project
+     * `_projectId`.
+     * `_ownedNFTAddressesAdd` assumed to be aligned with
+     * `_ownedNFTProjectIdsAdd`.
+     * e.g. Allows holders of project `_ownedNFTProjectIdsAdd[0]` on token
+     * contract `_ownedNFTAddressesAdd[0]` to mint `_projectId`.
+     * `_ownedNFTAddressesRemove` also assumed to be aligned with
+     * `_ownedNFTProjectIdsRemove`.
+     * @param _projectId Project ID to enable minting on.
+     * @param _ownedNFTAddressesAdd NFT core addresses of projects to be
+     * allowlisted. Indexes must align with `_ownedNFTProjectIdsAdd`.
+     * @param _ownedNFTProjectIdsAdd Project IDs on `_ownedNFTAddressesAdd`
+     * whose holders shall be allowlisted to mint project `_projectId`. Indexes
+     * must align with `_ownedNFTAddressesAdd`.
+     * @param _ownedNFTAddressesRemove NFT core addresses of projects to be
+     * removed from allowlist. Indexes must align with
+     * `_ownedNFTProjectIdsRemove`.
+     * @param _ownedNFTProjectIdsRemove Project IDs on
+     * `_ownedNFTAddressesRemove` whose holders will be removed from allowlist
+     * to mint project `_projectId`. Indexes must align with
+     * `_ownedNFTAddressesRemove`.
+     * @dev if a project is included in both add and remove arrays, it will be
+     * removed.
+     */
+    function allowRemoveHoldersOfProjects(
+        uint256 _projectId,
+        address[] memory _ownedNFTAddressesAdd,
+        uint256[] memory _ownedNFTProjectIdsAdd,
+        address[] memory _ownedNFTAddressesRemove,
+        uint256[] memory _ownedNFTProjectIdsRemove
+    ) external onlyArtist(_projectId) {
+        allowHoldersOfProjects(
+            _projectId,
+            _ownedNFTAddressesAdd,
+            _ownedNFTProjectIdsAdd
+        );
+        removeHoldersOfProjects(
+            _projectId,
+            _ownedNFTAddressesRemove,
+            _ownedNFTProjectIdsRemove
         );
     }
 

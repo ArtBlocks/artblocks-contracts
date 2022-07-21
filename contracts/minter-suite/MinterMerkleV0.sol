@@ -5,9 +5,9 @@ import "../interfaces/0.8.x/IGenArt721CoreContractV1.sol";
 import "../interfaces/0.8.x/IMinterFilterV0.sol";
 import "../interfaces/0.8.x/IFilteredMinterMerkleV0.sol";
 
-import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin-4.7/contracts/utils/cryptography/MerkleProof.sol";
+import "@openzeppelin-4.7/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin-4.7/contracts/security/ReentrancyGuard.sol";
 
 pragma solidity 0.8.9;
 
@@ -131,11 +131,14 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
      */
     function verifyAddress(
         uint256 _projectId,
-        bytes32[] memory _proof,
+        bytes32[] calldata _proof,
         address _address
     ) public view returns (bool) {
         return
-            _proof.verify(projectMerkleRoot[_projectId], hashAddress(_address));
+            _proof.verifyCalldata(
+                projectMerkleRoot[_projectId],
+                hashAddress(_address)
+            );
     }
 
     /**
@@ -226,7 +229,7 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
      * @param _proof Merkle proof.
      * @return tokenId Token ID of minted token
      */
-    function purchase(uint256 _projectId, bytes32[] memory _proof)
+    function purchase(uint256 _projectId, bytes32[] calldata _proof)
         external
         payable
         returns (uint256 tokenId)
@@ -246,7 +249,7 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
     function purchaseTo(
         address _to,
         uint256 _projectId,
-        bytes32[] memory _proof
+        bytes32[] calldata _proof
     ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
         require(
@@ -364,12 +367,12 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
      * @param _address Address to process.
      * @return merkleRoot Merkle root for `_address` and `_proof`
      */
-    function processProofForAddress(bytes32[] memory _proof, address _address)
+    function processProofForAddress(bytes32[] calldata _proof, address _address)
         external
         pure
         returns (bytes32)
     {
-        return _proof.processProof(hashAddress(_address));
+        return _proof.processProofCalldata(hashAddress(_address));
     }
 
     /**
