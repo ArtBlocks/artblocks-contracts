@@ -25,9 +25,11 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         string website;
         string license;
         string projectBaseURI;
+        string scriptType;
+        string scriptTypeVersion;
+        string aspectRatio;
         uint256 invocations;
         uint256 maxInvocations;
-        string scriptJSON;
         mapping(uint256 => string) scripts;
         uint256 scriptCount;
         string ipfsHash;
@@ -445,13 +447,31 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     /**
-     * @notice Updates script json for project `_projectId`.
+     * @notice Updates script type for project `_projectId`.
+     * @param _projectId Project to be updated.
+     * @param _scriptType Libary to be injected by renderer. e.g. "p5js"
+     * @param _scriptTypeVersion Version of library to be injected. e.g. "1.0.0"
      */
-    function updateProjectScriptJSON(
+    function updateProjectScriptType(
         uint256 _projectId,
-        string memory _projectScriptJSON
+        string memory _scriptType,
+        string memory _scriptTypeVersion
     ) public onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) {
-        projects[_projectId].scriptJSON = _projectScriptJSON;
+        projects[_projectId].scriptType = _scriptType;
+        projects[_projectId].scriptTypeVersion = _scriptTypeVersion;
+    }
+
+    /**
+     * @notice Updates project's aspect ratio.
+     * @param _projectId Project to be updated.
+     * @param _aspectRatio Aspect ratio to be set. Intended to be string in the
+     * format of a decimal, e.g. "1" for square, "1.77777778" for 16:9, etc.
+     */
+    function updateProjectAspectRatio(
+        uint256 _projectId,
+        string memory _aspectRatio
+    ) public onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) {
+        projects[_projectId].aspectRatio = _aspectRatio;
     }
 
     /**
@@ -539,9 +559,10 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     /**
      * @notice Returns script information for project `_projectId`.
      * @param _projectId Project to be queried.
-     * @return scriptJSON Project's script json
-     * @return scriptCount Count of scripts for project
+     * @return scriptType Project's script type/library (e.g. "p5js")
+     * @return scriptTypeVersion Project's library version (e.g. "1.0.0")
      * @return ipfsHash IPFS hash for project
+     * @return scriptCount Count of scripts for project
      * @return locked Boolean representing if project is locked
      * @return paused Boolean representing if project is paused
      */
@@ -549,14 +570,16 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         external
         view
         returns (
-            string memory scriptJSON,
-            uint256 scriptCount,
+            string memory scriptType,
+            string memory scriptTypeVersion,
             string memory ipfsHash,
+            uint256 scriptCount,
             bool locked,
             bool paused
         )
     {
-        scriptJSON = projects[_projectId].scriptJSON;
+        scriptType = projects[_projectId].scriptType;
+        scriptTypeVersion = projects[_projectId].scriptTypeVersion;
         scriptCount = projects[_projectId].scriptCount;
         ipfsHash = projects[_projectId].ipfsHash;
         locked = projects[_projectId].locked;

@@ -91,7 +91,7 @@ describe("GenArt721CoreV3", async function () {
         await expectRevert(
           this.genArt721Core
             .connect(this.accounts.artist)
-            .updateProjectScriptJSON(this.projectZero, "lorem ipsum"),
+            .updateProjectScript(this.projectZero, 0, "lorem ipsum"),
           "Only if unlocked"
         );
       });
@@ -104,6 +104,45 @@ describe("GenArt721CoreV3", async function () {
         .connect(this.accounts.deployer)
         .coreVersion();
       expect(coreVersion).to.be.equal("v3.0.0");
+    });
+  });
+
+  describe("projectScriptInfo", function () {
+    it("returns expected default values", async function () {
+      const projectScriptInfo = await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .projectScriptInfo(0);
+      expect(projectScriptInfo.scriptType).to.be.equal("");
+      expect(projectScriptInfo.scriptTypeVersion).to.be.equal("");
+      expect(projectScriptInfo.ipfsHash).to.be.equal("");
+      expect(projectScriptInfo.scriptCount).to.be.equal(0);
+      expect(projectScriptInfo.locked).to.be.equal(false);
+      expect(projectScriptInfo.paused).to.be.equal(true);
+    });
+
+    it("returns expected populated values", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectScriptType(this.projectZero, "p5js", "1.0.0");
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectIpfsHash(this.projectZero, "0x12345");
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .addProjectScript(this.projectZero, "if(true){}");
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .toggleProjectIsPaused(this.projectZero);
+
+      const projectScriptInfo = await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .projectScriptInfo(0);
+      expect(projectScriptInfo.scriptType).to.be.equal("p5js");
+      expect(projectScriptInfo.scriptTypeVersion).to.be.equal("1.0.0");
+      expect(projectScriptInfo.ipfsHash).to.be.equal("0x12345");
+      expect(projectScriptInfo.scriptCount).to.be.equal(1);
+      expect(projectScriptInfo.locked).to.be.equal(false);
+      expect(projectScriptInfo.paused).to.be.equal(false);
     });
   });
 
