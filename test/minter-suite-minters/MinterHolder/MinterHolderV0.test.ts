@@ -19,7 +19,7 @@ import {
   assignDefaultConstants,
   deployAndGet,
   deployCoreWithMinterFilter,
-  safeAddProject,
+  compareBN,
 } from "../../util/common";
 
 import { MinterHolder_Common } from "./MinterHolder.common";
@@ -1116,14 +1116,16 @@ describe("MinterHolderV0", async function () {
         );
 
       const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
-      const txCost = receipt.effectiveGasPrice.mul(receipt.gasUsed).toString();
+      const txCost = receipt.effectiveGasPrice.mul(receipt.gasUsed);
 
       console.log(
         "Gas cost for a successful ERC20 mint: ",
-        ethers.utils.formatUnits(txCost, "ether").toString(),
+        ethers.utils.formatUnits(txCost.toString(), "ether").toString(),
         "ETH"
       );
-      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0319931"));
+
+      expect(compareBN(txCost, ethers.utils.parseEther("0.03199"), 1)).to.be
+        .true;
     });
   });
 
