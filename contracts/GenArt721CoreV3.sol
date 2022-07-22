@@ -15,6 +15,14 @@ pragma solidity 0.8.9;
  * @author Art Blocks Inc.
  */
 contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
+    event ProjectCompleted(
+        uint256 indexed _projectId,
+        uint256 _completedTimestamp
+    );
+
+    uint256 constant ONE_MILLION = 1_000_000;
+    uint256 constant FOUR_WEEKS_IN_SECONDS = 2_419_200;
+
     /// randomizer contract
     IRandomizer public randomizerContract;
 
@@ -34,11 +42,10 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         uint256 scriptCount;
         string ipfsHash;
         bool active;
-        bool locked;
         bool paused;
+        uint256 completedTimestamp;
     }
 
-    uint256 constant ONE_MILLION = 1_000_000;
     mapping(uint256 => Project) projects;
 
     // All financial functions are stripped from struct for visibility
@@ -73,7 +80,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     modifier onlyUnlocked(uint256 _projectId) {
-        require(!projects[_projectId].locked, "Only if unlocked");
+        require(!projectLocked(_projectId), "Only if unlocked");
         _;
     }
 
@@ -133,8 +140,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
             "Must mint from the allowed minter contract."
         );
         require(
-            projects[_projectId].invocations <
-                projects[_projectId].maxInvocations,
+            projects[_projectId].completedTimestamp != 0,
             "Must not exceed max invocations"
         );
         require(
@@ -155,14 +161,21 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         internal
         returns (uint256 _tokenId)
     {
+        // checks & effects
         uint256 nextTokenId = (_projectId * ONE_MILLION) +
             projects[_projectId].invocations;
 
-        projects[_projectId].invocations++;
+        // increment invocations, register complete timestamp if applicable
+        if (
+            ++projects[_projectId].invocations ==
+            projects[_projectId].maxInvocations
+        ) {
+            _completeProject(_projectId);
+        }
 
         bytes32 tokenHash = keccak256(
             abi.encodePacked(
-                projects[_projectId].invocations,
+                nextTokenId,
                 blockhash(block.number - 1),
                 randomizerContract.returnValue()
             )
@@ -170,6 +183,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
 
         tokenIdToHash[nextTokenId] = tokenHash;
 
+        // interactions
         _mint(_to, nextTokenId);
 
         // Do not need to also log `projectId` in event, as the `projectId` for
@@ -178,6 +192,36 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         emit Mint(_to, nextTokenId);
 
         return nextTokenId;
+    }
+
+    /**
+     * @notice Returns whether a project is locked.
+     * Projects automatically lock four weeks after they are completed.
+     * @param _projectId Project ID to check.
+     */
+    function projectLocked(uint256 _projectId) public view returns (bool) {
+        return
+            projectCompleted(_projectId) &&
+            (block.timestamp - projects[_projectId].completedTimestamp >
+                FOUR_WEEKS_IN_SECONDS);
+    }
+
+    /**
+     * @notice Returns whether a project is completed.
+     * A project is considered completed when its invocations equals its max
+     * invocations.
+     * @param _projectId Project ID to check.
+     */
+    function projectCompleted(uint256 _projectId) public view returns (bool) {
+        return projects[_projectId].completedTimestamp != 0;
+    }
+
+    /**
+     * @notice Internal function to complete a project.
+     */
+    function _completeProject(uint256 _projectId) internal {
+        projects[_projectId].completedTimestamp = block.timestamp;
+        emit ProjectCompleted(_projectId, block.timestamp);
     }
 
     /**
@@ -232,17 +276,6 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         onlyWhitelisted
     {
         randomizerContract = IRandomizer(_randomizerAddress);
-    }
-
-    /**
-     * @notice Locks project `_projectId`.
-     */
-    function toggleProjectIsLocked(uint256 _projectId)
-        public
-        onlyWhitelisted
-        onlyUnlocked(_projectId)
-    {
-        projects[_projectId].locked = true;
     }
 
     /**
@@ -396,6 +429,10 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         );
         // effects
         projects[_projectId].maxInvocations = _maxInvocations;
+        // register completed timestamp if action completed the project
+        if (_maxInvocations == projects[_projectId].invocations) {
+            _completeProject(_projectId);
+        }
     }
 
     /**
@@ -552,7 +589,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         maxInvocations = projects[_projectId].maxInvocations;
         active = projects[_projectId].active;
         paused = projects[_projectId].paused;
-        locked = projects[_projectId].locked;
+        locked = projectLocked(_projectId);
     }
 
     /**
