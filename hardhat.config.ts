@@ -15,6 +15,8 @@ const RINKEBY_JSON_RPC_PROVIDER_URL = process.env.RINKEBY_JSON_RPC_PROVIDER_URL;
 const KOVAN_JSON_RPC_PROVIDER_URL = process.env.KOVAN_JSON_RPC_PROVIDER_URL;
 const ARBITRUM_RINKEBY_JSON_RPC_PROVIDER_URL =
   process.env.ARBITRUM_RINKEBY_JSON_RPC_PROVIDER_URL;
+const ARBITRUM_MAINNET_JSON_RPC_PROVIDER_URL =
+  process.env.ARBITRUM_MAINNET_JSON_RPC_PROVIDER_URL;
 const MAINNET_PRIVATE_KEY = process.env.MAINNET_PRIVATE_KEY;
 const TESTNET_PRIVATE_KEY = process.env.TESTNET_PRIVATE_KEY;
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
@@ -77,6 +79,10 @@ module.exports = {
     },
     arbitrumRinkeby: {
       url: ARBITRUM_RINKEBY_JSON_RPC_PROVIDER_URL,
+      accounts: [`0x${TESTNET_PRIVATE_KEY}`],
+    },
+    arbitrumMainnet: {
+      url: ARBITRUM_MAINNET_JSON_RPC_PROVIDER_URL,
       accounts: [`0x${TESTNET_PRIVATE_KEY}`],
     },
     coverage: {
