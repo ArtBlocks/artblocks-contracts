@@ -376,22 +376,25 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
 
     /**
      * @notice Updates maximum invocations for project `_projectId` to
-     * `_maxInvocations`.
+     * `_maxInvocations`. Maximum invocations may only be decreased by the
+     * artist, and must be greater than or equal to current invocations.
+     * New projects are created with maximum invocations of 1 million by
+     * default.
      */
     function updateProjectMaxInvocations(
         uint256 _projectId,
         uint256 _maxInvocations
     ) public onlyArtist(_projectId) {
+        // checks
         require(
-            (!projects[_projectId].locked ||
-                _maxInvocations < projects[_projectId].maxInvocations),
-            "Only if unlocked"
+            (_maxInvocations < projects[_projectId].maxInvocations),
+            "_maxInvocations may only be decreased"
         );
         require(
-            _maxInvocations > projects[_projectId].invocations,
-            "You must set max invocations greater than current invocations"
+            _maxInvocations >= projects[_projectId].invocations,
+            "You must set max invocations gte current invocations"
         );
-        require(_maxInvocations <= ONE_MILLION, "Cannot exceed 1000000");
+        // effects
         projects[_projectId].maxInvocations = _maxInvocations;
     }
 
