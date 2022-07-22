@@ -123,6 +123,7 @@ describe("GenArt721CoreV3", async function () {
         .projectScriptInfo(0);
       expect(projectScriptInfo.scriptType).to.be.equal("");
       expect(projectScriptInfo.scriptTypeVersion).to.be.equal("");
+      expect(projectScriptInfo.aspectRatio).to.be.equal("");
       expect(projectScriptInfo.ipfsHash).to.be.equal("");
       expect(projectScriptInfo.scriptCount).to.be.equal(0);
       expect(projectScriptInfo.locked).to.be.equal(false);
@@ -133,6 +134,9 @@ describe("GenArt721CoreV3", async function () {
       await this.genArt721Core
         .connect(this.accounts.artist)
         .updateProjectScriptType(this.projectZero, "p5js", "1.0.0");
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectAspectRatio(this.projectZero, "1.77777778");
       await this.genArt721Core
         .connect(this.accounts.artist)
         .updateProjectIpfsHash(this.projectZero, "0x12345");
@@ -148,6 +152,7 @@ describe("GenArt721CoreV3", async function () {
         .projectScriptInfo(0);
       expect(projectScriptInfo.scriptType).to.be.equal("p5js");
       expect(projectScriptInfo.scriptTypeVersion).to.be.equal("1.0.0");
+      expect(projectScriptInfo.aspectRatio).to.be.equal("1.77777778");
       expect(projectScriptInfo.ipfsHash).to.be.equal("0x12345");
       expect(projectScriptInfo.scriptCount).to.be.equal(1);
       expect(projectScriptInfo.locked).to.be.equal(false);

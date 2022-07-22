@@ -562,6 +562,8 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @param _projectId Project to be queried.
      * @return scriptType Project's script type/library (e.g. "p5js")
      * @return scriptTypeVersion Project's library version (e.g. "1.0.0")
+     * @return aspectRatio Aspect ratio of project (e.g. "1" for square,
+     * "1.77777778" for 16:9, etc.)
      * @return ipfsHash IPFS hash for project
      * @return scriptCount Count of scripts for project
      * @return locked Boolean representing if project is locked
@@ -573,6 +575,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         returns (
             string memory scriptType,
             string memory scriptTypeVersion,
+            string memory aspectRatio,
             string memory ipfsHash,
             uint256 scriptCount,
             bool locked,
@@ -581,6 +584,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     {
         scriptType = projects[_projectId].scriptType;
         scriptTypeVersion = projects[_projectId].scriptTypeVersion;
+        aspectRatio = projects[_projectId].aspectRatio;
         scriptCount = projects[_projectId].scriptCount;
         ipfsHash = projects[_projectId].ipfsHash;
         locked = projects[_projectId].locked;
