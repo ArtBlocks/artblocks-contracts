@@ -388,11 +388,11 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         // checks
         require(
             (_maxInvocations < projects[_projectId].maxInvocations),
-            "_maxInvocations may only be decreased"
+            "maxInvocations may only be decreased"
         );
         require(
             _maxInvocations >= projects[_projectId].invocations,
-            "You must set max invocations gte current invocations"
+            "Only max invocations gte current invocations"
         );
         // effects
         projects[_projectId].maxInvocations = _maxInvocations;
