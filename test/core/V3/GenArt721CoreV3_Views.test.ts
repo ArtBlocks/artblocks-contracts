@@ -130,16 +130,16 @@ describe("GenArt721CoreV3", async function () {
     });
   });
 
-  describe("projectMetadata", function () {
+  describe("projectDetails", function () {
     it("returns expected default values", async function () {
-      const projectMetadata = await this.genArt721Core
+      const projectDetails = await this.genArt721Core
         .connect(this.accounts.deployer)
-        .projectMetadata(this.projectZero);
-      expect(projectMetadata.projectName).to.be.equal("name");
-      expect(projectMetadata.artist).to.be.equal("");
-      expect(projectMetadata.description).to.be.equal("");
-      expect(projectMetadata.website).to.be.equal("");
-      expect(projectMetadata.license).to.be.equal("");
+        .projectDetails(this.projectZero);
+      expect(projectDetails.projectName).to.be.equal("name");
+      expect(projectDetails.artist).to.be.equal("");
+      expect(projectDetails.description).to.be.equal("");
+      expect(projectDetails.website).to.be.equal("");
+      expect(projectDetails.license).to.be.equal("");
     });
 
     it("returns expected values after populating", async function () {
@@ -158,14 +158,14 @@ describe("GenArt721CoreV3", async function () {
         .updateProjectLicense(this.projectZero, "MIT");
 
       // check for expected values
-      const projectMetadata = await this.genArt721Core
+      const projectDetails = await this.genArt721Core
         .connect(this.accounts.deployer)
-        .projectMetadata(this.projectZero);
-      expect(projectMetadata.projectName).to.be.equal("name");
-      expect(projectMetadata.artist).to.be.equal("artist");
-      expect(projectMetadata.description).to.be.equal("description");
-      expect(projectMetadata.website).to.be.equal("website");
-      expect(projectMetadata.license).to.be.equal("MIT");
+        .projectDetails(this.projectZero);
+      expect(projectDetails.projectName).to.be.equal("name");
+      expect(projectDetails.artist).to.be.equal("artist");
+      expect(projectDetails.description).to.be.equal("description");
+      expect(projectDetails.website).to.be.equal("website");
+      expect(projectDetails.license).to.be.equal("MIT");
     });
   });
 

@@ -497,7 +497,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     /**
-     * @notice Returns project metadata for project `_projectId`.
+     * @notice Returns project details for project `_projectId`.
      * @param _projectId Project to be queried.
      * @return projectName Name of project
      * @return artist Artist of project
@@ -506,7 +506,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @return license Project license
      * @dev this function was named projectDetails prior to V3 core contract.
      */
-    function projectMetadata(uint256 _projectId)
+    function projectDetails(uint256 _projectId)
         public
         view
         returns (
