@@ -196,6 +196,8 @@ contract GenArt721CoreV2WithEvents is
      */
     function updateAdmin(address _adminAddress) public onlyAdmin {
         admin = _adminAddress;
+
+        emit PlatformUpdated("admin");
     }
 
     /**
@@ -206,6 +208,8 @@ contract GenArt721CoreV2WithEvents is
         onlyAdmin
     {
         renderProviderAddress = _renderProviderAddress;
+
+        emit PlatformUpdated("renderProviderAddress");
     }
 
     /**
@@ -218,6 +222,8 @@ contract GenArt721CoreV2WithEvents is
     {
         require(_renderProviderPercentage <= 25, "Max of 25%");
         renderProviderPercentage = _renderProviderPercentage;
+
+        emit PlatformUpdated("renderProviderPercentage");
     }
 
     /**
@@ -225,6 +231,8 @@ contract GenArt721CoreV2WithEvents is
      */
     function addWhitelisted(address _address) public onlyAdmin {
         isWhitelisted[_address] = true;
+
+        emit AllowlistUpdated(true, _address);
     }
 
     /**
@@ -232,6 +240,8 @@ contract GenArt721CoreV2WithEvents is
      */
     function removeWhitelisted(address _address) public onlyAdmin {
         isWhitelisted[_address] = false;
+
+        emit AllowlistUpdated(false, _address);
     }
 
     /**
@@ -239,6 +249,8 @@ contract GenArt721CoreV2WithEvents is
      */
     function addMintWhitelisted(address _address) public onlyAdmin {
         isMintWhitelisted[_address] = true;
+
+        emit MintAllowlistUpdated(true, _address);
     }
 
     /**
@@ -246,6 +258,8 @@ contract GenArt721CoreV2WithEvents is
      */
     function removeMintWhitelisted(address _address) public onlyAdmin {
         isMintWhitelisted[_address] = false;
+
+        emit MintAllowlistUpdated(false, _address);
     }
 
     /**
@@ -256,6 +270,8 @@ contract GenArt721CoreV2WithEvents is
         onlyWhitelisted
     {
         randomizerContract = IRandomizer(_randomizerAddress);
+
+        emit PlatformUpdated("randomizerAddress");
     }
 
     /**
@@ -267,6 +283,8 @@ contract GenArt721CoreV2WithEvents is
         onlyUnlocked(_projectId)
     {
         projects[_projectId].locked = true;
+
+        emit ProjectUpdated(_projectId, "locked");
     }
 
     /**
@@ -274,6 +292,8 @@ contract GenArt721CoreV2WithEvents is
      */
     function toggleProjectIsActive(uint256 _projectId) public onlyWhitelisted {
         projects[_projectId].active = !projects[_projectId].active;
+
+        emit ProjectUpdated(_projectId, "active");
     }
 
     /**
@@ -284,6 +304,8 @@ contract GenArt721CoreV2WithEvents is
         address payable _artistAddress
     ) public onlyArtistOrWhitelisted(_projectId) {
         projectIdToArtistAddress[_projectId] = _artistAddress;
+
+        emit ProjectUpdated(_projectId, "artistAddress");
     }
 
     /**
@@ -294,6 +316,8 @@ contract GenArt721CoreV2WithEvents is
         onlyArtist(_projectId)
     {
         projects[_projectId].paused = !projects[_projectId].paused;
+
+        emit ProjectUpdated(_projectId, "paused");
     }
 
     /**
@@ -315,6 +339,8 @@ contract GenArt721CoreV2WithEvents is
         projects[projectId].paused = true;
         projects[projectId].maxInvocations = ONE_MILLION;
         nextProjectId = nextProjectId + 1;
+
+        emit ProjectUpdated(projectId, "created");
     }
 
     /**
@@ -331,6 +357,7 @@ contract GenArt721CoreV2WithEvents is
     ) public onlyArtist(_projectId) {
         projectIdToCurrencySymbol[_projectId] = _currencySymbol;
         projectIdToCurrencyAddress[_projectId] = _currencyAddress;
+        emit ProjectUpdated(_projectId, "currencyInfo");
     }
 
     /**
@@ -342,6 +369,8 @@ contract GenArt721CoreV2WithEvents is
         uint256 _pricePerTokenInWei
     ) public onlyArtist(_projectId) {
         projectIdToPricePerTokenInWei[_projectId] = _pricePerTokenInWei;
+
+        emit ProjectUpdated(_projectId, "projectIdToPricePerTokenInWei");
     }
 
     /**
@@ -353,6 +382,8 @@ contract GenArt721CoreV2WithEvents is
         onlyArtistOrWhitelisted(_projectId)
     {
         projects[_projectId].name = _projectName;
+
+        emit ProjectUpdated(_projectId, "projectName");
     }
 
     /**
@@ -364,6 +395,7 @@ contract GenArt721CoreV2WithEvents is
         string memory _projectArtistName
     ) public onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) {
         projects[_projectId].artist = _projectArtistName;
+        emit ProjectUpdated(_projectId, "projectName");
     }
 
     /**
@@ -381,6 +413,8 @@ contract GenArt721CoreV2WithEvents is
         projectIdToAdditionalPayeePercentage[
             _projectId
         ] = _additionalPayeePercentage;
+
+        emit ProjectUpdated(_projectId, "additionalPayeeInfo");
     }
 
     /**
@@ -395,6 +429,8 @@ contract GenArt721CoreV2WithEvents is
         projectIdToSecondaryMarketRoyaltyPercentage[
             _projectId
         ] = _secondMarketRoyalty;
+
+        emit ProjectUpdated(_projectId, "secondaryMarketRoyaltyPercentage");
     }
 
     /**
@@ -405,6 +441,8 @@ contract GenArt721CoreV2WithEvents is
         string memory _projectDescription
     ) public onlyArtist(_projectId) {
         projects[_projectId].description = _projectDescription;
+
+        emit ProjectUpdated(_projectId, "projectDescription");
     }
 
     /**
@@ -415,6 +453,8 @@ contract GenArt721CoreV2WithEvents is
         string memory _projectWebsite
     ) public onlyArtist(_projectId) {
         projects[_projectId].website = _projectWebsite;
+
+        emit ProjectUpdated(_projectId, "projectWebsite");
     }
 
     /**
@@ -425,6 +465,8 @@ contract GenArt721CoreV2WithEvents is
         string memory _projectLicense
     ) public onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) {
         projects[_projectId].license = _projectLicense;
+
+        emit ProjectUpdated(_projectId, "projectLicense");
     }
 
     /**
@@ -446,6 +488,8 @@ contract GenArt721CoreV2WithEvents is
         );
         require(_maxInvocations <= ONE_MILLION, "Cannot exceed 1000000");
         projects[_projectId].maxInvocations = _maxInvocations;
+
+        emit ProjectUpdated(_projectId, "projectMaxInvocations");
     }
 
     /**
@@ -462,6 +506,11 @@ contract GenArt721CoreV2WithEvents is
             projects[_projectId].scriptCount
         ] = _script;
         projects[_projectId].scriptCount = projects[_projectId].scriptCount + 1;
+
+        emit ProjectScriptUpdatedAtIndex(
+            _projectId,
+            projects[_projectId].scriptCount - 1
+        );
     }
 
     /**
@@ -480,6 +529,8 @@ contract GenArt721CoreV2WithEvents is
             "scriptId out of range"
         );
         projects[_projectId].scripts[_scriptId] = _script;
+
+        emit ProjectScriptUpdatedAtIndex(_projectId, _scriptId);
     }
 
     /**
@@ -498,6 +549,8 @@ contract GenArt721CoreV2WithEvents is
             projects[_projectId].scriptCount - 1
         ];
         projects[_projectId].scriptCount = projects[_projectId].scriptCount - 1;
+
+        emit ProjectUpdated(_projectId, "removeProjectLastScript");
     }
 
     /**
@@ -508,6 +561,8 @@ contract GenArt721CoreV2WithEvents is
         string memory _projectScriptJSON
     ) public onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) {
         projects[_projectId].scriptJSON = _projectScriptJSON;
+
+        emit ProjectUpdated(_projectId, "projectScriptJSON");
     }
 
     /**
@@ -519,6 +574,8 @@ contract GenArt721CoreV2WithEvents is
         onlyArtistOrWhitelisted(_projectId)
     {
         projects[_projectId].ipfsHash = _ipfsHash;
+
+        emit ProjectUpdated(_projectId, "projectIpfsHash");
     }
 
     /**
@@ -529,6 +586,8 @@ contract GenArt721CoreV2WithEvents is
         onlyArtist(_projectId)
     {
         projects[_projectId].projectBaseURI = _newBaseURI;
+
+        emit ProjectUpdated(_projectId, "projectBaseURI");
     }
 
     /**
