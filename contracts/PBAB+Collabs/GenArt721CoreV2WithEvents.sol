@@ -507,10 +507,7 @@ contract GenArt721CoreV2WithEvents is
         ] = _script;
         projects[_projectId].scriptCount = projects[_projectId].scriptCount + 1;
 
-        emit ProjectScriptUpdatedAtIndex(
-            _projectId,
-            projects[_projectId].scriptCount - 1
-        );
+        emit ProjectUpdated(_projectId, "addProjectScript");
     }
 
     /**
