@@ -15,10 +15,7 @@ pragma solidity 0.8.9;
  * @author Art Blocks Inc.
  */
 contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
-    event ProjectCompleted(
-        uint256 indexed _projectId,
-        uint256 _completedTimestamp
-    );
+    event ProjectCompleted(uint256 indexed _projectId);
 
     uint256 constant ONE_MILLION = 1_000_000;
     uint256 constant FOUR_WEEKS_IN_SECONDS = 2_419_200;
@@ -221,7 +218,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      */
     function _completeProject(uint256 _projectId) internal {
         projects[_projectId].completedTimestamp = block.timestamp;
-        emit ProjectCompleted(_projectId, block.timestamp);
+        emit ProjectCompleted(_projectId);
     }
 
     /**
