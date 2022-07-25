@@ -560,6 +560,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         _referenceContractsDescriptions[
             _referenceContract
         ] = _referenceContractDescription;
+
         // TODO - emit event when generic platform events are implemented
     }
 
@@ -816,7 +817,9 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
 
     /**
      * @notice Get reference Art Blocks contract address and description at
-     * index `_index` of enumerable mapping.
+     * index `_index` of enumerable mapping. Note that the index of a specific
+     * reference may change if references are added or removed by contract
+     * administrators.
      * @param _index enumerable map index to query.
      * @return referenceContractAddress Reference Art Blocks contract address
      * @return referenceContractDescription Reference Art Blocks contract
@@ -831,6 +834,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
             string memory referenceContractDescription
         )
     {
+        // .at function reverts if index is out of bounds
         referenceContractAddress = _referenceContracts.at(_index);
         referenceContractDescription = _referenceContractsDescriptions[
             referenceContractAddress
