@@ -6,6 +6,7 @@ import "./interfaces/0.8.x/IGenArt721CoreContractV3.sol";
 
 import "@openzeppelin-4.7/contracts/utils/Strings.sol";
 import "@openzeppelin-4.7/contracts/access/Ownable.sol";
+import "@openzeppelin-4.7/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin-4.7/contracts/token/ERC721/ERC721.sol";
 
 pragma solidity 0.8.9;
@@ -16,6 +17,9 @@ pragma solidity 0.8.9;
  */
 contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     event ProjectCompleted(uint256 indexed _projectId);
+
+    // add Enumerable Set methods
+    using EnumerableSet for EnumerableSet.AddressSet;
 
     uint256 constant ONE_MILLION = 1_000_000;
     uint256 constant FOUR_WEEKS_IN_SECONDS = 2_419_200;
@@ -70,6 +74,11 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     /// version & type of this core contract
     string public constant coreVersion = "v3.0.0";
     string public constant coreType = "GenArt721CoreV3";
+
+    /// Enumerable set of other official Art Blocks contracts
+    EnumerableSet.AddressSet private _referenceContracts;
+    /// Reference contract address to description
+    mapping(address => string) private _referenceContractsDescriptions;
 
     modifier onlyValidTokenId(uint256 _tokenId) {
         require(_exists(_tokenId), "Token ID does not exist");
@@ -534,6 +543,50 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     /**
+     * @notice Adds a reference contract to enumerable mapping of reference
+     * Art Blocks contracts.
+     * @param _referenceContract Address of reference Art Blocks contract
+     * (e.g. previous Art Blocks token contracts, curation registry, dependency
+     * registry, etc.). Will overwrite description if already exists.
+     * @param _referenceContractDescription Description of reference contract.
+     */
+    function addReferenceContract(
+        address _referenceContract,
+        string memory _referenceContractDescription
+    ) external onlyWhitelisted {
+        // add reference contract to set of reference contracts
+        _referenceContracts.add(_referenceContract);
+        // update description mapping
+        _referenceContractsDescriptions[
+            _referenceContract
+        ] = _referenceContractDescription;
+        // TODO - emit event when generic platform events are implemented
+    }
+
+    /**
+     * @notice Removes a reference contract in enumerable mapping of reference
+     * Art Blocks contracts.
+     * @param _referenceContract Address of reference Art Blocks contract to be
+     * removed.
+     * @dev will revert if reference contract is not in the set of reference
+     * contracts.
+     */
+    function removeReferenceContract(address _referenceContract)
+        external
+        onlyWhitelisted
+    {
+        require(
+            _referenceContracts.contains(_referenceContract),
+            "Only existing ref contracts"
+        );
+        _referenceContracts.remove(_referenceContract);
+        // no need to update internal description mapping, since it is updated
+        // if reference contract is ever re-added.
+
+        // TODO - emit event when generic platform events are implemented
+    }
+
+    /**
      * @notice Returns project details for project `_projectId`.
      * @param _projectId Project to be queried.
      * @return projectName Name of project
@@ -751,5 +804,36 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      */
     function admin() public view returns (address) {
         return owner();
+    }
+
+    /**
+     * @notice Gets quantity of referenced Art Blocks contracts on this core.
+     * @return uint256 quantity of NFT addresses registered
+     */
+    function getNumReferenceContracts() external view returns (uint256) {
+        return _referenceContracts.length();
+    }
+
+    /**
+     * @notice Get reference Art Blocks contract address and description at
+     * index `_index` of enumerable mapping.
+     * @param _index enumerable map index to query.
+     * @return referenceContractAddress Reference Art Blocks contract address
+     * @return referenceContractDescription Reference Art Blocks contract
+     * description
+     * @dev reverts if index is out of bounds.
+     */
+    function getReferenceContractAt(uint256 _index)
+        external
+        view
+        returns (
+            address referenceContractAddress,
+            string memory referenceContractDescription
+        )
+    {
+        referenceContractAddress = _referenceContracts.at(_index);
+        referenceContractDescription = _referenceContractsDescriptions[
+            referenceContractAddress
+        ];
     }
 }
