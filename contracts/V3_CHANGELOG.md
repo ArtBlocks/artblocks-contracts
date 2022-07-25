@@ -22,3 +22,4 @@ _This document is intended to document and explain the Art Blocks Core V3 change
     - `projectMetadata` - Information relevant to understanding the project as a work of art
     - `projectArtistPaymentInfo` - Information relevant to artists as they manage their primary and additional payment accounts
 - Never allow an increase in Project edition size
+  - IMPORTANT for artists to understand the impact of the change. Internal artist communication plan required for this type of change.
