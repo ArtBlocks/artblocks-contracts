@@ -137,7 +137,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
             "Must mint from the allowed minter contract."
         );
         require(
-            projects[_projectId].completedTimestamp != 0,
+            projects[_projectId].completedTimestamp == 0,
             "Must not exceed max invocations"
         );
         require(
