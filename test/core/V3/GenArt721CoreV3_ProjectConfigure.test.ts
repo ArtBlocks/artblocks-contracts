@@ -15,6 +15,7 @@ import {
   deployAndGet,
   deployCoreWithMinterFilter,
 } from "../../util/common";
+import { FOUR_WEEKS } from "../../util/constants";
 
 /**
  * Tests for V3 core dealing with configuring projects.
@@ -252,9 +253,7 @@ describe("GenArt721CoreV3", async function () {
         .projectLocked(this.projectZero);
       expect(isLocked).to.equal(false);
       // advance < 4 weeks
-      await ethers.provider.send("evm_increaseTime", [
-        4 * 7 * 24 * 60 * 60 - 1,
-      ]);
+      await ethers.provider.send("evm_increaseTime", [FOUR_WEEKS - 1]);
       await ethers.provider.send("evm_mine", []);
       isLocked = await this.genArt721Core
         .connect(this.accounts.user)
@@ -275,9 +274,7 @@ describe("GenArt721CoreV3", async function () {
           );
       }
       // advance > 4 weeks
-      await ethers.provider.send("evm_increaseTime", [
-        4 * 7 * 24 * 60 * 60 + 1,
-      ]);
+      await ethers.provider.send("evm_increaseTime", [FOUR_WEEKS + 1]);
       await ethers.provider.send("evm_mine", []);
       const isLocked = await this.genArt721Core
         .connect(this.accounts.user)
