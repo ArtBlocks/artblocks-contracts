@@ -159,36 +159,35 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         returns (uint256 _tokenId)
     {
         // checks & effects
-        uint256 nextTokenId = (_projectId * ONE_MILLION) +
-            projects[_projectId].invocations;
+        // increment project's invocations, then move to memory to avoid SLOAD
+        uint256 _invocationsAfter = ++projects[_projectId].invocations;
+        uint256 _invocationsBefore = _invocationsAfter - 1;
+        uint256 thisTokenId = (_projectId * ONE_MILLION) + _invocationsBefore;
 
-        // increment invocations, register complete timestamp if applicable
-        if (
-            ++projects[_projectId].invocations ==
-            projects[_projectId].maxInvocations
-        ) {
+        // mark project as completed if hit max invocations
+        if (_invocationsAfter == projects[_projectId].maxInvocations) {
             _completeProject(_projectId);
         }
 
         bytes32 tokenHash = keccak256(
             abi.encodePacked(
-                nextTokenId,
+                thisTokenId,
                 blockhash(block.number - 1),
                 randomizerContract.returnValue()
             )
         );
 
-        tokenIdToHash[nextTokenId] = tokenHash;
+        tokenIdToHash[thisTokenId] = tokenHash;
 
         // interactions
-        _mint(_to, nextTokenId);
+        _mint(_to, thisTokenId);
 
         // Do not need to also log `projectId` in event, as the `projectId` for
         // a given token can be derived from the `tokenId` with:
         //   projectId = tokenId / 1_000_000
-        emit Mint(_to, nextTokenId);
+        emit Mint(_to, thisTokenId);
 
-        return nextTokenId;
+        return thisTokenId;
     }
 
     /**
