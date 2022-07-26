@@ -19,7 +19,7 @@ _This document is intended to document and explain the Art Blocks Core V3 change
   - V1's `projectTokenInfo`, `projectScriptInfo`, and `projectDetails` are now broken out into:
     - `projectStateData` - Information relevant to minters/purchasers
     - `projectScriptDetails` - Information relevant to rendering tokens
-    - `projectMetadata` - Information relevant to understanding the project as a work of art
+    - `projectDetails` - Information relevant to understanding the project as a work of art (same function as pre-V3 core)
     - `projectArtistPaymentInfo` - Information relevant to artists as they manage their primary and additional payment accounts
 - Never allow an increase in Project edition size
   - IMPORTANT for artists to understand the impact of the change. Internal artist communication plan required for this type of change.
