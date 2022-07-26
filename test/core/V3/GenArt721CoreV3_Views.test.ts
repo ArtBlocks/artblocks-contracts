@@ -177,10 +177,18 @@ describe("GenArt721CoreV3 Views", async function () {
       expect(projectArtistPaymentInfo.artistAddress).to.be.equal(
         this.accounts.artist.address
       );
-      expect(projectArtistPaymentInfo.additionalPayee).to.be.equal(
+      expect(projectArtistPaymentInfo.additionalPayeePrimarySales).to.be.equal(
         constants.ZERO_ADDRESS
       );
-      expect(projectArtistPaymentInfo.additionalPayeePercentage).to.be.equal(0);
+      expect(
+        projectArtistPaymentInfo.additionalPayeePrimarySalesPercentage
+      ).to.be.equal(0);
+      expect(projectArtistPaymentInfo.additionalPayeeRoyalties).to.be.equal(
+        constants.ZERO_ADDRESS
+      );
+      expect(
+        projectArtistPaymentInfo.additionalPayeeRoyaltiesPercentage
+      ).to.be.equal(0);
     });
 
     it("returns expected values after populating", async function () {
@@ -193,10 +201,12 @@ describe("GenArt721CoreV3 Views", async function () {
         );
       await this.genArt721Core
         .connect(this.accounts.artist2)
-        .updateProjectAdditionalPayeeInfo(
+        .updateProjectAdditionalPayees(
           this.projectZero,
+          this.accounts.additional.address,
+          50,
           this.accounts.additional2.address,
-          50
+          51
         );
 
       // check for expected values
@@ -206,12 +216,18 @@ describe("GenArt721CoreV3 Views", async function () {
       expect(projectArtistPaymentInfo.artistAddress).to.be.equal(
         this.accounts.artist2.address
       );
-      expect(projectArtistPaymentInfo.additionalPayee).to.be.equal(
+      expect(projectArtistPaymentInfo.additionalPayeePrimarySales).to.be.equal(
+        this.accounts.additional.address
+      );
+      expect(
+        projectArtistPaymentInfo.additionalPayeePrimarySalesPercentage
+      ).to.be.equal(50);
+      expect(projectArtistPaymentInfo.additionalPayeeRoyalties).to.be.equal(
         this.accounts.additional2.address
       );
-      expect(projectArtistPaymentInfo.additionalPayeePercentage).to.be.equal(
-        50
-      );
+      expect(
+        projectArtistPaymentInfo.additionalPayeeRoyaltiesPercentage
+      ).to.be.equal(51);
     });
   });
 });
