@@ -390,7 +390,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         uint256 _projectId,
         uint256 _secondMarketRoyalty
     ) public onlyArtist(_projectId) {
-        require(_secondMarketRoyalty <= 100, "Max of 100%");
+        require(_secondMarketRoyalty <= 30, "Max of 30%");
         projectIdToSecondaryMarketRoyaltyPercentage[
             _projectId
         ] = _secondMarketRoyalty;
