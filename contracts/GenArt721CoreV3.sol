@@ -47,8 +47,14 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
 
     // All financial functions are stripped from struct for visibility
     mapping(uint256 => address payable) public projectIdToArtistAddress;
-    mapping(uint256 => address payable) public projectIdToAdditionalPayee;
-    mapping(uint256 => uint256) public projectIdToAdditionalPayeePercentage;
+    mapping(uint256 => address payable)
+        public projectIdToAdditionalPayeePrimarySales;
+    mapping(uint256 => uint256)
+        public projectIdToAdditionalPayeePrimarySalesPercentage;
+    mapping(uint256 => address payable)
+        public projectIdToAdditionalPayeeRoyalties;
+    mapping(uint256 => uint256)
+        public projectIdToAdditionalPayeeRoyaltiesPercentage;
     mapping(uint256 => uint256)
         public projectIdToSecondaryMarketRoyaltyPercentage;
 
@@ -338,25 +344,47 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     /**
-     * @notice Updates additional payee for project `_projectId` to be
-     * `_additionalPayee`, receiving `_additionalPayeePercentage` percent
-     * of artist mint and royalty revenues.
+     * @notice Updates additional payees and percentage splits for project
+     * `_projectId`.
+     * @param _projectId Project ID.
+     * @param _additionalPayeePrimarySales Address that may receive a
+     * percentage split of the artit's primary sales revenue.
+     * @param _additionalPayeePercentagePrimarySales Percent of artist's
+     * portion of primary sale revenue that will be split to address
+     * `_additionalPayeePrimarySales`.
+     * @param _additionalPayeeRoyalties Address that may receive a percentage
+     * split of the secondary sales royalties.
+     * @param _additionalPayeePercentageRoyalties Percent of artist's portion
+     * of secondary sale royalties that will be split to address
+     * `_additionalPayeeRoyalties`.
      */
-    function updateProjectAdditionalPayeeInfo(
+    function updateProjectAdditionalPayees(
         uint256 _projectId,
-        address payable _additionalPayee,
-        uint256 _additionalPayeePercentage
-    ) public onlyArtist(_projectId) {
-        require(_additionalPayeePercentage <= 100, "Max of 100%");
-        projectIdToAdditionalPayee[_projectId] = _additionalPayee;
-        projectIdToAdditionalPayeePercentage[
+        address payable _additionalPayeePrimarySales,
+        uint256 _additionalPayeePercentagePrimarySales,
+        address payable _additionalPayeeRoyalties,
+        uint256 _additionalPayeePercentageRoyalties
+    ) external onlyArtist(_projectId) {
+        projectIdToAdditionalPayeePrimarySales[
             _projectId
-        ] = _additionalPayeePercentage;
+        ] = _additionalPayeePrimarySales;
+        projectIdToAdditionalPayeePrimarySalesPercentage[
+            _projectId
+        ] = _additionalPayeePercentagePrimarySales;
+        projectIdToAdditionalPayeeRoyalties[
+            _projectId
+        ] = _additionalPayeeRoyalties;
+        projectIdToAdditionalPayeeRoyaltiesPercentage[
+            _projectId
+        ] = _additionalPayeePercentageRoyalties;
     }
 
     /**
      * @notice Updates artist secondary market royalties for project
      * `_projectId` to be `_secondMarketRoyalty` percent.
+     * This DOES NOT include the secondary market royalty percentages collected
+     * by Art Blocks; this is only the total percentage of royalties that will
+     * be split to artist and additionalSecondaryPayee.
      */
     function updateProjectSecondaryMarketRoyaltyPercentage(
         uint256 _projectId,
@@ -605,13 +633,23 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         view
         returns (
             address artistAddress,
-            address additionalPayee,
-            uint256 additionalPayeePercentage
+            address additionalPayeePrimarySales,
+            uint256 additionalPayeePrimarySalesPercentage,
+            address additionalPayeeRoyalties,
+            uint256 additionalPayeeRoyaltiesPercentage
         )
     {
         artistAddress = projectIdToArtistAddress[_projectId];
-        additionalPayee = projectIdToAdditionalPayee[_projectId];
-        additionalPayeePercentage = projectIdToAdditionalPayeePercentage[
+        additionalPayeePrimarySales = projectIdToAdditionalPayeePrimarySales[
+            _projectId
+        ];
+        additionalPayeePrimarySalesPercentage = projectIdToAdditionalPayeePrimarySalesPercentage[
+            _projectId
+        ];
+        additionalPayeeRoyalties = projectIdToAdditionalPayeeRoyalties[
+            _projectId
+        ];
+        additionalPayeeRoyaltiesPercentage = projectIdToAdditionalPayeeRoyaltiesPercentage[
             _projectId
         ];
     }
@@ -696,8 +734,8 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     {
         uint256 projectId = _tokenId / ONE_MILLION;
         artistAddress = projectIdToArtistAddress[projectId];
-        additionalPayee = projectIdToAdditionalPayee[projectId];
-        additionalPayeePercentage = projectIdToAdditionalPayeePercentage[
+        additionalPayee = projectIdToAdditionalPayeeRoyalties[projectId];
+        additionalPayeePercentage = projectIdToAdditionalPayeeRoyaltiesPercentage[
             projectId
         ];
         royaltyFeeByID = projectIdToSecondaryMarketRoyaltyPercentage[projectId];
