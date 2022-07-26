@@ -77,7 +77,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     modifier onlyUnlocked(uint256 _projectId) {
-        require(!projectLocked(_projectId), "Only if unlocked");
+        require(_projectUnlocked(_projectId), "Only if unlocked");
         _;
     }
 
@@ -191,25 +191,20 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     /**
-     * @notice Returns whether a project is locked.
+     * @notice Internal function that returns whether a project is unlocked.
      * Projects automatically lock four weeks after they are completed.
+     * Projects are considered completed when they have been invoked the
+     * maximum number of times.
      * @param _projectId Project ID to check.
      */
-    function projectLocked(uint256 _projectId) public view returns (bool) {
+    function _projectUnlocked(uint256 _projectId) internal view returns (bool) {
+        uint256 projectCompletedTimestamp = projects[_projectId]
+            .completedTimestamp;
+        bool projectOpen = projectCompletedTimestamp == 0;
         return
-            projectCompleted(_projectId) &&
-            (block.timestamp - projects[_projectId].completedTimestamp >
+            projectOpen ||
+            (block.timestamp - projectCompletedTimestamp <
                 FOUR_WEEKS_IN_SECONDS);
-    }
-
-    /**
-     * @notice Returns whether a project is completed.
-     * A project is considered completed when its invocations equals its max
-     * invocations.
-     * @param _projectId Project ID to check.
-     */
-    function projectCompleted(uint256 _projectId) public view returns (bool) {
-        return projects[_projectId].completedTimestamp != 0;
     }
 
     /**
@@ -585,7 +580,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         maxInvocations = projects[_projectId].maxInvocations;
         active = projects[_projectId].active;
         paused = projects[_projectId].paused;
-        locked = projectLocked(_projectId);
+        locked = !_projectUnlocked(_projectId);
     }
 
     /**
