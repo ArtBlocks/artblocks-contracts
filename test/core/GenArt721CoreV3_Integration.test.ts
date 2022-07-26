@@ -84,14 +84,14 @@ describe("GenArt721CoreV3", async function () {
     });
 
     describe("reverts on project locked", async function () {
-      it("reverts if try to modify script", async function () {
+      it("reverts if try to add script", async function () {
         await this.genArt721Core
           .connect(this.accounts.deployer)
           .toggleProjectIsLocked(this.projectZero);
         await expectRevert(
           this.genArt721Core
             .connect(this.accounts.artist)
-            .updateProjectScript(this.projectZero, 0, "lorem ipsum"),
+            .addProjectScript(this.projectZero, "lorem ipsum"),
           "Only if unlocked"
         );
       });
