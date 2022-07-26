@@ -32,7 +32,7 @@ async function fullyMintProject(
 /**
  * General Integration tests for V3 core.
  */
-describe("GenArt721CoreV3", async function () {
+describe("GenArt721CoreV3 Integration", async function () {
   beforeEach(async function () {
     // standard accounts and constants
     this.accounts = await getAccounts();

@@ -19,7 +19,7 @@ import {
 /**
  * Tests for V3 core dealing with configuring projects.
  */
-describe("GenArt721CoreV3", async function () {
+describe("GenArt721CoreV3 Events", async function () {
   beforeEach(async function () {
     // standard accounts and constants
     this.accounts = await getAccounts();
