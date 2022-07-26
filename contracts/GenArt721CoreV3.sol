@@ -114,15 +114,20 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @param _tokenName Name of token.
      * @param _tokenSymbol Token symbol.
      * @param _randomizerContract Randomizer contract.
+     * @param _adminACLContract Address of admin access control contract, to be
+     * set as contract owner.
      */
     constructor(
         string memory _tokenName,
         string memory _tokenSymbol,
-        address _randomizerContract
+        address _randomizerContract,
+        address _adminACLContract
     ) ERC721(_tokenName, _tokenSymbol) {
+        // set ACL management contract as owner
         isWhitelisted[msg.sender] = true;
         artblocksAddress = payable(msg.sender);
         randomizerContract = IRandomizer(_randomizerContract);
+        _transferOwnership(_adminACLContract);
     }
 
     /**

@@ -31,10 +31,17 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
       "BasicRandomizer"
     );
     this.randomizer = await randomizerFactory.deploy();
+    const adminACLFactory = await ethers.getContractFactory("MockAdminACLV0");
+    this.adminACL = await adminACLFactory.deploy();
     const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV3");
     this.genArt721Core = await artblocksFactory
       .connect(this.accounts.deployer)
-      .deploy(this.name, this.symbol, this.randomizer.address);
+      .deploy(
+        this.name,
+        this.symbol,
+        this.randomizer.address,
+        this.adminACL.address
+      );
 
     // allow user to mint on contract to remove any minter gas noise
     await this.genArt721Core
