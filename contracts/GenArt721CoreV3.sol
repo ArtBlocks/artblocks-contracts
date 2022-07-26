@@ -370,11 +370,20 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
 
     /**
      * @notice Updates description of project `_projectId`.
+     * Only artist may call when unlocked, only admin may call when locked.
      */
     function updateProjectDescription(
         uint256 _projectId,
         string memory _projectDescription
-    ) public onlyArtist(_projectId) {
+    ) public {
+        // checks
+        require(
+            _projectUnlocked(_projectId)
+                ? msg.sender == projectIdToArtistAddress[_projectId]
+                : msg.sender == owner(),
+            "Only artist when unlocked, owner when locked"
+        );
+        // effects
         projects[_projectId].description = _projectDescription;
     }
 
