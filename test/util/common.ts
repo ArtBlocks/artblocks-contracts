@@ -114,6 +114,23 @@ export async function safeAddProject(
   }
 }
 
+export async function fullyMintProject(
+  _projectId: BN,
+  _minterAccount: SignerWithAddress
+) {
+  for (let i = 0; i < this.maxInvocations; i++) {
+    await this.genArt721Core
+      .connect(_minterAccount)
+      .mint(_minterAccount.address, _projectId, _minterAccount.address);
+  }
+}
+
+export async function advanceEVMByTime(_timeSeconds: number) {
+  // advance with evm_increaseTime, then mine to advance time
+  await ethers.provider.send("evm_increaseTime", [_timeSeconds]);
+  await ethers.provider.send("evm_mine", []);
+}
+
 // utility funciton to compare Big Numbers, expecting them to be within x%, +/-
 export function compareBN(
   actual: BigNumber,

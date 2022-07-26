@@ -14,6 +14,8 @@ import {
   assignDefaultConstants,
   deployAndGet,
   deployCoreWithMinterFilter,
+  fullyMintProject,
+  advanceEVMByTime,
 } from "../../util/common";
 import { FOUR_WEEKS } from "../../util/constants";
 
@@ -194,8 +196,7 @@ describe("GenArt721CoreV3 Project Configure", async function () {
         .projectStateData(this.projectZero);
       expect(projectStateData.locked).to.equal(false);
       // advance < 4 weeks
-      await ethers.provider.send("evm_increaseTime", [FOUR_WEEKS - 1]);
-      await ethers.provider.send("evm_mine", []);
+      await advanceEVMByTime(FOUR_WEEKS - 1);
       projectStateData = await this.genArt721Core
         .connect(this.accounts.user)
         .projectStateData(this.projectZero);
@@ -215,13 +216,59 @@ describe("GenArt721CoreV3 Project Configure", async function () {
           );
       }
       // advance > 4 weeks
-      await ethers.provider.send("evm_increaseTime", [FOUR_WEEKS + 1]);
-      await ethers.provider.send("evm_mine", []);
+      await advanceEVMByTime(FOUR_WEEKS + 1);
       const projectStateData = await this.genArt721Core
         .connect(this.accounts.user)
         .projectStateData(this.projectZero);
       // expect project to be locked
       expect(projectStateData.locked).to.equal(true);
+    });
+  });
+
+  describe("updateProjectDescription", function () {
+    const errorMessage = "Only artist when unlocked, owner when locked";
+    it("owner cannot update when unlocked", async function () {
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateProjectDescription(this.projectZero, "new description"),
+        errorMessage
+      );
+    });
+
+    it("artist can update when unlocked", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectDescription(this.projectZero, "new description");
+      // expect view to be updated
+      const projectDetails = await this.genArt721Core
+        .connect(this.accounts.user)
+        .projectDetails(this.projectZero);
+      expect(projectDetails.description).to.equal("new description");
+    });
+
+    it("owner can update when locked", async function () {
+      await fullyMintProject.call(this, this.projectZero, this.accounts.artist);
+      await advanceEVMByTime(FOUR_WEEKS + 1);
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateProjectDescription(this.projectZero, "new description");
+      // expect view to be updated
+      const projectDetails = await this.genArt721Core
+        .connect(this.accounts.user)
+        .projectDetails(this.projectZero);
+      expect(projectDetails.description).to.equal("new description");
+    });
+
+    it("artist cannot update when locked", async function () {
+      await fullyMintProject.call(this, this.projectZero, this.accounts.artist);
+      await advanceEVMByTime(FOUR_WEEKS + 1);
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectDescription(this.projectZero, "new description"),
+        errorMessage
+      );
     });
   });
 });
