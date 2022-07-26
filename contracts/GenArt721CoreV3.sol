@@ -504,6 +504,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @return description Project description
      * @return website Project website
      * @return license Project license
+     * @dev this function was named projectDetails prior to V3 core contract.
      */
     function projectDetails(uint256 _projectId)
         public
@@ -524,33 +525,51 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     /**
-     * @notice Returns project token information for project `_projectId`.
+     * @notice Returns project state data for project `_projectId`.
      * @param _projectId Project to be queried
-     * @return artistAddress Project Artist's address
      * @return invocations Current number of invocations
      * @return maxInvocations Maximum allowed invocations
      * @return active Boolean representing if project is currently active
+     * @return paused Boolean representing if project is paused
+     * @return locked Boolean representing if project is locked
+     * @dev price and currency info are located on minter contracts
+     */
+    function projectStateData(uint256 _projectId)
+        public
+        view
+        returns (
+            uint256 invocations,
+            uint256 maxInvocations,
+            bool active,
+            bool paused,
+            bool locked
+        )
+    {
+        invocations = projects[_projectId].invocations;
+        maxInvocations = projects[_projectId].maxInvocations;
+        active = projects[_projectId].active;
+        paused = projects[_projectId].paused;
+        locked = projects[_projectId].locked;
+    }
+
+    /**
+     * @notice Returns artist payment information for project `_projectId`.
+     * @param _projectId Project to be queried
+     * @return artistAddress Project Artist's address
      * @return additionalPayee Additional payee address
      * @return additionalPayeePercentage Percentage of artist revenue
      * to be sent to the additional payee's address
-     * @dev price and currency info are located on minter contracts
      */
-    function projectInfo(uint256 _projectId)
+    function projectArtistPaymentInfo(uint256 _projectId)
         public
         view
         returns (
             address artistAddress,
-            uint256 invocations,
-            uint256 maxInvocations,
-            bool active,
             address additionalPayee,
             uint256 additionalPayeePercentage
         )
     {
         artistAddress = projectIdToArtistAddress[_projectId];
-        invocations = projects[_projectId].invocations;
-        maxInvocations = projects[_projectId].maxInvocations;
-        active = projects[_projectId].active;
         additionalPayee = projectIdToAdditionalPayee[_projectId];
         additionalPayeePercentage = projectIdToAdditionalPayeePercentage[
             _projectId
@@ -566,10 +585,8 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * "1.77777778" for 16:9, etc.)
      * @return ipfsHash IPFS hash for project
      * @return scriptCount Count of scripts for project
-     * @return locked Boolean representing if project is locked
-     * @return paused Boolean representing if project is paused
      */
-    function projectScriptInfo(uint256 _projectId)
+    function projectScriptDetails(uint256 _projectId)
         external
         view
         returns (
@@ -577,9 +594,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
             string memory scriptTypeVersion,
             string memory aspectRatio,
             string memory ipfsHash,
-            uint256 scriptCount,
-            bool locked,
-            bool paused
+            uint256 scriptCount
         )
     {
         scriptType = projects[_projectId].scriptType;
@@ -587,8 +602,6 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         aspectRatio = projects[_projectId].aspectRatio;
         scriptCount = projects[_projectId].scriptCount;
         ipfsHash = projects[_projectId].ipfsHash;
-        locked = projects[_projectId].locked;
-        paused = projects[_projectId].paused;
     }
 
     /**

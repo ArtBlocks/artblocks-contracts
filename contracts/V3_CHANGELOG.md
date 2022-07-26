@@ -15,3 +15,9 @@ _This document is intended to document and explain the Art Blocks Core V3 change
   - Added a getter function admin() that returns contract owner to maintain backwards-compatibility of interface with before-V3 contracts.
 - Change scriptJSON to distinct fields
   - This is to standardize which items should be on-chain and used by renderer (e.g. library, library version, aspectRatio).
+- Re-organize the contract's project-view functions to be more intuitive
+  - V1's `projectTokenInfo`, `projectScriptInfo`, and `projectDetails` are now broken out into:
+    - `projectStateData` - Information relevant to minters/purchasers
+    - `projectScriptDetails` - Information relevant to rendering tokens
+    - `projectDetails` - Information relevant to understanding the project as a work of art (same function as pre-V3 core)
+    - `projectArtistPaymentInfo` - Information relevant to artists as they manage their primary and additional payment accounts
