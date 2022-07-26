@@ -84,14 +84,14 @@ describe("GenArt721CoreV3", async function () {
     });
 
     describe("reverts on project locked", async function () {
-      it("reverts if try to modify script", async function () {
+      it("reverts if try to add script", async function () {
         await this.genArt721Core
           .connect(this.accounts.deployer)
           .toggleProjectIsLocked(this.projectZero);
         await expectRevert(
           this.genArt721Core
             .connect(this.accounts.artist)
-            .updateProjectScriptJSON(this.projectZero, "lorem ipsum"),
+            .addProjectScript(this.projectZero, "lorem ipsum"),
           "Only if unlocked"
         );
       });
@@ -113,6 +113,50 @@ describe("GenArt721CoreV3", async function () {
         .connect(this.accounts.deployer)
         .coreType();
       expect(coreType).to.be.equal("GenArt721CoreV3");
+    });
+  });
+
+  describe("projectScriptInfo", function () {
+    it("returns expected default values", async function () {
+      const projectScriptInfo = await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .projectScriptInfo(0);
+      expect(projectScriptInfo.scriptType).to.be.equal("");
+      expect(projectScriptInfo.scriptTypeVersion).to.be.equal("");
+      expect(projectScriptInfo.aspectRatio).to.be.equal("");
+      expect(projectScriptInfo.ipfsHash).to.be.equal("");
+      expect(projectScriptInfo.scriptCount).to.be.equal(0);
+      expect(projectScriptInfo.locked).to.be.equal(false);
+      expect(projectScriptInfo.paused).to.be.equal(true);
+    });
+
+    it("returns expected populated values", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectScriptType(this.projectZero, "p5js", "1.0.0");
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectAspectRatio(this.projectZero, "1.77777778");
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectIpfsHash(this.projectZero, "0x12345");
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .addProjectScript(this.projectZero, "if(true){}");
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .toggleProjectIsPaused(this.projectZero);
+
+      const projectScriptInfo = await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .projectScriptInfo(0);
+      expect(projectScriptInfo.scriptType).to.be.equal("p5js");
+      expect(projectScriptInfo.scriptTypeVersion).to.be.equal("1.0.0");
+      expect(projectScriptInfo.aspectRatio).to.be.equal("1.77777778");
+      expect(projectScriptInfo.ipfsHash).to.be.equal("0x12345");
+      expect(projectScriptInfo.scriptCount).to.be.equal(1);
+      expect(projectScriptInfo.locked).to.be.equal(false);
+      expect(projectScriptInfo.paused).to.be.equal(false);
     });
   });
 

@@ -10,6 +10,8 @@ _This document is intended to document and explain the Art Blocks Core V3 change
   - Price and currency info was moved to the minter contracts when we switched to the new minter suite system (after the V1 core contract was deployed).
 - Add a public version/type field on the contract (similr to minter type in minter suite minters)
   - This improves ability for client-side code to choose correct ABI when making contract calls based on the contract associated with the calls.
-- implement "Ownable"
+- Implement "Ownable"
   - Main benefit is OpenSea/aggregator support by default
   - Added a getter function admin() that returns contract owner to maintain backwards-compatibility of interface with before-V3 contracts.
+- Change scriptJSON to distinct fields
+  - This is to standardize which items should be on-chain and used by renderer (e.g. library, library version, aspectRatio).
