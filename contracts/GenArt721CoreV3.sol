@@ -624,9 +624,15 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @notice Returns artist payment information for project `_projectId`.
      * @param _projectId Project to be queried
      * @return artistAddress Project Artist's address
-     * @return additionalPayee Additional payee address
-     * @return additionalPayeePercentage Percentage of artist revenue
-     * to be sent to the additional payee's address
+     * @return additionalPayeePrimarySales Additional payee address for primary
+     * sales
+     * @return additionalPayeePrimarySalesPercentage Percentage of artist revenue
+     * to be sent to the additional payee address for primary sales
+     * @return additionalPayeeRoyalties Additional payee address for secondary
+     * sales royalties
+     * @return additionalPayeeRoyaltiesPercentage Percentage of artist revenue
+     * to be sent to the additional payee address for secondary sales royalties
+
      */
     function projectArtistPaymentInfo(uint256 _projectId)
         public
