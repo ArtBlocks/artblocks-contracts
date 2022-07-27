@@ -52,9 +52,9 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     mapping(uint256 => uint256)
         public projectIdToAdditionalPayeePrimarySalesPercentage;
     mapping(uint256 => address payable)
-        public projectIdToAdditionalPayeeRoyalties;
+        public projectIdToAdditionalPayeeSecondarySales;
     mapping(uint256 => uint256)
-        public projectIdToAdditionalPayeeRoyaltiesPercentage;
+        public projectIdToAdditionalPayeeSecondarySalesPercentage;
     mapping(uint256 => uint256)
         public projectIdToSecondaryMarketRoyaltyPercentage;
 
@@ -354,34 +354,41 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @param _projectId Project ID.
      * @param _additionalPayeePrimarySales Address that may receive a
      * percentage split of the artit's primary sales revenue.
-     * @param _additionalPayeePercentagePrimarySales Percent of artist's
+     * @param _additionalPayeePrimarySalesPercentage Percent of artist's
      * portion of primary sale revenue that will be split to address
      * `_additionalPayeePrimarySales`.
-     * @param _additionalPayeeRoyalties Address that may receive a percentage
+     * @param _additionalPayeeSecondarySales Address that may receive a percentage
      * split of the secondary sales royalties.
-     * @param _additionalPayeePercentageRoyalties Percent of artist's portion
+     * @param _additionalPayeeSecondarySalesPercentage Percent of artist's portion
      * of secondary sale royalties that will be split to address
      * `_additionalPayeeRoyalties`.
      */
     function updateProjectAdditionalPayees(
         uint256 _projectId,
         address payable _additionalPayeePrimarySales,
-        uint256 _additionalPayeePercentagePrimarySales,
-        address payable _additionalPayeeRoyalties,
-        uint256 _additionalPayeePercentageRoyalties
+        uint256 _additionalPayeePrimarySalesPercentage,
+        address payable _additionalPayeeSecondarySales,
+        uint256 _additionalPayeeSecondarySalesPercentage
     ) external onlyArtist(_projectId) {
+        // checks
+        require(
+            _additionalPayeePrimarySalesPercentage <= 100 &&
+                _additionalPayeeSecondarySalesPercentage <= 100,
+            "Max of 100%"
+        );
+        // effects
         projectIdToAdditionalPayeePrimarySales[
             _projectId
         ] = _additionalPayeePrimarySales;
         projectIdToAdditionalPayeePrimarySalesPercentage[
             _projectId
-        ] = _additionalPayeePercentagePrimarySales;
-        projectIdToAdditionalPayeeRoyalties[
+        ] = _additionalPayeePrimarySalesPercentage;
+        projectIdToAdditionalPayeeSecondarySales[
             _projectId
-        ] = _additionalPayeeRoyalties;
-        projectIdToAdditionalPayeeRoyaltiesPercentage[
+        ] = _additionalPayeeSecondarySales;
+        projectIdToAdditionalPayeeSecondarySalesPercentage[
             _projectId
-        ] = _additionalPayeePercentageRoyalties;
+        ] = _additionalPayeeSecondarySalesPercentage;
     }
 
     /**
@@ -390,12 +397,16 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * This DOES NOT include the secondary market royalty percentages collected
      * by Art Blocks; this is only the total percentage of royalties that will
      * be split to artist and additionalSecondaryPayee.
+     * @param _projectId Project ID.
+     * @param _secondMarketRoyalty Percent of secondary sales revenue that will
+     * be split to artist and additionalSecondaryPayee. This must be less than
+     * or equal to 95 percent.
      */
     function updateProjectSecondaryMarketRoyaltyPercentage(
         uint256 _projectId,
         uint256 _secondMarketRoyalty
     ) public onlyArtist(_projectId) {
-        require(_secondMarketRoyalty <= 30, "Max of 30%");
+        require(_secondMarketRoyalty <= 95, "Max of 95%");
         projectIdToSecondaryMarketRoyaltyPercentage[
             _projectId
         ] = _secondMarketRoyalty;
@@ -633,9 +644,9 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * sales
      * @return additionalPayeePrimarySalesPercentage Percentage of artist revenue
      * to be sent to the additional payee address for primary sales
-     * @return additionalPayeeRoyalties Additional payee address for secondary
+     * @return additionalPayeeSecondarySales Additional payee address for secondary
      * sales royalties
-     * @return additionalPayeeRoyaltiesPercentage Percentage of artist revenue
+     * @return additionalPayeeSecondarySalesPercentage Percentage of artist revenue
      * to be sent to the additional payee address for secondary sales royalties
 
      */
@@ -646,8 +657,8 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
             address artistAddress,
             address additionalPayeePrimarySales,
             uint256 additionalPayeePrimarySalesPercentage,
-            address additionalPayeeRoyalties,
-            uint256 additionalPayeeRoyaltiesPercentage
+            address additionalPayeeSecondarySales,
+            uint256 additionalPayeeSecondarySalesPercentage
         )
     {
         artistAddress = projectIdToArtistAddress[_projectId];
@@ -657,10 +668,10 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         additionalPayeePrimarySalesPercentage = projectIdToAdditionalPayeePrimarySalesPercentage[
             _projectId
         ];
-        additionalPayeeRoyalties = projectIdToAdditionalPayeeRoyalties[
+        additionalPayeeSecondarySales = projectIdToAdditionalPayeeSecondarySales[
             _projectId
         ];
-        additionalPayeeRoyaltiesPercentage = projectIdToAdditionalPayeeRoyaltiesPercentage[
+        additionalPayeeSecondarySalesPercentage = projectIdToAdditionalPayeeSecondarySalesPercentage[
             _projectId
         ];
     }
@@ -745,8 +756,8 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     {
         uint256 projectId = _tokenId / ONE_MILLION;
         artistAddress = projectIdToArtistAddress[projectId];
-        additionalPayee = projectIdToAdditionalPayeeRoyalties[projectId];
-        additionalPayeePercentage = projectIdToAdditionalPayeeRoyaltiesPercentage[
+        additionalPayee = projectIdToAdditionalPayeeSecondarySales[projectId];
+        additionalPayeePercentage = projectIdToAdditionalPayeeSecondarySalesPercentage[
             projectId
         ];
         royaltyFeeByID = projectIdToSecondaryMarketRoyaltyPercentage[projectId];

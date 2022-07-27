@@ -85,7 +85,7 @@ describe("GenArt721CoreV3 Integration", async function () {
   });
 
   describe("reverts on project locked", async function () {
-    it("reverts if try to modify script", async function () {
+    it("reverts if try to add script", async function () {
       await fullyMintProject.call(this, this.projectZero, this.accounts.artist);
       // wait until project is locked
       await advanceEVMByTime(FOUR_WEEKS + 1);
@@ -93,7 +93,7 @@ describe("GenArt721CoreV3 Integration", async function () {
       await expectRevert(
         this.genArt721Core
           .connect(this.accounts.artist)
-          .updateProjectScript(this.projectZero, 0, "lorem ipsum"),
+          .addProjectScript(this.projectZero, "lorem ipsum"),
         "Only if unlocked"
       );
     });
