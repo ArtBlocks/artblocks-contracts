@@ -349,34 +349,41 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @param _projectId Project ID.
      * @param _additionalPayeePrimarySales Address that may receive a
      * percentage split of the artit's primary sales revenue.
-     * @param _additionalPayeePercentagePrimarySales Percent of artist's
+     * @param _additionalPayeePrimarySalesPercentage Percent of artist's
      * portion of primary sale revenue that will be split to address
      * `_additionalPayeePrimarySales`.
-     * @param _additionalPayeeRoyalties Address that may receive a percentage
+     * @param _additionalPayeeSecondarySales Address that may receive a percentage
      * split of the secondary sales royalties.
-     * @param _additionalPayeePercentageRoyalties Percent of artist's portion
+     * @param _additionalPayeeSecondarySalesPercentage Percent of artist's portion
      * of secondary sale royalties that will be split to address
      * `_additionalPayeeRoyalties`.
      */
     function updateProjectAdditionalPayees(
         uint256 _projectId,
         address payable _additionalPayeePrimarySales,
-        uint256 _additionalPayeePercentagePrimarySales,
-        address payable _additionalPayeeRoyalties,
-        uint256 _additionalPayeePercentageRoyalties
+        uint256 _additionalPayeePrimarySalesPercentage,
+        address payable _additionalPayeeSecondarySales,
+        uint256 _additionalPayeeSecondarySalesPercentage
     ) external onlyArtist(_projectId) {
+        // checks
+        require(
+            _additionalPayeePrimarySalesPercentage <= 100 &&
+                _additionalPayeeSecondarySalesPercentage <= 100,
+            "Max of 100%"
+        );
+        // effects
         projectIdToAdditionalPayeePrimarySales[
             _projectId
         ] = _additionalPayeePrimarySales;
         projectIdToAdditionalPayeePrimarySalesPercentage[
             _projectId
-        ] = _additionalPayeePercentagePrimarySales;
+        ] = _additionalPayeePrimarySalesPercentage;
         projectIdToAdditionalPayeeSecondarySales[
             _projectId
-        ] = _additionalPayeeRoyalties;
+        ] = _additionalPayeeSecondarySales;
         projectIdToAdditionalPayeeSecondarySalesPercentage[
             _projectId
-        ] = _additionalPayeePercentageRoyalties;
+        ] = _additionalPayeeSecondarySalesPercentage;
     }
 
     /**
