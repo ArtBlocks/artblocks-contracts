@@ -8,6 +8,7 @@ import {
 } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
+import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 import {
   getAccounts,
@@ -15,11 +16,23 @@ import {
   deployAndGet,
   deployCoreWithMinterFilter,
 } from "../../util/common";
+import { FOUR_WEEKS } from "../../util/constants";
+
+async function fullyMintProject(
+  _projectId: BN,
+  _minterAccount: SignerWithAddress
+) {
+  for (let i = 0; i < this.maxInvocations; i++) {
+    await this.genArt721Core
+      .connect(_minterAccount)
+      .mint(_minterAccount.address, _projectId, _minterAccount.address);
+  }
+}
 
 /**
  * General Integration tests for V3 core.
  */
-describe("GenArt721CoreV3", async function () {
+describe("GenArt721CoreV3 Integration", async function () {
   beforeEach(async function () {
     // standard accounts and constants
     this.accounts = await getAccounts();
@@ -35,6 +48,11 @@ describe("GenArt721CoreV3", async function () {
       .deploy(this.name, this.symbol, this.randomizer.address);
 
     // TBD - V3 DOES NOT CURRENTLY HAVE A WORKING MINTER
+
+    // allow artist to mint on contract
+    await this.genArt721Core
+      .connect(this.accounts.deployer)
+      .updateMinterContract(this.accounts.artist.address);
 
     // add project
     await this.genArt721Core
@@ -70,9 +88,11 @@ describe("GenArt721CoreV3", async function () {
 
   describe("reverts on project locked", async function () {
     it("reverts if try to add script", async function () {
-      await this.genArt721Core
-        .connect(this.accounts.deployer)
-        .toggleProjectIsLocked(this.projectZero);
+      await fullyMintProject.call(this, this.projectZero, this.accounts.artist);
+      // wait until project is locked
+      await ethers.provider.send("evm_increaseTime", [FOUR_WEEKS + 1]);
+      await ethers.provider.send("evm_mine", []);
+      // expect revert
       await expectRevert(
         this.genArt721Core
           .connect(this.accounts.artist)

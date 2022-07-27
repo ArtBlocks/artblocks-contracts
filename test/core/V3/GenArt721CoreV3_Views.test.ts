@@ -19,7 +19,7 @@ import {
 /**
  * Tests regarding view functions for V3 core.
  */
-describe("GenArt721CoreV3", async function () {
+describe("GenArt721CoreV3 Views", async function () {
   beforeEach(async function () {
     // standard accounts and constants
     this.accounts = await getAccounts();

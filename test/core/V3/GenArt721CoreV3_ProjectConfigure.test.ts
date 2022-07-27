@@ -15,11 +15,12 @@ import {
   deployAndGet,
   deployCoreWithMinterFilter,
 } from "../../util/common";
+import { FOUR_WEEKS } from "../../util/constants";
 
 /**
  * Tests for V3 core dealing with configuring projects.
  */
-describe("GenArt721CoreV3", async function () {
+describe("GenArt721CoreV3 Project Configure", async function () {
   beforeEach(async function () {
     // standard accounts and constants
     this.accounts = await getAccounts();
@@ -114,6 +115,113 @@ describe("GenArt721CoreV3", async function () {
       await this.genArt721Core
         .connect(this.accounts.artist)
         .updateProjectMaxInvocations(this.projectZero, 1);
+    });
+  });
+
+  describe("project complete state", function () {
+    it("project may not mint when is completed due to reducing maxInvocations", async function () {
+      // mint a token on project zero
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .mint(
+          this.accounts.artist.address,
+          this.projectZero,
+          this.accounts.artist.address
+        );
+      // set max invocations to number of invocations
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectMaxInvocations(this.projectZero, 1);
+      // expect project to not mint when completed
+      expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .mint(
+            this.accounts.artist.address,
+            this.projectZero,
+            this.accounts.artist.address
+          ),
+        "Must not exceed max invocations"
+      );
+    });
+
+    it("project may not mint when is completed due to minting out", async function () {
+      // project mints out
+      for (let i = 0; i < this.maxInvocations; i++) {
+        await this.genArt721Core
+          .connect(this.accounts.artist)
+          .mint(
+            this.accounts.artist.address,
+            this.projectZero,
+            this.accounts.artist.address
+          );
+      }
+      // expect project to not mint when completed
+      expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .mint(
+            this.accounts.artist.address,
+            this.projectZero,
+            this.accounts.artist.address
+          ),
+        "Must not exceed max invocations"
+      );
+    });
+  });
+
+  describe("projectLocked", function () {
+    it("project is not locked by default", async function () {
+      const projectStateData = await this.genArt721Core
+        .connect(this.accounts.user)
+        .projectStateData(this.projectZero);
+      expect(projectStateData.locked).to.equal(false);
+    });
+
+    it("project is not locked < 4 weeks after being completed", async function () {
+      // project is completed
+      for (let i = 0; i < this.maxInvocations; i++) {
+        await this.genArt721Core
+          .connect(this.accounts.artist)
+          .mint(
+            this.accounts.artist.address,
+            this.projectZero,
+            this.accounts.artist.address
+          );
+      }
+      let projectStateData = await this.genArt721Core
+        .connect(this.accounts.user)
+        .projectStateData(this.projectZero);
+      expect(projectStateData.locked).to.equal(false);
+      // advance < 4 weeks
+      await ethers.provider.send("evm_increaseTime", [FOUR_WEEKS - 1]);
+      await ethers.provider.send("evm_mine", []);
+      projectStateData = await this.genArt721Core
+        .connect(this.accounts.user)
+        .projectStateData(this.projectZero);
+      // expect project to not be locked
+      expect(projectStateData.locked).to.equal(false);
+    });
+
+    it("project is locked > 4 weeks after being minted out", async function () {
+      // project is completed
+      for (let i = 0; i < this.maxInvocations; i++) {
+        await this.genArt721Core
+          .connect(this.accounts.artist)
+          .mint(
+            this.accounts.artist.address,
+            this.projectZero,
+            this.accounts.artist.address
+          );
+      }
+      // advance > 4 weeks
+      await ethers.provider.send("evm_increaseTime", [FOUR_WEEKS + 1]);
+      await ethers.provider.send("evm_mine", []);
+      const projectStateData = await this.genArt721Core
+        .connect(this.accounts.user)
+        .projectStateData(this.projectZero);
+      // expect project to be locked
+      expect(projectStateData.locked).to.equal(true);
     });
   });
 });
