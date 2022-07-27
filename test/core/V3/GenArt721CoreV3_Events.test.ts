@@ -29,7 +29,9 @@ describe("GenArt721CoreV3 Events", async function () {
       "BasicRandomizer"
     );
     this.randomizer = await randomizerFactory.deploy();
-    const adminACLFactory = await ethers.getContractFactory("MockAdminACLV0");
+    const adminACLFactory = await ethers.getContractFactory(
+      "MockAdminACLV0EventsTrue"
+    );
     this.adminACL = await adminACLFactory.deploy();
     const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV3");
     this.genArt721Core = await artblocksFactory
