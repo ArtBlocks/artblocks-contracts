@@ -385,12 +385,16 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * This DOES NOT include the secondary market royalty percentages collected
      * by Art Blocks; this is only the total percentage of royalties that will
      * be split to artist and additionalSecondaryPayee.
+     * @param _projectId Project ID.
+     * @param _secondMarketRoyalty Percent of secondary sales revenue that will
+     * be split to artist and additionalSecondaryPayee. This must be less than
+     * or equal to 95 percent.
      */
     function updateProjectSecondaryMarketRoyaltyPercentage(
         uint256 _projectId,
         uint256 _secondMarketRoyalty
     ) public onlyArtist(_projectId) {
-        require(_secondMarketRoyalty <= 30, "Max of 30%");
+        require(_secondMarketRoyalty <= 95, "Max of 95%");
         projectIdToSecondaryMarketRoyaltyPercentage[
             _projectId
         ] = _secondMarketRoyalty;
