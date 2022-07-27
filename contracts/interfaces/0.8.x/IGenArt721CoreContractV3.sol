@@ -23,6 +23,7 @@ interface IGenArt721CoreContractV3 {
     function coreType() external view returns (string memory);
 
     // owner (pre-V3 was named admin) of contract
+    // this is expected to be an Admin ACL contract for V3
     function owner() external view returns (address);
 
     // backwards-compatible admin - equal to owner()
@@ -36,8 +37,6 @@ interface IGenArt721CoreContractV3 {
         external
         view
         returns (uint256 projectId);
-
-    function isWhitelisted(address sender) external view returns (bool);
 
     // @dev this is not available in V0
     function isMintWhitelisted(address minter) external view returns (bool);
