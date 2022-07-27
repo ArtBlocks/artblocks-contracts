@@ -25,3 +25,4 @@ _This document is intended to document and explain the Art Blocks Core V3 change
   - IMPORTANT for artists to understand the impact of the change. Internal artist communication plan required for this type of change.
 - Automatically lock projects four weeks after they are fully minted
   - IMPORTANT for artists to understand the impact of the change. Internal artist communication plan required for this type of change.
+- Only allow artist to update project description when project is unlocked; only allow admin to update project description when project is locked.
