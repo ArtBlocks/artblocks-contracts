@@ -183,11 +183,11 @@ describe("GenArt721CoreV3 Views", async function () {
       expect(
         projectArtistPaymentInfo.additionalPayeePrimarySalesPercentage
       ).to.be.equal(0);
-      expect(projectArtistPaymentInfo.additionalPayeeRoyalties).to.be.equal(
-        constants.ZERO_ADDRESS
-      );
       expect(
-        projectArtistPaymentInfo.additionalPayeeRoyaltiesPercentage
+        projectArtistPaymentInfo.additionalPayeeSecondarySales
+      ).to.be.equal(constants.ZERO_ADDRESS);
+      expect(
+        projectArtistPaymentInfo.additionalPayeeSecondarySalesPercentage
       ).to.be.equal(0);
     });
 
@@ -222,11 +222,11 @@ describe("GenArt721CoreV3 Views", async function () {
       expect(
         projectArtistPaymentInfo.additionalPayeePrimarySalesPercentage
       ).to.be.equal(50);
-      expect(projectArtistPaymentInfo.additionalPayeeRoyalties).to.be.equal(
-        this.accounts.additional2.address
-      );
       expect(
-        projectArtistPaymentInfo.additionalPayeeRoyaltiesPercentage
+        projectArtistPaymentInfo.additionalPayeeSecondarySales
+      ).to.be.equal(this.accounts.additional2.address);
+      expect(
+        projectArtistPaymentInfo.additionalPayeeSecondarySalesPercentage
       ).to.be.equal(51);
     });
   });
