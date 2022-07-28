@@ -17,7 +17,7 @@ import {
 } from "../../util/common";
 
 /**
- * Tests for V3 core dealing with configuring projects.
+ * Tests for V3 core dealing with emitted events
  */
 describe("GenArt721CoreV3 Events", async function () {
   beforeEach(async function () {
