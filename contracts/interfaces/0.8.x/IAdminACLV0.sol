@@ -8,8 +8,5 @@ interface IAdminACLV0 {
     function AdminACLType() external view returns (string memory);
 
     // Checks if sender is allowed to call function with selector `_selector`
-    function allowed(address _sender, bytes4 _selector)
-        external
-        view
-        returns (bool);
+    function allowed(address _sender, bytes4 _selector) external returns (bool);
 }

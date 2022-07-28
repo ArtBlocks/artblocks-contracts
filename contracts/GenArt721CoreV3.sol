@@ -206,7 +206,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @dev assumes the Admin ACL contract is the owner of this contract
      * @dev assumes the Admin ACL contract implements the IAdminACLV0 interface
      */
-    function _adminAllowed(bytes4 _selector) internal view returns (bool) {
+    function _adminAllowed(bytes4 _selector) internal returns (bool) {
         return IAdminACLV0(owner()).allowed(msg.sender, _selector);
     }
 
@@ -435,7 +435,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         require(
             _projectUnlocked(_projectId)
                 ? msg.sender == projectIdToArtistAddress[_projectId]
-                : msg.sender == owner(),
+                : _adminAllowed(this.updateProjectDescription.selector),
             "Only artist when unlocked, owner when locked"
         );
         // effects

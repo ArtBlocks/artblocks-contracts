@@ -34,7 +34,7 @@ describe("GenArt721CoreV3 Integration", async function () {
     );
     this.randomizer = await randomizerFactory.deploy();
     const adminACLFactory = await ethers.getContractFactory(
-      "MockAdminACLV0EventsTrue"
+      "MockAdminACLV0Events"
     );
     this.adminACL = await adminACLFactory.deploy();
     const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV3");
@@ -66,23 +66,27 @@ describe("GenArt721CoreV3 Integration", async function () {
       .updateProjectMaxInvocations(this.projectZero, this.maxInvocations);
   });
 
-  describe("has whitelisted owner", function () {
-    it("has an artblocksAddress", async function () {
+  describe("artblocksAddress", function () {
+    it("returns expected artblocksAddress", async function () {
       expect(await this.genArt721Core.artblocksAddress()).to.be.equal(
         this.accounts.deployer.address
       );
     });
+  });
 
-    it("has an admin", async function () {
-      expect(await this.genArt721Core.admin()).to.be.equal(
+  describe("owner", function () {
+    it("returns expected owner", async function () {
+      expect(await this.genArt721Core.owner()).to.be.equal(
         this.adminACL.address
       );
     });
+  });
 
-    it("has a whitelisted account", async function () {
-      expect(
-        await this.genArt721Core.isWhitelisted(this.accounts.deployer.address)
-      ).to.be.equal(true);
+  describe("admin", function () {
+    it("returns expected backwards-compatible admin (owner)", async function () {
+      expect(await this.genArt721Core.admin()).to.be.equal(
+        this.adminACL.address
+      );
     });
   });
 
@@ -116,24 +120,6 @@ describe("GenArt721CoreV3 Integration", async function () {
         .connect(this.accounts.deployer)
         .coreType();
       expect(coreType).to.be.equal("GenArt721CoreV3");
-    });
-  });
-
-  describe("owner", function () {
-    it("returns expected owner", async function () {
-      const ownerAddress = await this.genArt721Core
-        .connect(this.accounts.deployer)
-        .owner();
-      expect(ownerAddress).to.be.equal(this.accounts.deployer.address);
-    });
-  });
-
-  describe("admin", function () {
-    it("returns expected backwards-compatible admin (owner)", async function () {
-      const adminAddress = await this.genArt721Core
-        .connect(this.accounts.deployer)
-        .owner();
-      expect(adminAddress).to.be.equal(this.accounts.deployer.address);
     });
   });
 });

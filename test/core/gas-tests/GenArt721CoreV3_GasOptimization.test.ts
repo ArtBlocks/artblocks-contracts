@@ -32,7 +32,7 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
     );
     this.randomizer = await randomizerFactory.deploy();
     const adminACLFactory = await ethers.getContractFactory(
-      "MockAdminACLV0EventsTrue"
+      "MockAdminACLV0Events"
     );
     this.adminACL = await adminACLFactory.deploy();
     const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV3");
