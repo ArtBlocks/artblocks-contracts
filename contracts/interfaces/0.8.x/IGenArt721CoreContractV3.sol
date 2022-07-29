@@ -21,12 +21,12 @@ interface IGenArt721CoreContractV3 {
      * @notice Project ID `_projectId` updated on bytes32-encoded field
      * `_update`.
      */
-    event ProjectUpdated(uint256 indexed _projectId, bytes32 _update);
+    event ProjectUpdated(uint256 indexed _projectId, bytes32 indexed _update);
 
     /**
      * @notice Platform updated on bytes32-encoded field `_field`.
      */
-    event PlatformUpdated(bytes32 _field);
+    event PlatformUpdated(bytes32 indexed _field);
 
     // version and type of the core contract
     // coreVersion is a string of the form "0.x.y"

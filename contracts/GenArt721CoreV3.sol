@@ -16,8 +16,6 @@ pragma solidity 0.8.9;
  * @author Art Blocks Inc.
  */
 contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
-    event ProjectCompleted(uint256 indexed _projectId);
-
     event ProposedArtistAddressesAndSplits(
         uint256 indexed _projectId,
         address _artistAddress,
@@ -31,6 +29,34 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
 
     uint256 constant ONE_MILLION = 1_000_000;
     uint256 constant FOUR_WEEKS_IN_SECONDS = 2_419_200;
+
+    // generic platform event fields
+    bytes32 constant FIELD_ARTBLOCKS_ADDRESS = "artblocksAddress";
+    bytes32 constant FIELD_RANDOMIZER_ADDRESS = "randomizerAddress";
+    bytes32 constant FIELD_ARTBLOCKS_CURATION_REGISTRY_ADDRESS =
+        "curationRegistryAddress";
+    bytes32 constant FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS =
+        "dependencyRegistryAddress";
+    bytes32 constant FIELD_ARTBLOCKS_PERCENTAGE = "artblocksPercentage";
+    // generic project event fields
+    bytes32 constant FIELD_PROJECT_COMPLETED = "projectCompleted";
+    bytes32 constant FIELD_PROJECT_ACTIVE = "active";
+    bytes32 constant FIELD_ARTIST_ADDRESS = "artistAddress";
+    bytes32 constant FIELD_PROJECT_PAUSED = "paused";
+    bytes32 constant FIELD_PROJECT_CREATED = "created";
+    bytes32 constant FIELD_PROJECT_NAME = "projectName";
+    bytes32 constant FIELD_ARTIST_NAME = "artistName";
+    bytes32 constant FIELD_SECONDARY_MARKET_ROYALTY_PERCENTAGE =
+        "secondaryMarketRoyaltyPercentage";
+    bytes32 constant FIELD_PROJECT_DESCRIPTION = "projectDescription";
+    bytes32 constant FIELD_PROJECT_WEBSITE = "projectWebsite";
+    bytes32 constant FIELD_PROJECT_LICENSE = "projectLicense";
+    bytes32 constant FIELD_MAX_INVOCATIONS = "projectMaxInvocations";
+    bytes32 constant FIELD_PROJECT_SCRIPT_TOUCHED = "projectScriptTouched";
+    bytes32 constant FIELD_PROJECT_SCRIPT_TYPE = "projectScriptType";
+    bytes32 constant FIELD_PROJECT_ASPECT_RATIO = "projectAspectRatio";
+    bytes32 constant FIELD_PROJECT_IPFS_HASH = "projectIpfsHash";
+    bytes32 constant FIELD_PROJECT_BASE_URI = "projectBaseURI";
 
     /// Art Blocks previous flagship token addresses (for reference)
     address public constant ART_BLOCKS_TOKEN_ADDRESS_0 =
@@ -169,7 +195,9 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         address _adminACLContract
     ) ERC721(_tokenName, _tokenSymbol) {
         artblocksAddress = payable(msg.sender);
+        emit PlatformUpdated(FIELD_ARTBLOCKS_ADDRESS);
         randomizerContract = IRandomizer(_randomizerContract);
+        emit PlatformUpdated(FIELD_RANDOMIZER_ADDRESS);
         // set AdminACL management contract as owner
         _transferOwnership(_adminACLContract);
     }
@@ -292,7 +320,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      */
     function _completeProject(uint256 _projectId) internal {
         projects[_projectId].completedTimestamp = block.timestamp;
-        emit ProjectCompleted(_projectId);
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_COMPLETED);
     }
 
     /**
@@ -305,6 +333,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         onlyAdminACL(this.updateArtblocksCurationRegistryAddress.selector)
     {
         artblocksCurationRegistryAddress = _artblocksCurationRegistryAddress;
+        emit PlatformUpdated(FIELD_ARTBLOCKS_CURATION_REGISTRY_ADDRESS);
     }
 
     /**
@@ -317,6 +346,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         onlyAdminACL(this.updateArtblocksDependencyRegistryAddress.selector)
     {
         artblocksDependencyRegistryAddress = _artblocksDependencyRegistryAddress;
+        emit PlatformUpdated(FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS);
     }
 
     /**
@@ -327,6 +357,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         onlyAdminACL(this.updateArtblocksAddress.selector)
     {
         artblocksAddress = _artblocksAddress;
+        emit PlatformUpdated(FIELD_ARTBLOCKS_ADDRESS);
     }
 
     /**
@@ -339,6 +370,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     {
         require(_artblocksPercentage <= 25, "Max of 25%");
         artblocksPercentage = _artblocksPercentage;
+        emit PlatformUpdated(FIELD_ARTBLOCKS_PERCENTAGE);
     }
 
     /**
@@ -360,6 +392,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         onlyAdminACL(this.updateRandomizerAddress.selector)
     {
         randomizerContract = IRandomizer(_randomizerAddress);
+        emit PlatformUpdated(FIELD_RANDOMIZER_ADDRESS);
     }
 
     /**
@@ -370,6 +403,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         onlyAdminACL(this.toggleProjectIsActive.selector)
     {
         projects[_projectId].active = !projects[_projectId].active;
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_ACTIVE);
     }
 
     /**
@@ -504,6 +538,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         address payable _artistAddress
     ) public onlyAdminACL(this.updateProjectArtistAddress.selector) {
         projectIdToArtistAddress[_projectId] = _artistAddress;
+        emit ProjectUpdated(_projectId, FIELD_ARTIST_ADDRESS);
     }
 
     /**
@@ -514,6 +549,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         onlyArtist(_projectId)
     {
         projects[_projectId].paused = !projects[_projectId].paused;
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_PAUSED);
     }
 
     /**
@@ -533,6 +569,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         projects[projectId].maxInvocations = ONE_MILLION;
 
         nextProjectId = nextProjectId + 1;
+        emit ProjectUpdated(projectId, FIELD_PROJECT_CREATED);
     }
 
     /**
@@ -544,6 +581,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         onlyArtistOrAdminACL(_projectId, this.updateProjectName.selector)
     {
         projects[_projectId].name = _projectName;
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_NAME);
     }
 
     /**
@@ -559,6 +597,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         onlyArtistOrAdminACL(_projectId, this.updateProjectArtistName.selector)
     {
         projects[_projectId].artist = _projectArtistName;
+        emit ProjectUpdated(_projectId, FIELD_ARTIST_NAME);
     }
 
     /**
@@ -580,6 +619,10 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         projectIdToSecondaryMarketRoyaltyPercentage[
             _projectId
         ] = _secondMarketRoyalty;
+        emit ProjectUpdated(
+            _projectId,
+            FIELD_SECONDARY_MARKET_ROYALTY_PERCENTAGE
+        );
     }
 
     /**
@@ -599,6 +642,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         );
         // effects
         projects[_projectId].description = _projectDescription;
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_DESCRIPTION);
     }
 
     /**
@@ -609,6 +653,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         string memory _projectWebsite
     ) public onlyArtist(_projectId) {
         projects[_projectId].website = _projectWebsite;
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_WEBSITE);
     }
 
     /**
@@ -623,6 +668,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         onlyArtistOrAdminACL(_projectId, this.updateProjectLicense.selector)
     {
         projects[_projectId].license = _projectLicense;
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_LICENSE);
     }
 
     /**
@@ -647,6 +693,8 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         );
         // effects
         projects[_projectId].maxInvocations = _maxInvocations;
+        emit ProjectUpdated(_projectId, FIELD_MAX_INVOCATIONS);
+
         // register completed timestamp if action completed the project
         if (_maxInvocations == projects[_projectId].invocations) {
             _completeProject(_projectId);
@@ -667,6 +715,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
             projects[_projectId].scriptCount
         ] = _script;
         projects[_projectId].scriptCount = projects[_projectId].scriptCount + 1;
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT_TOUCHED);
     }
 
     /**
@@ -689,6 +738,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
             "scriptId out of range"
         );
         projects[_projectId].scripts[_scriptId] = _script;
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT_TOUCHED);
     }
 
     /**
@@ -707,6 +757,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
             projects[_projectId].scriptCount - 1
         ];
         projects[_projectId].scriptCount = projects[_projectId].scriptCount - 1;
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT_TOUCHED);
     }
 
     /**
@@ -726,6 +777,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     {
         projects[_projectId].scriptType = _scriptType;
         projects[_projectId].scriptTypeVersion = _scriptTypeVersion;
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT_TYPE);
     }
 
     /**
@@ -743,6 +795,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         onlyArtistOrAdminACL(_projectId, this.updateProjectAspectRatio.selector)
     {
         projects[_projectId].aspectRatio = _aspectRatio;
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_ASPECT_RATIO);
     }
 
     /**
@@ -754,6 +807,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         onlyArtistOrAdminACL(_projectId, this.updateProjectIpfsHash.selector)
     {
         projects[_projectId].ipfsHash = _ipfsHash;
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_IPFS_HASH);
     }
 
     /**
@@ -764,6 +818,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         onlyArtist(_projectId)
     {
         projects[_projectId].projectBaseURI = _newBaseURI;
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_BASE_URI);
     }
 
     /**
