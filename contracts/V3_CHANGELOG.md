@@ -26,3 +26,7 @@ _This document is intended to document and explain the Art Blocks Core V3 change
 - Automatically lock projects four weeks after they are fully minted
   - IMPORTANT for artists to understand the impact of the change. Internal artist communication plan required for this type of change.
 - Only allow artist to update project description when project is unlocked; only allow admin to update project description when project is locked.
+- Add artist additionalPrimary and additionalSecondary payment accounts
+  - This is to allow artists to have different additional payee accounts for primary sales vs. secondary royalty sales. This supports the use case where an artist has a charity as a payee in primary sales, but not in secondary sales.
+- Limit artists to 30% secondary royalty fees
+  - Previously the limit was 100% secondary royalty fees. This is to prevent the artist from taking too much of the secondary royalty fees.
