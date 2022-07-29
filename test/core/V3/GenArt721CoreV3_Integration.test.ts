@@ -90,6 +90,68 @@ describe("GenArt721CoreV3 Integration", async function () {
     });
   });
 
+  describe("adminACLContract", function () {
+    it("returns expected adminACLContract address", async function () {
+      expect(await this.genArt721Core.adminACLContract()).to.be.equal(
+        this.adminACL.address
+      );
+    });
+
+    it("behaves as expected when transferring ownership", async function () {
+      // deploy new ACL with user as superAdmin
+      const userAdminACLFactory = await ethers.getContractFactory(
+        "MockAdminACLV0Events"
+      );
+      const userAdminACL = await userAdminACLFactory
+        .connect(this.accounts.user)
+        .deploy();
+      // update owner of core to new userAdminACL, expect OwnershipTransferred event
+      expect(
+        await this.adminACL
+          .connect(this.accounts.deployer)
+          .transferOwnershipOn(this.genArt721Core.address, userAdminACL.address)
+      )
+        .to.emit(this.genArt721Core, "OwnershipTransferred")
+        .withArgs(this.adminACL.address, userAdminACL.address);
+      // ensure owner + public adminACLContract has been updated
+      expect(await this.genArt721Core.owner()).to.be.equal(
+        userAdminACL.address
+      );
+      expect(await this.genArt721Core.adminACLContract()).to.be.equal(
+        userAdminACL.address
+      );
+      // ensure new userAdminACL may update project
+      await this.genArt721Core
+        .connect(this.accounts.user)
+        .addProject("new project", this.accounts.artist2.address);
+    });
+
+    it("behaves as expected when renouncing ownership", async function () {
+      // update owner of core to null address, expect OwnershipTransferred event
+      expect(
+        await this.adminACL
+          .connect(this.accounts.deployer)
+          .renounceOwnershipOn(this.genArt721Core.address)
+      )
+        .to.emit(this.genArt721Core, "OwnershipTransferred")
+        .withArgs(this.adminACL.address, constants.ZERO_ADDRESS);
+      // ensure owner + public adminACLContract has been updated
+      expect(await this.genArt721Core.owner()).to.be.equal(
+        constants.ZERO_ADDRESS
+      );
+      expect(await this.genArt721Core.adminACLContract()).to.be.equal(
+        constants.ZERO_ADDRESS
+      );
+      // ensure prior adminACL may not perform an admin function
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .addProject("new project", this.accounts.artist2.address),
+        "Only Admin ACL allowed"
+      );
+    });
+  });
+
   describe("reverts on project locked", async function () {
     it("reverts if try to add script", async function () {
       await fullyMintProject.call(this, this.projectZero, this.accounts.artist);

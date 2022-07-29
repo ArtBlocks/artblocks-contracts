@@ -7,6 +7,13 @@ interface IAdminACLV0 {
     // Type of the Admin ACL contract of the form "AdminACLV0"
     function AdminACLType() external view returns (string memory);
 
-    // Checks if sender is allowed to call function with selector `_selector`
-    function allowed(address _sender, bytes4 _selector) external returns (bool);
+    /**
+     * Checks if sender `_sender` is allowed to call function with selector
+     * `_selector` on contract `_contract`.
+     */
+    function allowed(
+        address _sender,
+        address _contract,
+        bytes4 _selector
+    ) external returns (bool);
 }

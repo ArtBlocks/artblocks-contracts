@@ -35,6 +35,9 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     /// randomizer contract
     IRandomizer public randomizerContract;
 
+    /// admin ACL contract
+    IAdminACLV0 public adminACLContract;
+
     struct Project {
         string name;
         string artist;
@@ -142,6 +145,17 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     /**
+     * @dev Transfers ownership of the contract to a new account (`newOwner`).
+     * Internal function without access restriction.
+     * @dev Overrides and wraps OpenZeppelin's _transferOwnership function to
+     * also update adminACLContract for improved introspection.
+     */
+    function _transferOwnership(address newOwner) internal override {
+        Ownable._transferOwnership(newOwner);
+        adminACLContract = IAdminACLV0(newOwner);
+    }
+
+    /**
      * @notice Mints a token from project `_projectId` and sets the
      * token's owner to `_to`.
      * @param _to Address to be the minted token's owner.
@@ -217,11 +231,13 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * call function with selector `_selector`, as determined by the Admin ACL
      * contract.
      * @param _selector Function selector to check.
-     * @dev assumes the Admin ACL contract is the owner of this contract
-     * @dev assumes the Admin ACL contract implements the IAdminACLV0 interface
+     * @dev assumes the Admin ACL contract is the owner of this contract, which
+     * is expected to always be true.
      */
     function _adminAllowed(bytes4 _selector) internal returns (bool) {
-        return IAdminACLV0(owner()).allowed(msg.sender, _selector);
+        return
+            owner() != address(0) &&
+            adminACLContract.allowed(msg.sender, address(this), _selector);
     }
 
     /**
