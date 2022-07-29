@@ -281,6 +281,42 @@ describe("GenArt721CoreV3 Project Configure", async function () {
     });
   });
 
+  describe("updateProjectArtistAddress", function () {
+    it("only allows owner to update project artist address", async function () {
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectArtistAddress(
+            this.projectZero,
+            this.accounts.artist2.address
+          ),
+        "Only Admin ACL allowed"
+      );
+      this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateProjectArtistAddress(
+          this.projectZero,
+          this.accounts.artist2.address
+        );
+    });
+
+    it("reflects updated artist address", async function () {
+      this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateProjectArtistAddress(
+          this.projectZero,
+          this.accounts.artist2.address
+        );
+      // expect view to reflect update
+      const projectArtistPaymentInfo = await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .projectArtistPaymentInfo(this.projectZero);
+      expect(projectArtistPaymentInfo.artistAddress).to.equal(
+        this.accounts.artist2.address
+      );
+    });
+  });
+
   describe("update project payment addresses", function () {
     beforeEach(async function () {
       this.valuesToUpdateTo = [
