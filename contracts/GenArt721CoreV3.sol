@@ -36,7 +36,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     address public constant ART_BLOCKS_TOKEN_ADDRESS_0 =
         0x059EDD72Cd353dF5106D2B9cC5ab83a52287aC3a;
     address public constant ART_BLOCKS_TOKEN_ADDRESS_1 =
-        0x059EDD72Cd353dF5106D2B9cC5ab83a52287aC3a;
+        0xa7d8d9ef8D8Ce8992Df33D8b8CF4Aebabd5bD270;
 
     /// Curation registry managed by Art Blocks
     address public artblocksCurationRegistryAddress;
