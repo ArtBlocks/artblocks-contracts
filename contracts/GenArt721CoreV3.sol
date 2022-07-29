@@ -439,7 +439,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
                         _additionalPayeeSecondarySalesPercentage
                     )
                 ),
-            "Must match proposal"
+            "Must match artist proposal"
         );
         // effects
         projectIdToArtistAddress[_projectId] = _artistAddress;

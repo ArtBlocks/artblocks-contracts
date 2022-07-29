@@ -385,7 +385,7 @@ describe("GenArt721CoreV3 Project Configure", async function () {
             this.valuesToUpdateTo[4],
             this.valuesToUpdateTo[5] + 1
           ),
-        "Must match proposal"
+        "Must match artist proposal"
       );
       await expectRevert(
         this.genArt721Core
@@ -398,7 +398,7 @@ describe("GenArt721CoreV3 Project Configure", async function () {
             this.valuesToUpdateTo[2],
             this.valuesToUpdateTo[5]
           ),
-        "Must match proposal"
+        "Must match artist proposal"
       );
       await expectRevert(
         this.genArt721Core
@@ -411,7 +411,7 @@ describe("GenArt721CoreV3 Project Configure", async function () {
             this.valuesToUpdateTo[4],
             this.valuesToUpdateTo[5]
           ),
-        "Must match proposal"
+        "Must match artist proposal"
       );
       await expectRevert(
         this.genArt721Core
@@ -424,7 +424,7 @@ describe("GenArt721CoreV3 Project Configure", async function () {
             this.valuesToUpdateTo[4],
             this.valuesToUpdateTo[5]
           ),
-        "Must match proposal"
+        "Must match artist proposal"
       );
       await expectRevert(
         this.genArt721Core
@@ -437,7 +437,7 @@ describe("GenArt721CoreV3 Project Configure", async function () {
             this.valuesToUpdateTo[4],
             this.valuesToUpdateTo[5]
           ),
-        "Must match proposal"
+        "Must match artist proposal"
       );
       await expectRevert(
         this.genArt721Core
@@ -450,7 +450,7 @@ describe("GenArt721CoreV3 Project Configure", async function () {
             this.valuesToUpdateTo[4],
             this.valuesToUpdateTo[5]
           ),
-        "Must match proposal"
+        "Must match artist proposal"
       );
     });
   });
