@@ -125,6 +125,25 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     /**
+     * This modifier allows the artist of a project to call a function if the
+     * owner of the contract has renounced ownership. This is to allow the
+     * contract to continue to function if the owner decides to renounce
+     * ownership.
+     */
+    modifier onlyAdminACLOrRenouncedArtist(
+        uint256 _projectId,
+        bytes4 _selector
+    ) {
+        require(
+            _adminAllowed(_selector) ||
+                (owner() == address(0) &&
+                    msg.sender == projectIdToArtistAddress[_projectId]),
+            "Only Admin ACL allowed, or artist if owner has renounced"
+        );
+        _;
+    }
+
+    /**
      * @notice Initializes contract.
      * @param _tokenName Name of token.
      * @param _tokenSymbol Token symbol.
@@ -401,7 +420,13 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         uint256 _additionalPayeePrimarySalesPercentage,
         address payable _additionalPayeeSecondarySales,
         uint256 _additionalPayeeSecondarySalesPercentage
-    ) external onlyAdminACL(this.adminAcceptArtistAddressesAndSplits.selector) {
+    )
+        external
+        onlyAdminACLOrRenouncedArtist(
+            _projectId,
+            this.adminAcceptArtistAddressesAndSplits.selector
+        )
+    {
         // checks
         require(
             proposedArtistAddressesAndSplitsHash[_projectId] ==
