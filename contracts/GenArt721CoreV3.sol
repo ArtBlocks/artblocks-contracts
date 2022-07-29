@@ -356,7 +356,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * of secondary sale royalties that will be split to address
      * `_additionalPayeeSecondarySales`.
      */
-    function artistProposePaymentAddressesAndSplits(
+    function proposeArtistPaymentAddressesAndSplits(
         uint256 _projectId,
         address payable _artistAddress,
         address payable _additionalPayeePrimarySales,
