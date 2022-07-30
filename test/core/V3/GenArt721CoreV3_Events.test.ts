@@ -67,29 +67,53 @@ describe("GenArt721CoreV3 Events", async function () {
       .addProject("name", this.accounts.artist2.address);
   });
 
-  describe("ProjectCompleted", function () {
-    it("emits ProjectCompleted when being minted out", async function () {
-      for (let i = 0; i < this.maxInvocations - 1; i++) {
-        await this.genArt721Core
-          .connect(this.accounts.artist)
-          .mint(
-            this.accounts.artist.address,
-            this.projectZero,
-            this.accounts.artist.address
-          );
-      }
-      // emits event when being minted out
+  // describe("ProjectCompleted", function () {
+  //   it("emits ProjectCompleted when being minted out", async function () {
+  //     for (let i = 0; i < this.maxInvocations - 1; i++) {
+  //       await this.genArt721Core
+  //         .connect(this.accounts.artist)
+  //         .mint(
+  //           this.accounts.artist.address,
+  //           this.projectZero,
+  //           this.accounts.artist.address
+  //         );
+  //     }
+  //     // emits event when being minted out
+  //     expect(
+  //       await this.genArt721Core
+  //         .connect(this.accounts.artist)
+  //         .mint(
+  //           this.accounts.artist.address,
+  //           this.projectZero,
+  //           this.accounts.artist.address
+  //         )
+  //     )
+  //       .to.emit(this.genArt721Core, "ProjectCompleted")
+  //       .withArgs(this.projectZero);
+  //   });
+  // });
+
+  describe("PlatformUpdated", function () {
+    it("emits artblocksAddress", async function () {
+      // emits expected event arg(s)
       expect(
         await this.genArt721Core
-          .connect(this.accounts.artist)
-          .mint(
-            this.accounts.artist.address,
-            this.projectZero,
-            this.accounts.artist.address
-          )
+          .connect(this.accounts.deployer)
+          .updateArtblocksAddress(this.accounts.artist.address)
       )
-        .to.emit(this.genArt721Core, "ProjectCompleted")
-        .withArgs(this.projectZero);
+        .to.emit(this.genArt721Core, "PlatformUpdated")
+        .withArgs(ethers.utils.formatBytes32String("artblocksAddress"));
+    });
+
+    it("emits 'randomizerAddress'", async function () {
+      // emits expected event arg(s)
+      expect(
+        await this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateRandomizerAddress(this.accounts.artist.address)
+      )
+        .to.emit(this.genArt721Core, "PlatformUpdated")
+        .withArgs(ethers.utils.formatBytes32String("randomizerAddress"));
     });
   });
 });
