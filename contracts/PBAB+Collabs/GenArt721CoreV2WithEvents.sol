@@ -25,10 +25,6 @@ contract GenArt721CoreV2WithEvents is
     bytes32 constant FIELD_ARTBLOCKS_OWNER = "owner";
     bytes32 constant FIELD_RENDER_PROVIDER_ADDRESS = "renderProviderAddress";
     bytes32 constant FIELD_RANDOMIZER_ADDRESS = "randomizerAddress";
-    bytes32 constant FIELD_ARTBLOCKS_CURATION_REGISTRY_ADDRESS =
-        "curationRegistryAddress";
-    bytes32 constant FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS =
-        "dependencyRegistryAddress";
     bytes32 constant FIELD_RENDER_PROVIDER_PERCENTAGE =
         "renderProviderPercentage";
     // generic project event fields
@@ -37,7 +33,7 @@ contract GenArt721CoreV2WithEvents is
     bytes32 constant FIELD_PROJECT_PAUSED = "paused";
     bytes32 constant FIELD_PROJECT_CREATED = "created";
     bytes32 constant FIELD_PROJECT_NAME = "name";
-    bytes32 constant FIELD_ARTIST_NAME = "artistName";
+    bytes32 constant FIELD_PROJECT_ARTIST_NAME = "artistName";
     bytes32 constant FIELD_SECONDARY_MARKET_ROYALTY_PERCENTAGE =
         "secondaryMarketRoyaltyPercentage";
     bytes32 constant FIELD_PROJECT_DESCRIPTION = "description";
@@ -393,7 +389,7 @@ contract GenArt721CoreV2WithEvents is
     ) public onlyArtist(_projectId) {
         projectIdToCurrencySymbol[_projectId] = _currencySymbol;
         projectIdToCurrencyAddress[_projectId] = _currencyAddress;
-        emit ProjectUpdated(_projectId, FIELD_CURRENCY_INFO);
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_CURRENCY_INFO);
     }
 
     /**
@@ -431,7 +427,7 @@ contract GenArt721CoreV2WithEvents is
         string memory _projectArtistName
     ) public onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) {
         projects[_projectId].artist = _projectArtistName;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_NAME);
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_ARTIST_NAME);
     }
 
     /**
