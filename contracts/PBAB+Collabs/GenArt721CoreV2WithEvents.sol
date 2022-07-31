@@ -151,9 +151,9 @@ contract GenArt721CoreV2WithEvents is
         admin = msg.sender;
         isWhitelisted[msg.sender] = true;
         renderProviderAddress = payable(msg.sender);
-        PlatformUpdated(FIELD_RENDER_PROVIDER_ADDRESS);
+        emit PlatformUpdated(FIELD_RENDER_PROVIDER_ADDRESS);
         randomizerContract = IRandomizer(_randomizerContract);
-        PlatformUpdated(FIELD_RANDOMIZER_ADDRESS);
+        emit PlatformUpdated(FIELD_RANDOMIZER_ADDRESS);
     }
 
     /**
