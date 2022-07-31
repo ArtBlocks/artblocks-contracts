@@ -15,6 +15,11 @@ pragma solidity 0.8.9;
  * @author Art Blocks Inc.
  */
 contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
+    event ProjectCompleted(uint256 indexed _projectId);
+
+    uint256 constant ONE_MILLION = 1_000_000;
+    uint256 constant FOUR_WEEKS_IN_SECONDS = 2_419_200;
+
     /// randomizer contract
     IRandomizer public randomizerContract;
 
@@ -25,24 +30,31 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         string website;
         string license;
         string projectBaseURI;
+        string scriptType;
+        string scriptTypeVersion;
+        string aspectRatio;
         uint256 invocations;
         uint256 maxInvocations;
-        string scriptJSON;
         mapping(uint256 => string) scripts;
         uint256 scriptCount;
         string ipfsHash;
         bool active;
-        bool locked;
         bool paused;
+        uint256 completedTimestamp;
     }
 
-    uint256 constant ONE_MILLION = 1_000_000;
     mapping(uint256 => Project) projects;
 
     // All financial functions are stripped from struct for visibility
     mapping(uint256 => address payable) public projectIdToArtistAddress;
-    mapping(uint256 => address payable) public projectIdToAdditionalPayee;
-    mapping(uint256 => uint256) public projectIdToAdditionalPayeePercentage;
+    mapping(uint256 => address payable)
+        public projectIdToAdditionalPayeePrimarySales;
+    mapping(uint256 => uint256)
+        public projectIdToAdditionalPayeePrimarySalesPercentage;
+    mapping(uint256 => address payable)
+        public projectIdToAdditionalPayeeSecondarySales;
+    mapping(uint256 => uint256)
+        public projectIdToAdditionalPayeeSecondarySalesPercentage;
     mapping(uint256 => uint256)
         public projectIdToSecondaryMarketRoyaltyPercentage;
 
@@ -71,7 +83,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     modifier onlyUnlocked(uint256 _projectId) {
-        require(!projects[_projectId].locked, "Only if unlocked");
+        require(_projectUnlocked(_projectId), "Only if unlocked");
         _;
     }
 
@@ -131,8 +143,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
             "Must mint from the allowed minter contract."
         );
         require(
-            projects[_projectId].invocations <
-                projects[_projectId].maxInvocations,
+            projects[_projectId].completedTimestamp == 0,
             "Must not exceed max invocations"
         );
         require(
@@ -153,29 +164,61 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         internal
         returns (uint256 _tokenId)
     {
-        uint256 nextTokenId = (_projectId * ONE_MILLION) +
-            projects[_projectId].invocations;
+        // checks & effects
+        // increment project's invocations, then move to memory to avoid SLOAD
+        uint256 _invocationsAfter = ++projects[_projectId].invocations;
+        uint256 _invocationsBefore = _invocationsAfter - 1;
+        uint256 thisTokenId = (_projectId * ONE_MILLION) + _invocationsBefore;
 
-        projects[_projectId].invocations++;
+        // mark project as completed if hit max invocations
+        if (_invocationsAfter == projects[_projectId].maxInvocations) {
+            _completeProject(_projectId);
+        }
 
         bytes32 tokenHash = keccak256(
             abi.encodePacked(
-                projects[_projectId].invocations,
+                thisTokenId,
                 blockhash(block.number - 1),
                 randomizerContract.returnValue()
             )
         );
 
-        tokenIdToHash[nextTokenId] = tokenHash;
+        tokenIdToHash[thisTokenId] = tokenHash;
 
-        _mint(_to, nextTokenId);
+        // interactions
+        _mint(_to, thisTokenId);
 
         // Do not need to also log `projectId` in event, as the `projectId` for
         // a given token can be derived from the `tokenId` with:
         //   projectId = tokenId / 1_000_000
-        emit Mint(_to, nextTokenId);
+        emit Mint(_to, thisTokenId);
 
-        return nextTokenId;
+        return thisTokenId;
+    }
+
+    /**
+     * @notice Internal function that returns whether a project is unlocked.
+     * Projects automatically lock four weeks after they are completed.
+     * Projects are considered completed when they have been invoked the
+     * maximum number of times.
+     * @param _projectId Project ID to check.
+     */
+    function _projectUnlocked(uint256 _projectId) internal view returns (bool) {
+        uint256 projectCompletedTimestamp = projects[_projectId]
+            .completedTimestamp;
+        bool projectOpen = projectCompletedTimestamp == 0;
+        return
+            projectOpen ||
+            (block.timestamp - projectCompletedTimestamp <
+                FOUR_WEEKS_IN_SECONDS);
+    }
+
+    /**
+     * @notice Internal function to complete a project.
+     */
+    function _completeProject(uint256 _projectId) internal {
+        projects[_projectId].completedTimestamp = block.timestamp;
+        emit ProjectCompleted(_projectId);
     }
 
     /**
@@ -230,17 +273,6 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         onlyWhitelisted
     {
         randomizerContract = IRandomizer(_randomizerAddress);
-    }
-
-    /**
-     * @notice Locks project `_projectId`.
-     */
-    function toggleProjectIsLocked(uint256 _projectId)
-        public
-        onlyWhitelisted
-        onlyUnlocked(_projectId)
-    {
-        projects[_projectId].locked = true;
     }
 
     /**
@@ -312,31 +344,64 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     /**
-     * @notice Updates additional payee for project `_projectId` to be
-     * `_additionalPayee`, receiving `_additionalPayeePercentage` percent
-     * of artist mint and royalty revenues.
+     * @notice Updates additional payees and percentage splits for project
+     * `_projectId`.
+     * @param _projectId Project ID.
+     * @param _additionalPayeePrimarySales Address that may receive a
+     * percentage split of the artit's primary sales revenue.
+     * @param _additionalPayeePrimarySalesPercentage Percent of artist's
+     * portion of primary sale revenue that will be split to address
+     * `_additionalPayeePrimarySales`.
+     * @param _additionalPayeeSecondarySales Address that may receive a percentage
+     * split of the secondary sales royalties.
+     * @param _additionalPayeeSecondarySalesPercentage Percent of artist's portion
+     * of secondary sale royalties that will be split to address
+     * `_additionalPayeeRoyalties`.
      */
-    function updateProjectAdditionalPayeeInfo(
+    function updateProjectAdditionalPayees(
         uint256 _projectId,
-        address payable _additionalPayee,
-        uint256 _additionalPayeePercentage
-    ) public onlyArtist(_projectId) {
-        require(_additionalPayeePercentage <= 100, "Max of 100%");
-        projectIdToAdditionalPayee[_projectId] = _additionalPayee;
-        projectIdToAdditionalPayeePercentage[
+        address payable _additionalPayeePrimarySales,
+        uint256 _additionalPayeePrimarySalesPercentage,
+        address payable _additionalPayeeSecondarySales,
+        uint256 _additionalPayeeSecondarySalesPercentage
+    ) external onlyArtist(_projectId) {
+        // checks
+        require(
+            _additionalPayeePrimarySalesPercentage <= 100 &&
+                _additionalPayeeSecondarySalesPercentage <= 100,
+            "Max of 100%"
+        );
+        // effects
+        projectIdToAdditionalPayeePrimarySales[
             _projectId
-        ] = _additionalPayeePercentage;
+        ] = _additionalPayeePrimarySales;
+        projectIdToAdditionalPayeePrimarySalesPercentage[
+            _projectId
+        ] = _additionalPayeePrimarySalesPercentage;
+        projectIdToAdditionalPayeeSecondarySales[
+            _projectId
+        ] = _additionalPayeeSecondarySales;
+        projectIdToAdditionalPayeeSecondarySalesPercentage[
+            _projectId
+        ] = _additionalPayeeSecondarySalesPercentage;
     }
 
     /**
      * @notice Updates artist secondary market royalties for project
      * `_projectId` to be `_secondMarketRoyalty` percent.
+     * This DOES NOT include the secondary market royalty percentages collected
+     * by Art Blocks; this is only the total percentage of royalties that will
+     * be split to artist and additionalSecondaryPayee.
+     * @param _projectId Project ID.
+     * @param _secondMarketRoyalty Percent of secondary sales revenue that will
+     * be split to artist and additionalSecondaryPayee. This must be less than
+     * or equal to 95 percent.
      */
     function updateProjectSecondaryMarketRoyaltyPercentage(
         uint256 _projectId,
         uint256 _secondMarketRoyalty
     ) public onlyArtist(_projectId) {
-        require(_secondMarketRoyalty <= 100, "Max of 100%");
+        require(_secondMarketRoyalty <= 95, "Max of 95%");
         projectIdToSecondaryMarketRoyaltyPercentage[
             _projectId
         ] = _secondMarketRoyalty;
@@ -344,11 +409,20 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
 
     /**
      * @notice Updates description of project `_projectId`.
+     * Only artist may call when unlocked, only admin may call when locked.
      */
     function updateProjectDescription(
         uint256 _projectId,
         string memory _projectDescription
-    ) public onlyArtist(_projectId) {
+    ) public {
+        // checks
+        require(
+            _projectUnlocked(_projectId)
+                ? msg.sender == projectIdToArtistAddress[_projectId]
+                : msg.sender == owner(),
+            "Only artist when unlocked, owner when locked"
+        );
+        // effects
         projects[_projectId].description = _projectDescription;
     }
 
@@ -374,23 +448,30 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
 
     /**
      * @notice Updates maximum invocations for project `_projectId` to
-     * `_maxInvocations`.
+     * `_maxInvocations`. Maximum invocations may only be decreased by the
+     * artist, and must be greater than or equal to current invocations.
+     * New projects are created with maximum invocations of 1 million by
+     * default.
      */
     function updateProjectMaxInvocations(
         uint256 _projectId,
         uint256 _maxInvocations
     ) public onlyArtist(_projectId) {
+        // checks
         require(
-            (!projects[_projectId].locked ||
-                _maxInvocations < projects[_projectId].maxInvocations),
-            "Only if unlocked"
+            (_maxInvocations < projects[_projectId].maxInvocations),
+            "maxInvocations may only be decreased"
         );
         require(
-            _maxInvocations > projects[_projectId].invocations,
-            "You must set max invocations greater than current invocations"
+            _maxInvocations >= projects[_projectId].invocations,
+            "Only max invocations gte current invocations"
         );
-        require(_maxInvocations <= ONE_MILLION, "Cannot exceed 1000000");
+        // effects
         projects[_projectId].maxInvocations = _maxInvocations;
+        // register completed timestamp if action completed the project
+        if (_maxInvocations == projects[_projectId].invocations) {
+            _completeProject(_projectId);
+        }
     }
 
     /**
@@ -446,13 +527,31 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     /**
-     * @notice Updates script json for project `_projectId`.
+     * @notice Updates script type for project `_projectId`.
+     * @param _projectId Project to be updated.
+     * @param _scriptType Libary to be injected by renderer. e.g. "p5js"
+     * @param _scriptTypeVersion Version of library to be injected. e.g. "1.0.0"
      */
-    function updateProjectScriptJSON(
+    function updateProjectScriptType(
         uint256 _projectId,
-        string memory _projectScriptJSON
+        string memory _scriptType,
+        string memory _scriptTypeVersion
     ) public onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) {
-        projects[_projectId].scriptJSON = _projectScriptJSON;
+        projects[_projectId].scriptType = _scriptType;
+        projects[_projectId].scriptTypeVersion = _scriptTypeVersion;
+    }
+
+    /**
+     * @notice Updates project's aspect ratio.
+     * @param _projectId Project to be updated.
+     * @param _aspectRatio Aspect ratio to be set. Intended to be string in the
+     * format of a decimal, e.g. "1" for square, "1.77777778" for 16:9, etc.
+     */
+    function updateProjectAspectRatio(
+        uint256 _projectId,
+        string memory _aspectRatio
+    ) public onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) {
+        projects[_projectId].aspectRatio = _aspectRatio;
     }
 
     /**
@@ -484,6 +583,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @return description Project description
      * @return website Project website
      * @return license Project license
+     * @dev this function was named projectDetails prior to V3 core contract.
      */
     function projectDetails(uint256 _projectId)
         public
@@ -504,35 +604,69 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     /**
-     * @notice Returns project token information for project `_projectId`.
+     * @notice Returns project state data for project `_projectId`.
      * @param _projectId Project to be queried
-     * @return artistAddress Project Artist's address
      * @return invocations Current number of invocations
      * @return maxInvocations Maximum allowed invocations
      * @return active Boolean representing if project is currently active
-     * @return additionalPayee Additional payee address
-     * @return additionalPayeePercentage Percentage of artist revenue
-     * to be sent to the additional payee's address
+     * @return paused Boolean representing if project is paused
+     * @return locked Boolean representing if project is locked
      * @dev price and currency info are located on minter contracts
      */
-    function projectInfo(uint256 _projectId)
+    function projectStateData(uint256 _projectId)
+        public
+        view
+        returns (
+            uint256 invocations,
+            uint256 maxInvocations,
+            bool active,
+            bool paused,
+            bool locked
+        )
+    {
+        invocations = projects[_projectId].invocations;
+        maxInvocations = projects[_projectId].maxInvocations;
+        active = projects[_projectId].active;
+        paused = projects[_projectId].paused;
+        locked = !_projectUnlocked(_projectId);
+    }
+
+    /**
+     * @notice Returns artist payment information for project `_projectId`.
+     * @param _projectId Project to be queried
+     * @return artistAddress Project Artist's address
+     * @return additionalPayeePrimarySales Additional payee address for primary
+     * sales
+     * @return additionalPayeePrimarySalesPercentage Percentage of artist revenue
+     * to be sent to the additional payee address for primary sales
+     * @return additionalPayeeSecondarySales Additional payee address for secondary
+     * sales royalties
+     * @return additionalPayeeSecondarySalesPercentage Percentage of artist revenue
+     * to be sent to the additional payee address for secondary sales royalties
+
+     */
+    function projectArtistPaymentInfo(uint256 _projectId)
         public
         view
         returns (
             address artistAddress,
-            uint256 invocations,
-            uint256 maxInvocations,
-            bool active,
-            address additionalPayee,
-            uint256 additionalPayeePercentage
+            address additionalPayeePrimarySales,
+            uint256 additionalPayeePrimarySalesPercentage,
+            address additionalPayeeSecondarySales,
+            uint256 additionalPayeeSecondarySalesPercentage
         )
     {
         artistAddress = projectIdToArtistAddress[_projectId];
-        invocations = projects[_projectId].invocations;
-        maxInvocations = projects[_projectId].maxInvocations;
-        active = projects[_projectId].active;
-        additionalPayee = projectIdToAdditionalPayee[_projectId];
-        additionalPayeePercentage = projectIdToAdditionalPayeePercentage[
+        additionalPayeePrimarySales = projectIdToAdditionalPayeePrimarySales[
+            _projectId
+        ];
+        additionalPayeePrimarySalesPercentage = projectIdToAdditionalPayeePrimarySalesPercentage[
+            _projectId
+        ];
+        additionalPayeeSecondarySales = projectIdToAdditionalPayeeSecondarySales[
+            _projectId
+        ];
+        additionalPayeeSecondarySalesPercentage = projectIdToAdditionalPayeeSecondarySalesPercentage[
             _projectId
         ];
     }
@@ -540,28 +674,29 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     /**
      * @notice Returns script information for project `_projectId`.
      * @param _projectId Project to be queried.
-     * @return scriptJSON Project's script json
-     * @return scriptCount Count of scripts for project
+     * @return scriptType Project's script type/library (e.g. "p5js")
+     * @return scriptTypeVersion Project's library version (e.g. "1.0.0")
+     * @return aspectRatio Aspect ratio of project (e.g. "1" for square,
+     * "1.77777778" for 16:9, etc.)
      * @return ipfsHash IPFS hash for project
-     * @return locked Boolean representing if project is locked
-     * @return paused Boolean representing if project is paused
+     * @return scriptCount Count of scripts for project
      */
-    function projectScriptInfo(uint256 _projectId)
+    function projectScriptDetails(uint256 _projectId)
         external
         view
         returns (
-            string memory scriptJSON,
-            uint256 scriptCount,
+            string memory scriptType,
+            string memory scriptTypeVersion,
+            string memory aspectRatio,
             string memory ipfsHash,
-            bool locked,
-            bool paused
+            uint256 scriptCount
         )
     {
-        scriptJSON = projects[_projectId].scriptJSON;
+        scriptType = projects[_projectId].scriptType;
+        scriptTypeVersion = projects[_projectId].scriptTypeVersion;
+        aspectRatio = projects[_projectId].aspectRatio;
         scriptCount = projects[_projectId].scriptCount;
         ipfsHash = projects[_projectId].ipfsHash;
-        locked = projects[_projectId].locked;
-        paused = projects[_projectId].paused;
     }
 
     /**
@@ -616,8 +751,8 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     {
         uint256 projectId = _tokenId / ONE_MILLION;
         artistAddress = projectIdToArtistAddress[projectId];
-        additionalPayee = projectIdToAdditionalPayee[projectId];
-        additionalPayeePercentage = projectIdToAdditionalPayeePercentage[
+        additionalPayee = projectIdToAdditionalPayeeSecondarySales[projectId];
+        additionalPayeePercentage = projectIdToAdditionalPayeeSecondarySalesPercentage[
             projectId
         ];
         royaltyFeeByID = projectIdToSecondaryMarketRoyaltyPercentage[projectId];

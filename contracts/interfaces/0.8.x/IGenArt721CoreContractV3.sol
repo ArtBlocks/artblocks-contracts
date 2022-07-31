@@ -47,27 +47,25 @@ interface IGenArt721CoreContractV3 {
         view
         returns (address payable);
 
-    function projectIdToAdditionalPayee(uint256 _projectId)
+    function projectIdToAdditionalPayeePrimarySales(uint256 _projectId)
         external
         view
         returns (address payable);
 
-    function projectIdToAdditionalPayeePercentage(uint256 _projectId)
-        external
-        view
-        returns (uint256);
+    function projectIdToAdditionalPayeePrimarySalesPercentage(
+        uint256 _projectId
+    ) external view returns (uint256);
 
-    // @dev new function in V3 (deprecated projectTokenInfo)
-    function projectInfo(uint256 _projectId)
+    // @dev new function in V3
+    function projectStateData(uint256 _projectId)
         external
         view
         returns (
-            address,
             uint256,
             uint256,
             bool,
-            address,
-            uint256
+            bool,
+            bool
         );
 
     function artblocksAddress() external view returns (address payable);
