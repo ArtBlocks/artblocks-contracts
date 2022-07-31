@@ -21,6 +21,40 @@ contract GenArt721CoreV2WithEvents is
     /// randomizer contract
     IRandomizer public randomizerContract;
 
+    // generic platform event fields
+    bytes32 constant FIELD_ARTBLOCKS_OWNER = "owner";
+    bytes32 constant FIELD_RENDER_PROVIDER_ADDRESS = "renderProviderAddress";
+    bytes32 constant FIELD_RANDOMIZER_ADDRESS = "randomizerAddress";
+    bytes32 constant FIELD_ARTBLOCKS_CURATION_REGISTRY_ADDRESS =
+        "curationRegistryAddress";
+    bytes32 constant FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS =
+        "dependencyRegistryAddress";
+    bytes32 constant FIELD_RENDER_PROVIDER_PERCENTAGE =
+        "renderProviderPercentage";
+    // generic project event fields
+    bytes32 constant FIELD_PROJECT_ACTIVE = "active";
+    bytes32 constant FIELD_ARTIST_ADDRESS = "artistAddress";
+    bytes32 constant FIELD_PROJECT_PAUSED = "paused";
+    bytes32 constant FIELD_PROJECT_CREATED = "created";
+    bytes32 constant FIELD_PROJECT_NAME = "name";
+    bytes32 constant FIELD_ARTIST_NAME = "artistName";
+    bytes32 constant FIELD_SECONDARY_MARKET_ROYALTY_PERCENTAGE =
+        "secondaryMarketRoyaltyPercentage";
+    bytes32 constant FIELD_PROJECT_DESCRIPTION = "description";
+    bytes32 constant FIELD_PROJECT_WEBSITE = "website";
+    bytes32 constant FIELD_PROJECT_LICENSE = "license";
+    bytes32 constant FIELD_MAX_INVOCATIONS = "maxInvocations";
+    bytes32 constant FIELD_PROJECT_SCRIPT = "script";
+    bytes32 constant FIELD_PROJECT_IPFS_HASH = "ipfsHash";
+    bytes32 constant FIELD_PROJECT_BASE_URI = "baseURI";
+    bytes32 constant FIELD_PROJECT_PRICE_PER_TOKEN_IN_WEI =
+        "pricePerTokenInWei";
+    bytes32 constant FIELD_PROJECT_LOCKED = "locked";
+    bytes32 constant FIELD_PROJECT_CURRENCY_INFO = "currencyInfo";
+    bytes32 constant FIELD_PROJECT_ADDITIONAL_PAYEE_INFO =
+        "additionalPayeeInfo";
+    bytes42 constant FIELD_PROJECT_SCRIPT_JSON = "scriptJSON";
+
     struct Project {
         string name;
         string artist;
@@ -121,7 +155,9 @@ contract GenArt721CoreV2WithEvents is
         admin = msg.sender;
         isWhitelisted[msg.sender] = true;
         renderProviderAddress = payable(msg.sender);
+        PlatformUpdated(FIELD_RENDER_PROVIDER_ADDRESS);
         randomizerContract = IRandomizer(_randomizerContract);
+        PlatformUpdated(FIELD_RANDOMIZER_ADDRESS);
     }
 
     /**
@@ -197,7 +233,7 @@ contract GenArt721CoreV2WithEvents is
     function updateAdmin(address _adminAddress) public onlyAdmin {
         admin = _adminAddress;
 
-        emit PlatformUpdated("admin");
+        emit PlatformUpdated(FIELD_ARTBLOCKS_OWNER);
     }
 
     /**
@@ -209,7 +245,7 @@ contract GenArt721CoreV2WithEvents is
     {
         renderProviderAddress = _renderProviderAddress;
 
-        emit PlatformUpdated("renderProviderAddress");
+        emit PlatformUpdated(FIELD_RENDER_PROVIDER_ADDRESS);
     }
 
     /**
@@ -223,7 +259,7 @@ contract GenArt721CoreV2WithEvents is
         require(_renderProviderPercentage <= 25, "Max of 25%");
         renderProviderPercentage = _renderProviderPercentage;
 
-        emit PlatformUpdated("renderProviderPercentage");
+        emit PlatformUpdated(FIELD_RENDER_PROVIDER_PERCENTAGE);
     }
 
     /**
@@ -232,7 +268,7 @@ contract GenArt721CoreV2WithEvents is
     function addWhitelisted(address _address) public onlyAdmin {
         isWhitelisted[_address] = true;
 
-        emit AllowlistUpdated(true, _address);
+        emit AllowlistUpdated(_address, true);
     }
 
     /**
@@ -241,7 +277,7 @@ contract GenArt721CoreV2WithEvents is
     function removeWhitelisted(address _address) public onlyAdmin {
         isWhitelisted[_address] = false;
 
-        emit AllowlistUpdated(false, _address);
+        emit AllowlistUpdated(_address, false);
     }
 
     /**
@@ -250,7 +286,7 @@ contract GenArt721CoreV2WithEvents is
     function addMintWhitelisted(address _address) public onlyAdmin {
         isMintWhitelisted[_address] = true;
 
-        emit MintAllowlistUpdated(true, _address);
+        emit MintAllowlistUpdated(_address, true);
     }
 
     /**
@@ -259,7 +295,7 @@ contract GenArt721CoreV2WithEvents is
     function removeMintWhitelisted(address _address) public onlyAdmin {
         isMintWhitelisted[_address] = false;
 
-        emit MintAllowlistUpdated(false, _address);
+        emit MintAllowlistUpdated(_address, false);
     }
 
     /**
@@ -271,7 +307,7 @@ contract GenArt721CoreV2WithEvents is
     {
         randomizerContract = IRandomizer(_randomizerAddress);
 
-        emit PlatformUpdated("randomizerAddress");
+        emit PlatformUpdated(FIELD_RANDOMIZER_ADDRESS);
     }
 
     /**
@@ -284,7 +320,7 @@ contract GenArt721CoreV2WithEvents is
     {
         projects[_projectId].locked = true;
 
-        emit ProjectUpdated(_projectId, "locked");
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_LOCKED);
     }
 
     /**
@@ -293,7 +329,7 @@ contract GenArt721CoreV2WithEvents is
     function toggleProjectIsActive(uint256 _projectId) public onlyWhitelisted {
         projects[_projectId].active = !projects[_projectId].active;
 
-        emit ProjectUpdated(_projectId, "active");
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_ACTIVE);
     }
 
     /**
@@ -305,7 +341,7 @@ contract GenArt721CoreV2WithEvents is
     ) public onlyArtistOrWhitelisted(_projectId) {
         projectIdToArtistAddress[_projectId] = _artistAddress;
 
-        emit ProjectUpdated(_projectId, "artistAddress");
+        emit ProjectUpdated(_projectId, FIELD_ARTIST_ADDRESS);
     }
 
     /**
@@ -317,7 +353,7 @@ contract GenArt721CoreV2WithEvents is
     {
         projects[_projectId].paused = !projects[_projectId].paused;
 
-        emit ProjectUpdated(_projectId, "paused");
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_PAUSED);
     }
 
     /**
@@ -340,7 +376,7 @@ contract GenArt721CoreV2WithEvents is
         projects[projectId].maxInvocations = ONE_MILLION;
         nextProjectId = nextProjectId + 1;
 
-        emit ProjectUpdated(projectId, "created");
+        emit ProjectUpdated(projectId, FIELD_PROJECT_CREATED);
     }
 
     /**
@@ -357,7 +393,7 @@ contract GenArt721CoreV2WithEvents is
     ) public onlyArtist(_projectId) {
         projectIdToCurrencySymbol[_projectId] = _currencySymbol;
         projectIdToCurrencyAddress[_projectId] = _currencyAddress;
-        emit ProjectUpdated(_projectId, "currencyInfo");
+        emit ProjectUpdated(_projectId, FIELD_CURRENCY_INFO);
     }
 
     /**
@@ -370,7 +406,7 @@ contract GenArt721CoreV2WithEvents is
     ) public onlyArtist(_projectId) {
         projectIdToPricePerTokenInWei[_projectId] = _pricePerTokenInWei;
 
-        emit ProjectUpdated(_projectId, "projectIdToPricePerTokenInWei");
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_PRICE_PER_TOKEN_IN_WEI);
     }
 
     /**
@@ -383,7 +419,7 @@ contract GenArt721CoreV2WithEvents is
     {
         projects[_projectId].name = _projectName;
 
-        emit ProjectUpdated(_projectId, "projectName");
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_NAME);
     }
 
     /**
@@ -395,7 +431,7 @@ contract GenArt721CoreV2WithEvents is
         string memory _projectArtistName
     ) public onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) {
         projects[_projectId].artist = _projectArtistName;
-        emit ProjectUpdated(_projectId, "projectName");
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_NAME);
     }
 
     /**
@@ -414,7 +450,7 @@ contract GenArt721CoreV2WithEvents is
             _projectId
         ] = _additionalPayeePercentage;
 
-        emit ProjectUpdated(_projectId, "additionalPayeeInfo");
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_ADDITIONAL_PAYEE_INFO);
     }
 
     /**
@@ -430,7 +466,10 @@ contract GenArt721CoreV2WithEvents is
             _projectId
         ] = _secondMarketRoyalty;
 
-        emit ProjectUpdated(_projectId, "secondaryMarketRoyaltyPercentage");
+        emit ProjectUpdated(
+            _projectId,
+            FIELD_SECONDARY_MARKET_ROYALTY_PERCENTAGE
+        );
     }
 
     /**
@@ -442,7 +481,7 @@ contract GenArt721CoreV2WithEvents is
     ) public onlyArtist(_projectId) {
         projects[_projectId].description = _projectDescription;
 
-        emit ProjectUpdated(_projectId, "projectDescription");
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_DESCRIPTION);
     }
 
     /**
@@ -454,7 +493,7 @@ contract GenArt721CoreV2WithEvents is
     ) public onlyArtist(_projectId) {
         projects[_projectId].website = _projectWebsite;
 
-        emit ProjectUpdated(_projectId, "projectWebsite");
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_WEBSITE);
     }
 
     /**
@@ -466,7 +505,7 @@ contract GenArt721CoreV2WithEvents is
     ) public onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) {
         projects[_projectId].license = _projectLicense;
 
-        emit ProjectUpdated(_projectId, "projectLicense");
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_LICENSE);
     }
 
     /**
@@ -489,7 +528,7 @@ contract GenArt721CoreV2WithEvents is
         require(_maxInvocations <= ONE_MILLION, "Cannot exceed 1000000");
         projects[_projectId].maxInvocations = _maxInvocations;
 
-        emit ProjectUpdated(_projectId, "projectMaxInvocations");
+        emit ProjectUpdated(_projectId, FIELD_MAX_INVOCATIONS);
     }
 
     /**
@@ -507,7 +546,7 @@ contract GenArt721CoreV2WithEvents is
         ] = _script;
         projects[_projectId].scriptCount = projects[_projectId].scriptCount + 1;
 
-        emit ProjectUpdated(_projectId, "addProjectScript");
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
     }
 
     /**
@@ -527,7 +566,7 @@ contract GenArt721CoreV2WithEvents is
         );
         projects[_projectId].scripts[_scriptId] = _script;
 
-        emit ProjectScriptUpdatedAtIndex(_projectId, _scriptId);
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
     }
 
     /**
@@ -547,7 +586,7 @@ contract GenArt721CoreV2WithEvents is
         ];
         projects[_projectId].scriptCount = projects[_projectId].scriptCount - 1;
 
-        emit ProjectUpdated(_projectId, "removeProjectLastScript");
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
     }
 
     /**
@@ -559,7 +598,7 @@ contract GenArt721CoreV2WithEvents is
     ) public onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) {
         projects[_projectId].scriptJSON = _projectScriptJSON;
 
-        emit ProjectUpdated(_projectId, "projectScriptJSON");
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT_JSON);
     }
 
     /**
@@ -572,7 +611,7 @@ contract GenArt721CoreV2WithEvents is
     {
         projects[_projectId].ipfsHash = _ipfsHash;
 
-        emit ProjectUpdated(_projectId, "projectIpfsHash");
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_IPFS_HASH);
     }
 
     /**
@@ -584,7 +623,7 @@ contract GenArt721CoreV2WithEvents is
     {
         projects[_projectId].projectBaseURI = _newBaseURI;
 
-        emit ProjectUpdated(_projectId, "projectBaseURI");
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_BASE_URI);
     }
 
     /**
