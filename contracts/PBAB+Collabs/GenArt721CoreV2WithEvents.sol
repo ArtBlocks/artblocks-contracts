@@ -49,7 +49,7 @@ contract GenArt721CoreV2WithEvents is
     bytes32 constant FIELD_PROJECT_CURRENCY_INFO = "currencyInfo";
     bytes32 constant FIELD_PROJECT_ADDITIONAL_PAYEE_INFO =
         "additionalPayeeInfo";
-    bytes42 constant FIELD_PROJECT_SCRIPT_JSON = "scriptJSON";
+    bytes32 constant FIELD_PROJECT_SCRIPT_JSON = "scriptJSON";
 
     struct Project {
         string name;
