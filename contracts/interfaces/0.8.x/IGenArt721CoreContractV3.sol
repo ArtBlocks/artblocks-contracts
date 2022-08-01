@@ -85,11 +85,11 @@ interface IGenArt721CoreContractV3 {
         external
         view
         returns (
-            uint256,
-            uint256,
-            bool,
-            bool,
-            bool
+            uint256 invocations,
+            uint256 maxInvocations,
+            bool active,
+            bool paused,
+            bool locked
         );
 
     function artblocksAddress() external view returns (address payable);
