@@ -3,6 +3,8 @@
 
 pragma solidity ^0.8.0;
 
+import "./IAdminACLV0.sol";
+
 interface IGenArt721CoreContractV3 {
     /**
      * @notice Token ID `_tokenId` minted to `_to`.
@@ -23,7 +25,11 @@ interface IGenArt721CoreContractV3 {
     function coreType() external view returns (string memory);
 
     // owner (pre-V3 was named admin) of contract
+    // this is expected to be an Admin ACL contract for V3
     function owner() external view returns (address);
+
+    // Admin ACL contract for V3, will be at the address owner()
+    function adminACLContract() external returns (IAdminACLV0);
 
     // backwards-compatible admin - equal to owner()
     function admin() external view returns (address);
@@ -36,8 +42,6 @@ interface IGenArt721CoreContractV3 {
         external
         view
         returns (uint256 projectId);
-
-    function isWhitelisted(address sender) external view returns (bool);
 
     // @dev this is not available in V0
     function isMintWhitelisted(address minter) external view returns (bool);

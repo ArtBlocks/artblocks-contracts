@@ -11,7 +11,7 @@ export const Minter_Common = async () => {
   describe("constructor", async function () {
     it("reverts when given incorrect minter filter and core addresses", async function () {
       const artblocksFactory = await ethers.getContractFactory(
-        "GenArt721CoreV3"
+        "GenArt721CoreV1"
       );
       const token2 = await artblocksFactory
         .connect(this.accounts.deployer)

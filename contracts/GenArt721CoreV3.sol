@@ -2,6 +2,7 @@
 // Created By: Art Blocks Inc.
 
 import "./interfaces/0.8.x/IRandomizer.sol";
+import "./interfaces/0.8.x/IAdminACLV0.sol";
 import "./interfaces/0.8.x/IGenArt721CoreContractV3.sol";
 
 import "@openzeppelin-4.7/contracts/utils/Strings.sol";
@@ -22,6 +23,9 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
 
     /// randomizer contract
     IRandomizer public randomizerContract;
+
+    /// admin ACL contract
+    IAdminACLV0 public adminACLContract;
 
     struct Project {
         string name;
@@ -64,9 +68,6 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
 
     mapping(uint256 => bytes32) public tokenIdToHash;
 
-    /// true if address is whitelisted
-    mapping(address => bool) public isWhitelisted;
-
     /// single minter allowed for this core contract
     address public minterContract;
 
@@ -87,6 +88,11 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         _;
     }
 
+    modifier onlyAdminACL(bytes4 _selector) {
+        require(_adminAllowed(_selector), "Only Admin ACL allowed");
+        _;
+    }
+
     modifier onlyArtist(uint256 _projectId) {
         require(
             msg.sender == projectIdToArtistAddress[_projectId],
@@ -95,16 +101,11 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         _;
     }
 
-    modifier onlyWhitelisted() {
-        require(isWhitelisted[msg.sender], "Only whitelisted");
-        _;
-    }
-
-    modifier onlyArtistOrWhitelisted(uint256 _projectId) {
+    modifier onlyArtistOrAdminACL(uint256 _projectId, bytes4 _selector) {
         require(
-            isWhitelisted[msg.sender] ||
-                msg.sender == projectIdToArtistAddress[_projectId],
-            "Only artist or whitelisted"
+            msg.sender == projectIdToArtistAddress[_projectId] ||
+                _adminAllowed(_selector),
+            "Only artist or Admin ACL allowed"
         );
         _;
     }
@@ -114,15 +115,30 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @param _tokenName Name of token.
      * @param _tokenSymbol Token symbol.
      * @param _randomizerContract Randomizer contract.
+     * @param _adminACLContract Address of admin access control contract, to be
+     * set as contract owner.
      */
     constructor(
         string memory _tokenName,
         string memory _tokenSymbol,
-        address _randomizerContract
+        address _randomizerContract,
+        address _adminACLContract
     ) ERC721(_tokenName, _tokenSymbol) {
-        isWhitelisted[msg.sender] = true;
         artblocksAddress = payable(msg.sender);
         randomizerContract = IRandomizer(_randomizerContract);
+        // set AdminACL management contract as owner
+        _transferOwnership(_adminACLContract);
+    }
+
+    /**
+     * @dev Transfers ownership of the contract to a new account (`newOwner`).
+     * Internal function without access restriction.
+     * @dev Overrides and wraps OpenZeppelin's _transferOwnership function to
+     * also update adminACLContract for improved introspection.
+     */
+    function _transferOwnership(address newOwner) internal override {
+        Ownable._transferOwnership(newOwner);
+        adminACLContract = IAdminACLV0(newOwner);
     }
 
     /**
@@ -131,7 +147,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @param _to Address to be the minted token's owner.
      * @param _projectId Project ID to mint a token on.
      * @param _by Purchaser of minted token.
-     * @dev sender must be a whitelisted minter
+     * @dev sender must be the allowed minterContract
      */
     function mint(
         address _to,
@@ -197,6 +213,23 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     /**
+     * @notice Internal function that returns whether msg.sender is allowed to
+     * call function with selector `_selector`, as determined by the Admin ACL
+     * contract.
+     * @param _selector Function selector to check.
+     * @dev assumes the Admin ACL contract is the owner of this contract, which
+     * is expected to always be true.
+     * @dev adminACLContract is expected to either be null address (if owner
+     * has renounced ownership), or conform to IAdminACLV0 interface. Check for
+     * null address first to avoid revert when admin has renounced ownership.
+     */
+    function _adminAllowed(bytes4 _selector) internal returns (bool) {
+        return
+            owner() != address(0) &&
+            adminACLContract.allowed(msg.sender, address(this), _selector);
+    }
+
+    /**
      * @notice Internal function that returns whether a project is unlocked.
      * Projects automatically lock four weeks after they are completed.
      * Projects are considered completed when they have been invoked the
@@ -226,7 +259,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      */
     function updateArtblocksAddress(address payable _artblocksAddress)
         public
-        onlyOwner
+        onlyAdminACL(this.updateArtblocksAddress.selector)
     {
         artblocksAddress = _artblocksAddress;
     }
@@ -237,30 +270,19 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      */
     function updateArtblocksPercentage(uint256 _artblocksPercentage)
         public
-        onlyOwner
+        onlyAdminACL(this.updateArtblocksPercentage.selector)
     {
         require(_artblocksPercentage <= 25, "Max of 25%");
         artblocksPercentage = _artblocksPercentage;
     }
 
     /**
-     * @notice Whitelists `_address`.
-     */
-    function addWhitelisted(address _address) public onlyOwner {
-        isWhitelisted[_address] = true;
-    }
-
-    /**
-     * @notice Revokes whitelisting of `_address`.
-     */
-    function removeWhitelisted(address _address) public onlyOwner {
-        isWhitelisted[_address] = false;
-    }
-
-    /**
      * @notice updates minter to `_address`.
      */
-    function updateMinterContract(address _address) public onlyOwner {
+    function updateMinterContract(address _address)
+        public
+        onlyAdminACL(this.updateMinterContract.selector)
+    {
         minterContract = _address;
         emit MinterUpdated(_address);
     }
@@ -270,7 +292,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      */
     function updateRandomizerAddress(address _randomizerAddress)
         public
-        onlyWhitelisted
+        onlyAdminACL(this.updateRandomizerAddress.selector)
     {
         randomizerContract = IRandomizer(_randomizerAddress);
     }
@@ -278,7 +300,10 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     /**
      * @notice Toggles project `_projectId` as active/inactive.
      */
-    function toggleProjectIsActive(uint256 _projectId) public onlyWhitelisted {
+    function toggleProjectIsActive(uint256 _projectId)
+        public
+        onlyAdminACL(this.toggleProjectIsActive.selector)
+    {
         projects[_projectId].active = !projects[_projectId].active;
     }
 
@@ -288,7 +313,13 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     function updateProjectArtistAddress(
         uint256 _projectId,
         address payable _artistAddress
-    ) public onlyArtistOrWhitelisted(_projectId) {
+    )
+        public
+        onlyArtistOrAdminACL(
+            _projectId,
+            this.updateProjectArtistAddress.selector
+        )
+    {
         projectIdToArtistAddress[_projectId] = _artistAddress;
     }
 
@@ -311,7 +342,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     function addProject(
         string memory _projectName,
         address payable _artistAddress
-    ) public onlyWhitelisted {
+    ) public onlyAdminACL(this.addProject.selector) {
         uint256 projectId = nextProjectId;
         projectIdToArtistAddress[projectId] = _artistAddress;
         projects[projectId].name = _projectName;
@@ -327,7 +358,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     function updateProjectName(uint256 _projectId, string memory _projectName)
         public
         onlyUnlocked(_projectId)
-        onlyArtistOrWhitelisted(_projectId)
+        onlyArtistOrAdminACL(_projectId, this.updateProjectName.selector)
     {
         projects[_projectId].name = _projectName;
     }
@@ -339,7 +370,11 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     function updateProjectArtistName(
         uint256 _projectId,
         string memory _projectArtistName
-    ) public onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) {
+    )
+        public
+        onlyUnlocked(_projectId)
+        onlyArtistOrAdminACL(_projectId, this.updateProjectArtistName.selector)
+    {
         projects[_projectId].artist = _projectArtistName;
     }
 
@@ -419,7 +454,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         require(
             _projectUnlocked(_projectId)
                 ? msg.sender == projectIdToArtistAddress[_projectId]
-                : msg.sender == owner(),
+                : _adminAllowed(this.updateProjectDescription.selector),
             "Only artist when unlocked, owner when locked"
         );
         // effects
@@ -442,7 +477,11 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     function updateProjectLicense(
         uint256 _projectId,
         string memory _projectLicense
-    ) public onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) {
+    )
+        public
+        onlyUnlocked(_projectId)
+        onlyArtistOrAdminACL(_projectId, this.updateProjectLicense.selector)
+    {
         projects[_projectId].license = _projectLicense;
     }
 
@@ -482,7 +521,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     function addProjectScript(uint256 _projectId, string memory _script)
         public
         onlyUnlocked(_projectId)
-        onlyArtistOrWhitelisted(_projectId)
+        onlyArtistOrAdminACL(_projectId, this.addProjectScript.selector)
     {
         projects[_projectId].scripts[
             projects[_projectId].scriptCount
@@ -500,7 +539,11 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         uint256 _projectId,
         uint256 _scriptId,
         string memory _script
-    ) public onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) {
+    )
+        public
+        onlyUnlocked(_projectId)
+        onlyArtistOrAdminACL(_projectId, this.updateProjectScript.selector)
+    {
         require(
             _scriptId < projects[_projectId].scriptCount,
             "scriptId out of range"
@@ -514,7 +557,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     function removeProjectLastScript(uint256 _projectId)
         public
         onlyUnlocked(_projectId)
-        onlyArtistOrWhitelisted(_projectId)
+        onlyArtistOrAdminACL(_projectId, this.removeProjectLastScript.selector)
     {
         require(
             projects[_projectId].scriptCount > 0,
@@ -536,7 +579,11 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         uint256 _projectId,
         string memory _scriptType,
         string memory _scriptTypeVersion
-    ) public onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) {
+    )
+        public
+        onlyUnlocked(_projectId)
+        onlyArtistOrAdminACL(_projectId, this.updateProjectScriptType.selector)
+    {
         projects[_projectId].scriptType = _scriptType;
         projects[_projectId].scriptTypeVersion = _scriptTypeVersion;
     }
@@ -550,7 +597,11 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     function updateProjectAspectRatio(
         uint256 _projectId,
         string memory _aspectRatio
-    ) public onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) {
+    )
+        public
+        onlyUnlocked(_projectId)
+        onlyArtistOrAdminACL(_projectId, this.updateProjectAspectRatio.selector)
+    {
         projects[_projectId].aspectRatio = _aspectRatio;
     }
 
@@ -560,7 +611,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     function updateProjectIpfsHash(uint256 _projectId, string memory _ipfsHash)
         public
         onlyUnlocked(_projectId)
-        onlyArtistOrWhitelisted(_projectId)
+        onlyArtistOrAdminACL(_projectId, this.updateProjectIpfsHash.selector)
     {
         projects[_projectId].ipfsHash = _ipfsHash;
     }
