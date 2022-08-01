@@ -75,22 +75,22 @@ describe("GenArt721CoreV3 Views", async function () {
     });
   });
 
-  describe("ART_BLOCKS_TOKEN_ADDRESS_0", function () {
+  describe("ART_BLOCKS_ERC721TOKEN_ADDRESS_V0", function () {
     it("returns expected value", async function () {
       const reference = await this.genArt721Core
         .connect(this.accounts.deployer)
-        .ART_BLOCKS_TOKEN_ADDRESS_0();
+        .ART_BLOCKS_ERC721TOKEN_ADDRESS_V0();
       expect(reference).to.be.equal(
         "0x059EDD72Cd353dF5106D2B9cC5ab83a52287aC3a"
       );
     });
   });
 
-  describe("ART_BLOCKS_TOKEN_ADDRESS_1", function () {
+  describe("ART_BLOCKS_ERC721TOKEN_ADDRESS_V1", function () {
     it("returns expected value", async function () {
       const reference = await this.genArt721Core
         .connect(this.accounts.deployer)
-        .ART_BLOCKS_TOKEN_ADDRESS_1();
+        .ART_BLOCKS_ERC721TOKEN_ADDRESS_V1();
       expect(reference).to.be.equal(
         "0xa7d8d9ef8D8Ce8992Df33D8b8CF4Aebabd5bD270"
       );
