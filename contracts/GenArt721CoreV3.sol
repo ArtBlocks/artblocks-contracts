@@ -465,7 +465,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     /**
      * @notice Updates artist of project `_projectId` to `_artistAddress`.
      * This is to only be used in the event that the artist address is
-     * compromised or illegal.
+     * compromised or sanctioned.
      */
     function updateProjectArtistAddress(
         uint256 _projectId,
