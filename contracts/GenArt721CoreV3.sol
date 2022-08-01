@@ -39,24 +39,24 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         "dependencyRegistryAddress";
     bytes32 constant FIELD_ARTBLOCKS_PERCENTAGE = "artblocksPercentage";
     // generic project event fields
-    bytes32 constant FIELD_PROJECT_COMPLETED = "projectCompleted";
+    bytes32 constant FIELD_PROJECT_COMPLETED = "completed";
     bytes32 constant FIELD_PROJECT_ACTIVE = "active";
     bytes32 constant FIELD_ARTIST_ADDRESS = "artistAddress";
     bytes32 constant FIELD_PROJECT_PAUSED = "paused";
     bytes32 constant FIELD_PROJECT_CREATED = "created";
-    bytes32 constant FIELD_PROJECT_NAME = "projectName";
+    bytes32 constant FIELD_PROJECT_NAME = "name";
     bytes32 constant FIELD_ARTIST_NAME = "artistName";
     bytes32 constant FIELD_SECONDARY_MARKET_ROYALTY_PERCENTAGE =
         "secondaryMarketRoyaltyPercentage";
-    bytes32 constant FIELD_PROJECT_DESCRIPTION = "projectDescription";
-    bytes32 constant FIELD_PROJECT_WEBSITE = "projectWebsite";
-    bytes32 constant FIELD_PROJECT_LICENSE = "projectLicense";
-    bytes32 constant FIELD_MAX_INVOCATIONS = "projectMaxInvocations";
-    bytes32 constant FIELD_PROJECT_SCRIPT_TOUCHED = "projectScriptTouched";
-    bytes32 constant FIELD_PROJECT_SCRIPT_TYPE = "projectScriptType";
-    bytes32 constant FIELD_PROJECT_ASPECT_RATIO = "projectAspectRatio";
-    bytes32 constant FIELD_PROJECT_IPFS_HASH = "projectIpfsHash";
-    bytes32 constant FIELD_PROJECT_BASE_URI = "projectBaseURI";
+    bytes32 constant FIELD_PROJECT_DESCRIPTION = "description";
+    bytes32 constant FIELD_PROJECT_WEBSITE = "website";
+    bytes32 constant FIELD_PROJECT_LICENSE = "license";
+    bytes32 constant FIELD_MAX_INVOCATIONS = "maxInvocations";
+    bytes32 constant FIELD_PROJECT_SCRIPT = "script";
+    bytes32 constant FIELD_PROJECT_SCRIPT_TYPE = "scriptType";
+    bytes32 constant FIELD_PROJECT_ASPECT_RATIO = "aspectRatio";
+    bytes32 constant FIELD_PROJECT_IPFS_HASH = "ipfsHash";
+    bytes32 constant FIELD_PROJECT_BASE_URI = "baseURI";
 
     // Art Blocks previous flagship ERC721 token addresses (for reference)
     /// Art Blocks Project ID range: [0-2]
@@ -720,7 +720,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
             projects[_projectId].scriptCount
         ] = _script;
         projects[_projectId].scriptCount = projects[_projectId].scriptCount + 1;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT_TOUCHED);
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
     }
 
     /**
@@ -743,7 +743,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
             "scriptId out of range"
         );
         projects[_projectId].scripts[_scriptId] = _script;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT_TOUCHED);
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
     }
 
     /**
@@ -762,7 +762,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
             projects[_projectId].scriptCount - 1
         ];
         projects[_projectId].scriptCount = projects[_projectId].scriptCount - 1;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT_TOUCHED);
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
     }
 
     /**
