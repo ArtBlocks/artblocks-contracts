@@ -58,10 +58,12 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     bytes32 constant FIELD_PROJECT_IPFS_HASH = "projectIpfsHash";
     bytes32 constant FIELD_PROJECT_BASE_URI = "projectBaseURI";
 
-    /// Art Blocks previous flagship token addresses (for reference)
-    address public constant ART_BLOCKS_TOKEN_ADDRESS_0 =
+    // Art Blocks previous flagship ERC721 token addresses (for reference)
+    /// Art Blocks Project ID range: [0-2]
+    address public constant ART_BLOCKS_ERC721TOKEN_ADDRESS_V0 =
         0x059EDD72Cd353dF5106D2B9cC5ab83a52287aC3a;
-    address public constant ART_BLOCKS_TOKEN_ADDRESS_1 =
+    /// Art Blocks Project ID range: [3-TODO: add V1 final project ID before deploying]
+    address public constant ART_BLOCKS_ERC721TOKEN_ADDRESS_V1 =
         0xa7d8d9ef8D8Ce8992Df33D8b8CF4Aebabd5bD270;
 
     /// Curation registry managed by Art Blocks
@@ -291,6 +293,9 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @param _selector Function selector to check.
      * @dev assumes the Admin ACL contract is the owner of this contract, which
      * is expected to always be true.
+     * @dev adminACLContract is expected to either be null address (if owner
+     * has renounced ownership), or conform to IAdminACLV0 interface. Check for
+     * null address first to avoid revert when admin has renounced ownership.
      */
     function _adminAllowed(bytes4 _selector) internal returns (bool) {
         return
@@ -531,7 +536,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     /**
      * @notice Updates artist of project `_projectId` to `_artistAddress`.
      * This is to only be used in the event that the artist address is
-     * compromised or illegal.
+     * compromised or sanctioned.
      */
     function updateProjectArtistAddress(
         uint256 _projectId,

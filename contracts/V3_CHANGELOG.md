@@ -29,7 +29,7 @@ _This document is intended to document and explain the Art Blocks Core V3 change
   - Artists may propose updates to their artist, additional primary, and additional secondary payment accounts. These updates must be executed by the contract admin.
   - This is to ensure that artists remain in control of their payment accounts, but that the contract admin can step in to prevent non-compliant payment accounts from being used.
   - If admin renounces ownership, artists can directly update their payment accounts.
-  - If admin has not renounced ownership, admin can directly update artist payment accounts in the event of a compromized or illegal artist account.
+  - If admin has not renounced ownership, admin can directly update artist payment accounts in the event of a compromised or sanctioned artist account.
 - Only allow artist to update project description when project is unlocked; only allow admin to update project description when project is locked.
 - Add artist additionalPrimary and additionalSecondary payment accounts
   - This is to allow artists to have different additional payee accounts for primary sales vs. secondary royalty sales. This supports the use case where an artist has a charity as a payee in primary sales, but not in secondary sales.
