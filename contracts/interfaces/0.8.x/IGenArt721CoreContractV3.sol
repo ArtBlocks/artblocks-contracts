@@ -72,6 +72,15 @@ interface IGenArt721CoreContractV3 {
     ) external view returns (uint256);
 
     // @dev new function in V3
+    function getPrimaryRevenueSplits(uint256 _projectId, uint256 _price)
+        external
+        view
+        returns (
+            address payable[] memory recipients_,
+            uint256[] memory revenues_
+        );
+
+    // @dev new function in V3
     function projectStateData(uint256 _projectId)
         external
         view
