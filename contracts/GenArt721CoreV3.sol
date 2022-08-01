@@ -252,6 +252,9 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @param _selector Function selector to check.
      * @dev assumes the Admin ACL contract is the owner of this contract, which
      * is expected to always be true.
+     * @dev adminACLContract is expected to either be null address (if owner
+     * has renounced ownership), or conform to IAdminACLV0 interface. Check for
+     * null address first to avoid revert when admin has renounced ownership.
      */
     function _adminAllowed(bytes4 _selector) internal returns (bool) {
         return
