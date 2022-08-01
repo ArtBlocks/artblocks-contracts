@@ -47,7 +47,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     bytes32 constant FIELD_PROJECT_NAME = "name";
     bytes32 constant FIELD_ARTIST_NAME = "artistName";
     bytes32 constant FIELD_SECONDARY_MARKET_ROYALTY_PERCENTAGE =
-        "secondaryMarketRoyaltyPercentage";
+        "royaltyPercentage";
     bytes32 constant FIELD_PROJECT_DESCRIPTION = "description";
     bytes32 constant FIELD_PROJECT_WEBSITE = "website";
     bytes32 constant FIELD_PROJECT_LICENSE = "license";

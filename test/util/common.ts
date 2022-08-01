@@ -114,11 +114,12 @@ export async function safeAddProject(
   }
 }
 
-export async function fullyMintProject(
+export async function mintProjectUntilRemaining(
   _projectId: BN,
-  _minterAccount: SignerWithAddress
+  _minterAccount: SignerWithAddress,
+  _leaveRemainingInvocations: number = 0
 ) {
-  for (let i = 0; i < this.maxInvocations; i++) {
+  for (let i = 0; i < this.maxInvocations - _leaveRemainingInvocations; i++) {
     await this.genArt721Core
       .connect(_minterAccount)
       .mint(_minterAccount.address, _projectId, _minterAccount.address);
