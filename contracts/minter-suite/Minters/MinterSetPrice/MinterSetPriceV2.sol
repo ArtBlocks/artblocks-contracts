@@ -202,8 +202,6 @@ contract MinterSetPriceV2 is ReentrancyGuard, IFilteredMinterV0 {
      * @dev splits ETH funds between sender (if refund), foundation,
      * artist, and artist's additional payee for a token purchased on
      * project `_projectId`.
-     * @dev utilizes transfer() to send ETH, so access lists may need to be
-     * populated when purchasing tokens.
      */
     function _splitFundsETH(uint256 _projectId) internal {
         if (msg.value > 0) {
