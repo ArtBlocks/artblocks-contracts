@@ -35,6 +35,8 @@ contract MinterFilterV0 is IMinterFilterV0 {
     /// minter address => is an approved minter?
     mapping(address => bool) public isApprovedMinter;
 
+    // modifier to restrict access to only AdminACL allowed calls
+    // @dev defers which ACL contract is used to the core contract
     modifier onlyCoreAdminACL(bytes4 _selector) {
         require(
             _adminACLContractAllowed(_selector),
@@ -43,12 +45,15 @@ contract MinterFilterV0 is IMinterFilterV0 {
         _;
     }
 
+    // modifier to restrict access to only the artist of `_projectId`, or
+    // AdminACL allowed calls
+    // @dev defers which ACL contract is used to the core contract
     modifier onlyCoreAdminACLOrArtist(uint256 _projectId, bytes4 _selector) {
         require(
             msg.sender ==
                 genArtCoreContract.projectIdToArtistAddress(_projectId) ||
                 _adminACLContractAllowed(_selector),
-            "Only Core whitelisted or Artist"
+            "Only Core AdminACL or Artist"
         );
         _;
     }
@@ -81,8 +86,8 @@ contract MinterFilterV0 is IMinterFilterV0 {
 
     /**
      * @notice Internal function that determines if caller is allowed to call
-     * a function on this contract. Defers logic to the core contract's
-     * AdminACL contract.
+     * a function on this contract. Defers which ACL contract is used to the
+     * core contract.
      */
     function _adminACLContractAllowed(bytes4 _selector)
         internal
