@@ -32,6 +32,19 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     uint256 constant ONE_MILLION = 1_000_000;
     uint256 constant FOUR_WEEKS_IN_SECONDS = 2_419_200;
 
+    // Art Blocks previous flagship ERC721 token addresses (for reference)
+    /// Art Blocks Project ID range: [0-2]
+    address public constant ART_BLOCKS_ERC721TOKEN_ADDRESS_V0 =
+        0x059EDD72Cd353dF5106D2B9cC5ab83a52287aC3a;
+    /// Art Blocks Project ID range: [3-TODO: add V1 final project ID before deploying]
+    address public constant ART_BLOCKS_ERC721TOKEN_ADDRESS_V1 =
+        0xa7d8d9ef8D8Ce8992Df33D8b8CF4Aebabd5bD270;
+
+    /// Curation registry managed by Art Blocks
+    address public artblocksCurationRegistryAddress;
+    /// Dependency registry managed by Art Blocks
+    address public artblocksDependencyRegistryAddress;
+
     /// randomizer contract
     IRandomizer public randomizerContract;
 
@@ -285,6 +298,30 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     function _completeProject(uint256 _projectId) internal {
         projects[_projectId].completedTimestamp = block.timestamp;
         emit ProjectCompleted(_projectId);
+    }
+
+    /**
+     * @notice Updates reference to Art Blocks Curation Registry contract.
+     */
+    function updateArtblocksCurationRegistryAddress(
+        address _artblocksCurationRegistryAddress
+    )
+        external
+        onlyAdminACL(this.updateArtblocksCurationRegistryAddress.selector)
+    {
+        artblocksCurationRegistryAddress = _artblocksCurationRegistryAddress;
+    }
+
+    /**
+     * @notice Updates reference to Art Blocks Dependency Registry contract.
+     */
+    function updateArtblocksDependencyRegistryAddress(
+        address _artblocksDependencyRegistryAddress
+    )
+        external
+        onlyAdminACL(this.updateArtblocksDependencyRegistryAddress.selector)
+    {
+        artblocksDependencyRegistryAddress = _artblocksDependencyRegistryAddress;
     }
 
     /**
