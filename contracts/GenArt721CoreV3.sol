@@ -1067,19 +1067,20 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     {
         recipients_ = new address payable[](3);
         revenues_ = new uint256[](3);
-        // Art Blocks
-        recipients_[2] = artblocksAddress;
+        // calculate revenues
         uint256 _artblocksRevenue = (_price * artblocksPercentage) / 100;
-        revenues_[2] = (_price * artblocksPercentage) / 100;
-        // additional payee
-        recipients_[1] = projectIdToAdditionalPayeePrimarySales[_projectId];
         uint256 _projectFunds = _price - _artblocksRevenue;
         uint256 _additionalPayeeRevenue = (_projectFunds *
             projectIdToAdditionalPayeePrimarySalesPercentage[_projectId]) / 100;
-        revenues_[1] = _additionalPayeeRevenue;
-        // artist
+        // Artist
         recipients_[0] = projectIdToArtistAddress[_projectId];
         revenues_[0] = _projectFunds - _additionalPayeeRevenue;
+        // Additional Payee for primary sales
+        recipients_[1] = projectIdToAdditionalPayeePrimarySales[_projectId];
+        revenues_[1] = _additionalPayeeRevenue;
+        // Art Blocks
+        recipients_[2] = artblocksAddress;
+        revenues_[2] = _artblocksRevenue;
     }
 
     /**
