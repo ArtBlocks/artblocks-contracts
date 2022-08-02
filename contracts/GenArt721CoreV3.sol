@@ -142,7 +142,10 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     modifier onlyAdminACL(bytes4 _selector) {
-        require(_adminAllowed(_selector), "Only Admin ACL allowed");
+        require(
+            adminACLAllowed(msg.sender, address(this), _selector),
+            "Only Admin ACL allowed"
+        );
         _;
     }
 
@@ -157,7 +160,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     modifier onlyArtistOrAdminACL(uint256 _projectId, bytes4 _selector) {
         require(
             msg.sender == projectIdToArtistAddress[_projectId] ||
-                _adminAllowed(_selector),
+                adminACLAllowed(msg.sender, address(this), _selector),
             "Only artist or Admin ACL allowed"
         );
         _;
@@ -174,7 +177,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         bytes4 _selector
     ) {
         require(
-            _adminAllowed(_selector) ||
+            adminACLAllowed(msg.sender, address(this), _selector) ||
                 (owner() == address(0) &&
                     msg.sender == projectIdToArtistAddress[_projectId]),
             "Only Admin ACL allowed, or artist if owner has renounced"
@@ -284,23 +287,6 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         emit Mint(_to, thisTokenId);
 
         return thisTokenId;
-    }
-
-    /**
-     * @notice Internal function that returns whether msg.sender is allowed to
-     * call function with selector `_selector`, as determined by the Admin ACL
-     * contract.
-     * @param _selector Function selector to check.
-     * @dev assumes the Admin ACL contract is the owner of this contract, which
-     * is expected to always be true.
-     * @dev adminACLContract is expected to either be null address (if owner
-     * has renounced ownership), or conform to IAdminACLV0 interface. Check for
-     * null address first to avoid revert when admin has renounced ownership.
-     */
-    function _adminAllowed(bytes4 _selector) internal returns (bool) {
-        return
-            owner() != address(0) &&
-            adminACLContract.allowed(msg.sender, address(this), _selector);
     }
 
     /**
@@ -642,7 +628,11 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         require(
             _projectUnlocked(_projectId)
                 ? msg.sender == projectIdToArtistAddress[_projectId]
-                : _adminAllowed(this.updateProjectDescription.selector),
+                : adminACLAllowed(
+                    msg.sender,
+                    address(this),
+                    this.updateProjectDescription.selector
+                ),
             "Only artist when unlocked, owner when locked"
         );
         // effects
@@ -824,6 +814,33 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     {
         projects[_projectId].projectBaseURI = _newBaseURI;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_BASE_URI);
+    }
+
+    /**
+     * @notice Convenience function that returns whether `_sender` is allowed
+     * to call function with selector `_selector` on contract `_contract`, as
+     * determined by this contract's current Admin ACL contract. Expected use
+     * cases include minter contracts checking if caller is allowed to call
+     * admin-gated functions on minter contracts.
+     * @param _sender Address of the sender calling function with selector
+     * `_selector` on contract `_contract`.
+     * @param _contract Address of the contract being called by `_sender`.
+     * @param _selector Function selector of the function being called by
+     * `_sender`.
+     * @dev assumes the Admin ACL contract is the owner of this contract, which
+     * is expected to always be true.
+     * @dev adminACLContract is expected to either be null address (if owner
+     * has renounced ownership), or conform to IAdminACLV0 interface. Check for
+     * null address first to avoid revert when admin has renounced ownership.
+     */
+    function adminACLAllowed(
+        address _sender,
+        address _contract,
+        bytes4 _selector
+    ) public returns (bool) {
+        return
+            owner() != address(0) &&
+            adminACLContract.allowed(_sender, _contract, _selector);
     }
 
     /**

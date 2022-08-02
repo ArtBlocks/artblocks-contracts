@@ -38,10 +38,7 @@ contract MinterFilterV1 is IMinterFilterV0 {
     // modifier to restrict access to only AdminACL allowed calls
     // @dev defers which ACL contract is used to the core contract
     modifier onlyCoreAdminACL(bytes4 _selector) {
-        require(
-            _adminACLContractAllowed(_selector),
-            "Only Core AdminACL allowed"
-        );
+        require(_coreAdminACLAllowed(_selector), "Only Core AdminACL allowed");
         _;
     }
 
@@ -52,7 +49,7 @@ contract MinterFilterV1 is IMinterFilterV0 {
         require(
             msg.sender ==
                 genArtCoreContract.projectIdToArtistAddress(_projectId) ||
-                _adminACLContractAllowed(_selector),
+                _coreAdminACLAllowed(_selector),
             "Only Core AdminACL or Artist"
         );
         _;
@@ -85,21 +82,17 @@ contract MinterFilterV1 is IMinterFilterV0 {
     }
 
     /**
-     * @notice Internal function that determines if caller is allowed to call
-     * a function on this contract. Defers which ACL contract is used to the
-     * core contract.
-     * @dev adminACLContract is expected to either be null address (if owner
-     * has renounced ownership), or conform to IAdminACLV0 interface. Check for
-     * null address first to avoid revert when admin has renounced ownership.
+     * @notice Internal function that determines if msg.sender is allowed to
+     * call a function on this contract. Defers to core contract's
+     * adminACLAllowed function.
      */
-    function _adminACLContractAllowed(bytes4 _selector)
-        internal
-        returns (bool)
-    {
-        IAdminACLV0 adminACLContract = genArtCoreContract.adminACLContract();
+    function _coreAdminACLAllowed(bytes4 _selector) internal returns (bool) {
         return
-            address(adminACLContract) != address(0) &&
-            adminACLContract.allowed(msg.sender, address(this), _selector);
+            genArtCoreContract.adminACLAllowed(
+                msg.sender,
+                address(this),
+                _selector
+            );
     }
 
     /**
