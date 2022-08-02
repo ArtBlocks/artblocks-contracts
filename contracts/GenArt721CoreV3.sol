@@ -18,6 +18,17 @@ pragma solidity 0.8.9;
 contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     event ProjectCompleted(uint256 indexed _projectId);
 
+    event ProposedArtistAddressesAndSplits(
+        uint256 indexed _projectId,
+        address _artistAddress,
+        address _additionalPayeePrimarySales,
+        uint256 _additionalPayeePrimarySalesPercentage,
+        address _additionalPayeeSecondarySales,
+        uint256 _additionalPayeeSecondarySalesPercentage
+    );
+
+    event AcceptedArtistAddressesAndSplits(uint256 indexed _projectId);
+
     uint256 constant ONE_MILLION = 1_000_000;
     uint256 constant FOUR_WEEKS_IN_SECONDS = 2_419_200;
 
@@ -61,6 +72,9 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         public projectIdToAdditionalPayeeSecondarySalesPercentage;
     mapping(uint256 => uint256)
         public projectIdToSecondaryMarketRoyaltyPercentage;
+
+    /// hash of artist's proposed payment updates to be approved by admin
+    mapping(uint256 => bytes32) public proposedArtistAddressesAndSplitsHash;
 
     address payable public artblocksAddress;
     /// Percentage of mint revenue allocated to Art Blocks
@@ -106,6 +120,25 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
             msg.sender == projectIdToArtistAddress[_projectId] ||
                 _adminAllowed(_selector),
             "Only artist or Admin ACL allowed"
+        );
+        _;
+    }
+
+    /**
+     * This modifier allows the artist of a project to call a function if the
+     * owner of the contract has renounced ownership. This is to allow the
+     * contract to continue to function if the owner decides to renounce
+     * ownership.
+     */
+    modifier onlyAdminACLOrRenouncedArtist(
+        uint256 _projectId,
+        bytes4 _selector
+    ) {
+        require(
+            _adminAllowed(_selector) ||
+                (owner() == address(0) &&
+                    msg.sender == projectIdToArtistAddress[_projectId]),
+            "Only Admin ACL allowed, or artist if owner has renounced"
         );
         _;
     }
@@ -308,18 +341,136 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     /**
+     * @notice Artist proposes updated set of artist address, additional payee
+     * addresses, and percentage splits for project `_projectId`. Addresses and
+     * percentages do not have to all be changed, but they must all be defined
+     * as a complete set.
+     * @param _projectId Project ID.
+     * @param _artistAddress Artist address that controls the project, and may
+     * receive payments.
+     * @param _additionalPayeePrimarySales Address that may receive a
+     * percentage split of the artit's primary sales revenue.
+     * @param _additionalPayeePrimarySalesPercentage Percent of artist's
+     * portion of primary sale revenue that will be split to address
+     * `_additionalPayeePrimarySales`.
+     * @param _additionalPayeeSecondarySales Address that may receive a percentage
+     * split of the secondary sales royalties.
+     * @param _additionalPayeeSecondarySalesPercentage Percent of artist's portion
+     * of secondary sale royalties that will be split to address
+     * `_additionalPayeeSecondarySales`.
+     */
+    function proposeArtistPaymentAddressesAndSplits(
+        uint256 _projectId,
+        address payable _artistAddress,
+        address payable _additionalPayeePrimarySales,
+        uint256 _additionalPayeePrimarySalesPercentage,
+        address payable _additionalPayeeSecondarySales,
+        uint256 _additionalPayeeSecondarySalesPercentage
+    ) external onlyArtist(_projectId) {
+        // checks
+        require(
+            _additionalPayeePrimarySalesPercentage <= 100 &&
+                _additionalPayeeSecondarySalesPercentage <= 100,
+            "Max of 100%"
+        );
+        // effects
+        proposedArtistAddressesAndSplitsHash[_projectId] = keccak256(
+            abi.encodePacked(
+                _artistAddress,
+                _additionalPayeePrimarySales,
+                _additionalPayeePrimarySalesPercentage,
+                _additionalPayeeSecondarySales,
+                _additionalPayeeSecondarySalesPercentage
+            )
+        );
+        // emit event for off-chain indexing
+        emit ProposedArtistAddressesAndSplits(
+            _projectId,
+            _artistAddress,
+            _additionalPayeePrimarySales,
+            _additionalPayeePrimarySalesPercentage,
+            _additionalPayeeSecondarySales,
+            _additionalPayeeSecondarySalesPercentage
+        );
+    }
+
+    /**
+     * @notice Admin accepts a proposed set of updated artist address,
+     * additional payee addresses, and percentage splits for project
+     * `_projectId`. Addresses and percentages do not have to all be changed,
+     * but they must all be defined as a complete set.
+     * @param _projectId Project ID.
+     * @param _artistAddress Artist address that controls the project, and may
+     * receive payments.
+     * @param _additionalPayeePrimarySales Address that may receive a
+     * percentage split of the artit's primary sales revenue.
+     * @param _additionalPayeePrimarySalesPercentage Percent of artist's
+     * portion of primary sale revenue that will be split to address
+     * `_additionalPayeePrimarySales`.
+     * @param _additionalPayeeSecondarySales Address that may receive a percentage
+     * split of the secondary sales royalties.
+     * @param _additionalPayeeSecondarySalesPercentage Percent of artist's portion
+     * of secondary sale royalties that will be split to address
+     * `_additionalPayeeSecondarySales`.
+     * @dev this must be called by the Admin ACL contract, and must only accept
+     * the most recent proposed values for a given project (validated on-chain
+     * by comparing the hash of the proposed and accepted values).
+     */
+    function adminAcceptArtistAddressesAndSplits(
+        uint256 _projectId,
+        address payable _artistAddress,
+        address payable _additionalPayeePrimarySales,
+        uint256 _additionalPayeePrimarySalesPercentage,
+        address payable _additionalPayeeSecondarySales,
+        uint256 _additionalPayeeSecondarySalesPercentage
+    )
+        external
+        onlyAdminACLOrRenouncedArtist(
+            _projectId,
+            this.adminAcceptArtistAddressesAndSplits.selector
+        )
+    {
+        // checks
+        require(
+            proposedArtistAddressesAndSplitsHash[_projectId] ==
+                keccak256(
+                    abi.encodePacked(
+                        _artistAddress,
+                        _additionalPayeePrimarySales,
+                        _additionalPayeePrimarySalesPercentage,
+                        _additionalPayeeSecondarySales,
+                        _additionalPayeeSecondarySalesPercentage
+                    )
+                ),
+            "Must match artist proposal"
+        );
+        // effects
+        projectIdToArtistAddress[_projectId] = _artistAddress;
+        projectIdToAdditionalPayeePrimarySales[
+            _projectId
+        ] = _additionalPayeePrimarySales;
+        projectIdToAdditionalPayeePrimarySalesPercentage[
+            _projectId
+        ] = _additionalPayeePrimarySalesPercentage;
+        projectIdToAdditionalPayeeSecondarySales[
+            _projectId
+        ] = _additionalPayeeSecondarySales;
+        projectIdToAdditionalPayeeSecondarySalesPercentage[
+            _projectId
+        ] = _additionalPayeeSecondarySalesPercentage;
+        // emit event for off-chain indexing
+        emit AcceptedArtistAddressesAndSplits(_projectId);
+    }
+
+    /**
      * @notice Updates artist of project `_projectId` to `_artistAddress`.
+     * This is to only be used in the event that the artist address is
+     * compromised or sanctioned.
      */
     function updateProjectArtistAddress(
         uint256 _projectId,
         address payable _artistAddress
-    )
-        public
-        onlyArtistOrAdminACL(
-            _projectId,
-            this.updateProjectArtistAddress.selector
-        )
-    {
+    ) public onlyAdminACL(this.updateProjectArtistAddress.selector) {
         projectIdToArtistAddress[_projectId] = _artistAddress;
     }
 
@@ -376,49 +527,6 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         onlyArtistOrAdminACL(_projectId, this.updateProjectArtistName.selector)
     {
         projects[_projectId].artist = _projectArtistName;
-    }
-
-    /**
-     * @notice Updates additional payees and percentage splits for project
-     * `_projectId`.
-     * @param _projectId Project ID.
-     * @param _additionalPayeePrimarySales Address that may receive a
-     * percentage split of the artit's primary sales revenue.
-     * @param _additionalPayeePrimarySalesPercentage Percent of artist's
-     * portion of primary sale revenue that will be split to address
-     * `_additionalPayeePrimarySales`.
-     * @param _additionalPayeeSecondarySales Address that may receive a percentage
-     * split of the secondary sales royalties.
-     * @param _additionalPayeeSecondarySalesPercentage Percent of artist's portion
-     * of secondary sale royalties that will be split to address
-     * `_additionalPayeeRoyalties`.
-     */
-    function updateProjectAdditionalPayees(
-        uint256 _projectId,
-        address payable _additionalPayeePrimarySales,
-        uint256 _additionalPayeePrimarySalesPercentage,
-        address payable _additionalPayeeSecondarySales,
-        uint256 _additionalPayeeSecondarySalesPercentage
-    ) external onlyArtist(_projectId) {
-        // checks
-        require(
-            _additionalPayeePrimarySalesPercentage <= 100 &&
-                _additionalPayeeSecondarySalesPercentage <= 100,
-            "Max of 100%"
-        );
-        // effects
-        projectIdToAdditionalPayeePrimarySales[
-            _projectId
-        ] = _additionalPayeePrimarySales;
-        projectIdToAdditionalPayeePrimarySalesPercentage[
-            _projectId
-        ] = _additionalPayeePrimarySalesPercentage;
-        projectIdToAdditionalPayeeSecondarySales[
-            _projectId
-        ] = _additionalPayeeSecondarySales;
-        projectIdToAdditionalPayeeSecondarySalesPercentage[
-            _projectId
-        ] = _additionalPayeeSecondarySalesPercentage;
     }
 
     /**

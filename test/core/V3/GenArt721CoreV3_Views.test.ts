@@ -200,43 +200,41 @@ describe("GenArt721CoreV3 Views", async function () {
       ).to.be.equal(0);
     });
 
-    it("returns expected values after populating", async function () {
-      // artist populates values
+    it("returns expected values after updating artist payment addresses and splits", async function () {
+      const valuesToUpdateTo = [
+        this.projectZero,
+        this.accounts.artist2.address,
+        this.accounts.additional.address,
+        50,
+        this.accounts.additional2.address,
+        51,
+      ];
+      // artist proposes new values
       await this.genArt721Core
         .connect(this.accounts.artist)
-        .updateProjectArtistAddress(
-          this.projectZero,
-          this.accounts.artist2.address
-        );
+        .proposeArtistPaymentAddressesAndSplits(...valuesToUpdateTo);
       await this.genArt721Core
-        .connect(this.accounts.artist2)
-        .updateProjectAdditionalPayees(
-          this.projectZero,
-          this.accounts.additional.address,
-          50,
-          this.accounts.additional2.address,
-          51
-        );
-
+        .connect(this.accounts.deployer)
+        .adminAcceptArtistAddressesAndSplits(...valuesToUpdateTo);
       // check for expected values
       const projectArtistPaymentInfo = await this.genArt721Core
         .connect(this.accounts.deployer)
         .projectArtistPaymentInfo(this.projectZero);
       expect(projectArtistPaymentInfo.artistAddress).to.be.equal(
-        this.accounts.artist2.address
+        valuesToUpdateTo[1]
       );
       expect(projectArtistPaymentInfo.additionalPayeePrimarySales).to.be.equal(
-        this.accounts.additional.address
+        valuesToUpdateTo[2]
       );
       expect(
         projectArtistPaymentInfo.additionalPayeePrimarySalesPercentage
-      ).to.be.equal(50);
+      ).to.be.equal(valuesToUpdateTo[3]);
       expect(
         projectArtistPaymentInfo.additionalPayeeSecondarySales
-      ).to.be.equal(this.accounts.additional2.address);
+      ).to.be.equal(valuesToUpdateTo[4]);
       expect(
         projectArtistPaymentInfo.additionalPayeeSecondarySalesPercentage
-      ).to.be.equal(51);
+      ).to.be.equal(valuesToUpdateTo[5]);
     });
   });
 });
