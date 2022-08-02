@@ -16,7 +16,7 @@ pragma solidity 0.8.9;
  * This is designed to be used with IGenArt721CoreContractV3 contracts.
  * @author Art Blocks Inc.
  */
-contract MinterFilterV0 is IMinterFilterV0 {
+contract MinterFilterV1 is IMinterFilterV0 {
     // add Enumerable Map methods
     using EnumerableMap for EnumerableMap.UintToAddressMap;
 
@@ -88,6 +88,9 @@ contract MinterFilterV0 is IMinterFilterV0 {
      * @notice Internal function that determines if caller is allowed to call
      * a function on this contract. Defers which ACL contract is used to the
      * core contract.
+     * @dev adminACLContract is expected to either be null address (if owner
+     * has renounced ownership), or conform to IAdminACLV0 interface. Check for
+     * null address first to avoid revert when admin has renounced ownership.
      */
     function _adminACLContractAllowed(bytes4 _selector)
         internal
