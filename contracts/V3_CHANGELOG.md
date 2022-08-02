@@ -48,3 +48,5 @@ _This document is intended to document and explain the Art Blocks Core V3 change
 - Add split revenues view function on core for primary sales
   - This offloads often-repeated primary sale payment splitting logic from V3's minter contracts onto the V3 core contract.
   - Placing splitter logic on core is preferred over creating something like a "common mint functions" external contract, because it avoids extra gas costs associated with EIP-2929 and calling cold addresses.
+- Update minters in minter suite to integrate with V3 core contract
+  - A couple breaking changes were made on the V3 core contract that required changes to the minter suite contracts.
