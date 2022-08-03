@@ -7,14 +7,15 @@ import EthersAdapter from "@gnosis.pm/safe-ethers-lib";
 import Safe from "@gnosis.pm/safe-core-sdk";
 import { SafeTransactionDataPartial } from "@gnosis.pm/safe-core-sdk-types";
 import { getGnosisSafe } from "../../util/GnosisSafeNetwork";
+import { isCoreV3 } from "../../util/common";
 
 /**
- * These tests are intended to check common MinterSetPriceV1 functionality.
- * The tests are intended to be run on the any MinterSetPriceV1 contract (not the V0 contracts).
+ * These tests are intended to check common MinterSetPriceV1 || V2 functionality.
+ * The tests are intended to be run on the any MinterSetPriceV1 || V2 contract (not the V0 contracts).
  * (this includes V1ERC20 contracts)
  * @dev assumes common BeforeEach to populate accounts, constants, and setup
  */
-export const MinterSetPriceV1_Common = async () => {
+export const MinterSetPriceV1V2_Common = async () => {
   describe("purchaseTo", async function () {
     it("does not support toggling of `purchaseToDisabled`", async function () {
       await expectRevert(
@@ -130,18 +131,21 @@ export const MinterSetPriceV1_Common = async () => {
         to: safeAddress,
         value: this.pricePerTokenInWei,
       });
-      const projectTokenInfoBefore = await this.genArt721Core.projectTokenInfo(
+      const viewFunctionWithInvocations = (await isCoreV3(this.genArt721Core))
+        ? this.genArt721Core.projectStateData
+        : this.genArt721Core.projectTokenInfo;
+      const projectStateDataBefore = await viewFunctionWithInvocations(
         this.projectZero
       );
       const executeTxResponse = await safeSdk2.executeTransaction(
         safeTransaction
       );
       await executeTxResponse.transactionResponse?.wait();
-      const projectTokenInfoAfter = await this.genArt721Core.projectTokenInfo(
+      const projectStateDataAfter = await viewFunctionWithInvocations(
         this.projectZero
       );
-      expect(projectTokenInfoAfter.invocations).to.be.equal(
-        projectTokenInfoBefore.invocations.add(1)
+      expect(projectStateDataAfter.invocations).to.be.equal(
+        projectStateDataBefore.invocations.add(1)
       );
     });
   });

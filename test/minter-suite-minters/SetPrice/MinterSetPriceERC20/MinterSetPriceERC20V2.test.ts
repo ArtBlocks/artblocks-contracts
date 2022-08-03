@@ -6,6 +6,7 @@ import {
   assignDefaultConstants,
   deployAndGet,
   deployCoreWithMinterFilter,
+  safeAddProject,
 } from "../../../util/common";
 
 import { MinterSetPriceERC20_Common } from "./MinterSetPriceERC20.common";
@@ -13,9 +14,9 @@ import { MinterSetPriceV1V2_Common } from "../MinterSetPriceV1V2.common";
 
 /**
  * These tests intended to ensure this Filtered Minter integrates properly with
- * V1 core contract.
+ * V3 core contract.
  */
-describe("MinterSetPriceERC20V1_V2PRTNRCore", async function () {
+describe("MinterSetPriceERC20V2_V3Core", async function () {
   beforeEach(async function () {
     // standard accounts and constants
     this.accounts = await getAccounts();
@@ -31,29 +32,33 @@ describe("MinterSetPriceERC20V1_V2PRTNRCore", async function () {
       randomizer: this.randomizer,
     } = await deployCoreWithMinterFilter.call(
       this,
-      "GenArt721CoreV2_PRTNR",
-      "MinterFilterV0"
+      "GenArt721CoreV3",
+      "MinterFilterV1"
     ));
 
     const minterFactory = await ethers.getContractFactory(
-      "MinterSetPriceERC20V1"
+      "MinterSetPriceERC20V2"
     );
     this.minter = await minterFactory.deploy(
       this.genArt721Core.address,
       this.minterFilter.address
     );
 
-    await this.genArt721Core
-      .connect(this.accounts.deployer)
-      .addProject("project0", this.accounts.artist.address, 0);
-
-    await this.genArt721Core
-      .connect(this.accounts.deployer)
-      .addProject("project1", this.accounts.artist.address, 0);
-
-    await this.genArt721Core
-      .connect(this.accounts.deployer)
-      .addProject("project2", this.accounts.artist.address, 0);
+    await safeAddProject(
+      this.genArt721Core,
+      this.accounts.deployer,
+      this.accounts.artist.address
+    );
+    await safeAddProject(
+      this.genArt721Core,
+      this.accounts.deployer,
+      this.accounts.artist.address
+    );
+    await safeAddProject(
+      this.genArt721Core,
+      this.accounts.deployer,
+      this.accounts.artist.address
+    );
 
     await this.genArt721Core
       .connect(this.accounts.deployer)
@@ -137,7 +142,7 @@ describe("MinterSetPriceERC20V1_V2PRTNRCore", async function () {
         ethers.utils.formatUnits(txCost, "ether").toString(),
         "ETH"
       );
-      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0298604"));
+      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0184253"));
     });
   });
 
