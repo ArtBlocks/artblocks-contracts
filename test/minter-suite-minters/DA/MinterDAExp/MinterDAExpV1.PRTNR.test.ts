@@ -20,7 +20,7 @@ import {
 } from "../../../util/common";
 import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../util/constants";
 import { MinterDAExp_Common } from "./MinterDAExp.common";
-import { MinterDAV1_Common } from "../MinterDAV1.common";
+import { MinterDAV1V2_Common } from "../MinterDAV1V2.common";
 
 /**
  * These tests intended to ensure this Filtered Minter integrates properly with
@@ -66,10 +66,6 @@ describe("MinterDAExpV1_V1Core", async function () {
       .toggleProjectIsActive(this.projectZero);
 
     await this.genArt721Core
-      .connect(this.accounts.deployer)
-      .addMintWhitelisted(this.minterFilter.address);
-
-    await this.genArt721Core
       .connect(this.accounts.artist)
       .updateProjectMaxInvocations(this.projectZero, 15);
 
@@ -111,8 +107,8 @@ describe("MinterDAExpV1_V1Core", async function () {
     MinterDAExp_Common();
   });
 
-  describe("common DA V1 tests", async function () {
-    MinterDAV1_Common();
+  describe("common DA V1V2 tests", async function () {
+    MinterDAV1V2_Common();
   });
 
   describe("calculate gas", async function () {
