@@ -17,20 +17,19 @@ import {
   deployCoreWithMinterFilter,
   compareBN,
   safeAddProject,
-  deployAndGetPBAB,
 } from "../../util/common";
 
 import { MinterHolder_Common } from "./MinterHolder.common";
 
 /**
- * These tests intended to ensure Filtered Minter integrates properly with V1
+ * These tests intended to ensure Filtered Minter integrates properly with V3
  * core contract.
  */
 describe("MinterHolderV0", async function () {
   beforeEach(async function () {
     // standard accounts and constants
     this.accounts = await getAccounts();
-    await assignDefaultConstants.call(this, 3); // this.projectZero = 3 on V1 core
+    await assignDefaultConstants.call(this);
     this.higherPricePerTokenInWei = this.pricePerTokenInWei.add(
       ethers.utils.parseEther("0.1")
     );
@@ -41,11 +40,11 @@ describe("MinterHolderV0", async function () {
       randomizer: this.randomizer,
     } = await deployCoreWithMinterFilter.call(
       this,
-      "GenArt721CoreV1",
-      "MinterFilterV0"
+      "GenArt721CoreV3",
+      "MinterFilterV1"
     ));
 
-    this.minter = await deployAndGet.call(this, "MinterHolderV0", [
+    this.minter = await deployAndGet.call(this, "MinterHolderV1", [
       this.genArt721Core.address,
       this.minterFilter.address,
     ]);
@@ -119,7 +118,7 @@ describe("MinterHolderV0", async function () {
 
     // artist mints a token on this.projectZero to use as proof of ownership
     const minterFactorySetPrice = await ethers.getContractFactory(
-      "MinterSetPriceV1"
+      "MinterSetPriceV2"
     );
     this.minterSetPrice = await minterFactorySetPrice.deploy(
       this.genArt721Core.address,
@@ -178,7 +177,7 @@ describe("MinterHolderV0", async function () {
         ethers.utils.formatUnits(txCost.toString(), "ether").toString(),
         "ETH"
       );
-      expect(compareBN(txCost, ethers.utils.parseEther("0.03199"), 1)).to.be
+      expect(compareBN(txCost, ethers.utils.parseEther("0.0151593"), 1)).to.be
         .true;
     });
   });

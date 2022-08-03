@@ -184,3 +184,35 @@ export async function isCoreV3(core: Contract): Promise<boolean> {
   }
   return false;
 }
+
+type T_PBAB = {
+  pbabToken: Contract;
+  pbabMinter: Contract;
+};
+
+export async function deployAndGetPBAB(): Promise<T_PBAB> {
+  const PBABFactory = await ethers.getContractFactory("GenArt721CoreV2_PBAB");
+  const pbabToken = await PBABFactory.connect(this.accounts.deployer).deploy(
+    this.name,
+    this.symbol,
+    this.randomizer.address
+  );
+  const minterFactory = await ethers.getContractFactory("GenArt721Minter_PBAB");
+  const pbabMinter = await minterFactory.deploy(pbabToken.address);
+  await pbabToken
+    .connect(this.accounts.deployer)
+    .addProject(
+      "project0_PBAB",
+      this.accounts.artist.address,
+      this.pricePerTokenInWei
+    );
+  await pbabToken.connect(this.accounts.deployer).toggleProjectIsActive(0);
+  await pbabToken
+    .connect(this.accounts.deployer)
+    .addMintWhitelisted(pbabMinter.address);
+  await pbabToken
+    .connect(this.accounts.artist)
+    .updateProjectMaxInvocations(0, this.maxInvocations);
+  await pbabToken.connect(this.accounts.artist).toggleProjectIsPaused(0);
+  return { pbabToken, pbabMinter };
+}
