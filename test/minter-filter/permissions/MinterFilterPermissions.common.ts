@@ -1,6 +1,6 @@
 import { expectRevert } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
-import { safeAddProject } from "../../util/common";
+import { safeAddProject, isCoreV3 } from "../../util/common";
 import { ethers } from "hardhat";
 
 /**
@@ -10,7 +10,6 @@ import { ethers } from "hardhat";
  */
 export const MinterFilterPermissions_Common = async () => {
   describe("`addApprovedMinter`/`removeApprovedMinter`", async function () {
-    const permissionErrorMessage = "Only Core whitelisted";
     const approvedMinterErrorMessage = "Only approved minters are allowed";
 
     it("is callable by 'whitelisted' EOA", async function () {
@@ -29,6 +28,9 @@ export const MinterFilterPermissions_Common = async () => {
     });
 
     it("is *not* callable by 'artist' EOA", async function () {
+      const permissionErrorMessage = (await isCoreV3(this.genArt721Core))
+        ? "Only Core AdminACL allowed"
+        : "Only Core whitelisted";
       await expectRevert(
         this.minterFilter
           .connect(this.accounts.artist)
@@ -44,6 +46,9 @@ export const MinterFilterPermissions_Common = async () => {
     });
 
     it("is *not* callable by 'misc' EOA", async function () {
+      const permissionErrorMessage = (await isCoreV3(this.genArt721Core))
+        ? "Only Core AdminACL allowed"
+        : "Only Core whitelisted";
       await expectRevert(
         this.minterFilter
           .connect(this.accounts.user)
@@ -64,12 +69,24 @@ export const MinterFilterPermissions_Common = async () => {
     const onlyMintAllowlistedErrorMessage = "Only mint allowlisted";
 
     it("is callable by 'whitelisted' EOA", async function () {
+      if (await isCoreV3(this.genArt721Core)) {
+        console.log(
+          "GenArt721CoreV3 does not need alert as canonical minter filter"
+        );
+        return;
+      }
       await this.minterFilter
         .connect(this.accounts.deployer)
         .alertAsCanonicalMinterFilter();
     });
 
     it("is *not* callable by 'artist' EOA", async function () {
+      if (await isCoreV3(this.genArt721Core)) {
+        console.log(
+          "GenArt721CoreV3 does not need alert as canonical minter filter"
+        );
+        return;
+      }
       await expectRevert(
         this.minterFilter
           .connect(this.accounts.artist)
@@ -79,6 +96,12 @@ export const MinterFilterPermissions_Common = async () => {
     });
 
     it("is *not* callable by 'misc' EOA", async function () {
+      if (await isCoreV3(this.genArt721Core)) {
+        console.log(
+          "GenArt721CoreV3 does not need alert as canonical minter filter"
+        );
+        return;
+      }
       await expectRevert(
         this.minterFilter
           .connect(this.accounts.user)
@@ -88,6 +111,12 @@ export const MinterFilterPermissions_Common = async () => {
     });
 
     it("is *not* callable when not mint allowlisted on core", async function () {
+      if (await isCoreV3(this.genArt721Core)) {
+        console.log(
+          "GenArt721CoreV3 does not need alert as canonical minter filter"
+        );
+        return;
+      }
       // remove minter from core allowlist by switching minter to null
       await this.genArt721Core
         .connect(this.accounts.deployer)
@@ -102,7 +131,6 @@ export const MinterFilterPermissions_Common = async () => {
   });
 
   describe("`removeMinterForProject`", async function () {
-    const permissionErrorMessage = "Only Core whitelisted or Artist";
     const minterNotAssignedErrorMessage = "EnumerableMap: nonexistent key";
 
     it("is not able to remove unassigned minters' EOA", async function () {
@@ -143,6 +171,9 @@ export const MinterFilterPermissions_Common = async () => {
     });
 
     it("is *not* callable by 'misc' EOA", async function () {
+      const permissionErrorMessage = (await isCoreV3(this.genArt721Core))
+        ? "Only Core AdminACL or Artist"
+        : "Only Core whitelisted or Artist";
       // approve and assign minter
       await this.minterFilter
         .connect(this.accounts.deployer)
@@ -161,7 +192,6 @@ export const MinterFilterPermissions_Common = async () => {
   });
 
   describe("removeMintersForProjects", async function () {
-    const permissionErrorMessage = "Only Core whitelisted";
     const minterNotAssignedErrorMessage = "EnumerableMap: nonexistent key";
 
     it("is not able to remove unassigned minters' EOA", async function () {
@@ -188,6 +218,9 @@ export const MinterFilterPermissions_Common = async () => {
     });
 
     it("is *not* callable by 'artist' EOA", async function () {
+      const permissionErrorMessage = (await isCoreV3(this.genArt721Core))
+        ? "Only Core AdminACL allowed"
+        : "Only Core whitelisted";
       // approve and assign minter
       await this.minterFilter
         .connect(this.accounts.deployer)
@@ -205,6 +238,9 @@ export const MinterFilterPermissions_Common = async () => {
     });
 
     it("is *not* callable by 'misc' EOA", async function () {
+      const permissionErrorMessage = (await isCoreV3(this.genArt721Core))
+        ? "Only Core AdminACL allowed"
+        : "Only Core whitelisted";
       // approve and assign minter
       await this.minterFilter
         .connect(this.accounts.deployer)
@@ -223,7 +259,6 @@ export const MinterFilterPermissions_Common = async () => {
   });
 
   describe("`setMinterForProject`", async function () {
-    const permissionErrorMessage = "Only Core whitelisted or Artist";
     const approvedMinterErrorMessage = "Only approved minters are allowed";
     const projectExistsErrorMessage = "Only existing projects";
 
@@ -258,6 +293,9 @@ export const MinterFilterPermissions_Common = async () => {
     });
 
     it("is *not* callable by 'misc' EOA", async function () {
+      const permissionErrorMessage = (await isCoreV3(this.genArt721Core))
+        ? "Only Core AdminACL or Artist"
+        : "Only Core whitelisted or Artist";
       await expectRevert(
         this.minterFilter
           .connect(this.accounts.user)
@@ -280,11 +318,10 @@ export const MinterFilterPermissions_Common = async () => {
   });
 
   describe("`mint`", async function () {
-    const onlyApprovedErrorMessage = "Only approved minters";
-    const permissionErrorMessage = "Only assigned minter";
     const unassignedErrorMessage = "EnumerableMap: nonexistent key";
     const priceNotConfiguredErrorMessage = "Price not configured";
     const pricePerTokenInWei = ethers.utils.parseEther("1");
+    const assignedMinterError = "Only assigned minter";
 
     it("is *not* callable when price not configured", async function () {
       // minter not approved
@@ -408,7 +445,7 @@ export const MinterFilterPermissions_Common = async () => {
           value: pricePerTokenInWei,
           gasPrice: 1,
         }),
-        permissionErrorMessage
+        assignedMinterError
       );
       // remove A from project
       await this.minterFilter
@@ -441,7 +478,7 @@ export const MinterFilterPermissions_Common = async () => {
             this.projectZero,
             this.accounts.deployer.address
           ),
-        permissionErrorMessage
+        assignedMinterError
       );
     });
 
@@ -462,7 +499,7 @@ export const MinterFilterPermissions_Common = async () => {
             this.projectZero,
             this.accounts.artist.address
           ),
-        permissionErrorMessage
+        assignedMinterError
       );
     });
 
@@ -483,7 +520,7 @@ export const MinterFilterPermissions_Common = async () => {
             this.projectZero,
             this.accounts.user.address
           ),
-        permissionErrorMessage
+        assignedMinterError
       );
     });
   });
