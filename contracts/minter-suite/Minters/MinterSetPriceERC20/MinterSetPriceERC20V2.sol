@@ -295,50 +295,39 @@ contract MinterSetPriceERC20V2 is ReentrancyGuard, IFilteredMinterV0 {
      */
     function _splitFundsETH(uint256 _projectId) internal {
         if (msg.value > 0) {
+            bool success_;
+            // send refund to sender
             uint256 pricePerTokenInWei = projectIdToPricePerTokenInWei[
                 _projectId
             ];
             uint256 refund = msg.value - pricePerTokenInWei;
             if (refund > 0) {
-                (bool success_, ) = msg.sender.call{value: refund}("");
+                (success_, ) = msg.sender.call{value: refund}("");
                 require(success_, "Refund failed");
             }
-            uint256 foundationAmount = (pricePerTokenInWei *
-                genArtCoreContract.artblocksPercentage()) / 100;
-            if (foundationAmount > 0) {
-                (bool success_, ) = genArtCoreContract.artblocksAddress().call{
-                    value: foundationAmount
-                }("");
-                require(success_, "Foundation payment failed");
-            }
-            uint256 projectFunds = pricePerTokenInWei - foundationAmount;
-            uint256 additionalPayeeAmount;
-            if (
-                genArtCoreContract
-                    .projectIdToAdditionalPayeePrimarySalesPercentage(
-                        _projectId
-                    ) > 0
-            ) {
-                additionalPayeeAmount =
-                    (projectFunds *
-                        genArtCoreContract
-                            .projectIdToAdditionalPayeePrimarySalesPercentage(
-                                _projectId
-                            )) /
-                    100;
-                if (additionalPayeeAmount > 0) {
-                    (bool success_, ) = genArtCoreContract
-                        .projectIdToAdditionalPayeePrimarySales(_projectId)
-                        .call{value: additionalPayeeAmount}("");
-                    require(success_, "Additional payment failed");
-                }
-            }
-            uint256 creatorFunds = projectFunds - additionalPayeeAmount;
-            if (creatorFunds > 0) {
-                (bool success_, ) = genArtCoreContract
-                    .projectIdToArtistAddress(_projectId)
-                    .call{value: creatorFunds}("");
+            // split remaining funds between foundation, artist, and artist's
+            // additional payee
+            (
+                address payable[] memory recipients_,
+                uint256[] memory revenues_
+            ) = genArtCoreContract.getPrimaryRevenueSplits(
+                    _projectId,
+                    pricePerTokenInWei
+                );
+            // artist payment
+            if (revenues_[0] > 0) {
+                (success_, ) = recipients_[0].call{value: revenues_[0]}("");
                 require(success_, "Artist payment failed");
+            }
+            // additional payee payment
+            if (revenues_[1] > 0) {
+                (success_, ) = recipients_[1].call{value: revenues_[1]}("");
+                require(success_, "Additional Payee payment failed");
+            }
+            // Art Blocks payment
+            if (revenues_[2] > 0) {
+                (success_, ) = recipients_[2].call{value: revenues_[2]}("");
+                require(success_, "Art Blocks payment failed");
             }
         }
     }
@@ -349,45 +338,37 @@ contract MinterSetPriceERC20V2 is ReentrancyGuard, IFilteredMinterV0 {
      */
     function _splitFundsERC20(uint256 _projectId) internal {
         uint256 pricePerTokenInWei = projectIdToPricePerTokenInWei[_projectId];
-        uint256 foundationAmount = (pricePerTokenInWei *
-            genArtCoreContract.artblocksPercentage()) / 100;
-        if (foundationAmount > 0) {
+        // split funds between foundation, artist, and artist's additional
+        // payee
+        (
+            address payable[] memory recipients_,
+            uint256[] memory revenues_
+        ) = genArtCoreContract.getPrimaryRevenueSplits(
+                _projectId,
+                pricePerTokenInWei
+            );
+        // artist payment
+        if (revenues_[0] > 0) {
             IERC20(projectIdToCurrencyAddress[_projectId]).transferFrom(
                 msg.sender,
-                genArtCoreContract.artblocksAddress(),
-                foundationAmount
+                recipients_[0],
+                revenues_[0]
             );
         }
-        uint256 projectFunds = pricePerTokenInWei - foundationAmount;
-        uint256 additionalPayeeAmount;
-        if (
-            genArtCoreContract.projectIdToAdditionalPayeePrimarySalesPercentage(
-                _projectId
-            ) > 0
-        ) {
-            additionalPayeeAmount =
-                (projectFunds *
-                    genArtCoreContract
-                        .projectIdToAdditionalPayeePrimarySalesPercentage(
-                            _projectId
-                        )) /
-                100;
-            if (additionalPayeeAmount > 0) {
-                IERC20(projectIdToCurrencyAddress[_projectId]).transferFrom(
-                    msg.sender,
-                    genArtCoreContract.projectIdToAdditionalPayeePrimarySales(
-                        _projectId
-                    ),
-                    additionalPayeeAmount
-                );
-            }
-        }
-        uint256 creatorFunds = projectFunds - additionalPayeeAmount;
-        if (creatorFunds > 0) {
+        // additional payee payment
+        if (revenues_[1] > 0) {
             IERC20(projectIdToCurrencyAddress[_projectId]).transferFrom(
                 msg.sender,
-                genArtCoreContract.projectIdToArtistAddress(_projectId),
-                creatorFunds
+                recipients_[1],
+                revenues_[1]
+            );
+        }
+        // Art Blocks payment
+        if (revenues_[2] > 0) {
+            IERC20(projectIdToCurrencyAddress[_projectId]).transferFrom(
+                msg.sender,
+                recipients_[2],
+                revenues_[2]
             );
         }
     }
