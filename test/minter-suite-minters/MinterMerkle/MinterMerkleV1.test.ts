@@ -18,14 +18,14 @@ import {
 import { MinterMerkle_Common, hashAddress } from "./MinterMerkle.common";
 
 /**
- * These tests intended to ensure Filtered Minter integrates properly with V1
+ * These tests intended to ensure Filtered Minter integrates properly with V3
  * core contract.
  */
-describe("MinterMerkleV0", async function () {
+describe("MinterMerkleV1", async function () {
   beforeEach(async function () {
     // standard accounts and constants
     this.accounts = await getAccounts();
-    await assignDefaultConstants.call(this, 3); // this.this.projectZero = 3 on V1 core
+    await assignDefaultConstants.call(this);
     this.higherPricePerTokenInWei = this.pricePerTokenInWei.add(
       ethers.utils.parseEther("0.1")
     );
@@ -36,11 +36,11 @@ describe("MinterMerkleV0", async function () {
       randomizer: this.randomizer,
     } = await deployCoreWithMinterFilter.call(
       this,
-      "GenArt721CoreV1",
-      "MinterFilterV0"
+      "GenArt721CoreV3",
+      "MinterFilterV1"
     ));
 
-    this.minter = await deployAndGet.call(this, "MinterMerkleV0", [
+    this.minter = await deployAndGet.call(this, "MinterMerkleV1", [
       this.genArt721Core.address,
       this.minterFilter.address,
     ]);
@@ -189,7 +189,7 @@ describe("MinterMerkleV0", async function () {
         ethers.utils.formatUnits(txCost.toString(), "ether").toString(),
         "ETH"
       );
-      expect(compareBN(txCost, ethers.utils.parseEther("0.03874"), 1)).to.be
+      expect(compareBN(txCost, ethers.utils.parseEther("0.0207682"), 1)).to.be
         .true;
     });
 
@@ -231,7 +231,7 @@ describe("MinterMerkleV0", async function () {
         "ETH"
       );
       // the following is not much more than the gas cost with a very small allowlist
-      expect(compareBN(txCost, ethers.utils.parseEther("0.03957"), 1)).to.be
+      expect(compareBN(txCost, ethers.utils.parseEther("0.021592"), 1)).to.be
         .true;
     });
   });
