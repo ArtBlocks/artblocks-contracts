@@ -300,6 +300,15 @@ export const MinterMerkle_Common = async () => {
           ),
         "Invalid Merkle proof"
       );
+      // expect revert if given an empty proof
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.additional)
+          ["purchase(uint256,bytes32[])"](this.projectTwo, [], {
+            value: this.pricePerTokenInWei,
+          }),
+        "Invalid Merkle proof"
+      );
     });
 
     it("does not allow purchase prior to configuring price", async function () {
