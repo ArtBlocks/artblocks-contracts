@@ -149,9 +149,14 @@ contract GenArt721CoreV2WithEvents is
         address _randomizerContract
     ) ERC721(_tokenName, _tokenSymbol) {
         admin = msg.sender;
+        emit PlatformUpdated(FIELD_OWNER);
+
         isWhitelisted[msg.sender] = true;
+        emit AllowlistUpdated(msg.sender, true);
+
         renderProviderAddress = payable(msg.sender);
         emit PlatformUpdated(FIELD_RENDER_PROVIDER_ADDRESS);
+
         randomizerContract = IRandomizer(_randomizerContract);
         emit PlatformUpdated(FIELD_RANDOMIZER_ADDRESS);
     }
