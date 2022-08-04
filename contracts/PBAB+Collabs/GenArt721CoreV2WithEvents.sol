@@ -22,7 +22,7 @@ contract GenArt721CoreV2WithEvents is
     IRandomizer public randomizerContract;
 
     // generic platform event fields
-    bytes32 constant FIELD_ARTBLOCKS_OWNER = "owner";
+    bytes32 constant FIELD_OWNER = "admin";
     bytes32 constant FIELD_RENDER_PROVIDER_ADDRESS = "renderProviderAddress";
     bytes32 constant FIELD_RANDOMIZER_ADDRESS = "randomizerAddress";
     bytes32 constant FIELD_RENDER_PROVIDER_PERCENTAGE =
@@ -35,7 +35,7 @@ contract GenArt721CoreV2WithEvents is
     bytes32 constant FIELD_PROJECT_NAME = "name";
     bytes32 constant FIELD_PROJECT_ARTIST_NAME = "artistName";
     bytes32 constant FIELD_SECONDARY_MARKET_ROYALTY_PERCENTAGE =
-        "secondaryMarketRoyaltyPercentage";
+        "royaltyPercentage";
     bytes32 constant FIELD_PROJECT_DESCRIPTION = "description";
     bytes32 constant FIELD_PROJECT_WEBSITE = "website";
     bytes32 constant FIELD_PROJECT_LICENSE = "license";
@@ -229,7 +229,7 @@ contract GenArt721CoreV2WithEvents is
     function updateAdmin(address _adminAddress) public onlyAdmin {
         admin = _adminAddress;
 
-        emit PlatformUpdated(FIELD_ARTBLOCKS_OWNER);
+        emit PlatformUpdated(FIELD_OWNER);
     }
 
     /**
