@@ -59,6 +59,8 @@ Core contracts use the versioning schema below:
 |      PRTNR Cores      | V2_PRTNR |   All PRTNR   | Various - see PBAB+Collabs directory [DEPLOYMENTS.md files](https://github.com/search?q=repo%3AArtBlocks%2Fartblocks-contracts+extension%3Amd+filename%3ADEPLOYMENTS&type=Code&ref=advsearch&l=&l=) |
 | Current Draft AB Core |    V3    |     (TBR)     | -                                                                                                                                                                                                   |
 
+> The current draft AB Core is a work in progress, ongoing [changelog here](./contracts/V3_CHANGELOG.md).
+
 ### MinterFilter Suite Compatibility Chart
 
 - We like new minters

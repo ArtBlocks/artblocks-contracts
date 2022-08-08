@@ -3,6 +3,8 @@
 
 pragma solidity ^0.8.0;
 
+import "./IAdminACLV0.sol";
+
 interface IGenArt721CoreContractV3 {
     /**
      * @notice Token ID `_tokenId` minted to `_to`.
@@ -15,7 +17,21 @@ interface IGenArt721CoreContractV3 {
      */
     event MinterUpdated(address indexed _currentMinter);
 
-    // getter function of public variable
+    // version and type of the core contract
+    // coreVersion is a string of the form "0.x.y"
+    function coreVersion() external view returns (string memory);
+
+    // coreType is a string of the form "GenArt721CoreV3"
+    function coreType() external view returns (string memory);
+
+    // owner (pre-V3 was named admin) of contract
+    // this is expected to be an Admin ACL contract for V3
+    function owner() external view returns (address);
+
+    // Admin ACL contract for V3, will be at the address owner()
+    function adminACLContract() external returns (IAdminACLV0);
+
+    // backwards-compatible admin - equal to owner()
     function admin() external view returns (address);
 
     // getter function of public variable
@@ -27,8 +43,6 @@ interface IGenArt721CoreContractV3 {
         view
         returns (uint256 projectId);
 
-    function isWhitelisted(address sender) external view returns (bool);
-
     // @dev this is not available in V0
     function isMintWhitelisted(address minter) external view returns (bool);
 
@@ -37,27 +51,25 @@ interface IGenArt721CoreContractV3 {
         view
         returns (address payable);
 
-    function projectIdToAdditionalPayee(uint256 _projectId)
+    function projectIdToAdditionalPayeePrimarySales(uint256 _projectId)
         external
         view
         returns (address payable);
 
-    function projectIdToAdditionalPayeePercentage(uint256 _projectId)
-        external
-        view
-        returns (uint256);
+    function projectIdToAdditionalPayeePrimarySalesPercentage(
+        uint256 _projectId
+    ) external view returns (uint256);
 
-    // @dev new function in V3 (deprecated projectTokenInfo)
-    function projectInfo(uint256 _projectId)
+    // @dev new function in V3
+    function projectStateData(uint256 _projectId)
         external
         view
         returns (
-            address,
             uint256,
             uint256,
             bool,
-            address,
-            uint256
+            bool,
+            bool
         );
 
     function artblocksAddress() external view returns (address payable);

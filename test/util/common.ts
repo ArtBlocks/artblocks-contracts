@@ -4,7 +4,7 @@
 import { BN } from "@openzeppelin/test-helpers";
 import { ethers } from "hardhat";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
-import { Contract } from "ethers";
+import { Contract, BigNumber } from "ethers";
 
 export type TestAccountsArtBlocks = {
   deployer: SignerWithAddress;
@@ -112,4 +112,32 @@ export async function safeAddProject(
       .connect(caller)
       .addProject("TestProject", artistAddress, 0, false);
   }
+}
+
+export async function fullyMintProject(
+  _projectId: BN,
+  _minterAccount: SignerWithAddress
+) {
+  for (let i = 0; i < this.maxInvocations; i++) {
+    await this.genArt721Core
+      .connect(_minterAccount)
+      .mint(_minterAccount.address, _projectId, _minterAccount.address);
+  }
+}
+
+export async function advanceEVMByTime(_timeSeconds: number) {
+  // advance with evm_increaseTime, then mine to advance time
+  await ethers.provider.send("evm_increaseTime", [_timeSeconds]);
+  await ethers.provider.send("evm_mine", []);
+}
+
+// utility funciton to compare Big Numbers, expecting them to be within x%, +/-
+export function compareBN(
+  actual: BigNumber,
+  expected: BigNumber,
+  tolerancePercent: number = 1
+): boolean {
+  const diff = actual.sub(expected);
+  const percentDiff = diff.mul(BigNumber.from("100")).div(expected);
+  return percentDiff.abs().lte(BigNumber.from(tolerancePercent.toString()));
 }
