@@ -14,7 +14,7 @@ pragma solidity 0.8.9;
  * @title Powered by Art Blocks ERC-721 core contract.
  * @author Art Blocks Inc.
  */
-contract GenArt721CoreV2_PBAB is ERC721Enumerable, IGenArt721CoreV2_PBAB {
+contract GenArt721CoreV2_PBAB_FLEX is ERC721Enumerable, IGenArt721CoreV2_PBAB {
     /// randomizer contract
     IRandomizer public randomizerContract;
 
@@ -34,18 +34,19 @@ contract GenArt721CoreV2_PBAB is ERC721Enumerable, IGenArt721CoreV2_PBAB {
         bool active;
         bool locked;
         bool paused;
+        bool externalAssetDependanciesLocked;
+        uint256 externalAssetDependanciesCount;
     }
 
-    uint256 constant MAX_EXTERNAL_ASSET_DEPENDANCIES = 10;
-    enum ExternalAssetDependancyType {
+    enum ExternalAssetDependencyType {
         IPFS,
         ARWEAVE
     }
-    struct ExternalAssetDependancy {
+    struct ExternalAssetDependency {
         string cid;
-        ExternalAssetDependancyType dependencyType;
+        ExternalAssetDependencyType dependencyType;
     }
-    mapping(uint256 => ExternalAssetDependancy[])
+    mapping(uint256 => ExternalAssetDependency[])
         public projectIdToExternalAssetDependencies;
 
     string public preferredIPFSGateway;
@@ -84,6 +85,14 @@ contract GenArt721CoreV2_PBAB is ERC721Enumerable, IGenArt721CoreV2_PBAB {
 
     modifier onlyValidTokenId(uint256 _tokenId) {
         require(_exists(_tokenId), "Token ID does not exist");
+        _;
+    }
+
+    modifier onlyUnlockedProjectExternalAssetDependencies(uint256 _projectId) {
+        require(
+            !projects[_projectId].externalAssetDependanciesLocked,
+            "Project external asset dependencies are locked"
+        );
         _;
     }
 
@@ -495,35 +504,70 @@ contract GenArt721CoreV2_PBAB is ERC721Enumerable, IGenArt721CoreV2_PBAB {
     }
 
     /**
-     * @notice Updates/sets external asset depdencies for project `_projectId`.
+     * @notice Updates external asset depdency for project `_projectId`.
      * @param _projectId Project to be updated.
-     * @param location Asset location.
-     * @param locationType Asset location type.
+     * @param _index Asset index.
+     * @param _cid Asset cid.
+     * @param _dependencyType Asset dependency type.
      */
-    function updateProjectExternalAssetDependencies(
+    function updateProjectExternalAssetDependency(
         uint256 _projectId,
-        string[] memory cids,
-        ExternalAssetDependancyType[] memory dependencyTypes
-    ) public onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) {
+        uint256 _index,
+        string memory _cid,
+        ExternalAssetDependencyType _dependencyType
+    )
+        public
+        onlyUnlockedProjectExternalAssetDependencies(_projectId)
+        onlyArtistOrWhitelisted(_projectId)
+    {
         require(
-            cids.length == dependencyTypes.length,
-            "The number of external assets provided must match the number of asset types provided"
+            _index < projectIdToExternalAssetDependencies[_projectId].length,
+            "Asset index out of range"
+        );
+        projectIdToExternalAssetDependencies[_projectId][_index].cid = _cid;
+        projectIdToExternalAssetDependencies[_projectId][_index]
+            .dependencyType = _dependencyType;
+    }
+
+    function removeProjectExternalAssetDependency(
+        uint256 _projectId,
+        uint256 _index
+    )
+        public
+        onlyUnlockedProjectExternalAssetDependencies(_projectId)
+        onlyArtistOrWhitelisted(_projectId)
+    {
+        require(
+            _index < projectIdToExternalAssetDependencies[_projectId].length,
+            "Asset index out of range"
         );
 
-        require(
-            cids.length <= MAX_EXTERNAL_ASSET_DEPENDANCIES,
-            "Too many external assets"
-        );
-
-        ExternalAssetDependency[] memory updatedAssets;
-        for (uint256 i = 0; i < cids.length; i++) {
-            ExternalAssetDependency asset = new ExternalAssetDependancy({
-                cid: cids[i],
-                locationType: dependencyTypes[i]
-            });
-            assetsToAdd.push(asset);
-            projectIdToExternalAssetDependencies[_projectId] = updatedAssets;
+        for (
+            uint256 i = _index;
+            i < projectIdToExternalAssetDependencies[_projectId].length - 1;
+            i++
+        ) {
+            projectIdToExternalAssetDependencies[_projectId][
+                i
+            ] = projectIdToExternalAssetDependencies[_projectId][i + 1];
         }
+        projectIdToExternalAssetDependencies[_projectId].pop();
+    }
+
+    function addProjectExternalAssetDependency(
+        uint256 _projectId,
+        string memory _cid,
+        ExternalAssetDependencyType _dependencyType
+    )
+        public
+        onlyUnlockedProjectExternalAssetDependencies(_projectId)
+        onlyArtistOrWhitelisted(_projectId)
+    {
+        ExternalAssetDependency memory asset = ExternalAssetDependency({
+            cid: _cid,
+            dependencyType: _dependencyType
+        });
+        projectIdToExternalAssetDependencies[_projectId].push(asset);
     }
 
     /**
