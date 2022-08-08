@@ -35,7 +35,6 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721Enumerable, IGenArt721CoreV2_PBAB {
         bool locked;
         bool paused;
         bool externalAssetDependanciesLocked;
-        uint256 externalAssetDependanciesCount;
     }
 
     enum ExternalAssetDependencyType {
@@ -291,6 +290,17 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721Enumerable, IGenArt721CoreV2_PBAB {
     }
 
     /**
+     * @notice Locks project `_projectId`.
+     */
+    function toggleProjectExternalAssetDependenciesAreLocked(uint256 _projectId)
+        public
+        onlyWhitelisted
+        onlyUnlocked(_projectId)
+    {
+        projects[_projectId].externalAssetDependanciesLocked = true;
+    }
+
+    /**
      * @notice Toggles project `_projectId` as active/inactive.
      */
     function toggleProjectIsActive(uint256 _projectId) public onlyWhitelisted {
@@ -504,7 +514,7 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721Enumerable, IGenArt721CoreV2_PBAB {
     }
 
     /**
-     * @notice Updates external asset depdency for project `_projectId`.
+     * @notice Updates external asset dependency for project `_projectId`.
      * @param _projectId Project to be updated.
      * @param _index Asset index.
      * @param _cid Asset cid.
@@ -529,6 +539,11 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721Enumerable, IGenArt721CoreV2_PBAB {
             .dependencyType = _dependencyType;
     }
 
+    /**
+     * @notice Removes external asset dependency for project `_projectId`.
+     * @param _projectId Project to be updated.
+     * @param _index Asset index
+     */
     function removeProjectExternalAssetDependency(
         uint256 _projectId,
         uint256 _index
@@ -554,6 +569,12 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721Enumerable, IGenArt721CoreV2_PBAB {
         projectIdToExternalAssetDependencies[_projectId].pop();
     }
 
+    /**
+     * @notice Adds external asset dependency for project `_projectId`.
+     * @param _projectId Project to be updated.
+     * @param _cid Asset cid.
+     * @param _dependencyType Asset dependency type.
+     */
     function addProjectExternalAssetDependency(
         uint256 _projectId,
         string memory _cid,
