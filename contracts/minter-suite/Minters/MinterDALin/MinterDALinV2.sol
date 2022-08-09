@@ -309,26 +309,34 @@ contract MinterDALinV2 is ReentrancyGuard, IFilteredMinterV0 {
             // split remaining funds between foundation, artist, and artist's
             // additional payee
             (
-                address payable[] memory recipients_,
-                uint256[] memory revenues_
+                uint256 artblocksRevenue_,
+                address payable artblocksAddress_,
+                uint256 artistRevenue_,
+                address payable artistAddress_,
+                uint256 additionalPayeePrimaryRevenue_,
+                address payable additionalPayeePrimaryAddress_
             ) = genArtCoreContract.getPrimaryRevenueSplits(
                     _projectId,
                     _currentPriceInWei
                 );
+            // Art Blocks payment
+            if (artblocksRevenue_ > 0) {
+                (success_, ) = artblocksAddress_.call{value: artblocksRevenue_}(
+                    ""
+                );
+                require(success_, "Art Blocks payment failed");
+            }
             // artist payment
-            if (revenues_[0] > 0) {
-                (success_, ) = recipients_[0].call{value: revenues_[0]}("");
+            if (artistRevenue_ > 0) {
+                (success_, ) = artistAddress_.call{value: artistRevenue_}("");
                 require(success_, "Artist payment failed");
             }
             // additional payee payment
-            if (revenues_[1] > 0) {
-                (success_, ) = recipients_[1].call{value: revenues_[1]}("");
+            if (additionalPayeePrimaryRevenue_ > 0) {
+                (success_, ) = additionalPayeePrimaryAddress_.call{
+                    value: additionalPayeePrimaryRevenue_
+                }("");
                 require(success_, "Additional Payee payment failed");
-            }
-            // Art Blocks payment
-            if (revenues_[2] > 0) {
-                (success_, ) = recipients_[2].call{value: revenues_[2]}("");
-                require(success_, "Art Blocks payment failed");
             }
         }
     }
