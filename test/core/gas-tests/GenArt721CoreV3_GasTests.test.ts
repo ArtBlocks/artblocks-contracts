@@ -24,6 +24,9 @@ import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../util/constants";
  * when optimizing for gas to quantify % reductions to aide in decision making.
  */
 describe("GenArt721CoreV3 Gas Tests", async function () {
+  // increase test timeout from 20s to 40s due to minting 500 tokens in beforeEach
+  this.timeout(40000);
+
   beforeEach(async function () {
     // standard accounts and constants
     this.accounts = await getAccounts();
