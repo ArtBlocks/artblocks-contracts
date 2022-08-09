@@ -21,7 +21,7 @@ import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../util/constants";
  * General Gas tests for V1 core.
  * Used to compare and quantify gas differences between V1 and V3+ cores.
  */
-describe("GenArt721CoreV1 Integration", async function () {
+describe("GenArt721CoreV1 Gas Tests", async function () {
   beforeEach(async function () {
     // standard accounts and constants
     this.accounts = await getAccounts();
