@@ -357,27 +357,25 @@ describe("GenArt721CoreV3 Views", async function () {
       // expect revenue splits to be properly calculated
       // Art Blocks
       const artblocksAddress = await this.genArt721Core.artblocksAddress();
-      expect(revenueSplits.recipients_[2]).to.be.equal(artblocksAddress);
-      expect(revenueSplits.revenues_[2]).to.be.equal(
+      expect(revenueSplits.artblocksAddress_).to.be.equal(artblocksAddress);
+      expect(revenueSplits.artblocksRevenue_).to.be.equal(
         ethers.utils.parseEther("0.10")
       );
       // Additional Payee
-      const additionalPayeePrimarySalesAddress =
-        await this.genArt721Core.projectIdToAdditionalPayeePrimarySales(
-          this.projectZero
-        );
-      expect(revenueSplits.recipients_[1]).to.be.equal(
+      // This is the special case where expected revenue is 0, so address should be null
+      const additionalPayeePrimarySalesAddress = constants.ZERO_ADDRESS;
+      expect(revenueSplits.additionalPayeePrimaryAddress_).to.be.equal(
         additionalPayeePrimarySalesAddress
       );
-      expect(revenueSplits.revenues_[1]).to.be.equal(
+      expect(revenueSplits.additionalPayeePrimaryRevenue_).to.be.equal(
         ethers.utils.parseEther("0")
       );
       // Artist
       const artistAddress = await this.genArt721Core.projectIdToArtistAddress(
         this.projectZero
       );
-      expect(revenueSplits.recipients_[0]).to.be.equal(artistAddress);
-      expect(revenueSplits.revenues_[0]).to.be.equal(
+      expect(revenueSplits.artistAddress_).to.be.equal(artistAddress);
+      expect(revenueSplits.artistRevenue_).to.be.equal(
         ethers.utils.parseEther("0.90")
       );
     });
@@ -420,25 +418,83 @@ describe("GenArt721CoreV3 Views", async function () {
         .getPrimaryRevenueSplits(this.projectOne, ethers.utils.parseEther("1"));
       // expect revenue splits to be properly calculated
       // Art Blocks
-      expect(revenueSplits.recipients_[2]).to.be.equal(
+      expect(revenueSplits.artblocksAddress_).to.be.equal(
         this.accounts.user.address
       );
-      expect(revenueSplits.revenues_[2]).to.be.equal(
+      expect(revenueSplits.artblocksRevenue_).to.be.equal(
         ethers.utils.parseEther("0.20")
       );
       // Additional Payee (0.8 * 0.51 = 0.408)
-      expect(revenueSplits.recipients_[1]).to.be.equal(
+      expect(revenueSplits.additionalPayeePrimaryAddress_).to.be.equal(
         proposeArtistPaymentAddressesAndSplitsArgs[2]
       );
-      expect(revenueSplits.revenues_[1]).to.be.equal(
+      expect(revenueSplits.additionalPayeePrimaryRevenue_).to.be.equal(
         ethers.utils.parseEther("0.408")
       );
       // Artist (0.8 * 0.51 = 0.392)
-      expect(revenueSplits.recipients_[0]).to.be.equal(
+      expect(revenueSplits.artistAddress_).to.be.equal(
         proposeArtistPaymentAddressesAndSplitsArgs[1]
       );
-      expect(revenueSplits.revenues_[0]).to.be.equal(
+      expect(revenueSplits.artistRevenue_).to.be.equal(
         ethers.utils.parseEther("0.392")
+      );
+    });
+
+    it("returns expected values for projectOne, with updated payment addresses and percentages only to Additional Payee Primary", async function () {
+      // add project
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .addProject("name", this.accounts.artist2.address);
+      // artist2 populates an addditional payee
+      const proposeArtistPaymentAddressesAndSplitsArgs = [
+        this.projectOne,
+        this.accounts.artist2.address,
+        this.accounts.additional2.address,
+        100,
+        this.accounts.user2.address,
+        0,
+      ];
+      await this.genArt721Core
+        .connect(this.accounts.artist2)
+        .proposeArtistPaymentAddressesAndSplits(
+          ...proposeArtistPaymentAddressesAndSplitsArgs
+        );
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .adminAcceptArtistAddressesAndSplits(
+          ...proposeArtistPaymentAddressesAndSplitsArgs
+        );
+      // update Art Blocks percentage to 20%
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateArtblocksPercentage(20);
+      // change Art Blocks payment address to random address
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateArtblocksAddress(this.accounts.user.address);
+      // check for expected values
+      const revenueSplits = await this.genArt721Core
+        .connect(this.accounts.user)
+        .getPrimaryRevenueSplits(this.projectOne, ethers.utils.parseEther("1"));
+      // expect revenue splits to be properly calculated
+      // Art Blocks
+      expect(revenueSplits.artblocksAddress_).to.be.equal(
+        this.accounts.user.address
+      );
+      expect(revenueSplits.artblocksRevenue_).to.be.equal(
+        ethers.utils.parseEther("0.20")
+      );
+      // Additional Payee (0.8 * 1.00 = 0.0.8)
+      expect(revenueSplits.additionalPayeePrimaryAddress_).to.be.equal(
+        proposeArtistPaymentAddressesAndSplitsArgs[2]
+      );
+      expect(revenueSplits.additionalPayeePrimaryRevenue_).to.be.equal(
+        ethers.utils.parseEther("0.8")
+      );
+      // Artist (0.8 * 0 = 0), special case of zero revenue, expect null address
+      expect(revenueSplits.artistAddress_).to.be.equal(constants.ZERO_ADDRESS);
+      expect(revenueSplits.artistRevenue_).to.be.equal(
+        ethers.utils.parseEther("0")
       );
     });
   });
