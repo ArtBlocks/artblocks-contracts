@@ -99,6 +99,16 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
 
     mapping(uint256 => Project) projects;
 
+    /**
+     * @dev mapping to gas-efficiently determine if project may be minted by
+     * non-artist address. Must be managed when configuring or affecting a
+     * project. Only intended to be true when:
+     * - project is active
+     * - project is not paused
+     * - project invocations < project max invocations
+     */
+    mapping(uint256 => bool) public projectMayBeMintedByNonArtist;
+
     // All financial functions are stripped from struct for visibility
     mapping(uint256 => address payable) public projectIdToArtistAddress;
     mapping(uint256 => address payable)
@@ -242,19 +252,13 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         uint256 invocationsAfter = invocationsBefore + 1;
         uint256 maxInvocations = projects[_projectId].maxInvocations;
 
+        // require either project is active, not paused, and invocations < max
+        // ...or minter is artist and invocations < max
         require(
-            invocationsBefore < maxInvocations,
-            "Must not exceed max invocations"
-        );
-        require(
-            projects[_projectId].active ||
-                _by == projectIdToArtistAddress[_projectId],
-            "Project must exist and be active"
-        );
-        require(
-            !projects[_projectId].paused ||
-                _by == projectIdToArtistAddress[_projectId],
-            "Purchases are paused."
+            projectMayBeMintedByNonArtist[_projectId] ||
+                (_by == projectIdToArtistAddress[_projectId] &&
+                    invocationsBefore < maxInvocations),
+            "Minting not allowed"
         );
 
         // EFFECTS
@@ -262,8 +266,10 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         projects[_projectId].invocations = invocationsAfter;
         uint256 thisTokenId = (_projectId * ONE_MILLION) + invocationsBefore;
 
-        // mark project as completed if hit max invocations
+        // mark project as completed if hit max invocations, and mark as not
+        // able to be minted
         if (invocationsAfter == maxInvocations) {
+            projectMayBeMintedByNonArtist[_projectId] = false;
             _completeProject(_projectId);
         }
 
@@ -312,6 +318,20 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     function _completeProject(uint256 _projectId) internal {
         projects[_projectId].completedTimestamp = block.timestamp;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_COMPLETED);
+    }
+
+    /**
+     * @dev Internal function that syncs mapping projectMayBeMintedByNonArtist
+     * for project `_projectId` with the current state of the project.
+     * Sets to true only if project is active, not paused, and project
+     * invocations is less than project max invocations.
+     */
+    function _syncprojectMayBeMintedByNonArtist(uint256 _projectId) internal {
+        projectMayBeMintedByNonArtist[_projectId] =
+            projects[_projectId].active &&
+            !projects[_projectId].paused &&
+            projects[_projectId].invocations <
+            projects[_projectId].maxInvocations;
     }
 
     /**
@@ -393,7 +413,11 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         public
         onlyAdminACL(this.toggleProjectIsActive.selector)
     {
+        // toggle active state
         projects[_projectId].active = !projects[_projectId].active;
+        // sync if project is able to be minted by non-artist
+        _syncprojectMayBeMintedByNonArtist(_projectId);
+        // emit event
         emit ProjectUpdated(_projectId, FIELD_PROJECT_ACTIVE);
     }
 
@@ -539,7 +563,11 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         public
         onlyArtist(_projectId)
     {
+        // toggle paused state
         projects[_projectId].paused = !projects[_projectId].paused;
+        // sync if project is able to be minted by non-artist
+        _syncprojectMayBeMintedByNonArtist(_projectId);
+        // emit event
         emit ProjectUpdated(_projectId, FIELD_PROJECT_PAUSED);
     }
 
@@ -690,8 +718,10 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         projects[_projectId].maxInvocations = _maxInvocations;
         emit ProjectUpdated(_projectId, FIELD_MAX_INVOCATIONS);
 
-        // register completed timestamp if action completed the project
+        // register completed timestamp if action completed the project, and
+        // mark as not able to be minted
         if (_maxInvocations == projects[_projectId].invocations) {
+            projectMayBeMintedByNonArtist[_projectId] = false;
             _completeProject(_projectId);
         }
     }
