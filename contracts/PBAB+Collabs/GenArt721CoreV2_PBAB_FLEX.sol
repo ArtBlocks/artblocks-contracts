@@ -37,7 +37,15 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721Enumerable, IGenArt721CoreV2_PBAB {
         bool externalAssetDependanciesLocked;
     }
 
-    event ExternalAssetDependencyUpdated(uint256 indexed _projectId);
+    event ExternalAssetDependencyUpdated(
+        uint256 indexed _projectId,
+        uint256 indexed _index
+    );
+    event ExternalAssetDependencyRemoved(
+        uint256 indexed _projectId,
+        uint256 indexed _index
+    );
+
     enum ExternalAssetDependencyType {
         IPFS,
         ARWEAVE
