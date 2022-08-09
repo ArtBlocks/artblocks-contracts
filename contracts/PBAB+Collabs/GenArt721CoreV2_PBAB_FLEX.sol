@@ -37,6 +37,7 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721Enumerable, IGenArt721CoreV2_PBAB {
         bool externalAssetDependanciesLocked;
     }
 
+    event ExternalAssetDependencyUpdated(uint256 indexed _projectId);
     enum ExternalAssetDependencyType {
         IPFS,
         ARWEAVE
@@ -537,6 +538,7 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721Enumerable, IGenArt721CoreV2_PBAB {
         projectIdToExternalAssetDependencies[_projectId][_index].cid = _cid;
         projectIdToExternalAssetDependencies[_projectId][_index]
             .dependencyType = _dependencyType;
+        emit ExternalAssetDependencyUpdated(_projectId);
     }
 
     /**
@@ -567,6 +569,7 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721Enumerable, IGenArt721CoreV2_PBAB {
             ] = projectIdToExternalAssetDependencies[_projectId][i + 1];
         }
         projectIdToExternalAssetDependencies[_projectId].pop();
+        emit ExternalAssetDependencyUpdated(_projectId);
     }
 
     /**
@@ -589,6 +592,7 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721Enumerable, IGenArt721CoreV2_PBAB {
             dependencyType: _dependencyType
         });
         projectIdToExternalAssetDependencies[_projectId].push(asset);
+        emit ExternalAssetDependencyUpdated(_projectId);
     }
 
     /**
