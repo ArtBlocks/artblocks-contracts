@@ -141,7 +141,7 @@ describe("GenArt721CoreV2_PBAB_FLEX_Integration", async function () {
           "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo",
           0
         );
-      // get aset info at index 0 for project 0
+      // get asset info at index 0 for project 0
       const externalAssetDependency = await this.genArt721Core
         .connect(this.accounts.artist)
         .projectIdToExternalAssetDependencies(0, 0);
@@ -166,6 +166,43 @@ describe("GenArt721CoreV2_PBAB_FLEX_Integration", async function () {
         "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo2"
       );
       expect(externalAssetDependency2[1]).to.equal(1);
+    });
+
+    it("can lock a projects external asset dependencies", async function () {
+      // add assets for project 0 at index 0
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .addProjectExternalAssetDependency(
+          this.projectZero,
+          "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo",
+          0
+        );
+      // lock external asset dependencies for project 0
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .toggleProjectExternalAssetDependenciesAreLocked(0);
+
+      // get asset info at index 0 for project 0
+      const externalAssetDependency = await this.genArt721Core
+        .connect(this.accounts.artist)
+        .projectIdToExternalAssetDependencies(0, 0);
+
+      expect(externalAssetDependency[0]).to.equal(
+        "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo"
+      );
+      expect(externalAssetDependency[1]).to.equal(0);
+
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectExternalAssetDependency(
+            0,
+            0,
+            "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo2",
+            1
+          ),
+        "Project external asset dependencies are locked"
+      );
     });
   });
 });

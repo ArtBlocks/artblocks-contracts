@@ -4,9 +4,9 @@
 import "../interfaces/0.8.x/IRandomizer.sol";
 import "../interfaces/0.8.x/IGenArt721CoreV2_PBAB.sol";
 
-import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin-4.5/contracts/utils/Strings.sol";
 
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import "@openzeppelin-4.5/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 
 pragma solidity 0.8.9;
 
@@ -290,11 +290,11 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721Enumerable, IGenArt721CoreV2_PBAB {
     }
 
     /**
-     * @notice Locks project `_projectId`.
+     * @notice Locks external asset dependencies for project `_projectId`.
      */
     function toggleProjectExternalAssetDependenciesAreLocked(uint256 _projectId)
         public
-        onlyWhitelisted
+        onlyArtistOrWhitelisted(_projectId)
         onlyUnlocked(_projectId)
     {
         projects[_projectId].externalAssetDependanciesLocked = true;
