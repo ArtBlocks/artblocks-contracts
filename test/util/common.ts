@@ -57,6 +57,7 @@ export async function assignDefaultConstants(
   this.projectZero = projectZero;
   this.projectOne = projectZero + 1;
   this.projectTwo = projectZero + 2;
+  this.projectThree = projectZero + 3;
   // token IDs
   this.projectZeroTokenZero = new BN(this.projectZero).mul(new BN("1000000"));
   this.projectZeroTokenOne = this.projectZeroTokenZero.add(new BN("1"));
@@ -64,6 +65,8 @@ export async function assignDefaultConstants(
   this.projectOneTokenOne = this.projectOneTokenZero.add(new BN("1"));
   this.projectTwoTokenZero = new BN(this.projectTwo).mul(new BN("1000000"));
   this.projectTwoTokenOne = this.projectTwoTokenZero.add(new BN("1"));
+  this.projectThreeTokenZero = new BN(this.projectThree).mul(new BN("1000000"));
+  this.projectThreeTokenOne = this.projectThreeTokenZero.add(new BN("1"));
 }
 
 // utility function to simplify code when deploying any contract from factory
