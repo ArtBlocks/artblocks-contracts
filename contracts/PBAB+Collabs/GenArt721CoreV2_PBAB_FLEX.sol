@@ -34,16 +34,25 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721Enumerable, IGenArt721CoreV2_PBAB {
         bool active;
         bool locked;
         bool paused;
-        bool externalAssetDependanciesLocked;
+        bool externalAssetDependenciesLocked;
+        uint256 externalAssetDependencyCount;
     }
 
     event ExternalAssetDependencyUpdated(
         uint256 indexed _projectId,
-        uint256 indexed _index
+        uint256 indexed _index,
+        string _cid,
+        ExternalAssetDependencyType _dependencyType
     );
     event ExternalAssetDependencyRemoved(
         uint256 indexed _projectId,
-        uint256 indexed _index
+        uint256 indexed _index,
+        string _cid,
+        ExternalAssetDependencyType _dependencyType
+    );
+    event ToggleProjectExternalAssetDependenciesLocked(
+        uint256 indexed _projectId,
+        bool _locked
     );
 
     enum ExternalAssetDependencyType {
@@ -98,7 +107,7 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721Enumerable, IGenArt721CoreV2_PBAB {
 
     modifier onlyUnlockedProjectExternalAssetDependencies(uint256 _projectId) {
         require(
-            !projects[_projectId].externalAssetDependanciesLocked,
+            !projects[_projectId].externalAssetDependenciesLocked,
             "Project external asset dependencies are locked"
         );
         _;
@@ -306,7 +315,8 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721Enumerable, IGenArt721CoreV2_PBAB {
         onlyArtistOrWhitelisted(_projectId)
         onlyUnlocked(_projectId)
     {
-        projects[_projectId].externalAssetDependanciesLocked = true;
+        projects[_projectId].externalAssetDependenciesLocked = true;
+        emit ToggleProjectExternalAssetDependenciesLocked(_projectId, true);
     }
 
     /**
@@ -546,7 +556,12 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721Enumerable, IGenArt721CoreV2_PBAB {
         projectIdToExternalAssetDependencies[_projectId][_index].cid = _cid;
         projectIdToExternalAssetDependencies[_projectId][_index]
             .dependencyType = _dependencyType;
-        emit ExternalAssetDependencyUpdated(_projectId);
+        emit ExternalAssetDependencyUpdated(
+            _projectId,
+            _index,
+            _cid,
+            _dependencyType
+        );
     }
 
     /**
@@ -567,6 +582,13 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721Enumerable, IGenArt721CoreV2_PBAB {
             "Asset index out of range"
         );
 
+        string memory _cid = projectIdToExternalAssetDependencies[_projectId][
+            _index
+        ].cid;
+        ExternalAssetDependencyType _dependencyType = projectIdToExternalAssetDependencies[
+                _projectId
+            ][_index].dependencyType;
+
         for (
             uint256 i = _index;
             i < projectIdToExternalAssetDependencies[_projectId].length - 1;
@@ -577,7 +599,15 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721Enumerable, IGenArt721CoreV2_PBAB {
             ] = projectIdToExternalAssetDependencies[_projectId][i + 1];
         }
         projectIdToExternalAssetDependencies[_projectId].pop();
-        emit ExternalAssetDependencyUpdated(_projectId);
+        projects[_projectId].externalAssetDependencyCount =
+            projects[_projectId].externalAssetDependencyCount -
+            1;
+        emit ExternalAssetDependencyRemoved(
+            _projectId,
+            _index,
+            _cid,
+            _dependencyType
+        );
     }
 
     /**
@@ -600,7 +630,16 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721Enumerable, IGenArt721CoreV2_PBAB {
             dependencyType: _dependencyType
         });
         projectIdToExternalAssetDependencies[_projectId].push(asset);
-        emit ExternalAssetDependencyUpdated(_projectId);
+        projects[_projectId].externalAssetDependencyCount =
+            projects[_projectId].externalAssetDependencyCount +
+            1;
+
+        emit ExternalAssetDependencyUpdated(
+            _projectId,
+            projectIdToExternalAssetDependencies[_projectId].length - 1,
+            _cid,
+            _dependencyType
+        );
     }
 
     /**
