@@ -219,7 +219,7 @@ contract MinterFilterV1 is IMinterFilterV0 {
             "Only assigned minter"
         );
         // EFFECTS
-        uint256 tokenId = genArtCoreContract.mint(_to, _projectId, sender);
+        uint256 tokenId = genArtCoreContract.mint_Ecf(_to, _projectId, sender);
         return tokenId;
     }
 

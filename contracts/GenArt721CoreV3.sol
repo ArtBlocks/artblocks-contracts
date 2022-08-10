@@ -212,8 +212,9 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @param _projectId Project ID to mint a token on.
      * @param _by Purchaser of minted token.
      * @dev sender must be the allowed minterContract
+     * @dev name of function is optimized for gas usage
      */
-    function mint(
+    function mint_Ecf(
         address _to,
         uint256 _projectId,
         address _by

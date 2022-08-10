@@ -112,7 +112,8 @@ interface IGenArt721CoreContractV3 {
 
     function artblocksPercentage() external view returns (uint256);
 
-    function mint(
+    // @dev gas-optimized signature in V3 for `mint`
+    function mint_Ecf(
         address _to,
         uint256 _projectId,
         address _by
