@@ -33,10 +33,19 @@ describe("GenArt721CoreV3 Integration", async function () {
       "BasicRandomizer"
     );
     this.randomizer = await randomizerFactory.deploy();
+    const adminACLFactory = await ethers.getContractFactory(
+      "MockAdminACLV0Events"
+    );
+    this.adminACL = await adminACLFactory.deploy();
     const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV3");
     this.genArt721Core = await artblocksFactory
       .connect(this.accounts.deployer)
-      .deploy(this.name, this.symbol, this.randomizer.address);
+      .deploy(
+        this.name,
+        this.symbol,
+        this.randomizer.address,
+        this.adminACL.address
+      );
 
     // TBD - V3 DOES NOT CURRENTLY HAVE A WORKING MINTER
 
@@ -57,23 +66,89 @@ describe("GenArt721CoreV3 Integration", async function () {
       .updateProjectMaxInvocations(this.projectZero, this.maxInvocations);
   });
 
-  describe("has whitelisted owner", function () {
-    it("has an admin", async function () {
+  describe("artblocksAddress", function () {
+    it("returns expected artblocksAddress", async function () {
       expect(await this.genArt721Core.artblocksAddress()).to.be.equal(
         this.accounts.deployer.address
       );
     });
+  });
 
-    it("has an admin", async function () {
+  describe("owner", function () {
+    it("returns expected owner", async function () {
+      expect(await this.genArt721Core.owner()).to.be.equal(
+        this.adminACL.address
+      );
+    });
+  });
+
+  describe("admin", function () {
+    it("returns expected backwards-compatible admin (owner)", async function () {
       expect(await this.genArt721Core.admin()).to.be.equal(
-        this.accounts.deployer.address
+        this.adminACL.address
+      );
+    });
+  });
+
+  describe("adminACLContract", function () {
+    it("returns expected adminACLContract address", async function () {
+      expect(await this.genArt721Core.adminACLContract()).to.be.equal(
+        this.adminACL.address
       );
     });
 
-    it("has a whitelisted account", async function () {
+    it("behaves as expected when transferring ownership", async function () {
+      // deploy new ACL with user as superAdmin
+      const userAdminACLFactory = await ethers.getContractFactory(
+        "MockAdminACLV0Events"
+      );
+      const userAdminACL = await userAdminACLFactory
+        .connect(this.accounts.user)
+        .deploy();
+      // update owner of core to new userAdminACL, expect OwnershipTransferred event
       expect(
-        await this.genArt721Core.isWhitelisted(this.accounts.deployer.address)
-      ).to.be.equal(true);
+        await this.adminACL
+          .connect(this.accounts.deployer)
+          .transferOwnershipOn(this.genArt721Core.address, userAdminACL.address)
+      )
+        .to.emit(this.genArt721Core, "OwnershipTransferred")
+        .withArgs(this.adminACL.address, userAdminACL.address);
+      // ensure owner + public adminACLContract has been updated
+      expect(await this.genArt721Core.owner()).to.be.equal(
+        userAdminACL.address
+      );
+      expect(await this.genArt721Core.adminACLContract()).to.be.equal(
+        userAdminACL.address
+      );
+      // ensure new userAdminACL may update project
+      await this.genArt721Core
+        .connect(this.accounts.user)
+        .addProject("new project", this.accounts.artist2.address);
+    });
+
+    it("behaves as expected when renouncing ownership", async function () {
+      // update owner of core to null address, expect OwnershipTransferred event
+      expect(
+        await this.adminACL
+          .connect(this.accounts.deployer)
+          .renounceOwnershipOn(this.genArt721Core.address)
+      )
+        .to.emit(this.genArt721Core, "OwnershipTransferred")
+        .withArgs(this.adminACL.address, constants.ZERO_ADDRESS);
+      // ensure owner + public adminACLContract has been updated
+      expect(await this.genArt721Core.owner()).to.be.equal(
+        constants.ZERO_ADDRESS
+      );
+      expect(await this.genArt721Core.adminACLContract()).to.be.equal(
+        constants.ZERO_ADDRESS
+      );
+      // ensure prior adminACL may not perform an admin function
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .addProject("new project", this.accounts.artist2.address),
+        "Only Admin ACL allowed"
+      );
     });
   });
 
@@ -107,24 +182,6 @@ describe("GenArt721CoreV3 Integration", async function () {
         .connect(this.accounts.deployer)
         .coreType();
       expect(coreType).to.be.equal("GenArt721CoreV3");
-    });
-  });
-
-  describe("owner", function () {
-    it("returns expected owner", async function () {
-      const ownerAddress = await this.genArt721Core
-        .connect(this.accounts.deployer)
-        .owner();
-      expect(ownerAddress).to.be.equal(this.accounts.deployer.address);
-    });
-  });
-
-  describe("admin", function () {
-    it("returns expected backwards-compatible admin (owner)", async function () {
-      const adminAddress = await this.genArt721Core
-        .connect(this.accounts.deployer)
-        .owner();
-      expect(adminAddress).to.be.equal(this.accounts.deployer.address);
     });
   });
 });

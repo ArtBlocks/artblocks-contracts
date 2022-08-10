@@ -2,6 +2,7 @@
 // Created By: Art Blocks Inc.
 
 import "./interfaces/0.8.x/IRandomizer.sol";
+import "./interfaces/0.8.x/IAdminACLV0.sol";
 import "./interfaces/0.8.x/IGenArt721CoreContractV3.sol";
 
 import "@openzeppelin-4.7/contracts/utils/Strings.sol";
@@ -17,11 +18,38 @@ pragma solidity 0.8.9;
 contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     event ProjectCompleted(uint256 indexed _projectId);
 
+    event ProposedArtistAddressesAndSplits(
+        uint256 indexed _projectId,
+        address _artistAddress,
+        address _additionalPayeePrimarySales,
+        uint256 _additionalPayeePrimarySalesPercentage,
+        address _additionalPayeeSecondarySales,
+        uint256 _additionalPayeeSecondarySalesPercentage
+    );
+
+    event AcceptedArtistAddressesAndSplits(uint256 indexed _projectId);
+
     uint256 constant ONE_MILLION = 1_000_000;
     uint256 constant FOUR_WEEKS_IN_SECONDS = 2_419_200;
 
+    // Art Blocks previous flagship ERC721 token addresses (for reference)
+    /// Art Blocks Project ID range: [0-2]
+    address public constant ART_BLOCKS_ERC721TOKEN_ADDRESS_V0 =
+        0x059EDD72Cd353dF5106D2B9cC5ab83a52287aC3a;
+    /// Art Blocks Project ID range: [3-TODO: add V1 final project ID before deploying]
+    address public constant ART_BLOCKS_ERC721TOKEN_ADDRESS_V1 =
+        0xa7d8d9ef8D8Ce8992Df33D8b8CF4Aebabd5bD270;
+
+    /// Curation registry managed by Art Blocks
+    address public artblocksCurationRegistryAddress;
+    /// Dependency registry managed by Art Blocks
+    address public artblocksDependencyRegistryAddress;
+
     /// randomizer contract
     IRandomizer public randomizerContract;
+
+    /// admin ACL contract
+    IAdminACLV0 public adminACLContract;
 
     struct Project {
         string name;
@@ -58,14 +86,14 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     mapping(uint256 => uint256)
         public projectIdToSecondaryMarketRoyaltyPercentage;
 
+    /// hash of artist's proposed payment updates to be approved by admin
+    mapping(uint256 => bytes32) public proposedArtistAddressesAndSplitsHash;
+
     address payable public artblocksAddress;
     /// Percentage of mint revenue allocated to Art Blocks
     uint256 public artblocksPercentage = 10;
 
     mapping(uint256 => bytes32) public tokenIdToHash;
-
-    /// true if address is whitelisted
-    mapping(address => bool) public isWhitelisted;
 
     /// single minter allowed for this core contract
     address public minterContract;
@@ -87,6 +115,11 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         _;
     }
 
+    modifier onlyAdminACL(bytes4 _selector) {
+        require(_adminAllowed(_selector), "Only Admin ACL allowed");
+        _;
+    }
+
     modifier onlyArtist(uint256 _projectId) {
         require(
             msg.sender == projectIdToArtistAddress[_projectId],
@@ -95,16 +128,30 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         _;
     }
 
-    modifier onlyWhitelisted() {
-        require(isWhitelisted[msg.sender], "Only whitelisted");
+    modifier onlyArtistOrAdminACL(uint256 _projectId, bytes4 _selector) {
+        require(
+            msg.sender == projectIdToArtistAddress[_projectId] ||
+                _adminAllowed(_selector),
+            "Only artist or Admin ACL allowed"
+        );
         _;
     }
 
-    modifier onlyArtistOrWhitelisted(uint256 _projectId) {
+    /**
+     * This modifier allows the artist of a project to call a function if the
+     * owner of the contract has renounced ownership. This is to allow the
+     * contract to continue to function if the owner decides to renounce
+     * ownership.
+     */
+    modifier onlyAdminACLOrRenouncedArtist(
+        uint256 _projectId,
+        bytes4 _selector
+    ) {
         require(
-            isWhitelisted[msg.sender] ||
-                msg.sender == projectIdToArtistAddress[_projectId],
-            "Only artist or whitelisted"
+            _adminAllowed(_selector) ||
+                (owner() == address(0) &&
+                    msg.sender == projectIdToArtistAddress[_projectId]),
+            "Only Admin ACL allowed, or artist if owner has renounced"
         );
         _;
     }
@@ -114,15 +161,30 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @param _tokenName Name of token.
      * @param _tokenSymbol Token symbol.
      * @param _randomizerContract Randomizer contract.
+     * @param _adminACLContract Address of admin access control contract, to be
+     * set as contract owner.
      */
     constructor(
         string memory _tokenName,
         string memory _tokenSymbol,
-        address _randomizerContract
+        address _randomizerContract,
+        address _adminACLContract
     ) ERC721(_tokenName, _tokenSymbol) {
-        isWhitelisted[msg.sender] = true;
         artblocksAddress = payable(msg.sender);
         randomizerContract = IRandomizer(_randomizerContract);
+        // set AdminACL management contract as owner
+        _transferOwnership(_adminACLContract);
+    }
+
+    /**
+     * @dev Transfers ownership of the contract to a new account (`newOwner`).
+     * Internal function without access restriction.
+     * @dev Overrides and wraps OpenZeppelin's _transferOwnership function to
+     * also update adminACLContract for improved introspection.
+     */
+    function _transferOwnership(address newOwner) internal override {
+        Ownable._transferOwnership(newOwner);
+        adminACLContract = IAdminACLV0(newOwner);
     }
 
     /**
@@ -131,7 +193,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @param _to Address to be the minted token's owner.
      * @param _projectId Project ID to mint a token on.
      * @param _by Purchaser of minted token.
-     * @dev sender must be a whitelisted minter
+     * @dev sender must be the allowed minterContract
      */
     function mint(
         address _to,
@@ -197,6 +259,23 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     /**
+     * @notice Internal function that returns whether msg.sender is allowed to
+     * call function with selector `_selector`, as determined by the Admin ACL
+     * contract.
+     * @param _selector Function selector to check.
+     * @dev assumes the Admin ACL contract is the owner of this contract, which
+     * is expected to always be true.
+     * @dev adminACLContract is expected to either be null address (if owner
+     * has renounced ownership), or conform to IAdminACLV0 interface. Check for
+     * null address first to avoid revert when admin has renounced ownership.
+     */
+    function _adminAllowed(bytes4 _selector) internal returns (bool) {
+        return
+            owner() != address(0) &&
+            adminACLContract.allowed(msg.sender, address(this), _selector);
+    }
+
+    /**
      * @notice Internal function that returns whether a project is unlocked.
      * Projects automatically lock four weeks after they are completed.
      * Projects are considered completed when they have been invoked the
@@ -222,11 +301,35 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     /**
+     * @notice Updates reference to Art Blocks Curation Registry contract.
+     */
+    function updateArtblocksCurationRegistryAddress(
+        address _artblocksCurationRegistryAddress
+    )
+        external
+        onlyAdminACL(this.updateArtblocksCurationRegistryAddress.selector)
+    {
+        artblocksCurationRegistryAddress = _artblocksCurationRegistryAddress;
+    }
+
+    /**
+     * @notice Updates reference to Art Blocks Dependency Registry contract.
+     */
+    function updateArtblocksDependencyRegistryAddress(
+        address _artblocksDependencyRegistryAddress
+    )
+        external
+        onlyAdminACL(this.updateArtblocksDependencyRegistryAddress.selector)
+    {
+        artblocksDependencyRegistryAddress = _artblocksDependencyRegistryAddress;
+    }
+
+    /**
      * @notice Updates artblocksAddress to `_artblocksAddress`.
      */
     function updateArtblocksAddress(address payable _artblocksAddress)
         public
-        onlyOwner
+        onlyAdminACL(this.updateArtblocksAddress.selector)
     {
         artblocksAddress = _artblocksAddress;
     }
@@ -237,30 +340,19 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      */
     function updateArtblocksPercentage(uint256 _artblocksPercentage)
         public
-        onlyOwner
+        onlyAdminACL(this.updateArtblocksPercentage.selector)
     {
         require(_artblocksPercentage <= 25, "Max of 25%");
         artblocksPercentage = _artblocksPercentage;
     }
 
     /**
-     * @notice Whitelists `_address`.
-     */
-    function addWhitelisted(address _address) public onlyOwner {
-        isWhitelisted[_address] = true;
-    }
-
-    /**
-     * @notice Revokes whitelisting of `_address`.
-     */
-    function removeWhitelisted(address _address) public onlyOwner {
-        isWhitelisted[_address] = false;
-    }
-
-    /**
      * @notice updates minter to `_address`.
      */
-    function updateMinterContract(address _address) public onlyOwner {
+    function updateMinterContract(address _address)
+        public
+        onlyAdminACL(this.updateMinterContract.selector)
+    {
         minterContract = _address;
         emit MinterUpdated(_address);
     }
@@ -270,7 +362,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      */
     function updateRandomizerAddress(address _randomizerAddress)
         public
-        onlyWhitelisted
+        onlyAdminACL(this.updateRandomizerAddress.selector)
     {
         randomizerContract = IRandomizer(_randomizerAddress);
     }
@@ -278,17 +370,144 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     /**
      * @notice Toggles project `_projectId` as active/inactive.
      */
-    function toggleProjectIsActive(uint256 _projectId) public onlyWhitelisted {
+    function toggleProjectIsActive(uint256 _projectId)
+        public
+        onlyAdminACL(this.toggleProjectIsActive.selector)
+    {
         projects[_projectId].active = !projects[_projectId].active;
     }
 
     /**
+     * @notice Artist proposes updated set of artist address, additional payee
+     * addresses, and percentage splits for project `_projectId`. Addresses and
+     * percentages do not have to all be changed, but they must all be defined
+     * as a complete set.
+     * @param _projectId Project ID.
+     * @param _artistAddress Artist address that controls the project, and may
+     * receive payments.
+     * @param _additionalPayeePrimarySales Address that may receive a
+     * percentage split of the artit's primary sales revenue.
+     * @param _additionalPayeePrimarySalesPercentage Percent of artist's
+     * portion of primary sale revenue that will be split to address
+     * `_additionalPayeePrimarySales`.
+     * @param _additionalPayeeSecondarySales Address that may receive a percentage
+     * split of the secondary sales royalties.
+     * @param _additionalPayeeSecondarySalesPercentage Percent of artist's portion
+     * of secondary sale royalties that will be split to address
+     * `_additionalPayeeSecondarySales`.
+     */
+    function proposeArtistPaymentAddressesAndSplits(
+        uint256 _projectId,
+        address payable _artistAddress,
+        address payable _additionalPayeePrimarySales,
+        uint256 _additionalPayeePrimarySalesPercentage,
+        address payable _additionalPayeeSecondarySales,
+        uint256 _additionalPayeeSecondarySalesPercentage
+    ) external onlyArtist(_projectId) {
+        // checks
+        require(
+            _additionalPayeePrimarySalesPercentage <= 100 &&
+                _additionalPayeeSecondarySalesPercentage <= 100,
+            "Max of 100%"
+        );
+        // effects
+        proposedArtistAddressesAndSplitsHash[_projectId] = keccak256(
+            abi.encodePacked(
+                _artistAddress,
+                _additionalPayeePrimarySales,
+                _additionalPayeePrimarySalesPercentage,
+                _additionalPayeeSecondarySales,
+                _additionalPayeeSecondarySalesPercentage
+            )
+        );
+        // emit event for off-chain indexing
+        emit ProposedArtistAddressesAndSplits(
+            _projectId,
+            _artistAddress,
+            _additionalPayeePrimarySales,
+            _additionalPayeePrimarySalesPercentage,
+            _additionalPayeeSecondarySales,
+            _additionalPayeeSecondarySalesPercentage
+        );
+    }
+
+    /**
+     * @notice Admin accepts a proposed set of updated artist address,
+     * additional payee addresses, and percentage splits for project
+     * `_projectId`. Addresses and percentages do not have to all be changed,
+     * but they must all be defined as a complete set.
+     * @param _projectId Project ID.
+     * @param _artistAddress Artist address that controls the project, and may
+     * receive payments.
+     * @param _additionalPayeePrimarySales Address that may receive a
+     * percentage split of the artit's primary sales revenue.
+     * @param _additionalPayeePrimarySalesPercentage Percent of artist's
+     * portion of primary sale revenue that will be split to address
+     * `_additionalPayeePrimarySales`.
+     * @param _additionalPayeeSecondarySales Address that may receive a percentage
+     * split of the secondary sales royalties.
+     * @param _additionalPayeeSecondarySalesPercentage Percent of artist's portion
+     * of secondary sale royalties that will be split to address
+     * `_additionalPayeeSecondarySales`.
+     * @dev this must be called by the Admin ACL contract, and must only accept
+     * the most recent proposed values for a given project (validated on-chain
+     * by comparing the hash of the proposed and accepted values).
+     */
+    function adminAcceptArtistAddressesAndSplits(
+        uint256 _projectId,
+        address payable _artistAddress,
+        address payable _additionalPayeePrimarySales,
+        uint256 _additionalPayeePrimarySalesPercentage,
+        address payable _additionalPayeeSecondarySales,
+        uint256 _additionalPayeeSecondarySalesPercentage
+    )
+        external
+        onlyAdminACLOrRenouncedArtist(
+            _projectId,
+            this.adminAcceptArtistAddressesAndSplits.selector
+        )
+    {
+        // checks
+        require(
+            proposedArtistAddressesAndSplitsHash[_projectId] ==
+                keccak256(
+                    abi.encodePacked(
+                        _artistAddress,
+                        _additionalPayeePrimarySales,
+                        _additionalPayeePrimarySalesPercentage,
+                        _additionalPayeeSecondarySales,
+                        _additionalPayeeSecondarySalesPercentage
+                    )
+                ),
+            "Must match artist proposal"
+        );
+        // effects
+        projectIdToArtistAddress[_projectId] = _artistAddress;
+        projectIdToAdditionalPayeePrimarySales[
+            _projectId
+        ] = _additionalPayeePrimarySales;
+        projectIdToAdditionalPayeePrimarySalesPercentage[
+            _projectId
+        ] = _additionalPayeePrimarySalesPercentage;
+        projectIdToAdditionalPayeeSecondarySales[
+            _projectId
+        ] = _additionalPayeeSecondarySales;
+        projectIdToAdditionalPayeeSecondarySalesPercentage[
+            _projectId
+        ] = _additionalPayeeSecondarySalesPercentage;
+        // emit event for off-chain indexing
+        emit AcceptedArtistAddressesAndSplits(_projectId);
+    }
+
+    /**
      * @notice Updates artist of project `_projectId` to `_artistAddress`.
+     * This is to only be used in the event that the artist address is
+     * compromised or sanctioned.
      */
     function updateProjectArtistAddress(
         uint256 _projectId,
         address payable _artistAddress
-    ) public onlyArtistOrWhitelisted(_projectId) {
+    ) public onlyAdminACL(this.updateProjectArtistAddress.selector) {
         projectIdToArtistAddress[_projectId] = _artistAddress;
     }
 
@@ -311,7 +530,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     function addProject(
         string memory _projectName,
         address payable _artistAddress
-    ) public onlyWhitelisted {
+    ) public onlyAdminACL(this.addProject.selector) {
         uint256 projectId = nextProjectId;
         projectIdToArtistAddress[projectId] = _artistAddress;
         projects[projectId].name = _projectName;
@@ -327,7 +546,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     function updateProjectName(uint256 _projectId, string memory _projectName)
         public
         onlyUnlocked(_projectId)
-        onlyArtistOrWhitelisted(_projectId)
+        onlyArtistOrAdminACL(_projectId, this.updateProjectName.selector)
     {
         projects[_projectId].name = _projectName;
     }
@@ -339,51 +558,12 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     function updateProjectArtistName(
         uint256 _projectId,
         string memory _projectArtistName
-    ) public onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) {
+    )
+        public
+        onlyUnlocked(_projectId)
+        onlyArtistOrAdminACL(_projectId, this.updateProjectArtistName.selector)
+    {
         projects[_projectId].artist = _projectArtistName;
-    }
-
-    /**
-     * @notice Updates additional payees and percentage splits for project
-     * `_projectId`.
-     * @param _projectId Project ID.
-     * @param _additionalPayeePrimarySales Address that may receive a
-     * percentage split of the artit's primary sales revenue.
-     * @param _additionalPayeePrimarySalesPercentage Percent of artist's
-     * portion of primary sale revenue that will be split to address
-     * `_additionalPayeePrimarySales`.
-     * @param _additionalPayeeSecondarySales Address that may receive a percentage
-     * split of the secondary sales royalties.
-     * @param _additionalPayeeSecondarySalesPercentage Percent of artist's portion
-     * of secondary sale royalties that will be split to address
-     * `_additionalPayeeRoyalties`.
-     */
-    function updateProjectAdditionalPayees(
-        uint256 _projectId,
-        address payable _additionalPayeePrimarySales,
-        uint256 _additionalPayeePrimarySalesPercentage,
-        address payable _additionalPayeeSecondarySales,
-        uint256 _additionalPayeeSecondarySalesPercentage
-    ) external onlyArtist(_projectId) {
-        // checks
-        require(
-            _additionalPayeePrimarySalesPercentage <= 100 &&
-                _additionalPayeeSecondarySalesPercentage <= 100,
-            "Max of 100%"
-        );
-        // effects
-        projectIdToAdditionalPayeePrimarySales[
-            _projectId
-        ] = _additionalPayeePrimarySales;
-        projectIdToAdditionalPayeePrimarySalesPercentage[
-            _projectId
-        ] = _additionalPayeePrimarySalesPercentage;
-        projectIdToAdditionalPayeeSecondarySales[
-            _projectId
-        ] = _additionalPayeeSecondarySales;
-        projectIdToAdditionalPayeeSecondarySalesPercentage[
-            _projectId
-        ] = _additionalPayeeSecondarySalesPercentage;
     }
 
     /**
@@ -419,7 +599,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         require(
             _projectUnlocked(_projectId)
                 ? msg.sender == projectIdToArtistAddress[_projectId]
-                : msg.sender == owner(),
+                : _adminAllowed(this.updateProjectDescription.selector),
             "Only artist when unlocked, owner when locked"
         );
         // effects
@@ -442,7 +622,11 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     function updateProjectLicense(
         uint256 _projectId,
         string memory _projectLicense
-    ) public onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) {
+    )
+        public
+        onlyUnlocked(_projectId)
+        onlyArtistOrAdminACL(_projectId, this.updateProjectLicense.selector)
+    {
         projects[_projectId].license = _projectLicense;
     }
 
@@ -482,7 +666,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     function addProjectScript(uint256 _projectId, string memory _script)
         public
         onlyUnlocked(_projectId)
-        onlyArtistOrWhitelisted(_projectId)
+        onlyArtistOrAdminACL(_projectId, this.addProjectScript.selector)
     {
         projects[_projectId].scripts[
             projects[_projectId].scriptCount
@@ -500,7 +684,11 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         uint256 _projectId,
         uint256 _scriptId,
         string memory _script
-    ) public onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) {
+    )
+        public
+        onlyUnlocked(_projectId)
+        onlyArtistOrAdminACL(_projectId, this.updateProjectScript.selector)
+    {
         require(
             _scriptId < projects[_projectId].scriptCount,
             "scriptId out of range"
@@ -514,7 +702,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     function removeProjectLastScript(uint256 _projectId)
         public
         onlyUnlocked(_projectId)
-        onlyArtistOrWhitelisted(_projectId)
+        onlyArtistOrAdminACL(_projectId, this.removeProjectLastScript.selector)
     {
         require(
             projects[_projectId].scriptCount > 0,
@@ -536,7 +724,11 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         uint256 _projectId,
         string memory _scriptType,
         string memory _scriptTypeVersion
-    ) public onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) {
+    )
+        public
+        onlyUnlocked(_projectId)
+        onlyArtistOrAdminACL(_projectId, this.updateProjectScriptType.selector)
+    {
         projects[_projectId].scriptType = _scriptType;
         projects[_projectId].scriptTypeVersion = _scriptTypeVersion;
     }
@@ -550,7 +742,11 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     function updateProjectAspectRatio(
         uint256 _projectId,
         string memory _aspectRatio
-    ) public onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) {
+    )
+        public
+        onlyUnlocked(_projectId)
+        onlyArtistOrAdminACL(_projectId, this.updateProjectAspectRatio.selector)
+    {
         projects[_projectId].aspectRatio = _aspectRatio;
     }
 
@@ -560,7 +756,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     function updateProjectIpfsHash(uint256 _projectId, string memory _ipfsHash)
         public
         onlyUnlocked(_projectId)
-        onlyArtistOrWhitelisted(_projectId)
+        onlyArtistOrAdminACL(_projectId, this.updateProjectIpfsHash.selector)
     {
         projects[_projectId].ipfsHash = _ipfsHash;
     }

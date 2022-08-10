@@ -29,10 +29,19 @@ describe("GenArt721CoreV3 Views", async function () {
       "BasicRandomizer"
     );
     this.randomizer = await randomizerFactory.deploy();
+    const adminACLFactory = await ethers.getContractFactory(
+      "MockAdminACLV0Events"
+    );
+    this.adminACL = await adminACLFactory.deploy();
     const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV3");
     this.genArt721Core = await artblocksFactory
       .connect(this.accounts.deployer)
-      .deploy(this.name, this.symbol, this.randomizer.address);
+      .deploy(
+        this.name,
+        this.symbol,
+        this.randomizer.address,
+        this.adminACL.address
+      );
 
     // TBD - V3 DOES NOT CURRENTLY HAVE A WORKING MINTER
 
@@ -63,6 +72,114 @@ describe("GenArt721CoreV3 Views", async function () {
         .connect(this.accounts.deployer)
         .coreType();
       expect(coreType).to.be.equal("GenArt721CoreV3");
+    });
+  });
+
+  describe("ART_BLOCKS_ERC721TOKEN_ADDRESS_V0", function () {
+    it("returns expected value", async function () {
+      const reference = await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .ART_BLOCKS_ERC721TOKEN_ADDRESS_V0();
+      expect(reference).to.be.equal(
+        "0x059EDD72Cd353dF5106D2B9cC5ab83a52287aC3a"
+      );
+    });
+  });
+
+  describe("ART_BLOCKS_ERC721TOKEN_ADDRESS_V1", function () {
+    it("returns expected value", async function () {
+      const reference = await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .ART_BLOCKS_ERC721TOKEN_ADDRESS_V1();
+      expect(reference).to.be.equal(
+        "0xa7d8d9ef8D8Ce8992Df33D8b8CF4Aebabd5bD270"
+      );
+    });
+  });
+
+  describe("artblocksCurationRegistryAddress", function () {
+    it("returns expected default value", async function () {
+      const reference = await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .artblocksCurationRegistryAddress();
+      expect(reference).to.be.equal(constants.ZERO_ADDRESS);
+    });
+
+    it("returns expected populated value", async function () {
+      // admin set to dummy address
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateArtblocksCurationRegistryAddress(
+          this.accounts.additional.address
+        );
+      // expect value to be updated
+      const reference = await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .artblocksCurationRegistryAddress();
+      expect(reference).to.be.equal(this.accounts.additional.address);
+    });
+
+    it("only allows admin to update value", async function () {
+      // expect revert when non-admin attempts to update
+      for (const account of [this.accounts.artist, this.accounts.additional]) {
+        await expectRevert(
+          this.genArt721Core
+            .connect(account)
+            .updateArtblocksCurationRegistryAddress(
+              this.accounts.additional.address
+            ),
+          "Only Admin ACL allowed"
+        );
+      }
+      // admin allowed to update
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateArtblocksCurationRegistryAddress(
+          this.accounts.additional.address
+        );
+    });
+  });
+
+  describe("artblocksDependencyRegistryAddress", function () {
+    it("returns expected default value", async function () {
+      const reference = await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .artblocksDependencyRegistryAddress();
+      expect(reference).to.be.equal(constants.ZERO_ADDRESS);
+    });
+
+    it("returns expected populated value", async function () {
+      // admin set to dummy address
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateArtblocksDependencyRegistryAddress(
+          this.accounts.additional.address
+        );
+      // expect value to be updated
+      const reference = await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .artblocksDependencyRegistryAddress();
+      expect(reference).to.be.equal(this.accounts.additional.address);
+    });
+
+    it("only allows admin to update value", async function () {
+      // expect revert when non-admin attempts to update
+      for (const account of [this.accounts.artist, this.accounts.additional]) {
+        await expectRevert(
+          this.genArt721Core
+            .connect(account)
+            .updateArtblocksDependencyRegistryAddress(
+              this.accounts.additional.address
+            ),
+          "Only Admin ACL allowed"
+        );
+      }
+      // admin allowed to update
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateArtblocksDependencyRegistryAddress(
+          this.accounts.additional.address
+        );
     });
   });
 
@@ -191,43 +308,41 @@ describe("GenArt721CoreV3 Views", async function () {
       ).to.be.equal(0);
     });
 
-    it("returns expected values after populating", async function () {
-      // artist populates values
+    it("returns expected values after updating artist payment addresses and splits", async function () {
+      const valuesToUpdateTo = [
+        this.projectZero,
+        this.accounts.artist2.address,
+        this.accounts.additional.address,
+        50,
+        this.accounts.additional2.address,
+        51,
+      ];
+      // artist proposes new values
       await this.genArt721Core
         .connect(this.accounts.artist)
-        .updateProjectArtistAddress(
-          this.projectZero,
-          this.accounts.artist2.address
-        );
+        .proposeArtistPaymentAddressesAndSplits(...valuesToUpdateTo);
       await this.genArt721Core
-        .connect(this.accounts.artist2)
-        .updateProjectAdditionalPayees(
-          this.projectZero,
-          this.accounts.additional.address,
-          50,
-          this.accounts.additional2.address,
-          51
-        );
-
+        .connect(this.accounts.deployer)
+        .adminAcceptArtistAddressesAndSplits(...valuesToUpdateTo);
       // check for expected values
       const projectArtistPaymentInfo = await this.genArt721Core
         .connect(this.accounts.deployer)
         .projectArtistPaymentInfo(this.projectZero);
       expect(projectArtistPaymentInfo.artistAddress).to.be.equal(
-        this.accounts.artist2.address
+        valuesToUpdateTo[1]
       );
       expect(projectArtistPaymentInfo.additionalPayeePrimarySales).to.be.equal(
-        this.accounts.additional.address
+        valuesToUpdateTo[2]
       );
       expect(
         projectArtistPaymentInfo.additionalPayeePrimarySalesPercentage
-      ).to.be.equal(50);
+      ).to.be.equal(valuesToUpdateTo[3]);
       expect(
         projectArtistPaymentInfo.additionalPayeeSecondarySales
-      ).to.be.equal(this.accounts.additional2.address);
+      ).to.be.equal(valuesToUpdateTo[4]);
       expect(
         projectArtistPaymentInfo.additionalPayeeSecondarySalesPercentage
-      ).to.be.equal(51);
+      ).to.be.equal(valuesToUpdateTo[5]);
     });
   });
 });

@@ -32,10 +32,19 @@ describe("GenArt721CoreV3 Project Configure", async function () {
       "BasicRandomizer"
     );
     this.randomizer = await randomizerFactory.deploy();
+    const adminACLFactory = await ethers.getContractFactory(
+      "MockAdminACLV0Events"
+    );
+    this.adminACL = await adminACLFactory.deploy();
     const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV3");
     this.genArt721Core = await artblocksFactory
       .connect(this.accounts.deployer)
-      .deploy(this.name, this.symbol, this.randomizer.address);
+      .deploy(
+        this.name,
+        this.symbol,
+        this.randomizer.address,
+        this.adminACL.address
+      );
 
     // TBD - V3 DOES NOT CURRENTLY HAVE A WORKING MINTER
 
@@ -268,6 +277,216 @@ describe("GenArt721CoreV3 Project Configure", async function () {
           .connect(this.accounts.artist)
           .updateProjectDescription(this.projectZero, "new description"),
         errorMessage
+      );
+    });
+  });
+
+  describe("updateProjectArtistAddress", function () {
+    it("only allows owner to update project artist address", async function () {
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectArtistAddress(
+            this.projectZero,
+            this.accounts.artist2.address
+          ),
+        "Only Admin ACL allowed"
+      );
+      this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateProjectArtistAddress(
+          this.projectZero,
+          this.accounts.artist2.address
+        );
+    });
+
+    it("reflects updated artist address", async function () {
+      this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateProjectArtistAddress(
+          this.projectZero,
+          this.accounts.artist2.address
+        );
+      // expect view to reflect update
+      const projectArtistPaymentInfo = await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .projectArtistPaymentInfo(this.projectZero);
+      expect(projectArtistPaymentInfo.artistAddress).to.equal(
+        this.accounts.artist2.address
+      );
+    });
+  });
+
+  describe("update project payment addresses", function () {
+    beforeEach(async function () {
+      this.valuesToUpdateTo = [
+        this.projectZero,
+        this.accounts.artist2.address,
+        this.accounts.additional.address,
+        50,
+        this.accounts.additional2.address,
+        51,
+      ];
+    });
+
+    it("only allows artist to propose updates", async function () {
+      // rejects deployer as a proposer of updates
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .proposeArtistPaymentAddressesAndSplits(...this.valuesToUpdateTo),
+        "Only artist"
+      );
+      // rejects user as a proposer of updates
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.user)
+          .proposeArtistPaymentAddressesAndSplits(...this.valuesToUpdateTo),
+        "Only artist"
+      );
+      // allows artist to propose new values
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .proposeArtistPaymentAddressesAndSplits(...this.valuesToUpdateTo);
+    });
+
+    it("only allows adminACL-allowed account to accept updates if owner has not renounced ownership", async function () {
+      // artist proposes new values
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .proposeArtistPaymentAddressesAndSplits(...this.valuesToUpdateTo);
+      // rejects artist as an acceptor of updates
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .adminAcceptArtistAddressesAndSplits(...this.valuesToUpdateTo),
+        "Only Admin ACL allowed"
+      );
+      // rejects user as an acceptor of updates
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.user)
+          .adminAcceptArtistAddressesAndSplits(...this.valuesToUpdateTo),
+        "Only Admin ACL allowed"
+      );
+      // allows deployer to accept new values
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .adminAcceptArtistAddressesAndSplits(...this.valuesToUpdateTo);
+    });
+
+    it("only allows artist account to accept proposed updates if owner has renounced ownership", async function () {
+      // artist proposes new values
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .proposeArtistPaymentAddressesAndSplits(...this.valuesToUpdateTo);
+      // admin renounces ownership
+      await this.adminACL
+        .connect(this.accounts.deployer)
+        .renounceOwnershipOn(this.genArt721Core.address);
+      // deployer may no longer accept proposed values
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .adminAcceptArtistAddressesAndSplits(...this.valuesToUpdateTo),
+        "Only Admin ACL allowed, or artist if owner has renounced"
+      );
+      // user may not accept proposed values
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.user)
+          .adminAcceptArtistAddressesAndSplits(...this.valuesToUpdateTo),
+        "Only Admin ACL allowed, or artist if owner has renounced"
+      );
+      // artist may accept proposed values
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .adminAcceptArtistAddressesAndSplits(...this.valuesToUpdateTo);
+    });
+
+    it("does not allow adminACL-allowed account to accept updates that don't match artist proposed values", async function () {
+      // artist proposes new values
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .proposeArtistPaymentAddressesAndSplits(...this.valuesToUpdateTo);
+      // rejects deployer's updates if they don't match artist's proposed values
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .adminAcceptArtistAddressesAndSplits(
+            this.valuesToUpdateTo[0],
+            this.valuesToUpdateTo[1],
+            this.valuesToUpdateTo[2],
+            this.valuesToUpdateTo[3],
+            this.valuesToUpdateTo[4],
+            this.valuesToUpdateTo[5] + 1
+          ),
+        "Must match artist proposal"
+      );
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .adminAcceptArtistAddressesAndSplits(
+            this.valuesToUpdateTo[0],
+            this.valuesToUpdateTo[1],
+            this.valuesToUpdateTo[2],
+            this.valuesToUpdateTo[3],
+            this.valuesToUpdateTo[2],
+            this.valuesToUpdateTo[5]
+          ),
+        "Must match artist proposal"
+      );
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .adminAcceptArtistAddressesAndSplits(
+            this.valuesToUpdateTo[0],
+            this.valuesToUpdateTo[1],
+            this.valuesToUpdateTo[2],
+            this.valuesToUpdateTo[3] - 1,
+            this.valuesToUpdateTo[4],
+            this.valuesToUpdateTo[5]
+          ),
+        "Must match artist proposal"
+      );
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .adminAcceptArtistAddressesAndSplits(
+            this.valuesToUpdateTo[0],
+            this.valuesToUpdateTo[1],
+            this.valuesToUpdateTo[4],
+            this.valuesToUpdateTo[3],
+            this.valuesToUpdateTo[4],
+            this.valuesToUpdateTo[5]
+          ),
+        "Must match artist proposal"
+      );
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .adminAcceptArtistAddressesAndSplits(
+            this.valuesToUpdateTo[0],
+            this.accounts.user.address,
+            this.valuesToUpdateTo[2],
+            this.valuesToUpdateTo[3],
+            this.valuesToUpdateTo[4],
+            this.valuesToUpdateTo[5]
+          ),
+        "Must match artist proposal"
+      );
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .adminAcceptArtistAddressesAndSplits(
+            this.projectOne,
+            this.valuesToUpdateTo[1],
+            this.valuesToUpdateTo[2],
+            this.valuesToUpdateTo[3],
+            this.valuesToUpdateTo[4],
+            this.valuesToUpdateTo[5]
+          ),
+        "Must match artist proposal"
       );
     });
   });
