@@ -138,6 +138,42 @@ contract GenArt721CoreV2WithEvents is
     }
 
     /**
+     * @notice Updates contract admin to `_adminAddress`.
+     */
+    function _updateAdmin(address _adminAddress) internal {
+        admin = _adminAddress;
+        emit PlatformUpdated(FIELD_OWNER);
+    }
+
+    /**
+     * @notice Updates render provider address to `_renderProviderAddress`.
+     */
+    function _updateRenderProviderAddress(address _renderProviderAddress)
+        internal
+    {
+        renderProviderAddress = payable(_renderProviderAddress);
+        emit PlatformUpdated(FIELD_RENDER_PROVIDER_ADDRESS);
+    }
+
+    /**
+     * @notice Updates randomizer address to `_randomizerAddress`.
+     */
+    function _updateRandomizerAddress(address _randomizerAddress) internal {
+        randomizerContract = IRandomizer(_randomizerAddress);
+        emit PlatformUpdated(FIELD_RANDOMIZER_ADDRESS);
+    }
+
+    /**
+     * @notice Updates allowListed status of a provided address `_address` with bool `_status`.
+     */
+    function _updateAddressAllowlisted(address _address, bool _status)
+        internal
+    {
+        isWhitelisted[_address] = _status;
+        emit AllowlistUpdated(_address, _status);
+    }
+
+    /**
      * @notice Initializes contract.
      * @param _tokenName Name of token.
      * @param _tokenSymbol Token symbol.
@@ -148,17 +184,10 @@ contract GenArt721CoreV2WithEvents is
         string memory _tokenSymbol,
         address _randomizerContract
     ) ERC721(_tokenName, _tokenSymbol) {
-        admin = msg.sender;
-        emit PlatformUpdated(FIELD_OWNER);
-
-        isWhitelisted[msg.sender] = true;
-        emit AllowlistUpdated(msg.sender, true);
-
-        renderProviderAddress = payable(msg.sender);
-        emit PlatformUpdated(FIELD_RENDER_PROVIDER_ADDRESS);
-
-        randomizerContract = IRandomizer(_randomizerContract);
-        emit PlatformUpdated(FIELD_RANDOMIZER_ADDRESS);
+        _updateAdmin(msg.sender);
+        _updateAddressAllowlisted(msg.sender, true);
+        _updateRandomizerAddress(_randomizerContract);
+        _updateRenderProviderAddress(msg.sender);
     }
 
     /**
@@ -232,9 +261,7 @@ contract GenArt721CoreV2WithEvents is
      * @notice Updates contract admin to `_adminAddress`.
      */
     function updateAdmin(address _adminAddress) public onlyAdmin {
-        admin = _adminAddress;
-
-        emit PlatformUpdated(FIELD_OWNER);
+        _updateAdmin(_adminAddress);
     }
 
     /**
@@ -244,9 +271,7 @@ contract GenArt721CoreV2WithEvents is
         public
         onlyAdmin
     {
-        renderProviderAddress = _renderProviderAddress;
-
-        emit PlatformUpdated(FIELD_RENDER_PROVIDER_ADDRESS);
+        _updateRenderProviderAddress(_renderProviderAddress);
     }
 
     /**
@@ -267,18 +292,14 @@ contract GenArt721CoreV2WithEvents is
      * @notice Whitelists `_address`.
      */
     function addWhitelisted(address _address) public onlyAdmin {
-        isWhitelisted[_address] = true;
-
-        emit AllowlistUpdated(_address, true);
+        _updateAddressAllowlisted(_address, true);
     }
 
     /**
      * @notice Revokes whitelisting of `_address`.
      */
     function removeWhitelisted(address _address) public onlyAdmin {
-        isWhitelisted[_address] = false;
-
-        emit AllowlistUpdated(_address, false);
+        _updateAddressAllowlisted(_address, false);
     }
 
     /**
