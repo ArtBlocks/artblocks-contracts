@@ -196,10 +196,8 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         address _randomizerContract,
         address _adminACLContract
     ) ERC721(_tokenName, _tokenSymbol) {
-        artblocksAddress = payable(msg.sender);
-        emit PlatformUpdated(FIELD_ARTBLOCKS_ADDRESS);
-        randomizerContract = IRandomizer(_randomizerContract);
-        emit PlatformUpdated(FIELD_RANDOMIZER_ADDRESS);
+        _updateArtblocksAddress(msg.sender);
+        _updateRandomizerAddress(_randomizerContract);
         // set AdminACL management contract as owner
         _transferOwnership(_adminACLContract);
     }
@@ -213,6 +211,22 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     function _transferOwnership(address newOwner) internal override {
         Ownable._transferOwnership(newOwner);
         adminACLContract = IAdminACLV0(newOwner);
+    }
+
+    /**
+     * @notice Updates Art Blocks payment address to `_renderProviderAddress`.
+     */
+    function _updateArtblocksAddress(address _artblocksAddress) internal {
+        artblocksAddress = payable(_artblocksAddress);
+        emit PlatformUpdated(FIELD_ARTBLOCKS_ADDRESS);
+    }
+
+    /**
+     * @notice Updates randomizer address to `_randomizerAddress`.
+     */
+    function _updateRandomizerAddress(address _randomizerAddress) internal {
+        randomizerContract = IRandomizer(_randomizerAddress);
+        emit PlatformUpdated(FIELD_RANDOMIZER_ADDRESS);
     }
 
     /**
@@ -361,8 +375,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         public
         onlyAdminACL(this.updateArtblocksAddress.selector)
     {
-        artblocksAddress = _artblocksAddress;
-        emit PlatformUpdated(FIELD_ARTBLOCKS_ADDRESS);
+        _updateArtblocksAddress(_artblocksAddress);
     }
 
     /**
@@ -396,8 +409,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         public
         onlyAdminACL(this.updateRandomizerAddress.selector)
     {
-        randomizerContract = IRandomizer(_randomizerAddress);
-        emit PlatformUpdated(FIELD_RANDOMIZER_ADDRESS);
+        _updateRandomizerAddress(_randomizerAddress);
     }
 
     /**
