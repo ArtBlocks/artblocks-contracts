@@ -192,4 +192,63 @@ describe("GenArt721CoreV3 Integration", async function () {
       expect(coreType).to.be.equal("GenArt721CoreV3");
     });
   });
+
+  describe("setTokenHash_8PT", function () {
+    it("does not allow non-randomizer to call", async function () {
+      // call directly from non-randomizer account and expect revert
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .setTokenHash_8PT(
+            this.projectZeroTokenZero.toNumber(),
+            ethers.constants.MaxInt256
+          ),
+        "Only randomizer may set"
+      );
+    });
+
+    it("does allow randomizer to call, and updates token hash", async function () {
+      // ensure token hash is initially zero
+      expect(
+        await this.genArt721Core.tokenIdToHash(
+          this.projectZeroTokenZero.toNumber()
+        )
+      ).to.be.equal(ethers.constants.HashZero);
+      // mint a token and expect token hash to be updated to a non-zero hash
+      await this.minter
+        .connect(this.accounts.artist)
+        .purchase(this.projectZero);
+      expect(
+        await this.genArt721Core.tokenIdToHash(
+          this.projectZeroTokenZero.toNumber()
+        )
+      ).to.not.be.equal(ethers.constants.HashZero);
+    });
+
+    it("does not allow randomizer to call once a token hash has been set", async function () {
+      // ensure token hash is initially zero
+      expect(
+        await this.genArt721Core.tokenIdToHash(
+          this.projectZeroTokenZero.toNumber()
+        )
+      ).to.be.equal(ethers.constants.HashZero);
+      // update randomizer to be an EOA for this test
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateRandomizerAddress(this.accounts.deployer.address);
+      // set token hash and expect success
+      await this.genArt721Core.setTokenHash_8PT(
+        this.projectZeroTokenZero.toNumber(),
+        ethers.utils.keccak256("0x42")
+      );
+      // expect revert when attempting to overwrite the token hash
+      await expectRevert(
+        this.genArt721Core.setTokenHash_8PT(
+          this.projectZeroTokenZero.toNumber(),
+          ethers.utils.keccak256("0x42")
+        ),
+        "Token hash already set"
+      );
+    });
+  });
 });

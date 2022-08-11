@@ -255,10 +255,11 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
             _completeProject(_projectId);
         }
 
+        // INTERACTIONS
+
         // token hash is updated by the randomizer contract on V3
         randomizerContract.assignTokenHash(thisTokenId);
 
-        // INTERACTIONS
         _mint(_to, thisTokenId);
 
         // Do not need to also log `projectId` in event, as the `projectId` for
@@ -276,9 +277,13 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * non-zero hash.
      * @param _tokenId Token ID to set the hash for.
      * @param _hash Hash to set for the token ID.
+     * @dev gas-optimized function name because called during mint sequence
      */
     function setTokenHash_8PT(uint256 _tokenId, bytes32 _hash) external {
-        require(msg.sender == address(randomizerContract), "Only randomizer.");
+        require(
+            msg.sender == address(randomizerContract),
+            "Only randomizer may set"
+        );
         require(
             tokenIdToHash[_tokenId] == bytes32(0),
             "Token hash already set."
