@@ -131,7 +131,7 @@ describe("MinterDALinV2_V3Core", async function () {
         "ETH"
       );
 
-      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0189681")); // assuming a cost of 100 GWEI
+      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0189538")); // assuming a cost of 100 GWEI
     });
   });
 });
