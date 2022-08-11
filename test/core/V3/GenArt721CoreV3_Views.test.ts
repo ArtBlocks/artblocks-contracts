@@ -25,25 +25,22 @@ describe("GenArt721CoreV3 Views", async function () {
     this.accounts = await getAccounts();
     await assignDefaultConstants.call(this);
 
-    const randomizerFactory = await ethers.getContractFactory(
-      "BasicRandomizer"
-    );
-    this.randomizer = await randomizerFactory.deploy();
-    const adminACLFactory = await ethers.getContractFactory(
-      "MockAdminACLV0Events"
-    );
-    this.adminACL = await adminACLFactory.deploy();
-    const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV3");
-    this.genArt721Core = await artblocksFactory
-      .connect(this.accounts.deployer)
-      .deploy(
-        this.name,
-        this.symbol,
-        this.randomizer.address,
-        this.adminACL.address
-      );
+    // deploy and configure minter filter and minter
+    ({
+      genArt721Core: this.genArt721Core,
+      minterFilter: this.minterFilter,
+      randomizer: this.randomizer,
+      adminACL: this.adminACL,
+    } = await deployCoreWithMinterFilter.call(
+      this,
+      "GenArt721CoreV3",
+      "MinterFilterV1"
+    ));
 
-    // TBD - V3 DOES NOT CURRENTLY HAVE A WORKING MINTER
+    this.minter = await deployAndGet.call(this, "MinterSetPriceV2", [
+      this.genArt721Core.address,
+      this.minterFilter.address,
+    ]);
 
     // add project
     await this.genArt721Core

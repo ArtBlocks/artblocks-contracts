@@ -29,30 +29,22 @@ describe("GenArt721CoreV3 Integration", async function () {
     this.accounts = await getAccounts();
     await assignDefaultConstants.call(this);
 
-    const randomizerFactory = await ethers.getContractFactory(
-      "BasicRandomizer"
-    );
-    this.randomizer = await randomizerFactory.deploy();
-    const adminACLFactory = await ethers.getContractFactory(
-      "MockAdminACLV0Events"
-    );
-    this.adminACL = await adminACLFactory.deploy();
-    const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV3");
-    this.genArt721Core = await artblocksFactory
-      .connect(this.accounts.deployer)
-      .deploy(
-        this.name,
-        this.symbol,
-        this.randomizer.address,
-        this.adminACL.address
-      );
+    // deploy and configure minter filter and minter
+    ({
+      genArt721Core: this.genArt721Core,
+      minterFilter: this.minterFilter,
+      randomizer: this.randomizer,
+      adminACL: this.adminACL,
+    } = await deployCoreWithMinterFilter.call(
+      this,
+      "GenArt721CoreV3",
+      "MinterFilterV1"
+    ));
 
-    // TBD - V3 DOES NOT CURRENTLY HAVE A WORKING MINTER
-
-    // allow artist to mint on contract
-    await this.genArt721Core
-      .connect(this.accounts.deployer)
-      .updateMinterContract(this.accounts.artist.address);
+    this.minter = await deployAndGet.call(this, "MinterSetPriceV2", [
+      this.genArt721Core.address,
+      this.minterFilter.address,
+    ]);
 
     // add project
     await this.genArt721Core
@@ -64,6 +56,17 @@ describe("GenArt721CoreV3 Integration", async function () {
     await this.genArt721Core
       .connect(this.accounts.artist)
       .updateProjectMaxInvocations(this.projectZero, this.maxInvocations);
+
+    // configure minter for project zero
+    await this.minterFilter
+      .connect(this.accounts.deployer)
+      .addApprovedMinter(this.minter.address);
+    await this.minterFilter
+      .connect(this.accounts.deployer)
+      .setMinterForProject(this.projectZero, this.minter.address);
+    await this.minter
+      .connect(this.accounts.artist)
+      .updatePricePerTokenInWei(this.projectZero, 0);
   });
 
   describe("artblocksAddress", function () {

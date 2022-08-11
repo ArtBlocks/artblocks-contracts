@@ -21,6 +21,7 @@ export type CoreWithMinterSuite = {
   randomizer: Contract;
   genArt721Core: Contract;
   minterFilter: Contract;
+  adminACL: Contract;
 };
 
 export async function getAccounts(): Promise<TestAccountsArtBlocks> {
@@ -87,7 +88,7 @@ export async function deployCoreWithMinterFilter(
   minterFilterName: string
 ): Promise<CoreWithMinterSuite> {
   const randomizer = await deployAndGet.call(this, "BasicRandomizer", []);
-  let genArt721Core, minterFilter;
+  let genArt721Core, minterFilter, adminACL;
   if (
     coreContractName.endsWith("V0") ||
     coreContractName.endsWith("V1") ||
@@ -107,7 +108,7 @@ export async function deployCoreWithMinterFilter(
       .connect(this.accounts.deployer)
       .addMintWhitelisted(minterFilter.address);
   } else if (coreContractName.endsWith("V3")) {
-    const adminACL = await deployAndGet.call(this, "MockAdminACLV0Events", []);
+    adminACL = await deployAndGet.call(this, "MockAdminACLV0Events", []);
     genArt721Core = await deployAndGet.call(this, coreContractName, [
       this.name,
       this.symbol,
@@ -122,7 +123,7 @@ export async function deployCoreWithMinterFilter(
       .connect(this.accounts.deployer)
       .updateMinterContract(minterFilter.address);
   }
-  return { randomizer, genArt721Core, minterFilter };
+  return { randomizer, genArt721Core, minterFilter, adminACL };
 }
 
 // utility function to call addProject on core for either V0/V1 core,
@@ -153,9 +154,7 @@ export async function mintProjectUntilRemaining(
   _leaveRemainingInvocations: number = 0
 ) {
   for (let i = 0; i < this.maxInvocations - _leaveRemainingInvocations; i++) {
-    await this.genArt721Core
-      .connect(_minterAccount)
-      .mint(_minterAccount.address, _projectId, _minterAccount.address);
+    await this.minter.connect(_minterAccount).purchase(_projectId);
   }
 }
 
