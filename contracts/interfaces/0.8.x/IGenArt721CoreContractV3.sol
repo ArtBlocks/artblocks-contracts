@@ -17,6 +17,17 @@ interface IGenArt721CoreContractV3 {
      */
     event MinterUpdated(address indexed _currentMinter);
 
+    /**
+     * @notice Platform updated on bytes32-encoded field `_field`.
+     */
+    event PlatformUpdated(bytes32 indexed _field);
+
+    /**
+     * @notice Project ID `_projectId` updated on bytes32-encoded field
+     * `_update`.
+     */
+    event ProjectUpdated(uint256 indexed _projectId, bytes32 indexed _update);
+
     // version and type of the core contract
     // coreVersion is a string of the form "0.x.y"
     function coreVersion() external view returns (string memory);
@@ -61,15 +72,24 @@ interface IGenArt721CoreContractV3 {
     ) external view returns (uint256);
 
     // @dev new function in V3
+    function getPrimaryRevenueSplits(uint256 _projectId, uint256 _price)
+        external
+        view
+        returns (
+            address payable[] memory recipients_,
+            uint256[] memory revenues_
+        );
+
+    // @dev new function in V3
     function projectStateData(uint256 _projectId)
         external
         view
         returns (
-            uint256,
-            uint256,
-            bool,
-            bool,
-            bool
+            uint256 invocations,
+            uint256 maxInvocations,
+            bool active,
+            bool paused,
+            bool locked
         );
 
     function artblocksAddress() external view returns (address payable);

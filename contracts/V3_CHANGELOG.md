@@ -42,3 +42,9 @@ _This document is intended to document and explain the Art Blocks Core V3 change
   - This helps define the relationship between the V3 core contract and the V1 and V2 core contracts
 - Add public reference variables for the Art Blocks-managed Dependency and Curation registries
   - This helps more completely define, on-chain, the metadata and rendering dependencies of Art Blocks projects
+- Add events for all indexed platform and project state changes
+  - This is to improve the ability for clients to track changes to the platform and projects
+  - Specifically, this enables our subgraph indexing layer to avoid using less performant call handlers when tracking the state of the V3 core contract. Event handlers may now be used to fully define all state changes.
+- Add split revenues view function on core for primary sales
+  - This offloads often-repeated primary sale payment splitting logic from V3's minter contracts onto the V3 core contract.
+  - Placing splitter logic on core is preferred over creating something like a "common mint functions" external contract, because it avoids extra gas costs associated with EIP-2929 and calling cold addresses.
