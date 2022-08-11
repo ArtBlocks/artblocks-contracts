@@ -283,7 +283,7 @@ describe("GenArt721CoreV3 Integration", async function () {
         mockRandomizer.actuallyAssignTokenHash(
           this.projectZeroTokenZero.toNumber()
         ),
-        "Token does not exist"
+        "Token ID does not exist"
       );
     });
   });
