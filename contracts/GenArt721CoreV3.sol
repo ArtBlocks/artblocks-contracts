@@ -256,6 +256,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         }
 
         // INTERACTIONS
+        _mint(_to, thisTokenId);
 
         // token hash is updated by the randomizer contract on V3
         randomizerContract.assignTokenHash(thisTokenId);
@@ -288,6 +289,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
             tokenIdToHash[_tokenId] == bytes32(0),
             "Token hash already set."
         );
+        require(_exists(_tokenId), "Token does not exist");
         tokenIdToHash[_tokenId] = _hash;
     }
 
