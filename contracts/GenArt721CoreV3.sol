@@ -21,12 +21,15 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
 
     // generic platform event fields
     bytes32 constant FIELD_ARTBLOCKS_ADDRESS = "artblocksAddress";
+    bytes32 constant FIELD_ARTBLOCKS_ADDRESS_SECONDARY =
+        "artblocksAddressSecondary";
     bytes32 constant FIELD_RANDOMIZER_ADDRESS = "randomizerAddress";
     bytes32 constant FIELD_ARTBLOCKS_CURATION_REGISTRY_ADDRESS =
         "curationRegistryAddress";
     bytes32 constant FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS =
         "dependencyRegistryAddress";
     bytes32 constant FIELD_ARTBLOCKS_PERCENTAGE = "artblocksPercentage";
+    bytes32 constant FIELD_ARTBLOCKS_BPS_SECONDARY = "artblocksBPSSecondary";
     // generic project event fields
     bytes32 constant FIELD_PROJECT_COMPLETED = "completed";
     bytes32 constant FIELD_PROJECT_ACTIVE = "active";
@@ -108,9 +111,14 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     /// hash of artist's proposed payment updates to be approved by admin
     mapping(uint256 => bytes32) public proposedArtistAddressesAndSplitsHash;
 
+    /// Art Blocks payment address for all primary sales revenues
     address payable public artblocksAddress;
     /// Percentage of mint revenue allocated to Art Blocks
     uint256 public artblocksPercentage = 10;
+    /// Art Blocks payment address for all secondary sales royalty reveneus
+    address payable public artblocksAddressSecondary;
+    /// Basis Points of secondary sales revenue allocated to Art Blocks
+    uint256 public artblocksBPSSecondary = 250;
 
     mapping(uint256 => bytes32) public tokenIdToHash;
 
@@ -204,6 +212,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         address _adminACLContract
     ) ERC721(_tokenName, _tokenSymbol) {
         _updateArtblocksAddress(msg.sender);
+        _updateArtblocksAddressSecondary(msg.sender);
         _updateRandomizerAddress(_randomizerContract);
         // set AdminACL management contract as owner
         _transferOwnership(_adminACLContract);
@@ -334,6 +343,16 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     /**
+     * @notice Updates artblocksAddressSecondary to
+     * `_artblocksAddressSecondary`.
+     */
+    function updateArtblocksAddressSecondary(
+        address payable _artblocksAddressSecondary
+    ) external onlyAdminACL(this.updateArtblocksAddressSecondary.selector) {
+        _updateArtblocksAddressSecondary(_artblocksAddressSecondary);
+    }
+
+    /**
      * @notice Updates Art Blocks mint revenue percentage to
      * `_artblocksPercentage`.
      */
@@ -344,6 +363,19 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         require(_artblocksPercentage <= 25, "Max of 25%");
         artblocksPercentage = _artblocksPercentage;
         emit PlatformUpdated(FIELD_ARTBLOCKS_PERCENTAGE);
+    }
+
+    /**
+     * @notice Updates Art Blocks secondary sales revenue Basis Points to
+     * `_artblocksBPSSecondary`.
+     */
+    function updateArtblocksBPSSecondary(uint256 _artblocksBPSSecondary)
+        external
+        onlyAdminACL(this.updateArtblocksBPSSecondary.selector)
+    {
+        require(_artblocksBPSSecondary <= 250, "Max of 2.5%");
+        artblocksBPSSecondary = _artblocksBPSSecondary;
+        emit PlatformUpdated(FIELD_ARTBLOCKS_BPS_SECONDARY);
     }
 
     /**
@@ -1158,11 +1190,22 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     /**
-     * @notice Updates Art Blocks payment address to `_renderProviderAddress`.
+     * @notice Updates Art Blocks payment address to `_artblocksAddress`.
      */
     function _updateArtblocksAddress(address _artblocksAddress) internal {
         artblocksAddress = payable(_artblocksAddress);
         emit PlatformUpdated(FIELD_ARTBLOCKS_ADDRESS);
+    }
+
+    /**
+     * @notice Updates Art Blocks secondary sales payment address to
+     * `_artblocksAddressSecondary`.
+     */
+    function _updateArtblocksAddressSecondary(
+        address _artblocksAddressSecondary
+    ) internal {
+        artblocksAddressSecondary = payable(_artblocksAddressSecondary);
+        emit PlatformUpdated(FIELD_ARTBLOCKS_ADDRESS_SECONDARY);
     }
 
     /**
