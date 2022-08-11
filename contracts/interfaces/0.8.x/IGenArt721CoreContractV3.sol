@@ -112,6 +112,9 @@ interface IGenArt721CoreContractV3 {
 
     function artblocksPercentage() external view returns (uint256);
 
+    // function to set a token's hash (must be guarded)
+    function setTokenHash_8PT(uint256 _tokenId, bytes32 _hash) external;
+
     // @dev gas-optimized signature in V3 for `mint`
     function mint_Ecf(
         address _to,

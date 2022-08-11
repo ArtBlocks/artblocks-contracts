@@ -81,20 +81,20 @@ export async function deployAndGet(
     .deploy(...deployArgs);
 }
 
-// utility function to deploy randomizer, core, and MinterFilter
+// utility function to deploy basic randomizer, core, and MinterFilter
 // works for core versions V0, V1, V2, V3
 export async function deployCoreWithMinterFilter(
   coreContractName: string,
   minterFilterName: string
 ): Promise<CoreWithMinterSuite> {
-  const randomizer = await deployAndGet.call(this, "BasicRandomizer", []);
-  let genArt721Core, minterFilter, adminACL;
+  let randomizer, genArt721Core, minterFilter, adminACL;
   if (
     coreContractName.endsWith("V0") ||
     coreContractName.endsWith("V1") ||
     coreContractName.endsWith("V2") ||
     coreContractName.endsWith("V2_PRTNR")
   ) {
+    randomizer = await deployAndGet.call(this, "BasicRandomizer", []);
     genArt721Core = await deployAndGet.call(this, coreContractName, [
       this.name,
       this.symbol,
@@ -108,6 +108,7 @@ export async function deployCoreWithMinterFilter(
       .connect(this.accounts.deployer)
       .addMintWhitelisted(minterFilter.address);
   } else if (coreContractName.endsWith("V3")) {
+    randomizer = await deployAndGet.call(this, "BasicRandomizerV2", []);
     adminACL = await deployAndGet.call(this, "MockAdminACLV0Events", []);
     genArt721Core = await deployAndGet.call(this, coreContractName, [
       this.name,
@@ -115,6 +116,11 @@ export async function deployCoreWithMinterFilter(
       randomizer.address,
       adminACL.address,
     ]);
+    // assign core contract for randomizer to use
+    randomizer
+      .connect(this.accounts.deployer)
+      .assignCoreAndRenounce(genArt721Core.address);
+    // deploy minter filter
     minterFilter = await deployAndGet.call(this, minterFilterName, [
       genArt721Core.address,
     ]);
