@@ -13,7 +13,7 @@ import {
   getAccounts,
   assignDefaultConstants,
   deployAndGet,
-  fullyMintProject,
+  mintProjectUntilRemaining,
   advanceEVMByTime,
   deployCoreWithMinterFilter,
 } from "../../util/common";
@@ -209,7 +209,12 @@ describe("GenArt721CoreV3 AminACL Requests", async function () {
 
     it("updateProjectDescription", async function () {
       // admin may only call when in a locked state
-      await fullyMintProject.call(this, this.projectZero, this.accounts.artist);
+      await mintProjectUntilRemaining.call(
+        this,
+        this.projectZero,
+        this.accounts.artist,
+        0
+      );
       await advanceEVMByTime(FOUR_WEEKS + 1);
       // ensure admin requests expected selector
       await validateAdminACLRequest.call(this, "updateProjectDescription", [

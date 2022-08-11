@@ -15,7 +15,7 @@ import {
   assignDefaultConstants,
   deployAndGet,
   deployCoreWithMinterFilter,
-  fullyMintProject,
+  mintProjectUntilRemaining,
   advanceEVMByTime,
 } from "../../util/common";
 import { FOUR_WEEKS } from "../../util/constants";
@@ -154,7 +154,12 @@ describe("GenArt721CoreV3 Integration", async function () {
 
   describe("reverts on project locked", async function () {
     it("reverts if try to add script", async function () {
-      await fullyMintProject.call(this, this.projectZero, this.accounts.artist);
+      await mintProjectUntilRemaining.call(
+        this,
+        this.projectZero,
+        this.accounts.artist,
+        0
+      );
       // wait until project is locked
       await advanceEVMByTime(FOUR_WEEKS + 1);
       // expect revert
