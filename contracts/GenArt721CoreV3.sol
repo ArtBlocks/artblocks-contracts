@@ -1052,6 +1052,50 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     /**
+     * @notice View function that returns appropriate revenue splits between
+     * different parties given a sale price of `_price` on project
+     * `_projectId`. Prescribes a split between project artist, additional
+     * primary payee, and Art Blocks. Does not account for refund if user
+     * overpays for a token (minter should refund the difference).
+     * Some minters may have alternative methods of splitting payments, in
+     * which case they should implement their own payment splitting logic.
+     * @param _projectId Project ID to be queried.
+     * @param _price Sale price of token.
+     * @return recipients_ Array of recipient addresses, always in the order
+     * [artist, additionalPayeePrimarySales, artblocksAddress]
+     * @return revenues_ Array of recipient addresses, always in the order
+     * [artistRevenue, additionalPayeePrimarySalesRevenue, artblocksRevenue]
+     * @dev this always returns three addresses and three revenues, but the
+     * revenue could be zero for one or more of the addresses. It is up to the
+     * contract performing the revenue split to handle this appropriately.
+     */
+    function getPrimaryRevenueSplits(uint256 _projectId, uint256 _price)
+        external
+        view
+        returns (
+            address payable[] memory recipients_,
+            uint256[] memory revenues_
+        )
+    {
+        recipients_ = new address payable[](3);
+        revenues_ = new uint256[](3);
+        // calculate revenues
+        uint256 _artblocksRevenue = (_price * artblocksPercentage) / 100;
+        uint256 _projectFunds = _price - _artblocksRevenue;
+        uint256 _additionalPayeeRevenue = (_projectFunds *
+            projectIdToAdditionalPayeePrimarySalesPercentage[_projectId]) / 100;
+        // Artist
+        recipients_[0] = projectIdToArtistAddress[_projectId];
+        revenues_[0] = _projectFunds - _additionalPayeeRevenue;
+        // Additional Payee for primary sales
+        recipients_[1] = projectIdToAdditionalPayeePrimarySales[_projectId];
+        revenues_[1] = _additionalPayeeRevenue;
+        // Art Blocks
+        recipients_[2] = artblocksAddress;
+        revenues_[2] = _artblocksRevenue;
+    }
+
+    /**
      * @notice Returns contract owner. Set to deployer's address by default on
      * contract deployment.
      * @dev ref: https://docs.openzeppelin.com/contracts/4.x/api/access#Ownable
