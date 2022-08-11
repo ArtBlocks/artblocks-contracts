@@ -495,4 +495,61 @@ describe("GenArt721CoreV3 Views", async function () {
       );
     });
   });
+
+  describe("numHistoricalRandomizers", function () {
+    it("returns value of one upon initial configuration", async function () {
+      const numHistoricalRandomizers = await this.genArt721Core
+        .connect(this.accounts.user)
+        .numHistoricalRandomizers();
+      expect(numHistoricalRandomizers).to.be.equal(1);
+    });
+
+    it("increments value when more randomizers are added", async function () {
+      // update to dummy randomizer address
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateRandomizerAddress(this.accounts.deployer.address);
+      // expect incremented number of randomizers
+      const numHistoricalRandomizers = await this.genArt721Core
+        .connect(this.accounts.user)
+        .numHistoricalRandomizers();
+      expect(numHistoricalRandomizers).to.be.equal(2);
+    });
+  });
+
+  describe("getHistoricalRandomizerAt", function () {
+    it("returns initial randomizer at index of zero upon initial configuration", async function () {
+      const randomizerAddress = await this.genArt721Core
+        .connect(this.accounts.user)
+        .getHistoricalRandomizerAt(0);
+      expect(randomizerAddress).to.be.equal(this.randomizer.address);
+    });
+
+    it("returns initial and next randomizer at expected indices when >1 randomizer in history", async function () {
+      // update to dummy randomizer address
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateRandomizerAddress(this.accounts.deployer.address);
+      // expect initial randomizer at index zero
+      const initialRandomizer = await this.genArt721Core
+        .connect(this.accounts.user)
+        .getHistoricalRandomizerAt(0);
+      expect(initialRandomizer).to.be.equal(this.randomizer.address);
+      // expect next randomizer at index one
+      const nextRandomizer = await this.genArt721Core
+        .connect(this.accounts.user)
+        .getHistoricalRandomizerAt(1);
+      expect(nextRandomizer).to.be.equal(this.accounts.deployer.address);
+    });
+
+    it("reverts when invalid index is queried", async function () {
+      // expect revert when query out of bounds index
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.user)
+          .getHistoricalRandomizerAt(2),
+        "Index out of bounds"
+      );
+    });
+  });
 });
