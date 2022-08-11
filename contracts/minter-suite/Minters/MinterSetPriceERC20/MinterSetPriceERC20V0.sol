@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../interfaces/0.8.x/IGenArt721CoreContractV1.sol";
-import "../interfaces/0.8.x/IMinterFilterV0.sol";
-import "../interfaces/0.8.x/IFilteredMinterV0.sol";
+import "../../../interfaces/0.8.x/IGenArt721CoreContractV1.sol";
+import "../../../interfaces/0.8.x/IMinterFilterV0.sol";
+import "../../../interfaces/0.8.x/IFilteredMinterV0.sol";
 
 import "@openzeppelin-4.5/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
@@ -15,7 +15,7 @@ pragma solidity 0.8.9;
  * or any ERC-20 token.
  * @author Art Blocks Inc.
  */
-contract MinterSetPriceERC20V1 is ReentrancyGuard, IFilteredMinterV0 {
+contract MinterSetPriceERC20V0 is ReentrancyGuard, IFilteredMinterV0 {
     /// Core contract address this minter interacts with
     address public immutable genArt721CoreAddress;
 
@@ -29,10 +29,18 @@ contract MinterSetPriceERC20V1 is ReentrancyGuard, IFilteredMinterV0 {
     IMinterFilterV0 private immutable minterFilter;
 
     /// minterType for this minter
-    string public constant minterType = "MinterSetPriceERC20V1";
+    string public constant minterType = "MinterSetPriceERC20V0";
 
     uint256 constant ONE_MILLION = 1_000_000;
 
+    /// projectId => are contracts allowed to mint?
+    mapping(uint256 => bool) public contractMintable;
+    /// projectId => are tokens allowed to be minted to other addresses?
+    mapping(uint256 => bool) public purchaseToDisabled;
+    /// purchaser address => projectId => number of mints purchased
+    mapping(address => mapping(uint256 => uint256)) public projectMintCounter;
+    /// projectId => maximum number of mints a given address may invoke
+    mapping(uint256 => uint256) public projectMintLimit;
     /// projectId => has project reached its maximum number of invocations?
     mapping(uint256 => bool) public projectMaxHasBeenInvoked;
     /// projectId => project's maximum number of invocations
@@ -122,6 +130,20 @@ contract MinterSetPriceERC20V1 is ReentrancyGuard, IFilteredMinterV0 {
     }
 
     /**
+     * @notice Sets the mint limit of a single purchaser for project
+     * `_projectId` to `_limit`.
+     * @param _projectId Project ID to set the mint limit for.
+     * @param _limit Number of times a given address may mint the
+     * project's tokens.
+     */
+    function setProjectMintLimit(uint256 _projectId, uint8 _limit)
+        external
+        onlyCoreWhitelisted
+    {
+        projectMintLimit[_projectId] = _limit;
+    }
+
+    /**
      * @notice Sets the maximum invocations of project `_projectId` based
      * on the value currently defined in the core contract.
      * @param _projectId Project ID to set the maximum invocations for.
@@ -145,15 +167,31 @@ contract MinterSetPriceERC20V1 is ReentrancyGuard, IFilteredMinterV0 {
     }
 
     /**
-     * @notice Warning: Disabling purchaseTo is not supported on this minter.
-     * This method exists purely for interface-conformance purposes.
+     * @notice Toggles if contracts are allowed to mint tokens for
+     * project `_projectId`.
+     * @param _projectId Project ID to be toggled.
+     */
+    function toggleContractMintable(uint256 _projectId)
+        external
+        onlyCoreWhitelisted
+    {
+        contractMintable[_projectId] = !contractMintable[_projectId];
+    }
+
+    /**
+     * @notice Toggles if purchases to other address are enabled for
+     * project `_projectId`.
+     * @param _projectId Project ID to be toggled.
      */
     function togglePurchaseToDisabled(uint256 _projectId)
         external
-        view
-        onlyArtist(_projectId)
+        onlyCoreWhitelisted
     {
-        revert("Action not supported");
+        purchaseToDisabled[_projectId] = !purchaseToDisabled[_projectId];
+        emit PurchaseToDisabledUpdated(
+            _projectId,
+            purchaseToDisabled[_projectId]
+        );
     }
 
     /**
@@ -237,7 +275,28 @@ contract MinterSetPriceERC20V1 is ReentrancyGuard, IFilteredMinterV0 {
             "Price not configured"
         );
 
-        // EFFECTS
+        // if contract filter is off, allow calls from another contract
+        if (!contractMintable[_projectId]) {
+            require(msg.sender == tx.origin, "No Contract Buys");
+        }
+
+        // if purchaseTo is disabled, enforce purchase destination to be the TX
+        // sending address.
+        if (purchaseToDisabled[_projectId]) {
+            require(msg.sender == _to, "No `purchaseTo` Allowed");
+        }
+
+        // limit mints per address by project
+        if (projectMintLimit[_projectId] > 0) {
+            require(
+                projectMintCounter[msg.sender][_projectId] <
+                    projectMintLimit[_projectId],
+                "Reached minting limit"
+            );
+            // EFFECTS
+            projectMintCounter[msg.sender][_projectId]++;
+        }
+
         tokenId = minterFilter.mint(_to, _projectId, msg.sender);
         // what if projectMaxInvocations[_projectId] is 0 (default value)?
         // that is intended, so that by default the minter allows infinite transactions,
