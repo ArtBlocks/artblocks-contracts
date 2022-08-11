@@ -233,7 +233,7 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721Enumerable, IGenArt721CoreV2_PBAB {
     /**
      * @notice Updates preferredIPFSGateway to `_gateway`.
      */
-    function updateIPFSGateway(string memory _gateway) public onlyAdmin {
+    function updateIPFSGateway(string calldata _gateway) public onlyAdmin {
         preferredIPFSGateway = _gateway;
         emit GatewayUpdated(ExternalAssetDependencyType.ARWEAVE, _gateway);
     }
@@ -241,7 +241,7 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721Enumerable, IGenArt721CoreV2_PBAB {
     /**
      * @notice Updates preferredArweaveGateway to `_gateway`.
      */
-    function updateArweaveGateway(string memory _gateway) public onlyAdmin {
+    function updateArweaveGateway(string calldata _gateway) public onlyAdmin {
         preferredArweaveGateway = _gateway;
         emit GatewayUpdated(ExternalAssetDependencyType.IPFS, _gateway);
     }
