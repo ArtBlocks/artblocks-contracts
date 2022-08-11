@@ -69,32 +69,6 @@ describe("GenArt721CoreV3 Events", async function () {
       .addProject("name", this.accounts.artist2.address);
   });
 
-  // describe("ProjectCompleted", function () {
-  //   it("emits ProjectCompleted when being minted out", async function () {
-  //     for (let i = 0; i < this.maxInvocations - 1; i++) {
-  //       await this.genArt721Core
-  //         .connect(this.accounts.artist)
-  //         .mint(
-  //           this.accounts.artist.address,
-  //           this.projectZero,
-  //           this.accounts.artist.address
-  //         );
-  //     }
-  //     // emits event when being minted out
-  //     expect(
-  //       await this.genArt721Core
-  //         .connect(this.accounts.artist)
-  //         .mint(
-  //           this.accounts.artist.address,
-  //           this.projectZero,
-  //           this.accounts.artist.address
-  //         )
-  //     )
-  //       .to.emit(this.genArt721Core, "ProjectCompleted")
-  //       .withArgs(this.projectZero);
-  //   });
-  // });
-
   describe("MinterUpdated", function () {
     it("emits MinterUpdated when being updated", async function () {
       // emits expected event arg(s)
