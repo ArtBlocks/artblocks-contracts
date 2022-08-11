@@ -60,8 +60,14 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     /// Dependency registry managed by Art Blocks
     address public artblocksDependencyRegistryAddress;
 
-    /// randomizer contract
+    /// current randomizer contract
     IRandomizerV2 public randomizerContract;
+
+    /// mapping of all randomizer contract addresses ever used by this contract
+    /// @dev index of first randomizer begins at zero, incrementing by one each
+    /// time a randomizer change occurs.
+    mapping(uint256 => address) private _indexToRandomizerContracts;
+    uint256 private _nextRandomizerIndex;
 
     /// admin ACL contract
     IAdminACLV0 public adminACLContract;
@@ -946,6 +952,30 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     /**
+     * @notice Gets qty of randomizers in history of all randomizers used by
+     * this core contract.
+     */
+    function numHistoricalRandomizers() external view returns (uint256) {
+        return _nextRandomizerIndex;
+    }
+
+    /**
+     * @notice Gets address of randomizer at index `_index` in history of all
+     * randomizers used by this core contract. Index is zero-based.
+     * @param _index Historical index of randomizer to be queried.
+     * @dev If a randomizer is switched away from and then switch back to, it
+     * will show up in the history twice.
+     */
+    function getHistoricalRandomizerAt(uint256 _index)
+        external
+        view
+        returns (address)
+    {
+        require(_index < _nextRandomizerIndex, "Index out of bounds");
+        return _indexToRandomizerContracts[_index];
+    }
+
+    /**
      * @notice Gets royalty data for token ID `_tokenId`.
      * @param _tokenId Token ID to be queried.
      * @return artistAddress Artist's payment address
@@ -1136,6 +1166,10 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      */
     function _updateRandomizerAddress(address _randomizerAddress) internal {
         randomizerContract = IRandomizerV2(_randomizerAddress);
+        // populate historical randomizer mapping, then increment index
+        _indexToRandomizerContracts[
+            _nextRandomizerIndex++
+        ] = _randomizerAddress;
         emit PlatformUpdated(FIELD_RANDOMIZER_ADDRESS);
     }
 
