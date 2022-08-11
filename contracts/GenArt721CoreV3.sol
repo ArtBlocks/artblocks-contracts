@@ -278,7 +278,10 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @param _hash Hash to set for the token ID.
      * @dev gas-optimized function name because called during mint sequence
      */
-    function setTokenHash_8PT(uint256 _tokenId, bytes32 _hash) external {
+    function setTokenHash_8PT(uint256 _tokenId, bytes32 _hash)
+        external
+        onlyValidTokenId(_tokenId)
+    {
         require(
             msg.sender == address(randomizerContract),
             "Only randomizer may set"
@@ -287,7 +290,6 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
             tokenIdToHash[_tokenId] == bytes32(0),
             "Token hash already set."
         );
-        require(_exists(_tokenId), "Token does not exist");
         tokenIdToHash[_tokenId] = _hash;
     }
 
