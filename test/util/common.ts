@@ -199,11 +199,13 @@ type T_PBAB = {
 };
 
 export async function deployAndGetPBAB(): Promise<T_PBAB> {
+  const randomizer = await deployAndGet.call(this, "BasicRandomizer", []);
+
   const PBABFactory = await ethers.getContractFactory("GenArt721CoreV2_PBAB");
   const pbabToken = await PBABFactory.connect(this.accounts.deployer).deploy(
     this.name,
     this.symbol,
-    this.randomizer.address
+    randomizer.address
   );
   const minterFactory = await ethers.getContractFactory("GenArt721Minter_PBAB");
   const pbabMinter = await minterFactory.deploy(pbabToken.address);
