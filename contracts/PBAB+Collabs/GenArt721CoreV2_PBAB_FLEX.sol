@@ -36,6 +36,7 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721Enumerable, IGenArt721CoreV2_PBAB {
         bool paused;
         bool externalAssetDependenciesLocked;
         uint256 externalAssetDependencyCount;
+        mapping(uint256 => ExternalAssetDependency) externalAssetDependencies;
     }
 
     event ExternalAssetDependencyUpdated(
@@ -44,16 +45,18 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721Enumerable, IGenArt721CoreV2_PBAB {
         string _cid,
         ExternalAssetDependencyType _dependencyType
     );
+
     event ExternalAssetDependencyRemoved(
         uint256 indexed _projectId,
-        uint256 indexed _index,
-        string _cid,
-        ExternalAssetDependencyType _dependencyType
+        uint256 indexed _index
     );
-    event ToggleProjectExternalAssetDependenciesLocked(
-        uint256 indexed _projectId,
-        bool _locked
+
+    event GatewayUpdated(
+        ExternalAssetDependencyType _dependencyType,
+        string _gatewayAddress
     );
+
+    event ProjectExternalAssetDependenciesLocked(uint256 indexed _projectId);
 
     enum ExternalAssetDependencyType {
         IPFS,
@@ -63,8 +66,6 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721Enumerable, IGenArt721CoreV2_PBAB {
         string cid;
         ExternalAssetDependencyType dependencyType;
     }
-    mapping(uint256 => ExternalAssetDependency[])
-        public projectIdToExternalAssetDependencies;
 
     string public preferredIPFSGateway;
     string public preferredArweaveGateway;
@@ -230,6 +231,22 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721Enumerable, IGenArt721CoreV2_PBAB {
     }
 
     /**
+     * @notice Updates preferredIPFSGateway to `_gateway`.
+     */
+    function updateIPFSGateway(string memory _gateway) public onlyAdmin {
+        preferredIPFSGateway = _gateway;
+        emit GatewayUpdated(ExternalAssetDependencyType.ARWEAVE, _gateway);
+    }
+
+    /**
+     * @notice Updates preferredArweaveGateway to `_gateway`.
+     */
+    function updateArweaveGateway(string memory _gateway) public onlyAdmin {
+        preferredArweaveGateway = _gateway;
+        emit GatewayUpdated(ExternalAssetDependencyType.IPFS, _gateway);
+    }
+
+    /**
      * @notice Updates contract admin to `_adminAddress`.
      */
     function updateAdmin(address _adminAddress) public onlyAdmin {
@@ -310,13 +327,13 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721Enumerable, IGenArt721CoreV2_PBAB {
     /**
      * @notice Locks external asset dependencies for project `_projectId`.
      */
-    function toggleProjectExternalAssetDependenciesAreLocked(uint256 _projectId)
+    function lockProjectExternalAssetDependencies(uint256 _projectId)
         public
         onlyArtistOrWhitelisted(_projectId)
-        onlyUnlocked(_projectId)
+        onlyUnlockedProjectExternalAssetDependencies(_projectId)
     {
         projects[_projectId].externalAssetDependenciesLocked = true;
-        emit ToggleProjectExternalAssetDependenciesLocked(_projectId, true);
+        emit ProjectExternalAssetDependenciesLocked(_projectId);
     }
 
     /**
@@ -536,8 +553,10 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721Enumerable, IGenArt721CoreV2_PBAB {
      * @notice Updates external asset dependency for project `_projectId`.
      * @param _projectId Project to be updated.
      * @param _index Asset index.
-     * @param _cid Asset cid.
+     * @param _cid Asset cid (Content identifier).
      * @param _dependencyType Asset dependency type.
+     *  0 - IPFS
+     *  1 - ARWEAVE
      */
     function updateProjectExternalAssetDependency(
         uint256 _projectId,
@@ -545,16 +564,17 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721Enumerable, IGenArt721CoreV2_PBAB {
         string memory _cid,
         ExternalAssetDependencyType _dependencyType
     )
-        public
+        external
         onlyUnlockedProjectExternalAssetDependencies(_projectId)
         onlyArtistOrWhitelisted(_projectId)
     {
         require(
-            _index < projectIdToExternalAssetDependencies[_projectId].length,
+            _index < projects[_projectId].externalAssetDependencyCount,
             "Asset index out of range"
         );
-        projectIdToExternalAssetDependencies[_projectId][_index].cid = _cid;
-        projectIdToExternalAssetDependencies[_projectId][_index]
+        projects[_projectId].externalAssetDependencies[_index].cid = _cid;
+        projects[_projectId]
+            .externalAssetDependencies[_index]
             .dependencyType = _dependencyType;
         emit ExternalAssetDependencyUpdated(
             _projectId,
@@ -565,7 +585,8 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721Enumerable, IGenArt721CoreV2_PBAB {
     }
 
     /**
-     * @notice Removes external asset dependency for project `_projectId`.
+     * @notice Removes external asset dependency for project `_projectId` at index `_index`.
+     * Assets with indices higher than `_index` can have their indices adjusted as a result of this operation.
      * @param _projectId Project to be updated.
      * @param _index Asset index
      */
@@ -573,55 +594,42 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721Enumerable, IGenArt721CoreV2_PBAB {
         uint256 _projectId,
         uint256 _index
     )
-        public
+        external
         onlyUnlockedProjectExternalAssetDependencies(_projectId)
         onlyArtistOrWhitelisted(_projectId)
     {
         require(
-            _index < projectIdToExternalAssetDependencies[_projectId].length,
+            _index < projects[_projectId].externalAssetDependencyCount,
             "Asset index out of range"
         );
 
-        string memory _cid = projectIdToExternalAssetDependencies[_projectId][
-            _index
-        ].cid;
-        ExternalAssetDependencyType _dependencyType = projectIdToExternalAssetDependencies[
-                _projectId
-            ][_index].dependencyType;
+        uint256 lastElementIndex = projects[_projectId]
+            .externalAssetDependencyCount - 1;
 
-        for (
-            uint256 i = _index;
-            i < projectIdToExternalAssetDependencies[_projectId].length - 1;
-            i++
-        ) {
-            projectIdToExternalAssetDependencies[_projectId][
-                i
-            ] = projectIdToExternalAssetDependencies[_projectId][i + 1];
-        }
-        projectIdToExternalAssetDependencies[_projectId].pop();
-        projects[_projectId].externalAssetDependencyCount =
-            projects[_projectId].externalAssetDependencyCount -
-            1;
-        emit ExternalAssetDependencyRemoved(
-            _projectId,
-            _index,
-            _cid,
-            _dependencyType
-        );
+        projects[_projectId].externalAssetDependencies[_index] = projects[
+            _projectId
+        ].externalAssetDependencies[lastElementIndex];
+        delete projects[_projectId].externalAssetDependencies[lastElementIndex];
+
+        projects[_projectId].externalAssetDependencyCount = lastElementIndex;
+
+        emit ExternalAssetDependencyRemoved(_projectId, _index);
     }
 
     /**
      * @notice Adds external asset dependency for project `_projectId`.
      * @param _projectId Project to be updated.
-     * @param _cid Asset cid.
+     * @param _cid Asset cid (Content identifier).
      * @param _dependencyType Asset dependency type.
+     *  0 - IPFS
+     *  1 - ARWEAVE
      */
     function addProjectExternalAssetDependency(
         uint256 _projectId,
         string memory _cid,
         ExternalAssetDependencyType _dependencyType
     )
-        public
+        external
         onlyUnlockedProjectExternalAssetDependencies(_projectId)
         onlyArtistOrWhitelisted(_projectId)
     {
@@ -629,14 +637,16 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721Enumerable, IGenArt721CoreV2_PBAB {
             cid: _cid,
             dependencyType: _dependencyType
         });
-        projectIdToExternalAssetDependencies[_projectId].push(asset);
+        projects[_projectId].externalAssetDependencies[
+            projects[_projectId].externalAssetDependencyCount
+        ] = asset;
         projects[_projectId].externalAssetDependencyCount =
             projects[_projectId].externalAssetDependencyCount +
             1;
 
         emit ExternalAssetDependencyUpdated(
             _projectId,
-            projectIdToExternalAssetDependencies[_projectId].length - 1,
+            projects[_projectId].externalAssetDependencyCount - 1,
             _cid,
             _dependencyType
         );
@@ -796,6 +806,27 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721Enumerable, IGenArt721CoreV2_PBAB {
         returns (string memory)
     {
         return projects[_projectId].scripts[_index];
+    }
+
+    /**
+     * @notice Returns external asset dependency for project `_projectId` at index `_index`.
+     */
+    function projectExternalAssetDependencyByIndex(
+        uint256 _projectId,
+        uint256 _index
+    ) public view returns (ExternalAssetDependency memory) {
+        return projects[_projectId].externalAssetDependencies[_index];
+    }
+
+    /**
+     * @notice Returns external asset dependency for project `_projectId` at index `_index`.
+     */
+    function projectExternalAssetDependencyCount(uint256 _projectId)
+        public
+        view
+        returns (uint256)
+    {
+        return projects[_projectId].externalAssetDependencyCount;
     }
 
     /**

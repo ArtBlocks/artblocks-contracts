@@ -80,13 +80,13 @@ describe("GenArt721CoreV2_PBAB_FLEX_Integration", async function () {
           "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo",
           0
         );
-      const externalAssetDependencies = await this.genArt721Core
+      const externalAssetDependency = await this.genArt721Core
         .connect(this.accounts.artist)
-        .projectIdToExternalAssetDependencies(0, 0);
-      expect(externalAssetDependencies[0]).to.equal(
+        .projectExternalAssetDependencyByIndex(0, 0);
+      expect(externalAssetDependency[0]).to.equal(
         "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo"
       );
-      expect(externalAssetDependencies[1]).to.equal(0);
+      expect(externalAssetDependency[1]).to.equal(0);
     });
 
     it("can remove an external asset dependency", async function () {
@@ -117,19 +117,13 @@ describe("GenArt721CoreV2_PBAB_FLEX_Integration", async function () {
         .connect(this.accounts.artist)
         .removeProjectExternalAssetDependency(0, 1);
       // get project external asset info   index 1 (should be info for project formerly at index 2)
+
+      // project external asset info at index 2 should be set back to default values as a result of being deleted
       const externalAssetDependency = await this.genArt721Core
         .connect(this.accounts.artist)
-        .projectIdToExternalAssetDependencies(0, 1);
-      expect(externalAssetDependency[0]).to.equal(
-        "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo3"
-      );
+        .projectExternalAssetDependencyByIndex(0, 2);
+      expect(externalAssetDependency[0]).to.equal("");
       expect(externalAssetDependency[1]).to.equal(0);
-      // project external asset info at index 2 should revert
-      await expectRevert.unspecified(
-        this.genArt721Core
-          .connect(this.accounts.artist)
-          .projectIdToExternalAssetDependencies(0, 2)
-      );
     });
 
     it("can update an external asset dependency", async function () {
@@ -144,7 +138,7 @@ describe("GenArt721CoreV2_PBAB_FLEX_Integration", async function () {
       // get asset info at index 0 for project 0
       const externalAssetDependency = await this.genArt721Core
         .connect(this.accounts.artist)
-        .projectIdToExternalAssetDependencies(0, 0);
+        .projectExternalAssetDependencyByIndex(0, 0);
       expect(externalAssetDependency[0]).to.equal(
         "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo"
       );
@@ -161,7 +155,7 @@ describe("GenArt721CoreV2_PBAB_FLEX_Integration", async function () {
 
       const externalAssetDependency2 = await this.genArt721Core
         .connect(this.accounts.artist)
-        .projectIdToExternalAssetDependencies(0, 0);
+        .projectExternalAssetDependencyByIndex(0, 0);
       expect(externalAssetDependency2[0]).to.equal(
         "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo2"
       );
@@ -180,12 +174,12 @@ describe("GenArt721CoreV2_PBAB_FLEX_Integration", async function () {
       // lock external asset dependencies for project 0
       await this.genArt721Core
         .connect(this.accounts.artist)
-        .toggleProjectExternalAssetDependenciesAreLocked(0);
+        .lockProjectExternalAssetDependencies(0);
 
       // get asset info at index 0 for project 0
       const externalAssetDependency = await this.genArt721Core
         .connect(this.accounts.artist)
-        .projectIdToExternalAssetDependencies(0, 0);
+        .projectExternalAssetDependencyByIndex(0, 0);
 
       expect(externalAssetDependency[0]).to.equal(
         "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo"
