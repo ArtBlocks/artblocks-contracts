@@ -561,7 +561,7 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721Enumerable, IGenArt721CoreV2_PBAB {
     function updateProjectExternalAssetDependency(
         uint256 _projectId,
         uint256 _index,
-        string memory _cid,
+        string calldata _cid,
         ExternalAssetDependencyType _dependencyType
     )
         external
@@ -626,7 +626,7 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721Enumerable, IGenArt721CoreV2_PBAB {
      */
     function addProjectExternalAssetDependency(
         uint256 _projectId,
-        string memory _cid,
+        string calldata _cid,
         ExternalAssetDependencyType _dependencyType
     )
         external
