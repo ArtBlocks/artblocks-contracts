@@ -1018,28 +1018,37 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     /**
-     * @notice Gets royalties for token ID `_tokenId`. This conforms to the
-     * IManifold interface designated in the Royalty Registry's
-     * RoyaltyEngineV1.sol contract.
+     * @notice Gets royalty Basis Points (BPS) for token ID `_tokenId`.
+     * This conforms to the IManifold interface designated in the Royalty
+     * Registry's RoyaltyEngineV1.sol contract.
      * ref: https://github.com/manifoldxyz/royalty-registry-solidity
      * @param _tokenId Token ID to be queried.
      * @return recipients Array of royalty payment recipients
      * @return bps Array of Basis Points (BPS) allocated to each recipient,
      * aligned by index.
-     * @dev only returns recipients that have a non-zero BPS allocation.
+     * @dev reverts if invalid _tokenId
+     * @dev only returns recipients that have a non-zero BPS allocation
      */
     function getRoyalties(uint256 _tokenId)
         external
         view
+        onlyValidTokenId(_tokenId)
         returns (address payable[] memory recipients, uint256[] memory bps)
     {
         uint256 projectId = _tokenId / ONE_MILLION;
-        // determine BPS for each recipient
-        uint256 royaltyBPSForArtistAndAdditional = 100 *
-            projectIdToSecondaryMarketRoyaltyPercentage[projectId];
-        uint256 artistBPS = (royaltyBPSForArtistAndAdditional * 100) /
-            projectIdToAdditionalPayeeSecondarySalesPercentage[projectId];
-        uint256 additionalBPS = royaltyBPSForArtistAndAdditional - artistBPS;
+        // load values into memory
+        uint256 royaltyPercentageForArtistAndAdditional = projectIdToSecondaryMarketRoyaltyPercentage[
+                projectId
+            ];
+        uint256 additionalPayeePercentage = projectIdToAdditionalPayeeSecondarySalesPercentage[
+                projectId
+            ];
+        // calculate BPS = percentage * 100
+        uint256 artistBPS = (100 - additionalPayeePercentage) *
+            royaltyPercentageForArtistAndAdditional;
+
+        uint256 additionalBPS = additionalPayeePercentage *
+            royaltyPercentageForArtistAndAdditional;
         uint256 artblocksBPS = artblocksSecondarySalesBPS;
         // determine length of returned array
         uint256 returnLength = artistBPS > 0 ? 1 : 0;
