@@ -135,17 +135,6 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     string public constant coreVersion = "v3.0.0";
     string public constant coreType = "GenArt721CoreV3";
 
-    event ProposedArtistAddressesAndSplits(
-        uint256 indexed _projectId,
-        address _artistAddress,
-        address _additionalPayeePrimarySales,
-        uint256 _additionalPayeePrimarySalesPercentage,
-        address _additionalPayeeSecondarySales,
-        uint256 _additionalPayeeSecondarySalesPercentage
-    );
-
-    event AcceptedArtistAddressesAndSplits(uint256 indexed _projectId);
-
     modifier onlyValidTokenId(uint256 _tokenId) {
         require(_exists(_tokenId), "Token ID does not exist");
         _;
