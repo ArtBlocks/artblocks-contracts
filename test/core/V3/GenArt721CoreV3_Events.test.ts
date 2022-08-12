@@ -93,6 +93,19 @@ describe("GenArt721CoreV3 Events", async function () {
         );
     });
 
+    it("emits artblocksSecondarySalesAddress", async function () {
+      // emits expected event arg(s)
+      expect(
+        await this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateArtblocksSecondarySalesAddress(this.accounts.artist.address)
+      )
+        .to.emit(this.genArt721Core, "PlatformUpdated")
+        .withArgs(
+          ethers.utils.formatBytes32String("artblocksSecondarySalesAddress")
+        );
+    });
+
     it("emits 'randomizerAddress'", async function () {
       // emits expected event arg(s)
       expect(
@@ -141,6 +154,17 @@ describe("GenArt721CoreV3 Events", async function () {
         .withArgs(
           ethers.utils.formatBytes32String("artblocksPrimaryPercentage")
         );
+    });
+
+    it("emits 'artblocksSecondaryBPS'", async function () {
+      // emits expected event arg(s)
+      expect(
+        await this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateArtblocksSecondarySalesBPS(240)
+      )
+        .to.emit(this.genArt721Core, "PlatformUpdated")
+        .withArgs(ethers.utils.formatBytes32String("artblocksSecondaryBPS"));
     });
   });
 

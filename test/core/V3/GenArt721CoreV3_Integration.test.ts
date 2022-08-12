@@ -77,6 +77,14 @@ describe("GenArt721CoreV3 Integration", async function () {
     });
   });
 
+  describe("artblocksSecondarySalesAddress", function () {
+    it("returns expected artblocksSecondarySalesAddress", async function () {
+      expect(
+        await this.genArt721Core.artblocksSecondarySalesAddress()
+      ).to.be.equal(this.accounts.deployer.address);
+    });
+  });
+
   describe("owner", function () {
     it("returns expected owner", async function () {
       expect(await this.genArt721Core.owner()).to.be.equal(
