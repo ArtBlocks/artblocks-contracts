@@ -109,7 +109,7 @@ interface IGenArt721CoreContractV3 {
         );
 
     // @dev Art Blocks primary sales payment address
-    function artblocksAddressPrimarySales()
+    function artblocksPrimarySalesAddress()
         external
         view
         returns (address payable);
@@ -118,7 +118,7 @@ interface IGenArt721CoreContractV3 {
     function artblocksPrimarySalesPercentage() external view returns (uint256);
 
     // @dev Art Blocks secondary sales royalties payment address
-    function artblocksAddressSecondarySales()
+    function artblocksSecondarySalesAddress()
         external
         view
         returns (address payable);

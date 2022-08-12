@@ -20,10 +20,10 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     uint256 constant FOUR_WEEKS_IN_SECONDS = 2_419_200;
 
     // generic platform event fields
-    bytes32 constant FIELD_ARTBLOCKS_ADDRESS_PRIMARY_SALES =
-        "artblocksAddressPrimarySales";
-    bytes32 constant FIELD_ARTBLOCKS_ADDRESS_SECONDARY_SALES =
-        "artblocksAddressSecondarySales";
+    bytes32 constant FIELD_ARTBLOCKS_PRIMARY_SALES_ADDRESS =
+        "artblocksPrimarySalesAddress";
+    bytes32 constant FIELD_ARTBLOCKS_SECONDARY_SALES_ADDRESS =
+        "artblocksSecondarySalesAddress";
     bytes32 constant FIELD_RANDOMIZER_ADDRESS = "randomizerAddress";
     bytes32 constant FIELD_ARTBLOCKS_CURATION_REGISTRY_ADDRESS =
         "curationRegistryAddress";
@@ -115,11 +115,11 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     mapping(uint256 => bytes32) public proposedArtistAddressesAndSplitsHash;
 
     /// Art Blocks payment address for all primary sales revenues
-    address payable public artblocksAddressPrimarySales;
+    address payable public artblocksPrimarySalesAddress;
     /// Percentage of primary sales revenue allocated to Art Blocks
     uint256 public artblocksPrimarySalesPercentage = 10;
     /// Art Blocks payment address for all secondary sales royalty revenues
-    address payable public artblocksAddressSecondarySales;
+    address payable public artblocksSecondarySalesAddress;
     /// Basis Points of secondary sales royalties allocated to Art Blocks
     uint256 public artblocksSecondarySalesBPS = 250;
 
@@ -214,8 +214,8 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         address _randomizerContract,
         address _adminACLContract
     ) ERC721(_tokenName, _tokenSymbol) {
-        _updateArtblocksAddressPrimarySales(msg.sender);
-        _updateArtblocksAddressSecondarySales(msg.sender);
+        _updateArtblocksPrimarySalesAddress(msg.sender);
+        _updateArtblocksSecondarySalesAddress(msg.sender);
         _updateRandomizerAddress(_randomizerContract);
         // set AdminACL management contract as owner
         _transferOwnership(_adminACLContract);
@@ -336,25 +336,25 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     /**
-     * @notice Updates artblocksAddressPrimarySales to `_artblocksAddressPrimarySales`.
+     * @notice Updates artblocksPrimarySalesAddress to `_artblocksPrimarySalesAddress`.
      */
-    function updateArtblocksAddressPrimarySales(
-        address payable _artblocksAddressPrimarySales
-    ) external onlyAdminACL(this.updateArtblocksAddressPrimarySales.selector) {
-        _updateArtblocksAddressPrimarySales(_artblocksAddressPrimarySales);
+    function updateArtblocksPrimarySalesAddress(
+        address payable _artblocksPrimarySalesAddress
+    ) external onlyAdminACL(this.updateArtblocksPrimarySalesAddress.selector) {
+        _updateArtblocksPrimarySalesAddress(_artblocksPrimarySalesAddress);
     }
 
     /**
      * @notice Updates Art Blocks secondary sales royalty payment address to
-     * `_artblocksAddressSecondarySales`.
+     * `_artblocksSecondarySalesAddress`.
      */
-    function updateArtblocksAddressSecondarySales(
-        address payable _artblocksAddressSecondarySales
+    function updateArtblocksSecondarySalesAddress(
+        address payable _artblocksSecondarySalesAddress
     )
         external
-        onlyAdminACL(this.updateArtblocksAddressSecondarySales.selector)
+        onlyAdminACL(this.updateArtblocksSecondarySalesAddress.selector)
     {
-        _updateArtblocksAddressSecondarySales(_artblocksAddressSecondarySales);
+        _updateArtblocksSecondarySalesAddress(_artblocksSecondarySalesAddress);
     }
 
     /**
@@ -1095,7 +1095,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
             100;
         artistRevenue_ = projectFunds - additionalPayeePrimaryRevenue_;
         // set addresses from storage
-        artblocksAddress_ = artblocksAddressPrimarySales;
+        artblocksAddress_ = artblocksPrimarySalesAddress;
         artistAddress_ = artistRevenue_ > 0
             ? projectIdToArtistAddress[_projectId]
             : payable(address(0));
@@ -1198,24 +1198,24 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     /**
      * @notice Updates Art Blocks payment address to `_artblocksAddress`.
      */
-    function _updateArtblocksAddressPrimarySales(
-        address _artblocksAddressPrimarySales
+    function _updateArtblocksPrimarySalesAddress(
+        address _artblocksPrimarySalesAddress
     ) internal {
-        artblocksAddressPrimarySales = payable(_artblocksAddressPrimarySales);
-        emit PlatformUpdated(FIELD_ARTBLOCKS_ADDRESS_PRIMARY_SALES);
+        artblocksPrimarySalesAddress = payable(_artblocksPrimarySalesAddress);
+        emit PlatformUpdated(FIELD_ARTBLOCKS_PRIMARY_SALES_ADDRESS);
     }
 
     /**
      * @notice Updates Art Blocks secondary sales royalty payment address to
-     * `_artblocksAddressSecondarySales`.
+     * `_artblocksSecondarySalesAddress`.
      */
-    function _updateArtblocksAddressSecondarySales(
-        address _artblocksAddressSecondarySales
+    function _updateArtblocksSecondarySalesAddress(
+        address _artblocksSecondarySalesAddress
     ) internal {
-        artblocksAddressSecondarySales = payable(
-            _artblocksAddressSecondarySales
+        artblocksSecondarySalesAddress = payable(
+            _artblocksSecondarySalesAddress
         );
-        emit PlatformUpdated(FIELD_ARTBLOCKS_ADDRESS_SECONDARY_SALES);
+        emit PlatformUpdated(FIELD_ARTBLOCKS_SECONDARY_SALES_ADDRESS);
     }
 
     /**
