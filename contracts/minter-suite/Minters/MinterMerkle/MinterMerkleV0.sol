@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../interfaces/0.8.x/IGenArt721CoreContractV1.sol";
-import "../interfaces/0.8.x/IMinterFilterV0.sol";
-import "../interfaces/0.8.x/IFilteredMinterMerkleV0.sol";
+import "../../../interfaces/0.8.x/IGenArt721CoreContractV1.sol";
+import "../../../interfaces/0.8.x/IMinterFilterV0.sol";
+import "../../../interfaces/0.8.x/IFilteredMinterMerkleV0.sol";
 
 import "@openzeppelin-4.7/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin-4.7/contracts/token/ERC20/IERC20.sol";

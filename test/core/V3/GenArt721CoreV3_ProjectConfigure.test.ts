@@ -14,7 +14,7 @@ import {
   assignDefaultConstants,
   deployAndGet,
   deployCoreWithMinterFilter,
-  fullyMintProject,
+  mintProjectUntilRemaining,
   advanceEVMByTime,
 } from "../../util/common";
 import { FOUR_WEEKS } from "../../util/constants";
@@ -257,7 +257,12 @@ describe("GenArt721CoreV3 Project Configure", async function () {
     });
 
     it("owner can update when locked", async function () {
-      await fullyMintProject.call(this, this.projectZero, this.accounts.artist);
+      await mintProjectUntilRemaining.call(
+        this,
+        this.projectZero,
+        this.accounts.artist,
+        0
+      );
       await advanceEVMByTime(FOUR_WEEKS + 1);
       await this.genArt721Core
         .connect(this.accounts.deployer)
@@ -270,7 +275,12 @@ describe("GenArt721CoreV3 Project Configure", async function () {
     });
 
     it("artist cannot update when locked", async function () {
-      await fullyMintProject.call(this, this.projectZero, this.accounts.artist);
+      await mintProjectUntilRemaining.call(
+        this,
+        this.projectZero,
+        this.accounts.artist,
+        0
+      );
       await advanceEVMByTime(FOUR_WEEKS + 1);
       await expectRevert(
         this.genArt721Core
