@@ -43,7 +43,8 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721, IGenArt721CoreV2_PBAB {
         uint256 indexed _projectId,
         uint256 indexed _index,
         string _cid,
-        ExternalAssetDependencyType _dependencyType
+        ExternalAssetDependencyType _dependencyType,
+        uint256 _externalAssetDependencyCount
     );
 
     event ExternalAssetDependencyRemoved(
@@ -574,8 +575,10 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721, IGenArt721CoreV2_PBAB {
         onlyUnlockedProjectExternalAssetDependencies(_projectId)
         onlyArtistOrWhitelisted(_projectId)
     {
+        uint256 projectExternalAssetDependencyCount = projects[_projectId]
+            .externalAssetDependencyCount;
         require(
-            _index < projects[_projectId].externalAssetDependencyCount,
+            _index < projectExternalAssetDependencyCount,
             "Asset index out of range"
         );
         projects[_projectId].externalAssetDependencies[_index].cid = _cid;
@@ -586,7 +589,8 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721, IGenArt721CoreV2_PBAB {
             _projectId,
             _index,
             _cid,
-            _dependencyType
+            _dependencyType,
+            projectExternalAssetDependencyCount
         );
     }
 
@@ -657,7 +661,8 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721, IGenArt721CoreV2_PBAB {
             _projectId,
             projectExternalAssetDependencyCount,
             _cid,
-            _dependencyType
+            _dependencyType,
+            projectExternalAssetDependencyCount
         );
     }
 
