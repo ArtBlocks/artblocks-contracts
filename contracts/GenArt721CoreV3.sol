@@ -1018,32 +1018,57 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     /**
-     * @notice Gets royalty data for token ID `_tokenId`.
+     * @notice Gets royalties for token ID `_tokenId`. This conforms to the
+     * IManifold interface designated in the Royalty Registry's
+     * RoyaltyEngineV1.sol contract.
+     * ref: https://github.com/manifoldxyz/royalty-registry-solidity
      * @param _tokenId Token ID to be queried.
-     * @return artistAddress Artist's payment address
-     * @return additionalPayee Additional payee's payment address
-     * @return additionalPayeePercentage Percentage of artist revenue
-     * to be sent to the additional payee's address
-     * @return royaltyFeeByID Total royalty percentage to be sent to
-     * combination of artist and additional payee
+     * @return recipients Array of royalty payment recipients
+     * @return bps Array of Basis Points (BPS) allocated to each recipient,
+     * aligned by index.
+     * @dev only returns recipients that have a non-zero BPS allocation.
      */
-    function getRoyaltyData(uint256 _tokenId)
+    function getRoyalties(uint256 _tokenId)
         external
         view
-        returns (
-            address artistAddress,
-            address additionalPayee,
-            uint256 additionalPayeePercentage,
-            uint256 royaltyFeeByID
-        )
+        returns (address payable[] memory recipients, uint256[] memory bps)
     {
         uint256 projectId = _tokenId / ONE_MILLION;
-        artistAddress = projectIdToArtistAddress[projectId];
-        additionalPayee = projectIdToAdditionalPayeeSecondarySales[projectId];
-        additionalPayeePercentage = projectIdToAdditionalPayeeSecondarySalesPercentage[
-            projectId
-        ];
-        royaltyFeeByID = projectIdToSecondaryMarketRoyaltyPercentage[projectId];
+        // determine BPS for each recipient
+        uint256 royaltyBPSForArtistAndAdditional = 100 *
+            projectIdToSecondaryMarketRoyaltyPercentage[projectId];
+        uint256 artistBPS = (royaltyBPSForArtistAndAdditional * 100) /
+            projectIdToAdditionalPayeeSecondarySalesPercentage[projectId];
+        uint256 additionalBPS = royaltyBPSForArtistAndAdditional - artistBPS;
+        uint256 artblocksBPS = artblocksSecondarySalesBPS;
+        // determine length of returned array
+        uint256 returnLength = artistBPS > 0 ? 1 : 0;
+        if (additionalBPS > 0) {
+            returnLength++;
+        }
+        if (artblocksBPS > 0) {
+            returnLength++;
+        }
+        // initialize arrays
+        recipients = new address payable[](returnLength);
+        bps = new uint256[](returnLength);
+        // populate arrays
+        uint256 index = 0;
+        if (artistBPS > 0) {
+            recipients[index] = projectIdToArtistAddress[projectId];
+            bps[index++] = artistBPS;
+        }
+        if (additionalBPS > 0) {
+            recipients[index] = projectIdToAdditionalPayeeSecondarySales[
+                projectId
+            ];
+            bps[index++] = additionalBPS;
+        }
+        if (artblocksBPS > 0) {
+            recipients[index] = artblocksSecondarySalesAddress;
+            bps[index] = artblocksBPS;
+        }
+        return (recipients, bps);
     }
 
     /**
