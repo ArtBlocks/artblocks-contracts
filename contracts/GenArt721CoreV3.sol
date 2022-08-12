@@ -359,7 +359,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
 
     /**
      * @notice Updates Art Blocks primary sales revenue percentage to
-     * `_artblocksPercentage`.
+     * `_artblocksPrimarySalesPercentage`.
      */
     function updateArtblocksPrimarySalesPercentage(
         uint256 _artblocksPrimarySalesPercentage
@@ -374,7 +374,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
 
     /**
      * @notice Updates Art Blocks secondary sales royalty Basis Points to
-     * `_artblocksBPSSecondary`.
+     * `_artblocksSecondarySalesBPS`.
      */
     function updateArtblocksSecondarySalesBPS(
         uint256 _artblocksSecondarySalesBPS
@@ -385,7 +385,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     /**
-     * @notice updates minter to `_address`.
+     * @notice Updates minter to `_address`.
      */
     function updateMinterContract(address _address)
         external
@@ -1196,7 +1196,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     /**
-     * @notice Updates Art Blocks payment address to `_artblocksAddress`.
+     * @notice Updates Art Blocks payment address to `_artblocksPrimarySalesAddress`.
      */
     function _updateArtblocksPrimarySalesAddress(
         address _artblocksPrimarySalesAddress
