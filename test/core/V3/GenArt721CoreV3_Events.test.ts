@@ -80,15 +80,17 @@ describe("GenArt721CoreV3 Events", async function () {
   });
 
   describe("PlatformUpdated", function () {
-    it("emits artblocksAddress", async function () {
+    it("emits artblocksPrimarySalesAddress", async function () {
       // emits expected event arg(s)
       expect(
         await this.genArt721Core
           .connect(this.accounts.deployer)
-          .updateArtblocksAddress(this.accounts.artist.address)
+          .updateArtblocksPrimarySalesAddress(this.accounts.artist.address)
       )
         .to.emit(this.genArt721Core, "PlatformUpdated")
-        .withArgs(ethers.utils.formatBytes32String("artblocksAddress"));
+        .withArgs(
+          ethers.utils.formatBytes32String("artblocksPrimarySalesAddress")
+        );
     });
 
     it("emits 'randomizerAddress'", async function () {
@@ -128,15 +130,17 @@ describe("GenArt721CoreV3 Events", async function () {
         );
     });
 
-    it("emits 'artblocksPercentage'", async function () {
+    it("emits 'artblocksPrimaryPercentage'", async function () {
       // emits expected event arg(s)
       expect(
         await this.genArt721Core
           .connect(this.accounts.deployer)
-          .updateArtblocksPercentage(11)
+          .updateArtblocksPrimarySalesPercentage(11)
       )
         .to.emit(this.genArt721Core, "PlatformUpdated")
-        .withArgs(ethers.utils.formatBytes32String("artblocksPercentage"));
+        .withArgs(
+          ethers.utils.formatBytes32String("artblocksPrimaryPercentage")
+        );
     });
   });
 

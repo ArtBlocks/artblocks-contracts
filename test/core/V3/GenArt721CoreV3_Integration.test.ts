@@ -69,11 +69,11 @@ describe("GenArt721CoreV3 Integration", async function () {
       .updatePricePerTokenInWei(this.projectZero, 0);
   });
 
-  describe("artblocksAddress", function () {
-    it("returns expected artblocksAddress", async function () {
-      expect(await this.genArt721Core.artblocksAddress()).to.be.equal(
-        this.accounts.deployer.address
-      );
+  describe("artblocksPrimarySalesAddress", function () {
+    it("returns expected artblocksPrimarySalesAddress", async function () {
+      expect(
+        await this.genArt721Core.artblocksPrimarySalesAddress()
+      ).to.be.equal(this.accounts.deployer.address);
     });
   });
 
