@@ -20,16 +20,19 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     uint256 constant FOUR_WEEKS_IN_SECONDS = 2_419_200;
 
     // generic platform event fields
-    bytes32 constant FIELD_ARTBLOCKS_ADDRESS = "artblocksAddress";
-    bytes32 constant FIELD_ARTBLOCKS_ADDRESS_SECONDARY =
-        "artblocksAddressSecondary";
+    bytes32 constant FIELD_ARTBLOCKS_ADDRESS_PRIMARY_SALES =
+        "artblocksAddressPrimarySales";
+    bytes32 constant FIELD_ARTBLOCKS_ADDRESS_SECONDARY_SALES =
+        "artblocksAddressSecondarySales";
     bytes32 constant FIELD_RANDOMIZER_ADDRESS = "randomizerAddress";
     bytes32 constant FIELD_ARTBLOCKS_CURATION_REGISTRY_ADDRESS =
         "curationRegistryAddress";
     bytes32 constant FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS =
         "dependencyRegistryAddress";
-    bytes32 constant FIELD_ARTBLOCKS_PERCENTAGE = "artblocksPercentage";
-    bytes32 constant FIELD_ARTBLOCKS_BPS_SECONDARY = "artblocksBPSSecondary";
+    bytes32 constant FIELD_ARTBLOCKS_PRIMARY_SALES_PERCENTAGE =
+        "artblocksPrimaryPercentage";
+    bytes32 constant FIELD_ARTBLOCKS_SECONDARY_SALES_BPS =
+        "artblocksSecondaryBPS";
     // generic project event fields
     bytes32 constant FIELD_PROJECT_COMPLETED = "completed";
     bytes32 constant FIELD_PROJECT_ACTIVE = "active";
@@ -112,13 +115,13 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     mapping(uint256 => bytes32) public proposedArtistAddressesAndSplitsHash;
 
     /// Art Blocks payment address for all primary sales revenues
-    address payable public artblocksAddress;
-    /// Percentage of mint revenue allocated to Art Blocks
-    uint256 public artblocksPercentage = 10;
-    /// Art Blocks payment address for all secondary sales royalty reveneus
-    address payable public artblocksAddressSecondary;
-    /// Basis Points of secondary sales revenue allocated to Art Blocks
-    uint256 public artblocksBPSSecondary = 250;
+    address payable public artblocksAddressPrimarySales;
+    /// Percentage of primary sales revenue allocated to Art Blocks
+    uint256 public artblocksPrimarySalesPercentage = 10;
+    /// Art Blocks payment address for all secondary sales royalty revenues
+    address payable public artblocksAddressSecondarySales;
+    /// Basis Points of secondary sales royalties allocated to Art Blocks
+    uint256 public artblocksSecondarySalesBPS = 250;
 
     mapping(uint256 => bytes32) public tokenIdToHash;
 
@@ -211,8 +214,8 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         address _randomizerContract,
         address _adminACLContract
     ) ERC721(_tokenName, _tokenSymbol) {
-        _updateArtblocksAddress(msg.sender);
-        _updateArtblocksAddressSecondary(msg.sender);
+        _updateArtblocksAddressPrimarySales(msg.sender);
+        _updateArtblocksAddressSecondarySales(msg.sender);
         _updateRandomizerAddress(_randomizerContract);
         // set AdminACL management contract as owner
         _transferOwnership(_adminACLContract);
@@ -333,49 +336,52 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     /**
-     * @notice Updates artblocksAddress to `_artblocksAddress`.
+     * @notice Updates artblocksAddressPrimarySales to `_artblocksAddressPrimarySales`.
      */
-    function updateArtblocksAddress(address payable _artblocksAddress)
+    function updateArtblocksAddressPrimarySales(
+        address payable _artblocksAddressPrimarySales
+    ) external onlyAdminACL(this.updateArtblocksAddressPrimarySales.selector) {
+        _updateArtblocksAddressPrimarySales(_artblocksAddressPrimarySales);
+    }
+
+    /**
+     * @notice Updates Art Blocks secondary sales royalty payment address to
+     * `_artblocksAddressSecondarySales`.
+     */
+    function updateArtblocksAddressSecondarySales(
+        address payable _artblocksAddressSecondarySales
+    )
         external
-        onlyAdminACL(this.updateArtblocksAddress.selector)
+        onlyAdminACL(this.updateArtblocksAddressSecondarySales.selector)
     {
-        _updateArtblocksAddress(_artblocksAddress);
+        _updateArtblocksAddressSecondarySales(_artblocksAddressSecondarySales);
     }
 
     /**
-     * @notice Updates artblocksAddressSecondary to
-     * `_artblocksAddressSecondary`.
-     */
-    function updateArtblocksAddressSecondary(
-        address payable _artblocksAddressSecondary
-    ) external onlyAdminACL(this.updateArtblocksAddressSecondary.selector) {
-        _updateArtblocksAddressSecondary(_artblocksAddressSecondary);
-    }
-
-    /**
-     * @notice Updates Art Blocks mint revenue percentage to
+     * @notice Updates Art Blocks primary sales revenue percentage to
      * `_artblocksPercentage`.
      */
-    function updateArtblocksPercentage(uint256 _artblocksPercentage)
+    function updateArtblocksPrimarySalesPercentage(
+        uint256 _artblocksPrimarySalesPercentage
+    )
         external
-        onlyAdminACL(this.updateArtblocksPercentage.selector)
+        onlyAdminACL(this.updateArtblocksPrimarySalesPercentage.selector)
     {
-        require(_artblocksPercentage <= 25, "Max of 25%");
-        artblocksPercentage = _artblocksPercentage;
-        emit PlatformUpdated(FIELD_ARTBLOCKS_PERCENTAGE);
+        require(_artblocksPrimarySalesPercentage <= 25, "Max of 25%");
+        artblocksPrimarySalesPercentage = _artblocksPrimarySalesPercentage;
+        emit PlatformUpdated(FIELD_ARTBLOCKS_PRIMARY_SALES_PERCENTAGE);
     }
 
     /**
-     * @notice Updates Art Blocks secondary sales revenue Basis Points to
+     * @notice Updates Art Blocks secondary sales royalty Basis Points to
      * `_artblocksBPSSecondary`.
      */
-    function updateArtblocksBPSSecondary(uint256 _artblocksBPSSecondary)
-        external
-        onlyAdminACL(this.updateArtblocksBPSSecondary.selector)
-    {
-        require(_artblocksBPSSecondary <= 250, "Max of 2.5%");
-        artblocksBPSSecondary = _artblocksBPSSecondary;
-        emit PlatformUpdated(FIELD_ARTBLOCKS_BPS_SECONDARY);
+    function updateArtblocksSecondarySalesBPS(
+        uint256 _artblocksSecondarySalesBPS
+    ) external onlyAdminACL(this.updateArtblocksSecondarySalesBPS.selector) {
+        require(_artblocksSecondarySalesBPS <= 250, "Max of 2.5%");
+        artblocksSecondarySalesBPS = _artblocksSecondarySalesBPS;
+        emit PlatformUpdated(FIELD_ARTBLOCKS_SECONDARY_SALES_BPS);
     }
 
     /**
@@ -1081,7 +1087,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         )
     {
         // calculate revenues
-        artblocksRevenue_ = (_price * artblocksPercentage) / 100;
+        artblocksRevenue_ = (_price * artblocksPrimarySalesPercentage) / 100;
         uint256 projectFunds = _price - artblocksRevenue_;
         additionalPayeePrimaryRevenue_ =
             (projectFunds *
@@ -1089,7 +1095,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
             100;
         artistRevenue_ = projectFunds - additionalPayeePrimaryRevenue_;
         // set addresses from storage
-        artblocksAddress_ = artblocksAddress;
+        artblocksAddress_ = artblocksAddressPrimarySales;
         artistAddress_ = artistRevenue_ > 0
             ? projectIdToArtistAddress[_projectId]
             : payable(address(0));
@@ -1192,20 +1198,24 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     /**
      * @notice Updates Art Blocks payment address to `_artblocksAddress`.
      */
-    function _updateArtblocksAddress(address _artblocksAddress) internal {
-        artblocksAddress = payable(_artblocksAddress);
-        emit PlatformUpdated(FIELD_ARTBLOCKS_ADDRESS);
+    function _updateArtblocksAddressPrimarySales(
+        address _artblocksAddressPrimarySales
+    ) internal {
+        artblocksAddressPrimarySales = payable(_artblocksAddressPrimarySales);
+        emit PlatformUpdated(FIELD_ARTBLOCKS_ADDRESS_PRIMARY_SALES);
     }
 
     /**
-     * @notice Updates Art Blocks secondary sales payment address to
-     * `_artblocksAddressSecondary`.
+     * @notice Updates Art Blocks secondary sales royalty payment address to
+     * `_artblocksAddressSecondarySales`.
      */
-    function _updateArtblocksAddressSecondary(
-        address _artblocksAddressSecondary
+    function _updateArtblocksAddressSecondarySales(
+        address _artblocksAddressSecondarySales
     ) internal {
-        artblocksAddressSecondary = payable(_artblocksAddressSecondary);
-        emit PlatformUpdated(FIELD_ARTBLOCKS_ADDRESS_SECONDARY);
+        artblocksAddressSecondarySales = payable(
+            _artblocksAddressSecondarySales
+        );
+        emit PlatformUpdated(FIELD_ARTBLOCKS_ADDRESS_SECONDARY_SALES);
     }
 
     /**

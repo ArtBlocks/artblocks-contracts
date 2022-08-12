@@ -108,9 +108,23 @@ interface IGenArt721CoreContractV3 {
             bool locked
         );
 
-    function artblocksAddress() external view returns (address payable);
+    // @dev Art Blocks primary sales payment address
+    function artblocksAddressPrimarySales()
+        external
+        view
+        returns (address payable);
 
-    function artblocksPercentage() external view returns (uint256);
+    // @dev Percentage of primary sales allocated to Art Blocks
+    function artblocksPrimarySalesPercentage() external view returns (uint256);
+
+    // @dev Art Blocks secondary sales royalties payment address
+    function artblocksAddressSecondarySales()
+        external
+        view
+        returns (address payable);
+
+    // @dev Basis points of secondary sales allocated to Art Blocks
+    function artblocksSecondarySalesBPS() external view returns (uint256);
 
     // function to set a token's hash (must be guarded)
     function setTokenHash_8PT(uint256 _tokenId, bytes32 _hash) external;
