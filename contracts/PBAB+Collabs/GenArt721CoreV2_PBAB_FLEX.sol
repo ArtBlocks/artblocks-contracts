@@ -662,7 +662,7 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721, IGenArt721CoreV2_PBAB {
             projectExternalAssetDependencyCount,
             _cid,
             _dependencyType,
-            projectExternalAssetDependencyCount
+            projectExternalAssetDependencyCount + 1
         );
     }
 
