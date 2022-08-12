@@ -1,13 +1,4 @@
-import {
-  BN,
-  constants,
-  expectEvent,
-  expectRevert,
-  balance,
-  ether,
-} from "@openzeppelin/test-helpers";
 import { expect } from "chai";
-import { BigNumber, Contract } from "ethers";
 import { ethers } from "hardhat";
 
 import {
@@ -15,25 +6,25 @@ import {
   assignDefaultConstants,
   deployAndGet,
   deployCoreWithMinterFilter,
-  compareBN,
   safeAddProject,
-  deployAndGetPBAB,
-} from "../../util/common";
+} from "../../../util/common";
 
-import { MinterHolder_Common } from "./MinterHolder.common";
+import { MinterSetPriceERC20_Common } from "./MinterSetPriceERC20.common";
+import { MinterSetPriceV1V2_Common } from "../MinterSetPriceV1V2.common";
 
 /**
- * These tests intended to ensure Filtered Minter integrates properly with V1
- * core contract.
+ * These tests intended to ensure this Filtered Minter integrates properly with
+ * V3 core contract.
  */
-describe("MinterHolderV0", async function () {
+describe("MinterSetPriceERC20V2_V3Core", async function () {
   beforeEach(async function () {
     // standard accounts and constants
     this.accounts = await getAccounts();
-    await assignDefaultConstants.call(this, 3); // this.projectZero = 3 on V1 core
+    await assignDefaultConstants.call(this);
     this.higherPricePerTokenInWei = this.pricePerTokenInWei.add(
       ethers.utils.parseEther("0.1")
     );
+
     // deploy and configure minter filter and minter
     ({
       genArt721Core: this.genArt721Core,
@@ -41,14 +32,17 @@ describe("MinterHolderV0", async function () {
       randomizer: this.randomizer,
     } = await deployCoreWithMinterFilter.call(
       this,
-      "GenArt721CoreV1",
-      "MinterFilterV0"
+      "GenArt721CoreV3",
+      "MinterFilterV1"
     ));
 
-    this.minter = await deployAndGet.call(this, "MinterHolderV0", [
+    const minterFactory = await ethers.getContractFactory(
+      "MinterSetPriceERC20V2"
+    );
+    this.minter = await minterFactory.deploy(
       this.genArt721Core.address,
-      this.minterFilter.address,
-    ]);
+      this.minterFilter.address
+    );
 
     await safeAddProject(
       this.genArt721Core,
@@ -117,69 +111,40 @@ describe("MinterHolderV0", async function () {
       .connect(this.accounts.artist)
       .updatePricePerTokenInWei(this.projectOne, this.pricePerTokenInWei);
 
-    // artist mints a token on this.projectZero to use as proof of ownership
-    const minterFactorySetPrice = await ethers.getContractFactory(
-      "MinterSetPriceV1"
+    // mock ERC20 token
+    const ERC20Factory = await ethers.getContractFactory("ERC20Mock");
+    this.ERC20Mock = await ERC20Factory.connect(this.accounts.user).deploy(
+      ethers.utils.parseEther("100")
     );
-    this.minterSetPrice = await minterFactorySetPrice.deploy(
-      this.genArt721Core.address,
-      this.minterFilter.address
-    );
-    await this.minterFilter
-      .connect(this.accounts.deployer)
-      .addApprovedMinter(this.minterSetPrice.address);
-    await this.minterFilter
-      .connect(this.accounts.deployer)
-      .setMinterForProject(this.projectZero, this.minterSetPrice.address);
-    await this.minterSetPrice
-      .connect(this.accounts.artist)
-      .updatePricePerTokenInWei(this.projectZero, this.pricePerTokenInWei);
-    await this.minterSetPrice
-      .connect(this.accounts.artist)
-      .purchase(this.projectZero, { value: this.pricePerTokenInWei });
-    // switch this.projectZero back to MinterHolderV0
-    await this.minterFilter
-      .connect(this.accounts.deployer)
-      .setMinterForProject(this.projectZero, this.minter.address);
-    await this.minter
-      .connect(this.accounts.deployer)
-      .registerNFTAddress(this.genArt721Core.address);
-    await this.minter
-      .connect(this.accounts.artist)
-      .allowHoldersOfProjects(
-        this.projectZero,
-        [this.genArt721Core.address],
-        [this.projectZero]
-      );
   });
 
-  describe("common MinterHolder tests", async () => {
-    MinterHolder_Common();
+  describe("common MinterSetPrice (ETH) tests", async () => {
+    MinterSetPriceERC20_Common();
+  });
+
+  describe("common MinterSetPrice V1V2 tests", async function () {
+    MinterSetPriceV1V2_Common();
   });
 
   describe("calculates gas", async function () {
     it("mints and calculates gas values", async function () {
       const tx = await this.minter
-        .connect(this.accounts.artist)
-        ["purchase(uint256,address,uint256)"](
-          this.projectZero,
-          this.genArt721Core.address,
-          this.projectZeroTokenZero.toNumber(),
-          {
-            value: this.pricePerTokenInWei,
-          }
-        );
+        .connect(this.accounts.user)
+        .purchase(this.projectOne, {
+          value: this.pricePerTokenInWei,
+        });
 
       const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
-      const txCost = receipt.effectiveGasPrice.mul(receipt.gasUsed);
+      const txCost = receipt.effectiveGasPrice.mul(receipt.gasUsed).toString();
 
       console.log(
         "Gas cost for a successful ERC20 mint: ",
-        ethers.utils.formatUnits(txCost.toString(), "ether").toString(),
+        ethers.utils.formatUnits(txCost, "ether").toString(),
         "ETH"
       );
-      expect(compareBN(txCost, ethers.utils.parseEther("0.03199"), 1)).to.be
-        .true;
+      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0184253"));
     });
   });
+
+  describe("purchaseTo", async function () {});
 });

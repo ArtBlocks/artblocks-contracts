@@ -78,28 +78,53 @@ export async function deployAndGet(
 }
 
 // utility function to deploy randomizer, core, and MinterFilter
+// works for core versions V0, V1, V2, V3
 export async function deployCoreWithMinterFilter(
   coreContractName: string,
   minterFilterName: string
 ): Promise<CoreWithMinterSuite> {
   const randomizer = await deployAndGet.call(this, "BasicRandomizer", []);
-  const genArt721Core = await deployAndGet.call(this, coreContractName, [
-    this.name,
-    this.symbol,
-    randomizer.address,
-  ]);
-  const minterFilter = await deployAndGet.call(this, minterFilterName, [
-    genArt721Core.address,
-  ]);
-  // allowlist minterFilter on the core contract
-  await genArt721Core
-    .connect(this.accounts.deployer)
-    .addMintWhitelisted(minterFilter.address);
+  let genArt721Core, minterFilter;
+  if (
+    coreContractName.endsWith("V0") ||
+    coreContractName.endsWith("V1") ||
+    coreContractName.endsWith("V2") ||
+    coreContractName.endsWith("V2_PRTNR")
+  ) {
+    genArt721Core = await deployAndGet.call(this, coreContractName, [
+      this.name,
+      this.symbol,
+      randomizer.address,
+    ]);
+    minterFilter = await deployAndGet.call(this, minterFilterName, [
+      genArt721Core.address,
+    ]);
+    // allowlist minterFilter on the core contract
+    await genArt721Core
+      .connect(this.accounts.deployer)
+      .addMintWhitelisted(minterFilter.address);
+  } else if (coreContractName.endsWith("V3")) {
+    const adminACL = await deployAndGet.call(this, "MockAdminACLV0Events", []);
+    genArt721Core = await deployAndGet.call(this, coreContractName, [
+      this.name,
+      this.symbol,
+      randomizer.address,
+      adminACL.address,
+    ]);
+    minterFilter = await deployAndGet.call(this, minterFilterName, [
+      genArt721Core.address,
+    ]);
+    // allowlist minterFilter on the core contract
+    await genArt721Core
+      .connect(this.accounts.deployer)
+      .updateMinterContract(minterFilter.address);
+  }
   return { randomizer, genArt721Core, minterFilter };
 }
 
-// utility function to call addProject on core for either flagship or PBAB/PRTNR
-// (used because flagship has four args, PBAB/PRTNR has three)
+// utility function to call addProject on core for either V0/V1 core,
+// PBAB/PRTNR, or V3 core.
+// (used because different core versions have different addProject functions)
 export async function safeAddProject(
   core: Contract,
   caller: SignerWithAddress,
@@ -108,9 +133,14 @@ export async function safeAddProject(
   try {
     await core.connect(caller).addProject("TestProject", artistAddress, 0);
   } catch {
-    await core
-      .connect(caller)
-      .addProject("TestProject", artistAddress, 0, false);
+    try {
+      // V3 core has only 2 args
+      await core.connect(caller).addProject("TestProject", artistAddress);
+    } catch {
+      await core
+        .connect(caller)
+        .addProject("TestProject", artistAddress, 0, false);
+    }
   }
 }
 
@@ -141,4 +171,48 @@ export function compareBN(
   const diff = actual.sub(expected);
   const percentDiff = diff.mul(BigNumber.from("100")).div(expected);
   return percentDiff.abs().lte(BigNumber.from(tolerancePercent.toString()));
+}
+
+// utility function to return if core is V3
+export async function isCoreV3(core: Contract): Promise<boolean> {
+  try {
+    if ((await core.coreType()) === "GenArt721CoreV3") {
+      return true;
+    }
+  } catch {
+    // swallow error because function doesn't exist on pre-V3 core contracts
+  }
+  return false;
+}
+
+type T_PBAB = {
+  pbabToken: Contract;
+  pbabMinter: Contract;
+};
+
+export async function deployAndGetPBAB(): Promise<T_PBAB> {
+  const PBABFactory = await ethers.getContractFactory("GenArt721CoreV2_PBAB");
+  const pbabToken = await PBABFactory.connect(this.accounts.deployer).deploy(
+    this.name,
+    this.symbol,
+    this.randomizer.address
+  );
+  const minterFactory = await ethers.getContractFactory("GenArt721Minter_PBAB");
+  const pbabMinter = await minterFactory.deploy(pbabToken.address);
+  await pbabToken
+    .connect(this.accounts.deployer)
+    .addProject(
+      "project0_PBAB",
+      this.accounts.artist.address,
+      this.pricePerTokenInWei
+    );
+  await pbabToken.connect(this.accounts.deployer).toggleProjectIsActive(0);
+  await pbabToken
+    .connect(this.accounts.deployer)
+    .addMintWhitelisted(pbabMinter.address);
+  await pbabToken
+    .connect(this.accounts.artist)
+    .updateProjectMaxInvocations(0, this.maxInvocations);
+  await pbabToken.connect(this.accounts.artist).toggleProjectIsPaused(0);
+  return { pbabToken, pbabMinter };
 }

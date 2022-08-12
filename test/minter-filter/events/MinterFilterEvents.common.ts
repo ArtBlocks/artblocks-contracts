@@ -8,8 +8,8 @@ import { safeAddProject } from "../../util/common";
  */
 export const MinterFilterEvents_Common = async () => {
   describe("addApprovedMinter", async function () {
-    it("emits an event for MinterSetPriceERC20V0", async function () {
-      const minterType = "MinterSetPriceERC20V0";
+    it("emits an event for minter set price ERC20", async function () {
+      const minterType = await this.minter.minterType();
       await expect(
         this.minterFilter
           .connect(this.accounts.deployer)
@@ -19,8 +19,8 @@ export const MinterFilterEvents_Common = async () => {
         .withArgs(this.minter.address, minterType);
     });
 
-    it("emits an event for MinterSetPriceV0", async function () {
-      const minterType = "MinterSetPriceV0";
+    it("emits an event for minter set price ETH", async function () {
+      const minterType = await this.minterETH.minterType();
       await expect(
         this.minterFilter
           .connect(this.accounts.deployer)
@@ -30,8 +30,8 @@ export const MinterFilterEvents_Common = async () => {
         .withArgs(this.minterETH.address, minterType);
     });
 
-    it("emits an event for MinterDALinV0", async function () {
-      const minterType = "MinterDALinV0";
+    it("emits an event for MinterDALinV*", async function () {
+      const minterType = await this.minterETHAuction.minterType();
       await expect(
         this.minterFilter
           .connect(this.accounts.deployer)
@@ -72,8 +72,8 @@ export const MinterFilterEvents_Common = async () => {
   });
 
   describe("setMinterForProject", async function () {
-    const minterType = "MinterSetPriceERC20V0";
     it("emits an event", async function () {
+      const minterType = await this.minter.minterType();
       await expect(
         this.minterFilter
           .connect(this.accounts.deployer)
@@ -100,18 +100,28 @@ export const MinterFilterEvents_Common = async () => {
 
   describe("alertAsCanonicalMinterFilter", async function () {
     it("emits event alerting as canonical minter", async function () {
-      // allowlist MinterFilter on core
-      await this.genArt721Core
-        .connect(this.accounts.deployer)
-        .addMintWhitelisted(this.minterFilter.address);
-      // expect proper event
-      await expect(
-        this.minterFilter
+      try {
+        // allowlist MinterFilter on core
+        await this.genArt721Core
           .connect(this.accounts.deployer)
-          .alertAsCanonicalMinterFilter()
-      )
-        .to.emit(this.minterFilter, "IsCanonicalMinterFilter")
-        .withArgs(this.genArt721Core.address);
+          .addMintWhitelisted(this.minterFilter.address);
+        // expect proper event
+        await expect(
+          this.minterFilter
+            .connect(this.accounts.deployer)
+            .alertAsCanonicalMinterFilter()
+        )
+          .to.emit(this.minterFilter, "IsCanonicalMinterFilter")
+          .withArgs(this.genArt721Core.address);
+      } catch (err) {
+        if ((await this.genArt721Core.coreType()) === "GenArt721CoreV3") {
+          console.log(
+            "GenArt721CoreV3 does not need alert as canonical minter filter"
+          );
+        } else {
+          throw err;
+        }
+      }
     });
   });
 };

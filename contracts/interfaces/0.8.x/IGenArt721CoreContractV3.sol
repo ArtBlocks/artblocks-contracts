@@ -45,6 +45,18 @@ interface IGenArt721CoreContractV3 {
     // backwards-compatible admin - equal to owner()
     function admin() external view returns (address);
 
+    /**
+     * Function determining if _sender is allowed to call function with
+     * selector _selector on contract `_contract`. Intended to be used with
+     * peripheral contracts such as minters, as well as internally by the
+     * core contract itself.
+     */
+    function adminACLAllowed(
+        address _sender,
+        address _contract,
+        bytes4 _selector
+    ) external returns (bool);
+
     // getter function of public variable
     function nextProjectId() external view returns (uint256);
 

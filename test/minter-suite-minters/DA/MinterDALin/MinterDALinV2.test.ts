@@ -23,13 +23,13 @@ import { MinterDAV1V2_Common } from "../MinterDAV1V2.common";
 
 /**
  * These tests intended to ensure this Filtered Minter integrates properly with
- * V1 core contract.
+ * V3 core contract.
  */
-describe("MinterDALinV1_V1Core", async function () {
+describe("MinterDALinV2_V3Core", async function () {
   beforeEach(async function () {
     // standard accounts and constants
     this.accounts = await getAccounts();
-    await assignDefaultConstants.call(this, 3); // projectZero = 3 on V1 core
+    await assignDefaultConstants.call(this);
     this.startingPrice = ethers.utils.parseEther("10");
     this.higherPricePerTokenInWei = this.startingPrice.add(
       ethers.utils.parseEther("0.1")
@@ -45,11 +45,11 @@ describe("MinterDALinV1_V1Core", async function () {
       randomizer: this.randomizer,
     } = await deployCoreWithMinterFilter.call(
       this,
-      "GenArt721CoreV1",
-      "MinterFilterV0"
+      "GenArt721CoreV3",
+      "MinterFilterV1"
     ));
 
-    this.minter = await deployAndGet.call(this, "MinterDALinV1", [
+    this.minter = await deployAndGet.call(this, "MinterDALinV2", [
       this.genArt721Core.address,
       this.minterFilter.address,
     ]);
@@ -131,7 +131,7 @@ describe("MinterDALinV1_V1Core", async function () {
         "ETH"
       );
 
-      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0373481")); // assuming a cost of 100 GWEI
+      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0193702")); // assuming a cost of 100 GWEI
     });
   });
 });

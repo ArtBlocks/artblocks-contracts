@@ -1,6 +1,7 @@
 import { constants, expectRevert } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
+import { isCoreV3 } from "../../../util/common";
 
 import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../util/constants";
 
@@ -204,20 +205,26 @@ export const MinterDAExp_Common = async () => {
     });
 
     it("disallows artist to reset auction details", async function () {
+      const expectedErrorMsg = (await isCoreV3(this.genArt721Core))
+        ? "Only Core AdminACL allowed"
+        : "Only Core whitelisted";
       await expectRevert(
         this.minter
           .connect(this.accounts.artist)
           .resetAuctionDetails(this.projectZero),
-        "Only Core whitelisted"
+        expectedErrorMsg
       );
     });
 
     it("disallows non-whitelisted non-artist to reset auction details", async function () {
+      const expectedErrorMsg = (await isCoreV3(this.genArt721Core))
+        ? "Only Core AdminACL allowed"
+        : "Only Core whitelisted";
       await expectRevert(
         this.minter
           .connect(this.accounts.additional)
           .resetAuctionDetails(this.projectZero),
-        "Only Core whitelisted"
+        expectedErrorMsg
       );
     });
 
@@ -317,11 +324,14 @@ export const MinterDAExp_Common = async () => {
     });
 
     it("validate setAllowablePriceDecayHalfLifeRangeSeconds ACL", async function () {
+      const expectedErrorMsg = (await isCoreV3(this.genArt721Core))
+        ? "Only Core AdminACL allowed"
+        : "Only Core whitelisted";
       await expectRevert(
         this.minter
           .connect(this.accounts.additional)
           .setAllowablePriceDecayHalfLifeRangeSeconds(60, 600),
-        "Only Core whitelisted"
+        expectedErrorMsg
       );
     });
   });
