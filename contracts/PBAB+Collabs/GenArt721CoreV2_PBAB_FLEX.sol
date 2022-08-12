@@ -52,7 +52,7 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721, IGenArt721CoreV2_PBAB {
     );
 
     event GatewayUpdated(
-        ExternalAssetDependencyType _dependencyType,
+        ExternalAssetDependencyType indexed _dependencyType,
         string _gatewayAddress
     );
 
@@ -233,7 +233,10 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721, IGenArt721CoreV2_PBAB {
     /**
      * @notice Updates preferredIPFSGateway to `_gateway`.
      */
-    function updateIPFSGateway(string calldata _gateway) public onlyAdmin {
+    function updateIPFSGateway(string calldata _gateway)
+        public
+        onlyWhitelisted
+    {
         preferredIPFSGateway = _gateway;
         emit GatewayUpdated(ExternalAssetDependencyType.ARWEAVE, _gateway);
     }
@@ -241,7 +244,10 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721, IGenArt721CoreV2_PBAB {
     /**
      * @notice Updates preferredArweaveGateway to `_gateway`.
      */
-    function updateArweaveGateway(string calldata _gateway) public onlyAdmin {
+    function updateArweaveGateway(string calldata _gateway)
+        public
+        onlyWhitelisted
+    {
         preferredArweaveGateway = _gateway;
         emit GatewayUpdated(ExternalAssetDependencyType.IPFS, _gateway);
     }
@@ -328,7 +334,7 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721, IGenArt721CoreV2_PBAB {
      * @notice Locks external asset dependencies for project `_projectId`.
      */
     function lockProjectExternalAssetDependencies(uint256 _projectId)
-        public
+        external
         onlyArtistOrWhitelisted(_projectId)
         onlyUnlockedProjectExternalAssetDependencies(_projectId)
     {
@@ -598,13 +604,14 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721, IGenArt721CoreV2_PBAB {
         onlyUnlockedProjectExternalAssetDependencies(_projectId)
         onlyArtistOrWhitelisted(_projectId)
     {
+        uint256 projectExternalAssetDependencyCount = projects[_projectId]
+            .externalAssetDependencyCount;
         require(
-            _index < projects[_projectId].externalAssetDependencyCount,
+            _index < projectExternalAssetDependencyCount,
             "Asset index out of range"
         );
 
-        uint256 lastElementIndex = projects[_projectId]
-            .externalAssetDependencyCount - 1;
+        uint256 lastElementIndex = projectExternalAssetDependencyCount - 1;
 
         projects[_projectId].externalAssetDependencies[_index] = projects[
             _projectId
@@ -633,20 +640,22 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721, IGenArt721CoreV2_PBAB {
         onlyUnlockedProjectExternalAssetDependencies(_projectId)
         onlyArtistOrWhitelisted(_projectId)
     {
+        uint256 projectExternalAssetDependencyCount = projects[_projectId]
+            .externalAssetDependencyCount;
         ExternalAssetDependency memory asset = ExternalAssetDependency({
             cid: _cid,
             dependencyType: _dependencyType
         });
         projects[_projectId].externalAssetDependencies[
-            projects[_projectId].externalAssetDependencyCount
+            projectExternalAssetDependencyCount
         ] = asset;
         projects[_projectId].externalAssetDependencyCount =
-            projects[_projectId].externalAssetDependencyCount +
+            projectExternalAssetDependencyCount +
             1;
 
         emit ExternalAssetDependencyUpdated(
             _projectId,
-            projects[_projectId].externalAssetDependencyCount - 1,
+            projectExternalAssetDependencyCount,
             _cid,
             _dependencyType
         );
@@ -798,7 +807,8 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721, IGenArt721CoreV2_PBAB {
     }
 
     /**
-     * @notice Returns script for project `_projectId` at script index `_index`.
+     * @notice Returns script for project `_projectId` at script index `_index`
+
      */
     function projectScriptByIndex(uint256 _projectId, uint256 _index)
         public
@@ -819,7 +829,7 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721, IGenArt721CoreV2_PBAB {
     }
 
     /**
-     * @notice Returns external asset dependency for project `_projectId` at index `_index`.
+     * @notice Returns external asset dependency count for project `_projectId` at index `_index`.
      */
     function projectExternalAssetDependencyCount(uint256 _projectId)
         public
