@@ -1070,46 +1070,60 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
 
     /**
      * @notice View function that returns appropriate revenue splits between
-     * different parties given a sale price of `_price` on project
-     * `_projectId`. Prescribes a split between project artist, additional
-     * primary payee, and Art Blocks. Does not account for refund if user
-     * overpays for a token (minter should refund the difference).
+     * different Art Blocks, Artist, and Artist's additional primary sales
+     * payee given a sale price of `_price` on project `_projectId`.
+     * This always returns three revenue amounts and three addresses, but if a
+     * revenue is zero for either Artist or additional payee, the corresponding
+     * address returned will also be null (for gas optimization).
+     * Does not account for refund if user overpays for a token (minter should
+     * handle a refund of the difference, if appropriate).
      * Some minters may have alternative methods of splitting payments, in
      * which case they should implement their own payment splitting logic.
      * @param _projectId Project ID to be queried.
      * @param _price Sale price of token.
-     * @return recipients_ Array of recipient addresses, always in the order
-     * [artist, additionalPayeePrimarySales, artblocksAddress]
-     * @return revenues_ Array of recipient addresses, always in the order
-     * [artistRevenue, additionalPayeePrimarySalesRevenue, artblocksRevenue]
-     * @dev this always returns three addresses and three revenues, but the
-     * revenue could be zero for one or more of the addresses. It is up to the
-     * contract performing the revenue split to handle this appropriately.
+     * @return artblocksRevenue_ amount of revenue to be sent to Art Blocks
+     * @return artblocksAddress_ address to send Art Blocks revenue to
+     * @return artistRevenue_ amount of revenue to be sent to Artist
+     * @return artistAddress_ address to send Artist revenue to. Will be null
+     * if no revenue is due to artist (gas optimization).
+     * @return additionalPayeePrimaryRevenue_ amount of revenue to be sent to
+     * additional payee for primary sales
+     * @return additionalPayeePrimaryAddress_ address to send Artist's
+     * additional payee for primary sales revenue to. Will be null if no
+     * revenue is due to additional payee for primary sales (gas optimization).
+     * @dev this always returns three addresses and three revenues, but if the
+     * revenue is zero, the corresponding address will be address(0). It is up
+     * to the contract performing the revenue split to handle this
+     * appropriately.
      */
     function getPrimaryRevenueSplits(uint256 _projectId, uint256 _price)
         external
         view
         returns (
-            address payable[] memory recipients_,
-            uint256[] memory revenues_
+            uint256 artblocksRevenue_,
+            address payable artblocksAddress_,
+            uint256 artistRevenue_,
+            address payable artistAddress_,
+            uint256 additionalPayeePrimaryRevenue_,
+            address payable additionalPayeePrimaryAddress_
         )
     {
-        recipients_ = new address payable[](3);
-        revenues_ = new uint256[](3);
         // calculate revenues
-        uint256 _artblocksRevenue = (_price * artblocksPercentage) / 100;
-        uint256 _projectFunds = _price - _artblocksRevenue;
-        uint256 _additionalPayeeRevenue = (_projectFunds *
-            projectIdToAdditionalPayeePrimarySalesPercentage[_projectId]) / 100;
-        // Artist
-        recipients_[0] = projectIdToArtistAddress[_projectId];
-        revenues_[0] = _projectFunds - _additionalPayeeRevenue;
-        // Additional Payee for primary sales
-        recipients_[1] = projectIdToAdditionalPayeePrimarySales[_projectId];
-        revenues_[1] = _additionalPayeeRevenue;
-        // Art Blocks
-        recipients_[2] = artblocksAddress;
-        revenues_[2] = _artblocksRevenue;
+        artblocksRevenue_ = (_price * artblocksPercentage) / 100;
+        uint256 projectFunds = _price - artblocksRevenue_;
+        additionalPayeePrimaryRevenue_ =
+            (projectFunds *
+                projectIdToAdditionalPayeePrimarySalesPercentage[_projectId]) /
+            100;
+        artistRevenue_ = projectFunds - additionalPayeePrimaryRevenue_;
+        // set addresses from storage
+        artblocksAddress_ = artblocksAddress;
+        artistAddress_ = artistRevenue_ > 0
+            ? projectIdToArtistAddress[_projectId]
+            : payable(address(0));
+        additionalPayeePrimaryAddress_ = additionalPayeePrimaryRevenue_ > 0
+            ? projectIdToAdditionalPayeePrimarySales[_projectId]
+            : payable(address(0));
     }
 
     /**

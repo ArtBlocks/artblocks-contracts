@@ -88,8 +88,12 @@ interface IGenArt721CoreContractV3 {
         external
         view
         returns (
-            address payable[] memory recipients_,
-            uint256[] memory revenues_
+            uint256 artblocksRevenue_,
+            address payable artblocksAddress_,
+            uint256 artistRevenue_,
+            address payable artistAddress_,
+            uint256 additionalPayeePrimaryRevenue_,
+            address payable additionalPayeePrimaryAddress_
         );
 
     // @dev new function in V3

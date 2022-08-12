@@ -295,50 +295,47 @@ contract MinterSetPriceERC20V2 is ReentrancyGuard, IFilteredMinterV0 {
      */
     function _splitFundsETH(uint256 _projectId) internal {
         if (msg.value > 0) {
+            bool success_;
+            // send refund to sender
             uint256 pricePerTokenInWei = projectIdToPricePerTokenInWei[
                 _projectId
             ];
             uint256 refund = msg.value - pricePerTokenInWei;
             if (refund > 0) {
-                (bool success_, ) = msg.sender.call{value: refund}("");
+                (success_, ) = msg.sender.call{value: refund}("");
                 require(success_, "Refund failed");
             }
-            uint256 foundationAmount = (pricePerTokenInWei *
-                genArtCoreContract.artblocksPercentage()) / 100;
-            if (foundationAmount > 0) {
-                (bool success_, ) = genArtCoreContract.artblocksAddress().call{
-                    value: foundationAmount
-                }("");
-                require(success_, "Foundation payment failed");
+            // split remaining funds between foundation, artist, and artist's
+            // additional payee
+            (
+                uint256 artblocksRevenue_,
+                address payable artblocksAddress_,
+                uint256 artistRevenue_,
+                address payable artistAddress_,
+                uint256 additionalPayeePrimaryRevenue_,
+                address payable additionalPayeePrimaryAddress_
+            ) = genArtCoreContract.getPrimaryRevenueSplits(
+                    _projectId,
+                    pricePerTokenInWei
+                );
+            // Art Blocks payment
+            if (artblocksRevenue_ > 0) {
+                (success_, ) = artblocksAddress_.call{value: artblocksRevenue_}(
+                    ""
+                );
+                require(success_, "Art Blocks payment failed");
             }
-            uint256 projectFunds = pricePerTokenInWei - foundationAmount;
-            uint256 additionalPayeeAmount;
-            if (
-                genArtCoreContract
-                    .projectIdToAdditionalPayeePrimarySalesPercentage(
-                        _projectId
-                    ) > 0
-            ) {
-                additionalPayeeAmount =
-                    (projectFunds *
-                        genArtCoreContract
-                            .projectIdToAdditionalPayeePrimarySalesPercentage(
-                                _projectId
-                            )) /
-                    100;
-                if (additionalPayeeAmount > 0) {
-                    (bool success_, ) = genArtCoreContract
-                        .projectIdToAdditionalPayeePrimarySales(_projectId)
-                        .call{value: additionalPayeeAmount}("");
-                    require(success_, "Additional payment failed");
-                }
-            }
-            uint256 creatorFunds = projectFunds - additionalPayeeAmount;
-            if (creatorFunds > 0) {
-                (bool success_, ) = genArtCoreContract
-                    .projectIdToArtistAddress(_projectId)
-                    .call{value: creatorFunds}("");
+            // artist payment
+            if (artistRevenue_ > 0) {
+                (success_, ) = artistAddress_.call{value: artistRevenue_}("");
                 require(success_, "Artist payment failed");
+            }
+            // additional payee payment
+            if (additionalPayeePrimaryRevenue_ > 0) {
+                (success_, ) = additionalPayeePrimaryAddress_.call{
+                    value: additionalPayeePrimaryRevenue_
+                }("");
+                require(success_, "Additional Payee payment failed");
             }
         }
     }
@@ -349,45 +346,41 @@ contract MinterSetPriceERC20V2 is ReentrancyGuard, IFilteredMinterV0 {
      */
     function _splitFundsERC20(uint256 _projectId) internal {
         uint256 pricePerTokenInWei = projectIdToPricePerTokenInWei[_projectId];
-        uint256 foundationAmount = (pricePerTokenInWei *
-            genArtCoreContract.artblocksPercentage()) / 100;
-        if (foundationAmount > 0) {
+        // split remaining funds between foundation, artist, and artist's
+        // additional payee
+        (
+            uint256 artblocksRevenue_,
+            address payable artblocksAddress_,
+            uint256 artistRevenue_,
+            address payable artistAddress_,
+            uint256 additionalPayeePrimaryRevenue_,
+            address payable additionalPayeePrimaryAddress_
+        ) = genArtCoreContract.getPrimaryRevenueSplits(
+                _projectId,
+                pricePerTokenInWei
+            );
+        // Art Blocks payment
+        if (artblocksRevenue_ > 0) {
             IERC20(projectIdToCurrencyAddress[_projectId]).transferFrom(
                 msg.sender,
-                genArtCoreContract.artblocksAddress(),
-                foundationAmount
+                artblocksAddress_,
+                artblocksRevenue_
             );
         }
-        uint256 projectFunds = pricePerTokenInWei - foundationAmount;
-        uint256 additionalPayeeAmount;
-        if (
-            genArtCoreContract.projectIdToAdditionalPayeePrimarySalesPercentage(
-                _projectId
-            ) > 0
-        ) {
-            additionalPayeeAmount =
-                (projectFunds *
-                    genArtCoreContract
-                        .projectIdToAdditionalPayeePrimarySalesPercentage(
-                            _projectId
-                        )) /
-                100;
-            if (additionalPayeeAmount > 0) {
-                IERC20(projectIdToCurrencyAddress[_projectId]).transferFrom(
-                    msg.sender,
-                    genArtCoreContract.projectIdToAdditionalPayeePrimarySales(
-                        _projectId
-                    ),
-                    additionalPayeeAmount
-                );
-            }
-        }
-        uint256 creatorFunds = projectFunds - additionalPayeeAmount;
-        if (creatorFunds > 0) {
+        // artist payment
+        if (artistRevenue_ > 0) {
             IERC20(projectIdToCurrencyAddress[_projectId]).transferFrom(
                 msg.sender,
-                genArtCoreContract.projectIdToArtistAddress(_projectId),
-                creatorFunds
+                artistAddress_,
+                artistRevenue_
+            );
+        }
+        // additional payee payment
+        if (additionalPayeePrimaryRevenue_ > 0) {
+            IERC20(projectIdToCurrencyAddress[_projectId]).transferFrom(
+                msg.sender,
+                additionalPayeePrimaryAddress_,
+                additionalPayeePrimaryRevenue_
             );
         }
     }
