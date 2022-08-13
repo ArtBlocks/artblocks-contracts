@@ -245,12 +245,19 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         uint256 _projectId,
         address _by
     ) external returns (uint256 _tokenId) {
+        // CHECKS
         require(
             msg.sender == minterContract,
             "Must mint from the allowed minter contract."
         );
+
+        // load invocations into memory
+        uint256 invocationsBefore = projects[_projectId].invocations;
+        uint256 invocationsAfter = invocationsBefore + 1;
+        uint256 maxInvocations = projects[_projectId].maxInvocations;
+
         require(
-            projects[_projectId].completedTimestamp == 0,
+            invocationsBefore < maxInvocations,
             "Must not exceed max invocations"
         );
         require(
@@ -264,24 +271,17 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
             "Purchases are paused."
         );
 
-        return _mintToken(_to, _projectId);
-    }
-
-    function _mintToken(address _to, uint256 _projectId)
-        internal
-        returns (uint256 _tokenId)
-    {
-        // checks & effects
-        // increment project's invocations, then move to memory to avoid SLOAD
-        uint256 _invocationsAfter = ++projects[_projectId].invocations;
-        uint256 _invocationsBefore = _invocationsAfter - 1;
-        uint256 thisTokenId = (_projectId * ONE_MILLION) + _invocationsBefore;
+        // EFFECTS
+        // increment project's invocations
+        projects[_projectId].invocations = invocationsAfter;
+        uint256 thisTokenId = (_projectId * ONE_MILLION) + invocationsBefore;
 
         // mark project as completed if hit max invocations
-        if (_invocationsAfter == projects[_projectId].maxInvocations) {
+        if (invocationsAfter == maxInvocations) {
             _completeProject(_projectId);
         }
 
+        // (includes an interaction with randomizer)
         bytes32 tokenHash = keccak256(
             abi.encodePacked(
                 thisTokenId,
@@ -292,7 +292,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
 
         tokenIdToHash[thisTokenId] = tokenHash;
 
-        // interactions
+        // INTERACTIONS
         _mint(_to, thisTokenId);
 
         // Do not need to also log `projectId` in event, as the `projectId` for

@@ -50,3 +50,5 @@ _This document is intended to document and explain the Art Blocks Core V3 change
   - Placing splitter logic on core is preferred over creating something like a "common mint functions" external contract, because it avoids extra gas costs associated with EIP-2929 and calling cold addresses.
 - Update minters in minter suite to integrate with V3 core contract
   - A couple breaking changes were made on the V3 core contract that required changes to the minter suite contracts.
+- Improve gas efficiency of minting on the V3 core contract
+  - Minimize costly SLOAD operations & re-organize logic to minimize gas usage
