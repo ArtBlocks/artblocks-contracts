@@ -12,6 +12,7 @@
     "docgen": "hardhat docgen",
     "generate:typechain": "typechain --target ethers-v5 --outDir ./scripts/contracts './artifacts/contracts/**/!(*.dbg)*.json'",
     "test": "hardhat test",
+    "coverage": "hardhat coverage",
     "format": "prettier --write 'contracts/**/*.sol' && prettier --write 'scripts/**/*.ts' && prettier --write 'test/**/*.ts'",
     "lint": "prettier --check 'contracts/**/*.sol' && prettier --check 'scripts/**/*.ts' && prettier --check 'test/**/*.ts'",
     "remix": "remixd -s ./ --remix-ide https://remix.ethereum.org"
@@ -56,7 +57,7 @@
     "prettier": "^2.3.2",
     "prettier-plugin-solidity": "^1.0.0-beta.19",
     "prompt-sync": "^4.2.0",
-    "solidity-coverage": "^0.7.10",
+    "solidity-coverage": "^0.7.21",
     "ts-node": "^9.1.1",
     "typechain": "^4.0.3",
     "typescript": "^4.2.3"
