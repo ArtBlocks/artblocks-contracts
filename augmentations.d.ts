@@ -16,6 +16,7 @@ declare module "mocha" {
     projectZero: number;
     projectOne: number;
     projectTwo: number;
+    projectThree: number;
     // token IDs
     projectZeroTokenZero: BigNumber;
     projectZeroTokenOne: BigNumber;
@@ -23,5 +24,7 @@ declare module "mocha" {
     projectOneTokenOne: BigNumber;
     projectTwoTokenZero: BigNumber;
     projectTwoTokenOne: BigNumber;
+    projectThreeTokenZero: BigNumber;
+    projectThreeTokenOne: BigNumber;
   }
 }
