@@ -127,7 +127,7 @@ describe("MinterSetPriceERC20V2_V3Core", async function () {
   });
 
   describe("calculates gas", async function () {
-    it("mints and calculates gas values", async function () {
+    it("mints and calculates gas values [ @skip-on-coverage ]", async function () {
       const tx = await this.minter
         .connect(this.accounts.user)
         .purchase(this.projectOne, {
