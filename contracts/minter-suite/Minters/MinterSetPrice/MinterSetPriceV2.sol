@@ -178,9 +178,6 @@ contract MinterSetPriceV2 is ReentrancyGuard, IFilteredMinterV0 {
 
     /**
      * @notice gas-optimized version of purchase(address, uint256).
-     * @param _to Address to be the new token's owner.
-     * @param _projectId Project ID to mint a token on.
-     * @return tokenId Token ID of minted token
      */
     function purchaseTo_do6(address _to, uint256 _projectId)
         public
