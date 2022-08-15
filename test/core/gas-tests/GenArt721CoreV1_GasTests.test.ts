@@ -91,7 +91,7 @@ describe("GenArt721CoreV1 Gas Tests", async function () {
   });
 
   describe("mint gas optimization", function () {
-    it("test gas cost of mint on MinterSetPrice", async function () {
+    it("test gas cost of mint on MinterSetPrice [ @skip-on-coverage ]", async function () {
       // mint
       const tx = await this.minter
         .connect(this.accounts.user)
@@ -110,7 +110,7 @@ describe("GenArt721CoreV1 Gas Tests", async function () {
       );
     });
 
-    it("test gas cost of mint on MinterDAExp", async function () {
+    it("test gas cost of mint on MinterDAExp [ @skip-on-coverage ]", async function () {
       this.startingPrice = ethers.utils.parseEther("10");
       this.higherPricePerTokenInWei = this.startingPrice.add(
         ethers.utils.parseEther("0.1")

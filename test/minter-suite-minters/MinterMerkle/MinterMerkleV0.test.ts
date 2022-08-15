@@ -171,7 +171,7 @@ describe("MinterMerkleV0", async function () {
   });
 
   describe("calculates gas", async function () {
-    it("mints and calculates gas values", async function () {
+    it("mints and calculates gas values [ @skip-on-coverage ]", async function () {
       const userMerkleProofOne = this.merkleTreeOne.getHexProof(
         hashAddress(this.accounts.user.address)
       );
@@ -193,7 +193,7 @@ describe("MinterMerkleV0", async function () {
         .true;
     });
 
-    it("is gas performant at 1k length allowlist", async function () {
+    it("is gas performant at 1k length allowlist [ @skip-on-coverage ]", async function () {
       // build new Merkle tree from 1k addresses, including user's address
       const _allowlist = [this.accounts.user.address];
       const crypto = require("crypto");

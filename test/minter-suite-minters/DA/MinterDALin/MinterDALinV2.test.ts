@@ -111,7 +111,7 @@ describe("MinterDALinV2_V3Core", async function () {
   });
 
   describe("calculate gas", async function () {
-    it("mints and calculates gas values", async function () {
+    it("mints and calculates gas values [ @skip-on-coverage ]", async function () {
       await ethers.provider.send("evm_mine", [
         this.startTime + this.auctionStartTimeOffset,
       ]);

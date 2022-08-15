@@ -80,7 +80,7 @@ describe("GenArt721Minter", async function () {
   });
 
   describe("(LEGACY MINTER) purchase method", async function () {
-    it("mints and calculates gas values", async function () {
+    it("mints and calculates gas values [ @skip-on-coverage ]", async function () {
       await this.minter.connect(this.accounts.user).purchase(this.projectZero, {
         value: this.pricePerTokenInWei,
       });

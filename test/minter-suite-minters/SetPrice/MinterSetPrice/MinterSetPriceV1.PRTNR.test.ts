@@ -140,7 +140,7 @@ describe("MinterSetPriceV1_V2PRTNRCore", async function () {
   });
 
   describe("calculates gas", async function () {
-    it("mints and calculates gas values", async function () {
+    it("mints and calculates gas values [ @skip-on-coverage ]", async function () {
       const tx = await this.minter1
         .connect(this.accounts.user)
         .purchase(this.projectZero, {
