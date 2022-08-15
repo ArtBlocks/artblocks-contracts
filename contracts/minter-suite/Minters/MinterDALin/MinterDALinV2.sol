@@ -270,15 +270,17 @@ contract MinterDALinV2 is ReentrancyGuard, IFilteredMinterV0 {
 
         // EFFECTS
         tokenId = minterFilter.mint(_to, _projectId, msg.sender);
-        // what if projectMaxInvocations[_projectId] is 0 (default value)?
+
+        // What if this overflows, since default value of uint256 is 0?
         // that is intended, so that by default the minter allows infinite transactions,
         // allowing the artblocks contract to stop minting
         // uint256 tokenInvocation = tokenId % ONE_MILLION;
-        if (
-            projectMaxInvocations[_projectId] > 0 &&
-            tokenId % ONE_MILLION == projectMaxInvocations[_projectId] - 1
-        ) {
-            projectMaxHasBeenInvoked[_projectId] = true;
+        unchecked {
+            if (
+                tokenId % ONE_MILLION == projectMaxInvocations[_projectId] - 1
+            ) {
+                projectMaxHasBeenInvoked[_projectId] = true;
+            }
         }
 
         // INTERACTIONS

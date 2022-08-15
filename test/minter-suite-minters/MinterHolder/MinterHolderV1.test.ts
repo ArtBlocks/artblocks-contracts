@@ -173,11 +173,11 @@ describe("MinterHolderV1", async function () {
       const txCost = receipt.effectiveGasPrice.mul(receipt.gasUsed);
 
       console.log(
-        "Gas cost for a successful ERC20 mint: ",
+        "Gas cost for a successful mint: ",
         ethers.utils.formatUnits(txCost.toString(), "ether").toString(),
         "ETH"
       );
-      expect(compareBN(txCost, ethers.utils.parseEther("0.0150254"), 1)).to.be
+      expect(compareBN(txCost, ethers.utils.parseEther("0.0150405"), 1)).to.be
         .true;
     });
   });

@@ -246,43 +246,44 @@ contract MinterSetPriceERC20V2 is ReentrancyGuard, IFilteredMinterV0 {
 
         // EFFECTS
         tokenId = minterFilter.mint(_to, _projectId, msg.sender);
-        // what if projectMaxInvocations[_projectId] is 0 (default value)?
+
+        // What if this overflows, since default value of uint256 is 0?
         // that is intended, so that by default the minter allows infinite transactions,
         // allowing the artblocks contract to stop minting
         // uint256 tokenInvocation = tokenId % ONE_MILLION;
-        if (
-            projectMaxInvocations[_projectId] > 0 &&
-            tokenId % ONE_MILLION == projectMaxInvocations[_projectId] - 1
-        ) {
-            projectMaxHasBeenInvoked[_projectId] = true;
+        unchecked {
+            if (
+                tokenId % ONE_MILLION == projectMaxInvocations[_projectId] - 1
+            ) {
+                projectMaxHasBeenInvoked[_projectId] = true;
+            }
         }
 
         // INTERACTIONS
-        if (projectIdToCurrencyAddress[_projectId] != address(0)) {
+        uint256 _pricePerTokenInWei = projectIdToPricePerTokenInWei[_projectId];
+        address _currencyAddress = projectIdToCurrencyAddress[_projectId];
+        if (_currencyAddress != address(0)) {
             require(
                 msg.value == 0,
                 "this project accepts a different currency and cannot accept ETH"
             );
             require(
-                IERC20(projectIdToCurrencyAddress[_projectId]).allowance(
-                    msg.sender,
-                    address(this)
-                ) >= projectIdToPricePerTokenInWei[_projectId],
+                IERC20(_currencyAddress).allowance(msg.sender, address(this)) >=
+                    _pricePerTokenInWei,
                 "Insufficient Funds Approved for TX"
             );
             require(
-                IERC20(projectIdToCurrencyAddress[_projectId]).balanceOf(
-                    msg.sender
-                ) >= projectIdToPricePerTokenInWei[_projectId],
+                IERC20(_currencyAddress).balanceOf(msg.sender) >=
+                    _pricePerTokenInWei,
                 "Insufficient balance."
             );
-            _splitFundsERC20(_projectId);
+            _splitFundsERC20(_projectId, _pricePerTokenInWei, _currencyAddress);
         } else {
             require(
-                msg.value >= projectIdToPricePerTokenInWei[_projectId],
+                msg.value >= _pricePerTokenInWei,
                 "Must send minimum value to mint!"
             );
-            _splitFundsETH(_projectId);
+            _splitFundsETH(_projectId, _pricePerTokenInWei);
         }
 
         return tokenId;
@@ -293,14 +294,13 @@ contract MinterSetPriceERC20V2 is ReentrancyGuard, IFilteredMinterV0 {
      * artist, and artist's additional payee for a token purchased on
      * project `_projectId`.
      */
-    function _splitFundsETH(uint256 _projectId) internal {
+    function _splitFundsETH(uint256 _projectId, uint256 _pricePerTokenInWei)
+        internal
+    {
         if (msg.value > 0) {
             bool success_;
             // send refund to sender
-            uint256 pricePerTokenInWei = projectIdToPricePerTokenInWei[
-                _projectId
-            ];
-            uint256 refund = msg.value - pricePerTokenInWei;
+            uint256 refund = msg.value - _pricePerTokenInWei;
             if (refund > 0) {
                 (success_, ) = msg.sender.call{value: refund}("");
                 require(success_, "Refund failed");
@@ -316,7 +316,7 @@ contract MinterSetPriceERC20V2 is ReentrancyGuard, IFilteredMinterV0 {
                 address payable additionalPayeePrimaryAddress_
             ) = genArtCoreContract.getPrimaryRevenueSplits(
                     _projectId,
-                    pricePerTokenInWei
+                    _pricePerTokenInWei
                 );
             // Art Blocks payment
             if (artblocksRevenue_ > 0) {
@@ -344,8 +344,11 @@ contract MinterSetPriceERC20V2 is ReentrancyGuard, IFilteredMinterV0 {
      * @dev splits ERC-20 funds between foundation, artist, and artist's
      * additional payee, for a token purchased on project `_projectId`.
      */
-    function _splitFundsERC20(uint256 _projectId) internal {
-        uint256 pricePerTokenInWei = projectIdToPricePerTokenInWei[_projectId];
+    function _splitFundsERC20(
+        uint256 _projectId,
+        uint256 _pricePerTokenInWei,
+        address _currencyAddress
+    ) internal {
         // split remaining funds between foundation, artist, and artist's
         // additional payee
         (
@@ -357,11 +360,12 @@ contract MinterSetPriceERC20V2 is ReentrancyGuard, IFilteredMinterV0 {
             address payable additionalPayeePrimaryAddress_
         ) = genArtCoreContract.getPrimaryRevenueSplits(
                 _projectId,
-                pricePerTokenInWei
+                _pricePerTokenInWei
             );
+        IERC20 _projectCurrency = IERC20(_currencyAddress);
         // Art Blocks payment
         if (artblocksRevenue_ > 0) {
-            IERC20(projectIdToCurrencyAddress[_projectId]).transferFrom(
+            _projectCurrency.transferFrom(
                 msg.sender,
                 artblocksAddress_,
                 artblocksRevenue_
@@ -369,7 +373,7 @@ contract MinterSetPriceERC20V2 is ReentrancyGuard, IFilteredMinterV0 {
         }
         // artist payment
         if (artistRevenue_ > 0) {
-            IERC20(projectIdToCurrencyAddress[_projectId]).transferFrom(
+            _projectCurrency.transferFrom(
                 msg.sender,
                 artistAddress_,
                 artistRevenue_
@@ -377,7 +381,7 @@ contract MinterSetPriceERC20V2 is ReentrancyGuard, IFilteredMinterV0 {
         }
         // additional payee payment
         if (additionalPayeePrimaryRevenue_ > 0) {
-            IERC20(projectIdToCurrencyAddress[_projectId]).transferFrom(
+            _projectCurrency.transferFrom(
                 msg.sender,
                 additionalPayeePrimaryAddress_,
                 additionalPayeePrimaryRevenue_

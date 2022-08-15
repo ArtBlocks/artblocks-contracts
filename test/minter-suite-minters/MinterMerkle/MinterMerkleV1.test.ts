@@ -185,11 +185,11 @@ describe("MinterMerkleV1", async function () {
       const txCost = receipt.effectiveGasPrice.mul(receipt.gasUsed);
 
       console.log(
-        "Gas cost for a successful ERC20 mint: ",
+        "Gas cost for a successful mint: ",
         ethers.utils.formatUnits(txCost.toString(), "ether").toString(),
         "ETH"
       );
-      expect(compareBN(txCost, ethers.utils.parseEther("0.0203519"), 1)).to.be
+      expect(compareBN(txCost, ethers.utils.parseEther("0.0206439"), 1)).to.be
         .true;
     });
 
@@ -231,7 +231,7 @@ describe("MinterMerkleV1", async function () {
         "ETH"
       );
       // the following is not much more than the gas cost with a very small allowlist
-      expect(compareBN(txCost, ethers.utils.parseEther("0.0211787"), 1)).to.be
+      expect(compareBN(txCost, ethers.utils.parseEther("0.0214727"), 1)).to.be
         .true;
     });
   });

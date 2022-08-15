@@ -264,8 +264,11 @@ contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
             "Maximum number of invocations reached"
         );
 
+        // load price of token into memory
+        uint256 _pricePerTokenInWei = projectIdToPricePerTokenInWei[_projectId];
+
         require(
-            msg.value >= projectIdToPricePerTokenInWei[_projectId],
+            msg.value >= _pricePerTokenInWei,
             "Must send minimum value to mint!"
         );
 
@@ -295,19 +298,21 @@ contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         }
 
         tokenId = minterFilter.mint(_to, _projectId, msg.sender);
-        // what if projectMaxInvocations[_projectId] is 0 (default value)?
+
+        // What if this overflows, since default value of uint256 is 0?
         // that is intended, so that by default the minter allows infinite transactions,
         // allowing the artblocks contract to stop minting
         // uint256 tokenInvocation = tokenId % ONE_MILLION;
-        if (
-            projectMaxInvocations[_projectId] > 0 &&
-            tokenId % ONE_MILLION == projectMaxInvocations[_projectId] - 1
-        ) {
-            projectMaxHasBeenInvoked[_projectId] = true;
+        unchecked {
+            if (
+                tokenId % ONE_MILLION == projectMaxInvocations[_projectId] - 1
+            ) {
+                projectMaxHasBeenInvoked[_projectId] = true;
+            }
         }
 
         // INTERACTIONS
-        _splitFundsETH(_projectId);
+        _splitFundsETH(_projectId, _pricePerTokenInWei);
 
         return tokenId;
     }
@@ -317,14 +322,13 @@ contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
      * artist, and artist's additional payee for a token purchased on
      * project `_projectId`.
      */
-    function _splitFundsETH(uint256 _projectId) internal {
+    function _splitFundsETH(uint256 _projectId, uint256 _pricePerTokenInWei)
+        internal
+    {
         if (msg.value > 0) {
             bool success_;
             // send refund to sender
-            uint256 pricePerTokenInWei = projectIdToPricePerTokenInWei[
-                _projectId
-            ];
-            uint256 refund = msg.value - pricePerTokenInWei;
+            uint256 refund = msg.value - _pricePerTokenInWei;
             if (refund > 0) {
                 (success_, ) = msg.sender.call{value: refund}("");
                 require(success_, "Refund failed");
@@ -340,7 +344,7 @@ contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
                 address payable additionalPayeePrimaryAddress_
             ) = genArtCoreContract.getPrimaryRevenueSplits(
                     _projectId,
-                    pricePerTokenInWei
+                    _pricePerTokenInWei
                 );
             // Art Blocks payment
             if (artblocksRevenue_ > 0) {
