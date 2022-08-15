@@ -97,12 +97,12 @@ describe("GenArt721CoreV3 Contract Configure", async function () {
   });
 
   describe("updateArtblocksSecondarySalesBPS", function () {
-    it("does not allow a value > 2.5%", async function () {
+    it("does not allow a value > 100%", async function () {
       await expectRevert(
         this.genArt721Core
           .connect(this.accounts.deployer)
-          .updateArtblocksSecondarySalesBPS(260),
-        "Max of 2.5%"
+          .updateArtblocksSecondarySalesBPS(10001),
+        "Max of 100%"
       );
     });
 

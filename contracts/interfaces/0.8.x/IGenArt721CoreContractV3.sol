@@ -55,7 +55,7 @@ interface IGenArt721CoreContractV3 is IManifold {
     // Admin ACL contract for V3, will be at the address owner()
     function adminACLContract() external returns (IAdminACLV0);
 
-    // backwards-compatible admin - equal to owner()
+    // backwards-compatible (pre-V3) admin - equal to owner()
     function admin() external view returns (address);
 
     /**
@@ -127,8 +127,20 @@ interface IGenArt721CoreContractV3 is IManifold {
         view
         returns (address payable);
 
+    /**
+     * @notice Backwards-compatible (pre-V3) function returning Art Blocks
+     * primary sales payment address (now called artblocksPrimarySalesAddress).
+     */
+    function artblocksAddress() external view returns (address payable);
+
     // @dev Percentage of primary sales allocated to Art Blocks
     function artblocksPrimarySalesPercentage() external view returns (uint256);
+
+    /**
+     * @notice Backwards-compatible (pre-V3) function returning Art Blocks
+     * primary sales percentage (now called artblocksPrimarySalesPercentage).
+     */
+    function artblocksPercentage() external view returns (uint256);
 
     // @dev Art Blocks secondary sales royalties payment address
     function artblocksSecondarySalesAddress()
@@ -148,4 +160,19 @@ interface IGenArt721CoreContractV3 is IManifold {
         uint256 _projectId,
         address _by
     ) external returns (uint256 tokenId);
+
+    /**
+     * @notice Backwards-compatible (pre-V3) function  that gets artist +
+     * artist's additional payee royalty data for token ID `_tokenId`.
+     * WARNING: Does not include Art Blocks portion of royalties.
+     */
+    function getRoyaltyData(uint256 _tokenId)
+        external
+        view
+        returns (
+            address artistAddress,
+            address additionalPayee,
+            uint256 additionalPayeePercentage,
+            uint256 royaltyFeeByID
+        );
 }

@@ -2,11 +2,7 @@
 // Created By: Art Blocks Inc.
 
 import "../interfaces/0.8.x/IArtblocksRoyaltyOverride.sol";
-/// @dev Deployed version uses an old version of the V3 interface. This repo's
-/// version switched to use the V1 contract interface. All that actually
-/// matters is that the admin() and getRoyaltyData(_tokenId) functions are
-// implemented.
-import "../interfaces/0.8.x/IGenArt721CoreContractV1.sol";
+import "../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
 
 import "@openzeppelin-4.5/contracts/utils/introspection/ERC165.sol";
 
@@ -53,7 +49,7 @@ contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
 
     modifier onlyAdminOnContract(address _tokenContract) {
         require(
-            IGenArt721CoreContractV1(_tokenContract).admin() == msg.sender,
+            IGenArt721CoreContractV3(_tokenContract).admin() == msg.sender,
             "Only core admin for specified token contract"
         );
         _;
@@ -153,7 +149,7 @@ contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
             address additionalPayee,
             uint256 additionalPayeePercentage,
             uint256 royaltyFeeByID
-        ) = IGenArt721CoreContractV1(_tokenAddress).getRoyaltyData(_tokenId);
+        ) = IGenArt721CoreContractV3(_tokenAddress).getRoyaltyData(_tokenId);
         // translate to desired output
         recipients_[0] = payable(artistAddress);
         bps[0] = (uint256(100) - additionalPayeePercentage) * royaltyFeeByID;
