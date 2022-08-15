@@ -52,6 +52,12 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
       this.minterFilter.address,
     ]);
 
+    this.minterSetPriceERC20 = await deployAndGet.call(
+      this,
+      "MinterSetPriceERC20V2",
+      [this.genArt721Core.address, this.minterFilter.address]
+    );
+
     this.minterDAExp = await deployAndGet.call(this, "MinterDAExpV2", [
       this.genArt721Core.address,
       this.minterFilter.address,
@@ -122,6 +128,38 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
       );
     });
 
+    it("test gas cost of mint on MinterSetPriceERC20 [ @skip-on-coverage ]", async function () {
+      // set project three minter to minterDAExp, and configure
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .addApprovedMinter(this.minterSetPriceERC20.address);
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .setMinterForProject(
+          this.projectThree,
+          this.minterSetPriceERC20.address
+        );
+      await this.minterSetPriceERC20
+        .connect(this.accounts.artist)
+        .updatePricePerTokenInWei(this.projectThree, this.pricePerTokenInWei);
+      // mint
+      const tx = await this.minterSetPriceERC20
+        .connect(this.accounts.user)
+        .purchase(this.projectThree, { value: this.pricePerTokenInWei });
+      const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+      console.log(`gas used for mint optimization test: ${receipt.gasUsed}`);
+      const gasCostAt100gwei = receipt.effectiveGasPrice
+        .mul(receipt.gasUsed)
+        .toString();
+      const gasCostAt100gweiInETH = parseFloat(
+        ethers.utils.formatUnits(gasCostAt100gwei, "ether")
+      );
+      const gasCostAt100gweiAt2kUSDPerETH = gasCostAt100gweiInETH * 2e3;
+      console.log(
+        `=USD at 100gwei, $2k USD/ETH: \$${gasCostAt100gweiAt2kUSDPerETH}`
+      );
+    });
+
     it("test gas cost of mint on MinterDAExp [ @skip-on-coverage ]", async function () {
       this.startingPrice = ethers.utils.parseEther("10");
       this.higherPricePerTokenInWei = this.startingPrice.add(
@@ -138,7 +176,7 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
       this.startTime = this.startTime + ONE_DAY;
 
       await ethers.provider.send("evm_mine", [this.startTime - ONE_MINUTE]);
-      // set project one minter to minterDAExp, and configure
+      // set project three minter to minterDAExp, and configure
       await this.minterFilter
         .connect(this.accounts.deployer)
         .addApprovedMinter(this.minterDAExp.address);
