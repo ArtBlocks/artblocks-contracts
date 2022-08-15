@@ -1039,6 +1039,38 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     /**
+     * @notice Backwards-compatible (pre-V3) function.
+     * Gets artist + artist's additional payee royalty data for token ID
+     `_tokenId`.
+     * WARNING: Does not include Art Blocks portion of royalties.
+     * @return artistAddress Artist's payment address
+     * @return additionalPayee Additional payee's payment address
+     * @return additionalPayeePercentage Percentage of artist revenue
+     * to be sent to the additional payee's address
+     * @return royaltyFeeByID Total royalty percentage to be sent to
+     * combination of artist and additional payee
+     * @dev Does not include Art Blocks portion of royalties.
+     */
+    function getRoyaltyData(uint256 _tokenId)
+        external
+        view
+        returns (
+            address artistAddress,
+            address additionalPayee,
+            uint256 additionalPayeePercentage,
+            uint256 royaltyFeeByID
+        )
+    {
+        uint256 projectId = _tokenId / ONE_MILLION;
+        artistAddress = projectIdToArtistAddress[projectId];
+        additionalPayee = projectIdToAdditionalPayeeSecondarySales[projectId];
+        additionalPayeePercentage = projectIdToAdditionalPayeeSecondarySalesPercentage[
+            projectId
+        ];
+        royaltyFeeByID = projectIdToSecondaryMarketRoyaltyPercentage[projectId];
+    }
+
+    /**
      * @notice Gets royalty Basis Points (BPS) for token ID `_tokenId`.
      * This conforms to the IManifold interface designated in the Royalty
      * Registry's RoyaltyEngineV1.sol contract.

@@ -149,4 +149,19 @@ interface IGenArt721CoreContractV3 is IManifold {
         uint256 _projectId,
         address _by
     ) external returns (uint256 tokenId);
+
+    /**
+     * @notice Backwards-compatible (pre-V3) function  that gets artist +
+     * artist's additional payee royalty data for token ID `_tokenId`.
+     * WARNING: Does not include Art Blocks portion of royalties.
+     */
+    function getRoyaltyData(uint256 _tokenId)
+        external
+        view
+        returns (
+            address artistAddress,
+            address additionalPayee,
+            uint256 additionalPayeePercentage,
+            uint256 royaltyFeeByID
+        );
 }
