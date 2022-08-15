@@ -150,6 +150,18 @@ contract MinterSetPriceV2 is ReentrancyGuard, IFilteredMinterV0 {
     }
 
     /**
+     * @notice gas-optimized version of purchase(uint256).
+     */
+    function purchase_H4M(uint256 _projectId)
+        external
+        payable
+        returns (uint256 tokenId)
+    {
+        tokenId = purchaseTo_do6(msg.sender, _projectId);
+        return tokenId;
+    }
+
+    /**
      * @notice Purchases a token from project `_projectId` and sets
      * the token's owner to `_to`.
      * @param _to Address to be the new token's owner.
@@ -157,6 +169,20 @@ contract MinterSetPriceV2 is ReentrancyGuard, IFilteredMinterV0 {
      * @return tokenId Token ID of minted token
      */
     function purchaseTo(address _to, uint256 _projectId)
+        public
+        payable
+        returns (uint256 tokenId)
+    {
+        return purchaseTo_do6(_to, _projectId);
+    }
+
+    /**
+     * @notice gas-optimized version of purchase(address, uint256).
+     * @param _to Address to be the new token's owner.
+     * @param _projectId Project ID to mint a token on.
+     * @return tokenId Token ID of minted token
+     */
+    function purchaseTo_do6(address _to, uint256 _projectId)
         public
         payable
         nonReentrant
