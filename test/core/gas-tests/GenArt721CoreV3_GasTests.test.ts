@@ -80,6 +80,11 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
       this.minterFilter.address,
     ]);
 
+    this.minterHolder = await deployAndGet.call(this, "MinterHolderV1", [
+      this.genArt721Core.address,
+      this.minterFilter.address,
+    ]);
+
     // add four projects, test on project three to directly compare to V1 core, which starts at projectId = 3
     for (let i = 0; i < 4; i++) {
       await safeAddProject(
@@ -102,7 +107,7 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
         this.projectThree,
         this.higherMaxInvocationsForGasTests
       );
-    // configure minter for project one
+    // configure minter for project three
     await this.minterFilter
       .connect(this.accounts.deployer)
       .addApprovedMinter(this.minter.address);
@@ -321,6 +326,81 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
         ["purchase(uint256,bytes32[])"](this.projectThree, userMerkleProof, {
           value: this.pricePerTokenInWei,
         });
+      // report gas
+      const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+      console.log(`gas used for mint optimization test: ${receipt.gasUsed}`);
+      const gasCostAt100gwei = receipt.effectiveGasPrice
+        .mul(receipt.gasUsed)
+        .toString();
+      const gasCostAt100gweiInETH = parseFloat(
+        ethers.utils.formatUnits(gasCostAt100gwei, "ether")
+      );
+      const gasCostAt100gweiAt2kUSDPerETH = gasCostAt100gweiInETH * 2e3;
+      console.log(
+        `=USD at 100gwei, $2k USD/ETH: \$${gasCostAt100gweiAt2kUSDPerETH}`
+      );
+    });
+
+    it("test gas cost of mint on MinterHolder [ @skip-on-coverage ]", async function () {
+      // set project three minter to MinterHolder, and configure
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .addApprovedMinter(this.minterHolder.address);
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .setMinterForProject(this.projectThree, this.minterHolder.address);
+      // set price for project three on minter
+      await this.minterHolder
+        .connect(this.accounts.artist)
+        .updatePricePerTokenInWei(this.projectThree, this.pricePerTokenInWei);
+
+      // configure minter
+      await this.minterHolder
+        .connect(this.accounts.deployer)
+        .registerNFTAddress(this.genArt721Core.address);
+      await this.minterHolder
+        .connect(this.accounts.artist)
+        .allowHoldersOfProjects(
+          this.projectThree,
+          [this.genArt721Core.address],
+          [this.projectOne]
+        );
+
+      // configure project three (to compare directly to V1 core)
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .toggleProjectIsActive(this.projectOne);
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .toggleProjectIsPaused(this.projectOne);
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectMaxInvocations(this.projectOne, this.maxInvocations);
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .setMinterForProject(this.projectOne, this.minter.address);
+      await this.minter
+        .connect(this.accounts.artist)
+        .updatePricePerTokenInWei(this.projectOne, this.pricePerTokenInWei);
+
+      // user mints a couple tokens on projectOne to use as a pass
+      for (let i = 0; i < 2; i++) {
+        await this.minter
+          .connect(this.accounts.user)
+          .purchase(this.projectOne, { value: this.pricePerTokenInWei });
+      }
+
+      // mint on MinterHolder
+      const tx = await this.minterHolder
+        .connect(this.accounts.user)
+        ["purchase(uint256,address,uint256)"](
+          this.projectThree,
+          this.genArt721Core.address,
+          this.projectOneTokenOne.toNumber(),
+          {
+            value: this.pricePerTokenInWei,
+          }
+        );
       // report gas
       const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
       console.log(`gas used for mint optimization test: ${receipt.gasUsed}`);
