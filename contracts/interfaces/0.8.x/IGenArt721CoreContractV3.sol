@@ -30,6 +30,17 @@ interface IGenArt721CoreContractV3 is IManifold {
      */
     event ProjectUpdated(uint256 indexed _projectId, bytes32 indexed _update);
 
+    event ProposedArtistAddressesAndSplits(
+        uint256 indexed _projectId,
+        address _artistAddress,
+        address _additionalPayeePrimarySales,
+        uint256 _additionalPayeePrimarySalesPercentage,
+        address _additionalPayeeSecondarySales,
+        uint256 _additionalPayeeSecondarySalesPercentage
+    );
+
+    event AcceptedArtistAddressesAndSplits(uint256 indexed _projectId);
+
     // version and type of the core contract
     // coreVersion is a string of the form "0.x.y"
     function coreVersion() external view returns (string memory);
