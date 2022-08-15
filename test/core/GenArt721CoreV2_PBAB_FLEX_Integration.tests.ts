@@ -67,19 +67,23 @@ describe("GenArt721CoreV2_PBAB_FLEX_Integration", async function () {
   });
 
   describe("common tests", async function () {
-    GenArt721MinterV1V2_Common();
+    // GenArt721MinterV1V2_Common();
   });
 
   describe("external asset dependencies", async function () {
     it("can add an external asset dependency", async function () {
       // add external asset dependency to project 0
-      await this.genArt721Core
-        .connect(this.accounts.artist)
-        .addProjectExternalAssetDependency(
-          this.projectZero,
-          "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo",
-          0
-        );
+      await expect(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .addProjectExternalAssetDependency(
+            this.projectZero,
+            "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo",
+            0
+          )
+      )
+        .to.emit(this.genArt721Core, "ExternalAssetDependencyUpdated")
+        .withArgs(0, 0, "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo", 0, 1);
       const externalAssetDependency = await this.genArt721Core
         .connect(this.accounts.artist)
         .projectExternalAssetDependencyByIndex(0, 0);
@@ -197,6 +201,26 @@ describe("GenArt721CoreV2_PBAB_FLEX_Integration", async function () {
           ),
         "Project external asset dependencies are locked"
       );
+    });
+
+    it("can use projectExternalAssetDependencyCount getter", async function () {
+      const externalAssetDependencyCountA = await this.genArt721Core
+        .connect(this.accounts.artist)
+        .projectExternalAssetDependencyCount(0);
+      expect(externalAssetDependencyCountA).to.equal(0);
+      // add assets for project 0 at index 0
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .addProjectExternalAssetDependency(
+          this.projectZero,
+          "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo",
+          0
+        );
+      // get asset info at index 0 for project 0
+      const externalAssetDependencyCountB = await this.genArt721Core
+        .connect(this.accounts.artist)
+        .projectExternalAssetDependencyCount(0);
+      expect(externalAssetDependencyCountB).to.equal(1);
     });
   });
 });

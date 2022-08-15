@@ -388,6 +388,7 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721, IGenArt721CoreV2_PBAB {
         projectIdToPricePerTokenInWei[projectId] = _pricePerTokenInWei;
         projects[projectId].paused = true;
         projects[projectId].maxInvocations = ONE_MILLION;
+        projects[projectId].externalAssetDependencyCount = 0;
         nextProjectId = nextProjectId + 1;
     }
 
@@ -575,12 +576,8 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721, IGenArt721CoreV2_PBAB {
         onlyUnlockedProjectExternalAssetDependencies(_projectId)
         onlyArtistOrWhitelisted(_projectId)
     {
-        uint256 projectExternalAssetDependencyCount = projects[_projectId]
-            .externalAssetDependencyCount;
-        require(
-            _index < projectExternalAssetDependencyCount,
-            "Asset index out of range"
-        );
+        uint256 assetCount = projects[_projectId].externalAssetDependencyCount;
+        require(_index < assetCount, "Asset index out of range");
         projects[_projectId].externalAssetDependencies[_index].cid = _cid;
         projects[_projectId]
             .externalAssetDependencies[_index]
@@ -590,7 +587,7 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721, IGenArt721CoreV2_PBAB {
             _index,
             _cid,
             _dependencyType,
-            projectExternalAssetDependencyCount
+            assetCount
         );
     }
 
@@ -608,14 +605,10 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721, IGenArt721CoreV2_PBAB {
         onlyUnlockedProjectExternalAssetDependencies(_projectId)
         onlyArtistOrWhitelisted(_projectId)
     {
-        uint256 projectExternalAssetDependencyCount = projects[_projectId]
-            .externalAssetDependencyCount;
-        require(
-            _index < projectExternalAssetDependencyCount,
-            "Asset index out of range"
-        );
+        uint256 assetCount = projects[_projectId].externalAssetDependencyCount;
+        require(_index < assetCount, "Asset index out of range");
 
-        uint256 lastElementIndex = projectExternalAssetDependencyCount - 1;
+        uint256 lastElementIndex = assetCount - 1;
 
         projects[_projectId].externalAssetDependencies[_index] = projects[
             _projectId
@@ -644,25 +637,20 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721, IGenArt721CoreV2_PBAB {
         onlyUnlockedProjectExternalAssetDependencies(_projectId)
         onlyArtistOrWhitelisted(_projectId)
     {
-        uint256 projectExternalAssetDependencyCount = projects[_projectId]
-            .externalAssetDependencyCount;
+        uint256 assetCount = projects[_projectId].externalAssetDependencyCount;
         ExternalAssetDependency memory asset = ExternalAssetDependency({
             cid: _cid,
             dependencyType: _dependencyType
         });
-        projects[_projectId].externalAssetDependencies[
-            projectExternalAssetDependencyCount
-        ] = asset;
-        projects[_projectId].externalAssetDependencyCount =
-            projectExternalAssetDependencyCount +
-            1;
+        projects[_projectId].externalAssetDependencies[assetCount] = asset;
+        projects[_projectId].externalAssetDependencyCount = assetCount + 1;
 
         emit ExternalAssetDependencyUpdated(
             _projectId,
-            projectExternalAssetDependencyCount,
+            assetCount,
             _cid,
             _dependencyType,
-            projectExternalAssetDependencyCount + 1
+            assetCount + 1
         );
     }
 
@@ -732,7 +720,8 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721, IGenArt721CoreV2_PBAB {
             string memory artist,
             string memory description,
             string memory website,
-            string memory license
+            string memory license,
+            uint256 externalAssetDependencyCount
         )
     {
         projectName = projects[_projectId].name;
@@ -740,6 +729,8 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721, IGenArt721CoreV2_PBAB {
         description = projects[_projectId].description;
         website = projects[_projectId].website;
         license = projects[_projectId].license;
+        externalAssetDependencyCount = projects[_projectId]
+            .externalAssetDependencyCount;
     }
 
     /**
