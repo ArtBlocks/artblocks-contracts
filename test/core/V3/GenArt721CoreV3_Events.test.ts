@@ -27,30 +27,21 @@ describe("GenArt721CoreV3 Events", async function () {
     this.accounts = await getAccounts();
     await assignDefaultConstants.call(this);
 
-    const randomizerFactory = await ethers.getContractFactory(
-      "BasicRandomizer"
-    );
-    this.randomizer = await randomizerFactory.deploy();
-    const adminACLFactory = await ethers.getContractFactory(
-      "MockAdminACLV0Events"
-    );
-    this.adminACL = await adminACLFactory.deploy();
-    const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV3");
-    this.genArt721Core = await artblocksFactory
-      .connect(this.accounts.deployer)
-      .deploy(
-        this.name,
-        this.symbol,
-        this.randomizer.address,
-        this.adminACL.address
-      );
+    // deploy and configure minter filter and minter
+    ({
+      genArt721Core: this.genArt721Core,
+      minterFilter: this.minterFilter,
+      randomizer: this.randomizer,
+    } = await deployCoreWithMinterFilter.call(
+      this,
+      "GenArt721CoreV3",
+      "MinterFilterV1"
+    ));
 
-    // TBD - V3 DOES NOT CURRENTLY HAVE A WORKING MINTER
-
-    // allow artist to mint on contract
-    await this.genArt721Core
-      .connect(this.accounts.deployer)
-      .updateMinterContract(this.accounts.artist.address);
+    this.minter = await deployAndGet.call(this, "MinterSetPriceV2", [
+      this.genArt721Core.address,
+      this.minterFilter.address,
+    ]);
 
     // add project zero
     await this.genArt721Core
@@ -63,10 +54,16 @@ describe("GenArt721CoreV3 Events", async function () {
       .connect(this.accounts.artist)
       .updateProjectMaxInvocations(this.projectZero, this.maxInvocations);
 
-    // add project one without setting it to active or setting max invocations
-    await this.genArt721Core
+    // configure minter for project zero
+    await this.minterFilter
       .connect(this.accounts.deployer)
-      .addProject("name", this.accounts.artist2.address);
+      .addApprovedMinter(this.minter.address);
+    await this.minterFilter
+      .connect(this.accounts.deployer)
+      .setMinterForProject(this.projectZero, this.minter.address);
+    await this.minter
+      .connect(this.accounts.artist)
+      .updatePricePerTokenInWei(this.projectZero, 0);
   });
 
   describe("MinterUpdated", function () {
@@ -153,13 +150,9 @@ describe("GenArt721CoreV3 Events", async function () {
       );
       // emits expected event arg(s) when completing project
       expect(
-        await this.genArt721Core
+        await this.minter
           .connect(this.accounts.artist)
-          .mint(
-            this.accounts.artist.address,
-            this.projectZero,
-            this.accounts.artist.address
-          )
+          .purchase(this.projectZero)
       )
         .to.emit(this.genArt721Core, "ProjectUpdated")
         .withArgs(
@@ -223,7 +216,7 @@ describe("GenArt721CoreV3 Events", async function () {
           .addProject("new project", this.accounts.artist.address)
       )
         .to.emit(this.genArt721Core, "ProjectUpdated")
-        .withArgs(this.projectTwo, ethers.utils.formatBytes32String("created"));
+        .withArgs(this.projectOne, ethers.utils.formatBytes32String("created"));
     });
 
     it("emits name", async function () {
