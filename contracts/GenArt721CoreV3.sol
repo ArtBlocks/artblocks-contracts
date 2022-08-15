@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-only
+pragma solidity 0.8.9;
+
 // Created By: Art Blocks Inc.
 
 import "./interfaces/0.8.x/IRandomizer.sol";
@@ -9,24 +11,11 @@ import "@openzeppelin-4.7/contracts/utils/Strings.sol";
 import "@openzeppelin-4.7/contracts/access/Ownable.sol";
 import "@openzeppelin-4.7/contracts/token/ERC721/ERC721.sol";
 
-pragma solidity 0.8.9;
-
 /**
  * @title Art Blocks ERC-721 core contract, V3.
  * @author Art Blocks Inc.
  */
 contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
-    event ProposedArtistAddressesAndSplits(
-        uint256 indexed _projectId,
-        address _artistAddress,
-        address _additionalPayeePrimarySales,
-        uint256 _additionalPayeePrimarySalesPercentage,
-        address _additionalPayeeSecondarySales,
-        uint256 _additionalPayeeSecondarySalesPercentage
-    );
-
-    event AcceptedArtistAddressesAndSplits(uint256 indexed _projectId);
-
     uint256 constant ONE_MILLION = 1_000_000;
     uint256 constant FOUR_WEEKS_IN_SECONDS = 2_419_200;
 
@@ -131,6 +120,17 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     string public constant coreVersion = "v3.0.0";
     string public constant coreType = "GenArt721CoreV3";
 
+    event ProposedArtistAddressesAndSplits(
+        uint256 indexed _projectId,
+        address _artistAddress,
+        address _additionalPayeePrimarySales,
+        uint256 _additionalPayeePrimarySalesPercentage,
+        address _additionalPayeeSecondarySales,
+        uint256 _additionalPayeeSecondarySalesPercentage
+    );
+
+    event AcceptedArtistAddressesAndSplits(uint256 indexed _projectId);
+
     modifier onlyValidTokenId(uint256 _tokenId) {
         require(_exists(_tokenId), "Token ID does not exist");
         _;
@@ -206,33 +206,6 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     /**
-     * @dev Transfers ownership of the contract to a new account (`newOwner`).
-     * Internal function without access restriction.
-     * @dev Overrides and wraps OpenZeppelin's _transferOwnership function to
-     * also update adminACLContract for improved introspection.
-     */
-    function _transferOwnership(address newOwner) internal override {
-        Ownable._transferOwnership(newOwner);
-        adminACLContract = IAdminACLV0(newOwner);
-    }
-
-    /**
-     * @notice Updates Art Blocks payment address to `_renderProviderAddress`.
-     */
-    function _updateArtblocksAddress(address _artblocksAddress) internal {
-        artblocksAddress = payable(_artblocksAddress);
-        emit PlatformUpdated(FIELD_ARTBLOCKS_ADDRESS);
-    }
-
-    /**
-     * @notice Updates randomizer address to `_randomizerAddress`.
-     */
-    function _updateRandomizerAddress(address _randomizerAddress) internal {
-        randomizerContract = IRandomizer(_randomizerAddress);
-        emit PlatformUpdated(FIELD_RANDOMIZER_ADDRESS);
-    }
-
-    /**
      * @notice Mints a token from project `_projectId` and sets the
      * token's owner to `_to`.
      * @param _to Address to be the minted token's owner.
@@ -304,31 +277,6 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     /**
-     * @notice Internal function that returns whether a project is unlocked.
-     * Projects automatically lock four weeks after they are completed.
-     * Projects are considered completed when they have been invoked the
-     * maximum number of times.
-     * @param _projectId Project ID to check.
-     */
-    function _projectUnlocked(uint256 _projectId) internal view returns (bool) {
-        uint256 projectCompletedTimestamp = projects[_projectId]
-            .completedTimestamp;
-        bool projectOpen = projectCompletedTimestamp == 0;
-        return
-            projectOpen ||
-            (block.timestamp - projectCompletedTimestamp <
-                FOUR_WEEKS_IN_SECONDS);
-    }
-
-    /**
-     * @notice Internal function to complete a project.
-     */
-    function _completeProject(uint256 _projectId) internal {
-        projects[_projectId].completedTimestamp = block.timestamp;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_COMPLETED);
-    }
-
-    /**
      * @notice Updates reference to Art Blocks Curation Registry contract.
      */
     function updateArtblocksCurationRegistryAddress(
@@ -358,7 +306,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @notice Updates artblocksAddress to `_artblocksAddress`.
      */
     function updateArtblocksAddress(address payable _artblocksAddress)
-        public
+        external
         onlyAdminACL(this.updateArtblocksAddress.selector)
     {
         _updateArtblocksAddress(_artblocksAddress);
@@ -369,7 +317,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * `_artblocksPercentage`.
      */
     function updateArtblocksPercentage(uint256 _artblocksPercentage)
-        public
+        external
         onlyAdminACL(this.updateArtblocksPercentage.selector)
     {
         require(_artblocksPercentage <= 25, "Max of 25%");
@@ -381,7 +329,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @notice updates minter to `_address`.
      */
     function updateMinterContract(address _address)
-        public
+        external
         onlyAdminACL(this.updateMinterContract.selector)
     {
         minterContract = _address;
@@ -392,7 +340,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @notice Updates randomizer to `_randomizerAddress`.
      */
     function updateRandomizerAddress(address _randomizerAddress)
-        public
+        external
         onlyAdminACL(this.updateRandomizerAddress.selector)
     {
         _updateRandomizerAddress(_randomizerAddress);
@@ -402,7 +350,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @notice Toggles project `_projectId` as active/inactive.
      */
     function toggleProjectIsActive(uint256 _projectId)
-        public
+        external
         onlyAdminACL(this.toggleProjectIsActive.selector)
     {
         projects[_projectId].active = !projects[_projectId].active;
@@ -539,7 +487,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     function updateProjectArtistAddress(
         uint256 _projectId,
         address payable _artistAddress
-    ) public onlyAdminACL(this.updateProjectArtistAddress.selector) {
+    ) external onlyAdminACL(this.updateProjectArtistAddress.selector) {
         projectIdToArtistAddress[_projectId] = _artistAddress;
         emit ProjectUpdated(_projectId, FIELD_ARTIST_ADDRESS);
     }
@@ -548,7 +496,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @notice Toggles paused state of project `_projectId`.
      */
     function toggleProjectIsPaused(uint256 _projectId)
-        public
+        external
         onlyArtist(_projectId)
     {
         projects[_projectId].paused = !projects[_projectId].paused;
@@ -564,7 +512,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     function addProject(
         string memory _projectName,
         address payable _artistAddress
-    ) public onlyAdminACL(this.addProject.selector) {
+    ) external onlyAdminACL(this.addProject.selector) {
         uint256 projectId = nextProjectId;
         projectIdToArtistAddress[projectId] = _artistAddress;
         projects[projectId].name = _projectName;
@@ -579,7 +527,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @notice Updates name of project `_projectId` to be `_projectName`.
      */
     function updateProjectName(uint256 _projectId, string memory _projectName)
-        public
+        external
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.updateProjectName.selector)
     {
@@ -595,7 +543,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         uint256 _projectId,
         string memory _projectArtistName
     )
-        public
+        external
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.updateProjectArtistName.selector)
     {
@@ -617,7 +565,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     function updateProjectSecondaryMarketRoyaltyPercentage(
         uint256 _projectId,
         uint256 _secondMarketRoyalty
-    ) public onlyArtist(_projectId) {
+    ) external onlyArtist(_projectId) {
         require(_secondMarketRoyalty <= 95, "Max of 95%");
         projectIdToSecondaryMarketRoyaltyPercentage[
             _projectId
@@ -635,7 +583,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     function updateProjectDescription(
         uint256 _projectId,
         string memory _projectDescription
-    ) public {
+    ) external {
         // checks
         require(
             _projectUnlocked(_projectId)
@@ -658,7 +606,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     function updateProjectWebsite(
         uint256 _projectId,
         string memory _projectWebsite
-    ) public onlyArtist(_projectId) {
+    ) external onlyArtist(_projectId) {
         projects[_projectId].website = _projectWebsite;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_WEBSITE);
     }
@@ -670,7 +618,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         uint256 _projectId,
         string memory _projectLicense
     )
-        public
+        external
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.updateProjectLicense.selector)
     {
@@ -688,7 +636,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     function updateProjectMaxInvocations(
         uint256 _projectId,
         uint256 _maxInvocations
-    ) public onlyArtist(_projectId) {
+    ) external onlyArtist(_projectId) {
         // checks
         require(
             (_maxInvocations < projects[_projectId].maxInvocations),
@@ -714,7 +662,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @param _script Script to be added.
      */
     function addProjectScript(uint256 _projectId, string memory _script)
-        public
+        external
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.addProjectScript.selector)
     {
@@ -736,7 +684,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         uint256 _scriptId,
         string memory _script
     )
-        public
+        external
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.updateProjectScript.selector)
     {
@@ -752,7 +700,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @notice Removes last script from project `_projectId`.
      */
     function removeProjectLastScript(uint256 _projectId)
-        public
+        external
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.removeProjectLastScript.selector)
     {
@@ -778,7 +726,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         string memory _scriptType,
         string memory _scriptTypeVersion
     )
-        public
+        external
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.updateProjectScriptType.selector)
     {
@@ -797,7 +745,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         uint256 _projectId,
         string memory _aspectRatio
     )
-        public
+        external
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.updateProjectAspectRatio.selector)
     {
@@ -809,7 +757,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @notice Updates ipfs hash for project `_projectId`.
      */
     function updateProjectIpfsHash(uint256 _projectId, string memory _ipfsHash)
-        public
+        external
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.updateProjectIpfsHash.selector)
     {
@@ -821,38 +769,11 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @notice Updates base URI for project `_projectId` to `_newBaseURI`.
      */
     function updateProjectBaseURI(uint256 _projectId, string memory _newBaseURI)
-        public
+        external
         onlyArtist(_projectId)
     {
         projects[_projectId].projectBaseURI = _newBaseURI;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_BASE_URI);
-    }
-
-    /**
-     * @notice Convenience function that returns whether `_sender` is allowed
-     * to call function with selector `_selector` on contract `_contract`, as
-     * determined by this contract's current Admin ACL contract. Expected use
-     * cases include minter contracts checking if caller is allowed to call
-     * admin-gated functions on minter contracts.
-     * @param _sender Address of the sender calling function with selector
-     * `_selector` on contract `_contract`.
-     * @param _contract Address of the contract being called by `_sender`.
-     * @param _selector Function selector of the function being called by
-     * `_sender`.
-     * @dev assumes the Admin ACL contract is the owner of this contract, which
-     * is expected to always be true.
-     * @dev adminACLContract is expected to either be null address (if owner
-     * has renounced ownership), or conform to IAdminACLV0 interface. Check for
-     * null address first to avoid revert when admin has renounced ownership.
-     */
-    function adminACLAllowed(
-        address _sender,
-        address _contract,
-        bytes4 _selector
-    ) public returns (bool) {
-        return
-            owner() != address(0) &&
-            adminACLContract.allowed(_sender, _contract, _selector);
     }
 
     /**
@@ -866,7 +787,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @dev this function was named projectDetails prior to V3 core contract.
      */
     function projectDetails(uint256 _projectId)
-        public
+        external
         view
         returns (
             string memory projectName,
@@ -894,7 +815,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @dev price and currency info are located on minter contracts
      */
     function projectStateData(uint256 _projectId)
-        public
+        external
         view
         returns (
             uint256 invocations,
@@ -926,7 +847,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
 
      */
     function projectArtistPaymentInfo(uint256 _projectId)
-        public
+        external
         view
         returns (
             address artistAddress,
@@ -1020,7 +941,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * combination of artist and additional payee
      */
     function getRoyaltyData(uint256 _tokenId)
-        public
+        external
         view
         returns (
             address artistAddress,
@@ -1036,36 +957,6 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
             projectId
         ];
         royaltyFeeByID = projectIdToSecondaryMarketRoyaltyPercentage[projectId];
-    }
-
-    /**
-     * @notice Gets the project ID for a given `_tokenId`.
-     */
-    function tokenIdToProjectId(uint256 _tokenId)
-        external
-        pure
-        returns (uint256 _projectId)
-    {
-        return _tokenId / ONE_MILLION;
-    }
-
-    /**
-     * @notice Gets token URI for token ID `_tokenId`.
-     */
-    function tokenURI(uint256 _tokenId)
-        public
-        view
-        override
-        onlyValidTokenId(_tokenId)
-        returns (string memory)
-    {
-        return
-            string(
-                abi.encodePacked(
-                    projects[_tokenId / ONE_MILLION].projectBaseURI,
-                    Strings.toString(_tokenId)
-                )
-            );
     }
 
     /**
@@ -1127,6 +1018,52 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     /**
+     * @notice Backwards-compatible (pre-V3) getter returning contract admin
+     * @return admin_ Address of contract owner
+     */
+    function admin() external view returns (address) {
+        return owner();
+    }
+
+    /**
+     * @notice Gets the project ID for a given `_tokenId`.
+     */
+    function tokenIdToProjectId(uint256 _tokenId)
+        external
+        pure
+        returns (uint256 _projectId)
+    {
+        return _tokenId / ONE_MILLION;
+    }
+
+    /**
+     * @notice Convenience function that returns whether `_sender` is allowed
+     * to call function with selector `_selector` on contract `_contract`, as
+     * determined by this contract's current Admin ACL contract. Expected use
+     * cases include minter contracts checking if caller is allowed to call
+     * admin-gated functions on minter contracts.
+     * @param _sender Address of the sender calling function with selector
+     * `_selector` on contract `_contract`.
+     * @param _contract Address of the contract being called by `_sender`.
+     * @param _selector Function selector of the function being called by
+     * `_sender`.
+     * @dev assumes the Admin ACL contract is the owner of this contract, which
+     * is expected to always be true.
+     * @dev adminACLContract is expected to either be null address (if owner
+     * has renounced ownership), or conform to IAdminACLV0 interface. Check for
+     * null address first to avoid revert when admin has renounced ownership.
+     */
+    function adminACLAllowed(
+        address _sender,
+        address _contract,
+        bytes4 _selector
+    ) public returns (bool) {
+        return
+            owner() != address(0) &&
+            adminACLContract.allowed(_sender, _contract, _selector);
+    }
+
+    /**
      * @notice Returns contract owner. Set to deployer's address by default on
      * contract deployment.
      * @dev ref: https://docs.openzeppelin.com/contracts/4.x/api/access#Ownable
@@ -1142,10 +1079,73 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     /**
-     * @notice Backwards-compatible (pre-V3) getter returning contract admin
-     * @return admin_ Address of contract owner
+     * @notice Gets token URI for token ID `_tokenId`.
      */
-    function admin() public view returns (address) {
-        return owner();
+    function tokenURI(uint256 _tokenId)
+        public
+        view
+        override
+        onlyValidTokenId(_tokenId)
+        returns (string memory)
+    {
+        return
+            string(
+                abi.encodePacked(
+                    projects[_tokenId / ONE_MILLION].projectBaseURI,
+                    Strings.toString(_tokenId)
+                )
+            );
+    }
+
+    /**
+     * @dev Transfers ownership of the contract to a new account (`newOwner`).
+     * Internal function without access restriction.
+     * @dev Overrides and wraps OpenZeppelin's _transferOwnership function to
+     * also update adminACLContract for improved introspection.
+     */
+    function _transferOwnership(address newOwner) internal override {
+        Ownable._transferOwnership(newOwner);
+        adminACLContract = IAdminACLV0(newOwner);
+    }
+
+    /**
+     * @notice Updates Art Blocks payment address to `_renderProviderAddress`.
+     */
+    function _updateArtblocksAddress(address _artblocksAddress) internal {
+        artblocksAddress = payable(_artblocksAddress);
+        emit PlatformUpdated(FIELD_ARTBLOCKS_ADDRESS);
+    }
+
+    /**
+     * @notice Updates randomizer address to `_randomizerAddress`.
+     */
+    function _updateRandomizerAddress(address _randomizerAddress) internal {
+        randomizerContract = IRandomizer(_randomizerAddress);
+        emit PlatformUpdated(FIELD_RANDOMIZER_ADDRESS);
+    }
+
+    /**
+     * @notice Internal function to complete a project.
+     */
+    function _completeProject(uint256 _projectId) internal {
+        projects[_projectId].completedTimestamp = block.timestamp;
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_COMPLETED);
+    }
+
+    /**
+     * @notice Internal function that returns whether a project is unlocked.
+     * Projects automatically lock four weeks after they are completed.
+     * Projects are considered completed when they have been invoked the
+     * maximum number of times.
+     * @param _projectId Project ID to check.
+     */
+    function _projectUnlocked(uint256 _projectId) internal view returns (bool) {
+        uint256 projectCompletedTimestamp = projects[_projectId]
+            .completedTimestamp;
+        bool projectOpen = projectCompletedTimestamp == 0;
+        return
+            projectOpen ||
+            (block.timestamp - projectCompletedTimestamp <
+                FOUR_WEEKS_IN_SECONDS);
     }
 }
