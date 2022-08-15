@@ -63,6 +63,11 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
       this.minterFilter.address,
     ]);
 
+    this.minterDALin = await deployAndGet.call(this, "MinterDALinV2", [
+      this.genArt721Core.address,
+      this.minterFilter.address,
+    ]);
+
     // add four projects, test on project three to directly compare to V1 core, which starts at projectId = 3
     for (let i = 0; i < 4; i++) {
       await safeAddProject(
@@ -162,9 +167,6 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
 
     it("test gas cost of mint on MinterDAExp [ @skip-on-coverage ]", async function () {
       this.startingPrice = ethers.utils.parseEther("10");
-      this.higherPricePerTokenInWei = this.startingPrice.add(
-        ethers.utils.parseEther("0.1")
-      );
       this.basePrice = ethers.utils.parseEther("0.05");
       this.defaultHalfLife = ONE_HOUR / 2;
       this.auctionStartTimeOffset = ONE_HOUR;
@@ -198,6 +200,57 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
 
       // mint
       const tx = await this.minterDAExp
+        .connect(this.accounts.user)
+        .purchase(this.projectThree, { value: this.startingPrice });
+      const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+      console.log(`gas used for mint optimization test: ${receipt.gasUsed}`);
+      const gasCostAt100gwei = receipt.effectiveGasPrice
+        .mul(receipt.gasUsed)
+        .toString();
+      const gasCostAt100gweiInETH = parseFloat(
+        ethers.utils.formatUnits(gasCostAt100gwei, "ether")
+      );
+      const gasCostAt100gweiAt2kUSDPerETH = gasCostAt100gweiInETH * 2e3;
+      console.log(
+        `=USD at 100gwei, $2k USD/ETH: \$${gasCostAt100gweiAt2kUSDPerETH}`
+      );
+    });
+
+    it("test gas cost of mint on MinterDALin [ @skip-on-coverage ]", async function () {
+      this.basePrice = ethers.utils.parseEther("0.05");
+      this.startingPrice = ethers.utils.parseEther("0.25");
+      this.auctionStartTimeOffset = ONE_HOUR;
+      if (!this.startTime) {
+        const blockNumber = await ethers.provider.getBlockNumber();
+        const block = await ethers.provider.getBlock(blockNumber);
+        this.startTime = block.timestamp;
+      }
+      this.startTime = this.startTime + ONE_DAY;
+
+      await ethers.provider.send("evm_mine", [this.startTime - ONE_MINUTE]);
+      // set project three minter to minterDALin, and configure
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .addApprovedMinter(this.minterDALin.address);
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .setMinterForProject(this.projectThree, this.minterDALin.address);
+
+      await this.minterDALin
+        .connect(this.accounts.artist)
+        .setAuctionDetails(
+          this.projectThree,
+          this.startTime + this.auctionStartTimeOffset,
+          this.startTime + this.auctionStartTimeOffset + ONE_HOUR * 2,
+          this.startingPrice,
+          this.basePrice
+        );
+      await ethers.provider.send("evm_mine", [
+        this.startTime + this.auctionStartTimeOffset,
+      ]);
+
+      // mint
+      const tx = await this.minterDALin
         .connect(this.accounts.user)
         .purchase(this.projectThree, { value: this.startingPrice });
       const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
