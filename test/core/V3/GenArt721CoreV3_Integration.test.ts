@@ -199,6 +199,7 @@ describe("GenArt721CoreV3 Integration", async function () {
       await this.minter
         .connect(this.accounts.artist)
         .purchase(this.projectZero);
+
       // call directly from non-randomizer account and expect revert
       await expectRevert(
         this.genArt721Core
