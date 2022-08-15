@@ -3,7 +3,7 @@ pragma solidity 0.8.9;
 
 // Created By: Art Blocks Inc.
 
-import "./interfaces/0.8.x/IRandomizer.sol";
+import "./interfaces/0.8.x/IRandomizerV2.sol";
 import "./interfaces/0.8.x/IAdminACLV0.sol";
 import "./interfaces/0.8.x/IGenArt721CoreContractV3.sol";
 
@@ -61,7 +61,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     address public artblocksDependencyRegistryAddress;
 
     /// randomizer contract
-    IRandomizer public randomizerContract;
+    IRandomizerV2 public randomizerContract;
 
     /// admin ACL contract
     IAdminACLV0 public adminACLContract;
@@ -255,18 +255,11 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
             _completeProject(_projectId);
         }
 
-        // (includes an interaction with randomizer)
-        bytes32 tokenHash = keccak256(
-            abi.encodePacked(
-                thisTokenId,
-                blockhash(block.number - 1),
-                randomizerContract.returnValue()
-            )
-        );
-
-        tokenIdToHash[thisTokenId] = tokenHash;
-
         // INTERACTIONS
+
+        // token hash is updated by the randomizer contract on V3
+        randomizerContract.assignTokenHash(thisTokenId);
+
         _mint(_to, thisTokenId);
 
         // Do not need to also log `projectId` in event, as the `projectId` for
@@ -275,6 +268,27 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         emit Mint(_to, thisTokenId);
 
         return thisTokenId;
+    }
+
+    /**
+     * @notice Sets the hash for a given token ID `_tokenId`.
+     * May only be called by the current randomizer contract.
+     * May only be called for tokens that have not already been assigned a
+     * non-zero hash.
+     * @param _tokenId Token ID to set the hash for.
+     * @param _hash Hash to set for the token ID.
+     * @dev gas-optimized function name because called during mint sequence
+     */
+    function setTokenHash_8PT(uint256 _tokenId, bytes32 _hash) external {
+        require(
+            msg.sender == address(randomizerContract),
+            "Only randomizer may set"
+        );
+        require(
+            tokenIdToHash[_tokenId] == bytes32(0),
+            "Token hash already set."
+        );
+        tokenIdToHash[_tokenId] = _hash;
     }
 
     /**
@@ -1121,7 +1135,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @notice Updates randomizer address to `_randomizerAddress`.
      */
     function _updateRandomizerAddress(address _randomizerAddress) internal {
-        randomizerContract = IRandomizer(_randomizerAddress);
+        randomizerContract = IRandomizerV2(_randomizerAddress);
         emit PlatformUpdated(FIELD_RANDOMIZER_ADDRESS);
     }
 
