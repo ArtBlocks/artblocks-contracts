@@ -77,11 +77,25 @@ describe("GenArt721CoreV3 Integration", async function () {
     });
   });
 
+  describe("artblocksAddress", function () {
+    it("returns expected artblocksAddress", async function () {
+      expect(await this.genArt721Core.artblocksAddress()).to.be.equal(
+        this.accounts.deployer.address
+      );
+    });
+  });
+
   describe("artblocksSecondarySalesAddress", function () {
     it("returns expected artblocksSecondarySalesAddress", async function () {
       expect(
         await this.genArt721Core.artblocksSecondarySalesAddress()
       ).to.be.equal(this.accounts.deployer.address);
+    });
+  });
+
+  describe("artblocksPercentage", function () {
+    it("returns expected artblocksPercentage", async function () {
+      expect(await this.genArt721Core.artblocksPercentage()).to.be.equal(10);
     });
   });
 
@@ -207,6 +221,7 @@ describe("GenArt721CoreV3 Integration", async function () {
       await this.minter
         .connect(this.accounts.artist)
         .purchase(this.projectZero);
+
       // call directly from non-randomizer account and expect revert
       await expectRevert(
         this.genArt721Core

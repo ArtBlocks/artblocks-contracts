@@ -375,11 +375,16 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     /**
      * @notice Updates Art Blocks secondary sales royalty Basis Points to
      * `_artblocksSecondarySalesBPS`.
+     * @dev Due to seocndary royalties being ultimately enforced via social
+     * consensus, no hard upper limit is imposed on the BPS value, other than
+     * <= 100% royalty, which would not make mathematical sense. Realistically,
+     * changing this value is expected to either never occur, or be a rare
+     * occurrence.
      */
     function updateArtblocksSecondarySalesBPS(
         uint256 _artblocksSecondarySalesBPS
     ) external onlyAdminACL(this.updateArtblocksSecondarySalesBPS.selector) {
-        require(_artblocksSecondarySalesBPS <= 250, "Max of 2.5%");
+        require(_artblocksSecondarySalesBPS <= 10000, "Max of 100%");
         artblocksSecondarySalesBPS = _artblocksSecondarySalesBPS;
         emit PlatformUpdated(FIELD_ARTBLOCKS_SECONDARY_SALES_BPS);
     }
@@ -1015,6 +1020,22 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
             "Index out of bounds"
         );
         return _historicalRandomizerAddresses[_index];
+    }
+
+    /**
+     * @notice Backwards-compatible (pre-V3) function returning Art Blocks
+     * primary sales payment address (now called artblocksPrimarySalesAddress).
+     */
+    function artblocksAddress() external view returns (address payable) {
+        return artblocksPrimarySalesAddress;
+    }
+
+    /**
+     * @notice Backwards-compatible (pre-V3) function returning Art Blocks
+     * primary sales percentage (now called artblocksPrimarySalesPercentage).
+     */
+    function artblocksPercentage() external view returns (uint256) {
+        return artblocksPrimarySalesPercentage;
     }
 
     /**
