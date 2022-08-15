@@ -8,6 +8,9 @@ import {
 } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
+const { MerkleTree } = require("merkletreejs");
+import { hashAddress } from "../../minter-suite-minters/MinterMerkle/MinterMerkle.common";
+const keccak256 = require("keccak256");
 
 import {
   getAccounts,
@@ -17,6 +20,10 @@ import {
   safeAddProject,
 } from "../../util/common";
 import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../util/constants";
+
+import { Logger } from "@ethersproject/logger";
+// hide nuisance logs about event overloading
+Logger.setLogLevel(Logger.levels.ERROR);
 
 /**
  * General Gas tests for V3 core.
@@ -64,6 +71,11 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
     ]);
 
     this.minterDALin = await deployAndGet.call(this, "MinterDALinV2", [
+      this.genArt721Core.address,
+      this.minterFilter.address,
+    ]);
+
+    this.minterMerkle = await deployAndGet.call(this, "MinterMerkleV1", [
       this.genArt721Core.address,
       this.minterFilter.address,
     ]);
@@ -253,6 +265,63 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
       const tx = await this.minterDALin
         .connect(this.accounts.user)
         .purchase(this.projectThree, { value: this.startingPrice });
+      const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+      console.log(`gas used for mint optimization test: ${receipt.gasUsed}`);
+      const gasCostAt100gwei = receipt.effectiveGasPrice
+        .mul(receipt.gasUsed)
+        .toString();
+      const gasCostAt100gweiInETH = parseFloat(
+        ethers.utils.formatUnits(gasCostAt100gwei, "ether")
+      );
+      const gasCostAt100gweiAt2kUSDPerETH = gasCostAt100gweiInETH * 2e3;
+      console.log(
+        `=USD at 100gwei, $2k USD/ETH: \$${gasCostAt100gweiAt2kUSDPerETH}`
+      );
+    });
+
+    it("test gas cost of mint on MinterMerkle [ @skip-on-coverage ]", async function () {
+      // set project three minter to MinterMerkle, and configure
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .addApprovedMinter(this.minterMerkle.address);
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .setMinterForProject(this.projectThree, this.minterMerkle.address);
+      // set price for project three on minter
+      await this.minterMerkle
+        .connect(this.accounts.artist)
+        .updatePricePerTokenInWei(this.projectThree, this.pricePerTokenInWei);
+
+      // build new Merkle tree from 1k addresses, including user's address
+      const _allowlist = [this.accounts.user.address];
+      const crypto = require("crypto");
+      for (let i = 1; i < 1000; i++) {
+        const _pk = crypto.randomBytes(32).toString("hex");
+        const _addr = ethers.utils.computeAddress("0x" + _pk);
+        _allowlist.push(_addr);
+      }
+      const _merkleTree = new MerkleTree(
+        _allowlist.map((_addr) => hashAddress(_addr)),
+        keccak256,
+        {
+          sortPairs: true,
+        }
+      );
+      // update Merkle root
+      await this.minterMerkle
+        .connect(this.accounts.artist)
+        .updateMerkleRoot(this.projectThree, _merkleTree.getRoot());
+      // user mint with new Merkle proof
+      const userMerkleProof = _merkleTree.getHexProof(
+        hashAddress(this.accounts.user.address)
+      );
+      // mint
+      const tx = await this.minterMerkle
+        .connect(this.accounts.user)
+        ["purchase(uint256,bytes32[])"](this.projectThree, userMerkleProof, {
+          value: this.pricePerTokenInWei,
+        });
+      // report gas
       const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
       console.log(`gas used for mint optimization test: ${receipt.gasUsed}`);
       const gasCostAt100gwei = receipt.effectiveGasPrice
