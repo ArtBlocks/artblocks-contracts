@@ -25,25 +25,22 @@ describe("GenArt721CoreV3 Views", async function () {
     this.accounts = await getAccounts();
     await assignDefaultConstants.call(this);
 
-    const randomizerFactory = await ethers.getContractFactory(
-      "BasicRandomizer"
-    );
-    this.randomizer = await randomizerFactory.deploy();
-    const adminACLFactory = await ethers.getContractFactory(
-      "MockAdminACLV0Events"
-    );
-    this.adminACL = await adminACLFactory.deploy();
-    const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV3");
-    this.genArt721Core = await artblocksFactory
-      .connect(this.accounts.deployer)
-      .deploy(
-        this.name,
-        this.symbol,
-        this.randomizer.address,
-        this.adminACL.address
-      );
+    // deploy and configure minter filter and minter
+    ({
+      genArt721Core: this.genArt721Core,
+      minterFilter: this.minterFilter,
+      randomizer: this.randomizer,
+      adminACL: this.adminACL,
+    } = await deployCoreWithMinterFilter.call(
+      this,
+      "GenArt721CoreV3",
+      "MinterFilterV1"
+    ));
 
-    // TBD - V3 DOES NOT CURRENTLY HAVE A WORKING MINTER
+    this.minter = await deployAndGet.call(this, "MinterSetPriceV2", [
+      this.genArt721Core.address,
+      this.minterFilter.address,
+    ]);
 
     // add project
     await this.genArt721Core
@@ -55,6 +52,17 @@ describe("GenArt721CoreV3 Views", async function () {
     await this.genArt721Core
       .connect(this.accounts.artist)
       .updateProjectMaxInvocations(this.projectZero, this.maxInvocations);
+
+    // configure minter for project zero
+    await this.minterFilter
+      .connect(this.accounts.deployer)
+      .addApprovedMinter(this.minter.address);
+    await this.minterFilter
+      .connect(this.accounts.deployer)
+      .setMinterForProject(this.projectZero, this.minter.address);
+    await this.minter
+      .connect(this.accounts.artist)
+      .updatePricePerTokenInWei(this.projectZero, 0);
   });
 
   describe("coreVersion", function () {
@@ -356,7 +364,8 @@ describe("GenArt721CoreV3 Views", async function () {
         );
       // expect revenue splits to be properly calculated
       // Art Blocks
-      const artblocksAddress = await this.genArt721Core.artblocksAddress();
+      const artblocksAddress =
+        await this.genArt721Core.artblocksPrimarySalesAddress();
       expect(revenueSplits.artblocksAddress_).to.be.equal(artblocksAddress);
       expect(revenueSplits.artblocksRevenue_).to.be.equal(
         ethers.utils.parseEther("0.10")
@@ -407,11 +416,11 @@ describe("GenArt721CoreV3 Views", async function () {
       // update Art Blocks percentage to 20%
       await this.genArt721Core
         .connect(this.accounts.deployer)
-        .updateArtblocksPercentage(20);
+        .updateArtblocksPrimarySalesPercentage(20);
       // change Art Blocks payment address to random address
       await this.genArt721Core
         .connect(this.accounts.deployer)
-        .updateArtblocksAddress(this.accounts.user.address);
+        .updateArtblocksPrimarySalesAddress(this.accounts.user.address);
       // check for expected values
       const revenueSplits = await this.genArt721Core
         .connect(this.accounts.user)
@@ -464,14 +473,14 @@ describe("GenArt721CoreV3 Views", async function () {
         .adminAcceptArtistAddressesAndSplits(
           ...proposeArtistPaymentAddressesAndSplitsArgs
         );
-      // update Art Blocks percentage to 20%
+      // update Art Blocks primary sales percentage to 20%
       await this.genArt721Core
         .connect(this.accounts.deployer)
-        .updateArtblocksPercentage(20);
-      // change Art Blocks payment address to random address
+        .updateArtblocksPrimarySalesPercentage(20);
+      // change Art Blocks primary sales payment address to random address
       await this.genArt721Core
         .connect(this.accounts.deployer)
-        .updateArtblocksAddress(this.accounts.user.address);
+        .updateArtblocksPrimarySalesAddress(this.accounts.user.address);
       // check for expected values
       const revenueSplits = await this.genArt721Core
         .connect(this.accounts.user)
@@ -495,6 +504,413 @@ describe("GenArt721CoreV3 Views", async function () {
       expect(revenueSplits.artistAddress_).to.be.equal(constants.ZERO_ADDRESS);
       expect(revenueSplits.artistRevenue_).to.be.equal(
         ethers.utils.parseEther("0")
+      );
+    });
+  });
+
+  describe("getRoyalties", function () {
+    it("returns expected default values for valid projectZero token", async function () {
+      // mint token for projectZero
+      await this.minter
+        .connect(this.accounts.artist)
+        .purchase(this.projectZero);
+      // check for expected values
+      const royaltiesData = await this.genArt721Core
+        .connect(this.accounts.user)
+        .getRoyalties(this.projectZeroTokenZero.toNumber());
+      // Artist
+      // This is a special case where expected revenue is 0, so not included in the array
+      // Additional Payee
+      // This is a special case where expected revenue is 0, so not included in the array
+      // Art Blocks
+      const artblocksSecondarySalesAddress =
+        await this.genArt721Core.artblocksSecondarySalesAddress();
+      expect(royaltiesData.recipients[0]).to.be.equal(
+        artblocksSecondarySalesAddress
+      );
+      expect(royaltiesData.bps[0]).to.be.equal(250);
+    });
+
+    it("returns expected configured values for valid projectOne token, three non-zero royalties", async function () {
+      // add project
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .addProject("name", this.accounts.artist2.address);
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .toggleProjectIsActive(this.projectOne);
+      await this.genArt721Core
+        .connect(this.accounts.artist2)
+        .updateProjectMaxInvocations(this.projectOne, this.maxInvocations);
+
+      // configure minter for project one
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .setMinterForProject(this.projectOne, this.minter.address);
+      await this.minter
+        .connect(this.accounts.artist2)
+        .updatePricePerTokenInWei(this.projectOne, 0);
+
+      // mint token for projectOne
+      await this.minter
+        .connect(this.accounts.artist2)
+        .purchase(this.projectOne);
+
+      // configure royalties for projectOne
+      await this.genArt721Core
+        .connect(this.accounts.artist2)
+        .updateProjectSecondaryMarketRoyaltyPercentage(this.projectOne, 10);
+      // artist2 populates an addditional payee
+      const proposeArtistPaymentAddressesAndSplitsArgs = [
+        this.projectOne,
+        this.accounts.artist2.address,
+        constants.ZERO_ADDRESS,
+        0,
+        this.accounts.additional2.address, // additional secondary address
+        51, // additonal secondary percentage
+      ];
+      await this.genArt721Core
+        .connect(this.accounts.artist2)
+        .proposeArtistPaymentAddressesAndSplits(
+          ...proposeArtistPaymentAddressesAndSplitsArgs
+        );
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .adminAcceptArtistAddressesAndSplits(
+          ...proposeArtistPaymentAddressesAndSplitsArgs
+        );
+      // update Art Blocks secondary BPS to 2.4%
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateArtblocksSecondarySalesBPS(240);
+      // change Art Blocks payment address to random address
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateArtblocksSecondarySalesAddress(this.accounts.user.address);
+
+      // check for expected values
+      const royaltiesData = await this.genArt721Core
+        .connect(this.accounts.user)
+        .getRoyalties(this.projectOneTokenZero.toNumber());
+      // Artist
+      const artistAddress = this.accounts.artist2.address;
+      expect(royaltiesData.recipients[0]).to.be.equal(artistAddress);
+      // artist BPS = 10% * 100 (BPS/%) * 0.49 to artist = 490 BPS
+      expect(royaltiesData.bps[0]).to.be.equal(490);
+      // Additional Payee
+      const projectIdToAdditionalPayeeSecondarySales =
+        this.accounts.additional2.address;
+      expect(royaltiesData.recipients[1]).to.be.equal(
+        projectIdToAdditionalPayeeSecondarySales
+      );
+      // artist BPS = 10% * 100 (BPS/%) * 0.51 to additional = 510 BPS
+      expect(royaltiesData.bps[1]).to.be.equal(510);
+      // Art Blocks
+      const artblocksSecondarySalesAddress = this.accounts.user.address;
+      expect(royaltiesData.recipients[2]).to.be.equal(
+        artblocksSecondarySalesAddress
+      );
+      expect(royaltiesData.bps[2]).to.be.equal(240);
+    });
+
+    it("returns expected configured values for valid projectOne token, only artist royalties are zero", async function () {
+      // add project
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .addProject("name", this.accounts.artist2.address);
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .toggleProjectIsActive(this.projectOne);
+      await this.genArt721Core
+        .connect(this.accounts.artist2)
+        .updateProjectMaxInvocations(this.projectOne, this.maxInvocations);
+
+      // configure minter for project one
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .setMinterForProject(this.projectOne, this.minter.address);
+      await this.minter
+        .connect(this.accounts.artist2)
+        .updatePricePerTokenInWei(this.projectOne, 0);
+
+      // mint token for projectOne
+      await this.minter
+        .connect(this.accounts.artist2)
+        .purchase(this.projectOne);
+
+      // configure royalties for projectOne
+      await this.genArt721Core
+        .connect(this.accounts.artist2)
+        .updateProjectSecondaryMarketRoyaltyPercentage(this.projectOne, 10);
+      // artist2 populates an addditional payee
+      const proposeArtistPaymentAddressesAndSplitsArgs = [
+        this.projectOne,
+        this.accounts.artist2.address,
+        constants.ZERO_ADDRESS,
+        0,
+        this.accounts.additional2.address, // additional secondary address
+        100, // additonal secondary percentage
+      ];
+      await this.genArt721Core
+        .connect(this.accounts.artist2)
+        .proposeArtistPaymentAddressesAndSplits(
+          ...proposeArtistPaymentAddressesAndSplitsArgs
+        );
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .adminAcceptArtistAddressesAndSplits(
+          ...proposeArtistPaymentAddressesAndSplitsArgs
+        );
+      // update Art Blocks secondary BPS to 2.4%
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateArtblocksSecondarySalesBPS(240);
+      // change Art Blocks payment address to random address
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateArtblocksSecondarySalesAddress(this.accounts.user.address);
+
+      // check for expected values
+      const royaltiesData = await this.genArt721Core
+        .connect(this.accounts.user)
+        .getRoyalties(this.projectOneTokenZero.toNumber());
+      // Artist
+      // This is a special case where expected revenue is 0, so not included in the array
+      // Additional Payee
+      const projectIdToAdditionalPayeeSecondarySales =
+        this.accounts.additional2.address;
+      expect(royaltiesData.recipients[0]).to.be.equal(
+        projectIdToAdditionalPayeeSecondarySales
+      );
+      // artist BPS = 10% * 100 (BPS/%) * 1.00 to additional = 1000 BPS
+      expect(royaltiesData.bps[0]).to.be.equal(1000);
+      // Art Blocks
+      const artblocksSecondarySalesAddress = this.accounts.user.address;
+      expect(royaltiesData.recipients[1]).to.be.equal(
+        artblocksSecondarySalesAddress
+      );
+      expect(royaltiesData.bps[1]).to.be.equal(240);
+    });
+
+    it("returns expected configured values for valid projectOne token, only additional payee royalties are zero", async function () {
+      // add project
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .addProject("name", this.accounts.artist2.address);
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .toggleProjectIsActive(this.projectOne);
+      await this.genArt721Core
+        .connect(this.accounts.artist2)
+        .updateProjectMaxInvocations(this.projectOne, this.maxInvocations);
+
+      // configure minter for project one
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .setMinterForProject(this.projectOne, this.minter.address);
+      await this.minter
+        .connect(this.accounts.artist2)
+        .updatePricePerTokenInWei(this.projectOne, 0);
+
+      // mint token for projectOne
+      await this.minter
+        .connect(this.accounts.artist2)
+        .purchase(this.projectOne);
+
+      // configure royalties for projectOne
+      await this.genArt721Core
+        .connect(this.accounts.artist2)
+        .updateProjectSecondaryMarketRoyaltyPercentage(this.projectOne, 10);
+      // artist2 populates an addditional payee
+      const proposeArtistPaymentAddressesAndSplitsArgs = [
+        this.projectOne,
+        this.accounts.artist2.address,
+        constants.ZERO_ADDRESS,
+        0,
+        this.accounts.additional2.address, // additional secondary address
+        0, // additonal secondary percentage
+      ];
+      await this.genArt721Core
+        .connect(this.accounts.artist2)
+        .proposeArtistPaymentAddressesAndSplits(
+          ...proposeArtistPaymentAddressesAndSplitsArgs
+        );
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .adminAcceptArtistAddressesAndSplits(
+          ...proposeArtistPaymentAddressesAndSplitsArgs
+        );
+      // update Art Blocks secondary BPS to 2.4%
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateArtblocksSecondarySalesBPS(240);
+      // change Art Blocks payment address to random address
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateArtblocksSecondarySalesAddress(this.accounts.user.address);
+
+      // check for expected values
+      const royaltiesData = await this.genArt721Core
+        .connect(this.accounts.user)
+        .getRoyalties(this.projectOneTokenZero.toNumber());
+      // Artist
+      const artistAddress = this.accounts.artist2.address;
+      expect(royaltiesData.recipients[0]).to.be.equal(artistAddress);
+      // artist BPS = 10% * 100 (BPS/%) * 1.00 to artist = 1000 BPS
+      expect(royaltiesData.bps[0]).to.be.equal(1000);
+      // Additional Payee
+      // This is a special case where expected revenue is 0, so not included in the array
+      // Art Blocks
+      const artblocksSecondarySalesAddress = this.accounts.user.address;
+      expect(royaltiesData.recipients[1]).to.be.equal(
+        artblocksSecondarySalesAddress
+      );
+      expect(royaltiesData.bps[1]).to.be.equal(240);
+    });
+
+    it("returns expected configured values for valid projectOne token, only Art Blocks royalties are zero", async function () {
+      // add project
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .addProject("name", this.accounts.artist2.address);
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .toggleProjectIsActive(this.projectOne);
+      await this.genArt721Core
+        .connect(this.accounts.artist2)
+        .updateProjectMaxInvocations(this.projectOne, this.maxInvocations);
+
+      // configure minter for project one
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .setMinterForProject(this.projectOne, this.minter.address);
+      await this.minter
+        .connect(this.accounts.artist2)
+        .updatePricePerTokenInWei(this.projectOne, 0);
+
+      // mint token for projectOne
+      await this.minter
+        .connect(this.accounts.artist2)
+        .purchase(this.projectOne);
+
+      // configure royalties for projectOne
+      await this.genArt721Core
+        .connect(this.accounts.artist2)
+        .updateProjectSecondaryMarketRoyaltyPercentage(this.projectOne, 10);
+      // artist2 populates an addditional payee
+      const proposeArtistPaymentAddressesAndSplitsArgs = [
+        this.projectOne,
+        this.accounts.artist2.address,
+        constants.ZERO_ADDRESS,
+        0,
+        this.accounts.additional2.address, // additional secondary address
+        51, // additonal secondary percentage
+      ];
+      await this.genArt721Core
+        .connect(this.accounts.artist2)
+        .proposeArtistPaymentAddressesAndSplits(
+          ...proposeArtistPaymentAddressesAndSplitsArgs
+        );
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .adminAcceptArtistAddressesAndSplits(
+          ...proposeArtistPaymentAddressesAndSplitsArgs
+        );
+      // update Art Blocks secondary BPS to 0%
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateArtblocksSecondarySalesBPS(0);
+      // change Art Blocks payment address to random address
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateArtblocksSecondarySalesAddress(this.accounts.user.address);
+
+      // check for expected values
+      const royaltiesData = await this.genArt721Core
+        .connect(this.accounts.user)
+        .getRoyalties(this.projectOneTokenZero.toNumber());
+      // Artist
+      const artistAddress = this.accounts.artist2.address;
+      expect(royaltiesData.recipients[0]).to.be.equal(artistAddress);
+      // artist BPS = 10% * 100 (BPS/%) * 0.49 to artist = 490 BPS
+      expect(royaltiesData.bps[0]).to.be.equal(490);
+      // Additional Payee
+      const projectIdToAdditionalPayeeSecondarySales =
+        this.accounts.additional2.address;
+      expect(royaltiesData.recipients[1]).to.be.equal(
+        projectIdToAdditionalPayeeSecondarySales
+      );
+      // artist BPS = 10% * 100 (BPS/%) * 0.51 to additional = 510 BPS
+      expect(royaltiesData.bps[1]).to.be.equal(510);
+      // Art Blocks
+      // This is a special case where expected revenue is 0, so not included in the array
+      expect(royaltiesData.recipients.length).to.be.equal(2);
+      expect(royaltiesData.bps.length).to.be.equal(2);
+    });
+
+    it("reverts when asking for invalid token", async function () {
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.user)
+          .getRoyalties(this.projectZeroTokenZero.toNumber()),
+        "Token ID does not exist"
+      );
+    });
+  });
+
+  describe("numHistoricalRandomizers", function () {
+    it("returns value of one upon initial configuration", async function () {
+      const numHistoricalRandomizers = await this.genArt721Core
+        .connect(this.accounts.user)
+        .numHistoricalRandomizers();
+      expect(numHistoricalRandomizers).to.be.equal(1);
+    });
+
+    it("increments value when more randomizers are added", async function () {
+      // update to dummy randomizer address
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateRandomizerAddress(this.accounts.deployer.address);
+      // expect incremented number of randomizers
+      const numHistoricalRandomizers = await this.genArt721Core
+        .connect(this.accounts.user)
+        .numHistoricalRandomizers();
+      expect(numHistoricalRandomizers).to.be.equal(2);
+    });
+  });
+
+  describe("getHistoricalRandomizerAt", function () {
+    it("returns initial randomizer at index of zero upon initial configuration", async function () {
+      const randomizerAddress = await this.genArt721Core
+        .connect(this.accounts.user)
+        .getHistoricalRandomizerAt(0);
+      expect(randomizerAddress).to.be.equal(this.randomizer.address);
+    });
+
+    it("returns initial and next randomizer at expected indices when >1 randomizer in history", async function () {
+      // update to dummy randomizer address
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateRandomizerAddress(this.accounts.deployer.address);
+      // expect initial randomizer at index zero
+      const initialRandomizer = await this.genArt721Core
+        .connect(this.accounts.user)
+        .getHistoricalRandomizerAt(0);
+      expect(initialRandomizer).to.be.equal(this.randomizer.address);
+      // expect next randomizer at index one
+      const nextRandomizer = await this.genArt721Core
+        .connect(this.accounts.user)
+        .getHistoricalRandomizerAt(1);
+      expect(nextRandomizer).to.be.equal(this.accounts.deployer.address);
+    });
+
+    it("reverts when invalid index is queried", async function () {
+      // expect revert when query out of bounds index
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.user)
+          .getHistoricalRandomizerAt(2),
+        "Index out of bounds"
       );
     });
   });

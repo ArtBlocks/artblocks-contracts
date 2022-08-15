@@ -111,7 +111,7 @@ describe("MinterDALinV2_V3Core", async function () {
   });
 
   describe("calculate gas", async function () {
-    it("mints and calculates gas values", async function () {
+    it("mints and calculates gas values [ @skip-on-coverage ]", async function () {
       await ethers.provider.send("evm_mine", [
         this.startTime + this.auctionStartTimeOffset,
       ]);
@@ -130,8 +130,7 @@ describe("MinterDALinV2_V3Core", async function () {
         ethers.utils.formatUnits(txCost, "ether").toString(),
         "ETH"
       );
-
-      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0189681")); // assuming a cost of 100 GWEI
+      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0192619")); // assuming a cost of 100 GWEI
     });
   });
 });

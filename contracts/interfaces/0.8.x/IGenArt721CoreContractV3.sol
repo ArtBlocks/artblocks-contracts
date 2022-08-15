@@ -4,8 +4,10 @@
 pragma solidity ^0.8.0;
 
 import "./IAdminACLV0.sol";
+/// use the Royalty Registry's IManifold interface for token royalties
+import "./IManifold.sol";
 
-interface IGenArt721CoreContractV3 {
+interface IGenArt721CoreContractV3 is IManifold {
     /**
      * @notice Token ID `_tokenId` minted to `_to`.
      */
@@ -27,6 +29,17 @@ interface IGenArt721CoreContractV3 {
      * `_update`.
      */
     event ProjectUpdated(uint256 indexed _projectId, bytes32 indexed _update);
+
+    event ProposedArtistAddressesAndSplits(
+        uint256 indexed _projectId,
+        address _artistAddress,
+        address _additionalPayeePrimarySales,
+        uint256 _additionalPayeePrimarySalesPercentage,
+        address _additionalPayeeSecondarySales,
+        uint256 _additionalPayeeSecondarySalesPercentage
+    );
+
+    event AcceptedArtistAddressesAndSplits(uint256 indexed _projectId);
 
     // version and type of the core contract
     // coreVersion is a string of the form "0.x.y"
@@ -108,9 +121,26 @@ interface IGenArt721CoreContractV3 {
             bool locked
         );
 
-    function artblocksAddress() external view returns (address payable);
+    // @dev Art Blocks primary sales payment address
+    function artblocksPrimarySalesAddress()
+        external
+        view
+        returns (address payable);
 
-    function artblocksPercentage() external view returns (uint256);
+    // @dev Percentage of primary sales allocated to Art Blocks
+    function artblocksPrimarySalesPercentage() external view returns (uint256);
+
+    // @dev Art Blocks secondary sales royalties payment address
+    function artblocksSecondarySalesAddress()
+        external
+        view
+        returns (address payable);
+
+    // @dev Basis points of secondary sales allocated to Art Blocks
+    function artblocksSecondarySalesBPS() external view returns (uint256);
+
+    // function to set a token's hash (must be guarded)
+    function setTokenHash_8PT(uint256 _tokenId, bytes32 _hash) external;
 
     // @dev gas-optimized signature in V3 for `mint`
     function mint_Ecf(
@@ -118,14 +148,4 @@ interface IGenArt721CoreContractV3 {
         uint256 _projectId,
         address _by
     ) external returns (uint256 tokenId);
-
-    function getRoyaltyData(uint256 _tokenId)
-        external
-        view
-        returns (
-            address artistAddress,
-            address additionalPayee,
-            uint256 additionalPayeePercentage,
-            uint256 royaltyFeeByID
-        );
 }

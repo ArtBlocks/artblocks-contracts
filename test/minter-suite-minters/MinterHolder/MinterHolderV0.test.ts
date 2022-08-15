@@ -158,7 +158,7 @@ describe("MinterHolderV0", async function () {
   });
 
   describe("calculates gas", async function () {
-    it("mints and calculates gas values", async function () {
+    it("mints and calculates gas values [ @skip-on-coverage ]", async function () {
       const tx = await this.minter
         .connect(this.accounts.artist)
         ["purchase(uint256,address,uint256)"](

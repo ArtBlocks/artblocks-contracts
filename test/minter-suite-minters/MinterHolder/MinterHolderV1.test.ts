@@ -157,7 +157,7 @@ describe("MinterHolderV1", async function () {
   });
 
   describe("calculates gas", async function () {
-    it("mints and calculates gas values", async function () {
+    it("mints and calculates gas values [ @skip-on-coverage ]", async function () {
       const tx = await this.minter
         .connect(this.accounts.artist)
         ["purchase(uint256,address,uint256)"](
@@ -177,7 +177,7 @@ describe("MinterHolderV1", async function () {
         ethers.utils.formatUnits(txCost.toString(), "ether").toString(),
         "ETH"
       );
-      expect(compareBN(txCost, ethers.utils.parseEther("0.0145"), 1)).to.be
+      expect(compareBN(txCost, ethers.utils.parseEther("0.0150254"), 1)).to.be
         .true;
     });
   });

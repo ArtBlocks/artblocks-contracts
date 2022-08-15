@@ -70,7 +70,7 @@ describe("GenArt721CoreV1 Integration", async function () {
   });
 
   describe("purchase payments and gas", async function () {
-    it("can create a token then funds distributed (no additional payee)", async function () {
+    it("can create a token then funds distributed (no additional payee) [ @skip-on-coverage ]", async function () {
       const artistBalance = await this.accounts.artist.getBalance();
       const ownerBalance = await this.accounts.user.getBalance();
       const deployerBalance = await this.accounts.deployer.getBalance();
@@ -107,7 +107,7 @@ describe("GenArt721CoreV1 Integration", async function () {
       ).to.equal(ethers.utils.parseEther("1.0361817").mul("-1")); // spent 1 ETH
     });
 
-    it("can create a token then funds distributed (with additional payee)", async function () {
+    it("can create a token then funds distributed (with additional payee) [ @skip-on-coverage ]", async function () {
       const additionalBalance = await this.accounts.additional.getBalance();
       const artistBalance = await this.accounts.artist.getBalance();
       const ownerBalance = await this.accounts.user.getBalance();
@@ -157,7 +157,7 @@ describe("GenArt721CoreV1 Integration", async function () {
       ).to.equal(ethers.utils.parseEther("0.8002491"));
     });
 
-    it("can create a token then funds distributed (with additional payee getting 100%)", async function () {
+    it("can create a token then funds distributed (with additional payee getting 100%) [ @skip-on-coverage ]", async function () {
       const additionalBalance = await this.accounts.additional.getBalance();
       const artistBalance = await this.accounts.artist.getBalance();
       const ownerBalance = await this.accounts.user.getBalance();

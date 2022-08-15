@@ -3,7 +3,7 @@ pragma solidity 0.8.9;
 
 // Created By: Art Blocks Inc.
 
-import "./interfaces/0.8.x/IRandomizer.sol";
+import "./interfaces/0.8.x/IRandomizerV2.sol";
 import "./interfaces/0.8.x/IAdminACLV0.sol";
 import "./interfaces/0.8.x/IGenArt721CoreContractV3.sol";
 
@@ -20,13 +20,19 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     uint256 constant FOUR_WEEKS_IN_SECONDS = 2_419_200;
 
     // generic platform event fields
-    bytes32 constant FIELD_ARTBLOCKS_ADDRESS = "artblocksAddress";
+    bytes32 constant FIELD_ARTBLOCKS_PRIMARY_SALES_ADDRESS =
+        "artblocksPrimarySalesAddress";
+    bytes32 constant FIELD_ARTBLOCKS_SECONDARY_SALES_ADDRESS =
+        "artblocksSecondarySalesAddress";
     bytes32 constant FIELD_RANDOMIZER_ADDRESS = "randomizerAddress";
     bytes32 constant FIELD_ARTBLOCKS_CURATION_REGISTRY_ADDRESS =
         "curationRegistryAddress";
     bytes32 constant FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS =
         "dependencyRegistryAddress";
-    bytes32 constant FIELD_ARTBLOCKS_PERCENTAGE = "artblocksPercentage";
+    bytes32 constant FIELD_ARTBLOCKS_PRIMARY_SALES_PERCENTAGE =
+        "artblocksPrimaryPercentage";
+    bytes32 constant FIELD_ARTBLOCKS_SECONDARY_SALES_BPS =
+        "artblocksSecondaryBPS";
     // generic project event fields
     bytes32 constant FIELD_PROJECT_COMPLETED = "completed";
     bytes32 constant FIELD_PROJECT_ACTIVE = "active";
@@ -60,8 +66,12 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     /// Dependency registry managed by Art Blocks
     address public artblocksDependencyRegistryAddress;
 
-    /// randomizer contract
-    IRandomizer public randomizerContract;
+    /// current randomizer contract
+    IRandomizerV2 public randomizerContract;
+
+    /// append-only array of all randomizer contract addresses ever used by
+    /// this contract
+    address[] private _historicalRandomizerAddresses;
 
     /// admin ACL contract
     IAdminACLV0 public adminACLContract;
@@ -104,9 +114,14 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     /// hash of artist's proposed payment updates to be approved by admin
     mapping(uint256 => bytes32) public proposedArtistAddressesAndSplitsHash;
 
-    address payable public artblocksAddress;
-    /// Percentage of mint revenue allocated to Art Blocks
-    uint256 public artblocksPercentage = 10;
+    /// Art Blocks payment address for all primary sales revenues
+    address payable public artblocksPrimarySalesAddress;
+    /// Percentage of primary sales revenue allocated to Art Blocks
+    uint256 public artblocksPrimarySalesPercentage = 10;
+    /// Art Blocks payment address for all secondary sales royalty revenues
+    address payable public artblocksSecondarySalesAddress;
+    /// Basis Points of secondary sales royalties allocated to Art Blocks
+    uint256 public artblocksSecondarySalesBPS = 250;
 
     mapping(uint256 => bytes32) public tokenIdToHash;
 
@@ -119,17 +134,6 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     /// version & type of this core contract
     string public constant coreVersion = "v3.0.0";
     string public constant coreType = "GenArt721CoreV3";
-
-    event ProposedArtistAddressesAndSplits(
-        uint256 indexed _projectId,
-        address _artistAddress,
-        address _additionalPayeePrimarySales,
-        uint256 _additionalPayeePrimarySalesPercentage,
-        address _additionalPayeeSecondarySales,
-        uint256 _additionalPayeeSecondarySalesPercentage
-    );
-
-    event AcceptedArtistAddressesAndSplits(uint256 indexed _projectId);
 
     modifier onlyValidTokenId(uint256 _tokenId) {
         require(_exists(_tokenId), "Token ID does not exist");
@@ -199,7 +203,8 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         address _randomizerContract,
         address _adminACLContract
     ) ERC721(_tokenName, _tokenSymbol) {
-        _updateArtblocksAddress(msg.sender);
+        _updateArtblocksPrimarySalesAddress(msg.sender);
+        _updateArtblocksSecondarySalesAddress(msg.sender);
         _updateRandomizerAddress(_randomizerContract);
         // set AdminACL management contract as owner
         _transferOwnership(_adminACLContract);
@@ -255,19 +260,11 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
             _completeProject(_projectId);
         }
 
-        // (includes an interaction with randomizer)
-        bytes32 tokenHash = keccak256(
-            abi.encodePacked(
-                thisTokenId,
-                blockhash(block.number - 1),
-                randomizerContract.returnValue()
-            )
-        );
-
-        tokenIdToHash[thisTokenId] = tokenHash;
-
         // INTERACTIONS
         _mint(_to, thisTokenId);
+
+        // token hash is updated by the randomizer contract on V3
+        randomizerContract.assignTokenHash(thisTokenId);
 
         // Do not need to also log `projectId` in event, as the `projectId` for
         // a given token can be derived from the `tokenId` with:
@@ -275,6 +272,30 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         emit Mint(_to, thisTokenId);
 
         return thisTokenId;
+    }
+
+    /**
+     * @notice Sets the hash for a given token ID `_tokenId`.
+     * May only be called by the current randomizer contract.
+     * May only be called for tokens that have not already been assigned a
+     * non-zero hash.
+     * @param _tokenId Token ID to set the hash for.
+     * @param _hash Hash to set for the token ID.
+     * @dev gas-optimized function name because called during mint sequence
+     */
+    function setTokenHash_8PT(uint256 _tokenId, bytes32 _hash)
+        external
+        onlyValidTokenId(_tokenId)
+    {
+        require(
+            msg.sender == address(randomizerContract),
+            "Only randomizer may set"
+        );
+        require(
+            tokenIdToHash[_tokenId] == bytes32(0),
+            "Token hash already set."
+        );
+        tokenIdToHash[_tokenId] = _hash;
     }
 
     /**
@@ -304,30 +325,56 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     /**
-     * @notice Updates artblocksAddress to `_artblocksAddress`.
+     * @notice Updates artblocksPrimarySalesAddress to `_artblocksPrimarySalesAddress`.
      */
-    function updateArtblocksAddress(address payable _artblocksAddress)
-        external
-        onlyAdminACL(this.updateArtblocksAddress.selector)
-    {
-        _updateArtblocksAddress(_artblocksAddress);
+    function updateArtblocksPrimarySalesAddress(
+        address payable _artblocksPrimarySalesAddress
+    ) external onlyAdminACL(this.updateArtblocksPrimarySalesAddress.selector) {
+        _updateArtblocksPrimarySalesAddress(_artblocksPrimarySalesAddress);
     }
 
     /**
-     * @notice Updates Art Blocks mint revenue percentage to
-     * `_artblocksPercentage`.
+     * @notice Updates Art Blocks secondary sales royalty payment address to
+     * `_artblocksSecondarySalesAddress`.
      */
-    function updateArtblocksPercentage(uint256 _artblocksPercentage)
+    function updateArtblocksSecondarySalesAddress(
+        address payable _artblocksSecondarySalesAddress
+    )
         external
-        onlyAdminACL(this.updateArtblocksPercentage.selector)
+        onlyAdminACL(this.updateArtblocksSecondarySalesAddress.selector)
     {
-        require(_artblocksPercentage <= 25, "Max of 25%");
-        artblocksPercentage = _artblocksPercentage;
-        emit PlatformUpdated(FIELD_ARTBLOCKS_PERCENTAGE);
+        _updateArtblocksSecondarySalesAddress(_artblocksSecondarySalesAddress);
     }
 
     /**
-     * @notice updates minter to `_address`.
+     * @notice Updates Art Blocks primary sales revenue percentage to
+     * `_artblocksPrimarySalesPercentage`.
+     */
+    function updateArtblocksPrimarySalesPercentage(
+        uint256 _artblocksPrimarySalesPercentage
+    )
+        external
+        onlyAdminACL(this.updateArtblocksPrimarySalesPercentage.selector)
+    {
+        require(_artblocksPrimarySalesPercentage <= 25, "Max of 25%");
+        artblocksPrimarySalesPercentage = _artblocksPrimarySalesPercentage;
+        emit PlatformUpdated(FIELD_ARTBLOCKS_PRIMARY_SALES_PERCENTAGE);
+    }
+
+    /**
+     * @notice Updates Art Blocks secondary sales royalty Basis Points to
+     * `_artblocksSecondarySalesBPS`.
+     */
+    function updateArtblocksSecondarySalesBPS(
+        uint256 _artblocksSecondarySalesBPS
+    ) external onlyAdminACL(this.updateArtblocksSecondarySalesBPS.selector) {
+        require(_artblocksSecondarySalesBPS <= 250, "Max of 2.5%");
+        artblocksSecondarySalesBPS = _artblocksSecondarySalesBPS;
+        emit PlatformUpdated(FIELD_ARTBLOCKS_SECONDARY_SALES_BPS);
+    }
+
+    /**
+     * @notice Updates minter to `_address`.
      */
     function updateMinterContract(address _address)
         external
@@ -932,32 +979,94 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     /**
-     * @notice Gets royalty data for token ID `_tokenId`.
-     * @param _tokenId Token ID to be queried.
-     * @return artistAddress Artist's payment address
-     * @return additionalPayee Additional payee's payment address
-     * @return additionalPayeePercentage Percentage of artist revenue
-     * to be sent to the additional payee's address
-     * @return royaltyFeeByID Total royalty percentage to be sent to
-     * combination of artist and additional payee
+     * @notice Gets qty of randomizers in history of all randomizers used by
+     * this core contract. If a randomizer is switched away from then back to,
+     * it will show up in the history twice.
      */
-    function getRoyaltyData(uint256 _tokenId)
+    function numHistoricalRandomizers() external view returns (uint256) {
+        return _historicalRandomizerAddresses.length;
+    }
+
+    /**
+     * @notice Gets address of randomizer at index `_index` in history of all
+     * randomizers used by this core contract. Index is zero-based.
+     * @param _index Historical index of randomizer to be queried.
+     * @dev If a randomizer is switched away from and then switched back to, it
+     * will show up in the history twice.
+     */
+    function getHistoricalRandomizerAt(uint256 _index)
         external
         view
-        returns (
-            address artistAddress,
-            address additionalPayee,
-            uint256 additionalPayeePercentage,
-            uint256 royaltyFeeByID
-        )
+        returns (address)
+    {
+        require(
+            _index < _historicalRandomizerAddresses.length,
+            "Index out of bounds"
+        );
+        return _historicalRandomizerAddresses[_index];
+    }
+
+    /**
+     * @notice Gets royalty Basis Points (BPS) for token ID `_tokenId`.
+     * This conforms to the IManifold interface designated in the Royalty
+     * Registry's RoyaltyEngineV1.sol contract.
+     * ref: https://github.com/manifoldxyz/royalty-registry-solidity
+     * @param _tokenId Token ID to be queried.
+     * @return recipients Array of royalty payment recipients
+     * @return bps Array of Basis Points (BPS) allocated to each recipient,
+     * aligned by index.
+     * @dev reverts if invalid _tokenId
+     * @dev only returns recipients that have a non-zero BPS allocation
+     */
+    function getRoyalties(uint256 _tokenId)
+        external
+        view
+        onlyValidTokenId(_tokenId)
+        returns (address payable[] memory recipients, uint256[] memory bps)
     {
         uint256 projectId = _tokenId / ONE_MILLION;
-        artistAddress = projectIdToArtistAddress[projectId];
-        additionalPayee = projectIdToAdditionalPayeeSecondarySales[projectId];
-        additionalPayeePercentage = projectIdToAdditionalPayeeSecondarySalesPercentage[
-            projectId
-        ];
-        royaltyFeeByID = projectIdToSecondaryMarketRoyaltyPercentage[projectId];
+        // load values into memory
+        uint256 royaltyPercentageForArtistAndAdditional = projectIdToSecondaryMarketRoyaltyPercentage[
+                projectId
+            ];
+        uint256 additionalPayeePercentage = projectIdToAdditionalPayeeSecondarySalesPercentage[
+                projectId
+            ];
+        // calculate BPS = percentage * 100
+        uint256 artistBPS = (100 - additionalPayeePercentage) *
+            royaltyPercentageForArtistAndAdditional;
+
+        uint256 additionalBPS = additionalPayeePercentage *
+            royaltyPercentageForArtistAndAdditional;
+        uint256 artblocksBPS = artblocksSecondarySalesBPS;
+        // determine length of returned array
+        uint256 returnLength = artistBPS > 0 ? 1 : 0;
+        if (additionalBPS > 0) {
+            returnLength++;
+        }
+        if (artblocksBPS > 0) {
+            returnLength++;
+        }
+        // initialize arrays
+        recipients = new address payable[](returnLength);
+        bps = new uint256[](returnLength);
+        // populate arrays
+        uint256 index = 0;
+        if (artistBPS > 0) {
+            recipients[index] = projectIdToArtistAddress[projectId];
+            bps[index++] = artistBPS;
+        }
+        if (additionalBPS > 0) {
+            recipients[index] = projectIdToAdditionalPayeeSecondarySales[
+                projectId
+            ];
+            bps[index++] = additionalBPS;
+        }
+        if (artblocksBPS > 0) {
+            recipients[index] = artblocksSecondarySalesAddress;
+            bps[index] = artblocksBPS;
+        }
+        return (recipients, bps);
     }
 
     /**
@@ -1001,7 +1110,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         )
     {
         // calculate revenues
-        artblocksRevenue_ = (_price * artblocksPercentage) / 100;
+        artblocksRevenue_ = (_price * artblocksPrimarySalesPercentage) / 100;
         uint256 projectFunds = _price - artblocksRevenue_;
         additionalPayeePrimaryRevenue_ =
             (projectFunds *
@@ -1009,7 +1118,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
             100;
         artistRevenue_ = projectFunds - additionalPayeePrimaryRevenue_;
         // set addresses from storage
-        artblocksAddress_ = artblocksAddress;
+        artblocksAddress_ = artblocksPrimarySalesAddress;
         artistAddress_ = artistRevenue_ > 0
             ? projectIdToArtistAddress[_projectId]
             : payable(address(0));
@@ -1110,18 +1219,35 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     /**
-     * @notice Updates Art Blocks payment address to `_renderProviderAddress`.
+     * @notice Updates Art Blocks payment address to `_artblocksPrimarySalesAddress`.
      */
-    function _updateArtblocksAddress(address _artblocksAddress) internal {
-        artblocksAddress = payable(_artblocksAddress);
-        emit PlatformUpdated(FIELD_ARTBLOCKS_ADDRESS);
+    function _updateArtblocksPrimarySalesAddress(
+        address _artblocksPrimarySalesAddress
+    ) internal {
+        artblocksPrimarySalesAddress = payable(_artblocksPrimarySalesAddress);
+        emit PlatformUpdated(FIELD_ARTBLOCKS_PRIMARY_SALES_ADDRESS);
+    }
+
+    /**
+     * @notice Updates Art Blocks secondary sales royalty payment address to
+     * `_artblocksSecondarySalesAddress`.
+     */
+    function _updateArtblocksSecondarySalesAddress(
+        address _artblocksSecondarySalesAddress
+    ) internal {
+        artblocksSecondarySalesAddress = payable(
+            _artblocksSecondarySalesAddress
+        );
+        emit PlatformUpdated(FIELD_ARTBLOCKS_SECONDARY_SALES_ADDRESS);
     }
 
     /**
      * @notice Updates randomizer address to `_randomizerAddress`.
      */
     function _updateRandomizerAddress(address _randomizerAddress) internal {
-        randomizerContract = IRandomizer(_randomizerAddress);
+        randomizerContract = IRandomizerV2(_randomizerAddress);
+        // populate historical randomizer array
+        _historicalRandomizerAddresses.push(_randomizerAddress);
         emit PlatformUpdated(FIELD_RANDOMIZER_ADDRESS);
     }
 

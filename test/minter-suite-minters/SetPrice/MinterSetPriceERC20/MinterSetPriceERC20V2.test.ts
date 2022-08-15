@@ -127,7 +127,7 @@ describe("MinterSetPriceERC20V2_V3Core", async function () {
   });
 
   describe("calculates gas", async function () {
-    it("mints and calculates gas values", async function () {
+    it("mints and calculates gas values [ @skip-on-coverage ]", async function () {
       const tx = await this.minter
         .connect(this.accounts.user)
         .purchase(this.projectOne, {
@@ -142,7 +142,7 @@ describe("MinterSetPriceERC20V2_V3Core", async function () {
         ethers.utils.formatUnits(txCost, "ether").toString(),
         "ETH"
       );
-      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0180234"));
+      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0183172"));
     });
   });
 

@@ -171,7 +171,7 @@ describe("MinterMerkleV1", async function () {
   });
 
   describe("calculates gas", async function () {
-    it("mints and calculates gas values", async function () {
+    it("mints and calculates gas values [ @skip-on-coverage ]", async function () {
       const userMerkleProofOne = this.merkleTreeOne.getHexProof(
         hashAddress(this.accounts.user.address)
       );
@@ -189,11 +189,11 @@ describe("MinterMerkleV1", async function () {
         ethers.utils.formatUnits(txCost.toString(), "ether").toString(),
         "ETH"
       );
-      expect(compareBN(txCost, ethers.utils.parseEther("0.0207682"), 1)).to.be
+      expect(compareBN(txCost, ethers.utils.parseEther("0.0203519"), 1)).to.be
         .true;
     });
 
-    it("is gas performant at 1k length allowlist", async function () {
+    it("is gas performant at 1k length allowlist [ @skip-on-coverage ]", async function () {
       // build new Merkle tree from 1k addresses, including user's address
       const _allowlist = [this.accounts.user.address];
       const crypto = require("crypto");
@@ -231,7 +231,7 @@ describe("MinterMerkleV1", async function () {
         "ETH"
       );
       // the following is not much more than the gas cost with a very small allowlist
-      expect(compareBN(txCost, ethers.utils.parseEther("0.021592"), 1)).to.be
+      expect(compareBN(txCost, ethers.utils.parseEther("0.0211787"), 1)).to.be
         .true;
     });
   });
