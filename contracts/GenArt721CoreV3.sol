@@ -1023,6 +1023,22 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     /**
+     * @notice Backwards-compatible (pre-V3) function returning Art Blocks
+     * primary sales payment address (now called artblocksPrimarySalesAddress).
+     */
+    function artblocksAddress() external view returns (address payable) {
+        return artblocksPrimarySalesAddress;
+    }
+
+    /**
+     * @notice Backwards-compatible (pre-V3) function returning Art Blocks
+     * primary sales percentage (now called artblocksPrimarySalesPercentage).
+     */
+    function artblocksPercentage() external view returns (uint256) {
+        return artblocksPrimarySalesPercentage;
+    }
+
+    /**
      * @notice Gets royalty data for token ID `_tokenId`.
      * @param _tokenId Token ID to be queried.
      * @return artistAddress Artist's payment address
