@@ -94,16 +94,36 @@ describe("GenArt721CoreV3 AminACL Requests", async function () {
   });
 
   describe("requests appropriate selectors from AdminACL", function () {
-    it("updateArtblocksAddress", async function () {
-      await validateAdminACLRequest.call(this, "updateArtblocksAddress", [
-        this.accounts.user.address,
-      ]);
+    it("updateArtblocksPrimarySalesAddress", async function () {
+      await validateAdminACLRequest.call(
+        this,
+        "updateArtblocksPrimarySalesAddress",
+        [this.accounts.user.address]
+      );
     });
 
-    it("updateArtblocksPercentage", async function () {
-      await validateAdminACLRequest.call(this, "updateArtblocksPercentage", [
-        11,
-      ]);
+    it("updateArtblocksSecondarySalesAddress", async function () {
+      await validateAdminACLRequest.call(
+        this,
+        "updateArtblocksSecondarySalesAddress",
+        [this.accounts.user.address]
+      );
+    });
+
+    it("updateArtblocksPrimarySalesPercentage", async function () {
+      await validateAdminACLRequest.call(
+        this,
+        "updateArtblocksPrimarySalesPercentage",
+        [11]
+      );
+    });
+
+    it("updateArtblocksSecondarySalesBPS", async function () {
+      await validateAdminACLRequest.call(
+        this,
+        "updateArtblocksSecondarySalesBPS",
+        [240]
+      );
     });
 
     it("updateMinterContract", async function () {

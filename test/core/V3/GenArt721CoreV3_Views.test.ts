@@ -353,7 +353,8 @@ describe("GenArt721CoreV3 Views", async function () {
         );
       // expect revenue splits to be properly calculated
       // Art Blocks
-      const artblocksAddress = await this.genArt721Core.artblocksAddress();
+      const artblocksAddress =
+        await this.genArt721Core.artblocksPrimarySalesAddress();
       expect(revenueSplits.artblocksAddress_).to.be.equal(artblocksAddress);
       expect(revenueSplits.artblocksRevenue_).to.be.equal(
         ethers.utils.parseEther("0.10")
@@ -404,11 +405,11 @@ describe("GenArt721CoreV3 Views", async function () {
       // update Art Blocks percentage to 20%
       await this.genArt721Core
         .connect(this.accounts.deployer)
-        .updateArtblocksPercentage(20);
+        .updateArtblocksPrimarySalesPercentage(20);
       // change Art Blocks payment address to random address
       await this.genArt721Core
         .connect(this.accounts.deployer)
-        .updateArtblocksAddress(this.accounts.user.address);
+        .updateArtblocksPrimarySalesAddress(this.accounts.user.address);
       // check for expected values
       const revenueSplits = await this.genArt721Core
         .connect(this.accounts.user)
@@ -461,14 +462,14 @@ describe("GenArt721CoreV3 Views", async function () {
         .adminAcceptArtistAddressesAndSplits(
           ...proposeArtistPaymentAddressesAndSplitsArgs
         );
-      // update Art Blocks percentage to 20%
+      // update Art Blocks primary sales percentage to 20%
       await this.genArt721Core
         .connect(this.accounts.deployer)
-        .updateArtblocksPercentage(20);
-      // change Art Blocks payment address to random address
+        .updateArtblocksPrimarySalesPercentage(20);
+      // change Art Blocks primary sales payment address to random address
       await this.genArt721Core
         .connect(this.accounts.deployer)
-        .updateArtblocksAddress(this.accounts.user.address);
+        .updateArtblocksPrimarySalesAddress(this.accounts.user.address);
       // check for expected values
       const revenueSplits = await this.genArt721Core
         .connect(this.accounts.user)

@@ -69,11 +69,33 @@ describe("GenArt721CoreV3 Integration", async function () {
       .updatePricePerTokenInWei(this.projectZero, 0);
   });
 
+  describe("artblocksPrimarySalesAddress", function () {
+    it("returns expected artblocksPrimarySalesAddress", async function () {
+      expect(
+        await this.genArt721Core.artblocksPrimarySalesAddress()
+      ).to.be.equal(this.accounts.deployer.address);
+    });
+  });
+
   describe("artblocksAddress", function () {
     it("returns expected artblocksAddress", async function () {
       expect(await this.genArt721Core.artblocksAddress()).to.be.equal(
         this.accounts.deployer.address
       );
+    });
+  });
+
+  describe("artblocksSecondarySalesAddress", function () {
+    it("returns expected artblocksSecondarySalesAddress", async function () {
+      expect(
+        await this.genArt721Core.artblocksSecondarySalesAddress()
+      ).to.be.equal(this.accounts.deployer.address);
+    });
+  });
+
+  describe("artblocksPercentage", function () {
+    it("returns expected artblocksPercentage", async function () {
+      expect(await this.genArt721Core.artblocksPercentage()).to.be.equal(10);
     });
   });
 

@@ -42,7 +42,7 @@ interface IGenArt721CoreContractV3 {
     // Admin ACL contract for V3, will be at the address owner()
     function adminACLContract() external returns (IAdminACLV0);
 
-    // backwards-compatible admin - equal to owner()
+    // backwards-compatible (pre-V3) admin - equal to owner()
     function admin() external view returns (address);
 
     /**
@@ -108,9 +108,35 @@ interface IGenArt721CoreContractV3 {
             bool locked
         );
 
+    // @dev Art Blocks primary sales payment address
+    function artblocksPrimarySalesAddress()
+        external
+        view
+        returns (address payable);
+
+    /**
+     * @notice Backwards-compatible (pre-V3) function returning Art Blocks
+     * primary sales payment address (now called artblocksPrimarySalesAddress).
+     */
     function artblocksAddress() external view returns (address payable);
 
+    // @dev Percentage of primary sales allocated to Art Blocks
+    function artblocksPrimarySalesPercentage() external view returns (uint256);
+
+    /**
+     * @notice Backwards-compatible (pre-V3) function returning Art Blocks
+     * primary sales percentage (now called artblocksPrimarySalesPercentage).
+     */
     function artblocksPercentage() external view returns (uint256);
+
+    // @dev Art Blocks secondary sales royalties payment address
+    function artblocksSecondarySalesAddress()
+        external
+        view
+        returns (address payable);
+
+    // @dev Basis points of secondary sales allocated to Art Blocks
+    function artblocksSecondarySalesBPS() external view returns (uint256);
 
     // function to set a token's hash (must be guarded)
     function setTokenHash_8PT(uint256 _tokenId, bytes32 _hash) external;
