@@ -4,8 +4,10 @@
 pragma solidity ^0.8.0;
 
 import "./IAdminACLV0.sol";
+/// use the Royalty Registry's IManifold interface for token royalties
+import "./IManifold.sol";
 
-interface IGenArt721CoreContractV3 {
+interface IGenArt721CoreContractV3 is IManifold {
     /**
      * @notice Token ID `_tokenId` minted to `_to`.
      */
@@ -148,6 +150,11 @@ interface IGenArt721CoreContractV3 {
         address _by
     ) external returns (uint256 tokenId);
 
+    /**
+     * @notice Backwards-compatible (pre-V3) function  that gets artist +
+     * artist's additional payee royalty data for token ID `_tokenId`.
+     * WARNING: Does not include Art Blocks portion of royalties.
+     */
     function getRoyaltyData(uint256 _tokenId)
         external
         view
