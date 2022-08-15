@@ -60,8 +60,12 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     /// Dependency registry managed by Art Blocks
     address public artblocksDependencyRegistryAddress;
 
-    /// randomizer contract
+    /// current randomizer contract
     IRandomizerV2 public randomizerContract;
+
+    /// append-only array of all randomizer contract addresses ever used by
+    /// this contract
+    address[] private _historicalRandomizerAddresses;
 
     /// admin ACL contract
     IAdminACLV0 public adminACLContract;
@@ -948,6 +952,34 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     /**
+     * @notice Gets qty of randomizers in history of all randomizers used by
+     * this core contract. If a randomizer is switched away from then back to,
+     * it will show up in the history twice.
+     */
+    function numHistoricalRandomizers() external view returns (uint256) {
+        return _historicalRandomizerAddresses.length;
+    }
+
+    /**
+     * @notice Gets address of randomizer at index `_index` in history of all
+     * randomizers used by this core contract. Index is zero-based.
+     * @param _index Historical index of randomizer to be queried.
+     * @dev If a randomizer is switched away from and then switched back to, it
+     * will show up in the history twice.
+     */
+    function getHistoricalRandomizerAt(uint256 _index)
+        external
+        view
+        returns (address)
+    {
+        require(
+            _index < _historicalRandomizerAddresses.length,
+            "Index out of bounds"
+        );
+        return _historicalRandomizerAddresses[_index];
+    }
+
+    /**
      * @notice Gets royalty data for token ID `_tokenId`.
      * @param _tokenId Token ID to be queried.
      * @return artistAddress Artist's payment address
@@ -1138,6 +1170,8 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      */
     function _updateRandomizerAddress(address _randomizerAddress) internal {
         randomizerContract = IRandomizerV2(_randomizerAddress);
+        // populate historical randomizer array
+        _historicalRandomizerAddresses.push(_randomizerAddress);
         emit PlatformUpdated(FIELD_RANDOMIZER_ADDRESS);
     }
 
