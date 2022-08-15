@@ -195,6 +195,11 @@ describe("GenArt721CoreV3 Integration", async function () {
 
   describe("setTokenHash_8PT", function () {
     it("does not allow non-randomizer to call", async function () {
+      // mint token zero so it is a valid token
+      await this.minter
+        .connect(this.accounts.artist)
+        .purchase(this.projectZero);
+
       // call directly from non-randomizer account and expect revert
       await expectRevert(
         this.genArt721Core
@@ -232,22 +237,58 @@ describe("GenArt721CoreV3 Integration", async function () {
           this.projectZeroTokenZero.toNumber()
         )
       ).to.be.equal(ethers.constants.HashZero);
-      // update randomizer to be an EOA for this test
+      // update randomizer to be a special mock randomizer for this test (seperate mint from token hash assignment)
+      // deploy new RandomizerV2_NoAssignMock randomizer
+      const mockRandomizer = await deployAndGet.call(
+        this,
+        "RandomizerV2_NoAssignMock",
+        []
+      );
+      // update randomizer to new randomizer
+      await mockRandomizer
+        .connect(this.accounts.deployer)
+        .assignCoreAndRenounce(this.genArt721Core.address);
       await this.genArt721Core
         .connect(this.accounts.deployer)
-        .updateRandomizerAddress(this.accounts.deployer.address);
+        .updateRandomizerAddress(mockRandomizer.address);
+      // mint a token and expect token hash to not be updated (due to the alternate randomizer)
+      await this.minter
+        .connect(this.accounts.artist)
+        .purchase(this.projectZero);
       // set token hash and expect success
-      await this.genArt721Core.setTokenHash_8PT(
-        this.projectZeroTokenZero.toNumber(),
-        ethers.utils.keccak256("0x42")
+      await mockRandomizer.actuallyAssignTokenHash(
+        this.projectZeroTokenZero.toNumber()
       );
       // expect revert when attempting to overwrite the token hash
       await expectRevert(
-        this.genArt721Core.setTokenHash_8PT(
-          this.projectZeroTokenZero.toNumber(),
-          ethers.utils.keccak256("0x42")
+        mockRandomizer.actuallyAssignTokenHash(
+          this.projectZeroTokenZero.toNumber()
         ),
         "Token hash already set"
+      );
+    });
+
+    it("does not allow randomizer to assign hash if token does not yet exist", async function () {
+      // update randomizer to be a special mock randomizer for this test (seperate mint from token hash assignment)
+      // deploy new RandomizerV2_NoAssignMock randomizer
+      const mockRandomizer = await deployAndGet.call(
+        this,
+        "RandomizerV2_NoAssignMock",
+        []
+      );
+      // update randomizer to new randomizer
+      await mockRandomizer
+        .connect(this.accounts.deployer)
+        .assignCoreAndRenounce(this.genArt721Core.address);
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateRandomizerAddress(mockRandomizer.address);
+      // expect revert when attempting to set token hash of non-existing token
+      await expectRevert(
+        mockRandomizer.actuallyAssignTokenHash(
+          this.projectZeroTokenZero.toNumber()
+        ),
+        "Token ID does not exist"
       );
     });
   });
