@@ -135,7 +135,7 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
       // mint
       const tx = await this.minter
         .connect(this.accounts.user)
-        .purchase(this.projectThree, { value: this.pricePerTokenInWei });
+        .purchase_H4M(this.projectThree, { value: this.pricePerTokenInWei });
       const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
       console.log(`gas used for mint optimization test: ${receipt.gasUsed}`);
       const gasCostAt100gwei = receipt.effectiveGasPrice
@@ -167,7 +167,7 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
       // mint
       const tx = await this.minterSetPriceERC20
         .connect(this.accounts.user)
-        .purchase(this.projectThree, { value: this.pricePerTokenInWei });
+        .purchase_H4M(this.projectThree, { value: this.pricePerTokenInWei });
       const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
       console.log(`gas used for mint optimization test: ${receipt.gasUsed}`);
       const gasCostAt100gwei = receipt.effectiveGasPrice
@@ -218,7 +218,7 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
       // mint
       const tx = await this.minterDAExp
         .connect(this.accounts.user)
-        .purchase(this.projectThree, { value: this.startingPrice });
+        .purchase_H4M(this.projectThree, { value: this.startingPrice });
       const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
       console.log(`gas used for mint optimization test: ${receipt.gasUsed}`);
       const gasCostAt100gwei = receipt.effectiveGasPrice
@@ -269,7 +269,7 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
       // mint
       const tx = await this.minterDALin
         .connect(this.accounts.user)
-        .purchase(this.projectThree, { value: this.startingPrice });
+        .purchase_H4M(this.projectThree, { value: this.startingPrice });
       const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
       console.log(`gas used for mint optimization test: ${receipt.gasUsed}`);
       const gasCostAt100gwei = receipt.effectiveGasPrice
@@ -323,7 +323,7 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
       // mint
       const tx = await this.minterMerkle
         .connect(this.accounts.user)
-        ["purchase(uint256,bytes32[])"](this.projectThree, userMerkleProof, {
+        .purchase_gD5(this.projectThree, userMerkleProof, {
           value: this.pricePerTokenInWei,
         });
       // report gas
@@ -393,7 +393,7 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
       // mint on MinterHolder
       const tx = await this.minterHolder
         .connect(this.accounts.user)
-        ["purchase(uint256,address,uint256)"](
+        .purchase_nnf(
           this.projectThree,
           this.genArt721Core.address,
           this.projectOneTokenOne.toNumber(),

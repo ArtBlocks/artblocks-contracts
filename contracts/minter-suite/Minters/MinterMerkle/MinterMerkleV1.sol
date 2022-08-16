@@ -241,7 +241,19 @@ contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         payable
         returns (uint256 tokenId)
     {
-        tokenId = purchaseTo(msg.sender, _projectId, _proof);
+        tokenId = purchaseTo_K1L(msg.sender, _projectId, _proof);
+        return tokenId;
+    }
+
+    /**
+     * @notice gas-optimized version of purchase(uint256,bytes32[]).
+     */
+    function purchase_gD5(uint256 _projectId, bytes32[] calldata _proof)
+        external
+        payable
+        returns (uint256 tokenId)
+    {
+        tokenId = purchaseTo_K1L(msg.sender, _projectId, _proof);
         return tokenId;
     }
 
@@ -254,6 +266,17 @@ contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
      * @return tokenId Token ID of minted token
      */
     function purchaseTo(
+        address _to,
+        uint256 _projectId,
+        bytes32[] calldata _proof
+    ) external payable returns (uint256 tokenId) {
+        return purchaseTo_K1L(_to, _projectId, _proof);
+    }
+
+    /**
+     * @notice gas-optimized version of purchaseTo(address,uint256,bytes32[]).
+     */
+    function purchaseTo_K1L(
         address _to,
         uint256 _projectId,
         bytes32[] calldata _proof
