@@ -1226,4 +1226,29 @@ describe("GenArt721CoreV3 Views", async function () {
       ).to.be.false;
     });
   });
+
+  describe("tokenIdToProjectId", function () {
+    it("returns expected value", async function () {
+      // project Zero, token zero
+      let projectId = await this.genArt721Core
+        .connect(this.accounts.user)
+        .tokenIdToProjectId(this.projectZeroTokenZero.toNumber());
+      expect(projectId).to.be.equal(this.projectZero);
+      // project One, token zero
+      projectId = await this.genArt721Core
+        .connect(this.accounts.user)
+        .tokenIdToProjectId(this.projectOneTokenZero.toNumber());
+      expect(projectId).to.be.equal(this.projectOne);
+      // project One, token one
+      projectId = await this.genArt721Core
+        .connect(this.accounts.user)
+        .tokenIdToProjectId(this.projectOneTokenOne.toNumber());
+      expect(projectId).to.be.equal(this.projectOne);
+      // project Two, token one
+      projectId = await this.genArt721Core
+        .connect(this.accounts.user)
+        .tokenIdToProjectId(this.projectTwoTokenOne.toNumber());
+      expect(projectId).to.be.equal(this.projectTwo);
+    });
+  });
 });
