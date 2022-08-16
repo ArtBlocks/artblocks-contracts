@@ -59,20 +59,6 @@ contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
     /// projectId => price per token has been configured on this minter
     mapping(uint256 => bool) private projectIdToPriceIsConfigured;
 
-    // modifier to restrict access to only AdminACL allowed calls
-    // @dev defers which ACL contract is used to the core contract
-    modifier onlyCoreAdminACL(bytes4 _selector) {
-        require(
-            genArtCoreContract.adminACLAllowed(
-                msg.sender,
-                address(this),
-                _selector
-            ),
-            "Only Core AdminACL allowed"
-        );
-        _;
-    }
-
     modifier onlyArtist(uint256 _projectId) {
         require(
             msg.sender ==

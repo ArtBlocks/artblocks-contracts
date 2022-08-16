@@ -48,20 +48,6 @@ contract MinterSetPriceERC20V2 is ReentrancyGuard, IFilteredMinterV0 {
     /// projectId => currency address - supersedes any defined core value
     mapping(uint256 => address) private projectIdToCurrencyAddress;
 
-    // modifier to restrict access to only AdminACL allowed calls
-    // @dev defers which ACL contract is used to the core contract
-    modifier onlyCoreAdminACL(bytes4 _selector) {
-        require(
-            genArtCoreContract.adminACLAllowed(
-                msg.sender,
-                address(this),
-                _selector
-            ),
-            "Only Core AdminACL allowed"
-        );
-        _;
-    }
-
     modifier onlyArtist(uint256 _projectId) {
         require(
             msg.sender ==
