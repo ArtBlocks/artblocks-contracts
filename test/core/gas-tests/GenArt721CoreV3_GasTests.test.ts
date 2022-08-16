@@ -393,7 +393,7 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
       // mint on MinterHolder
       const tx = await this.minterHolder
         .connect(this.accounts.user)
-        ["purchase(uint256,address,uint256)"](
+        .purchase_nnf(
           this.projectThree,
           this.genArt721Core.address,
           this.projectOneTokenOne.toNumber(),

@@ -398,7 +398,24 @@ contract MinterHolderV1 is ReentrancyGuard, IFilteredMinterHolderV0 {
         address _ownedNFTAddress,
         uint256 _ownedNFTTokenId
     ) external payable returns (uint256 tokenId) {
-        tokenId = purchaseTo(
+        tokenId = purchaseTo_L69(
+            msg.sender,
+            _projectId,
+            _ownedNFTAddress,
+            _ownedNFTTokenId
+        );
+        return tokenId;
+    }
+
+    /**
+     * @notice gas-optimized version of purchase(uint256,address,uint256).
+     */
+    function purchase_nnf(
+        uint256 _projectId,
+        address _ownedNFTAddress,
+        uint256 _ownedNFTTokenId
+    ) external payable returns (uint256 tokenId) {
+        tokenId = purchaseTo_L69(
             msg.sender,
             _projectId,
             _ownedNFTAddress,
@@ -419,6 +436,19 @@ contract MinterHolderV1 is ReentrancyGuard, IFilteredMinterHolderV0 {
      * @return tokenId Token ID of minted token
      */
     function purchaseTo(
+        address _to,
+        uint256 _projectId,
+        address _ownedNFTAddress,
+        uint256 _ownedNFTTokenId
+    ) external payable returns (uint256 tokenId) {
+        return
+            purchaseTo_L69(_to, _projectId, _ownedNFTAddress, _ownedNFTTokenId);
+    }
+
+    /**
+     * @notice gas-optimized version of purchaseTo(address,uint256,address,uint256).
+     */
+    function purchaseTo_L69(
         address _to,
         uint256 _projectId,
         address _ownedNFTAddress,
