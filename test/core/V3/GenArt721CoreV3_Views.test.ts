@@ -1202,4 +1202,28 @@ describe("GenArt721CoreV3 Views", async function () {
       expect(projectURI).to.be.equal("https://example.com/");
     });
   });
+
+  describe("isMintWhitelisted", function () {
+    it("returns true for minterFilter", async function () {
+      const emptyProjectURI = await this.genArt721Core
+        .connect(this.accounts.user)
+        .projectURIInfo(this.projectZero);
+      expect(
+        await this.genArt721Core
+          .connect(this.accounts.user)
+          .isMintWhitelisted(this.minterFilter.address)
+      ).to.be.true;
+    });
+
+    it("returns false for non-minterFilter", async function () {
+      const emptyProjectURI = await this.genArt721Core
+        .connect(this.accounts.user)
+        .projectURIInfo(this.projectZero);
+      expect(
+        await this.genArt721Core
+          .connect(this.accounts.user)
+          .isMintWhitelisted(this.minter.address)
+      ).to.be.false;
+    });
+  });
 });
