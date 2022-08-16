@@ -6,6 +6,7 @@ pragma solidity 0.8.9;
 import "./interfaces/0.8.x/IRandomizerV2.sol";
 import "./interfaces/0.8.x/IAdminACLV0.sol";
 import "./interfaces/0.8.x/IGenArt721CoreContractV3.sol";
+import "./interfaces/0.8.x/IManifold.sol";
 
 import "@openzeppelin-4.7/contracts/utils/Strings.sol";
 import "@openzeppelin-4.7/contracts/access/Ownable.sol";
@@ -1258,6 +1259,21 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
                     Strings.toString(_tokenId)
                 )
             );
+    }
+
+    /**
+     * @dev See {IERC165-supportsInterface}.
+     */
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override
+        returns (bool)
+    {
+        return
+            interfaceId == type(IManifold).interfaceId ||
+            super.supportsInterface(interfaceId);
     }
 
     /**
