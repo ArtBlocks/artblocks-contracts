@@ -226,7 +226,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         address _by
     ) external returns (uint256 _tokenId) {
         // CHECKS
-        require(msg.sender == minterContract, "Must mint from minterContract");
+        require(msg.sender == minterContract, "Must mint from minter contract");
 
         // load invocations into memory
         uint256 invocationsBefore = projects[_projectId].invocations;

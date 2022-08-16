@@ -262,7 +262,7 @@ describe("GenArt721CoreV3 Integration", async function () {
             this.projectZero,
             this.accounts.artist.address
           ),
-        "Must mint from minterContract"
+        "Must mint from minter contract"
       );
     });
 
