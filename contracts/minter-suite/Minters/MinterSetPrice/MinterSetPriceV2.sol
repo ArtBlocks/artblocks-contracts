@@ -145,7 +145,7 @@ contract MinterSetPriceV2 is ReentrancyGuard, IFilteredMinterV0 {
         payable
         returns (uint256 tokenId)
     {
-        tokenId = purchaseTo(msg.sender, _projectId);
+        tokenId = purchaseTo_do6(msg.sender, _projectId);
         return tokenId;
     }
 
@@ -169,7 +169,7 @@ contract MinterSetPriceV2 is ReentrancyGuard, IFilteredMinterV0 {
      * @return tokenId Token ID of minted token
      */
     function purchaseTo(address _to, uint256 _projectId)
-        public
+        external
         payable
         returns (uint256 tokenId)
     {
