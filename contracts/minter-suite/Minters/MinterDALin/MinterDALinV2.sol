@@ -238,7 +238,19 @@ contract MinterDALinV2 is ReentrancyGuard, IFilteredMinterV0 {
         payable
         returns (uint256 tokenId)
     {
-        tokenId = purchaseTo(msg.sender, _projectId);
+        tokenId = purchaseTo_do6(msg.sender, _projectId);
+        return tokenId;
+    }
+
+    /**
+     * @notice gas-optimized version of purchase(uint256).
+     */
+    function purchase_H4M(uint256 _projectId)
+        external
+        payable
+        returns (uint256 tokenId)
+    {
+        tokenId = purchaseTo_do6(msg.sender, _projectId);
         return tokenId;
     }
 
@@ -250,6 +262,17 @@ contract MinterDALinV2 is ReentrancyGuard, IFilteredMinterV0 {
      * @return tokenId Token ID of minted token
      */
     function purchaseTo(address _to, uint256 _projectId)
+        external
+        payable
+        returns (uint256 tokenId)
+    {
+        return purchaseTo_do6(_to, _projectId);
+    }
+
+    /**
+     * @notice gas-optimized version of purchaseTo(address, uint256).
+     */
+    function purchaseTo_do6(address _to, uint256 _projectId)
         public
         payable
         nonReentrant
