@@ -247,7 +247,7 @@ contract MinterSetPriceERC20V2 is ReentrancyGuard, IFilteredMinterV0 {
     }
 
     /**
-     * @notice gas-optimized version of purchase(address, uint256).
+     * @notice gas-optimized version of purchaseTo(address, uint256).
      */
     function purchaseTo_do6(address _to, uint256 _projectId)
         public

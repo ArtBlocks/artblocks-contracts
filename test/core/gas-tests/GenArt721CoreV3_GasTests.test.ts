@@ -218,7 +218,7 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
       // mint
       const tx = await this.minterDAExp
         .connect(this.accounts.user)
-        .purchase(this.projectThree, { value: this.startingPrice });
+        .purchase_H4M(this.projectThree, { value: this.startingPrice });
       const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
       console.log(`gas used for mint optimization test: ${receipt.gasUsed}`);
       const gasCostAt100gwei = receipt.effectiveGasPrice
