@@ -1203,6 +1203,46 @@ describe("GenArt721CoreV3 Views", async function () {
     });
   });
 
+  describe("tokenURI", function () {
+    it("returns tokenID string by default", async function () {
+      // mint token for projectZero
+      await this.minter
+        .connect(this.accounts.artist)
+        .purchase(this.projectZero);
+      // check tokenURI
+      const tokenURIForEmptyProjectURI = await this.genArt721Core
+        .connect(this.accounts.user)
+        .tokenURI(this.projectZeroTokenZero.toNumber());
+      expect(tokenURIForEmptyProjectURI).to.be.equal("0");
+    });
+
+    it("returns expected tokenURI after a populated projectURI", async function () {
+      // mint token for projectZero
+      await this.minter
+        .connect(this.accounts.artist)
+        .purchase(this.projectZero);
+      // add a couple project scripts
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectBaseURI(this.projectZero, "https://example.com/");
+      // check tokenURI
+      const tokenURI = await this.genArt721Core
+        .connect(this.accounts.user)
+        .tokenURI(this.projectZeroTokenZero.toNumber());
+      expect(tokenURI).to.be.equal("https://example.com/0");
+    });
+
+    it("reverts when token does not exist", async function () {
+      // expect revert when token does not exist
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.user)
+          .tokenURI(this.projectZeroTokenZero.toNumber()),
+        "Token ID does not exist"
+      );
+    });
+  });
+
   describe("isMintWhitelisted", function () {
     it("returns true for minterFilter", async function () {
       const emptyProjectURI = await this.genArt721Core
