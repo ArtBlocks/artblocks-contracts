@@ -633,34 +633,6 @@ export const MinterMerkle_Common = async () => {
     });
   });
 
-  describe("additional payee payments", async function () {
-    it("handles additional payee payments", async function () {
-      const userMerkleProofOne = this.merkleTreeOne.getHexProof(
-        hashAddress(this.accounts.user.address)
-      );
-      const valuesToUpdateTo = [
-        this.projectOne,
-        this.accounts.artist2.address,
-        this.accounts.additional.address,
-        50,
-        this.accounts.additional2.address,
-        51,
-      ];
-      await this.genArt721Core
-        .connect(this.accounts.artist)
-        .proposeArtistPaymentAddressesAndSplits(...valuesToUpdateTo);
-      await this.genArt721Core
-        .connect(this.accounts.deployer)
-        .adminAcceptArtistAddressesAndSplits(...valuesToUpdateTo);
-
-      await this.minter
-        .connect(this.accounts.user)
-        ["purchase(uint256,bytes32[])"](this.projectOne, userMerkleProofOne, {
-          value: this.pricePerTokenInWei,
-        });
-    });
-  });
-
   describe("processProofForAddress (pure)", async function () {
     it("returns expected value", async function () {
       const userMerkleProofOne = this.merkleTreeOne.getHexProof(

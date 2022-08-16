@@ -11,6 +11,7 @@ import {
 
 import { MinterSetPriceERC20_Common } from "./MinterSetPriceERC20.common";
 import { MinterSetPriceV1V2_Common } from "../MinterSetPriceV1V2.common";
+import { MinterSetPriceV2_Common } from "../MinterSetPriceV2.common";
 
 /**
  * These tests intended to ensure this Filtered Minter integrates properly with
@@ -124,6 +125,10 @@ describe("MinterSetPriceERC20V2_V3Core", async function () {
 
   describe("common MinterSetPrice V1V2 tests", async function () {
     MinterSetPriceV1V2_Common();
+  });
+
+  describe("common MinterSetPrice V2 tests", async function () {
+    MinterSetPriceV2_Common();
   });
 
   describe("setProjectMaxInvocations", async function () {

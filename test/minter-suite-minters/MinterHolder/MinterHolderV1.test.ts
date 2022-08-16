@@ -185,6 +185,36 @@ describe("MinterHolderV1", async function () {
     });
   });
 
+  describe("additional payee payments", async function () {
+    it("handles additional payee payments", async function () {
+      const valuesToUpdateTo = [
+        this.projectOne,
+        this.accounts.artist.address,
+        this.accounts.additional.address,
+        50,
+        this.accounts.additional2.address,
+        51,
+      ];
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .proposeArtistPaymentAddressesAndSplits(...valuesToUpdateTo);
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .adminAcceptArtistAddressesAndSplits(...valuesToUpdateTo);
+
+      await this.minter
+        .connect(this.accounts.artist)
+        ["purchase(uint256,address,uint256)"](
+          this.projectZero,
+          this.genArt721Core.address,
+          this.projectZeroTokenZero.toNumber(),
+          {
+            value: this.pricePerTokenInWei,
+          }
+        );
+    });
+  });
+
   describe("calculates gas", async function () {
     it("mints and calculates gas values [ @skip-on-coverage ]", async function () {
       const tx = await this.minter
