@@ -323,7 +323,7 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
       // mint
       const tx = await this.minterMerkle
         .connect(this.accounts.user)
-        ["purchase(uint256,bytes32[])"](this.projectThree, userMerkleProof, {
+        .purchase_gD5(this.projectThree, userMerkleProof, {
           value: this.pricePerTokenInWei,
         });
       // report gas
