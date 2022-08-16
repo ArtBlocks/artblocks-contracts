@@ -549,7 +549,6 @@ describe("GenArt721CoreV3 Project Configure", async function () {
   });
 
   describe("updateProjectSecondaryMarketRoyaltyPercentage", function () {
-    const errorMessage = "Max of 95%";
     it("owner can not update when unlocked", async function () {
       await expectRevert(
         this.genArt721Core
@@ -594,6 +593,51 @@ describe("GenArt721CoreV3 Project Configure", async function () {
           .connect(this.accounts.artist)
           .updateProjectSecondaryMarketRoyaltyPercentage(this.projectZero, 96),
         "Max of 95%"
+      );
+    });
+  });
+
+  describe("updateProjectScript", function () {
+    beforeEach(async function () {
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .addProjectScript(this.projectZero, "// script 0");
+    });
+
+    it("owner can update when unlocked", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateProjectScript(this.projectZero, 0, "// script 0.1");
+    });
+
+    it("artist can update when unlocked", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectScript(this.projectZero, 0, "// script 0.1");
+    });
+
+    it("artist cannot update when locked", async function () {
+      await mintProjectUntilRemaining.call(
+        this,
+        this.projectZero,
+        this.accounts.artist,
+        0
+      );
+      await advanceEVMByTime(FOUR_WEEKS + 1);
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectScript(this.projectZero, 0, "// script 0.1"),
+        "Only if unlocked"
+      );
+    });
+
+    it("artist cannot update non-existing script index", async function () {
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectScript(this.projectZero, 1, "// script 1"),
+        "scriptId out of range"
       );
     });
   });
