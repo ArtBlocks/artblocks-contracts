@@ -641,4 +641,54 @@ describe("GenArt721CoreV3 Project Configure", async function () {
       );
     });
   });
+
+  describe("removeProjectLastScript", function () {
+    beforeEach(async function () {
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .addProjectScript(this.projectZero, "// script 0");
+    });
+
+    it("owner can remove when unlocked", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .removeProjectLastScript(this.projectZero);
+    });
+
+    it("artist can remove when unlocked", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .removeProjectLastScript(this.projectZero);
+    });
+
+    it("artist cannot remove when locked", async function () {
+      await mintProjectUntilRemaining.call(
+        this,
+        this.projectZero,
+        this.accounts.artist,
+        0
+      );
+      await advanceEVMByTime(FOUR_WEEKS + 1);
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .removeProjectLastScript(this.projectZero),
+        "Only if unlocked"
+      );
+    });
+
+    it("artist cannot update non-existing script index", async function () {
+      // remove existing script
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .removeProjectLastScript(this.projectZero);
+      // expect revert when tyring to remove again
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .removeProjectLastScript(this.projectZero),
+        "there are no scripts to remove"
+      );
+    });
+  });
 });
