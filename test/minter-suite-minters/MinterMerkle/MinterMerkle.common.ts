@@ -282,6 +282,18 @@ export const MinterMerkle_Common = async () => {
       );
     });
 
+    it("does not allow purchase without proof arg", async function () {
+      // expect revert due to price not being configured
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.additional)
+          ["purchase(uint256)"](this.projectZero, {
+            value: this.pricePerTokenInWei,
+          }),
+        "Must provide Merkle proof"
+      );
+    });
+
     it("does not allow purchase prior to setting Merkle root (results in invalid proof)", async function () {
       // configure price per genArt721Core
       await this.minter
@@ -583,6 +595,22 @@ export const MinterMerkle_Common = async () => {
   });
 
   describe("purchaseTo", async function () {
+    it("does not allow purchaseTo without proof arg", async function () {
+      // expect revert due to price not being configured
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.additional)
+          ["purchaseTo(address,uint256)"](
+            this.accounts.user.address,
+            this.projectZero,
+            {
+              value: this.pricePerTokenInWei,
+            }
+          ),
+        "Must provide Merkle proof"
+      );
+    });
+
     it("does not allow purchase prior to configuring price", async function () {
       // calc and update merkle root for project two
       const merkleRootTwo = this.merkleTreeTwo.getHexRoot();
@@ -630,6 +658,19 @@ export const MinterMerkle_Common = async () => {
           .togglePurchaseToDisabled(this.projectOne),
         "Action not supported"
       );
+    });
+  });
+
+  describe("processProofForAddress (pure)", async function () {
+    it("returns expected value", async function () {
+      const userMerkleProofOne = this.merkleTreeOne.getHexProof(
+        hashAddress(this.accounts.user.address)
+      );
+      const expectedRoot = this.merkleTreeOne.getHexRoot();
+      const receivedRoot = await this.minter
+        .connect(this.accounts.user)
+        .processProofForAddress(userMerkleProofOne, this.accounts.user.address);
+      expect(receivedRoot).to.equal(expectedRoot);
     });
   });
 

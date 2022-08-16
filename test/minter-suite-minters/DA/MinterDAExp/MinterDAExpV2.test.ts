@@ -21,6 +21,7 @@ import {
 import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../util/constants";
 import { MinterDAExp_Common } from "./MinterDAExp.common";
 import { MinterDAV1V2_Common } from "../MinterDAV1V2.common";
+import { MinterDAV2_Common } from "../MinterDAV2.common";
 
 /**
  * These tests intended to ensure this Filtered Minter integrates properly with
@@ -109,6 +110,10 @@ describe("MinterDAExpV2_V3Core", async function () {
 
   describe("common DA V1V2 tests", async function () {
     MinterDAV1V2_Common();
+  });
+
+  describe("common DA V2 tests", async function () {
+    MinterDAV2_Common();
   });
 
   describe("setProjectMaxInvocations", async function () {

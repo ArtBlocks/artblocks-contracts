@@ -1159,4 +1159,136 @@ describe("GenArt721CoreV3 Views", async function () {
       );
     });
   });
+
+  describe("projectScriptByIndex", function () {
+    it("returns empty string by default", async function () {
+      const emptyProjectScript = await this.genArt721Core
+        .connect(this.accounts.user)
+        .projectScriptByIndex(this.projectZero, 0);
+      expect(emptyProjectScript).to.be.equal("");
+    });
+
+    it("returns expected populated string", async function () {
+      // add a couple project scripts
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .addProjectScript(this.projectZero, "console.log('hello')");
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .addProjectScript(this.projectZero, "console.log('world')");
+      const projectScript = await this.genArt721Core
+        .connect(this.accounts.user)
+        .projectScriptByIndex(this.projectZero, 1);
+      expect(projectScript).to.be.equal("console.log('world')");
+    });
+  });
+
+  describe("projectURIInfo", function () {
+    it("returns empty string by default", async function () {
+      const emptyProjectURI = await this.genArt721Core
+        .connect(this.accounts.user)
+        .projectURIInfo(this.projectZero);
+      expect(emptyProjectURI).to.be.equal("");
+    });
+
+    it("returns expected populated projectURI", async function () {
+      // add a couple project scripts
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectBaseURI(this.projectZero, "https://example.com/");
+      const projectURI = await this.genArt721Core
+        .connect(this.accounts.user)
+        .projectURIInfo(this.projectZero);
+      expect(projectURI).to.be.equal("https://example.com/");
+    });
+  });
+
+  describe("tokenURI", function () {
+    it("returns tokenID string by default", async function () {
+      // mint token for projectZero
+      await this.minter
+        .connect(this.accounts.artist)
+        .purchase(this.projectZero);
+      // check tokenURI
+      const tokenURIForEmptyProjectURI = await this.genArt721Core
+        .connect(this.accounts.user)
+        .tokenURI(this.projectZeroTokenZero.toNumber());
+      expect(tokenURIForEmptyProjectURI).to.be.equal("0");
+    });
+
+    it("returns expected tokenURI after a populated projectURI", async function () {
+      // mint token for projectZero
+      await this.minter
+        .connect(this.accounts.artist)
+        .purchase(this.projectZero);
+      // add a couple project scripts
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectBaseURI(this.projectZero, "https://example.com/");
+      // check tokenURI
+      const tokenURI = await this.genArt721Core
+        .connect(this.accounts.user)
+        .tokenURI(this.projectZeroTokenZero.toNumber());
+      expect(tokenURI).to.be.equal("https://example.com/0");
+    });
+
+    it("reverts when token does not exist", async function () {
+      // expect revert when token does not exist
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.user)
+          .tokenURI(this.projectZeroTokenZero.toNumber()),
+        "Token ID does not exist"
+      );
+    });
+  });
+
+  describe("isMintWhitelisted", function () {
+    it("returns true for minterFilter", async function () {
+      const emptyProjectURI = await this.genArt721Core
+        .connect(this.accounts.user)
+        .projectURIInfo(this.projectZero);
+      expect(
+        await this.genArt721Core
+          .connect(this.accounts.user)
+          .isMintWhitelisted(this.minterFilter.address)
+      ).to.be.true;
+    });
+
+    it("returns false for non-minterFilter", async function () {
+      const emptyProjectURI = await this.genArt721Core
+        .connect(this.accounts.user)
+        .projectURIInfo(this.projectZero);
+      expect(
+        await this.genArt721Core
+          .connect(this.accounts.user)
+          .isMintWhitelisted(this.minter.address)
+      ).to.be.false;
+    });
+  });
+
+  describe("tokenIdToProjectId", function () {
+    it("returns expected value", async function () {
+      // project Zero, token zero
+      let projectId = await this.genArt721Core
+        .connect(this.accounts.user)
+        .tokenIdToProjectId(this.projectZeroTokenZero.toNumber());
+      expect(projectId).to.be.equal(this.projectZero);
+      // project One, token zero
+      projectId = await this.genArt721Core
+        .connect(this.accounts.user)
+        .tokenIdToProjectId(this.projectOneTokenZero.toNumber());
+      expect(projectId).to.be.equal(this.projectOne);
+      // project One, token one
+      projectId = await this.genArt721Core
+        .connect(this.accounts.user)
+        .tokenIdToProjectId(this.projectOneTokenOne.toNumber());
+      expect(projectId).to.be.equal(this.projectOne);
+      // project Two, token one
+      projectId = await this.genArt721Core
+        .connect(this.accounts.user)
+        .tokenIdToProjectId(this.projectTwoTokenOne.toNumber());
+      expect(projectId).to.be.equal(this.projectTwo);
+    });
+  });
 });

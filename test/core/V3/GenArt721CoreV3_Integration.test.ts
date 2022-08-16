@@ -252,6 +252,38 @@ describe("GenArt721CoreV3 Integration", async function () {
     });
   });
 
+  describe("mint_ECF", function () {
+    it("reverts if not called by the minter contract", async function () {
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .mint_Ecf(
+            this.accounts.artist.address,
+            this.projectZero,
+            this.accounts.artist.address
+          ),
+        "Must mint from minter contract"
+      );
+    });
+
+    it("reverts if try to mint non-active project", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .toggleProjectIsActive(this.projectZero);
+      await expectRevert(
+        this.minter.connect(this.accounts.user).purchase(this.projectZero),
+        "Project must exist and be active"
+      );
+    });
+
+    it("reverts if try to mint paused from non-artist account", async function () {
+      await expectRevert(
+        this.minter.connect(this.accounts.user).purchase(this.projectZero),
+        "Purchases are paused."
+      );
+    });
+  });
+
   describe("setTokenHash_8PT", function () {
     it("does not allow non-randomizer to call", async function () {
       // mint token zero so it is a valid token

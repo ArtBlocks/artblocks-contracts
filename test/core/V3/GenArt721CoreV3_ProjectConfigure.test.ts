@@ -262,6 +262,51 @@ describe("GenArt721CoreV3 Project Configure", async function () {
     });
   });
 
+  describe("updateProjectName", function () {
+    const errorMessage = "Only artist when unlocked, owner when locked";
+    it("owner can update when unlocked", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateProjectName(this.projectZero, "new name");
+    });
+
+    it("artist can update when unlocked", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectName(this.projectZero, "new name");
+      // expect view to be updated
+      const projectDetails = await this.genArt721Core
+        .connect(this.accounts.user)
+        .projectDetails(this.projectZero);
+      expect(projectDetails.projectName).to.equal("new name");
+    });
+
+    it("owner can not update when locked", async function () {
+      await mintProjectUntilRemaining.call(
+        this,
+        this.projectZero,
+        this.accounts.artist,
+        0
+      );
+      await advanceEVMByTime(FOUR_WEEKS + 1);
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateProjectName(this.projectZero, "new description"),
+        "Only if unlocked"
+      );
+    });
+
+    it("user cannot update", async function () {
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.user)
+          .updateProjectName(this.projectZero, "new description"),
+        "Only artist or Admin ACL allowed"
+      );
+    });
+  });
+
   describe("updateProjectArtistAddress", function () {
     it("only allows owner to update project artist address", async function () {
       await expectRevert(
@@ -329,6 +374,37 @@ describe("GenArt721CoreV3 Project Configure", async function () {
       await this.genArt721Core
         .connect(this.accounts.artist)
         .proposeArtistPaymentAddressesAndSplits(...this.valuesToUpdateTo);
+    });
+
+    it("does not allow artist to propose invalid", async function () {
+      // rejects artist proposal primary >100% to additional
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .proposeArtistPaymentAddressesAndSplits(
+            this.projectZero,
+            this.accounts.artist2.address,
+            this.accounts.additional.address,
+            101,
+            this.accounts.additional2.address,
+            0
+          ),
+        "Max of 100%"
+      );
+      // rejects artist proposal secondary >100% to additional
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .proposeArtistPaymentAddressesAndSplits(
+            this.projectZero,
+            this.accounts.artist2.address,
+            this.accounts.additional.address,
+            0,
+            this.accounts.additional2.address,
+            101
+          ),
+        "Max of 100%"
+      );
     });
 
     it("only allows adminACL-allowed account to accept updates if owner has not renounced ownership", async function () {
@@ -468,6 +544,150 @@ describe("GenArt721CoreV3 Project Configure", async function () {
             this.valuesToUpdateTo[5]
           ),
         "Must match artist proposal"
+      );
+    });
+  });
+
+  describe("updateProjectSecondaryMarketRoyaltyPercentage", function () {
+    it("owner can not update when unlocked", async function () {
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateProjectSecondaryMarketRoyaltyPercentage(this.projectZero, 10),
+        "Only artist"
+      );
+    });
+
+    it("artist can update when unlocked", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectSecondaryMarketRoyaltyPercentage(this.projectZero, 10);
+      // expect view to be updated
+      const royaltyData = await this.genArt721Core
+        .connect(this.accounts.user)
+        .getRoyaltyData(this.projectZero);
+      expect(royaltyData.royaltyFeeByID).to.equal(10);
+    });
+
+    it("artist can update when locked", async function () {
+      await mintProjectUntilRemaining.call(
+        this,
+        this.projectZero,
+        this.accounts.artist,
+        0
+      );
+      await advanceEVMByTime(FOUR_WEEKS + 1);
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectSecondaryMarketRoyaltyPercentage(this.projectZero, 11);
+      // expect view to be updated
+      const royaltyData = await this.genArt721Core
+        .connect(this.accounts.user)
+        .getRoyaltyData(this.projectZero);
+      expect(royaltyData.royaltyFeeByID).to.equal(11);
+    });
+
+    it("artist cannot update > 95%", async function () {
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectSecondaryMarketRoyaltyPercentage(this.projectZero, 96),
+        "Max of 95%"
+      );
+    });
+  });
+
+  describe("updateProjectScript", function () {
+    beforeEach(async function () {
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .addProjectScript(this.projectZero, "// script 0");
+    });
+
+    it("owner can update when unlocked", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateProjectScript(this.projectZero, 0, "// script 0.1");
+    });
+
+    it("artist can update when unlocked", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectScript(this.projectZero, 0, "// script 0.1");
+    });
+
+    it("artist cannot update when locked", async function () {
+      await mintProjectUntilRemaining.call(
+        this,
+        this.projectZero,
+        this.accounts.artist,
+        0
+      );
+      await advanceEVMByTime(FOUR_WEEKS + 1);
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectScript(this.projectZero, 0, "// script 0.1"),
+        "Only if unlocked"
+      );
+    });
+
+    it("artist cannot update non-existing script index", async function () {
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectScript(this.projectZero, 1, "// script 1"),
+        "scriptId out of range"
+      );
+    });
+  });
+
+  describe("removeProjectLastScript", function () {
+    beforeEach(async function () {
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .addProjectScript(this.projectZero, "// script 0");
+    });
+
+    it("owner can remove when unlocked", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .removeProjectLastScript(this.projectZero);
+    });
+
+    it("artist can remove when unlocked", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .removeProjectLastScript(this.projectZero);
+    });
+
+    it("artist cannot remove when locked", async function () {
+      await mintProjectUntilRemaining.call(
+        this,
+        this.projectZero,
+        this.accounts.artist,
+        0
+      );
+      await advanceEVMByTime(FOUR_WEEKS + 1);
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .removeProjectLastScript(this.projectZero),
+        "Only if unlocked"
+      );
+    });
+
+    it("artist cannot update non-existing script index", async function () {
+      // remove existing script
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .removeProjectLastScript(this.projectZero);
+      // expect revert when tyring to remove again
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .removeProjectLastScript(this.projectZero),
+        "there are no scripts to remove"
       );
     });
   });

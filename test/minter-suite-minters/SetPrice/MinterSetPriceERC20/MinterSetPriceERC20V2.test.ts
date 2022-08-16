@@ -11,6 +11,8 @@ import {
 
 import { MinterSetPriceERC20_Common } from "./MinterSetPriceERC20.common";
 import { MinterSetPriceV1V2_Common } from "../MinterSetPriceV1V2.common";
+import { MinterSetPriceV2_Common } from "../MinterSetPriceV2.common";
+import { BigNumber } from "ethers";
 
 /**
  * These tests intended to ensure this Filtered Minter integrates properly with
@@ -126,6 +128,10 @@ describe("MinterSetPriceERC20V2_V3Core", async function () {
     MinterSetPriceV1V2_Common();
   });
 
+  describe("common MinterSetPrice V2 tests", async function () {
+    MinterSetPriceV2_Common();
+  });
+
   describe("setProjectMaxInvocations", async function () {
     it("allows artist to call setProjectMaxInvocations", async function () {
       await this.minter
@@ -137,6 +143,50 @@ describe("MinterSetPriceERC20V2_V3Core", async function () {
       await this.minter
         .connect(this.accounts.user)
         .setProjectMaxInvocations(this.projectZero);
+    });
+  });
+
+  describe("additional payee payments with ERC20", async function () {
+    it("handles additional payee payments with ERC20", async function () {
+      const valuesToUpdateTo = [
+        this.projectZero,
+        this.accounts.artist.address,
+        this.accounts.additional.address,
+        50,
+        this.accounts.additional2.address,
+        51,
+      ];
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .proposeArtistPaymentAddressesAndSplits(...valuesToUpdateTo);
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .adminAcceptArtistAddressesAndSplits(...valuesToUpdateTo);
+      // artist changes to Mock ERC20 token
+      await this.minter
+        .connect(this.accounts.artist)
+        .updateProjectCurrencyInfo(
+          this.projectZero,
+          "MOCK",
+          this.ERC20Mock.address
+        );
+      // approve contract and able to mint with Mock token
+      await this.ERC20Mock.connect(this.accounts.user).approve(
+        this.minter.address,
+        ethers.utils.parseEther("100")
+      );
+      await this.minter.connect(this.accounts.user).purchase(this.projectZero);
+      // expect additional payee to receive 50% of artist revenues
+      const additionalBalance = await this.ERC20Mock.balanceOf(
+        this.accounts.additional.address
+      );
+      expect(additionalBalance).to.equal(
+        this.pricePerTokenInWei
+          .mul(BigNumber.from("90"))
+          .div(BigNumber.from("100"))
+          .mul(BigNumber.from("50"))
+          .div(BigNumber.from("100"))
+      );
     });
   });
 
