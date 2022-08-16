@@ -170,6 +170,21 @@ describe("MinterHolderV1", async function () {
     });
   });
 
+  describe("purchase_nnf", async function () {
+    it("allows `purchase_nnf` by default", async function () {
+      await this.minter
+        .connect(this.accounts.artist)
+        .purchase_nnf(
+          this.projectZero,
+          this.genArt721Core.address,
+          this.projectZeroTokenZero.toNumber(),
+          {
+            value: this.pricePerTokenInWei,
+          }
+        );
+    });
+  });
+
   describe("calculates gas", async function () {
     it("mints and calculates gas values [ @skip-on-coverage ]", async function () {
       const tx = await this.minter

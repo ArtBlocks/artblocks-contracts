@@ -184,6 +184,19 @@ describe("MinterMerkleV1", async function () {
     });
   });
 
+  describe("purchase_gD5", async function () {
+    it("allows `purchase_gD5` by default", async function () {
+      const userMerkleProofOne = this.merkleTreeOne.getHexProof(
+        hashAddress(this.accounts.user.address)
+      );
+      await this.minter
+        .connect(this.accounts.user)
+        .purchase_gD5(this.projectOne, userMerkleProofOne, {
+          value: this.pricePerTokenInWei,
+        });
+    });
+  });
+
   describe("calculates gas", async function () {
     it("mints and calculates gas values [ @skip-on-coverage ]", async function () {
       const userMerkleProofOne = this.merkleTreeOne.getHexProof(

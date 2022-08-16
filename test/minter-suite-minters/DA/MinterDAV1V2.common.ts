@@ -56,6 +56,45 @@ export const MinterDAV1V2_Common = async () => {
     });
   });
 
+  describe("purchase_H4M", async function () {
+    it("allows `purchase_H4M` by default", async function () {
+      await ethers.provider.send("evm_mine", [
+        this.startTime + this.auctionStartTimeOffset,
+      ]);
+      await this.minter
+        .connect(this.accounts.user)
+        .purchase_H4M(this.projectZero, {
+          value: this.startingPrice,
+        });
+    });
+  });
+
+  describe("additional payee payments", async function () {
+    it("handles additional payee payments", async function () {
+      const valuesToUpdateTo = [
+        this.projectZero,
+        this.accounts.artist2.address,
+        this.accounts.additional.address,
+        50,
+        this.accounts.additional2.address,
+        51,
+      ];
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .proposeArtistPaymentAddressesAndSplits(...valuesToUpdateTo);
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .adminAcceptArtistAddressesAndSplits(...valuesToUpdateTo);
+
+      await ethers.provider.send("evm_mine", [
+        this.startTime + this.auctionStartTimeOffset,
+      ]);
+      await this.minter.connect(this.accounts.user).purchase(this.projectZero, {
+        value: this.startingPrice,
+      });
+    });
+  });
+
   describe("reentrancy attack", async function () {
     it("does not allow reentrant purchaseTo", async function () {
       // advance to time when auction is active
