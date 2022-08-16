@@ -82,7 +82,7 @@ export const Minter_Common = async () => {
       // update max invocations to 1 on the core
       await this.genArt721Core
         .connect(this.accounts.artist)
-        .updateProjectMaxInvocations(this.projectZero, 1);
+        .updateProjectMaxInvocations(this.projectZero, 2);
       // sync max invocations on minter
       await this.minter
         .connect(this.accounts.deployer)
@@ -90,7 +90,7 @@ export const Minter_Common = async () => {
       // expect max invocations to be 1 on the minter
       expect(
         await this.minter.projectMaxInvocations(this.projectZero)
-      ).to.be.equal(1);
+      ).to.be.equal(2);
     });
   });
 };
