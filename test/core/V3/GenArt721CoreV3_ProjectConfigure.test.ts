@@ -376,6 +376,37 @@ describe("GenArt721CoreV3 Project Configure", async function () {
         .proposeArtistPaymentAddressesAndSplits(...this.valuesToUpdateTo);
     });
 
+    it("does not allow artist to propose invalid", async function () {
+      // rejects artist proposal primary >100% to additional
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .proposeArtistPaymentAddressesAndSplits(
+            this.projectZero,
+            this.accounts.artist2.address,
+            this.accounts.additional.address,
+            101,
+            this.accounts.additional2.address,
+            0
+          ),
+        "Max of 100%"
+      );
+      // rejects artist proposal secondary >100% to additional
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .proposeArtistPaymentAddressesAndSplits(
+            this.projectZero,
+            this.accounts.artist2.address,
+            this.accounts.additional.address,
+            0,
+            this.accounts.additional2.address,
+            101
+          ),
+        "Max of 100%"
+      );
+    });
+
     it("only allows adminACL-allowed account to accept updates if owner has not renounced ownership", async function () {
       // artist proposes new values
       await this.genArt721Core
