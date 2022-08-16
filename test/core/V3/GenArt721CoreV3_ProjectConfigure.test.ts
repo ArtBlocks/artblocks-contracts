@@ -262,6 +262,51 @@ describe("GenArt721CoreV3 Project Configure", async function () {
     });
   });
 
+  describe("updateProjectName", function () {
+    const errorMessage = "Only artist when unlocked, owner when locked";
+    it("owner can update when unlocked", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateProjectName(this.projectZero, "new name");
+    });
+
+    it("artist can update when unlocked", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectName(this.projectZero, "new name");
+      // expect view to be updated
+      const projectDetails = await this.genArt721Core
+        .connect(this.accounts.user)
+        .projectDetails(this.projectZero);
+      expect(projectDetails.projectName).to.equal("new name");
+    });
+
+    it("owner can not update when locked", async function () {
+      await mintProjectUntilRemaining.call(
+        this,
+        this.projectZero,
+        this.accounts.artist,
+        0
+      );
+      await advanceEVMByTime(FOUR_WEEKS + 1);
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateProjectName(this.projectZero, "new description"),
+        "Only if unlocked"
+      );
+    });
+
+    it("user cannot update", async function () {
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.user)
+          .updateProjectName(this.projectZero, "new description"),
+        "Only artist or Admin ACL allowed"
+      );
+    });
+  });
+
   describe("updateProjectArtistAddress", function () {
     it("only allows owner to update project artist address", async function () {
       await expectRevert(
