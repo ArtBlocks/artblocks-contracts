@@ -1182,4 +1182,24 @@ describe("GenArt721CoreV3 Views", async function () {
       expect(projectScript).to.be.equal("console.log('world')");
     });
   });
+
+  describe("projectURIInfo", function () {
+    it("returns empty string by default", async function () {
+      const emptyProjectURI = await this.genArt721Core
+        .connect(this.accounts.user)
+        .projectURIInfo(this.projectZero);
+      expect(emptyProjectURI).to.be.equal("");
+    });
+
+    it("returns expected populated projectURI", async function () {
+      // add a couple project scripts
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectBaseURI(this.projectZero, "https://example.com/");
+      const projectURI = await this.genArt721Core
+        .connect(this.accounts.user)
+        .projectURIInfo(this.projectZero);
+      expect(projectURI).to.be.equal("https://example.com/");
+    });
+  });
 });
