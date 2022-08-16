@@ -28,6 +28,10 @@ Create a `.env` file by duplicating `.env.example` and populating all variables.
 
 `yarn test`
 
+### generate coverage report
+
+`yarn coverage`
+
 ### format your source code
 
 `yarn format`
@@ -35,6 +39,8 @@ Create a `.env` file by duplicating `.env.example` and populating all variables.
 ## Deployments
 
 Deployment script templates are located in the `./scripts` directory. To run a deployment script `deploy.ts`:
+
+> IMPORTANT - many scripts rely on typechain-generated factories, so ensure you have run `yarn generate:typechain` before running any deployment scripts.
 
 ```
 yarn hardhat run --network <your-network> scripts/deploy.ts
@@ -67,12 +73,12 @@ Core contracts use the versioning schema below:
 - Minters have to iteract with (at least one) core contract
 - **Note:** while the whole end-to-end MinterFilter+FilteredMinter architecture is likely not the ideal fit for PBAB partners due to the infrastructure complexity required for partners integrating with it, any of the individual minters from within the minter suite can readily be adapted to work with PBAB core contracts–if you are a PBAB partner and there is a minter in the suite that this would be appealing for, please contact your account manager!
 
-**Thus:** The minter suite compatability chart!
-
-| Minter Suite Version | Compatible Core Contract Version | Comments                                                                                                                         |
-| -------------------- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
-| V0                   | V1, V2_PRTNR                     | expect `projectTokenInfo()` to change in future core contract versions (since price & currency data is now stored on V0 minters) |
-| V1                   | V1, V2_PRTNR                     | expect `projectTokenInfo()` to change in future core contract versions (since price & currency data is now stored on V0 minters) |
+| Core Contract Version(s) | Recommended Minters                                                                                             | Depreciated Minters                                                         |
+| ------------------------ | --------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| V0                       | (legacy minter)                                                                                                 | -                                                                           |
+| V1, V1_PRTNR             | MinterSetPriceV1<br>MinterSetPriceERC20V1<br>MinterDAExpV1<br>MinterDALinV1<br>MinterMerkleV0<br>MinterHolderV0 | MinterSetPriceV0<br>MinterSetPriceERC20V0<br>MinterDAExpV0<br>MinterDALinV0 |
+| V2 (PBAB)                | (various PBAB minters)                                                                                          | -                                                                           |
+| V3                       | MinterSetPriceV2<br>MinterSetPriceERC20V2<br>MinterDAExpV2<br>MinterDALinV2<br>MinterMerkleV1<br>MinterHolderV1 | -                                                                           |
 
 ### Active Minting Contract(s)
 
@@ -148,9 +154,9 @@ Documentation for contracts may be generated via `yarn docgen`. Some Art Blocks 
 
 ## Royalty Registry Overrides
 
-Art Blocks supports lookups of all mainnet flagship, partnership, and PBAB tokens on the [Royalty Registry](https://royaltyregistry.xyz/lookup).
+Art Blocks supports lookups of all mainnet flagship, partnership, and PBAB tokens on Manifold's [Royalty Registry](https://royaltyregistry.xyz/lookup).
 
-These contracts delegate all permissions to the core contracts. The following Royalty Registry override contracts are deployed at:
+Prior to the V3 core contract, royalty registry override contracts are required to integrate with the Royalty Registry. These contracts delegate all permissions to the core contracts. The following Royalty Registry override contracts are deployed at:
 
 - **mainnet (AB deployed):**
 
