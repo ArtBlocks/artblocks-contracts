@@ -1159,4 +1159,27 @@ describe("GenArt721CoreV3 Views", async function () {
       );
     });
   });
+
+  describe("projectScriptByIndex", function () {
+    it("returns empty string by default", async function () {
+      const emptyProjectScript = await this.genArt721Core
+        .connect(this.accounts.user)
+        .projectScriptByIndex(this.projectZero, 0);
+      expect(emptyProjectScript).to.be.equal("");
+    });
+
+    it("returns expected populated string", async function () {
+      // add a couple project scripts
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .addProjectScript(this.projectZero, "console.log('hello')");
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .addProjectScript(this.projectZero, "console.log('world')");
+      const projectScript = await this.genArt721Core
+        .connect(this.accounts.user)
+        .projectScriptByIndex(this.projectZero, 1);
+      expect(projectScript).to.be.equal("console.log('world')");
+    });
+  });
 });
