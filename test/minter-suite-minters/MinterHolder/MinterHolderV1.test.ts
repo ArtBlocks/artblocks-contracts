@@ -188,7 +188,7 @@ describe("MinterHolderV1", async function () {
   describe("additional payee payments", async function () {
     it("handles additional payee payments", async function () {
       const valuesToUpdateTo = [
-        this.projectOne,
+        this.projectZero,
         this.accounts.artist.address,
         this.accounts.additional.address,
         50,
