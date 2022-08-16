@@ -215,6 +215,43 @@ describe("GenArt721CoreV3 Integration", async function () {
     });
   });
 
+  describe("supportsInterface", function () {
+    it("supports IManifold", async function () {
+      // expected true for supporting: bytes4(keccak256('getRoyalties(uint256)')) == 0xbb3bafd6
+      expect(
+        await this.genArt721Core
+          .connect(this.accounts.deployer)
+          .supportsInterface(0xbb3bafd6)
+      ).to.be.true;
+    });
+
+    it("supports IERC721", async function () {
+      // expected true for interface = 0x80ac58cd
+      expect(
+        await this.genArt721Core
+          .connect(this.accounts.deployer)
+          .supportsInterface(0x80ac58cd)
+      ).to.be.true;
+    });
+
+    it("supports IERC165", async function () {
+      // expected true for interface = 0x01ffc9a7
+      expect(
+        await this.genArt721Core
+          .connect(this.accounts.deployer)
+          .supportsInterface(0x01ffc9a7)
+      ).to.be.true;
+    });
+
+    it("does not support 0xffffffff", async function () {
+      expect(
+        await this.genArt721Core
+          .connect(this.accounts.deployer)
+          .supportsInterface(0xffffffff)
+      ).to.be.false;
+    });
+  });
+
   describe("setTokenHash_8PT", function () {
     it("does not allow non-randomizer to call", async function () {
       // mint token zero so it is a valid token
