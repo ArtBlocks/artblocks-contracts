@@ -111,6 +111,20 @@ describe("MinterDAExpV2_V3Core", async function () {
     MinterDAV1V2_Common();
   });
 
+  describe("setProjectMaxInvocations", async function () {
+    it("allows artist to call setProjectMaxInvocations", async function () {
+      await this.minter
+        .connect(this.accounts.artist)
+        .setProjectMaxInvocations(this.projectZero);
+    });
+
+    it("allows user to call setProjectMaxInvocations", async function () {
+      await this.minter
+        .connect(this.accounts.user)
+        .setProjectMaxInvocations(this.projectZero);
+    });
+  });
+
   describe("calculate gas", async function () {
     it("mints and calculates gas values [ @skip-on-coverage ]", async function () {
       await ethers.provider.send("evm_mine", [

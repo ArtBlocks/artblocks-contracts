@@ -156,6 +156,20 @@ describe("MinterHolderV1", async function () {
     MinterHolder_Common();
   });
 
+  describe("setProjectMaxInvocations", async function () {
+    it("allows artist to call setProjectMaxInvocations", async function () {
+      await this.minter
+        .connect(this.accounts.artist)
+        .setProjectMaxInvocations(this.projectZero);
+    });
+
+    it("allows user to call setProjectMaxInvocations", async function () {
+      await this.minter
+        .connect(this.accounts.user)
+        .setProjectMaxInvocations(this.projectZero);
+    });
+  });
+
   describe("calculates gas", async function () {
     it("mints and calculates gas values [ @skip-on-coverage ]", async function () {
       const tx = await this.minter
