@@ -88,9 +88,9 @@ contract MinterSetPriceV2 is ReentrancyGuard, IFilteredMinterV0 {
     }
 
     /**
-     * @notice Only used for gas optimization of mints after maxInvocations has
-     * been reached. Syncs local maximum invocations of project `_projectId`
-     * based on the value currently defined in the core contract.
+     * @notice Syncs local maximum invocations of project `_projectId` based on
+     * the value currently defined in the core contract. Only used for gas
+     * optimization of mints after maxInvocations has been reached.
      * @param _projectId Project ID to set the maximum invocations for.
      * @dev this enables gas reduction after maxInvocations have been reached -
      * core contracts shall still enforce a maxInvocation check during mint.
@@ -205,8 +205,8 @@ contract MinterSetPriceV2 is ReentrancyGuard, IFilteredMinterV0 {
         // EFFECTS
         tokenId = minterFilter.mint(_to, _projectId, msg.sender);
 
-        // Okay if this underflows because if statement will always eval false.
-        // This is only for gas optimization (core enforces maxInvocations).
+        // okay if this underflows because if statement will always eval false.
+        // this is only for gas optimization (core enforces maxInvocations).
         unchecked {
             if (
                 tokenId % ONE_MILLION == projectMaxInvocations[_projectId] - 1
