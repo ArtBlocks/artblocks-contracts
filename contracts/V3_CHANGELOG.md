@@ -54,3 +54,5 @@ _This document is intended to document and explain the Art Blocks Core V3 change
   - Minimize costly SLOAD operations & re-organize logic to minimize gas usage
   - Optimize mint function signature to reduce gas usage
 - Update randomizer interface for V3 core contract
+- Only allow artists to reduce the number of maximum invocations
+  - Remove any unnecessary minter logic accordingly
