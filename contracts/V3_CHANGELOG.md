@@ -36,6 +36,7 @@ _This document is intended to document and explain the Art Blocks Core V3 change
 - Limit artists to 30% secondary royalty fees
   - Previously the limit was 100% secondary royalty fees. This is to prevent the artist from taking too much of the secondary royalty fees.
 - Support [Manifold's Royalty Registry](https://github.com/manifoldxyz/royalty-registry-solidity) directly on V3 core contract
+  - Add Art Blocks royalty information to V3 core contract
   - conform to the IManifold interface, as defined on the Manifold Royalty Registry
 - Delegate all admin access checks to new AdminACL contract
   - This is to allow for more flexible admin access control, and to allow for future admin access control changes without having to redeploy the core contract.
