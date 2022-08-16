@@ -547,4 +547,54 @@ describe("GenArt721CoreV3 Project Configure", async function () {
       );
     });
   });
+
+  describe("updateProjectSecondaryMarketRoyaltyPercentage", function () {
+    const errorMessage = "Max of 95%";
+    it("owner can not update when unlocked", async function () {
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateProjectSecondaryMarketRoyaltyPercentage(this.projectZero, 10),
+        "Only artist"
+      );
+    });
+
+    it("artist can update when unlocked", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectSecondaryMarketRoyaltyPercentage(this.projectZero, 10);
+      // expect view to be updated
+      const royaltyData = await this.genArt721Core
+        .connect(this.accounts.user)
+        .getRoyaltyData(this.projectZero);
+      expect(royaltyData.royaltyFeeByID).to.equal(10);
+    });
+
+    it("artist can update when locked", async function () {
+      await mintProjectUntilRemaining.call(
+        this,
+        this.projectZero,
+        this.accounts.artist,
+        0
+      );
+      await advanceEVMByTime(FOUR_WEEKS + 1);
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectSecondaryMarketRoyaltyPercentage(this.projectZero, 11);
+      // expect view to be updated
+      const royaltyData = await this.genArt721Core
+        .connect(this.accounts.user)
+        .getRoyaltyData(this.projectZero);
+      expect(royaltyData.royaltyFeeByID).to.equal(11);
+    });
+
+    it("artist cannot update > 95%", async function () {
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectSecondaryMarketRoyaltyPercentage(this.projectZero, 96),
+        "Max of 95%"
+      );
+    });
+  });
 });
