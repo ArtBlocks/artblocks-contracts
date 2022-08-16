@@ -35,25 +35,12 @@ contract MinterSetPriceV2 is ReentrancyGuard, IFilteredMinterV0 {
     /// projectId => has project reached its maximum number of invocations?
     mapping(uint256 => bool) public projectMaxHasBeenInvoked;
     /// projectId => project's maximum number of invocations
+    /// optionally synced with core contract value, for gas optimization
     mapping(uint256 => uint256) public projectMaxInvocations;
     /// projectId => price per token in wei - supersedes any defined core price
     mapping(uint256 => uint256) private projectIdToPricePerTokenInWei;
     /// projectId => price per token has been configured on this minter
     mapping(uint256 => bool) private projectIdToPriceIsConfigured;
-
-    // modifier to restrict access to only AdminACL allowed calls
-    // @dev defers which ACL contract is used to the core contract
-    modifier onlyCoreAdminACL(bytes4 _selector) {
-        require(
-            genArtCoreContract.adminACLAllowed(
-                msg.sender,
-                address(this),
-                _selector
-            ),
-            "Only Core AdminACL allowed"
-        );
-        _;
-    }
 
     modifier onlyArtist(uint256 _projectId) {
         require(
@@ -87,26 +74,22 @@ contract MinterSetPriceV2 is ReentrancyGuard, IFilteredMinterV0 {
     }
 
     /**
-     * @notice Sets the maximum invocations of project `_projectId` based
-     * on the value currently defined in the core contract.
+     * @notice Syncs local maximum invocations of project `_projectId` based on
+     * the value currently defined in the core contract. Only used for gas
+     * optimization of mints after maxInvocations has been reached.
      * @param _projectId Project ID to set the maximum invocations for.
-     * @dev also checks and may refresh projectMaxHasBeenInvoked for project
      * @dev this enables gas reduction after maxInvocations have been reached -
      * core contracts shall still enforce a maxInvocation check during mint.
+     * @dev function is intentionally not gated to any specific access control;
+     * it only syncs a local state variable to the core contract's state.
      */
-    function setProjectMaxInvocations(uint256 _projectId)
-        external
-        onlyCoreAdminACL(this.setProjectMaxInvocations.selector)
-    {
-        uint256 invocations;
+    function setProjectMaxInvocations(uint256 _projectId) external {
         uint256 maxInvocations;
-        (invocations, maxInvocations, , , ) = genArtCoreContract
-            .projectStateData(_projectId);
+        (, maxInvocations, , , ) = genArtCoreContract.projectStateData(
+            _projectId
+        );
         // update storage with results
         projectMaxInvocations[_projectId] = maxInvocations;
-        if (invocations < maxInvocations) {
-            projectMaxHasBeenInvoked[_projectId] = false;
-        }
     }
 
     /**
@@ -208,10 +191,8 @@ contract MinterSetPriceV2 is ReentrancyGuard, IFilteredMinterV0 {
         // EFFECTS
         tokenId = minterFilter.mint(_to, _projectId, msg.sender);
 
-        // What if this overflows, since default value of uint256 is 0?
-        // that is intended, so that by default the minter allows infinite transactions,
-        // allowing the artblocks contract to stop minting
-        // uint256 tokenInvocation = tokenId % ONE_MILLION;
+        // okay if this underflows because if statement will always eval false.
+        // this is only for gas optimization (core enforces maxInvocations).
         unchecked {
             if (
                 tokenId % ONE_MILLION == projectMaxInvocations[_projectId] - 1

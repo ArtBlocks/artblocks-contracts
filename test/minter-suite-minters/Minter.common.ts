@@ -70,4 +70,27 @@ export const Minter_Common = async () => {
       expect(priceInfo.currencyAddress).to.be.equal(constants.ZERO_ADDRESS);
     });
   });
+
+  describe("setProjectMaxInvocations", async function () {
+    it("allows deployer to call setProjectMaxInvocations", async function () {
+      await this.minter
+        .connect(this.accounts.deployer)
+        .setProjectMaxInvocations(this.projectZero);
+    });
+
+    it("updates local projectMaxInvocations after syncing to core", async function () {
+      // update max invocations to 1 on the core
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectMaxInvocations(this.projectZero, 2);
+      // sync max invocations on minter
+      await this.minter
+        .connect(this.accounts.deployer)
+        .setProjectMaxInvocations(this.projectZero);
+      // expect max invocations to be 1 on the minter
+      expect(
+        await this.minter.projectMaxInvocations(this.projectZero)
+      ).to.be.equal(2);
+    });
+  });
 };
