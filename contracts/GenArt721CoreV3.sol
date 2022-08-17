@@ -100,18 +100,21 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
 
     mapping(uint256 => Project) projects;
 
+    // Pack project financials into a separate struct
+    struct ProjectFinance {
+        uint8 additionalPayeePrimarySalesPercentage;
+        uint8 additionalPayeeSecondarySalesPercentage;
+        uint8 secondaryMarketRoyaltyPercentage;
+    }
+    // Project financials mapping
+    mapping(uint256 => ProjectFinance) projectIdToFinancials;
+
     // All financial functions are stripped from struct for visibility
     mapping(uint256 => address payable) public projectIdToArtistAddress;
     mapping(uint256 => address payable)
         public projectIdToAdditionalPayeePrimarySales;
-    mapping(uint256 => uint256)
-        public projectIdToAdditionalPayeePrimarySalesPercentage;
     mapping(uint256 => address payable)
         public projectIdToAdditionalPayeeSecondarySales;
-    mapping(uint256 => uint256)
-        public projectIdToAdditionalPayeeSecondarySalesPercentage;
-    mapping(uint256 => uint256)
-        public projectIdToSecondaryMarketRoyaltyPercentage;
 
     /// hash of artist's proposed payment updates to be approved by admin
     mapping(uint256 => bytes32) public proposedArtistAddressesAndSplitsHash;
@@ -514,19 +517,24 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
             "Must match artist proposal"
         );
         // effects
+        // update project payment addresses
         projectIdToArtistAddress[_projectId] = _artistAddress;
         projectIdToAdditionalPayeePrimarySales[
             _projectId
         ] = _additionalPayeePrimarySales;
-        projectIdToAdditionalPayeePrimarySalesPercentage[
-            _projectId
-        ] = _additionalPayeePrimarySalesPercentage;
         projectIdToAdditionalPayeeSecondarySales[
             _projectId
         ] = _additionalPayeeSecondarySales;
-        projectIdToAdditionalPayeeSecondarySalesPercentage[
+        // update project financial percentages
+        ProjectFinance storage projectFinance = projectIdToFinancials[
             _projectId
-        ] = _additionalPayeeSecondarySalesPercentage;
+        ];
+        projectFinance.additionalPayeePrimarySalesPercentage = uint8(
+            _additionalPayeePrimarySalesPercentage
+        );
+        projectFinance.additionalPayeeSecondarySalesPercentage = uint8(
+            _additionalPayeeSecondarySalesPercentage
+        );
         // emit event for off-chain indexing
         emit AcceptedArtistAddressesAndSplits(_projectId);
     }
@@ -619,9 +627,8 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         uint256 _secondMarketRoyalty
     ) external onlyArtist(_projectId) {
         require(_secondMarketRoyalty <= 95, "Max of 95%");
-        projectIdToSecondaryMarketRoyaltyPercentage[
-            _projectId
-        ] = _secondMarketRoyalty;
+        projectIdToFinancials[_projectId]
+            .secondaryMarketRoyaltyPercentage = uint8(_secondMarketRoyalty);
         emit ProjectUpdated(
             _projectId,
             FIELD_SECONDARY_MARKET_ROYALTY_PERCENTAGE
@@ -913,15 +920,16 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         additionalPayeePrimarySales = projectIdToAdditionalPayeePrimarySales[
             _projectId
         ];
-        additionalPayeePrimarySalesPercentage = projectIdToAdditionalPayeePrimarySalesPercentage[
+        ProjectFinance storage projectFinance = projectIdToFinancials[
             _projectId
         ];
+        additionalPayeePrimarySalesPercentage = projectFinance
+            .additionalPayeePrimarySalesPercentage;
         additionalPayeeSecondarySales = projectIdToAdditionalPayeeSecondarySales[
             _projectId
         ];
-        additionalPayeeSecondarySalesPercentage = projectIdToAdditionalPayeeSecondarySalesPercentage[
-            _projectId
-        ];
+        additionalPayeeSecondarySalesPercentage = projectFinance
+            .additionalPayeeSecondarySalesPercentage;
     }
 
     /**
@@ -1027,6 +1035,18 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     /**
+     * @notice View function returning Artist's additional payee primary sales
+     * percentage.
+     */
+    function projectIdToAdditionalPayeePrimarySalesPercentage(
+        uint256 _projectId
+    ) external view returns (uint256) {
+        return
+            projectIdToFinancials[_projectId]
+                .additionalPayeePrimarySalesPercentage;
+    }
+
+    /**
      * @notice Backwards-compatible (pre-V3) function.
      * Gets artist + artist's additional payee royalty data for token ID
      `_tokenId`.
@@ -1052,10 +1072,12 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         uint256 projectId = _tokenId / ONE_MILLION;
         artistAddress = projectIdToArtistAddress[projectId];
         additionalPayee = projectIdToAdditionalPayeeSecondarySales[projectId];
-        additionalPayeePercentage = projectIdToAdditionalPayeeSecondarySalesPercentage[
+        ProjectFinance storage projectFinance = projectIdToFinancials[
             projectId
         ];
-        royaltyFeeByID = projectIdToSecondaryMarketRoyaltyPercentage[projectId];
+        additionalPayeePercentage = projectFinance
+            .additionalPayeeSecondarySalesPercentage;
+        royaltyFeeByID = projectFinance.secondaryMarketRoyaltyPercentage;
     }
 
     /**
@@ -1078,12 +1100,13 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     {
         uint256 projectId = _tokenId / ONE_MILLION;
         // load values into memory
-        uint256 royaltyPercentageForArtistAndAdditional = projectIdToSecondaryMarketRoyaltyPercentage[
-                projectId
-            ];
-        uint256 additionalPayeePercentage = projectIdToAdditionalPayeeSecondarySalesPercentage[
-                projectId
-            ];
+        ProjectFinance storage projectFinance = projectIdToFinancials[
+            projectId
+        ];
+        uint256 royaltyPercentageForArtistAndAdditional = projectFinance
+            .secondaryMarketRoyaltyPercentage;
+        uint256 additionalPayeePercentage = projectFinance
+            .additionalPayeeSecondarySalesPercentage;
         // calculate BPS = percentage * 100
         uint256 artistBPS = (100 - additionalPayeePercentage) *
             royaltyPercentageForArtistAndAdditional;
@@ -1166,7 +1189,8 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         uint256 projectFunds = _price - artblocksRevenue_;
         additionalPayeePrimaryRevenue_ =
             (projectFunds *
-                projectIdToAdditionalPayeePrimarySalesPercentage[_projectId]) /
+                projectIdToFinancials[_projectId]
+                    .additionalPayeePrimarySalesPercentage) /
             100;
         artistRevenue_ = projectFunds - additionalPayeePrimaryRevenue_;
         // set addresses from storage
