@@ -244,7 +244,7 @@ describe("MinterMerkleV1", async function () {
         ethers.utils.formatUnits(txCost.toString(), "ether").toString(),
         "ETH"
       );
-      expect(compareBN(txCost, ethers.utils.parseEther("0.0206439"), 1)).to.be
+      expect(compareBN(txCost, ethers.utils.parseEther("0.0185667"), 1)).to.be
         .true;
     });
 
@@ -286,7 +286,7 @@ describe("MinterMerkleV1", async function () {
         "ETH"
       );
       // the following is not much more than the gas cost with a very small allowlist
-      expect(compareBN(txCost, ethers.utils.parseEther("0.0214727"), 1)).to.be
+      expect(compareBN(txCost, ethers.utils.parseEther("0.0193937"), 1)).to.be
         .true;
     });
   });
