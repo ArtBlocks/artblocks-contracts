@@ -104,7 +104,7 @@ describe("GenArt721CoreV1 Integration", async function () {
       ).to.equal(ethers.utils.parseEther("0.8971167"));
       expect(
         (await this.accounts.user.getBalance()).sub(ownerBalance)
-      ).to.equal(ethers.utils.parseEther("1.0361817").mul("-1")); // spent 1 ETH
+      ).to.equal(ethers.utils.parseEther("1.0361882").mul("-1")); // spent 1 ETH
     });
 
     it("can create a token then funds distributed (with additional payee) [ @skip-on-coverage ]", async function () {
@@ -151,7 +151,7 @@ describe("GenArt721CoreV1 Integration", async function () {
       ).to.equal(ethers.utils.parseEther("0.09"));
       expect(
         (await this.accounts.user.getBalance()).sub(ownerBalance)
-      ).to.equal(ethers.utils.parseEther("1.0375547").mul("-1")); // spent 1 ETH
+      ).to.equal(ethers.utils.parseEther("1.0375612").mul("-1")); // spent 1 ETH
       expect(
         (await this.accounts.artist.getBalance()).sub(artistBalance)
       ).to.equal(ethers.utils.parseEther("0.8002491"));
@@ -201,7 +201,7 @@ describe("GenArt721CoreV1 Integration", async function () {
       ).to.equal(ethers.utils.parseEther("0.9"));
       expect(
         (await this.accounts.user.getBalance()).sub(ownerBalance)
-      ).to.equal(ethers.utils.parseEther("1.0362942").mul("-1")); // spent 1 ETH
+      ).to.equal(ethers.utils.parseEther("1.0363007").mul("-1")); // spent 1 ETH
       expect(
         (await this.accounts.artist.getBalance()).sub(artistBalance)
       ).to.equal(ethers.utils.parseEther("0.0097509").mul("-1"));

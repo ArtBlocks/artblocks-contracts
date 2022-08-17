@@ -160,7 +160,7 @@ describe("MinterSetPriceV0_V1Core", async function () {
         "ETH"
       );
 
-      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0368459")); // assuming a cost of 100 GWEI
+      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.036859")); // assuming a cost of 100 GWEI
     });
   });
 
