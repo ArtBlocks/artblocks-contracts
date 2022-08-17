@@ -82,6 +82,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         uint24 invocations;
         uint24 maxInvocations;
         uint24 scriptCount;
+        // max uint64 ~= 1.8e19 sec ~= 570 billion years
         uint64 completedTimestamp;
         bool active;
         bool paused;
