@@ -7,7 +7,7 @@ import "../interfaces/0.8.x/IGenArt721CoreContractV1.sol";
 
 import "@openzeppelin-4.5/contracts/utils/Strings.sol";
 
-import "@openzeppelin-4.5/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
+import "@openzeppelin-4.5/contracts/token/ERC721/ERC721.sol";
 
 pragma solidity 0.8.9;
 
@@ -17,7 +17,7 @@ pragma solidity 0.8.9;
  * @dev conforms to V1 and V2_PBAB interfaces
  */
 contract GenArt721CoreV2_PRTNR is
-    ERC721Enumerable,
+    ERC721,
     IGenArt721CoreV2_PBAB,
     IGenArt721CoreContractV1
 {
