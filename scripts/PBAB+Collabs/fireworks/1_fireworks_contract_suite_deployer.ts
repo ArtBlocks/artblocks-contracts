@@ -9,11 +9,12 @@ import { createPBABBucket } from "../../util/aws_s3";
 // CONFIG BEGINS HERE
 // TODO: Update and verify the below configuration items before deploying!
 //////////////////////////////////////////////////////////////////////////////
-const pbabTokenName = "Fireworks by Samsung";
+const pbabTokenName = "Samsung Bespoke Collection";
 const pbabTokenTicker = "FIREWORKS";
 const pbabTransferAddress = "0xC4FEeF2F8EcA740c5C04dfc4D9946878100993e9";
 const rendererProviderAddress = "0xC4FEeF2F8EcA740c5C04dfc4D9946878100993e9";
-const randomizerContractAddress = "0x7ba972189ED3C527847170453fC108707F62755a";
+const randomizerContractAddress = "0x088098f7438773182b703625c4128aff85fcffc4"; // mainnet
+// const randomizerContractAddress = "0x7ba972189ED3C527847170453fC108707F62755a"; // ropsten
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG ENDS HERE
 //////////////////////////////////////////////////////////////////////////////
