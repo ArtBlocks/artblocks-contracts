@@ -1142,7 +1142,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
             royaltyPercentageForArtistAndAdditional;
         uint256 artblocksBPS = artblocksSecondarySalesBPS;
         // populate arrays
-        uint256 payeeCount = 0;
+        uint256 payeeCount;
         if (artistBPS > 0) {
             recipients[payeeCount] = projectIdToArtistAddress[projectId];
             bps[payeeCount++] = artistBPS;
