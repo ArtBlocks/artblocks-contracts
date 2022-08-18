@@ -18,6 +18,7 @@ import "@openzeppelin-4.7/contracts/token/ERC721/ERC721.sol";
  */
 contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     uint256 constant ONE_MILLION = 1_000_000;
+    uint24 constant ONE_MILLION_UINT24 = 1_000_000;
     uint256 constant FOUR_WEEKS_IN_SECONDS = 2_419_200;
 
     // generic platform event fields
@@ -78,6 +79,13 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     IAdminACLV0 public adminACLContract;
 
     struct Project {
+        uint24 invocations;
+        uint24 maxInvocations;
+        uint24 scriptCount;
+        // max uint64 ~= 1.8e19 sec ~= 570 billion years
+        uint64 completedTimestamp;
+        bool active;
+        bool paused;
         string name;
         string artist;
         string description;
@@ -87,14 +95,8 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         string scriptType;
         string scriptTypeVersion;
         string aspectRatio;
-        uint256 invocations;
-        uint256 maxInvocations;
-        mapping(uint256 => string) scripts;
-        uint256 scriptCount;
         string ipfsHash;
-        bool active;
-        bool paused;
-        uint256 completedTimestamp;
+        mapping(uint256 => string) scripts;
     }
 
     mapping(uint256 => Project) projects;
@@ -229,9 +231,9 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         require(msg.sender == minterContract, "Must mint from minter contract");
 
         // load invocations into memory
-        uint256 invocationsBefore = projects[_projectId].invocations;
-        uint256 invocationsAfter = invocationsBefore + 1;
-        uint256 maxInvocations = projects[_projectId].maxInvocations;
+        uint24 invocationsBefore = projects[_projectId].invocations;
+        uint24 invocationsAfter = invocationsBefore + 1;
+        uint24 maxInvocations = projects[_projectId].maxInvocations;
 
         require(
             invocationsBefore < maxInvocations,
@@ -568,7 +570,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         projectIdToArtistAddress[projectId] = _artistAddress;
         projects[projectId].name = _projectName;
         projects[projectId].paused = true;
-        projects[projectId].maxInvocations = ONE_MILLION;
+        projects[projectId].maxInvocations = ONE_MILLION_UINT24;
 
         nextProjectId = nextProjectId + 1;
         emit ProjectUpdated(projectId, FIELD_PROJECT_CREATED);
@@ -686,7 +688,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      */
     function updateProjectMaxInvocations(
         uint256 _projectId,
-        uint256 _maxInvocations
+        uint24 _maxInvocations
     ) external onlyArtist(_projectId) {
         // checks
         require(
@@ -1321,7 +1323,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @notice Internal function to complete a project.
      */
     function _completeProject(uint256 _projectId) internal {
-        projects[_projectId].completedTimestamp = block.timestamp;
+        projects[_projectId].completedTimestamp = uint64(block.timestamp);
         emit ProjectUpdated(_projectId, FIELD_PROJECT_COMPLETED);
     }
 
