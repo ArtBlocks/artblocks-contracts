@@ -459,16 +459,28 @@ contract MinterDAExpV2 is ReentrancyGuard, IFilteredMinterV0 {
         require(block.timestamp > _timestampStart, "Auction not yet started");
         require(_priceDecayHalfLifeSeconds > 0, "Only configured auctions");
         uint256 decayedPrice = _projectConfig.startPrice;
-        uint256 elapsedTimeSeconds = block.timestamp - _timestampStart;
+        uint256 elapsedTimeSeconds;
+        unchecked {
+            // already checked that block.timestamp > _timestampStart above
+            elapsedTimeSeconds = block.timestamp - _timestampStart;
+        }
         // Divide by two (via bit-shifting) for the number of entirely completed
         // half-lives that have elapsed since auction start time.
-        decayedPrice >>= elapsedTimeSeconds / _priceDecayHalfLifeSeconds;
+        unchecked {
+            // already required _priceDecayHalfLifeSeconds > 0
+            decayedPrice >>= elapsedTimeSeconds / _priceDecayHalfLifeSeconds;
+        }
         // Perform a linear interpolation between partial half-life points, to
         // approximate the current place on a perfect exponential decay curve.
-        decayedPrice -=
-            (decayedPrice * (elapsedTimeSeconds % _priceDecayHalfLifeSeconds)) /
-            _priceDecayHalfLifeSeconds /
-            2;
+        unchecked {
+            // value of expression is provably always less than decayedPrice,
+            // given that no underflow not possible
+            decayedPrice -=
+                (decayedPrice *
+                    (elapsedTimeSeconds % _priceDecayHalfLifeSeconds)) /
+                _priceDecayHalfLifeSeconds /
+                2;
+        }
         if (decayedPrice < _basePrice) {
             // Price may not decay below stay `basePrice`.
             return _basePrice;
