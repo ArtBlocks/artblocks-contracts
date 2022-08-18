@@ -238,7 +238,12 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
 
         // load invocations into memory
         uint24 invocationsBefore = projects[_projectId].invocations;
-        uint24 invocationsAfter = invocationsBefore + 1;
+        uint24 invocationsAfter;
+        unchecked {
+            // invocationsBefore guaranteed <= maxInvocations <= 1_000_000,
+            // 1_000_000 << max uint24, so no possible overflow
+            invocationsAfter = invocationsBefore + 1;
+        }
         uint24 maxInvocations = projects[_projectId].maxInvocations;
 
         require(
@@ -259,7 +264,14 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         // EFFECTS
         // increment project's invocations
         projects[_projectId].invocations = invocationsAfter;
-        uint256 thisTokenId = (_projectId * ONE_MILLION) + invocationsBefore;
+        uint256 thisTokenId;
+        unchecked {
+            // invocationsBefore is uint24 << max uint256. In production use,
+            // _projectId * ONE_MILLION must be << max uint256, otherwise
+            // tokenIdToProjectId function become invalid.
+            // Therefore, no risk of overflow
+            thisTokenId = (_projectId * ONE_MILLION) + invocationsBefore;
+        }
 
         // mark project as completed if hit max invocations
         if (invocationsAfter == maxInvocations) {
@@ -1170,20 +1182,30 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     {
         // calculate revenues
         artblocksRevenue_ = (_price * artblocksPrimarySalesPercentage) / 100;
-        uint256 projectFunds = _price - artblocksRevenue_;
+        uint256 projectFunds;
+        unchecked {
+            // artblocksRevenue_ is always <=25, so guaranteed to never underflow
+            projectFunds = _price - artblocksRevenue_;
+        }
         additionalPayeePrimaryRevenue_ =
             (projectFunds *
                 projectIdToAdditionalPayeePrimarySalesPercentage[_projectId]) /
             100;
-        artistRevenue_ = projectFunds - additionalPayeePrimaryRevenue_;
+        unchecked {
+            // projectIdToAdditionalPayeePrimarySalesPercentage is always
+            // <=100, so guaranteed to never underflow
+            artistRevenue_ = projectFunds - additionalPayeePrimaryRevenue_;
+        }
         // set addresses from storage
         artblocksAddress_ = artblocksPrimarySalesAddress;
-        artistAddress_ = artistRevenue_ > 0
-            ? projectIdToArtistAddress[_projectId]
-            : payable(address(0));
-        additionalPayeePrimaryAddress_ = additionalPayeePrimaryRevenue_ > 0
-            ? projectIdToAdditionalPayeePrimarySales[_projectId]
-            : payable(address(0));
+        if (artistRevenue_ > 0) {
+            artistAddress_ = projectIdToArtistAddress[_projectId];
+        }
+        if (additionalPayeePrimaryRevenue_ > 0) {
+            additionalPayeePrimaryAddress_ = projectIdToAdditionalPayeePrimarySales[
+                _projectId
+            ];
+        }
     }
 
     /**
