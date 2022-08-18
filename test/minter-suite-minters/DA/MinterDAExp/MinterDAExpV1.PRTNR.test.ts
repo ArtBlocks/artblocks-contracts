@@ -26,7 +26,7 @@ import { MinterDAV1V2_Common } from "../MinterDAV1V2.common";
  * These tests intended to ensure this Filtered Minter integrates properly with
  * V1 core contract.
  */
-describe("MinterDAExpV1_V1Core", async function () {
+describe("MinterDAExpV1_V1PRTNRCore", async function () {
   beforeEach(async function () {
     // standard accounts and constants
     this.accounts = await getAccounts();
@@ -131,7 +131,7 @@ describe("MinterDAExpV1_V1Core", async function () {
         "ETH"
       );
 
-      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0228514")); // assuming a cost of 100 GWEI
+      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0196845")); // assuming a cost of 100 GWEI
     });
   });
 });

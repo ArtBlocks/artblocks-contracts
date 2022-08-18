@@ -155,7 +155,7 @@ describe("MinterSetPriceV1_V2PRTNRCore", async function () {
         "ETH"
       );
 
-      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0216789")); // assuming a cost of 100 GWEI
+      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.018512")); // assuming a cost of 100 GWEI
     });
   });
 
