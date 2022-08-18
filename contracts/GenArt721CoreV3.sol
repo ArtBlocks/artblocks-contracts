@@ -240,6 +240,8 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         uint24 invocationsBefore = projects[_projectId].invocations;
         uint24 invocationsAfter;
         unchecked {
+            // invocationsBefore guaranteed <= maxInvocations <= 1_000_000,
+            // 1_000_000 << max uint24, so no possible overflow
             invocationsAfter = invocationsBefore + 1;
         }
         uint24 maxInvocations = projects[_projectId].maxInvocations;
@@ -264,6 +266,10 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         projects[_projectId].invocations = invocationsAfter;
         uint256 thisTokenId;
         unchecked {
+            // invocationsBefore is uint24 << max uint256. In production use,
+            // _projectId * ONE_MILLION must be << max uint256, otherwise
+            // tokenIdToProjectId function become invalid.
+            // Therefore, no risk of overflow
             thisTokenId = (_projectId * ONE_MILLION) + invocationsBefore;
         }
 
