@@ -64,3 +64,5 @@ _This document is intended to document and explain the Art Blocks Core V3 change
 - Update randomizer interface for V3 core contract
 - Only allow artists to reduce the number of maximum invocations
   - Remove any unnecessary minter logic accordingly
+- Enable admin to forever prevent new projects from being added to the core contract
+  - This is to prevent the core contract from being used to mint new projects if Art Blocks ever changes to a new contract in the future.
