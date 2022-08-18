@@ -42,22 +42,20 @@ contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
 
     uint256 constant ONE_MILLION = 1_000_000;
 
+    struct ProjectConfig {
+        bool maxHasBeenInvoked;
+        bool priceIsConfigured;
+        bool mintLimiterDisabled;
+        uint24 maxInvocations;
+        uint256 pricePerTokenInWei;
+    }
+
+    mapping(uint256 => ProjectConfig) public projectConfig;
+
     /// projectId => merkle root
     mapping(uint256 => bytes32) public projectMerkleRoot;
     /// projectId => purchaser address => has purchased one or more mints
     mapping(uint256 => mapping(address => bool)) public projectMintedBy;
-    /// projectId => are addresses limited to one mint each?
-    /// (default behavior is limit one mint per address)
-    mapping(uint256 => bool) public projectMintLimiterDisabled;
-    /// projectId => has project reached its maximum number of invocations?
-    mapping(uint256 => bool) public projectMaxHasBeenInvoked;
-    /// projectId => project's maximum number of invocations
-    /// optionally synced with core contract value, for gas optimization
-    mapping(uint256 => uint256) public projectMaxInvocations;
-    /// projectId => price per token in wei - supersedes any defined core price
-    mapping(uint256 => uint256) private projectIdToPricePerTokenInWei;
-    /// projectId => price per token has been configured on this minter
-    mapping(uint256 => bool) private projectIdToPriceIsConfigured;
 
     modifier onlyArtist(uint256 _projectId) {
         require(
@@ -144,13 +142,13 @@ contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         external
         onlyArtist(_projectId)
     {
-        projectMintLimiterDisabled[_projectId] = !projectMintLimiterDisabled[
-            _projectId
-        ];
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        _projectConfig.mintLimiterDisabled = !_projectConfig
+            .mintLimiterDisabled;
         emit ConfigValueSet(
             _projectId,
             CONFIG_MINT_LIMITER_DISABLED,
-            projectMintLimiterDisabled[_projectId]
+            _projectConfig.mintLimiterDisabled
         );
     }
 
@@ -170,7 +168,7 @@ contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
             _projectId
         );
         // update storage with results
-        projectMaxInvocations[_projectId] = maxInvocations;
+        projectConfig[_projectId].maxInvocations = uint24(maxInvocations);
     }
 
     /**
@@ -186,6 +184,44 @@ contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
     }
 
     /**
+     * @notice projectId => has project reached its maximum number of
+     * invocations?
+     */
+    function projectMaxHasBeenInvoked(uint256 _projectId)
+        external
+        view
+        returns (bool)
+    {
+        return projectConfig[_projectId].maxHasBeenInvoked;
+    }
+
+    /**
+     * @notice projectId => project's maximum number of invocations.
+     * Optionally synced with core contract value, for gas optimization.
+     * @dev this value my be out-of-sync with the core contract's value, and is
+     * used for gas-minimization of failed mint transactions only.
+     */
+    function projectMaxInvocations(uint256 _projectId)
+        external
+        view
+        returns (uint256)
+    {
+        return uint256(projectConfig[_projectId].maxInvocations);
+    }
+
+    /**
+     * @notice projectId => may a single address mint multiple times?
+     * (default behavior is limit one mint per address)
+     */
+    function projectMintLimiterDisabled(uint256 _projectId)
+        external
+        view
+        returns (bool)
+    {
+        return projectConfig[_projectId].mintLimiterDisabled;
+    }
+
+    /**
      * @notice Updates this minter's price per token of project `_projectId`
      * to be '_pricePerTokenInWei`, in Wei.
      * This price supersedes any legacy core contract price per token value.
@@ -194,8 +230,8 @@ contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         uint256 _projectId,
         uint256 _pricePerTokenInWei
     ) external onlyArtist(_projectId) {
-        projectIdToPricePerTokenInWei[_projectId] = _pricePerTokenInWei;
-        projectIdToPriceIsConfigured[_projectId] = true;
+        projectConfig[_projectId].pricePerTokenInWei = _pricePerTokenInWei;
+        projectConfig[_projectId].priceIsConfigured = true;
         emit PricePerTokenInWeiUpdated(_projectId, _pricePerTokenInWei);
     }
 
@@ -265,13 +301,14 @@ contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         bytes32[] calldata _proof
     ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
         require(
-            !projectMaxHasBeenInvoked[_projectId],
+            !_projectConfig.maxHasBeenInvoked,
             "Maximum number of invocations reached"
         );
 
         // load price of token into memory
-        uint256 _pricePerTokenInWei = projectIdToPricePerTokenInWei[_projectId];
+        uint256 _pricePerTokenInWei = _projectConfig.pricePerTokenInWei;
 
         require(
             msg.value >= _pricePerTokenInWei,
@@ -279,10 +316,7 @@ contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         );
 
         // require artist to have configured price of token on this minter
-        require(
-            projectIdToPriceIsConfigured[_projectId],
-            "Price not configured"
-        );
+        require(_projectConfig.priceIsConfigured, "Price not configured");
 
         // no contract filter since Merkle tree controls allowed addresses
 
@@ -295,7 +329,7 @@ contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         // limit mints per address by project
         if (projectMintedBy[_projectId][msg.sender]) {
             require(
-                projectMintLimiterDisabled[_projectId],
+                _projectConfig.mintLimiterDisabled,
                 "Limit 1 mint per address"
             );
         } else {
@@ -308,10 +342,8 @@ contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         // okay if this underflows because if statement will always eval false.
         // this is only for gas optimization (core enforces maxInvocations).
         unchecked {
-            if (
-                tokenId % ONE_MILLION == projectMaxInvocations[_projectId] - 1
-            ) {
-                projectMaxHasBeenInvoked[_projectId] = true;
+            if (tokenId % ONE_MILLION == _projectConfig.maxInvocations - 1) {
+                _projectConfig.maxHasBeenInvoked = true;
             }
         }
 
@@ -411,8 +443,9 @@ contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
             address currencyAddress
         )
     {
-        isConfigured = projectIdToPriceIsConfigured[_projectId];
-        tokenPriceInWei = projectIdToPricePerTokenInWei[_projectId];
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        isConfigured = _projectConfig.priceIsConfigured;
+        tokenPriceInWei = _projectConfig.pricePerTokenInWei;
         currencySymbol = "ETH";
         currencyAddress = address(0);
     }

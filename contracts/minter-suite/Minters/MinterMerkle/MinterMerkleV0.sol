@@ -45,7 +45,7 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
     mapping(uint256 => bytes32) public projectMerkleRoot;
     /// projectId => purchaser address => has purchased one or more mints
     mapping(uint256 => mapping(address => bool)) public projectMintedBy;
-    /// projectId => are addresses limited to one mint each?
+    /// projectId => may a single address mint multiple times?
     /// (default behavior is limit one mint per address)
     mapping(uint256 => bool) public projectMintLimiterDisabled;
     /// projectId => has project reached its maximum number of invocations?
