@@ -200,14 +200,14 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @param _randomizerContract Randomizer contract.
      * @param _adminACLContract Address of admin access control contract, to be
      * set as contract owner.
-     * @param _nextProjectId The initial next project ID.
+     * @param _startingProjectId The initial next project ID.
      */
     constructor(
         string memory _tokenName,
         string memory _tokenSymbol,
         address _randomizerContract,
         address _adminACLContract,
-        uint256 _nextProjectId
+        uint256 _startingProjectId
     ) ERC721(_tokenName, _tokenSymbol) {
         _updateArtblocksPrimarySalesAddress(msg.sender);
         _updateArtblocksSecondarySalesAddress(msg.sender);
@@ -215,7 +215,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         // set AdminACL management contract as owner
         _transferOwnership(_adminACLContract);
         // initialize next project ID
-        nextProjectId = _nextProjectId;
+        nextProjectId = _startingProjectId;
         emit PlatformUpdated(FIELD_NEXT_PROJECT_ID);
     }
 
