@@ -118,4 +118,28 @@ describe("GenArt721CoreV3 Contract Configure", async function () {
         .updateArtblocksSecondarySalesBPS(0);
     });
   });
+
+  describe("forbidNewProjects", function () {
+    it("prevents new projects from being added after calling", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .forbidNewProjects();
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .addProject("shouldn't work", this.accounts.artist.address),
+        "New projects forbidden"
+      );
+    });
+
+    it("does allow to call forbidNewProjects more than once", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .forbidNewProjects();
+      await expectRevert(
+        this.genArt721Core.connect(this.accounts.deployer).forbidNewProjects(),
+        "Already forbidden"
+      );
+    });
+  });
 });

@@ -182,6 +182,17 @@ describe("GenArt721CoreV3 Events", async function () {
         .to.emit(this.genArt721Core, "PlatformUpdated")
         .withArgs(ethers.utils.formatBytes32String("artblocksSecondaryBPS"));
     });
+
+    it("emits 'newProjectsForbidden'", async function () {
+      // emits expected event arg(s)
+      expect(
+        await this.genArt721Core
+          .connect(this.accounts.deployer)
+          .forbidNewProjects()
+      )
+        .to.emit(this.genArt721Core, "PlatformUpdated")
+        .withArgs(ethers.utils.formatBytes32String("newProjectsForbidden"));
+    });
   });
 
   describe("ProjectUpdated", function () {
