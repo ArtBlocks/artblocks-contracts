@@ -430,9 +430,17 @@ contract MinterDALinV2 is ReentrancyGuard, IFilteredMinterV0 {
             require(_timestampEnd > 0, "Only configured auctions");
             return _basePrice;
         }
-        uint256 elapsedTime = block.timestamp - _timestampStart;
-        uint256 duration = _timestampEnd - _timestampStart;
-        uint256 startToEndDiff = _startPrice - _basePrice;
+        uint256 elapsedTime;
+        uint256 duration;
+        uint256 startToEndDiff;
+        unchecked {
+            // already checked that block.timestamp > _timestampStart
+            elapsedTime = block.timestamp - _timestampStart;
+            // _timestampEnd > _timestampStart enforced during assignment
+            duration = _timestampEnd - _timestampStart;
+            // _startPrice > _basePrice enforced during assignment
+            startToEndDiff = _startPrice - _basePrice;
+        }
         return _startPrice - ((elapsedTime * startToEndDiff) / duration);
     }
 
