@@ -80,17 +80,33 @@ describe("GenArt721CoreV3 Events", async function () {
   });
 
   describe("PlatformUpdated", function () {
-    it("emits artblocksPrimarySalesAddress", async function () {
-      // emits expected event arg(s)
-      expect(
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .updateArtblocksPrimarySalesAddress(this.accounts.artist.address)
-      )
-        .to.emit(this.genArt721Core, "PlatformUpdated")
-        .withArgs(
-          ethers.utils.formatBytes32String("artblocksPrimarySalesAddress")
+    it("emits nextProjectId", async function () {
+      // typical expect event helper doesn't work for deploy event
+      const contractFactory = await ethers.getContractFactory(
+        "GenArt721CoreV3"
+      );
+      const tx = await contractFactory
+        .connect(this.accounts.deployer)
+        .deploy(
+          "name",
+          "symbol",
+          constants.ZERO_ADDRESS,
+          constants.ZERO_ADDRESS,
+          365
         );
+      const receipt = await tx.deployTransaction.wait();
+      // target event is the last log
+      const targetLog = receipt.logs[receipt.logs.length - 1];
+      // expect "PlatformUpdated" event as log 0
+      expect(targetLog.topics[0]).to.be.equal(
+        ethers.utils.keccak256(
+          ethers.utils.toUtf8Bytes("PlatformUpdated(bytes32)")
+        )
+      );
+      // expect field to be bytes32 of "nextProjectId" as log 1
+      expect(targetLog.topics[1]).to.be.equal(
+        ethers.utils.formatBytes32String("nextProjectId")
+      );
     });
 
     it("emits artblocksSecondarySalesAddress", async function () {

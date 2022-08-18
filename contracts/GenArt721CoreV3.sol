@@ -133,7 +133,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     address public minterContract;
 
     /// next project ID to be created
-    uint256 public nextProjectId = 0;
+    uint256 public nextProjectId;
 
     /// version & type of this core contract
     string public constant coreVersion = "v3.0.0";
