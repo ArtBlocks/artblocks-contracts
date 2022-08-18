@@ -23,6 +23,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
 
     // generic platform event fields
     bytes32 constant FIELD_NEXT_PROJECT_ID = "nextProjectId";
+    bytes32 constant FIELD_NEW_PROJECTS_FORBIDDEN = "newProjectsForbidden";
     bytes32 constant FIELD_ARTBLOCKS_PRIMARY_SALES_ADDRESS =
         "artblocksPrimarySalesAddress";
     bytes32 constant FIELD_ARTBLOCKS_SECONDARY_SALES_ADDRESS =
@@ -133,7 +134,11 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     address public minterContract;
 
     /// next project ID to be created
-    uint256 public nextProjectId;
+    uint248 private _nextProjectId;
+
+    /// bool indicating if adding new projects is forbidden;
+    /// default behavior is to allow new projects
+    bool public newProjectsForbidden;
 
     /// version & type of this core contract
     string public constant coreVersion = "v3.0.0";
@@ -584,14 +589,27 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         string memory _projectName,
         address payable _artistAddress
     ) external onlyAdminACL(this.addProject.selector) {
-        uint256 projectId = nextProjectId;
+        require(!newProjectsForbidden, "New projects forbidden");
+        uint256 projectId = _nextProjectId;
         projectIdToArtistAddress[projectId] = _artistAddress;
         projects[projectId].name = _projectName;
         projects[projectId].paused = true;
         projects[projectId].maxInvocations = ONE_MILLION_UINT24;
 
-        nextProjectId = nextProjectId + 1;
+        _nextProjectId = uint248(projectId) + 1;
         emit ProjectUpdated(projectId, FIELD_PROJECT_CREATED);
+    }
+
+    /**
+     * @notice Forever forbids new projects from being added to this contract.
+     */
+    function forbidNewProjects()
+        external
+        onlyAdminACL(this.forbidNewProjects.selector)
+    {
+        require(!newProjectsForbidden, "Already forbidden");
+        newProjectsForbidden = true;
+        emit PlatformUpdated(FIELD_NEW_PROJECTS_FORBIDDEN);
     }
 
     /**
@@ -845,6 +863,13 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     {
         projects[_projectId].projectBaseURI = _newBaseURI;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_BASE_URI);
+    }
+
+    /**
+     * @notice Next project ID to be created on this contract.
+     */
+    function nextProjectId() external view returns (uint256) {
+        return _nextProjectId;
     }
 
     /**
