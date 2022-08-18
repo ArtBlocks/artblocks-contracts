@@ -17,12 +17,15 @@ import {
 } from "../../util/common";
 import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../util/constants";
 
+const numInitialMints = 500;
+const numMintsToAverage = 15;
+
 /**
  * General Gas tests for V1 core.
  * Used to compare and quantify gas differences between V1 and V3+ cores.
  */
 describe("GenArt721CoreV1 Gas Tests", async function () {
-  // increase test timeout from 20s to 40s due to minting 500 tokens in beforeEach
+  // increase test timeout from 20s to 40s due to minting numInitialMints tokens in beforeEach
   this.timeout(40000);
 
   beforeEach(async function () {
@@ -82,8 +85,8 @@ describe("GenArt721CoreV1 Gas Tests", async function () {
       .connect(this.accounts.artist)
       .setMinterForProject(this.projectZero, this.minter.address);
 
-    // mint 500 tokens on project zero to simulate a typical real-world use case
-    for (let i = 0; i < 500; i++) {
+    // mint numInitialMints tokens on project zero to simulate a typical real-world use case
+    for (let i = 0; i < numInitialMints; i++) {
       await this.minter
         .connect(this.accounts.user)
         .purchase(this.projectZero, { value: this.pricePerTokenInWei });
@@ -92,21 +95,29 @@ describe("GenArt721CoreV1 Gas Tests", async function () {
 
   describe("mint gas optimization", function () {
     it("test gas cost of mint on MinterSetPrice [ @skip-on-coverage ]", async function () {
-      // mint
-      const tx = await this.minter
-        .connect(this.accounts.user)
-        .purchase(this.projectZero, { value: this.pricePerTokenInWei });
-      const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
-      console.log(`gas used for mint optimization test: ${receipt.gasUsed}`);
-      const gasCostAt100gwei = receipt.effectiveGasPrice
-        .mul(receipt.gasUsed)
+      // report gas over an average of numMintsToAverage purchases
+      const receipts = [];
+      for (let index = 0; index < numMintsToAverage; index++) {
+        const tx = await this.minter
+          .connect(this.accounts.user)
+          .purchase(this.projectZero, { value: this.pricePerTokenInWei });
+        receipts.push(await ethers.provider.getTransactionReceipt(tx.hash));
+      }
+      const gasUseds = receipts.map((receipt) => receipt.gasUsed);
+      const avgGasUsed = gasUseds
+        .reduce((a, b) => a.add(b))
+        .div(gasUseds.length);
+      console.log(`average gas used for mint optimization test: ${avgGasUsed}`);
+      const avgGasCostAt100gwei = receipts[0].effectiveGasPrice
+        .mul(avgGasUsed)
         .toString();
-      const gasCostAt100gweiInETH = parseFloat(
-        ethers.utils.formatUnits(gasCostAt100gwei, "ether")
+
+      const avgGasCostAt100gweiInETH = parseFloat(
+        ethers.utils.formatUnits(avgGasCostAt100gwei, "ether")
       );
-      const gasCostAt100gweiAt2kUSDPerETH = gasCostAt100gweiInETH * 2e3;
+      const avgGasCostAt100gweiAt2kUSDPerETH = avgGasCostAt100gweiInETH * 2e3;
       console.log(
-        `=USD at 100gwei, $2k USD/ETH: \$${gasCostAt100gweiAt2kUSDPerETH}`
+        `=USD at 100gwei, $2k USD/ETH: \$${avgGasCostAt100gweiAt2kUSDPerETH}`
       );
     });
 
@@ -146,21 +157,29 @@ describe("GenArt721CoreV1 Gas Tests", async function () {
         this.startTime + this.auctionStartTimeOffset,
       ]);
 
-      // mint
-      const tx = await this.minterDAExp
-        .connect(this.accounts.user)
-        .purchase(this.projectZero, { value: this.startingPrice });
-      const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
-      console.log(`gas used for mint optimization test: ${receipt.gasUsed}`);
-      const gasCostAt100gwei = receipt.effectiveGasPrice
-        .mul(receipt.gasUsed)
+      // report gas over an average of numMintsToAverage purchases
+      const receipts = [];
+      for (let index = 0; index < numMintsToAverage; index++) {
+        const tx = await this.minterDAExp
+          .connect(this.accounts.user)
+          .purchase(this.projectZero, { value: this.startingPrice });
+        receipts.push(await ethers.provider.getTransactionReceipt(tx.hash));
+      }
+      const gasUseds = receipts.map((receipt) => receipt.gasUsed);
+      const avgGasUsed = gasUseds
+        .reduce((a, b) => a.add(b))
+        .div(gasUseds.length);
+      console.log(`average gas used for mint optimization test: ${avgGasUsed}`);
+      const avgGasCostAt100gwei = receipts[0].effectiveGasPrice
+        .mul(avgGasUsed)
         .toString();
-      const gasCostAt100gweiInETH = parseFloat(
-        ethers.utils.formatUnits(gasCostAt100gwei, "ether")
+
+      const avgGasCostAt100gweiInETH = parseFloat(
+        ethers.utils.formatUnits(avgGasCostAt100gwei, "ether")
       );
-      const gasCostAt100gweiAt2kUSDPerETH = gasCostAt100gweiInETH * 2e3;
+      const avgGasCostAt100gweiAt2kUSDPerETH = avgGasCostAt100gweiInETH * 2e3;
       console.log(
-        `=USD at 100gwei, $2k USD/ETH: \$${gasCostAt100gweiAt2kUSDPerETH}`
+        `=USD at 100gwei, $2k USD/ETH: \$${avgGasCostAt100gweiAt2kUSDPerETH}`
       );
     });
   });

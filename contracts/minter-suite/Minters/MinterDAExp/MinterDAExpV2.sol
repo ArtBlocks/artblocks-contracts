@@ -51,11 +51,17 @@ contract MinterDAExpV2 is ReentrancyGuard, IFilteredMinterV0 {
 
     uint256 constant ONE_MILLION = 1_000_000;
 
-    /// projectId => has project reached its maximum number of invocations?
-    mapping(uint256 => bool) public projectMaxHasBeenInvoked;
-    /// projectId => project's maximum number of invocations
-    /// optionally synced with core contract value, for gas optimization
-    mapping(uint256 => uint256) public projectMaxInvocations;
+    struct ProjectConfig {
+        bool maxHasBeenInvoked;
+        uint24 maxInvocations;
+        // max uint64 ~= 1.8e19 sec ~= 570 billion years
+        uint64 timestampStart;
+        uint64 priceDecayHalfLifeSeconds;
+        uint256 startPrice;
+        uint256 basePrice;
+    }
+
+    mapping(uint256 => ProjectConfig) public projectConfig;
 
     /// Minimum price decay half life: price must decay with a half life of at
     /// least this amount (must cut in half at least every N seconds).
@@ -63,15 +69,6 @@ contract MinterDAExpV2 is ReentrancyGuard, IFilteredMinterV0 {
     /// Maximum price decay half life: price may decay with a half life of no
     /// more than this amount (may cut in half at no more than every N seconds).
     uint256 public maximumPriceDecayHalfLifeSeconds = 3600; // 60 minutes
-
-    /// projectId => auction parameters
-    mapping(uint256 => AuctionParameters) public projectAuctionParameters;
-    struct AuctionParameters {
-        uint256 timestampStart;
-        uint256 priceDecayHalfLifeSeconds;
-        uint256 startPrice;
-        uint256 basePrice;
-    }
 
     // modifier to restrict access to only AdminACL allowed calls
     // @dev defers which ACL contract is used to the core contract
@@ -134,7 +131,7 @@ contract MinterDAExpV2 is ReentrancyGuard, IFilteredMinterV0 {
             _projectId
         );
         // update storage with results
-        projectMaxInvocations[_projectId] = maxInvocations;
+        projectConfig[_projectId].maxInvocations = uint24(maxInvocations);
     }
 
     /**
@@ -147,6 +144,54 @@ contract MinterDAExpV2 is ReentrancyGuard, IFilteredMinterV0 {
         onlyArtist(_projectId)
     {
         revert("Action not supported");
+    }
+
+    /**
+     * @notice projectId => has project reached its maximum number of
+     * invocations?
+     */
+    function projectMaxHasBeenInvoked(uint256 _projectId)
+        external
+        view
+        returns (bool)
+    {
+        return projectConfig[_projectId].maxHasBeenInvoked;
+    }
+
+    /**
+     * @notice projectId => project's maximum number of invocations.
+     * Optionally synced with core contract value, for gas optimization.
+     * @dev this value my be out-of-sync with the core contract's value, and is
+     * used for gas-minimization of failed mint transactions only.
+     */
+    function projectMaxInvocations(uint256 _projectId)
+        external
+        view
+        returns (uint256)
+    {
+        return uint256(projectConfig[_projectId].maxInvocations);
+    }
+
+    /**
+     * @notice projectId => auction parameters
+     */
+    function projectAuctionParameters(uint256 _projectId)
+        external
+        view
+        returns (
+            uint256 timestampStart,
+            uint256 priceDecayHalfLifeSeconds,
+            uint256 startPrice,
+            uint256 basePrice
+        )
+    {
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        return (
+            _projectConfig.timestampStart,
+            _projectConfig.priceDecayHalfLifeSeconds,
+            _projectConfig.startPrice,
+            _projectConfig.basePrice
+        );
     }
 
     /**
@@ -200,12 +245,11 @@ contract MinterDAExpV2 is ReentrancyGuard, IFilteredMinterV0 {
         uint256 _startPrice,
         uint256 _basePrice
     ) external onlyArtist(_projectId) {
-        AuctionParameters memory auctionParams = projectAuctionParameters[
-            _projectId
-        ];
+        // CHECKS
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
         require(
-            auctionParams.timestampStart == 0 ||
-                block.timestamp < auctionParams.timestampStart,
+            _projectConfig.timestampStart == 0 ||
+                block.timestamp < _projectConfig.timestampStart,
             "No modifications mid-auction"
         );
         require(
@@ -222,12 +266,14 @@ contract MinterDAExpV2 is ReentrancyGuard, IFilteredMinterV0 {
                     maximumPriceDecayHalfLifeSeconds),
             "Price decay half life must fall between min and max allowable values"
         );
-        projectAuctionParameters[_projectId] = AuctionParameters(
-            _auctionTimestampStart,
-            _priceDecayHalfLifeSeconds,
-            _startPrice,
-            _basePrice
+        // EFFECTS
+        _projectConfig.timestampStart = uint64(_auctionTimestampStart);
+        _projectConfig.priceDecayHalfLifeSeconds = uint64(
+            _priceDecayHalfLifeSeconds
         );
+        _projectConfig.startPrice = _startPrice;
+        _projectConfig.basePrice = _basePrice;
+
         emit SetAuctionDetails(
             _projectId,
             _auctionTimestampStart,
@@ -247,7 +293,13 @@ contract MinterDAExpV2 is ReentrancyGuard, IFilteredMinterV0 {
         external
         onlyCoreAdminACL(this.resetAuctionDetails.selector)
     {
-        delete projectAuctionParameters[_projectId];
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        // reset to initial values
+        _projectConfig.timestampStart = 0;
+        _projectConfig.priceDecayHalfLifeSeconds = 0;
+        _projectConfig.startPrice = 0;
+        _projectConfig.basePrice = 0;
+
         emit ResetAuctionDetails(_projectId);
     }
 
@@ -302,8 +354,9 @@ contract MinterDAExpV2 is ReentrancyGuard, IFilteredMinterV0 {
         returns (uint256 tokenId)
     {
         // CHECKS
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
         require(
-            !projectMaxHasBeenInvoked[_projectId],
+            !_projectConfig.maxHasBeenInvoked,
             "Maximum number of invocations reached"
         );
 
@@ -320,10 +373,8 @@ contract MinterDAExpV2 is ReentrancyGuard, IFilteredMinterV0 {
         // okay if this underflows because if statement will always eval false.
         // this is only for gas optimization (core enforces maxInvocations).
         unchecked {
-            if (
-                tokenId % ONE_MILLION == projectMaxInvocations[_projectId] - 1
-            ) {
-                projectMaxHasBeenInvoked[_projectId] = true;
+            if (tokenId % ONE_MILLION == _projectConfig.maxInvocations - 1) {
+                _projectConfig.maxHasBeenInvoked = true;
             }
         }
 
@@ -397,36 +448,42 @@ contract MinterDAExpV2 is ReentrancyGuard, IFilteredMinterV0 {
      * decay, `_priceDecayHalfLifeSeconds`.
      */
     function _getPrice(uint256 _projectId) private view returns (uint256) {
-        AuctionParameters memory auctionParams = projectAuctionParameters[
-            _projectId
-        ];
-        require(
-            block.timestamp > auctionParams.timestampStart,
-            "Auction not yet started"
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        // move parameters to memory if used more than once
+        uint256 _timestampStart = uint256(_projectConfig.timestampStart);
+        uint256 _priceDecayHalfLifeSeconds = uint256(
+            _projectConfig.priceDecayHalfLifeSeconds
         );
-        require(
-            auctionParams.priceDecayHalfLifeSeconds > 0,
-            "Only configured auctions"
-        );
-        uint256 decayedPrice = auctionParams.startPrice;
-        uint256 elapsedTimeSeconds = block.timestamp -
-            auctionParams.timestampStart;
+        uint256 _basePrice = _projectConfig.basePrice;
+
+        require(block.timestamp > _timestampStart, "Auction not yet started");
+        require(_priceDecayHalfLifeSeconds > 0, "Only configured auctions");
+        uint256 decayedPrice = _projectConfig.startPrice;
+        uint256 elapsedTimeSeconds;
+        unchecked {
+            // already checked that block.timestamp > _timestampStart above
+            elapsedTimeSeconds = block.timestamp - _timestampStart;
+        }
         // Divide by two (via bit-shifting) for the number of entirely completed
         // half-lives that have elapsed since auction start time.
-        decayedPrice >>=
-            elapsedTimeSeconds /
-            auctionParams.priceDecayHalfLifeSeconds;
+        unchecked {
+            // already required _priceDecayHalfLifeSeconds > 0
+            decayedPrice >>= elapsedTimeSeconds / _priceDecayHalfLifeSeconds;
+        }
         // Perform a linear interpolation between partial half-life points, to
         // approximate the current place on a perfect exponential decay curve.
-        decayedPrice -=
-            (decayedPrice *
-                (elapsedTimeSeconds %
-                    auctionParams.priceDecayHalfLifeSeconds)) /
-            auctionParams.priceDecayHalfLifeSeconds /
-            2;
-        if (decayedPrice < auctionParams.basePrice) {
+        unchecked {
+            // value of expression is provably always less than decayedPrice,
+            // so no underflow is possible
+            decayedPrice -=
+                (decayedPrice *
+                    (elapsedTimeSeconds % _priceDecayHalfLifeSeconds)) /
+                _priceDecayHalfLifeSeconds /
+                2;
+        }
+        if (decayedPrice < _basePrice) {
             // Price may not decay below stay `basePrice`.
-            return auctionParams.basePrice;
+            return _basePrice;
         }
         return decayedPrice;
     }
@@ -455,15 +512,14 @@ contract MinterDAExpV2 is ReentrancyGuard, IFilteredMinterV0 {
             address currencyAddress
         )
     {
-        AuctionParameters memory auctionParams = projectAuctionParameters[
-            _projectId
-        ];
-        isConfigured = (auctionParams.startPrice > 0);
-        if (block.timestamp <= auctionParams.timestampStart) {
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
+
+        isConfigured = (_projectConfig.startPrice > 0);
+        if (block.timestamp <= _projectConfig.timestampStart) {
             // Provide a reasonable value for `tokenPriceInWei` when it would
             // otherwise revert, using the starting price before auction starts.
-            tokenPriceInWei = auctionParams.startPrice;
-        } else if (auctionParams.startPrice == 0) {
+            tokenPriceInWei = _projectConfig.startPrice;
+        } else if (_projectConfig.startPrice == 0) {
             // In the case of unconfigured auction, return price of zero when
             // it would otherwise revert
             tokenPriceInWei = 0;

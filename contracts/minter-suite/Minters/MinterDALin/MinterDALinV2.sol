@@ -50,22 +50,20 @@ contract MinterDALinV2 is ReentrancyGuard, IFilteredMinterV0 {
 
     uint256 constant ONE_MILLION = 1_000_000;
 
-    /// projectId => has project reached its maximum number of invocations?
-    mapping(uint256 => bool) public projectMaxHasBeenInvoked;
-    /// projectId => project's maximum number of invocations
-    /// optionally synced with core contract value, for gas optimization
-    mapping(uint256 => uint256) public projectMaxInvocations;
-    /// Minimum auction length in seconds
-    uint256 public minimumAuctionLengthSeconds = 3600;
-
-    /// projectId => auction parameters
-    mapping(uint256 => AuctionParameters) public projectAuctionParameters;
-    struct AuctionParameters {
-        uint256 timestampStart;
-        uint256 timestampEnd;
+    struct ProjectConfig {
+        bool maxHasBeenInvoked;
+        uint24 maxInvocations;
+        // max uint64 ~= 1.8e19 sec ~= 570 billion years
+        uint64 timestampStart;
+        uint64 timestampEnd;
         uint256 startPrice;
         uint256 basePrice;
     }
+
+    mapping(uint256 => ProjectConfig) public projectConfig;
+
+    /// Minimum auction length in seconds
+    uint256 public minimumAuctionLengthSeconds = 3600;
 
     // modifier to restrict access to only AdminACL allowed calls
     // @dev defers which ACL contract is used to the core contract
@@ -128,7 +126,7 @@ contract MinterDALinV2 is ReentrancyGuard, IFilteredMinterV0 {
             _projectId
         );
         // update storage with results
-        projectMaxInvocations[_projectId] = maxInvocations;
+        projectConfig[_projectId].maxInvocations = uint24(maxInvocations);
     }
 
     /**
@@ -141,6 +139,54 @@ contract MinterDALinV2 is ReentrancyGuard, IFilteredMinterV0 {
         onlyArtist(_projectId)
     {
         revert("Action not supported");
+    }
+
+    /**
+     * @notice projectId => has project reached its maximum number of
+     * invocations?
+     */
+    function projectMaxHasBeenInvoked(uint256 _projectId)
+        external
+        view
+        returns (bool)
+    {
+        return projectConfig[_projectId].maxHasBeenInvoked;
+    }
+
+    /**
+     * @notice projectId => project's maximum number of invocations.
+     * Optionally synced with core contract value, for gas optimization.
+     * @dev this value my be out-of-sync with the core contract's value, and is
+     * used for gas-minimization of failed mint transactions only.
+     */
+    function projectMaxInvocations(uint256 _projectId)
+        external
+        view
+        returns (uint256)
+    {
+        return uint256(projectConfig[_projectId].maxInvocations);
+    }
+
+    /**
+     * @notice projectId => auction parameters
+     */
+    function projectAuctionParameters(uint256 _projectId)
+        external
+        view
+        returns (
+            uint256 timestampStart,
+            uint256 timestampEnd,
+            uint256 startPrice,
+            uint256 basePrice
+        )
+    {
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        return (
+            _projectConfig.timestampStart,
+            _projectConfig.timestampEnd,
+            _projectConfig.startPrice,
+            _projectConfig.basePrice
+        );
     }
 
     /**
@@ -171,12 +217,11 @@ contract MinterDALinV2 is ReentrancyGuard, IFilteredMinterV0 {
         uint256 _startPrice,
         uint256 _basePrice
     ) external onlyArtist(_projectId) {
-        AuctionParameters memory auctionParams = projectAuctionParameters[
-            _projectId
-        ];
+        // CHECKS
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
         require(
-            auctionParams.timestampStart == 0 ||
-                block.timestamp < auctionParams.timestampStart,
+            _projectConfig.timestampStart == 0 ||
+                block.timestamp < _projectConfig.timestampStart,
             "No modifications mid-auction"
         );
         require(
@@ -196,12 +241,11 @@ contract MinterDALinV2 is ReentrancyGuard, IFilteredMinterV0 {
             _startPrice > _basePrice,
             "Auction start price must be greater than auction end price"
         );
-        projectAuctionParameters[_projectId] = AuctionParameters(
-            _auctionTimestampStart,
-            _auctionTimestampEnd,
-            _startPrice,
-            _basePrice
-        );
+        // EFFECTS
+        _projectConfig.timestampStart = uint64(_auctionTimestampStart);
+        _projectConfig.timestampEnd = uint64(_auctionTimestampEnd);
+        _projectConfig.startPrice = _startPrice;
+        _projectConfig.basePrice = _basePrice;
         emit SetAuctionDetails(
             _projectId,
             _auctionTimestampStart,
@@ -221,7 +265,13 @@ contract MinterDALinV2 is ReentrancyGuard, IFilteredMinterV0 {
         external
         onlyCoreAdminACL(this.resetAuctionDetails.selector)
     {
-        delete projectAuctionParameters[_projectId];
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        // reset to initial values
+        _projectConfig.timestampStart = 0;
+        _projectConfig.timestampEnd = 0;
+        _projectConfig.startPrice = 0;
+        _projectConfig.basePrice = 0;
+
         emit ResetAuctionDetails(_projectId);
     }
 
@@ -276,8 +326,9 @@ contract MinterDALinV2 is ReentrancyGuard, IFilteredMinterV0 {
         returns (uint256 tokenId)
     {
         // CHECKS
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
         require(
-            !projectMaxHasBeenInvoked[_projectId],
+            !_projectConfig.maxHasBeenInvoked,
             "Maximum number of invocations reached"
         );
 
@@ -294,10 +345,8 @@ contract MinterDALinV2 is ReentrancyGuard, IFilteredMinterV0 {
         // okay if this underflows because if statement will always eval false.
         // this is only for gas optimization (core enforces maxInvocations).
         unchecked {
-            if (
-                tokenId % ONE_MILLION == projectMaxInvocations[_projectId] - 1
-            ) {
-                projectMaxHasBeenInvoked[_projectId] = true;
+            if (tokenId % ONE_MILLION == _projectConfig.maxInvocations - 1) {
+                _projectConfig.maxHasBeenInvoked = true;
             }
         }
 
@@ -369,25 +418,30 @@ contract MinterDALinV2 is ReentrancyGuard, IFilteredMinterV0 {
      * @return current price of token in Wei
      */
     function _getPrice(uint256 _projectId) private view returns (uint256) {
-        AuctionParameters memory auctionParams = projectAuctionParameters[
-            _projectId
-        ];
-        require(
-            block.timestamp > auctionParams.timestampStart,
-            "Auction not yet started"
-        );
-        if (block.timestamp >= auctionParams.timestampEnd) {
-            require(auctionParams.timestampEnd > 0, "Only configured auctions");
-            return auctionParams.basePrice;
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        // move parameters to memory if used more than once
+        uint256 _timestampStart = uint256(_projectConfig.timestampStart);
+        uint256 _timestampEnd = uint256(_projectConfig.timestampEnd);
+        uint256 _startPrice = _projectConfig.startPrice;
+        uint256 _basePrice = _projectConfig.basePrice;
+
+        require(block.timestamp > _timestampStart, "Auction not yet started");
+        if (block.timestamp >= _timestampEnd) {
+            require(_timestampEnd > 0, "Only configured auctions");
+            return _basePrice;
         }
-        uint256 elapsedTime = block.timestamp - auctionParams.timestampStart;
-        uint256 duration = auctionParams.timestampEnd -
-            auctionParams.timestampStart;
-        uint256 startToEndDiff = auctionParams.startPrice -
-            auctionParams.basePrice;
-        return
-            auctionParams.startPrice -
-            ((elapsedTime * startToEndDiff) / duration);
+        uint256 elapsedTime;
+        uint256 duration;
+        uint256 startToEndDiff;
+        unchecked {
+            // already checked that block.timestamp > _timestampStart
+            elapsedTime = block.timestamp - _timestampStart;
+            // _timestampEnd > _timestampStart enforced during assignment
+            duration = _timestampEnd - _timestampStart;
+            // _startPrice > _basePrice enforced during assignment
+            startToEndDiff = _startPrice - _basePrice;
+        }
+        return _startPrice - ((elapsedTime * startToEndDiff) / duration);
     }
 
     /**
@@ -414,15 +468,14 @@ contract MinterDALinV2 is ReentrancyGuard, IFilteredMinterV0 {
             address currencyAddress
         )
     {
-        AuctionParameters memory auctionParams = projectAuctionParameters[
-            _projectId
-        ];
-        isConfigured = (auctionParams.startPrice > 0);
-        if (block.timestamp <= auctionParams.timestampStart) {
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
+
+        isConfigured = (_projectConfig.startPrice > 0);
+        if (block.timestamp <= _projectConfig.timestampStart) {
             // Provide a reasonable value for `tokenPriceInWei` when it would
             // otherwise revert, using the starting price before auction starts.
-            tokenPriceInWei = auctionParams.startPrice;
-        } else if (auctionParams.timestampEnd == 0) {
+            tokenPriceInWei = _projectConfig.startPrice;
+        } else if (_projectConfig.timestampEnd == 0) {
             // In the case of unconfigured auction, return price of zero when
             // it would otherwise revert
             tokenPriceInWei = 0;

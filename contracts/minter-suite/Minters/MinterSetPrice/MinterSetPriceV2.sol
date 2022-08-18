@@ -32,15 +32,14 @@ contract MinterSetPriceV2 is ReentrancyGuard, IFilteredMinterV0 {
 
     uint256 constant ONE_MILLION = 1_000_000;
 
-    /// projectId => has project reached its maximum number of invocations?
-    mapping(uint256 => bool) public projectMaxHasBeenInvoked;
-    /// projectId => project's maximum number of invocations
-    /// optionally synced with core contract value, for gas optimization
-    mapping(uint256 => uint256) public projectMaxInvocations;
-    /// projectId => price per token in wei - supersedes any defined core price
-    mapping(uint256 => uint256) private projectIdToPricePerTokenInWei;
-    /// projectId => price per token has been configured on this minter
-    mapping(uint256 => bool) private projectIdToPriceIsConfigured;
+    struct ProjectConfig {
+        bool maxHasBeenInvoked;
+        bool priceIsConfigured;
+        uint24 maxInvocations;
+        uint256 pricePerTokenInWei;
+    }
+
+    mapping(uint256 => ProjectConfig) public projectConfig;
 
     modifier onlyArtist(uint256 _projectId) {
         require(
@@ -89,7 +88,7 @@ contract MinterSetPriceV2 is ReentrancyGuard, IFilteredMinterV0 {
             _projectId
         );
         // update storage with results
-        projectMaxInvocations[_projectId] = maxInvocations;
+        projectConfig[_projectId].maxInvocations = uint24(maxInvocations);
     }
 
     /**
@@ -105,6 +104,32 @@ contract MinterSetPriceV2 is ReentrancyGuard, IFilteredMinterV0 {
     }
 
     /**
+     * @notice projectId => has project reached its maximum number of
+     * invocations?
+     */
+    function projectMaxHasBeenInvoked(uint256 _projectId)
+        external
+        view
+        returns (bool)
+    {
+        return projectConfig[_projectId].maxHasBeenInvoked;
+    }
+
+    /**
+     * @notice projectId => project's maximum number of invocations.
+     * Optionally synced with core contract value, for gas optimization.
+     * @dev this value my be out-of-sync with the core contract's value, and is
+     * used for gas-minimization of failed mint transactions only.
+     */
+    function projectMaxInvocations(uint256 _projectId)
+        external
+        view
+        returns (uint256)
+    {
+        return uint256(projectConfig[_projectId].maxInvocations);
+    }
+
+    /**
      * @notice Updates this minter's price per token of project `_projectId`
      * to be '_pricePerTokenInWei`, in Wei.
      * This price supersedes any legacy core contract price per token value.
@@ -113,8 +138,9 @@ contract MinterSetPriceV2 is ReentrancyGuard, IFilteredMinterV0 {
         uint256 _projectId,
         uint256 _pricePerTokenInWei
     ) external onlyArtist(_projectId) {
-        projectIdToPricePerTokenInWei[_projectId] = _pricePerTokenInWei;
-        projectIdToPriceIsConfigured[_projectId] = true;
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        _projectConfig.pricePerTokenInWei = _pricePerTokenInWei;
+        _projectConfig.priceIsConfigured = true;
         emit PricePerTokenInWeiUpdated(_projectId, _pricePerTokenInWei);
     }
 
@@ -169,19 +195,17 @@ contract MinterSetPriceV2 is ReentrancyGuard, IFilteredMinterV0 {
         returns (uint256 tokenId)
     {
         // CHECKS
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
         require(
-            !projectMaxHasBeenInvoked[_projectId],
+            !_projectConfig.maxHasBeenInvoked,
             "Maximum number of invocations reached"
         );
 
         // require artist to have configured price of token on this minter
-        require(
-            projectIdToPriceIsConfigured[_projectId],
-            "Price not configured"
-        );
+        require(_projectConfig.priceIsConfigured, "Price not configured");
 
         // load price of token into memory
-        uint256 _pricePerTokenInWei = projectIdToPricePerTokenInWei[_projectId];
+        uint256 _pricePerTokenInWei = _projectConfig.pricePerTokenInWei;
 
         require(
             msg.value >= _pricePerTokenInWei,
@@ -194,10 +218,8 @@ contract MinterSetPriceV2 is ReentrancyGuard, IFilteredMinterV0 {
         // okay if this underflows because if statement will always eval false.
         // this is only for gas optimization (core enforces maxInvocations).
         unchecked {
-            if (
-                tokenId % ONE_MILLION == projectMaxInvocations[_projectId] - 1
-            ) {
-                projectMaxHasBeenInvoked[_projectId] = true;
+            if (tokenId % ONE_MILLION == _projectConfig.maxInvocations - 1) {
+                _projectConfig.maxHasBeenInvoked = true;
             }
         }
 
@@ -282,8 +304,9 @@ contract MinterSetPriceV2 is ReentrancyGuard, IFilteredMinterV0 {
             address currencyAddress
         )
     {
-        isConfigured = projectIdToPriceIsConfigured[_projectId];
-        tokenPriceInWei = projectIdToPricePerTokenInWei[_projectId];
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        isConfigured = _projectConfig.priceIsConfigured;
+        tokenPriceInWei = _projectConfig.pricePerTokenInWei;
         currencySymbol = "ETH";
         currencyAddress = address(0);
     }

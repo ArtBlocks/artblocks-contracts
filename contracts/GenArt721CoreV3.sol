@@ -18,9 +18,12 @@ import "@openzeppelin-4.7/contracts/token/ERC721/ERC721.sol";
  */
 contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     uint256 constant ONE_MILLION = 1_000_000;
+    uint24 constant ONE_MILLION_UINT24 = 1_000_000;
     uint256 constant FOUR_WEEKS_IN_SECONDS = 2_419_200;
 
     // generic platform event fields
+    bytes32 constant FIELD_NEXT_PROJECT_ID = "nextProjectId";
+    bytes32 constant FIELD_NEW_PROJECTS_FORBIDDEN = "newProjectsForbidden";
     bytes32 constant FIELD_ARTBLOCKS_PRIMARY_SALES_ADDRESS =
         "artblocksPrimarySalesAddress";
     bytes32 constant FIELD_ARTBLOCKS_SECONDARY_SALES_ADDRESS =
@@ -78,6 +81,13 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     IAdminACLV0 public adminACLContract;
 
     struct Project {
+        uint24 invocations;
+        uint24 maxInvocations;
+        uint24 scriptCount;
+        // max uint64 ~= 1.8e19 sec ~= 570 billion years
+        uint64 completedTimestamp;
+        bool active;
+        bool paused;
         string name;
         string artist;
         string description;
@@ -87,14 +97,8 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         string scriptType;
         string scriptTypeVersion;
         string aspectRatio;
-        uint256 invocations;
-        uint256 maxInvocations;
-        mapping(uint256 => string) scripts;
-        uint256 scriptCount;
         string ipfsHash;
-        bool active;
-        bool paused;
-        uint256 completedTimestamp;
+        mapping(uint256 => string) scripts;
     }
 
     mapping(uint256 => Project) projects;
@@ -130,7 +134,11 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     address public minterContract;
 
     /// next project ID to be created
-    uint256 public nextProjectId = 0;
+    uint248 private _nextProjectId;
+
+    /// bool indicating if adding new projects is forbidden;
+    /// default behavior is to allow new projects
+    bool public newProjectsForbidden;
 
     /// version & type of this core contract
     string public constant coreVersion = "v3.0.0";
@@ -197,18 +205,25 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @param _randomizerContract Randomizer contract.
      * @param _adminACLContract Address of admin access control contract, to be
      * set as contract owner.
+     * @param _startingProjectId The initial next project ID.
+     * @dev _startingProjectId should be set to a value much, much less than
+     * max(uint248) to avoid overflow when adding to it.
      */
     constructor(
         string memory _tokenName,
         string memory _tokenSymbol,
         address _randomizerContract,
-        address _adminACLContract
+        address _adminACLContract,
+        uint256 _startingProjectId
     ) ERC721(_tokenName, _tokenSymbol) {
         _updateArtblocksPrimarySalesAddress(msg.sender);
         _updateArtblocksSecondarySalesAddress(msg.sender);
         _updateRandomizerAddress(_randomizerContract);
         // set AdminACL management contract as owner
         _transferOwnership(_adminACLContract);
+        // initialize next project ID
+        _nextProjectId = uint248(_startingProjectId);
+        emit PlatformUpdated(FIELD_NEXT_PROJECT_ID);
     }
 
     /**
@@ -229,9 +244,14 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         require(msg.sender == minterContract, "Must mint from minter contract");
 
         // load invocations into memory
-        uint256 invocationsBefore = projects[_projectId].invocations;
-        uint256 invocationsAfter = invocationsBefore + 1;
-        uint256 maxInvocations = projects[_projectId].maxInvocations;
+        uint24 invocationsBefore = projects[_projectId].invocations;
+        uint24 invocationsAfter;
+        unchecked {
+            // invocationsBefore guaranteed <= maxInvocations <= 1_000_000,
+            // 1_000_000 << max uint24, so no possible overflow
+            invocationsAfter = invocationsBefore + 1;
+        }
+        uint24 maxInvocations = projects[_projectId].maxInvocations;
 
         require(
             invocationsBefore < maxInvocations,
@@ -251,7 +271,14 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         // EFFECTS
         // increment project's invocations
         projects[_projectId].invocations = invocationsAfter;
-        uint256 thisTokenId = (_projectId * ONE_MILLION) + invocationsBefore;
+        uint256 thisTokenId;
+        unchecked {
+            // invocationsBefore is uint24 << max uint256. In production use,
+            // _projectId * ONE_MILLION must be << max uint256, otherwise
+            // tokenIdToProjectId function become invalid.
+            // Therefore, no risk of overflow
+            thisTokenId = (_projectId * ONE_MILLION) + invocationsBefore;
+        }
 
         // mark project as completed if hit max invocations
         if (invocationsAfter == maxInvocations) {
@@ -564,14 +591,27 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         string memory _projectName,
         address payable _artistAddress
     ) external onlyAdminACL(this.addProject.selector) {
-        uint256 projectId = nextProjectId;
+        require(!newProjectsForbidden, "New projects forbidden");
+        uint256 projectId = _nextProjectId;
         projectIdToArtistAddress[projectId] = _artistAddress;
         projects[projectId].name = _projectName;
         projects[projectId].paused = true;
-        projects[projectId].maxInvocations = ONE_MILLION;
+        projects[projectId].maxInvocations = ONE_MILLION_UINT24;
 
-        nextProjectId = nextProjectId + 1;
+        _nextProjectId = uint248(projectId) + 1;
         emit ProjectUpdated(projectId, FIELD_PROJECT_CREATED);
+    }
+
+    /**
+     * @notice Forever forbids new projects from being added to this contract.
+     */
+    function forbidNewProjects()
+        external
+        onlyAdminACL(this.forbidNewProjects.selector)
+    {
+        require(!newProjectsForbidden, "Already forbidden");
+        newProjectsForbidden = true;
+        emit PlatformUpdated(FIELD_NEW_PROJECTS_FORBIDDEN);
     }
 
     /**
@@ -686,7 +726,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      */
     function updateProjectMaxInvocations(
         uint256 _projectId,
-        uint256 _maxInvocations
+        uint24 _maxInvocations
     ) external onlyArtist(_projectId) {
         // checks
         require(
@@ -825,6 +865,13 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     {
         projects[_projectId].projectBaseURI = _newBaseURI;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_BASE_URI);
+    }
+
+    /**
+     * @notice Next project ID to be created on this contract.
+     */
+    function nextProjectId() external view returns (uint256) {
+        return _nextProjectId;
     }
 
     /**
@@ -1162,20 +1209,30 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     {
         // calculate revenues
         artblocksRevenue_ = (_price * artblocksPrimarySalesPercentage) / 100;
-        uint256 projectFunds = _price - artblocksRevenue_;
+        uint256 projectFunds;
+        unchecked {
+            // artblocksRevenue_ is always <=25, so guaranteed to never underflow
+            projectFunds = _price - artblocksRevenue_;
+        }
         additionalPayeePrimaryRevenue_ =
             (projectFunds *
                 projectIdToAdditionalPayeePrimarySalesPercentage[_projectId]) /
             100;
-        artistRevenue_ = projectFunds - additionalPayeePrimaryRevenue_;
+        unchecked {
+            // projectIdToAdditionalPayeePrimarySalesPercentage is always
+            // <=100, so guaranteed to never underflow
+            artistRevenue_ = projectFunds - additionalPayeePrimaryRevenue_;
+        }
         // set addresses from storage
         artblocksAddress_ = artblocksPrimarySalesAddress;
-        artistAddress_ = artistRevenue_ > 0
-            ? projectIdToArtistAddress[_projectId]
-            : payable(address(0));
-        additionalPayeePrimaryAddress_ = additionalPayeePrimaryRevenue_ > 0
-            ? projectIdToAdditionalPayeePrimarySales[_projectId]
-            : payable(address(0));
+        if (artistRevenue_ > 0) {
+            artistAddress_ = projectIdToArtistAddress[_projectId];
+        }
+        if (additionalPayeePrimaryRevenue_ > 0) {
+            additionalPayeePrimaryAddress_ = projectIdToAdditionalPayeePrimarySales[
+                _projectId
+            ];
+        }
     }
 
     /**
@@ -1321,7 +1378,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @notice Internal function to complete a project.
      */
     function _completeProject(uint256 _projectId) internal {
-        projects[_projectId].completedTimestamp = block.timestamp;
+        projects[_projectId].completedTimestamp = uint64(block.timestamp);
         emit ProjectUpdated(_projectId, FIELD_PROJECT_COMPLETED);
     }
 
