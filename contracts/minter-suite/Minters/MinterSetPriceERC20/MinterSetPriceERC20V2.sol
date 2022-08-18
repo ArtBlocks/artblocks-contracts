@@ -34,19 +34,21 @@ contract MinterSetPriceERC20V2 is ReentrancyGuard, IFilteredMinterV0 {
 
     uint256 constant ONE_MILLION = 1_000_000;
 
-    /// projectId => has project reached its maximum number of invocations?
-    mapping(uint256 => bool) public projectMaxHasBeenInvoked;
-    /// projectId => project's maximum number of invocations
-    /// optionally synced with core contract value, for gas optimization
-    mapping(uint256 => uint256) public projectMaxInvocations;
-    /// projectId => price per token in wei - supersedes any defined core price
-    mapping(uint256 => uint256) private projectIdToPricePerTokenInWei;
-    /// projectId => price per token has been configured on this minter
-    mapping(uint256 => bool) private projectIdToPriceIsConfigured;
-    /// projectId => currency symbol - supersedes any defined core value
-    mapping(uint256 => string) private projectIdToCurrencySymbol;
-    /// projectId => currency address - supersedes any defined core value
-    mapping(uint256 => address) private projectIdToCurrencyAddress;
+    struct ProjectConfig {
+        bool maxHasBeenInvoked;
+        bool priceIsConfigured;
+        uint24 maxInvocations;
+        address currencyAddress;
+        uint256 pricePerTokenInWei;
+        string currencySymbol;
+    }
+
+    mapping(uint256 => ProjectConfig) public projectConfig;
+
+    // /// projectId => currency symbol - supersedes any defined core value
+    // mapping(uint256 => string) private projectIdToCurrencySymbol;
+    // /// projectId => currency address - supersedes any defined core value
+    // mapping(uint256 => address) private projectIdToCurrencyAddress;
 
     modifier onlyArtist(uint256 _projectId) {
         require(
@@ -90,7 +92,7 @@ contract MinterSetPriceERC20V2 is ReentrancyGuard, IFilteredMinterV0 {
         view
         returns (uint256 balance)
     {
-        balance = IERC20(projectIdToCurrencyAddress[_projectId]).balanceOf(
+        balance = IERC20(projectConfig[_projectId].currencyAddress).balanceOf(
             msg.sender
         );
         return balance;
@@ -108,10 +110,10 @@ contract MinterSetPriceERC20V2 is ReentrancyGuard, IFilteredMinterV0 {
         view
         returns (uint256 remaining)
     {
-        remaining = IERC20(projectIdToCurrencyAddress[_projectId]).allowance(
-            msg.sender,
-            address(this)
-        );
+        remaining = IERC20(projectConfig[_projectId].currencyAddress).allowance(
+                msg.sender,
+                address(this)
+            );
         return remaining;
     }
 
@@ -131,7 +133,7 @@ contract MinterSetPriceERC20V2 is ReentrancyGuard, IFilteredMinterV0 {
             _projectId
         );
         // update storage with results
-        projectMaxInvocations[_projectId] = maxInvocations;
+        projectConfig[_projectId].maxInvocations = uint24(maxInvocations);
     }
 
     /**
@@ -147,6 +149,32 @@ contract MinterSetPriceERC20V2 is ReentrancyGuard, IFilteredMinterV0 {
     }
 
     /**
+     * @notice projectId => has project reached its maximum number of
+     * invocations?
+     */
+    function projectMaxHasBeenInvoked(uint256 _projectId)
+        external
+        view
+        returns (bool)
+    {
+        return projectConfig[_projectId].maxHasBeenInvoked;
+    }
+
+    /**
+     * @notice projectId => project's maximum number of invocations.
+     * Optionally synced with core contract value, for gas optimization.
+     * @dev this value my be out-of-sync with the core contract's value, and is
+     * used for gas-minimization of failed mint transactions only.
+     */
+    function projectMaxInvocations(uint256 _projectId)
+        external
+        view
+        returns (uint256)
+    {
+        return uint256(projectConfig[_projectId].maxInvocations);
+    }
+
+    /**
      * @notice Updates this minter's price per token of project `_projectId`
      * to be '_pricePerTokenInWei`, in Wei.
      * This price supersedes any legacy core contract price per token value.
@@ -155,8 +183,8 @@ contract MinterSetPriceERC20V2 is ReentrancyGuard, IFilteredMinterV0 {
         uint256 _projectId,
         uint256 _pricePerTokenInWei
     ) external onlyArtist(_projectId) {
-        projectIdToPricePerTokenInWei[_projectId] = _pricePerTokenInWei;
-        projectIdToPriceIsConfigured[_projectId] = true;
+        projectConfig[_projectId].pricePerTokenInWei = _pricePerTokenInWei;
+        projectConfig[_projectId].priceIsConfigured = true;
         emit PricePerTokenInWeiUpdated(_projectId, _pricePerTokenInWei);
     }
 
@@ -179,8 +207,8 @@ contract MinterSetPriceERC20V2 is ReentrancyGuard, IFilteredMinterV0 {
                 (_currencyAddress == address(0)),
             "ETH is only null address"
         );
-        projectIdToCurrencySymbol[_projectId] = _currencySymbol;
-        projectIdToCurrencyAddress[_projectId] = _currencyAddress;
+        projectConfig[_projectId].currencySymbol = _currencySymbol;
+        projectConfig[_projectId].currencyAddress = _currencyAddress;
         emit ProjectCurrencyInfoUpdated(
             _projectId,
             _currencyAddress,
@@ -239,16 +267,14 @@ contract MinterSetPriceERC20V2 is ReentrancyGuard, IFilteredMinterV0 {
         returns (uint256 tokenId)
     {
         // CHECKS
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
         require(
-            !projectMaxHasBeenInvoked[_projectId],
+            !_projectConfig.maxHasBeenInvoked,
             "Maximum number of invocations reached"
         );
 
         // require artist to have configured price of token on this minter
-        require(
-            projectIdToPriceIsConfigured[_projectId],
-            "Price not configured"
-        );
+        require(_projectConfig.priceIsConfigured, "Price not configured");
 
         // EFFECTS
         tokenId = minterFilter.mint(_to, _projectId, msg.sender);
@@ -256,16 +282,14 @@ contract MinterSetPriceERC20V2 is ReentrancyGuard, IFilteredMinterV0 {
         // okay if this underflows because if statement will always eval false.
         // this is only for gas optimization (core enforces maxInvocations).
         unchecked {
-            if (
-                tokenId % ONE_MILLION == projectMaxInvocations[_projectId] - 1
-            ) {
-                projectMaxHasBeenInvoked[_projectId] = true;
+            if (tokenId % ONE_MILLION == _projectConfig.maxInvocations - 1) {
+                _projectConfig.maxHasBeenInvoked = true;
             }
         }
 
         // INTERACTIONS
-        uint256 _pricePerTokenInWei = projectIdToPricePerTokenInWei[_projectId];
-        address _currencyAddress = projectIdToCurrencyAddress[_projectId];
+        uint256 _pricePerTokenInWei = _projectConfig.pricePerTokenInWei;
+        address _currencyAddress = _projectConfig.currencyAddress;
         if (_currencyAddress != address(0)) {
             require(
                 msg.value == 0,
@@ -417,14 +441,15 @@ contract MinterSetPriceERC20V2 is ReentrancyGuard, IFilteredMinterV0 {
             address currencyAddress
         )
     {
-        isConfigured = projectIdToPriceIsConfigured[_projectId];
-        tokenPriceInWei = projectIdToPricePerTokenInWei[_projectId];
-        currencyAddress = projectIdToCurrencyAddress[_projectId];
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        isConfigured = _projectConfig.priceIsConfigured;
+        tokenPriceInWei = _projectConfig.pricePerTokenInWei;
+        currencyAddress = _projectConfig.currencyAddress;
         if (currencyAddress == address(0)) {
             // defaults to ETH
             currencySymbol = "ETH";
         } else {
-            currencySymbol = projectIdToCurrencySymbol[_projectId];
+            currencySymbol = _projectConfig.currencySymbol;
         }
     }
 }
