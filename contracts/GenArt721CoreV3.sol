@@ -22,6 +22,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     uint256 constant FOUR_WEEKS_IN_SECONDS = 2_419_200;
 
     // generic platform event fields
+    bytes32 constant FIELD_NEXT_PROJECT_ID = "nextProjectId";
     bytes32 constant FIELD_ARTBLOCKS_PRIMARY_SALES_ADDRESS =
         "artblocksPrimarySalesAddress";
     bytes32 constant FIELD_ARTBLOCKS_SECONDARY_SALES_ADDRESS =
@@ -199,18 +200,23 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @param _randomizerContract Randomizer contract.
      * @param _adminACLContract Address of admin access control contract, to be
      * set as contract owner.
+     * @param _nextProjectId The initial next project ID.
      */
     constructor(
         string memory _tokenName,
         string memory _tokenSymbol,
         address _randomizerContract,
-        address _adminACLContract
+        address _adminACLContract,
+        uint256 _nextProjectId
     ) ERC721(_tokenName, _tokenSymbol) {
         _updateArtblocksPrimarySalesAddress(msg.sender);
         _updateArtblocksSecondarySalesAddress(msg.sender);
         _updateRandomizerAddress(_randomizerContract);
         // set AdminACL management contract as owner
         _transferOwnership(_adminACLContract);
+        // initialize next project ID
+        nextProjectId = _nextProjectId;
+        emit PlatformUpdated(FIELD_NEXT_PROJECT_ID);
     }
 
     /**

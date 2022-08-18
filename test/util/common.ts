@@ -115,6 +115,7 @@ export async function deployCoreWithMinterFilter(
       this.symbol,
       randomizer.address,
       adminACL.address,
+      0,
     ]);
     // assign core contract for randomizer to use
     randomizer
