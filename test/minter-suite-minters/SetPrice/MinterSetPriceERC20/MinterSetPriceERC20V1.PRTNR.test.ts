@@ -137,7 +137,7 @@ describe("MinterSetPriceERC20V1_V2PRTNRCore", async function () {
         ethers.utils.formatUnits(txCost, "ether").toString(),
         "ETH"
       );
-      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0227135"));
+      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0227306"));
     });
   });
 
