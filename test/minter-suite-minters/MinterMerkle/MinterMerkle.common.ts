@@ -704,6 +704,38 @@ export const MinterMerkle_Common = async () => {
     });
   });
 
+  describe("projectMintLimiterDisabled", async function () {
+    it("is false by default", async function () {
+      const projectMintLimiterDisabled = await this.minter
+        .connect(this.accounts.user)
+        .projectMintLimiterDisabled(this.projectZero);
+      expect(projectMintLimiterDisabled).to.be.false;
+    });
+
+    it("is true by when toggled", async function () {
+      await this.minter
+        .connect(this.accounts.artist)
+        .toggleProjectMintLimiter(this.projectZero);
+      const projectMintLimiterDisabled = await this.minter
+        .connect(this.accounts.user)
+        .projectMintLimiterDisabled(this.projectZero);
+      expect(projectMintLimiterDisabled).to.be.true;
+    });
+
+    it("is false by when toggled twice", async function () {
+      await this.minter
+        .connect(this.accounts.artist)
+        .toggleProjectMintLimiter(this.projectZero);
+      await this.minter
+        .connect(this.accounts.artist)
+        .toggleProjectMintLimiter(this.projectZero);
+      const projectMintLimiterDisabled = await this.minter
+        .connect(this.accounts.user)
+        .projectMintLimiterDisabled(this.projectZero);
+      expect(projectMintLimiterDisabled).to.be.false;
+    });
+  });
+
   describe("reentrancy attack", async function () {
     it("does not allow reentrant purchaseTo, when mint limiter on", async function () {
       // contract buys are always allowed by default if in merkle tree
