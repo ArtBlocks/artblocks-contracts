@@ -1122,6 +1122,10 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         onlyValidTokenId(_tokenId)
         returns (address payable[] memory recipients, uint256[] memory bps)
     {
+        // initialize arrays with maximum potential length
+        recipients = new address payable[](3);
+        bps = new uint256[](3);
+
         uint256 projectId = _tokenId / ONE_MILLION;
         // load values into memory
         uint256 royaltyPercentageForArtistAndAdditional = projectIdToSecondaryMarketRoyaltyPercentage[
@@ -1137,32 +1141,29 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         uint256 additionalBPS = additionalPayeePercentage *
             royaltyPercentageForArtistAndAdditional;
         uint256 artblocksBPS = artblocksSecondarySalesBPS;
-        // determine length of returned array
-        uint256 returnLength = artistBPS > 0 ? 1 : 0;
-        if (additionalBPS > 0) {
-            returnLength++;
-        }
-        if (artblocksBPS > 0) {
-            returnLength++;
-        }
-        // initialize arrays
-        recipients = new address payable[](returnLength);
-        bps = new uint256[](returnLength);
         // populate arrays
-        uint256 index = 0;
+        uint256 payeeCount;
         if (artistBPS > 0) {
-            recipients[index] = projectIdToArtistAddress[projectId];
-            bps[index++] = artistBPS;
+            recipients[payeeCount] = projectIdToArtistAddress[projectId];
+            bps[payeeCount++] = artistBPS;
         }
         if (additionalBPS > 0) {
-            recipients[index] = projectIdToAdditionalPayeeSecondarySales[
+            recipients[payeeCount] = projectIdToAdditionalPayeeSecondarySales[
                 projectId
             ];
-            bps[index++] = additionalBPS;
+            bps[payeeCount++] = additionalBPS;
         }
         if (artblocksBPS > 0) {
-            recipients[index] = artblocksSecondarySalesAddress;
-            bps[index] = artblocksBPS;
+            recipients[payeeCount] = artblocksSecondarySalesAddress;
+            bps[payeeCount++] = artblocksBPS;
+        }
+        // trim arrays if necessary
+        if (3 > payeeCount) {
+            assembly {
+                let decrease := sub(3, payeeCount)
+                mstore(recipients, sub(mload(recipients), decrease))
+                mstore(bps, sub(mload(bps), decrease))
+            }
         }
         return (recipients, bps);
     }
