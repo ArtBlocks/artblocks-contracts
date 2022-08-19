@@ -7,7 +7,7 @@ import "./IAdminACLV0.sol";
 /// use the Royalty Registry's IManifold interface for token royalties
 import "./IManifold.sol";
 
-interface IGenArt721CoreContractV3 is IManifold {
+interface IGenArt721CoreContractV3 {
     /**
      * @notice Token ID `_tokenId` minted to `_to`.
      */
@@ -40,13 +40,6 @@ interface IGenArt721CoreContractV3 is IManifold {
     );
 
     event AcceptedArtistAddressesAndSplits(uint256 indexed _projectId);
-
-    // version and type of the core contract
-    // coreVersion is a string of the form "0.x.y"
-    function coreVersion() external view returns (string memory);
-
-    // coreType is a string of the form "GenArt721CoreV3"
-    function coreType() external view returns (string memory);
 
     // owner (pre-V3 was named admin) of contract
     // this is expected to be an Admin ACL contract for V3
@@ -87,15 +80,6 @@ interface IGenArt721CoreContractV3 is IManifold {
         view
         returns (address payable);
 
-    function projectIdToAdditionalPayeePrimarySales(uint256 _projectId)
-        external
-        view
-        returns (address payable);
-
-    function projectIdToAdditionalPayeePrimarySalesPercentage(
-        uint256 _projectId
-    ) external view returns (uint256);
-
     // @dev new function in V3
     function getPrimaryRevenueSplits(uint256 _projectId, uint256 _price)
         external
@@ -120,36 +104,6 @@ interface IGenArt721CoreContractV3 is IManifold {
             bool paused,
             bool locked
         );
-
-    // @dev Art Blocks primary sales payment address
-    function artblocksPrimarySalesAddress()
-        external
-        view
-        returns (address payable);
-
-    /**
-     * @notice Backwards-compatible (pre-V3) function returning Art Blocks
-     * primary sales payment address (now called artblocksPrimarySalesAddress).
-     */
-    function artblocksAddress() external view returns (address payable);
-
-    // @dev Percentage of primary sales allocated to Art Blocks
-    function artblocksPrimarySalesPercentage() external view returns (uint256);
-
-    /**
-     * @notice Backwards-compatible (pre-V3) function returning Art Blocks
-     * primary sales percentage (now called artblocksPrimarySalesPercentage).
-     */
-    function artblocksPercentage() external view returns (uint256);
-
-    // @dev Art Blocks secondary sales royalties payment address
-    function artblocksSecondarySalesAddress()
-        external
-        view
-        returns (address payable);
-
-    // @dev Basis points of secondary sales allocated to Art Blocks
-    function artblocksSecondarySalesBPS() external view returns (uint256);
 
     // function to set a token's hash (must be guarded)
     function setTokenHash_8PT(uint256 _tokenId, bytes32 _hash) external;
