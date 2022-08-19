@@ -7,6 +7,16 @@ import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../util/constants";
 
 import { Minter_Common } from "../../Minter.common";
 
+// returns true if exponential auction params are all zero
+const DAExpAuctionParamsAreZero = (auctionParams) => {
+  return (
+    auctionParams.timestampStart == 0 &&
+    auctionParams.priceDecayHalfLifeSeconds == 0 &&
+    auctionParams.startPrice == 0 &&
+    auctionParams.basePrice == 0
+  );
+};
+
 /**
  * These tests are intended to check common DAExp functionality.
  * @dev assumes common BeforeEach to populate accounts, constants, and setup
@@ -212,10 +222,7 @@ export const MinterDAExp_Common = async () => {
       const auctionParams = await this.minter
         .connect(this.accounts.deployer)
         .projectAuctionParameters(this.projectOne);
-      expect(auctionParams.timestampStart).to.be.equal(0);
-      expect(auctionParams.priceDecayHalfLifeSeconds).to.be.equal(0);
-      expect(auctionParams.startPrice).to.be.equal(0);
-      expect(auctionParams.basePrice).to.be.equal(0);
+      expect(DAExpAuctionParamsAreZero(auctionParams)).to.be.true;
     });
 
     it("returns expected values after resetting values", async function () {
@@ -225,10 +232,7 @@ export const MinterDAExp_Common = async () => {
       const auctionParams = await this.minter
         .connect(this.accounts.deployer)
         .projectAuctionParameters(this.projectZero);
-      expect(auctionParams.timestampStart).to.be.equal(0);
-      expect(auctionParams.priceDecayHalfLifeSeconds).to.be.equal(0);
-      expect(auctionParams.startPrice).to.be.equal(0);
-      expect(auctionParams.basePrice).to.be.equal(0);
+      expect(DAExpAuctionParamsAreZero(auctionParams)).to.be.true;
     });
   });
 

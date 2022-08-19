@@ -7,6 +7,16 @@ import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../util/constants";
 
 import { Minter_Common } from "../../Minter.common";
 
+// returns true if exponential auction params are all zero
+const DALinAuctionParamsAreZero = (auctionParams) => {
+  return (
+    auctionParams.timestampStart == 0 &&
+    auctionParams.timestampEnd == 0 &&
+    auctionParams.startPrice == 0 &&
+    auctionParams.basePrice == 0
+  );
+};
+
 /**
  * These tests are intended to check common DALin functionality.
  * @dev assumes common BeforeEach to populate accounts, constants, and setup
@@ -220,10 +230,7 @@ export const MinterDALin_Common = async () => {
       const auctionParams = await this.minter
         .connect(this.accounts.deployer)
         .projectAuctionParameters(this.projectOne);
-      expect(auctionParams.timestampStart).to.be.equal(0);
-      expect(auctionParams.timestampEnd).to.be.equal(0);
-      expect(auctionParams.startPrice).to.be.equal(0);
-      expect(auctionParams.basePrice).to.be.equal(0);
+      expect(DALinAuctionParamsAreZero(auctionParams)).to.be.true;
     });
 
     it("returns expected values after resetting values", async function () {
@@ -233,10 +240,7 @@ export const MinterDALin_Common = async () => {
       const auctionParams = await this.minter
         .connect(this.accounts.deployer)
         .projectAuctionParameters(this.projectZero);
-      expect(auctionParams.timestampStart).to.be.equal(0);
-      expect(auctionParams.timestampEnd).to.be.equal(0);
-      expect(auctionParams.startPrice).to.be.equal(0);
-      expect(auctionParams.basePrice).to.be.equal(0);
+      expect(DALinAuctionParamsAreZero(auctionParams)).to.be.true;
     });
   });
 
