@@ -223,3 +223,7 @@ Your `.env` file should contain a `COINMARKETCAP_API_KEY` param in order to calc
 
 After this config is finished, you'll notice a `usd (avg)` column in the auto-generated table that's printed when you run unit tests with `yarn test`.
 (note: gasPrice is a variable param that reflects the gwei/gas cost of a tx)
+
+## Useful References
+
+[evm.codes](https://www.evm.codes/) - An interactive guide to EVM op-code costs.
