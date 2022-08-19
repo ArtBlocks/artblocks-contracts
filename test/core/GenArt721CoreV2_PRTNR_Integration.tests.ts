@@ -16,7 +16,7 @@ import {
   deployAndGet,
   deployCoreWithMinterFilter,
 } from "../util/common";
-import { GenArt721MinterV1V2_Common } from "./GenArt721CoreV1V2.common";
+import { GenArt721MinterV1V2PRTNR_Common } from "./GenArt721CoreV1V2PRTNR.common";
 
 /**
  * These tests are intended to check integration of the MinterFilter suite with
@@ -30,12 +30,15 @@ describe("GenArt721CoreV2_PRTNR_Integration", async function () {
     this.accounts = await getAccounts();
     await assignDefaultConstants.call(this);
     // deploy and configure minter filter and minter
-    ({ genArt721Core: this.genArt721Core, minterFilter: this.minterFilter } =
-      await deployCoreWithMinterFilter.call(
-        this,
-        "GenArt721CoreV2_PRTNR",
-        "MinterFilterV0"
-      ));
+    ({
+      genArt721Core: this.genArt721Core,
+      minterFilter: this.minterFilter,
+      randomizer: this.randomizer,
+    } = await deployCoreWithMinterFilter.call(
+      this,
+      "GenArt721CoreV2_PRTNR",
+      "MinterFilterV0"
+    ));
     this.minter = await deployAndGet.call(this, "MinterSetPriceV1", [
       this.genArt721Core.address,
       this.minterFilter.address,
@@ -67,7 +70,23 @@ describe("GenArt721CoreV2_PRTNR_Integration", async function () {
   });
 
   describe("common tests", async function () {
-    GenArt721MinterV1V2_Common();
+    GenArt721MinterV1V2PRTNR_Common();
+  });
+
+  describe("initial nextProjectId", function () {
+    it("returns zero when initialized to zero nextProjectId", async function () {
+      // one project has already been added, so should be one
+      expect(await this.genArt721Core.nextProjectId()).to.be.equal(1);
+    });
+
+    it("returns >0 when initialized to >0 nextProjectId", async function () {
+      const differentGenArt721Core = await deployAndGet.call(
+        this,
+        "GenArt721CoreV2_PRTNR",
+        [this.name, this.symbol, this.randomizer.address, 365]
+      );
+      expect(await differentGenArt721Core.nextProjectId()).to.be.equal(365);
+    });
   });
 
   describe("purchase payments and gas", async function () {

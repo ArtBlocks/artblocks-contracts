@@ -8,7 +8,7 @@ import { expect } from "chai";
  * does in fact mint tokens to purchaser.
  * @dev assumes common BeforeEach to populate accounts, constants, and setup
  */
-export const GenArt721MinterV1V2_Common = async () => {
+export const GenArt721MinterV1V2PRTNR_Common = async () => {
   describe("has whitelisted owner", function () {
     it("has an admin", async function () {
       expect(await this.genArt721Core.artblocksAddress()).to.be.equal(

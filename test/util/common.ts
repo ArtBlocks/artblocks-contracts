@@ -82,24 +82,36 @@ export async function deployAndGet(
 }
 
 // utility function to deploy basic randomizer, core, and MinterFilter
-// works for core versions V0, V1, V2, V3
+// works for core versions V0, V1, V2_PRTNR, V3
 export async function deployCoreWithMinterFilter(
   coreContractName: string,
   minterFilterName: string
 ): Promise<CoreWithMinterSuite> {
+  if (coreContractName.endsWith("V2_PBAB")) {
+    throw new Error("V2_PBAB not supported");
+  }
   let randomizer, genArt721Core, minterFilter, adminACL;
+  randomizer = await deployAndGet.call(this, "BasicRandomizer", []);
   if (
     coreContractName.endsWith("V0") ||
     coreContractName.endsWith("V1") ||
-    coreContractName.endsWith("V2") ||
     coreContractName.endsWith("V2_PRTNR")
   ) {
-    randomizer = await deployAndGet.call(this, "BasicRandomizer", []);
-    genArt721Core = await deployAndGet.call(this, coreContractName, [
-      this.name,
-      this.symbol,
-      randomizer.address,
-    ]);
+    if (coreContractName.endsWith("V0") || coreContractName.endsWith("V1")) {
+      genArt721Core = await deployAndGet.call(this, coreContractName, [
+        this.name,
+        this.symbol,
+        randomizer.address,
+      ]);
+    } else {
+      // V2_PRTNR need additional arg for starting project ID
+      genArt721Core = await deployAndGet.call(this, coreContractName, [
+        this.name,
+        this.symbol,
+        randomizer.address,
+        0,
+      ]);
+    }
     minterFilter = await deployAndGet.call(this, minterFilterName, [
       genArt721Core.address,
     ]);
@@ -206,7 +218,8 @@ export async function deployAndGetPBAB(): Promise<T_PBAB> {
   const pbabToken = await PBABFactory.connect(this.accounts.deployer).deploy(
     this.name,
     this.symbol,
-    randomizer.address
+    randomizer.address,
+    0
   );
   const minterFactory = await ethers.getContractFactory("GenArt721Minter_PBAB");
   const pbabMinter = await minterFactory.deploy(pbabToken.address);

@@ -7,6 +7,16 @@ import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../util/constants";
 
 import { Minter_Common } from "../../Minter.common";
 
+// returns true if exponential auction params are all zero
+const DAExpAuctionParamsAreZero = (auctionParams) => {
+  return (
+    auctionParams.timestampStart == 0 &&
+    auctionParams.priceDecayHalfLifeSeconds == 0 &&
+    auctionParams.startPrice == 0 &&
+    auctionParams.basePrice == 0
+  );
+};
+
 /**
  * These tests are intended to check common DAExp functionality.
  * @dev assumes common BeforeEach to populate accounts, constants, and setup
@@ -190,6 +200,71 @@ export const MinterDAExp_Common = async () => {
           ),
         "Auction start price must be greater than auction end price"
       );
+    });
+  });
+
+  describe("projectAuctionParameters", async function () {
+    it("returns expected populated values", async function () {
+      const auctionParams = await this.minter.projectAuctionParameters(
+        this.projectZero
+      );
+      expect(auctionParams.timestampStart).to.be.equal(
+        this.startTime + this.auctionStartTimeOffset
+      );
+      expect(auctionParams.priceDecayHalfLifeSeconds).to.be.equal(
+        this.defaultHalfLife
+      );
+      expect(auctionParams.startPrice).to.be.equal(this.startingPrice);
+      expect(auctionParams.basePrice).to.be.equal(this.basePrice);
+    });
+
+    it("returns expected initial values", async function () {
+      const auctionParams = await this.minter
+        .connect(this.accounts.deployer)
+        .projectAuctionParameters(this.projectOne);
+      expect(DAExpAuctionParamsAreZero(auctionParams)).to.be.true;
+    });
+
+    it("returns expected values after resetting values", async function () {
+      await this.minter
+        .connect(this.accounts.deployer)
+        .resetAuctionDetails(this.projectZero);
+      const auctionParams = await this.minter
+        .connect(this.accounts.deployer)
+        .projectAuctionParameters(this.projectZero);
+      expect(DAExpAuctionParamsAreZero(auctionParams)).to.be.true;
+    });
+  });
+
+  describe("projectMaxHasBeenInvoked", async function () {
+    it("returns expected value for project zero", async function () {
+      const hasMaxBeenInvoked = await this.minter.projectMaxHasBeenInvoked(
+        this.projectZero
+      );
+      expect(hasMaxBeenInvoked).to.be.false;
+    });
+
+    it("returns true after a project is minted out", async function () {
+      // reduce maxInvocations to 2 on core
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectMaxInvocations(this.projectZero, 1);
+      // sync max invocations on minter
+      await this.minter
+        .connect(this.accounts.deployer)
+        .setProjectMaxInvocations(this.projectZero);
+      // mint a token
+      await ethers.provider.send("evm_mine", [
+        this.startTime + this.auctionStartTimeOffset,
+      ]);
+      await this.minter.connect(this.accounts.user).purchase(this.projectZero, {
+        value: this.startingPrice,
+      });
+      // expect projectMaxHasBeenInvoked to be true
+      const hasMaxBeenInvoked = await this.minter.projectMaxHasBeenInvoked(
+        this.projectZero
+      );
+      expect(hasMaxBeenInvoked).to.be.true;
     });
   });
 

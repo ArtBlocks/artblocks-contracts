@@ -12,6 +12,7 @@ import { createPBABBucket } from "./util/aws_s3";
 //////////////////////////////////////////////////////////////////////////////
 const pbabTokenName = "TODO :: Placeholder";
 const pbabTokenTicker = "TODO";
+const startingProjectId = 0; // TODO
 const pbabTransferAddress = "0x000000000000000000000000000000000000dEaD";
 const rendererProviderAddress = "0x000000000000000000000000000000000000dEaD";
 const randomizerAddress = "0x000000000000000000000000000000000000dEaD";
@@ -32,10 +33,11 @@ async function main() {
   const genArt721Core = await genArt721CoreFactory.deploy(
     pbabTokenName,
     pbabTokenTicker,
-    randomizerAddress
+    randomizerAddress,
+    startingProjectId
   );
 
-  await createPBABBucket(pbabTokenName);
+  await createPBABBucket(pbabTokenName, networkName);
 
   await genArt721Core.deployed();
   console.log(`GenArt721Core deployed at ${genArt721Core.address}`);
@@ -102,7 +104,7 @@ async function main() {
   const standardVerify = "yarn hardhat verify";
   console.log(`Verify GenArt721CoreV2 deployment with:`);
   console.log(
-    `${standardVerify} --network ${networkName} ${genArt721Core.address} "${pbabTokenName}" "${pbabTokenTicker}" ${randomizerAddress}`
+    `${standardVerify} --network ${networkName} ${genArt721Core.address} "${pbabTokenName}" "${pbabTokenTicker}" ${randomizerAddress} ${startingProjectId}`
   );
   console.log(`Verify GenArt721Minter deployment with:`);
   console.log(

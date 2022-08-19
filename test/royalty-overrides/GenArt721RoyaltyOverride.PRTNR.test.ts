@@ -25,7 +25,7 @@ const assertRoyaltiesResponse = async (
  * @notice This ensures responses from a flagship royalty override are as
  * expected when integrating with a GenArt721CoreV2_PRTNR core contract.
  */
-describe("GenArt721RoyaltyOverride", async function () {
+describe("GenArt721RoyaltyOverride_PRTNR", async function () {
   const name = "Non Fungible Token";
   const symbol = "NFT";
 
@@ -72,7 +72,7 @@ describe("GenArt721RoyaltyOverride", async function () {
     );
     this.tokenA = await artblocksFactory
       .connect(adminA)
-      .deploy(name, symbol, this.randomizer.address);
+      .deploy(name, symbol, this.randomizer.address, 0);
 
     // add projects for artists 0 and 1
     await this.tokenA
@@ -159,7 +159,7 @@ describe("GenArt721RoyaltyOverride", async function () {
     // deploy second core contract with two more projects
     this.tokenB = await artblocksFactory
       .connect(adminB)
-      .deploy(name, symbol, this.randomizer.address);
+      .deploy(name, symbol, this.randomizer.address, 0);
 
     // add projects for artists 0 and 1
     await this.tokenB

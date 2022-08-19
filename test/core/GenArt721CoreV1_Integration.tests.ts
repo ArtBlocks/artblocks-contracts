@@ -15,7 +15,7 @@ import {
   deployAndGet,
   deployCoreWithMinterFilter,
 } from "../util/common";
-import { GenArt721MinterV1V2_Common } from "./GenArt721CoreV1V2.common";
+import { GenArt721MinterV1V2PRTNR_Common } from "./GenArt721CoreV1V2PRTNR.common";
 
 /**
  * These tests are intended to check integration of the MinterFilter suite
@@ -66,7 +66,7 @@ describe("GenArt721CoreV1 Integration", async function () {
   });
 
   describe("common tests", async function () {
-    GenArt721MinterV1V2_Common();
+    GenArt721MinterV1V2PRTNR_Common();
   });
 
   describe("purchase payments and gas", async function () {
