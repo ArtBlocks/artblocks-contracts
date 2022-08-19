@@ -218,7 +218,8 @@ export async function deployAndGetPBAB(): Promise<T_PBAB> {
   const pbabToken = await PBABFactory.connect(this.accounts.deployer).deploy(
     this.name,
     this.symbol,
-    randomizer.address
+    randomizer.address,
+    0
   );
   const minterFactory = await ethers.getContractFactory("GenArt721Minter_PBAB");
   const pbabMinter = await minterFactory.deploy(pbabToken.address);
