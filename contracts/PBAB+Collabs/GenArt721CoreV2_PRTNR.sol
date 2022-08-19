@@ -97,10 +97,7 @@ contract GenArt721CoreV2_PRTNR is
     /// next project ID to be created
     uint256
         public
-        override(
-            IGenArt721CoreContractV1,
-            IGenArt721CoreV2_PBAB
-        ) nextProjectId = 0;
+        override(IGenArt721CoreContractV1, IGenArt721CoreV2_PBAB) nextProjectId;
 
     modifier onlyValidTokenId(uint256 _tokenId) {
         require(_exists(_tokenId), "Token ID does not exist");
@@ -144,16 +141,22 @@ contract GenArt721CoreV2_PRTNR is
      * @param _tokenName Name of token.
      * @param _tokenSymbol Token symbol.
      * @param _randomizerContract Randomizer contract.
+     * @param _startingProjectId The initial next project ID.
+     * @dev _startingProjectId should be set to a value much, much less than
+     * max(uint256) to avoid overflow when adding to it.
      */
     constructor(
         string memory _tokenName,
         string memory _tokenSymbol,
-        address _randomizerContract
+        address _randomizerContract,
+        uint256 _startingProjectId
     ) ERC721(_tokenName, _tokenSymbol) {
         admin = msg.sender;
         isWhitelisted[msg.sender] = true;
         renderProviderAddress = payable(msg.sender);
         randomizerContract = IRandomizer(_randomizerContract);
+        // initialize next project ID
+        nextProjectId = _startingProjectId;
     }
 
     /**
