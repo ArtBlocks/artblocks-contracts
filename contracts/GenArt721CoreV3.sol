@@ -128,7 +128,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     /// Basis Points of secondary sales royalties allocated to Art Blocks
     uint256 public artblocksSecondarySalesBPS = 250;
 
-    mapping(uint256 => bytes32) public tokenIdToHash;
+    mapping(uint256 => bytes16) public tokenIdToHash;
 
     /// single minter allowed for this core contract
     address public minterContract;
@@ -308,7 +308,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @param _hash Hash to set for the token ID.
      * @dev gas-optimized function name because called during mint sequence
      */
-    function setTokenHash_8PT(uint256 _tokenId, bytes32 _hash)
+    function setTokenHash_8PT(uint256 _tokenId, bytes16 _hash)
         external
         onlyValidTokenId(_tokenId)
     {
@@ -317,7 +317,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
             "Only randomizer may set"
         );
         require(
-            tokenIdToHash[_tokenId] == bytes32(0),
+            tokenIdToHash[_tokenId] == bytes16(0),
             "Token hash already set."
         );
         tokenIdToHash[_tokenId] = _hash;

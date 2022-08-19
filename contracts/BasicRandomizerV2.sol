@@ -18,17 +18,19 @@ contract BasicRandomizerV2 is IRandomizerV2, Ownable {
     }
 
     // When `genArt721Core` calls this, it can be assured that the randomizer
-    // will set a bytes32 hash for tokenId `_tokenId` on the core contract.
+    // will set a bytes16 hash for tokenId `_tokenId` on the core contract.
     function assignTokenHash(uint256 _tokenId) external virtual {
         require(msg.sender == address(genArt721Core), "Only core may call");
         uint256 time = block.timestamp;
-        bytes32 hash = keccak256(
-            abi.encodePacked(
-                _tokenId,
-                block.number,
-                blockhash(block.number - 1),
-                time,
-                (time % 200) + 1
+        bytes16 hash = bytes16(
+            keccak256(
+                abi.encodePacked(
+                    _tokenId,
+                    block.number,
+                    blockhash(block.number - 1),
+                    time,
+                    (time % 200) + 1
+                )
             )
         );
         genArt721Core.setTokenHash_8PT(_tokenId, hash);

@@ -23,13 +23,15 @@ contract RandomizerV2_NoAssignMock is BasicRandomizerV2 {
     // @dev WARNING - THIS IS NOT SECURE AND SHOULD NOT BE USED IN PRODUCTION.
     function actuallyAssignTokenHash(uint256 _tokenId) external {
         uint256 time = block.timestamp;
-        bytes32 hash = keccak256(
-            abi.encodePacked(
-                _tokenId,
-                block.number,
-                blockhash(block.number - 1),
-                time,
-                (time % 200) + 1
+        bytes16 hash = bytes16(
+            keccak256(
+                abi.encodePacked(
+                    _tokenId,
+                    block.number,
+                    blockhash(block.number - 1),
+                    time,
+                    (time % 200) + 1
+                )
             )
         );
         genArt721Core.setTokenHash_8PT(_tokenId, hash);
