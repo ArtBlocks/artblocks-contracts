@@ -193,6 +193,77 @@ export const MinterDAExp_Common = async () => {
     });
   });
 
+  describe("projectAuctionParameters", async function () {
+    it("returns expected populated values", async function () {
+      const auctionParams = await this.minter.projectAuctionParameters(
+        this.projectZero
+      );
+      expect(auctionParams.timestampStart).to.be.equal(
+        this.startTime + this.auctionStartTimeOffset
+      );
+      expect(auctionParams.priceDecayHalfLifeSeconds).to.be.equal(
+        this.defaultHalfLife
+      );
+      expect(auctionParams.startPrice).to.be.equal(this.startingPrice);
+      expect(auctionParams.basePrice).to.be.equal(this.basePrice);
+    });
+
+    it("returns expected initial values", async function () {
+      const auctionParams = await this.minter
+        .connect(this.accounts.deployer)
+        .projectAuctionParameters(this.projectOne);
+      expect(auctionParams.timestampStart).to.be.equal(0);
+      expect(auctionParams.priceDecayHalfLifeSeconds).to.be.equal(0);
+      expect(auctionParams.startPrice).to.be.equal(0);
+      expect(auctionParams.basePrice).to.be.equal(0);
+    });
+
+    it("returns expected values after resetting values", async function () {
+      await this.minter
+        .connect(this.accounts.deployer)
+        .resetAuctionDetails(this.projectZero);
+      const auctionParams = await this.minter
+        .connect(this.accounts.deployer)
+        .projectAuctionParameters(this.projectZero);
+      expect(auctionParams.timestampStart).to.be.equal(0);
+      expect(auctionParams.priceDecayHalfLifeSeconds).to.be.equal(0);
+      expect(auctionParams.startPrice).to.be.equal(0);
+      expect(auctionParams.basePrice).to.be.equal(0);
+    });
+  });
+
+  describe("projectMaxHasBeenInvoked", async function () {
+    it("returns expected value for project zero", async function () {
+      const hasMaxBeenInvoked = await this.minter.projectMaxHasBeenInvoked(
+        this.projectZero
+      );
+      expect(hasMaxBeenInvoked).to.be.false;
+    });
+
+    it("returns true after a project is minted out", async function () {
+      // reduce maxInvocations to 2 on core
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectMaxInvocations(this.projectZero, 1);
+      // sync max invocations on minter
+      await this.minter
+        .connect(this.accounts.deployer)
+        .setProjectMaxInvocations(this.projectZero);
+      // mint a token
+      await ethers.provider.send("evm_mine", [
+        this.startTime + this.auctionStartTimeOffset,
+      ]);
+      await this.minter.connect(this.accounts.user).purchase(this.projectZero, {
+        value: this.startingPrice,
+      });
+      // expect projectMaxHasBeenInvoked to be true
+      const hasMaxBeenInvoked = await this.minter.projectMaxHasBeenInvoked(
+        this.projectZero
+      );
+      expect(hasMaxBeenInvoked).to.be.true;
+    });
+  });
+
   describe("resetAuctionDetails", async function () {
     it("allows whitelisted to reset auction details", async function () {
       await expect(
