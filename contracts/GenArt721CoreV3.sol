@@ -128,7 +128,16 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     /// Basis Points of secondary sales royalties allocated to Art Blocks
     uint256 public artblocksSecondarySalesBPS = 250;
 
-    mapping(uint256 => bytes32) public tokenIdToHash;
+    /// struct to pack a token owner and hash seed into same storage slot
+    struct OwnerAndHashSeed {
+        // 20 bytes for address of token's owner
+        address owner;
+        // remaining 12 bytes allocated to token hash seed
+        bytes12 hashSeed;
+    }
+
+    /// mapping of token ID to struct of token owner and hash seed
+    mapping(uint256 => OwnerAndHashSeed) public tokenIdToOwnerAndHashSeed;
 
     /// single minter allowed for this core contract
     address public minterContract;
@@ -300,27 +309,31 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     /**
-     * @notice Sets the hash for a given token ID `_tokenId`.
+     * @notice Sets the hash seed for a given token ID `_tokenId`.
      * May only be called by the current randomizer contract.
      * May only be called for tokens that have not already been assigned a
      * non-zero hash.
      * @param _tokenId Token ID to set the hash for.
-     * @param _hash Hash to set for the token ID.
+     * @param _hash Hash seed set for the token ID. Only last 12 bytes will be
+     * used.
      * @dev gas-optimized function name because called during mint sequence
      */
     function setTokenHash_8PT(uint256 _tokenId, bytes32 _hash)
         external
         onlyValidTokenId(_tokenId)
     {
+        OwnerAndHashSeed storage ownerAndHashSeed = tokenIdToOwnerAndHashSeed[
+            _tokenId
+        ];
         require(
             msg.sender == address(randomizerContract),
             "Only randomizer may set"
         );
         require(
-            tokenIdToHash[_tokenId] == bytes32(0),
-            "Token hash already set."
+            ownerAndHashSeed.hashSeed == bytes12(0),
+            "Token hash already set"
         );
-        tokenIdToHash[_tokenId] = _hash;
+        ownerAndHashSeed.hashSeed = bytes12(_hash);
     }
 
     /**
@@ -872,6 +885,15 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      */
     function nextProjectId() external view returns (uint256) {
         return _nextProjectId;
+    }
+
+    /**
+     * @notice Returns token hash for token ID `_tokenId`.
+     * @dev token hash is the keccak256 hash of the stored hash seed
+     */
+    function tokenIdToHash(uint256 _tokenId) external view returns (bytes32) {
+        return
+            keccak256(abi.encode(tokenIdToOwnerAndHashSeed[_tokenId].hashSeed));
     }
 
     /**
