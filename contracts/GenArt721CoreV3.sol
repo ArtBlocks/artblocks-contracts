@@ -10,13 +10,17 @@ import "./interfaces/0.8.x/IManifold.sol";
 
 import "@openzeppelin-4.7/contracts/utils/Strings.sol";
 import "@openzeppelin-4.7/contracts/access/Ownable.sol";
-import "@openzeppelin-4.7/contracts/token/ERC721/ERC721.sol";
+import "./libs/0.8.x/ERC721_PackedHashSeed.sol";
 
 /**
  * @title Art Blocks ERC-721 core contract, V3.
  * @author Art Blocks Inc.
  */
-contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
+contract GenArt721CoreV3 is
+    ERC721_PackedHashSeed,
+    Ownable,
+    IGenArt721CoreContractV3
+{
     uint256 constant ONE_MILLION = 1_000_000;
     uint24 constant ONE_MILLION_UINT24 = 1_000_000;
     uint256 constant FOUR_WEEKS_IN_SECONDS = 2_419_200;
@@ -128,17 +132,6 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     /// Basis Points of secondary sales royalties allocated to Art Blocks
     uint256 public artblocksSecondarySalesBPS = 250;
 
-    /// struct to pack a token owner and hash seed into same storage slot
-    struct OwnerAndHashSeed {
-        // 20 bytes for address of token's owner
-        address owner;
-        // remaining 12 bytes allocated to token hash seed
-        bytes12 hashSeed;
-    }
-
-    /// mapping of token ID to struct of token owner and hash seed
-    mapping(uint256 => OwnerAndHashSeed) public tokenIdToOwnerAndHashSeed;
-
     /// single minter allowed for this core contract
     address public minterContract;
 
@@ -224,7 +217,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         address _randomizerContract,
         address _adminACLContract,
         uint256 _startingProjectId
-    ) ERC721(_tokenName, _tokenSymbol) {
+    ) ERC721_PackedHashSeed(_tokenName, _tokenSymbol) {
         _updateArtblocksPrimarySalesAddress(msg.sender);
         _updateArtblocksSecondarySalesAddress(msg.sender);
         _updateRandomizerAddress(_randomizerContract);
@@ -322,7 +315,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         external
         onlyValidTokenId(_tokenId)
     {
-        OwnerAndHashSeed storage ownerAndHashSeed = tokenIdToOwnerAndHashSeed[
+        OwnerAndHashSeed storage ownerAndHashSeed = _ownersAndHashSeeds[
             _tokenId
         ];
         require(
@@ -892,8 +885,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @dev token hash is the keccak256 hash of the stored hash seed
      */
     function tokenIdToHash(uint256 _tokenId) external view returns (bytes32) {
-        return
-            keccak256(abi.encode(tokenIdToOwnerAndHashSeed[_tokenId].hashSeed));
+        return keccak256(abi.encode(_ownersAndHashSeeds[_tokenId].hashSeed));
     }
 
     /**
