@@ -881,11 +881,16 @@ contract GenArt721CoreV3 is
     }
 
     /**
-     * @notice Returns token hash for token ID `_tokenId`.
+     * @notice Returns token hash for token ID `_tokenId`. Returns null if hash
+     * has not been set.
      * @dev token hash is the keccak256 hash of the stored hash seed
      */
     function tokenIdToHash(uint256 _tokenId) external view returns (bytes32) {
-        return keccak256(abi.encode(_ownersAndHashSeeds[_tokenId].hashSeed));
+        bytes12 _hashSeed = _ownersAndHashSeeds[_tokenId].hashSeed;
+        if (_hashSeed == 0) {
+            return 0;
+        }
+        return keccak256(abi.encode(_hashSeed));
     }
 
     /**
