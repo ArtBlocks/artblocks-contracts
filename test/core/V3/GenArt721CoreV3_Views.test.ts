@@ -1176,6 +1176,220 @@ describe("GenArt721CoreV3 Views", async function () {
     });
   });
 
+  describe("artblocksPrimarySalesPercentage", function () {
+    it("returns expected default value", async function () {
+      // check for expected values
+      const viewData = await this.genArt721Core
+        .connect(this.accounts.user)
+        .artblocksPrimarySalesPercentage();
+      expect(viewData).to.be.equal(10);
+    });
+
+    it("returns expected configured values for projectZero", async function () {
+      // configure Art Blocks primary sales percentage
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateArtblocksPrimarySalesPercentage(11);
+
+      // check for expected values
+      const viewData = await this.genArt721Core
+        .connect(this.accounts.user)
+        .artblocksPrimarySalesPercentage();
+      expect(viewData).to.be.equal(11);
+    });
+  });
+
+  describe("projectIdToSecondaryMarketRoyaltyPercentage", function () {
+    it("returns expected default value", async function () {
+      // check for expected values
+      const viewData = await this.genArt721Core
+        .connect(this.accounts.user)
+        .projectIdToSecondaryMarketRoyaltyPercentage(this.projectZero);
+      expect(viewData).to.be.equal(0);
+    });
+
+    it("returns expected configured values for projectZero", async function () {
+      // configure royalties for projectOne
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectSecondaryMarketRoyaltyPercentage(this.projectZero, 10);
+
+      // check for expected values
+      const viewData = await this.genArt721Core
+        .connect(this.accounts.user)
+        .projectIdToSecondaryMarketRoyaltyPercentage(this.projectZero);
+      expect(viewData).to.be.equal(10);
+    });
+  });
+
+  describe("projectIdToAdditionalPayeePrimarySales", function () {
+    it("returns expected default value", async function () {
+      // check for expected values
+      const viewData = await this.genArt721Core
+        .connect(this.accounts.user)
+        .projectIdToAdditionalPayeePrimarySales(this.projectZero);
+      expect(viewData).to.be.equal(constants.ZERO_ADDRESS);
+    });
+
+    it("returns expected configured values for projectOne", async function () {
+      // add project
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .addProject("name", this.accounts.artist2.address);
+      // artist2 populates an addditional payee
+      const proposeArtistPaymentAddressesAndSplitsArgs = [
+        this.projectOne,
+        this.accounts.artist2.address,
+        this.accounts.additional.address,
+        49,
+        this.accounts.additional2.address, // additional secondary address
+        51, // additonal secondary percentage
+      ];
+      await this.genArt721Core
+        .connect(this.accounts.artist2)
+        .proposeArtistPaymentAddressesAndSplits(
+          ...proposeArtistPaymentAddressesAndSplitsArgs
+        );
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .adminAcceptArtistAddressesAndSplits(
+          ...proposeArtistPaymentAddressesAndSplitsArgs
+        );
+
+      // check for expected values
+      const viewData = await this.genArt721Core
+        .connect(this.accounts.user)
+        .projectIdToAdditionalPayeePrimarySales(this.projectOne);
+      expect(viewData).to.be.equal(this.accounts.additional.address);
+    });
+  });
+
+  describe("projectIdToAdditionalPayeePrimarySalesPercentage", function () {
+    it("returns expected default value", async function () {
+      // check for expected values
+      const viewData = await this.genArt721Core
+        .connect(this.accounts.user)
+        .projectIdToAdditionalPayeePrimarySalesPercentage(this.projectZero);
+      expect(viewData).to.be.equal(0);
+    });
+
+    it("returns expected configured values for projectOne", async function () {
+      // add project
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .addProject("name", this.accounts.artist2.address);
+      // artist2 populates an addditional payee
+      const proposeArtistPaymentAddressesAndSplitsArgs = [
+        this.projectOne,
+        this.accounts.artist2.address,
+        this.accounts.additional.address,
+        49,
+        this.accounts.additional2.address, // additional secondary address
+        51, // additonal secondary percentage
+      ];
+      await this.genArt721Core
+        .connect(this.accounts.artist2)
+        .proposeArtistPaymentAddressesAndSplits(
+          ...proposeArtistPaymentAddressesAndSplitsArgs
+        );
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .adminAcceptArtistAddressesAndSplits(
+          ...proposeArtistPaymentAddressesAndSplitsArgs
+        );
+
+      // check for expected values
+      const viewData = await this.genArt721Core
+        .connect(this.accounts.user)
+        .projectIdToAdditionalPayeePrimarySalesPercentage(this.projectOne);
+      expect(viewData).to.be.equal(49);
+    });
+  });
+
+  describe("projectIdToAdditionalPayeeSecondarySales", function () {
+    it("returns expected default value", async function () {
+      // check for expected values
+      const viewData = await this.genArt721Core
+        .connect(this.accounts.user)
+        .projectIdToAdditionalPayeeSecondarySales(this.projectZero);
+      expect(viewData).to.be.equal(constants.ZERO_ADDRESS);
+    });
+
+    it("returns expected configured values for projectOne", async function () {
+      // add project
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .addProject("name", this.accounts.artist2.address);
+      // artist2 populates an addditional payee
+      const proposeArtistPaymentAddressesAndSplitsArgs = [
+        this.projectOne,
+        this.accounts.artist2.address,
+        this.accounts.additional.address,
+        49,
+        this.accounts.additional2.address, // additional secondary address
+        51, // additonal secondary percentage
+      ];
+      await this.genArt721Core
+        .connect(this.accounts.artist2)
+        .proposeArtistPaymentAddressesAndSplits(
+          ...proposeArtistPaymentAddressesAndSplitsArgs
+        );
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .adminAcceptArtistAddressesAndSplits(
+          ...proposeArtistPaymentAddressesAndSplitsArgs
+        );
+
+      // check for expected values
+      const viewData = await this.genArt721Core
+        .connect(this.accounts.user)
+        .projectIdToAdditionalPayeeSecondarySales(this.projectOne);
+      expect(viewData).to.be.equal(this.accounts.additional2.address);
+    });
+  });
+
+  describe("projectIdToAdditionalPayeeSecondarySalesPercentage", function () {
+    it("returns expected default value", async function () {
+      // check for expected values
+      const viewData = await this.genArt721Core
+        .connect(this.accounts.user)
+        .projectIdToAdditionalPayeeSecondarySalesPercentage(this.projectZero);
+      expect(viewData).to.be.equal(0);
+    });
+
+    it("returns expected configured values for projectOne", async function () {
+      // add project
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .addProject("name", this.accounts.artist2.address);
+      // artist2 populates an addditional payee
+      const proposeArtistPaymentAddressesAndSplitsArgs = [
+        this.projectOne,
+        this.accounts.artist2.address,
+        this.accounts.additional.address,
+        49,
+        this.accounts.additional2.address, // additional secondary address
+        51, // additonal secondary percentage
+      ];
+      await this.genArt721Core
+        .connect(this.accounts.artist2)
+        .proposeArtistPaymentAddressesAndSplits(
+          ...proposeArtistPaymentAddressesAndSplitsArgs
+        );
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .adminAcceptArtistAddressesAndSplits(
+          ...proposeArtistPaymentAddressesAndSplitsArgs
+        );
+
+      // check for expected values
+      const viewData = await this.genArt721Core
+        .connect(this.accounts.user)
+        .projectIdToAdditionalPayeeSecondarySalesPercentage(this.projectOne);
+      expect(viewData).to.be.equal(51);
+    });
+  });
+
   describe("numHistoricalRandomizers", function () {
     it("returns value of one upon initial configuration", async function () {
       const numHistoricalRandomizers = await this.genArt721Core
