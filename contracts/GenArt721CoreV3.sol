@@ -107,26 +107,30 @@ contract GenArt721CoreV3 is
 
     mapping(uint256 => Project) projects;
 
-    // All financial functions are stripped from struct for visibility
-    mapping(uint256 => address payable) public projectIdToArtistAddress;
-    mapping(uint256 => address payable)
-        public projectIdToAdditionalPayeePrimarySales;
-    mapping(uint256 => uint256)
-        public projectIdToAdditionalPayeePrimarySalesPercentage;
-    mapping(uint256 => address payable)
-        public projectIdToAdditionalPayeeSecondarySales;
-    mapping(uint256 => uint256)
-        public projectIdToAdditionalPayeeSecondarySalesPercentage;
-    mapping(uint256 => uint256)
-        public projectIdToSecondaryMarketRoyaltyPercentage;
+    /// packed struct containing project financial information
+    struct ProjectFinance {
+        address payable additionalPayeePrimarySales;
+        // packed uint: max of 100, max uint8 = 255
+        uint8 additionalPayeePrimarySalesPercentage;
+        address payable additionalPayeeSecondarySales;
+        // packed uint: max of 100, max uint8 = 255
+        uint8 additionalPayeeSecondarySalesPercentage;
+        address payable artistAddress;
+        // packed uint: max of 95, max uint8 = 255
+        uint8 secondaryMarketRoyaltyPercentage;
+    }
+    // Project financials mapping
+    mapping(uint256 => ProjectFinance) projectIdToFinancials;
 
     /// hash of artist's proposed payment updates to be approved by admin
     mapping(uint256 => bytes32) public proposedArtistAddressesAndSplitsHash;
 
-    /// Art Blocks payment address for all primary sales revenues
+    /// Art Blocks payment address for all primary sales revenues (packed)
     address payable public artblocksPrimarySalesAddress;
-    /// Percentage of primary sales revenue allocated to Art Blocks
-    uint256 public artblocksPrimarySalesPercentage = 10;
+    /// Percentage of primary sales revenue allocated to Art Blocks (packed)
+    // packed uint: max of 25, max uint8 = 255
+    uint8 private _artblocksPrimarySalesPercentage = 10;
+
     /// Art Blocks payment address for all secondary sales royalty revenues
     address payable public artblocksSecondarySalesAddress;
     /// Basis Points of secondary sales royalties allocated to Art Blocks
@@ -166,7 +170,7 @@ contract GenArt721CoreV3 is
 
     modifier onlyArtist(uint256 _projectId) {
         require(
-            msg.sender == projectIdToArtistAddress[_projectId],
+            msg.sender == projectIdToFinancials[_projectId].artistAddress,
             "Only artist"
         );
         _;
@@ -174,7 +178,7 @@ contract GenArt721CoreV3 is
 
     modifier onlyArtistOrAdminACL(uint256 _projectId, bytes4 _selector) {
         require(
-            msg.sender == projectIdToArtistAddress[_projectId] ||
+            msg.sender == projectIdToFinancials[_projectId].artistAddress ||
                 adminACLAllowed(msg.sender, address(this), _selector),
             "Only artist or Admin ACL allowed"
         );
@@ -194,7 +198,8 @@ contract GenArt721CoreV3 is
         require(
             adminACLAllowed(msg.sender, address(this), _selector) ||
                 (owner() == address(0) &&
-                    msg.sender == projectIdToArtistAddress[_projectId]),
+                    msg.sender ==
+                    projectIdToFinancials[_projectId].artistAddress),
             "Only Admin ACL allowed, or artist if owner has renounced"
         );
         _;
@@ -261,12 +266,12 @@ contract GenArt721CoreV3 is
         );
         require(
             projects[_projectId].active ||
-                _by == projectIdToArtistAddress[_projectId],
+                _by == projectIdToFinancials[_projectId].artistAddress,
             "Project must exist and be active"
         );
         require(
             !projects[_projectId].paused ||
-                _by == projectIdToArtistAddress[_projectId],
+                _by == projectIdToFinancials[_projectId].artistAddress,
             "Purchases are paused."
         );
 
@@ -382,13 +387,15 @@ contract GenArt721CoreV3 is
      * `_artblocksPrimarySalesPercentage`.
      */
     function updateArtblocksPrimarySalesPercentage(
-        uint256 _artblocksPrimarySalesPercentage
+        uint256 artblocksPrimarySalesPercentage_
     )
         external
         onlyAdminACL(this.updateArtblocksPrimarySalesPercentage.selector)
     {
-        require(_artblocksPrimarySalesPercentage <= 25, "Max of 25%");
-        artblocksPrimarySalesPercentage = _artblocksPrimarySalesPercentage;
+        require(artblocksPrimarySalesPercentage_ <= 25, "Max of 25%");
+        _artblocksPrimarySalesPercentage = uint8(
+            artblocksPrimarySalesPercentage_
+        );
         emit PlatformUpdated(FIELD_ARTBLOCKS_PRIMARY_SALES_PERCENTAGE);
     }
 
@@ -546,19 +553,20 @@ contract GenArt721CoreV3 is
             "Must match artist proposal"
         );
         // effects
-        projectIdToArtistAddress[_projectId] = _artistAddress;
-        projectIdToAdditionalPayeePrimarySales[
+        ProjectFinance storage projectFinance = projectIdToFinancials[
             _projectId
-        ] = _additionalPayeePrimarySales;
-        projectIdToAdditionalPayeePrimarySalesPercentage[
-            _projectId
-        ] = _additionalPayeePrimarySalesPercentage;
-        projectIdToAdditionalPayeeSecondarySales[
-            _projectId
-        ] = _additionalPayeeSecondarySales;
-        projectIdToAdditionalPayeeSecondarySalesPercentage[
-            _projectId
-        ] = _additionalPayeeSecondarySalesPercentage;
+        ];
+        projectFinance.artistAddress = _artistAddress;
+        projectFinance
+            .additionalPayeePrimarySales = _additionalPayeePrimarySales;
+        projectFinance.additionalPayeePrimarySalesPercentage = uint8(
+            _additionalPayeePrimarySalesPercentage
+        );
+        projectFinance
+            .additionalPayeeSecondarySales = _additionalPayeeSecondarySales;
+        projectFinance.additionalPayeeSecondarySalesPercentage = uint8(
+            _additionalPayeeSecondarySalesPercentage
+        );
         // emit event for off-chain indexing
         emit AcceptedArtistAddressesAndSplits(_projectId);
     }
@@ -572,7 +580,7 @@ contract GenArt721CoreV3 is
         uint256 _projectId,
         address payable _artistAddress
     ) external onlyAdminACL(this.updateProjectArtistAddress.selector) {
-        projectIdToArtistAddress[_projectId] = _artistAddress;
+        projectIdToFinancials[_projectId].artistAddress = _artistAddress;
         emit ProjectUpdated(_projectId, FIELD_ARTIST_ADDRESS);
     }
 
@@ -599,7 +607,7 @@ contract GenArt721CoreV3 is
     ) external onlyAdminACL(this.addProject.selector) {
         require(!newProjectsForbidden, "New projects forbidden");
         uint256 projectId = _nextProjectId;
-        projectIdToArtistAddress[projectId] = _artistAddress;
+        projectIdToFinancials[projectId].artistAddress = _artistAddress;
         projects[projectId].name = _projectName;
         projects[projectId].paused = true;
         projects[projectId].maxInvocations = ONE_MILLION_UINT24;
@@ -664,9 +672,8 @@ contract GenArt721CoreV3 is
         uint256 _secondMarketRoyalty
     ) external onlyArtist(_projectId) {
         require(_secondMarketRoyalty <= 95, "Max of 95%");
-        projectIdToSecondaryMarketRoyaltyPercentage[
-            _projectId
-        ] = _secondMarketRoyalty;
+        projectIdToFinancials[_projectId]
+            .secondaryMarketRoyaltyPercentage = uint8(_secondMarketRoyalty);
         emit ProjectUpdated(
             _projectId,
             FIELD_SECONDARY_MARKET_ROYALTY_PERCENTAGE
@@ -684,7 +691,7 @@ contract GenArt721CoreV3 is
         // checks
         require(
             _projectUnlocked(_projectId)
-                ? msg.sender == projectIdToArtistAddress[_projectId]
+                ? msg.sender == projectIdToFinancials[_projectId].artistAddress
                 : adminACLAllowed(
                     msg.sender,
                     address(this),
@@ -894,6 +901,88 @@ contract GenArt721CoreV3 is
     }
 
     /**
+     * @notice View function returning Art Blocks portion of primary sales, in
+     * percent.
+     */
+    function artblocksPrimarySalesPercentage() external view returns (uint256) {
+        return _artblocksPrimarySalesPercentage;
+    }
+
+    /**
+     * @notice View function returning Artist's address for project
+     * `_projectId`.
+     */
+    function projectIdToArtistAddress(uint256 _projectId)
+        external
+        view
+        returns (address payable)
+    {
+        return projectIdToFinancials[_projectId].artistAddress;
+    }
+
+    /**
+     * @notice View function returning Artist's secondary market royalty
+     * percentage for project `_projectId`.
+     * This does not include Art Blocks portion of secondary market royalties.
+     */
+    function projectIdToSecondaryMarketRoyaltyPercentage(uint256 _projectId)
+        external
+        view
+        returns (uint256)
+    {
+        return
+            projectIdToFinancials[_projectId].secondaryMarketRoyaltyPercentage;
+    }
+
+    /**
+     * @notice View function returning Artist's additional payee address for
+     * primary sales, for project `_projectId`.
+     */
+    function projectIdToAdditionalPayeePrimarySales(uint256 _projectId)
+        external
+        view
+        returns (address payable)
+    {
+        return projectIdToFinancials[_projectId].additionalPayeePrimarySales;
+    }
+
+    /**
+     * @notice View function returning Artist's additional payee primary sales
+     * percentage, for project `_projectId`.
+     */
+    function projectIdToAdditionalPayeePrimarySalesPercentage(
+        uint256 _projectId
+    ) external view returns (uint256) {
+        return
+            projectIdToFinancials[_projectId]
+                .additionalPayeePrimarySalesPercentage;
+    }
+
+    /**
+     * @notice View function returning Artist's additional payee address for
+     * secondary sales, for project `_projectId`.
+     */
+    function projectIdToAdditionalPayeeSecondarySales(uint256 _projectId)
+        external
+        view
+        returns (address payable)
+    {
+        return projectIdToFinancials[_projectId].additionalPayeeSecondarySales;
+    }
+
+    /**
+     * @notice View function returning Artist's additional payee secondary
+     * sales percentage, for project `_projectId`.
+     */
+    function projectIdToAdditionalPayeeSecondarySalesPercentage(
+        uint256 _projectId
+    ) external view returns (uint256) {
+        return
+            projectIdToFinancials[_projectId]
+                .additionalPayeeSecondarySalesPercentage;
+    }
+
+    /**
      * @notice Returns project details for project `_projectId`.
      * @param _projectId Project to be queried.
      * @return projectName Name of project
@@ -974,19 +1063,18 @@ contract GenArt721CoreV3 is
             uint256 additionalPayeeSecondarySalesPercentage
         )
     {
-        artistAddress = projectIdToArtistAddress[_projectId];
-        additionalPayeePrimarySales = projectIdToAdditionalPayeePrimarySales[
+        ProjectFinance storage projectFinance = projectIdToFinancials[
             _projectId
         ];
-        additionalPayeePrimarySalesPercentage = projectIdToAdditionalPayeePrimarySalesPercentage[
-            _projectId
-        ];
-        additionalPayeeSecondarySales = projectIdToAdditionalPayeeSecondarySales[
-            _projectId
-        ];
-        additionalPayeeSecondarySalesPercentage = projectIdToAdditionalPayeeSecondarySalesPercentage[
-            _projectId
-        ];
+        artistAddress = projectFinance.artistAddress;
+        additionalPayeePrimarySales = projectFinance
+            .additionalPayeePrimarySales;
+        additionalPayeePrimarySalesPercentage = projectFinance
+            .additionalPayeePrimarySalesPercentage;
+        additionalPayeeSecondarySales = projectFinance
+            .additionalPayeeSecondarySales;
+        additionalPayeeSecondarySalesPercentage = projectFinance
+            .additionalPayeeSecondarySalesPercentage;
     }
 
     /**
@@ -1088,7 +1176,7 @@ contract GenArt721CoreV3 is
      * primary sales percentage (now called artblocksPrimarySalesPercentage).
      */
     function artblocksPercentage() external view returns (uint256) {
-        return artblocksPrimarySalesPercentage;
+        return _artblocksPrimarySalesPercentage;
     }
 
     /**
@@ -1115,12 +1203,14 @@ contract GenArt721CoreV3 is
         )
     {
         uint256 projectId = _tokenId / ONE_MILLION;
-        artistAddress = projectIdToArtistAddress[projectId];
-        additionalPayee = projectIdToAdditionalPayeeSecondarySales[projectId];
-        additionalPayeePercentage = projectIdToAdditionalPayeeSecondarySalesPercentage[
+        ProjectFinance storage projectFinance = projectIdToFinancials[
             projectId
         ];
-        royaltyFeeByID = projectIdToSecondaryMarketRoyaltyPercentage[projectId];
+        artistAddress = projectFinance.artistAddress;
+        additionalPayee = projectFinance.additionalPayeeSecondarySales;
+        additionalPayeePercentage = projectFinance
+            .additionalPayeeSecondarySalesPercentage;
+        royaltyFeeByID = projectFinance.secondaryMarketRoyaltyPercentage;
     }
 
     /**
@@ -1146,13 +1236,14 @@ contract GenArt721CoreV3 is
         bps = new uint256[](3);
 
         uint256 projectId = _tokenId / ONE_MILLION;
+        ProjectFinance storage projectFinance = projectIdToFinancials[
+            projectId
+        ];
         // load values into memory
-        uint256 royaltyPercentageForArtistAndAdditional = projectIdToSecondaryMarketRoyaltyPercentage[
-                projectId
-            ];
-        uint256 additionalPayeePercentage = projectIdToAdditionalPayeeSecondarySalesPercentage[
-                projectId
-            ];
+        uint256 royaltyPercentageForArtistAndAdditional = projectFinance
+            .secondaryMarketRoyaltyPercentage;
+        uint256 additionalPayeePercentage = projectFinance
+            .additionalPayeeSecondarySalesPercentage;
         // calculate BPS = percentage * 100
         uint256 artistBPS = (100 - additionalPayeePercentage) *
             royaltyPercentageForArtistAndAdditional;
@@ -1163,13 +1254,12 @@ contract GenArt721CoreV3 is
         // populate arrays
         uint256 payeeCount;
         if (artistBPS > 0) {
-            recipients[payeeCount] = projectIdToArtistAddress[projectId];
+            recipients[payeeCount] = projectFinance.artistAddress;
             bps[payeeCount++] = artistBPS;
         }
         if (additionalBPS > 0) {
-            recipients[payeeCount] = projectIdToAdditionalPayeeSecondarySales[
-                projectId
-            ];
+            recipients[payeeCount] = projectFinance
+                .additionalPayeeSecondarySales;
             bps[payeeCount++] = additionalBPS;
         }
         if (artblocksBPS > 0) {
@@ -1227,8 +1317,13 @@ contract GenArt721CoreV3 is
             address payable additionalPayeePrimaryAddress_
         )
     {
+        ProjectFinance storage projectFinance = projectIdToFinancials[
+            _projectId
+        ];
         // calculate revenues
-        artblocksRevenue_ = (_price * artblocksPrimarySalesPercentage) / 100;
+        artblocksRevenue_ =
+            (_price * uint256(_artblocksPrimarySalesPercentage)) /
+            100;
         uint256 projectFunds;
         unchecked {
             // artblocksRevenue_ is always <=25, so guaranteed to never underflow
@@ -1236,7 +1331,7 @@ contract GenArt721CoreV3 is
         }
         additionalPayeePrimaryRevenue_ =
             (projectFunds *
-                projectIdToAdditionalPayeePrimarySalesPercentage[_projectId]) /
+                projectFinance.additionalPayeePrimarySalesPercentage) /
             100;
         unchecked {
             // projectIdToAdditionalPayeePrimarySalesPercentage is always
@@ -1246,12 +1341,11 @@ contract GenArt721CoreV3 is
         // set addresses from storage
         artblocksAddress_ = artblocksPrimarySalesAddress;
         if (artistRevenue_ > 0) {
-            artistAddress_ = projectIdToArtistAddress[_projectId];
+            artistAddress_ = projectFinance.artistAddress;
         }
         if (additionalPayeePrimaryRevenue_ > 0) {
-            additionalPayeePrimaryAddress_ = projectIdToAdditionalPayeePrimarySales[
-                _projectId
-            ];
+            additionalPayeePrimaryAddress_ = projectFinance
+                .additionalPayeePrimarySales;
         }
     }
 
