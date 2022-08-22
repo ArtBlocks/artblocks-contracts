@@ -249,35 +249,35 @@ contract GenArt721CoreV3 is
     ) external returns (uint256 _tokenId) {
         // CHECKS
         require(msg.sender == minterContract, "Must mint from minter contract");
-
+        Project storage project = projects[_projectId];
         // load invocations into memory
-        uint24 invocationsBefore = projects[_projectId].invocations;
+        uint24 invocationsBefore = project.invocations;
         uint24 invocationsAfter;
         unchecked {
             // invocationsBefore guaranteed <= maxInvocations <= 1_000_000,
             // 1_000_000 << max uint24, so no possible overflow
             invocationsAfter = invocationsBefore + 1;
         }
-        uint24 maxInvocations = projects[_projectId].maxInvocations;
+        uint24 maxInvocations = project.maxInvocations;
 
         require(
             invocationsBefore < maxInvocations,
             "Must not exceed max invocations"
         );
         require(
-            projects[_projectId].active ||
+            project.active ||
                 _by == projectIdToFinancials[_projectId].artistAddress,
             "Project must exist and be active"
         );
         require(
-            !projects[_projectId].paused ||
+            !project.paused ||
                 _by == projectIdToFinancials[_projectId].artistAddress,
             "Purchases are paused."
         );
 
         // EFFECTS
         // increment project's invocations
-        projects[_projectId].invocations = invocationsAfter;
+        project.invocations = invocationsAfter;
         uint256 thisTokenId;
         unchecked {
             // invocationsBefore is uint24 << max uint256. In production use,
@@ -741,21 +741,23 @@ contract GenArt721CoreV3 is
         uint256 _projectId,
         uint24 _maxInvocations
     ) external onlyArtist(_projectId) {
-        // checks
+        // CHECKS
+        Project storage project = projects[_projectId];
+        uint256 _invocations = project.invocations;
         require(
-            (_maxInvocations < projects[_projectId].maxInvocations),
+            (_maxInvocations < project.maxInvocations),
             "maxInvocations may only be decreased"
         );
         require(
-            _maxInvocations >= projects[_projectId].invocations,
+            _maxInvocations >= _invocations,
             "Only max invocations gte current invocations"
         );
-        // effects
-        projects[_projectId].maxInvocations = _maxInvocations;
+        // EFFECTS
+        project.maxInvocations = _maxInvocations;
         emit ProjectUpdated(_projectId, FIELD_MAX_INVOCATIONS);
 
         // register completed timestamp if action completed the project
-        if (_maxInvocations == projects[_projectId].invocations) {
+        if (_maxInvocations == _invocations) {
             _completeProject(_projectId);
         }
     }
@@ -770,10 +772,9 @@ contract GenArt721CoreV3 is
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.addProjectScript.selector)
     {
-        projects[_projectId].scripts[
-            projects[_projectId].scriptCount
-        ] = _script;
-        projects[_projectId].scriptCount = projects[_projectId].scriptCount + 1;
+        Project storage project = projects[_projectId];
+        project.scripts[project.scriptCount] = _script;
+        project.scriptCount = project.scriptCount + 1;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
     }
 
@@ -792,11 +793,9 @@ contract GenArt721CoreV3 is
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.updateProjectScript.selector)
     {
-        require(
-            _scriptId < projects[_projectId].scriptCount,
-            "scriptId out of range"
-        );
-        projects[_projectId].scripts[_scriptId] = _script;
+        Project storage project = projects[_projectId];
+        require(_scriptId < project.scriptCount, "scriptId out of range");
+        project.scripts[_scriptId] = _script;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
     }
 
@@ -808,14 +807,10 @@ contract GenArt721CoreV3 is
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.removeProjectLastScript.selector)
     {
-        require(
-            projects[_projectId].scriptCount > 0,
-            "there are no scripts to remove"
-        );
-        delete projects[_projectId].scripts[
-            projects[_projectId].scriptCount - 1
-        ];
-        projects[_projectId].scriptCount = projects[_projectId].scriptCount - 1;
+        Project storage project = projects[_projectId];
+        require(project.scriptCount > 0, "there are no scripts to remove");
+        delete project.scripts[project.scriptCount - 1];
+        project.scriptCount = project.scriptCount - 1;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
     }
 
@@ -834,8 +829,9 @@ contract GenArt721CoreV3 is
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.updateProjectScriptType.selector)
     {
-        projects[_projectId].scriptType = _scriptType;
-        projects[_projectId].scriptTypeVersion = _scriptTypeVersion;
+        Project storage project = projects[_projectId];
+        project.scriptType = _scriptType;
+        project.scriptTypeVersion = _scriptTypeVersion;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT_TYPE);
     }
 
@@ -1003,11 +999,12 @@ contract GenArt721CoreV3 is
             string memory license
         )
     {
-        projectName = projects[_projectId].name;
-        artist = projects[_projectId].artist;
-        description = projects[_projectId].description;
-        website = projects[_projectId].website;
-        license = projects[_projectId].license;
+        Project storage project = projects[_projectId];
+        projectName = project.name;
+        artist = project.artist;
+        description = project.description;
+        website = project.website;
+        license = project.license;
     }
 
     /**
@@ -1031,10 +1028,11 @@ contract GenArt721CoreV3 is
             bool locked
         )
     {
-        invocations = projects[_projectId].invocations;
-        maxInvocations = projects[_projectId].maxInvocations;
-        active = projects[_projectId].active;
-        paused = projects[_projectId].paused;
+        Project storage project = projects[_projectId];
+        invocations = project.invocations;
+        maxInvocations = project.maxInvocations;
+        active = project.active;
+        paused = project.paused;
         locked = !_projectUnlocked(_projectId);
     }
 
@@ -1098,11 +1096,12 @@ contract GenArt721CoreV3 is
             uint256 scriptCount
         )
     {
-        scriptType = projects[_projectId].scriptType;
-        scriptTypeVersion = projects[_projectId].scriptTypeVersion;
-        aspectRatio = projects[_projectId].aspectRatio;
-        scriptCount = projects[_projectId].scriptCount;
-        ipfsHash = projects[_projectId].ipfsHash;
+        Project storage project = projects[_projectId];
+        scriptType = project.scriptType;
+        scriptTypeVersion = project.scriptTypeVersion;
+        aspectRatio = project.aspectRatio;
+        scriptCount = project.scriptCount;
+        ipfsHash = project.ipfsHash;
     }
 
     /**
