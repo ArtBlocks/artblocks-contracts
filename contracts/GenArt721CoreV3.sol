@@ -312,11 +312,11 @@ contract GenArt721CoreV3 is
      * May only be called for tokens that have not already been assigned a
      * non-zero hash.
      * @param _tokenId Token ID to set the hash for.
-     * @param _hash Hash seed set for the token ID. Only last 12 bytes will be
-     * used.
+     * @param _hashSeed Hash seed to set for the token ID. Only last 12 bytes
+     * will be used.
      * @dev gas-optimized function name because called during mint sequence
      */
-    function setTokenHash_8PT(uint256 _tokenId, bytes32 _hash)
+    function setTokenHash_8PT(uint256 _tokenId, bytes32 _hashSeed)
         external
         onlyValidTokenId(_tokenId)
     {
@@ -331,7 +331,7 @@ contract GenArt721CoreV3 is
             ownerAndHashSeed.hashSeed == bytes12(0),
             "Token hash already set"
         );
-        ownerAndHashSeed.hashSeed = bytes12(_hash);
+        ownerAndHashSeed.hashSeed = bytes12(_hashSeed);
     }
 
     /**
