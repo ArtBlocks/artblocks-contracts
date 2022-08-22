@@ -1,3 +1,4 @@
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import {
   BN,
   constants,
@@ -15,6 +16,40 @@ import {
   deployAndGet,
   deployCoreWithMinterFilter,
 } from "../../util/common";
+
+export type ArtistFinanceProposal = {
+  artistAddress: string;
+  additionalPayeePrimarySalesAddress: string;
+  additionalPayeePrimarySalesPercentage: number;
+  additionalPayeeSecondarySalesAddress: string;
+  additionalPayeeSecondarySalesPercentage: number;
+};
+
+// helper function to update artist financial data
+async function updateArtistFinance(
+  projectId: number,
+  currentArtistAccount: SignerWithAddress,
+  proposal: ArtistFinanceProposal
+): Promise<void> {
+  const proposeArtistPaymentAddressesAndSplitsArgs = [
+    projectId,
+    proposal.artistAddress,
+    proposal.additionalPayeePrimarySalesAddress,
+    proposal.additionalPayeePrimarySalesPercentage,
+    proposal.additionalPayeeSecondarySalesAddress,
+    proposal.additionalPayeeSecondarySalesPercentage,
+  ];
+  await this.genArt721Core
+    .connect(currentArtistAccount)
+    .proposeArtistPaymentAddressesAndSplits(
+      ...proposeArtistPaymentAddressesAndSplitsArgs
+    );
+  await this.genArt721Core
+    .connect(this.accounts.deployer)
+    .adminAcceptArtistAddressesAndSplits(
+      ...proposeArtistPaymentAddressesAndSplitsArgs
+    );
+}
 
 /**
  * Tests regarding view functions for V3 core.
@@ -394,25 +429,18 @@ describe("GenArt721CoreV3 Views", async function () {
       await this.genArt721Core
         .connect(this.accounts.deployer)
         .addProject("name", this.accounts.artist2.address);
-      // artist2 populates an addditional payee
-      const proposeArtistPaymentAddressesAndSplitsArgs = [
+      await updateArtistFinance.call(
+        this,
         this.projectOne,
-        this.accounts.artist2.address,
-        this.accounts.additional2.address,
-        51,
-        this.accounts.user2.address,
-        0,
-      ];
-      await this.genArt721Core
-        .connect(this.accounts.artist2)
-        .proposeArtistPaymentAddressesAndSplits(
-          ...proposeArtistPaymentAddressesAndSplitsArgs
-        );
-      await this.genArt721Core
-        .connect(this.accounts.deployer)
-        .adminAcceptArtistAddressesAndSplits(
-          ...proposeArtistPaymentAddressesAndSplitsArgs
-        );
+        this.accounts.artist2,
+        {
+          artistAddress: this.accounts.artist2.address,
+          additionalPayeePrimarySalesAddress: this.accounts.additional2.address,
+          additionalPayeePrimarySalesPercentage: 51,
+          additionalPayeeSecondarySalesAddress: this.accounts.user2.address,
+          additionalPayeeSecondarySalesPercentage: 52,
+        }
+      );
       // update Art Blocks percentage to 20%
       await this.genArt721Core
         .connect(this.accounts.deployer)
@@ -435,14 +463,14 @@ describe("GenArt721CoreV3 Views", async function () {
       );
       // Additional Payee (0.8 * 0.51 = 0.408)
       expect(revenueSplits.additionalPayeePrimaryAddress_).to.be.equal(
-        proposeArtistPaymentAddressesAndSplitsArgs[2]
+        this.accounts.additional2.address
       );
       expect(revenueSplits.additionalPayeePrimaryRevenue_).to.be.equal(
         ethers.utils.parseEther("0.408")
       );
       // Artist (0.8 * 0.51 = 0.392)
       expect(revenueSplits.artistAddress_).to.be.equal(
-        proposeArtistPaymentAddressesAndSplitsArgs[1]
+        this.accounts.artist2.address
       );
       expect(revenueSplits.artistRevenue_).to.be.equal(
         ethers.utils.parseEther("0.392")
@@ -455,24 +483,18 @@ describe("GenArt721CoreV3 Views", async function () {
         .connect(this.accounts.deployer)
         .addProject("name", this.accounts.artist2.address);
       // artist2 populates an addditional payee
-      const proposeArtistPaymentAddressesAndSplitsArgs = [
+      await updateArtistFinance.call(
+        this,
         this.projectOne,
-        this.accounts.artist2.address,
-        this.accounts.additional2.address,
-        100,
-        this.accounts.user2.address,
-        0,
-      ];
-      await this.genArt721Core
-        .connect(this.accounts.artist2)
-        .proposeArtistPaymentAddressesAndSplits(
-          ...proposeArtistPaymentAddressesAndSplitsArgs
-        );
-      await this.genArt721Core
-        .connect(this.accounts.deployer)
-        .adminAcceptArtistAddressesAndSplits(
-          ...proposeArtistPaymentAddressesAndSplitsArgs
-        );
+        this.accounts.artist2,
+        {
+          artistAddress: this.accounts.artist2.address,
+          additionalPayeePrimarySalesAddress: this.accounts.additional2.address,
+          additionalPayeePrimarySalesPercentage: 100,
+          additionalPayeeSecondarySalesAddress: this.accounts.user2.address,
+          additionalPayeeSecondarySalesPercentage: 0,
+        }
+      );
       // update Art Blocks primary sales percentage to 20%
       await this.genArt721Core
         .connect(this.accounts.deployer)
@@ -495,7 +517,7 @@ describe("GenArt721CoreV3 Views", async function () {
       );
       // Additional Payee (0.8 * 1.00 = 0.0.8)
       expect(revenueSplits.additionalPayeePrimaryAddress_).to.be.equal(
-        proposeArtistPaymentAddressesAndSplitsArgs[2]
+        this.accounts.additional2.address
       );
       expect(revenueSplits.additionalPayeePrimaryRevenue_).to.be.equal(
         ethers.utils.parseEther("0.8")
@@ -563,24 +585,19 @@ describe("GenArt721CoreV3 Views", async function () {
         .connect(this.accounts.artist2)
         .updateProjectSecondaryMarketRoyaltyPercentage(this.projectOne, 10);
       // artist2 populates an addditional payee
-      const proposeArtistPaymentAddressesAndSplitsArgs = [
+      await updateArtistFinance.call(
+        this,
         this.projectOne,
-        this.accounts.artist2.address,
-        constants.ZERO_ADDRESS,
-        0,
-        this.accounts.additional2.address, // additional secondary address
-        51, // additonal secondary percentage
-      ];
-      await this.genArt721Core
-        .connect(this.accounts.artist2)
-        .proposeArtistPaymentAddressesAndSplits(
-          ...proposeArtistPaymentAddressesAndSplitsArgs
-        );
-      await this.genArt721Core
-        .connect(this.accounts.deployer)
-        .adminAcceptArtistAddressesAndSplits(
-          ...proposeArtistPaymentAddressesAndSplitsArgs
-        );
+        this.accounts.artist2,
+        {
+          artistAddress: this.accounts.artist2.address,
+          additionalPayeePrimarySalesAddress: constants.ZERO_ADDRESS,
+          additionalPayeePrimarySalesPercentage: 0,
+          additionalPayeeSecondarySalesAddress:
+            this.accounts.additional2.address,
+          additionalPayeeSecondarySalesPercentage: 51,
+        }
+      );
       // update Art Blocks secondary BPS to 2.4%
       await this.genArt721Core
         .connect(this.accounts.deployer)
@@ -724,24 +741,19 @@ describe("GenArt721CoreV3 Views", async function () {
         .connect(this.accounts.artist2)
         .updateProjectSecondaryMarketRoyaltyPercentage(this.projectOne, 10);
       // artist2 populates an addditional payee
-      const proposeArtistPaymentAddressesAndSplitsArgs = [
+      await updateArtistFinance.call(
+        this,
         this.projectOne,
-        this.accounts.artist2.address,
-        constants.ZERO_ADDRESS,
-        0,
-        this.accounts.additional2.address, // additional secondary address
-        0, // additonal secondary percentage
-      ];
-      await this.genArt721Core
-        .connect(this.accounts.artist2)
-        .proposeArtistPaymentAddressesAndSplits(
-          ...proposeArtistPaymentAddressesAndSplitsArgs
-        );
-      await this.genArt721Core
-        .connect(this.accounts.deployer)
-        .adminAcceptArtistAddressesAndSplits(
-          ...proposeArtistPaymentAddressesAndSplitsArgs
-        );
+        this.accounts.artist2,
+        {
+          artistAddress: this.accounts.artist2.address,
+          additionalPayeePrimarySalesAddress: constants.ZERO_ADDRESS,
+          additionalPayeePrimarySalesPercentage: 0,
+          additionalPayeeSecondarySalesAddress:
+            this.accounts.additional2.address,
+          additionalPayeeSecondarySalesPercentage: 0,
+        }
+      );
       // update Art Blocks secondary BPS to 2.4%
       await this.genArt721Core
         .connect(this.accounts.deployer)
@@ -800,24 +812,19 @@ describe("GenArt721CoreV3 Views", async function () {
         .connect(this.accounts.artist2)
         .updateProjectSecondaryMarketRoyaltyPercentage(this.projectOne, 10);
       // artist2 populates an addditional payee
-      const proposeArtistPaymentAddressesAndSplitsArgs = [
+      await updateArtistFinance.call(
+        this,
         this.projectOne,
-        this.accounts.artist2.address,
-        constants.ZERO_ADDRESS,
-        0,
-        this.accounts.additional2.address, // additional secondary address
-        51, // additonal secondary percentage
-      ];
-      await this.genArt721Core
-        .connect(this.accounts.artist2)
-        .proposeArtistPaymentAddressesAndSplits(
-          ...proposeArtistPaymentAddressesAndSplitsArgs
-        );
-      await this.genArt721Core
-        .connect(this.accounts.deployer)
-        .adminAcceptArtistAddressesAndSplits(
-          ...proposeArtistPaymentAddressesAndSplitsArgs
-        );
+        this.accounts.artist2,
+        {
+          artistAddress: this.accounts.artist2.address,
+          additionalPayeePrimarySalesAddress: constants.ZERO_ADDRESS,
+          additionalPayeePrimarySalesPercentage: 0,
+          additionalPayeeSecondarySalesAddress:
+            this.accounts.additional2.address,
+          additionalPayeeSecondarySalesPercentage: 51,
+        }
+      );
       // update Art Blocks secondary BPS to 0%
       await this.genArt721Core
         .connect(this.accounts.deployer)
@@ -880,24 +887,19 @@ describe("GenArt721CoreV3 Views", async function () {
         .connect(this.accounts.artist2)
         .updateProjectSecondaryMarketRoyaltyPercentage(this.projectOne, 0);
       // artist2 populates an addditional payee
-      const proposeArtistPaymentAddressesAndSplitsArgs = [
+      await updateArtistFinance.call(
+        this,
         this.projectOne,
-        this.accounts.artist2.address,
-        constants.ZERO_ADDRESS,
-        0,
-        this.accounts.additional2.address, // additional secondary address
-        51, // additonal secondary percentage
-      ];
-      await this.genArt721Core
-        .connect(this.accounts.artist2)
-        .proposeArtistPaymentAddressesAndSplits(
-          ...proposeArtistPaymentAddressesAndSplitsArgs
-        );
-      await this.genArt721Core
-        .connect(this.accounts.deployer)
-        .adminAcceptArtistAddressesAndSplits(
-          ...proposeArtistPaymentAddressesAndSplitsArgs
-        );
+        this.accounts.artist2,
+        {
+          artistAddress: this.accounts.artist2.address,
+          additionalPayeePrimarySalesAddress: constants.ZERO_ADDRESS,
+          additionalPayeePrimarySalesPercentage: 0,
+          additionalPayeeSecondarySalesAddress:
+            this.accounts.additional2.address,
+          additionalPayeeSecondarySalesPercentage: 51,
+        }
+      );
       // update Art Blocks secondary BPS to 0%
       await this.genArt721Core
         .connect(this.accounts.deployer)
@@ -980,24 +982,19 @@ describe("GenArt721CoreV3 Views", async function () {
         .connect(this.accounts.artist2)
         .updateProjectSecondaryMarketRoyaltyPercentage(this.projectOne, 10);
       // artist2 populates an addditional payee
-      const proposeArtistPaymentAddressesAndSplitsArgs = [
+      await updateArtistFinance.call(
+        this,
         this.projectOne,
-        this.accounts.artist2.address,
-        constants.ZERO_ADDRESS,
-        0,
-        this.accounts.additional2.address, // additional secondary address
-        51, // additonal secondary percentage
-      ];
-      await this.genArt721Core
-        .connect(this.accounts.artist2)
-        .proposeArtistPaymentAddressesAndSplits(
-          ...proposeArtistPaymentAddressesAndSplitsArgs
-        );
-      await this.genArt721Core
-        .connect(this.accounts.deployer)
-        .adminAcceptArtistAddressesAndSplits(
-          ...proposeArtistPaymentAddressesAndSplitsArgs
-        );
+        this.accounts.artist2,
+        {
+          artistAddress: this.accounts.artist2.address,
+          additionalPayeePrimarySalesAddress: constants.ZERO_ADDRESS,
+          additionalPayeePrimarySalesPercentage: 0,
+          additionalPayeeSecondarySalesAddress:
+            this.accounts.additional2.address,
+          additionalPayeeSecondarySalesPercentage: 51,
+        }
+      );
       // update Art Blocks secondary BPS to 2.4%
       await this.genArt721Core
         .connect(this.accounts.deployer)
@@ -1052,24 +1049,19 @@ describe("GenArt721CoreV3 Views", async function () {
         .connect(this.accounts.artist2)
         .updateProjectSecondaryMarketRoyaltyPercentage(this.projectOne, 10);
       // artist2 populates an addditional payee
-      const proposeArtistPaymentAddressesAndSplitsArgs = [
+      await updateArtistFinance.call(
+        this,
         this.projectOne,
-        this.accounts.artist2.address,
-        constants.ZERO_ADDRESS,
-        0,
-        this.accounts.additional2.address, // additional secondary address
-        100, // additonal secondary percentage
-      ];
-      await this.genArt721Core
-        .connect(this.accounts.artist2)
-        .proposeArtistPaymentAddressesAndSplits(
-          ...proposeArtistPaymentAddressesAndSplitsArgs
-        );
-      await this.genArt721Core
-        .connect(this.accounts.deployer)
-        .adminAcceptArtistAddressesAndSplits(
-          ...proposeArtistPaymentAddressesAndSplitsArgs
-        );
+        this.accounts.artist2,
+        {
+          artistAddress: this.accounts.artist2.address,
+          additionalPayeePrimarySalesAddress: constants.ZERO_ADDRESS,
+          additionalPayeePrimarySalesPercentage: 0,
+          additionalPayeeSecondarySalesAddress:
+            this.accounts.additional2.address,
+          additionalPayeeSecondarySalesPercentage: 100,
+        }
+      );
       // update Art Blocks secondary BPS to 2.4%
       await this.genArt721Core
         .connect(this.accounts.deployer)
@@ -1124,24 +1116,19 @@ describe("GenArt721CoreV3 Views", async function () {
         .connect(this.accounts.artist2)
         .updateProjectSecondaryMarketRoyaltyPercentage(this.projectOne, 10);
       // artist2 populates an addditional payee
-      const proposeArtistPaymentAddressesAndSplitsArgs = [
+      await updateArtistFinance.call(
+        this,
         this.projectOne,
-        this.accounts.artist2.address,
-        constants.ZERO_ADDRESS,
-        0,
-        this.accounts.additional2.address, // additional secondary address
-        0, // additonal secondary percentage
-      ];
-      await this.genArt721Core
-        .connect(this.accounts.artist2)
-        .proposeArtistPaymentAddressesAndSplits(
-          ...proposeArtistPaymentAddressesAndSplitsArgs
-        );
-      await this.genArt721Core
-        .connect(this.accounts.deployer)
-        .adminAcceptArtistAddressesAndSplits(
-          ...proposeArtistPaymentAddressesAndSplitsArgs
-        );
+        this.accounts.artist2,
+        {
+          artistAddress: this.accounts.artist2.address,
+          additionalPayeePrimarySalesAddress: constants.ZERO_ADDRESS,
+          additionalPayeePrimarySalesPercentage: 0,
+          additionalPayeeSecondarySalesAddress:
+            this.accounts.additional2.address,
+          additionalPayeeSecondarySalesPercentage: 0,
+        }
+      );
       // update Art Blocks secondary BPS to 2.4%
       await this.genArt721Core
         .connect(this.accounts.deployer)
@@ -1237,25 +1224,19 @@ describe("GenArt721CoreV3 Views", async function () {
         .connect(this.accounts.deployer)
         .addProject("name", this.accounts.artist2.address);
       // artist2 populates an addditional payee
-      const proposeArtistPaymentAddressesAndSplitsArgs = [
+      await updateArtistFinance.call(
+        this,
         this.projectOne,
-        this.accounts.artist2.address,
-        this.accounts.additional.address,
-        49,
-        this.accounts.additional2.address, // additional secondary address
-        51, // additonal secondary percentage
-      ];
-      await this.genArt721Core
-        .connect(this.accounts.artist2)
-        .proposeArtistPaymentAddressesAndSplits(
-          ...proposeArtistPaymentAddressesAndSplitsArgs
-        );
-      await this.genArt721Core
-        .connect(this.accounts.deployer)
-        .adminAcceptArtistAddressesAndSplits(
-          ...proposeArtistPaymentAddressesAndSplitsArgs
-        );
-
+        this.accounts.artist2,
+        {
+          artistAddress: this.accounts.artist2.address,
+          additionalPayeePrimarySalesAddress: this.accounts.additional.address,
+          additionalPayeePrimarySalesPercentage: 49,
+          additionalPayeeSecondarySalesAddress:
+            this.accounts.additional2.address,
+          additionalPayeeSecondarySalesPercentage: 51,
+        }
+      );
       // check for expected values
       const viewData = await this.genArt721Core
         .connect(this.accounts.user)
@@ -1279,25 +1260,19 @@ describe("GenArt721CoreV3 Views", async function () {
         .connect(this.accounts.deployer)
         .addProject("name", this.accounts.artist2.address);
       // artist2 populates an addditional payee
-      const proposeArtistPaymentAddressesAndSplitsArgs = [
+      await updateArtistFinance.call(
+        this,
         this.projectOne,
-        this.accounts.artist2.address,
-        this.accounts.additional.address,
-        49,
-        this.accounts.additional2.address, // additional secondary address
-        51, // additonal secondary percentage
-      ];
-      await this.genArt721Core
-        .connect(this.accounts.artist2)
-        .proposeArtistPaymentAddressesAndSplits(
-          ...proposeArtistPaymentAddressesAndSplitsArgs
-        );
-      await this.genArt721Core
-        .connect(this.accounts.deployer)
-        .adminAcceptArtistAddressesAndSplits(
-          ...proposeArtistPaymentAddressesAndSplitsArgs
-        );
-
+        this.accounts.artist2,
+        {
+          artistAddress: this.accounts.artist2.address,
+          additionalPayeePrimarySalesAddress: this.accounts.additional.address,
+          additionalPayeePrimarySalesPercentage: 49,
+          additionalPayeeSecondarySalesAddress:
+            this.accounts.additional2.address,
+          additionalPayeeSecondarySalesPercentage: 51,
+        }
+      );
       // check for expected values
       const viewData = await this.genArt721Core
         .connect(this.accounts.user)
@@ -1321,25 +1296,19 @@ describe("GenArt721CoreV3 Views", async function () {
         .connect(this.accounts.deployer)
         .addProject("name", this.accounts.artist2.address);
       // artist2 populates an addditional payee
-      const proposeArtistPaymentAddressesAndSplitsArgs = [
+      await updateArtistFinance.call(
+        this,
         this.projectOne,
-        this.accounts.artist2.address,
-        this.accounts.additional.address,
-        49,
-        this.accounts.additional2.address, // additional secondary address
-        51, // additonal secondary percentage
-      ];
-      await this.genArt721Core
-        .connect(this.accounts.artist2)
-        .proposeArtistPaymentAddressesAndSplits(
-          ...proposeArtistPaymentAddressesAndSplitsArgs
-        );
-      await this.genArt721Core
-        .connect(this.accounts.deployer)
-        .adminAcceptArtistAddressesAndSplits(
-          ...proposeArtistPaymentAddressesAndSplitsArgs
-        );
-
+        this.accounts.artist2,
+        {
+          artistAddress: this.accounts.artist2.address,
+          additionalPayeePrimarySalesAddress: this.accounts.additional.address,
+          additionalPayeePrimarySalesPercentage: 49,
+          additionalPayeeSecondarySalesAddress:
+            this.accounts.additional2.address,
+          additionalPayeeSecondarySalesPercentage: 51,
+        }
+      );
       // check for expected values
       const viewData = await this.genArt721Core
         .connect(this.accounts.user)
@@ -1363,25 +1332,19 @@ describe("GenArt721CoreV3 Views", async function () {
         .connect(this.accounts.deployer)
         .addProject("name", this.accounts.artist2.address);
       // artist2 populates an addditional payee
-      const proposeArtistPaymentAddressesAndSplitsArgs = [
+      await updateArtistFinance.call(
+        this,
         this.projectOne,
-        this.accounts.artist2.address,
-        this.accounts.additional.address,
-        49,
-        this.accounts.additional2.address, // additional secondary address
-        51, // additonal secondary percentage
-      ];
-      await this.genArt721Core
-        .connect(this.accounts.artist2)
-        .proposeArtistPaymentAddressesAndSplits(
-          ...proposeArtistPaymentAddressesAndSplitsArgs
-        );
-      await this.genArt721Core
-        .connect(this.accounts.deployer)
-        .adminAcceptArtistAddressesAndSplits(
-          ...proposeArtistPaymentAddressesAndSplitsArgs
-        );
-
+        this.accounts.artist2,
+        {
+          artistAddress: this.accounts.artist2.address,
+          additionalPayeePrimarySalesAddress: this.accounts.additional.address,
+          additionalPayeePrimarySalesPercentage: 49,
+          additionalPayeeSecondarySalesAddress:
+            this.accounts.additional2.address,
+          additionalPayeeSecondarySalesPercentage: 51,
+        }
+      );
       // check for expected values
       const viewData = await this.genArt721Core
         .connect(this.accounts.user)
