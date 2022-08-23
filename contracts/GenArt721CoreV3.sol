@@ -11,6 +11,7 @@ import "./interfaces/0.8.x/IManifold.sol";
 import "@openzeppelin-4.7/contracts/utils/Strings.sol";
 import "@openzeppelin-4.7/contracts/access/Ownable.sol";
 import "./libs/0.8.x/ERC721_PackedHashSeed.sol";
+import "./libs/0.8.x/Bytes32Strings.sol";
 
 /**
  * @title Art Blocks ERC-721 core contract, V3.
@@ -21,6 +22,7 @@ contract GenArt721CoreV3 is
     Ownable,
     IGenArt721CoreContractV3
 {
+    using Bytes32Strings for bytes32;
     uint256 constant ONE_MILLION = 1_000_000;
     uint24 constant ONE_MILLION_UINT24 = 1_000_000;
     uint256 constant FOUR_WEEKS_IN_SECONDS = 2_419_200;
@@ -98,8 +100,7 @@ contract GenArt721CoreV3 is
         string website;
         string license;
         string projectBaseURI;
-        string scriptType;
-        string scriptTypeVersion;
+        bytes32 scriptTypeAndVersion;
         string aspectRatio;
         string ipfsHash;
         mapping(uint256 => string) scripts;
@@ -817,21 +818,20 @@ contract GenArt721CoreV3 is
     /**
      * @notice Updates script type for project `_projectId`.
      * @param _projectId Project to be updated.
-     * @param _scriptType Libary to be injected by renderer. e.g. "p5js"
-     * @param _scriptTypeVersion Version of library to be injected. e.g. "1.0.0"
+     * @param _scriptTypeAndVersion Script type and version e.g. "p5js@1.0.0",
+     * as bytes32 encoded string.
      */
     function updateProjectScriptType(
         uint256 _projectId,
-        string memory _scriptType,
-        string memory _scriptTypeVersion
+        bytes32 _scriptTypeAndVersion
     )
         external
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.updateProjectScriptType.selector)
     {
         Project storage project = projects[_projectId];
-        project.scriptType = _scriptType;
-        project.scriptTypeVersion = _scriptTypeVersion;
+        // TODO - require @ symbol in _scriptTypeAndVersion
+        project.scriptTypeAndVersion = _scriptTypeAndVersion;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT_TYPE);
     }
 
@@ -1078,8 +1078,8 @@ contract GenArt721CoreV3 is
     /**
      * @notice Returns script information for project `_projectId`.
      * @param _projectId Project to be queried.
-     * @return scriptType Project's script type/library (e.g. "p5js")
-     * @return scriptTypeVersion Project's library version (e.g. "1.0.0")
+     * @return scriptTypeAndVersion Project's script type and version
+     * (e.g. "p5js(atSymbol)1.0.0")
      * @return aspectRatio Aspect ratio of project (e.g. "1" for square,
      * "1.77777778" for 16:9, etc.)
      * @return ipfsHash IPFS hash for project
@@ -1089,16 +1089,21 @@ contract GenArt721CoreV3 is
         external
         view
         returns (
-            string memory scriptType,
-            string memory scriptTypeVersion,
+            string memory scriptTypeAndVersion,
             string memory aspectRatio,
             string memory ipfsHash,
             uint256 scriptCount
         )
     {
         Project storage project = projects[_projectId];
-        scriptType = project.scriptType;
-        scriptTypeVersion = project.scriptTypeVersion;
+        // convert to string
+        scriptTypeAndVersion = project.scriptTypeAndVersion.toString();
+        // scriptTypeAndVersion = string(
+        //     abi.encodePacked(project.scriptTypeAndVersion)
+        // );
+        // scriptTypeAndVersion = string(
+        //     string.concat(project.scriptTypeAndVersion)
+        // );
         aspectRatio = project.aspectRatio;
         scriptCount = project.scriptCount;
         ipfsHash = project.ipfsHash;
