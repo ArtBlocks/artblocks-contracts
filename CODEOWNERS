@@ -1,3 +1,2 @@
-# Request review from both the general Eng-Reviewers group, 
-# and the specific Eng-Approvers-Contracts group.
-*       @ArtBlocks/Eng-Reviewers @ArtBlocks/Eng-Approvers-Contracts
+# Request review from the best fit approvers group for this repo.
+*       @ArtBlocks/Eng-Approvers-Contracts
