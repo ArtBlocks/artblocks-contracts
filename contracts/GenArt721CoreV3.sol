@@ -26,7 +26,7 @@ contract GenArt721CoreV3 is
     uint256 constant ONE_MILLION = 1_000_000;
     uint24 constant ONE_MILLION_UINT24 = 1_000_000;
     uint256 constant FOUR_WEEKS_IN_SECONDS = 2_419_200;
-    uint8 constant AT_CHARACTER_CODE = uint8(bytes1("@") >> 4); // 64
+    uint8 constant AT_CHARACTER_CODE = uint8(bytes1("@")); // 0x40
 
     // generic platform event fields
     bytes32 constant FIELD_NEXT_PROJECT_ID = "nextProjectId";

@@ -45,15 +45,10 @@ library Bytes32Strings {
     {
         uint8 i;
         for (i = 0; i < 32; i++) {
-            bytes1 _byte = source[i];
+            uint8 _charCode = uint8(source[i]);
             // if not a null byte
-            if (_byte != 0) {
-                // char B
-                uint8 _f = uint8(_byte & 0x0f);
-                // char A
-                uint8 _l = uint8(_byte >> 4);
-                // true if either char matches
-                if (_f == utf8CharCode || _l == utf8CharCode) {
+            if (_charCode != 0) {
+                if (_charCode == utf8CharCode) {
                     return true;
                 }
             }
