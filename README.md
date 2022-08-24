@@ -73,7 +73,7 @@ Core contracts use the versioning schema below:
 - Minters have to iteract with (at least one) core contract
 - **Note:** while the whole end-to-end MinterFilter+FilteredMinter architecture is likely not the ideal fit for PBAB partners due to the infrastructure complexity required for partners integrating with it, any of the individual minters from within the minter suite can readily be adapted to work with PBAB core contracts–if you are a PBAB partner and there is a minter in the suite that this would be appealing for, please contact your account manager!
 
-| Core Contract Version(s) | Recommended Minters                                                                                             | deprecated Minters                                                         |
+| Core Contract Version(s) | Recommended Minters                                                                                             | Deprecated Minters                                                         |
 | ------------------------ | --------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
 | V0                       | (legacy minter)                                                                                                 | -                                                                           |
 | V1, V1_PRTNR             | MinterSetPriceV1<br>MinterSetPriceERC20V1<br>MinterDAExpV1<br>MinterDALinV1<br>MinterMerkleV0<br>MinterHolderV0 | MinterSetPriceV0<br>MinterSetPriceERC20V0<br>MinterDAExpV0<br>MinterDALinV0 |
