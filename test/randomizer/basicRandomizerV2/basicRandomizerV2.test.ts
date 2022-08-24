@@ -136,6 +136,26 @@ describe("BasicRandomizerV2 w/V3 core", async function () {
         )
       ).to.not.be.equal(ethers.constants.HashZero);
     });
+
+    it("multiple tokens minted have different hashes", async function () {
+      // expect 2 successful mints
+      await this.minter
+        .connect(this.accounts.artist)
+        .purchase(this.projectZero);
+      await this.minter
+        .connect(this.accounts.artist)
+        .purchase(this.projectZero);
+      // expect token hash to be assigned
+      const projectZeroTokenZeroHash = await this.genArt721Core.tokenIdToHash(
+        this.projectZeroTokenZero.toNumber()
+      );
+      const projectZeroTokenOneHash = await this.genArt721Core.tokenIdToHash(
+        this.projectZeroTokenOne.toNumber()
+      );
+      expect(projectZeroTokenZeroHash).to.not.be.equal(projectZeroTokenOneHash);
+      console.info(`projectZeroTokenZeroHash: ${projectZeroTokenZeroHash}`);
+      console.info(`projectZeroTokenOneHash: ${projectZeroTokenOneHash}`);
+    });
   });
 
   describe("owner", function () {
