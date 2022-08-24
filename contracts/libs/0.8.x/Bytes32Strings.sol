@@ -33,4 +33,31 @@ library Bytes32Strings {
             mstore(add(result, 0x20), source)
         }
     }
+
+    /**
+     * @dev Intended to check if a `bytes32`-encoded string contains a given
+     * character with utf8 character code `utf8CharCode.
+     */
+    function containsCharacter(bytes32 source, uint8 utf8CharCode)
+        internal
+        pure
+        returns (bool)
+    {
+        uint8 i;
+        for (i = 0; i < 32; i++) {
+            bytes1 _byte = source[i];
+            // if not a null byte
+            if (_byte != 0) {
+                // char B
+                uint8 _f = uint8(_byte & 0x0f);
+                // char A
+                uint8 _l = uint8(_byte >> 4);
+                // true if either char matches
+                if (_f == utf8CharCode || _l == utf8CharCode) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
 }

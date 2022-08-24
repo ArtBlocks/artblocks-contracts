@@ -26,6 +26,7 @@ contract GenArt721CoreV3 is
     uint256 constant ONE_MILLION = 1_000_000;
     uint24 constant ONE_MILLION_UINT24 = 1_000_000;
     uint256 constant FOUR_WEEKS_IN_SECONDS = 2_419_200;
+    uint8 constant AT_CHARACTER_CODE = uint8(bytes1("@") >> 4); // 64
 
     // generic platform event fields
     bytes32 constant FIELD_NEXT_PROJECT_ID = "nextProjectId";
@@ -830,7 +831,11 @@ contract GenArt721CoreV3 is
         onlyArtistOrAdminACL(_projectId, this.updateProjectScriptType.selector)
     {
         Project storage project = projects[_projectId];
-        // TODO - require @ symbol in _scriptTypeAndVersion
+        // require @ symbol in _scriptTypeAndVersion
+        require(
+            _scriptTypeAndVersion.containsCharacter(AT_CHARACTER_CODE),
+            "must contain @"
+        );
         project.scriptTypeAndVersion = _scriptTypeAndVersion;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT_TYPE);
     }
@@ -1096,14 +1101,7 @@ contract GenArt721CoreV3 is
         )
     {
         Project storage project = projects[_projectId];
-        // convert to string
         scriptTypeAndVersion = project.scriptTypeAndVersion.toString();
-        // scriptTypeAndVersion = string(
-        //     abi.encodePacked(project.scriptTypeAndVersion)
-        // );
-        // scriptTypeAndVersion = string(
-        //     string.concat(project.scriptTypeAndVersion)
-        // );
         aspectRatio = project.aspectRatio;
         scriptCount = project.scriptCount;
         ipfsHash = project.ipfsHash;
