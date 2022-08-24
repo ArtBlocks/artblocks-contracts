@@ -12,6 +12,7 @@ import "@openzeppelin-4.7/contracts/utils/Strings.sol";
 import "@openzeppelin-4.7/contracts/access/Ownable.sol";
 import "./libs/0.8.x/ERC721_PackedHashSeed.sol";
 import "./libs/0.8.x/Bytes32Strings.sol";
+import "./libs/0.8.x/ContractStorage.sol";
 
 /**
  * @title Art Blocks ERC-721 core contract, V3.
@@ -104,7 +105,7 @@ contract GenArt721CoreV3 is
         bytes32 scriptTypeAndVersion;
         string aspectRatio;
         string ipfsHash;
-        mapping(uint256 => string) scripts;
+        mapping(uint256 => address) scripts;
     }
 
     mapping(uint256 => Project) projects;
@@ -769,13 +770,15 @@ contract GenArt721CoreV3 is
      * @param _projectId Project to be updated.
      * @param _script Script to be added.
      */
-    function addProjectScript(uint256 _projectId, string memory _script)
+    function addProjectScript(uint256 _projectId, string calldata _script)
         external
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.addProjectScript.selector)
     {
         Project storage project = projects[_projectId];
-        project.scripts[project.scriptCount] = _script;
+        project.scripts[project.scriptCount] = ContractStorage.write(
+            bytes(_script)
+        );
         project.scriptCount = project.scriptCount + 1;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
     }
@@ -789,7 +792,7 @@ contract GenArt721CoreV3 is
     function updateProjectScript(
         uint256 _projectId,
         uint256 _scriptId,
-        string memory _script
+        string calldata _script
     )
         external
         onlyUnlocked(_projectId)
@@ -797,7 +800,9 @@ contract GenArt721CoreV3 is
     {
         Project storage project = projects[_projectId];
         require(_scriptId < project.scriptCount, "scriptId out of range");
-        project.scripts[_scriptId] = _script;
+        project.scripts[project.scriptCount] = ContractStorage.write(
+            bytes(_script)
+        );
         emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
     }
 
@@ -1115,7 +1120,8 @@ contract GenArt721CoreV3 is
         view
         returns (string memory)
     {
-        return projects[_projectId].scripts[_index];
+        return
+            string(ContractStorage.read(projects[_projectId].scripts[_index]));
     }
 
     /**
