@@ -17,7 +17,7 @@
 
 `0xC9604821E25E162452157c932380984F7c1f6402.` set as minter owner, whitelisted on core contract, and admin of core contract.
 
-## Ropsten (depreciated)
+## Ropsten (deprecated)
 
 ### Upload 0
 
