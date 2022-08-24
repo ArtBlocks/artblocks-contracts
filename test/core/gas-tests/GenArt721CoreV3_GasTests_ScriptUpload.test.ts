@@ -16,7 +16,7 @@ import {
   deployCoreWithMinterFilter,
   safeAddProject,
 } from "../../util/common";
-import { SQUIGGLE_SCRIPT } from "../../util/constants";
+import { SQUIGGLE_SCRIPT, SKULPTUUR_SCRIPT_APPROX } from "../../util/constants";
 
 import { Logger } from "@ethersproject/logger";
 // hide nuisance logs about event overloading
@@ -27,7 +27,7 @@ Logger.setLogLevel(Logger.levels.ERROR);
  * Used to test the gas cost of different operations on the core, specifically
  * when optimizing for gas to quantify % reductions to aide in decision making.
  */
-describe("GenArt721CoreV3 Gas Tests", async function () {
+describe("GenArt721CoreV3 Gas Tests - Script Upload", async function () {
   // increase test timeout from 20s to 40s due to minting numMintsToAverage tokens in beforeEach
   this.timeout(40000);
 
@@ -81,7 +81,7 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
   });
 
   describe("script upload gas optimization", function () {
-    it("test gas cost of uploading script [ @skip-on-coverage ]", async function () {
+    it("test gas cost of uploading Chromie Squiggle script [ @skip-on-coverage ]", async function () {
       const tx = await this.genArt721Core
         .connect(this.accounts.artist)
         .addProjectScript(this.projectThree, SQUIGGLE_SCRIPT);
@@ -106,6 +106,33 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
       );
       // console.info(script0);
       expect(script0).to.equal(SQUIGGLE_SCRIPT);
+    });
+
+    it("test gas cost of uploading Skulptuur script [ @skip-on-coverage ]", async function () {
+      const tx = await this.genArt721Core
+        .connect(this.accounts.artist)
+        .addProjectScript(this.projectThree, SKULPTUUR_SCRIPT_APPROX);
+      const receipt = await tx.wait();
+      const gasUsed = receipt.gasUsed.toNumber();
+      console.log("gas used for script upload: ", gasUsed);
+      // also report in USD at specific conditions
+      const gasCostAt100gwei = receipt.effectiveGasPrice
+        .mul(gasUsed)
+        .toString();
+      const gasCostAt100gweiInETH = parseFloat(
+        ethers.utils.formatUnits(gasCostAt100gwei, "ether")
+      );
+      const gasCostAt100gweiAt2kUSDPerETH = gasCostAt100gweiInETH * 2e3;
+      console.log(
+        `=USD at 100gwei, $2k USD/ETH: \$${gasCostAt100gweiAt2kUSDPerETH}`
+      );
+      // ensure value was updated
+      const script0 = await this.genArt721Core.projectScriptByIndex(
+        this.projectThree,
+        0
+      );
+      // console.info(script0);
+      expect(script0).to.equal(SKULPTUUR_SCRIPT_APPROX);
     });
   });
 });
