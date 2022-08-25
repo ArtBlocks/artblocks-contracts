@@ -36,8 +36,9 @@ library Bytes32Strings {
 
     /**
      * @dev Intended to check if a `bytes32`-encoded string contains a given
-     * character with utf8 character code `utf8CharCode exactly `targetQty`
-     * times.
+     * character with UTF-8 character code `utf8CharCode exactly `targetQty`
+     * times. Does not support searching for multi-byte characters, only
+     * characters with UTF-8 character codes < 0x80.
      */
     function containsExactCharacterQty(
         bytes32 source,
@@ -48,8 +49,8 @@ library Bytes32Strings {
         uint8 i;
         for (i = 0; i < 32; ) {
             uint8 _charCode = uint8(source[i]);
-            // if not a null byte
-            if (_charCode != 0) {
+            // if not a null byte, or a multi-byte UTF-8 character, check match
+            if (_charCode != 0 && _charCode < 0x80) {
                 if (_charCode == utf8CharCode) {
                     unchecked {
                         // no risk of overflow since max 32 iterations < max uin8=255
