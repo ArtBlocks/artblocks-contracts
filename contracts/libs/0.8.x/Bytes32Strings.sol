@@ -36,23 +36,32 @@ library Bytes32Strings {
 
     /**
      * @dev Intended to check if a `bytes32`-encoded string contains a given
-     * character with utf8 character code `utf8CharCode.
+     * character with utf8 character code `utf8CharCode exactly `targetQty`
+     * times.
      */
-    function containsCharacter(bytes32 source, uint8 utf8CharCode)
-        internal
-        pure
-        returns (bool)
-    {
+    function containsExactCharacterQty(
+        bytes32 source,
+        uint8 utf8CharCode,
+        uint8 targetQty
+    ) internal pure returns (bool) {
+        uint8 _occurrences = 0;
         uint8 i;
-        for (i = 0; i < 32; i++) {
+        for (i = 0; i < 32; ) {
             uint8 _charCode = uint8(source[i]);
             // if not a null byte
             if (_charCode != 0) {
                 if (_charCode == utf8CharCode) {
-                    return true;
+                    unchecked {
+                        // no risk of overflow since max 32 iterations < max uin8=255
+                        ++_occurrences;
+                    }
                 }
             }
+            unchecked {
+                // no risk of overflow since max 32 iterations < max uin8=255
+                ++i;
+            }
         }
-        return false;
+        return _occurrences == targetQty;
     }
 }

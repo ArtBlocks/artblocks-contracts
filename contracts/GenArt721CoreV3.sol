@@ -831,10 +831,13 @@ contract GenArt721CoreV3 is
         onlyArtistOrAdminACL(_projectId, this.updateProjectScriptType.selector)
     {
         Project storage project = projects[_projectId];
-        // require @ symbol in _scriptTypeAndVersion
+        // require exactly one @ symbol in _scriptTypeAndVersion
         require(
-            _scriptTypeAndVersion.containsCharacter(AT_CHARACTER_CODE),
-            "must contain @"
+            _scriptTypeAndVersion.containsExactCharacterQty(
+                AT_CHARACTER_CODE,
+                uint8(1)
+            ),
+            "must contain exactly one @"
         );
         project.scriptTypeAndVersion = _scriptTypeAndVersion;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT_TYPE);

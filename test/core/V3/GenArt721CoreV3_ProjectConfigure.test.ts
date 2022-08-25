@@ -341,16 +341,8 @@ describe("GenArt721CoreV3 Project Configure", async function () {
       expect(projectDetails.scriptTypeAndVersion).to.equal("p5js@v1.2.3");
     });
 
-    it("tx does not revert with @ at alternate position in byte", async function () {
-      await this.genArt721Core
-        .connect(this.accounts.artist)
-        .updateProjectScriptType(
-          this.projectZero,
-          ethers.utils.formatBytes32String("p5js_@_v1.2.3")
-        );
-    });
-
-    it("value must contain `@`", async function () {
+    it("value must contain exactly one `@`", async function () {
+      // test too few @
       await expectRevert(
         this.genArt721Core
           .connect(this.accounts.artist)
@@ -358,7 +350,17 @@ describe("GenArt721CoreV3 Project Configure", async function () {
             this.projectZero,
             ethers.utils.formatBytes32String("p5js_v1.2.3")
           ),
-        "must contain @"
+        "must contain exactly one @"
+      );
+      // test too many @
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectScriptType(
+            this.projectZero,
+            ethers.utils.formatBytes32String("p5@js@v1.2.3")
+          ),
+        "must contain exactly one @"
       );
     });
 
