@@ -1525,7 +1525,6 @@ describe("GenArt721CoreV3 Views", async function () {
 
     it("returns expected tokenURI after a populated projectURI (long URI edge-case)", async function () {
       const longURI = "https://example.com/".repeat(100);
-      console.log(longURI);
       // mint token for projectZero
       await this.minter
         .connect(this.accounts.artist)

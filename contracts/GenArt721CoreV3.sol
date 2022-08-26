@@ -1464,11 +1464,9 @@ contract GenArt721CoreV3 is
             _projectBaseURILen := mload(_projectBaseURI)
         }
         if (_projectBaseURILen > 0) {
-            return
-                string(abi.encodePacked(_projectBaseURI, _tokenId.toString()));
+            return string.concat(_projectBaseURI, _tokenId.toString());
         } else {
-            return
-                string(abi.encodePacked(contractBaseURI, _tokenId.toString()));
+            return string.concat(contractBaseURI, _tokenId.toString());
         }
     }
 
