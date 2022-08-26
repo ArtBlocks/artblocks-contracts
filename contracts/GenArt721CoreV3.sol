@@ -1458,16 +1458,11 @@ contract GenArt721CoreV3 is
     {
         string memory _projectBaseURI = projects[_tokenId / ONE_MILLION]
             .projectBaseURI;
-        uint256 _projectBaseURILen;
-        assembly {
-            // load string length directly from first word
-            _projectBaseURILen := mload(_projectBaseURI)
-        }
-        if (_projectBaseURILen > 0) {
+        if (bytes(_projectBaseURI).length > 0) {
             return string.concat(_projectBaseURI, _tokenId.toString());
-        } else {
-            return string.concat(contractBaseURI, _tokenId.toString());
         }
+        // fallback to contract base URI
+        return string.concat(contractBaseURI, _tokenId.toString());
     }
 
     /**
