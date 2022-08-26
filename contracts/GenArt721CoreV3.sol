@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-pragma solidity 0.8.9;
+pragma solidity 0.8.16;
 
 // Created By: Art Blocks Inc.
 
@@ -23,6 +23,8 @@ contract GenArt721CoreV3 is
     IGenArt721CoreContractV3
 {
     using Bytes32Strings for bytes32;
+    using Strings for address;
+    using Strings for uint256;
     uint256 constant ONE_MILLION = 1_000_000;
     uint24 constant ONE_MILLION_UINT24 = 1_000_000;
     uint256 constant FOUR_WEEKS_IN_SECONDS = 2_419_200;
@@ -31,6 +33,7 @@ contract GenArt721CoreV3 is
     // generic platform event fields
     bytes32 constant FIELD_NEXT_PROJECT_ID = "nextProjectId";
     bytes32 constant FIELD_NEW_PROJECTS_FORBIDDEN = "newProjectsForbidden";
+    bytes32 constant FIELD_CONTRACT_BASE_URI = "baseURI";
     bytes32 constant FIELD_ARTBLOCKS_PRIMARY_SALES_ADDRESS =
         "artblocksPrimarySalesAddress";
     bytes32 constant FIELD_ARTBLOCKS_SECONDARY_SALES_ADDRESS =
@@ -152,6 +155,10 @@ contract GenArt721CoreV3 is
     string public constant coreVersion = "v3.0.0";
     string public constant coreType = "GenArt721CoreV3";
 
+    /// default base URI for all projects, to be used unless project has a
+    /// projectBaseURI defined
+    string public contractBaseURI;
+
     modifier onlyValidTokenId(uint256 _tokenId) {
         require(_exists(_tokenId), "Token ID does not exist");
         _;
@@ -230,6 +237,14 @@ contract GenArt721CoreV3 is
         _updateRandomizerAddress(_randomizerContract);
         // set AdminACL management contract as owner
         _transferOwnership(_adminACLContract);
+        // initialize contract base URI
+        _updateContractBaseURI(
+            string.concat(
+                "https://token.artblocks.io/",
+                address(this).toHexString(),
+                "/"
+            )
+        );
         // initialize next project ID
         _nextProjectId = uint248(_startingProjectId);
         emit PlatformUpdated(FIELD_NEXT_PROJECT_ID);
@@ -875,6 +890,8 @@ contract GenArt721CoreV3 is
 
     /**
      * @notice Updates base URI for project `_projectId` to `_newBaseURI`.
+     * If a project base URI is uninitialized or set to an empty string, tokens
+     * of that project will use the contractBaseURI as their base URI.
      */
     function updateProjectBaseURI(uint256 _projectId, string memory _newBaseURI)
         external
@@ -882,6 +899,18 @@ contract GenArt721CoreV3 is
     {
         projects[_projectId].projectBaseURI = _newBaseURI;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_BASE_URI);
+    }
+
+    /**
+     * @notice Updates contract base URI to `_contractBaseURI`.
+     * If a project base URI is uninitialized or set to an empty string, tokens
+     * of that project will use the contractBaseURI as their base URI.
+     */
+    function updateContractBaseURI(string memory _contractBaseURI)
+        external
+        onlyAdminACL(this.updateContractBaseURI.selector)
+    {
+        _updateContractBaseURI(_contractBaseURI);
     }
 
     /**
@@ -1417,6 +1446,8 @@ contract GenArt721CoreV3 is
 
     /**
      * @notice Gets token URI for token ID `_tokenId`.
+     * @dev uses the project's base URI if populated, otherwise falls back to
+     * the contract's base URI.
      */
     function tokenURI(uint256 _tokenId)
         public
@@ -1425,13 +1456,20 @@ contract GenArt721CoreV3 is
         onlyValidTokenId(_tokenId)
         returns (string memory)
     {
-        return
-            string(
-                abi.encodePacked(
-                    projects[_tokenId / ONE_MILLION].projectBaseURI,
-                    Strings.toString(_tokenId)
-                )
-            );
+        string memory _projectBaseURI = projects[_tokenId / ONE_MILLION]
+            .projectBaseURI;
+        uint256 _projectBaseURILen;
+        assembly {
+            // load string length directly from first word
+            _projectBaseURILen := mload(_projectBaseURI)
+        }
+        if (_projectBaseURILen > 0) {
+            return
+                string(abi.encodePacked(_projectBaseURI, _tokenId.toString()));
+        } else {
+            return
+                string(abi.encodePacked(contractBaseURI, _tokenId.toString()));
+        }
     }
 
     /**
@@ -1491,6 +1529,16 @@ contract GenArt721CoreV3 is
         // populate historical randomizer array
         _historicalRandomizerAddresses.push(_randomizerAddress);
         emit PlatformUpdated(FIELD_RANDOMIZER_ADDRESS);
+    }
+
+    /**
+     * @notice Updates contract base URI to `_contractBaseURI`.
+     * If a project base URI is uninitialized or set to an empty string, tokens
+     * of that project will use the contractBaseURI as their base URI.
+     */
+    function _updateContractBaseURI(string memory _contractBaseURI) internal {
+        contractBaseURI = _contractBaseURI;
+        emit PlatformUpdated(FIELD_CONTRACT_BASE_URI);
     }
 
     /**
