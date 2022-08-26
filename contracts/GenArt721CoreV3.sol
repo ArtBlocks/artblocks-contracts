@@ -23,7 +23,6 @@ contract GenArt721CoreV3 is
     IGenArt721CoreContractV3
 {
     using Bytes32Strings for bytes32;
-    using Strings for address;
     using Strings for uint256;
     uint256 constant ONE_MILLION = 1_000_000;
     uint24 constant ONE_MILLION_UINT24 = 1_000_000;
@@ -238,13 +237,7 @@ contract GenArt721CoreV3 is
         // set AdminACL management contract as owner
         _transferOwnership(_adminACLContract);
         // initialize contract base URI
-        _updateContractBaseURI(
-            string.concat(
-                "https://token.artblocks.io/",
-                address(this).toHexString(),
-                "/"
-            )
-        );
+        _updateContractBaseURI("https://token.artblocks.io/");
         // initialize next project ID
         _nextProjectId = uint248(_startingProjectId);
         emit PlatformUpdated(FIELD_NEXT_PROJECT_ID);
