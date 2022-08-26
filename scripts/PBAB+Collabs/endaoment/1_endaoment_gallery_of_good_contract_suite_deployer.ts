@@ -2,20 +2,23 @@
 // Created By: Art Blocks Inc.
 
 import { ethers } from "hardhat";
-import { GenArt721CoreV2PBAB__factory } from "./contracts/factories/GenArt721CoreV2PBAB__factory";
-import { GenArt721MinterPBAB__factory } from "./contracts/factories/GenArt721MinterPBAB__factory";
-import { createPBABBucket } from "./util/aws_s3";
+import { GenArt721CoreV2EndaomentGalleryForGood__factory } from "../../contracts/factories/GenArt721CoreV2EndaomentGalleryForGood__factory";
+import { GenArt721MinterEndaomentGalleryForGood__factory } from "../../contracts/factories/GenArt721MinterEndaomentGalleryForGood__factory";
+import { createPBABBucket } from "../../util/aws_s3";
 
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG BEGINS HERE
 // TODO: Update and verify the below configuration items before deploying!
 //////////////////////////////////////////////////////////////////////////////
-const pbabTokenName = "TODO :: Placeholder";
-const pbabTokenTicker = "TODO";
-const startingProjectId = 0; // TODO
-const pbabTransferAddress = "0x000000000000000000000000000000000000dEaD";
-const rendererProviderAddress = "0x000000000000000000000000000000000000dEaD";
-const randomizerAddress = "0x000000000000000000000000000000000000dEaD";
+const pbabTokenName = "Endaoment Gallery for Good";
+const pbabTokenTicker = "EGG";
+const startingProjectId = 0; // Initial deployment, start at 0.
+
+// NOTE: Goerli Details
+const pbabTransferAddress = "0xbe21e4cf884c8b2517e4e199487f8b505841cb36";
+// This is just deployer wallet for Goerli
+const rendererProviderAddress = "0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63";
+const randomizerAddress = "0xec5dae4b11213290b2dbe5295093f75920bd2982";
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG ENDS HERE
 //////////////////////////////////////////////////////////////////////////////
@@ -29,7 +32,8 @@ async function main() {
   //////////////////////////////////////////////////////////////////////////////
 
   // Deploy Core contract.
-  const genArt721CoreFactory = new GenArt721CoreV2PBAB__factory(deployer);
+  const genArt721CoreFactory =
+    new GenArt721CoreV2EndaomentGalleryForGood__factory(deployer);
   const genArt721Core = await genArt721CoreFactory.deploy(
     pbabTokenName,
     pbabTokenTicker,
@@ -43,7 +47,8 @@ async function main() {
   console.log(`GenArt721Core deployed at ${genArt721Core.address}`);
 
   // Deploy Minter contract.
-  const genArt721MinterFactory = new GenArt721MinterPBAB__factory(deployer);
+  const genArt721MinterFactory =
+    new GenArt721MinterEndaomentGalleryForGood__factory(deployer);
   const genArt721Minter = await genArt721MinterFactory.deploy(
     genArt721Core.address
   );

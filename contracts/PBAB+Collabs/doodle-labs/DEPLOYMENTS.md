@@ -31,7 +31,7 @@ Additionally due to complexity of `.transfer()` out of gas errors caused by the 
 
 `0x95DcB7b8e99B7B8FCb1DCb9e82Bb12183b2bbE02.` set as minter owner, whitelisted on core contract, and admin of core contract.
 
-## Ropsten (depreciated)
+## Ropsten (deprecated)
 
 ### Upload 0
 

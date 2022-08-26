@@ -68,7 +68,7 @@ https://goerli.etherscan.io/address/0xe25D9B8F5Cd8E8E8ccb68F26fc70E6AD4e0C7845#c
 
 `0x2246475beddf9333b6a6D9217194576E7617Afd1` set as minter owner, whitelisted on core contract, and admin of core contract. (contact Ryley if you need to change this)
 
-# Depreciated
+# deprecated
 ## Ropsten
 
 ### Upload 0
