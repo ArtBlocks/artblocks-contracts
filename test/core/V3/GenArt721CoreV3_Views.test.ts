@@ -1467,7 +1467,7 @@ describe("GenArt721CoreV3 Views", async function () {
         .connect(this.accounts.user)
         .tokenURI(this.projectZeroTokenZero.toNumber());
       expect(tokenURIForEmptyProjectURI).to.be.equal(
-        `https://token.artblocks.io/${this.genArt721Core.address.toLowerCase()}/${this.projectZeroTokenZero.toString()}`
+        `https://token.artblocks.io/${this.projectZeroTokenZero.toString()}`
       );
     });
 
@@ -1560,7 +1560,7 @@ describe("GenArt721CoreV3 Views", async function () {
         .connect(this.accounts.user)
         .tokenURI(this.projectZeroTokenZero.toNumber());
       expect(tokenURI).to.be.equal(
-        `https://token.artblocks.io/${this.genArt721Core.address.toLowerCase()}/${this.projectZeroTokenZero.toString()}`
+        `https://token.artblocks.io/${this.projectZeroTokenZero.toString()}`
       );
     });
 
