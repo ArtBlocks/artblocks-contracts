@@ -112,14 +112,14 @@ contract GenArt721CoreV3 is
     /// packed struct containing project financial information
     struct ProjectFinance {
         address payable additionalPayeePrimarySales;
-        // packed uint: max of 100, max uint8 = 255
-        uint8 additionalPayeePrimarySalesPercentage;
+        // packed uint: max of 95, max uint8 = 255
+        uint8 secondaryMarketRoyaltyPercentage;
         address payable additionalPayeeSecondarySales;
         // packed uint: max of 100, max uint8 = 255
         uint8 additionalPayeeSecondarySalesPercentage;
         address payable artistAddress;
-        // packed uint: max of 95, max uint8 = 255
-        uint8 secondaryMarketRoyaltyPercentage;
+        // packed uint: max of 100, max uint8 = 255
+        uint8 additionalPayeePrimarySalesPercentage;
     }
     // Project financials mapping
     mapping(uint256 => ProjectFinance) projectIdToFinancials;
