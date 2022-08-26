@@ -13,8 +13,9 @@ _This document is intended to document and explain the Art Blocks Core V3 change
 - Implement "Ownable"
   - Main benefit is OpenSea/aggregator support by default
   - Added a getter function admin() that returns contract owner to maintain backwards-compatibility of interface with before-V3 contracts.
-- Change scriptJSON to distinct fields
+- Change `scriptJSON` to distinct fields `scriptTypeAndVersion` and `aspectRatio`
   - This is to standardize which items should be on-chain and used by renderer (e.g. library, library version, aspectRatio).
+  - On-chain data validation that `scriptTypeAndVersion` contains `@` delimeter (to better ensure library version is recorded).
 - Re-organize the contract's project-view functions to be more intuitive
   - V1's `projectTokenInfo`, `projectScriptInfo`, and `projectDetails` are now broken out into:
     - `projectStateData` - Information relevant to minters/purchasers
@@ -54,8 +55,11 @@ _This document is intended to document and explain the Art Blocks Core V3 change
 - Update minters in minter suite to integrate with V3 core contract
   - A couple breaking changes were made on the V3 core contract that required changes to the minter suite contracts.
 - Improve gas efficiency of minting on the V3 core contract
-  - Minimize costly SLOAD operations & re-organize logic to minimize gas usage
-  - Pack structs
+  - Derive from ERC721 instead of ERC721Enumerable
+  - Fork OpenZeppelin ERC721 implementation to pack token hash seed with owner address
+  - Minimize SLOAD operations & re-organize logic to minimize gas usage
+  - Pack project data by optimizing struct layout and variable types
+  - Pack project financial data by utilizing new struct and variable types
   - Optimize mint function signature to reduce gas usage
 - Improve gas efficiency of V3-compatible minters
   - Minimize costly SLOAD operations & re-organize logic to minimize gas usage

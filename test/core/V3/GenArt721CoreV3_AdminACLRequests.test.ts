@@ -214,8 +214,7 @@ describe("GenArt721CoreV3 AminACL Requests", async function () {
     it("updateProjectScriptType", async function () {
       await validateAdminACLRequest.call(this, "updateProjectScriptType", [
         this.projectZero,
-        "p5js",
-        "v1.4.2",
+        ethers.utils.formatBytes32String("p5js@v1.2.3"),
       ]);
     });
 

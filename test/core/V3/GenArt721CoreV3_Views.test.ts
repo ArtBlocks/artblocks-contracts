@@ -231,8 +231,7 @@ describe("GenArt721CoreV3 Views", async function () {
       const projectScriptDetails = await this.genArt721Core
         .connect(this.accounts.deployer)
         .projectScriptDetails(this.projectZero);
-      expect(projectScriptDetails.scriptType).to.be.equal("");
-      expect(projectScriptDetails.scriptTypeVersion).to.be.equal("");
+      expect(projectScriptDetails.scriptTypeAndVersion).to.be.equal("");
       expect(projectScriptDetails.aspectRatio).to.be.equal("");
       expect(projectScriptDetails.ipfsHash).to.be.equal("");
       expect(projectScriptDetails.scriptCount).to.be.equal(0);
@@ -241,7 +240,10 @@ describe("GenArt721CoreV3 Views", async function () {
     it("returns expected populated values", async function () {
       await this.genArt721Core
         .connect(this.accounts.artist)
-        .updateProjectScriptType(this.projectZero, "p5js", "1.0.0");
+        .updateProjectScriptType(
+          this.projectZero,
+          ethers.utils.formatBytes32String("p5js@v1.2.3")
+        );
       await this.genArt721Core
         .connect(this.accounts.artist)
         .updateProjectAspectRatio(this.projectZero, "1.77777778");
@@ -255,8 +257,9 @@ describe("GenArt721CoreV3 Views", async function () {
       const projectScriptDetails = await this.genArt721Core
         .connect(this.accounts.deployer)
         .projectScriptDetails(this.projectZero);
-      expect(projectScriptDetails.scriptType).to.be.equal("p5js");
-      expect(projectScriptDetails.scriptTypeVersion).to.be.equal("1.0.0");
+      expect(projectScriptDetails.scriptTypeAndVersion).to.be.equal(
+        "p5js@v1.2.3"
+      );
       expect(projectScriptDetails.aspectRatio).to.be.equal("1.77777778");
       expect(projectScriptDetails.ipfsHash).to.be.equal("0x12345");
       expect(projectScriptDetails.scriptCount).to.be.equal(1);

@@ -307,6 +307,95 @@ describe("GenArt721CoreV3 Project Configure", async function () {
     });
   });
 
+  describe("updateProjectScriptType", function () {
+    const errorMessage = "Only artist when unlocked, owner when locked";
+    it("owner can update when unlocked", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateProjectScriptType(
+          this.projectZero,
+          ethers.utils.formatBytes32String("p5js@v1.2.3")
+        );
+    });
+
+    it("artist can update when unlocked", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectScriptType(
+          this.projectZero,
+          ethers.utils.formatBytes32String("p5js@v1.2.3")
+        );
+    });
+
+    it("view is updated when value is updated", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectScriptType(
+          this.projectZero,
+          ethers.utils.formatBytes32String("p5js@v1.2.3")
+        );
+      // expect view to be updated
+      const projectDetails = await this.genArt721Core
+        .connect(this.accounts.user)
+        .projectScriptDetails(this.projectZero);
+      expect(projectDetails.scriptTypeAndVersion).to.equal("p5js@v1.2.3");
+    });
+
+    it("value must contain exactly one `@`", async function () {
+      // test too few @
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectScriptType(
+            this.projectZero,
+            ethers.utils.formatBytes32String("p5js_v1.2.3")
+          ),
+        "must contain exactly one @"
+      );
+      // test too many @
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectScriptType(
+            this.projectZero,
+            ethers.utils.formatBytes32String("p5@js@v1.2.3")
+          ),
+        "must contain exactly one @"
+      );
+    });
+
+    it("owner can not update when locked", async function () {
+      await mintProjectUntilRemaining.call(
+        this,
+        this.projectZero,
+        this.accounts.artist,
+        0
+      );
+      await advanceEVMByTime(FOUR_WEEKS + 1);
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateProjectScriptType(
+            this.projectZero,
+            ethers.utils.formatBytes32String("p5js@v1.2.3")
+          ),
+        "Only if unlocked"
+      );
+    });
+
+    it("user cannot update", async function () {
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.user)
+          .updateProjectScriptType(
+            this.projectZero,
+            ethers.utils.formatBytes32String("p5js@v1.2.3")
+          ),
+        "Only artist or Admin ACL allowed"
+      );
+    });
+  });
+
   describe("updateProjectArtistAddress", function () {
     it("only allows owner to update project artist address", async function () {
       await expectRevert(

@@ -406,7 +406,10 @@ describe("GenArt721CoreV3 Events", async function () {
       expect(
         await this.genArt721Core
           .connect(this.accounts.artist)
-          .updateProjectScriptType(this.projectZero, "p5js", "v1.2.3")
+          .updateProjectScriptType(
+            this.projectZero,
+            ethers.utils.formatBytes32String("p5js@v1.2.3")
+          )
       )
         .to.emit(this.genArt721Core, "ProjectUpdated")
         .withArgs(
