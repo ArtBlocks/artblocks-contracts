@@ -32,7 +32,7 @@ contract GenArt721CoreV3 is
     // generic platform event fields
     bytes32 constant FIELD_NEXT_PROJECT_ID = "nextProjectId";
     bytes32 constant FIELD_NEW_PROJECTS_FORBIDDEN = "newProjectsForbidden";
-    bytes32 constant FIELD_CONTRACT_BASE_URI = "baseURI";
+    bytes32 constant FIELD_DEFAULT_BASE_URI = "defaultBaseURI";
     bytes32 constant FIELD_ARTBLOCKS_PRIMARY_SALES_ADDRESS =
         "artblocksPrimarySalesAddress";
     bytes32 constant FIELD_ARTBLOCKS_SECONDARY_SALES_ADDRESS =
@@ -154,9 +154,8 @@ contract GenArt721CoreV3 is
     string public constant coreVersion = "v3.0.0";
     string public constant coreType = "GenArt721CoreV3";
 
-    /// default base URI for all projects, to be used unless project has a
-    /// projectBaseURI defined
-    string public contractBaseURI;
+    /// default base URI to initialize all new project projectBaseURI values to
+    string public defaultBaseURI;
 
     modifier onlyValidTokenId(uint256 _tokenId) {
         require(_exists(_tokenId), "Token ID does not exist");
@@ -236,8 +235,8 @@ contract GenArt721CoreV3 is
         _updateRandomizerAddress(_randomizerContract);
         // set AdminACL management contract as owner
         _transferOwnership(_adminACLContract);
-        // initialize contract base URI
-        _updateContractBaseURI("https://token.artblocks.io/");
+        // initialize default base URI
+        _updateDefaultBaseURI("https://token.artblocks.io/");
         // initialize next project ID
         _nextProjectId = uint248(_startingProjectId);
         emit PlatformUpdated(FIELD_NEXT_PROJECT_ID);
@@ -621,6 +620,7 @@ contract GenArt721CoreV3 is
         projects[projectId].name = _projectName;
         projects[projectId].paused = true;
         projects[projectId].maxInvocations = ONE_MILLION_UINT24;
+        projects[projectId].projectBaseURI = defaultBaseURI;
 
         _nextProjectId = uint248(projectId) + 1;
         emit ProjectUpdated(projectId, FIELD_PROJECT_CREATED);
@@ -883,8 +883,9 @@ contract GenArt721CoreV3 is
 
     /**
      * @notice Updates base URI for project `_projectId` to `_newBaseURI`.
-     * If a project base URI is uninitialized or set to an empty string, tokens
-     * of that project will use the contractBaseURI as their base URI.
+     * This is the controlling base URI for all tokens in the project. The
+     * contract-level defaultBaseURI is only used when initializing new
+     * projects.
      */
     function updateProjectBaseURI(uint256 _projectId, string memory _newBaseURI)
         external
@@ -895,15 +896,15 @@ contract GenArt721CoreV3 is
     }
 
     /**
-     * @notice Updates contract base URI to `_contractBaseURI`.
-     * If a project base URI is uninitialized or set to an empty string, tokens
-     * of that project will use the contractBaseURI as their base URI.
+     * @notice Updates default base URI to `_defaultBaseURI`. The
+     * contract-level defaultBaseURI is only used when initializing new
+     * projects. Token URIs are determined by their project's `projectBaseURI`.
      */
-    function updateContractBaseURI(string memory _contractBaseURI)
+    function updateDefaultBaseURI(string memory _defaultBaseURI)
         external
-        onlyAdminACL(this.updateContractBaseURI.selector)
+        onlyAdminACL(this.updateDefaultBaseURI.selector)
     {
-        _updateContractBaseURI(_contractBaseURI);
+        _updateDefaultBaseURI(_defaultBaseURI);
     }
 
     /**
@@ -1439,8 +1440,8 @@ contract GenArt721CoreV3 is
 
     /**
      * @notice Gets token URI for token ID `_tokenId`.
-     * @dev uses the project's base URI if populated, otherwise falls back to
-     * the contract's base URI.
+     * @dev token URIs are the concatenation of the project base URI and the
+     * token ID.
      */
     function tokenURI(uint256 _tokenId)
         public
@@ -1451,11 +1452,7 @@ contract GenArt721CoreV3 is
     {
         string memory _projectBaseURI = projects[_tokenId / ONE_MILLION]
             .projectBaseURI;
-        if (bytes(_projectBaseURI).length > 0) {
-            return string.concat(_projectBaseURI, _tokenId.toString());
-        }
-        // fallback to contract base URI
-        return string.concat(contractBaseURI, _tokenId.toString());
+        return string.concat(_projectBaseURI, _tokenId.toString());
     }
 
     /**
@@ -1518,13 +1515,13 @@ contract GenArt721CoreV3 is
     }
 
     /**
-     * @notice Updates contract base URI to `_contractBaseURI`.
-     * If a project base URI is uninitialized or set to an empty string, tokens
-     * of that project will use the contractBaseURI as their base URI.
+     * @notice Updates default base URI to `_defaultBaseURI`.
+     * When new projects are added, their `projectBaseURI` is automatically
+     * initialized to `_defaultBaseURI`.
      */
-    function _updateContractBaseURI(string memory _contractBaseURI) internal {
-        contractBaseURI = _contractBaseURI;
-        emit PlatformUpdated(FIELD_CONTRACT_BASE_URI);
+    function _updateDefaultBaseURI(string memory _defaultBaseURI) internal {
+        defaultBaseURI = _defaultBaseURI;
+        emit PlatformUpdated(FIELD_DEFAULT_BASE_URI);
     }
 
     /**
