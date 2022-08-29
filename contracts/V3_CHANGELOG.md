@@ -70,6 +70,5 @@ _This document is intended to document and explain the Art Blocks Core V3 change
   - Remove any unnecessary minter logic accordingly
 - Enable admin to forever prevent new projects from being added to the core contract
   - This is to prevent the core contract from being used to mint new projects if Art Blocks ever changes to a new contract in the future.
-- Add new automatically-populated and admin-configurable `contractBaseURI` field to V3 core contract
-  - This is to have a default base URI for all projects on the V3 core contract, and to allow the admin to update the base URI if needed.
-  - This is only used of an artist does not populate the `projectBaseURI` on their project, keeping artists in control of their project's base URI.
+- Add new automatically-populated and admin-configurable `defaultBaseURI` field to V3 core contract
+  - This is to have a default base URI for all **new** projects on the V3 core contract, and to allow the artist to update the base URI if needed.
