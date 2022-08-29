@@ -143,12 +143,12 @@ describe("GenArt721CoreV3 Contract Configure", async function () {
     });
   });
 
-  describe("updateContractBaseURI", function () {
+  describe("updateDefaultBaseURI", function () {
     it("does not allow non-admin to call", async function () {
       await expectRevert(
         this.genArt721Core
           .connect(this.accounts.artist)
-          .updateContractBaseURI("https://token.newuri.com"),
+          .updateDefaultBaseURI("https://token.newuri.com/"),
         "Only Admin ACL allowed"
       );
     });
@@ -156,7 +156,7 @@ describe("GenArt721CoreV3 Contract Configure", async function () {
     it("does allow admin to call", async function () {
       await this.genArt721Core
         .connect(this.accounts.deployer)
-        .updateContractBaseURI("https://token.newuri.com");
+        .updateDefaultBaseURI("https://token.newuri.com/");
     });
   });
 });

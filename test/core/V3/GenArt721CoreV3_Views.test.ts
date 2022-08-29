@@ -1457,33 +1457,50 @@ describe("GenArt721CoreV3 Views", async function () {
   });
 
   describe("tokenURI", function () {
-    it("returns contract base URI if projectURI is not populated", async function () {
+    it("returns default base URI if projectURI is not populated", async function () {
       // mint token for projectZero
       await this.minter
         .connect(this.accounts.artist)
         .purchase(this.projectZero);
       // check tokenURI
-      const tokenURIForEmptyProjectURI = await this.genArt721Core
+      const tokenURIForDefaultProjectURI = await this.genArt721Core
         .connect(this.accounts.user)
         .tokenURI(this.projectZeroTokenZero.toNumber());
-      expect(tokenURIForEmptyProjectURI).to.be.equal(
+      expect(tokenURIForDefaultProjectURI).to.be.equal(
         `https://token.artblocks.io/${this.projectZeroTokenZero.toString()}`
       );
     });
 
-    it("returns updated contract base URI if contract base URI is updated after constructor", async function () {
-      // mint token for projectZero
-      await this.minter
-        .connect(this.accounts.artist)
-        .purchase(this.projectZero);
+    it("returns updated default base URI if contract base URI is updated after constructor", async function () {
       // update contract base URI
       await this.genArt721Core
         .connect(this.accounts.deployer)
         .updateContractBaseURI("https://tokenz.AB.com/");
+      // add new project
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .addProject("projectOne", this.accounts.artist.address);
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .toggleProjectIsActive(this.projectOne);
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectMaxInvocations(this.projectOne, this.maxInvocations);
+
+      // configure minter for project zero
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .setMinterForProject(this.projectOne, this.minter.address);
+      await this.minter
+        .connect(this.accounts.artist)
+        .updatePricePerTokenInWei(this.projectOne, 0);
+      // mint token for projectOne
+      await this.minter.connect(this.accounts.artist).purchase(this.projectOne);
+
       // check tokenURI
       const tokenURIForEmptyProjectURI = await this.genArt721Core
         .connect(this.accounts.user)
-        .tokenURI(this.projectZeroTokenZero.toNumber());
+        .tokenURI(this.projectOneTokenOne.toNumber());
       expect(tokenURIForEmptyProjectURI).to.be.equal(
         `https://tokenz.AB.com/${this.projectZeroTokenZero.toString()}`
       );
@@ -1539,28 +1556,6 @@ describe("GenArt721CoreV3 Views", async function () {
         .tokenURI(this.projectZeroTokenZero.toNumber());
       expect(tokenURI).to.be.equal(
         `${longURI}${this.projectZeroTokenZero.toString()}`
-      );
-    });
-
-    it("returns contract base URI after a populated projectURI is re-set to empty string", async function () {
-      // mint token for projectZero
-      await this.minter
-        .connect(this.accounts.artist)
-        .purchase(this.projectZero);
-      // set project base URI to non-empty string
-      await this.genArt721Core
-        .connect(this.accounts.artist)
-        .updateProjectBaseURI(this.projectZero, "https://example.com/");
-      // set project base URI to empty string
-      await this.genArt721Core
-        .connect(this.accounts.artist)
-        .updateProjectBaseURI(this.projectZero, "");
-      // check tokenURI
-      const tokenURI = await this.genArt721Core
-        .connect(this.accounts.user)
-        .tokenURI(this.projectZeroTokenZero.toNumber());
-      expect(tokenURI).to.be.equal(
-        `https://token.artblocks.io/${this.projectZeroTokenZero.toString()}`
       );
     });
 

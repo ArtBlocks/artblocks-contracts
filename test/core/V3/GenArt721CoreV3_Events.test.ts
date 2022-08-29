@@ -194,15 +194,15 @@ describe("GenArt721CoreV3 Events", async function () {
         .withArgs(ethers.utils.formatBytes32String("newProjectsForbidden"));
     });
 
-    it("emits `contractBaseURI`", async function () {
+    it("emits `defaultBaseURI`", async function () {
       // emits expected event arg(s)
       expect(
         await this.genArt721Core
           .connect(this.accounts.deployer)
-          .updateContractBaseURI("https://newbaseuri.com/token/")
+          .defaultBaseURI("https://newbaseuri.com/token/")
       )
         .to.emit(this.genArt721Core, "PlatformUpdated")
-        .withArgs(ethers.utils.formatBytes32String("baseURI"));
+        .withArgs(ethers.utils.formatBytes32String("defaultBaseURI"));
     });
   });
 
