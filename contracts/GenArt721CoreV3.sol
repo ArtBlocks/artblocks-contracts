@@ -777,14 +777,45 @@ contract GenArt721CoreV3 is
      * @param _projectId Project to be updated.
      * @param _script Script to be added.
      */
-    function addProjectScript(uint256 _projectId, string memory _script)
+    function addProjectScript(uint256 _projectId, string calldata _script)
         external
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.addProjectScript.selector)
     {
         Project storage project = projects[_projectId];
-        project.scripts[project.scriptCount] = _script;
-        project.scriptCount = project.scriptCount + 1;
+        uint256 scriptCountBefore = project.scriptCount;
+        // store at a free storage slot by double-hashing the abi.encode of _projectId, scriptIndex
+        bytes32 startSlot = keccak256(
+            abi.encode(keccak256(abi.encode(_projectId, scriptCountBefore)))
+        );
+        assembly {
+            // first four bytes of calldata is function selector
+            // next 32 are the _projectId value
+            // next word is data offset, which is 0x20 for single string input
+            // (skip storing this, we can assume 0x20 for single string input)
+            // next word is length of string data, in bytes
+            let currentCalldataByte := 0x44
+            let dataLenBytes := calldataload(currentCalldataByte)
+            sstore(startSlot, dataLenBytes)
+            // increment currentCalldataByte by 32
+            currentCalldataByte := add(currentCalldataByte, 0x20)
+            // finally, string data itself in bytes/32 words, big endian
+            // iterate until we reach the final word
+            let stringDataStart := 0x44
+            let currentSlot := add(startSlot, 1)
+            for {
+                let storedDataLenBytes := 0
+            } lt(storedDataLenBytes, dataLenBytes) {
+                storedDataLenBytes := add(storedDataLenBytes, 32)
+            } {
+                sstore(currentSlot, calldataload(currentCalldataByte))
+                // increment currentCalldataByte by 32 bytes
+                currentCalldataByte := add(currentCalldataByte, 0x20)
+                // increment currentSlot
+                currentSlot := add(currentSlot, 1)
+            }
+        }
+        project.scriptCount = uint24(scriptCountBefore + 1);
         emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
     }
 
@@ -1140,7 +1171,54 @@ contract GenArt721CoreV3 is
         view
         returns (string memory)
     {
-        return projects[_projectId].scripts[_index];
+        // store retrieve at custom storage slot by double-hashing _projectId, scriptIndex
+        bytes32 startSlot = keccak256(
+            abi.encode(keccak256(abi.encode(_projectId, _index)))
+        );
+        assembly {
+            // first slot in storage is string data length, in bytes
+            let currentSlot := startSlot
+            let stringDataLen := sload(currentSlot)
+            currentSlot := add(currentSlot, 1)
+            // dtermine required space in memory for return data
+            let stringDataRemainder := mod(stringDataLen, 0x20)
+            // first round down to word
+            let stringDataLenRoundUpToWord := mul(
+                div(stringDataLen, 0x20),
+                0x20
+            )
+            // increase by 32 bytes if partially filled words
+            if iszero(stringDataRemainder) {
+                stringDataLenRoundUpToWord := add(
+                    stringDataLenRoundUpToWord,
+                    0x20
+                )
+            }
+            // reserve space in memory for return data, 0x40 of offset and length, string data len for rest
+            // load free memory pointer
+            let ptr := mload(0x40)
+            mstore(0x40, add(ptr, add(0x40, stringDataLenRoundUpToWord)))
+            // data offset of 32 for the single string returned
+            let nextMemPos := ptr
+            mstore(nextMemPos, 0x20)
+            nextMemPos := add(nextMemPos, 0x20)
+            // string data length in next word
+            mstore(nextMemPos, stringDataLen)
+            nextMemPos := add(nextMemPos, 0x20)
+            // store string data, if any
+            for {
+                let loadedDataLen := 0
+            } lt(loadedDataLen, stringDataLen) {
+                loadedDataLen := add(loadedDataLen, 32)
+            } {
+                mstore(nextMemPos, sload(currentSlot))
+                // increment next memory position by a word
+                nextMemPos := add(nextMemPos, 0x20)
+                // increment currentSlot by one
+                currentSlot := add(currentSlot, 1)
+            }
+            return(ptr, add(sub(nextMemPos, ptr), 0x40))
+        }
     }
 
     /**
