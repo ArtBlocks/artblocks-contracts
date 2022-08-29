@@ -1437,11 +1437,11 @@ describe("GenArt721CoreV3 Views", async function () {
   });
 
   describe("projectURIInfo", function () {
-    it("returns empty string by default", async function () {
+    it("returns default string by default", async function () {
       const emptyProjectURI = await this.genArt721Core
         .connect(this.accounts.user)
         .projectURIInfo(this.projectZero);
-      expect(emptyProjectURI).to.be.equal("");
+      expect(emptyProjectURI).to.be.equal("https://token.artblocks.io/");
     });
 
     it("returns expected populated projectURI", async function () {
@@ -1475,7 +1475,7 @@ describe("GenArt721CoreV3 Views", async function () {
       // update contract base URI
       await this.genArt721Core
         .connect(this.accounts.deployer)
-        .updateContractBaseURI("https://tokenz.AB.com/");
+        .updateDefaultBaseURI("https://tokenz.AB.com/");
       // add new project
       await this.genArt721Core
         .connect(this.accounts.deployer)
@@ -1500,9 +1500,9 @@ describe("GenArt721CoreV3 Views", async function () {
       // check tokenURI
       const tokenURIForEmptyProjectURI = await this.genArt721Core
         .connect(this.accounts.user)
-        .tokenURI(this.projectOneTokenOne.toNumber());
+        .tokenURI(this.projectOneTokenZero.toNumber());
       expect(tokenURIForEmptyProjectURI).to.be.equal(
-        `https://tokenz.AB.com/${this.projectZeroTokenZero.toString()}`
+        `https://tokenz.AB.com/${this.projectOneTokenZero.toString()}`
       );
     });
 
