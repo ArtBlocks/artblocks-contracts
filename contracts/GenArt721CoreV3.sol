@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-pragma solidity 0.8.9;
+pragma solidity 0.8.16;
 
 // Created By: Art Blocks Inc.
 
@@ -23,6 +23,7 @@ contract GenArt721CoreV3 is
     IGenArt721CoreContractV3
 {
     using Bytes32Strings for bytes32;
+    using Strings for uint256;
     uint256 constant ONE_MILLION = 1_000_000;
     uint24 constant ONE_MILLION_UINT24 = 1_000_000;
     uint256 constant FOUR_WEEKS_IN_SECONDS = 2_419_200;
@@ -31,6 +32,7 @@ contract GenArt721CoreV3 is
     // generic platform event fields
     bytes32 constant FIELD_NEXT_PROJECT_ID = "nextProjectId";
     bytes32 constant FIELD_NEW_PROJECTS_FORBIDDEN = "newProjectsForbidden";
+    bytes32 constant FIELD_DEFAULT_BASE_URI = "defaultBaseURI";
     bytes32 constant FIELD_ARTBLOCKS_PRIMARY_SALES_ADDRESS =
         "artblocksPrimarySalesAddress";
     bytes32 constant FIELD_ARTBLOCKS_SECONDARY_SALES_ADDRESS =
@@ -152,6 +154,9 @@ contract GenArt721CoreV3 is
     string public constant coreVersion = "v3.0.0";
     string public constant coreType = "GenArt721CoreV3";
 
+    /// default base URI to initialize all new project projectBaseURI values to
+    string public defaultBaseURI;
+
     modifier onlyValidTokenId(uint256 _tokenId) {
         require(_exists(_tokenId), "Token ID does not exist");
         _;
@@ -230,6 +235,8 @@ contract GenArt721CoreV3 is
         _updateRandomizerAddress(_randomizerContract);
         // set AdminACL management contract as owner
         _transferOwnership(_adminACLContract);
+        // initialize default base URI
+        _updateDefaultBaseURI("https://token.artblocks.io/");
         // initialize next project ID
         _nextProjectId = uint248(_startingProjectId);
         emit PlatformUpdated(FIELD_NEXT_PROJECT_ID);
@@ -613,6 +620,7 @@ contract GenArt721CoreV3 is
         projects[projectId].name = _projectName;
         projects[projectId].paused = true;
         projects[projectId].maxInvocations = ONE_MILLION_UINT24;
+        projects[projectId].projectBaseURI = defaultBaseURI;
 
         _nextProjectId = uint248(projectId) + 1;
         emit ProjectUpdated(projectId, FIELD_PROJECT_CREATED);
@@ -875,6 +883,9 @@ contract GenArt721CoreV3 is
 
     /**
      * @notice Updates base URI for project `_projectId` to `_newBaseURI`.
+     * This is the controlling base URI for all tokens in the project. The
+     * contract-level defaultBaseURI is only used when initializing new
+     * projects.
      */
     function updateProjectBaseURI(uint256 _projectId, string memory _newBaseURI)
         external
@@ -882,6 +893,18 @@ contract GenArt721CoreV3 is
     {
         projects[_projectId].projectBaseURI = _newBaseURI;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_BASE_URI);
+    }
+
+    /**
+     * @notice Updates default base URI to `_defaultBaseURI`. The
+     * contract-level defaultBaseURI is only used when initializing new
+     * projects. Token URIs are determined by their project's `projectBaseURI`.
+     */
+    function updateDefaultBaseURI(string memory _defaultBaseURI)
+        external
+        onlyAdminACL(this.updateDefaultBaseURI.selector)
+    {
+        _updateDefaultBaseURI(_defaultBaseURI);
     }
 
     /**
@@ -1417,6 +1440,8 @@ contract GenArt721CoreV3 is
 
     /**
      * @notice Gets token URI for token ID `_tokenId`.
+     * @dev token URIs are the concatenation of the project base URI and the
+     * token ID.
      */
     function tokenURI(uint256 _tokenId)
         public
@@ -1425,13 +1450,9 @@ contract GenArt721CoreV3 is
         onlyValidTokenId(_tokenId)
         returns (string memory)
     {
-        return
-            string(
-                abi.encodePacked(
-                    projects[_tokenId / ONE_MILLION].projectBaseURI,
-                    Strings.toString(_tokenId)
-                )
-            );
+        string memory _projectBaseURI = projects[_tokenId / ONE_MILLION]
+            .projectBaseURI;
+        return string.concat(_projectBaseURI, _tokenId.toString());
     }
 
     /**
@@ -1491,6 +1512,16 @@ contract GenArt721CoreV3 is
         // populate historical randomizer array
         _historicalRandomizerAddresses.push(_randomizerAddress);
         emit PlatformUpdated(FIELD_RANDOMIZER_ADDRESS);
+    }
+
+    /**
+     * @notice Updates default base URI to `_defaultBaseURI`.
+     * When new projects are added, their `projectBaseURI` is automatically
+     * initialized to `_defaultBaseURI`.
+     */
+    function _updateDefaultBaseURI(string memory _defaultBaseURI) internal {
+        defaultBaseURI = _defaultBaseURI;
+        emit PlatformUpdated(FIELD_DEFAULT_BASE_URI);
     }
 
     /**

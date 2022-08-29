@@ -142,4 +142,21 @@ describe("GenArt721CoreV3 Contract Configure", async function () {
       );
     });
   });
+
+  describe("updateDefaultBaseURI", function () {
+    it("does not allow non-admin to call", async function () {
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateDefaultBaseURI("https://token.newuri.com/"),
+        "Only Admin ACL allowed"
+      );
+    });
+
+    it("does allow admin to call", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateDefaultBaseURI("https://token.newuri.com/");
+    });
+  });
 });
