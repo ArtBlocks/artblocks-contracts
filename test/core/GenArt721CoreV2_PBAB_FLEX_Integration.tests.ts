@@ -83,7 +83,7 @@ describe("GenArt721CoreV2_PBAB_FLEX_Integration", async function () {
           )
       )
         .to.emit(this.genArt721Core, "ExternalAssetDependencyUpdated")
-        .withArgs(0, 0, "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo", 0, 1);
+        .withArgs(0, 0, " ", 0, 1);
       const externalAssetDependency = await this.genArt721Core
         .connect(this.accounts.artist)
         .projectExternalAssetDependencyByIndex(0, 0);

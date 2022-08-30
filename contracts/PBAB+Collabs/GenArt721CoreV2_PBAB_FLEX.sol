@@ -720,8 +720,7 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721, IGenArt721CoreV2_PBAB {
             string memory artist,
             string memory description,
             string memory website,
-            string memory license,
-            uint256 externalAssetDependencyCount
+            string memory license
         )
     {
         projectName = projects[_projectId].name;
@@ -729,8 +728,6 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721, IGenArt721CoreV2_PBAB {
         description = projects[_projectId].description;
         website = projects[_projectId].website;
         license = projects[_projectId].license;
-        externalAssetDependencyCount = projects[_projectId]
-            .externalAssetDependencyCount;
     }
 
     /**
