@@ -352,9 +352,12 @@ describe("GenArt721CoreV3 Views", async function () {
       expect(
         projectArtistPaymentInfo.additionalPayeeSecondarySalesPercentage
       ).to.be.equal(0);
+      expect(
+        projectArtistPaymentInfo.secondaryMarketRoyaltyPercentage
+      ).to.be.equal(0);
     });
 
-    it("returns expected values after updating artist payment addresses and splits", async function () {
+    it("returns expected values after updating artist payment addresses and splits, and secondary royalty percentage", async function () {
       const valuesToUpdateTo = [
         this.projectZero,
         this.accounts.artist2.address,
@@ -370,6 +373,10 @@ describe("GenArt721CoreV3 Views", async function () {
       await this.genArt721Core
         .connect(this.accounts.deployer)
         .adminAcceptArtistAddressesAndSplits(...valuesToUpdateTo);
+      // new artist sets new secondary royalty percentage
+      await this.genArt721Core
+        .connect(this.accounts.artist2)
+        .updateProjectSecondaryMarketRoyaltyPercentage(this.projectZero, 5);
       // check for expected values
       const projectArtistPaymentInfo = await this.genArt721Core
         .connect(this.accounts.deployer)
@@ -389,6 +396,9 @@ describe("GenArt721CoreV3 Views", async function () {
       expect(
         projectArtistPaymentInfo.additionalPayeeSecondarySalesPercentage
       ).to.be.equal(valuesToUpdateTo[5]);
+      expect(
+        projectArtistPaymentInfo.secondaryMarketRoyaltyPercentage
+      ).to.be.equal(5);
     });
   });
 
