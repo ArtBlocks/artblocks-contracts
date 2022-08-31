@@ -276,8 +276,8 @@ describe("GenArt721CoreV3 Integration", async function () {
 
   describe("startingProjectId", function () {
     it("returns zero when initialized to zero nextProjectId", async function () {
-      // one project has already been added, so should be one
-      expect(await this.genArt721Core.startingProjectId()).to.be.equal(1);
+      // one project has already been added, but starting project ID should remain at 0
+      expect(await this.genArt721Core.startingProjectId()).to.be.equal(0);
     });
 
     it("returns >0 when initialized to >0 nextProjectId", async function () {
