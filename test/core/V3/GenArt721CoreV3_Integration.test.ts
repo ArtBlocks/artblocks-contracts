@@ -274,6 +274,28 @@ describe("GenArt721CoreV3 Integration", async function () {
     });
   });
 
+  describe("startingProjectId", function () {
+    it("returns zero when initialized to zero nextProjectId", async function () {
+      // one project has already been added, so should be one
+      expect(await this.genArt721Core.startingProjectId()).to.be.equal(1);
+    });
+
+    it("returns >0 when initialized to >0 nextProjectId", async function () {
+      const differentGenArt721Core = await deployAndGet.call(
+        this,
+        "GenArt721CoreV3",
+        [
+          this.name,
+          this.symbol,
+          this.randomizer.address,
+          this.adminACL.address,
+          365,
+        ]
+      );
+      expect(await differentGenArt721Core.startingProjectId()).to.be.equal(365);
+    });
+  });
+
   describe("mint_ECF", function () {
     it("reverts if not called by the minter contract", async function () {
       await expectRevert(

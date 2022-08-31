@@ -143,6 +143,9 @@ contract GenArt721CoreV3 is
     /// single minter allowed for this core contract
     address public minterContract;
 
+    /// starting (initial) project ID on this contract
+    uint256 public immutable startingProjectId;
+
     /// next project ID to be created
     uint248 private _nextProjectId;
 
@@ -230,6 +233,8 @@ contract GenArt721CoreV3 is
         address _adminACLContract,
         uint256 _startingProjectId
     ) ERC721_PackedHashSeed(_tokenName, _tokenSymbol) {
+        // record contracts starting project ID
+        startingProjectId = _startingProjectId;
         _updateArtblocksPrimarySalesAddress(msg.sender);
         _updateArtblocksSecondarySalesAddress(msg.sender);
         _updateRandomizerAddress(_randomizerContract);
