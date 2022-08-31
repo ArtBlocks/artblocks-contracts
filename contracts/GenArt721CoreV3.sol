@@ -1079,7 +1079,10 @@ contract GenArt721CoreV3 is
      * sales royalties
      * @return additionalPayeeSecondarySalesPercentage Percentage of artist revenue
      * to be sent to the additional payee address for secondary sales royalties
-
+     * @return secondaryMarketRoyaltyPercentage Royalty percentage to be sent to
+     * combination of artist and additional payee. This does not include the
+     * platform's percentage of secondary sales royalties, which is defined by
+     * `artblocksSecondarySalesBPS`.
      */
     function projectArtistPaymentInfo(uint256 _projectId)
         external
@@ -1089,7 +1092,8 @@ contract GenArt721CoreV3 is
             address additionalPayeePrimarySales,
             uint256 additionalPayeePrimarySalesPercentage,
             address additionalPayeeSecondarySales,
-            uint256 additionalPayeeSecondarySalesPercentage
+            uint256 additionalPayeeSecondarySalesPercentage,
+            uint256 secondaryMarketRoyaltyPercentage
         )
     {
         ProjectFinance storage projectFinance = projectIdToFinancials[
@@ -1104,6 +1108,8 @@ contract GenArt721CoreV3 is
             .additionalPayeeSecondarySales;
         additionalPayeeSecondarySalesPercentage = projectFinance
             .additionalPayeeSecondarySalesPercentage;
+        secondaryMarketRoyaltyPercentage = projectFinance
+            .secondaryMarketRoyaltyPercentage;
     }
 
     /**
