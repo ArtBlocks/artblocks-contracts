@@ -497,7 +497,7 @@ contract GenArt721CoreV3 is
         );
         // effects
         proposedArtistAddressesAndSplitsHash[_projectId] = keccak256(
-            abi.encodePacked(
+            abi.encode(
                 _artistAddress,
                 _additionalPayeePrimarySales,
                 _additionalPayeePrimarySalesPercentage,
@@ -556,7 +556,7 @@ contract GenArt721CoreV3 is
         require(
             proposedArtistAddressesAndSplitsHash[_projectId] ==
                 keccak256(
-                    abi.encodePacked(
+                    abi.encode(
                         _artistAddress,
                         _additionalPayeePrimarySales,
                         _additionalPayeePrimarySalesPercentage,
