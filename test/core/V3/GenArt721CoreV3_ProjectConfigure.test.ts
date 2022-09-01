@@ -635,6 +635,38 @@ describe("GenArt721CoreV3 Project Configure", async function () {
         "Must match artist proposal"
       );
     });
+
+    it("only allows adminACL-allowed account to accept updates once (i.e. proposal is cleared upon acceptance)", async function () {
+      // artist proposes new values
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .proposeArtistPaymentAddressesAndSplits(...this.valuesToUpdateTo);
+      // rejects artist as an acceptor of updates
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .adminAcceptArtistAddressesAndSplits(...this.valuesToUpdateTo),
+        "Only Admin ACL allowed"
+      );
+      // rejects user as an acceptor of updates
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.user)
+          .adminAcceptArtistAddressesAndSplits(...this.valuesToUpdateTo),
+        "Only Admin ACL allowed"
+      );
+      // allows deployer to accept new values
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .adminAcceptArtistAddressesAndSplits(...this.valuesToUpdateTo);
+      // reverts if deployer tries to accept again
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .adminAcceptArtistAddressesAndSplits(...this.valuesToUpdateTo),
+        "Must match artist proposal"
+      );
+    });
   });
 
   describe("updateProjectSecondaryMarketRoyaltyPercentage", function () {
