@@ -581,6 +581,8 @@ contract GenArt721CoreV3 is
         projectFinance.additionalPayeeSecondarySalesPercentage = uint8(
             _additionalPayeeSecondarySalesPercentage
         );
+        // clear proposed values
+        proposedArtistAddressesAndSplitsHash[_projectId] = bytes32(0);
         // emit event for off-chain indexing
         emit AcceptedArtistAddressesAndSplits(_projectId);
     }
