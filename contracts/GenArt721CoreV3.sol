@@ -497,7 +497,7 @@ contract GenArt721CoreV3 is
         );
         // effects
         proposedArtistAddressesAndSplitsHash[_projectId] = keccak256(
-            abi.encodePacked(
+            abi.encode(
                 _artistAddress,
                 _additionalPayeePrimarySales,
                 _additionalPayeePrimarySalesPercentage,
@@ -556,7 +556,7 @@ contract GenArt721CoreV3 is
         require(
             proposedArtistAddressesAndSplitsHash[_projectId] ==
                 keccak256(
-                    abi.encodePacked(
+                    abi.encode(
                         _artistAddress,
                         _additionalPayeePrimarySales,
                         _additionalPayeePrimarySalesPercentage,
@@ -581,6 +581,8 @@ contract GenArt721CoreV3 is
         projectFinance.additionalPayeeSecondarySalesPercentage = uint8(
             _additionalPayeeSecondarySalesPercentage
         );
+        // clear proposed values
+        proposedArtistAddressesAndSplitsHash[_projectId] = bytes32(0);
         // emit event for off-chain indexing
         emit AcceptedArtistAddressesAndSplits(_projectId);
     }
