@@ -49,17 +49,17 @@ contract GenArt721CoreV3 is
     // generic project event fields
     bytes32 constant FIELD_PROJECT_COMPLETED = "completed";
     bytes32 constant FIELD_PROJECT_ACTIVE = "active";
-    bytes32 constant FIELD_ARTIST_ADDRESS = "artistAddress";
+    bytes32 constant FIELD_PROJECT_ARTIST_ADDRESS = "artistAddress";
     bytes32 constant FIELD_PROJECT_PAUSED = "paused";
     bytes32 constant FIELD_PROJECT_CREATED = "created";
     bytes32 constant FIELD_PROJECT_NAME = "name";
-    bytes32 constant FIELD_ARTIST_NAME = "artistName";
-    bytes32 constant FIELD_SECONDARY_MARKET_ROYALTY_PERCENTAGE =
+    bytes32 constant FIELD_PROJECT_ARTIST_NAME = "artistName";
+    bytes32 constant FIELD_PROJECT_SECONDARY_MARKET_ROYALTY_PERCENTAGE =
         "royaltyPercentage";
     bytes32 constant FIELD_PROJECT_DESCRIPTION = "description";
     bytes32 constant FIELD_PROJECT_WEBSITE = "website";
     bytes32 constant FIELD_PROJECT_LICENSE = "license";
-    bytes32 constant FIELD_MAX_INVOCATIONS = "maxInvocations";
+    bytes32 constant FIELD_PROJECT_MAX_INVOCATIONS = "maxInvocations";
     bytes32 constant FIELD_PROJECT_SCRIPT = "script";
     bytes32 constant FIELD_PROJECT_SCRIPT_TYPE = "scriptType";
     bytes32 constant FIELD_PROJECT_ASPECT_RATIO = "aspectRatio";
@@ -597,7 +597,7 @@ contract GenArt721CoreV3 is
         address payable _artistAddress
     ) external onlyAdminACL(this.updateProjectArtistAddress.selector) {
         projectIdToFinancials[_projectId].artistAddress = _artistAddress;
-        emit ProjectUpdated(_projectId, FIELD_ARTIST_ADDRESS);
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_ARTIST_ADDRESS);
     }
 
     /**
@@ -670,7 +670,7 @@ contract GenArt721CoreV3 is
         onlyArtistOrAdminACL(_projectId, this.updateProjectArtistName.selector)
     {
         projects[_projectId].artist = _projectArtistName;
-        emit ProjectUpdated(_projectId, FIELD_ARTIST_NAME);
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_ARTIST_NAME);
     }
 
     /**
@@ -693,7 +693,7 @@ contract GenArt721CoreV3 is
             .secondaryMarketRoyaltyPercentage = uint8(_secondMarketRoyalty);
         emit ProjectUpdated(
             _projectId,
-            FIELD_SECONDARY_MARKET_ROYALTY_PERCENTAGE
+            FIELD_PROJECT_SECONDARY_MARKET_ROYALTY_PERCENTAGE
         );
     }
 
@@ -771,7 +771,7 @@ contract GenArt721CoreV3 is
         );
         // EFFECTS
         project.maxInvocations = _maxInvocations;
-        emit ProjectUpdated(_projectId, FIELD_MAX_INVOCATIONS);
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_MAX_INVOCATIONS);
 
         // register completed timestamp if action completed the project
         if (_maxInvocations == _invocations) {
