@@ -641,20 +641,6 @@ describe("GenArt721CoreV3 Project Configure", async function () {
       await this.genArt721Core
         .connect(this.accounts.artist)
         .proposeArtistPaymentAddressesAndSplits(...this.valuesToUpdateTo);
-      // rejects artist as an acceptor of updates
-      await expectRevert(
-        this.genArt721Core
-          .connect(this.accounts.artist)
-          .adminAcceptArtistAddressesAndSplits(...this.valuesToUpdateTo),
-        "Only Admin ACL allowed"
-      );
-      // rejects user as an acceptor of updates
-      await expectRevert(
-        this.genArt721Core
-          .connect(this.accounts.user)
-          .adminAcceptArtistAddressesAndSplits(...this.valuesToUpdateTo),
-        "Only Admin ACL allowed"
-      );
       // allows deployer to accept new values
       await this.genArt721Core
         .connect(this.accounts.deployer)
