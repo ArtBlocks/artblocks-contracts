@@ -16,7 +16,7 @@ import {
   deployAndGet,
   deployCoreWithMinterFilter,
 } from "../util/common";
-import { GenArt721MinterV1V2_Common } from "./GenArt721CoreV1V2.common";
+import { GenArt721MinterV1V2PRTNR_Common } from "./GenArt721CoreV1V2PRTNR.common";
 
 /**
  * These tests are intended to check integration of the MinterFilter suite with
@@ -33,7 +33,7 @@ describe("GenArt721CoreV2_PBAB_FLEX_Integration", async function () {
     ({ genArt721Core: this.genArt721Core, minterFilter: this.minterFilter } =
       await deployCoreWithMinterFilter.call(
         this,
-        "GenArt721CoreV2_PBAB_FLEX",
+        "GenArt721CoreV2_ENGINE_FLEX",
         "MinterFilterV0"
       ));
     this.minter = await deployAndGet.call(this, "MinterSetPriceV1", [
@@ -67,7 +67,7 @@ describe("GenArt721CoreV2_PBAB_FLEX_Integration", async function () {
   });
 
   describe("common tests", async function () {
-    // GenArt721MinterV1V2_Common();
+    GenArt721MinterV1V2PRTNR_Common();
   });
 
   describe("external asset dependencies", async function () {

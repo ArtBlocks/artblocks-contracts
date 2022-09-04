@@ -12,7 +12,7 @@ pragma solidity 0.8.9;
  * @title Powered by Art Blocks ERC-721 core contract.
  * @author Art Blocks Inc.
  */
-contract GenArt721CoreV2_PBAB_FLEX is ERC721, IGenArt721CoreV2_PBAB {
+contract GenArt721CoreV2_ENGINE_FLEX is ERC721, IGenArt721CoreV2_PBAB {
     /// randomizer contract
     IRandomizer public randomizerContract;
 

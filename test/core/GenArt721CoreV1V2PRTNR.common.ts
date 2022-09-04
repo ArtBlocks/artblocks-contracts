@@ -17,6 +17,7 @@ export const GenArt721MinterV1V2PRTNR_Common = async () => {
       } catch (error) {
         addressResult = await this.genArt721Core.renderProviderAddress();
       }
+      console.log(addressResult);
       expect(addressResult).to.be.equal(this.accounts.deployer.address);
     });
 
