@@ -3,9 +3,7 @@
 
 import "../interfaces/0.8.x/IRandomizer.sol";
 import "../interfaces/0.8.x/IGenArt721CoreV2_PBAB.sol";
-
 import "@openzeppelin-4.5/contracts/utils/Strings.sol";
-
 import "@openzeppelin-4.5/contracts/token/ERC721/ERC721.sol";
 
 pragma solidity 0.8.9;
@@ -35,7 +33,7 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721, IGenArt721CoreV2_PBAB {
         bool locked;
         bool paused;
         bool externalAssetDependenciesLocked;
-        uint256 externalAssetDependencyCount;
+        uint24 externalAssetDependencyCount;
         mapping(uint256 => ExternalAssetDependency) externalAssetDependencies;
     }
 
@@ -44,7 +42,7 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721, IGenArt721CoreV2_PBAB {
         uint256 indexed _index,
         string _cid,
         ExternalAssetDependencyType _dependencyType,
-        uint256 _externalAssetDependencyCount
+        uint24 _externalAssetDependencyCount
     );
 
     event ExternalAssetDependencyRemoved(
@@ -388,7 +386,6 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721, IGenArt721CoreV2_PBAB {
         projectIdToPricePerTokenInWei[projectId] = _pricePerTokenInWei;
         projects[projectId].paused = true;
         projects[projectId].maxInvocations = ONE_MILLION;
-        projects[projectId].externalAssetDependencyCount = 0;
         nextProjectId = nextProjectId + 1;
     }
 
@@ -576,7 +573,7 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721, IGenArt721CoreV2_PBAB {
         onlyUnlockedProjectExternalAssetDependencies(_projectId)
         onlyArtistOrWhitelisted(_projectId)
     {
-        uint256 assetCount = projects[_projectId].externalAssetDependencyCount;
+        uint24 assetCount = projects[_projectId].externalAssetDependencyCount;
         require(_index < assetCount, "Asset index out of range");
         projects[_projectId].externalAssetDependencies[_index].cid = _cid;
         projects[_projectId]
@@ -593,6 +590,7 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721, IGenArt721CoreV2_PBAB {
 
     /**
      * @notice Removes external asset dependency for project `_projectId` at index `_index`.
+     * Removal is done by swapping the element to be removed with the last element in the array, then deleting this last element.
      * Assets with indices higher than `_index` can have their indices adjusted as a result of this operation.
      * @param _projectId Project to be updated.
      * @param _index Asset index
@@ -605,10 +603,10 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721, IGenArt721CoreV2_PBAB {
         onlyUnlockedProjectExternalAssetDependencies(_projectId)
         onlyArtistOrWhitelisted(_projectId)
     {
-        uint256 assetCount = projects[_projectId].externalAssetDependencyCount;
+        uint24 assetCount = projects[_projectId].externalAssetDependencyCount;
         require(_index < assetCount, "Asset index out of range");
 
-        uint256 lastElementIndex = assetCount - 1;
+        uint24 lastElementIndex = assetCount - 1;
 
         projects[_projectId].externalAssetDependencies[_index] = projects[
             _projectId
@@ -637,7 +635,7 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721, IGenArt721CoreV2_PBAB {
         onlyUnlockedProjectExternalAssetDependencies(_projectId)
         onlyArtistOrWhitelisted(_projectId)
     {
-        uint256 assetCount = projects[_projectId].externalAssetDependencyCount;
+        uint24 assetCount = projects[_projectId].externalAssetDependencyCount;
         ExternalAssetDependency memory asset = ExternalAssetDependency({
             cid: _cid,
             dependencyType: _dependencyType
@@ -829,7 +827,7 @@ contract GenArt721CoreV2_PBAB_FLEX is ERC721, IGenArt721CoreV2_PBAB {
         view
         returns (uint256)
     {
-        return projects[_projectId].externalAssetDependencyCount;
+        return uint256(projects[_projectId].externalAssetDependencyCount);
     }
 
     /**

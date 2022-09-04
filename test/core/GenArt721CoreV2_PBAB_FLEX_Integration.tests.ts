@@ -83,10 +83,11 @@ describe("GenArt721CoreV2_PBAB_FLEX_Integration", async function () {
           )
       )
         .to.emit(this.genArt721Core, "ExternalAssetDependencyUpdated")
-        .withArgs(0, 0, " ", 0, 1);
+        .withArgs(0, 0, "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo", 0, 1);
       const externalAssetDependency = await this.genArt721Core
         .connect(this.accounts.artist)
         .projectExternalAssetDependencyByIndex(0, 0);
+
       expect(externalAssetDependency[0]).to.equal(
         "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo"
       );
@@ -120,7 +121,6 @@ describe("GenArt721CoreV2_PBAB_FLEX_Integration", async function () {
       await this.genArt721Core
         .connect(this.accounts.artist)
         .removeProjectExternalAssetDependency(0, 1);
-      // get project external asset info   index 1 (should be info for project formerly at index 2)
 
       // project external asset info at index 2 should be set back to default values as a result of being deleted
       const externalAssetDependency = await this.genArt721Core
@@ -128,6 +128,21 @@ describe("GenArt721CoreV2_PBAB_FLEX_Integration", async function () {
         .projectExternalAssetDependencyByIndex(0, 2);
       expect(externalAssetDependency[0]).to.equal("");
       expect(externalAssetDependency[1]).to.equal(0);
+
+      // project external asset info at index 1 should be set be set to the same values as index 2, prior to removal
+      // this test also validates the deepy copy of the shifted external asset dependency
+      const externalAssetDependencyAtIndex1 = await this.genArt721Core
+        .connect(this.accounts.artist)
+        .projectExternalAssetDependencyByIndex(0, 1);
+      expect(externalAssetDependencyAtIndex1[0]).to.equal(
+        "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo3"
+      );
+      expect(externalAssetDependencyAtIndex1[1]).to.equal(0);
+
+      const externalAssetDependencyCount = await this.genArt721Core
+        .connect(this.accounts.artist)
+        .projectExternalAssetDependencyCount(0);
+      expect(externalAssetDependencyCount).to.equal(2);
     });
 
     it("can update an external asset dependency", async function () {
@@ -216,7 +231,7 @@ describe("GenArt721CoreV2_PBAB_FLEX_Integration", async function () {
           "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo",
           0
         );
-      // get asset info at index 0 for project 0
+
       const externalAssetDependencyCountB = await this.genArt721Core
         .connect(this.accounts.artist)
         .projectExternalAssetDependencyCount(0);
