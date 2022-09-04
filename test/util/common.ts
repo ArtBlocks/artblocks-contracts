@@ -21,6 +21,7 @@ export type CoreWithMinterSuite = {
   randomizer: Contract;
   genArt721Core: Contract;
   minterFilter: Contract;
+  adminACL: Contract;
 };
 
 export async function getAccounts(): Promise<TestAccountsArtBlocks> {
@@ -57,6 +58,7 @@ export async function assignDefaultConstants(
   this.projectZero = projectZero;
   this.projectOne = projectZero + 1;
   this.projectTwo = projectZero + 2;
+  this.projectThree = projectZero + 3;
   // token IDs
   this.projectZeroTokenZero = new BN(this.projectZero).mul(new BN("1000000"));
   this.projectZeroTokenOne = this.projectZeroTokenZero.add(new BN("1"));
@@ -64,6 +66,8 @@ export async function assignDefaultConstants(
   this.projectOneTokenOne = this.projectOneTokenZero.add(new BN("1"));
   this.projectTwoTokenZero = new BN(this.projectTwo).mul(new BN("1000000"));
   this.projectTwoTokenOne = this.projectTwoTokenZero.add(new BN("1"));
+  this.projectThreeTokenZero = new BN(this.projectThree).mul(new BN("1000000"));
+  this.projectThreeTokenOne = this.projectThreeTokenZero.add(new BN("1"));
 }
 
 // utility function to simplify code when deploying any contract from factory
@@ -77,29 +81,73 @@ export async function deployAndGet(
     .deploy(...deployArgs);
 }
 
-// utility function to deploy randomizer, core, and MinterFilter
+// utility function to deploy basic randomizer, core, and MinterFilter
+// works for core versions V0, V1, V2_PRTNR, V3
 export async function deployCoreWithMinterFilter(
   coreContractName: string,
   minterFilterName: string
 ): Promise<CoreWithMinterSuite> {
-  const randomizer = await deployAndGet.call(this, "BasicRandomizer", []);
-  const genArt721Core = await deployAndGet.call(this, coreContractName, [
-    this.name,
-    this.symbol,
-    randomizer.address,
-  ]);
-  const minterFilter = await deployAndGet.call(this, minterFilterName, [
-    genArt721Core.address,
-  ]);
-  // allowlist minterFilter on the core contract
-  await genArt721Core
-    .connect(this.accounts.deployer)
-    .addMintWhitelisted(minterFilter.address);
-  return { randomizer, genArt721Core, minterFilter };
+  if (coreContractName.endsWith("V2_PBAB")) {
+    throw new Error("V2_PBAB not supported");
+  }
+  let randomizer, genArt721Core, minterFilter, adminACL;
+  randomizer = await deployAndGet.call(this, "BasicRandomizer", []);
+  if (
+    coreContractName.endsWith("V0") ||
+    coreContractName.endsWith("V1") ||
+    coreContractName.endsWith("V2_PRTNR")
+  ) {
+    if (coreContractName.endsWith("V0") || coreContractName.endsWith("V1")) {
+      genArt721Core = await deployAndGet.call(this, coreContractName, [
+        this.name,
+        this.symbol,
+        randomizer.address,
+      ]);
+    } else {
+      // V2_PRTNR need additional arg for starting project ID
+      genArt721Core = await deployAndGet.call(this, coreContractName, [
+        this.name,
+        this.symbol,
+        randomizer.address,
+        0,
+      ]);
+    }
+    minterFilter = await deployAndGet.call(this, minterFilterName, [
+      genArt721Core.address,
+    ]);
+    // allowlist minterFilter on the core contract
+    await genArt721Core
+      .connect(this.accounts.deployer)
+      .addMintWhitelisted(minterFilter.address);
+  } else if (coreContractName.endsWith("V3")) {
+    randomizer = await deployAndGet.call(this, "BasicRandomizerV2", []);
+    adminACL = await deployAndGet.call(this, "MockAdminACLV0Events", []);
+    genArt721Core = await deployAndGet.call(this, coreContractName, [
+      this.name,
+      this.symbol,
+      randomizer.address,
+      adminACL.address,
+      0,
+    ]);
+    // assign core contract for randomizer to use
+    randomizer
+      .connect(this.accounts.deployer)
+      .assignCoreAndRenounce(genArt721Core.address);
+    // deploy minter filter
+    minterFilter = await deployAndGet.call(this, minterFilterName, [
+      genArt721Core.address,
+    ]);
+    // allowlist minterFilter on the core contract
+    await genArt721Core
+      .connect(this.accounts.deployer)
+      .updateMinterContract(minterFilter.address);
+  }
+  return { randomizer, genArt721Core, minterFilter, adminACL };
 }
 
-// utility function to call addProject on core for either flagship or PBAB/PRTNR
-// (used because flagship has four args, PBAB/PRTNR has three)
+// utility function to call addProject on core for either V0/V1 core,
+// PBAB/PRTNR, or V3 core.
+// (used because different core versions have different addProject functions)
 export async function safeAddProject(
   core: Contract,
   caller: SignerWithAddress,
@@ -108,9 +156,14 @@ export async function safeAddProject(
   try {
     await core.connect(caller).addProject("TestProject", artistAddress, 0);
   } catch {
-    await core
-      .connect(caller)
-      .addProject("TestProject", artistAddress, 0, false);
+    try {
+      // V3 core has only 2 args
+      await core.connect(caller).addProject("TestProject", artistAddress);
+    } catch {
+      await core
+        .connect(caller)
+        .addProject("TestProject", artistAddress, 0, false);
+    }
   }
 }
 
@@ -120,9 +173,7 @@ export async function mintProjectUntilRemaining(
   _leaveRemainingInvocations: number = 0
 ) {
   for (let i = 0; i < this.maxInvocations - _leaveRemainingInvocations; i++) {
-    await this.genArt721Core
-      .connect(_minterAccount)
-      .mint(_minterAccount.address, _projectId, _minterAccount.address);
+    await this.minter.connect(_minterAccount).purchase(_projectId);
   }
 }
 
@@ -141,4 +192,51 @@ export function compareBN(
   const diff = actual.sub(expected);
   const percentDiff = diff.mul(BigNumber.from("100")).div(expected);
   return percentDiff.abs().lte(BigNumber.from(tolerancePercent.toString()));
+}
+
+// utility function to return if core is V3
+export async function isCoreV3(core: Contract): Promise<boolean> {
+  try {
+    if ((await core.coreType()) === "GenArt721CoreV3") {
+      return true;
+    }
+  } catch {
+    // swallow error because function doesn't exist on pre-V3 core contracts
+  }
+  return false;
+}
+
+type T_PBAB = {
+  pbabToken: Contract;
+  pbabMinter: Contract;
+};
+
+export async function deployAndGetPBAB(): Promise<T_PBAB> {
+  const randomizer = await deployAndGet.call(this, "BasicRandomizer", []);
+
+  const PBABFactory = await ethers.getContractFactory("GenArt721CoreV2_PBAB");
+  const pbabToken = await PBABFactory.connect(this.accounts.deployer).deploy(
+    this.name,
+    this.symbol,
+    randomizer.address,
+    0
+  );
+  const minterFactory = await ethers.getContractFactory("GenArt721Minter_PBAB");
+  const pbabMinter = await minterFactory.deploy(pbabToken.address);
+  await pbabToken
+    .connect(this.accounts.deployer)
+    .addProject(
+      "project0_PBAB",
+      this.accounts.artist.address,
+      this.pricePerTokenInWei
+    );
+  await pbabToken.connect(this.accounts.deployer).toggleProjectIsActive(0);
+  await pbabToken
+    .connect(this.accounts.deployer)
+    .addMintWhitelisted(pbabMinter.address);
+  await pbabToken
+    .connect(this.accounts.artist)
+    .updateProjectMaxInvocations(0, this.maxInvocations);
+  await pbabToken.connect(this.accounts.artist).toggleProjectIsPaused(0);
+  return { pbabToken, pbabMinter };
 }

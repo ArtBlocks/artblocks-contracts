@@ -10,7 +10,7 @@ import { GenArt721Minter_PBAB_Common } from "./GenArt721Minter_PBAB.common";
  * These tests intended to ensure Filtered Minter integrates properly with V1
  * core contract.
  */
-describe("GenArt721Minter_PBAB", async function () {
+describe("GenArt721MinterBurner_PBAB", async function () {
   beforeEach(async function () {
     // standard accounts and constants
     this.accounts = await getAccounts();
@@ -25,7 +25,7 @@ describe("GenArt721Minter_PBAB", async function () {
     const PBABFactory = await ethers.getContractFactory("GenArt721CoreV2_PBAB");
     this.genArt721Core = await PBABFactory.connect(
       this.accounts.deployer
-    ).deploy(this.name, this.symbol, this.randomizer.address);
+    ).deploy(this.name, this.symbol, this.randomizer.address, 0);
 
     const minterFactory = await ethers.getContractFactory(
       "GenArt721MinterBurner_PBAB"

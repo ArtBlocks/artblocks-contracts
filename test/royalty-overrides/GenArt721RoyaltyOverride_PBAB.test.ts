@@ -72,7 +72,7 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
     );
     this.tokenA = await artblocksFactory_PBAB
       .connect(adminA)
-      .deploy(name, symbol, this.randomizer.address);
+      .deploy(name, symbol, this.randomizer.address, 0);
 
     // set renderProviderAddress for tokenA
     await this.tokenA
@@ -141,7 +141,7 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
     // deploy second core contract with two more projects
     this.tokenB = await artblocksFactory_PBAB
       .connect(adminB)
-      .deploy(name, symbol, this.randomizer.address);
+      .deploy(name, symbol, this.randomizer.address, 0);
 
     // set renderProviderAddress for tokenB
     await this.tokenB

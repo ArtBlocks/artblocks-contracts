@@ -113,7 +113,7 @@ describe("MinterDAExpV0_V1Core", async function () {
   });
 
   describe("calculate gas", async function () {
-    it("mints and calculates gas values", async function () {
+    it("mints and calculates gas values [ @skip-on-coverage ]", async function () {
       await ethers.provider.send("evm_mine", [
         this.startTime + this.auctionStartTimeOffset,
       ]);
@@ -132,7 +132,7 @@ describe("MinterDAExpV0_V1Core", async function () {
         "ETH"
       );
 
-      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0380107")); // assuming a cost of 100 GWEI
+      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0380392")); // assuming a cost of 100 GWEI
     });
   });
 

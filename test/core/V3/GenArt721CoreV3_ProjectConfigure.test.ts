@@ -28,30 +28,22 @@ describe("GenArt721CoreV3 Project Configure", async function () {
     this.accounts = await getAccounts();
     await assignDefaultConstants.call(this);
 
-    const randomizerFactory = await ethers.getContractFactory(
-      "BasicRandomizer"
-    );
-    this.randomizer = await randomizerFactory.deploy();
-    const adminACLFactory = await ethers.getContractFactory(
-      "MockAdminACLV0Events"
-    );
-    this.adminACL = await adminACLFactory.deploy();
-    const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV3");
-    this.genArt721Core = await artblocksFactory
-      .connect(this.accounts.deployer)
-      .deploy(
-        this.name,
-        this.symbol,
-        this.randomizer.address,
-        this.adminACL.address
-      );
+    // deploy and configure minter filter and minter
+    ({
+      genArt721Core: this.genArt721Core,
+      minterFilter: this.minterFilter,
+      randomizer: this.randomizer,
+      adminACL: this.adminACL,
+    } = await deployCoreWithMinterFilter.call(
+      this,
+      "GenArt721CoreV3",
+      "MinterFilterV1"
+    ));
 
-    // TBD - V3 DOES NOT CURRENTLY HAVE A WORKING MINTER
-
-    // allow artist to mint on contract
-    await this.genArt721Core
-      .connect(this.accounts.deployer)
-      .updateMinterContract(this.accounts.artist.address);
+    this.minter = await deployAndGet.call(this, "MinterSetPriceV2", [
+      this.genArt721Core.address,
+      this.minterFilter.address,
+    ]);
 
     // add project zero
     await this.genArt721Core
@@ -68,6 +60,17 @@ describe("GenArt721CoreV3 Project Configure", async function () {
     await this.genArt721Core
       .connect(this.accounts.deployer)
       .addProject("name", this.accounts.artist2.address);
+
+    // configure minter for project zero
+    await this.minterFilter
+      .connect(this.accounts.deployer)
+      .addApprovedMinter(this.minter.address);
+    await this.minterFilter
+      .connect(this.accounts.deployer)
+      .setMinterForProject(this.projectZero, this.minter.address);
+    await this.minter
+      .connect(this.accounts.artist)
+      .updatePricePerTokenInWei(this.projectZero, 0);
   });
 
   describe("updateProjectMaxInvocations", function () {
@@ -104,13 +107,9 @@ describe("GenArt721CoreV3 Project Configure", async function () {
 
     it("only allows maxInvocations to be gte current invocations", async function () {
       // mint a token on project zero
-      await this.genArt721Core
+      await this.minter
         .connect(this.accounts.artist)
-        .mint(
-          this.accounts.artist.address,
-          this.projectZero,
-          this.accounts.artist.address
-        );
+        .purchase(this.projectZero);
       // invocations cannot be < current invocations
       await expectRevert(
         this.genArt721Core
@@ -132,26 +131,16 @@ describe("GenArt721CoreV3 Project Configure", async function () {
   describe("project complete state", function () {
     it("project may not mint when is completed due to reducing maxInvocations", async function () {
       // mint a token on project zero
-      await this.genArt721Core
+      await this.minter
         .connect(this.accounts.artist)
-        .mint(
-          this.accounts.artist.address,
-          this.projectZero,
-          this.accounts.artist.address
-        );
+        .purchase(this.projectZero);
       // set max invocations to number of invocations
       await this.genArt721Core
         .connect(this.accounts.artist)
         .updateProjectMaxInvocations(this.projectZero, 1);
       // expect project to not mint when completed
       expectRevert(
-        this.genArt721Core
-          .connect(this.accounts.artist)
-          .mint(
-            this.accounts.artist.address,
-            this.projectZero,
-            this.accounts.artist.address
-          ),
+        this.minter.connect(this.accounts.artist).purchase(this.projectZero),
         "Must not exceed max invocations"
       );
     });
@@ -159,23 +148,13 @@ describe("GenArt721CoreV3 Project Configure", async function () {
     it("project may not mint when is completed due to minting out", async function () {
       // project mints out
       for (let i = 0; i < this.maxInvocations; i++) {
-        await this.genArt721Core
+        await this.minter
           .connect(this.accounts.artist)
-          .mint(
-            this.accounts.artist.address,
-            this.projectZero,
-            this.accounts.artist.address
-          );
+          .purchase(this.projectZero);
       }
       // expect project to not mint when completed
       expectRevert(
-        this.genArt721Core
-          .connect(this.accounts.artist)
-          .mint(
-            this.accounts.artist.address,
-            this.projectZero,
-            this.accounts.artist.address
-          ),
+        this.minter.connect(this.accounts.artist).purchase(this.projectZero),
         "Must not exceed max invocations"
       );
     });
@@ -192,13 +171,9 @@ describe("GenArt721CoreV3 Project Configure", async function () {
     it("project is not locked < 4 weeks after being completed", async function () {
       // project is completed
       for (let i = 0; i < this.maxInvocations; i++) {
-        await this.genArt721Core
+        await this.minter
           .connect(this.accounts.artist)
-          .mint(
-            this.accounts.artist.address,
-            this.projectZero,
-            this.accounts.artist.address
-          );
+          .purchase(this.projectZero);
       }
       let projectStateData = await this.genArt721Core
         .connect(this.accounts.user)
@@ -216,13 +191,9 @@ describe("GenArt721CoreV3 Project Configure", async function () {
     it("project is locked > 4 weeks after being minted out", async function () {
       // project is completed
       for (let i = 0; i < this.maxInvocations; i++) {
-        await this.genArt721Core
+        await this.minter
           .connect(this.accounts.artist)
-          .mint(
-            this.accounts.artist.address,
-            this.projectZero,
-            this.accounts.artist.address
-          );
+          .purchase(this.projectZero);
       }
       // advance > 4 weeks
       await advanceEVMByTime(FOUR_WEEKS + 1);
@@ -287,6 +258,140 @@ describe("GenArt721CoreV3 Project Configure", async function () {
           .connect(this.accounts.artist)
           .updateProjectDescription(this.projectZero, "new description"),
         errorMessage
+      );
+    });
+  });
+
+  describe("updateProjectName", function () {
+    const errorMessage = "Only artist when unlocked, owner when locked";
+    it("owner can update when unlocked", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateProjectName(this.projectZero, "new name");
+    });
+
+    it("artist can update when unlocked", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectName(this.projectZero, "new name");
+      // expect view to be updated
+      const projectDetails = await this.genArt721Core
+        .connect(this.accounts.user)
+        .projectDetails(this.projectZero);
+      expect(projectDetails.projectName).to.equal("new name");
+    });
+
+    it("owner can not update when locked", async function () {
+      await mintProjectUntilRemaining.call(
+        this,
+        this.projectZero,
+        this.accounts.artist,
+        0
+      );
+      await advanceEVMByTime(FOUR_WEEKS + 1);
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateProjectName(this.projectZero, "new description"),
+        "Only if unlocked"
+      );
+    });
+
+    it("user cannot update", async function () {
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.user)
+          .updateProjectName(this.projectZero, "new description"),
+        "Only artist or Admin ACL allowed"
+      );
+    });
+  });
+
+  describe("updateProjectScriptType", function () {
+    const errorMessage = "Only artist when unlocked, owner when locked";
+    it("owner can update when unlocked", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateProjectScriptType(
+          this.projectZero,
+          ethers.utils.formatBytes32String("p5js@v1.2.3")
+        );
+    });
+
+    it("artist can update when unlocked", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectScriptType(
+          this.projectZero,
+          ethers.utils.formatBytes32String("p5js@v1.2.3")
+        );
+    });
+
+    it("view is updated when value is updated", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectScriptType(
+          this.projectZero,
+          ethers.utils.formatBytes32String("p5js@v1.2.3")
+        );
+      // expect view to be updated
+      const projectDetails = await this.genArt721Core
+        .connect(this.accounts.user)
+        .projectScriptDetails(this.projectZero);
+      expect(projectDetails.scriptTypeAndVersion).to.equal("p5js@v1.2.3");
+    });
+
+    it("value must contain exactly one `@`", async function () {
+      // test too few @
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectScriptType(
+            this.projectZero,
+            ethers.utils.formatBytes32String("p5js_v1.2.3")
+          ),
+        "must contain exactly one @"
+      );
+      // test too many @
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectScriptType(
+            this.projectZero,
+            ethers.utils.formatBytes32String("p5@js@v1.2.3")
+          ),
+        "must contain exactly one @"
+      );
+    });
+
+    it("owner can not update when locked", async function () {
+      await mintProjectUntilRemaining.call(
+        this,
+        this.projectZero,
+        this.accounts.artist,
+        0
+      );
+      await advanceEVMByTime(FOUR_WEEKS + 1);
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateProjectScriptType(
+            this.projectZero,
+            ethers.utils.formatBytes32String("p5js@v1.2.3")
+          ),
+        "Only if unlocked"
+      );
+    });
+
+    it("user cannot update", async function () {
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.user)
+          .updateProjectScriptType(
+            this.projectZero,
+            ethers.utils.formatBytes32String("p5js@v1.2.3")
+          ),
+        "Only artist or Admin ACL allowed"
       );
     });
   });
@@ -358,6 +463,37 @@ describe("GenArt721CoreV3 Project Configure", async function () {
       await this.genArt721Core
         .connect(this.accounts.artist)
         .proposeArtistPaymentAddressesAndSplits(...this.valuesToUpdateTo);
+    });
+
+    it("does not allow artist to propose invalid", async function () {
+      // rejects artist proposal primary >100% to additional
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .proposeArtistPaymentAddressesAndSplits(
+            this.projectZero,
+            this.accounts.artist2.address,
+            this.accounts.additional.address,
+            101,
+            this.accounts.additional2.address,
+            0
+          ),
+        "Max of 100%"
+      );
+      // rejects artist proposal secondary >100% to additional
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .proposeArtistPaymentAddressesAndSplits(
+            this.projectZero,
+            this.accounts.artist2.address,
+            this.accounts.additional.address,
+            0,
+            this.accounts.additional2.address,
+            101
+          ),
+        "Max of 100%"
+      );
     });
 
     it("only allows adminACL-allowed account to accept updates if owner has not renounced ownership", async function () {
@@ -497,6 +633,168 @@ describe("GenArt721CoreV3 Project Configure", async function () {
             this.valuesToUpdateTo[5]
           ),
         "Must match artist proposal"
+      );
+    });
+
+    it("only allows adminACL-allowed account to accept updates once (i.e. proposal is cleared upon acceptance)", async function () {
+      // artist proposes new values
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .proposeArtistPaymentAddressesAndSplits(...this.valuesToUpdateTo);
+      // allows deployer to accept new values
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .adminAcceptArtistAddressesAndSplits(...this.valuesToUpdateTo);
+      // reverts if deployer tries to accept again
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .adminAcceptArtistAddressesAndSplits(...this.valuesToUpdateTo),
+        "Must match artist proposal"
+      );
+    });
+  });
+
+  describe("updateProjectSecondaryMarketRoyaltyPercentage", function () {
+    it("owner can not update when unlocked", async function () {
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateProjectSecondaryMarketRoyaltyPercentage(this.projectZero, 10),
+        "Only artist"
+      );
+    });
+
+    it("artist can update when unlocked", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectSecondaryMarketRoyaltyPercentage(this.projectZero, 10);
+      // expect view to be updated
+      const royaltyData = await this.genArt721Core
+        .connect(this.accounts.user)
+        .getRoyaltyData(this.projectZero);
+      expect(royaltyData.royaltyFeeByID).to.equal(10);
+    });
+
+    it("artist can update when locked", async function () {
+      await mintProjectUntilRemaining.call(
+        this,
+        this.projectZero,
+        this.accounts.artist,
+        0
+      );
+      await advanceEVMByTime(FOUR_WEEKS + 1);
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectSecondaryMarketRoyaltyPercentage(this.projectZero, 11);
+      // expect view to be updated
+      const royaltyData = await this.genArt721Core
+        .connect(this.accounts.user)
+        .getRoyaltyData(this.projectZero);
+      expect(royaltyData.royaltyFeeByID).to.equal(11);
+    });
+
+    it("artist cannot update > 95%", async function () {
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectSecondaryMarketRoyaltyPercentage(this.projectZero, 96),
+        "Max of 95%"
+      );
+    });
+  });
+
+  describe("updateProjectScript", function () {
+    beforeEach(async function () {
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .addProjectScript(this.projectZero, "// script 0");
+    });
+
+    it("owner can update when unlocked", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateProjectScript(this.projectZero, 0, "// script 0.1");
+    });
+
+    it("artist can update when unlocked", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectScript(this.projectZero, 0, "// script 0.1");
+    });
+
+    it("artist cannot update when locked", async function () {
+      await mintProjectUntilRemaining.call(
+        this,
+        this.projectZero,
+        this.accounts.artist,
+        0
+      );
+      await advanceEVMByTime(FOUR_WEEKS + 1);
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectScript(this.projectZero, 0, "// script 0.1"),
+        "Only if unlocked"
+      );
+    });
+
+    it("artist cannot update non-existing script index", async function () {
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectScript(this.projectZero, 1, "// script 1"),
+        "scriptId out of range"
+      );
+    });
+  });
+
+  describe("removeProjectLastScript", function () {
+    beforeEach(async function () {
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .addProjectScript(this.projectZero, "// script 0");
+    });
+
+    it("owner can remove when unlocked", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .removeProjectLastScript(this.projectZero);
+    });
+
+    it("artist can remove when unlocked", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .removeProjectLastScript(this.projectZero);
+    });
+
+    it("artist cannot remove when locked", async function () {
+      await mintProjectUntilRemaining.call(
+        this,
+        this.projectZero,
+        this.accounts.artist,
+        0
+      );
+      await advanceEVMByTime(FOUR_WEEKS + 1);
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .removeProjectLastScript(this.projectZero),
+        "Only if unlocked"
+      );
+    });
+
+    it("artist cannot update non-existing script index", async function () {
+      // remove existing script
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .removeProjectLastScript(this.projectZero);
+      // expect revert when tyring to remove again
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .removeProjectLastScript(this.projectZero),
+        "there are no scripts to remove"
       );
     });
   });

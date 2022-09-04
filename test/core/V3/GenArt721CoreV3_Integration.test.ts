@@ -29,30 +29,22 @@ describe("GenArt721CoreV3 Integration", async function () {
     this.accounts = await getAccounts();
     await assignDefaultConstants.call(this);
 
-    const randomizerFactory = await ethers.getContractFactory(
-      "BasicRandomizer"
-    );
-    this.randomizer = await randomizerFactory.deploy();
-    const adminACLFactory = await ethers.getContractFactory(
-      "MockAdminACLV0Events"
-    );
-    this.adminACL = await adminACLFactory.deploy();
-    const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV3");
-    this.genArt721Core = await artblocksFactory
-      .connect(this.accounts.deployer)
-      .deploy(
-        this.name,
-        this.symbol,
-        this.randomizer.address,
-        this.adminACL.address
-      );
+    // deploy and configure minter filter and minter
+    ({
+      genArt721Core: this.genArt721Core,
+      minterFilter: this.minterFilter,
+      randomizer: this.randomizer,
+      adminACL: this.adminACL,
+    } = await deployCoreWithMinterFilter.call(
+      this,
+      "GenArt721CoreV3",
+      "MinterFilterV1"
+    ));
 
-    // TBD - V3 DOES NOT CURRENTLY HAVE A WORKING MINTER
-
-    // allow artist to mint on contract
-    await this.genArt721Core
-      .connect(this.accounts.deployer)
-      .updateMinterContract(this.accounts.artist.address);
+    this.minter = await deployAndGet.call(this, "MinterSetPriceV2", [
+      this.genArt721Core.address,
+      this.minterFilter.address,
+    ]);
 
     // add project
     await this.genArt721Core
@@ -64,6 +56,25 @@ describe("GenArt721CoreV3 Integration", async function () {
     await this.genArt721Core
       .connect(this.accounts.artist)
       .updateProjectMaxInvocations(this.projectZero, this.maxInvocations);
+
+    // configure minter for project zero
+    await this.minterFilter
+      .connect(this.accounts.deployer)
+      .addApprovedMinter(this.minter.address);
+    await this.minterFilter
+      .connect(this.accounts.deployer)
+      .setMinterForProject(this.projectZero, this.minter.address);
+    await this.minter
+      .connect(this.accounts.artist)
+      .updatePricePerTokenInWei(this.projectZero, 0);
+  });
+
+  describe("artblocksPrimarySalesAddress", function () {
+    it("returns expected artblocksPrimarySalesAddress", async function () {
+      expect(
+        await this.genArt721Core.artblocksPrimarySalesAddress()
+      ).to.be.equal(this.accounts.deployer.address);
+    });
   });
 
   describe("artblocksAddress", function () {
@@ -71,6 +82,20 @@ describe("GenArt721CoreV3 Integration", async function () {
       expect(await this.genArt721Core.artblocksAddress()).to.be.equal(
         this.accounts.deployer.address
       );
+    });
+  });
+
+  describe("artblocksSecondarySalesAddress", function () {
+    it("returns expected artblocksSecondarySalesAddress", async function () {
+      expect(
+        await this.genArt721Core.artblocksSecondarySalesAddress()
+      ).to.be.equal(this.accounts.deployer.address);
+    });
+  });
+
+  describe("artblocksPercentage", function () {
+    it("returns expected artblocksPercentage", async function () {
+      expect(await this.genArt721Core.artblocksPercentage()).to.be.equal(10);
     });
   });
 
@@ -187,6 +212,219 @@ describe("GenArt721CoreV3 Integration", async function () {
         .connect(this.accounts.deployer)
         .coreType();
       expect(coreType).to.be.equal("GenArt721CoreV3");
+    });
+  });
+
+  describe("supportsInterface", function () {
+    it("supports IManifold", async function () {
+      // expected true for supporting: bytes4(keccak256('getRoyalties(uint256)')) == 0xbb3bafd6
+      expect(
+        await this.genArt721Core
+          .connect(this.accounts.deployer)
+          .supportsInterface(0xbb3bafd6)
+      ).to.be.true;
+    });
+
+    it("supports IERC721", async function () {
+      // expected true for interface = 0x80ac58cd
+      expect(
+        await this.genArt721Core
+          .connect(this.accounts.deployer)
+          .supportsInterface(0x80ac58cd)
+      ).to.be.true;
+    });
+
+    it("supports IERC165", async function () {
+      // expected true for interface = 0x01ffc9a7
+      expect(
+        await this.genArt721Core
+          .connect(this.accounts.deployer)
+          .supportsInterface(0x01ffc9a7)
+      ).to.be.true;
+    });
+
+    it("does not support 0xffffffff", async function () {
+      expect(
+        await this.genArt721Core
+          .connect(this.accounts.deployer)
+          .supportsInterface(0xffffffff)
+      ).to.be.false;
+    });
+  });
+
+  describe("initial nextProjectId", function () {
+    it("returns zero when initialized to zero nextProjectId", async function () {
+      // one project has already been added, so should be one
+      expect(await this.genArt721Core.nextProjectId()).to.be.equal(1);
+    });
+
+    it("returns >0 when initialized to >0 nextProjectId", async function () {
+      const differentGenArt721Core = await deployAndGet.call(
+        this,
+        "GenArt721CoreV3",
+        [
+          this.name,
+          this.symbol,
+          this.randomizer.address,
+          this.adminACL.address,
+          365,
+        ]
+      );
+      expect(await differentGenArt721Core.nextProjectId()).to.be.equal(365);
+    });
+  });
+
+  describe("startingProjectId", function () {
+    it("returns zero when initialized to zero nextProjectId", async function () {
+      // one project has already been added, but starting project ID should remain at 0
+      expect(await this.genArt721Core.startingProjectId()).to.be.equal(0);
+    });
+
+    it("returns >0 when initialized to >0 nextProjectId", async function () {
+      const differentGenArt721Core = await deployAndGet.call(
+        this,
+        "GenArt721CoreV3",
+        [
+          this.name,
+          this.symbol,
+          this.randomizer.address,
+          this.adminACL.address,
+          365,
+        ]
+      );
+      expect(await differentGenArt721Core.startingProjectId()).to.be.equal(365);
+    });
+  });
+
+  describe("mint_ECF", function () {
+    it("reverts if not called by the minter contract", async function () {
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .mint_Ecf(
+            this.accounts.artist.address,
+            this.projectZero,
+            this.accounts.artist.address
+          ),
+        "Must mint from minter contract"
+      );
+    });
+
+    it("reverts if try to mint non-active project", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .toggleProjectIsActive(this.projectZero);
+      await expectRevert(
+        this.minter.connect(this.accounts.user).purchase(this.projectZero),
+        "Project must exist and be active"
+      );
+    });
+
+    it("reverts if try to mint paused from non-artist account", async function () {
+      await expectRevert(
+        this.minter.connect(this.accounts.user).purchase(this.projectZero),
+        "Purchases are paused."
+      );
+    });
+  });
+
+  describe("setTokenHash_8PT", function () {
+    it("does not allow non-randomizer to call", async function () {
+      // mint token zero so it is a valid token
+      await this.minter
+        .connect(this.accounts.artist)
+        .purchase(this.projectZero);
+
+      // call directly from non-randomizer account and expect revert
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .setTokenHash_8PT(
+            this.projectZeroTokenZero.toNumber(),
+            ethers.constants.MaxInt256
+          ),
+        "Only randomizer may set"
+      );
+    });
+
+    it("does allow randomizer to call, and updates token hash", async function () {
+      // ensure token hash is initially zero
+      expect(
+        await this.genArt721Core.tokenIdToHash(
+          this.projectZeroTokenZero.toNumber()
+        )
+      ).to.be.equal(ethers.constants.HashZero);
+      // mint a token and expect token hash to be updated to a non-zero hash
+      await this.minter
+        .connect(this.accounts.artist)
+        .purchase(this.projectZero);
+      expect(
+        await this.genArt721Core.tokenIdToHash(
+          this.projectZeroTokenZero.toNumber()
+        )
+      ).to.not.be.equal(ethers.constants.HashZero);
+    });
+
+    it("does not allow randomizer to call once a token hash has been set", async function () {
+      // ensure token hash is initially zero
+      expect(
+        await this.genArt721Core.tokenIdToHash(
+          this.projectZeroTokenZero.toNumber()
+        )
+      ).to.be.equal(ethers.constants.HashZero);
+      // update randomizer to be a special mock randomizer for this test (seperate mint from token hash assignment)
+      // deploy new RandomizerV2_NoAssignMock randomizer
+      const mockRandomizer = await deployAndGet.call(
+        this,
+        "RandomizerV2_NoAssignMock",
+        []
+      );
+      // update randomizer to new randomizer
+      await mockRandomizer
+        .connect(this.accounts.deployer)
+        .assignCoreAndRenounce(this.genArt721Core.address);
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateRandomizerAddress(mockRandomizer.address);
+      // mint a token and expect token hash to not be updated (due to the alternate randomizer)
+      await this.minter
+        .connect(this.accounts.artist)
+        .purchase(this.projectZero);
+      // set token hash and expect success
+      await mockRandomizer.actuallyAssignTokenHash(
+        this.projectZeroTokenZero.toNumber()
+      );
+      // expect revert when attempting to overwrite the token hash
+      await expectRevert(
+        mockRandomizer.actuallyAssignTokenHash(
+          this.projectZeroTokenZero.toNumber()
+        ),
+        "Token hash already set"
+      );
+    });
+
+    it("does not allow randomizer to assign hash if token does not yet exist", async function () {
+      // update randomizer to be a special mock randomizer for this test (seperate mint from token hash assignment)
+      // deploy new RandomizerV2_NoAssignMock randomizer
+      const mockRandomizer = await deployAndGet.call(
+        this,
+        "RandomizerV2_NoAssignMock",
+        []
+      );
+      // update randomizer to new randomizer
+      await mockRandomizer
+        .connect(this.accounts.deployer)
+        .assignCoreAndRenounce(this.genArt721Core.address);
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateRandomizerAddress(mockRandomizer.address);
+      // expect revert when attempting to set token hash of non-existing token
+      await expectRevert(
+        mockRandomizer.actuallyAssignTokenHash(
+          this.projectZeroTokenZero.toNumber()
+        ),
+        "Token ID does not exist"
+      );
     });
   });
 });

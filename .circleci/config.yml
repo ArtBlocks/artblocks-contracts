@@ -7,7 +7,8 @@ orbs:
 jobs:
   lint-and-test:
     docker:
-      - image: 'cimg/base:stable'
+      - image: "cimg/base:stable"
+    resource_class: large
     steps:
       - checkout
       - node/install:

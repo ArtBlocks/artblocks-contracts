@@ -22,7 +22,7 @@ describe("GenArt721Minter_PBAB", async function () {
     const PBABFactory = await ethers.getContractFactory("GenArt721CoreV2_PBAB");
     this.genArt721Core = await PBABFactory.connect(
       this.accounts.deployer
-    ).deploy(this.name, this.symbol, this.randomizer.address);
+    ).deploy(this.name, this.symbol, this.randomizer.address, 0);
 
     const minterFactory = await ethers.getContractFactory(
       "GenArt721Minter_PBAB"

@@ -13,8 +13,9 @@ _This document is intended to document and explain the Art Blocks Core V3 change
 - Implement "Ownable"
   - Main benefit is OpenSea/aggregator support by default
   - Added a getter function admin() that returns contract owner to maintain backwards-compatibility of interface with before-V3 contracts.
-- Change scriptJSON to distinct fields
+- Change `scriptJSON` to distinct fields `scriptTypeAndVersion` and `aspectRatio`
   - This is to standardize which items should be on-chain and used by renderer (e.g. library, library version, aspectRatio).
+  - On-chain data validation that `scriptTypeAndVersion` contains `@` delimeter (to better ensure library version is recorded).
 - Re-organize the contract's project-view functions to be more intuitive
   - V1's `projectTokenInfo`, `projectScriptInfo`, and `projectDetails` are now broken out into:
     - `projectStateData` - Information relevant to minters/purchasers
@@ -35,6 +36,9 @@ _This document is intended to document and explain the Art Blocks Core V3 change
   - This is to allow artists to have different additional payee accounts for primary sales vs. secondary royalty sales. This supports the use case where an artist has a charity as a payee in primary sales, but not in secondary sales.
 - Limit artists to 30% secondary royalty fees
   - Previously the limit was 100% secondary royalty fees. This is to prevent the artist from taking too much of the secondary royalty fees.
+- Support [Manifold's Royalty Registry](https://github.com/manifoldxyz/royalty-registry-solidity) directly on V3 core contract
+  - Add Art Blocks royalty information to V3 core contract
+  - conform to the IManifold interface, as defined on the Manifold Royalty Registry
 - Delegate all admin access checks to new AdminACL contract
   - This is to allow for more flexible admin access control, and to allow for future admin access control changes without having to redeploy the core contract.
   - The core contract now does not distinguish between admin and whitelisted addresses. All admin access checks are delegated to the AdminACL contract.
@@ -48,3 +52,23 @@ _This document is intended to document and explain the Art Blocks Core V3 change
 - Add split revenues view function on core for primary sales
   - This offloads often-repeated primary sale payment splitting logic from V3's minter contracts onto the V3 core contract.
   - Placing splitter logic on core is preferred over creating something like a "common mint functions" external contract, because it avoids extra gas costs associated with EIP-2929 and calling cold addresses.
+- Update minters in minter suite to integrate with V3 core contract
+  - A couple breaking changes were made on the V3 core contract that required changes to the minter suite contracts.
+- Improve gas efficiency of minting on the V3 core contract
+  - Derive from ERC721 instead of ERC721Enumerable
+  - Fork OpenZeppelin ERC721 implementation to pack token hash seed with owner address
+  - Minimize SLOAD operations & re-organize logic to minimize gas usage
+  - Pack project data by optimizing struct layout and variable types
+  - Pack project financial data by utilizing new struct and variable types
+  - Optimize mint function signature to reduce gas usage
+- Improve gas efficiency of V3-compatible minters
+  - Minimize costly SLOAD operations & re-organize logic to minimize gas usage
+  - Pack structs
+  - Optimize mint function signature to reduce gas usage
+- Update randomizer interface for V3 core contract
+- Only allow artists to reduce the number of maximum invocations
+  - Remove any unnecessary minter logic accordingly
+- Enable admin to forever prevent new projects from being added to the core contract
+  - This is to prevent the core contract from being used to mint new projects if Art Blocks ever changes to a new contract in the future.
+- Add new automatically-populated and admin-configurable `defaultBaseURI` field to V3 core contract
+  - This is to have a default base URI for all **new** projects on the V3 core contract, and to allow the artist to update the base URI if needed.

@@ -10,7 +10,7 @@ import {
 } from "../../../util/common";
 
 import { MinterSetPriceERC20_Common } from "./MinterSetPriceERC20.common";
-import { MinterSetPriceV1_Common } from "../MinterSetPriceV1.common";
+import { MinterSetPriceV1V2_Common } from "../MinterSetPriceV1V2.common";
 
 /**
  * These tests intended to ensure this Filtered Minter integrates properly with
@@ -44,17 +44,21 @@ describe("MinterSetPriceERC20V1_V1Core", async function () {
       this.minterFilter.address
     );
 
-    await this.genArt721Core
-      .connect(this.accounts.deployer)
-      .addProject("project0", this.accounts.artist.address, 0, false);
-
-    await this.genArt721Core
-      .connect(this.accounts.deployer)
-      .addProject("project1", this.accounts.artist.address, 0, false);
-
-    await this.genArt721Core
-      .connect(this.accounts.deployer)
-      .addProject("project2", this.accounts.artist.address, 0, false);
+    await safeAddProject(
+      this.genArt721Core,
+      this.accounts.deployer,
+      this.accounts.artist.address
+    );
+    await safeAddProject(
+      this.genArt721Core,
+      this.accounts.deployer,
+      this.accounts.artist.address
+    );
+    await safeAddProject(
+      this.genArt721Core,
+      this.accounts.deployer,
+      this.accounts.artist.address
+    );
 
     await this.genArt721Core
       .connect(this.accounts.deployer)
@@ -65,10 +69,6 @@ describe("MinterSetPriceERC20V1_V1Core", async function () {
     await this.genArt721Core
       .connect(this.accounts.deployer)
       .toggleProjectIsActive(this.projectTwo);
-
-    await this.genArt721Core
-      .connect(this.accounts.deployer)
-      .addMintWhitelisted(this.minterFilter.address);
 
     await this.genArt721Core
       .connect(this.accounts.artist)
@@ -122,12 +122,12 @@ describe("MinterSetPriceERC20V1_V1Core", async function () {
     MinterSetPriceERC20_Common();
   });
 
-  describe("common MinterSetPrice V1 tests", async function () {
-    MinterSetPriceV1_Common();
+  describe("common MinterSetPrice V1V2 tests", async function () {
+    MinterSetPriceV1V2_Common();
   });
 
   describe("calculates gas", async function () {
-    it("mints and calculates gas values", async function () {
+    it("mints and calculates gas values [ @skip-on-coverage ]", async function () {
       const tx = await this.minter
         .connect(this.accounts.user)
         .purchase(this.projectOne, {
@@ -142,7 +142,7 @@ describe("MinterSetPriceERC20V1_V1Core", async function () {
         ethers.utils.formatUnits(txCost, "ether").toString(),
         "ETH"
       );
-      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.036402"));
+      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0364129"));
     });
   });
 

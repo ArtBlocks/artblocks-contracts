@@ -1,57 +1,65 @@
 // SPDX-License-Identifier: LGPL-3.0-only
+pragma solidity 0.8.16;
+
 // Created By: Art Blocks Inc.
 
-import "./interfaces/0.8.x/IRandomizer.sol";
+import "./interfaces/0.8.x/IRandomizerV2.sol";
 import "./interfaces/0.8.x/IAdminACLV0.sol";
 import "./interfaces/0.8.x/IGenArt721CoreContractV3.sol";
+import "./interfaces/0.8.x/IManifold.sol";
 
 import "@openzeppelin-4.7/contracts/utils/Strings.sol";
 import "@openzeppelin-4.7/contracts/access/Ownable.sol";
-import "@openzeppelin-4.7/contracts/token/ERC721/ERC721.sol";
-
-pragma solidity 0.8.9;
+import "./libs/0.8.x/ERC721_PackedHashSeed.sol";
+import "./libs/0.8.x/Bytes32Strings.sol";
 
 /**
  * @title Art Blocks ERC-721 core contract, V3.
  * @author Art Blocks Inc.
  */
-contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
-    event ProposedArtistAddressesAndSplits(
-        uint256 indexed _projectId,
-        address _artistAddress,
-        address _additionalPayeePrimarySales,
-        uint256 _additionalPayeePrimarySalesPercentage,
-        address _additionalPayeeSecondarySales,
-        uint256 _additionalPayeeSecondarySalesPercentage
-    );
-
-    event AcceptedArtistAddressesAndSplits(uint256 indexed _projectId);
-
+contract GenArt721CoreV3 is
+    ERC721_PackedHashSeed,
+    Ownable,
+    IGenArt721CoreContractV3
+{
+    using Bytes32Strings for bytes32;
+    using Strings for uint256;
     uint256 constant ONE_MILLION = 1_000_000;
+    uint24 constant ONE_MILLION_UINT24 = 1_000_000;
     uint256 constant FOUR_WEEKS_IN_SECONDS = 2_419_200;
+    uint8 constant AT_CHARACTER_CODE = uint8(bytes1("@")); // 0x40
 
     // generic platform event fields
-    bytes32 constant FIELD_ARTBLOCKS_ADDRESS = "artblocksAddress";
+    bytes32 constant FIELD_NEXT_PROJECT_ID = "nextProjectId";
+    bytes32 constant FIELD_NEW_PROJECTS_FORBIDDEN = "newProjectsForbidden";
+    bytes32 constant FIELD_DEFAULT_BASE_URI = "defaultBaseURI";
+    bytes32 constant FIELD_ARTBLOCKS_PRIMARY_SALES_ADDRESS =
+        "artblocksPrimarySalesAddress";
+    bytes32 constant FIELD_ARTBLOCKS_SECONDARY_SALES_ADDRESS =
+        "artblocksSecondarySalesAddress";
     bytes32 constant FIELD_RANDOMIZER_ADDRESS = "randomizerAddress";
     bytes32 constant FIELD_ARTBLOCKS_CURATION_REGISTRY_ADDRESS =
         "curationRegistryAddress";
     bytes32 constant FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS =
         "dependencyRegistryAddress";
-    bytes32 constant FIELD_ARTBLOCKS_PERCENTAGE = "artblocksPercentage";
+    bytes32 constant FIELD_ARTBLOCKS_PRIMARY_SALES_PERCENTAGE =
+        "artblocksPrimaryPercentage";
+    bytes32 constant FIELD_ARTBLOCKS_SECONDARY_SALES_BPS =
+        "artblocksSecondaryBPS";
     // generic project event fields
     bytes32 constant FIELD_PROJECT_COMPLETED = "completed";
     bytes32 constant FIELD_PROJECT_ACTIVE = "active";
-    bytes32 constant FIELD_ARTIST_ADDRESS = "artistAddress";
+    bytes32 constant FIELD_PROJECT_ARTIST_ADDRESS = "artistAddress";
     bytes32 constant FIELD_PROJECT_PAUSED = "paused";
     bytes32 constant FIELD_PROJECT_CREATED = "created";
     bytes32 constant FIELD_PROJECT_NAME = "name";
-    bytes32 constant FIELD_ARTIST_NAME = "artistName";
-    bytes32 constant FIELD_SECONDARY_MARKET_ROYALTY_PERCENTAGE =
+    bytes32 constant FIELD_PROJECT_ARTIST_NAME = "artistName";
+    bytes32 constant FIELD_PROJECT_SECONDARY_MARKET_ROYALTY_PERCENTAGE =
         "royaltyPercentage";
     bytes32 constant FIELD_PROJECT_DESCRIPTION = "description";
     bytes32 constant FIELD_PROJECT_WEBSITE = "website";
     bytes32 constant FIELD_PROJECT_LICENSE = "license";
-    bytes32 constant FIELD_MAX_INVOCATIONS = "maxInvocations";
+    bytes32 constant FIELD_PROJECT_MAX_INVOCATIONS = "maxInvocations";
     bytes32 constant FIELD_PROJECT_SCRIPT = "script";
     bytes32 constant FIELD_PROJECT_SCRIPT_TYPE = "scriptType";
     bytes32 constant FIELD_PROJECT_ASPECT_RATIO = "aspectRatio";
@@ -71,65 +79,86 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     /// Dependency registry managed by Art Blocks
     address public artblocksDependencyRegistryAddress;
 
-    /// randomizer contract
-    IRandomizer public randomizerContract;
+    /// current randomizer contract
+    IRandomizerV2 public randomizerContract;
+
+    /// append-only array of all randomizer contract addresses ever used by
+    /// this contract
+    address[] private _historicalRandomizerAddresses;
 
     /// admin ACL contract
     IAdminACLV0 public adminACLContract;
 
     struct Project {
+        uint24 invocations;
+        uint24 maxInvocations;
+        uint24 scriptCount;
+        // max uint64 ~= 1.8e19 sec ~= 570 billion years
+        uint64 completedTimestamp;
+        bool active;
+        bool paused;
         string name;
         string artist;
         string description;
         string website;
         string license;
         string projectBaseURI;
-        string scriptType;
-        string scriptTypeVersion;
+        bytes32 scriptTypeAndVersion;
         string aspectRatio;
-        uint256 invocations;
-        uint256 maxInvocations;
-        mapping(uint256 => string) scripts;
-        uint256 scriptCount;
         string ipfsHash;
-        bool active;
-        bool paused;
-        uint256 completedTimestamp;
+        mapping(uint256 => string) scripts;
     }
 
     mapping(uint256 => Project) projects;
 
-    // All financial functions are stripped from struct for visibility
-    mapping(uint256 => address payable) public projectIdToArtistAddress;
-    mapping(uint256 => address payable)
-        public projectIdToAdditionalPayeePrimarySales;
-    mapping(uint256 => uint256)
-        public projectIdToAdditionalPayeePrimarySalesPercentage;
-    mapping(uint256 => address payable)
-        public projectIdToAdditionalPayeeSecondarySales;
-    mapping(uint256 => uint256)
-        public projectIdToAdditionalPayeeSecondarySalesPercentage;
-    mapping(uint256 => uint256)
-        public projectIdToSecondaryMarketRoyaltyPercentage;
+    /// packed struct containing project financial information
+    struct ProjectFinance {
+        address payable additionalPayeePrimarySales;
+        // packed uint: max of 95, max uint8 = 255
+        uint8 secondaryMarketRoyaltyPercentage;
+        address payable additionalPayeeSecondarySales;
+        // packed uint: max of 100, max uint8 = 255
+        uint8 additionalPayeeSecondarySalesPercentage;
+        address payable artistAddress;
+        // packed uint: max of 100, max uint8 = 255
+        uint8 additionalPayeePrimarySalesPercentage;
+    }
+    // Project financials mapping
+    mapping(uint256 => ProjectFinance) projectIdToFinancials;
 
     /// hash of artist's proposed payment updates to be approved by admin
     mapping(uint256 => bytes32) public proposedArtistAddressesAndSplitsHash;
 
-    address payable public artblocksAddress;
-    /// Percentage of mint revenue allocated to Art Blocks
-    uint256 public artblocksPercentage = 10;
+    /// Art Blocks payment address for all primary sales revenues (packed)
+    address payable public artblocksPrimarySalesAddress;
+    /// Percentage of primary sales revenue allocated to Art Blocks (packed)
+    // packed uint: max of 25, max uint8 = 255
+    uint8 private _artblocksPrimarySalesPercentage = 10;
 
-    mapping(uint256 => bytes32) public tokenIdToHash;
+    /// Art Blocks payment address for all secondary sales royalty revenues
+    address payable public artblocksSecondarySalesAddress;
+    /// Basis Points of secondary sales royalties allocated to Art Blocks
+    uint256 public artblocksSecondarySalesBPS = 250;
 
     /// single minter allowed for this core contract
     address public minterContract;
 
+    /// starting (initial) project ID on this contract
+    uint256 public immutable startingProjectId;
+
     /// next project ID to be created
-    uint256 public nextProjectId = 0;
+    uint248 private _nextProjectId;
+
+    /// bool indicating if adding new projects is forbidden;
+    /// default behavior is to allow new projects
+    bool public newProjectsForbidden;
 
     /// version & type of this core contract
     string public constant coreVersion = "v3.0.0";
     string public constant coreType = "GenArt721CoreV3";
+
+    /// default base URI to initialize all new project projectBaseURI values to
+    string public defaultBaseURI;
 
     modifier onlyValidTokenId(uint256 _tokenId) {
         require(_exists(_tokenId), "Token ID does not exist");
@@ -142,13 +171,16 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     modifier onlyAdminACL(bytes4 _selector) {
-        require(_adminAllowed(_selector), "Only Admin ACL allowed");
+        require(
+            adminACLAllowed(msg.sender, address(this), _selector),
+            "Only Admin ACL allowed"
+        );
         _;
     }
 
     modifier onlyArtist(uint256 _projectId) {
         require(
-            msg.sender == projectIdToArtistAddress[_projectId],
+            msg.sender == projectIdToFinancials[_projectId].artistAddress,
             "Only artist"
         );
         _;
@@ -156,8 +188,8 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
 
     modifier onlyArtistOrAdminACL(uint256 _projectId, bytes4 _selector) {
         require(
-            msg.sender == projectIdToArtistAddress[_projectId] ||
-                _adminAllowed(_selector),
+            msg.sender == projectIdToFinancials[_projectId].artistAddress ||
+                adminACLAllowed(msg.sender, address(this), _selector),
             "Only artist or Admin ACL allowed"
         );
         _;
@@ -174,9 +206,10 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         bytes4 _selector
     ) {
         require(
-            _adminAllowed(_selector) ||
+            adminACLAllowed(msg.sender, address(this), _selector) ||
                 (owner() == address(0) &&
-                    msg.sender == projectIdToArtistAddress[_projectId]),
+                    msg.sender ==
+                    projectIdToFinancials[_projectId].artistAddress),
             "Only Admin ACL allowed, or artist if owner has renounced"
         );
         _;
@@ -189,44 +222,29 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @param _randomizerContract Randomizer contract.
      * @param _adminACLContract Address of admin access control contract, to be
      * set as contract owner.
+     * @param _startingProjectId The initial next project ID.
+     * @dev _startingProjectId should be set to a value much, much less than
+     * max(uint248) to avoid overflow when adding to it.
      */
     constructor(
         string memory _tokenName,
         string memory _tokenSymbol,
         address _randomizerContract,
-        address _adminACLContract
-    ) ERC721(_tokenName, _tokenSymbol) {
-        _updateArtblocksAddress(msg.sender);
+        address _adminACLContract,
+        uint256 _startingProjectId
+    ) ERC721_PackedHashSeed(_tokenName, _tokenSymbol) {
+        // record contracts starting project ID
+        startingProjectId = _startingProjectId;
+        _updateArtblocksPrimarySalesAddress(msg.sender);
+        _updateArtblocksSecondarySalesAddress(msg.sender);
         _updateRandomizerAddress(_randomizerContract);
         // set AdminACL management contract as owner
         _transferOwnership(_adminACLContract);
-    }
-
-    /**
-     * @dev Transfers ownership of the contract to a new account (`newOwner`).
-     * Internal function without access restriction.
-     * @dev Overrides and wraps OpenZeppelin's _transferOwnership function to
-     * also update adminACLContract for improved introspection.
-     */
-    function _transferOwnership(address newOwner) internal override {
-        Ownable._transferOwnership(newOwner);
-        adminACLContract = IAdminACLV0(newOwner);
-    }
-
-    /**
-     * @notice Updates Art Blocks payment address to `_renderProviderAddress`.
-     */
-    function _updateArtblocksAddress(address _artblocksAddress) internal {
-        artblocksAddress = payable(_artblocksAddress);
-        emit PlatformUpdated(FIELD_ARTBLOCKS_ADDRESS);
-    }
-
-    /**
-     * @notice Updates randomizer address to `_randomizerAddress`.
-     */
-    function _updateRandomizerAddress(address _randomizerAddress) internal {
-        randomizerContract = IRandomizer(_randomizerAddress);
-        emit PlatformUpdated(FIELD_RANDOMIZER_ADDRESS);
+        // initialize default base URI
+        _updateDefaultBaseURI("https://token.artblocks.io/");
+        // initialize next project ID
+        _nextProjectId = uint248(_startingProjectId);
+        emit PlatformUpdated(FIELD_NEXT_PROJECT_ID);
     }
 
     /**
@@ -236,61 +254,63 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @param _projectId Project ID to mint a token on.
      * @param _by Purchaser of minted token.
      * @dev sender must be the allowed minterContract
+     * @dev name of function is optimized for gas usage
      */
-    function mint(
+    function mint_Ecf(
         address _to,
         uint256 _projectId,
         address _by
     ) external returns (uint256 _tokenId) {
+        // CHECKS
+        require(msg.sender == minterContract, "Must mint from minter contract");
+        Project storage project = projects[_projectId];
+        // load invocations into memory
+        uint24 invocationsBefore = project.invocations;
+        uint24 invocationsAfter;
+        unchecked {
+            // invocationsBefore guaranteed <= maxInvocations <= 1_000_000,
+            // 1_000_000 << max uint24, so no possible overflow
+            invocationsAfter = invocationsBefore + 1;
+        }
+        uint24 maxInvocations = project.maxInvocations;
+
         require(
-            msg.sender == minterContract,
-            "Must mint from the allowed minter contract."
-        );
-        require(
-            projects[_projectId].completedTimestamp == 0,
+            invocationsBefore < maxInvocations,
             "Must not exceed max invocations"
         );
         require(
-            projects[_projectId].active ||
-                _by == projectIdToArtistAddress[_projectId],
+            project.active ||
+                _by == projectIdToFinancials[_projectId].artistAddress,
             "Project must exist and be active"
         );
         require(
-            !projects[_projectId].paused ||
-                _by == projectIdToArtistAddress[_projectId],
+            !project.paused ||
+                _by == projectIdToFinancials[_projectId].artistAddress,
             "Purchases are paused."
         );
 
-        return _mintToken(_to, _projectId);
-    }
-
-    function _mintToken(address _to, uint256 _projectId)
-        internal
-        returns (uint256 _tokenId)
-    {
-        // checks & effects
-        // increment project's invocations, then move to memory to avoid SLOAD
-        uint256 _invocationsAfter = ++projects[_projectId].invocations;
-        uint256 _invocationsBefore = _invocationsAfter - 1;
-        uint256 thisTokenId = (_projectId * ONE_MILLION) + _invocationsBefore;
+        // EFFECTS
+        // increment project's invocations
+        project.invocations = invocationsAfter;
+        uint256 thisTokenId;
+        unchecked {
+            // invocationsBefore is uint24 << max uint256. In production use,
+            // _projectId * ONE_MILLION must be << max uint256, otherwise
+            // tokenIdToProjectId function become invalid.
+            // Therefore, no risk of overflow
+            thisTokenId = (_projectId * ONE_MILLION) + invocationsBefore;
+        }
 
         // mark project as completed if hit max invocations
-        if (_invocationsAfter == projects[_projectId].maxInvocations) {
+        if (invocationsAfter == maxInvocations) {
             _completeProject(_projectId);
         }
 
-        bytes32 tokenHash = keccak256(
-            abi.encodePacked(
-                thisTokenId,
-                blockhash(block.number - 1),
-                randomizerContract.returnValue()
-            )
-        );
-
-        tokenIdToHash[thisTokenId] = tokenHash;
-
-        // interactions
+        // INTERACTIONS
         _mint(_to, thisTokenId);
+
+        // token hash is updated by the randomizer contract on V3
+        randomizerContract.assignTokenHash(thisTokenId);
 
         // Do not need to also log `projectId` in event, as the `projectId` for
         // a given token can be derived from the `tokenId` with:
@@ -301,45 +321,31 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     /**
-     * @notice Internal function that returns whether msg.sender is allowed to
-     * call function with selector `_selector`, as determined by the Admin ACL
-     * contract.
-     * @param _selector Function selector to check.
-     * @dev assumes the Admin ACL contract is the owner of this contract, which
-     * is expected to always be true.
-     * @dev adminACLContract is expected to either be null address (if owner
-     * has renounced ownership), or conform to IAdminACLV0 interface. Check for
-     * null address first to avoid revert when admin has renounced ownership.
+     * @notice Sets the hash seed for a given token ID `_tokenId`.
+     * May only be called by the current randomizer contract.
+     * May only be called for tokens that have not already been assigned a
+     * non-zero hash.
+     * @param _tokenId Token ID to set the hash for.
+     * @param _hashSeed Hash seed to set for the token ID. Only last 12 bytes
+     * will be used.
+     * @dev gas-optimized function name because called during mint sequence
      */
-    function _adminAllowed(bytes4 _selector) internal returns (bool) {
-        return
-            owner() != address(0) &&
-            adminACLContract.allowed(msg.sender, address(this), _selector);
-    }
-
-    /**
-     * @notice Internal function that returns whether a project is unlocked.
-     * Projects automatically lock four weeks after they are completed.
-     * Projects are considered completed when they have been invoked the
-     * maximum number of times.
-     * @param _projectId Project ID to check.
-     */
-    function _projectUnlocked(uint256 _projectId) internal view returns (bool) {
-        uint256 projectCompletedTimestamp = projects[_projectId]
-            .completedTimestamp;
-        bool projectOpen = projectCompletedTimestamp == 0;
-        return
-            projectOpen ||
-            (block.timestamp - projectCompletedTimestamp <
-                FOUR_WEEKS_IN_SECONDS);
-    }
-
-    /**
-     * @notice Internal function to complete a project.
-     */
-    function _completeProject(uint256 _projectId) internal {
-        projects[_projectId].completedTimestamp = block.timestamp;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_COMPLETED);
+    function setTokenHash_8PT(uint256 _tokenId, bytes32 _hashSeed)
+        external
+        onlyValidTokenId(_tokenId)
+    {
+        OwnerAndHashSeed storage ownerAndHashSeed = _ownersAndHashSeeds[
+            _tokenId
+        ];
+        require(
+            msg.sender == address(randomizerContract),
+            "Only randomizer may set"
+        );
+        require(
+            ownerAndHashSeed.hashSeed == bytes12(0),
+            "Token hash already set"
+        );
+        ownerAndHashSeed.hashSeed = bytes12(_hashSeed);
     }
 
     /**
@@ -369,33 +375,66 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     /**
-     * @notice Updates artblocksAddress to `_artblocksAddress`.
+     * @notice Updates artblocksPrimarySalesAddress to `_artblocksPrimarySalesAddress`.
      */
-    function updateArtblocksAddress(address payable _artblocksAddress)
-        public
-        onlyAdminACL(this.updateArtblocksAddress.selector)
-    {
-        _updateArtblocksAddress(_artblocksAddress);
+    function updateArtblocksPrimarySalesAddress(
+        address payable _artblocksPrimarySalesAddress
+    ) external onlyAdminACL(this.updateArtblocksPrimarySalesAddress.selector) {
+        _updateArtblocksPrimarySalesAddress(_artblocksPrimarySalesAddress);
     }
 
     /**
-     * @notice Updates Art Blocks mint revenue percentage to
-     * `_artblocksPercentage`.
+     * @notice Updates Art Blocks secondary sales royalty payment address to
+     * `_artblocksSecondarySalesAddress`.
      */
-    function updateArtblocksPercentage(uint256 _artblocksPercentage)
-        public
-        onlyAdminACL(this.updateArtblocksPercentage.selector)
+    function updateArtblocksSecondarySalesAddress(
+        address payable _artblocksSecondarySalesAddress
+    )
+        external
+        onlyAdminACL(this.updateArtblocksSecondarySalesAddress.selector)
     {
-        require(_artblocksPercentage <= 25, "Max of 25%");
-        artblocksPercentage = _artblocksPercentage;
-        emit PlatformUpdated(FIELD_ARTBLOCKS_PERCENTAGE);
+        _updateArtblocksSecondarySalesAddress(_artblocksSecondarySalesAddress);
     }
 
     /**
-     * @notice updates minter to `_address`.
+     * @notice Updates Art Blocks primary sales revenue percentage to
+     * `_artblocksPrimarySalesPercentage`.
+     */
+    function updateArtblocksPrimarySalesPercentage(
+        uint256 artblocksPrimarySalesPercentage_
+    )
+        external
+        onlyAdminACL(this.updateArtblocksPrimarySalesPercentage.selector)
+    {
+        require(artblocksPrimarySalesPercentage_ <= 25, "Max of 25%");
+        _artblocksPrimarySalesPercentage = uint8(
+            artblocksPrimarySalesPercentage_
+        );
+        emit PlatformUpdated(FIELD_ARTBLOCKS_PRIMARY_SALES_PERCENTAGE);
+    }
+
+    /**
+     * @notice Updates Art Blocks secondary sales royalty Basis Points to
+     * `_artblocksSecondarySalesBPS`.
+     * @dev Due to seocndary royalties being ultimately enforced via social
+     * consensus, no hard upper limit is imposed on the BPS value, other than
+     * <= 100% royalty, which would not make mathematical sense. Realistically,
+     * changing this value is expected to either never occur, or be a rare
+     * occurrence.
+     */
+    function updateArtblocksSecondarySalesBPS(
+        uint256 _artblocksSecondarySalesBPS
+    ) external onlyAdminACL(this.updateArtblocksSecondarySalesBPS.selector) {
+        require(_artblocksSecondarySalesBPS <= 10000, "Max of 100%");
+        artblocksSecondarySalesBPS = _artblocksSecondarySalesBPS;
+        emit PlatformUpdated(FIELD_ARTBLOCKS_SECONDARY_SALES_BPS);
+    }
+
+    /**
+     * @notice Updates minter to `_address`.
      */
     function updateMinterContract(address _address)
-        public
+        external
         onlyAdminACL(this.updateMinterContract.selector)
     {
         minterContract = _address;
@@ -406,7 +445,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @notice Updates randomizer to `_randomizerAddress`.
      */
     function updateRandomizerAddress(address _randomizerAddress)
-        public
+        external
         onlyAdminACL(this.updateRandomizerAddress.selector)
     {
         _updateRandomizerAddress(_randomizerAddress);
@@ -416,7 +455,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @notice Toggles project `_projectId` as active/inactive.
      */
     function toggleProjectIsActive(uint256 _projectId)
-        public
+        external
         onlyAdminACL(this.toggleProjectIsActive.selector)
     {
         projects[_projectId].active = !projects[_projectId].active;
@@ -458,7 +497,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         );
         // effects
         proposedArtistAddressesAndSplitsHash[_projectId] = keccak256(
-            abi.encodePacked(
+            abi.encode(
                 _artistAddress,
                 _additionalPayeePrimarySales,
                 _additionalPayeePrimarySalesPercentage,
@@ -517,7 +556,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         require(
             proposedArtistAddressesAndSplitsHash[_projectId] ==
                 keccak256(
-                    abi.encodePacked(
+                    abi.encode(
                         _artistAddress,
                         _additionalPayeePrimarySales,
                         _additionalPayeePrimarySalesPercentage,
@@ -528,19 +567,22 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
             "Must match artist proposal"
         );
         // effects
-        projectIdToArtistAddress[_projectId] = _artistAddress;
-        projectIdToAdditionalPayeePrimarySales[
+        ProjectFinance storage projectFinance = projectIdToFinancials[
             _projectId
-        ] = _additionalPayeePrimarySales;
-        projectIdToAdditionalPayeePrimarySalesPercentage[
-            _projectId
-        ] = _additionalPayeePrimarySalesPercentage;
-        projectIdToAdditionalPayeeSecondarySales[
-            _projectId
-        ] = _additionalPayeeSecondarySales;
-        projectIdToAdditionalPayeeSecondarySalesPercentage[
-            _projectId
-        ] = _additionalPayeeSecondarySalesPercentage;
+        ];
+        projectFinance.artistAddress = _artistAddress;
+        projectFinance
+            .additionalPayeePrimarySales = _additionalPayeePrimarySales;
+        projectFinance.additionalPayeePrimarySalesPercentage = uint8(
+            _additionalPayeePrimarySalesPercentage
+        );
+        projectFinance
+            .additionalPayeeSecondarySales = _additionalPayeeSecondarySales;
+        projectFinance.additionalPayeeSecondarySalesPercentage = uint8(
+            _additionalPayeeSecondarySalesPercentage
+        );
+        // clear proposed values
+        proposedArtistAddressesAndSplitsHash[_projectId] = bytes32(0);
         // emit event for off-chain indexing
         emit AcceptedArtistAddressesAndSplits(_projectId);
     }
@@ -553,16 +595,16 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     function updateProjectArtistAddress(
         uint256 _projectId,
         address payable _artistAddress
-    ) public onlyAdminACL(this.updateProjectArtistAddress.selector) {
-        projectIdToArtistAddress[_projectId] = _artistAddress;
-        emit ProjectUpdated(_projectId, FIELD_ARTIST_ADDRESS);
+    ) external onlyAdminACL(this.updateProjectArtistAddress.selector) {
+        projectIdToFinancials[_projectId].artistAddress = _artistAddress;
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_ARTIST_ADDRESS);
     }
 
     /**
      * @notice Toggles paused state of project `_projectId`.
      */
     function toggleProjectIsPaused(uint256 _projectId)
-        public
+        external
         onlyArtist(_projectId)
     {
         projects[_projectId].paused = !projects[_projectId].paused;
@@ -578,22 +620,36 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     function addProject(
         string memory _projectName,
         address payable _artistAddress
-    ) public onlyAdminACL(this.addProject.selector) {
-        uint256 projectId = nextProjectId;
-        projectIdToArtistAddress[projectId] = _artistAddress;
+    ) external onlyAdminACL(this.addProject.selector) {
+        require(!newProjectsForbidden, "New projects forbidden");
+        uint256 projectId = _nextProjectId;
+        projectIdToFinancials[projectId].artistAddress = _artistAddress;
         projects[projectId].name = _projectName;
         projects[projectId].paused = true;
-        projects[projectId].maxInvocations = ONE_MILLION;
+        projects[projectId].maxInvocations = ONE_MILLION_UINT24;
+        projects[projectId].projectBaseURI = defaultBaseURI;
 
-        nextProjectId = nextProjectId + 1;
+        _nextProjectId = uint248(projectId) + 1;
         emit ProjectUpdated(projectId, FIELD_PROJECT_CREATED);
+    }
+
+    /**
+     * @notice Forever forbids new projects from being added to this contract.
+     */
+    function forbidNewProjects()
+        external
+        onlyAdminACL(this.forbidNewProjects.selector)
+    {
+        require(!newProjectsForbidden, "Already forbidden");
+        newProjectsForbidden = true;
+        emit PlatformUpdated(FIELD_NEW_PROJECTS_FORBIDDEN);
     }
 
     /**
      * @notice Updates name of project `_projectId` to be `_projectName`.
      */
     function updateProjectName(uint256 _projectId, string memory _projectName)
-        public
+        external
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.updateProjectName.selector)
     {
@@ -609,12 +665,12 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         uint256 _projectId,
         string memory _projectArtistName
     )
-        public
+        external
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.updateProjectArtistName.selector)
     {
         projects[_projectId].artist = _projectArtistName;
-        emit ProjectUpdated(_projectId, FIELD_ARTIST_NAME);
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_ARTIST_NAME);
     }
 
     /**
@@ -631,14 +687,13 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     function updateProjectSecondaryMarketRoyaltyPercentage(
         uint256 _projectId,
         uint256 _secondMarketRoyalty
-    ) public onlyArtist(_projectId) {
+    ) external onlyArtist(_projectId) {
         require(_secondMarketRoyalty <= 95, "Max of 95%");
-        projectIdToSecondaryMarketRoyaltyPercentage[
-            _projectId
-        ] = _secondMarketRoyalty;
+        projectIdToFinancials[_projectId]
+            .secondaryMarketRoyaltyPercentage = uint8(_secondMarketRoyalty);
         emit ProjectUpdated(
             _projectId,
-            FIELD_SECONDARY_MARKET_ROYALTY_PERCENTAGE
+            FIELD_PROJECT_SECONDARY_MARKET_ROYALTY_PERCENTAGE
         );
     }
 
@@ -649,12 +704,16 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     function updateProjectDescription(
         uint256 _projectId,
         string memory _projectDescription
-    ) public {
+    ) external {
         // checks
         require(
             _projectUnlocked(_projectId)
-                ? msg.sender == projectIdToArtistAddress[_projectId]
-                : _adminAllowed(this.updateProjectDescription.selector),
+                ? msg.sender == projectIdToFinancials[_projectId].artistAddress
+                : adminACLAllowed(
+                    msg.sender,
+                    address(this),
+                    this.updateProjectDescription.selector
+                ),
             "Only artist when unlocked, owner when locked"
         );
         // effects
@@ -668,7 +727,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     function updateProjectWebsite(
         uint256 _projectId,
         string memory _projectWebsite
-    ) public onlyArtist(_projectId) {
+    ) external onlyArtist(_projectId) {
         projects[_projectId].website = _projectWebsite;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_WEBSITE);
     }
@@ -680,7 +739,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         uint256 _projectId,
         string memory _projectLicense
     )
-        public
+        external
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.updateProjectLicense.selector)
     {
@@ -697,23 +756,25 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      */
     function updateProjectMaxInvocations(
         uint256 _projectId,
-        uint256 _maxInvocations
-    ) public onlyArtist(_projectId) {
-        // checks
+        uint24 _maxInvocations
+    ) external onlyArtist(_projectId) {
+        // CHECKS
+        Project storage project = projects[_projectId];
+        uint256 _invocations = project.invocations;
         require(
-            (_maxInvocations < projects[_projectId].maxInvocations),
+            (_maxInvocations < project.maxInvocations),
             "maxInvocations may only be decreased"
         );
         require(
-            _maxInvocations >= projects[_projectId].invocations,
+            _maxInvocations >= _invocations,
             "Only max invocations gte current invocations"
         );
-        // effects
-        projects[_projectId].maxInvocations = _maxInvocations;
-        emit ProjectUpdated(_projectId, FIELD_MAX_INVOCATIONS);
+        // EFFECTS
+        project.maxInvocations = _maxInvocations;
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_MAX_INVOCATIONS);
 
         // register completed timestamp if action completed the project
-        if (_maxInvocations == projects[_projectId].invocations) {
+        if (_maxInvocations == _invocations) {
             _completeProject(_projectId);
         }
     }
@@ -724,14 +785,13 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @param _script Script to be added.
      */
     function addProjectScript(uint256 _projectId, string memory _script)
-        public
+        external
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.addProjectScript.selector)
     {
-        projects[_projectId].scripts[
-            projects[_projectId].scriptCount
-        ] = _script;
-        projects[_projectId].scriptCount = projects[_projectId].scriptCount + 1;
+        Project storage project = projects[_projectId];
+        project.scripts[project.scriptCount] = _script;
+        project.scriptCount = project.scriptCount + 1;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
     }
 
@@ -746,15 +806,13 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         uint256 _scriptId,
         string memory _script
     )
-        public
+        external
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.updateProjectScript.selector)
     {
-        require(
-            _scriptId < projects[_projectId].scriptCount,
-            "scriptId out of range"
-        );
-        projects[_projectId].scripts[_scriptId] = _script;
+        Project storage project = projects[_projectId];
+        require(_scriptId < project.scriptCount, "scriptId out of range");
+        project.scripts[_scriptId] = _script;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
     }
 
@@ -762,38 +820,41 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @notice Removes last script from project `_projectId`.
      */
     function removeProjectLastScript(uint256 _projectId)
-        public
+        external
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.removeProjectLastScript.selector)
     {
-        require(
-            projects[_projectId].scriptCount > 0,
-            "there are no scripts to remove"
-        );
-        delete projects[_projectId].scripts[
-            projects[_projectId].scriptCount - 1
-        ];
-        projects[_projectId].scriptCount = projects[_projectId].scriptCount - 1;
+        Project storage project = projects[_projectId];
+        require(project.scriptCount > 0, "there are no scripts to remove");
+        delete project.scripts[project.scriptCount - 1];
+        project.scriptCount = project.scriptCount - 1;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
     }
 
     /**
      * @notice Updates script type for project `_projectId`.
      * @param _projectId Project to be updated.
-     * @param _scriptType Libary to be injected by renderer. e.g. "p5js"
-     * @param _scriptTypeVersion Version of library to be injected. e.g. "1.0.0"
+     * @param _scriptTypeAndVersion Script type and version e.g. "p5js@1.0.0",
+     * as bytes32 encoded string.
      */
     function updateProjectScriptType(
         uint256 _projectId,
-        string memory _scriptType,
-        string memory _scriptTypeVersion
+        bytes32 _scriptTypeAndVersion
     )
-        public
+        external
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.updateProjectScriptType.selector)
     {
-        projects[_projectId].scriptType = _scriptType;
-        projects[_projectId].scriptTypeVersion = _scriptTypeVersion;
+        Project storage project = projects[_projectId];
+        // require exactly one @ symbol in _scriptTypeAndVersion
+        require(
+            _scriptTypeAndVersion.containsExactCharacterQty(
+                AT_CHARACTER_CODE,
+                uint8(1)
+            ),
+            "must contain exactly one @"
+        );
+        project.scriptTypeAndVersion = _scriptTypeAndVersion;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT_TYPE);
     }
 
@@ -807,7 +868,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         uint256 _projectId,
         string memory _aspectRatio
     )
-        public
+        external
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.updateProjectAspectRatio.selector)
     {
@@ -819,7 +880,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @notice Updates ipfs hash for project `_projectId`.
      */
     function updateProjectIpfsHash(uint256 _projectId, string memory _ipfsHash)
-        public
+        external
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.updateProjectIpfsHash.selector)
     {
@@ -829,13 +890,130 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
 
     /**
      * @notice Updates base URI for project `_projectId` to `_newBaseURI`.
+     * This is the controlling base URI for all tokens in the project. The
+     * contract-level defaultBaseURI is only used when initializing new
+     * projects.
      */
     function updateProjectBaseURI(uint256 _projectId, string memory _newBaseURI)
-        public
+        external
         onlyArtist(_projectId)
     {
         projects[_projectId].projectBaseURI = _newBaseURI;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_BASE_URI);
+    }
+
+    /**
+     * @notice Updates default base URI to `_defaultBaseURI`. The
+     * contract-level defaultBaseURI is only used when initializing new
+     * projects. Token URIs are determined by their project's `projectBaseURI`.
+     */
+    function updateDefaultBaseURI(string memory _defaultBaseURI)
+        external
+        onlyAdminACL(this.updateDefaultBaseURI.selector)
+    {
+        _updateDefaultBaseURI(_defaultBaseURI);
+    }
+
+    /**
+     * @notice Next project ID to be created on this contract.
+     */
+    function nextProjectId() external view returns (uint256) {
+        return _nextProjectId;
+    }
+
+    /**
+     * @notice Returns token hash for token ID `_tokenId`. Returns null if hash
+     * has not been set.
+     * @dev token hash is the keccak256 hash of the stored hash seed
+     */
+    function tokenIdToHash(uint256 _tokenId) external view returns (bytes32) {
+        bytes12 _hashSeed = _ownersAndHashSeeds[_tokenId].hashSeed;
+        if (_hashSeed == 0) {
+            return 0;
+        }
+        return keccak256(abi.encode(_hashSeed));
+    }
+
+    /**
+     * @notice View function returning Art Blocks portion of primary sales, in
+     * percent.
+     */
+    function artblocksPrimarySalesPercentage() external view returns (uint256) {
+        return _artblocksPrimarySalesPercentage;
+    }
+
+    /**
+     * @notice View function returning Artist's address for project
+     * `_projectId`.
+     */
+    function projectIdToArtistAddress(uint256 _projectId)
+        external
+        view
+        returns (address payable)
+    {
+        return projectIdToFinancials[_projectId].artistAddress;
+    }
+
+    /**
+     * @notice View function returning Artist's secondary market royalty
+     * percentage for project `_projectId`.
+     * This does not include Art Blocks portion of secondary market royalties.
+     */
+    function projectIdToSecondaryMarketRoyaltyPercentage(uint256 _projectId)
+        external
+        view
+        returns (uint256)
+    {
+        return
+            projectIdToFinancials[_projectId].secondaryMarketRoyaltyPercentage;
+    }
+
+    /**
+     * @notice View function returning Artist's additional payee address for
+     * primary sales, for project `_projectId`.
+     */
+    function projectIdToAdditionalPayeePrimarySales(uint256 _projectId)
+        external
+        view
+        returns (address payable)
+    {
+        return projectIdToFinancials[_projectId].additionalPayeePrimarySales;
+    }
+
+    /**
+     * @notice View function returning Artist's additional payee primary sales
+     * percentage, for project `_projectId`.
+     */
+    function projectIdToAdditionalPayeePrimarySalesPercentage(
+        uint256 _projectId
+    ) external view returns (uint256) {
+        return
+            projectIdToFinancials[_projectId]
+                .additionalPayeePrimarySalesPercentage;
+    }
+
+    /**
+     * @notice View function returning Artist's additional payee address for
+     * secondary sales, for project `_projectId`.
+     */
+    function projectIdToAdditionalPayeeSecondarySales(uint256 _projectId)
+        external
+        view
+        returns (address payable)
+    {
+        return projectIdToFinancials[_projectId].additionalPayeeSecondarySales;
+    }
+
+    /**
+     * @notice View function returning Artist's additional payee secondary
+     * sales percentage, for project `_projectId`.
+     */
+    function projectIdToAdditionalPayeeSecondarySalesPercentage(
+        uint256 _projectId
+    ) external view returns (uint256) {
+        return
+            projectIdToFinancials[_projectId]
+                .additionalPayeeSecondarySalesPercentage;
     }
 
     /**
@@ -849,7 +1027,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @dev this function was named projectDetails prior to V3 core contract.
      */
     function projectDetails(uint256 _projectId)
-        public
+        external
         view
         returns (
             string memory projectName,
@@ -859,11 +1037,12 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
             string memory license
         )
     {
-        projectName = projects[_projectId].name;
-        artist = projects[_projectId].artist;
-        description = projects[_projectId].description;
-        website = projects[_projectId].website;
-        license = projects[_projectId].license;
+        Project storage project = projects[_projectId];
+        projectName = project.name;
+        artist = project.artist;
+        description = project.description;
+        website = project.website;
+        license = project.license;
     }
 
     /**
@@ -877,7 +1056,7 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * @dev price and currency info are located on minter contracts
      */
     function projectStateData(uint256 _projectId)
-        public
+        external
         view
         returns (
             uint256 invocations,
@@ -887,10 +1066,11 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
             bool locked
         )
     {
-        invocations = projects[_projectId].invocations;
-        maxInvocations = projects[_projectId].maxInvocations;
-        active = projects[_projectId].active;
-        paused = projects[_projectId].paused;
+        Project storage project = projects[_projectId];
+        invocations = project.invocations;
+        maxInvocations = project.maxInvocations;
+        active = project.active;
+        paused = project.paused;
         locked = !_projectUnlocked(_projectId);
     }
 
@@ -906,39 +1086,44 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
      * sales royalties
      * @return additionalPayeeSecondarySalesPercentage Percentage of artist revenue
      * to be sent to the additional payee address for secondary sales royalties
-
+     * @return secondaryMarketRoyaltyPercentage Royalty percentage to be sent to
+     * combination of artist and additional payee. This does not include the
+     * platform's percentage of secondary sales royalties, which is defined by
+     * `artblocksSecondarySalesBPS`.
      */
     function projectArtistPaymentInfo(uint256 _projectId)
-        public
+        external
         view
         returns (
             address artistAddress,
             address additionalPayeePrimarySales,
             uint256 additionalPayeePrimarySalesPercentage,
             address additionalPayeeSecondarySales,
-            uint256 additionalPayeeSecondarySalesPercentage
+            uint256 additionalPayeeSecondarySalesPercentage,
+            uint256 secondaryMarketRoyaltyPercentage
         )
     {
-        artistAddress = projectIdToArtistAddress[_projectId];
-        additionalPayeePrimarySales = projectIdToAdditionalPayeePrimarySales[
+        ProjectFinance storage projectFinance = projectIdToFinancials[
             _projectId
         ];
-        additionalPayeePrimarySalesPercentage = projectIdToAdditionalPayeePrimarySalesPercentage[
-            _projectId
-        ];
-        additionalPayeeSecondarySales = projectIdToAdditionalPayeeSecondarySales[
-            _projectId
-        ];
-        additionalPayeeSecondarySalesPercentage = projectIdToAdditionalPayeeSecondarySalesPercentage[
-            _projectId
-        ];
+        artistAddress = projectFinance.artistAddress;
+        additionalPayeePrimarySales = projectFinance
+            .additionalPayeePrimarySales;
+        additionalPayeePrimarySalesPercentage = projectFinance
+            .additionalPayeePrimarySalesPercentage;
+        additionalPayeeSecondarySales = projectFinance
+            .additionalPayeeSecondarySales;
+        additionalPayeeSecondarySalesPercentage = projectFinance
+            .additionalPayeeSecondarySalesPercentage;
+        secondaryMarketRoyaltyPercentage = projectFinance
+            .secondaryMarketRoyaltyPercentage;
     }
 
     /**
      * @notice Returns script information for project `_projectId`.
      * @param _projectId Project to be queried.
-     * @return scriptType Project's script type/library (e.g. "p5js")
-     * @return scriptTypeVersion Project's library version (e.g. "1.0.0")
+     * @return scriptTypeAndVersion Project's script type and version
+     * (e.g. "p5js(atSymbol)1.0.0")
      * @return aspectRatio Aspect ratio of project (e.g. "1" for square,
      * "1.77777778" for 16:9, etc.)
      * @return ipfsHash IPFS hash for project
@@ -948,18 +1133,17 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         external
         view
         returns (
-            string memory scriptType,
-            string memory scriptTypeVersion,
+            string memory scriptTypeAndVersion,
             string memory aspectRatio,
             string memory ipfsHash,
             uint256 scriptCount
         )
     {
-        scriptType = projects[_projectId].scriptType;
-        scriptTypeVersion = projects[_projectId].scriptTypeVersion;
-        aspectRatio = projects[_projectId].aspectRatio;
-        scriptCount = projects[_projectId].scriptCount;
-        ipfsHash = projects[_projectId].ipfsHash;
+        Project storage project = projects[_projectId];
+        scriptTypeAndVersion = project.scriptTypeAndVersion.toString();
+        aspectRatio = project.aspectRatio;
+        scriptCount = project.scriptCount;
+        ipfsHash = project.ipfsHash;
     }
 
     /**
@@ -993,17 +1177,64 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     /**
-     * @notice Gets royalty data for token ID `_tokenId`.
-     * @param _tokenId Token ID to be queried.
+     * @notice Gets qty of randomizers in history of all randomizers used by
+     * this core contract. If a randomizer is switched away from then back to,
+     * it will show up in the history twice.
+     */
+    function numHistoricalRandomizers() external view returns (uint256) {
+        return _historicalRandomizerAddresses.length;
+    }
+
+    /**
+     * @notice Gets address of randomizer at index `_index` in history of all
+     * randomizers used by this core contract. Index is zero-based.
+     * @param _index Historical index of randomizer to be queried.
+     * @dev If a randomizer is switched away from and then switched back to, it
+     * will show up in the history twice.
+     */
+    function getHistoricalRandomizerAt(uint256 _index)
+        external
+        view
+        returns (address)
+    {
+        require(
+            _index < _historicalRandomizerAddresses.length,
+            "Index out of bounds"
+        );
+        return _historicalRandomizerAddresses[_index];
+    }
+
+    /**
+     * @notice Backwards-compatible (pre-V3) function returning Art Blocks
+     * primary sales payment address (now called artblocksPrimarySalesAddress).
+     */
+    function artblocksAddress() external view returns (address payable) {
+        return artblocksPrimarySalesAddress;
+    }
+
+    /**
+     * @notice Backwards-compatible (pre-V3) function returning Art Blocks
+     * primary sales percentage (now called artblocksPrimarySalesPercentage).
+     */
+    function artblocksPercentage() external view returns (uint256) {
+        return _artblocksPrimarySalesPercentage;
+    }
+
+    /**
+     * @notice Backwards-compatible (pre-V3) function.
+     * Gets artist + artist's additional payee royalty data for token ID
+     `_tokenId`.
+     * WARNING: Does not include Art Blocks portion of royalties.
      * @return artistAddress Artist's payment address
      * @return additionalPayee Additional payee's payment address
      * @return additionalPayeePercentage Percentage of artist revenue
      * to be sent to the additional payee's address
      * @return royaltyFeeByID Total royalty percentage to be sent to
      * combination of artist and additional payee
+     * @dev Does not include Art Blocks portion of royalties.
      */
     function getRoyaltyData(uint256 _tokenId)
-        public
+        external
         view
         returns (
             address artistAddress,
@@ -1013,12 +1244,158 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
         )
     {
         uint256 projectId = _tokenId / ONE_MILLION;
-        artistAddress = projectIdToArtistAddress[projectId];
-        additionalPayee = projectIdToAdditionalPayeeSecondarySales[projectId];
-        additionalPayeePercentage = projectIdToAdditionalPayeeSecondarySalesPercentage[
+        ProjectFinance storage projectFinance = projectIdToFinancials[
             projectId
         ];
-        royaltyFeeByID = projectIdToSecondaryMarketRoyaltyPercentage[projectId];
+        artistAddress = projectFinance.artistAddress;
+        additionalPayee = projectFinance.additionalPayeeSecondarySales;
+        additionalPayeePercentage = projectFinance
+            .additionalPayeeSecondarySalesPercentage;
+        royaltyFeeByID = projectFinance.secondaryMarketRoyaltyPercentage;
+    }
+
+    /**
+     * @notice Gets royalty Basis Points (BPS) for token ID `_tokenId`.
+     * This conforms to the IManifold interface designated in the Royalty
+     * Registry's RoyaltyEngineV1.sol contract.
+     * ref: https://github.com/manifoldxyz/royalty-registry-solidity
+     * @param _tokenId Token ID to be queried.
+     * @return recipients Array of royalty payment recipients
+     * @return bps Array of Basis Points (BPS) allocated to each recipient,
+     * aligned by index.
+     * @dev reverts if invalid _tokenId
+     * @dev only returns recipients that have a non-zero BPS allocation
+     */
+    function getRoyalties(uint256 _tokenId)
+        external
+        view
+        onlyValidTokenId(_tokenId)
+        returns (address payable[] memory recipients, uint256[] memory bps)
+    {
+        // initialize arrays with maximum potential length
+        recipients = new address payable[](3);
+        bps = new uint256[](3);
+
+        uint256 projectId = _tokenId / ONE_MILLION;
+        ProjectFinance storage projectFinance = projectIdToFinancials[
+            projectId
+        ];
+        // load values into memory
+        uint256 royaltyPercentageForArtistAndAdditional = projectFinance
+            .secondaryMarketRoyaltyPercentage;
+        uint256 additionalPayeePercentage = projectFinance
+            .additionalPayeeSecondarySalesPercentage;
+        // calculate BPS = percentage * 100
+        uint256 artistBPS = (100 - additionalPayeePercentage) *
+            royaltyPercentageForArtistAndAdditional;
+
+        uint256 additionalBPS = additionalPayeePercentage *
+            royaltyPercentageForArtistAndAdditional;
+        uint256 artblocksBPS = artblocksSecondarySalesBPS;
+        // populate arrays
+        uint256 payeeCount;
+        if (artistBPS > 0) {
+            recipients[payeeCount] = projectFinance.artistAddress;
+            bps[payeeCount++] = artistBPS;
+        }
+        if (additionalBPS > 0) {
+            recipients[payeeCount] = projectFinance
+                .additionalPayeeSecondarySales;
+            bps[payeeCount++] = additionalBPS;
+        }
+        if (artblocksBPS > 0) {
+            recipients[payeeCount] = artblocksSecondarySalesAddress;
+            bps[payeeCount++] = artblocksBPS;
+        }
+        // trim arrays if necessary
+        if (3 > payeeCount) {
+            assembly {
+                let decrease := sub(3, payeeCount)
+                mstore(recipients, sub(mload(recipients), decrease))
+                mstore(bps, sub(mload(bps), decrease))
+            }
+        }
+        return (recipients, bps);
+    }
+
+    /**
+     * @notice View function that returns appropriate revenue splits between
+     * different Art Blocks, Artist, and Artist's additional primary sales
+     * payee given a sale price of `_price` on project `_projectId`.
+     * This always returns three revenue amounts and three addresses, but if a
+     * revenue is zero for either Artist or additional payee, the corresponding
+     * address returned will also be null (for gas optimization).
+     * Does not account for refund if user overpays for a token (minter should
+     * handle a refund of the difference, if appropriate).
+     * Some minters may have alternative methods of splitting payments, in
+     * which case they should implement their own payment splitting logic.
+     * @param _projectId Project ID to be queried.
+     * @param _price Sale price of token.
+     * @return artblocksRevenue_ amount of revenue to be sent to Art Blocks
+     * @return artblocksAddress_ address to send Art Blocks revenue to
+     * @return artistRevenue_ amount of revenue to be sent to Artist
+     * @return artistAddress_ address to send Artist revenue to. Will be null
+     * if no revenue is due to artist (gas optimization).
+     * @return additionalPayeePrimaryRevenue_ amount of revenue to be sent to
+     * additional payee for primary sales
+     * @return additionalPayeePrimaryAddress_ address to send Artist's
+     * additional payee for primary sales revenue to. Will be null if no
+     * revenue is due to additional payee for primary sales (gas optimization).
+     * @dev this always returns three addresses and three revenues, but if the
+     * revenue is zero, the corresponding address will be address(0). It is up
+     * to the contract performing the revenue split to handle this
+     * appropriately.
+     */
+    function getPrimaryRevenueSplits(uint256 _projectId, uint256 _price)
+        external
+        view
+        returns (
+            uint256 artblocksRevenue_,
+            address payable artblocksAddress_,
+            uint256 artistRevenue_,
+            address payable artistAddress_,
+            uint256 additionalPayeePrimaryRevenue_,
+            address payable additionalPayeePrimaryAddress_
+        )
+    {
+        ProjectFinance storage projectFinance = projectIdToFinancials[
+            _projectId
+        ];
+        // calculate revenues
+        artblocksRevenue_ =
+            (_price * uint256(_artblocksPrimarySalesPercentage)) /
+            100;
+        uint256 projectFunds;
+        unchecked {
+            // artblocksRevenue_ is always <=25, so guaranteed to never underflow
+            projectFunds = _price - artblocksRevenue_;
+        }
+        additionalPayeePrimaryRevenue_ =
+            (projectFunds *
+                projectFinance.additionalPayeePrimarySalesPercentage) /
+            100;
+        unchecked {
+            // projectIdToAdditionalPayeePrimarySalesPercentage is always
+            // <=100, so guaranteed to never underflow
+            artistRevenue_ = projectFunds - additionalPayeePrimaryRevenue_;
+        }
+        // set addresses from storage
+        artblocksAddress_ = artblocksPrimarySalesAddress;
+        if (artistRevenue_ > 0) {
+            artistAddress_ = projectFinance.artistAddress;
+        }
+        if (additionalPayeePrimaryRevenue_ > 0) {
+            additionalPayeePrimaryAddress_ = projectFinance
+                .additionalPayeePrimarySales;
+        }
+    }
+
+    /**
+     * @notice Backwards-compatible (pre-V3) getter returning contract admin
+     * @return admin_ Address of contract owner
+     */
+    function admin() external view returns (address) {
+        return owner();
     }
 
     /**
@@ -1033,66 +1410,30 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     /**
-     * @notice Gets token URI for token ID `_tokenId`.
+     * @notice Convenience function that returns whether `_sender` is allowed
+     * to call function with selector `_selector` on contract `_contract`, as
+     * determined by this contract's current Admin ACL contract. Expected use
+     * cases include minter contracts checking if caller is allowed to call
+     * admin-gated functions on minter contracts.
+     * @param _sender Address of the sender calling function with selector
+     * `_selector` on contract `_contract`.
+     * @param _contract Address of the contract being called by `_sender`.
+     * @param _selector Function selector of the function being called by
+     * `_sender`.
+     * @dev assumes the Admin ACL contract is the owner of this contract, which
+     * is expected to always be true.
+     * @dev adminACLContract is expected to either be null address (if owner
+     * has renounced ownership), or conform to IAdminACLV0 interface. Check for
+     * null address first to avoid revert when admin has renounced ownership.
      */
-    function tokenURI(uint256 _tokenId)
-        public
-        view
-        override
-        onlyValidTokenId(_tokenId)
-        returns (string memory)
-    {
+    function adminACLAllowed(
+        address _sender,
+        address _contract,
+        bytes4 _selector
+    ) public returns (bool) {
         return
-            string(
-                abi.encodePacked(
-                    projects[_tokenId / ONE_MILLION].projectBaseURI,
-                    Strings.toString(_tokenId)
-                )
-            );
-    }
-
-    /**
-     * @notice View function that returns appropriate revenue splits between
-     * different parties given a sale price of `_price` on project
-     * `_projectId`. Prescribes a split between project artist, additional
-     * primary payee, and Art Blocks. Does not account for refund if user
-     * overpays for a token (minter should refund the difference).
-     * Some minters may have alternative methods of splitting payments, in
-     * which case they should implement their own payment splitting logic.
-     * @param _projectId Project ID to be queried.
-     * @param _price Sale price of token.
-     * @return recipients_ Array of recipient addresses, always in the order
-     * [artist, additionalPayeePrimarySales, artblocksAddress]
-     * @return revenues_ Array of recipient addresses, always in the order
-     * [artistRevenue, additionalPayeePrimarySalesRevenue, artblocksRevenue]
-     * @dev this always returns three addresses and three revenues, but the
-     * revenue could be zero for one or more of the addresses. It is up to the
-     * contract performing the revenue split to handle this appropriately.
-     */
-    function getPrimaryRevenueSplits(uint256 _projectId, uint256 _price)
-        external
-        view
-        returns (
-            address payable[] memory recipients_,
-            uint256[] memory revenues_
-        )
-    {
-        recipients_ = new address payable[](3);
-        revenues_ = new uint256[](3);
-        // calculate revenues
-        uint256 _artblocksRevenue = (_price * artblocksPercentage) / 100;
-        uint256 _projectFunds = _price - _artblocksRevenue;
-        uint256 _additionalPayeeRevenue = (_projectFunds *
-            projectIdToAdditionalPayeePrimarySalesPercentage[_projectId]) / 100;
-        // Artist
-        recipients_[0] = projectIdToArtistAddress[_projectId];
-        revenues_[0] = _projectFunds - _additionalPayeeRevenue;
-        // Additional Payee for primary sales
-        recipients_[1] = projectIdToAdditionalPayeePrimarySales[_projectId];
-        revenues_[1] = _additionalPayeeRevenue;
-        // Art Blocks
-        recipients_[2] = artblocksAddress;
-        revenues_[2] = _artblocksRevenue;
+            owner() != address(0) &&
+            adminACLContract.allowed(_sender, _contract, _selector);
     }
 
     /**
@@ -1111,10 +1452,113 @@ contract GenArt721CoreV3 is ERC721, Ownable, IGenArt721CoreContractV3 {
     }
 
     /**
-     * @notice Backwards-compatible (pre-V3) getter returning contract admin
-     * @return admin_ Address of contract owner
+     * @notice Gets token URI for token ID `_tokenId`.
+     * @dev token URIs are the concatenation of the project base URI and the
+     * token ID.
      */
-    function admin() public view returns (address) {
-        return owner();
+    function tokenURI(uint256 _tokenId)
+        public
+        view
+        override
+        onlyValidTokenId(_tokenId)
+        returns (string memory)
+    {
+        string memory _projectBaseURI = projects[_tokenId / ONE_MILLION]
+            .projectBaseURI;
+        return string.concat(_projectBaseURI, _tokenId.toString());
+    }
+
+    /**
+     * @dev See {IERC165-supportsInterface}.
+     */
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override
+        returns (bool)
+    {
+        return
+            interfaceId == type(IManifold).interfaceId ||
+            super.supportsInterface(interfaceId);
+    }
+
+    /**
+     * @dev Transfers ownership of the contract to a new account (`newOwner`).
+     * Internal function without access restriction.
+     * @dev Overrides and wraps OpenZeppelin's _transferOwnership function to
+     * also update adminACLContract for improved introspection.
+     */
+    function _transferOwnership(address newOwner) internal override {
+        Ownable._transferOwnership(newOwner);
+        adminACLContract = IAdminACLV0(newOwner);
+    }
+
+    /**
+     * @notice Updates Art Blocks payment address to `_artblocksPrimarySalesAddress`.
+     */
+    function _updateArtblocksPrimarySalesAddress(
+        address _artblocksPrimarySalesAddress
+    ) internal {
+        artblocksPrimarySalesAddress = payable(_artblocksPrimarySalesAddress);
+        emit PlatformUpdated(FIELD_ARTBLOCKS_PRIMARY_SALES_ADDRESS);
+    }
+
+    /**
+     * @notice Updates Art Blocks secondary sales royalty payment address to
+     * `_artblocksSecondarySalesAddress`.
+     */
+    function _updateArtblocksSecondarySalesAddress(
+        address _artblocksSecondarySalesAddress
+    ) internal {
+        artblocksSecondarySalesAddress = payable(
+            _artblocksSecondarySalesAddress
+        );
+        emit PlatformUpdated(FIELD_ARTBLOCKS_SECONDARY_SALES_ADDRESS);
+    }
+
+    /**
+     * @notice Updates randomizer address to `_randomizerAddress`.
+     */
+    function _updateRandomizerAddress(address _randomizerAddress) internal {
+        randomizerContract = IRandomizerV2(_randomizerAddress);
+        // populate historical randomizer array
+        _historicalRandomizerAddresses.push(_randomizerAddress);
+        emit PlatformUpdated(FIELD_RANDOMIZER_ADDRESS);
+    }
+
+    /**
+     * @notice Updates default base URI to `_defaultBaseURI`.
+     * When new projects are added, their `projectBaseURI` is automatically
+     * initialized to `_defaultBaseURI`.
+     */
+    function _updateDefaultBaseURI(string memory _defaultBaseURI) internal {
+        defaultBaseURI = _defaultBaseURI;
+        emit PlatformUpdated(FIELD_DEFAULT_BASE_URI);
+    }
+
+    /**
+     * @notice Internal function to complete a project.
+     */
+    function _completeProject(uint256 _projectId) internal {
+        projects[_projectId].completedTimestamp = uint64(block.timestamp);
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_COMPLETED);
+    }
+
+    /**
+     * @notice Internal function that returns whether a project is unlocked.
+     * Projects automatically lock four weeks after they are completed.
+     * Projects are considered completed when they have been invoked the
+     * maximum number of times.
+     * @param _projectId Project ID to check.
+     */
+    function _projectUnlocked(uint256 _projectId) internal view returns (bool) {
+        uint256 projectCompletedTimestamp = projects[_projectId]
+            .completedTimestamp;
+        bool projectOpen = projectCompletedTimestamp == 0;
+        return
+            projectOpen ||
+            (block.timestamp - projectCompletedTimestamp <
+                FOUR_WEEKS_IN_SECONDS);
     }
 }

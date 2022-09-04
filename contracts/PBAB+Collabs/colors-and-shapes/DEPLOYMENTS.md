@@ -13,7 +13,7 @@ TBD
 
 `0x7f5a0A6847fD0FA05C13CBC02f435047b429E37C.` set as minter owner, whitelisted on core contract, and admin of core contract.
 
-## Ropsten (depreciated)
+## Ropsten (deprecated)
 
 ### Upload 0
 

@@ -44,31 +44,26 @@ describe("GenArt721CoreV3 AminACL Requests", async function () {
     this.accounts = await getAccounts();
     await assignDefaultConstants.call(this);
 
-    const randomizerFactory = await ethers.getContractFactory(
-      "BasicRandomizer"
-    );
-    this.randomizer = await randomizerFactory.deploy();
-    const adminACLFactory = await ethers.getContractFactory(
-      "MockAdminACLV0Events"
-    );
-    this.adminACL = await adminACLFactory.deploy();
-    this.artblocksFactory = await ethers.getContractFactory("GenArt721CoreV3");
-    this.coreInterface = this.artblocksFactory.interface;
-    this.genArt721Core = await this.artblocksFactory
-      .connect(this.accounts.deployer)
-      .deploy(
-        this.name,
-        this.symbol,
-        this.randomizer.address,
-        this.adminACL.address
-      );
+    // get core contract interface for signature hash retrieval
+    const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV3");
+    this.coreInterface = artblocksFactory.interface;
 
-    // TBD - V3 DOES NOT CURRENTLY HAVE A WORKING MINTER
+    // deploy and configure minter filter and minter
+    ({
+      genArt721Core: this.genArt721Core,
+      minterFilter: this.minterFilter,
+      randomizer: this.randomizer,
+      adminACL: this.adminACL,
+    } = await deployCoreWithMinterFilter.call(
+      this,
+      "GenArt721CoreV3",
+      "MinterFilterV1"
+    ));
 
-    // allow artist to mint on contract
-    await this.genArt721Core
-      .connect(this.accounts.deployer)
-      .updateMinterContract(this.accounts.artist.address);
+    this.minter = await deployAndGet.call(this, "MinterSetPriceV2", [
+      this.genArt721Core.address,
+      this.minterFilter.address,
+    ]);
 
     // add project zero
     await this.genArt721Core
@@ -85,19 +80,50 @@ describe("GenArt721CoreV3 AminACL Requests", async function () {
     await this.genArt721Core
       .connect(this.accounts.deployer)
       .addProject("name", this.accounts.artist2.address);
+
+    // configure minter for project zero
+    await this.minterFilter
+      .connect(this.accounts.deployer)
+      .addApprovedMinter(this.minter.address);
+    await this.minterFilter
+      .connect(this.accounts.deployer)
+      .setMinterForProject(this.projectZero, this.minter.address);
+    await this.minter
+      .connect(this.accounts.artist)
+      .updatePricePerTokenInWei(this.projectZero, 0);
   });
 
   describe("requests appropriate selectors from AdminACL", function () {
-    it("updateArtblocksAddress", async function () {
-      await validateAdminACLRequest.call(this, "updateArtblocksAddress", [
-        this.accounts.user.address,
-      ]);
+    it("updateArtblocksPrimarySalesAddress", async function () {
+      await validateAdminACLRequest.call(
+        this,
+        "updateArtblocksPrimarySalesAddress",
+        [this.accounts.user.address]
+      );
     });
 
-    it("updateArtblocksPercentage", async function () {
-      await validateAdminACLRequest.call(this, "updateArtblocksPercentage", [
-        11,
-      ]);
+    it("updateArtblocksSecondarySalesAddress", async function () {
+      await validateAdminACLRequest.call(
+        this,
+        "updateArtblocksSecondarySalesAddress",
+        [this.accounts.user.address]
+      );
+    });
+
+    it("updateArtblocksPrimarySalesPercentage", async function () {
+      await validateAdminACLRequest.call(
+        this,
+        "updateArtblocksPrimarySalesPercentage",
+        [11]
+      );
+    });
+
+    it("updateArtblocksSecondarySalesBPS", async function () {
+      await validateAdminACLRequest.call(
+        this,
+        "updateArtblocksSecondarySalesBPS",
+        [240]
+      );
     });
 
     it("updateMinterContract", async function () {
@@ -188,8 +214,7 @@ describe("GenArt721CoreV3 AminACL Requests", async function () {
     it("updateProjectScriptType", async function () {
       await validateAdminACLRequest.call(this, "updateProjectScriptType", [
         this.projectZero,
-        "p5js",
-        "v1.4.2",
+        ethers.utils.formatBytes32String("p5js@v1.2.3"),
       ]);
     });
 

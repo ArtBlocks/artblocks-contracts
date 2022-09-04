@@ -7,18 +7,19 @@ import Safe from "@gnosis.pm/safe-core-sdk";
 import { SafeTransactionDataPartial } from "@gnosis.pm/safe-core-sdk-types";
 import { getGnosisSafe } from "../../../util/GnosisSafeNetwork";
 
-import { MinterSetPriceV1_Common } from "../MinterSetPriceV1.common";
+import { MinterSetPriceV1V2_Common } from "../MinterSetPriceV1V2.common";
+import { isCoreV3 } from "../../../util/common";
 
 /**
  * These tests are intended to check common MinterSetPriceERC20V1 functionality.
  * @dev assumes common BeforeEach to populate accounts, constants, and setup
  */
-export const MinterSetPriceERC20V1_Common = async () => {
-  describe("common MinterSetPrice V1 minter tests", async () => {
-    MinterSetPriceV1_Common();
+export const MinterSetPriceERC20V1V2_Common = async () => {
+  describe("common MinterSetPrice V1V2 minter tests", async () => {
+    MinterSetPriceV1V2_Common();
   });
 
-  describe("gnosis safe V1", async function () {
+  describe("gnosis safe V1V2", async function () {
     it("allows gnosis safe to purchase in ERC20", async function () {
       // artist changes to Mock ERC20 token
       await this.minter
@@ -98,18 +99,21 @@ export const MinterSetPriceERC20V1_Common = async () => {
       await approveTxResponse.transactionResponse?.wait();
 
       // execute purchase transaction
-      const projectTokenInfoBefore = await this.genArt721Core.projectTokenInfo(
+      const viewFunctionWithInvocations = (await isCoreV3(this.genArt721Core))
+        ? this.genArt721Core.projectStateData
+        : this.genArt721Core.projectTokenInfo;
+      const projectStateDataBefore = await viewFunctionWithInvocations(
         this.projectOne
       );
       const executeTxResponse = await safeSdk2.executeTransaction(
         safeTransaction
       );
       await executeTxResponse.transactionResponse?.wait();
-      const projectTokenInfoAfter = await this.genArt721Core.projectTokenInfo(
+      const projectStateDataAfter = await viewFunctionWithInvocations(
         this.projectOne
       );
-      expect(projectTokenInfoAfter.invocations).to.be.equal(
-        projectTokenInfoBefore.invocations.add(1)
+      expect(projectStateDataAfter.invocations).to.be.equal(
+        projectStateDataBefore.invocations.add(1)
       );
     });
   });

@@ -15,7 +15,7 @@ import {
   deployAndGet,
   deployCoreWithMinterFilter,
 } from "../util/common";
-import { GenArt721MinterV1V2_Common } from "./GenArt721CoreV1V2.common";
+import { GenArt721MinterV1V2PRTNR_Common } from "./GenArt721CoreV1V2PRTNR.common";
 
 /**
  * These tests are intended to check integration of the MinterFilter suite
@@ -66,11 +66,11 @@ describe("GenArt721CoreV1 Integration", async function () {
   });
 
   describe("common tests", async function () {
-    GenArt721MinterV1V2_Common();
+    GenArt721MinterV1V2PRTNR_Common();
   });
 
   describe("purchase payments and gas", async function () {
-    it("can create a token then funds distributed (no additional payee)", async function () {
+    it("can create a token then funds distributed (no additional payee) [ @skip-on-coverage ]", async function () {
       const artistBalance = await this.accounts.artist.getBalance();
       const ownerBalance = await this.accounts.user.getBalance();
       const deployerBalance = await this.accounts.deployer.getBalance();
@@ -104,10 +104,10 @@ describe("GenArt721CoreV1 Integration", async function () {
       ).to.equal(ethers.utils.parseEther("0.8971167"));
       expect(
         (await this.accounts.user.getBalance()).sub(ownerBalance)
-      ).to.equal(ethers.utils.parseEther("1.0361817").mul("-1")); // spent 1 ETH
+      ).to.equal(ethers.utils.parseEther("1.0361882").mul("-1")); // spent 1 ETH
     });
 
-    it("can create a token then funds distributed (with additional payee)", async function () {
+    it("can create a token then funds distributed (with additional payee) [ @skip-on-coverage ]", async function () {
       const additionalBalance = await this.accounts.additional.getBalance();
       const artistBalance = await this.accounts.artist.getBalance();
       const ownerBalance = await this.accounts.user.getBalance();
@@ -151,13 +151,13 @@ describe("GenArt721CoreV1 Integration", async function () {
       ).to.equal(ethers.utils.parseEther("0.09"));
       expect(
         (await this.accounts.user.getBalance()).sub(ownerBalance)
-      ).to.equal(ethers.utils.parseEther("1.0375547").mul("-1")); // spent 1 ETH
+      ).to.equal(ethers.utils.parseEther("1.0375612").mul("-1")); // spent 1 ETH
       expect(
         (await this.accounts.artist.getBalance()).sub(artistBalance)
       ).to.equal(ethers.utils.parseEther("0.8002491"));
     });
 
-    it("can create a token then funds distributed (with additional payee getting 100%)", async function () {
+    it("can create a token then funds distributed (with additional payee getting 100%) [ @skip-on-coverage ]", async function () {
       const additionalBalance = await this.accounts.additional.getBalance();
       const artistBalance = await this.accounts.artist.getBalance();
       const ownerBalance = await this.accounts.user.getBalance();
@@ -201,7 +201,7 @@ describe("GenArt721CoreV1 Integration", async function () {
       ).to.equal(ethers.utils.parseEther("0.9"));
       expect(
         (await this.accounts.user.getBalance()).sub(ownerBalance)
-      ).to.equal(ethers.utils.parseEther("1.0362942").mul("-1")); // spent 1 ETH
+      ).to.equal(ethers.utils.parseEther("1.0363007").mul("-1")); // spent 1 ETH
       expect(
         (await this.accounts.artist.getBalance()).sub(artistBalance)
       ).to.equal(ethers.utils.parseEther("0.0097509").mul("-1"));

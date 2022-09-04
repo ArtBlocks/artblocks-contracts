@@ -20,13 +20,13 @@ import {
 } from "../../../util/common";
 import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../util/constants";
 import { MinterDAExp_Common } from "./MinterDAExp.common";
-import { MinterDAV1_Common } from "../MinterDAV1.common";
+import { MinterDAV1V2_Common } from "../MinterDAV1V2.common";
 
 /**
  * These tests intended to ensure this Filtered Minter integrates properly with
  * V1 core contract.
  */
-describe("MinterDAExpV1_V1Core", async function () {
+describe("MinterDAExpV1_V1PRTNRCore", async function () {
   beforeEach(async function () {
     // standard accounts and constants
     this.accounts = await getAccounts();
@@ -64,10 +64,6 @@ describe("MinterDAExpV1_V1Core", async function () {
     await this.genArt721Core
       .connect(this.accounts.deployer)
       .toggleProjectIsActive(this.projectZero);
-
-    await this.genArt721Core
-      .connect(this.accounts.deployer)
-      .addMintWhitelisted(this.minterFilter.address);
 
     await this.genArt721Core
       .connect(this.accounts.artist)
@@ -111,12 +107,12 @@ describe("MinterDAExpV1_V1Core", async function () {
     MinterDAExp_Common();
   });
 
-  describe("common DA V1 tests", async function () {
-    MinterDAV1_Common();
+  describe("common DA V1V2 tests", async function () {
+    MinterDAV1V2_Common();
   });
 
   describe("calculate gas", async function () {
-    it("mints and calculates gas values", async function () {
+    it("mints and calculates gas values [ @skip-on-coverage ]", async function () {
       await ethers.provider.send("evm_mine", [
         this.startTime + this.auctionStartTimeOffset,
       ]);
@@ -135,7 +131,7 @@ describe("MinterDAExpV1_V1Core", async function () {
         "ETH"
       );
 
-      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0228514")); // assuming a cost of 100 GWEI
+      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0197038")); // assuming a cost of 100 GWEI
     });
   });
 });

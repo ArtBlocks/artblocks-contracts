@@ -448,4 +448,58 @@ export const MinterSetPriceERC20_Common = async () => {
       expect(currencyInfo.currencyAddress).to.be.equal(this.ERC20Mock.address);
     });
   });
+
+  describe("getYourBalanceOfProjectERC20", async function () {
+    it("returns expected value", async function () {
+      // artist changes to Mock ERC20 token
+      await this.minter
+        .connect(this.accounts.artist)
+        .updateProjectCurrencyInfo(
+          this.projectZero,
+          "MOCK",
+          this.ERC20Mock.address
+        );
+      // reports expected value
+      expect(
+        await this.minter
+          .connect(this.accounts.user)
+          .getYourBalanceOfProjectERC20(this.projectZero)
+      ).to.be.equal(ethers.utils.parseEther("100"));
+      expect(
+        await this.minter
+          .connect(this.accounts.artist)
+          .getYourBalanceOfProjectERC20(this.projectZero)
+      ).to.be.equal(0);
+    });
+  });
+
+  describe("checkYourAllowanceOfProjectERC20", async function () {
+    it("returns expected value", async function () {
+      // artist changes to Mock ERC20 token
+      await this.minter
+        .connect(this.accounts.artist)
+        .updateProjectCurrencyInfo(
+          this.projectZero,
+          "MOCK",
+          this.ERC20Mock.address
+        );
+      // reports expected value
+      expect(
+        await this.minter
+          .connect(this.accounts.user)
+          .checkYourAllowanceOfProjectERC20(this.projectZero)
+      ).to.be.equal(0);
+      // user approve contract and able to spend Mock token
+      await this.ERC20Mock.connect(this.accounts.user).approve(
+        this.minter.address,
+        ethers.utils.parseEther("50")
+      );
+      // reports expected value
+      expect(
+        await this.minter
+          .connect(this.accounts.user)
+          .checkYourAllowanceOfProjectERC20(this.projectZero)
+      ).to.be.equal(ethers.utils.parseEther("50"));
+    });
+  });
 };

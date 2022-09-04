@@ -27,30 +27,21 @@ describe("GenArt721CoreV3 Events", async function () {
     this.accounts = await getAccounts();
     await assignDefaultConstants.call(this);
 
-    const randomizerFactory = await ethers.getContractFactory(
-      "BasicRandomizer"
-    );
-    this.randomizer = await randomizerFactory.deploy();
-    const adminACLFactory = await ethers.getContractFactory(
-      "MockAdminACLV0Events"
-    );
-    this.adminACL = await adminACLFactory.deploy();
-    const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV3");
-    this.genArt721Core = await artblocksFactory
-      .connect(this.accounts.deployer)
-      .deploy(
-        this.name,
-        this.symbol,
-        this.randomizer.address,
-        this.adminACL.address
-      );
+    // deploy and configure minter filter and minter
+    ({
+      genArt721Core: this.genArt721Core,
+      minterFilter: this.minterFilter,
+      randomizer: this.randomizer,
+    } = await deployCoreWithMinterFilter.call(
+      this,
+      "GenArt721CoreV3",
+      "MinterFilterV1"
+    ));
 
-    // TBD - V3 DOES NOT CURRENTLY HAVE A WORKING MINTER
-
-    // allow artist to mint on contract
-    await this.genArt721Core
-      .connect(this.accounts.deployer)
-      .updateMinterContract(this.accounts.artist.address);
+    this.minter = await deployAndGet.call(this, "MinterSetPriceV2", [
+      this.genArt721Core.address,
+      this.minterFilter.address,
+    ]);
 
     // add project zero
     await this.genArt721Core
@@ -63,10 +54,16 @@ describe("GenArt721CoreV3 Events", async function () {
       .connect(this.accounts.artist)
       .updateProjectMaxInvocations(this.projectZero, this.maxInvocations);
 
-    // add project one without setting it to active or setting max invocations
-    await this.genArt721Core
+    // configure minter for project zero
+    await this.minterFilter
       .connect(this.accounts.deployer)
-      .addProject("name", this.accounts.artist2.address);
+      .addApprovedMinter(this.minter.address);
+    await this.minterFilter
+      .connect(this.accounts.deployer)
+      .setMinterForProject(this.projectZero, this.minter.address);
+    await this.minter
+      .connect(this.accounts.artist)
+      .updatePricePerTokenInWei(this.projectZero, 0);
   });
 
   describe("MinterUpdated", function () {
@@ -83,15 +80,46 @@ describe("GenArt721CoreV3 Events", async function () {
   });
 
   describe("PlatformUpdated", function () {
-    it("emits artblocksAddress", async function () {
+    it("emits nextProjectId", async function () {
+      // typical expect event helper doesn't work for deploy event
+      const contractFactory = await ethers.getContractFactory(
+        "GenArt721CoreV3"
+      );
+      const tx = await contractFactory
+        .connect(this.accounts.deployer)
+        .deploy(
+          "name",
+          "symbol",
+          constants.ZERO_ADDRESS,
+          constants.ZERO_ADDRESS,
+          365
+        );
+      const receipt = await tx.deployTransaction.wait();
+      // target event is the last log
+      const targetLog = receipt.logs[receipt.logs.length - 1];
+      // expect "PlatformUpdated" event as log 0
+      expect(targetLog.topics[0]).to.be.equal(
+        ethers.utils.keccak256(
+          ethers.utils.toUtf8Bytes("PlatformUpdated(bytes32)")
+        )
+      );
+      // expect field to be bytes32 of "nextProjectId" as log 1
+      expect(targetLog.topics[1]).to.be.equal(
+        ethers.utils.formatBytes32String("nextProjectId")
+      );
+    });
+
+    it("emits artblocksSecondarySalesAddress", async function () {
       // emits expected event arg(s)
       expect(
         await this.genArt721Core
           .connect(this.accounts.deployer)
-          .updateArtblocksAddress(this.accounts.artist.address)
+          .updateArtblocksSecondarySalesAddress(this.accounts.artist.address)
       )
         .to.emit(this.genArt721Core, "PlatformUpdated")
-        .withArgs(ethers.utils.formatBytes32String("artblocksAddress"));
+        .withArgs(
+          ethers.utils.formatBytes32String("artblocksSecondarySalesAddress")
+        );
     });
 
     it("emits 'randomizerAddress'", async function () {
@@ -131,15 +159,50 @@ describe("GenArt721CoreV3 Events", async function () {
         );
     });
 
-    it("emits 'artblocksPercentage'", async function () {
+    it("emits 'artblocksPrimaryPercentage'", async function () {
       // emits expected event arg(s)
       expect(
         await this.genArt721Core
           .connect(this.accounts.deployer)
-          .updateArtblocksPercentage(11)
+          .updateArtblocksPrimarySalesPercentage(11)
       )
         .to.emit(this.genArt721Core, "PlatformUpdated")
-        .withArgs(ethers.utils.formatBytes32String("artblocksPercentage"));
+        .withArgs(
+          ethers.utils.formatBytes32String("artblocksPrimaryPercentage")
+        );
+    });
+
+    it("emits 'artblocksSecondaryBPS'", async function () {
+      // emits expected event arg(s)
+      expect(
+        await this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateArtblocksSecondarySalesBPS(240)
+      )
+        .to.emit(this.genArt721Core, "PlatformUpdated")
+        .withArgs(ethers.utils.formatBytes32String("artblocksSecondaryBPS"));
+    });
+
+    it("emits 'newProjectsForbidden'", async function () {
+      // emits expected event arg(s)
+      expect(
+        await this.genArt721Core
+          .connect(this.accounts.deployer)
+          .forbidNewProjects()
+      )
+        .to.emit(this.genArt721Core, "PlatformUpdated")
+        .withArgs(ethers.utils.formatBytes32String("newProjectsForbidden"));
+    });
+
+    it("emits `defaultBaseURI`", async function () {
+      // emits expected event arg(s)
+      expect(
+        await this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateDefaultBaseURI("https://newbaseuri.com/token/")
+      )
+        .to.emit(this.genArt721Core, "PlatformUpdated")
+        .withArgs(ethers.utils.formatBytes32String("defaultBaseURI"));
     });
   });
 
@@ -153,13 +216,9 @@ describe("GenArt721CoreV3 Events", async function () {
       );
       // emits expected event arg(s) when completing project
       expect(
-        await this.genArt721Core
+        await this.minter
           .connect(this.accounts.artist)
-          .mint(
-            this.accounts.artist.address,
-            this.projectZero,
-            this.accounts.artist.address
-          )
+          .purchase(this.projectZero)
       )
         .to.emit(this.genArt721Core, "ProjectUpdated")
         .withArgs(
@@ -223,7 +282,7 @@ describe("GenArt721CoreV3 Events", async function () {
           .addProject("new project", this.accounts.artist.address)
       )
         .to.emit(this.genArt721Core, "ProjectUpdated")
-        .withArgs(this.projectTwo, ethers.utils.formatBytes32String("created"));
+        .withArgs(this.projectOne, ethers.utils.formatBytes32String("created"));
     });
 
     it("emits name", async function () {
@@ -358,7 +417,10 @@ describe("GenArt721CoreV3 Events", async function () {
       expect(
         await this.genArt721Core
           .connect(this.accounts.artist)
-          .updateProjectScriptType(this.projectZero, "p5js", "v1.2.3")
+          .updateProjectScriptType(
+            this.projectZero,
+            ethers.utils.formatBytes32String("p5js@v1.2.3")
+          )
       )
         .to.emit(this.genArt721Core, "ProjectUpdated")
         .withArgs(

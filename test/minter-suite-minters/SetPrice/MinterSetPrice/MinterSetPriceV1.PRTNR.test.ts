@@ -18,7 +18,7 @@ import {
 } from "../../../util/common";
 
 import { MinterSetPrice_ETH_Common } from "./MinterSetPrice.common";
-import { MinterSetPriceV1_Common } from "../MinterSetPriceV1.common";
+import { MinterSetPriceV1V2_Common } from "../MinterSetPriceV1V2.common";
 
 /**
  * These tests intended to ensure this Filtered Minter integrates properly with
@@ -85,10 +85,6 @@ describe("MinterSetPriceV1_V2PRTNRCore", async function () {
       .toggleProjectIsActive(this.projectTwo);
 
     await this.genArt721Core
-      .connect(this.accounts.deployer)
-      .addMintWhitelisted(this.minterFilter.address);
-
-    await this.genArt721Core
       .connect(this.accounts.artist)
       .updateProjectMaxInvocations(this.projectZero, this.maxInvocations);
     await this.genArt721Core
@@ -139,12 +135,12 @@ describe("MinterSetPriceV1_V2PRTNRCore", async function () {
     MinterSetPrice_ETH_Common();
   });
 
-  describe("common MinterSetPrice V1 tests", async function () {
-    MinterSetPriceV1_Common();
+  describe("common MinterSetPrice V1V2 tests", async function () {
+    MinterSetPriceV1V2_Common();
   });
 
   describe("calculates gas", async function () {
-    it("mints and calculates gas values", async function () {
+    it("mints and calculates gas values [ @skip-on-coverage ]", async function () {
       const tx = await this.minter1
         .connect(this.accounts.user)
         .purchase(this.projectZero, {
@@ -159,7 +155,7 @@ describe("MinterSetPriceV1_V2PRTNRCore", async function () {
         "ETH"
       );
 
-      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0216789")); // assuming a cost of 100 GWEI
+      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0185247")); // assuming a cost of 100 GWEI
     });
   });
 
