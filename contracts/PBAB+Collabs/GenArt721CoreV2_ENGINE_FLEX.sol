@@ -9,7 +9,8 @@ import "@openzeppelin-4.5/contracts/token/ERC721/ERC721.sol";
 pragma solidity 0.8.9;
 
 /**
- * @title Powered by Art Blocks ERC-721 core contract.
+ * @title Art Blocks Engine ERC-721 core contract with FLEX integration.
+ * Allows for projects to specify external asset dependencies from either IPFS or ARWEAVE.
  * @author Art Blocks Inc.
  */
 contract GenArt721CoreV2_ENGINE_FLEX is ERC721, IGenArt721CoreV2_PBAB {
