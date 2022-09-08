@@ -95,9 +95,14 @@ export async function deployCoreWithMinterFilter(
   if (
     coreContractName.endsWith("V0") ||
     coreContractName.endsWith("V1") ||
-    coreContractName.endsWith("V2_PRTNR")
+    coreContractName.endsWith("V2_PRTNR") ||
+    coreContractName.endsWith("V2_ENGINE_FLEX")
   ) {
-    if (coreContractName.endsWith("V0") || coreContractName.endsWith("V1")) {
+    if (
+      coreContractName.endsWith("V0") ||
+      coreContractName.endsWith("V1") ||
+      coreContractName.endsWith("V2_ENGINE_FLEX")
+    ) {
       genArt721Core = await deployAndGet.call(this, coreContractName, [
         this.name,
         this.symbol,
