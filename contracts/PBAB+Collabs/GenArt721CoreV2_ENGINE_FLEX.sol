@@ -17,6 +17,10 @@ contract GenArt721CoreV2_ENGINE_FLEX is ERC721, IGenArt721CoreV2_PBAB {
     /// randomizer contract
     IRandomizer public randomizerContract;
 
+    /// version & type of this core contract
+    string public constant coreVersion = "v2.0.0";
+    string public constant coreType = "GenArt721CoreV2_ENGINE_FLEX";
+
     struct Project {
         string name;
         string artist;
