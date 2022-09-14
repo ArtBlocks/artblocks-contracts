@@ -29,26 +29,6 @@ contract AdminACLV0 is IAdminACLV0 {
     }
 
     /**
-     * @dev Allows superAdmin to call transferOwnership on other contract from
-     * this contract.
-     */
-    function transferOwnershipOn(address _contract, address _newOwner)
-        external
-    {
-        require(msg.sender == superAdmin, "Only superAdmin");
-        Ownable(_contract).transferOwnership(_newOwner);
-    }
-
-    /**
-     * @dev Allows superAdmin to call renounceOwnership on other contract from
-     * this contract.
-     */
-    function renounceOwnershipOn(address _contract) external {
-        require(msg.sender == superAdmin, "Only superAdmin");
-        Ownable(_contract).renounceOwnership();
-    }
-
-    /**
      * @dev Returns true if `_sender` is `superAdmin` for all ACL checks.
      */
     function allowed(

@@ -347,6 +347,31 @@ contract GenArt721CoreV3 is
     }
 
     /**
+     * @notice Updates AdminACL contract.
+     * @param _newAdminACLContract Address of new AdminACL contract.
+     * @dev Ensure that the new AdminACL contract is able to manage calls to
+     * this function to avoid locking out the ability to update the AdminACL
+     * after performing this change.
+     */
+    function updateAdminACL(address _newAdminACLContract)
+        external
+        onlyAdminACL(this.updateAdminACL.selector)
+    {
+        _transferOwnership(_newAdminACLContract);
+    }
+
+    /**
+     * @notice Renounces ownership of the contract.
+     */
+    function renounceOwnership()
+        public
+        override
+        onlyAdminACL(this.renounceOwnership.selector)
+    {
+        _transferOwnership(address(0));
+    }
+
+    /**
      * @notice Updates reference to Art Blocks Curation Registry contract.
      */
     function updateArtblocksCurationRegistryAddress(
