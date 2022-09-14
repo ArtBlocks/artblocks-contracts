@@ -10,7 +10,7 @@ import "@openzeppelin-4.7/contracts/access/Ownable.sol";
  * for any other address will return false.
  */
 contract AdminACLV0 is IAdminACLV0 {
-    string public AdminACLType = "MockAdminACLV0Events";
+    string public AdminACLType = "AdminACLV0";
 
     // superAdmin is the only address that passes any and all ACL checks
     address public superAdmin;
@@ -49,8 +49,7 @@ contract AdminACLV0 is IAdminACLV0 {
     }
 
     /**
-     * @dev Returns true for all ACL checks.
-     * Also emits event for testing purposes.
+     * @dev Returns true if `_sender` is `superAdmin` for all ACL checks.
      */
     function allowed(
         address _sender,
