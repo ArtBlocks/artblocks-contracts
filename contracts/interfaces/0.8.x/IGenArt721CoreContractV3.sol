@@ -118,6 +118,7 @@ interface IGenArt721CoreContractV3 is IManifold {
             uint256 maxInvocations,
             bool active,
             bool paused,
+            uint256 completedTimestamp,
             bool locked
         );
 

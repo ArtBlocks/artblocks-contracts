@@ -1038,6 +1038,8 @@ contract GenArt721CoreV3 is
      * @return maxInvocations Maximum allowed invocations
      * @return active Boolean representing if project is currently active
      * @return paused Boolean representing if project is paused
+     * @return completedTimestamp zero if project not complete, otherwise
+     * timestamp of project completion.
      * @return locked Boolean representing if project is locked
      * @dev price and currency info are located on minter contracts
      */
@@ -1049,6 +1051,7 @@ contract GenArt721CoreV3 is
             uint256 maxInvocations,
             bool active,
             bool paused,
+            uint256 completedTimestamp,
             bool locked
         )
     {
@@ -1057,6 +1060,7 @@ contract GenArt721CoreV3 is
         maxInvocations = project.maxInvocations;
         active = project.active;
         paused = project.paused;
+        completedTimestamp = project.completedTimestamp;
         locked = !_projectUnlocked(_projectId);
     }
 

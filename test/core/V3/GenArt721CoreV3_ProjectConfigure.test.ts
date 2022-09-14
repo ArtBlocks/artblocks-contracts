@@ -143,6 +143,11 @@ describe("GenArt721CoreV3 Project Configure", async function () {
         this.minter.connect(this.accounts.artist).purchase(this.projectZero),
         "Must not exceed max invocations"
       );
+      // confirm project is completed via view function
+      const projectStateData = await this.genArt721Core.projectStateData(
+        this.projectZero
+      );
+      expect(projectStateData.completedTimestamp).to.be.gt(0);
     });
 
     it("project may not mint when is completed due to minting out", async function () {
@@ -157,6 +162,11 @@ describe("GenArt721CoreV3 Project Configure", async function () {
         this.minter.connect(this.accounts.artist).purchase(this.projectZero),
         "Must not exceed max invocations"
       );
+      // confirm project is completed via view function
+      const projectStateData = await this.genArt721Core.projectStateData(
+        this.projectZero
+      );
+      expect(projectStateData.completedTimestamp).to.be.gt(0);
     });
   });
 
