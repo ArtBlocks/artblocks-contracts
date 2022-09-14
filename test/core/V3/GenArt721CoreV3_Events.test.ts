@@ -443,20 +443,6 @@ describe("GenArt721CoreV3 Events", async function () {
         );
     });
 
-    it("emits ipfsHash", async function () {
-      // emits expected event arg(s)
-      expect(
-        await this.genArt721Core
-          .connect(this.accounts.artist)
-          .updateProjectIpfsHash(this.projectZero, "ipfsHash")
-      )
-        .to.emit(this.genArt721Core, "ProjectUpdated")
-        .withArgs(
-          this.projectZero,
-          ethers.utils.formatBytes32String("ipfsHash")
-        );
-    });
-
     it("emits baseURI", async function () {
       // emits expected event arg(s)
       expect(

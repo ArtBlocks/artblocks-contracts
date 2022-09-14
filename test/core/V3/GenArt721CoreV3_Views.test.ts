@@ -233,7 +233,6 @@ describe("GenArt721CoreV3 Views", async function () {
         .projectScriptDetails(this.projectZero);
       expect(projectScriptDetails.scriptTypeAndVersion).to.be.equal("");
       expect(projectScriptDetails.aspectRatio).to.be.equal("");
-      expect(projectScriptDetails.ipfsHash).to.be.equal("");
       expect(projectScriptDetails.scriptCount).to.be.equal(0);
     });
 
@@ -249,9 +248,6 @@ describe("GenArt721CoreV3 Views", async function () {
         .updateProjectAspectRatio(this.projectZero, "1.77777778");
       await this.genArt721Core
         .connect(this.accounts.artist)
-        .updateProjectIpfsHash(this.projectZero, "0x12345");
-      await this.genArt721Core
-        .connect(this.accounts.artist)
         .addProjectScript(this.projectZero, "if(true){}");
 
       const projectScriptDetails = await this.genArt721Core
@@ -261,7 +257,6 @@ describe("GenArt721CoreV3 Views", async function () {
         "p5js@v1.2.3"
       );
       expect(projectScriptDetails.aspectRatio).to.be.equal("1.77777778");
-      expect(projectScriptDetails.ipfsHash).to.be.equal("0x12345");
       expect(projectScriptDetails.scriptCount).to.be.equal(1);
     });
   });
