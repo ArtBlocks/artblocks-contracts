@@ -275,6 +275,7 @@ describe("GenArt721CoreV3 Views", async function () {
       expect(projectStateData.maxInvocations).to.be.equal(15);
       expect(projectStateData.active).to.be.true;
       expect(projectStateData.paused).to.be.true;
+      expect(projectStateData.completedTimestamp).to.be.equal(0);
       expect(projectStateData.locked).to.be.false;
     });
 
@@ -289,6 +290,7 @@ describe("GenArt721CoreV3 Views", async function () {
       expect(projectStateData.maxInvocations).to.be.equal(15);
       expect(projectStateData.active).to.be.true;
       expect(projectStateData.paused).to.be.false;
+      expect(projectStateData.completedTimestamp).to.be.equal(0);
       expect(projectStateData.locked).to.be.false;
     });
   });
