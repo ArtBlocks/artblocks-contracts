@@ -63,7 +63,6 @@ contract GenArt721CoreV3 is
     bytes32 constant FIELD_PROJECT_SCRIPT = "script";
     bytes32 constant FIELD_PROJECT_SCRIPT_TYPE = "scriptType";
     bytes32 constant FIELD_PROJECT_ASPECT_RATIO = "aspectRatio";
-    bytes32 constant FIELD_PROJECT_IPFS_HASH = "ipfsHash";
     bytes32 constant FIELD_PROJECT_BASE_URI = "baseURI";
 
     // Art Blocks previous flagship ERC721 token addresses (for reference)
@@ -105,7 +104,6 @@ contract GenArt721CoreV3 is
         string projectBaseURI;
         bytes32 scriptTypeAndVersion;
         string aspectRatio;
-        string ipfsHash;
         mapping(uint256 => string) scripts;
     }
 
@@ -877,18 +875,6 @@ contract GenArt721CoreV3 is
     }
 
     /**
-     * @notice Updates ipfs hash for project `_projectId`.
-     */
-    function updateProjectIpfsHash(uint256 _projectId, string memory _ipfsHash)
-        external
-        onlyUnlocked(_projectId)
-        onlyArtistOrAdminACL(_projectId, this.updateProjectIpfsHash.selector)
-    {
-        projects[_projectId].ipfsHash = _ipfsHash;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_IPFS_HASH);
-    }
-
-    /**
      * @notice Updates base URI for project `_projectId` to `_newBaseURI`.
      * This is the controlling base URI for all tokens in the project. The
      * contract-level defaultBaseURI is only used when initializing new
@@ -1126,7 +1112,6 @@ contract GenArt721CoreV3 is
      * (e.g. "p5js(atSymbol)1.0.0")
      * @return aspectRatio Aspect ratio of project (e.g. "1" for square,
      * "1.77777778" for 16:9, etc.)
-     * @return ipfsHash IPFS hash for project
      * @return scriptCount Count of scripts for project
      */
     function projectScriptDetails(uint256 _projectId)
@@ -1135,7 +1120,6 @@ contract GenArt721CoreV3 is
         returns (
             string memory scriptTypeAndVersion,
             string memory aspectRatio,
-            string memory ipfsHash,
             uint256 scriptCount
         )
     {
@@ -1143,7 +1127,6 @@ contract GenArt721CoreV3 is
         scriptTypeAndVersion = project.scriptTypeAndVersion.toString();
         aspectRatio = project.aspectRatio;
         scriptCount = project.scriptCount;
-        ipfsHash = project.ipfsHash;
     }
 
     /**
