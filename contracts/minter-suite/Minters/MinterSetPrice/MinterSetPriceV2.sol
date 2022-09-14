@@ -84,7 +84,7 @@ contract MinterSetPriceV2 is ReentrancyGuard, IFilteredMinterV0 {
      */
     function setProjectMaxInvocations(uint256 _projectId) external {
         uint256 maxInvocations;
-        (, maxInvocations, , , ) = genArtCoreContract.projectStateData(
+        (, maxInvocations, , , , ) = genArtCoreContract.projectStateData(
             _projectId
         );
         // update storage with results
