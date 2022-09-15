@@ -4,8 +4,19 @@
 pragma solidity ^0.8.0;
 
 interface IAdminACLV0 {
+    /**
+     * @notice Token ID `_tokenId` minted to `_to`.
+     */
+    event SuperAdminTransferred(
+        address indexed previousSuperAdmin,
+        address indexed newSuperAdmin
+    );
+
     /// Type of the Admin ACL contract, e.g. "AdminACLV0"
     function AdminACLType() external view returns (string memory);
+
+    /// super admin address
+    function superAdmin() external view returns (address);
 
     /**
      * @notice Calls transferOwnership on other contract from this contract.

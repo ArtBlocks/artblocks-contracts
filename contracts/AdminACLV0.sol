@@ -25,7 +25,9 @@ contract AdminACLV0 is IAdminACLV0, ERC165 {
      */
     function changeSuperAdmin(address _newSuperAdmin) external {
         require(msg.sender == superAdmin, "Only superAdmin");
+        address previousSuperAdmin = superAdmin;
         superAdmin = _newSuperAdmin;
+        emit SuperAdminTransferred(previousSuperAdmin, _newSuperAdmin);
     }
 
     /**
