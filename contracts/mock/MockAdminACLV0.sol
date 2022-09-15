@@ -4,6 +4,7 @@ pragma solidity ^0.8.0;
 
 import "../interfaces/0.8.x/IAdminACLV0.sol";
 import "@openzeppelin-4.7/contracts/access/Ownable.sol";
+import "@openzeppelin-4.7/contracts/utils/introspection/ERC165.sol";
 
 /**
  * @dev Mock contract for testing purposes.
@@ -11,8 +12,10 @@ import "@openzeppelin-4.7/contracts/access/Ownable.sol";
  * for any other address will return false.
  * It also emits an event for all ACL checks, enabling our test suite to verify
  * that the ACL was checked with the correct parameters.
+ * @dev this contract specifically does not broadcast conformance to IAdminACLV0
+ * for testing purposes.
  */
-contract MockAdminACLV0Events is IAdminACLV0 {
+contract MockAdminACLV0Events is IAdminACLV0, ERC165 {
     // event used for testing purposes to diagnose what core contract is asking
     // approval for.
     event ACLCheck(address indexed sender, bytes4 indexed selector);
@@ -43,11 +46,11 @@ contract MockAdminACLV0Events is IAdminACLV0 {
      * @dev Allows superAdmin to call transferOwnership on other contract from
      * this contract.
      */
-    function transferOwnershipOn(address _contract, address _newOwner)
+    function transferOwnershipOn(address _contract, address _newAdminACL)
         external
     {
         require(msg.sender == superAdmin, "Only superAdmin");
-        Ownable(_contract).transferOwnership(_newOwner);
+        Ownable(_contract).transferOwnership(_newAdminACL);
     }
 
     /**

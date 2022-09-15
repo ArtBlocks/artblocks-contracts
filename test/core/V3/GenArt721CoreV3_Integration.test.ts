@@ -124,9 +124,7 @@ describe("GenArt721CoreV3 Integration", async function () {
 
     it("behaves as expected when transferring ownership", async function () {
       // deploy new ACL with user as superAdmin
-      const userAdminACLFactory = await ethers.getContractFactory(
-        "MockAdminACLV0Events"
-      );
+      const userAdminACLFactory = await ethers.getContractFactory("AdminACLV0");
       const userAdminACL = await userAdminACLFactory
         .connect(this.accounts.user)
         .deploy();

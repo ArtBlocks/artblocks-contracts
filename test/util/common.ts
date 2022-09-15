@@ -130,7 +130,7 @@ export async function deployCoreWithMinterFilter(
     const adminACLContractName = useAdminACLWithEvents
       ? "MockAdminACLV0Events"
       : "AdminACLV0";
-    adminACL = await deployAndGet.call(this, "MockAdminACLV0Events", []);
+    adminACL = await deployAndGet.call(this, adminACLContractName, []);
     genArt721Core = await deployAndGet.call(this, coreContractName, [
       this.name,
       this.symbol,
