@@ -231,7 +231,9 @@ async function main() {
 
   // update super admin address
   if (superAdminAddress) {
-    await adminACL.connect(deployer).changeSuperAdmin(superAdminAddress);
+    await adminACL
+      .connect(deployer)
+      .changeSuperAdmin(superAdminAddress, [genArt721Core.address]);
   }
 
   // Output instructions for manual Etherscan verification.
