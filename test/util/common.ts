@@ -85,7 +85,8 @@ export async function deployAndGet(
 // works for core versions V0, V1, V2_PRTNR, V3
 export async function deployCoreWithMinterFilter(
   coreContractName: string,
-  minterFilterName: string
+  minterFilterName: string,
+  useAdminACLWithEvents: boolean = false
 ): Promise<CoreWithMinterSuite> {
   if (coreContractName.endsWith("V2_PBAB")) {
     throw new Error("V2_PBAB not supported");
@@ -126,7 +127,10 @@ export async function deployCoreWithMinterFilter(
       .addMintWhitelisted(minterFilter.address);
   } else if (coreContractName.endsWith("V3")) {
     randomizer = await deployAndGet.call(this, "BasicRandomizerV2", []);
-    adminACL = await deployAndGet.call(this, "MockAdminACLV0Events", []);
+    const adminACLContractName = useAdminACLWithEvents
+      ? "MockAdminACLV0Events"
+      : "AdminACLV0";
+    adminACL = await deployAndGet.call(this, adminACLContractName, []);
     genArt721Core = await deployAndGet.call(this, coreContractName, [
       this.name,
       this.symbol,
