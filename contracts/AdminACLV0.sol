@@ -22,12 +22,23 @@ contract AdminACLV0 is IAdminACLV0, ERC165 {
 
     /**
      * @notice Allows superAdmin change the superAdmin address.
+     * @param _newSuperAdmin The new superAdmin address.
+     * @param _genArt721CoreAddressesToUpdate Array of genArt721Core
+     * addresses to update to the new superAdmin, for indexing purposes only.
+     * @dev this function is gated to only superAdmin address.
      */
-    function changeSuperAdmin(address _newSuperAdmin) external {
+    function changeSuperAdmin(
+        address _newSuperAdmin,
+        address[] calldata _genArt721CoreAddressesToUpdate
+    ) external {
         require(msg.sender == superAdmin, "Only superAdmin");
         address previousSuperAdmin = superAdmin;
         superAdmin = _newSuperAdmin;
-        emit SuperAdminTransferred(previousSuperAdmin, _newSuperAdmin);
+        emit SuperAdminTransferred(
+            previousSuperAdmin,
+            _newSuperAdmin,
+            _genArt721CoreAddressesToUpdate
+        );
     }
 
     /**
