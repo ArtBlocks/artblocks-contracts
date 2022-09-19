@@ -21,9 +21,9 @@ import {
 import { FOUR_WEEKS } from "../../util/constants";
 
 /**
- * Tests for transferring ownership to new AdminACL on AdminACLV0.
+ * Tests for functionality of AdminACLV0.
  */
-describe("AdminACLV0 Transfer Ownership", async function () {
+describe("AdminACLV0", async function () {
   beforeEach(async function () {
     // standard accounts and constants
     this.accounts = await getAccounts();
@@ -76,6 +76,31 @@ describe("AdminACLV0 Transfer Ownership", async function () {
       await this.adminACL.transferOwnershipOn(
         this.genArt721Core.address,
         this.adminACL_InterfaceBroadcast.address
+      );
+    });
+  });
+
+  describe("changeSuperAdmin", function () {
+    it("emits an event", async function () {
+      expect(
+        await this.adminACL.changeSuperAdmin(this.accounts.deployer2.address, [
+          this.genArt721Core.address,
+        ])
+      )
+        .to.emit(this.adminACL, "SuperAdminTransferred")
+        .withArgs(
+          this.accounts.deployer.address,
+          this.accounts.deployer2.address,
+          [this.genArt721Core.address]
+        );
+    });
+
+    it("updates superAdmin", async function () {
+      await this.adminACL.changeSuperAdmin(this.accounts.deployer2.address, [
+        this.genArt721Core.address,
+      ]);
+      expect(await this.adminACL.superAdmin()).to.equal(
+        this.accounts.deployer2.address
       );
     });
   });
