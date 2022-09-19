@@ -474,7 +474,8 @@ contract MinterDAExpV2 is ReentrancyGuard, IFilteredMinterV0 {
         // approximate the current place on a perfect exponential decay curve.
         unchecked {
             // value of expression is provably always less than decayedPrice,
-            // so no underflow is possible
+            // so no underflow is possible when the subtraction assignment
+            // operator is used on decayedPrice.
             decayedPrice -=
                 (decayedPrice *
                     (elapsedTimeSeconds % _priceDecayHalfLifeSeconds)) /
