@@ -11,9 +11,13 @@ import { expect } from "chai";
 export const GenArt721MinterV1V2PRTNR_Common = async () => {
   describe("has whitelisted owner", function () {
     it("has an admin", async function () {
-      expect(await this.genArt721Core.artblocksAddress()).to.be.equal(
-        this.accounts.deployer.address
-      );
+      let addressResult;
+      try {
+        addressResult = await this.genArt721Core.artblocksAddress();
+      } catch (error) {
+        addressResult = await this.genArt721Core.renderProviderAddress();
+      }
+      expect(addressResult).to.be.equal(this.accounts.deployer.address);
     });
 
     it("has an admin", async function () {

@@ -115,6 +115,30 @@ describe("MinterDALinV2_V3Core", async function () {
     MinterDAV2_Common();
   });
 
+  describe("setAuctionDetails", async function () {
+    it("does not unsafely cast auction time start > type(uint64).max", async function () {
+      await this.minter
+        .connect(this.accounts.deployer)
+        .resetAuctionDetails(this.projectZero);
+      const overflowStartTime = ethers.BigNumber.from("2").pow(
+        ethers.BigNumber.from("64")
+      );
+      const overflowEndTime = overflowStartTime.add(ONE_HOUR * 2);
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.artist)
+          .setAuctionDetails(
+            this.projectZero,
+            overflowStartTime,
+            overflowEndTime,
+            this.startingPrice,
+            this.basePrice
+          ),
+        "SafeCast: value doesn't fit in 64 bits"
+      );
+    });
+  });
+
   describe("setProjectMaxInvocations", async function () {
     it("allows artist to call setProjectMaxInvocations", async function () {
       await this.minter
@@ -149,7 +173,7 @@ describe("MinterDALinV2_V3Core", async function () {
         ethers.utils.formatUnits(txCost, "ether").toString(),
         "ETH"
       );
-      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0138867")); // assuming a cost of 100 GWEI
+      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0138845")); // assuming a cost of 100 GWEI
     });
   });
 });

@@ -35,7 +35,8 @@ describe("GenArt721CoreV3 Events", async function () {
     } = await deployCoreWithMinterFilter.call(
       this,
       "GenArt721CoreV3",
-      "MinterFilterV1"
+      "MinterFilterV1",
+      true
     ));
 
     this.minter = await deployAndGet.call(this, "MinterSetPriceV2", [
@@ -440,20 +441,6 @@ describe("GenArt721CoreV3 Events", async function () {
         .withArgs(
           this.projectZero,
           ethers.utils.formatBytes32String("aspectRatio")
-        );
-    });
-
-    it("emits ipfsHash", async function () {
-      // emits expected event arg(s)
-      expect(
-        await this.genArt721Core
-          .connect(this.accounts.artist)
-          .updateProjectIpfsHash(this.projectZero, "ipfsHash")
-      )
-        .to.emit(this.genArt721Core, "ProjectUpdated")
-        .withArgs(
-          this.projectZero,
-          ethers.utils.formatBytes32String("ipfsHash")
         );
     });
 

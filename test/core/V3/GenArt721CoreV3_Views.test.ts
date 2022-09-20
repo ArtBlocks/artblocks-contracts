@@ -233,7 +233,6 @@ describe("GenArt721CoreV3 Views", async function () {
         .projectScriptDetails(this.projectZero);
       expect(projectScriptDetails.scriptTypeAndVersion).to.be.equal("");
       expect(projectScriptDetails.aspectRatio).to.be.equal("");
-      expect(projectScriptDetails.ipfsHash).to.be.equal("");
       expect(projectScriptDetails.scriptCount).to.be.equal(0);
     });
 
@@ -249,9 +248,6 @@ describe("GenArt721CoreV3 Views", async function () {
         .updateProjectAspectRatio(this.projectZero, "1.77777778");
       await this.genArt721Core
         .connect(this.accounts.artist)
-        .updateProjectIpfsHash(this.projectZero, "0x12345");
-      await this.genArt721Core
-        .connect(this.accounts.artist)
         .addProjectScript(this.projectZero, "if(true){}");
 
       const projectScriptDetails = await this.genArt721Core
@@ -261,7 +257,6 @@ describe("GenArt721CoreV3 Views", async function () {
         "p5js@v1.2.3"
       );
       expect(projectScriptDetails.aspectRatio).to.be.equal("1.77777778");
-      expect(projectScriptDetails.ipfsHash).to.be.equal("0x12345");
       expect(projectScriptDetails.scriptCount).to.be.equal(1);
     });
   });
@@ -275,6 +270,7 @@ describe("GenArt721CoreV3 Views", async function () {
       expect(projectStateData.maxInvocations).to.be.equal(15);
       expect(projectStateData.active).to.be.true;
       expect(projectStateData.paused).to.be.true;
+      expect(projectStateData.completedTimestamp).to.be.equal(0);
       expect(projectStateData.locked).to.be.false;
     });
 
@@ -289,6 +285,7 @@ describe("GenArt721CoreV3 Views", async function () {
       expect(projectStateData.maxInvocations).to.be.equal(15);
       expect(projectStateData.active).to.be.true;
       expect(projectStateData.paused).to.be.false;
+      expect(projectStateData.completedTimestamp).to.be.equal(0);
       expect(projectStateData.locked).to.be.false;
     });
   });
@@ -352,9 +349,12 @@ describe("GenArt721CoreV3 Views", async function () {
       expect(
         projectArtistPaymentInfo.additionalPayeeSecondarySalesPercentage
       ).to.be.equal(0);
+      expect(
+        projectArtistPaymentInfo.secondaryMarketRoyaltyPercentage
+      ).to.be.equal(0);
     });
 
-    it("returns expected values after updating artist payment addresses and splits", async function () {
+    it("returns expected values after updating artist payment addresses and splits, and secondary royalty percentage", async function () {
       const valuesToUpdateTo = [
         this.projectZero,
         this.accounts.artist2.address,
@@ -370,6 +370,10 @@ describe("GenArt721CoreV3 Views", async function () {
       await this.genArt721Core
         .connect(this.accounts.deployer)
         .adminAcceptArtistAddressesAndSplits(...valuesToUpdateTo);
+      // new artist sets new secondary royalty percentage
+      await this.genArt721Core
+        .connect(this.accounts.artist2)
+        .updateProjectSecondaryMarketRoyaltyPercentage(this.projectZero, 5);
       // check for expected values
       const projectArtistPaymentInfo = await this.genArt721Core
         .connect(this.accounts.deployer)
@@ -389,6 +393,9 @@ describe("GenArt721CoreV3 Views", async function () {
       expect(
         projectArtistPaymentInfo.additionalPayeeSecondarySalesPercentage
       ).to.be.equal(valuesToUpdateTo[5]);
+      expect(
+        projectArtistPaymentInfo.secondaryMarketRoyaltyPercentage
+      ).to.be.equal(5);
     });
   });
 

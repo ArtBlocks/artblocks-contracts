@@ -124,9 +124,7 @@ describe("GenArt721CoreV3 Integration", async function () {
 
     it("behaves as expected when transferring ownership", async function () {
       // deploy new ACL with user as superAdmin
-      const userAdminACLFactory = await ethers.getContractFactory(
-        "MockAdminACLV0Events"
-      );
+      const userAdminACLFactory = await ethers.getContractFactory("AdminACLV0");
       const userAdminACL = await userAdminACLFactory
         .connect(this.accounts.user)
         .deploy();
@@ -271,6 +269,28 @@ describe("GenArt721CoreV3 Integration", async function () {
         ]
       );
       expect(await differentGenArt721Core.nextProjectId()).to.be.equal(365);
+    });
+  });
+
+  describe("startingProjectId", function () {
+    it("returns zero when initialized to zero nextProjectId", async function () {
+      // one project has already been added, but starting project ID should remain at 0
+      expect(await this.genArt721Core.startingProjectId()).to.be.equal(0);
+    });
+
+    it("returns >0 when initialized to >0 nextProjectId", async function () {
+      const differentGenArt721Core = await deployAndGet.call(
+        this,
+        "GenArt721CoreV3",
+        [
+          this.name,
+          this.symbol,
+          this.randomizer.address,
+          this.adminACL.address,
+          365,
+        ]
+      );
+      expect(await differentGenArt721Core.startingProjectId()).to.be.equal(365);
     });
   });
 

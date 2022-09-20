@@ -6,6 +6,7 @@ import "../../../interfaces/0.8.x/IMinterFilterV0.sol";
 import "../../../interfaces/0.8.x/IFilteredMinterV0.sol";
 
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin-4.5/contracts/utils/math/SafeCast.sol";
 
 pragma solidity 0.8.9;
 
@@ -14,8 +15,39 @@ pragma solidity 0.8.9;
  * Pricing is achieved using an automated Dutch-auction mechanism.
  * This is designed to be used with IGenArt721CoreContractV3 contracts.
  * @author Art Blocks Inc.
+ * @notice Privileged Roles and Ownership:
+ * This contract is designed to be managed, with limited powers.
+ * Privileged roles and abilities are controlled by the core contract's Admin
+ * ACL contract and a project's artist. Both of these roles hold extensive
+ * power and can modify minter details.
+ * Care must be taken to ensure that the admin ACL contract and artist
+ * addresses are secure behind a multi-sig or other access control mechanism.
+ * ----------------------------------------------------------------------------
+ * The following functions are restricted to the core contract's Admin ACL
+ * contract:
+ * - setAllowablePriceDecayHalfLifeRangeSeconds (note: this range is only
+ *   enforced when creating new auctions)
+ * - resetAuctionDetails (note: this will prevent minting until a new auction
+ *   is created)
+ * ----------------------------------------------------------------------------
+ * The following functions are restricted to a project's artist:
+ * - setAuctionDetails (note: this may only be called when there is no active
+ *   auction)
+ * ----------------------------------------------------------------------------
+ * Additional admin and artist privileged roles may be described on other
+ * contracts that this minter integrates with.
+ *
+ * @dev Note that while this minter makes use of `block.timestamp` and it is
+ * technically possible that this value is manipulated by block producers, such
+ * manipulation will not have material impact on the price values of this minter
+ * given the business practices for how pricing is congfigured for this minter
+ * and that variations on the order of less than a minute should not
+ * meaningfully impact price given the minimum allowable price decay rate that
+ * this minter intends to support.
  */
 contract MinterDAExpV2 is ReentrancyGuard, IFilteredMinterV0 {
+    using SafeCast for uint256;
+
     /// Auction details updated for project `projectId`.
     event SetAuctionDetails(
         uint256 indexed projectId,
@@ -127,7 +159,7 @@ contract MinterDAExpV2 is ReentrancyGuard, IFilteredMinterV0 {
      */
     function setProjectMaxInvocations(uint256 _projectId) external {
         uint256 maxInvocations;
-        (, maxInvocations, , , ) = genArtCoreContract.projectStateData(
+        (, maxInvocations, , , , ) = genArtCoreContract.projectStateData(
             _projectId
         );
         // update storage with results
@@ -267,10 +299,9 @@ contract MinterDAExpV2 is ReentrancyGuard, IFilteredMinterV0 {
             "Price decay half life must fall between min and max allowable values"
         );
         // EFFECTS
-        _projectConfig.timestampStart = uint64(_auctionTimestampStart);
-        _projectConfig.priceDecayHalfLifeSeconds = uint64(
-            _priceDecayHalfLifeSeconds
-        );
+        _projectConfig.timestampStart = _auctionTimestampStart.toUint64();
+        _projectConfig.priceDecayHalfLifeSeconds = _priceDecayHalfLifeSeconds
+            .toUint64();
         _projectConfig.startPrice = _startPrice;
         _projectConfig.basePrice = _basePrice;
 
@@ -387,6 +418,9 @@ contract MinterDAExpV2 is ReentrancyGuard, IFilteredMinterV0 {
      * @dev splits ETH funds between sender (if refund), foundation,
      * artist, and artist's additional payee for a token purchased on
      * project `_projectId`.
+     * @dev possible DoS during splits is acknowledged, and mitigated by
+     * business practices, including end-to-end testing on mainnet, and
+     * admin-accepted artist payment addresses.
      * @param _projectId Project ID for which funds shall be split.
      * @param _currentPriceInWei Current price of token, in Wei.
      */
@@ -474,7 +508,8 @@ contract MinterDAExpV2 is ReentrancyGuard, IFilteredMinterV0 {
         // approximate the current place on a perfect exponential decay curve.
         unchecked {
             // value of expression is provably always less than decayedPrice,
-            // so no underflow is possible
+            // so no underflow is possible when the subtraction assignment
+            // operator is used on decayedPrice.
             decayedPrice -=
                 (decayedPrice *
                     (elapsedTimeSeconds % _priceDecayHalfLifeSeconds)) /
