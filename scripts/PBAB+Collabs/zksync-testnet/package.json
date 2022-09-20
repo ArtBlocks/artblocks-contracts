@@ -1,0 +1,17 @@
+{
+  "name": "zksync-testnet",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "Ben Lyaunzon",
+  "license": "MIT",
+  "devDependencies": {
+    "@matterlabs/hardhat-zksync-deploy": "^0.4.0",
+    "@matterlabs/hardhat-zksync-solc": "^0.3.9",
+    "@openzeppelin-4.5/contracts": "npm:@openzeppelin/contracts@4.5.0",
+    "ethers": "^5.7.1",
+    "hardhat": "^2.11.2",
+    "ts-node": "^10.9.1",
+    "typescript": "^4.8.3",
+    "zksync-web3": "^0.9.0"
+  }
+}
