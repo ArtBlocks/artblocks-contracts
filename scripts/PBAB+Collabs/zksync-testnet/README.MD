@@ -41,10 +41,10 @@ Purchased token 0xe94ee4c7242c62770472728bf1eec2fd6c6a33f1d851971bffb0693414aef2
 
 Results:
 
-- Upload Script: 0.0011221882 ETH
-- Mint 1: 0.000087925 ETH
-- Mint 2: 0.000087925 ETH
-- Mint 3: 0.000087925 ETH
+- Upload Script: 0.0011221882 ETH (~1.50 USD)
+- Mint 1: 0.000087925 ETH (~0.12 USD)
+- Mint 2: 0.000087925 ETH (~0.12 USD)
+- Mint 3: 0.000087925 ETH (~0.12 USD)
 
 ```bash
 GenArt721CoreV2_zk was deployed to 0x9de53e13CEeAe01ac3f7074089FCE3C8B66eb1e6
@@ -60,7 +60,7 @@ Purchased token 0x941e4be1e74ad5a9d8f76ab0e3ce86658663870b077caeab81ca460f6ff4cb
 
 Results:
 
-- Upload Script: 0.0011221882 ETH
-- Mint 1: 0.000087925 ETH
-- Mint 2: 0.000087925 ETH
-- Mint 3: 0.000087925 ETH
+- Upload Script: 0.0011221882 ETH (~1.50 USD)
+- Mint 1: 0.000087925 ETH (~0.12 USD)
+- Mint 2: 0.000087925 ETH (~0.12 USD)
+- Mint 3: 0.000087925 ETH (~0.12 USD)
