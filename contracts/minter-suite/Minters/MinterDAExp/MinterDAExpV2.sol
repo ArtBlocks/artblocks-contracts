@@ -36,6 +36,14 @@ pragma solidity 0.8.9;
  * ----------------------------------------------------------------------------
  * Additional admin and artist privileged roles may be described on other
  * contracts that this minter integrates with.
+ *
+ * @dev Note that while this minter makes use of `block.timestamp` and it is
+ * technically possible that this value is manipulated by block producers, such
+ * manipulation will not have material impact on the price values of this minter
+ * given the business practices for how pricing is congfigured for this minter
+ * and that variations on the order of less than a minute should not
+ * meaningfully impact price given the minimum allowable price decay rate that
+ * this minter intends to support.
  */
 contract MinterDAExpV2 is ReentrancyGuard, IFilteredMinterV0 {
     using SafeCast for uint256;
