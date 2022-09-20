@@ -15,6 +15,20 @@ pragma solidity 0.8.9;
  * This is designed to be used with IGenArt721CoreContractV3 contracts.
  * or any ERC-20 token.
  * @author Art Blocks Inc.
+ * @notice Privileged Roles and Ownership:
+ * This contract is designed to be managed, with limited powers.
+ * Privileged roles and abilities are controlled by the project's artist, which
+ * can be modified by the core contract's Admin ACL contract. Both of these
+ * roles hold extensive power and can modify minter details.
+ * Care must be taken to ensure that the admin ACL contract and artist
+ * addresses are secure behind a multi-sig or other access control mechanism.
+ * ----------------------------------------------------------------------------
+ * The following functions are restricted to a project's artist:
+ * - updatePricePerTokenInWei
+ * - updateProjectCurrencyInfo
+ * ----------------------------------------------------------------------------
+ * Additional admin and artist privileged roles may be described on other
+ * contracts that this minter integrates with.
  */
 contract MinterSetPriceERC20V2 is ReentrancyGuard, IFilteredMinterV0 {
     /// Core contract address this minter interacts with
