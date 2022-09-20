@@ -55,8 +55,10 @@ import "./libs/0.8.x/Bytes32Strings.sol";
  * - updateProjectAspectRatio
  * ----------------------------------------------------------------------------
  * The following functions are restricted to only the Artist address:
- * - proposeArtistPaymentAddressesAndSplits (note that this has to be accepted by adminAcceptArtistAddressesAndSplits
- *   to take effect)
+ * - proposeArtistPaymentAddressesAndSplits (note that this has to be accepted
+ *   by adminAcceptArtistAddressesAndSplits to take effect, which is restricted
+ *   to the Admin ACL contract, or the artist if the core contract owner has
+ *   renounced ownership)
  * - toggleProjectIsPaused (note the artist can still mint while paused)
  * - updateProjectSecondaryMarketRoyaltyPercentage (up to 95%)
  * - updateProjectWebsite
