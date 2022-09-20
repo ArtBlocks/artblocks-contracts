@@ -187,6 +187,7 @@ async function main() {
 
   // alert as canonical minter filter
   tx = await minterFilter.connect(deployer).alertAsCanonicalMinterFilter();
+  await tx.wait();
   console.log(`Alerted MinterFilter ${minterFilter.address} on minter filter.`);
   delay(EXTRA_DELAY_BETWEEN_TX);
 
