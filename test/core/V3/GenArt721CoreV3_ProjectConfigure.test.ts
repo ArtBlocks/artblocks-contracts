@@ -143,6 +143,11 @@ describe("GenArt721CoreV3 Project Configure", async function () {
         this.minter.connect(this.accounts.artist).purchase(this.projectZero),
         "Must not exceed max invocations"
       );
+      // confirm project is completed via view function
+      const projectStateData = await this.genArt721Core.projectStateData(
+        this.projectZero
+      );
+      expect(projectStateData.completedTimestamp).to.be.gt(0);
     });
 
     it("project may not mint when is completed due to minting out", async function () {
@@ -157,6 +162,11 @@ describe("GenArt721CoreV3 Project Configure", async function () {
         this.minter.connect(this.accounts.artist).purchase(this.projectZero),
         "Must not exceed max invocations"
       );
+      // confirm project is completed via view function
+      const projectStateData = await this.genArt721Core.projectStateData(
+        this.projectZero
+      );
+      expect(projectStateData.completedTimestamp).to.be.gt(0);
     });
   });
 
@@ -632,6 +642,24 @@ describe("GenArt721CoreV3 Project Configure", async function () {
             this.valuesToUpdateTo[4],
             this.valuesToUpdateTo[5]
           ),
+        "Must match artist proposal"
+      );
+    });
+
+    it("only allows adminACL-allowed account to accept updates once (i.e. proposal is cleared upon acceptance)", async function () {
+      // artist proposes new values
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .proposeArtistPaymentAddressesAndSplits(...this.valuesToUpdateTo);
+      // allows deployer to accept new values
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .adminAcceptArtistAddressesAndSplits(...this.valuesToUpdateTo);
+      // reverts if deployer tries to accept again
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .adminAcceptArtistAddressesAndSplits(...this.valuesToUpdateTo),
         "Must match artist proposal"
       );
     });

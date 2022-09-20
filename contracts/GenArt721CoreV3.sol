@@ -16,6 +16,67 @@ import "./libs/0.8.x/Bytes32Strings.sol";
 /**
  * @title Art Blocks ERC-721 core contract, V3.
  * @author Art Blocks Inc.
+ * @notice Privileged Roles and Ownership:
+ * This contract is designed to be managed, with progressively limited powers
+ * as a project progresses from active to locked.
+ * Privileged roles and abilities are controlled by the admin ACL contract and
+ * artists. Both of these roles hold extensive power and can arbitrarily
+ * control and modify portions of projects, dependent upon project state. After
+ * a project is locked, important project metadata fields are locked including
+ * the project name, artist name, and script and display details. Edition size
+ * can never be increased.
+ * Care must be taken to ensure that the admin ACL contract and artist
+ * addresses are secure behind a multi-sig or other access control mechanism.
+ * ----------------------------------------------------------------------------
+ * The following functions are restricted to the Admin ACL contract:
+ * - updateArtblocksCurationRegistryAddress
+ * - updateArtblocksDependencyRegistryAddress
+ * - updateArtblocksPrimarySalesAddress
+ * - updateArtblocksSecondarySalesAddress
+ * - updateArtblocksPrimarySalesPercentage (up to 25%)
+ * - updateArtblocksSecondarySalesBPS (up to 100%)
+ * - updateMinterContract
+ * - updateRandomizerAddress
+ * - toggleProjectIsActive
+ * - updateProjectArtistAddress (ultimately controlling the project and its
+ *   and-on revenue)
+ * - addProject
+ * - forbidNewProjects (forever forbidding new projects)
+ * - updateDefaultBaseURI (used to initialize new project base URIs)
+ * ----------------------------------------------------------------------------
+ * The following functions are restricted to either the the Artist address or
+ * the Admin ACL contract, only when the project is not locked:
+ * - updateProjectName
+ * - updateProjectArtistName
+ * - updateProjectLicense
+ * - Change project script via addProjectScript, updateProjectScript,
+ *   and removeProjectLastScript
+ * - updateProjectScriptType
+ * - updateProjectAspectRatio
+ * ----------------------------------------------------------------------------
+ * The following functions are restricted to only the Artist address:
+ * - proposeArtistPaymentAddressesAndSplits (note that this has to be accepted
+ *   by adminAcceptArtistAddressesAndSplits to take effect, which is restricted
+ *   to the Admin ACL contract, or the artist if the core contract owner has
+ *   renounced ownership)
+ * - toggleProjectIsPaused (note the artist can still mint while paused)
+ * - updateProjectSecondaryMarketRoyaltyPercentage (up to 95%)
+ * - updateProjectWebsite
+ * - updateProjectMaxInvocations (to a number greater than or equal to the
+ *   current number of invocations, and less than current project maximum
+ *   invocations)
+ * - updateProjectBaseURI (controlling the base URI for tokens in the project)
+ * ----------------------------------------------------------------------------
+ * The following function is restricted to either the Admin ACL contract, or
+ * the Artist address if the core contract owner has renounced ownership:
+ * - adminAcceptArtistAddressesAndSplits
+ * ----------------------------------------------------------------------------
+ * The following function is restricted to the artist when a project is
+ * unlocked, and only callable by Admin ACL contract when a project is locked:
+ * - updateProjectDescription
+ * ----------------------------------------------------------------------------
+ * Additional admin and artist privileged roles may be described on minters,
+ * registries, and other contracts that may interact with this core contract.
  */
 contract GenArt721CoreV3 is
     ERC721_PackedHashSeed,
@@ -49,21 +110,20 @@ contract GenArt721CoreV3 is
     // generic project event fields
     bytes32 constant FIELD_PROJECT_COMPLETED = "completed";
     bytes32 constant FIELD_PROJECT_ACTIVE = "active";
-    bytes32 constant FIELD_ARTIST_ADDRESS = "artistAddress";
+    bytes32 constant FIELD_PROJECT_ARTIST_ADDRESS = "artistAddress";
     bytes32 constant FIELD_PROJECT_PAUSED = "paused";
     bytes32 constant FIELD_PROJECT_CREATED = "created";
     bytes32 constant FIELD_PROJECT_NAME = "name";
-    bytes32 constant FIELD_ARTIST_NAME = "artistName";
-    bytes32 constant FIELD_SECONDARY_MARKET_ROYALTY_PERCENTAGE =
+    bytes32 constant FIELD_PROJECT_ARTIST_NAME = "artistName";
+    bytes32 constant FIELD_PROJECT_SECONDARY_MARKET_ROYALTY_PERCENTAGE =
         "royaltyPercentage";
     bytes32 constant FIELD_PROJECT_DESCRIPTION = "description";
     bytes32 constant FIELD_PROJECT_WEBSITE = "website";
     bytes32 constant FIELD_PROJECT_LICENSE = "license";
-    bytes32 constant FIELD_MAX_INVOCATIONS = "maxInvocations";
+    bytes32 constant FIELD_PROJECT_MAX_INVOCATIONS = "maxInvocations";
     bytes32 constant FIELD_PROJECT_SCRIPT = "script";
     bytes32 constant FIELD_PROJECT_SCRIPT_TYPE = "scriptType";
     bytes32 constant FIELD_PROJECT_ASPECT_RATIO = "aspectRatio";
-    bytes32 constant FIELD_PROJECT_IPFS_HASH = "ipfsHash";
     bytes32 constant FIELD_PROJECT_BASE_URI = "baseURI";
 
     // Art Blocks previous flagship ERC721 token addresses (for reference)
@@ -105,7 +165,6 @@ contract GenArt721CoreV3 is
         string projectBaseURI;
         bytes32 scriptTypeAndVersion;
         string aspectRatio;
-        string ipfsHash;
         mapping(uint256 => string) scripts;
     }
 
@@ -142,6 +201,9 @@ contract GenArt721CoreV3 is
 
     /// single minter allowed for this core contract
     address public minterContract;
+
+    /// starting (initial) project ID on this contract
+    uint256 public immutable startingProjectId;
 
     /// next project ID to be created
     uint248 private _nextProjectId;
@@ -230,6 +292,8 @@ contract GenArt721CoreV3 is
         address _adminACLContract,
         uint256 _startingProjectId
     ) ERC721_PackedHashSeed(_tokenName, _tokenSymbol) {
+        // record contracts starting project ID
+        startingProjectId = _startingProjectId;
         _updateArtblocksPrimarySalesAddress(msg.sender);
         _updateArtblocksSecondarySalesAddress(msg.sender);
         _updateRandomizerAddress(_randomizerContract);
@@ -492,7 +556,7 @@ contract GenArt721CoreV3 is
         );
         // effects
         proposedArtistAddressesAndSplitsHash[_projectId] = keccak256(
-            abi.encodePacked(
+            abi.encode(
                 _artistAddress,
                 _additionalPayeePrimarySales,
                 _additionalPayeePrimarySalesPercentage,
@@ -551,7 +615,7 @@ contract GenArt721CoreV3 is
         require(
             proposedArtistAddressesAndSplitsHash[_projectId] ==
                 keccak256(
-                    abi.encodePacked(
+                    abi.encode(
                         _artistAddress,
                         _additionalPayeePrimarySales,
                         _additionalPayeePrimarySalesPercentage,
@@ -576,6 +640,8 @@ contract GenArt721CoreV3 is
         projectFinance.additionalPayeeSecondarySalesPercentage = uint8(
             _additionalPayeeSecondarySalesPercentage
         );
+        // clear proposed values
+        proposedArtistAddressesAndSplitsHash[_projectId] = bytes32(0);
         // emit event for off-chain indexing
         emit AcceptedArtistAddressesAndSplits(_projectId);
     }
@@ -590,7 +656,7 @@ contract GenArt721CoreV3 is
         address payable _artistAddress
     ) external onlyAdminACL(this.updateProjectArtistAddress.selector) {
         projectIdToFinancials[_projectId].artistAddress = _artistAddress;
-        emit ProjectUpdated(_projectId, FIELD_ARTIST_ADDRESS);
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_ARTIST_ADDRESS);
     }
 
     /**
@@ -663,7 +729,7 @@ contract GenArt721CoreV3 is
         onlyArtistOrAdminACL(_projectId, this.updateProjectArtistName.selector)
     {
         projects[_projectId].artist = _projectArtistName;
-        emit ProjectUpdated(_projectId, FIELD_ARTIST_NAME);
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_ARTIST_NAME);
     }
 
     /**
@@ -686,7 +752,7 @@ contract GenArt721CoreV3 is
             .secondaryMarketRoyaltyPercentage = uint8(_secondMarketRoyalty);
         emit ProjectUpdated(
             _projectId,
-            FIELD_SECONDARY_MARKET_ROYALTY_PERCENTAGE
+            FIELD_PROJECT_SECONDARY_MARKET_ROYALTY_PERCENTAGE
         );
     }
 
@@ -764,7 +830,7 @@ contract GenArt721CoreV3 is
         );
         // EFFECTS
         project.maxInvocations = _maxInvocations;
-        emit ProjectUpdated(_projectId, FIELD_MAX_INVOCATIONS);
+        emit ProjectUpdated(_projectId, FIELD_PROJECT_MAX_INVOCATIONS);
 
         // register completed timestamp if action completed the project
         if (_maxInvocations == _invocations) {
@@ -867,18 +933,6 @@ contract GenArt721CoreV3 is
     {
         projects[_projectId].aspectRatio = _aspectRatio;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_ASPECT_RATIO);
-    }
-
-    /**
-     * @notice Updates ipfs hash for project `_projectId`.
-     */
-    function updateProjectIpfsHash(uint256 _projectId, string memory _ipfsHash)
-        external
-        onlyUnlocked(_projectId)
-        onlyArtistOrAdminACL(_projectId, this.updateProjectIpfsHash.selector)
-    {
-        projects[_projectId].ipfsHash = _ipfsHash;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_IPFS_HASH);
     }
 
     /**
@@ -1045,6 +1099,8 @@ contract GenArt721CoreV3 is
      * @return maxInvocations Maximum allowed invocations
      * @return active Boolean representing if project is currently active
      * @return paused Boolean representing if project is paused
+     * @return completedTimestamp zero if project not complete, otherwise
+     * timestamp of project completion.
      * @return locked Boolean representing if project is locked
      * @dev price and currency info are located on minter contracts
      */
@@ -1056,6 +1112,7 @@ contract GenArt721CoreV3 is
             uint256 maxInvocations,
             bool active,
             bool paused,
+            uint256 completedTimestamp,
             bool locked
         )
     {
@@ -1064,6 +1121,7 @@ contract GenArt721CoreV3 is
         maxInvocations = project.maxInvocations;
         active = project.active;
         paused = project.paused;
+        completedTimestamp = project.completedTimestamp;
         locked = !_projectUnlocked(_projectId);
     }
 
@@ -1079,7 +1137,10 @@ contract GenArt721CoreV3 is
      * sales royalties
      * @return additionalPayeeSecondarySalesPercentage Percentage of artist revenue
      * to be sent to the additional payee address for secondary sales royalties
-
+     * @return secondaryMarketRoyaltyPercentage Royalty percentage to be sent to
+     * combination of artist and additional payee. This does not include the
+     * platform's percentage of secondary sales royalties, which is defined by
+     * `artblocksSecondarySalesBPS`.
      */
     function projectArtistPaymentInfo(uint256 _projectId)
         external
@@ -1089,7 +1150,8 @@ contract GenArt721CoreV3 is
             address additionalPayeePrimarySales,
             uint256 additionalPayeePrimarySalesPercentage,
             address additionalPayeeSecondarySales,
-            uint256 additionalPayeeSecondarySalesPercentage
+            uint256 additionalPayeeSecondarySalesPercentage,
+            uint256 secondaryMarketRoyaltyPercentage
         )
     {
         ProjectFinance storage projectFinance = projectIdToFinancials[
@@ -1104,6 +1166,8 @@ contract GenArt721CoreV3 is
             .additionalPayeeSecondarySales;
         additionalPayeeSecondarySalesPercentage = projectFinance
             .additionalPayeeSecondarySalesPercentage;
+        secondaryMarketRoyaltyPercentage = projectFinance
+            .secondaryMarketRoyaltyPercentage;
     }
 
     /**
@@ -1113,7 +1177,6 @@ contract GenArt721CoreV3 is
      * (e.g. "p5js(atSymbol)1.0.0")
      * @return aspectRatio Aspect ratio of project (e.g. "1" for square,
      * "1.77777778" for 16:9, etc.)
-     * @return ipfsHash IPFS hash for project
      * @return scriptCount Count of scripts for project
      */
     function projectScriptDetails(uint256 _projectId)
@@ -1122,7 +1185,6 @@ contract GenArt721CoreV3 is
         returns (
             string memory scriptTypeAndVersion,
             string memory aspectRatio,
-            string memory ipfsHash,
             uint256 scriptCount
         )
     {
@@ -1130,7 +1192,6 @@ contract GenArt721CoreV3 is
         scriptTypeAndVersion = project.scriptTypeAndVersion.toString();
         aspectRatio = project.aspectRatio;
         scriptCount = project.scriptCount;
-        ipfsHash = project.ipfsHash;
     }
 
     /**

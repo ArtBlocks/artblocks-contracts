@@ -13,6 +13,19 @@ pragma solidity 0.8.9;
  * @title Filtered Minter contract that allows tokens to be minted with ETH.
  * This is designed to be used with IGenArt721CoreContractV3 contracts.
  * @author Art Blocks Inc.
+ * @notice Privileged Roles and Ownership:
+ * This contract is designed to be managed, with limited powers.
+ * Privileged roles and abilities are controlled by the project's artist, which
+ * can be modified by the core contract's Admin ACL contract. Both of these
+ * roles hold extensive power and can modify minter details.
+ * Care must be taken to ensure that the admin ACL contract and artist
+ * addresses are secure behind a multi-sig or other access control mechanism.
+ * ----------------------------------------------------------------------------
+ * The following functions are restricted to a project's artist:
+ * - updatePricePerTokenInWei
+ * ----------------------------------------------------------------------------
+ * Additional admin and artist privileged roles may be described on other
+ * contracts that this minter integrates with.
  */
 contract MinterSetPriceV2 is ReentrancyGuard, IFilteredMinterV0 {
     /// Core contract address this minter interacts with
@@ -84,7 +97,7 @@ contract MinterSetPriceV2 is ReentrancyGuard, IFilteredMinterV0 {
      */
     function setProjectMaxInvocations(uint256 _projectId) external {
         uint256 maxInvocations;
-        (, maxInvocations, , , ) = genArtCoreContract.projectStateData(
+        (, maxInvocations, , , , ) = genArtCoreContract.projectStateData(
             _projectId
         );
         // update storage with results
@@ -233,6 +246,9 @@ contract MinterSetPriceV2 is ReentrancyGuard, IFilteredMinterV0 {
      * @dev splits ETH funds between sender (if refund), foundation,
      * artist, and artist's additional payee for a token purchased on
      * project `_projectId`.
+     * @dev possible DoS during splits is acknowledged, and mitigated by
+     * business practices, including end-to-end testing on mainnet, and
+     * admin-accepted artist payment addresses.
      */
     function _splitFundsETH(uint256 _projectId, uint256 _pricePerTokenInWei)
         internal
