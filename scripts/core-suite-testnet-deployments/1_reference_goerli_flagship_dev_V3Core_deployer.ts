@@ -145,6 +145,9 @@ async function main() {
   // SETUP BEGINS HERE
   //////////////////////////////////////////////////////////////////////////////
 
+  // Assign randomizer to core and renounce ownership
+  await randomizer.assignCoreAndRenounce(genArt721Core.address);
+
   // Allowlist the Minter on the Core contract.
   await genArt721Core
     .connect(deployer)
@@ -242,6 +245,8 @@ async function main() {
   console.log(
     `${standardVerify} --network ${networkName} ${genArt721Core.address} "${tokenName}" "${tokenTicker}" ${randomizerAddress} ${adminACLAddress} ${startingProjectId}`
   );
+  console.log(`Verify Admin ACL contract deployment with:`);
+  console.log(`${standardVerify} --network ${networkName} ${adminACL.address}`);
   console.log(`Verify MinterFilter deployment with:`);
   console.log(
     `${standardVerify} --network ${networkName} ${minterFilter.address} ${genArt721Core.address}`
