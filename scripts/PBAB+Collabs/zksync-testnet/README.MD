@@ -47,10 +47,7 @@ Results:
 - Mint 3: 0.000087925 ETH
 
 ```bash
-Running deploy script
-0x2246475beddf9333b6a6D9217194576E7617Afd1
 GenArt721CoreV2_zk was deployed to 0x9de53e13CEeAe01ac3f7074089FCE3C8B66eb1e6
-
 GenArt721Minter_zk was deployed to 0x9b3CCac78C77999C0E45f4b2AC32c9c7666B9885
 Allowlisted the Minter on the Core contract.
 succesfully added project 0
