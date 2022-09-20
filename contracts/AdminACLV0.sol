@@ -7,8 +7,14 @@ import "@openzeppelin-4.7/contracts/access/Ownable.sol";
 import "@openzeppelin-4.7/contracts/utils/introspection/ERC165.sol";
 
 /**
+ * @title Admin ACL contract, V0.
+ * @author Art Blocks Inc.
+ * @notice Privileged Roles and Ownership:
  * This contract has a single superAdmin that passes all ACL checks. All checks
  * for any other address will return false.
+ * The superAdmin can be changed by the current superAdmin.
+ * Care must be taken to ensure that the admin ACL contract is secure behind a
+ * multi-sig or other secure access control mechanism.
  */
 contract AdminACLV0 is IAdminACLV0, ERC165 {
     string public AdminACLType = "AdminACLV0";
