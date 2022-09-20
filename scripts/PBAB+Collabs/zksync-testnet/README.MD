@@ -19,6 +19,12 @@ We used the following tooling for testing:
 
 Minor issue to note: Currently zksync-solc/zksync-deploy do not support multi-compiler hardhat configs. This is the reason why we needed to copy over the minter + core contract into a seperate directory as a new/independent hardhat project. This is a known issue by the zkSync team and they are working on adding multi-compiler support for the future.
 
+Some other items worth mentioning around eth <> zkSync2.0 differences:
+
+- temporary zksync limitations https://v2-docs.zksync.io/dev/zksync-v2/temp-limits.html#using-libraries-in-solidity
+- zksync system contracts https://v2-docs.zksync.io/dev/zksync-v2/system-contracts.html
+- zksync fee model https://v2-docs.zksync.io/dev/zksync-v2/fee-model.html
+
 ### Gas Profiling
 
 ```bash
