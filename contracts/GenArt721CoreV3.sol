@@ -16,6 +16,65 @@ import "./libs/0.8.x/Bytes32Strings.sol";
 /**
  * @title Art Blocks ERC-721 core contract, V3.
  * @author Art Blocks Inc.
+ * @notice Privileged Roles and Ownership:
+ * This contract is designed to be managed, with progressively limited powers
+ * as a project progresses from active to locked.
+ * Privileged roles and abilities are controlled by the admin ACL contract and
+ * artists. Both of these roles hold extensive power and can arbitrarily
+ * control and modify portions of projects, dependent upon project state. After
+ * a project is locked, important project metadata fields are locked including
+ * the project name, artist name, and script and display details. Edition size
+ * can never be increased.
+ * Care must be taken to ensure that the admin ACL contract and artist
+ * addresses are secure behind a multi-sig or other access control mechanism.
+ * ----------------------------------------------------------------------------
+ * The following functions are restricted to the Admin ACL contract:
+ * - updateArtblocksCurationRegistryAddress
+ * - updateArtblocksDependencyRegistryAddress
+ * - updateArtblocksPrimarySalesAddress
+ * - updateArtblocksSecondarySalesAddress
+ * - updateArtblocksPrimarySalesPercentage (up to 25%)
+ * - updateArtblocksSecondarySalesBPS (up to 100%)
+ * - updateMinterContract
+ * - updateRandomizerAddress
+ * - toggleProjectIsActive
+ * - updateProjectArtistAddress (ultimately controlling the project and its
+ *   and-on revenue)
+ * - addProject
+ * - forbidNewProjects (forever forbidding new projects)
+ * - updateDefaultBaseURI (used to initialize new project base URIs)
+ * ----------------------------------------------------------------------------
+ * The following functions are restricted to either the the Artist address or
+ * the Admin ACL contract, only when the project is not locked:
+ * - updateProjectName
+ * - updateProjectArtistName
+ * - updateProjectLicense
+ * - Change project script via addProjectScript, updateProjectScript,
+ *   and removeProjectLastScript
+ * - updateProjectScriptType
+ * - updateProjectAspectRatio
+ * ----------------------------------------------------------------------------
+ * The following functions are restricted to only the Artist address:
+ * - proposeArtistPaymentAddressesAndSplits (note that this has to be accepted by adminAcceptArtistAddressesAndSplits
+ *   to take effect)
+ * - toggleProjectIsPaused (note the artist can still mint while paused)
+ * - updateProjectSecondaryMarketRoyaltyPercentage (up to 95%)
+ * - updateProjectWebsite
+ * - updateProjectMaxInvocations (to a number greater than or equal to the
+ *   current number of invocations, and less than current project maximum
+ *   invocations)
+ * - updateProjectBaseURI (controlling the base URI for tokens in the project)
+ * ----------------------------------------------------------------------------
+ * The following function is restricted to either the Admin ACL contract, or
+ * the Artist address if the core contract owner has renounced ownership:
+ * - adminAcceptArtistAddressesAndSplits
+ * ----------------------------------------------------------------------------
+ * The following function is restricted to the artist when a project is
+ * unlocked, and only callable by Admin ACL contract when a project is locked:
+ * - updateProjectDescription
+ * ----------------------------------------------------------------------------
+ * Additional admin and artist privileged roles may be described on minters,
+ * registries, and other contracts that may interact with this core contract.
  */
 contract GenArt721CoreV3 is
     ERC721_PackedHashSeed,

@@ -14,6 +14,27 @@ pragma solidity 0.8.9;
  * Pricing is achieved using an automated Dutch-auction mechanism.
  * This is designed to be used with IGenArt721CoreContractV3 contracts.
  * @author Art Blocks Inc.
+ * @notice Privileged Roles and Ownership:
+ * This contract is designed to be managed, with limited powers.
+ * Privileged roles and abilities are controlled by the core contract's Admin
+ * ACL contract and a project's artist. Both of these roles hold extensive
+ * power and can modify minter details.
+ * Care must be taken to ensure that the admin ACL contract and artist
+ * addresses are secure behind a multi-sig or other access control mechanism.
+ * ----------------------------------------------------------------------------
+ * The following functions are restricted to the core contract's Admin ACL
+ * contract:
+ * - setMinimumAuctionLengthSeconds (note: this is only enforced when creating
+ *   new auctions)
+ * - resetAuctionDetails (note: this will prevent minting until a new auction
+ *   is created)
+ * ----------------------------------------------------------------------------
+ * The following functions are restricted to a project's artist:
+ * - setAuctionDetails (note: this may only be called when there is no active
+ *   auction)
+ * ----------------------------------------------------------------------------
+ * Additional admin and artist privileged roles may be described on other
+ * contracts that this minter integrates with.
  */
 contract MinterDALinV2 is ReentrancyGuard, IFilteredMinterV0 {
     /// Auction details updated for project `projectId`.

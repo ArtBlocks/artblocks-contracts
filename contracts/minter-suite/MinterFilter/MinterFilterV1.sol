@@ -15,6 +15,26 @@ pragma solidity 0.8.9;
  * on a per-project basis.
  * This is designed to be used with IGenArt721CoreContractV3 contracts.
  * @author Art Blocks Inc.
+ * @notice Privileged Roles and Ownership:
+ * This contract is designed to be managed, with limited powers.
+ * Privileged roles and abilities are controlled by the core contract's Admin
+ * ACL contract and a project's artist. Both of these roles hold extensive
+ * power and can modify a project's current minter.
+ * Care must be taken to ensure that the admin ACL contract and artist
+ * addresses are secure behind a multi-sig or other access control mechanism.
+ * ----------------------------------------------------------------------------
+ * The following functions are restricted to the core contract's Admin ACL
+ * contract:
+ * - addApprovedMinters
+ * - removeApprovedMinters
+ * - removeMintersForProjects
+ * ----------------------------------------------------------------------------
+ * The following functions are restricted to the core contract's Admin ACL
+ * contract or a project's artist:
+ * - setMinterForProject
+ * - removeMinterForProject
+ * ----------------------------------------------------------------------------
+ * Additional admin and artist privileged roles may be described on minters
  */
 contract MinterFilterV1 is IMinterFilterV0 {
     // add Enumerable Map methods
