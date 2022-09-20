@@ -556,6 +556,9 @@ contract MinterHolderV1 is ReentrancyGuard, IFilteredMinterHolderV0 {
      * @dev splits ETH funds between sender (if refund), foundation,
      * artist, and artist's additional payee for a token purchased on
      * project `_projectId`.
+     * @dev possible DoS during splits is acknowledged, and mitigated by
+     * business practices, including end-to-end testing on mainnet, and
+     * admin-accepted artist payment addresses.
      */
     function _splitFundsETH(uint256 _projectId, uint256 _pricePerTokenInWei)
         internal

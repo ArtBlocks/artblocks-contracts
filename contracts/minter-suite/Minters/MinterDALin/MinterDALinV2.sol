@@ -6,6 +6,7 @@ import "../../../interfaces/0.8.x/IMinterFilterV0.sol";
 import "../../../interfaces/0.8.x/IFilteredMinterV0.sol";
 
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin-4.5/contracts/utils/math/SafeCast.sol";
 
 pragma solidity 0.8.9;
 
@@ -37,6 +38,8 @@ pragma solidity 0.8.9;
  * contracts that this minter integrates with.
  */
 contract MinterDALinV2 is ReentrancyGuard, IFilteredMinterV0 {
+    using SafeCast for uint256;
+
     /// Auction details updated for project `projectId`.
     event SetAuctionDetails(
         uint256 indexed projectId,
@@ -263,8 +266,8 @@ contract MinterDALinV2 is ReentrancyGuard, IFilteredMinterV0 {
             "Auction start price must be greater than auction end price"
         );
         // EFFECTS
-        _projectConfig.timestampStart = uint64(_auctionTimestampStart);
-        _projectConfig.timestampEnd = uint64(_auctionTimestampEnd);
+        _projectConfig.timestampStart = _auctionTimestampStart.toUint64();
+        _projectConfig.timestampEnd = _auctionTimestampEnd.toUint64();
         _projectConfig.startPrice = _startPrice;
         _projectConfig.basePrice = _basePrice;
         emit SetAuctionDetails(
@@ -381,6 +384,9 @@ contract MinterDALinV2 is ReentrancyGuard, IFilteredMinterV0 {
      * @dev splits ETH funds between sender (if refund), foundation,
      * artist, and artist's additional payee for a token purchased on
      * project `_projectId`.
+     * @dev possible DoS during splits is acknowledged, and mitigated by
+     * business practices, including end-to-end testing on mainnet, and
+     * admin-accepted artist payment addresses.
      * @param _projectId Project ID for which funds shall be split.
      * @param _currentPriceInWei Current price of token, in Wei.
      */
