@@ -18,6 +18,11 @@ import {
   advanceEVMByTime,
 } from "../../util/common";
 import { FOUR_WEEKS } from "../../util/constants";
+import {
+  SQUIGGLE_SCRIPT,
+  SKULPTUUR_SCRIPT_APPROX,
+  CONTRACT_SIZE_LIMIT_SCRIPT,
+} from "../../util/example-scripts";
 
 /**
  * Tests for V3 core dealing with configuring projects.
@@ -711,6 +716,101 @@ describe("GenArt721CoreV3 Project Configure", async function () {
           .updateProjectSecondaryMarketRoyaltyPercentage(this.projectZero, 96),
         "Max of 95%"
       );
+    });
+  });
+
+  describe("addProjectScript", function () {
+    it("uploads and recalls an empty script", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .addProjectScript(this.projectZero, "");
+      const script = await this.genArt721Core.projectScriptByIndex(
+        this.projectZero,
+        0
+      );
+      expect(script).to.equal("");
+    });
+
+    it("uploads and recalls an short script < 32 bytes", async function () {
+      const targetScript = "console.log(hello world)";
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .addProjectScript(this.projectZero, targetScript);
+      const script = await this.genArt721Core.projectScriptByIndex(
+        this.projectZero,
+        0
+      );
+      expect(script).to.equal(targetScript);
+    });
+
+    it("uploads and recalls chromie squiggle script", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .addProjectScript(this.projectZero, SQUIGGLE_SCRIPT);
+      const script = await this.genArt721Core.projectScriptByIndex(
+        this.projectZero,
+        0
+      );
+      expect(script).to.equal(SQUIGGLE_SCRIPT);
+    });
+
+    it("uploads and recalls different script", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .addProjectScript(this.projectZero, SKULPTUUR_SCRIPT_APPROX);
+      const script = await this.genArt721Core.projectScriptByIndex(
+        this.projectZero,
+        0
+      );
+      expect(script).to.equal(SKULPTUUR_SCRIPT_APPROX);
+    });
+
+    it("uploads and recalls 23.95 KB script", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .addProjectScript(this.projectZero, CONTRACT_SIZE_LIMIT_SCRIPT);
+      const script = await this.genArt721Core.projectScriptByIndex(
+        this.projectZero,
+        0
+      );
+      expect(script).to.equal(CONTRACT_SIZE_LIMIT_SCRIPT);
+    });
+
+    it("uploads and recalls chromie squiggle script and different script", async function () {
+      // index 0: squiggle
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .addProjectScript(this.projectZero, SQUIGGLE_SCRIPT);
+      // index 1: skulptuur-like
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .addProjectScript(this.projectZero, SKULPTUUR_SCRIPT_APPROX);
+      // verify results
+      const scriptZero = await this.genArt721Core.projectScriptByIndex(
+        this.projectZero,
+        0
+      );
+      expect(scriptZero).to.equal(SQUIGGLE_SCRIPT);
+      const scriptOne = await this.genArt721Core.projectScriptByIndex(
+        this.projectZero,
+        1
+      );
+      expect(scriptOne).to.equal(SKULPTUUR_SCRIPT_APPROX);
+    });
+  });
+
+  describe("projectScriptBytecodeAddressByIndex", function () {
+    it("uploads and recalls an empty script", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .addProjectScript(this.projectZero, "");
+      const scriptBytecodeAddress =
+        await this.genArt721Core.projectScriptBytecodeAddressByIndex(
+          this.projectZero,
+          0
+        );
+      console.log(scriptBytecodeAddress);
+      expect(scriptBytecodeAddress).to.not.equal("");
     });
   });
 
