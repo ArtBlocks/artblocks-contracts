@@ -11,6 +11,7 @@ import "./interfaces/0.8.x/IManifold.sol";
 import "@openzeppelin-4.7/contracts/utils/Strings.sol";
 import "@openzeppelin-4.7/contracts/access/Ownable.sol";
 import "./libs/0.8.x/ERC721_PackedHashSeed.sol";
+import "./libs/0.8.x/BytecodeStorage.sol";
 import "./libs/0.8.x/Bytes32Strings.sol";
 
 /**
@@ -83,6 +84,8 @@ contract GenArt721CoreV3 is
     Ownable,
     IGenArt721CoreContractV3
 {
+    using BytecodeStorage for string;
+    using BytecodeStorage for address;
     using Bytes32Strings for bytes32;
     using Strings for uint256;
     uint256 constant ONE_MILLION = 1_000_000;
@@ -165,7 +168,8 @@ contract GenArt721CoreV3 is
         string projectBaseURI;
         bytes32 scriptTypeAndVersion;
         string aspectRatio;
-        mapping(uint256 => string) scripts;
+        // mapping from script index to address storing script in bytecode
+        mapping(uint256 => address) scriptBytecodeAddresses;
     }
 
     mapping(uint256 => Project) projects;
@@ -849,7 +853,9 @@ contract GenArt721CoreV3 is
         onlyArtistOrAdminACL(_projectId, this.addProjectScript.selector)
     {
         Project storage project = projects[_projectId];
-        project.scripts[project.scriptCount] = _script;
+        // store script in contract bytecode
+        project.scriptBytecodeAddresses[project.scriptCount] = _script
+            .writeToBytecode();
         project.scriptCount = project.scriptCount + 1;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
     }
@@ -871,7 +877,8 @@ contract GenArt721CoreV3 is
     {
         Project storage project = projects[_projectId];
         require(_scriptId < project.scriptCount, "scriptId out of range");
-        project.scripts[_scriptId] = _script;
+        // store script in contract bytecode
+        project.scriptBytecodeAddresses[_scriptId] = _script.writeToBytecode();
         emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
     }
 
@@ -885,7 +892,7 @@ contract GenArt721CoreV3 is
     {
         Project storage project = projects[_projectId];
         require(project.scriptCount > 0, "there are no scripts to remove");
-        delete project.scripts[project.scriptCount - 1];
+        delete project.scriptBytecodeAddresses[project.scriptCount - 1];
         project.scriptCount = project.scriptCount - 1;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
     }
@@ -1195,6 +1202,17 @@ contract GenArt721CoreV3 is
     }
 
     /**
+     * @notice Returns address with bytecode containing project script for
+     * project `_projectId` at script index `_index`.
+     */
+    function projectScriptBytecodeAddressByIndex(
+        uint256 _projectId,
+        uint256 _index
+    ) external view returns (address) {
+        return projects[_projectId].scriptBytecodeAddresses[_index];
+    }
+
+    /**
      * @notice Returns script for project `_projectId` at script index `_index`.
      */
     function projectScriptByIndex(uint256 _projectId, uint256 _index)
@@ -1202,7 +1220,10 @@ contract GenArt721CoreV3 is
         view
         returns (string memory)
     {
-        return projects[_projectId].scripts[_index];
+        return
+            projects[_projectId]
+                .scriptBytecodeAddresses[_index]
+                .readFromBytecode();
     }
 
     /**
