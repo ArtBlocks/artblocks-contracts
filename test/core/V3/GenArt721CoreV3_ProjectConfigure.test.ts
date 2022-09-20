@@ -768,7 +768,9 @@ describe("GenArt721CoreV3 Project Configure", async function () {
     it("uploads and recalls 23.95 KB script", async function () {
       await this.genArt721Core
         .connect(this.accounts.artist)
-        .addProjectScript(this.projectZero, CONTRACT_SIZE_LIMIT_SCRIPT);
+        .addProjectScript(this.projectZero, CONTRACT_SIZE_LIMIT_SCRIPT, {
+          gasLimit: 30000000, // hard-code gas limit because ethers sometimes estimates too high
+        });
       const script = await this.genArt721Core.projectScriptByIndex(
         this.projectZero,
         0
