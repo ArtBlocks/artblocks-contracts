@@ -363,6 +363,9 @@ contract MinterDALinV2 is ReentrancyGuard, IFilteredMinterV0 {
      * @dev splits ETH funds between sender (if refund), foundation,
      * artist, and artist's additional payee for a token purchased on
      * project `_projectId`.
+     * @dev possible DoS during splits is acknowledged, and mitigated by
+     * business practices, including end-to-end testing on mainnet, and
+     * admin-accepted artist payment addresses.
      * @param _projectId Project ID for which funds shall be split.
      * @param _currentPriceInWei Current price of token, in Wei.
      */
