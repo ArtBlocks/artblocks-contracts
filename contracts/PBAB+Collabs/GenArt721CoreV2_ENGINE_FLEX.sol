@@ -242,7 +242,7 @@ contract GenArt721CoreV2_ENGINE_FLEX is ERC721, IGenArt721CoreV2_PBAB {
         onlyWhitelisted
     {
         preferredIPFSGateway = _gateway;
-        emit GatewayUpdated(ExternalAssetDependencyType.ARWEAVE, _gateway);
+        emit GatewayUpdated(ExternalAssetDependencyType.IPFS, _gateway);
     }
 
     /**
@@ -253,7 +253,7 @@ contract GenArt721CoreV2_ENGINE_FLEX is ERC721, IGenArt721CoreV2_PBAB {
         onlyWhitelisted
     {
         preferredArweaveGateway = _gateway;
-        emit GatewayUpdated(ExternalAssetDependencyType.IPFS, _gateway);
+        emit GatewayUpdated(ExternalAssetDependencyType.ARWEAVE, _gateway);
     }
 
     /**
