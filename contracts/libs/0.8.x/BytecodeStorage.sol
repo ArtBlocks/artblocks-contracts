@@ -12,7 +12,13 @@ pragma solidity ^0.8.0;
  */
 library BytecodeStorage {
     /// always set first byte to 0x00 (STOP) to ensure created contracts cannot be called
-    uint256 internal constant DATA_OFFSET = 1;
+    //---------------------------------------------------------------------------------------------------------------//
+    // Offset Amount | Offset Aggregate | Description                                                                //
+    //---------------------------------------------------------------------------------------------------------------//
+    // 1             | 1                | set first byte to 0x00 (STOP) to ensure created contracts cannot be called //
+    // 20            | 20               | reserve 20 bytes for deploying-contract's address                          //
+    //---------------------------------------------------------------------------------------------------------------//
+    uint256 internal constant DATA_OFFSET = 21;
 
     /**
      * @notice Write a string to contract bytecode
@@ -41,6 +47,7 @@ library BytecodeStorage {
             //---------------------------------------------------------------------------------------------------------------//
             hex"60_0B_59_81_38_03_80_92_59_39_F3", // returns all code in the contract except for the first 11 (0B in hex) bytes
             hex"00", // prefix bytecode with 0x00 to ensure contract cannot be called
+            msg.sender, // store the deploying-contract's address (to be used to gate `selfdestruct`)
             _data
         );
 
