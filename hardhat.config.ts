@@ -15,6 +15,8 @@ const RINKEBY_JSON_RPC_PROVIDER_URL = process.env.RINKEBY_JSON_RPC_PROVIDER_URL;
 const KOVAN_JSON_RPC_PROVIDER_URL = process.env.KOVAN_JSON_RPC_PROVIDER_URL;
 const MAINNET_PRIVATE_KEY = process.env.MAINNET_PRIVATE_KEY;
 const TESTNET_PRIVATE_KEY = process.env.TESTNET_PRIVATE_KEY;
+const TESTNET_PRIVATE_KEY2 = process.env.TESTNET_PRIVATE_KEY2;
+const TESTNET_PRIVATE_KEY3 = process.env.TESTNET_PRIVATE_KEY3;
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
 
 // You need to export an object to set up your config
@@ -68,7 +70,11 @@ module.exports = {
     },
     goerli: {
       url: GOERLI_JSON_RPC_PROVIDER_URL,
-      accounts: [`0x${TESTNET_PRIVATE_KEY}`],
+      accounts: [
+        `0x${TESTNET_PRIVATE_KEY}`,
+        `0x${TESTNET_PRIVATE_KEY2}`,
+        `0x${TESTNET_PRIVATE_KEY3}`,
+      ],
     },
     ropsten: {
       url: ROPSTEN_JSON_RPC_PROVIDER_URL,
