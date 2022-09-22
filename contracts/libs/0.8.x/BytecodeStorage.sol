@@ -15,15 +15,17 @@ library BytecodeStorage {
     //---------------------------------------------------------------------------------------------------------------//
     // Offset Amount | Offset Aggregate | Description                                                                //
     //---------------------------------------------------------------------------------------------------------------//
-    // 1             | 1                | set first byte to 0x00 (STOP) to ensure created contracts cannot be called //
-    // 20            | 20               | reserve 20 bytes for deploying-contract's address                          //
+    // TODO: gated-cleanup-logic is incomplete                                                                       //
+    // 11            | 11               | allow contract to be `selfdestruct`-able via gated-cleanup-logic           //
+    // 1             | 12               | set first byte to 0x00 (STOP) to ensure created contracts cannot be called //
+    // 20            | 32               | reserve 20 bytes for storing deploying-contract's address                  //
     //---------------------------------------------------------------------------------------------------------------//
-    uint256 internal constant DATA_OFFSET = 21;
+    uint256 internal constant DATA_OFFSET = 32;
 
     /**
      * @notice Write a string to contract bytecode
      * @param _data string to be written to contract
-     * @return address_ address of deployed contract with bytecode containing concat(0x00, data)
+     * @return address_ address of deployed contract with bytecode containing concat(gated-cleanup-logic, 0x00, data)
      */
     function writeToBytecode(string memory _data)
         internal
@@ -46,8 +48,23 @@ library BytecodeStorage {
             // 0xf3    |  0xf3               | RETURN       |                                                                //
             //---------------------------------------------------------------------------------------------------------------//
             hex"60_0B_59_81_38_03_80_92_59_39_F3", // returns all code in the contract except for the first 11 (0B in hex) bytes
+            //---------------------------------------------------------------------------------------------------------------//
+            // Opcode  | Opcode + Arguments  | Description  | Stack View                                                     //
+            //---------------------------------------------------------------------------------------------------------------//
+            // 0x60    |  0x6000             | PUSH1 0      | destinationOffset                                              //
+            // 0x60    |  0x600B             | PUSH1 11 (*) | destinationOffset contractOffset                               //
+            // 0x60    |  0x6014             | PUSH1 20     | destinationOffset contractOffset 20                            //
+            // 0x39    |  0x39               | CODECOPY     |                                                                //
+            // 0x60    |  0x6000             | PUSH1 0      | destinationOffset                                              //
+            // 0x51    |  0x51               | MLOAD        | creatorAddress                                                 //
+            // 0xFF    |  0xFF               | SELFDESTRUCT |                                                                //
+            //---------------------------------------------------------------------------------------------------------------//
+            // (*) Note: this value must be adjusted if selfdestruct purge logic is adjusted, to refer to the correct start  //
+            //           offset for where the `msg.sender` address was stored in deplyed bytecode.                           //
+            //---------------------------------------------------------------------------------------------------------------//
+            hex"60_00_60_0B_60_14_39_60_00_51_FF", // allow contract to be `selfdestruct`-able for cleanup purposes
+            msg.sender, // store the deploying-contract's address (to be used to gate and call `selfdestruct`)
             hex"00", // prefix bytecode with 0x00 to ensure contract cannot be called
-            msg.sender, // store the deploying-contract's address (to be used to gate `selfdestruct`)
             _data
         );
 
@@ -63,7 +80,7 @@ library BytecodeStorage {
 
     /**
      * @notice Read a string from contract bytecode
-     * @param _address address of deployed contract with bytecode containing concat(0x00, data)
+     * @param _address address of deployed contract with bytecode containing concat(gated-cleanup-logic, 0x00, data)
      * @return data string read from contract bytecode
      */
     function readFromBytecode(address _address)
@@ -112,5 +129,15 @@ library BytecodeStorage {
         assembly {
             size := extcodesize(_address)
         }
+    }
+
+    /**
+     * @notice Purge contract bytecode for cleanup purposes
+     * @param _address address of deployed contract with bytecode containing concat(gated-cleanup-logic, 0x00, data)
+     */
+    function purgeBytecode(address _address) internal {
+        // deployed bytecode (above) handles all logic for purging state, so no
+        // call data is expected to be passed along to purge
+        _address.call("");
     }
 }

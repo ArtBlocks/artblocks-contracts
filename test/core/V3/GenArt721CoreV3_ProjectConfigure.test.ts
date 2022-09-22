@@ -754,6 +754,40 @@ describe("GenArt721CoreV3 Project Configure", async function () {
       expect(script).to.equal(SQUIGGLE_SCRIPT);
     });
 
+    it("uploads chromie squiggle script, and then purges it", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .addProjectScript(this.projectZero, SQUIGGLE_SCRIPT);
+      const script = await this.genArt721Core.projectScriptByIndex(
+        this.projectZero,
+        0
+      );
+      expect(script).to.equal(SQUIGGLE_SCRIPT);
+
+      const scriptAddress =
+        await this.genArt721Core.projectScriptBytecodeAddressByIndex(
+          this.projectZero,
+          0
+        );
+
+      const scriptByteCode = await ethers.provider.getCode(scriptAddress);
+      expect(scriptByteCode).to.not.equal("0x");
+
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .removeProjectLastScript(this.projectZero);
+      const removedScript = await this.genArt721Core.projectScriptByIndex(
+        this.projectZero,
+        0
+      );
+      expect(removedScript).to.equal("");
+
+      const removedScriptByteCode = await ethers.provider.getCode(
+        scriptAddress
+      );
+      expect(removedScriptByteCode).to.equal("0x");
+    });
+
     it("uploads and recalls different script", async function () {
       await this.genArt721Core
         .connect(this.accounts.artist)
