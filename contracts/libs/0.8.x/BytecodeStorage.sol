@@ -16,7 +16,8 @@ pragma solidity ^0.8.0;
  *      - uses the `string` data type for input/output on reads, rather than speaking in bytes directly
  *      - exposes "delete" functionality, allowing no-longer-used storage to be purged from chain state
  *      - stores the "writer" address (library user) in the deployed contract bytes, which is useful for both:
-          a) providing necessary information for safe deletion; and b) allowing this to be introspected on-chain
+ *         a) providing necessary information for safe deletion; and
+ *         b) allowing this to be introspected on-chain
  *      Also, given that much of this library is written in assembly, this library makes use of a slightly
  *      different convention (when compared to the rest of the Art Blocks smart contract repo) around
  *      pre-defining return values in order to simplify need to directly memory manage these return values.
