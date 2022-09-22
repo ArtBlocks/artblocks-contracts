@@ -237,5 +237,25 @@ describe("GenArt721CoreV2_PBAB_FLEX_Integration", async function () {
         .projectExternalAssetDependencyCount(0);
       expect(externalAssetDependencyCountB).to.equal(1);
     });
+
+    it("can update contract preferred IPFS & Arweave gateways", async function () {
+      // setting IPFS gateway
+      await expect(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateIPFSGateway("https://ipfs.io/ipfs/")
+      )
+        .to.emit(this.genArt721Core, "GatewayUpdated")
+        .withArgs(0, "https://ipfs.io/ipfs/");
+
+      // setting Arweave gateway
+      await expect(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateArweaveGateway("https://arweave.net/")
+      )
+        .to.emit(this.genArt721Core, "GatewayUpdated")
+        .withArgs(1, "https://arweave.net/");
+    });
   });
 });
