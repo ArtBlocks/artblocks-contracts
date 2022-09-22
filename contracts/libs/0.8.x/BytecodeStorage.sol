@@ -5,23 +5,35 @@ pragma solidity ^0.8.0;
 
 /**
  * @title Art Blocks Script Storage Library
+ * @notice Utilize contract bytecode as persistant storage for large chunks of script string data.
+ *
  * @author Art Blocks Inc.
  * @author Modified from 0xSequence (https://github.com/0xsequence/sstore2/blob/master/contracts/SSTORE2.sol)
  * @author Modified from Solmate (https://github.com/transmissions11/solmate/blob/main/src/utils/SSTORE2.sol)
- * @notice Utilize contract bytecode as persistant storage for large chunks of script string data.
- * @dev Given that much of this library is written in assembly, this library makes use of a slightly different
- *      convention (when compared to the rest of the Art Blocks smart contract repo) around pre-defining
- *      return values in order to simplify need to directly memory manage these return values.
+ *
+ * @dev Compared to the above two rerferenced libraries, this contracts-as-storage implementation makes a few
+ *      notably different design decisions:
+ *      - uses the `string` data type for input/output on reads, rather than speaking in bytes directly
+ *      - exposes "delete" functionality, allowing no-longer-used storage to be purged from chain state
+ *      - stores the "writer" address (library user) in the deployed contract bytes, which is useful for both:
+          a) providing necessary information for safe deletion; and b) allowing this to be introspected on-chain
+ *      Also, given that much of this library is written in assembly, this library makes use of a slightly
+ *      different convention (when compared to the rest of the Art Blocks smart contract repo) around
+ *      pre-defining return values in order to simplify need to directly memory manage these return values.
  */
 library BytecodeStorage {
-    /// always set first byte to 0x00 (STOP) to ensure created contracts cannot be called
     //---------------------------------------------------------------------------------------------------------------//
     // Offset Amount | Offset Aggregate | Description                                                                //
     //---------------------------------------------------------------------------------------------------------------//
     // 27            | 27               | allow contract to be `selfdestruct`-able via gated-cleanup-logic           //
     // 20            | 47               | reserve 20 bytes for storing deploying-contract's address                  //
     //---------------------------------------------------------------------------------------------------------------//
+    // define the offset for where the "logic bytes" end and the "data bytes" begin
     uint256 internal constant DATA_OFFSET = 47;
+
+    /*//////////////////////////////////////////////////////////////
+                           WRITE LOGIC
+    //////////////////////////////////////////////////////////////*/
 
     /**
      * @notice Write a string to contract bytecode
@@ -116,6 +128,10 @@ library BytecodeStorage {
         require(address_ != address(0), "ContractAsStorage: Write Error");
     }
 
+    /*//////////////////////////////////////////////////////////////
+                               READ LOGIC
+    //////////////////////////////////////////////////////////////*/
+
     /**
      * @notice Read a string from contract bytecode
      * @param _address address of deployed contract with bytecode containing concat(gated-cleanup-logic, data)
@@ -158,16 +174,9 @@ library BytecodeStorage {
         }
     }
 
-    /**
-        @notice Returns the size of the code at address `_address`
-        @param _address address that may or may not contain code
-        @return size size of code at `_address`
-    */
-    function _codeSizeAt(address _address) private view returns (uint256 size) {
-        assembly {
-            size := extcodesize(_address)
-        }
-    }
+    /*//////////////////////////////////////////////////////////////
+                              DELETE LOGIC
+    //////////////////////////////////////////////////////////////*/
 
     /**
      * @notice Purge contract bytecode for cleanup purposes
@@ -179,5 +188,20 @@ library BytecodeStorage {
         // deployed bytecode (above) handles all logic for purging state, so no
         // call data is expected to be passed along to perform data purge
         _address.call("");
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                          INTERNAL HELPER LOGIC
+    //////////////////////////////////////////////////////////////*/
+
+    /**
+        @notice Returns the size of the code at address `_address`
+        @param _address address that may or may not contain code
+        @return size size of code at `_address`
+    */
+    function _codeSizeAt(address _address) private view returns (uint256 size) {
+        assembly {
+            size := extcodesize(_address)
+        }
     }
 }
