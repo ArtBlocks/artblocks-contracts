@@ -78,6 +78,14 @@ describe("GenArt721CoreV3 Project Configure", async function () {
       .updatePricePerTokenInWei(this.projectZero, 0);
   });
 
+  describe("imported scripts are non-empty", function () {
+    it("ensure diffs are captured if project scripts are deleted", async function () {
+      expect(SQUIGGLE_SCRIPT.length).to.be.gt(0);
+      expect(SKULPTUUR_SCRIPT_APPROX.length).to.be.gt(0);
+      expect(CONTRACT_SIZE_LIMIT_SCRIPT.length).to.be.gt(0);
+    });
+  });
+
   describe("updateProjectMaxInvocations", function () {
     it("only allows artist to update", async function () {
       // deployer cannot update
