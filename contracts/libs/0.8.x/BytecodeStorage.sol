@@ -23,7 +23,7 @@ library BytecodeStorage {
     /**
      * @notice Write a string to contract bytecode
      * @param _data string to be written to contract
-     * @return address_ address of deployed contract with bytecode containing concat(gated-cleanup-logic, 0x00, data)
+     * @return address_ address of deployed contract with bytecode containing concat(gated-cleanup-logic, data)
      */
     function writeToBytecode(string memory _data)
         internal
@@ -50,7 +50,7 @@ library BytecodeStorage {
             //---------------------------------------------------------------------------------------------------------------//
             // Opcode  | Opcode + Arguments  | Description  | Stack View                                                     //
             //---------------------------------------------------------------------------------------------------------------//
-            // (1) conditional logic for determing purge-gate
+            // (1) conditional logic for determing purge-gate (only the bytecode contract deployer can `selfdestruct`)
             //---------------------------------------------------------------------------------------------------------------//
             // 0x60    |  0x60_14            | PUSH1 20     | 20                                                             //
             // 0x60    |  0x60_1B            | PUSH1 27 (*) | contractOffset 20                                              //
@@ -65,11 +65,11 @@ library BytecodeStorage {
             // 0x51    |  0x51               | MLOAD        | msg.sender byteDeployerAddress                                 //
             // 0x14    |  0x14               | EQ           | (msg.sender == byteDeployerAddress)                            //
             //---------------------------------------------------------------------------------------------------------------//
-            // (2) load up destination jump address for `selfdestruct` logic
+            // (2) load up the destination jump address for `selfdestruct` logic
             //---------------------------------------------------------------------------------------------------------------//
             // 0x60    |  0x60_16            | PUSH1 22 (^) | jumpDestination (msg.sender == byteDeployerAddress)            //
             //---------------------------------------------------------------------------------------------------------------//
-            // (3) jump if conditional logic above succeeds, otherwise revert with invalid op-code
+            // (3) jump if the conditional logic above succeeds, otherwise revert with `invalid` op-code
             //---------------------------------------------------------------------------------------------------------------//
             // 0x57    |  0x57               | JUMPI        |                                                                //
             // 0xFE    |  0xFE               | INVALID      |                                                                //
@@ -88,18 +88,18 @@ library BytecodeStorage {
             //           entry point jump desination.                                                                        //
             //---------------------------------------------------------------------------------------------------------------//
             // allow contract to be `selfdestruct`-able for cleanup purposes, gated to deploying-contract's address
-            // (1) conditional logic for determing purge-gate
+            // (1) conditional logic for determing purge-gate (only the bytecode contract deployer can `selfdestruct`)
             hex"60_14_60_1B_60_0C_39_33_60_20_52_60_00_51_60_20_51_14",
-            // (2) load up destination jump address for `selfdestruct` logic
+            // (2) load up the destination jump address for `selfdestruct` logic
             hex"60_16",
-            // (3) jump if conditional logic above succeeds, otherwise revert with invalid op-code
+            // (3) jump if the conditional logic above succeeds, otherwise revert with `invalid` op-code
             hex"57_FE",
             // (4) perform actual purging
             hex"5B_60_00_51_FF",
             // store the deploying-contract's address (to be used to gate and call `selfdestruct`)
-            // note: abi.encodePacked will not pad the address, making the address 20 bytes
+            // note: abi.encodePacked will not `0`-pad the address to 32 bytes, making the address 20 bytes instead
             address(this),
-            // data comes last
+            // uploaded data (stored as bytecode) comes last
             _data
         );
 
@@ -115,7 +115,7 @@ library BytecodeStorage {
 
     /**
      * @notice Read a string from contract bytecode
-     * @param _address address of deployed contract with bytecode containing concat(gated-cleanup-logic, 0x00, data)
+     * @param _address address of deployed contract with bytecode containing concat(gated-cleanup-logic, data)
      * @return data string read from contract bytecode
      */
     function readFromBytecode(address _address)
@@ -168,11 +168,13 @@ library BytecodeStorage {
 
     /**
      * @notice Purge contract bytecode for cleanup purposes
-     * @param _address address of deployed contract with bytecode containing concat(gated-cleanup-logic, 0x00, data)
+     * @param _address address of deployed contract with bytecode containing concat(gated-cleanup-logic, data)
+     * @dev This method is only callable by the address of the contract that originally deployed the bytecode
+     *      being purged. If this method is called by any other address, it will revert with the `INVALID` op-code.
      */
     function purgeBytecode(address _address) internal {
         // deployed bytecode (above) handles all logic for purging state, so no
-        // call data is expected to be passed along to purge
+        // call data is expected to be passed along to perform data purge
         _address.call("");
     }
 }
