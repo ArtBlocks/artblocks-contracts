@@ -31,6 +31,8 @@ library BytecodeStorage {
     //---------------------------------------------------------------------------------------------------------------//
     // define the offset for where the "logic bytes" end, and the "data bytes" begin
     uint256 internal constant DATA_OFFSET = 47;
+    // define the offset for where the purely-logic aspects of the the "logic bytes" end
+    uint256 internal constant DATA_OFFSET_MINUS_ADDRESS = 27;
 
     /*//////////////////////////////////////////////////////////////
                            WRITE LOGIC
@@ -172,6 +174,40 @@ library BytecodeStorage {
             mstore(data, size)
             // copy code to memory, excluding the gated-cleanup-logic
             extcodecopy(_address, add(data, 0x20), DATA_OFFSET, size)
+        }
+    }
+
+    /**
+     * @notice Get address for deployer for given contract bytecode
+     * @param _address address of deployed contract with bytecode containing concat(gated-cleanup-logic, data)
+     * @return writerAddress address read from contract bytecode
+     */
+    function getWriterAddressForBytecode(address _address)
+        internal
+        view
+        returns (address writerAddress)
+    {
+        // get the size of the data
+        uint256 codeSize = _codeSizeAt(_address);
+        // handle case where address contains code < DATA_OFFSET
+        // note: the first check here also captures the case where codeSize == 0
+        //       implicitly, but we add the second check of (codeSize == 0)
+        //       as a fall-through that will never execute unless `DATA_OFFSET`
+        //       is set to 0 at some point.
+        if ((codeSize < DATA_OFFSET) || (codeSize == 0)) {
+            revert("ContractAsStorage: Read Error");
+        }
+
+        assembly {
+            // allocate free memory
+            writerAddress := mload(0x40)
+            // copy the 20-byte address of the data contract writer to memory
+            extcodecopy(
+                _address,
+                add(writerAddress, 0x20),
+                DATA_OFFSET_MINUS_ADDRESS,
+                20
+            )
         }
     }
 
