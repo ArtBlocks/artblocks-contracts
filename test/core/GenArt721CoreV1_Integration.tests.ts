@@ -114,14 +114,14 @@ describe("GenArt721CoreV1 Integration", async function () {
       const deployerBalance = await this.accounts.deployer.getBalance();
 
       const additionalPayeePercentage = 10;
-      this.genArt721Core
+      await this.genArt721Core
         .connect(this.accounts.artist)
         .updateProjectAdditionalPayeeInfo(
           this.projectZero,
           this.accounts.additional.address,
           additionalPayeePercentage
         );
-      this.genArt721Core
+      await this.genArt721Core
         .connect(this.accounts.artist)
         .toggleProjectIsPaused(this.projectZero);
 
