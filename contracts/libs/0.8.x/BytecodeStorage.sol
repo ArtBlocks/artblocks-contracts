@@ -29,7 +29,7 @@ library BytecodeStorage {
     // 27            | 27               | allow contract to be `selfdestruct`-able via gated-cleanup-logic           //
     // 20            | 47               | reserve 20 bytes for storing deploying-contract's address                  //
     //---------------------------------------------------------------------------------------------------------------//
-    // define the offset for where the "logic bytes" end and the "data bytes" begin
+    // define the offset for where the "logic bytes" end, and the "data bytes" begin
     uint256 internal constant DATA_OFFSET = 47;
 
     /*//////////////////////////////////////////////////////////////
@@ -170,7 +170,7 @@ library BytecodeStorage {
             mstore(0x40, add(data, and(add(add(size, 0x20), 0x1f), not(0x1f))))
             // store length of data in first 32 bytes
             mstore(data, size)
-            // copy code to memory, excluding the first byte of contract code (0x00)
+            // copy code to memory, excluding the gated-cleanup-logic
             extcodecopy(_address, add(data, 0x20), DATA_OFFSET, size)
         }
     }
