@@ -128,12 +128,12 @@ library BytecodeStorage {
     {
         // get the size of the data
         uint256 codeSize = _codeSizeAt(_address);
-        // handle case where address does not contain code
-        if (codeSize == 0) {
-            return "";
-        }
         // handle case where address contains code < DATA_OFFSET
-        if (codeSize < DATA_OFFSET) {
+        // note: the first check here also captures the case where codeSize == 0
+        //       implicitly, but we add the second check of (codeSize == 0)
+        //       as a fall-through that will never execute unless `DATA_OFFSET`
+        //       is set to 0 at some point.
+        if ((codeSize < DATA_OFFSET) || (codeSize == 0)) {
             revert("ContractAsStorage: Read Error");
         }
         // handle case where address contains code >= DATA_OFFSET

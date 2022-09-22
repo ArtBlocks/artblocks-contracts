@@ -784,11 +784,10 @@ describe("GenArt721CoreV3 Project Configure", async function () {
       await this.genArt721Core
         .connect(this.accounts.artist)
         .removeProjectLastScript(this.projectZero);
-      const removedScript = await this.genArt721Core.projectScriptByIndex(
-        this.projectZero,
-        0
+      await expectRevert(
+        this.genArt721Core.projectScriptByIndex(this.projectZero, 0),
+        "ContractAsStorage: Read Error"
       );
-      expect(removedScript).to.equal("");
 
       const removedScriptByteCode = await ethers.provider.getCode(
         scriptAddress
