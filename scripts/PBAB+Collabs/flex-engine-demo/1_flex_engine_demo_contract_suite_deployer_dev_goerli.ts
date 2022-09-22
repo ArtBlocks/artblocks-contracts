@@ -24,8 +24,8 @@ const EXTRA_DELAY_BETWEEN_TX = 10000; // ms
 //////////////////////////////////////////////////////////////////////////////
 // FLEX contract file
 import { GenArt721CoreV2ENGINEFLEX__factory } from "../../contracts/factories/GenArt721CoreV2ENGINEFLEX__factory";
-const tokenName = "Art Blocks Flex Engine Demo (Goerli)";
-const tokenTicker = "ABFLEX_DEMO_STAGE_GOERLI";
+const tokenName = "Art Blocks Flex Engine Development Demo";
+const tokenTicker = "ABFLEX_DEMO_DEV_GOERLI";
 const transferAddress = "0x2246475beddf9333b6a6D9217194576E7617Afd1";
 const artblocksAddress = "0x2246475beddf9333b6a6D9217194576E7617Afd1";
 const randomizerAddress = "0xEC5DaE4b11213290B2dBe5295093f75920bD2982";
@@ -187,6 +187,7 @@ async function main() {
 
   // alert as canonical minter filter
   tx = await minterFilter.connect(deployer).alertAsCanonicalMinterFilter();
+  await tx.wait();
   console.log(`Alerted MinterFilter ${minterFilter.address} on minter filter.`);
   delay(EXTRA_DELAY_BETWEEN_TX);
 
