@@ -15,12 +15,11 @@ library BytecodeStorage {
     //---------------------------------------------------------------------------------------------------------------//
     // Offset Amount | Offset Aggregate | Description                                                                //
     //---------------------------------------------------------------------------------------------------------------//
-    // TODO: gated-cleanup-logic is incomplete                                                                       //
-    // 11            | 11               | allow contract to be `selfdestruct`-able via gated-cleanup-logic           //
-    // 1             | 12               | set first byte to 0x00 (STOP) to ensure created contracts cannot be called //
-    // 20            | 32               | reserve 20 bytes for storing deploying-contract's address                  //
+    // 28            | 28               | allow contract to be `selfdestruct`-able via gated-cleanup-logic           //
+    // 1             | 29               | set first byte to 0x00 (STOP) to ensure created contracts cannot be called //
+    // 20            | 49               | reserve 20 bytes for storing deploying-contract's address                  //
     //---------------------------------------------------------------------------------------------------------------//
-    uint256 internal constant DATA_OFFSET = 32;
+    uint256 internal constant DATA_OFFSET = 49;
 
     /**
      * @notice Write a string to contract bytecode
@@ -36,7 +35,7 @@ library BytecodeStorage {
             //---------------------------------------------------------------------------------------------------------------//
             // Opcode  | Opcode + Arguments  | Description  | Stack View                                                     //
             //---------------------------------------------------------------------------------------------------------------//
-            // 0x60    |  0x600B             | PUSH1 11     | codeOffset                                                     //
+            // 0x60    |  0x60_0B            | PUSH1 11     | codeOffset                                                     //
             // 0x59    |  0x59               | MSIZE        | 0 codeOffset                                                   //
             // 0x81    |  0x81               | DUP2         | codeOffset 0 codeOffset                                        //
             // 0x38    |  0x38               | CODESIZE     | codeSize codeOffset 0 codeOffset                               //
@@ -47,24 +46,62 @@ library BytecodeStorage {
             // 0x39    |  0x39               | CODECOPY     | 0 (codeSize - codeOffset)                                      //
             // 0xf3    |  0xf3               | RETURN       |                                                                //
             //---------------------------------------------------------------------------------------------------------------//
-            hex"60_0B_59_81_38_03_80_92_59_39_F3", // returns all code in the contract except for the first 11 (0B in hex) bytes
+            // returns all code in the contract except for the first 11 (0B in hex) bytes
+            hex"60_0B_59_81_38_03_80_92_59_39_F3",
             //---------------------------------------------------------------------------------------------------------------//
             // Opcode  | Opcode + Arguments  | Description  | Stack View                                                     //
             //---------------------------------------------------------------------------------------------------------------//
-            // 0x60    |  0x6000             | PUSH1 0      | destinationOffset                                              //
-            // 0x60    |  0x600B             | PUSH1 11 (*) | destinationOffset contractOffset                               //
-            // 0x60    |  0x6014             | PUSH1 20     | destinationOffset contractOffset 20                            //
+            // (1) conditional logic for determing purge-gate
+            //---------------------------------------------------------------------------------------------------------------//
+            // 0x60    |  0x60_00            | PUSH1 0      | 0                                                              //
+            // 0x60    |  0x60_1C            | PUSH1 28 (*) | contractOffset 0                                               //
+            // 0x60    |  0x60_14            | PUSH1 20     | 20 contractOffset 0                                            //
             // 0x39    |  0x39               | CODECOPY     |                                                                //
-            // 0x60    |  0x6000             | PUSH1 0      | destinationOffset                                              //
-            // 0x51    |  0x51               | MLOAD        | creatorAddress                                                 //
+            // 0x60    |  0x60_00            | PUSH1 0      | 0                                                              //
+            // 0x51    |  0x51               | MLOAD        | byteDeployerAddress                                            //
+            // 0x33    |  0x33               | CALLER       | msg.sender byteDeployerAddress                                 //
+            // 0x14    |  0x14               | EQ           | (byteDeployerAddress == msg.sender)                            //
+            //---------------------------------------------------------------------------------------------------------------//
+            // (2) load up destination jump address for `selfdestruct` logic
+            //---------------------------------------------------------------------------------------------------------------//
+            // 0x60    |  0x60_11            | PUSH1 17 (^) | jumpDestination (byteDeployerAddress == msg.sender)            //
+            //---------------------------------------------------------------------------------------------------------------//
+            // (3) jump if conditional logic above succeeds, otherwise revert with invalid op-code
+            //---------------------------------------------------------------------------------------------------------------//
+            // 0x57    |  0x57               | JUMPI        |                                                                //
+            // 0xFE    |  0xFE               | INVALID      |                                                                //
+            //---------------------------------------------------------------------------------------------------------------//
+            // (4) perform actual purging
+            //---------------------------------------------------------------------------------------------------------------//
+            // 0x58    |  0x58               | JUMPDEST     |                                                                //
+            // 0x60    |  0x60_00            | PUSH1 0      | 0                                                              //
+            // 0x60    |  0x60_1C            | PUSH1 28 (*) | contractOffset 0                                               //
+            // 0x60    |  0x60_14            | PUSH1 20     | 20 contractOffset 0                                            //
+            // 0x39    |  0x39               | CODECOPY     |                                                                //
+            // 0x60    |  0x60_00            | PUSH1 0      | 0                                                              //
+            // 0x51    |  0x51               | MLOAD        | byteDeployerAddress                                            //
             // 0xFF    |  0xFF               | SELFDESTRUCT |                                                                //
             //---------------------------------------------------------------------------------------------------------------//
             // (*) Note: this value must be adjusted if selfdestruct purge logic is adjusted, to refer to the correct start  //
             //           offset for where the `msg.sender` address was stored in deplyed bytecode.                           //
+            //                                                                                                               //
+            // (^) Note: this value must be adjusted if selfdestruct purge logic is adjusted, to refer to the purge logic    //
+            //           entry point jump desination.                                                                        //
             //---------------------------------------------------------------------------------------------------------------//
-            hex"60_00_60_0B_60_14_39_60_00_51_FF", // allow contract to be `selfdestruct`-able for cleanup purposes
-            msg.sender, // store the deploying-contract's address (to be used to gate and call `selfdestruct`)
-            hex"00", // prefix bytecode with 0x00 to ensure contract cannot be called
+            // allow contract to be `selfdestruct`-able for cleanup purposes, gated to deploying-contract's address
+            // (1) conditional logic for determing purge-gate
+            hex"60_00_60_1C_60_14_39_60_00_51_33_14",
+            // (2) load up destination jump address for `selfdestruct` logic
+            hex"60_11",
+            // (3) jump if conditional logic above succeeds, otherwise revert with invalid op-code
+            hex"57_FE",
+            // (4) perform actual purging
+            hex"58_60_00_60_1C_60_14_39_60_00_51_FF",
+            // store the deploying-contract's address (to be used to gate and call `selfdestruct`)
+            msg.sender,
+            // prefix bytecode with 0x00 to ensure contract data cannot be called
+            hex"00",
+            // data comes last
             _data
         );
 
