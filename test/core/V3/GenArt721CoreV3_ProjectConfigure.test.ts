@@ -930,6 +930,38 @@ describe("GenArt721CoreV3 Project Configure", async function () {
         "scriptId out of range"
       );
     });
+
+    it("bytecode contracts deployed and purged as expected in updates", async function () {
+      const originalScriptAddress =
+        await this.genArt721Core.projectScriptBytecodeAddressByIndex(
+          this.projectZero,
+          0
+        );
+
+      const scriptByteCode = await ethers.provider.getCode(
+        originalScriptAddress
+      );
+      expect(scriptByteCode).to.not.equal("0x");
+
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectScript(this.projectZero, 0, "// script 0.1");
+
+      const oldAddressByteCode = await ethers.provider.getCode(
+        originalScriptAddress
+      );
+      expect(oldAddressByteCode).to.equal("0x");
+
+      const newScriptAddress =
+        await this.genArt721Core.projectScriptBytecodeAddressByIndex(
+          this.projectZero,
+          0
+        );
+      const newScriptByteCode = await ethers.provider.getCode(newScriptAddress);
+      expect(newScriptByteCode).to.not.equal("0x");
+      expect(newScriptByteCode).to.not.equal(scriptByteCode);
+      expect(newScriptByteCode).to.not.equal(oldAddressByteCode);
+    });
   });
 
   describe("removeProjectLastScript", function () {
