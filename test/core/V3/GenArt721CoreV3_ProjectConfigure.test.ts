@@ -788,6 +788,43 @@ describe("GenArt721CoreV3 Project Configure", async function () {
       expect(removedScriptByteCode).to.equal("0x");
     });
 
+    it("uploads chromie squiggle script and attempts to purge from non-allowed address", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .addProjectScript(this.projectZero, SQUIGGLE_SCRIPT);
+      const script = await this.genArt721Core.projectScriptByIndex(
+        this.projectZero,
+        0
+      );
+      expect(script).to.equal(SQUIGGLE_SCRIPT);
+
+      const scriptAddress =
+        await this.genArt721Core.projectScriptBytecodeAddressByIndex(
+          this.projectZero,
+          0
+        );
+
+      const scriptByteCode = await ethers.provider.getCode(scriptAddress);
+      expect(scriptByteCode).to.not.equal("0x");
+
+      // Any random user should **not** be able to purge bytecode storage.
+      await expectRevert.unspecified(
+        this.accounts.user.call({
+          to: scriptAddress,
+        })
+      );
+      // Nor should even the core contract deployer be able to do so directly.
+      await expectRevert.unspecified(
+        this.accounts.deployer.call({
+          to: scriptAddress,
+        })
+      );
+
+      const sameScriptByteCode = await ethers.provider.getCode(scriptAddress);
+      expect(sameScriptByteCode).to.equal(scriptByteCode);
+      expect(sameScriptByteCode).to.not.equal("0x");
+    });
+
     it("uploads and recalls different script", async function () {
       await this.genArt721Core
         .connect(this.accounts.artist)
