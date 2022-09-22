@@ -9,6 +9,9 @@ pragma solidity ^0.8.0;
  * @author Modified from 0xSequence (https://github.com/0xsequence/sstore2/blob/master/contracts/SSTORE2.sol)
  * @author Modified from Solmate (https://github.com/transmissions11/solmate/blob/main/src/utils/SSTORE2.sol)
  * @notice Utilize contract bytecode as persistant storage for large chunks of script string data.
+ * @dev Given that much of this library is written in assembly, this library makes use of a slightly different
+ *      convention (when compared to the rest of the Art Blocks smart contract repo) around pre-defining
+ *      return values in order to simplify need to directly memory manage these return values.
  */
 library BytecodeStorage {
     /// always set first byte to 0x00 (STOP) to ensure created contracts cannot be called
