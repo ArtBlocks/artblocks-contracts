@@ -877,7 +877,10 @@ contract GenArt721CoreV3 is
     {
         Project storage project = projects[_projectId];
         require(_scriptId < project.scriptCount, "scriptId out of range");
-        // store script in contract bytecode
+        // purge old contract bytecode contract from the blockchain state
+        project.scriptBytecodeAddresses[_scriptId].purgeBytecode();
+        // store script in contract bytecode, replacing reference address from
+        // the contract that no longer exists with the newly created one
         project.scriptBytecodeAddresses[_scriptId] = _script.writeToBytecode();
         emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
     }
@@ -892,6 +895,9 @@ contract GenArt721CoreV3 is
     {
         Project storage project = projects[_projectId];
         require(project.scriptCount > 0, "there are no scripts to remove");
+        // purge old contract bytecode contract from the blockchain state
+        project.scriptBytecodeAddresses[project.scriptCount - 1].purgeBytecode();
+        // delete reference to contract address that no longer exists
         delete project.scriptBytecodeAddresses[project.scriptCount - 1];
         project.scriptCount = project.scriptCount - 1;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
