@@ -206,9 +206,9 @@ library BytecodeStorage {
     //////////////////////////////////////////////////////////////*/
 
     /**
-        @notice Returns the size of the code at address `_address`
-        @param _address address that may or may not contain code
-        @return size size of code at `_address`
+        @notice Returns the size of the bytecode at address `_address`
+        @param _address address that may or may not contain bytecode
+        @return size size of the bytecode code at `_address`
     */
     function _codeSizeAt(address _address) private view returns (uint256 size) {
         assembly {
