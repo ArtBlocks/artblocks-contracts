@@ -198,7 +198,13 @@ library BytecodeStorage {
     function purgeBytecode(address _address) internal {
         // deployed bytecode (above) handles all logic for purging state, so no
         // call data is expected to be passed along to perform data purge
-        _address.call("");
+        (
+            bool success, /*` data` not needed */
+
+        ) = _address.call("");
+        if (!success) {
+            revert();
+        }
     }
 
     /*//////////////////////////////////////////////////////////////
