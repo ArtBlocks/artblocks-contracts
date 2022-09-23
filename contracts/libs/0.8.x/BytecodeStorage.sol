@@ -104,6 +104,7 @@ library BytecodeStorage {
             //           entry point jump desination.                                                                        //
             //---------------------------------------------------------------------------------------------------------------//
             // allow contract to be `selfdestruct`-able for cleanup purposes, gated to deploying-contract's address
+            //
             // (1) conditional logic for determing purge-gate (only the bytecode contract deployer can `selfdestruct`)
             hex"60_14_60_1B_60_0C_39_33_60_20_52_60_00_51_60_20_51_14",
             // (2) load up the destination jump address for `selfdestruct` logic
@@ -113,7 +114,16 @@ library BytecodeStorage {
             // (4) perform actual purging
             hex"5B_60_00_51_FF",
             // store the deploying-contract's address (to be used to gate and call `selfdestruct`)
-            // note: abi.encodePacked will not `0`-pad the address to 32 bytes, making the address 20 bytes instead
+            //
+            // note: it is important that this address is the executing contract's address
+            //      (the address that represents the client-application smart contract of this library)
+            //      which means that it is the responsibility of the client-application smart contract
+            //      to determine how deletes are gated (or if they are exposed at all) as it is only
+            //      this contract that will be able to call `purgeBytecode` as the `CALLER` that is
+            //      checked above (op-code 0x33).
+            //
+            // also note: abi.encodePacked will not `0`-pad the address to 32 bytes,
+            //            making the address 20 bytes instead
             address(this),
             // uploaded data (stored as bytecode) comes last
             _data
