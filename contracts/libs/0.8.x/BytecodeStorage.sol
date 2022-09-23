@@ -32,7 +32,7 @@ library BytecodeStorage {
     // define the offset for where the "logic bytes" end, and the "data bytes" begin
     uint256 internal constant DATA_OFFSET = 47;
     // define the offset for where the purely-logic aspects of the the "logic bytes" end
-    uint256 internal constant DATA_OFFSET_MINUS_ADDRESS = 27;
+    uint256 internal constant DEPLOYER_ADDRESS_OFFSET = 27;
 
     /*//////////////////////////////////////////////////////////////
                            WRITE LOGIC
@@ -215,7 +215,7 @@ library BytecodeStorage {
             extcodecopy(
                 _address,
                 add(writerAddress, 12),
-                DATA_OFFSET_MINUS_ADDRESS,
+                DEPLOYER_ADDRESS_OFFSET,
                 20
             )
         }
