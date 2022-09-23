@@ -790,7 +790,7 @@ describe("GenArt721CoreV3 Project Configure", async function () {
         this.projectZero,
         0
       );
-      expect(emptyScript).to.not.equal("");
+      expect(emptyScript).to.equal("");
 
       const removedScriptByteCode = await ethers.provider.getCode(
         scriptAddress
