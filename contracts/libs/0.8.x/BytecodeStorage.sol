@@ -214,7 +214,7 @@ library BytecodeStorage {
             // copy the 20-byte address of the data contract writer to memory
             extcodecopy(
                 _address,
-                add(writerAddress, 0x20),
+                add(writerAddress, 12),
                 DATA_OFFSET_MINUS_ADDRESS,
                 20
             )
