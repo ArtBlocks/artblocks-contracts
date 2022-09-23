@@ -1226,10 +1226,12 @@ contract GenArt721CoreV3 is
         view
         returns (string memory)
     {
-        return
-            projects[_projectId]
-                .scriptBytecodeAddresses[_index]
-                .readFromBytecode();
+        Project storage project = projects[_projectId];
+        // If trying to access an out-of-index script, return the empty string.
+        if (_index >= project.scriptCount) {
+            return "";
+        }
+        return project.scriptBytecodeAddresses[_index].readFromBytecode();
     }
 
     /**

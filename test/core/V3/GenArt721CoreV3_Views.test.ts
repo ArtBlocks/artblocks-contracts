@@ -1421,11 +1421,11 @@ describe("GenArt721CoreV3 Views", async function () {
   });
 
   describe("projectScriptByIndex", function () {
-    it("reverts on invalid reads", async function () {
-      await expectRevert(
-        this.genArt721Core.projectScriptByIndex(this.projectZero, 0),
-        "ContractAsStorage: Read Error"
-      );
+    it("returns empty string by default", async function () {
+      const emptyProjectScript = await this.genArt721Core
+        .connect(this.accounts.user)
+        .projectScriptByIndex(this.projectZero, 0);
+      expect(emptyProjectScript).to.be.equal("");
     });
 
     it("returns expected populated string", async function () {
