@@ -153,7 +153,7 @@ library BytecodeStorage {
         view
         returns (string memory data)
     {
-        // get the size of the data
+        // get the size of the bytecode
         uint256 codeSize = _codeSizeAt(_address);
         // handle case where address contains code < DATA_OFFSET
         // note: the first check here also captures the case where codeSize == 0
