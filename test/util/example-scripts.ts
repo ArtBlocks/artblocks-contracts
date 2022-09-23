@@ -216,3 +216,7 @@ Egestas purus viverra accumsan in nisl nisi scelerisque eu. In nulla posuere sol
 Commodo quis imperdiet massa tincidunt nunc pulvinar sapien. Ac auctor augue mauris augue. Fringilla est ullamcorper eget nulla. Nunc congue nisi vitae suscipit tellus mauris a diam maecenas. Amet facilisis magna etiam tempor orci eu lobortis elementum nibh. Congue quisque egestas diam in arcu cursus. Varius sit amet mattis vulputate. Elit eget gravida cum sociis natoque. In hac habitasse platea dictumst. In eu mi bibendum neque egestas congue quisque egestas. Vitae auctor eu augue ut lectus arcu bibendum at varius. Commodo odio aenean sed adipiscing diam donec adipiscing tristique risus.
 
 Commodo quis imperdiet massa tincidunt nunc pulvinar sapien. Ac auctor augue mauris augue. Fringilla est ullamcorper eget nulla.`;
+
+export const RANDOM_UTF_EIGHT_SCRIPT = `
+",<.>/?~𝘈0!@#$%^&*()-_=+[{]};:'Ɍ𝓢ȚЦ𝒱Ѡ𝓧Ƴ𝕵ꓗʟ𝙼ℕ০𝚸𝗤Հꓫ𝚈𝚭𝜶Ꮟçძ𝑒𝖿𝗀ḧ𝗂𝐣ҝɭḿ𝕟𝐨𝝔-_=+[{𝙱ƇᗞΣℱԍҤ١𝔍К𝓛𝓜ƝȎ𝚸𝑄Ṛ𝓢ṮṺƲᏔ.𝕢ṛ𝓼тú𝔳ẃ⤬𝝲𝗓1]};:'",<ꓢṰǓⅤ𝔚Ȥѧᖯć𝗱ễ𝑓𝙜Ⴙ𝞲𝑗𝒌ļṃŉо𝞎𝒒ᵲꜱ𝙩ừḆ𝖢𝕯٤ḞԍНǏ𝙅ƘԸⲘ𝙉০Ρ𝗤ăѣ𝔠ծềſģȟᎥ𝒋ǩľḿꞑȯ𝘱𝑞𝗋𝘴ȶ𝞄𝜈ψ𝒙𝘆𝚣123456789𝗏ŵ𝒙𝒚ź1234567890!@#$%^&*()-_=+[{]};:'",<.>/?~АḂⲤ𝗗𝖤𝗙ꞠꓧȊ𝐉𝜥ꓡ𝑀𝑵Ǭ𝙿𝑄Ŗ𝑆𝒯𝖴𝘝𝘞ꓫŸ𝜡ả𝘢ƀ𝖼ḋếᵮℊ𝙝Ꭵ𝕛кιṃդⱺ𝓅𝘲𝕣𝖘ŧ𝑢ṽẉ𝘅ყž1234567890!@#$%^&*()-_=+[{]};:'",<.>/?~Ѧ234567890!@#$%^&*()>/?~𝖠Β𝒞𝘋𝙴𝓕ĢȞỈⲬ𝑌𝙕𝘢𝕤
+`;
