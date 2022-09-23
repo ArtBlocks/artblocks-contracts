@@ -209,8 +209,6 @@ library BytecodeStorage {
         }
 
         assembly {
-            // allocate free memory
-            writerAddress := mload(0x40)
             // copy the 20-byte address of the data contract writer to memory
             extcodecopy(
                 _address,
