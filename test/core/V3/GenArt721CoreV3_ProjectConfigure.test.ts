@@ -22,7 +22,7 @@ import {
   SQUIGGLE_SCRIPT,
   SKULPTUUR_SCRIPT_APPROX,
   CONTRACT_SIZE_LIMIT_SCRIPT,
-  RANDOM_UTF_EIGHT_SCRIPT,
+  MULTI_BYTE_UTF_EIGHT_SCRIPT,
 } from "../../util/example-scripts";
 
 /**
@@ -84,7 +84,7 @@ describe("GenArt721CoreV3 Project Configure", async function () {
       expect(SQUIGGLE_SCRIPT.length).to.be.gt(0);
       expect(SKULPTUUR_SCRIPT_APPROX.length).to.be.gt(0);
       expect(CONTRACT_SIZE_LIMIT_SCRIPT.length).to.be.gt(0);
-      expect(RANDOM_UTF_EIGHT_SCRIPT.length).to.be.gt(0);
+      expect(MULTI_BYTE_UTF_EIGHT_SCRIPT.length).to.be.gt(0);
     });
   });
 
@@ -862,12 +862,12 @@ describe("GenArt721CoreV3 Project Configure", async function () {
     it("uploads and recalls misc. UTF-8 script", async function () {
       await this.genArt721Core
         .connect(this.accounts.artist)
-        .addProjectScript(this.projectZero, RANDOM_UTF_EIGHT_SCRIPT);
+        .addProjectScript(this.projectZero, MULTI_BYTE_UTF_EIGHT_SCRIPT);
       const script = await this.genArt721Core.projectScriptByIndex(
         this.projectZero,
         0
       );
-      expect(script).to.equal(RANDOM_UTF_EIGHT_SCRIPT);
+      expect(script).to.equal(MULTI_BYTE_UTF_EIGHT_SCRIPT);
     });
 
     it("uploads and recalls chromie squiggle script and different script", async function () {
