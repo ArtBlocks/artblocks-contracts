@@ -560,6 +560,9 @@ contract GenArt721CoreV3 is
      * @param _additionalPayeeSecondarySalesPercentage Percent of artist's portion
      * of secondary sale royalties that will be split to address
      * `_additionalPayeeSecondarySales`.
+     * @dev `_artistAddress` must be a valid address (non-zero-address), but it
+     * is intentionally allowable for `_additionalPayee{Primary,Secondaary}Sales`
+     * and their associated percentages to be zero'd out by the controlling artist.
      */
     function proposeArtistPaymentAddressesAndSplits(
         uint256 _projectId,
@@ -568,7 +571,12 @@ contract GenArt721CoreV3 is
         uint256 _additionalPayeePrimarySalesPercentage,
         address payable _additionalPayeeSecondarySales,
         uint256 _additionalPayeeSecondarySalesPercentage
-    ) external onlyArtist(_projectId) {
+    )
+        external
+        onlyValidProjectId(_projectId)
+        onlyArtist(_projectId)
+        onlyNonZeroAddress(_artistAddress)
+    {
         // checks
         require(
             _additionalPayeePrimarySalesPercentage <= 100 &&
