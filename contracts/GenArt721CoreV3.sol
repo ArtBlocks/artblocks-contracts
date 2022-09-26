@@ -1632,9 +1632,9 @@ contract GenArt721CoreV3 is
 
     /**
      * @notice Updates Art Blocks payment address to `_artblocksPrimarySalesAddress`.
-     * @dev Note that this message does not check that the input address is
-     * not `address(0)` as it is expected that callers of this method should
-     * perform input validation.
+     * @dev Note that this method does not check that the input address is
+     * not `address(0)`, as it is expected that callers of this method should
+     * perform input validation where applicable.
      */
     function _updateArtblocksPrimarySalesAddress(
         address _artblocksPrimarySalesAddress
@@ -1646,9 +1646,9 @@ contract GenArt721CoreV3 is
     /**
      * @notice Updates Art Blocks secondary sales royalty payment address to
      * `_artblocksSecondarySalesAddress`.
-     * @dev Note that this message does not check that the input address is
-     * not `address(0)` as it is expected that callers of this method should
-     * perform input validation.
+     * @dev Note that this method does not check that the input address is
+     * not `address(0)`, as it is expected that callers of this method should
+     * perform input validation where applicable.
      */
     function _updateArtblocksSecondarySalesAddress(
         address _artblocksSecondarySalesAddress
@@ -1661,9 +1661,9 @@ contract GenArt721CoreV3 is
 
     /**
      * @notice Updates randomizer address to `_randomizerAddress`.
-     * @dev Note that this message does not check that the input address is
-     * not `address(0)` as it is expected that callers of this method should
-     * perform input validation.
+     * @dev Note that this method does not check that the input address is
+     * not `address(0)`, as it is expected that callers of this method should
+     * perform input validation where applicable.
      */
     function _updateRandomizerAddress(address _randomizerAddress) internal {
         randomizerContract = IRandomizerV2(_randomizerAddress);
