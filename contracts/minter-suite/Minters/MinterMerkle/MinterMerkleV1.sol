@@ -112,6 +112,7 @@ contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         external
         onlyArtist(_projectId)
     {
+        require(_root != bytes32(0), "Root must be provided");
         projectMerkleRoot[_projectId] = _root;
         emit ConfigValueSet(_projectId, CONFIG_MERKLE_ROOT, _root);
     }
