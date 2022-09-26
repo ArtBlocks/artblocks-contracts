@@ -856,6 +856,7 @@ contract GenArt721CoreV3 is
         external
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.updateProjectLicense.selector)
+        onlyNonEmptyString(_projectLicense)
     {
         projects[_projectId].license = _projectLicense;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_LICENSE);
