@@ -891,6 +891,42 @@ describe("GenArt721CoreV3 Project Configure", async function () {
       );
       expect(scriptOne).to.equal(SKULPTUUR_SCRIPT_APPROX);
     });
+
+    it("doesn't selfdestruct script storage contract when safeTransferFrom to script storage contract", async function () {
+      // upload script and get address
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .addProjectScript(this.projectZero, SQUIGGLE_SCRIPT);
+      const scriptAddress =
+        await this.genArt721Core.projectScriptBytecodeAddressByIndex(
+          this.projectZero,
+          0
+        );
+      const scriptByteCode = await ethers.provider.getCode(scriptAddress);
+      expect(scriptByteCode).to.not.equal("0x");
+
+      // mint a token on project zero
+      await this.minter
+        .connect(this.accounts.artist)
+        .purchase(this.projectZero);
+
+      // attempt to safe-transfer token to script storage contract
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          ["safeTransferFrom(address,address,uint256)"](
+            this.accounts.artist.address,
+            scriptAddress,
+            this.projectZeroTokenZero.toNumber()
+          ),
+        "ERC721: transfer to non ERC721Receiver implementer"
+      );
+
+      // verify script storage contract still exists
+      const sameScriptByteCode = await ethers.provider.getCode(scriptAddress);
+      expect(sameScriptByteCode).to.equal(scriptByteCode);
+      expect(sameScriptByteCode).to.not.equal("0x");
+    });
   });
 
   describe("projectScriptBytecodeAddressByIndex", function () {
