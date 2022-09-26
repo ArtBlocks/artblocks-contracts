@@ -1041,6 +1041,7 @@ contract GenArt721CoreV3 is
     function updateDefaultBaseURI(string memory _defaultBaseURI)
         external
         onlyAdminACL(this.updateDefaultBaseURI.selector)
+        onlyNonEmptyString(_newBaseURI)
     {
         _updateDefaultBaseURI(_defaultBaseURI);
     }
