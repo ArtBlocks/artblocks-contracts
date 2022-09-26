@@ -446,7 +446,11 @@ contract GenArt721CoreV3 is
      */
     function updateArtblocksPrimarySalesAddress(
         address payable _artblocksPrimarySalesAddress
-    ) external onlyAdminACL(this.updateArtblocksPrimarySalesAddress.selector) {
+    )
+        external
+        onlyAdminACL(this.updateArtblocksPrimarySalesAddress.selector)
+        onlyNonZeroAddress(_artblocksPrimarySalesAddress)
+    {
         _updateArtblocksPrimarySalesAddress(_artblocksPrimarySalesAddress);
     }
 
