@@ -463,6 +463,7 @@ contract GenArt721CoreV3 is
     )
         external
         onlyAdminACL(this.updateArtblocksSecondarySalesAddress.selector)
+        onlyNonZeroAddress(_artblocksSecondarySalesAddress)
     {
         _updateArtblocksSecondarySalesAddress(_artblocksSecondarySalesAddress);
     }
