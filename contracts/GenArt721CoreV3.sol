@@ -625,6 +625,9 @@ contract GenArt721CoreV3 is
      * @dev this must be called by the Admin ACL contract, and must only accept
      * the most recent proposed values for a given project (validated on-chain
      * by comparing the hash of the proposed and accepted values).
+     * @dev `_artistAddress` must be a valid address (non-zero-address), but it
+     * is intentionally allowable for `_additionalPayee{Primary,Secondaary}Sales`
+     * and their associated percentages to be zero'd out by the controlling artist.
      */
     function adminAcceptArtistAddressesAndSplits(
         uint256 _projectId,
@@ -635,10 +638,12 @@ contract GenArt721CoreV3 is
         uint256 _additionalPayeeSecondarySalesPercentage
     )
         external
+        onlyValidProjectId(_projectId)
         onlyAdminACLOrRenouncedArtist(
             _projectId,
             this.adminAcceptArtistAddressesAndSplits.selector
         )
+        onlyNonZeroAddress(_artistAddress)
     {
         // checks
         require(
