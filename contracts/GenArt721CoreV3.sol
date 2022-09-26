@@ -224,6 +224,11 @@ contract GenArt721CoreV3 is
         _;
     }
 
+    modifier onlyNonEmptyString(string memory _string) {
+        require(bytes(_string).length != 0, "Must input non-empty string");
+        _;
+    }
+
     modifier onlyValidTokenId(uint256 _tokenId) {
         require(_exists(_tokenId), "Token ID does not exist");
         _;
@@ -721,7 +726,12 @@ contract GenArt721CoreV3 is
     function addProject(
         string memory _projectName,
         address payable _artistAddress
-    ) external onlyAdminACL(this.addProject.selector) {
+    )
+        external
+        onlyAdminACL(this.addProject.selector)
+        onlyNonEmptyString(_projectName)
+        onlyNonZeroAddress(_artistAddress)
+    {
         require(!newProjectsForbidden, "New projects forbidden");
         uint256 projectId = _nextProjectId;
         projectIdToFinancials[projectId].artistAddress = _artistAddress;
