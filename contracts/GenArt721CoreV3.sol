@@ -89,7 +89,6 @@ contract GenArt721CoreV3 is
     uint24 constant ONE_MILLION_UINT24 = 1_000_000;
     uint256 constant FOUR_WEEKS_IN_SECONDS = 2_419_200;
     uint8 constant AT_CHARACTER_CODE = uint8(bytes1("@")); // 0x40
-    string constant NON_ZERO_ADDRESS_MSG = "Must use non-zero address";
 
     // generic platform event fields
     bytes32 constant FIELD_NEXT_PROJECT_ID = "nextProjectId";
@@ -219,6 +218,11 @@ contract GenArt721CoreV3 is
 
     /// default base URI to initialize all new project projectBaseURI values to
     string public defaultBaseURI;
+
+    modifier onlyNonZeroAddress(address _address) {
+        require(_address != address(0), "Must input non-zero address");
+        _;
+    }
 
     modifier onlyValidTokenId(uint256 _tokenId) {
         require(_exists(_tokenId), "Token ID does not exist");
@@ -417,11 +421,8 @@ contract GenArt721CoreV3 is
     )
         external
         onlyAdminACL(this.updateArtblocksCurationRegistryAddress.selector)
+        onlyNonZeroAddress(_artblocksCurationRegistryAddress)
     {
-        require(
-            _artblocksCurationRegistryAddress != address(0),
-            NON_ZERO_ADDRESS_MSG
-        );
         artblocksCurationRegistryAddress = _artblocksCurationRegistryAddress;
         emit PlatformUpdated(FIELD_ARTBLOCKS_CURATION_REGISTRY_ADDRESS);
     }
@@ -434,11 +435,8 @@ contract GenArt721CoreV3 is
     )
         external
         onlyAdminACL(this.updateArtblocksDependencyRegistryAddress.selector)
+        onlyNonZeroAddress(_artblocksDependencyRegistryAddress)
     {
-        require(
-            _artblocksDependencyRegistryAddress != address(0),
-            NON_ZERO_ADDRESS_MSG
-        );
         artblocksDependencyRegistryAddress = _artblocksDependencyRegistryAddress;
         emit PlatformUpdated(FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS);
     }
