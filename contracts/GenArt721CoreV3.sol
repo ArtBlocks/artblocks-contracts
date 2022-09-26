@@ -1676,6 +1676,9 @@ contract GenArt721CoreV3 is
      * @notice Updates default base URI to `_defaultBaseURI`.
      * When new projects are added, their `projectBaseURI` is automatically
      * initialized to `_defaultBaseURI`.
+     * @dev Note that this method does not check that the input string is not
+     * the empty string, as it is expected that callers of this method should
+     * perform input validation where applicable.
      */
     function _updateDefaultBaseURI(string memory _defaultBaseURI) internal {
         defaultBaseURI = _defaultBaseURI;
