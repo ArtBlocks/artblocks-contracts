@@ -218,6 +218,7 @@ contract MinterSetPriceERC20V2 is ReentrancyGuard, IFilteredMinterV0 {
         uint256 _projectId,
         uint256 _pricePerTokenInWei
     ) external onlyArtist(_projectId) {
+        require(_pricePerTokenInWei > 0, "Price may not be 0");
         projectConfig[_projectId].pricePerTokenInWei = _pricePerTokenInWei;
         projectConfig[_projectId].priceIsConfigured = true;
         emit PricePerTokenInWeiUpdated(_projectId, _pricePerTokenInWei);

@@ -260,6 +260,8 @@ contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
      * @notice Updates this minter's price per token of project `_projectId`
      * to be '_pricePerTokenInWei`, in Wei.
      * This price supersedes any legacy core contract price per token value.
+     * @dev Note that it is intentionally supported here that the configured
+     * price may be explicitly set to `0`.
      */
     function updatePricePerTokenInWei(
         uint256 _projectId,
