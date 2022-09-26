@@ -836,6 +836,7 @@ contract GenArt721CoreV3 is
 
     /**
      * @notice Updates website of project `_projectId` to be `_projectWebsite`.
+     * @dev It is intentionally allowed for this to be set to the empty string.
      */
     function updateProjectWebsite(
         uint256 _projectId,
