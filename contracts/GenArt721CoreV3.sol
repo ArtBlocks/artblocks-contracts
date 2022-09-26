@@ -434,6 +434,10 @@ contract GenArt721CoreV3 is
         external
         onlyAdminACL(this.updateArtblocksDependencyRegistryAddress.selector)
     {
+        require(
+            _artblocksCurationRegistryAddress != address(0),
+            "Must set registry to valid address"
+        );
         artblocksDependencyRegistryAddress = _artblocksDependencyRegistryAddress;
         emit PlatformUpdated(FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS);
     }
