@@ -75,6 +75,10 @@ import "./libs/0.8.x/Bytes32Strings.sol";
  * unlocked, and only callable by Admin ACL contract when a project is locked:
  * - updateProjectDescription
  * ----------------------------------------------------------------------------
+ * The following function is restricted to owner calling directly:
+ * - transferOwnership
+ * - renounceOwnership
+ * ----------------------------------------------------------------------------
  * Additional admin and artist privileged roles may be described on minters,
  * registries, and other contracts that may interact with this core contract.
  */
@@ -408,6 +412,29 @@ contract GenArt721CoreV3 is
     }
 
     /**
+     * @notice Allows owner (AdminACL) to revoke ownership of the contract.
+     * Note that the contract is intended to continue to function after the
+     * owner renounces ownership, but no new projects will be able to be added.
+     * Renouncing ownership will leave the contract without an owner,
+     * thereby removing any functionality that is only available to the
+     * owner/AdminACL contract. The same is true for any dependent contracts
+     * that also integrate with the owner/AdminACL contract (e.g. potentially
+     * minter suite contracts, registry contracts, etc.).
+     * After renouncing ownership, artists will be in control of updates to
+     * their payment addresses and splits (see modifier
+     * onlyAdminACLOrRenouncedArtist`)
+     * @dev This function may or may not ever be invoked.
+     * @dev This function is intended to be called directly by the adminACL,
+     * not by an address allowed by the adminACL contract.
+     */
+    function renounceOwnership() public override onlyOwner {
+        // broadcast that new projects are no longer allowed (if not already)
+        _forbidNewProjects();
+        // renounce ownership viw Ownable
+        Ownable.renounceOwnership();
+    }
+
+    /**
      * @notice Updates reference to Art Blocks Curation Registry contract.
      */
     function updateArtblocksCurationRegistryAddress(
@@ -700,8 +727,7 @@ contract GenArt721CoreV3 is
         onlyAdminACL(this.forbidNewProjects.selector)
     {
         require(!newProjectsForbidden, "Already forbidden");
-        newProjectsForbidden = true;
-        emit PlatformUpdated(FIELD_NEW_PROJECTS_FORBIDDEN);
+        _forbidNewProjects();
     }
 
     /**
@@ -1529,6 +1555,18 @@ contract GenArt721CoreV3 is
         return
             interfaceId == type(IManifold).interfaceId ||
             super.supportsInterface(interfaceId);
+    }
+
+    /**
+     * @dev forbids new projects from being created
+     * @dev only performs operation and emits event if contract is not already
+     * forbidding new projects.
+     */
+    function _forbidNewProjects() internal {
+        if (!newProjectsForbidden) {
+            newProjectsForbidden = true;
+            emit PlatformUpdated(FIELD_NEW_PROJECTS_FORBIDDEN);
+        }
     }
 
     /**
