@@ -277,7 +277,12 @@ contract MinterFilterV1 is IMinterFilterV0 {
      * @return bool true if project has an assigned minter, else false
      * @dev requires project to have an assigned minter
      */
-    function projectHasMinter(uint256 _projectId) external view returns (bool) {
+    function projectHasMinter(uint256 _projectId)
+        external
+        view
+        onlyValidProjectId(_projectId)
+        returns (bool)
+    {
         (bool _hasMinter, ) = minterForProject.tryGet(_projectId);
         return _hasMinter;
     }
