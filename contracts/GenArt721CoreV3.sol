@@ -979,7 +979,8 @@ contract GenArt721CoreV3 is
      * @notice Updates project's aspect ratio.
      * @param _projectId Project to be updated.
      * @param _aspectRatio Aspect ratio to be set. Intended to be string in the
-     * format of a decimal, e.g. "1" for square, "1.77777778" for 16:9, etc.
+     * format of a decimal, e.g. "1" for square, "1.77777778" for 16:9, etc.,
+     * allowing for a maximum of 10 digits and one (optional) decimal separator.
      */
     function updateProjectAspectRatio(
         uint256 _projectId,
@@ -988,7 +989,31 @@ contract GenArt721CoreV3 is
         external
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.updateProjectAspectRatio.selector)
+        onlyNonEmptyString(_aspectRatio)
     {
+        // Perform more detailed input validation for aspect ratio.
+        bytes memory aspectRatioBytes = bytes(_aspectRatio);
+        uint256 bytesLength = aspectRatioBytes.length;
+        require(bytesLength <= 11, "Aspect ratio format too long");
+        bool hasSeenDecimalSeparator = false;
+        for (uint256 i; i < bytesLength; i++) {
+            bytes1 character = aspectRatioBytes[i];
+            // Allow as many #s as desired.
+            if (character >= 0x30 && character <= 0x39) {
+                // 9-0
+                continue;
+            }
+            if (character == 0x2E) {
+                // .
+                // Allow no more than 1 `.` occurance.
+                if (!hasSeenDecimalSeparator) {
+                    hasSeenDecimalSeparator = true;
+                    continue;
+                }
+            }
+            revert("Improperly formatted aspect ratio");
+        }
+
         projects[_projectId].aspectRatio = _aspectRatio;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_ASPECT_RATIO);
     }

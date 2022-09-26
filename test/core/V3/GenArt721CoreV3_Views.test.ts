@@ -245,7 +245,7 @@ describe("GenArt721CoreV3 Views", async function () {
         );
       await this.genArt721Core
         .connect(this.accounts.artist)
-        .updateProjectAspectRatio(this.projectZero, "1.77777778");
+        .updateProjectAspectRatio(this.projectZero, "1.777777778");
       await this.genArt721Core
         .connect(this.accounts.artist)
         .addProjectScript(this.projectZero, "if(true){}");
@@ -256,8 +256,29 @@ describe("GenArt721CoreV3 Views", async function () {
       expect(projectScriptDetails.scriptTypeAndVersion).to.be.equal(
         "p5js@v1.2.3"
       );
-      expect(projectScriptDetails.aspectRatio).to.be.equal("1.77777778");
+      expect(projectScriptDetails.aspectRatio).to.be.equal("1.777777778");
       expect(projectScriptDetails.scriptCount).to.be.equal(1);
+    });
+
+    it("validates aspect ratio format details", async function () {
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectAspectRatio(this.projectZero, "1.7777777778"),
+        "Aspect ratio format too long"
+      );
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectAspectRatio(this.projectZero, "2/3"),
+        "Improperly formatted aspect ratio"
+      );
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectAspectRatio(this.projectZero, "1.2.3.4"),
+        "Improperly formatted aspect ratio"
+      );
     });
   });
 
