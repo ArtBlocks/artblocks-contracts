@@ -520,6 +520,7 @@ contract GenArt721CoreV3 is
     function updateRandomizerAddress(address _randomizerAddress)
         external
         onlyAdminACL(this.updateRandomizerAddress.selector)
+        onlyNonZeroAddress(_randomizerAddress)
     {
         _updateRandomizerAddress(_randomizerAddress);
     }
