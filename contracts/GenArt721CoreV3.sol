@@ -1629,6 +1629,9 @@ contract GenArt721CoreV3 is
 
     /**
      * @notice Updates Art Blocks payment address to `_artblocksPrimarySalesAddress`.
+     * @dev Note that this message does not check that the input address is
+     * not `address(0)` as it is expected that callers of this method should
+     * perform input validation.
      */
     function _updateArtblocksPrimarySalesAddress(
         address _artblocksPrimarySalesAddress
