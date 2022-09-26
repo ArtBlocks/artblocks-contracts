@@ -1027,6 +1027,7 @@ contract GenArt721CoreV3 is
     function updateProjectBaseURI(uint256 _projectId, string memory _newBaseURI)
         external
         onlyArtist(_projectId)
+        onlyNonEmptyString(_newBaseURI)
     {
         projects[_projectId].projectBaseURI = _newBaseURI;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_BASE_URI);
