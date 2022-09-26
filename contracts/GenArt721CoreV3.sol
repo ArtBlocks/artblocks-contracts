@@ -688,7 +688,15 @@ contract GenArt721CoreV3 is
     function updateProjectArtistAddress(
         uint256 _projectId,
         address payable _artistAddress
-    ) external onlyAdminACL(this.updateProjectArtistAddress.selector) {
+    )
+        external
+        onlyValidProjectId(_projectId)
+        onlyAdminACLOrRenouncedArtist(
+            _projectID,
+            this.updateProjectArtistAddress.selector
+        )
+        onlyNonZeroAddress(_artistAddress)
+    {
         projectIdToFinancials[_projectId].artistAddress = _artistAddress;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_ARTIST_ADDRESS);
     }
