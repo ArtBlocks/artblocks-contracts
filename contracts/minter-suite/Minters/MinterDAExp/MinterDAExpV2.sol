@@ -187,7 +187,9 @@ contract MinterDAExpV2 is ReentrancyGuard, IFilteredMinterV0 {
      * only result in a gas cost increase, since the core contract will still
      * enforce a maxInvocation check during minting. A false positive is not
      * possible because the V3 core contract only allows maximum invocations
-     * to be reduced, not increased.
+     * to be reduced, not increased. Based on this rationale, we intentionally
+     * do not do input validation in this method as to whether or not the input
+     * `_projectId` is an existing project ID.
      *
      */
     function projectMaxHasBeenInvoked(uint256 _projectId)
