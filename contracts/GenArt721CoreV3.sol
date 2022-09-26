@@ -697,7 +697,7 @@ contract GenArt721CoreV3 is
         external
         onlyValidProjectId(_projectId)
         onlyAdminACLOrRenouncedArtist(
-            _projectID,
+            _projectId,
             this.updateProjectArtistAddress.selector
         )
         onlyNonZeroAddress(_artistAddress)
