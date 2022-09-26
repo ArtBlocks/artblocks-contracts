@@ -761,7 +761,6 @@ contract GenArt721CoreV3 is
      */
     function updateProjectName(uint256 _projectId, string memory _projectName)
         external
-        onlyValidProjectId(_projectId)
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.updateProjectName.selector)
         onlyNonEmptyString(_projectName)
@@ -779,7 +778,6 @@ contract GenArt721CoreV3 is
         string memory _projectArtistName
     )
         external
-        onlyValidProjectId(_projectId)
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.updateProjectArtistName.selector)
     {
@@ -854,7 +852,6 @@ contract GenArt721CoreV3 is
         string memory _projectLicense
     )
         external
-        onlyValidProjectId(_projectId)
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.updateProjectLicense.selector)
     {
@@ -901,7 +898,6 @@ contract GenArt721CoreV3 is
      */
     function addProjectScript(uint256 _projectId, string memory _script)
         external
-        onlyValidProjectId(_projectId)
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.addProjectScript.selector)
     {
@@ -923,7 +919,6 @@ contract GenArt721CoreV3 is
         string memory _script
     )
         external
-        onlyValidProjectId(_projectId)
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.updateProjectScript.selector)
     {
@@ -938,7 +933,6 @@ contract GenArt721CoreV3 is
      */
     function removeProjectLastScript(uint256 _projectId)
         external
-        onlyValidProjectId(_projectId)
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.removeProjectLastScript.selector)
     {
@@ -960,7 +954,6 @@ contract GenArt721CoreV3 is
         bytes32 _scriptTypeAndVersion
     )
         external
-        onlyValidProjectId(_projectId)
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.updateProjectScriptType.selector)
     {
@@ -988,7 +981,6 @@ contract GenArt721CoreV3 is
         string memory _aspectRatio
     )
         external
-        onlyValidProjectId(_projectId)
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.updateProjectAspectRatio.selector)
     {
@@ -1661,7 +1653,12 @@ contract GenArt721CoreV3 is
      * maximum number of times.
      * @param _projectId Project ID to check.
      */
-    function _projectUnlocked(uint256 _projectId) internal view returns (bool) {
+    function _projectUnlocked(uint256 _projectId)
+        internal
+        view
+        onlyValidProjectId(_projectId)
+        returns (bool)
+    {
         uint256 projectCompletedTimestamp = projects[_projectId]
             .completedTimestamp;
         bool projectOpen = projectCompletedTimestamp == 0;
