@@ -55,6 +55,11 @@ contract MinterFilterV1 is IMinterFilterV0 {
     /// minter address => is an approved minter?
     mapping(address => bool) public isApprovedMinter;
 
+    modifier onlyNonZeroAddress(address _address) {
+        require(_address != address(0), "Must input non-zero address");
+        _;
+    }
+
     // modifier to restrict access to only AdminACL allowed calls
     // @dev defers which ACL contract is used to the core contract
     modifier onlyCoreAdminACL(bytes4 _selector) {
@@ -96,7 +101,9 @@ contract MinterFilterV1 is IMinterFilterV0 {
      * @param _genArt721Address Art Blocks core contract address
      * this contract will be a minter for. Can never be updated.
      */
-    constructor(address _genArt721Address) {
+    constructor(address _genArt721Address)
+        onlyNonZeroAddress(_genArt721Address)
+    {
         genArt721CoreAddress = _genArt721Address;
         genArtCoreContract = IGenArt721CoreContractV3(_genArt721Address);
     }
@@ -122,6 +129,7 @@ contract MinterFilterV1 is IMinterFilterV0 {
     function addApprovedMinter(address _minterAddress)
         external
         onlyCoreAdminACL(this.addApprovedMinter.selector)
+        onlyNonZeroAddress(_minterAddress)
     {
         isApprovedMinter[_minterAddress] = true;
         emit MinterApproved(
