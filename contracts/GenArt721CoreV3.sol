@@ -306,7 +306,10 @@ contract GenArt721CoreV3 is
         address _randomizerContract,
         address _adminACLContract,
         uint256 _startingProjectId
-    ) ERC721_PackedHashSeed(_tokenName, _tokenSymbol) {
+    )
+        ERC721_PackedHashSeed(_tokenName, _tokenSymbol)
+        onlyNonZeroAddress(_randomizerContract)
+    {
         // record contracts starting project ID
         startingProjectId = _startingProjectId;
         _updateArtblocksPrimarySalesAddress(msg.sender);
@@ -1658,6 +1661,9 @@ contract GenArt721CoreV3 is
 
     /**
      * @notice Updates randomizer address to `_randomizerAddress`.
+     * @dev Note that this message does not check that the input address is
+     * not `address(0)` as it is expected that callers of this method should
+     * perform input validation.
      */
     function _updateRandomizerAddress(address _randomizerAddress) internal {
         randomizerContract = IRandomizerV2(_randomizerAddress);
