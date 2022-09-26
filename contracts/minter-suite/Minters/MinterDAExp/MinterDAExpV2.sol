@@ -291,6 +291,8 @@ contract MinterDAExpV2 is ReentrancyGuard, IFilteredMinterV0 {
      *  price (in seconds).
      * @param _startPrice Price at which to start the auction, in Wei.
      * @param _basePrice Resting price of the auction, in Wei.
+     * @dev Note that it is intentionally supported here that the configured
+     * price may be explicitly set to `0`.
      */
     function setAuctionDetails(
         uint256 _projectId,
