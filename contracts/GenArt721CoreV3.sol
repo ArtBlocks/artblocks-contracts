@@ -925,6 +925,7 @@ contract GenArt721CoreV3 is
         external
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.updateProjectScript.selector)
+        onlyNonEmptyString(_script)
     {
         Project storage project = projects[_projectId];
         require(_scriptId < project.scriptCount, "scriptId out of range");
