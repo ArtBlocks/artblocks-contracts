@@ -229,6 +229,11 @@ contract GenArt721CoreV3 is
         _;
     }
 
+    modifier onlyValidProjectId(uint256 _projectId) {
+        require(_projectId < _nextProjectId, "Project ID does not exist");
+        _;
+    }
+
     modifier onlyUnlocked(uint256 _projectId) {
         require(_projectUnlocked(_projectId), "Only if unlocked");
         _;
@@ -531,6 +536,7 @@ contract GenArt721CoreV3 is
     function toggleProjectIsActive(uint256 _projectId)
         external
         onlyAdminACL(this.toggleProjectIsActive.selector)
+        onlyValidProjectId(_projectId)
     {
         projects[_projectId].active = !projects[_projectId].active;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_ACTIVE);
