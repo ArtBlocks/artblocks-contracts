@@ -80,7 +80,7 @@ contract MinterFilterV1 is IMinterFilterV0 {
         _;
     }
 
-    modifier projectExists(uint256 _projectId) {
+    modifier onlyValidProjectId(uint256 _projectId) {
         require(
             _projectId < genArtCoreContract.nextProjectId(),
             "Only existing projects"
@@ -165,7 +165,7 @@ contract MinterFilterV1 is IMinterFilterV0 {
         external
         onlyCoreAdminACLOrArtist(_projectId, this.setMinterForProject.selector)
         usingApprovedMinter(_minterAddress)
-        projectExists(_projectId)
+        onlyValidProjectId(_projectId)
     {
         // decrement number of projects using a previous minter
         (bool hasPreviousMinter, address previousMinter) = minterForProject
@@ -261,6 +261,7 @@ contract MinterFilterV1 is IMinterFilterV0 {
     function getMinterForProject(uint256 _projectId)
         external
         view
+        onlyValidProjectId(_projectId)
         returns (address)
     {
         (bool _hasMinter, address _currentMinter) = minterForProject.tryGet(
