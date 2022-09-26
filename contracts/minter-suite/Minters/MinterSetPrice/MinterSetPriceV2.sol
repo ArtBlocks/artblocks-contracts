@@ -151,7 +151,9 @@ contract MinterSetPriceV2 is ReentrancyGuard, IFilteredMinterV0 {
      * project's max invocations have not been synced on this minter, since the
      * V3 core contract only allows maximum invocations to be reduced, not
      * increased. When this happens, the minter will enable minting, allowing
-     * the core contract to enforce the max invocations check.
+     * the core contract to enforce the max invocations check. Based on this
+     * rationale, we intentionally do not do input validation in this method as
+     * to whether or not the input `_projectId` is an existing project ID.
      */
     function projectMaxInvocations(uint256 _projectId)
         external
