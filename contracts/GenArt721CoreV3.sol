@@ -404,6 +404,7 @@ contract GenArt721CoreV3 is
             ownerAndHashSeed.hashSeed == bytes12(0),
             "Token hash already set"
         );
+        require(_hashSeed != bytes12(0), "No seed re-setting");
         ownerAndHashSeed.hashSeed = bytes12(_hashSeed);
     }
 
