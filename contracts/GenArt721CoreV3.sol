@@ -508,6 +508,7 @@ contract GenArt721CoreV3 is
     function updateMinterContract(address _address)
         external
         onlyAdminACL(this.updateMinterContract.selector)
+        onlyNonZeroAddress(_address)
     {
         minterContract = _address;
         emit MinterUpdated(_address);
