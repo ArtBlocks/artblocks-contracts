@@ -146,6 +146,7 @@ contract MinterFilterV1 is IMinterFilterV0 {
         external
         onlyCoreAdminACL(this.removeApprovedMinter.selector)
     {
+        require(isApprovedMinter[_minterAddress], "Only approved minters");
         require(
             numProjectsUsingMinter[_minterAddress] == 0,
             "Only unused minters"
