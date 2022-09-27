@@ -55,6 +55,11 @@ contract MinterFilterV1 is IMinterFilterV0 {
     /// minter address => is an approved minter?
     mapping(address => bool) public isApprovedMinter;
 
+    modifier onlyNonZeroAddress(address _address) {
+        require(_address != address(0), "Must input non-zero address");
+        _;
+    }
+
     // modifier to restrict access to only AdminACL allowed calls
     // @dev defers which ACL contract is used to the core contract
     modifier onlyCoreAdminACL(bytes4 _selector) {
@@ -75,7 +80,7 @@ contract MinterFilterV1 is IMinterFilterV0 {
         _;
     }
 
-    modifier projectExists(uint256 _projectId) {
+    modifier onlyValidProjectId(uint256 _projectId) {
         require(
             _projectId < genArtCoreContract.nextProjectId(),
             "Only existing projects"
@@ -96,7 +101,9 @@ contract MinterFilterV1 is IMinterFilterV0 {
      * @param _genArt721Address Art Blocks core contract address
      * this contract will be a minter for. Can never be updated.
      */
-    constructor(address _genArt721Address) {
+    constructor(address _genArt721Address)
+        onlyNonZeroAddress(_genArt721Address)
+    {
         genArt721CoreAddress = _genArt721Address;
         genArtCoreContract = IGenArt721CoreContractV3(_genArt721Address);
     }
@@ -122,6 +129,7 @@ contract MinterFilterV1 is IMinterFilterV0 {
     function addApprovedMinter(address _minterAddress)
         external
         onlyCoreAdminACL(this.addApprovedMinter.selector)
+        onlyNonZeroAddress(_minterAddress)
     {
         isApprovedMinter[_minterAddress] = true;
         emit MinterApproved(
@@ -138,6 +146,7 @@ contract MinterFilterV1 is IMinterFilterV0 {
         external
         onlyCoreAdminACL(this.removeApprovedMinter.selector)
     {
+        require(isApprovedMinter[_minterAddress], "Only approved minters");
         require(
             numProjectsUsingMinter[_minterAddress] == 0,
             "Only unused minters"
@@ -156,7 +165,7 @@ contract MinterFilterV1 is IMinterFilterV0 {
         external
         onlyCoreAdminACLOrArtist(_projectId, this.setMinterForProject.selector)
         usingApprovedMinter(_minterAddress)
-        projectExists(_projectId)
+        onlyValidProjectId(_projectId)
     {
         // decrement number of projects using a previous minter
         (bool hasPreviousMinter, address previousMinter) = minterForProject
@@ -252,6 +261,7 @@ contract MinterFilterV1 is IMinterFilterV0 {
     function getMinterForProject(uint256 _projectId)
         external
         view
+        onlyValidProjectId(_projectId)
         returns (address)
     {
         (bool _hasMinter, address _currentMinter) = minterForProject.tryGet(
@@ -267,7 +277,12 @@ contract MinterFilterV1 is IMinterFilterV0 {
      * @return bool true if project has an assigned minter, else false
      * @dev requires project to have an assigned minter
      */
-    function projectHasMinter(uint256 _projectId) external view returns (bool) {
+    function projectHasMinter(uint256 _projectId)
+        external
+        view
+        onlyValidProjectId(_projectId)
+        returns (bool)
+    {
         (bool _hasMinter, ) = minterForProject.tryGet(_projectId);
         return _hasMinter;
     }

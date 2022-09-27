@@ -86,12 +86,14 @@ describe("GenArt721CoreV3 Events", async function () {
       const contractFactory = await ethers.getContractFactory(
         "GenArt721CoreV3"
       );
+      // it is OK that this randomizer address isn't a particularly valid
+      // address for the purposes of this test
       const tx = await contractFactory
         .connect(this.accounts.deployer)
         .deploy(
           "name",
           "symbol",
-          constants.ZERO_ADDRESS,
+          this.accounts.additional.address,
           constants.ZERO_ADDRESS,
           365
         );
@@ -126,9 +128,11 @@ describe("GenArt721CoreV3 Events", async function () {
     it("emits 'randomizerAddress'", async function () {
       // emits expected event arg(s)
       expect(
+        // it is OK that this randomizer address isn't a particularly valid
+        // address for the purposes of this test
         await this.genArt721Core
           .connect(this.accounts.deployer)
-          .updateRandomizerAddress(this.accounts.artist.address)
+          .updateRandomizerAddress(this.accounts.additional.address)
       )
         .to.emit(this.genArt721Core, "PlatformUpdated")
         .withArgs(ethers.utils.formatBytes32String("randomizerAddress"));

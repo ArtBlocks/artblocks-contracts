@@ -233,12 +233,32 @@ contract GenArt721CoreV3 is
     /// default base URI to initialize all new project projectBaseURI values to
     string public defaultBaseURI;
 
+    modifier onlyNonZeroAddress(address _address) {
+        require(_address != address(0), "Must input non-zero address");
+        _;
+    }
+
+    modifier onlyNonEmptyString(string memory _string) {
+        require(bytes(_string).length != 0, "Must input non-empty string");
+        _;
+    }
+
     modifier onlyValidTokenId(uint256 _tokenId) {
         require(_exists(_tokenId), "Token ID does not exist");
         _;
     }
 
+    modifier onlyValidProjectId(uint256 _projectId) {
+        require(
+            (_projectId >= startingProjectId) && (_projectId < _nextProjectId),
+            "Project ID does not exist"
+        );
+        _;
+    }
+
     modifier onlyUnlocked(uint256 _projectId) {
+        // Note: calling `_projectUnlocked` enforces that the `_projectId`
+        //       passed in is valid.`
         require(_projectUnlocked(_projectId), "Only if unlocked");
         _;
     }
@@ -307,7 +327,10 @@ contract GenArt721CoreV3 is
         address _randomizerContract,
         address _adminACLContract,
         uint248 _startingProjectId
-    ) ERC721_PackedHashSeed(_tokenName, _tokenSymbol) {
+    )
+        ERC721_PackedHashSeed(_tokenName, _tokenSymbol)
+        onlyNonZeroAddress(_randomizerContract)
+    {
         // record contracts starting project ID
         // casting-up is safe
         startingProjectId = uint256(_startingProjectId);
@@ -424,6 +447,7 @@ contract GenArt721CoreV3 is
             ownerAndHashSeed.hashSeed == bytes12(0),
             "Token hash already set"
         );
+        require(_hashSeed != bytes12(0), "No zero hash seed");
         ownerAndHashSeed.hashSeed = bytes12(_hashSeed);
     }
 
@@ -462,6 +486,7 @@ contract GenArt721CoreV3 is
     )
         external
         onlyAdminACL(this.updateArtblocksCurationRegistryAddress.selector)
+        onlyNonZeroAddress(_artblocksCurationRegistryAddress)
     {
         artblocksCurationRegistryAddress = _artblocksCurationRegistryAddress;
         emit PlatformUpdated(FIELD_ARTBLOCKS_CURATION_REGISTRY_ADDRESS);
@@ -475,6 +500,7 @@ contract GenArt721CoreV3 is
     )
         external
         onlyAdminACL(this.updateArtblocksDependencyRegistryAddress.selector)
+        onlyNonZeroAddress(_artblocksDependencyRegistryAddress)
     {
         artblocksDependencyRegistryAddress = _artblocksDependencyRegistryAddress;
         emit PlatformUpdated(FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS);
@@ -485,7 +511,11 @@ contract GenArt721CoreV3 is
      */
     function updateArtblocksPrimarySalesAddress(
         address payable _artblocksPrimarySalesAddress
-    ) external onlyAdminACL(this.updateArtblocksPrimarySalesAddress.selector) {
+    )
+        external
+        onlyAdminACL(this.updateArtblocksPrimarySalesAddress.selector)
+        onlyNonZeroAddress(_artblocksPrimarySalesAddress)
+    {
         _updateArtblocksPrimarySalesAddress(_artblocksPrimarySalesAddress);
     }
 
@@ -498,6 +528,7 @@ contract GenArt721CoreV3 is
     )
         external
         onlyAdminACL(this.updateArtblocksSecondarySalesAddress.selector)
+        onlyNonZeroAddress(_artblocksSecondarySalesAddress)
     {
         _updateArtblocksSecondarySalesAddress(_artblocksSecondarySalesAddress);
     }
@@ -542,6 +573,7 @@ contract GenArt721CoreV3 is
     function updateMinterContract(address _address)
         external
         onlyAdminACL(this.updateMinterContract.selector)
+        onlyNonZeroAddress(_address)
     {
         minterContract = _address;
         emit MinterUpdated(_address);
@@ -553,6 +585,7 @@ contract GenArt721CoreV3 is
     function updateRandomizerAddress(address _randomizerAddress)
         external
         onlyAdminACL(this.updateRandomizerAddress.selector)
+        onlyNonZeroAddress(_randomizerAddress)
     {
         _updateRandomizerAddress(_randomizerAddress);
     }
@@ -563,6 +596,7 @@ contract GenArt721CoreV3 is
     function toggleProjectIsActive(uint256 _projectId)
         external
         onlyAdminACL(this.toggleProjectIsActive.selector)
+        onlyValidProjectId(_projectId)
     {
         projects[_projectId].active = !projects[_projectId].active;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_ACTIVE);
@@ -586,6 +620,9 @@ contract GenArt721CoreV3 is
      * @param _additionalPayeeSecondarySalesPercentage Percent of artist's portion
      * of secondary sale royalties that will be split to address
      * `_additionalPayeeSecondarySales`.
+     * @dev `_artistAddress` must be a valid address (non-zero-address), but it
+     * is intentionally allowable for `_additionalPayee{Primary,Secondaary}Sales`
+     * and their associated percentages to be zero'd out by the controlling artist.
      */
     function proposeArtistPaymentAddressesAndSplits(
         uint256 _projectId,
@@ -594,7 +631,12 @@ contract GenArt721CoreV3 is
         uint256 _additionalPayeePrimarySalesPercentage,
         address payable _additionalPayeeSecondarySales,
         uint256 _additionalPayeeSecondarySalesPercentage
-    ) external onlyArtist(_projectId) {
+    )
+        external
+        onlyValidProjectId(_projectId)
+        onlyArtist(_projectId)
+        onlyNonZeroAddress(_artistAddress)
+    {
         // checks
         require(
             _additionalPayeePrimarySalesPercentage <= 100 &&
@@ -643,6 +685,9 @@ contract GenArt721CoreV3 is
      * @dev this must be called by the Admin ACL contract, and must only accept
      * the most recent proposed values for a given project (validated on-chain
      * by comparing the hash of the proposed and accepted values).
+     * @dev `_artistAddress` must be a valid address (non-zero-address), but it
+     * is intentionally allowable for `_additionalPayee{Primary,Secondaary}Sales`
+     * and their associated percentages to be zero'd out by the controlling artist.
      */
     function adminAcceptArtistAddressesAndSplits(
         uint256 _projectId,
@@ -653,10 +698,12 @@ contract GenArt721CoreV3 is
         uint256 _additionalPayeeSecondarySalesPercentage
     )
         external
+        onlyValidProjectId(_projectId)
         onlyAdminACLOrRenouncedArtist(
             _projectId,
             this.adminAcceptArtistAddressesAndSplits.selector
         )
+        onlyNonZeroAddress(_artistAddress)
     {
         // checks
         require(
@@ -701,7 +748,15 @@ contract GenArt721CoreV3 is
     function updateProjectArtistAddress(
         uint256 _projectId,
         address payable _artistAddress
-    ) external onlyAdminACL(this.updateProjectArtistAddress.selector) {
+    )
+        external
+        onlyValidProjectId(_projectId)
+        onlyAdminACLOrRenouncedArtist(
+            _projectId,
+            this.updateProjectArtistAddress.selector
+        )
+        onlyNonZeroAddress(_artistAddress)
+    {
         projectIdToFinancials[_projectId].artistAddress = _artistAddress;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_ARTIST_ADDRESS);
     }
@@ -726,7 +781,12 @@ contract GenArt721CoreV3 is
     function addProject(
         string memory _projectName,
         address payable _artistAddress
-    ) external onlyAdminACL(this.addProject.selector) {
+    )
+        external
+        onlyAdminACL(this.addProject.selector)
+        onlyNonEmptyString(_projectName)
+        onlyNonZeroAddress(_artistAddress)
+    {
         require(!newProjectsForbidden, "New projects forbidden");
         uint256 projectId = _nextProjectId;
         projectIdToFinancials[projectId].artistAddress = _artistAddress;
@@ -757,6 +817,7 @@ contract GenArt721CoreV3 is
         external
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.updateProjectName.selector)
+        onlyNonEmptyString(_projectName)
     {
         projects[_projectId].name = _projectName;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_NAME);
@@ -773,6 +834,7 @@ contract GenArt721CoreV3 is
         external
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.updateProjectArtistName.selector)
+        onlyNonEmptyString(_projectArtistName)
     {
         projects[_projectId].artist = _projectArtistName;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_ARTIST_NAME);
@@ -828,6 +890,7 @@ contract GenArt721CoreV3 is
 
     /**
      * @notice Updates website of project `_projectId` to be `_projectWebsite`.
+     * @dev It is intentionally allowed for this to be set to the empty string.
      */
     function updateProjectWebsite(
         uint256 _projectId,
@@ -847,6 +910,7 @@ contract GenArt721CoreV3 is
         external
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.updateProjectLicense.selector)
+        onlyNonEmptyString(_projectLicense)
     {
         projects[_projectId].license = _projectLicense;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_LICENSE);
@@ -893,6 +957,7 @@ contract GenArt721CoreV3 is
         external
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.addProjectScript.selector)
+        onlyNonEmptyString(_script)
     {
         Project storage project = projects[_projectId];
         project.scripts[project.scriptCount] = _script;
@@ -914,6 +979,7 @@ contract GenArt721CoreV3 is
         external
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.updateProjectScript.selector)
+        onlyNonEmptyString(_script)
     {
         Project storage project = projects[_projectId];
         require(_scriptId < project.scriptCount, "scriptId out of range");
@@ -967,7 +1033,8 @@ contract GenArt721CoreV3 is
      * @notice Updates project's aspect ratio.
      * @param _projectId Project to be updated.
      * @param _aspectRatio Aspect ratio to be set. Intended to be string in the
-     * format of a decimal, e.g. "1" for square, "1.77777778" for 16:9, etc.
+     * format of a decimal, e.g. "1" for square, "1.77777778" for 16:9, etc.,
+     * allowing for a maximum of 10 digits and one (optional) decimal separator.
      */
     function updateProjectAspectRatio(
         uint256 _projectId,
@@ -976,7 +1043,35 @@ contract GenArt721CoreV3 is
         external
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.updateProjectAspectRatio.selector)
+        onlyNonEmptyString(_aspectRatio)
     {
+        // Perform more detailed input validation for aspect ratio.
+        bytes memory aspectRatioBytes = bytes(_aspectRatio);
+        uint256 bytesLength = aspectRatioBytes.length;
+        require(bytesLength <= 11, "Aspect ratio format too long");
+        bool hasSeenDecimalSeparator = false;
+        bool hasSeenNumber = false;
+        for (uint256 i; i < bytesLength; i++) {
+            bytes1 character = aspectRatioBytes[i];
+            // Allow as many #s as desired.
+            if (character >= 0x30 && character <= 0x39) {
+                // 9-0
+                // We need to ensure there is at least 1 `9-0` occurrence.
+                hasSeenNumber = true;
+                continue;
+            }
+            if (character == 0x2E) {
+                // .
+                // Allow no more than 1 `.` occurrence.
+                if (!hasSeenDecimalSeparator) {
+                    hasSeenDecimalSeparator = true;
+                    continue;
+                }
+            }
+            revert("Improperly formatted aspect ratio");
+        }
+        require(hasSeenNumber, "Aspect ratio has no numbers");
+
         projects[_projectId].aspectRatio = _aspectRatio;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_ASPECT_RATIO);
     }
@@ -990,6 +1085,7 @@ contract GenArt721CoreV3 is
     function updateProjectBaseURI(uint256 _projectId, string memory _newBaseURI)
         external
         onlyArtist(_projectId)
+        onlyNonEmptyString(_newBaseURI)
     {
         projects[_projectId].projectBaseURI = _newBaseURI;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_BASE_URI);
@@ -1003,6 +1099,7 @@ contract GenArt721CoreV3 is
     function updateDefaultBaseURI(string memory _defaultBaseURI)
         external
         onlyAdminACL(this.updateDefaultBaseURI.selector)
+        onlyNonEmptyString(_defaultBaseURI)
     {
         _updateDefaultBaseURI(_defaultBaseURI);
     }
@@ -1602,6 +1699,9 @@ contract GenArt721CoreV3 is
 
     /**
      * @notice Updates Art Blocks payment address to `_artblocksPrimarySalesAddress`.
+     * @dev Note that this method does not check that the input address is
+     * not `address(0)`, as it is expected that callers of this method should
+     * perform input validation where applicable.
      */
     function _updateArtblocksPrimarySalesAddress(
         address _artblocksPrimarySalesAddress
@@ -1613,6 +1713,9 @@ contract GenArt721CoreV3 is
     /**
      * @notice Updates Art Blocks secondary sales royalty payment address to
      * `_artblocksSecondarySalesAddress`.
+     * @dev Note that this method does not check that the input address is
+     * not `address(0)`, as it is expected that callers of this method should
+     * perform input validation where applicable.
      */
     function _updateArtblocksSecondarySalesAddress(
         address _artblocksSecondarySalesAddress
@@ -1625,6 +1728,9 @@ contract GenArt721CoreV3 is
 
     /**
      * @notice Updates randomizer address to `_randomizerAddress`.
+     * @dev Note that this method does not check that the input address is
+     * not `address(0)`, as it is expected that callers of this method should
+     * perform input validation where applicable.
      */
     function _updateRandomizerAddress(address _randomizerAddress) internal {
         randomizerContract = IRandomizerV2(_randomizerAddress);
@@ -1637,6 +1743,9 @@ contract GenArt721CoreV3 is
      * @notice Updates default base URI to `_defaultBaseURI`.
      * When new projects are added, their `projectBaseURI` is automatically
      * initialized to `_defaultBaseURI`.
+     * @dev Note that this method does not check that the input string is not
+     * the empty string, as it is expected that callers of this method should
+     * perform input validation where applicable.
      */
     function _updateDefaultBaseURI(string memory _defaultBaseURI) internal {
         defaultBaseURI = _defaultBaseURI;
@@ -1657,8 +1766,14 @@ contract GenArt721CoreV3 is
      * Projects are considered completed when they have been invoked the
      * maximum number of times.
      * @param _projectId Project ID to check.
+     * @dev This also enforces that the `_projectId` passed in is valid.
      */
-    function _projectUnlocked(uint256 _projectId) internal view returns (bool) {
+    function _projectUnlocked(uint256 _projectId)
+        internal
+        view
+        onlyValidProjectId(_projectId)
+        returns (bool)
+    {
         uint256 projectCompletedTimestamp = projects[_projectId]
             .completedTimestamp;
         bool projectOpen = projectCompletedTimestamp == 0;

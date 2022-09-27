@@ -112,6 +112,7 @@ contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         external
         onlyArtist(_projectId)
     {
+        require(_root != bytes32(0), "Root must be provided");
         projectMerkleRoot[_projectId] = _root;
         emit ConfigValueSet(_projectId, CONFIG_MERKLE_ROOT, _root);
     }
@@ -206,7 +207,9 @@ contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
      * only result in a gas cost increase, since the core contract will still
      * enforce a maxInvocation check during minting. A false positive is not
      * possible because the V3 core contract only allows maximum invocations
-     * to be reduced, not increased.
+     * to be reduced, not increased. Based on this rationale, we intentionally
+     * do not do input validation in this method as to whether or not the input
+     * `_projectId` is an existing project ID.
      */
     function projectMaxHasBeenInvoked(uint256 _projectId)
         external
@@ -230,7 +233,9 @@ contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
      * project's max invocations have not been synced on this minter, since the
      * V3 core contract only allows maximum invocations to be reduced, not
      * increased. When this happens, the minter will enable minting, allowing
-     * the core contract to enforce the max invocations check.
+     * the core contract to enforce the max invocations check. Based on this
+     * rationale, we intentionally do not do input validation in this method as
+     * to whether or not the input `_projectId` is an existing project ID.
      */
     function projectMaxInvocations(uint256 _projectId)
         external
@@ -256,6 +261,8 @@ contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
      * @notice Updates this minter's price per token of project `_projectId`
      * to be '_pricePerTokenInWei`, in Wei.
      * This price supersedes any legacy core contract price per token value.
+     * @dev Note that it is intentionally supported here that the configured
+     * price may be explicitly set to `0`.
      */
     function updatePricePerTokenInWei(
         uint256 _projectId,

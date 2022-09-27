@@ -171,7 +171,9 @@ contract MinterSetPriceERC20V2 is ReentrancyGuard, IFilteredMinterV0 {
      * only result in a gas cost increase, since the core contract will still
      * enforce a maxInvocation check during minting. A false positive is not
      * possible because the V3 core contract only allows maximum invocations
-     * to be reduced, not increased.
+     * to be reduced, not increased. Based on this rationale, we intentionally
+     * do not do input validation in this method as to whether or not the input
+     * `_projectId` is an existing project ID.
      */
     function projectMaxHasBeenInvoked(uint256 _projectId)
         external
@@ -195,7 +197,9 @@ contract MinterSetPriceERC20V2 is ReentrancyGuard, IFilteredMinterV0 {
      * project's max invocations have not been synced on this minter, since the
      * V3 core contract only allows maximum invocations to be reduced, not
      * increased. When this happens, the minter will enable minting, allowing
-     * the core contract to enforce the max invocations check.
+     * the core contract to enforce the max invocations check. Based on this
+     * rationale, we intentionally do not do input validation in this method as
+     * to whether or not the input `_projectId` is an existing project ID.
      */
     function projectMaxInvocations(uint256 _projectId)
         external
@@ -214,6 +218,7 @@ contract MinterSetPriceERC20V2 is ReentrancyGuard, IFilteredMinterV0 {
         uint256 _projectId,
         uint256 _pricePerTokenInWei
     ) external onlyArtist(_projectId) {
+        require(_pricePerTokenInWei > 0, "Price may not be 0");
         projectConfig[_projectId].pricePerTokenInWei = _pricePerTokenInWei;
         projectConfig[_projectId].priceIsConfigured = true;
         emit PricePerTokenInWeiUpdated(_projectId, _pricePerTokenInWei);
