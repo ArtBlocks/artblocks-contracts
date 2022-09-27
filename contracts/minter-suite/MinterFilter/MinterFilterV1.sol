@@ -265,7 +265,6 @@ contract MinterFilterV1 is IMinterFilterV0 {
      * @notice Queries if project `_projectId` has an assigned minter.
      * @param _projectId Project ID to query.
      * @return bool true if project has an assigned minter, else false
-     * @dev requires project to have an assigned minter
      */
     function projectHasMinter(uint256 _projectId) external view returns (bool) {
         (bool _hasMinter, ) = minterForProject.tryGet(_projectId);
