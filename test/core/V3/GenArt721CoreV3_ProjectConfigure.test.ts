@@ -879,13 +879,12 @@ describe("GenArt721CoreV3 Project Configure", async function () {
 
     it("fails to upload 26 KB script", async function () {
       await expectRevert(
-        this.genArt721Core
-          .connect(this.accounts.artist)
-          .addProjectScript(
-            this.projectZero,
-            GREATER_THAN_CONTRACT_SIZE_LIMIT_SCRIPT
-          ),
-        "Transaction gas limit is 30795800 and exceeds block gas limit of 30000000"
+        this.genArt721Core.connect(this.accounts.artist).addProjectScript(
+          this.projectZero,
+          GREATER_THAN_CONTRACT_SIZE_LIMIT_SCRIPT,
+          { gasLimit: 30000000 } // hard-code gas limit because ethers sometimes estimates too high
+        ),
+        "ContractAsStorage: Write Error"
       );
     });
 
