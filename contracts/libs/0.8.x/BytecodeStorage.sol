@@ -24,10 +24,11 @@ pragma solidity ^0.8.0;
  */
 library BytecodeStorage {
     //---------------------------------------------------------------------------------------------------------------//
-    // Offset Amount | Offset Aggregate | Description                                                                //
+    // Starting Index | Size | Ending Index | Description                                                            //
     //---------------------------------------------------------------------------------------------------------------//
-    // 53            | 53               | allow contract to be `selfdestruct`-able via gated-cleanup-logic           //
-    // 20            | 73               | reserve 20 bytes for storing deploying-contract's address                  //
+    // 0              | N/A  | 0            |                                                                        //
+    // 0              | 53   | 53           | the bytes of the gated-cleanup-logic allowing for `selfdestruct`ion    //
+    // 53             | 20   | 73           | the 20 bytes used for storing the deploying contract's address         //
     //---------------------------------------------------------------------------------------------------------------//
     // Define the offset for where the "logic bytes" end, and the "data bytes" begin. Note that this is a manually
     // calculated value, and must be updated if the above table is changed. It is expected that tests will fail if
