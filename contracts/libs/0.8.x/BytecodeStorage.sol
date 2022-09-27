@@ -34,6 +34,8 @@ library BytecodeStorage {
     // calculated value, and must be updated if the above table is changed. It is expected that tests will fail if
     // this value is not updated.
     uint256 internal constant DATA_OFFSET = 73;
+    uint256 internal constant ADDRESS_LENGTH = 20;
+    uint256 internal constant ADDRESS_OFFSET = DATA_OFFSET - ADDRESS_LENGTH;
 
     /*//////////////////////////////////////////////////////////////
                            WRITE LOGIC
@@ -187,10 +189,10 @@ library BytecodeStorage {
         // get the size of the bytecode
         uint256 bytecodeSize = _bytecodeSizeAt(_address);
         // handle case where address contains code < DATA_OFFSET
-        // note: the first check here also captures the case where bytecodeSize == 0
-        //       implicitly, but we add the second check of (bytecodeSize == 0)
-        //       as a fall-through that will never execute unless `DATA_OFFSET`
-        //       is set to 0 at some point.
+        // note: the first check here also captures the case where
+        //       (bytecodeSize == 0) implicitly, but we add the second check of
+        //       (bytecodeSize == 0) as a fall-through that will never execute
+        //       unless `DATA_OFFSET` is set to 0 at some point.
         if ((bytecodeSize < DATA_OFFSET) || (bytecodeSize == 0)) {
             revert("ContractAsStorage: Read Error");
         }
@@ -229,21 +231,25 @@ library BytecodeStorage {
         // get the size of the data
         uint256 bytecodeSize = _bytecodeSizeAt(_address);
         // handle case where address contains code < DATA_OFFSET
-        // note: the first check here also captures the case where bytecodeSize == 0
-        //       implicitly, but we add the second check of (bytecodeSize == 0)
-        //       as a fall-through that will never execute unless `DATA_OFFSET`
-        //       is set to 0 at some point.
+        // note: the first check here also captures the case where
+        //       (bytecodeSize == 0) implicitly, but we add the second check of
+        //       (bytecodeSize == 0) as a fall-through that will never execute
+        //       unless `DATA_OFFSET` is set to 0 at some point.
         if ((bytecodeSize < DATA_OFFSET) || (bytecodeSize == 0)) {
             revert("ContractAsStorage: Read Error");
         }
 
         assembly {
             // copy the 20-byte address of the data contract writer to memory
+            // note: this relies on the assumption noted at the top-level of
+            //       this file that the storage layout for the deployed
+            //       contracts-as-storage contract looks like:
+            //       | gated-cleanup-logic | deployer-address | data |
             extcodecopy(
                 _address,
-                add(writerAddress, 12),
-                DEPLOYER_ADDRESS_OFFSET,
-                20
+                add(writerAddress, 12), // address needs to be 0-padded.
+                ADDRESS_OFFSET,
+                ADDRESS_LENGTH
             )
         }
     }
