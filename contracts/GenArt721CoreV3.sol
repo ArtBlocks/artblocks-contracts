@@ -244,6 +244,8 @@ contract GenArt721CoreV3 is
     }
 
     modifier onlyUnlocked(uint256 _projectId) {
+        // Note: calling `_projectUnlocked` enforces that the `_projectId`
+        //       passed in is valid.`
         require(_projectUnlocked(_projectId), "Only if unlocked");
         _;
     }
@@ -1744,6 +1746,7 @@ contract GenArt721CoreV3 is
      * Projects are considered completed when they have been invoked the
      * maximum number of times.
      * @param _projectId Project ID to check.
+     * @dev This also enforces that the `_projectId` passed in is valid.
      */
     function _projectUnlocked(uint256 _projectId)
         internal
