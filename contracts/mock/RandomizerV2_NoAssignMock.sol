@@ -39,7 +39,6 @@ contract RandomizerV2_NoAssignMock is BasicRandomizerV2 {
     // to zero on the core contract. Used for test purposes only.
     // @dev WARNING - THIS IS NOT SECURE AND SHOULD NOT BE USED IN PRODUCTION.
     function actuallyAssignZeroTokenHash(uint256 _tokenId) external {
-        uint256 time = block.timestamp;
         bytes32 hash;
         genArt721Core.setTokenHash_8PT(_tokenId, hash);
     }
