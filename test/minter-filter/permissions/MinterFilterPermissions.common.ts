@@ -328,7 +328,6 @@ export const MinterFilterPermissions_Common = async () => {
       await expectRevert(
         this.minter.connect(this.accounts.artist).purchase(this.projectZero, {
           value: pricePerTokenInWei,
-          gasPrice: 1,
         }),
         priceNotConfiguredErrorMessage
       );
@@ -340,7 +339,6 @@ export const MinterFilterPermissions_Common = async () => {
       await expectRevert(
         this.minter.connect(this.accounts.artist).purchase(this.projectZero, {
           value: pricePerTokenInWei,
-          gasPrice: 1,
         }),
         priceNotConfiguredErrorMessage
       );
@@ -355,7 +353,6 @@ export const MinterFilterPermissions_Common = async () => {
       await expectRevert(
         this.minter.connect(this.accounts.artist).purchase(this.projectZero, {
           value: pricePerTokenInWei,
-          gasPrice: 1,
         }),
         unassignedErrorMessage
       );
@@ -367,7 +364,6 @@ export const MinterFilterPermissions_Common = async () => {
       await expectRevert(
         this.minter.connect(this.accounts.artist).purchase(this.projectZero, {
           value: pricePerTokenInWei,
-          gasPrice: 1,
         }),
         unassignedErrorMessage
       );
@@ -390,7 +386,6 @@ export const MinterFilterPermissions_Common = async () => {
         .connect(this.accounts.artist)
         .purchase(this.projectZero, {
           value: pricePerTokenInWei,
-          gasPrice: 1,
         });
       // remove minter from project
       await this.minterFilter
@@ -400,7 +395,6 @@ export const MinterFilterPermissions_Common = async () => {
       await expectRevert(
         this.minter.connect(this.accounts.artist).purchase(this.projectZero, {
           value: pricePerTokenInWei,
-          gasPrice: 1,
         }),
         unassignedErrorMessage
       );
@@ -437,13 +431,11 @@ export const MinterFilterPermissions_Common = async () => {
       // success when minting from minterA
       await minterA.connect(this.accounts.artist).purchase(this.projectZero, {
         value: pricePerTokenInWei,
-        gasPrice: 1,
       });
       // revert when minting from minterB
       await expectRevert(
         minterB.connect(this.accounts.artist).purchase(this.projectZero, {
           value: pricePerTokenInWei,
-          gasPrice: 1,
         }),
         assignedMinterError
       );
@@ -455,7 +447,6 @@ export const MinterFilterPermissions_Common = async () => {
       await expectRevert(
         minterA.connect(this.accounts.artist).purchase(this.projectZero, {
           value: pricePerTokenInWei,
-          gasPrice: 1,
         }),
         unassignedErrorMessage
       );

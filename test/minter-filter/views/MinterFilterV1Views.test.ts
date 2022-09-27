@@ -11,12 +11,6 @@ import { MinterFilterViews_Common } from "./MinterFilterViews.common";
 
 const runForEach = [
   {
-    core: "GenArt721CoreV1",
-    coreFirstProjectNumber: 3,
-    minterFilter: "MinterFilterV0",
-    minter: "MinterSetPriceERC20V0",
-  },
-  {
     core: "GenArt721CoreV3",
     coreFirstProjectNumber: 0,
     minterFilter: "MinterFilterV1",
@@ -56,8 +50,16 @@ runForEach.forEach((params) => {
       );
     });
 
-    describe("common tests", async function () {
-      MinterFilterViews_Common();
+    describe("V1+ specific input checks", async function () {
+      it("reverts on improper address inputs", async function () {
+        // addProject
+        expectRevert(
+          this.minterFilter
+            .connect(this.accounts.deployer)
+            .addApprovedMinter(constants.ZERO_ADDRESS),
+          "Must input non-zero address"
+        );
+      });
     });
   });
 });

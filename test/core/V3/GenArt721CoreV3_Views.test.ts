@@ -245,7 +245,7 @@ describe("GenArt721CoreV3 Views", async function () {
         );
       await this.genArt721Core
         .connect(this.accounts.artist)
-        .updateProjectAspectRatio(this.projectZero, "1.77777778");
+        .updateProjectAspectRatio(this.projectZero, "1.777777778");
       await this.genArt721Core
         .connect(this.accounts.artist)
         .addProjectScript(this.projectZero, "if(true){}");
@@ -256,8 +256,35 @@ describe("GenArt721CoreV3 Views", async function () {
       expect(projectScriptDetails.scriptTypeAndVersion).to.be.equal(
         "p5js@v1.2.3"
       );
-      expect(projectScriptDetails.aspectRatio).to.be.equal("1.77777778");
+      expect(projectScriptDetails.aspectRatio).to.be.equal("1.777777778");
       expect(projectScriptDetails.scriptCount).to.be.equal(1);
+    });
+
+    it("validates aspect ratio format details", async function () {
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectAspectRatio(this.projectZero, "1.7777777778"),
+        "Aspect ratio format too long"
+      );
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectAspectRatio(this.projectZero, "2/3"),
+        "Improperly formatted aspect ratio"
+      );
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectAspectRatio(this.projectZero, "1.2.3.4"),
+        "Improperly formatted aspect ratio"
+      );
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectAspectRatio(this.projectZero, "."),
+        "Aspect ratio has no numbers"
+      );
     });
   });
 
@@ -484,6 +511,158 @@ describe("GenArt721CoreV3 Views", async function () {
       );
       expect(revenueSplits.artistRevenue_).to.be.equal(
         ethers.utils.parseEther("0.392")
+      );
+    });
+
+    it("reverts on improper address inputs", async function () {
+      // addProject
+      expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .addProject("name", constants.ZERO_ADDRESS),
+        "Must input non-zero address"
+      );
+      // updateArtblocksCurationRegistryAddress
+      expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateArtblocksCurationRegistryAddress(constants.ZERO_ADDRESS),
+        "Must input non-zero address"
+      );
+      // updateArtblocksDependencyRegistryAddress
+      expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateArtblocksDependencyRegistryAddress(constants.ZERO_ADDRESS),
+        "Must input non-zero address"
+      );
+      // updateArtblocksPrimarySalesAddress
+      expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateArtblocksPrimarySalesAddress(constants.ZERO_ADDRESS),
+        "Must input non-zero address"
+      );
+      // updateArtblocksSecondarySalesAddress
+      expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateArtblocksSecondarySalesAddress(constants.ZERO_ADDRESS),
+        "Must input non-zero address"
+      );
+      // updateMinterContract
+      expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateMinterContract(constants.ZERO_ADDRESS),
+        "Must input non-zero address"
+      );
+      // updateRandomizerAddress
+      expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateRandomizerAddress(constants.ZERO_ADDRESS),
+        "Must input non-zero address"
+      );
+      // updateProjectArtistAddress
+      expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateProjectArtistAddress(this.projectZero, constants.ZERO_ADDRESS),
+        "Must input non-zero address"
+      );
+
+      const proposeArtistPaymentAddressesAndSplitsArgs = [
+        this.projectZero,
+        constants.ZERO_ADDRESS,
+        constants.ZERO_ADDRESS,
+        0,
+        constants.ZERO_ADDRESS,
+        0,
+      ];
+      // proposeArtistPaymentAddressesAndSplits
+      expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .proposeArtistPaymentAddressesAndSplits(
+            ...proposeArtistPaymentAddressesAndSplitsArgs
+          ),
+        "Must input non-zero address"
+      );
+      // adminAcceptArtistAddressesAndSplits
+      expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .adminAcceptArtistAddressesAndSplits(
+            ...proposeArtistPaymentAddressesAndSplitsArgs
+          ),
+        "Must input non-zero address"
+      );
+    });
+
+    it("reverts on improper string inputs", async function () {
+      // addProject
+      expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .addProject("", this.accounts.artist.address),
+        "Must input non-empty string"
+      );
+      // updateProjectName
+      expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateProjectName(this.projectZero, ""),
+        "Must input non-empty string"
+      );
+      // updateProjectArtistName
+      expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateProjectArtistName(this.projectZero, ""),
+        "Must input non-empty string"
+      );
+      // updateProjectLicense
+      expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateProjectLicense(this.projectZero, ""),
+        "Must input non-empty string"
+      );
+      // addProjectScript
+      expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .addProjectScript(this.projectZero, ""),
+        "Must input non-empty string"
+      );
+      // updateProjectScript
+      expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateProjectScript(this.projectZero, 0, ""),
+        "Must input non-empty string"
+      );
+      // updateProjectAspectRatio
+      expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateProjectAspectRatio(this.projectZero, ""),
+        "Must input non-empty string"
+      );
+      // updateProjectBaseURI
+      expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectBaseURI(this.projectZero, ""),
+        "Must input non-empty string"
+      );
+      // updateDefaultBaseURI
+      expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateDefaultBaseURI(""),
+        "Must input non-empty string"
       );
     });
 
@@ -1421,11 +1600,11 @@ describe("GenArt721CoreV3 Views", async function () {
   });
 
   describe("projectScriptByIndex", function () {
-    it("reverts on invalid reads", async function () {
-      await expectRevert(
-        this.genArt721Core.projectScriptByIndex(this.projectZero, 0),
-        "ContractAsStorage: Read Error"
-      );
+    it("returns empty string by default", async function () {
+      const emptyProjectScript = await this.genArt721Core
+        .connect(this.accounts.user)
+        .projectScriptByIndex(this.projectZero, 0);
+      expect(emptyProjectScript).to.be.equal("");
     });
 
     it("returns expected populated string", async function () {

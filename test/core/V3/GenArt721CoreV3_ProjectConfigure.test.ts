@@ -22,6 +22,8 @@ import {
   SQUIGGLE_SCRIPT,
   SKULPTUUR_SCRIPT_APPROX,
   CONTRACT_SIZE_LIMIT_SCRIPT,
+  GREATER_THAN_CONTRACT_SIZE_LIMIT_SCRIPT,
+  MULTI_BYTE_UTF_EIGHT_SCRIPT,
 } from "../../util/example-scripts";
 
 /**
@@ -83,6 +85,11 @@ describe("GenArt721CoreV3 Project Configure", async function () {
       expect(SQUIGGLE_SCRIPT.length).to.be.gt(0);
       expect(SKULPTUUR_SCRIPT_APPROX.length).to.be.gt(0);
       expect(CONTRACT_SIZE_LIMIT_SCRIPT.length).to.be.gt(0);
+      expect(GREATER_THAN_CONTRACT_SIZE_LIMIT_SCRIPT.length).to.be.gt(0);
+      expect(GREATER_THAN_CONTRACT_SIZE_LIMIT_SCRIPT.length).to.be.gt(
+        CONTRACT_SIZE_LIMIT_SCRIPT.length
+      );
+      expect(MULTI_BYTE_UTF_EIGHT_SCRIPT.length).to.be.gt(0);
     });
   });
 
@@ -722,21 +729,21 @@ describe("GenArt721CoreV3 Project Configure", async function () {
         this.genArt721Core
           .connect(this.accounts.artist)
           .updateProjectSecondaryMarketRoyaltyPercentage(this.projectZero, 96),
-        "Max of 95%"
+        "Max of ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE percent"
       );
     });
   });
 
   describe("addProjectScript", function () {
-    it("uploads and recalls an empty script", async function () {
+    it("uploads and recalls a single-byte script", async function () {
       await this.genArt721Core
         .connect(this.accounts.artist)
-        .addProjectScript(this.projectZero, "");
+        .addProjectScript(this.projectZero, "0");
       const script = await this.genArt721Core.projectScriptByIndex(
         this.projectZero,
         0
       );
-      expect(script).to.equal("");
+      expect(script).to.equal("0");
     });
 
     it("uploads and recalls an short script < 32 bytes", async function () {
@@ -784,10 +791,11 @@ describe("GenArt721CoreV3 Project Configure", async function () {
       await this.genArt721Core
         .connect(this.accounts.artist)
         .removeProjectLastScript(this.projectZero);
-      await expectRevert(
-        this.genArt721Core.projectScriptByIndex(this.projectZero, 0),
-        "ContractAsStorage: Read Error"
+      const emptyScript = await this.genArt721Core.projectScriptByIndex(
+        this.projectZero,
+        0
       );
+      expect(emptyScript).to.equal("");
 
       const removedScriptByteCode = await ethers.provider.getCode(
         scriptAddress
@@ -826,6 +834,19 @@ describe("GenArt721CoreV3 Project Configure", async function () {
           to: scriptAddress,
         })
       );
+      // And this is still the case when correct `0xFF` bytes are sent along.
+      await expectRevert.unspecified(
+        this.accounts.user.call({
+          to: scriptAddress,
+          data: "0xFF",
+        })
+      );
+      await expectRevert.unspecified(
+        this.accounts.deployer.call({
+          to: scriptAddress,
+          data: "0xFF",
+        })
+      );
 
       const sameScriptByteCode = await ethers.provider.getCode(scriptAddress);
       expect(sameScriptByteCode).to.equal(scriptByteCode);
@@ -856,6 +877,28 @@ describe("GenArt721CoreV3 Project Configure", async function () {
       expect(script).to.equal(CONTRACT_SIZE_LIMIT_SCRIPT);
     });
 
+    it("fails to upload 26 KB script", async function () {
+      await expectRevert(
+        this.genArt721Core.connect(this.accounts.artist).addProjectScript(
+          this.projectZero,
+          GREATER_THAN_CONTRACT_SIZE_LIMIT_SCRIPT,
+          { gasLimit: 30000000 } // hard-code gas limit because ethers sometimes estimates too high
+        ),
+        "ContractAsStorage: Write Error"
+      );
+    });
+
+    it("uploads and recalls misc. UTF-8 script", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .addProjectScript(this.projectZero, MULTI_BYTE_UTF_EIGHT_SCRIPT);
+      const script = await this.genArt721Core.projectScriptByIndex(
+        this.projectZero,
+        0
+      );
+      expect(script).to.equal(MULTI_BYTE_UTF_EIGHT_SCRIPT);
+    });
+
     it("uploads and recalls chromie squiggle script and different script", async function () {
       // index 0: squiggle
       await this.genArt721Core
@@ -877,20 +920,56 @@ describe("GenArt721CoreV3 Project Configure", async function () {
       );
       expect(scriptOne).to.equal(SKULPTUUR_SCRIPT_APPROX);
     });
+
+    it("doesn't selfdestruct script storage contract when safeTransferFrom to script storage contract", async function () {
+      // upload script and get address
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .addProjectScript(this.projectZero, SQUIGGLE_SCRIPT);
+      const scriptAddress =
+        await this.genArt721Core.projectScriptBytecodeAddressByIndex(
+          this.projectZero,
+          0
+        );
+      const scriptByteCode = await ethers.provider.getCode(scriptAddress);
+      expect(scriptByteCode).to.not.equal("0x");
+
+      // mint a token on project zero
+      await this.minter
+        .connect(this.accounts.artist)
+        .purchase(this.projectZero);
+
+      // attempt to safe-transfer token to script storage contract
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          ["safeTransferFrom(address,address,uint256)"](
+            this.accounts.artist.address,
+            scriptAddress,
+            this.projectZeroTokenZero.toNumber()
+          ),
+        "ERC721: transfer to non ERC721Receiver implementer"
+      );
+
+      // verify script storage contract still exists
+      const sameScriptByteCode = await ethers.provider.getCode(scriptAddress);
+      expect(sameScriptByteCode).to.equal(scriptByteCode);
+      expect(sameScriptByteCode).to.not.equal("0x");
+    });
   });
 
   describe("projectScriptBytecodeAddressByIndex", function () {
-    it("uploads and recalls an empty script", async function () {
+    it("uploads and recalls a single-byte script", async function () {
       await this.genArt721Core
         .connect(this.accounts.artist)
-        .addProjectScript(this.projectZero, "");
+        .addProjectScript(this.projectZero, "0");
       const scriptBytecodeAddress =
         await this.genArt721Core.projectScriptBytecodeAddressByIndex(
           this.projectZero,
           0
         );
       console.log(scriptBytecodeAddress);
-      expect(scriptBytecodeAddress).to.not.equal("");
+      expect(scriptBytecodeAddress).to.not.equal("0");
     });
   });
 

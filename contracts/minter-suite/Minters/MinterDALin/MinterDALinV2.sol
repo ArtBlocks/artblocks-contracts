@@ -175,7 +175,16 @@ contract MinterDALinV2 is ReentrancyGuard, IFilteredMinterV0 {
 
     /**
      * @notice projectId => has project reached its maximum number of
-     * invocations?
+     * invocations? Note that this returns a local cache of the core contract's
+     * state, and may be out of sync with the core contract. This is
+     * intentional, as it only enables gas optimization of mints after a
+     * project's maximum invocations has been reached. A false negative will
+     * only result in a gas cost increase, since the core contract will still
+     * enforce a maxInvocation check during minting. A false positive is not
+     * possible because the V3 core contract only allows maximum invocations
+     * to be reduced, not increased. Based on this rationale, we intentionally
+     * do not do input validation in this method as to whether or not the input
+     * `_projectId` is an existing project ID.
      */
     function projectMaxHasBeenInvoked(uint256 _projectId)
         external
@@ -188,8 +197,20 @@ contract MinterDALinV2 is ReentrancyGuard, IFilteredMinterV0 {
     /**
      * @notice projectId => project's maximum number of invocations.
      * Optionally synced with core contract value, for gas optimization.
-     * @dev this value my be out-of-sync with the core contract's value, and is
-     * used for gas-minimization of failed mint transactions only.
+     * Note that this returns a local cache of the core contract's
+     * state, and may be out of sync with the core contract. This is
+     * intentional, as it only enables gas optimization of mints after a
+     * project's maximum invocations has been reached.
+     * @dev A number greater than the core contract's project max invocations
+     * will only result in a gas cost increase, since the core contract will
+     * still enforce a maxInvocation check during minting. A number less than
+     * the core contract's project max invocations is only possible when the
+     * project's max invocations have not been synced on this minter, since the
+     * V3 core contract only allows maximum invocations to be reduced, not
+     * increased. When this happens, the minter will enable minting, allowing
+     * the core contract to enforce the max invocations check. Based on this
+     * rationale, we intentionally do not do input validation in this method as
+     * to whether or not the input `_projectId` is an existing project ID.
      */
     function projectMaxInvocations(uint256 _projectId)
         external
@@ -241,6 +262,8 @@ contract MinterDALinV2 is ReentrancyGuard, IFilteredMinterV0 {
      * @param _auctionTimestampEnd Timestamp at which to end the auction.
      * @param _startPrice Price at which to start the auction, in Wei.
      * @param _basePrice Resting price of the auction, in Wei.
+     * @dev Note that it is intentionally supported here that the configured
+     * price may be explicitly set to `0`.
      */
     function setAuctionDetails(
         uint256 _projectId,
@@ -359,6 +382,13 @@ contract MinterDALinV2 is ReentrancyGuard, IFilteredMinterV0 {
     {
         // CHECKS
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
+
+        // Note that `maxHasBeenInvoked` is only checked here to reduce gas
+        // consumption after a project has been fully minted.
+        // `_projectConfig.maxHasBeenInvoked` is locally cached to reduce
+        // gas consumption, but if not in sync with the core contract's value,
+        // the core contract also enforces its own max invocation check during
+        // minting.
         require(
             !_projectConfig.maxHasBeenInvoked,
             "Maximum number of invocations reached"
