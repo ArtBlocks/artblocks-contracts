@@ -97,6 +97,11 @@ contract GenArt721CoreV3 is
     // This contract emits generic events that contain fields that indicate
     // which parameter has been updated. This is sufficient for application
     // state management, while also simplifying the contract and indexing code.
+    // This was done as an alternative to having custom events that emit what
+    // field-values have changed for each event, given that changed values can
+    // be introspected by indexers due to the design of this smart contract
+    // exposing these state changes via publicly viewable fields.
+    //
     // The following fields are used to indicate which contract-level parameter
     // has been updated in the `PlatformUpdated` event:
     bytes32 constant FIELD_NEXT_PROJECT_ID = "nextProjectId";
