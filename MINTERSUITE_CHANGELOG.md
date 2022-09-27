@@ -21,3 +21,9 @@
 
 ### MinterDARefundExp
 - V0: Initial release
+
+### MinterHolder
+- V0: Initial release
+
+### MinterMerkle
+- V0: Initial release

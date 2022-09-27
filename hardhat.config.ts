@@ -9,6 +9,7 @@ import "@nomiclabs/hardhat-etherscan";
 import "hardhat-docgen";
 
 const MAINNET_JSON_RPC_PROVIDER_URL = process.env.MAINNET_JSON_RPC_PROVIDER_URL;
+const GOERLI_JSON_RPC_PROVIDER_URL = process.env.GOERLI_JSON_RPC_PROVIDER_URL;
 const ROPSTEN_JSON_RPC_PROVIDER_URL = process.env.ROPSTEN_JSON_RPC_PROVIDER_URL;
 const RINKEBY_JSON_RPC_PROVIDER_URL = process.env.RINKEBY_JSON_RPC_PROVIDER_URL;
 const KOVAN_JSON_RPC_PROVIDER_URL = process.env.KOVAN_JSON_RPC_PROVIDER_URL;
@@ -40,7 +41,16 @@ module.exports = {
         settings: {
           optimizer: {
             enabled: true,
-            runs: 100,
+            runs: 25,
+          },
+        },
+      },
+      {
+        version: "0.8.16",
+        settings: {
+          optimizer: {
+            enabled: true,
+            runs: 25,
           },
         },
       },
@@ -55,6 +65,10 @@ module.exports = {
       url: MAINNET_JSON_RPC_PROVIDER_URL,
       accounts: [`0x${MAINNET_PRIVATE_KEY}`],
       gasPrice: 60000000000, // 60 gwei
+    },
+    goerli: {
+      url: GOERLI_JSON_RPC_PROVIDER_URL,
+      accounts: [`0x${TESTNET_PRIVATE_KEY}`],
     },
     ropsten: {
       url: ROPSTEN_JSON_RPC_PROVIDER_URL,
@@ -89,6 +103,6 @@ module.exports = {
     currency: "USD",
     gasPrice: 100,
     enabled: true,
-    coinmarketcap: process.env.COINMARKETCAP_API_KEY
-  }
+    coinmarketcap: process.env.COINMARKETCAP_API_KEY,
+  },
 };

@@ -1,9 +1,16 @@
-const formatTitleCaseToKebabCase = (str: string) => {
-  return str.toLowerCase().replace(/\s/g, "-");
+const formatTitleCaseToKebabCase = (str: string, networkName: string) => {
+  // also removes any duplicate network names (e.g. "goerli-goerli" -> "goerli")
+  return str
+    .toLowerCase()
+    .replace(/\s/g, "-") // remove whitespace
+    .replace(/\(/g, "") // remove (
+    .replace(/\)/g, "") // remove )
+    .replace(/-x-/g, "-") // replace "-x-" w/ "-" (partner contracts)
+    .replace(`${networkName}-${networkName}`, `${networkName}`); // remove double network name
 };
 
 const getPBABBucketName = (pbabToken: string, networkName: string) => {
-  const base = formatTitleCaseToKebabCase(pbabToken);
+  const base = formatTitleCaseToKebabCase(pbabToken, networkName);
   return `${base}-${networkName}`;
 };
 
