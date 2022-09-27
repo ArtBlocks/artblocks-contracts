@@ -60,7 +60,8 @@ import "./libs/0.8.x/Bytes32Strings.sol";
  *   to the Admin ACL contract, or the artist if the core contract owner has
  *   renounced ownership)
  * - toggleProjectIsPaused (note the artist can still mint while paused)
- * - updateProjectSecondaryMarketRoyaltyPercentage (up to 95%)
+ * - updateProjectSecondaryMarketRoyaltyPercentage (up to 
+     ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE percent)
  * - updateProjectWebsite
  * - updateProjectMaxInvocations (to a number greater than or equal to the
  *   current number of invocations, and less than current project maximum
@@ -85,10 +86,16 @@ contract GenArt721CoreV3 is
 {
     using Bytes32Strings for bytes32;
     using Strings for uint256;
+    uint256 constant ONE_HUNDRED = 100;
     uint256 constant ONE_MILLION = 1_000_000;
     uint24 constant ONE_MILLION_UINT24 = 1_000_000;
     uint256 constant FOUR_WEEKS_IN_SECONDS = 2_419_200;
     uint8 constant AT_CHARACTER_CODE = uint8(bytes1("@")); // 0x40
+
+    // numeric constants
+    uint256 constant ART_BLOCKS_MAX_PRIMARY_SALES_PERCENTAGE = 25; // 25%
+    uint256 constant ART_BLOCKS_MAX_SECONDARY_SALES_BPS = 10000; // 10_000 BPS = 100%
+    uint256 constant ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE = 95; // 95%
 
     // generic platform event fields
     bytes32 constant FIELD_NEXT_PROJECT_ID = "nextProjectId";
@@ -308,7 +315,8 @@ contract GenArt721CoreV3 is
 
     /**
      * @notice Mints a token from project `_projectId` and sets the
-     * token's owner to `_to`.
+     * token's owner to `_to`. Hash may or may not be assigned to the token
+     * during the mint transaction, depending on the randomizer contract.
      * @param _to Address to be the minted token's owner.
      * @param _projectId Project ID to mint a token on.
      * @param _by Purchaser of minted token.
@@ -465,7 +473,11 @@ contract GenArt721CoreV3 is
         external
         onlyAdminACL(this.updateArtblocksPrimarySalesPercentage.selector)
     {
-        require(artblocksPrimarySalesPercentage_ <= 25, "Max of 25%");
+        require(
+            artblocksPrimarySalesPercentage_ <=
+                ART_BLOCKS_MAX_PRIMARY_SALES_PERCENTAGE,
+            "Max of ART_BLOCKS_MAX_PRIMARY_SALES_PERCENTAGE percent"
+        );
         _artblocksPrimarySalesPercentage = uint8(
             artblocksPrimarySalesPercentage_
         );
@@ -484,7 +496,10 @@ contract GenArt721CoreV3 is
     function updateArtblocksSecondarySalesBPS(
         uint256 _artblocksSecondarySalesBPS
     ) external onlyAdminACL(this.updateArtblocksSecondarySalesBPS.selector) {
-        require(_artblocksSecondarySalesBPS <= 10000, "Max of 100%");
+        require(
+            _artblocksSecondarySalesBPS <= ART_BLOCKS_MAX_SECONDARY_SALES_BPS,
+            "Max of ART_BLOCKS_MAX_SECONDARY_SALES_BPS BPS"
+        );
         artblocksSecondarySalesBPS = _artblocksSecondarySalesBPS;
         emit PlatformUpdated(FIELD_ARTBLOCKS_SECONDARY_SALES_BPS);
     }
@@ -550,8 +565,8 @@ contract GenArt721CoreV3 is
     ) external onlyArtist(_projectId) {
         // checks
         require(
-            _additionalPayeePrimarySalesPercentage <= 100 &&
-                _additionalPayeeSecondarySalesPercentage <= 100,
+            _additionalPayeePrimarySalesPercentage <= ONE_HUNDRED &&
+                _additionalPayeeSecondarySalesPercentage <= ONE_HUNDRED,
             "Max of 100%"
         );
         // effects
@@ -741,13 +756,16 @@ contract GenArt721CoreV3 is
      * @param _projectId Project ID.
      * @param _secondMarketRoyalty Percent of secondary sales revenue that will
      * be split to artist and additionalSecondaryPayee. This must be less than
-     * or equal to 95 percent.
+     * or equal to ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE percent.
      */
     function updateProjectSecondaryMarketRoyaltyPercentage(
         uint256 _projectId,
         uint256 _secondMarketRoyalty
     ) external onlyArtist(_projectId) {
-        require(_secondMarketRoyalty <= 95, "Max of 95%");
+        require(
+            _secondMarketRoyalty <= ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE,
+            "Max of ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE percent"
+        );
         projectIdToFinancials[_projectId]
             .secondaryMarketRoyaltyPercentage = uint8(_secondMarketRoyalty);
         emit ProjectUpdated(
@@ -886,7 +904,9 @@ contract GenArt721CoreV3 is
         Project storage project = projects[_projectId];
         require(project.scriptCount > 0, "there are no scripts to remove");
         delete project.scripts[project.scriptCount - 1];
-        project.scriptCount = project.scriptCount - 1;
+        unchecked {
+            project.scriptCount = project.scriptCount - 1;
+        }
         emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
     }
 
@@ -1291,7 +1311,7 @@ contract GenArt721CoreV3 is
             uint256 royaltyFeeByID
         )
     {
-        uint256 projectId = _tokenId / ONE_MILLION;
+        uint256 projectId = tokenIdToProjectId(_tokenId);
         ProjectFinance storage projectFinance = projectIdToFinancials[
             projectId
         ];
@@ -1324,7 +1344,7 @@ contract GenArt721CoreV3 is
         recipients = new address payable[](3);
         bps = new uint256[](3);
 
-        uint256 projectId = _tokenId / ONE_MILLION;
+        uint256 projectId = tokenIdToProjectId(_tokenId);
         ProjectFinance storage projectFinance = projectIdToFinancials[
             projectId
         ];
@@ -1334,7 +1354,7 @@ contract GenArt721CoreV3 is
         uint256 additionalPayeePercentage = projectFinance
             .additionalPayeeSecondarySalesPercentage;
         // calculate BPS = percentage * 100
-        uint256 artistBPS = (100 - additionalPayeePercentage) *
+        uint256 artistBPS = (ONE_HUNDRED - additionalPayeePercentage) *
             royaltyPercentageForArtistAndAdditional;
 
         uint256 additionalBPS = additionalPayeePercentage *
@@ -1412,7 +1432,7 @@ contract GenArt721CoreV3 is
         // calculate revenues
         artblocksRevenue_ =
             (_price * uint256(_artblocksPrimarySalesPercentage)) /
-            100;
+            ONE_HUNDRED;
         uint256 projectFunds;
         unchecked {
             // artblocksRevenue_ is always <=25, so guaranteed to never underflow
@@ -1421,7 +1441,7 @@ contract GenArt721CoreV3 is
         additionalPayeePrimaryRevenue_ =
             (projectFunds *
                 projectFinance.additionalPayeePrimarySalesPercentage) /
-            100;
+            ONE_HUNDRED;
         unchecked {
             // projectIdToAdditionalPayeePrimarySalesPercentage is always
             // <=100, so guaranteed to never underflow
@@ -1450,7 +1470,7 @@ contract GenArt721CoreV3 is
      * @notice Gets the project ID for a given `_tokenId`.
      */
     function tokenIdToProjectId(uint256 _tokenId)
-        external
+        public
         pure
         returns (uint256 _projectId)
     {
@@ -1511,7 +1531,7 @@ contract GenArt721CoreV3 is
         onlyValidTokenId(_tokenId)
         returns (string memory)
     {
-        string memory _projectBaseURI = projects[_tokenId / ONE_MILLION]
+        string memory _projectBaseURI = projects[tokenIdToProjectId(_tokenId)]
             .projectBaseURI;
         return string.concat(_projectBaseURI, _tokenId.toString());
     }
