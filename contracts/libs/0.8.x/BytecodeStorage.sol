@@ -29,7 +29,9 @@ library BytecodeStorage {
     // 53            | 53               | allow contract to be `selfdestruct`-able via gated-cleanup-logic           //
     // 20            | 73               | reserve 20 bytes for storing deploying-contract's address                  //
     //---------------------------------------------------------------------------------------------------------------//
-    // define the offset for where the "logic bytes" end, and the "data bytes" begin
+    // Define the offset for where the "logic bytes" end, and the "data bytes" begin. Note that this is a manually
+    // calculated value, and must be updated if the above table is changed. It is expected that tests will fail if
+    // this value is not updated.
     uint256 internal constant DATA_OFFSET = 73;
 
     /*//////////////////////////////////////////////////////////////
