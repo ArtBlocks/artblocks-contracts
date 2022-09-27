@@ -69,7 +69,7 @@ contract MinterSetPriceV2 is ReentrancyGuard, IFilteredMinterV0 {
      * at address `_genArt721Address`.
      * @param _genArt721Address Art Blocks core contract address for
      * which this contract will be a minter.
-     * @param _minterFilter Minter filter for whichccthis will a
+     * @param _minterFilter Minter filter for which this will be a
      * filtered minter.
      */
     constructor(address _genArt721Address, address _minterFilter)
