@@ -600,6 +600,72 @@ describe("GenArt721CoreV3 Views", async function () {
       );
     });
 
+    it("reverts on improper string inputs", async function () {
+      // addProject
+      expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .addProject("", this.accounts.artist.address),
+        "Must input non-empty string"
+      );
+      // updateProjectName
+      expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateProjectName(this.projectZero, ""),
+        "Must input non-empty string"
+      );
+      // updateProjectArtistName
+      expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateProjectArtistName(this.projectZero, ""),
+        "Must input non-empty string"
+      );
+      // updateProjectLicense
+      expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateProjectLicense(this.projectZero, ""),
+        "Must input non-empty string"
+      );
+      // addProjectScript
+      expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .addProjectScript(this.projectZero, ""),
+        "Must input non-empty string"
+      );
+      // updateProjectScript
+      expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateProjectScript(this.projectZero, 0, ""),
+        "Must input non-empty string"
+      );
+      // updateProjectAspectRatio
+      expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateProjectAspectRatio(this.projectZero, ""),
+        "Must input non-empty string"
+      );
+      // updateProjectBaseURI
+      expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectBaseURI(this.projectZero, ""),
+        "Must input non-empty string"
+      );
+      // updateDefaultBaseURI
+      expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateDefaultBaseURI(""),
+        "Must input non-empty string"
+      );
+    });
+
     it("returns expected values for projectOne, with updated payment addresses and percentages only to Additional Payee Primary", async function () {
       // add project
       await this.genArt721Core
