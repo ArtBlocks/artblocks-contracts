@@ -834,6 +834,19 @@ describe("GenArt721CoreV3 Project Configure", async function () {
           to: scriptAddress,
         })
       );
+      // And this is still the case when correct `0xFF` bytes are sent along.
+      await expectRevert.unspecified(
+        this.accounts.user.call({
+          to: scriptAddress,
+          data: "0xFF",
+        })
+      );
+      await expectRevert.unspecified(
+        this.accounts.deployer.call({
+          to: scriptAddress,
+          data: "0xFF",
+        })
+      );
 
       const sameScriptByteCode = await ethers.provider.getCode(scriptAddress);
       expect(sameScriptByteCode).to.equal(scriptByteCode);
