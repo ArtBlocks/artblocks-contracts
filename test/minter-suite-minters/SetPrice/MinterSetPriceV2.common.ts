@@ -7,7 +7,7 @@ import EthersAdapter from "@gnosis.pm/safe-ethers-lib";
 import Safe from "@gnosis.pm/safe-core-sdk";
 import { SafeTransactionDataPartial } from "@gnosis.pm/safe-core-sdk-types";
 import { getGnosisSafe } from "../../util/GnosisSafeNetwork";
-import { isCoreV3 } from "../../util/common";
+import { isCoreV3, deployAndGet } from "../../util/common";
 
 /**
  * These tests are intended to check common MinterSetPriceV2 functionality.
@@ -23,6 +23,104 @@ export const MinterSetPriceV2_Common = async () => {
         .purchase_H4M(this.projectZero, {
           value: this.pricePerTokenInWei,
         });
+    });
+
+    describe("payment splitting", async function () {
+      beforeEach(async function () {
+        this.deadReceiver = await deployAndGet.call(
+          this,
+          "DeadReceiverMock",
+          []
+        );
+      });
+
+      it("requires successful payment to platform", async function () {
+        // update platform address to a contract that reverts on receive
+        await this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateArtblocksPrimarySalesAddress(this.deadReceiver.address);
+        // expect revert when trying to purchase
+        await expectRevert(
+          this.minter.connect(this.accounts.user).purchase(this.projectZero, {
+            value: this.pricePerTokenInWei,
+          }),
+          "Art Blocks payment failed"
+        );
+      });
+
+      it("requires successful payment to artist", async function () {
+        // update artist address to a contract that reverts on receive
+        await this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateProjectArtistAddress(
+            this.projectZero,
+            this.deadReceiver.address
+          );
+        // expect revert when trying to purchase
+        await expectRevert(
+          this.minter.connect(this.accounts.user).purchase(this.projectZero, {
+            value: this.pricePerTokenInWei,
+          }),
+          "Artist payment failed"
+        );
+      });
+
+      it("requires successful payment to artist additional payee", async function () {
+        // update artist additional payee to a contract that reverts on receive
+        const proposedAddressesAndSplits = [
+          this.projectZero,
+          this.accounts.artist.address,
+          this.deadReceiver.address,
+          50,
+          this.accounts.additional2.address,
+          50,
+        ];
+        await this.genArt721Core
+          .connect(this.accounts.artist)
+          .proposeArtistPaymentAddressesAndSplits(
+            ...proposedAddressesAndSplits
+          );
+        await this.genArt721Core
+          .connect(this.accounts.deployer)
+          .adminAcceptArtistAddressesAndSplits(...proposedAddressesAndSplits);
+        // expect revert when trying to purchase
+        await expectRevert(
+          this.minter.connect(this.accounts.user).purchase(this.projectZero, {
+            value: this.pricePerTokenInWei,
+          }),
+          "Additional Payee payment failed"
+        );
+      });
+
+      it("handles zero platform and artist payment values", async function () {
+        // update platform to zero percent
+        await this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateArtblocksPrimarySalesPercentage(0);
+        // update artist primary split to zero
+        const proposedAddressesAndSplits = [
+          this.projectZero,
+          this.accounts.artist.address,
+          this.accounts.additional.address,
+          100,
+          this.accounts.additional2.address,
+          50,
+        ];
+        await this.genArt721Core
+          .connect(this.accounts.artist)
+          .proposeArtistPaymentAddressesAndSplits(
+            ...proposedAddressesAndSplits
+          );
+        await this.genArt721Core
+          .connect(this.accounts.deployer)
+          .adminAcceptArtistAddressesAndSplits(...proposedAddressesAndSplits);
+        // expect successful purchase
+        await this.minter
+          .connect(this.accounts.user)
+          .purchase(this.projectZero, {
+            value: this.pricePerTokenInWei,
+          });
+      });
     });
   });
 

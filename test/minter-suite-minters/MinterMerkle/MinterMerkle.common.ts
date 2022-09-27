@@ -13,7 +13,7 @@ import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 
-import { isCoreV3 } from "../../util/common";
+import { isCoreV3, deployAndGet } from "../../util/common";
 
 import EthersAdapter from "@gnosis.pm/safe-ethers-lib";
 import Safe from "@gnosis.pm/safe-core-sdk";

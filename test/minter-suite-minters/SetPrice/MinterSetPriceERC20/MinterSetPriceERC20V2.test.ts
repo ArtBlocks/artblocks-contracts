@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
-
+import { expectRevert } from "@openzeppelin/test-helpers";
 import {
   getAccounts,
   assignDefaultConstants,
@@ -130,6 +130,77 @@ describe("MinterSetPriceERC20V2_V3Core", async function () {
 
   describe("common MinterSetPrice V2 tests", async function () {
     MinterSetPriceV2_Common();
+  });
+
+  describe("updatePricePerTokenInWei", async function () {
+    it("does not allow price update to be zero", async function () {
+      // does allow artist
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.artist)
+          .updatePricePerTokenInWei(this.projectZero, 0),
+        "Price may not be 0"
+      );
+    });
+  });
+
+  describe("purchase", async function () {
+    it("requires sufficient ERC20 token approval", async function () {
+      // artist changes to Mock ERC20 token
+      await this.minter
+        .connect(this.accounts.artist)
+        .updateProjectCurrencyInfo(
+          this.projectZero,
+          "MOCK",
+          this.ERC20Mock.address
+        );
+      // approve contract and able to mint with Mock token, but insufficient qty approved
+      await this.ERC20Mock.connect(this.accounts.user).approve(
+        this.minter.address,
+        this.pricePerTokenInWei.sub(1)
+      );
+      await expectRevert(
+        this.minter.connect(this.accounts.user).purchase(this.projectZero),
+        "Insufficient Funds Approved for TX"
+      );
+    });
+
+    it("handles ERC20 splits when platform and artist have zero revenues", async function () {
+      // artist changes to Mock ERC20 token
+      await this.minter
+        .connect(this.accounts.artist)
+        .updateProjectCurrencyInfo(
+          this.projectZero,
+          "MOCK",
+          this.ERC20Mock.address
+        );
+      // approve contract and able to mint with Mock token
+      await this.ERC20Mock.connect(this.accounts.user).approve(
+        this.minter.address,
+        this.pricePerTokenInWei
+      );
+      // update platform to zero percent
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateArtblocksPrimarySalesPercentage(0);
+      // update artist primary split to zero
+      const proposedAddressesAndSplits = [
+        this.projectZero,
+        this.accounts.artist.address,
+        this.accounts.additional.address,
+        100,
+        this.accounts.additional2.address,
+        50,
+      ];
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .proposeArtistPaymentAddressesAndSplits(...proposedAddressesAndSplits);
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .adminAcceptArtistAddressesAndSplits(...proposedAddressesAndSplits);
+      // expect successful purchase of token
+      await this.minter.connect(this.accounts.user).purchase(this.projectZero);
+    });
   });
 
   describe("setProjectMaxInvocations", async function () {
