@@ -239,7 +239,10 @@ contract GenArt721CoreV3 is
     }
 
     modifier onlyValidProjectId(uint256 _projectId) {
-        require(_projectId < _nextProjectId, "Project ID does not exist");
+        require(
+            (_projectId >= startingProjectId) && (_projectId < _nextProjectId),
+            "Project ID does not exist"
+        );
         _;
     }
 
