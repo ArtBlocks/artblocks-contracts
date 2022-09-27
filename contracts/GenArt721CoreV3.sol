@@ -287,17 +287,20 @@ contract GenArt721CoreV3 is
      * set as contract owner.
      * @param _startingProjectId The initial next project ID.
      * @dev _startingProjectId should be set to a value much, much less than
-     * max(uint248) to avoid overflow when adding to it.
+     * max(uint248), but an explicit input type of `uint248` is used as it is
+     * safer to cast up to `uint256` than it is to cast down for the purposes
+     * of setting `_nextProjectId`.
      */
     constructor(
         string memory _tokenName,
         string memory _tokenSymbol,
         address _randomizerContract,
         address _adminACLContract,
-        uint256 _startingProjectId
+        uint248 _startingProjectId
     ) ERC721_PackedHashSeed(_tokenName, _tokenSymbol) {
         // record contracts starting project ID
-        startingProjectId = _startingProjectId;
+        // casting-up is safe
+        startingProjectId = uint256(_startingProjectId);
         _updateArtblocksPrimarySalesAddress(msg.sender);
         _updateArtblocksSecondarySalesAddress(msg.sender);
         _updateRandomizerAddress(_randomizerContract);
@@ -306,7 +309,7 @@ contract GenArt721CoreV3 is
         // initialize default base URI
         _updateDefaultBaseURI("https://token.artblocks.io/");
         // initialize next project ID
-        _nextProjectId = uint248(_startingProjectId);
+        _nextProjectId = _startingProjectId;
         emit PlatformUpdated(FIELD_NEXT_PROJECT_ID);
     }
 
