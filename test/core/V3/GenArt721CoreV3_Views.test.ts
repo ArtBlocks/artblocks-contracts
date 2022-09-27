@@ -514,6 +514,92 @@ describe("GenArt721CoreV3 Views", async function () {
       );
     });
 
+    it("reverts on improper address inputs", async function () {
+      // addProject
+      expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .addProject("name", constants.ZERO_ADDRESS),
+        "Must input non-zero address"
+      );
+      // updateArtblocksCurationRegistryAddress
+      expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateArtblocksCurationRegistryAddress(constants.ZERO_ADDRESS),
+        "Must input non-zero address"
+      );
+      // updateArtblocksDependencyRegistryAddress
+      expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateArtblocksDependencyRegistryAddress(constants.ZERO_ADDRESS),
+        "Must input non-zero address"
+      );
+      // updateArtblocksPrimarySalesAddress
+      expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateArtblocksPrimarySalesAddress(constants.ZERO_ADDRESS),
+        "Must input non-zero address"
+      );
+      // updateArtblocksSecondarySalesAddress
+      expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateArtblocksSecondarySalesAddress(constants.ZERO_ADDRESS),
+        "Must input non-zero address"
+      );
+      // updateMinterContract
+      expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateMinterContract(constants.ZERO_ADDRESS),
+        "Must input non-zero address"
+      );
+      // updateRandomizerAddress
+      expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateRandomizerAddress(constants.ZERO_ADDRESS),
+        "Must input non-zero address"
+      );
+      // updateProjectArtistAddress
+      expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateProjectArtistAddress(this.projectZero, constants.ZERO_ADDRESS),
+        "Must input non-zero address"
+      );
+
+      const proposeArtistPaymentAddressesAndSplitsArgs = [
+        this.projectZero,
+        constants.ZERO_ADDRESS,
+        constants.ZERO_ADDRESS,
+        0,
+        constants.ZERO_ADDRESS,
+        0,
+      ];
+      // proposeArtistPaymentAddressesAndSplits
+      expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .proposeArtistPaymentAddressesAndSplits(
+            ...proposeArtistPaymentAddressesAndSplitsArgs
+          ),
+        "Must input non-zero address"
+      );
+      // adminAcceptArtistAddressesAndSplits
+      expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.deployer)
+          .adminAcceptArtistAddressesAndSplits(
+            ...proposeArtistPaymentAddressesAndSplitsArgs
+          ),
+        "Must input non-zero address"
+      );
+    });
+
     it("returns expected values for projectOne, with updated payment addresses and percentages only to Additional Payee Primary", async function () {
       // add project
       await this.genArt721Core
