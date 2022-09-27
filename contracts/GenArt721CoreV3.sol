@@ -324,6 +324,7 @@ contract GenArt721CoreV3 is
      * @param _to Address to be the minted token's owner.
      * @param _projectId Project ID to mint a token on.
      * @param _by Purchaser of minted token.
+     * @return _tokenId The ID of the minted token.
      * @dev sender must be the allowed minterContract
      * @dev name of function is optimized for gas usage
      */
@@ -448,6 +449,8 @@ contract GenArt721CoreV3 is
 
     /**
      * @notice Updates reference to Art Blocks Curation Registry contract.
+     * @param _artblocksCurationRegistryAddress Address of new Curation
+     * Registry.
      */
     function updateArtblocksCurationRegistryAddress(
         address _artblocksCurationRegistryAddress
@@ -461,6 +464,8 @@ contract GenArt721CoreV3 is
 
     /**
      * @notice Updates reference to Art Blocks Dependency Registry contract.
+     * @param _artblocksDependencyRegistryAddress Address of new Dependency
+     * Registry.
      */
     function updateArtblocksDependencyRegistryAddress(
         address _artblocksDependencyRegistryAddress
@@ -473,7 +478,10 @@ contract GenArt721CoreV3 is
     }
 
     /**
-     * @notice Updates artblocksPrimarySalesAddress to `_artblocksPrimarySalesAddress`.
+     * @notice Updates artblocksPrimarySalesAddress to
+     * `_artblocksPrimarySalesAddress`.
+     * @param _artblocksPrimarySalesAddress Address of new primary sales
+     * payment address.
      */
     function updateArtblocksPrimarySalesAddress(
         address payable _artblocksPrimarySalesAddress
@@ -484,6 +492,8 @@ contract GenArt721CoreV3 is
     /**
      * @notice Updates Art Blocks secondary sales royalty payment address to
      * `_artblocksSecondarySalesAddress`.
+     * @param _artblocksSecondarySalesAddress Address of new secondary sales
+     * payment address.
      */
     function updateArtblocksSecondarySalesAddress(
         address payable _artblocksSecondarySalesAddress
@@ -496,7 +506,9 @@ contract GenArt721CoreV3 is
 
     /**
      * @notice Updates Art Blocks primary sales revenue percentage to
-     * `_artblocksPrimarySalesPercentage`.
+     * `artblocksPrimarySalesPercentage_`.
+     * @param artblocksPrimarySalesPercentage_ New primary sales revenue
+     * percentage.
      */
     function updateArtblocksPrimarySalesPercentage(
         uint256 artblocksPrimarySalesPercentage_
@@ -518,7 +530,9 @@ contract GenArt721CoreV3 is
     /**
      * @notice Updates Art Blocks secondary sales royalty Basis Points to
      * `_artblocksSecondarySalesBPS`.
-     * @dev Due to seocndary royalties being ultimately enforced via social
+     * @param _artblocksSecondarySalesBPS New secondary sales royalty Basis
+     * points.
+     * @dev Due to secondary royalties being ultimately enforced via social
      * consensus, no hard upper limit is imposed on the BPS value, other than
      * <= 100% royalty, which would not make mathematical sense. Realistically,
      * changing this value is expected to either never occur, or be a rare
@@ -537,6 +551,7 @@ contract GenArt721CoreV3 is
 
     /**
      * @notice Updates minter to `_address`.
+     * @param _address Address of new minter.
      */
     function updateMinterContract(address _address)
         external
@@ -548,6 +563,7 @@ contract GenArt721CoreV3 is
 
     /**
      * @notice Updates randomizer to `_randomizerAddress`.
+     * @param _randomizerAddress Address of new randomizer.
      */
     function updateRandomizerAddress(address _randomizerAddress)
         external
@@ -558,6 +574,7 @@ contract GenArt721CoreV3 is
 
     /**
      * @notice Toggles project `_projectId` as active/inactive.
+     * @param _projectId Project ID to be toggled.
      */
     function toggleProjectIsActive(uint256 _projectId)
         external
@@ -576,7 +593,7 @@ contract GenArt721CoreV3 is
      * @param _artistAddress Artist address that controls the project, and may
      * receive payments.
      * @param _additionalPayeePrimarySales Address that may receive a
-     * percentage split of the artit's primary sales revenue.
+     * percentage split of the artist's primary sales revenue.
      * @param _additionalPayeePrimarySalesPercentage Percent of artist's
      * portion of primary sale revenue that will be split to address
      * `_additionalPayeePrimarySales`.
@@ -630,7 +647,7 @@ contract GenArt721CoreV3 is
      * @param _artistAddress Artist address that controls the project, and may
      * receive payments.
      * @param _additionalPayeePrimarySales Address that may receive a
-     * percentage split of the artit's primary sales revenue.
+     * percentage split of the artist's primary sales revenue.
      * @param _additionalPayeePrimarySalesPercentage Percent of artist's
      * portion of primary sale revenue that will be split to address
      * `_additionalPayeePrimarySales`.
@@ -696,6 +713,8 @@ contract GenArt721CoreV3 is
      * @notice Updates artist of project `_projectId` to `_artistAddress`.
      * This is to only be used in the event that the artist address is
      * compromised or sanctioned.
+     * @param _projectId Project ID.
+     * @param _artistAddress New artist address.
      */
     function updateProjectArtistAddress(
         uint256 _projectId,
@@ -707,6 +726,7 @@ contract GenArt721CoreV3 is
 
     /**
      * @notice Toggles paused state of project `_projectId`.
+     * @param _projectId Project ID to be toggled.
      */
     function toggleProjectIsPaused(uint256 _projectId)
         external
@@ -751,6 +771,8 @@ contract GenArt721CoreV3 is
 
     /**
      * @notice Updates name of project `_projectId` to be `_projectName`.
+     * @param _projectId Project ID.
+     * @param _projectName New project name.
      */
     function updateProjectName(uint256 _projectId, string memory _projectName)
         external
@@ -764,6 +786,8 @@ contract GenArt721CoreV3 is
     /**
      * @notice Updates artist name for project `_projectId` to be
      * `_projectArtistName`.
+     * @param _projectId Project ID.
+     * @param _projectArtistName New artist name.
      */
     function updateProjectArtistName(
         uint256 _projectId,
@@ -807,6 +831,8 @@ contract GenArt721CoreV3 is
     /**
      * @notice Updates description of project `_projectId`.
      * Only artist may call when unlocked, only admin may call when locked.
+     * @param _projectId Project ID.
+     * @param _projectDescription New project description.
      */
     function updateProjectDescription(
         uint256 _projectId,
@@ -830,6 +856,8 @@ contract GenArt721CoreV3 is
 
     /**
      * @notice Updates website of project `_projectId` to be `_projectWebsite`.
+     * @param _projectId Project ID.
+     * @param _projectWebsite New project website.
      */
     function updateProjectWebsite(
         uint256 _projectId,
@@ -841,6 +869,8 @@ contract GenArt721CoreV3 is
 
     /**
      * @notice Updates license for project `_projectId`.
+     * @param _projectId Project ID.
+     * @param _projectLicense New project license.
      */
     function updateProjectLicense(
         uint256 _projectId,
@@ -860,6 +890,8 @@ contract GenArt721CoreV3 is
      * artist, and must be greater than or equal to current invocations.
      * New projects are created with maximum invocations of 1 million by
      * default.
+     * @param _projectId Project ID.
+     * @param _maxInvocations New maximum invocations.
      */
     function updateProjectMaxInvocations(
         uint256 _projectId,
@@ -906,7 +938,7 @@ contract GenArt721CoreV3 is
      * @notice Updates script for project `_projectId` at script ID `_scriptId`.
      * @param _projectId Project to be updated.
      * @param _scriptId Script ID to be updated.
-     * @param _script Script to be added.
+     * @param _script The updated script value.
      */
     function updateProjectScript(
         uint256 _projectId,
@@ -925,6 +957,7 @@ contract GenArt721CoreV3 is
 
     /**
      * @notice Removes last script from project `_projectId`.
+     * @param _projectId Project to be updated.
      */
     function removeProjectLastScript(uint256 _projectId)
         external
@@ -990,6 +1023,8 @@ contract GenArt721CoreV3 is
      * This is the controlling base URI for all tokens in the project. The
      * contract-level defaultBaseURI is only used when initializing new
      * projects.
+     * @param _projectId Project to be updated.
+     * @param _newBaseURI New base URI.
      */
     function updateProjectBaseURI(uint256 _projectId, string memory _newBaseURI)
         external
@@ -1003,6 +1038,7 @@ contract GenArt721CoreV3 is
      * @notice Updates default base URI to `_defaultBaseURI`. The
      * contract-level defaultBaseURI is only used when initializing new
      * projects. Token URIs are determined by their project's `projectBaseURI`.
+     * @param _defaultBaseURI New default base URI.
      */
     function updateDefaultBaseURI(string memory _defaultBaseURI)
         external
@@ -1013,6 +1049,7 @@ contract GenArt721CoreV3 is
 
     /**
      * @notice Next project ID to be created on this contract.
+     * @return uint256 Next project ID.
      */
     function nextProjectId() external view returns (uint256) {
         return _nextProjectId;
@@ -1021,6 +1058,8 @@ contract GenArt721CoreV3 is
     /**
      * @notice Returns token hash for token ID `_tokenId`. Returns null if hash
      * has not been set.
+     * @param _tokenId Token ID to be queried.
+     * @return bytes32 Token hash.
      * @dev token hash is the keccak256 hash of the stored hash seed
      */
     function tokenIdToHash(uint256 _tokenId) external view returns (bytes32) {
@@ -1034,6 +1073,7 @@ contract GenArt721CoreV3 is
     /**
      * @notice View function returning Art Blocks portion of primary sales, in
      * percent.
+     * @return uint256 Art Blocks portion of primary sales, in percent.
      */
     function artblocksPrimarySalesPercentage() external view returns (uint256) {
         return _artblocksPrimarySalesPercentage;
@@ -1042,6 +1082,8 @@ contract GenArt721CoreV3 is
     /**
      * @notice View function returning Artist's address for project
      * `_projectId`.
+     * @param _projectId Project ID to be queried.
+     * @return address Artist's address.
      */
     function projectIdToArtistAddress(uint256 _projectId)
         external
@@ -1055,6 +1097,8 @@ contract GenArt721CoreV3 is
      * @notice View function returning Artist's secondary market royalty
      * percentage for project `_projectId`.
      * This does not include Art Blocks portion of secondary market royalties.
+     * @param _projectId Project ID to be queried.
+     * @return uint256 Artist's secondary market royalty percentage.
      */
     function projectIdToSecondaryMarketRoyaltyPercentage(uint256 _projectId)
         external
@@ -1068,6 +1112,8 @@ contract GenArt721CoreV3 is
     /**
      * @notice View function returning Artist's additional payee address for
      * primary sales, for project `_projectId`.
+     * @param _projectId Project ID to be queried.
+     * @return address Artist's additional payee address for primary sales.
      */
     function projectIdToAdditionalPayeePrimarySales(uint256 _projectId)
         external
@@ -1080,6 +1126,8 @@ contract GenArt721CoreV3 is
     /**
      * @notice View function returning Artist's additional payee primary sales
      * percentage, for project `_projectId`.
+     * @param _projectId Project ID to be queried.
+     * @return uint256 Artist's additional payee primary sales percentage.
      */
     function projectIdToAdditionalPayeePrimarySalesPercentage(
         uint256 _projectId
@@ -1092,6 +1140,9 @@ contract GenArt721CoreV3 is
     /**
      * @notice View function returning Artist's additional payee address for
      * secondary sales, for project `_projectId`.
+     * @param _projectId Project ID to be queried.
+     * @return address payable Artist's additional payee address for secondary
+     * sales.
      */
     function projectIdToAdditionalPayeeSecondarySales(uint256 _projectId)
         external
@@ -1104,6 +1155,8 @@ contract GenArt721CoreV3 is
     /**
      * @notice View function returning Artist's additional payee secondary
      * sales percentage, for project `_projectId`.
+     * @param _projectId Project ID to be queried.
+     * @return uint256 Artist's additional payee secondary sales percentage.
      */
     function projectIdToAdditionalPayeeSecondarySalesPercentage(
         uint256 _projectId
@@ -1246,6 +1299,8 @@ contract GenArt721CoreV3 is
 
     /**
      * @notice Returns script for project `_projectId` at script index `_index`.
+     * @param _projectId Project to be queried.
+     * @param _index Index of script to be queried.
      */
     function projectScriptByIndex(uint256 _projectId, uint256 _index)
         external
@@ -1257,6 +1312,8 @@ contract GenArt721CoreV3 is
 
     /**
      * @notice Returns base URI for project `_projectId`.
+     * @param _projectId Project to be queried.
+     * @return projectBaseURI Base URI for project
      */
     function projectURIInfo(uint256 _projectId)
         external
@@ -1269,6 +1326,9 @@ contract GenArt721CoreV3 is
     /**
      * @notice Backwards-compatible (pre-V3) function returning if `_minter` is
      * minterContract.
+     * @param _minter Address to be queried.
+     * @return bool Boolean representing if `_minter` is minterContract.
+     */
      */
     function isMintWhitelisted(address _minter) external view returns (bool) {
         return (minterContract == _minter);
@@ -1278,6 +1338,7 @@ contract GenArt721CoreV3 is
      * @notice Gets qty of randomizers in history of all randomizers used by
      * this core contract. If a randomizer is switched away from then back to,
      * it will show up in the history twice.
+     * @return randomizerHistoryCount Count of randomizers in history
      */
     function numHistoricalRandomizers() external view returns (uint256) {
         return _historicalRandomizerAddresses.length;
@@ -1287,6 +1348,7 @@ contract GenArt721CoreV3 is
      * @notice Gets address of randomizer at index `_index` in history of all
      * randomizers used by this core contract. Index is zero-based.
      * @param _index Historical index of randomizer to be queried.
+     * @return randomizerAddress Address of randomizer at index `_index`.
      * @dev If a randomizer is switched away from and then switched back to, it
      * will show up in the history twice.
      */
@@ -1305,6 +1367,7 @@ contract GenArt721CoreV3 is
     /**
      * @notice Backwards-compatible (pre-V3) function returning Art Blocks
      * primary sales payment address (now called artblocksPrimarySalesAddress).
+     * @return address payable Art Blocks primary sales payment address
      */
     function artblocksAddress() external view returns (address payable) {
         return artblocksPrimarySalesAddress;
@@ -1313,6 +1376,7 @@ contract GenArt721CoreV3 is
     /**
      * @notice Backwards-compatible (pre-V3) function returning Art Blocks
      * primary sales percentage (now called artblocksPrimarySalesPercentage).
+     * @return uint256 Art Blocks primary sales percentage
      */
     function artblocksPercentage() external view returns (uint256) {
         return _artblocksPrimarySalesPercentage;
@@ -1323,6 +1387,7 @@ contract GenArt721CoreV3 is
      * Gets artist + artist's additional payee royalty data for token ID
      `_tokenId`.
      * WARNING: Does not include Art Blocks portion of royalties.
+     * @param _tokenId Token ID to be queried.
      * @return artistAddress Artist's payment address
      * @return additionalPayee Additional payee's payment address
      * @return additionalPayeePercentage Percentage of artist revenue
@@ -1490,7 +1555,7 @@ contract GenArt721CoreV3 is
 
     /**
      * @notice Backwards-compatible (pre-V3) getter returning contract admin
-     * @return admin_ Address of contract owner
+     * @return address Address of contract admin (same as owner)
      */
     function admin() external view returns (address) {
         return owner();
@@ -1498,6 +1563,8 @@ contract GenArt721CoreV3 is
 
     /**
      * @notice Gets the project ID for a given `_tokenId`.
+     * @param _tokenId Token ID to be queried.
+     * @return projectId Project ID for given `_tokenId`.
      */
     function tokenIdToProjectId(uint256 _tokenId)
         public
@@ -1518,6 +1585,8 @@ contract GenArt721CoreV3 is
      * @param _contract Address of the contract being called by `_sender`.
      * @param _selector Function selector of the function being called by
      * `_sender`.
+     * @return bool Whether `_sender` is allowed to call function with selector
+     * `_selector` on contract `_contract`.
      * @dev assumes the Admin ACL contract is the owner of this contract, which
      * is expected to always be true.
      * @dev adminACLContract is expected to either be null address (if owner
@@ -1537,6 +1606,7 @@ contract GenArt721CoreV3 is
     /**
      * @notice Returns contract owner. Set to deployer's address by default on
      * contract deployment.
+     * @return address Address of contract owner.
      * @dev ref: https://docs.openzeppelin.com/contracts/4.x/api/access#Ownable
      * @dev owner role was called `admin` prior to V3 core contract
      */
@@ -1551,6 +1621,8 @@ contract GenArt721CoreV3 is
 
     /**
      * @notice Gets token URI for token ID `_tokenId`.
+     * @param _tokenId Token ID to be queried.
+     * @return string URI of token ID `_tokenId`.
      * @dev token URIs are the concatenation of the project base URI and the
      * token ID.
      */
@@ -1582,7 +1654,7 @@ contract GenArt721CoreV3 is
     }
 
     /**
-     * @dev forbids new projects from being created
+     * @notice Forbids new projects from being created
      * @dev only performs operation and emits event if contract is not already
      * forbidding new projects.
      */
@@ -1594,8 +1666,10 @@ contract GenArt721CoreV3 is
     }
 
     /**
-     * @dev Transfers ownership of the contract to a new account (`newOwner`).
+     * @notice Transfers ownership of the contract to a new account (`newOwner`).
      * Internal function without access restriction.
+     * @param newOwner New owner.
+     * @dev owner role was called `admin` prior to V3 core contract.
      * @dev Overrides and wraps OpenZeppelin's _transferOwnership function to
      * also update adminACLContract for improved introspection.
      */
@@ -1606,6 +1680,7 @@ contract GenArt721CoreV3 is
 
     /**
      * @notice Updates Art Blocks payment address to `_artblocksPrimarySalesAddress`.
+     * @param _artblocksPrimarySalesAddress New Art Blocks payment address.
      */
     function _updateArtblocksPrimarySalesAddress(
         address _artblocksPrimarySalesAddress
@@ -1617,6 +1692,8 @@ contract GenArt721CoreV3 is
     /**
      * @notice Updates Art Blocks secondary sales royalty payment address to
      * `_artblocksSecondarySalesAddress`.
+     * @param _artblocksSecondarySalesAddress New Art Blocks secondary sales
+     * payment address.
      */
     function _updateArtblocksSecondarySalesAddress(
         address _artblocksSecondarySalesAddress
@@ -1629,6 +1706,7 @@ contract GenArt721CoreV3 is
 
     /**
      * @notice Updates randomizer address to `_randomizerAddress`.
+     * @param _randomizerAddress New randomizer address.
      */
     function _updateRandomizerAddress(address _randomizerAddress) internal {
         randomizerContract = IRandomizerV2(_randomizerAddress);
@@ -1641,6 +1719,7 @@ contract GenArt721CoreV3 is
      * @notice Updates default base URI to `_defaultBaseURI`.
      * When new projects are added, their `projectBaseURI` is automatically
      * initialized to `_defaultBaseURI`.
+     * @param _defaultBaseURI New default base URI.
      */
     function _updateDefaultBaseURI(string memory _defaultBaseURI) internal {
         defaultBaseURI = _defaultBaseURI;
@@ -1649,6 +1728,7 @@ contract GenArt721CoreV3 is
 
     /**
      * @notice Internal function to complete a project.
+     * @param _projectId Project ID to be completed.
      */
     function _completeProject(uint256 _projectId) internal {
         projects[_projectId].completedTimestamp = uint64(block.timestamp);
@@ -1660,7 +1740,8 @@ contract GenArt721CoreV3 is
      * Projects automatically lock four weeks after they are completed.
      * Projects are considered completed when they have been invoked the
      * maximum number of times.
-     * @param _projectId Project ID to check.
+     * @param _projectId Project ID to be queried.
+     * @return bool true if project is unlocked, false otherwise.
      */
     function _projectUnlocked(uint256 _projectId) internal view returns (bool) {
         uint256 projectCompletedTimestamp = projects[_projectId]
