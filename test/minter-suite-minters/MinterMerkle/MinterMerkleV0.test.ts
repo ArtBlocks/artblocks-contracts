@@ -166,7 +166,7 @@ describe("MinterMerkleV0", async function () {
     this.ERC20Mock = await ERC20Factory.deploy(ethers.utils.parseEther("100"));
   });
 
-  describe("common MinterHolder tests", async () => {
+  describe("common MinterMerkle tests", async () => {
     MinterMerkle_Common();
   });
 
