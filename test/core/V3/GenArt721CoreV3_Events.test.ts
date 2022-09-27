@@ -93,7 +93,7 @@ describe("GenArt721CoreV3 Events", async function () {
         .deploy(
           "name",
           "symbol",
-          this.accounts.additional,
+          this.accounts.additional.address,
           constants.ZERO_ADDRESS,
           365
         );
@@ -132,7 +132,7 @@ describe("GenArt721CoreV3 Events", async function () {
         // address for the purposes of this test
         await this.genArt721Core
           .connect(this.accounts.deployer)
-          .updateRandomizerAddress(this.accounts.additional)
+          .updateRandomizerAddress(this.accounts.additional.address)
       )
         .to.emit(this.genArt721Core, "PlatformUpdated")
         .withArgs(ethers.utils.formatBytes32String("randomizerAddress"));

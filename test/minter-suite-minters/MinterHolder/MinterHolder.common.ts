@@ -979,10 +979,13 @@ export const MinterHolder_Common = async () => {
         .connect(this.accounts.deployer)
         .projectMaxHasBeenInvoked(this.projectOne);
       expect(hasMaxBeenInvoked).to.be.false;
+    });
+
+    it("reverts for unconfigured/non-existent project", async function () {
       // trying to set this on unconfigured project (e.g. 99) should cause
       // revert on the underlying CoreContract.
       expectRevert(
-        await this.minter
+        this.minter
           .connect(this.accounts.deployer)
           .setProjectMaxInvocations(99),
         "Project ID does not exist"

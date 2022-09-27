@@ -126,9 +126,6 @@ export const MinterSetPrice_ETH_Common = async () => {
         .connect(this.accounts.deployer)
         .setProjectMaxInvocations(this.projectZero);
       // minter should update storage with accurate projectMaxInvocations
-      await this.minter1
-        .connect(this.accounts.deployer)
-        .setProjectMaxInvocations(this.projectZero);
       let maxInvocations = await this.minter1
         .connect(this.accounts.deployer)
         .projectMaxInvocations(this.projectZero);
@@ -149,10 +146,13 @@ export const MinterSetPrice_ETH_Common = async () => {
         .connect(this.accounts.deployer)
         .projectMaxInvocations(this.projectOne);
       expect(maxInvocations).to.be.equal(this.maxInvocations);
+    });
+
+    it("reverts for unconfigured/non-existent project", async function () {
       // trying to set this on unconfigured project (e.g. 99) should cause
       // revert on the underlying CoreContract.
       expectRevert(
-        await this.minter
+        this.minter
           .connect(this.accounts.deployer)
           .setProjectMaxInvocations(99),
         "Project ID does not exist"
