@@ -1329,7 +1329,6 @@ contract GenArt721CoreV3 is
      * @param _minter Address to be queried.
      * @return bool Boolean representing if `_minter` is minterContract.
      */
-     */
     function isMintWhitelisted(address _minter) external view returns (bool) {
         return (minterContract == _minter);
     }
@@ -1564,7 +1563,7 @@ contract GenArt721CoreV3 is
     /**
      * @notice Gets the project ID for a given `_tokenId`.
      * @param _tokenId Token ID to be queried.
-     * @return projectId Project ID for given `_tokenId`.
+     * @return _projectId Project ID for given `_tokenId`.
      */
     function tokenIdToProjectId(uint256 _tokenId)
         public
