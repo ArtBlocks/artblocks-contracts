@@ -422,10 +422,14 @@ contract GenArt721CoreV3 is
      * minter suite contracts, registry contracts, etc.).
      * After renouncing ownership, artists will be in control of updates to
      * their payment addresses and splits (see modifier
-     * onlyAdminACLOrRenouncedArtist`)
-     * @dev This function may or may not ever be invoked.
-     * @dev This function is intended to be called directly by the adminACL,
-     * not by an address allowed by the adminACL contract.
+     * onlyAdminACLOrRenouncedArtist`).
+     * While there is no currently intended reason to call this method based on
+     * defined Art Blocks business practices, this method exists to allow
+     * artists to continue to maintain the limited set of contract
+     * functionality that exists post-project-lock in an environment in which
+     * there is no longer an admin maintaining this smart contract.
+     * @dev This function is intended to be called directly by the AdminACL,
+     * not by an address allowed by the AdminACL contract.
      */
     function renounceOwnership() public override onlyOwner {
         // broadcast that new projects are no longer allowed (if not already)
