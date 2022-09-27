@@ -22,6 +22,7 @@ import {
   SQUIGGLE_SCRIPT,
   SKULPTUUR_SCRIPT_APPROX,
   CONTRACT_SIZE_LIMIT_SCRIPT,
+  GREATER_THAN_CONTRACT_SIZE_LIMIT_SCRIPT,
   MULTI_BYTE_UTF_EIGHT_SCRIPT,
 } from "../../util/example-scripts";
 
@@ -84,6 +85,10 @@ describe("GenArt721CoreV3 Project Configure", async function () {
       expect(SQUIGGLE_SCRIPT.length).to.be.gt(0);
       expect(SKULPTUUR_SCRIPT_APPROX.length).to.be.gt(0);
       expect(CONTRACT_SIZE_LIMIT_SCRIPT.length).to.be.gt(0);
+      expect(GREATER_THAN_CONTRACT_SIZE_LIMIT_SCRIPT.length).to.be.gt(0);
+      expect(GREATER_THAN_CONTRACT_SIZE_LIMIT_SCRIPT.length).to.be.gt(
+        CONTRACT_SIZE_LIMIT_SCRIPT.length
+      );
       expect(MULTI_BYTE_UTF_EIGHT_SCRIPT.length).to.be.gt(0);
     });
   });
@@ -857,6 +862,18 @@ describe("GenArt721CoreV3 Project Configure", async function () {
         0
       );
       expect(script).to.equal(CONTRACT_SIZE_LIMIT_SCRIPT);
+    });
+
+    it("fails to upload 26 KB script", async function () {
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .addProjectScript(
+            this.projectZero,
+            GREATER_THAN_CONTRACT_SIZE_LIMIT_SCRIPT
+          ),
+        "Transaction gas limit is 30795800 and exceeds block gas limit of 30000000"
+      );
     });
 
     it("uploads and recalls misc. UTF-8 script", async function () {
