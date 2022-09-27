@@ -97,7 +97,16 @@ contract GenArt721CoreV3 is
     uint256 constant FOUR_WEEKS_IN_SECONDS = 2_419_200;
     uint8 constant AT_CHARACTER_CODE = uint8(bytes1("@")); // 0x40
 
-    // generic platform event fields
+    // This contract emits generic events that contain fields that indicate
+    // which parameter has been updated. This is sufficient for application
+    // state management, while also simplifying the contract and indexing code.
+    // This was done as an alternative to having custom events that emit what
+    // field-values have changed for each event, given that changed values can
+    // be introspected by indexers due to the design of this smart contract
+    // exposing these state changes via publicly viewable fields.
+    //
+    // The following fields are used to indicate which contract-level parameter
+    // has been updated in the `PlatformUpdated` event:
     bytes32 constant FIELD_NEXT_PROJECT_ID = "nextProjectId";
     bytes32 constant FIELD_NEW_PROJECTS_FORBIDDEN = "newProjectsForbidden";
     bytes32 constant FIELD_DEFAULT_BASE_URI = "defaultBaseURI";
@@ -114,7 +123,8 @@ contract GenArt721CoreV3 is
         "artblocksPrimaryPercentage";
     bytes32 constant FIELD_ARTBLOCKS_SECONDARY_SALES_BPS =
         "artblocksSecondaryBPS";
-    // generic project event fields
+    // The following fields are used to indicate which project-level parameter
+    // has been updated in the `ProjectUpdated` event:
     bytes32 constant FIELD_PROJECT_COMPLETED = "completed";
     bytes32 constant FIELD_PROJECT_ACTIVE = "active";
     bytes32 constant FIELD_PROJECT_ARTIST_ADDRESS = "artistAddress";
@@ -399,6 +409,9 @@ contract GenArt721CoreV3 is
      * @param _hashSeed Hash seed to set for the token ID. Only last 12 bytes
      * will be used.
      * @dev gas-optimized function name because called during mint sequence
+     * @dev if a separate event is required when the token hash is set, e.g.
+     * for indexing purposes, it must be emitted by the randomizer. This is to
+     * minimize gas when minting.
      */
     function setTokenHash_8PT(uint256 _tokenId, bytes32 _hashSeed)
         external
