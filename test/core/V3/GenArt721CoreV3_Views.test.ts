@@ -279,6 +279,12 @@ describe("GenArt721CoreV3 Views", async function () {
           .updateProjectAspectRatio(this.projectZero, "1.2.3.4"),
         "Improperly formatted aspect ratio"
       );
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectAspectRatio(this.projectZero, "."),
+        "Aspect ratio has no numbers"
+      );
     });
   });
 

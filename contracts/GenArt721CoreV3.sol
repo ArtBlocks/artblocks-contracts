@@ -1037,16 +1037,19 @@ contract GenArt721CoreV3 is
         uint256 bytesLength = aspectRatioBytes.length;
         require(bytesLength <= 11, "Aspect ratio format too long");
         bool hasSeenDecimalSeparator = false;
+        bool hasSeenNumber = false;
         for (uint256 i; i < bytesLength; i++) {
             bytes1 character = aspectRatioBytes[i];
             // Allow as many #s as desired.
             if (character >= 0x30 && character <= 0x39) {
                 // 9-0
+                // We need to ensure there is at least 1 `9-0` occurrence.
+                hasSeenNumber = true;
                 continue;
             }
             if (character == 0x2E) {
                 // .
-                // Allow no more than 1 `.` occurance.
+                // Allow no more than 1 `.` occurrence.
                 if (!hasSeenDecimalSeparator) {
                     hasSeenDecimalSeparator = true;
                     continue;
@@ -1054,6 +1057,7 @@ contract GenArt721CoreV3 is
             }
             revert("Improperly formatted aspect ratio");
         }
+        require(hasSeenNumber, "Aspect ratio has no numbers");
 
         projects[_projectId].aspectRatio = _aspectRatio;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_ASPECT_RATIO);
