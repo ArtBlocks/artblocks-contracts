@@ -79,7 +79,7 @@ describe("GenArt721CoreV3 Contract Configure", async function () {
         this.genArt721Core
           .connect(this.accounts.deployer)
           .updateArtblocksPrimarySalesPercentage(26),
-        "Max of 25%"
+        "Max of ART_BLOCKS_MAX_PRIMARY_SALES_PERCENTAGE percent"
       );
     });
 
@@ -102,7 +102,7 @@ describe("GenArt721CoreV3 Contract Configure", async function () {
         this.genArt721Core
           .connect(this.accounts.deployer)
           .updateArtblocksSecondarySalesBPS(10001),
-        "Max of 100%"
+        "Max of ART_BLOCKS_MAX_SECONDARY_SALES_BPS BPS"
       );
     });
 
