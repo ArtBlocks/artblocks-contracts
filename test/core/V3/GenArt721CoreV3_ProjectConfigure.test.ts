@@ -709,7 +709,7 @@ describe("GenArt721CoreV3 Project Configure", async function () {
         this.genArt721Core
           .connect(this.accounts.artist)
           .updateProjectSecondaryMarketRoyaltyPercentage(this.projectZero, 96),
-        "Max of 95%"
+        "Max of ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE percent"
       );
     });
   });
