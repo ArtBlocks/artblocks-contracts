@@ -76,6 +76,10 @@ import "./libs/0.8.x/Bytes32Strings.sol";
  * unlocked, and only callable by Admin ACL contract when a project is locked:
  * - updateProjectDescription
  * ----------------------------------------------------------------------------
+ * The following function is restricted to owner calling directly:
+ * - transferOwnership
+ * - renounceOwnership
+ * ----------------------------------------------------------------------------
  * Additional admin and artist privileged roles may be described on minters,
  * registries, and other contracts that may interact with this core contract.
  */
@@ -287,17 +291,20 @@ contract GenArt721CoreV3 is
      * set as contract owner.
      * @param _startingProjectId The initial next project ID.
      * @dev _startingProjectId should be set to a value much, much less than
-     * max(uint248) to avoid overflow when adding to it.
+     * max(uint248), but an explicit input type of `uint248` is used as it is
+     * safer to cast up to `uint256` than it is to cast down for the purposes
+     * of setting `_nextProjectId`.
      */
     constructor(
         string memory _tokenName,
         string memory _tokenSymbol,
         address _randomizerContract,
         address _adminACLContract,
-        uint256 _startingProjectId
+        uint248 _startingProjectId
     ) ERC721_PackedHashSeed(_tokenName, _tokenSymbol) {
         // record contracts starting project ID
-        startingProjectId = _startingProjectId;
+        // casting-up is safe
+        startingProjectId = uint256(_startingProjectId);
         _updateArtblocksPrimarySalesAddress(msg.sender);
         _updateArtblocksSecondarySalesAddress(msg.sender);
         _updateRandomizerAddress(_randomizerContract);
@@ -306,7 +313,7 @@ contract GenArt721CoreV3 is
         // initialize default base URI
         _updateDefaultBaseURI("https://token.artblocks.io/");
         // initialize next project ID
-        _nextProjectId = uint248(_startingProjectId);
+        _nextProjectId = _startingProjectId;
         emit PlatformUpdated(FIELD_NEXT_PROJECT_ID);
     }
 
@@ -409,6 +416,33 @@ contract GenArt721CoreV3 is
             "Token hash already set"
         );
         ownerAndHashSeed.hashSeed = bytes12(_hashSeed);
+    }
+
+    /**
+     * @notice Allows owner (AdminACL) to revoke ownership of the contract.
+     * Note that the contract is intended to continue to function after the
+     * owner renounces ownership, but no new projects will be able to be added.
+     * Renouncing ownership will leave the contract without an owner,
+     * thereby removing any functionality that is only available to the
+     * owner/AdminACL contract. The same is true for any dependent contracts
+     * that also integrate with the owner/AdminACL contract (e.g. potentially
+     * minter suite contracts, registry contracts, etc.).
+     * After renouncing ownership, artists will be in control of updates to
+     * their payment addresses and splits (see modifier
+     * onlyAdminACLOrRenouncedArtist`).
+     * While there is no currently intended reason to call this method based on
+     * defined Art Blocks business practices, this method exists to allow
+     * artists to continue to maintain the limited set of contract
+     * functionality that exists post-project-lock in an environment in which
+     * there is no longer an admin maintaining this smart contract.
+     * @dev This function is intended to be called directly by the AdminACL,
+     * not by an address allowed by the AdminACL contract.
+     */
+    function renounceOwnership() public override onlyOwner {
+        // broadcast that new projects are no longer allowed (if not already)
+        _forbidNewProjects();
+        // renounce ownership viw Ownable
+        Ownable.renounceOwnership();
     }
 
     /**
@@ -704,8 +738,7 @@ contract GenArt721CoreV3 is
         onlyAdminACL(this.forbidNewProjects.selector)
     {
         require(!newProjectsForbidden, "Already forbidden");
-        newProjectsForbidden = true;
-        emit PlatformUpdated(FIELD_NEW_PROJECTS_FORBIDDEN);
+        _forbidNewProjects();
     }
 
     /**
@@ -1558,6 +1591,18 @@ contract GenArt721CoreV3 is
         return
             interfaceId == type(IManifold).interfaceId ||
             super.supportsInterface(interfaceId);
+    }
+
+    /**
+     * @dev forbids new projects from being created
+     * @dev only performs operation and emits event if contract is not already
+     * forbidding new projects.
+     */
+    function _forbidNewProjects() internal {
+        if (!newProjectsForbidden) {
+            newProjectsForbidden = true;
+            emit PlatformUpdated(FIELD_NEW_PROJECTS_FORBIDDEN);
+        }
     }
 
     /**
