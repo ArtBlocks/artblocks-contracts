@@ -735,15 +735,15 @@ describe("GenArt721CoreV3 Project Configure", async function () {
   });
 
   describe("addProjectScript", function () {
-    it("uploads and recalls an empty script", async function () {
+    it("uploads and recalls a single-byte script", async function () {
       await this.genArt721Core
         .connect(this.accounts.artist)
-        .addProjectScript(this.projectZero, "");
+        .addProjectScript(this.projectZero, "0");
       const script = await this.genArt721Core.projectScriptByIndex(
         this.projectZero,
         0
       );
-      expect(script).to.equal("");
+      expect(script).to.equal("0");
     });
 
     it("uploads and recalls an short script < 32 bytes", async function () {
@@ -959,17 +959,17 @@ describe("GenArt721CoreV3 Project Configure", async function () {
   });
 
   describe("projectScriptBytecodeAddressByIndex", function () {
-    it("uploads and recalls an empty script", async function () {
+    it("uploads and recalls a single-byte script", async function () {
       await this.genArt721Core
         .connect(this.accounts.artist)
-        .addProjectScript(this.projectZero, "");
+        .addProjectScript(this.projectZero, "0");
       const scriptBytecodeAddress =
         await this.genArt721Core.projectScriptBytecodeAddressByIndex(
           this.projectZero,
           0
         );
       console.log(scriptBytecodeAddress);
-      expect(scriptBytecodeAddress).to.not.equal("");
+      expect(scriptBytecodeAddress).to.not.equal("0");
     });
   });
 

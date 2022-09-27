@@ -61,7 +61,7 @@ import "./libs/0.8.x/Bytes32Strings.sol";
  *   to the Admin ACL contract, or the artist if the core contract owner has
  *   renounced ownership)
  * - toggleProjectIsPaused (note the artist can still mint while paused)
- * - updateProjectSecondaryMarketRoyaltyPercentage (up to 
+ * - updateProjectSecondaryMarketRoyaltyPercentage (up to
      ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE percent)
  * - updateProjectWebsite
  * - updateProjectMaxInvocations (to a number greater than or equal to the
@@ -1061,7 +1061,7 @@ contract GenArt721CoreV3 is
         // purge old contract bytecode contract from the blockchain state
         project.scriptBytecodeAddresses[project.scriptCount - 1].purgeBytecode();
         // delete reference to contract address that no longer exists
-        delete project.scripts[project.scriptCount - 1];
+        delete project.scriptBytecodeAddresses[project.scriptCount - 1];
         unchecked {
             project.scriptCount = project.scriptCount - 1;
         }
