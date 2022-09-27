@@ -417,15 +417,14 @@ export const MinterSetPriceERC20_Common = async () => {
         .connect(this.accounts.deployer)
         .projectMaxHasBeenInvoked(this.projectOne);
       expect(hasMaxBeenInvoked).to.be.false;
-      // should also support unconfigured project projectMaxInvocations
-      // e.g. project 99, which does not yet exist
-      await this.minter
-        .connect(this.accounts.deployer)
-        .setProjectMaxInvocations(99);
-      maxInvocations = await this.minter
-        .connect(this.accounts.deployer)
-        .projectMaxInvocations(99);
-      expect(maxInvocations).to.be.equal(0);
+      // trying to set this on unconfigured project (e.g. 99) should cause
+      // revert on the underlying CoreContract.
+      expectRevert(
+        await this.minter
+          .connect(this.accounts.deployer)
+          .setProjectMaxInvocations(99),
+        "Project ID does not exist"
+      );
     });
   });
 

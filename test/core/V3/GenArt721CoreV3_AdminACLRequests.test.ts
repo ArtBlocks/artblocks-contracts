@@ -225,13 +225,6 @@ describe("GenArt721CoreV3 AminACL Requests", async function () {
       ]);
     });
 
-    it("updateProjectIpfsHash", async function () {
-      await validateAdminACLRequest.call(this, "updateProjectAspectRatio", [
-        this.projectZero,
-        "0x",
-      ]);
-    });
-
     it("updateProjectDescription", async function () {
       // admin may only call when in a locked state
       await mintProjectUntilRemaining.call(

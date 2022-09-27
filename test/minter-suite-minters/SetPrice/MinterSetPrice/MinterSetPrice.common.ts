@@ -149,15 +149,14 @@ export const MinterSetPrice_ETH_Common = async () => {
         .connect(this.accounts.deployer)
         .projectMaxInvocations(this.projectOne);
       expect(maxInvocations).to.be.equal(this.maxInvocations);
-      // should also support unconfigured project projectMaxInvocations
-      // e.g. this.projectZero on minter3 - still update to accurate max invocations
-      await this.minter3
-        .connect(this.accounts.deployer)
-        .setProjectMaxInvocations(this.projectZero);
-      maxInvocations = await this.minter3
-        .connect(this.accounts.deployer)
-        .projectMaxInvocations(this.projectZero);
-      expect(maxInvocations).to.be.equal(this.maxInvocations);
+      // trying to set this on unconfigured project (e.g. 99) should cause
+      // revert on the underlying CoreContract.
+      expectRevert(
+        await this.minter
+          .connect(this.accounts.deployer)
+          .setProjectMaxInvocations(99),
+        "Project ID does not exist"
+      );
     });
   });
 

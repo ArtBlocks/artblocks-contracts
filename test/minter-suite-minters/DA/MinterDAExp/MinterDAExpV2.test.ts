@@ -56,7 +56,7 @@ describe("MinterDAExpV2_V3Core", async function () {
       this.minterFilter.address,
     ]);
 
-    safeAddProject(
+    await safeAddProject(
       this.genArt721Core,
       this.accounts.deployer,
       this.accounts.artist.address
