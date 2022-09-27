@@ -50,7 +50,8 @@ library BytecodeStorage {
             //---------------------------------------------------------------------------------------------------------------//
             // Opcode  | Opcode + Arguments  | Description  | Stack View                                                     //
             //---------------------------------------------------------------------------------------------------------------//
-            // (0) creation code returns all code in the contract except for the first 11 (0B in hex) bytes
+            // (0) creation code returns all code in the contract except for the first 11 (0B in hex) bytes, as these 11
+            //     bytes are the creation code itself which we do not want to store in the deployed storage contract result
             //---------------------------------------------------------------------------------------------------------------//
             // 0x60    |  0x60_0B            | PUSH1 11     | codeOffset                                                     //
             // 0x59    |  0x59               | MSIZE        | 0 codeOffset                                                   //
