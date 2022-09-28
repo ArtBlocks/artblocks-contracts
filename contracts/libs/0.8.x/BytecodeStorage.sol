@@ -20,7 +20,8 @@ pragma solidity ^0.8.0;
  *         b) allowing this to be introspected on-chain
  *      Also, given that much of this library is written in assembly, this library makes use of a slightly
  *      different convention (when compared to the rest of the Art Blocks smart contract repo) around
- *      pre-defining return values in order to simplify need to directly memory manage these return values.
+ *      pre-defining return values in some cases in order to simplify need to directly memory manage these
+ *      return values.
  */
 library BytecodeStorage {
     //---------------------------------------------------------------------------------------------------------------//
@@ -31,9 +32,11 @@ library BytecodeStorage {
     // 53             | 20   | 73           | the 20 bytes used for storing the deploying contract's address         //
     //---------------------------------------------------------------------------------------------------------------//
     // Define the offset for where the "logic bytes" end, and the "data bytes" begin. Note that this is a manually
-    // calculated value, and must be updated if the above table is changed. It is expected that tests will fail if
-    // this value is not updated.
+    // calculated value, and must be updated if the above table is changed. It is expected that tests will fail
+    // loudly if these values are not updated in-step with eachother.
     uint256 internal constant DATA_OFFSET = 73;
+    uint256 internal constant ADDRESS_LENGTH = 20;
+    uint256 internal constant ADDRESS_OFFSET = 53; // DATA_OFFSET - ADDRESS_LENGTH
 
     /*//////////////////////////////////////////////////////////////
                            WRITE LOGIC
@@ -187,10 +190,10 @@ library BytecodeStorage {
         // get the size of the bytecode
         uint256 bytecodeSize = _bytecodeSizeAt(_address);
         // handle case where address contains code < DATA_OFFSET
-        // note: the first check here also captures the case where bytecodeSize == 0
-        //       implicitly, but we add the second check of (bytecodeSize == 0)
-        //       as a fall-through that will never execute unless `DATA_OFFSET`
-        //       is set to 0 at some point.
+        // note: the first check here also captures the case where
+        //       (bytecodeSize == 0) implicitly, but we add the second check of
+        //       (bytecodeSize == 0) as a fall-through that will never execute
+        //       unless `DATA_OFFSET` is set to 0 at some point.
         if ((bytecodeSize < DATA_OFFSET) || (bytecodeSize == 0)) {
             revert("ContractAsStorage: Read Error");
         }
@@ -216,6 +219,47 @@ library BytecodeStorage {
         }
     }
 
+    /**
+     * @notice Get address for deployer for given contract bytecode
+     * @param _address address of deployed contract with bytecode containing concat(gated-cleanup-logic, data)
+     * @return writerAddress address read from contract bytecode
+     */
+    function getWriterAddressForBytecode(address _address)
+        internal
+        view
+        returns (address)
+    {
+        // get the size of the data
+        uint256 bytecodeSize = _bytecodeSizeAt(_address);
+        // handle case where address contains code < DATA_OFFSET
+        // note: the first check here also captures the case where
+        //       (bytecodeSize == 0) implicitly, but we add the second check of
+        //       (bytecodeSize == 0) as a fall-through that will never execute
+        //       unless `DATA_OFFSET` is set to 0 at some point.
+        if ((bytecodeSize < DATA_OFFSET) || (bytecodeSize == 0)) {
+            revert("ContractAsStorage: Read Error");
+        }
+
+        address writerAddress;
+        assembly {
+            // copy the 20-byte address of the data contract writer to memory
+            // note: this relies on the assumption noted at the top-level of
+            //       this file that the storage layout for the deployed
+            //       contracts-as-storage contract looks like:
+            //       | gated-cleanup-logic | deployer-address | data |
+            extcodecopy(
+                _address,
+                add(writerAddress, 12), // add zero-padding to fill one slot
+                ADDRESS_OFFSET,
+                ADDRESS_LENGTH
+            )
+            return(
+                writerAddress,
+                0x20 // return size is entire slot, as it is zero-padded
+            )
+        }
+    }
+
     /*//////////////////////////////////////////////////////////////
                               DELETE LOGIC
     //////////////////////////////////////////////////////////////*/
@@ -232,11 +276,11 @@ library BytecodeStorage {
         // deployed bytecode (above) handles all logic for purging state, so no
         // call data is expected to be passed along to perform data purge
         (
-            bool success, /*` data` not needed */
+            bool success, /* `data` not needed */
 
         ) = _address.call(hex"FF");
         if (!success) {
-            revert();
+            revert("ContractAsStorage: Delete Error");
         }
     }
 
