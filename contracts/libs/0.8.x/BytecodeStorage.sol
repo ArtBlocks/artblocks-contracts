@@ -20,7 +20,8 @@ pragma solidity ^0.8.0;
  *         b) allowing this to be introspected on-chain
  *      Also, given that much of this library is written in assembly, this library makes use of a slightly
  *      different convention (when compared to the rest of the Art Blocks smart contract repo) around
- *      pre-defining return values in order to simplify need to directly memory manage these return values.
+ *      pre-defining return values in some cases in order to simplify need to directly memory manage these
+ *      return values.
  */
 library BytecodeStorage {
     //---------------------------------------------------------------------------------------------------------------//
@@ -226,7 +227,7 @@ library BytecodeStorage {
     function getWriterAddressForBytecode(address _address)
         internal
         view
-        returns (address writerAddress)
+        returns (address)
     {
         // get the size of the data
         uint256 bytecodeSize = _bytecodeSizeAt(_address);
@@ -240,6 +241,9 @@ library BytecodeStorage {
         }
 
         assembly {
+            // allocate free memory and shift the free memory pointer over by one slot
+            let writerAddress := mload(0x40)
+            mstore(0x40, add(writerAddress, 0x20))
             // copy the 20-byte address of the data contract writer to memory
             // note: this relies on the assumption noted at the top-level of
             //       this file that the storage layout for the deployed
@@ -247,9 +251,13 @@ library BytecodeStorage {
             //       | gated-cleanup-logic | deployer-address | data |
             extcodecopy(
                 _address,
-                add(writerAddress, 12), // address needs to be 0-padded.
+                add(writerAddress, 12), // add zero-padding to fill one slot
                 ADDRESS_OFFSET,
                 ADDRESS_LENGTH
+            )
+            return(
+                writerAddress,
+                0x20 // return size is entire slot, as it is zero-padded
             )
         }
     }

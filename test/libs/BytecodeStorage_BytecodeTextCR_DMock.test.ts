@@ -164,14 +164,14 @@ describe("BytecodeStorage + BytecodeTextCR_DMock Library Tests", async function 
       const textSlotId = nextTextSlotId - 1;
       const textBytecodeAddress =
         await this.bytecodeTextCR_DMock.storedTextBytecodeAddresses(textSlotId);
-      console.log(textBytecodeAddress);
       const textAuthorAddress =
         await this.bytecodeTextCR_DMock.readAuthorForTextAtAddress(
           textBytecodeAddress
         );
-      console.log(textAuthorAddress);
       const resolvedMockAddress = await this.bytecodeTextCR_DMock
         .resolvedAddress;
+      console.log(textBytecodeAddress);
+      console.log(textAuthorAddress);
       console.log(resolvedMockAddress);
       expect(textAuthorAddress).to.equal(resolvedMockAddress);
     });

@@ -20,9 +20,6 @@ import "../libs/0.8.x/BytecodeStorage.sol";
  *         contracts cannot be _updated_ directly in chain-state, this mock does
  *         not expose updates (the usual "U" in "CRUD") as they are not
  *         supported by the underlying library.
- *         Also note that this mock implementation follows the return-value
- *         format standards that the underlying BytecodeStorage library uses,
- *         rather than those used more broadly in the Art Blocks contracts repo.
  */
 contract BytecodeTextCR_DMock {
     using BytecodeStorage for string;
@@ -54,7 +51,7 @@ contract BytecodeTextCR_DMock {
     /**
      * @notice "Create": Adds a chunk of text to be stored to chain-state.
      * @param _text Text to be created in chain-state.
-     * @return textSlotId slot that the written bytecode contract address was
+     * @return uint256 Slot that the written bytecode contract address was
      *         stored in.
      * @dev Intentionally do not perform input validation, instead allowing
      *      the underlying BytecodeStorage lib to throw errors where applicable.
@@ -62,13 +59,14 @@ contract BytecodeTextCR_DMock {
     function createText(string memory _text)
         external
         onlyDeployer
-        returns (uint256 textSlotId)
+        returns (uint256)
     {
         // store text in contract bytecode
         storedTextBytecodeAddresses[nextTextSlotId] = _text.writeToBytecode();
         // record written slot before incrementing
-        textSlotId = nextTextSlotId;
+        uint256 textSlotId = nextTextSlotId;
         nextTextSlotId++;
+        return textSlotId;
     }
 
     /**
@@ -76,16 +74,12 @@ contract BytecodeTextCR_DMock {
      *                 chain-state.
      * @param _textSlotId Slot (associated with this contract) for which to
      *                   read text content.
-     * @return text Content read from contract bytecode in the given slot.
+     * @return string Content read from contract bytecode in the given slot.
      * @dev Intentionally do not perform input validation, instead allowing
      *      the underlying BytecodeStorage lib to throw errors where applicable.
      */
-    function readText(uint256 _textSlotId)
-        public
-        view
-        returns (string memory text)
-    {
-        text = storedTextBytecodeAddresses[_textSlotId].readFromBytecode();
+    function readText(uint256 _textSlotId) public view returns (string memory) {
+        return storedTextBytecodeAddresses[_textSlotId].readFromBytecode();
     }
 
     /**
@@ -111,23 +105,23 @@ contract BytecodeTextCR_DMock {
      * @notice Allows additional read introspection, to read a chunk of text ,
      *                from chain-state that lives at a given deployed address.
      * @param _bytecodeAddress address from which to read text content.
-     * @return text Content read from contract bytecode at the given address.
+     * @return string Content read from contract bytecode at the given address.
      * @dev Intentionally do not perform input validation, instead allowing
      *      the underlying BytecodeStorage lib to throw errors where applicable.
      */
     function readTextAtAddress(address _bytecodeAddress)
         public
         view
-        returns (string memory text)
+        returns (string memory)
     {
-        text = _bytecodeAddress.readFromBytecode();
+        return _bytecodeAddress.readFromBytecode();
     }
 
     /**
      * @notice Allows introspection of who deployed a given contracts-as-storage
      *         contract, based on a provided `_bytecodeAddress`.
      * @param _bytecodeAddress address for which to read the author address.
-     * @return authorAddress of the author who wrote the data contained in the
+     * @return address of the author who wrote the data contained in the
      *         given `_bytecodeAddress` contract.
      * @dev Intentionally do not perform input validation, instead allowing
      *      the underlying BytecodeStorage lib to throw errors where applicable.
@@ -135,9 +129,9 @@ contract BytecodeTextCR_DMock {
     function readAuthorForTextAtAddress(address _bytecodeAddress)
         public
         view
-        returns (address authorAddress)
+        returns (address)
     {
-        authorAddress = _bytecodeAddress.getWriterAddressForBytecode();
+        return _bytecodeAddress.getWriterAddressForBytecode();
     }
 
     /**
