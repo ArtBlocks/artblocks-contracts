@@ -154,6 +154,19 @@ export const MinterHolder_Common = async () => {
         );
     });
 
+    it("length of array args must match", async function () {
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.artist)
+          .allowHoldersOfProjects(
+            this.projectZero,
+            [this.genArt721Core.address, this.genArt721Core.address],
+            [this.projectOne]
+          ),
+        "Length of add arrays must match"
+      );
+    });
+
     it("emits event when update allowed holders for a single project", async function () {
       await expect(
         this.minter
@@ -244,6 +257,19 @@ export const MinterHolder_Common = async () => {
           [this.genArt721Core.address],
           [this.projectOne]
         );
+    });
+
+    it("only allows equal length array args", async function () {
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.artist)
+          .removeHoldersOfProjects(
+            this.projectZero,
+            [this.genArt721Core.address, this.genArt721Core.address],
+            [this.projectOne]
+          ),
+        "Length of remove arrays must match"
+      );
     });
 
     it("emits event when removing allowed holders for a single project", async function () {

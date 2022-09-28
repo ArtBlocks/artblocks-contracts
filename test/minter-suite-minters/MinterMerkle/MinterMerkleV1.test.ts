@@ -3,6 +3,7 @@ const keccak256 = require("keccak256");
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { Logger } from "@ethersproject/logger";
+import { constants, expectRevert } from "@openzeppelin/test-helpers";
 // hide nuisance logs about event overloading
 Logger.setLogLevel(Logger.levels.ERROR);
 
@@ -170,6 +171,19 @@ describe("MinterMerkleV1", async function () {
     MinterMerkle_Common();
   });
 
+  describe("updateMerkleRoot", async function () {
+    it("does not allow Merkle root of zero", async function () {
+      const newMerkleRoot = constants.ZERO_BYTES32;
+      // artist allowed
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.artist)
+          .updateMerkleRoot(this.projectZero, newMerkleRoot),
+        "Root must be provided"
+      );
+    });
+  });
+
   describe("setProjectMaxInvocations", async function () {
     it("allows artist to call setProjectMaxInvocations", async function () {
       await this.minter
@@ -194,6 +208,131 @@ describe("MinterMerkleV1", async function () {
         .purchase_gD5(this.projectOne, userMerkleProofOne, {
           value: this.pricePerTokenInWei,
         });
+    });
+  });
+
+  describe("payment splitting", async function () {
+    beforeEach(async function () {
+      this.userMerkleProofZero = this.merkleTreeZero.getHexProof(
+        hashAddress(this.accounts.user.address)
+      );
+      this.userMerkleProofOne = this.merkleTreeOne.getHexProof(
+        hashAddress(this.accounts.user.address)
+      );
+      this.additionalMerkleProofTwo = this.merkleTreeTwo.getHexProof(
+        hashAddress(this.accounts.additional.address)
+      );
+      this.deadReceiver = await deployAndGet.call(this, "DeadReceiverMock", []);
+    });
+
+    it("requires successful payment to platform", async function () {
+      // update platform address to a contract that reverts on receive
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateArtblocksPrimarySalesAddress(this.deadReceiver.address);
+      // expect revert when trying to purchase
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.user)
+          ["purchase(uint256,bytes32[])"](
+            this.projectZero,
+            this.userMerkleProofZero,
+            {
+              value: this.pricePerTokenInWei,
+            }
+          ),
+        "Art Blocks payment failed"
+      );
+    });
+
+    it("requires successful payment to artist", async function () {
+      // update artist address to a contract that reverts on receive
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateProjectArtistAddress(
+          this.projectZero,
+          this.deadReceiver.address
+        );
+      // expect revert when trying to purchase
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.user)
+          ["purchase(uint256,bytes32[])"](
+            this.projectZero,
+            this.userMerkleProofZero,
+            {
+              value: this.pricePerTokenInWei,
+            }
+          ),
+        "Artist payment failed"
+      );
+    });
+
+    it("requires successful payment to artist additional payee", async function () {
+      // update artist additional payee to a contract that reverts on receive
+      const proposedAddressesAndSplits = [
+        this.projectZero,
+        this.accounts.artist.address,
+        this.deadReceiver.address,
+        // @dev 50% to additional, 50% to artist, to ensure additional is paid
+        50,
+        this.accounts.additional2.address,
+        // @dev split for secondary sales doesn't matter for this test
+        50,
+      ];
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .proposeArtistPaymentAddressesAndSplits(...proposedAddressesAndSplits);
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .adminAcceptArtistAddressesAndSplits(...proposedAddressesAndSplits);
+      // expect revert when trying to purchase
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.user)
+          ["purchase(uint256,bytes32[])"](
+            this.projectZero,
+            this.userMerkleProofZero,
+            {
+              value: this.pricePerTokenInWei,
+            }
+          ),
+        "Additional Payee payment failed"
+      );
+    });
+
+    it("handles zero platform and artist payment values", async function () {
+      // update platform to zero percent
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateArtblocksPrimarySalesPercentage(0);
+      // update artist primary split to zero
+      const proposedAddressesAndSplits = [
+        this.projectZero,
+        this.accounts.artist.address,
+        this.accounts.additional.address,
+        // @dev 100% to additional, 0% to artist, to induce zero artist payment value
+        100,
+        this.accounts.additional2.address,
+        // @dev split for secondary sales doesn't matter for this test
+        50,
+      ];
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .proposeArtistPaymentAddressesAndSplits(...proposedAddressesAndSplits);
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .adminAcceptArtistAddressesAndSplits(...proposedAddressesAndSplits);
+      // expect successful purchase
+      await this.minter
+        .connect(this.accounts.user)
+        ["purchase(uint256,bytes32[])"](
+          this.projectZero,
+          this.userMerkleProofZero,
+          {
+            value: this.pricePerTokenInWei,
+          }
+        );
     });
   });
 

@@ -128,6 +128,31 @@ export const MinterDALin_Common = async () => {
         .getPriceInfo(this.projectZero);
       expect(contractPriceInfo.tokenPriceInWei).to.be.equal(this.basePrice);
     });
+
+    it("allows `purchaseTo` with price of zero", async function () {
+      // set auction parameters to prices of zero
+      await this.minter
+        .connect(this.accounts.deployer)
+        .resetAuctionDetails(this.projectZero);
+      await this.minter
+        .connect(this.accounts.deployer)
+        .setMinimumAuctionLengthSeconds(1);
+      await this.minter.connect(this.accounts.artist).setAuctionDetails(
+        this.projectZero,
+        this.startTime + this.auctionStartTimeOffset,
+        this.startTime + this.auctionStartTimeOffset + 1,
+        1, // starting price of 1 wei
+        0 // base price of zero
+      );
+      // advance to end of auction, resulting in a price of zero
+      await ethers.provider.send("evm_mine", [
+        this.startTime + this.auctionStartTimeOffset + 1,
+      ]);
+      // expect mint success with call value of zero
+      await this.minter
+        .connect(this.accounts.user)
+        .purchaseTo(this.accounts.additional.address, this.projectZero, {});
+    });
   });
 
   describe("setAuctionDetails", async function () {
@@ -213,6 +238,24 @@ export const MinterDALin_Common = async () => {
         "Auction start price must be greater than auction end price"
       );
     });
+
+    it("disallows auctions that start in past", async function () {
+      await this.minter
+        .connect(this.accounts.deployer)
+        .resetAuctionDetails(this.projectZero);
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.artist)
+          .setAuctionDetails(
+            this.projectZero,
+            0,
+            this.startTime + 2 * ONE_HOUR,
+            this.startingPrice,
+            this.basePrice
+          ),
+        "Only future auctions"
+      );
+    });
   });
 
   describe("projectAuctionParameters", async function () {
@@ -277,6 +320,36 @@ export const MinterDALin_Common = async () => {
         this.projectZero
       );
       expect(hasMaxBeenInvoked).to.be.true;
+    });
+
+    it("blocks minting after a project max has been invoked", async function () {
+      // reduce maxInvocations to 2 on core
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectMaxInvocations(this.projectZero, 1);
+      // sync max invocations on minter
+      await this.minter
+        .connect(this.accounts.deployer)
+        .setProjectMaxInvocations(this.projectZero);
+      // mint a token
+      await ethers.provider.send("evm_mine", [
+        this.startTime + this.auctionStartTimeOffset,
+      ]);
+      await this.minter.connect(this.accounts.user).purchase(this.projectZero, {
+        value: this.startingPrice,
+      });
+      // expect projectMaxHasBeenInvoked to be true
+      const hasMaxBeenInvoked = await this.minter.projectMaxHasBeenInvoked(
+        this.projectZero
+      );
+      expect(hasMaxBeenInvoked).to.be.true;
+      // expect revert when trying to mint another token
+      await expectRevert(
+        this.minter.connect(this.accounts.user).purchase(this.projectZero, {
+          value: this.startingPrice,
+        }),
+        "Maximum number of invocations reached"
+      );
     });
   });
 

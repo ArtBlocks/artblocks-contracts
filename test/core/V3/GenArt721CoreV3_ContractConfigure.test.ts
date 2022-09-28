@@ -141,6 +141,21 @@ describe("GenArt721CoreV3 Contract Configure", async function () {
         "Already forbidden"
       );
     });
+
+    it("does allow to call renounceOwnership after forbidding new projects", async function () {
+      // forbid new projects
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .forbidNewProjects();
+      // update owner of core to null address, expect OwnershipTransferred event
+      expect(
+        await this.adminACL
+          .connect(this.accounts.deployer)
+          .renounceOwnershipOn(this.genArt721Core.address)
+      )
+        .to.emit(this.genArt721Core, "OwnershipTransferred")
+        .withArgs(this.adminACL.address, constants.ZERO_ADDRESS);
+    });
   });
 
   describe("updateDefaultBaseURI", function () {
