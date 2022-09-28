@@ -102,7 +102,7 @@ contract BytecodeTextCR_DMock {
     //////////////////////////////////////////////////////////////*/
 
     /**
-     * @notice Allows additional read introspection, to read a chunk of text ,
+     * @notice Allows additional read introspection, to read a chunk of text,
      *                from chain-state that lives at a given deployed address.
      * @param _bytecodeAddress address from which to read text content.
      * @return string Content read from contract bytecode at the given address.
@@ -132,6 +132,21 @@ contract BytecodeTextCR_DMock {
         returns (address)
     {
         return _bytecodeAddress.getWriterAddressForBytecode();
+    }
+
+    /**
+     * @notice Allows additional delete introspection, to delete a chunk of text,
+     *                from chain-state that lives at a given deployed address.
+     * @param _bytecodeAddress address from which to delete text content.
+     * @dev Intentionally do not perform input validation, instead allowing
+     *      the underlying BytecodeStorage lib to throw errors where applicable.
+     */
+    function deleteTextAtAddress(address _bytecodeAddress)
+        external
+        onlyDeployer
+    {
+        // purge old contract bytecode contract from the blockchain state
+        _bytecodeAddress.purgeBytecode();
     }
 
     /**

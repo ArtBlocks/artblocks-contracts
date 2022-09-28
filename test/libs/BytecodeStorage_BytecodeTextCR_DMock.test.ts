@@ -327,11 +327,66 @@ describe("BytecodeStorage + BytecodeTextCR_DMock Library Tests", async function 
           data: "0xFF",
         })
       );
+      // The following prodding attempts will not revert in a way caught by
+      // hardhat, as the INVALID call is wrapped by the silent failures in
+      // `callWithNonsenseData` and `callWithoutData`.
+      await this.bytecodeTextCR_DMock
+        .connect(this.accounts.deployer)
+        .callWithNonsenseData(textBytecodeAddress, "0xFFFF");
+      await this.bytecodeTextCR_DMock
+        .connect(this.accounts.deployer)
+        .callWithNonsenseData(textBytecodeAddress, "0x00FF");
+      await this.bytecodeTextCR_DMock
+        .connect(this.accounts.deployer)
+        .callWithNonsenseData(textBytecodeAddress, "0xFE");
+      await this.bytecodeTextCR_DMock
+        .connect(this.accounts.deployer)
+        .callWithNonsenseData(textBytecodeAddress, "0x00");
+      await this.bytecodeTextCR_DMock
+        .connect(this.accounts.deployer)
+        .callWithoutData(textBytecodeAddress);
 
+      // Deployed bytes are unchanged.
       const notRemovedBytecode = await ethers.provider.getCode(
         textBytecodeAddress
       );
       expect(notRemovedBytecode).to.equal(deployedBytecode);
+      expect(notRemovedBytecode).to.not.equal("0x");
+    });
+
+    it("purgeBytecode is *not* interoperable", async function () {
+      await this.bytecodeTextCR_DMock
+        .connect(this.accounts.deployer)
+        .createText("beeeep boop bop bop bop beeeep bop");
+      const textBytecodeAddress = getLatestTextDeploymentAddress(
+        this.bytecodeTextCR_DMock
+      );
+
+      const deployedBytecode = await ethers.provider.getCode(
+        textBytecodeAddress
+      );
+      expect(deployedBytecode).to.not.equal("0x");
+
+      // deploy a second instance of the library mock
+      const additionalBytecodeTextCR_DMock = await deployAndGet.call(
+        this,
+        "BytecodeTextCR_DMock",
+        [] // no deployment args
+      );
+
+      await expectRevert(
+        additionalBytecodeTextCR_DMock
+          .connect(this.accounts.deployer)
+          .deleteTextAtAddress(textBytecodeAddress),
+        "ContractAsStorage: Delete Error"
+      );
+
+      // Deployed bytes are unchanged.
+      const notRemovedBytecode = await ethers.provider.getCode(
+        textBytecodeAddress
+      );
+      expect(notRemovedBytecode).to.equal(deployedBytecode);
+      expect(notRemovedBytecode).to.not.equal("0x");
     });
   });
 });
