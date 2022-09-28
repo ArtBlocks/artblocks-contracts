@@ -31,11 +31,11 @@ library BytecodeStorage {
     // 53             | 20   | 73           | the 20 bytes used for storing the deploying contract's address         //
     //---------------------------------------------------------------------------------------------------------------//
     // Define the offset for where the "logic bytes" end, and the "data bytes" begin. Note that this is a manually
-    // calculated value, and must be updated if the above table is changed. It is expected that tests will fail if
-    // this value is not updated.
+    // calculated value, and must be updated if the above table is changed. It is expected that tests will fail
+    // loudly if these values are not updated in-step with eachother.
     uint256 internal constant DATA_OFFSET = 73;
     uint256 internal constant ADDRESS_LENGTH = 20;
-    uint256 internal constant ADDRESS_OFFSET = DATA_OFFSET - ADDRESS_LENGTH;
+    uint256 internal constant ADDRESS_OFFSET = 53; // DATA_OFFSET - ADDRESS_LENGTH
 
     /*//////////////////////////////////////////////////////////////
                            WRITE LOGIC
@@ -274,7 +274,7 @@ library BytecodeStorage {
 
         ) = _address.call(hex"FF");
         if (!success) {
-            revert();
+            revert("ContractAsStorage: Delete Error");
         }
     }
 
