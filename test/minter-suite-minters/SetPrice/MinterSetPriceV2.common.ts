@@ -71,8 +71,10 @@ export const MinterSetPriceV2_Common = async () => {
           this.projectZero,
           this.accounts.artist.address,
           this.deadReceiver.address,
+          // @dev 50% to additional, 50% to artist, to ensure additional is paid
           50,
           this.accounts.additional2.address,
+          // @dev split for secondary sales doesn't matter for this test
           50,
         ];
         await this.genArt721Core
@@ -102,8 +104,10 @@ export const MinterSetPriceV2_Common = async () => {
           this.projectZero,
           this.accounts.artist.address,
           this.accounts.additional.address,
+          // @dev 100% to additional, 0% to artist, to induce zero artist payment
           100,
           this.accounts.additional2.address,
+          // @dev split for secondary sales doesn't matter for this test
           50,
         ];
         await this.genArt721Core

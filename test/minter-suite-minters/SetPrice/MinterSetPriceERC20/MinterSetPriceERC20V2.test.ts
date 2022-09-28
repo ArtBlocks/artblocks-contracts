@@ -188,8 +188,10 @@ describe("MinterSetPriceERC20V2_V3Core", async function () {
         this.projectZero,
         this.accounts.artist.address,
         this.accounts.additional.address,
+        // @dev 100% to additional, 0% to artist, to induce zero artist payment value
         100,
         this.accounts.additional2.address,
+        // @dev split for secondary sales doesn't matter for this test
         50,
       ];
       await this.genArt721Core
