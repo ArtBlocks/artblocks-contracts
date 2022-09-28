@@ -138,6 +138,30 @@ describe("BytecodeStorage + BytecodeTextCR_DMock Library Tests", async function 
         "ContractAsStorage: Read Error"
       );
     });
+
+    it("readFromBytecode is interoperable", async function () {
+      const targetText = "hip hip hippity hop";
+      await validateCreateAndRead(
+        targetText,
+        this.bytecodeTextCR_DMock,
+        this.accounts.deployer
+      );
+
+      const textBytecodeAddress = getLatestTextDeploymentAddress(
+        this.bytecodeTextCR_DMock
+      );
+
+      // deploy a second instance of the library mock
+      const additionalBytecodeTextCR_DMock = await deployAndGet.call(
+        this,
+        "BytecodeTextCR_DMock",
+        [] // no deployment args
+      );
+      const text = await additionalBytecodeTextCR_DMock.readTextAtAddress(
+        textBytecodeAddress
+      );
+      expect(text).to.equal(targetText);
+    });
   });
 
   describe("validate writeToBytecode behavior at size-limit boundaries", function () {
@@ -167,7 +191,7 @@ describe("BytecodeStorage + BytecodeTextCR_DMock Library Tests", async function 
 
   describe("validate getWriterAddressForBytecode behavior", function () {
     it("author is the mock for valid bytecode contract", async function () {
-      const createTextTX = await this.bytecodeTextCR_DMock
+      await this.bytecodeTextCR_DMock
         .connect(this.accounts.deployer)
         .createText("cute lil test text hehe");
       const textBytecodeAddress = getLatestTextDeploymentAddress(
@@ -190,10 +214,33 @@ describe("BytecodeStorage + BytecodeTextCR_DMock Library Tests", async function 
         "ContractAsStorage: Read Error"
       );
     });
+
+    it("getWriterAddressForBytecode is interoperable", async function () {
+      await this.bytecodeTextCR_DMock
+        .connect(this.accounts.deployer)
+        .createText("zip zipppity zoooop zop");
+      const textBytecodeAddress = getLatestTextDeploymentAddress(
+        this.bytecodeTextCR_DMock
+      );
+
+      // deploy a second instance of the library mock
+      const additionalBytecodeTextCR_DMock = await deployAndGet.call(
+        this,
+        "BytecodeTextCR_DMock",
+        [] // no deployment args
+      );
+      const textAuthorAddress =
+        await additionalBytecodeTextCR_DMock.readAuthorForTextAtAddress(
+          textBytecodeAddress
+        );
+      const resolvedMockAddress = await this.bytecodeTextCR_DMock
+        .resolvedAddress;
+      expect(textAuthorAddress).to.equal(resolvedMockAddress);
+    });
   });
 
   describe("validate purgeBytecode behavior", function () {
-    it("creates text, and then deletes it", async function () {
+    it("writes text, and then purges it", async function () {
       const targetText = "silly willy billy dilly dilly";
       await validateCreateAndRead(
         targetText,
@@ -222,10 +269,8 @@ describe("BytecodeStorage + BytecodeTextCR_DMock Library Tests", async function 
       );
       expect(removedBytecode).to.equal("0x");
     });
-  });
 
-  describe("perform SELFDESTRUCT prodding via callWithNonsenseData", function () {
-    it("purging via direct call data possible with 0xFF", async function () {
+    it("SELFDESTRUCT via direct call data possible with 0xFF", async function () {
       const targetText = "silly willy billy dilly dilly";
       await validateCreateAndRead(
         targetText,
@@ -252,7 +297,7 @@ describe("BytecodeStorage + BytecodeTextCR_DMock Library Tests", async function 
       expect(removedBytecode).to.equal("0x");
     });
 
-    it("purging is not possible via misc. prodding", async function () {
+    it("SELFDESTRUCT is NOT possible via call-data prodding", async function () {
       const targetText = "silly willy billy dilly dilly";
       await validateCreateAndRead(
         targetText,
@@ -269,40 +314,24 @@ describe("BytecodeStorage + BytecodeTextCR_DMock Library Tests", async function 
       );
       expect(deployedBytecode).to.not.equal("0x");
 
-      expectRevert.unspecified(
-        this.bytecodeTextCR_DMock
-          .connect(this.accounts.deployer)
-          .callWithoutData(textBytecodeAddress)
+      // Non-writer addresses should **not** be able to purge bytecode storage.
+      await expectRevert.unspecified(
+        this.accounts.deployer.call({
+          to: textBytecodeAddress,
+        })
       );
-      expectRevert.unspecified(
-        this.bytecodeTextCR_DMock
-          .connect(this.accounts.deployer)
-          .callWithNonsenseData(textBytecodeAddress, "0xFFFF")
-      );
-      expectRevert.unspecified(
-        this.bytecodeTextCR_DMock
-          .connect(this.accounts.deployer)
-          .callWithNonsenseData(textBytecodeAddress, "0x00FF")
-      );
-      expectRevert.unspecified(
-        this.bytecodeTextCR_DMock
-          .connect(this.accounts.deployer)
-          .callWithNonsenseData(textBytecodeAddress, "0xFE")
-      );
-      expectRevert.unspecified(
-        this.bytecodeTextCR_DMock
-          .connect(this.accounts.deployer)
-          .callWithNonsenseData(textBytecodeAddress, "0x00")
+      // And this is still the case when correct `0xFF` bytes are sent along.
+      await expectRevert.unspecified(
+        this.accounts.deployer.call({
+          to: textBytecodeAddress,
+          data: "0xFF",
+        })
       );
 
-      const deployedBytecodePt2 = await ethers.provider.getCode(
+      const notRemovedBytecode = await ethers.provider.getCode(
         textBytecodeAddress
       );
-      expect(deployedBytecodePt2).to.not.equal("0x");
+      expect(notRemovedBytecode).to.equal(deployedBytecode);
     });
-  });
-
-  describe("validate interoperability of multiple library instances", function () {
-    // TODO: Add coverage!
   });
 });
