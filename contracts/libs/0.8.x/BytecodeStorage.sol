@@ -240,10 +240,8 @@ library BytecodeStorage {
             revert("ContractAsStorage: Read Error");
         }
 
+        address writerAddress;
         assembly {
-            // allocate free memory and shift the free memory pointer over by one slot
-            let writerAddress := mload(0x40)
-            mstore(0x40, add(writerAddress, 0x20))
             // copy the 20-byte address of the data contract writer to memory
             // note: this relies on the assumption noted at the top-level of
             //       this file that the storage layout for the deployed
