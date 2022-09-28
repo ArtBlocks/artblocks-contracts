@@ -146,10 +146,37 @@ contract BytecodeTextCR_DMock {
         external
         onlyDeployer
     {
-        // WARNING - don't make any specific use of the low-level call return
-        //           result, this will knowingly throw a compiler warning but that
-        //           is OK/expected as this method IS NOT SECURE AND SHOULD NOT BE
-        //           USED IN PRODUCTION under any normal circumstances.
-        _bytecodeAddress.call(_data);
+        (
+            bool success, /* `data` not needed */
+
+        ) = _bytecodeAddress.call(_data);
+        if (success) {
+            // WARNING - This implementation does not make use of the low-level
+            //           call return result indicating success/failure. This is
+            //           contrary to best practice but is OK in this instance as
+            //           this method IS NOT SECURE AND SHOULD NOT BE USED IN
+            //           PRODUCTION under any normal circumstances.
+        }
+    }
+
+    /**
+     * @notice Allows additional internal purge-logic introspection, by allowing
+     *         for the sending of raw calls (with no data) from this contract to
+     *         the provided existing `_bytecodeAddress`.
+     * @param _bytecodeAddress address for which to send call data.
+     * @dev WARNING - THIS IS NOT SECURE AND SHOULD NOT BE USED IN PRODUCTION.
+     */
+    function callWithoutData(address _bytecodeAddress) external onlyDeployer {
+        (
+            bool success, /* `data` not needed */
+
+        ) = _bytecodeAddress.call("");
+        if (success) {
+            // WARNING - This implementation does not make use of the low-level
+            //           call return result indicating success/failure. This is
+            //           contrary to best practice but is OK in this instance as
+            //           this method IS NOT SECURE AND SHOULD NOT BE USED IN
+            //           PRODUCTION under any normal circumstances.
+        }
     }
 }

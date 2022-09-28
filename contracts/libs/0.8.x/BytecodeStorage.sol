@@ -278,7 +278,7 @@ library BytecodeStorage {
         // deployed bytecode (above) handles all logic for purging state, so no
         // call data is expected to be passed along to perform data purge
         (
-            bool success, /*` data` not needed */
+            bool success, /* `data` not needed */
 
         ) = _address.call(hex"FF");
         if (!success) {
