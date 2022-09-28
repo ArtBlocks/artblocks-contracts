@@ -161,6 +161,20 @@ export const MinterSetPriceERC20_Common = async () => {
         );
     });
 
+    it("does not allow non-ETH to use zero address", async function () {
+      // doesn't allow user
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.artist)
+          .updateProjectCurrencyInfo(
+            this.projectZero,
+            "NOT_ETH",
+            constants.ZERO_ADDRESS
+          ),
+        "ETH is only null address"
+      );
+    });
+
     it("enforces currency info update and allows purchases", async function () {
       // artist changes to Mock ERC20 token
       await this.minter

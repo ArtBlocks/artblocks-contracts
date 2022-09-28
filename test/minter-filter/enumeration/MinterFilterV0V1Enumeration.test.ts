@@ -5,6 +5,7 @@ import {
   deployCoreWithMinterFilter,
   safeAddProject,
 } from "../../util/common";
+import { expectRevert } from "@openzeppelin/test-helpers";
 import { MinterFilterEnumeration_Common } from "./MinterFilterEnumeration.common";
 
 const runForEach = [
@@ -49,6 +50,22 @@ runForEach.forEach((params) => {
 
     describe("common tests", async function () {
       MinterFilterEnumeration_Common();
+    });
+
+    describe("test specific to V1", async function () {
+      it("doesn't allow removal of unapproved minters", async function () {
+        if (params.minterFilter !== "MinterFilterV1") {
+          console.log("skipping test for non-V1 minter filter");
+          return;
+        }
+        // reverts when attempting to remove minter being used
+        await expectRevert(
+          this.minterFilter
+            .connect(this.accounts.deployer)
+            .removeApprovedMinter(this.minter.address),
+          "Only approved minters"
+        );
+      });
     });
   });
 });

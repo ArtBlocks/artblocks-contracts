@@ -401,6 +401,34 @@ describe("GenArt721CoreV3 Integration", async function () {
       );
     });
 
+    it("does not allow randomizer to set token hash seed to zero", async function () {
+      // update randomizer to be a special mock randomizer for this test (seperate mint from token hash assignment)
+      // deploy new RandomizerV2_NoAssignMock randomizer
+      const mockRandomizer = await deployAndGet.call(
+        this,
+        "RandomizerV2_NoAssignMock",
+        []
+      );
+      // update randomizer to new randomizer
+      await mockRandomizer
+        .connect(this.accounts.deployer)
+        .assignCoreAndRenounce(this.genArt721Core.address);
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateRandomizerAddress(mockRandomizer.address);
+      // mint a token and expect token hash to not be updated (due to the alternate randomizer)
+      await this.minter
+        .connect(this.accounts.artist)
+        .purchase(this.projectZero);
+      // expect revert when attempting to set token hash to zero
+      await expectRevert(
+        mockRandomizer.actuallyAssignZeroTokenHash(
+          this.projectZeroTokenZero.toNumber()
+        ),
+        "No zero hash seed"
+      );
+    });
+
     it("does not allow randomizer to assign hash if token does not yet exist", async function () {
       // update randomizer to be a special mock randomizer for this test (seperate mint from token hash assignment)
       // deploy new RandomizerV2_NoAssignMock randomizer
