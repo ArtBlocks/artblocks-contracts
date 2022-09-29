@@ -38,8 +38,6 @@ import "./libs/0.8.x/Bytes32Strings.sol";
  * - updateMinterContract
  * - updateRandomizerAddress
  * - toggleProjectIsActive
- * - updateProjectArtistAddress (ultimately controlling the project and its
- *   and-on revenue)
  * - addProject
  * - forbidNewProjects (forever forbidding new projects)
  * - updateDefaultBaseURI (used to initialize new project base URIs)
@@ -71,6 +69,8 @@ import "./libs/0.8.x/Bytes32Strings.sol";
  * The following function is restricted to either the Admin ACL contract, or
  * the Artist address if the core contract owner has renounced ownership:
  * - adminAcceptArtistAddressesAndSplits
+ * - updateProjectArtistAddress (owner ultimately controlling the project and
+ *   its and-on revenue, unless owner has renounced ownership)
  * ----------------------------------------------------------------------------
  * The following function is restricted to the artist when a project is
  * unlocked, and only callable by Admin ACL contract when a project is locked:
@@ -1866,7 +1866,6 @@ contract GenArt721CoreV3 is
      * maximum number of times.
      * @param _projectId Project ID to be queried.
      * @return bool true if project is unlocked, false otherwise.
-     * @param _projectId Project ID to check.
      * @dev This also enforces that the `_projectId` passed in is valid.
      */
     function _projectUnlocked(uint256 _projectId)
