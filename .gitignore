@@ -43,6 +43,10 @@ node_modules
 cache
 artifacts
 
+#Hardhat-zk
+cache-zk
+artifacts-zk
+
 # Typechain generated files
 scripts/contracts
 

@@ -8,6 +8,9 @@ import "hardhat-contract-sizer";
 import "@nomiclabs/hardhat-etherscan";
 import "hardhat-docgen";
 
+import "@matterlabs/hardhat-zksync-deploy";
+import "@matterlabs/hardhat-zksync-solc";
+
 const MAINNET_JSON_RPC_PROVIDER_URL = process.env.MAINNET_JSON_RPC_PROVIDER_URL;
 const GOERLI_JSON_RPC_PROVIDER_URL = process.env.GOERLI_JSON_RPC_PROVIDER_URL;
 const ROPSTEN_JSON_RPC_PROVIDER_URL = process.env.ROPSTEN_JSON_RPC_PROVIDER_URL;
@@ -25,6 +28,24 @@ const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
  */
 
 module.exports = {
+  // zksync specific 
+  zksolc: {
+    version: "1.1.0",
+    compilerSource: "docker",
+    settings: {
+      optimizer: {
+        enabled: true,
+      },
+      experimental: {
+        dockerImage: "matterlabs/zksolc",
+      },
+    },
+  },
+  zkSyncDeploy: {
+    zkSyncNetwork: "https://zksync2-testnet.zksync.dev",
+    ethNetwork: "goerli", // Can also be the RPC URL of the network (e.g. `https://goerli.infura.io/v3/<API_KEY>`)
+  },
+
   solidity: {
     compilers: [
       {
