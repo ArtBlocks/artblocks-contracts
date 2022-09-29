@@ -4,12 +4,13 @@
 import "../../../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
 import "../../../interfaces/0.8.x/IMinterFilterV0.sol";
 import "../../../interfaces/0.8.x/IFilteredMinterMerkleV0.sol";
+import "../../../interfaces/0.8.x/IDelegationRegistry.sol";
 
 import "@openzeppelin-4.7/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin-4.7/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin-4.7/contracts/security/ReentrancyGuard.sol";
 
-pragma solidity 0.8.9;
+pragma solidity ^0.8.17;
 
 /**
  * @title Filtered Minter contract that allows tokens to be minted with ETH
@@ -33,6 +34,13 @@ pragma solidity 0.8.9;
  */
 contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
     using MerkleProof for bytes32[];
+
+    /// Delegation registry address
+    address public constant delegationRegistryAddress =
+        0x00000000000076A84feF008CDAbe6409d2FE638B;
+
+    /// Delegation registry address
+    IDelegationRegistry private immutable delegationRegistryContract;
 
     /// Core contract address this minter interacts with
     address public immutable genArt721CoreAddress;
@@ -94,6 +102,9 @@ contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
     {
         genArt721CoreAddress = _genArt721Address;
         genArtCoreContract = IGenArt721CoreContractV3(_genArt721Address);
+        delegationRegistryContract = IDelegationRegistry(
+            delegationRegistryAddress
+        );
         minterFilterAddress = _minterFilter;
         minterFilter = IMinterFilterV0(_minterFilter);
         require(
@@ -298,7 +309,24 @@ contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         payable
         returns (uint256 tokenId)
     {
-        tokenId = purchaseTo_K1L(msg.sender, _projectId, _proof);
+        tokenId = purchaseTo_K1L(msg.sender, _projectId, _proof, address(0));
+        return tokenId;
+    }
+
+    /**
+     * @notice Purchases a token from project `_projectId` as a delegate, (the
+     *         `msg.sender`) on behalf of an explicitly defined delegee.
+     * @param _projectId Project ID to mint a token on.
+     * @param _proof Merkle proof.
+     * @param _delegee Delegee being purchased on behalf of.
+     * @return tokenId Token ID of minted token
+     */
+    function purchase(
+        uint256 _projectId,
+        bytes32[] calldata _proof,
+        address _delegee
+    ) external payable returns (uint256 tokenId) {
+        tokenId = purchaseTo_K1L(msg.sender, _projectId, _proof, _delegee);
         return tokenId;
     }
 
@@ -310,7 +338,7 @@ contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         payable
         returns (uint256 tokenId)
     {
-        tokenId = purchaseTo_K1L(msg.sender, _projectId, _proof);
+        tokenId = purchaseTo_K1L(msg.sender, _projectId, _proof, address(0));
         return tokenId;
     }
 
@@ -327,7 +355,26 @@ contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         uint256 _projectId,
         bytes32[] calldata _proof
     ) external payable returns (uint256 tokenId) {
-        return purchaseTo_K1L(_to, _projectId, _proof);
+        return purchaseTo_K1L(_to, _projectId, _proof, address(0));
+    }
+
+    /**
+     * @notice Purchases a token from project `_projectId` and sets
+     *         the token's owner to `_to`, as a delegate, (the `msg.sender`)
+     *         on behalf of an explicitly defined delegee.
+     * @param _to Address to be the new token's owner.
+     * @param _projectId Project ID to mint a token on.
+     * @param _proof Merkle proof.
+     * @param _delegee Delegee being purchased on behalf of.
+     * @return tokenId Token ID of minted token
+     */
+    function purchaseTo(
+        address _to,
+        uint256 _projectId,
+        bytes32[] calldata _proof,
+        address _delegee
+    ) external payable returns (uint256 tokenId) {
+        return purchaseTo_K1L(_to, _projectId, _proof, _delegee);
     }
 
     /**
@@ -336,7 +383,8 @@ contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
     function purchaseTo_K1L(
         address _to,
         uint256 _projectId,
-        bytes32[] calldata _proof
+        bytes32[] calldata _proof,
+        address _delegee // acceptable to be `address(0)` if no delegee
     ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
@@ -365,24 +413,47 @@ contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
 
         // no contract filter since Merkle tree controls allowed addresses
 
+        // NOTE: delegate-delegee handling **begins here**.
+
+        // handle that the delegee may be either the `msg.sender` in the case
+        // that there is not a true delegee, or may be `_delegee` if one is
+        // provided explicitly (and it is valid).
+        address delegee = msg.sender;
+        if (_delegee != address(0)) {
+            // If a delegee is provided, it must be valid, otherwise throw rather
+            // than optimistically-minting with original `msg.sender`.
+            // Note, we do not check `checkDelegateForAll` as well, as it is known
+            // to be implicitly checked by calling `checkDelegateForContract`.
+            bool isValidDelegee = delegationRegistryContract
+                .checkDelegateForContract(
+                    msg.sender, // delegate
+                    delegee, // vault
+                    genArt721CoreAddress // contract
+                );
+            require(isValidDelegee, "Invalid delegate-delegee pairing");
+            delegee = _delegee;
+        }
+
         // require valid Merkle proof
         require(
-            verifyAddress(_projectId, _proof, msg.sender),
+            verifyAddress(_projectId, _proof, delegee),
             "Invalid Merkle proof"
         );
 
         // limit mints per address by project
-        if (projectMintedBy[_projectId][msg.sender]) {
+        if (projectMintedBy[_projectId][delegee]) {
             require(
                 _projectConfig.mintLimiterDisabled,
                 "Limit 1 mint per address"
             );
         } else {
             // EFFECTS
-            projectMintedBy[_projectId][msg.sender] = true;
+            projectMintedBy[_projectId][delegee] = true;
         }
 
-        tokenId = minterFilter.mint(_to, _projectId, msg.sender);
+        tokenId = minterFilter.mint(_to, _projectId, delegee);
+
+        // NOTE: delegate-delegee handling **ends here**.
 
         // okay if this underflows because if statement will always eval false.
         // this is only for gas optimization (core enforces maxInvocations).
