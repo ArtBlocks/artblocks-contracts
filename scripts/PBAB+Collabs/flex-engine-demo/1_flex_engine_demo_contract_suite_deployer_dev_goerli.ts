@@ -2,14 +2,6 @@
 // Created By: Art Blocks Inc.
 
 import { ethers } from "hardhat";
-import { BasicRandomizer__factory } from "../../contracts/factories/BasicRandomizer__factory";
-// minter suite
-import { MinterFilterV0__factory } from "../../contracts/factories/MinterFilterV0__factory";
-import { MinterSetPriceV1__factory } from "../../contracts/factories/MinterSetPriceV1__factory";
-import { MinterSetPriceERC20V1__factory } from "../../contracts/factories/MinterSetPriceERC20V1__factory";
-import { MinterDALinV1__factory } from "../../contracts/factories/MinterDALinV1__factory";
-import { MinterDAExpV1__factory } from "../../contracts/factories/MinterDAExpV1__factory";
-
 // delay to avoid issues with reorgs and tx failures
 import { delay } from "../../util/utils";
 const EXTRA_DELAY_BETWEEN_TX = 10000; // ms
@@ -24,6 +16,8 @@ const EXTRA_DELAY_BETWEEN_TX = 10000; // ms
 //////////////////////////////////////////////////////////////////////////////
 // FLEX contract file
 import { GenArt721CoreV2ENGINEFLEX__factory } from "../../contracts/factories/GenArt721CoreV2ENGINEFLEX__factory";
+import { GenArt721MinterPBAB__factory } from "../../contracts/factories/GenArt721MinterPBAB__factory";
+
 const tokenName = "Art Blocks Flex Engine Development Demo";
 const tokenTicker = "ABFLEX_DEMO_DEV_GOERLI";
 const transferAddress = "0x2246475beddf9333b6a6D9217194576E7617Afd1";
@@ -60,53 +54,14 @@ async function main() {
   await genArt721CoreFlex.deployed();
   console.log(`GenArt721CoreV2 FLEX deployed at ${genArt721CoreFlex.address}`);
 
-  // deploy FLEX minter filter
-  const minterFilterFactory = new MinterFilterV0__factory(deployer);
-  const minterFilter = await minterFilterFactory.deploy(
+  // Deploy Minter contract.
+  const genArt721MinterFactory = new GenArt721MinterPBAB__factory(deployer);
+  const genArt721Minter = await genArt721MinterFactory.deploy(
     genArt721CoreFlex.address
   );
-  await minterFilter.deployed();
-  console.log(`Minter Filter for FLEX deployed at ${minterFilter.address}`);
 
-  // Deploy Minter Suite contracts
-  // set price V1
-  const minterSetPriceFactory = new MinterSetPriceV1__factory(deployer);
-  const minterSetPrice = await minterSetPriceFactory.deploy(
-    genArt721CoreFlex.address,
-    minterFilter.address
-  );
-  await minterSetPrice.deployed();
-  console.log(
-    `MinterSetPrice V1 for FLEX deployed at ${minterSetPrice.address}`
-  );
-  // set price ERC20 V1
-  const minterSetPriceERC20Factory = new MinterSetPriceERC20V1__factory(
-    deployer
-  );
-  const minterSetPriceERC20 = await minterSetPriceERC20Factory.deploy(
-    genArt721CoreFlex.address,
-    minterFilter.address
-  );
-  await minterSetPriceERC20.deployed();
-  console.log(
-    `MinterSetPrice ERC20 V1 for FLEX deployed at ${minterSetPriceERC20.address}`
-  );
-  // DA Lin V1
-  const MinterDALin__factory = new MinterDALinV1__factory(deployer);
-  const minterDALin = await MinterDALin__factory.deploy(
-    genArt721CoreFlex.address,
-    minterFilter.address
-  );
-  await minterDALin.deployed();
-  console.log(`Minter DA Lin V1 for FLEX deployed at ${minterDALin.address}`);
-  // DA Exp V1
-  const MinterDAExp__factory = new MinterDAExpV1__factory(deployer);
-  const minterDAExp = await MinterDAExp__factory.deploy(
-    genArt721CoreFlex.address,
-    minterFilter.address
-  );
-  await minterDAExp.deployed();
-  console.log(`Minter DA Exp V1 for FLEX deployed at ${minterDAExp.address}`);
+  await genArt721Minter.deployed();
+  console.log(`Minter deployed at ${genArt721Minter.address}`);
 
   //////////////////////////////////////////////////////////////////////////////
   // DEPLOYMENT ENDS HERE
@@ -119,7 +74,7 @@ async function main() {
   // Allowlist the Minter on the Core contract.
   tx = await genArt721CoreFlex
     .connect(deployer)
-    .addMintWhitelisted(minterFilter.address);
+    .addMintWhitelisted(genArt721Minter.address);
   await tx.wait();
   console.log(`Allowlisted the Minter Filter on the Core contract.`);
   delay(EXTRA_DELAY_BETWEEN_TX);
@@ -130,6 +85,12 @@ async function main() {
     .updateRenderProviderAddress(artblocksAddress);
   await tx.wait();
   console.log(`Updated the artblocks address to: ${artblocksAddress}.`);
+
+  // Set Minter owner.
+  tx = await genArt721Minter.connect(deployer).setOwnerAddress(transferAddress);
+  console.log(`Set the Minter owner to: ${transferAddress}.`);
+  await tx.wait();
+
   delay(EXTRA_DELAY_BETWEEN_TX);
 
   // Allowlist AB staff (testnet only)
@@ -154,42 +115,6 @@ async function main() {
       delay(EXTRA_DELAY_BETWEEN_TX);
     }
   }
-
-  // Allowlist new Minters on MinterFilter.
-  tx = await minterFilter
-    .connect(deployer)
-    .addApprovedMinter(minterSetPrice.address);
-  await tx.wait();
-  console.log(`Allowlisted minter ${minterSetPrice.address} on minter filter.`);
-  delay(EXTRA_DELAY_BETWEEN_TX);
-  tx = await minterFilter
-    .connect(deployer)
-    .addApprovedMinter(minterSetPriceERC20.address);
-  await tx.wait();
-  console.log(
-    `Allowlisted minter ${minterSetPriceERC20.address} on minter filter.`
-  );
-  delay(EXTRA_DELAY_BETWEEN_TX);
-
-  tx = await minterFilter
-    .connect(deployer)
-    .addApprovedMinter(minterDALin.address);
-  await tx.wait();
-  console.log(`Allowlisted minter ${minterDALin.address} on minter filter.`);
-  delay(EXTRA_DELAY_BETWEEN_TX);
-
-  tx = await minterFilter
-    .connect(deployer)
-    .addApprovedMinter(minterDAExp.address);
-  await tx.wait();
-  console.log(`Allowlisted minter ${minterDAExp.address} on minter filter.`);
-  delay(EXTRA_DELAY_BETWEEN_TX);
-
-  // alert as canonical minter filter
-  tx = await minterFilter.connect(deployer).alertAsCanonicalMinterFilter();
-  await tx.wait();
-  console.log(`Alerted MinterFilter ${minterFilter.address} on minter filter.`);
-  delay(EXTRA_DELAY_BETWEEN_TX);
 
   // (optional) add initial project
   if (doAddProjectZero) {
@@ -224,25 +149,9 @@ async function main() {
   console.log(
     `${standardVerify} --network ${networkName} ${genArt721CoreFlex.address} "${tokenName}" "${tokenTicker}" ${randomizerAddress}`
   );
-  console.log(`Verify MinterFilter deployment with:`);
+  console.log(`Verify Minter deployment with:`);
   console.log(
-    `${standardVerify} --network ${networkName} ${minterFilter.address} ${genArt721CoreFlex.address}`
-  );
-  console.log(`Verify MinterSetPrice deployment with:`);
-  console.log(
-    `${standardVerify} --network ${networkName} ${minterSetPrice.address} ${genArt721CoreFlex.address} ${minterFilter.address}`
-  );
-  console.log(`Verify MinterSetPriceERC20 deployment with:`);
-  console.log(
-    `${standardVerify} --network ${networkName} ${minterSetPriceERC20.address} ${genArt721CoreFlex.address} ${minterFilter.address}`
-  );
-  console.log(`Verify MinterDALin deployment with:`);
-  console.log(
-    `${standardVerify} --network ${networkName} ${minterDALin.address} ${genArt721CoreFlex.address} ${minterFilter.address}`
-  );
-  console.log(`Verify MinterDAExp deployment with:`);
-  console.log(
-    `${standardVerify} --network ${networkName} ${minterDAExp.address} ${genArt721CoreFlex.address} ${minterFilter.address}`
+    `${standardVerify} --network ${networkName} ${genArt721Minter.address} ${genArt721CoreFlex.address}`
   );
 
   //////////////////////////////////////////////////////////////////////////////
