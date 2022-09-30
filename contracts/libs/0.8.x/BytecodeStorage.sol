@@ -28,15 +28,15 @@ library BytecodeStorage {
     // Starting Index | Size | Ending Index | Description                                                            //
     //---------------------------------------------------------------------------------------------------------------//
     // 0              | N/A  | 0            |                                                                        //
-    // 0              | 53   | 53           | the bytes of the gated-cleanup-logic allowing for `selfdestruct`ion    //
-    // 53             | 20   | 73           | the 20 bytes used for storing the deploying contract's address         //
+    // 0              | 72   | 72           | the bytes of the gated-cleanup-logic allowing for `selfdestruct`ion    //
+    // 72             | 20   | 92           | the 20 bytes used for storing the deploying contract's address         //
     //---------------------------------------------------------------------------------------------------------------//
     // Define the offset for where the "logic bytes" end, and the "data bytes" begin. Note that this is a manually
     // calculated value, and must be updated if the above table is changed. It is expected that tests will fail
     // loudly if these values are not updated in-step with eachother.
-    uint256 internal constant DATA_OFFSET = 73;
+    uint256 internal constant DATA_OFFSET = 92;
     uint256 internal constant ADDRESS_LENGTH = 20;
-    uint256 internal constant ADDRESS_OFFSET = 53; // DATA_OFFSET - ADDRESS_LENGTH
+    uint256 internal constant ADDRESS_OFFSET = 72; // DATA_OFFSET - ADDRESS_LENGTH
 
     /*//////////////////////////////////////////////////////////////
                            WRITE LOGIC
@@ -70,79 +70,89 @@ library BytecodeStorage {
             // 0x39    |  0x39               | CODECOPY     | 0 (codeSize - codeOffset)                                      //
             // 0xf3    |  0xf3               | RETURN       |                                                                //
             //---------------------------------------------------------------------------------------------------------------//
+            // (11 bytes)
             hex"60_0B_59_81_38_03_80_92_59_39_F3",
             //---------------------------------------------------------------------------------------------------------------//
             // Opcode  | Opcode + Arguments  | Description  | Stack View                                                     //
             //---------------------------------------------------------------------------------------------------------------//
             // (1a) conditional logic for determing purge-gate (only the bytecode contract deployer can `selfdestruct`)
             //---------------------------------------------------------------------------------------------------------------//
-            // 0x60    |  0x60_14            | PUSH1 20     | 20                                                             //
-            // 0x60    |  0x60_35            | PUSH1 53 (*) | contractOffset 20                                              //
-            // 0x60    |  0x60_0C            | PUSH1 12     | 12 contractOffset 20                                           //
-            // 0x39    |  0x39               | CODECOPY     |                                                                //
-            // 0x33    |  0x33               | CALLER       | msg.sender                                                     //
-            // 0x60    |  0x60_20            | PUSH1 32     | 32 msg.sender                                                  //
-            // 0x52    |  0x52               | MSTORE       |                                                                //
-            // 0x60    |  0x60_00            | PUSH1 0      | 0                                                              //
-            // 0x51    |  0x51               | MLOAD        | byteDeployerAddress                                            //
-            // 0x60    |  0x60_20            | PUSH1 32     | 32 byteDeployerAddress                                         //
-            // 0x51    |  0x51               | MLOAD        | msg.sender byteDeployerAddress                                 //
-            // 0x14    |  0x14               | EQ           | (msg.sender == byteDeployerAddress)                            //
-            hex"60_14_60_35_60_0C_39_33_60_20_52_60_00_51_60_20_51_14",
+            // 0x60    |  0x60_14            | PUSH1 20           | 20                                                       //
+            // 0x60    |  0x60_48            | PUSH1 72 (*)       | contractOffset 20                                        //
+            // 0x60    |  0x60_0C            | PUSH1 12           | 12 contractOffset 20                                     //
+            // 0x39    |  0x39               | CODECOPY           |                                                          //
+            // 0x60    |  0x60_00            | PUSH1 0            | 0                                                        //
+            // 0x51    |  0x51               | MLOAD              | byteDeployerAddress                                      //
+            // 0x33    |  0x33               | CALLER             | msg.sender byteDeployerAddress                           //
+            // 0x14    |  0x14               | EQ                 | (msg.sender == byteDeployerAddress)                      //
+            //---------------------------------------------------------------------------------------------------------------//
+            // (12 bytes: 0-11 in deployed contract)
+            hex"60_14_60_48_60_0C_39_60_00_51_33_14",
             //---------------------------------------------------------------------------------------------------------------//
             // (1b) load up the destination jump address for `(2a) calldata length check` logic, jump or raise `invalid` op-code
             //---------------------------------------------------------------------------------------------------------------//
-            // 0x60    |  0x60_16            | PUSH1 22 (^) | jumpDestination (msg.sender == byteDeployerAddress)            //
-            // 0x57    |  0x57               | JUMPI        |                                                                //
-            // 0xFE    |  0xFE               | INVALID      |                                                                //
-            hex"60_16_57_FE",
+            // 0x60    |  0x60_10            | PUSH1 16 (^)       | jumpDestination (msg.sender == byteDeployerAddress)      //
+            // 0x57    |  0x57               | JUMPI              |                                                          //
+            // 0xFE    |  0xFE               | INVALID            |                                                          //
+            //---------------------------------------------------------------------------------------------------------------//
+            // (4 bytes: 12-15 in deployed contract)
+            hex"60_10_57_FE",
             //---------------------------------------------------------------------------------------------------------------//
             // (2a) conditional logic for determing purge-gate (only if calldata length is 1 byte)
             //---------------------------------------------------------------------------------------------------------------//
-            // 0x5B    |  0x5B               | JUMPDEST (22)|                                                                //
-            // 0x60    |  0x60_01            | PUSH1 1      | 1                                                              //
-            // 0x36    |  0x36               | CALLDATASIZE | calldataSize 1                                                 //
-            // 0x14    |  0x14               | EQ           | (calldataSize == 1)                                            //
+            // 0x5B    |  0x5B               | JUMPDEST (16)      |                                                          //
+            // 0x60    |  0x60_01            | PUSH1 1            | 1                                                        //
+            // 0x36    |  0x36               | CALLDATASIZE       | calldataSize 1                                           //
+            // 0x14    |  0x14               | EQ                 | (calldataSize == 1)                                      //
+            //---------------------------------------------------------------------------------------------------------------//
+            // (5 bytes: 16-20 in deployed contract)
             hex"5B_60_01_36_14",
             //---------------------------------------------------------------------------------------------------------------//
             // (2b) load up the destination jump address for `(3a) calldata value check` logic, jump or raise `invalid` op-code
             //---------------------------------------------------------------------------------------------------------------//
-            // 0x60    |  0x60_1F            | PUSH1 31 (^) | jumpDestination (calldataSize == 1)                            //
-            // 0x57    |  0x57               | JUMPI        |                                                                //
-            // 0xFE    |  0xFE               | INVALID      |                                                                //
-            hex"60_1F_57_FE",
+            // 0x60    |  0x60_19            | PUSH1 25 (^)       | jumpDestination (calldataSize == 1)                      //
+            // 0x57    |  0x57               | JUMPI              |                                                          //
+            // 0xFE    |  0xFE               | INVALID            |                                                          //
+            //---------------------------------------------------------------------------------------------------------------//
+            // (4 bytes: 21-24 in deployed contract)
+            hex"60_19_57_FE",
             //---------------------------------------------------------------------------------------------------------------//
             // (3a) conditional logic for determing purge-gate (only if calldata is `0xFF`)
             //---------------------------------------------------------------------------------------------------------------//
-            // 0x5B    |  0x5B               | JUMPDEST (31)|                                                                //
-            // 0x60    |  0x60_FF            | PUSH1 0xFF   | 0xFF                                                           //
-            // 0x60    |  0x60_41            | PUSH1 65     | (64+1) 0xFF                                                    //
-            // 0x52    |  0x52               | MSTORE       |                                                                //
-            // 0x60    |  0x60_00            | PUSH1 0      | 0                                                              //
-            // 0x35    |  0x35               | CALLDATALOAD | calldata                                                       //
-            // 0x60    |  0x60_60            | PUSH1 96     | 96 calldata                                                    //
-            // 0x51    |  0x51               | MLOAD        | 0xFF00...00 calldata                                           //
-            // 0x14    |  0x14               | EQ           | (0xFF00...00 == calldata)                                      //
-            hex"5B_60_FF_60_41_52_60_00_35_60_60_51_14",
+            // 0x5B    |  0x5B               | JUMPDEST (25)      |                                                          //
+            // 0x60    |  0x60_00            | PUSH1 0            | 0                                                        //
+            // 0x35    |  0x35               | CALLDATALOAD       | calldata                                                 //
+            // 0x7F    |  0x7F_FF_00_..._00  | PUSH32 0xFF00...00 | 0xFF0...00 calldata                                      //
+            // 0x14    |  0x14               | EQ                 | (0xFF00...00 == calldata)                                //
+            //---------------------------------------------------------------------------------------------------------------//
+            // (4 bytes: 25-28 in deployed contract)
+            hex"5B_60_00_35",
+            // (33 bytes: 29-61 in deployed contract)
+            hex"7F_FF_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00_00",
+            // (1 byte: 62 in deployed contract)
+            hex"14",
             //---------------------------------------------------------------------------------------------------------------//
             // (3b) load up the destination jump address for actual purging (4), jump or raise `invalid` op-code
             //---------------------------------------------------------------------------------------------------------------//
-            // 0x60    |  0x60_30            | PUSH1 48 (^) | jumpDestination (0xFF00...00 == calldata)                      //
-            // 0x57    |  0x57               | JUMPI        |                                                                //
-            // 0xFE    |  0xFE               | INVALID      |                                                                //
-            hex"60_30_57_FE",
+            // 0x60    |  0x60_43            | PUSH1 67 (^)       | jumpDestination (0xFF00...00 == calldata)                //
+            // 0x57    |  0x57               | JUMPI              |                                                          //
+            // 0xFE    |  0xFE               | INVALID            |                                                          //
             //---------------------------------------------------------------------------------------------------------------//
+            // (4 bytes: 63-66 in deployed contract)
+            hex"60_43_57_FE",
             //---------------------------------------------------------------------------------------------------------------//
             // (4) perform actual purging
             //---------------------------------------------------------------------------------------------------------------//
-            // 0x5B    |  0x5B               | JUMPDEST (48)|                                                                //
-            // 0x60    |  0x60_00            | PUSH1 0      | 0                                                              //
-            // 0x51    |  0x51               | MLOAD        | byteDeployerAddress                                            //
-            // 0xFF    |  0xFF               | SELFDESTRUCT |                                                                //
+            // 0x5B    |  0x5B               | JUMPDEST (67)      |                                                          //
+            // 0x60    |  0x60_00            | PUSH1 0            | 0                                                        //
+            // 0x51    |  0x51               | MLOAD              | byteDeployerAddress                                      //
+            // 0xFF    |  0xFF               | SELFDESTRUCT       |                                                          //
+            //---------------------------------------------------------------------------------------------------------------//
+            // (5 bytes: 67-71 in deployed contract)
             hex"5B_60_00_51_FF",
             //---------------------------------------------------------------------------------------------------------------//
             // (*) Note: this value must be adjusted if selfdestruct purge logic is adjusted, to refer to the correct start  //
-            //           offset for where the `msg.sender` address was stored in deplyed bytecode.                           //
+            //           offset for where the `msg.sender` address was stored in deployed bytecode.                          //
             //                                                                                                               //
             // (^) Note: this value must be adjusted if portions of the selfdestruct purge logic are adjusted.               //
             //---------------------------------------------------------------------------------------------------------------//
