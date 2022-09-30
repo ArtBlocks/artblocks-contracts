@@ -902,6 +902,158 @@ export const MinterMerkle_Common = async () => {
     });
   });
 
+  describe("projectRemainingInvocationsForAddress", async function () {
+    beforeEach(async function () {
+      this.userMerkleProofZero = this.merkleTreeZero.getHexProof(
+        hashAddress(this.accounts.user.address)
+      );
+    });
+
+    it("is (true, 1) by default", async function () {
+      const projectRemainingInvocationsForAddress_ = await this.minter
+        .connect(this.accounts.user)
+        .projectRemainingInvocationsForAddress(
+          this.projectZero,
+          this.accounts.user.address
+        );
+      expect(
+        projectRemainingInvocationsForAddress_.projectLimitsMintInvocationsPerAddress
+      ).to.equal(true);
+      expect(
+        projectRemainingInvocationsForAddress_.mintInvocationsRemaining
+      ).to.equal(1);
+    });
+
+    it("is (true, 0) after minting a token on default setting", async function () {
+      // mint a token
+      await this.minter
+        .connect(this.accounts.user)
+        ["purchase(uint256,bytes32[])"](
+          this.projectZero,
+          this.userMerkleProofZero,
+          {
+            value: this.pricePerTokenInWei,
+          }
+        );
+      // user should have 0 remaining invocations
+      const projectRemainingInvocationsForAddress_ = await this.minter
+        .connect(this.accounts.user)
+        .projectRemainingInvocationsForAddress(
+          this.projectZero,
+          this.accounts.user.address
+        );
+      expect(
+        projectRemainingInvocationsForAddress_.projectLimitsMintInvocationsPerAddress
+      ).to.equal(true);
+      expect(
+        projectRemainingInvocationsForAddress_.mintInvocationsRemaining
+      ).to.equal(0);
+    });
+
+    it("is (false, 0) by when set to not limit mints per address", async function () {
+      await this.minter
+        .connect(this.accounts.artist)
+        .setProjectInvocationsPerAddress(this.projectZero, 0);
+      // check remaining invocations response
+      let projectRemainingInvocationsForAddress_ = await this.minter
+        .connect(this.accounts.user)
+        .projectRemainingInvocationsForAddress(
+          this.projectZero,
+          this.accounts.user.address
+        );
+      expect(
+        projectRemainingInvocationsForAddress_.projectLimitsMintInvocationsPerAddress
+      ).to.equal(false);
+      expect(
+        projectRemainingInvocationsForAddress_.mintInvocationsRemaining
+      ).to.equal(0);
+      // still false after user mints a token
+      await this.minter
+        .connect(this.accounts.user)
+        ["purchase(uint256,bytes32[])"](
+          this.projectZero,
+          this.userMerkleProofZero,
+          {
+            value: this.pricePerTokenInWei,
+          }
+        );
+      // check remaining invocations response
+      projectRemainingInvocationsForAddress_ = await this.minter
+        .connect(this.accounts.user)
+        .projectRemainingInvocationsForAddress(
+          this.projectZero,
+          this.accounts.user.address
+        );
+      expect(
+        projectRemainingInvocationsForAddress_.projectLimitsMintInvocationsPerAddress
+      ).to.equal(false);
+      expect(
+        projectRemainingInvocationsForAddress_.mintInvocationsRemaining
+      ).to.equal(0);
+    });
+
+    it("is updated when set to limit mints per address", async function () {
+      await this.minter
+        .connect(this.accounts.artist)
+        .setProjectInvocationsPerAddress(this.projectZero, 5);
+      // check remaining invocations response
+      let projectRemainingInvocationsForAddress_ = await this.minter
+        .connect(this.accounts.user)
+        .projectRemainingInvocationsForAddress(
+          this.projectZero,
+          this.accounts.user.address
+        );
+      expect(
+        projectRemainingInvocationsForAddress_.projectLimitsMintInvocationsPerAddress
+      ).to.equal(true);
+      expect(
+        projectRemainingInvocationsForAddress_.mintInvocationsRemaining
+      ).to.equal(5);
+      // updates after user mints two tokens
+      for (let i = 0; i < 2; i++) {
+        await this.minter
+          .connect(this.accounts.user)
+          ["purchase(uint256,bytes32[])"](
+            this.projectZero,
+            this.userMerkleProofZero,
+            {
+              value: this.pricePerTokenInWei,
+            }
+          );
+      }
+      // check remaining invocations response
+      projectRemainingInvocationsForAddress_ = await this.minter
+        .connect(this.accounts.user)
+        .projectRemainingInvocationsForAddress(
+          this.projectZero,
+          this.accounts.user.address
+        );
+      expect(
+        projectRemainingInvocationsForAddress_.projectLimitsMintInvocationsPerAddress
+      ).to.equal(true);
+      expect(
+        projectRemainingInvocationsForAddress_.mintInvocationsRemaining
+      ).to.equal(3);
+      // becomes zero if artist reduces limit to 1
+      await this.minter
+        .connect(this.accounts.artist)
+        .setProjectInvocationsPerAddress(this.projectZero, 1);
+      // check remaining invocations response
+      projectRemainingInvocationsForAddress_ = await this.minter
+        .connect(this.accounts.user)
+        .projectRemainingInvocationsForAddress(
+          this.projectZero,
+          this.accounts.user.address
+        );
+      expect(
+        projectRemainingInvocationsForAddress_.projectLimitsMintInvocationsPerAddress
+      ).to.equal(true);
+      expect(
+        projectRemainingInvocationsForAddress_.mintInvocationsRemaining
+      ).to.equal(0);
+    });
+  });
+
   describe("reentrancy attack", async function () {
     it("does not allow reentrant purchaseTo, when invocations per address is default value", async function () {
       // contract buys are always allowed by default if in merkle tree

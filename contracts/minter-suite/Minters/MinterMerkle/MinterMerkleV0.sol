@@ -63,7 +63,7 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
 
     /// projectId => purchaser address => qty of mints purchased for project
     mapping(uint256 => mapping(address => uint256))
-        public projectUserInvocations;
+        public projectUserMintInvocations;
 
     modifier onlyCoreWhitelisted() {
         require(
@@ -152,8 +152,9 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
 
     /**
      * @notice Sets maximum allowed invocations per allowlisted address for
-     * project `_project` to `limit`. If `limit` is set to 0, infinite mints
-     * will be allowed.
+     * project `_project` to `limit`. If `limit` is set to 0, allowlisted
+     * addresses will be able to mint as many times as desired, until the
+     * project reaches its maximum invocations.
      * Default is a value of 1 if never configured by artist.
      * @param _projectId Project ID to toggle the mint limit.
      * @param _maxInvocationsPerAddress Maximum allowed invocations per
@@ -166,6 +167,8 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         uint24 _maxInvocationsPerAddress
     ) external onlyArtist(_projectId) {
         // use override value instead of the contract's default
+        // @dev this never changes from true to false; default value is only
+        // used if artist has never configured project invocations per address
         projectUseMaxInvocationsPerAddressOverride[_projectId] = true;
         // update the override value
         projectMaxInvocationsPerAddressOverride[
@@ -309,14 +312,23 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
 
         // FINAL CHECK, WITH FOLLOW-ON EFFECTS
         require(
-            // _++ returns current invocations, then increments
-            projectUserInvocations[_projectId][msg.sender]++ <
+            projectUserMintInvocations[_projectId][msg.sender] <
                 _maxProjectInvocationsPerAddress ||
                 _maxProjectInvocationsPerAddress == 0,
             "Maximum number of invocations per address reached"
         );
 
+        // EFFECTS
+        // increment user's invocations for this project
+        unchecked {
+            // this will never overflow since user's invocations on a project
+            // are limited by the project's max invocations
+            projectUserMintInvocations[_projectId][msg.sender]++;
+        }
+
+        // mint token
         tokenId = minterFilter.mint(_to, _projectId, msg.sender);
+
         // what if projectMaxInvocations[_projectId] is 0 (default value)?
         // that is intended, so that by default the minter allows infinite transactions,
         // allowing the artblocks contract to stop minting
@@ -399,7 +411,7 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
      * CONFIG_USE_MAX_INVOCATIONS_PER_ADDRESS_OVERRIDE is changed.
      */
     function projectMaxInvocationsPerAddress(uint256 _projectId)
-        external
+        public
         view
         returns (uint256)
     {
@@ -407,6 +419,60 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
             return uint256(projectMaxInvocationsPerAddressOverride[_projectId]);
         } else {
             return DEFAULT_MAX_INVOCATIONS_PER_ADDRESS;
+        }
+    }
+
+    /**
+     * @notice Returns remaining invocations for a given address.
+     * If `projectLimitsMintInvocationsPerAddress` is false, individual
+     * addresses are only limited by the project's maximum invocations, and a
+     * dummy value of zero is returned for `mintInvocationsRemaining`.
+     * If `projectLimitsMintInvocationsPerAddress` is true, the quantity of
+     * remaining mint invocations for address `_address` is returned as
+     * `mintInvocationsRemaining`.
+     * Note that mint invocations per address can be changed at any time by the
+     * artist of a project.
+     * Also note that all mint invocations are limited by a project's maximum
+     * invocations as defined on the core contract. This function may return
+     * a value greater than the project's remaining invocations.
+     */
+    function projectRemainingInvocationsForAddress(
+        uint256 _projectId,
+        address _address
+    )
+        external
+        view
+        returns (
+            bool projectLimitsMintInvocationsPerAddress,
+            uint256 mintInvocationsRemaining
+        )
+    {
+        uint256 maxInvocationsPerAddress = projectMaxInvocationsPerAddress(
+            _projectId
+        );
+        if (maxInvocationsPerAddress == 0) {
+            // project does not limit mint invocations per address, so leave
+            // `projectLimitsMintInvocationsPerAddress` at solitiy initial
+            // value of false. Also leave `mintInvocationsRemaining` at
+            // solidity initial value of zero, as indicated in this function's
+            // documentation.
+        } else {
+            projectLimitsMintInvocationsPerAddress = true;
+            uint256 userMintInvocations = projectUserMintInvocations[
+                _projectId
+            ][_address];
+            // if user has not reached max invocations per address, return
+            // remaining invocations
+            if (maxInvocationsPerAddress > userMintInvocations) {
+                unchecked {
+                    // will never underflow due to the check above
+                    mintInvocationsRemaining =
+                        maxInvocationsPerAddress -
+                        userMintInvocations;
+                }
+            }
+            // else user has reached their maximum invocations, so leave
+            // `mintInvocationsRemaining` at solidity initial value of zero
         }
     }
 
