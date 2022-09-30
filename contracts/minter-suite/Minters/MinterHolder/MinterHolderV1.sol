@@ -11,7 +11,7 @@ import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin-4.5/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin-4.5/contracts/utils/structs/EnumerableMap.sol";
 
-pragma solidity 0.8.9;
+pragma solidity 0.8.16;
 
 /**
  * @title Filtered Minter contract that allows tokens to be minted with ETH
