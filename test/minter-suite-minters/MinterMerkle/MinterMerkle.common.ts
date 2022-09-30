@@ -220,6 +220,17 @@ export const MinterMerkle_Common = async () => {
         .updateMerkleRoot(this.projectZero, newMerkleRoot);
     });
 
+    it("does not allow Merkle root of zero", async function () {
+      const newMerkleRoot = constants.ZERO_BYTES32;
+      // artist allowed
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.artist)
+          .updateMerkleRoot(this.projectZero, newMerkleRoot),
+        "Root must be provided"
+      );
+    });
+
     it("emits event when update merkle root", async function () {
       const newMerkleRoot = this.merkleTreeZero.getHexRoot();
       await expect(
