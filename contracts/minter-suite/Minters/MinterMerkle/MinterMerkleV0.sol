@@ -36,18 +36,22 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
 
     /// project minter configuration keys used by this minter
     bytes32 private constant CONFIG_MERKLE_ROOT = "merkleRoot";
-    bytes32 private constant CONFIG_MINT_LIMITER_DISABLED =
-        "mintLimiterDisabled";
+    bytes32 private constant CONFIG_USE_MAX_INVOCATIONS_PER_ADDRESS_OVERRIDE =
+        "useMaxMintsPerAddrOverride"; // shortened to fit in 32 bytes
+    bytes32 private constant CONFIG_MAX_INVOCATIONS_OVERRIDE =
+        "maxMintsPerAddrOverride"; // shortened to match format of previous key
 
     uint256 constant ONE_MILLION = 1_000_000;
 
+    uint256 public constant DEFAULT_MAX_INVOCATIONS_PER_ADDRESS = 1;
+
     /// projectId => merkle root
     mapping(uint256 => bytes32) public projectMerkleRoot;
-    /// projectId => purchaser address => has purchased one or more mints
-    mapping(uint256 => mapping(address => bool)) public projectMintedBy;
-    /// projectId => may a single address mint multiple times?
-    /// (default behavior is limit one mint per address)
-    mapping(uint256 => bool) public projectMintLimiterDisabled;
+    /// projectId => are max invocations per address overrides enabled
+    /// (default is false, so DEFAULT_MAX_INVOCATIONS_PER_ADDRESS per address)
+    mapping(uint256 => bool) public projectUseMaxInvocationsPerAddressOverride;
+    /// projectId => max invocations per address override
+    mapping(uint256 => uint256) public projectMaxInvocationsPerAddressOverride;
     /// projectId => has project reached its maximum number of invocations?
     mapping(uint256 => bool) public projectMaxHasBeenInvoked;
     /// projectId => project's maximum number of invocations
@@ -56,6 +60,10 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
     mapping(uint256 => uint256) private projectIdToPricePerTokenInWei;
     /// projectId => price per token has been configured on this minter
     mapping(uint256 => bool) private projectIdToPriceIsConfigured;
+
+    /// projectId => purchaser address => qty of mints purchased for project
+    mapping(uint256 => mapping(address => uint256))
+        public projectUserInvocations;
 
     modifier onlyCoreWhitelisted() {
         require(
@@ -143,21 +151,36 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
     }
 
     /**
-     * @notice Toggles mint limit of one per address for project `_projectId`.
-     * If mint limit is disabled, unlimited mints per address are allowed.
+     * @notice Sets maximum allowed invocations per allowlisted address for
+     * project `_project` to `limit`. If `limit` is set to 0, infinite mints
+     * will be allowed.
+     * Default is a value of 1 if never configured by artist.
      * @param _projectId Project ID to toggle the mint limit.
+     * @param _maxInvocationsPerAddress Maximum allowed invocations per
+     * allowlisted address.
+     * @dev default value stated above must be updated if the value of
+     * CONFIG_USE_MAX_INVOCATIONS_PER_ADDRESS_OVERRIDE is changed.
      */
-    function toggleProjectMintLimiter(uint256 _projectId)
-        external
-        onlyArtist(_projectId)
-    {
-        projectMintLimiterDisabled[_projectId] = !projectMintLimiterDisabled[
+    function setProjectInvocationsPerAddress(
+        uint256 _projectId,
+        uint24 _maxInvocationsPerAddress
+    ) external onlyArtist(_projectId) {
+        // use override value instead of the contract's default
+        projectUseMaxInvocationsPerAddressOverride[_projectId] = true;
+        // update the override value
+        projectMaxInvocationsPerAddressOverride[
             _projectId
-        ];
+        ] = _maxInvocationsPerAddress;
+        // generic events
         emit ConfigValueSet(
             _projectId,
-            CONFIG_MINT_LIMITER_DISABLED,
-            projectMintLimiterDisabled[_projectId]
+            CONFIG_USE_MAX_INVOCATIONS_PER_ADDRESS_OVERRIDE,
+            true
+        );
+        emit ConfigValueSet(
+            _projectId,
+            CONFIG_MAX_INVOCATIONS_OVERRIDE,
+            uint256(_maxInvocationsPerAddress)
         );
     }
 
@@ -278,15 +301,20 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         );
 
         // limit mints per address by project
-        if (projectMintedBy[_projectId][msg.sender]) {
-            require(
-                projectMintLimiterDisabled[_projectId],
-                "Limit 1 mint per address"
-            );
-        } else {
-            // EFFECTS
-            projectMintedBy[_projectId][msg.sender] = true;
-        }
+        uint256 _maxProjectInvocationsPerAddress = projectUseMaxInvocationsPerAddressOverride[
+                _projectId
+            ]
+                ? projectMaxInvocationsPerAddressOverride[_projectId]
+                : DEFAULT_MAX_INVOCATIONS_PER_ADDRESS;
+
+        // FINAL CHECK, WITH FOLLOW-ON EFFECTS
+        require(
+            // _++ returns current invocations, then increments
+            projectUserInvocations[_projectId][msg.sender]++ <
+                _maxProjectInvocationsPerAddress ||
+                _maxProjectInvocationsPerAddress == 0,
+            "Maximum number of invocations per address reached"
+        );
 
         tokenId = minterFilter.mint(_to, _projectId, msg.sender);
         // what if projectMaxInvocations[_projectId] is 0 (default value)?
@@ -358,6 +386,27 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
                     .call{value: creatorFunds}("");
                 require(success_, "Artist payment failed");
             }
+        }
+    }
+
+    /**
+     * @notice projectId => maximum invocations per allowlisted address. If a
+     * a value of 0 is returned, there is no limit on the number of mints per
+     * allowlisted address.
+     * Default behavior is limit 1 mint per address.
+     * This value can be changed at any time by the artist.
+     * @dev default value stated above must be updated if the value of
+     * CONFIG_USE_MAX_INVOCATIONS_PER_ADDRESS_OVERRIDE is changed.
+     */
+    function projectMaxInvocationsPerAddress(uint256 _projectId)
+        external
+        view
+        returns (uint256)
+    {
+        if (projectUseMaxInvocationsPerAddressOverride[_projectId]) {
+            return uint256(projectMaxInvocationsPerAddressOverride[_projectId]);
+        } else {
+            return DEFAULT_MAX_INVOCATIONS_PER_ADDRESS;
         }
     }
 
