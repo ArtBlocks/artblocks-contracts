@@ -171,19 +171,6 @@ describe("MinterMerkleV1", async function () {
     MinterMerkle_Common();
   });
 
-  describe("updateMerkleRoot", async function () {
-    it("does not allow Merkle root of zero", async function () {
-      const newMerkleRoot = constants.ZERO_BYTES32;
-      // artist allowed
-      await expectRevert(
-        this.minter
-          .connect(this.accounts.artist)
-          .updateMerkleRoot(this.projectZero, newMerkleRoot),
-        "Root must be provided"
-      );
-    });
-  });
-
   describe("setProjectMaxInvocations", async function () {
     it("allows artist to call setProjectMaxInvocations", async function () {
       await this.minter

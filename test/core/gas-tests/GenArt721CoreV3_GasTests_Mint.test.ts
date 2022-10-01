@@ -350,10 +350,10 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
       await this.minterMerkle
         .connect(this.accounts.artist)
         .updateMerkleRoot(this.projectThree, _merkleTree.getRoot());
-      // toggle disable mint limiter to allow for taking an average
+      // allow unlimited mints to enable taking an average
       await this.minterMerkle
         .connect(this.accounts.artist)
-        .toggleProjectMintLimiter(this.projectThree);
+        .setProjectInvocationsPerAddress(this.projectThree, 0);
       await this.minterMerkle
         .connect(this.accounts.artist)
         .updateMerkleRoot(this.projectThree, _merkleTree.getRoot());
