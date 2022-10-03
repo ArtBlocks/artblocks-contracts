@@ -452,7 +452,7 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         );
         if (maxInvocationsPerAddress == 0) {
             // project does not limit mint invocations per address, so leave
-            // `projectLimitsMintInvocationsPerAddress` at solitiy initial
+            // `projectLimitsMintInvocationsPerAddress` at solidity initial
             // value of false. Also leave `mintInvocationsRemaining` at
             // solidity initial value of zero, as indicated in this function's
             // documentation.
