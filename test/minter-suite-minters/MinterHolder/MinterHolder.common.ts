@@ -154,6 +154,19 @@ export const MinterHolder_Common = async () => {
         );
     });
 
+    it("length of array args must match", async function () {
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.artist)
+          .allowHoldersOfProjects(
+            this.projectZero,
+            [this.genArt721Core.address, this.genArt721Core.address],
+            [this.projectOne]
+          ),
+        "Length of add arrays must match"
+      );
+    });
+
     it("emits event when update allowed holders for a single project", async function () {
       await expect(
         this.minter
@@ -244,6 +257,19 @@ export const MinterHolder_Common = async () => {
           [this.genArt721Core.address],
           [this.projectOne]
         );
+    });
+
+    it("only allows equal length array args", async function () {
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.artist)
+          .removeHoldersOfProjects(
+            this.projectZero,
+            [this.genArt721Core.address, this.genArt721Core.address],
+            [this.projectOne]
+          ),
+        "Length of remove arrays must match"
+      );
     });
 
     it("emits event when removing allowed holders for a single project", async function () {
@@ -979,15 +1005,17 @@ export const MinterHolder_Common = async () => {
         .connect(this.accounts.deployer)
         .projectMaxHasBeenInvoked(this.projectOne);
       expect(hasMaxBeenInvoked).to.be.false;
-      // should also support unconfigured project this.maxInvocations
-      // e.g. project 99, which does not yet exist
-      await this.minter
-        .connect(this.accounts.deployer)
-        .setProjectMaxInvocations(99);
-      maxInvocations = await this.minter
-        .connect(this.accounts.deployer)
-        .projectMaxInvocations(99);
-      expect(maxInvocations).to.be.equal(0);
+    });
+
+    it("reverts for unconfigured/non-existent project", async function () {
+      // trying to set this on unconfigured project (e.g. 99) should cause
+      // revert on the underlying CoreContract.
+      expectRevert(
+        this.minter
+          .connect(this.accounts.deployer)
+          .setProjectMaxInvocations(99),
+        "Project ID does not exist"
+      );
     });
   });
 

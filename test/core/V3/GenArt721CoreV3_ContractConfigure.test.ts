@@ -79,7 +79,7 @@ describe("GenArt721CoreV3 Contract Configure", async function () {
         this.genArt721Core
           .connect(this.accounts.deployer)
           .updateArtblocksPrimarySalesPercentage(26),
-        "Max of 25%"
+        "Max of ART_BLOCKS_MAX_PRIMARY_SALES_PERCENTAGE percent"
       );
     });
 
@@ -102,7 +102,7 @@ describe("GenArt721CoreV3 Contract Configure", async function () {
         this.genArt721Core
           .connect(this.accounts.deployer)
           .updateArtblocksSecondarySalesBPS(10001),
-        "Max of 100%"
+        "Max of ART_BLOCKS_MAX_SECONDARY_SALES_BPS BPS"
       );
     });
 
@@ -140,6 +140,21 @@ describe("GenArt721CoreV3 Contract Configure", async function () {
         this.genArt721Core.connect(this.accounts.deployer).forbidNewProjects(),
         "Already forbidden"
       );
+    });
+
+    it("does allow to call renounceOwnership after forbidding new projects", async function () {
+      // forbid new projects
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .forbidNewProjects();
+      // update owner of core to null address, expect OwnershipTransferred event
+      expect(
+        await this.adminACL
+          .connect(this.accounts.deployer)
+          .renounceOwnershipOn(this.genArt721Core.address)
+      )
+        .to.emit(this.genArt721Core, "OwnershipTransferred")
+        .withArgs(this.adminACL.address, constants.ZERO_ADDRESS);
     });
   });
 

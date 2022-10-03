@@ -1,3 +1,4 @@
+import { BN, constants, expectRevert } from "@openzeppelin/test-helpers";
 import {
   getAccounts,
   assignDefaultConstants,
@@ -24,7 +25,7 @@ const runForEach = [
 ];
 
 runForEach.forEach((params) => {
-  describe("MinterFilterV0Views", async function () {
+  describe(`${params.minterFilter}Views`, async function () {
     beforeEach(async function () {
       // standard accounts and constants
       this.accounts = await getAccounts();

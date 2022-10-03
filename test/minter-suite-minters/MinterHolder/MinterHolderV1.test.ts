@@ -185,6 +185,137 @@ describe("MinterHolderV1", async function () {
     });
   });
 
+  describe("payment splitting", async function () {
+    beforeEach(async function () {
+      this.deadReceiver = await deployAndGet.call(this, "DeadReceiverMock", []);
+    });
+
+    it("requires successful payment to platform", async function () {
+      // update platform address to a contract that reverts on receive
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateArtblocksPrimarySalesAddress(this.deadReceiver.address);
+      // expect revert when trying to purchase
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.artist)
+          .purchase_nnf(
+            this.projectZero,
+            this.genArt721Core.address,
+            this.projectZeroTokenZero.toNumber(),
+            {
+              value: this.pricePerTokenInWei,
+            }
+          ),
+        "Art Blocks payment failed"
+      );
+    });
+
+    it("requires successful payment to artist", async function () {
+      // update artist address to a contract that reverts on receive
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateProjectArtistAddress(
+          this.projectZero,
+          this.deadReceiver.address
+        );
+      // expect revert when trying to purchase
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.artist)
+          .purchase_nnf(
+            this.projectZero,
+            this.genArt721Core.address,
+            this.projectZeroTokenZero.toNumber(),
+            {
+              value: this.pricePerTokenInWei,
+            }
+          ),
+        "Artist payment failed"
+      );
+    });
+
+    it("requires successful payment to artist additional payee", async function () {
+      // update artist additional payee to a contract that reverts on receive
+      const proposedAddressesAndSplits = [
+        this.projectZero,
+        this.accounts.artist.address,
+        this.deadReceiver.address,
+        // @dev 50% to additional, 50% to artist, to ensure additional is paid
+        50,
+        this.accounts.additional2.address,
+        // @dev split for secondary sales doesn't matter for this test
+        50,
+      ];
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .proposeArtistPaymentAddressesAndSplits(...proposedAddressesAndSplits);
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .adminAcceptArtistAddressesAndSplits(...proposedAddressesAndSplits);
+      // expect revert when trying to purchase
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.artist)
+          .purchase_nnf(
+            this.projectZero,
+            this.genArt721Core.address,
+            this.projectZeroTokenZero.toNumber(),
+            {
+              value: this.pricePerTokenInWei,
+            }
+          ),
+        "Additional Payee payment failed"
+      );
+    });
+
+    it("handles zero platform and artist payment values", async function () {
+      // update platform to zero percent
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateArtblocksPrimarySalesPercentage(0);
+      // update artist primary split to zero
+      const proposedAddressesAndSplits = [
+        this.projectZero,
+        this.accounts.artist.address,
+        this.accounts.additional.address,
+        // @dev 100% to additional, 0% to artist, to induce zero artist payment value
+        100,
+        this.accounts.additional2.address,
+        // @dev split for secondary sales doesn't matter for this test
+        50,
+      ];
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .proposeArtistPaymentAddressesAndSplits(...proposedAddressesAndSplits);
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .adminAcceptArtistAddressesAndSplits(...proposedAddressesAndSplits);
+      // expect successful purchase
+      await this.minter
+        .connect(this.accounts.artist)
+        .purchase_nnf(
+          this.projectZero,
+          this.genArt721Core.address,
+          this.projectZeroTokenZero.toNumber(),
+          {
+            value: this.pricePerTokenInWei,
+          }
+        );
+    });
+  });
+
+  describe("onlyCoreAdminACL", async function () {
+    it("restricts registerNFTAddress to only core admin ACL allowed", async function () {
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.user)
+          .registerNFTAddress(this.genArt721Core.address),
+        "Only Core AdminACL allowed"
+      );
+    });
+  });
+
   describe("additional payee payments", async function () {
     it("handles additional payee payments", async function () {
       const valuesToUpdateTo = [
@@ -236,7 +367,7 @@ describe("MinterHolderV1", async function () {
         ethers.utils.formatUnits(txCost.toString(), "ether").toString(),
         "ETH"
       );
-      expect(compareBN(txCost, ethers.utils.parseEther("0.0118406"), 1)).to.be
+      expect(compareBN(txCost, ethers.utils.parseEther("0.0115697"), 1)).to.be
         .true;
     });
   });

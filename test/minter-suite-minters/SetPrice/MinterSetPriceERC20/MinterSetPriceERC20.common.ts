@@ -161,6 +161,20 @@ export const MinterSetPriceERC20_Common = async () => {
         );
     });
 
+    it("does not allow non-ETH to use zero address", async function () {
+      // doesn't allow user
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.artist)
+          .updateProjectCurrencyInfo(
+            this.projectZero,
+            "NOT_ETH",
+            constants.ZERO_ADDRESS
+          ),
+        "ETH is only null address"
+      );
+    });
+
     it("enforces currency info update and allows purchases", async function () {
       // artist changes to Mock ERC20 token
       await this.minter
@@ -405,9 +419,6 @@ export const MinterSetPriceERC20_Common = async () => {
         .connect(this.accounts.deployer)
         .setProjectMaxInvocations(this.projectOne);
       // minter should update storage with accurate projectMaxInvocations
-      await this.minter
-        .connect(this.accounts.deployer)
-        .setProjectMaxInvocations(this.projectOne);
       let maxInvocations = await this.minter
         .connect(this.accounts.deployer)
         .projectMaxInvocations(this.projectOne);
@@ -417,15 +428,17 @@ export const MinterSetPriceERC20_Common = async () => {
         .connect(this.accounts.deployer)
         .projectMaxHasBeenInvoked(this.projectOne);
       expect(hasMaxBeenInvoked).to.be.false;
-      // should also support unconfigured project projectMaxInvocations
-      // e.g. project 99, which does not yet exist
-      await this.minter
-        .connect(this.accounts.deployer)
-        .setProjectMaxInvocations(99);
-      maxInvocations = await this.minter
-        .connect(this.accounts.deployer)
-        .projectMaxInvocations(99);
-      expect(maxInvocations).to.be.equal(0);
+    });
+
+    it("reverts for unconfigured/non-existent project", async function () {
+      // trying to set this on unconfigured project (e.g. 99) should cause
+      // revert on the underlying CoreContract.
+      expectRevert(
+        this.minter
+          .connect(this.accounts.deployer)
+          .setProjectMaxInvocations(99),
+        "Project ID does not exist"
+      );
     });
   });
 
