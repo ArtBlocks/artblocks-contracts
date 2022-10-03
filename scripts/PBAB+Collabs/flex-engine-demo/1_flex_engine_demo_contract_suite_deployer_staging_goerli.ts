@@ -16,13 +16,9 @@ const EXTRA_DELAY_BETWEEN_TX = 10000; // ms
 //////////////////////////////////////////////////////////////////////////////
 // FLEX contract file
 import { GenArt721CoreV2ENGINEFLEX__factory } from "../../contracts/factories/GenArt721CoreV2ENGINEFLEX__factory";
-<<<<<<< HEAD
 import { GenArt721MinterPBAB__factory } from "../../contracts/factories/GenArt721MinterPBAB__factory";
 
 const tokenName = "Art Blocks Flex Engine Staging Demo";
-=======
-const tokenName = "Art Blocks Flex Engine Demo (Goerli)";
->>>>>>> main
 const tokenTicker = "ABFLEX_DEMO_STAGE_GOERLI";
 const transferAddress = "0x2246475beddf9333b6a6D9217194576E7617Afd1";
 const artblocksAddress = "0x2246475beddf9333b6a6D9217194576E7617Afd1";
