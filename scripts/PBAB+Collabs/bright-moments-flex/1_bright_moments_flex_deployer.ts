@@ -47,7 +47,6 @@ async function main() {
     tokenTicker,
     randomizerAddress
   );
-  console.log(genArt721CoreFlex.deployTransaction);
   await genArt721CoreFlex.deployed();
   console.log(`GenArt721CoreV2 FLEX deployed at ${genArt721CoreFlex.address}`);
 
