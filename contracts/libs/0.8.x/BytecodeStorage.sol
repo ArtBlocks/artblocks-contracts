@@ -77,8 +77,8 @@ library BytecodeStorage {
             // (1a) conditional logic for determing purge-gate (only the bytecode contract deployer can `selfdestruct`)
             //---------------------------------------------------------------------------------------------------------------//
             // 0x60    |  0x60_20            | PUSH1 32           | 32                                                       //
-            // 0x60    |  0x60_48            | PUSH1 72 (*)       | contractOffset 20                                        //
-            // 0x60    |  0x60_00            | PUSH1 0            | 0 contractOffset 20                                      //
+            // 0x60    |  0x60_48            | PUSH1 72 (*)       | contractOffset 32                                        //
+            // 0x60    |  0x60_00            | PUSH1 0            | 0 contractOffset 32                                      //
             // 0x39    |  0x39               | CODECOPY           |                                                          //
             // 0x60    |  0x60_00            | PUSH1 0            | 0                                                        //
             // 0x51    |  0x51               | MLOAD              | byteDeployerAddress                                      //
