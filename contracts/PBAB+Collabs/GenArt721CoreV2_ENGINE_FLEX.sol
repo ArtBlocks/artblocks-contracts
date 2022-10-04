@@ -2,7 +2,7 @@
 // Created By: Art Blocks Inc.
 
 import "../interfaces/0.8.x/IRandomizer.sol";
-import "../interfaces/0.8.x/IGenArt721CoreV2_PBAB.sol";
+import "../interfaces/0.8.x/IGenArt721CoreV2_ENGINE_FLEX.sol";
 import "@openzeppelin-4.5/contracts/utils/Strings.sol";
 import "@openzeppelin-4.5/contracts/token/ERC721/ERC721.sol";
 
@@ -13,7 +13,7 @@ pragma solidity 0.8.9;
  * Allows for projects to specify external asset dependencies from either IPFS or ARWEAVE.
  * @author Art Blocks Inc.
  */
-contract GenArt721CoreV2_ENGINE_FLEX is ERC721, IGenArt721CoreV2_PBAB {
+contract GenArt721CoreV2_ENGINE_FLEX is ERC721, IGenArt721CoreV2_ENGINE_FLEX {
     /// randomizer contract
     IRandomizer public randomizerContract;
 
@@ -40,35 +40,6 @@ contract GenArt721CoreV2_ENGINE_FLEX is ERC721, IGenArt721CoreV2_PBAB {
         bool externalAssetDependenciesLocked;
         uint24 externalAssetDependencyCount;
         mapping(uint256 => ExternalAssetDependency) externalAssetDependencies;
-    }
-
-    event ExternalAssetDependencyUpdated(
-        uint256 indexed _projectId,
-        uint256 indexed _index,
-        string _cid,
-        ExternalAssetDependencyType _dependencyType,
-        uint24 _externalAssetDependencyCount
-    );
-
-    event ExternalAssetDependencyRemoved(
-        uint256 indexed _projectId,
-        uint256 indexed _index
-    );
-
-    event GatewayUpdated(
-        ExternalAssetDependencyType indexed _dependencyType,
-        string _gatewayAddress
-    );
-
-    event ProjectExternalAssetDependenciesLocked(uint256 indexed _projectId);
-
-    enum ExternalAssetDependencyType {
-        IPFS,
-        ARWEAVE
-    }
-    struct ExternalAssetDependency {
-        string cid;
-        ExternalAssetDependencyType dependencyType;
     }
 
     string public preferredIPFSGateway;
