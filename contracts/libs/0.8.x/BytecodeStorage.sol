@@ -29,14 +29,13 @@ library BytecodeStorage {
     //---------------------------------------------------------------------------------------------------------------//
     // 0              | N/A  | 0            |                                                                        //
     // 0              | 72   | 72           | the bytes of the gated-cleanup-logic allowing for `selfdestruct`ion    //
-    // 72             | 20   | 92           | the 20 bytes used for storing the deploying contract's address         //
+    // 72             | 32   | 104          | the 32 bytes for storing the deploying contract's (0-padded) address   //
     //---------------------------------------------------------------------------------------------------------------//
     // Define the offset for where the "logic bytes" end, and the "data bytes" begin. Note that this is a manually
     // calculated value, and must be updated if the above table is changed. It is expected that tests will fail
     // loudly if these values are not updated in-step with eachother.
-    uint256 internal constant DATA_OFFSET = 92;
-    uint256 internal constant ADDRESS_LENGTH = 20;
-    uint256 internal constant ADDRESS_OFFSET = 72; // DATA_OFFSET - ADDRESS_LENGTH
+    uint256 internal constant DATA_OFFSET = 104;
+    uint256 internal constant ADDRESS_OFFSET = 72;
 
     /*//////////////////////////////////////////////////////////////
                            WRITE LOGIC
@@ -77,9 +76,9 @@ library BytecodeStorage {
             //---------------------------------------------------------------------------------------------------------------//
             // (1a) conditional logic for determing purge-gate (only the bytecode contract deployer can `selfdestruct`)
             //---------------------------------------------------------------------------------------------------------------//
-            // 0x60    |  0x60_14            | PUSH1 20           | 20                                                       //
-            // 0x60    |  0x60_48            | PUSH1 72 (*)       | contractOffset 20                                        //
-            // 0x60    |  0x60_0C            | PUSH1 12           | 12 contractOffset 20                                     //
+            // 0x60    |  0x60_20            | PUSH1 32           | 32                                                       //
+            // 0x60    |  0x60_48            | PUSH1 72 (*)       | contractOffset 32                                        //
+            // 0x60    |  0x60_00            | PUSH1 0            | 0 contractOffset 32                                      //
             // 0x39    |  0x39               | CODECOPY           |                                                          //
             // 0x60    |  0x60_00            | PUSH1 0            | 0                                                        //
             // 0x51    |  0x51               | MLOAD              | byteDeployerAddress                                      //
@@ -87,7 +86,7 @@ library BytecodeStorage {
             // 0x14    |  0x14               | EQ                 | (msg.sender == byteDeployerAddress)                      //
             //---------------------------------------------------------------------------------------------------------------//
             // (12 bytes: 0-11 in deployed contract)
-            hex"60_14_60_48_60_0C_39_60_00_51_33_14",
+            hex"60_20_60_48_60_00_39_60_00_51_33_14",
             //---------------------------------------------------------------------------------------------------------------//
             // (1b) load up the destination jump address for `(2a) calldata length check` logic, jump or raise `invalid` op-code
             //---------------------------------------------------------------------------------------------------------------//
@@ -157,7 +156,8 @@ library BytecodeStorage {
             // (^) Note: this value must be adjusted if portions of the selfdestruct purge logic are adjusted.               //
             //---------------------------------------------------------------------------------------------------------------//
             //
-            // store the deploying-contract's address (to be used to gate and call `selfdestruct`)
+            // store the deploying-contract's address (to be used to gate and call `selfdestruct`),
+            // with expected 0-padding to fit a 20-byte address into a 30-byte slot.
             //
             // note: it is important that this address is the executing contract's address
             //      (the address that represents the client-application smart contract of this library)
@@ -165,9 +165,7 @@ library BytecodeStorage {
             //      to determine how deletes are gated (or if they are exposed at all) as it is only
             //      this contract that will be able to call `purgeBytecode` as the `CALLER` that is
             //      checked above (op-code 0x33).
-            //
-            // also note: abi.encodePacked will not `0`-pad the address to 32 bytes,
-            //            making the address 20 bytes instead
+            hex"00_00_00_00_00_00_00_00_00_00_00_00", // left-pad 20-byte address with 12 0x00 bytes
             address(this),
             // uploaded data (stored as bytecode) comes last
             _data
@@ -251,22 +249,20 @@ library BytecodeStorage {
         }
 
         assembly {
-            // ensure next free 32 bytes are all zeros
-            mstore(mload(0x40), 0x0)
             // allocate free memory
             let writerAddress := mload(0x40)
             // shift free memory pointer by one slot
             mstore(0x40, add(mload(0x40), 0x20))
-            // copy the 20-byte address of the data contract writer to memory
+            // copy the 32-byte address of the data contract writer to memory
             // note: this relies on the assumption noted at the top-level of
             //       this file that the storage layout for the deployed
             //       contracts-as-storage contract looks like:
-            //       | gated-cleanup-logic | deployer-address | data |
+            //       | gated-cleanup-logic | deployer-address (padded) | data |
             extcodecopy(
                 _address,
-                add(writerAddress, 12), // add zero-padding to fill one slot
+                writerAddress,
                 ADDRESS_OFFSET,
-                ADDRESS_LENGTH
+                0x20 // full 32-bytes, as address is expected to be zero-padded
             )
             return(
                 writerAddress,
