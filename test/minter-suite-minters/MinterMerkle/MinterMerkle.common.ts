@@ -47,6 +47,32 @@ export const MinterMerkle_Common = async () => {
     Minter_Common();
   });
 
+  describe("deploy", async () => {
+    it("broadcasts default max mints per user during deployment", async function () {
+      const minterFactory = await ethers.getContractFactory(
+        // minterType is a function that returns the minter contract name
+        await this.minter.minterType()
+      );
+      const tx = await minterFactory
+        .connect(this.accounts.deployer)
+        .deploy(this.genArt721Core.address, this.minterFilter.address);
+      const receipt = await tx.deployTransaction.wait();
+      // check for expected event
+      // target event is the last log
+      const targetLog = receipt.logs[0];
+      // expect "DefaultMaxInvocationsPerAddress" event as topic 0
+      expect(targetLog.topics[0]).to.be.equal(
+        ethers.utils.keccak256(
+          ethers.utils.toUtf8Bytes("DefaultMaxInvocationsPerAddress(uint256)")
+        )
+      );
+      // expect default max invocations to be 1, as the event data
+      expect(targetLog.data).to.be.equal(
+        "0x0000000000000000000000000000000000000000000000000000000000000001"
+      );
+    });
+  });
+
   describe("updatePricePerTokenInWei", async function () {
     it("only allows artist to update price", async function () {
       const onlyArtistErrorMessage = "Only Artist";
