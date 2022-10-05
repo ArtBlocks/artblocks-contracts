@@ -8,7 +8,7 @@ import "../../../interfaces/0.8.x/IFilteredMinterV0.sol";
 import "@openzeppelin-4.5/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
 
-pragma solidity 0.8.9;
+pragma solidity 0.8.17;
 
 /**
  * @title Filtered Minter contract that allows tokens to be minted with ETH
