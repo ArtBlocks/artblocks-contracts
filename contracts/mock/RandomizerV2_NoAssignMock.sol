@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Creatd By: Art Blocks Inc.
 
-pragma solidity 0.8.16;
+pragma solidity 0.8.17;
 
 import "../BasicRandomizerV2.sol";
 
