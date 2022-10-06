@@ -9,7 +9,7 @@ import "@openzeppelin-4.7/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin-4.7/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin-4.7/contracts/security/ReentrancyGuard.sol";
 
-pragma solidity 0.8.16;
+pragma solidity 0.8.17;
 
 /**
  * @title Filtered Minter contract that allows tokens to be minted with ETH
@@ -111,6 +111,10 @@ contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         require(
             minterFilter.genArt721CoreAddress() == _genArt721Address,
             "Illegal contract pairing"
+        );
+        // broadcast default max invocations per address for this minter
+        emit DefaultMaxInvocationsPerAddress(
+            DEFAULT_MAX_INVOCATIONS_PER_ADDRESS
         );
     }
 

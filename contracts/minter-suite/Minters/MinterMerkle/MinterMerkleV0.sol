@@ -102,6 +102,10 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
             minterFilter.genArt721CoreAddress() == _genArt721Address,
             "Illegal contract pairing"
         );
+        // broadcast default max invocations per address for this minter
+        emit DefaultMaxInvocationsPerAddress(
+            DEFAULT_MAX_INVOCATIONS_PER_ADDRESS
+        );
     }
 
     /**
