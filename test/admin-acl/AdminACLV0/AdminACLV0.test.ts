@@ -78,6 +78,18 @@ describe("AdminACLV0", async function () {
         this.adminACL_InterfaceBroadcast.address
       );
     });
+
+    it("is not callable by non-superAdmin", async function () {
+      await expectRevert(
+        this.adminACL
+          .connect(this.accounts.user)
+          .transferOwnershipOn(
+            this.genArt721Core.address,
+            this.adminACL_InterfaceBroadcast.address
+          ),
+        "Only superAdmin"
+      );
+    });
   });
 
   describe("changeSuperAdmin", function () {
@@ -101,6 +113,28 @@ describe("AdminACLV0", async function () {
       ]);
       expect(await this.adminACL.superAdmin()).to.equal(
         this.accounts.deployer2.address
+      );
+    });
+
+    it("is not callable by non-superAdmin", async function () {
+      await expectRevert(
+        this.adminACL
+          .connect(this.accounts.user)
+          .changeSuperAdmin(this.accounts.deployer2.address, [
+            this.genArt721Core.address,
+          ]),
+        "Only superAdmin"
+      );
+    });
+  });
+
+  describe("renounceOwnershipOn", function () {
+    it("is not callable by non-superAdmin", async function () {
+      await expectRevert(
+        this.adminACL
+          .connect(this.accounts.user)
+          .renounceOwnershipOn(this.genArt721Core.address),
+        "Only superAdmin"
       );
     });
   });
