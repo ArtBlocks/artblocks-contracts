@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: LGPL-3.0-only
-pragma solidity 0.8.16;
+pragma solidity 0.8.17;
 
 // Created By: Art Blocks Inc.
 
@@ -154,7 +154,7 @@ contract GenArt721CoreV3 is
     /// Art Blocks Project ID range: [0-2]
     address public constant ART_BLOCKS_ERC721TOKEN_ADDRESS_V0 =
         0x059EDD72Cd353dF5106D2B9cC5ab83a52287aC3a;
-    /// Art Blocks Project ID range: [3-TODO: add V1 final project ID before deploying]
+    /// Art Blocks Project ID range: [3-373]
     address public constant ART_BLOCKS_ERC721TOKEN_ADDRESS_V1 =
         0xa7d8d9ef8D8Ce8992Df33D8b8CF4Aebabd5bD270;
 
