@@ -18,6 +18,13 @@ import {
   advanceEVMByTime,
 } from "../../util/common";
 import { FOUR_WEEKS } from "../../util/constants";
+import {
+  SQUIGGLE_SCRIPT,
+  SKULPTUUR_SCRIPT_APPROX,
+  CONTRACT_SIZE_LIMIT_SCRIPT,
+  GREATER_THAN_CONTRACT_SIZE_LIMIT_SCRIPT,
+  MULTI_BYTE_UTF_EIGHT_SCRIPT,
+} from "../../util/example-scripts";
 
 /**
  * Tests for V3 core dealing with configuring projects.
@@ -71,6 +78,19 @@ describe("GenArt721CoreV3 Project Configure", async function () {
     await this.minter
       .connect(this.accounts.artist)
       .updatePricePerTokenInWei(this.projectZero, 0);
+  });
+
+  describe("imported scripts are non-empty", function () {
+    it("ensure diffs are captured if project scripts are deleted", async function () {
+      expect(SQUIGGLE_SCRIPT.length).to.be.gt(0);
+      expect(SKULPTUUR_SCRIPT_APPROX.length).to.be.gt(0);
+      expect(CONTRACT_SIZE_LIMIT_SCRIPT.length).to.be.gt(0);
+      expect(GREATER_THAN_CONTRACT_SIZE_LIMIT_SCRIPT.length).to.be.gt(0);
+      expect(GREATER_THAN_CONTRACT_SIZE_LIMIT_SCRIPT.length).to.be.gt(
+        CONTRACT_SIZE_LIMIT_SCRIPT.length
+      );
+      expect(MULTI_BYTE_UTF_EIGHT_SCRIPT.length).to.be.gt(0);
+    });
   });
 
   describe("updateProjectMaxInvocations", function () {
@@ -714,6 +734,245 @@ describe("GenArt721CoreV3 Project Configure", async function () {
     });
   });
 
+  describe("addProjectScript", function () {
+    it("uploads and recalls a single-byte script", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .addProjectScript(this.projectZero, "0");
+      const script = await this.genArt721Core.projectScriptByIndex(
+        this.projectZero,
+        0
+      );
+      expect(script).to.equal("0");
+    });
+
+    it("uploads and recalls an short script < 32 bytes", async function () {
+      const targetScript = "console.log(hello world)";
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .addProjectScript(this.projectZero, targetScript);
+      const script = await this.genArt721Core.projectScriptByIndex(
+        this.projectZero,
+        0
+      );
+      expect(script).to.equal(targetScript);
+    });
+
+    it("uploads and recalls chromie squiggle script", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .addProjectScript(this.projectZero, SQUIGGLE_SCRIPT);
+      const script = await this.genArt721Core.projectScriptByIndex(
+        this.projectZero,
+        0
+      );
+      expect(script).to.equal(SQUIGGLE_SCRIPT);
+    });
+
+    it("uploads chromie squiggle script, and then purges it", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .addProjectScript(this.projectZero, SQUIGGLE_SCRIPT);
+      const script = await this.genArt721Core.projectScriptByIndex(
+        this.projectZero,
+        0
+      );
+      expect(script).to.equal(SQUIGGLE_SCRIPT);
+
+      const scriptAddress =
+        await this.genArt721Core.projectScriptBytecodeAddressByIndex(
+          this.projectZero,
+          0
+        );
+
+      const scriptByteCode = await ethers.provider.getCode(scriptAddress);
+      expect(scriptByteCode).to.not.equal("0x");
+
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .removeProjectLastScript(this.projectZero);
+      const emptyScript = await this.genArt721Core.projectScriptByIndex(
+        this.projectZero,
+        0
+      );
+      expect(emptyScript).to.equal("");
+
+      const removedScriptByteCode = await ethers.provider.getCode(
+        scriptAddress
+      );
+      expect(removedScriptByteCode).to.equal("0x");
+    });
+
+    it("uploads chromie squiggle script and attempts to purge from non-allowed address", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .addProjectScript(this.projectZero, SQUIGGLE_SCRIPT);
+      const script = await this.genArt721Core.projectScriptByIndex(
+        this.projectZero,
+        0
+      );
+      expect(script).to.equal(SQUIGGLE_SCRIPT);
+
+      const scriptAddress =
+        await this.genArt721Core.projectScriptBytecodeAddressByIndex(
+          this.projectZero,
+          0
+        );
+
+      const scriptByteCode = await ethers.provider.getCode(scriptAddress);
+      expect(scriptByteCode).to.not.equal("0x");
+
+      // Any random user should **not** be able to purge bytecode storage.
+      await expectRevert.unspecified(
+        this.accounts.user.call({
+          to: scriptAddress,
+        })
+      );
+      // Nor should even the core contract deployer be able to do so directly.
+      await expectRevert.unspecified(
+        this.accounts.deployer.call({
+          to: scriptAddress,
+        })
+      );
+      // And this is still the case when correct `0xFF` bytes are sent along.
+      await expectRevert.unspecified(
+        this.accounts.user.call({
+          to: scriptAddress,
+          data: "0xFF",
+        })
+      );
+      await expectRevert.unspecified(
+        this.accounts.deployer.call({
+          to: scriptAddress,
+          data: "0xFF",
+        })
+      );
+
+      const sameScriptByteCode = await ethers.provider.getCode(scriptAddress);
+      expect(sameScriptByteCode).to.equal(scriptByteCode);
+      expect(sameScriptByteCode).to.not.equal("0x");
+    });
+
+    it("uploads and recalls different script", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .addProjectScript(this.projectZero, SKULPTUUR_SCRIPT_APPROX);
+      const script = await this.genArt721Core.projectScriptByIndex(
+        this.projectZero,
+        0
+      );
+      expect(script).to.equal(SKULPTUUR_SCRIPT_APPROX);
+    });
+
+    it("uploads and recalls 23.95 KB script", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .addProjectScript(this.projectZero, CONTRACT_SIZE_LIMIT_SCRIPT, {
+          gasLimit: 30000000, // hard-code gas limit because ethers sometimes estimates too high
+        });
+      const script = await this.genArt721Core.projectScriptByIndex(
+        this.projectZero,
+        0
+      );
+      expect(script).to.equal(CONTRACT_SIZE_LIMIT_SCRIPT);
+    });
+
+    it("fails to upload 26 KB script", async function () {
+      await expectRevert(
+        this.genArt721Core.connect(this.accounts.artist).addProjectScript(
+          this.projectZero,
+          GREATER_THAN_CONTRACT_SIZE_LIMIT_SCRIPT,
+          { gasLimit: 30000000 } // hard-code gas limit because ethers sometimes estimates too high
+        ),
+        "ContractAsStorage: Write Error"
+      );
+    });
+
+    it("uploads and recalls misc. UTF-8 script", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .addProjectScript(this.projectZero, MULTI_BYTE_UTF_EIGHT_SCRIPT);
+      const script = await this.genArt721Core.projectScriptByIndex(
+        this.projectZero,
+        0
+      );
+      expect(script).to.equal(MULTI_BYTE_UTF_EIGHT_SCRIPT);
+    });
+
+    it("uploads and recalls chromie squiggle script and different script", async function () {
+      // index 0: squiggle
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .addProjectScript(this.projectZero, SQUIGGLE_SCRIPT);
+      // index 1: skulptuur-like
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .addProjectScript(this.projectZero, SKULPTUUR_SCRIPT_APPROX);
+      // verify results
+      const scriptZero = await this.genArt721Core.projectScriptByIndex(
+        this.projectZero,
+        0
+      );
+      expect(scriptZero).to.equal(SQUIGGLE_SCRIPT);
+      const scriptOne = await this.genArt721Core.projectScriptByIndex(
+        this.projectZero,
+        1
+      );
+      expect(scriptOne).to.equal(SKULPTUUR_SCRIPT_APPROX);
+    });
+
+    it("doesn't selfdestruct script storage contract when safeTransferFrom to script storage contract", async function () {
+      // upload script and get address
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .addProjectScript(this.projectZero, SQUIGGLE_SCRIPT);
+      const scriptAddress =
+        await this.genArt721Core.projectScriptBytecodeAddressByIndex(
+          this.projectZero,
+          0
+        );
+      const scriptByteCode = await ethers.provider.getCode(scriptAddress);
+      expect(scriptByteCode).to.not.equal("0x");
+
+      // mint a token on project zero
+      await this.minter
+        .connect(this.accounts.artist)
+        .purchase(this.projectZero);
+
+      // attempt to safe-transfer token to script storage contract
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          ["safeTransferFrom(address,address,uint256)"](
+            this.accounts.artist.address,
+            scriptAddress,
+            this.projectZeroTokenZero.toNumber()
+          ),
+        "ERC721: transfer to non ERC721Receiver implementer"
+      );
+
+      // verify script storage contract still exists
+      const sameScriptByteCode = await ethers.provider.getCode(scriptAddress);
+      expect(sameScriptByteCode).to.equal(scriptByteCode);
+      expect(sameScriptByteCode).to.not.equal("0x");
+    });
+  });
+
+  describe("projectScriptBytecodeAddressByIndex", function () {
+    it("uploads and recalls a single-byte script", async function () {
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .addProjectScript(this.projectZero, "0");
+      const scriptBytecodeAddress =
+        await this.genArt721Core.projectScriptBytecodeAddressByIndex(
+          this.projectZero,
+          0
+        );
+      console.log(scriptBytecodeAddress);
+      expect(scriptBytecodeAddress).to.not.equal("0");
+    });
+  });
+
   describe("updateProjectScript", function () {
     beforeEach(async function () {
       await this.genArt721Core
@@ -756,6 +1015,38 @@ describe("GenArt721CoreV3 Project Configure", async function () {
           .updateProjectScript(this.projectZero, 1, "// script 1"),
         "scriptId out of range"
       );
+    });
+
+    it("bytecode contracts deployed and purged as expected in updates", async function () {
+      const originalScriptAddress =
+        await this.genArt721Core.projectScriptBytecodeAddressByIndex(
+          this.projectZero,
+          0
+        );
+
+      const scriptByteCode = await ethers.provider.getCode(
+        originalScriptAddress
+      );
+      expect(scriptByteCode).to.not.equal("0x");
+
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectScript(this.projectZero, 0, "// script 0.1");
+
+      const oldAddressByteCode = await ethers.provider.getCode(
+        originalScriptAddress
+      );
+      expect(oldAddressByteCode).to.equal("0x");
+
+      const newScriptAddress =
+        await this.genArt721Core.projectScriptBytecodeAddressByIndex(
+          this.projectZero,
+          0
+        );
+      const newScriptByteCode = await ethers.provider.getCode(newScriptAddress);
+      expect(newScriptByteCode).to.not.equal("0x");
+      expect(newScriptByteCode).to.not.equal(scriptByteCode);
+      expect(newScriptByteCode).to.not.equal(oldAddressByteCode);
     });
   });
 
