@@ -336,23 +336,6 @@ contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
     }
 
     /**
-     * @notice Purchases a token from project `_projectId` as a delegate, (the
-     *         `msg.sender`) on behalf of an explicitly defined delegee.
-     * @param _projectId Project ID to mint a token on.
-     * @param _proof Merkle proof.
-     * @param _delegee Delegee being purchased on behalf of.
-     * @return tokenId Token ID of minted token
-     */
-    function purchase(
-        uint256 _projectId,
-        bytes32[] calldata _proof,
-        address _delegee
-    ) external payable returns (uint256 tokenId) {
-        tokenId = purchaseTo_K1L(msg.sender, _projectId, _proof, _delegee);
-        return tokenId;
-    }
-
-    /**
      * @notice gas-optimized version of purchase(uint256,bytes32[]).
      */
     function purchase_gD5(uint256 _projectId, bytes32[] calldata _proof)
@@ -383,20 +366,20 @@ contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
     /**
      * @notice Purchases a token from project `_projectId` and sets
      *         the token's owner to `_to`, as a delegate, (the `msg.sender`)
-     *         on behalf of an explicitly defined delegee.
+     *         on behalf of an explicitly defined vault.
      * @param _to Address to be the new token's owner.
      * @param _projectId Project ID to mint a token on.
      * @param _proof Merkle proof.
-     * @param _delegee Delegee being purchased on behalf of.
+     * @param _vault Delegee being purchased on behalf of.
      * @return tokenId Token ID of minted token
      */
     function purchaseTo(
         address _to,
         uint256 _projectId,
         bytes32[] calldata _proof,
-        address _delegee
+        address _vault
     ) external payable returns (uint256 tokenId) {
-        return purchaseTo_K1L(_to, _projectId, _proof, _delegee);
+        return purchaseTo_K1L(_to, _projectId, _proof, _vault);
     }
 
     /**
@@ -406,7 +389,7 @@ contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         address _to,
         uint256 _projectId,
         bytes32[] calldata _proof,
-        address _delegee // acceptable to be `address(0)` if no delegee
+        address _vault // acceptable to be `address(0)` if no vault
     ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
@@ -435,30 +418,30 @@ contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
 
         // no contract filter since Merkle tree controls allowed addresses
 
-        // NOTE: delegate-delegee handling **begins here**.
+        // NOTE: delegate-vault handling **begins here**.
 
-        // handle that the delegee may be either the `msg.sender` in the case
-        // that there is not a true delegee, or may be `_delegee` if one is
+        // handle that the vault may be either the `msg.sender` in the case
+        // that there is not a true vault, or may be `_vault` if one is
         // provided explicitly (and it is valid).
-        address delegee = msg.sender;
-        if (_delegee != address(0)) {
-            // If a delegee is provided, it must be valid, otherwise throw rather
+        address vault = msg.sender;
+        if (_vault != address(0)) {
+            // If a vault is provided, it must be valid, otherwise throw rather
             // than optimistically-minting with original `msg.sender`.
             // Note, we do not check `checkDelegateForAll` as well, as it is known
             // to be implicitly checked by calling `checkDelegateForContract`.
             bool isValidDelegee = delegationRegistryContract
                 .checkDelegateForContract(
                     msg.sender, // delegate
-                    delegee, // vault
+                    vault, // vault
                     genArt721CoreAddress // contract
                 );
-            require(isValidDelegee, "Invalid delegate-delegee pairing");
-            delegee = _delegee;
+            require(isValidDelegee, "Invalid delegate-vault pairing");
+            vault = _vault;
         }
 
         // require valid Merkle proof
         require(
-            verifyAddress(_projectId, _proof, delegee),
+            verifyAddress(_projectId, _proof, vault),
             "Invalid Merkle proof"
         );
 
@@ -468,8 +451,9 @@ contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
             ? _projectConfig.maxInvocationsPerAddressOverride
             : DEFAULT_MAX_INVOCATIONS_PER_ADDRESS;
 
+        // note that mint limits index off of the `vault` (when applicable)
         require(
-            projectUserMintInvocations[_projectId][delegee] <
+            projectUserMintInvocations[_projectId][vault] <
                 _maxProjectInvocationsPerAddress ||
                 _maxProjectInvocationsPerAddress == 0,
             "Maximum number of invocations per address reached"
@@ -480,13 +464,13 @@ contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         unchecked {
             // this will never overflow since user's invocations on a project
             // are limited by the project's max invocations
-            projectUserMintInvocations[_projectId][delegee]++;
+            projectUserMintInvocations[_projectId][vault]++;
         }
 
         // mint token
-        tokenId = minterFilter.mint(_to, _projectId, delegee);
+        tokenId = minterFilter.mint(_to, _projectId, vault);
 
-        // NOTE: delegate-delegee handling **ends here**.
+        // NOTE: delegate-vault handling **ends here**.
 
         // okay if this underflows because if statement will always eval false.
         // this is only for gas optimization (core enforces maxInvocations).
