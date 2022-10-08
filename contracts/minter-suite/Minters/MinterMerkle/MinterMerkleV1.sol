@@ -331,7 +331,7 @@ contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         payable
         returns (uint256 tokenId)
     {
-        tokenId = purchaseTo_K1L(msg.sender, _projectId, _proof, address(0));
+        tokenId = purchaseTo_kem(msg.sender, _projectId, _proof, address(0));
         return tokenId;
     }
 
@@ -343,7 +343,7 @@ contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         payable
         returns (uint256 tokenId)
     {
-        tokenId = purchaseTo_K1L(msg.sender, _projectId, _proof, address(0));
+        tokenId = purchaseTo_kem(msg.sender, _projectId, _proof, address(0));
         return tokenId;
     }
 
@@ -360,7 +360,7 @@ contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         uint256 _projectId,
         bytes32[] calldata _proof
     ) external payable returns (uint256 tokenId) {
-        return purchaseTo_K1L(_to, _projectId, _proof, address(0));
+        return purchaseTo_kem(_to, _projectId, _proof, address(0));
     }
 
     /**
@@ -379,7 +379,7 @@ contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         bytes32[] calldata _proof,
         address _vault
     ) external payable returns (uint256 tokenId) {
-        return purchaseTo_K1L(_to, _projectId, _proof, _vault);
+        return purchaseTo_kem(_to, _projectId, _proof, _vault);
     }
 
     /**
