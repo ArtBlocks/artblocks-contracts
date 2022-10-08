@@ -72,3 +72,4 @@ _This document is intended to document and explain the Art Blocks Core V3 change
   - This is to prevent the core contract from being used to mint new projects if Art Blocks ever changes to a new contract in the future.
 - Add new automatically-populated and admin-configurable `defaultBaseURI` field to V3 core contract
   - This is to have a default base URI for all **new** projects on the V3 core contract, and to allow the artist to update the base URI if needed.
+- Update approach for script storage to use contracts-as-storage (as made widely known by sstore2 library) approach, using newly introduced BytecodeStorage.sol library.

@@ -32,7 +32,6 @@ export const MinterDAExp_Common = async () => {
       await expectRevert(
         this.minter.connect(this.accounts.user).purchase(this.projectZero, {
           value: this.startingPrice.toString(),
-          gasPrice: 0,
         }),
         "Auction not yet started"
       );
@@ -51,6 +50,9 @@ export const MinterDAExp_Common = async () => {
             this.auctionStartTimeOffset +
             i * this.defaultHalfLife,
         ]);
+        await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", [
+          "0x0",
+        ]);
         await this.minter
           .connect(this.accounts.user)
           .purchase(this.projectZero, {
@@ -58,7 +60,9 @@ export const MinterDAExp_Common = async () => {
             gasPrice: 0,
           });
         // Test that price isn't too low
-
+        await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", [
+          "0x0",
+        ]);
         await expectRevert(
           this.minter.connect(this.accounts.user).purchase(this.projectZero, {
             value: ((price.toBigInt() * BigInt(100)) / BigInt(101)).toString(),

@@ -6,6 +6,8 @@ import { ethers } from "hardhat";
 import { delay } from "../../util/utils";
 const EXTRA_DELAY_BETWEEN_TX = 10000; // ms
 
+import { createPBABBucket } from "../../util/aws_s3";
+
 /**
  * This script was created to deploy partner contracts to the goerli
  * testnet. It is intended to document the deployment process and provide a
@@ -15,19 +17,16 @@ const EXTRA_DELAY_BETWEEN_TX = 10000; // ms
 // CONFIG BEGINS HERE
 //////////////////////////////////////////////////////////////////////////////
 // FLEX contract file
-import { GenArt721CoreV2ENGINEFLEX__factory } from "../../contracts/factories/GenArt721CoreV2ENGINEFLEX__factory";
-import { GenArt721MinterPBAB__factory } from "../../contracts/factories/GenArt721MinterPBAB__factory";
+import { GenArt721CoreV2VerseFlex__factory } from "../../contracts/factories/GenArt721CoreV2VerseFlex__factory";
+import { GenArt721MinterVerseFlex__factory } from "../../contracts/factories/GenArt721MinterVerseFlex__factory";
 
-const tokenName = "Art Blocks Flex Engine Development Demo";
-const tokenTicker = "ABFLEX_DEMO_DEV_GOERLI";
-const transferAddress = "0x2246475beddf9333b6a6D9217194576E7617Afd1";
-const artblocksAddress = "0x2246475beddf9333b6a6D9217194576E7617Afd1";
+// Details pulled from https://github.com/ArtBlocks/artblocks/issues/275 (private repo)
+const tokenName = "Verse";
+const tokenTicker = "VERSE";
+const transferAddress = "0x7DA651e4C4c1C4cEfbE9dfb030B9A85cc6a041B7";
+const artblocksAddress = "0x97e7CfDe2d975496d3f0AC4467D4D5e3c77f47Fd";
+// Shared **goerli** randomizer instance.
 const randomizerAddress = "0xEC5DaE4b11213290B2dBe5295093f75920bD2982";
-// (optional) add initial project
-const doAddProjectZero = true;
-const projectZeroName = "projectZeroTest";
-const artistAddress = "0x2246475beddf9333b6a6D9217194576E7617Afd1";
-const pricePerTokenInWei = 0;
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG ENDS HERE
 //////////////////////////////////////////////////////////////////////////////
@@ -40,22 +39,26 @@ async function main() {
   // DEPLOYMENT BEGINS HERE
   //////////////////////////////////////////////////////////////////////////////
 
+  // Setup S3 bucket.
+  await createPBABBucket(tokenName, networkName);
+
   // Randomizer contract
   console.log(`Using shared randomizer at ${randomizerAddress}`);
 
   // deploy FLEX core contract
-  const coreFactory = new GenArt721CoreV2ENGINEFLEX__factory(deployer);
+  const coreFactory = new GenArt721CoreV2VerseFlex__factory(deployer);
   const genArt721CoreFlex = await coreFactory.deploy(
     tokenName,
     tokenTicker,
     randomizerAddress
   );
-  console.log(genArt721CoreFlex.deployTransaction);
   await genArt721CoreFlex.deployed();
   console.log(`GenArt721CoreV2 FLEX deployed at ${genArt721CoreFlex.address}`);
 
   // Deploy Minter contract.
-  const genArt721MinterFactory = new GenArt721MinterPBAB__factory(deployer);
+  const genArt721MinterFactory = new GenArt721MinterVerseFlex__factory(
+    deployer
+  );
   const genArt721Minter = await genArt721MinterFactory.deploy(
     genArt721CoreFlex.address
   );
@@ -76,7 +79,7 @@ async function main() {
     .connect(deployer)
     .addMintWhitelisted(genArt721Minter.address);
   await tx.wait();
-  console.log(`Allowlisted the Minter Filter on the Core contract.`);
+  console.log(`Allowlisted the Minter on the Core contract.`);
   delay(EXTRA_DELAY_BETWEEN_TX);
 
   // Update the Art Blocks Address.
@@ -115,19 +118,6 @@ async function main() {
       delay(EXTRA_DELAY_BETWEEN_TX);
     }
   }
-
-  // (optional) add initial project
-  if (doAddProjectZero) {
-    tx = await genArt721CoreFlex.addProject(
-      projectZeroName,
-      artistAddress,
-      pricePerTokenInWei
-    );
-    await tx.wait();
-  }
-  console.log(
-    `Added project zero ${projectZeroName} on core contract at ${genArt721CoreFlex.address}.`
-  );
 
   // Allowlist new owner.
   tx = await genArt721CoreFlex

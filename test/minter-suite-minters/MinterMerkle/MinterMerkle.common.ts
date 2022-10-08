@@ -20,7 +20,11 @@ import Safe from "@gnosis.pm/safe-core-sdk";
 import { SafeTransactionDataPartial } from "@gnosis.pm/safe-core-sdk-types";
 import { getGnosisSafe } from "../../util/GnosisSafeNetwork";
 
-import { CONFIG_MERKLE_ROOT, CONFIG_MINT_LIMITER_DISABLED } from "./constants";
+import {
+  CONFIG_MERKLE_ROOT,
+  CONFIG_USE_MAX_INVOCATIONS_PER_ADDRESS_OVERRIDE,
+  CONFIG_MAX_INVOCATIONS_OVERRIDE,
+} from "./constants";
 
 /**
  * @notice This returns the same result as solidity:
@@ -41,6 +45,32 @@ export function hashAddress(_address) {
 export const MinterMerkle_Common = async () => {
   describe("common minter tests", async () => {
     Minter_Common();
+  });
+
+  describe("deploy", async () => {
+    it("broadcasts default max mints per user during deployment", async function () {
+      const minterFactory = await ethers.getContractFactory(
+        // minterType is a function that returns the minter contract name
+        await this.minter.minterType()
+      );
+      const tx = await minterFactory
+        .connect(this.accounts.deployer)
+        .deploy(this.genArt721Core.address, this.minterFilter.address);
+      const receipt = await tx.deployTransaction.wait();
+      // check for expected event
+      // target event is the last log
+      const targetLog = receipt.logs[0];
+      // expect "DefaultMaxInvocationsPerAddress" event as topic 0
+      expect(targetLog.topics[0]).to.be.equal(
+        ethers.utils.keccak256(
+          ethers.utils.toUtf8Bytes("DefaultMaxInvocationsPerAddress(uint256)")
+        )
+      );
+      // expect default max invocations to be 1, as the event data
+      expect(targetLog.data).to.be.equal(
+        "0x0000000000000000000000000000000000000000000000000000000000000001"
+      );
+    });
   });
 
   describe("updatePricePerTokenInWei", async function () {
@@ -170,26 +200,26 @@ export const MinterMerkle_Common = async () => {
     });
   });
 
-  describe("toggleProjectMintLimiter", async function () {
-    it("only allows artist to toggle mint limiter", async function () {
+  describe("setProjectInvocationsPerAddress", async function () {
+    it("only allows artist to set", async function () {
       // user not allowed
       await expectRevert(
         this.minter
           .connect(this.accounts.user)
-          .toggleProjectMintLimiter(this.projectZero),
+          .setProjectInvocationsPerAddress(this.projectZero, 0),
         "Only Artist"
       );
       // additional not allowed
       await expectRevert(
         this.minter
           .connect(this.accounts.additional)
-          .toggleProjectMintLimiter(this.projectZero),
+          .setProjectInvocationsPerAddress(this.projectZero, 0),
         "Only Artist"
       );
       // artist allowed
       await this.minter
         .connect(this.accounts.artist)
-        .toggleProjectMintLimiter(this.projectZero);
+        .setProjectInvocationsPerAddress(this.projectZero, 0);
     });
   });
 
@@ -216,6 +246,17 @@ export const MinterMerkle_Common = async () => {
         .updateMerkleRoot(this.projectZero, newMerkleRoot);
     });
 
+    it("does not allow Merkle root of zero", async function () {
+      const newMerkleRoot = constants.ZERO_BYTES32;
+      // artist allowed
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.artist)
+          .updateMerkleRoot(this.projectZero, newMerkleRoot),
+        "Root must be provided"
+      );
+    });
+
     it("emits event when update merkle root", async function () {
       const newMerkleRoot = this.merkleTreeZero.getHexRoot();
       await expect(
@@ -228,44 +269,69 @@ export const MinterMerkle_Common = async () => {
     });
   });
 
-  describe("toggleProjectMintLimiter", async function () {
-    it("only allows artist to toggle mint limiter", async function () {
+  describe("setProjectInvocationsPerAddress", async function () {
+    it("only allows artist to setProjectInvocationsPerAddress", async function () {
       const newMerkleRoot = this.merkleTreeZero.getHexRoot();
       // user not allowed
       await expectRevert(
         this.minter
           .connect(this.accounts.user)
-          .toggleProjectMintLimiter(this.projectZero),
+          .setProjectInvocationsPerAddress(this.projectZero, 0),
         "Only Artist"
       );
       // additional not allowed
       await expectRevert(
         this.minter
           .connect(this.accounts.additional)
-          .toggleProjectMintLimiter(this.projectZero),
+          .setProjectInvocationsPerAddress(this.projectZero, 0),
         "Only Artist"
       );
       // artist allowed
       await this.minter
         .connect(this.accounts.artist)
-        .toggleProjectMintLimiter(this.projectZero);
+        .setProjectInvocationsPerAddress(this.projectZero, 0);
     });
 
-    it("emits event when toggling mint limiter", async function () {
+    it("emits events when setting project max invocations per address", async function () {
       await expect(
         this.minter
           .connect(this.accounts.artist)
-          .toggleProjectMintLimiter(this.projectZero)
+          .setProjectInvocationsPerAddress(this.projectZero, 0)
       )
         .to.emit(this.minter, "ConfigValueSet(uint256,bytes32,bool)")
-        .withArgs(this.projectZero, CONFIG_MINT_LIMITER_DISABLED, true);
+        .withArgs(
+          this.projectZero,
+          CONFIG_USE_MAX_INVOCATIONS_PER_ADDRESS_OVERRIDE,
+          true
+        );
+      // expect zero value when set to zero
       await expect(
         this.minter
           .connect(this.accounts.artist)
-          .toggleProjectMintLimiter(this.projectZero)
+          .setProjectInvocationsPerAddress(this.projectZero, 0)
+      )
+        .to.emit(this.minter, "ConfigValueSet(uint256,bytes32,uint256)")
+        .withArgs(this.projectZero, CONFIG_MAX_INVOCATIONS_OVERRIDE, 0);
+      // expect true again
+      await expect(
+        this.minter
+          .connect(this.accounts.artist)
+          .setProjectInvocationsPerAddress(this.projectZero, 0)
       )
         .to.emit(this.minter, "ConfigValueSet(uint256,bytes32,bool)")
-        .withArgs(this.projectZero, CONFIG_MINT_LIMITER_DISABLED, false);
+        .withArgs(
+          this.projectZero,
+          CONFIG_USE_MAX_INVOCATIONS_PER_ADDRESS_OVERRIDE,
+          true
+        );
+      // expect 999 value when set to 999
+      await expect(
+        this.minter
+          .connect(this.accounts.artist)
+          .setProjectInvocationsPerAddress(this.projectZero, 999)
+      )
+        .to.emit(this.minter, "ConfigValueSet(uint256,bytes32,uint256)")
+        .withArgs(this.projectZero, CONFIG_MAX_INVOCATIONS_OVERRIDE, 999);
     });
   });
 
@@ -358,7 +424,7 @@ export const MinterMerkle_Common = async () => {
         );
     });
 
-    it("enforces mint limiter when limiter on", async function () {
+    it("enforces mint limit per address when default limit of one is used", async function () {
       await this.minter
         .connect(this.accounts.user)
         ["purchase(uint256,bytes32[])"](
@@ -368,7 +434,7 @@ export const MinterMerkle_Common = async () => {
             value: this.pricePerTokenInWei,
           }
         );
-      // expect revert after account hits minting limit
+      // expect revert after account hits default invocations per address limit of one
       await expectRevert(
         this.minter
           .connect(this.accounts.user)
@@ -379,15 +445,15 @@ export const MinterMerkle_Common = async () => {
               value: this.pricePerTokenInWei,
             }
           ),
-        "Limit 1 mint per address"
+        "Maximum number of invocations per address reached"
       );
     });
 
-    it("allows multiple mints when limiter off", async function () {
+    it("allows multiple mints when override is set to unlimited", async function () {
       // toggle mint limiter to be off
       await this.minter
         .connect(this.accounts.artist)
-        .toggleProjectMintLimiter(this.projectZero);
+        .setProjectInvocationsPerAddress(this.projectZero, 0);
       // mint 15 times from a single address without failure
       for (let i = 0; i < 15; i++) {
         await this.minter
@@ -400,6 +466,110 @@ export const MinterMerkle_Common = async () => {
             }
           );
       }
+    });
+
+    it("allows only five mints when override is set to five", async function () {
+      // toggle mint limiter to be off
+      await this.minter
+        .connect(this.accounts.artist)
+        .setProjectInvocationsPerAddress(this.projectZero, 5);
+      // mint 5 times from a single address without failure
+      for (let i = 0; i < 5; i++) {
+        await this.minter
+          .connect(this.accounts.user)
+          ["purchase(uint256,bytes32[])"](
+            this.projectZero,
+            this.userMerkleProofZero,
+            {
+              value: this.pricePerTokenInWei,
+            }
+          );
+      }
+      // expect revert after account hits >5 invocations
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.user)
+          ["purchase(uint256,bytes32[])"](
+            this.projectZero,
+            this.userMerkleProofZero,
+            {
+              value: this.pricePerTokenInWei,
+            }
+          ),
+        "Maximum number of invocations per address reached"
+      );
+    });
+
+    it("stops allowing mints if artist reduces max invocations per address = current user's project invocations", async function () {
+      // artist allows unlimited mints per address
+      await this.minter
+        .connect(this.accounts.artist)
+        .setProjectInvocationsPerAddress(this.projectZero, 0);
+      // mint 5 times from a single address without failure
+      for (let i = 0; i < 5; i++) {
+        await this.minter
+          .connect(this.accounts.user)
+          ["purchase(uint256,bytes32[])"](
+            this.projectZero,
+            this.userMerkleProofZero,
+            {
+              value: this.pricePerTokenInWei,
+            }
+          );
+      }
+      // artist allows five mints per address
+      await this.minter
+        .connect(this.accounts.artist)
+        .setProjectInvocationsPerAddress(this.projectZero, 5);
+      // expect revert because account already has 5 invocations
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.user)
+          ["purchase(uint256,bytes32[])"](
+            this.projectZero,
+            this.userMerkleProofZero,
+            {
+              value: this.pricePerTokenInWei,
+            }
+          ),
+        "Maximum number of invocations per address reached"
+      );
+    });
+
+    it("stops allowing mints if artist reduces max invocations per address < current user's project invocations", async function () {
+      // artist allows unlimited mints per address
+      await this.minter
+        .connect(this.accounts.artist)
+        .setProjectInvocationsPerAddress(this.projectZero, 0);
+      // mint 5 times from a single address without failure
+      for (let i = 0; i < 5; i++) {
+        await this.minter
+          .connect(this.accounts.user)
+          ["purchase(uint256,bytes32[])"](
+            this.projectZero,
+            this.userMerkleProofZero,
+            {
+              value: this.pricePerTokenInWei,
+            }
+          );
+      }
+      // artist allows one mint per address
+      await this.minter
+        .connect(this.accounts.artist)
+        .setProjectInvocationsPerAddress(this.projectZero, 1);
+      // expect revert because account already has >1 invocation
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.user)
+          ["purchase(uint256,bytes32[])"](
+            this.projectZero,
+            this.userMerkleProofZero,
+            {
+              value: this.pricePerTokenInWei,
+            }
+          ),
+        "Maximum number of invocations per address reached"
+      );
     });
 
     it("rejects invalid merkle proofs", async function () {
@@ -422,7 +592,7 @@ export const MinterMerkle_Common = async () => {
     it("does nothing if setProjectMaxInvocations is not called (fails correctly)", async function () {
       await this.minter
         .connect(this.accounts.artist)
-        .toggleProjectMintLimiter(this.projectZero);
+        .setProjectInvocationsPerAddress(this.projectZero, 0);
       for (let i = 0; i < 15; i++) {
         await this.minter
           .connect(this.accounts.user)
@@ -512,7 +682,7 @@ export const MinterMerkle_Common = async () => {
     it("fails more cheaply if setProjectMaxInvocations is set", async function () {
       await this.minter
         .connect(this.accounts.artist)
-        .toggleProjectMintLimiter(this.projectZero);
+        .setProjectInvocationsPerAddress(this.projectZero, 0);
       // Try without setProjectMaxInvocations, store gas cost
       for (let i = 0; i < 15; i++) {
         await this.minter
@@ -548,7 +718,7 @@ export const MinterMerkle_Common = async () => {
         .setProjectMaxInvocations(this.projectOne);
       await this.minter
         .connect(this.accounts.artist)
-        .toggleProjectMintLimiter(this.projectOne);
+        .setProjectInvocationsPerAddress(this.projectOne, 0);
       for (let i = 0; i < 15; i++) {
         await this.minter
           .connect(this.accounts.user)
@@ -703,40 +873,215 @@ export const MinterMerkle_Common = async () => {
     });
   });
 
-  describe("projectMintLimiterDisabled", async function () {
-    it("is false by default", async function () {
-      const projectMintLimiterDisabled = await this.minter
+  describe("projectMaxInvocationsPerAddress", async function () {
+    it("is 1 by default", async function () {
+      const projectMaxInvocationsPerAddress_ = await this.minter
         .connect(this.accounts.user)
-        .projectMintLimiterDisabled(this.projectZero);
-      expect(projectMintLimiterDisabled).to.be.false;
+        .projectMaxInvocationsPerAddress(this.projectZero);
+      expect(projectMaxInvocationsPerAddress_).to.equal(1);
     });
 
-    it("is true by when toggled", async function () {
+    it("is 0 by when set to 0", async function () {
       await this.minter
         .connect(this.accounts.artist)
-        .toggleProjectMintLimiter(this.projectZero);
-      const projectMintLimiterDisabled = await this.minter
+        .setProjectInvocationsPerAddress(this.projectZero, 0);
+      const projectMaxInvocationsPerAddress_ = await this.minter
         .connect(this.accounts.user)
-        .projectMintLimiterDisabled(this.projectZero);
-      expect(projectMintLimiterDisabled).to.be.true;
+        .projectMaxInvocationsPerAddress(this.projectZero);
+      expect(projectMaxInvocationsPerAddress_).to.equal(0);
     });
 
-    it("is false by when toggled twice", async function () {
+    it("is 999 by when set to 999", async function () {
       await this.minter
         .connect(this.accounts.artist)
-        .toggleProjectMintLimiter(this.projectZero);
-      await this.minter
-        .connect(this.accounts.artist)
-        .toggleProjectMintLimiter(this.projectZero);
-      const projectMintLimiterDisabled = await this.minter
+        .setProjectInvocationsPerAddress(this.projectZero, 999);
+      const projectMaxInvocationsPerAddress_ = await this.minter
         .connect(this.accounts.user)
-        .projectMintLimiterDisabled(this.projectZero);
-      expect(projectMintLimiterDisabled).to.be.false;
+        .projectMaxInvocationsPerAddress(this.projectZero);
+      expect(projectMaxInvocationsPerAddress_).to.equal(999);
+    });
+
+    it("is 999 by when set to 0 then changed to 999", async function () {
+      await this.minter
+        .connect(this.accounts.artist)
+        .setProjectInvocationsPerAddress(this.projectZero, 0);
+      await this.minter
+        .connect(this.accounts.artist)
+        .setProjectInvocationsPerAddress(this.projectZero, 999);
+      const projectMaxInvocationsPerAddress_ = await this.minter
+        .connect(this.accounts.user)
+        .projectMaxInvocationsPerAddress(this.projectZero);
+      expect(projectMaxInvocationsPerAddress_).to.equal(999);
+    });
+
+    it("is 1 by when set to 0 then changed to 1", async function () {
+      await this.minter
+        .connect(this.accounts.artist)
+        .setProjectInvocationsPerAddress(this.projectZero, 0);
+      await this.minter
+        .connect(this.accounts.artist)
+        .setProjectInvocationsPerAddress(this.projectZero, 1);
+      const projectMaxInvocationsPerAddress_ = await this.minter
+        .connect(this.accounts.user)
+        .projectMaxInvocationsPerAddress(this.projectZero);
+      expect(projectMaxInvocationsPerAddress_).to.equal(1);
+    });
+  });
+
+  describe("projectRemainingInvocationsForAddress", async function () {
+    beforeEach(async function () {
+      this.userMerkleProofZero = this.merkleTreeZero.getHexProof(
+        hashAddress(this.accounts.user.address)
+      );
+    });
+
+    it("is (true, 1) by default", async function () {
+      const projectRemainingInvocationsForAddress_ = await this.minter
+        .connect(this.accounts.user)
+        .projectRemainingInvocationsForAddress(
+          this.projectZero,
+          this.accounts.user.address
+        );
+      expect(
+        projectRemainingInvocationsForAddress_.projectLimitsMintInvocationsPerAddress
+      ).to.equal(true);
+      expect(
+        projectRemainingInvocationsForAddress_.mintInvocationsRemaining
+      ).to.equal(1);
+    });
+
+    it("is (true, 0) after minting a token on default setting", async function () {
+      // mint a token
+      await this.minter
+        .connect(this.accounts.user)
+        ["purchase(uint256,bytes32[])"](
+          this.projectZero,
+          this.userMerkleProofZero,
+          {
+            value: this.pricePerTokenInWei,
+          }
+        );
+      // user should have 0 remaining invocations
+      const projectRemainingInvocationsForAddress_ = await this.minter
+        .connect(this.accounts.user)
+        .projectRemainingInvocationsForAddress(
+          this.projectZero,
+          this.accounts.user.address
+        );
+      expect(
+        projectRemainingInvocationsForAddress_.projectLimitsMintInvocationsPerAddress
+      ).to.equal(true);
+      expect(
+        projectRemainingInvocationsForAddress_.mintInvocationsRemaining
+      ).to.equal(0);
+    });
+
+    it("is (false, 0) by when set to not limit mints per address", async function () {
+      await this.minter
+        .connect(this.accounts.artist)
+        .setProjectInvocationsPerAddress(this.projectZero, 0);
+      // check remaining invocations response
+      let projectRemainingInvocationsForAddress_ = await this.minter
+        .connect(this.accounts.user)
+        .projectRemainingInvocationsForAddress(
+          this.projectZero,
+          this.accounts.user.address
+        );
+      expect(
+        projectRemainingInvocationsForAddress_.projectLimitsMintInvocationsPerAddress
+      ).to.equal(false);
+      expect(
+        projectRemainingInvocationsForAddress_.mintInvocationsRemaining
+      ).to.equal(0);
+      // still false after user mints a token
+      await this.minter
+        .connect(this.accounts.user)
+        ["purchase(uint256,bytes32[])"](
+          this.projectZero,
+          this.userMerkleProofZero,
+          {
+            value: this.pricePerTokenInWei,
+          }
+        );
+      // check remaining invocations response
+      projectRemainingInvocationsForAddress_ = await this.minter
+        .connect(this.accounts.user)
+        .projectRemainingInvocationsForAddress(
+          this.projectZero,
+          this.accounts.user.address
+        );
+      expect(
+        projectRemainingInvocationsForAddress_.projectLimitsMintInvocationsPerAddress
+      ).to.equal(false);
+      expect(
+        projectRemainingInvocationsForAddress_.mintInvocationsRemaining
+      ).to.equal(0);
+    });
+
+    it("is updated when set to limit mints per address", async function () {
+      await this.minter
+        .connect(this.accounts.artist)
+        .setProjectInvocationsPerAddress(this.projectZero, 5);
+      // check remaining invocations response
+      let projectRemainingInvocationsForAddress_ = await this.minter
+        .connect(this.accounts.user)
+        .projectRemainingInvocationsForAddress(
+          this.projectZero,
+          this.accounts.user.address
+        );
+      expect(
+        projectRemainingInvocationsForAddress_.projectLimitsMintInvocationsPerAddress
+      ).to.equal(true);
+      expect(
+        projectRemainingInvocationsForAddress_.mintInvocationsRemaining
+      ).to.equal(5);
+      // updates after user mints two tokens
+      for (let i = 0; i < 2; i++) {
+        await this.minter
+          .connect(this.accounts.user)
+          ["purchase(uint256,bytes32[])"](
+            this.projectZero,
+            this.userMerkleProofZero,
+            {
+              value: this.pricePerTokenInWei,
+            }
+          );
+      }
+      // check remaining invocations response
+      projectRemainingInvocationsForAddress_ = await this.minter
+        .connect(this.accounts.user)
+        .projectRemainingInvocationsForAddress(
+          this.projectZero,
+          this.accounts.user.address
+        );
+      expect(
+        projectRemainingInvocationsForAddress_.projectLimitsMintInvocationsPerAddress
+      ).to.equal(true);
+      expect(
+        projectRemainingInvocationsForAddress_.mintInvocationsRemaining
+      ).to.equal(3);
+      // becomes zero if artist reduces limit to 1
+      await this.minter
+        .connect(this.accounts.artist)
+        .setProjectInvocationsPerAddress(this.projectZero, 1);
+      // check remaining invocations response
+      projectRemainingInvocationsForAddress_ = await this.minter
+        .connect(this.accounts.user)
+        .projectRemainingInvocationsForAddress(
+          this.projectZero,
+          this.accounts.user.address
+        );
+      expect(
+        projectRemainingInvocationsForAddress_.projectLimitsMintInvocationsPerAddress
+      ).to.equal(true);
+      expect(
+        projectRemainingInvocationsForAddress_.mintInvocationsRemaining
+      ).to.equal(0);
     });
   });
 
   describe("reentrancy attack", async function () {
-    it("does not allow reentrant purchaseTo, when mint limiter on", async function () {
+    it("does not allow reentrant purchaseTo, when invocations per address is default value", async function () {
       // contract buys are always allowed by default if in merkle tree
       // attacker deploys reentrancy contract specifically for Merkle minter(s)
       const reentrancyMockFactory = await ethers.getContractFactory(
@@ -817,10 +1162,10 @@ export const MinterMerkle_Common = async () => {
       }
     });
 
-    it("does not allow reentrant purchaseTo, when mint limiter off", async function () {
+    it("does not allow reentrant purchaseTo, when mint limiter invocations per address set to 0 (unlimited)", async function () {
       await this.minter
         .connect(this.accounts.artist)
-        .toggleProjectMintLimiter(this.projectOne);
+        .setProjectInvocationsPerAddress(this.projectOne, 0);
       // contract buys are always allowed by default if in merkle tree
       // attacker deploys reentrancy contract specifically for Merkle minter(s)
       const reentrancyMockFactory = await ethers.getContractFactory(

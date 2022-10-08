@@ -8,7 +8,7 @@ import "../../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
 
 import "@openzeppelin-4.5/contracts/utils/structs/EnumerableMap.sol";
 
-pragma solidity 0.8.9;
+pragma solidity 0.8.17;
 
 /**
  * @title Minter filter contract that allows filtered minters to be set
