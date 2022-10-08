@@ -385,7 +385,7 @@ contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
     /**
      * @notice gas-optimized version of purchaseTo(address,uint256,bytes32[]).
      */
-    function purchaseTo_K1L(
+    function purchaseTo_kem(
         address _to,
         uint256 _projectId,
         bytes32[] calldata _proof,
