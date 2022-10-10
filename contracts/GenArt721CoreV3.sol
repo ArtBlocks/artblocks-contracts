@@ -700,14 +700,14 @@ contract GenArt721CoreV3 is
             "Secondary payee is zero address"
         );
         // effects
-        // automatically accept if no new proposed addresses
+        // automatically accept if no proposed addresses modifications
         bool automaticAccept; // default false
         if (
-            _artistAddress == projectFinance.artistAddress &&
-            _additionalPayeePrimarySales ==
-            projectFinance.additionalPayeePrimarySales &&
-            _additionalPayeeSecondarySales ==
-            projectFinance.additionalPayeeSecondarySales
+            (_artistAddress == projectFinance.artistAddress) &&
+            (_additionalPayeePrimarySales ==
+            projectFinance.additionalPayeePrimarySales) &&
+            (_additionalPayeeSecondarySales ==
+            projectFinance.additionalPayeeSecondarySales)
         ) {
             automaticAccept = true;
         }
@@ -732,7 +732,7 @@ contract GenArt721CoreV3 is
             _additionalPayeeSecondarySales,
             _additionalPayeeSecondarySalesPercentage
         );
-        // automatically accept if no new proposed addresses
+        // automatically accept if no proposed addresses modifications
         if (automaticAccept) {
             // clear any previously proposed values
             proposedArtistAddressesAndSplitsHash[_projectId] = bytes32(0);
