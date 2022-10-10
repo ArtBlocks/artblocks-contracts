@@ -5,10 +5,11 @@ orbs:
   aws-cli: circleci/aws-cli@3.0.0
 
 jobs:
-  lint-and-test:
+  checkout_and_compile:
     docker:
       - image: "cimg/base:stable"
     resource_class: large
+    working_directory: ~/artblocks-contracts
     steps:
       - checkout
       - node/install:
@@ -18,8 +19,34 @@ jobs:
           pkg-manager: yarn
       - run: node --version
       - run:
+          name: Compile
+          command: yarn compile
+      - save_cache:
+          paths:
+            - ~/artblocks-contracts
+          key: compiled-env-{{ .Environment.CIRCLE_SHA1 }}
+  lint:
+    docker:
+      - image: "cimg/base:stable"
+    resource_class: large
+    working_directory: ~/artblocks-contracts
+    steps:
+      - checkout
+      - restore_cache:
+          key: compiled-env-{{ .Environment.CIRCLE_SHA1 }}
+      - run:
           name: Lint
           command: yarn lint
+  test:
+    docker:
+      - image: "cimg/base:stable"
+    resource_class: large
+    working_directory: ~/artblocks-contracts
+    steps:
+      - checkout
+      - restore_cache:
+          key: compiled-env-{{ .Environment.CIRCLE_SHA1 }}
+      - run: node --version
       - run:
           name: Run tests
           command: yarn test
@@ -27,4 +54,10 @@ jobs:
 workflows:
   run-ci:
     jobs:
-      - lint-and-test
+      - checkout_and_compile
+      - lint:
+          requires:
+            - checkout_and_compile
+      - test:
+          requires:
+            - checkout_and_compile
