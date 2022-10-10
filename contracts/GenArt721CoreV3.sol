@@ -713,17 +713,25 @@ contract GenArt721CoreV3 is
             _additionalPayeeSecondarySales,
             _additionalPayeeSecondarySalesPercentage
         );
-        // automatically accept if no proposed addresses modifications,
-        // or if the proposal only removes payee addresses.
+        // automatically accept if no proposed addresses modifications, or if
+        // the proposal only removes payee addresses.
         // store proposal hash on-chain, only if not automatic accept
-        bool automaticAccept = ((_artistAddress ==
-            projectFinance.artistAddress) &&
-            (_additionalPayeePrimarySales ==
-                projectFinance.additionalPayeePrimarySales ||
-                _additionalPayeePrimarySales == address(0)) &&
-            (_additionalPayeeSecondarySales ==
-                projectFinance.additionalPayeeSecondarySales ||
-                _additionalPayeeSecondarySales == address(0)));
+        bool automaticAccept;
+        {
+            // block scope to avoid stack too deep error
+            bool artistUnchanged = _artistAddress ==
+                projectFinance.artistAddress;
+            bool additionalPrimaryUnchangedOrRemoved = (_additionalPayeePrimarySales ==
+                    projectFinance.additionalPayeePrimarySales) ||
+                    (_additionalPayeePrimarySales == address(0));
+            bool additionalSecondaryUnchangedOrRemoved = (_additionalPayeeSecondarySales ==
+                    projectFinance.additionalPayeeSecondarySales) ||
+                    (_additionalPayeeSecondarySales == address(0));
+            automaticAccept =
+                artistUnchanged &&
+                additionalPrimaryUnchangedOrRemoved &&
+                additionalSecondaryUnchangedOrRemoved;
+        }
         if (automaticAccept) {
             // clear any previously proposed values
             proposedArtistAddressesAndSplitsHash[_projectId] = bytes32(0);
