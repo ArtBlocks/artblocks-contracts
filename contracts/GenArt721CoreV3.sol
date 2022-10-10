@@ -700,6 +700,17 @@ contract GenArt721CoreV3 is
             "Secondary payee is zero address"
         );
         // effects
+        // emit event for off-chain indexing
+        // note: always emit a proposal event, even in the pathway of
+        // automatic approval, to simplify indexing expectations
+        emit ProposedArtistAddressesAndSplits(
+            _projectId,
+            _artistAddress,
+            _additionalPayeePrimarySales,
+            _additionalPayeePrimarySalesPercentage,
+            _additionalPayeeSecondarySales,
+            _additionalPayeeSecondarySalesPercentage
+        );
         // automatically accept if no proposed addresses modifications
         bool automaticAccept; // default false
         if (
@@ -711,28 +722,8 @@ contract GenArt721CoreV3 is
         ) {
             automaticAccept = true;
         }
-        // store proposal hash on-chain, only if not automatic accept
-        if (!automaticAccept) {
-            proposedArtistAddressesAndSplitsHash[_projectId] = keccak256(
-                abi.encode(
-                    _artistAddress,
-                    _additionalPayeePrimarySales,
-                    _additionalPayeePrimarySalesPercentage,
-                    _additionalPayeeSecondarySales,
-                    _additionalPayeeSecondarySalesPercentage
-                )
-            );
-        }
-        // emit event for off-chain indexing
-        emit ProposedArtistAddressesAndSplits(
-            _projectId,
-            _artistAddress,
-            _additionalPayeePrimarySales,
-            _additionalPayeePrimarySalesPercentage,
-            _additionalPayeeSecondarySales,
-            _additionalPayeeSecondarySalesPercentage
-        );
         // automatically accept if no proposed addresses modifications
+        // store proposal hash on-chain, only if not automatic accept
         if (automaticAccept) {
             // clear any previously proposed values
             proposedArtistAddressesAndSplitsHash[_projectId] = bytes32(0);
@@ -747,6 +738,16 @@ contract GenArt721CoreV3 is
             );
             // emit event for off-chain indexing
             emit AcceptedArtistAddressesAndSplits(_projectId);
+        } else {
+            proposedArtistAddressesAndSplitsHash[_projectId] = keccak256(
+                abi.encode(
+                    _artistAddress,
+                    _additionalPayeePrimarySales,
+                    _additionalPayeePrimarySalesPercentage,
+                    _additionalPayeeSecondarySales,
+                    _additionalPayeeSecondarySalesPercentage
+                )
+            );
         }
     }
 
