@@ -31,7 +31,6 @@ jobs:
     resource_class: large
     working_directory: ~/artblocks-contracts
     steps:
-      - checkout
       - restore_cache:
           key: compiled-env-{{ .Environment.CIRCLE_SHA1 }}
       - run:
@@ -43,7 +42,6 @@ jobs:
     resource_class: large
     working_directory: ~/artblocks-contracts
     steps:
-      - checkout
       - restore_cache:
           key: compiled-env-{{ .Environment.CIRCLE_SHA1 }}
       - run: node --version
