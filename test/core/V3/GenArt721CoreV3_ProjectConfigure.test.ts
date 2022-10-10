@@ -1037,7 +1037,8 @@ describe("GenArt721CoreV3 Project Configure", async function () {
       expect(script).to.equal(CONTRACT_SIZE_LIMIT_SCRIPT);
     });
 
-    it("fails to upload 26 KB script", async function () {
+    // skip on coverage because contract max sizes are ignored
+    it("fails to upload 26 KB script [ @skip-on-coverage ]", async function () {
       await expectRevert(
         this.genArt721Core.connect(this.accounts.artist).addProjectScript(
           this.projectZero,
