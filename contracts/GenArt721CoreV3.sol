@@ -54,10 +54,12 @@ import "./libs/0.8.x/Bytes32Strings.sol";
  * - updateProjectAspectRatio
  * ----------------------------------------------------------------------------
  * The following functions are restricted to only the Artist address:
- * - proposeArtistPaymentAddressesAndSplits (note that this has to be accepted
+ * - proposeArtistPaymentAddressesAndSplits (Note that this has to be accepted
  *   by adminAcceptArtistAddressesAndSplits to take effect, which is restricted
  *   to the Admin ACL contract, or the artist if the core contract owner has
- *   renounced ownership)
+ *   renounced ownership. Also note that a proposal will be automatically
+ *   accepted if the artist only proposes changed payee percentages without
+ *   modifying any payee addresses.)
  * - toggleProjectIsPaused (note the artist can still mint while paused)
  * - updateProjectSecondaryMarketRoyaltyPercentage (up to
      ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE percent)
@@ -643,6 +645,11 @@ contract GenArt721CoreV3 is
      * addresses, and percentage splits for project `_projectId`. Addresses and
      * percentages do not have to all be changed, but they must all be defined
      * as a complete set.
+     * Note that if the artist is only proposing a change to the payee percentage
+     * splits, without modifying the payee addresses, the proposal will be
+     * automatically approved and the new splits will become active immediately.
+     * Also note that if the artist is proposing sending funds to the zero
+     * address, this function will revert and the proposal will not be created.
      * @param _projectId Project ID.
      * @param _artistAddress Artist address that controls the project, and may
      * receive payments.
@@ -673,23 +680,29 @@ contract GenArt721CoreV3 is
         onlyArtist(_projectId)
         onlyNonZeroAddress(_artistAddress)
     {
+        ProjectFinance storage projectFinance = projectIdToFinancials[
+            _projectId
+        ];
         // checks
         require(
             _additionalPayeePrimarySalesPercentage <= ONE_HUNDRED &&
                 _additionalPayeeSecondarySalesPercentage <= ONE_HUNDRED,
             "Max of 100%"
         );
-        // effects
-        proposedArtistAddressesAndSplitsHash[_projectId] = keccak256(
-            abi.encode(
-                _artistAddress,
-                _additionalPayeePrimarySales,
-                _additionalPayeePrimarySalesPercentage,
-                _additionalPayeeSecondarySales,
-                _additionalPayeeSecondarySalesPercentage
-            )
+        require(
+            _additionalPayeePrimarySalesPercentage == 0 ||
+                _additionalPayeePrimarySales != address(0),
+            "Primary payee is zero address"
         );
+        require(
+            _additionalPayeeSecondarySalesPercentage == 0 ||
+                _additionalPayeeSecondarySales != address(0),
+            "Secondary payee is zero address"
+        );
+        // effects
         // emit event for off-chain indexing
+        // note: always emit a proposal event, even in the pathway of
+        // automatic approval, to simplify indexing expectations
         emit ProposedArtistAddressesAndSplits(
             _projectId,
             _artistAddress,
@@ -698,6 +711,39 @@ contract GenArt721CoreV3 is
             _additionalPayeeSecondarySales,
             _additionalPayeeSecondarySalesPercentage
         );
+        // automatically accept if no proposed addresses modifications
+        // store proposal hash on-chain, only if not automatic accept
+        bool automaticAccept = ((_artistAddress ==
+            projectFinance.artistAddress) &&
+            (_additionalPayeePrimarySales ==
+                projectFinance.additionalPayeePrimarySales) &&
+            (_additionalPayeeSecondarySales ==
+                projectFinance.additionalPayeeSecondarySales));
+        if (automaticAccept) {
+            // clear any previously proposed values
+            proposedArtistAddressesAndSplitsHash[_projectId] = bytes32(0);
+            // update storage
+            // (only change to percentages during automatic accept)
+            // (safe to cast as uint8 as max is 100%, max uint8 is 255)
+            projectFinance.additionalPayeePrimarySalesPercentage = uint8(
+                _additionalPayeePrimarySalesPercentage
+            );
+            projectFinance.additionalPayeeSecondarySalesPercentage = uint8(
+                _additionalPayeeSecondarySalesPercentage
+            );
+            // emit event for off-chain indexing
+            emit AcceptedArtistAddressesAndSplits(_projectId);
+        } else {
+            proposedArtistAddressesAndSplitsHash[_projectId] = keccak256(
+                abi.encode(
+                    _artistAddress,
+                    _additionalPayeePrimarySales,
+                    _additionalPayeePrimarySalesPercentage,
+                    _additionalPayeeSecondarySales,
+                    _additionalPayeeSecondarySalesPercentage
+                )
+            );
+        }
     }
 
     /**
