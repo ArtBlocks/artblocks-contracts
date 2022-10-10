@@ -177,7 +177,8 @@ describe("BytecodeStorage + BytecodeTextCR_DMock Library Tests", async function 
       expect(text).to.equal(targetText);
     });
 
-    it("fails to upload 26 KB script", async function () {
+    // skip on coverage because contract max sizes are ignored
+    it("fails to upload 26 KB script [ @skip-on-coverage ]", async function () {
       await expectRevert(
         this.bytecodeTextCR_DMock
           .connect(this.accounts.deployer)
