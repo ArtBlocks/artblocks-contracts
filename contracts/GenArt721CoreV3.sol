@@ -59,7 +59,7 @@ import "./libs/0.8.x/Bytes32Strings.sol";
  *   to the Admin ACL contract, or the artist if the core contract owner has
  *   renounced ownership. Also note that a proposal will be automatically
  *   accepted if the artist only proposes changed payee percentages without
- *   modifying any payee addresses.)
+ *   modifying any payee addresses, or is only removing payee addresses.)
  * - toggleProjectIsPaused (note the artist can still mint while paused)
  * - updateProjectSecondaryMarketRoyaltyPercentage (up to
      ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE percent)
@@ -648,6 +648,8 @@ contract GenArt721CoreV3 is
      * Note that if the artist is only proposing a change to the payee percentage
      * splits, without modifying the payee addresses, the proposal will be
      * automatically approved and the new splits will become active immediately.
+     * Automatic approval will also be granted if the artist is only removing
+     * additional payee addresses, without adding any new ones.
      * Also note that if the artist is proposing sending funds to the zero
      * address, this function will revert and the proposal will not be created.
      * @param _projectId Project ID.
@@ -711,23 +713,39 @@ contract GenArt721CoreV3 is
             _additionalPayeeSecondarySales,
             _additionalPayeeSecondarySalesPercentage
         );
-        // automatically accept if no proposed addresses modifications
+        // automatically accept if no proposed addresses modifications, or if
+        // the proposal only removes payee addresses.
         // store proposal hash on-chain, only if not automatic accept
-        bool automaticAccept = ((_artistAddress ==
-            projectFinance.artistAddress) &&
-            (_additionalPayeePrimarySales ==
-                projectFinance.additionalPayeePrimarySales) &&
-            (_additionalPayeeSecondarySales ==
-                projectFinance.additionalPayeeSecondarySales));
+        bool automaticAccept;
+        {
+            // block scope to avoid stack too deep error
+            bool artistUnchanged = _artistAddress ==
+                projectFinance.artistAddress;
+            bool additionalPrimaryUnchangedOrRemoved = (_additionalPayeePrimarySales ==
+                    projectFinance.additionalPayeePrimarySales) ||
+                    (_additionalPayeePrimarySales == address(0));
+            bool additionalSecondaryUnchangedOrRemoved = (_additionalPayeeSecondarySales ==
+                    projectFinance.additionalPayeeSecondarySales) ||
+                    (_additionalPayeeSecondarySales == address(0));
+            automaticAccept =
+                artistUnchanged &&
+                additionalPrimaryUnchangedOrRemoved &&
+                additionalSecondaryUnchangedOrRemoved;
+        }
         if (automaticAccept) {
             // clear any previously proposed values
             proposedArtistAddressesAndSplitsHash[_projectId] = bytes32(0);
             // update storage
-            // (only change to percentages during automatic accept)
-            // (safe to cast as uint8 as max is 100%, max uint8 is 255)
+            // (artist address cannot change during automatic accept)
+            projectFinance
+                .additionalPayeePrimarySales = _additionalPayeePrimarySales;
+            // safe to cast as uint8 as max is 100%, max uint8 is 255
             projectFinance.additionalPayeePrimarySalesPercentage = uint8(
                 _additionalPayeePrimarySalesPercentage
             );
+            projectFinance
+                .additionalPayeeSecondarySales = _additionalPayeeSecondarySales;
+            // safe to cast as uint8 as max is 100%, max uint8 is 255
             projectFinance.additionalPayeeSecondarySalesPercentage = uint8(
                 _additionalPayeeSecondarySalesPercentage
             );
