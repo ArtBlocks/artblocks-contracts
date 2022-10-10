@@ -164,22 +164,24 @@ describe("GenArt721CoreV1 Integration", async function () {
       const deployerBalance = await this.accounts.deployer.getBalance();
 
       const additionalPayeePercentage = 100;
-      this.genArt721Core
+      await this.genArt721Core
         .connect(this.accounts.artist)
         .updateProjectAdditionalPayeeInfo(
           this.projectZero,
           this.accounts.additional.address,
           additionalPayeePercentage
         );
-      this.genArt721Core
+      await this.genArt721Core
         .connect(this.accounts.artist)
         .toggleProjectIsPaused(this.projectZero);
 
       // pricePerTokenInWei setup above to be 1 ETH
-      await expect(
-        this.minter.connect(this.accounts.user).purchase(this.projectZero, {
-          value: this.pricePerTokenInWei,
-        })
+      expect(
+        await this.minter
+          .connect(this.accounts.user)
+          .purchase(this.projectZero, {
+            value: this.pricePerTokenInWei,
+          })
       )
         .to.emit(this.genArt721Core, "Transfer")
         .withArgs(
@@ -188,10 +190,10 @@ describe("GenArt721CoreV1 Integration", async function () {
           this.projectZeroTokenZero
         );
 
-      this.projectZeroInfo = await this.genArt721Core.projectTokenInfo(
+      const projectZeroInfo = await this.genArt721Core.projectTokenInfo(
         this.projectZero
       );
-      expect(this.projectZeroInfo.invocations).to.equal("1");
+      expect(projectZeroInfo.invocations).to.equal("1");
 
       expect(
         (await this.accounts.deployer.getBalance()).sub(deployerBalance)
