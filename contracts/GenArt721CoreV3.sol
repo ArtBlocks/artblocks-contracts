@@ -54,11 +54,12 @@ import "./libs/0.8.x/Bytes32Strings.sol";
  * - updateProjectAspectRatio
  * ----------------------------------------------------------------------------
  * The following functions are restricted to only the Artist address:
- * - proposeArtistPaymentAddressesAndSplits (note that this has to be accepted
+ * - proposeArtistPaymentAddressesAndSplits (Note that this has to be accepted
  *   by adminAcceptArtistAddressesAndSplits to take effect, which is restricted
  *   to the Admin ACL contract, or the artist if the core contract owner has
  *   renounced ownership. Also note that a proposal will be automatically
- *   accepted if the artist only proposes changed percentages.)
+ *   accepted if the artist only proposes changed payee percentages without 
+ *   modifying any payee addresses.)
  * - toggleProjectIsPaused (note the artist can still mint while paused)
  * - updateProjectSecondaryMarketRoyaltyPercentage (up to
      ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE percent)
@@ -644,9 +645,9 @@ contract GenArt721CoreV3 is
      * addresses, and percentage splits for project `_projectId`. Addresses and
      * percentages do not have to all be changed, but they must all be defined
      * as a complete set.
-     * Note that if the artist is only proposing a change to the percentage
-     * splits, the proposal will be automatically approved and the new splits
-     * will become active immediately.
+     * Note that if the artist is only proposing a change to the payee percentage
+     * splits, without modifying the payee addresses, the proposal will be 
+     * automatically approved and the new splits will become active immediately.
      * Also note that if the artist is proposing sending funds to the zero
      * address, this function will revert and the proposal will not be created.
      * @param _projectId Project ID.
