@@ -58,7 +58,7 @@ import "./libs/0.8.x/Bytes32Strings.sol";
  *   by adminAcceptArtistAddressesAndSplits to take effect, which is restricted
  *   to the Admin ACL contract, or the artist if the core contract owner has
  *   renounced ownership. Also note that a proposal will be automatically
- *   accepted if the artist only proposes changed payee percentages without 
+ *   accepted if the artist only proposes changed payee percentages without
  *   modifying any payee addresses.)
  * - toggleProjectIsPaused (note the artist can still mint while paused)
  * - updateProjectSecondaryMarketRoyaltyPercentage (up to
@@ -646,7 +646,7 @@ contract GenArt721CoreV3 is
      * percentages do not have to all be changed, but they must all be defined
      * as a complete set.
      * Note that if the artist is only proposing a change to the payee percentage
-     * splits, without modifying the payee addresses, the proposal will be 
+     * splits, without modifying the payee addresses, the proposal will be
      * automatically approved and the new splits will become active immediately.
      * Also note that if the artist is proposing sending funds to the zero
      * address, this function will revert and the proposal will not be created.
@@ -712,15 +712,13 @@ contract GenArt721CoreV3 is
             _additionalPayeeSecondarySalesPercentage
         );
         // automatically accept if no proposed addresses modifications
-        bool automaticAccept = (
-            (_artistAddress == projectFinance.artistAddress) &&
-            (_additionalPayeePrimarySales ==
-            projectFinance.additionalPayeePrimarySales) &&
-            (_additionalPayeeSecondarySales ==
-            projectFinance.additionalPayeeSecondarySales)
-        );
-        // automatically accept if no proposed addresses modifications
         // store proposal hash on-chain, only if not automatic accept
+        bool automaticAccept = ((_artistAddress ==
+            projectFinance.artistAddress) &&
+            (_additionalPayeePrimarySales ==
+                projectFinance.additionalPayeePrimarySales) &&
+            (_additionalPayeeSecondarySales ==
+                projectFinance.additionalPayeeSecondarySales));
         if (automaticAccept) {
             // clear any previously proposed values
             proposedArtistAddressesAndSplitsHash[_projectId] = bytes32(0);
