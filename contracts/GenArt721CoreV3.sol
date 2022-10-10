@@ -712,16 +712,13 @@ contract GenArt721CoreV3 is
             _additionalPayeeSecondarySalesPercentage
         );
         // automatically accept if no proposed addresses modifications
-        bool automaticAccept; // default false
-        if (
+        bool automaticAccept = (
             (_artistAddress == projectFinance.artistAddress) &&
             (_additionalPayeePrimarySales ==
             projectFinance.additionalPayeePrimarySales) &&
             (_additionalPayeeSecondarySales ==
             projectFinance.additionalPayeeSecondarySales)
-        ) {
-            automaticAccept = true;
-        }
+        );
         // automatically accept if no proposed addresses modifications
         // store proposal hash on-chain, only if not automatic accept
         if (automaticAccept) {
