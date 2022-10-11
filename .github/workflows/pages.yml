@@ -34,6 +34,18 @@ jobs:
           cache: "npm"
       - name: install dependencies
         run: yarn install
+      - name: Set up dummy env vars
+        run: |
+          echo "MAINNET_JSON_RPC_PROVIDER_URL=https://mainnet.infura.io/v3/dummyApiKey" >> $GITHUB_ENV
+          echo "GOERLI_JSON_RPC_PROVIDER_URL=https://goerli.infura.io/v3/dummyApiKey" >> $GITHUB_ENV
+          echo "ROPSTEN_JSON_RPC_PROVIDER_URL=https://ropsten.infura.io/v3/dummyApiKey" >> $GITHUB_ENV
+          echo "RINKEBY_JSON_RPC_PROVIDER_URL=https://rinkeby.infura.io/v3/dummyApiKey" >> $GITHUB_ENV
+          echo "KOVAN_JSON_RPC_PROVIDER_URL=https://kovan.infura.io/v3/dummyApiKey" >> $GITHUB_ENV
+          # dummy private keys (not connected to accounts)
+          echo "MAINNET_PRIVATE_KEY=02972a49e65597958031921ec9470de839a7b7de0558c5a59a95d1751a3524cf" >> $GITHUB_ENV
+          echo "TESTNET_PRIVATE_KEY=02972a49e65597958031921ec9470de839a7b7de0558c5a59a95d1751a3524cf" >> $GITHUB_ENV
+          echo "TESTNET_PRIVATE_KEY2=02972a49e65597958031921ec9470de839a7b7de0558c5a59a95d1751a3524cf" >> $GITHUB_ENV
+          echo "TESTNET_PRIVATE_KEY3=02972a49e65597958031921ec9470de839a7b7de0558c5a59a95d1751a3524cf" >> $GITHUB_ENV
       - name: build docs
         run: yarn docgen
       - name: upload docs artifact
