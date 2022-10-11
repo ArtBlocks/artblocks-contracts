@@ -44,7 +44,7 @@ export function hashAddress(_address) {
  */
 export const MinterMerkle_Common = async () => {
   describe("common minter tests", async () => {
-    Minter_Common();
+    await Minter_Common();
   });
 
   describe("deploy", async () => {

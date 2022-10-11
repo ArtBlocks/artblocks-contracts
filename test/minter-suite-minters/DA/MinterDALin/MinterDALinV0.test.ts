@@ -109,7 +109,7 @@ describe("MinterDALinV0_V1Core", async function () {
   });
 
   describe("common tests", async function () {
-    MinterDALin_Common();
+    await MinterDALin_Common();
   });
 
   describe("calculate gas", async function () {

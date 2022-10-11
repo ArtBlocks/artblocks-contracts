@@ -55,7 +55,7 @@ runForEach.forEach((params) => {
     });
 
     describe("common tests", async function () {
-      MinterFilterPermissions_Common();
+      await MinterFilterPermissions_Common();
     });
   });
 });

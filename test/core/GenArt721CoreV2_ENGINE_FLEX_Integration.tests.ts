@@ -67,7 +67,7 @@ describe("GenArt721CoreV2_PBAB_FLEX_Integration", async function () {
   });
 
   describe("common tests", async function () {
-    GenArt721MinterV1V2PRTNR_Common();
+    await GenArt721MinterV1V2PRTNR_Common();
   });
 
   describe("external asset dependencies", async function () {

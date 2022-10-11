@@ -30,6 +30,6 @@ describe("MinterFilterV0Enumeration_V2PRTNRCore", async function () {
   });
 
   describe("common tests", async function () {
-    MinterFilterEnumeration_Common();
+    await MinterFilterEnumeration_Common();
   });
 });

@@ -80,13 +80,13 @@ describe("MinterSetPriceERC20V0_V1Core", async function () {
       .connect(this.accounts.artist)
       .updateProjectMaxInvocations(this.projectTwo, this.maxInvocations);
 
-    this.genArt721Core
+    await this.genArt721Core
       .connect(this.accounts.artist)
       .toggleProjectIsPaused(this.projectZero);
-    this.genArt721Core
+    await this.genArt721Core
       .connect(this.accounts.artist)
       .toggleProjectIsPaused(this.projectOne);
-    this.genArt721Core
+    await this.genArt721Core
       .connect(this.accounts.artist)
       .toggleProjectIsPaused(this.projectTwo);
 
@@ -119,7 +119,7 @@ describe("MinterSetPriceERC20V0_V1Core", async function () {
   });
 
   describe("common MinterSetPrice (ETH) tests", async () => {
-    MinterSetPriceERC20_Common();
+    await MinterSetPriceERC20_Common();
   });
 
   describe("calculates gas", async function () {

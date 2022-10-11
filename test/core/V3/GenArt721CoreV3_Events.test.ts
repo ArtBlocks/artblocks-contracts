@@ -70,8 +70,8 @@ describe("GenArt721CoreV3 Events", async function () {
   describe("MinterUpdated", function () {
     it("emits MinterUpdated when being updated", async function () {
       // emits expected event arg(s)
-      expect(
-        await this.genArt721Core
+      await expect(
+        this.genArt721Core
           .connect(this.accounts.deployer)
           .updateMinterContract(this.accounts.deployer.address)
       )
@@ -101,21 +101,21 @@ describe("GenArt721CoreV3 Events", async function () {
       // target event is the last log
       const targetLog = receipt.logs[receipt.logs.length - 1];
       // expect "PlatformUpdated" event as log 0
-      expect(targetLog.topics[0]).to.be.equal(
+      await expect(targetLog.topics[0]).to.be.equal(
         ethers.utils.keccak256(
           ethers.utils.toUtf8Bytes("PlatformUpdated(bytes32)")
         )
       );
       // expect field to be bytes32 of "nextProjectId" as log 1
-      expect(targetLog.topics[1]).to.be.equal(
+      await expect(targetLog.topics[1]).to.be.equal(
         ethers.utils.formatBytes32String("nextProjectId")
       );
     });
 
     it("emits artblocksSecondarySalesAddress", async function () {
       // emits expected event arg(s)
-      expect(
-        await this.genArt721Core
+      await expect(
+        this.genArt721Core
           .connect(this.accounts.deployer)
           .updateArtblocksSecondarySalesAddress(this.accounts.artist.address)
       )
@@ -127,10 +127,10 @@ describe("GenArt721CoreV3 Events", async function () {
 
     it("emits 'randomizerAddress'", async function () {
       // emits expected event arg(s)
-      expect(
+      await expect(
         // it is OK that this randomizer address isn't a particularly valid
         // address for the purposes of this test
-        await this.genArt721Core
+        this.genArt721Core
           .connect(this.accounts.deployer)
           .updateRandomizerAddress(this.accounts.additional.address)
       )
@@ -140,8 +140,8 @@ describe("GenArt721CoreV3 Events", async function () {
 
     it("emits 'curationRegistryAddress'", async function () {
       // emits expected event arg(s)
-      expect(
-        await this.genArt721Core
+      await expect(
+        this.genArt721Core
           .connect(this.accounts.deployer)
           .updateArtblocksCurationRegistryAddress(this.accounts.artist.address)
       )
@@ -151,8 +151,8 @@ describe("GenArt721CoreV3 Events", async function () {
 
     it("emits 'dependencyRegistryAddress'", async function () {
       // emits expected event arg(s)
-      expect(
-        await this.genArt721Core
+      await expect(
+        this.genArt721Core
           .connect(this.accounts.deployer)
           .updateArtblocksDependencyRegistryAddress(
             this.accounts.artist.address
@@ -166,8 +166,8 @@ describe("GenArt721CoreV3 Events", async function () {
 
     it("emits 'artblocksPrimaryPercentage'", async function () {
       // emits expected event arg(s)
-      expect(
-        await this.genArt721Core
+      await expect(
+        this.genArt721Core
           .connect(this.accounts.deployer)
           .updateArtblocksPrimarySalesPercentage(11)
       )
@@ -179,8 +179,8 @@ describe("GenArt721CoreV3 Events", async function () {
 
     it("emits 'artblocksSecondaryBPS'", async function () {
       // emits expected event arg(s)
-      expect(
-        await this.genArt721Core
+      await expect(
+        this.genArt721Core
           .connect(this.accounts.deployer)
           .updateArtblocksSecondarySalesBPS(240)
       )
@@ -190,10 +190,8 @@ describe("GenArt721CoreV3 Events", async function () {
 
     it("emits 'newProjectsForbidden'", async function () {
       // emits expected event arg(s)
-      expect(
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .forbidNewProjects()
+      await expect(
+        this.genArt721Core.connect(this.accounts.deployer).forbidNewProjects()
       )
         .to.emit(this.genArt721Core, "PlatformUpdated")
         .withArgs(ethers.utils.formatBytes32String("newProjectsForbidden"));
@@ -201,8 +199,8 @@ describe("GenArt721CoreV3 Events", async function () {
 
     it("emits `defaultBaseURI`", async function () {
       // emits expected event arg(s)
-      expect(
-        await this.genArt721Core
+      await expect(
+        this.genArt721Core
           .connect(this.accounts.deployer)
           .updateDefaultBaseURI("https://newbaseuri.com/token/")
       )
@@ -220,10 +218,8 @@ describe("GenArt721CoreV3 Events", async function () {
         1
       );
       // emits expected event arg(s) when completing project
-      expect(
-        await this.minter
-          .connect(this.accounts.artist)
-          .purchase(this.projectZero)
+      await expect(
+        this.minter.connect(this.accounts.artist).purchase(this.projectZero)
       )
         .to.emit(this.genArt721Core, "ProjectUpdated")
         .withArgs(
@@ -234,16 +230,16 @@ describe("GenArt721CoreV3 Events", async function () {
 
     it("emits active", async function () {
       // emits expected event arg(s) when toggling project inactive
-      expect(
-        await this.genArt721Core
+      await expect(
+        this.genArt721Core
           .connect(this.accounts.deployer)
           .toggleProjectIsActive(this.projectZero)
       )
         .to.emit(this.genArt721Core, "ProjectUpdated")
         .withArgs(this.projectZero, ethers.utils.formatBytes32String("active"));
       // emits expected event arg(s) when toggling project active
-      expect(
-        await this.genArt721Core
+      await expect(
+        this.genArt721Core
           .connect(this.accounts.deployer)
           .toggleProjectIsActive(this.projectZero)
       )
@@ -253,8 +249,8 @@ describe("GenArt721CoreV3 Events", async function () {
 
     it("emits artistAddress", async function () {
       // emits expected event arg(s)
-      expect(
-        await this.genArt721Core
+      await expect(
+        this.genArt721Core
           .connect(this.accounts.deployer)
           .updateProjectArtistAddress(
             this.projectZero,
@@ -270,8 +266,8 @@ describe("GenArt721CoreV3 Events", async function () {
 
     it("emits paused", async function () {
       // emits expected event arg(s)
-      expect(
-        await this.genArt721Core
+      await expect(
+        this.genArt721Core
           .connect(this.accounts.artist)
           .toggleProjectIsPaused(this.projectZero)
       )
@@ -281,8 +277,8 @@ describe("GenArt721CoreV3 Events", async function () {
 
     it("emits created", async function () {
       // emits expected event arg(s)
-      expect(
-        await this.genArt721Core
+      await expect(
+        this.genArt721Core
           .connect(this.accounts.deployer)
           .addProject("new project", this.accounts.artist.address)
       )
@@ -292,8 +288,8 @@ describe("GenArt721CoreV3 Events", async function () {
 
     it("emits name", async function () {
       // emits expected event arg(s)
-      expect(
-        await this.genArt721Core
+      await expect(
+        this.genArt721Core
           .connect(this.accounts.deployer)
           .updateProjectName(this.projectZero, "new project name")
       )
@@ -303,8 +299,8 @@ describe("GenArt721CoreV3 Events", async function () {
 
     it("emits artistName", async function () {
       // emits expected event arg(s)
-      expect(
-        await this.genArt721Core
+      await expect(
+        this.genArt721Core
           .connect(this.accounts.deployer)
           .updateProjectArtistName(this.projectZero, "new artist name")
       )
@@ -317,8 +313,8 @@ describe("GenArt721CoreV3 Events", async function () {
 
     it("emits secondaryMarketRoyaltyPercentage", async function () {
       // emits expected event arg(s)
-      expect(
-        await this.genArt721Core
+      await expect(
+        this.genArt721Core
           .connect(this.accounts.artist)
           .updateProjectSecondaryMarketRoyaltyPercentage(this.projectZero, 10)
       )
@@ -331,8 +327,8 @@ describe("GenArt721CoreV3 Events", async function () {
 
     it("emits description", async function () {
       // emits expected event arg(s)
-      expect(
-        await this.genArt721Core
+      await expect(
+        this.genArt721Core
           .connect(this.accounts.artist)
           .updateProjectDescription(this.projectZero, "new description")
       )
@@ -345,8 +341,8 @@ describe("GenArt721CoreV3 Events", async function () {
 
     it("emits website", async function () {
       // emits expected event arg(s)
-      expect(
-        await this.genArt721Core
+      await expect(
+        this.genArt721Core
           .connect(this.accounts.artist)
           .updateProjectWebsite(this.projectZero, "new website")
       )
@@ -359,8 +355,8 @@ describe("GenArt721CoreV3 Events", async function () {
 
     it("emits license", async function () {
       // emits expected event arg(s)
-      expect(
-        await this.genArt721Core
+      await expect(
+        this.genArt721Core
           .connect(this.accounts.artist)
           .updateProjectLicense(this.projectZero, "new license")
       )
@@ -373,8 +369,8 @@ describe("GenArt721CoreV3 Events", async function () {
 
     it("emits maxInvocations", async function () {
       // emits expected event arg(s)
-      expect(
-        await this.genArt721Core
+      await expect(
+        this.genArt721Core
           .connect(this.accounts.artist)
           .updateProjectMaxInvocations(this.projectZero, 10)
       )
@@ -388,16 +384,16 @@ describe("GenArt721CoreV3 Events", async function () {
     it("emits script when adding/editing/removing script", async function () {
       // emits expected event arg(s)
       // add script
-      expect(
-        await this.genArt721Core
+      await expect(
+        this.genArt721Core
           .connect(this.accounts.artist)
           .addProjectScript(this.projectZero, `console.log("hello world")`)
       )
         .to.emit(this.genArt721Core, "ProjectUpdated")
         .withArgs(this.projectZero, ethers.utils.formatBytes32String("script"));
       // edit script
-      expect(
-        await this.genArt721Core
+      await expect(
+        this.genArt721Core
           .connect(this.accounts.artist)
           .updateProjectScript(
             this.projectZero,
@@ -408,8 +404,8 @@ describe("GenArt721CoreV3 Events", async function () {
         .to.emit(this.genArt721Core, "ProjectUpdated")
         .withArgs(this.projectZero, ethers.utils.formatBytes32String("script"));
       // remove script
-      expect(
-        await this.genArt721Core
+      await expect(
+        this.genArt721Core
           .connect(this.accounts.artist)
           .removeProjectLastScript(this.projectZero)
       )
@@ -419,8 +415,8 @@ describe("GenArt721CoreV3 Events", async function () {
 
     it("emits scriptType", async function () {
       // emits expected event arg(s)
-      expect(
-        await this.genArt721Core
+      await expect(
+        this.genArt721Core
           .connect(this.accounts.artist)
           .updateProjectScriptType(
             this.projectZero,
@@ -436,8 +432,8 @@ describe("GenArt721CoreV3 Events", async function () {
 
     it("emits aspectRatio", async function () {
       // emits expected event arg(s)
-      expect(
-        await this.genArt721Core
+      await expect(
+        this.genArt721Core
           .connect(this.accounts.artist)
           .updateProjectAspectRatio(this.projectZero, "1.77777778")
       )
@@ -450,8 +446,8 @@ describe("GenArt721CoreV3 Events", async function () {
 
     it("emits baseURI", async function () {
       // emits expected event arg(s)
-      expect(
-        await this.genArt721Core
+      await expect(
+        this.genArt721Core
           .connect(this.accounts.artist)
           .updateProjectBaseURI(
             this.projectZero,

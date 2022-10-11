@@ -82,13 +82,13 @@ describe("MinterSetPriceERC20V2_V3Core", async function () {
       .connect(this.accounts.artist)
       .updateProjectMaxInvocations(this.projectTwo, this.maxInvocations);
 
-    this.genArt721Core
+    await this.genArt721Core
       .connect(this.accounts.artist)
       .toggleProjectIsPaused(this.projectZero);
-    this.genArt721Core
+    await this.genArt721Core
       .connect(this.accounts.artist)
       .toggleProjectIsPaused(this.projectOne);
-    this.genArt721Core
+    await this.genArt721Core
       .connect(this.accounts.artist)
       .toggleProjectIsPaused(this.projectTwo);
 
@@ -121,15 +121,15 @@ describe("MinterSetPriceERC20V2_V3Core", async function () {
   });
 
   describe("common MinterSetPrice (ETH) tests", async () => {
-    MinterSetPriceERC20_Common();
+    await MinterSetPriceERC20_Common();
   });
 
   describe("common MinterSetPrice V1V2 tests", async function () {
-    MinterSetPriceV1V2_Common();
+    await MinterSetPriceV1V2_Common();
   });
 
   describe("common MinterSetPrice V2 tests", async function () {
-    MinterSetPriceV2_Common();
+    await MinterSetPriceV2_Common();
   });
 
   describe("updatePricePerTokenInWei", async function () {

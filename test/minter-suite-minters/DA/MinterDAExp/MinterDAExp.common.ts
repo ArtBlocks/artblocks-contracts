@@ -23,7 +23,7 @@ const DAExpAuctionParamsAreZero = (auctionParams) => {
  */
 export const MinterDAExp_Common = async () => {
   describe("common minter tests", async () => {
-    Minter_Common();
+    await Minter_Common();
   });
 
   describe("purchase", async function () {

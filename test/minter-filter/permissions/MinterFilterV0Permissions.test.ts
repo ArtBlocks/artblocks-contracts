@@ -39,6 +39,6 @@ describe("MinterFilterV0PermissionsEvents", async function () {
   });
 
   describe("common tests", async function () {
-    MinterFilterPermissions_Common();
+    await MinterFilterPermissions_Common();
   });
 });
