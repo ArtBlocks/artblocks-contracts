@@ -23,7 +23,7 @@ jobs:
     docker:
       - image: "cimg/base:stable"
     resource_class: large
-    parallelism: 5
+    parallelism: 8
     steps:
       - checkout
       - node/install:
