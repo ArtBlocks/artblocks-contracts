@@ -31,19 +31,11 @@ jobs:
           lts: true
       - node/install-packages:
           pkg-manager: yarn
-      - run: mkdir ~/junit
       - run:
           name: Hardhat Test
           command: |
-            TEST_FILES="$(circleci tests glob "./test/**/*.ts" | circleci tests split --split-by=timings)"
+            TEST_FILES="$(circleci tests glob "./test/**/*.ts" | circleci tests split)"
             yarn test ${TEST_FILES}
-      - run:
-          command: cp junit.xml ~/junit/
-          when: always
-      - store_test_results:
-          path: ~/junit
-      - store_artifacts:
-          path: ~/junit
   lint-and-test:
     docker:
       - image: "cimg/base:stable"
