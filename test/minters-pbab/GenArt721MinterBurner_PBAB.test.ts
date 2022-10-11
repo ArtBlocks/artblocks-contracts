@@ -80,7 +80,7 @@ describe("GenArt721MinterBurner_PBAB", async function () {
       .connect(this.accounts.artist)
       .updateProjectMaxInvocations(this.projectTwo, this.maxInvocations);
 
-    this.genArt721Core
+    await this.genArt721Core
       .connect(this.accounts.artist)
       .toggleProjectIsPaused(this.projectZero);
     this.genArt721Core

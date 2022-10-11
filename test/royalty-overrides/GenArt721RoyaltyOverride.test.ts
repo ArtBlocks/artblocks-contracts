@@ -118,10 +118,10 @@ describe("GenArt721RoyaltyOverride", async function () {
       .connect(artist1)
       .updateProjectMaxInvocations(projectOne, 15);
 
-    this.tokenA
+    await this.tokenA
       .connect(this.royaltyAccounts.artist0)
       .toggleProjectIsPaused(projectZero);
-    this.tokenA
+    await this.tokenA
       .connect(this.royaltyAccounts.artist1)
       .toggleProjectIsPaused(projectOne);
 
@@ -199,10 +199,10 @@ describe("GenArt721RoyaltyOverride", async function () {
       .connect(artist1)
       .updateProjectMaxInvocations(projectOne, 15);
 
-    this.tokenB
+    await this.tokenB
       .connect(this.royaltyAccounts.artist0)
       .toggleProjectIsPaused(projectZero);
-    this.tokenB
+    await this.tokenB
       .connect(this.royaltyAccounts.artist1)
       .toggleProjectIsPaused(projectOne);
 
