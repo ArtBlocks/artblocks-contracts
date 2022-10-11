@@ -92,7 +92,7 @@ describe("MinterHolderV0", async function () {
     await this.genArt721Core
       .connect(this.accounts.artist)
       .toggleProjectIsPaused(this.projectOne);
-    this.genArt721Core
+    await this.genArt721Core
       .connect(this.accounts.artist)
       .toggleProjectIsPaused(this.projectTwo);
 
@@ -154,7 +154,7 @@ describe("MinterHolderV0", async function () {
   });
 
   describe("common MinterHolder tests", async () => {
-    MinterHolder_Common();
+    await MinterHolder_Common();
   });
 
   describe("calculates gas", async function () {

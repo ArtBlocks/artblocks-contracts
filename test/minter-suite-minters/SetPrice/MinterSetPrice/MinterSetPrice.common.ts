@@ -10,7 +10,7 @@ import { Minter_Common } from "../../Minter.common";
  */
 export const MinterSetPrice_ETH_Common = async () => {
   describe("common minter tests", async () => {
-    Minter_Common();
+    await Minter_Common();
   });
 
   describe("updatePricePerTokenInWei", async function () {

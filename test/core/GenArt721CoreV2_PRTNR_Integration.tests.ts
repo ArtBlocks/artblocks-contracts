@@ -70,7 +70,7 @@ describe("GenArt721CoreV2_PRTNR_Integration", async function () {
   });
 
   describe("common tests", async function () {
-    GenArt721MinterV1V2PRTNR_Common();
+    await GenArt721MinterV1V2PRTNR_Common();
   });
 
   describe("initial nextProjectId", function () {
@@ -196,12 +196,10 @@ describe("GenArt721CoreV2_PRTNR_Integration", async function () {
         .toggleProjectIsPaused(this.projectZero);
 
       // pricePerTokenInWei setup above to be 1 ETH
-      expect(
-        await this.minter
-          .connect(this.accounts.user)
-          .purchase(this.projectZero, {
-            value: this.pricePerTokenInWei,
-          })
+      await expect(
+        this.minter.connect(this.accounts.user).purchase(this.projectZero, {
+          value: this.pricePerTokenInWei,
+        })
       )
         .to.emit(this.genArt721Core, "Transfer")
         .withArgs(

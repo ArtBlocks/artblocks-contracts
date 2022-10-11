@@ -94,8 +94,8 @@ describe("AdminACLV0", async function () {
 
   describe("changeSuperAdmin", function () {
     it("emits an event", async function () {
-      expect(
-        await this.adminACL.changeSuperAdmin(this.accounts.deployer2.address, [
+      await expect(
+        this.adminACL.changeSuperAdmin(this.accounts.deployer2.address, [
           this.genArt721Core.address,
         ])
       )

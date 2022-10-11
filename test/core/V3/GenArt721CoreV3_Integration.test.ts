@@ -129,8 +129,8 @@ describe("GenArt721CoreV3 Integration", async function () {
         .connect(this.accounts.user)
         .deploy();
       // update owner of core to new userAdminACL, expect OwnershipTransferred event
-      expect(
-        await this.adminACL
+      await expect(
+        this.adminACL
           .connect(this.accounts.deployer)
           .transferOwnershipOn(this.genArt721Core.address, userAdminACL.address)
       )
@@ -151,7 +151,7 @@ describe("GenArt721CoreV3 Integration", async function () {
 
     it("behaves as expected when renouncing ownership", async function () {
       // update owner of core to null address, expect OwnershipTransferred event
-      expect(
+      await expect(
         await this.adminACL
           .connect(this.accounts.deployer)
           .renounceOwnershipOn(this.genArt721Core.address)

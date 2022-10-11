@@ -110,7 +110,7 @@ describe("GenArt721Minter_PBAB", async function () {
 
   // base tests
   describe("common tests", async function () {
-    GenArt721Minter_PBAB_Common();
+    await GenArt721Minter_PBAB_Common();
   });
 
   // no additional tests neeeded for this contract

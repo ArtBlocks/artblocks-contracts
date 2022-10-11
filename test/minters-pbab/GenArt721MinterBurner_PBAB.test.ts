@@ -113,7 +113,7 @@ describe("GenArt721MinterBurner_PBAB", async function () {
 
   // base tests
   describe("common tests", async function () {
-    GenArt721Minter_PBAB_Common();
+    await GenArt721Minter_PBAB_Common();
   });
 
   describe("setBurnERC20DuringPurchase", async function () {

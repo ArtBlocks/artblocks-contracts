@@ -36,6 +36,6 @@ describe("MinterFilterV0Views", async function () {
   });
 
   describe("common tests", async function () {
-    MinterFilterViews_Common();
+    await MinterFilterViews_Common();
   });
 });

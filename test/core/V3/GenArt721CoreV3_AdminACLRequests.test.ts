@@ -22,10 +22,8 @@ import { FOUR_WEEKS } from "../../util/constants";
 async function validateAdminACLRequest(functionName: string, args: any[]) {
   const targetSelector = this.coreInterface.getSighash(functionName);
   // emits event when being minted out
-  expect(
-    await this.genArt721Core
-      .connect(this.accounts.deployer)
-      [functionName](...args)
+  await expect(
+    this.genArt721Core.connect(this.accounts.deployer)[functionName](...args)
   )
     .to.emit(this.adminACL, "ACLCheck")
     .withArgs(this.accounts.deployer.address, targetSelector);

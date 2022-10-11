@@ -119,7 +119,7 @@ describe("MinterSetPriceERC20V0_V1Core", async function () {
   });
 
   describe("common MinterSetPrice (ETH) tests", async () => {
-    MinterSetPriceERC20_Common();
+    await MinterSetPriceERC20_Common();
   });
 
   describe("calculates gas", async function () {

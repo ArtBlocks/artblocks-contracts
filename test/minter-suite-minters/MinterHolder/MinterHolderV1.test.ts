@@ -153,7 +153,7 @@ describe("MinterHolderV1", async function () {
   });
 
   describe("common MinterHolder tests", async () => {
-    MinterHolder_Common();
+    await MinterHolder_Common();
   });
 
   describe("setProjectMaxInvocations", async function () {

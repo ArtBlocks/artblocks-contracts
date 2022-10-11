@@ -167,7 +167,7 @@ describe("MinterMerkleV0", async function () {
   });
 
   describe("common MinterMerkle tests", async () => {
-    MinterMerkle_Common();
+    await MinterMerkle_Common();
   });
 
   describe("calculates gas", async function () {
