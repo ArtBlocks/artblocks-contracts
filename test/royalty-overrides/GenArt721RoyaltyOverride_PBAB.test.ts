@@ -243,7 +243,7 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
       let response = await this.royaltyOverride
         .connect(this.royaltyAccounts.anyone)
         .getRoyalties(this.tokenA.address, tokenIdProject0);
-      assertRoyaltiesResponse(
+      await assertRoyaltiesResponse(
         response,
         [
           this.royaltyAccounts.artist0.address,
@@ -257,7 +257,7 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
       response = await this.royaltyOverride
         .connect(this.royaltyAccounts.anyone)
         .getRoyalties(this.tokenA.address, tokenIdProject1);
-      assertRoyaltiesResponse(
+      await assertRoyaltiesResponse(
         response,
         [
           this.royaltyAccounts.artist1.address,
@@ -285,7 +285,7 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
       response = await this.royaltyOverride
         .connect(this.royaltyAccounts.anyone)
         .getRoyalties(this.tokenB.address, tokenIdProject0);
-      assertRoyaltiesResponse(
+      await assertRoyaltiesResponse(
         response,
         [
           this.royaltyAccounts.artist0.address,
@@ -299,7 +299,7 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
       response = await this.royaltyOverride
         .connect(this.royaltyAccounts.anyone)
         .getRoyalties(this.tokenB.address, tokenIdProject1);
-      assertRoyaltiesResponse(
+      await assertRoyaltiesResponse(
         response,
         [
           this.royaltyAccounts.artist1.address,
@@ -322,7 +322,7 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
       let response = await this.royaltyOverride
         .connect(this.royaltyAccounts.anyone)
         .getRoyalties(this.tokenA.address, tokenIdProject0);
-      assertRoyaltiesResponse(
+      await assertRoyaltiesResponse(
         response,
         [
           this.royaltyAccounts.artist0.address,
@@ -340,7 +340,7 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
       response = await this.royaltyOverride
         .connect(this.royaltyAccounts.anyone)
         .getRoyalties(this.tokenA.address, tokenIdProject0);
-      assertRoyaltiesResponse(
+      await assertRoyaltiesResponse(
         response,
         [
           this.royaltyAccounts.artist0.address,
@@ -365,7 +365,7 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
       let response = await this.royaltyOverride
         .connect(this.royaltyAccounts.anyone)
         .getRoyalties(this.tokenA.address, tokenIdProject0);
-      assertRoyaltiesResponse(
+      await assertRoyaltiesResponse(
         response,
         [
           this.royaltyAccounts.artist0.address,
@@ -387,7 +387,7 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
       response = await this.royaltyOverride
         .connect(this.royaltyAccounts.anyone)
         .getRoyalties(this.tokenA.address, tokenIdProject0);
-      assertRoyaltiesResponse(
+      await assertRoyaltiesResponse(
         response,
         [
           this.royaltyAccounts.artist0.address,
@@ -488,7 +488,7 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
       let response = await this.royaltyOverride
         .connect(this.royaltyAccounts.anyone)
         .getRoyalties(this.tokenB.address, tokenIdProject0);
-      assertRoyaltiesResponse(
+      await assertRoyaltiesResponse(
         response,
         [
           this.royaltyAccounts.artist0.address,
@@ -531,7 +531,7 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
       let response = await this.royaltyOverride
         .connect(this.royaltyAccounts.anyone)
         .getRoyalties(this.tokenA.address, tokenIdProject0);
-      assertRoyaltiesResponse(
+      await assertRoyaltiesResponse(
         response,
         [
           this.royaltyAccounts.artist0.address,
@@ -591,7 +591,7 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
       let response = await this.royaltyOverride
         .connect(this.royaltyAccounts.anyone)
         .getRoyalties(this.tokenA.address, tokenIdProject0);
-      assertRoyaltiesResponse(
+      await assertRoyaltiesResponse(
         response,
         [
           this.royaltyAccounts.artist0.address,
@@ -609,7 +609,7 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
       response = await this.royaltyOverride
         .connect(this.royaltyAccounts.anyone)
         .getRoyalties(this.tokenA.address, tokenIdProject0);
-      assertRoyaltiesResponse(
+      await assertRoyaltiesResponse(
         response,
         [
           this.royaltyAccounts.artist0.address,
@@ -630,7 +630,7 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
       let response = await this.royaltyOverride
         .connect(this.royaltyAccounts.anyone)
         .getRoyalties(this.tokenA.address, tokenIdProject0);
-      assertRoyaltiesResponse(
+      await assertRoyaltiesResponse(
         response,
         [
           this.royaltyAccounts.artist0.address,
@@ -648,7 +648,7 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
       response = await this.royaltyOverride
         .connect(this.royaltyAccounts.anyone)
         .getRoyalties(this.tokenA.address, tokenIdProject0);
-      assertRoyaltiesResponse(
+      await assertRoyaltiesResponse(
         response,
         [
           this.royaltyAccounts.artist0.address,
@@ -714,7 +714,7 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
       let response = await this.royaltyOverride
         .connect(this.royaltyAccounts.anyone)
         .getRoyalties(this.tokenA.address, tokenIdProject0);
-      assertRoyaltiesResponse(
+      await assertRoyaltiesResponse(
         response,
         [
           this.royaltyAccounts.artist0.address,
@@ -732,7 +732,7 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
       response = await this.royaltyOverride
         .connect(this.royaltyAccounts.anyone)
         .getRoyalties(this.tokenA.address, tokenIdProject0);
-      assertRoyaltiesResponse(
+      await assertRoyaltiesResponse(
         response,
         [
           this.royaltyAccounts.artist0.address,
@@ -753,7 +753,7 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
       let response = await this.royaltyOverride
         .connect(this.royaltyAccounts.anyone)
         .getRoyalties(this.tokenA.address, tokenIdProject0);
-      assertRoyaltiesResponse(
+      await assertRoyaltiesResponse(
         response,
         [
           this.royaltyAccounts.artist0.address,
@@ -771,7 +771,7 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
       response = await this.royaltyOverride
         .connect(this.royaltyAccounts.anyone)
         .getRoyalties(this.tokenA.address, tokenIdProject0);
-      assertRoyaltiesResponse(
+      await assertRoyaltiesResponse(
         response,
         [
           this.royaltyAccounts.artist0.address,
