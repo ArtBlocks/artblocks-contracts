@@ -18,21 +18,14 @@ jobs:
       - node/install-packages:
           pkg-manager: yarn
       - run: node --version
-      - run:
-          name: Compile
-          command: yarn compile
-      - save_cache:
-          paths:
-            - ~/artblocks-contracts
-          key: compiled-env-{{ .Environment.CIRCLE_SHA1 }}
   lint:
     docker:
       - image: "cimg/base:stable"
     resource_class: large
-    working_directory: ~/artblocks-contracts
     steps:
-      - restore_cache:
-          key: compiled-env-{{ .Environment.CIRCLE_SHA1 }}
+      - node/install:
+          install-yarn: true
+          lts: true
       - run:
           name: Lint
           command: yarn lint
@@ -41,13 +34,16 @@ jobs:
       - image: "cimg/base:stable"
     resource_class: large
     working_directory: ~/artblocks-contracts
+    parallelism: 5
     steps:
-      - restore_cache:
-          key: compiled-env-{{ .Environment.CIRCLE_SHA1 }}
-      - run: node --version
+      - node/install:
+          install-yarn: true
+          lts: true
       - run:
-          name: Run tests
-          command: yarn test
+          name: Hardhat Test
+          command: |
+            TEST_FILES="$(circleci tests glob "./test/**/*.spec.ts" | circleci tests split)"
+            yarn test ${TEST_FILES}
 
 workflows:
   run-ci:
