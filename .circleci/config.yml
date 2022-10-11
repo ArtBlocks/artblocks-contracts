@@ -17,20 +17,6 @@ jobs:
       - node/install-packages:
           pkg-manager: yarn
       - run: node --version
-  lint:
-    docker:
-      - image: "cimg/base:stable"
-    resource_class: large
-    steps:
-      - checkout
-      - node/install:
-          install-yarn: true
-          lts: true
-      - node/install-packages:
-          pkg-manager: yarn
-      - run:
-          name: Lint
-          command: yarn lint
   test:
     docker:
       - image: "cimg/base:stable"
@@ -46,16 +32,15 @@ jobs:
       - run:
           name: Hardhat Test
           command: |
-            TEST_FILES="$(circleci tests glob "./test/**/*.spec.ts" | circleci tests split)"
+            TEST_FILES="$(circleci tests glob "./test/**/*.test.ts" | circleci tests split)"
             yarn test ${TEST_FILES}
 
 workflows:
   run-ci:
     jobs:
       - checkout_and_compile
-      - lint:
-          requires:
-            - checkout_and_compile
+      - node/run:
+          yarn-run: lint
       - test:
           requires:
             - checkout_and_compile
