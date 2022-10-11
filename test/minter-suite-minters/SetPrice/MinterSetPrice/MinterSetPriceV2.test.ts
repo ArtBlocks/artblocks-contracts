@@ -137,15 +137,15 @@ describe("MinterSetPriceV2_V3Core", async function () {
   });
 
   describe("common MinterSetPrice (ETH) tests", async () => {
-    MinterSetPrice_ETH_Common();
+    await MinterSetPrice_ETH_Common();
   });
 
   describe("common MinterSetPrice V1V2 tests", async function () {
-    MinterSetPriceV1V2_Common();
+    await MinterSetPriceV1V2_Common();
   });
 
   describe("common MinterSetPrice V2 tests", async function () {
-    MinterSetPriceV2_Common();
+    await MinterSetPriceV2_Common();
   });
 
   describe("setProjectMaxInvocations", async function () {

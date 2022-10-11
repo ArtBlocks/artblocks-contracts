@@ -104,15 +104,15 @@ describe("MinterDALinV2_V3Core", async function () {
   });
 
   describe("common DALin tests", async () => {
-    MinterDALin_Common();
+    await MinterDALin_Common();
   });
 
   describe("common DA V1V2 tests", async function () {
-    MinterDAV1V2_Common();
+    await MinterDAV1V2_Common();
   });
 
   describe("common DA V2 tests", async function () {
-    MinterDAV2_Common();
+    await MinterDAV2_Common();
   });
 
   describe("setAuctionDetails", async function () {

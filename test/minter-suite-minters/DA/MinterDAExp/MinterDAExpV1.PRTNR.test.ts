@@ -55,7 +55,7 @@ describe("MinterDAExpV1_V1PRTNRCore", async function () {
       this.minterFilter.address,
     ]);
 
-    safeAddProject(
+    await safeAddProject(
       this.genArt721Core,
       this.accounts.deployer,
       this.accounts.artist.address
@@ -104,11 +104,11 @@ describe("MinterDAExpV1_V1PRTNRCore", async function () {
   });
 
   describe("common DAEXP tests", async function () {
-    MinterDAExp_Common();
+    await MinterDAExp_Common();
   });
 
   describe("common DA V1V2 tests", async function () {
-    MinterDAV1V2_Common();
+    await MinterDAV1V2_Common();
   });
 
   describe("calculate gas", async function () {

@@ -16,7 +16,7 @@ import { isCoreV3 } from "../../../util/common";
  */
 export const MinterSetPriceERC20V1V2_Common = async () => {
   describe("common MinterSetPrice V1V2 minter tests", async () => {
-    MinterSetPriceV1V2_Common();
+    await MinterSetPriceV1V2_Common();
   });
 
   describe("gnosis safe V1V2", async function () {
