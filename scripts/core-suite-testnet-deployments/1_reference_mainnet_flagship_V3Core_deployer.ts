@@ -32,9 +32,11 @@ const EXTRA_DELAY_BETWEEN_TX = 5000; // ms
 //////////////////////////////////////////////////////////////////////////////
 const tokenName = "Art Blocks";
 const tokenTicker = "BLOCKS";
-const superAdminAddress = ; // TODO: set to AB multisig
-const artblocksPrimarySalesAddress = ; // TODO: set to AB primary sales payment address (V1 core is 0xf7A55108A6E830a809e88e74cbf5f5DE9D930153)
-const artblocksSecondarySalesAddress = ; // TODO: set to AB secondary sales payment address (I think V1 royalty override is 0x05b0658C6D0eD423e39da60F8feDDd460d838F5f)
+const superAdminAddress = "0xCF00eC2B327BCfA2bee2D8A5Aee0A7671d08A283"; // Art Blocks contract-management multi-sig
+const artblocksPrimarySalesAddress =
+  "0xf7A55108A6E830a809e88e74cbf5f5DE9D930153";
+const artblocksSecondarySalesAddress =
+  "0x05b0658C6D0eD423e39da60F8feDDd460d838F5f";
 const startingProjectId = 374; // last project ID on V1 core is 373, confirmed by creative team
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG ENDS HERE
@@ -46,7 +48,7 @@ async function main() {
   const networkName = network.name == "homestead" ? "mainnet" : network.name;
   if (networkName != "mainnet") {
     throw new Error("This script is intended to be run on mainnet only");
-  };
+  }
   //////////////////////////////////////////////////////////////////////////////
   // DEPLOYMENT BEGINS HERE
   //////////////////////////////////////////////////////////////////////////////
