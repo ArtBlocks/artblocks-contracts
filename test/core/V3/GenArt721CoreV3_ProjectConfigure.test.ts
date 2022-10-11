@@ -683,6 +683,235 @@ describe("GenArt721CoreV3 Project Configure", async function () {
         "Must match artist proposal"
       );
     });
+
+    it("does not allow proposing payment to the zero address", async function () {
+      // update additional primary to zero address and non-zero percentage
+      let valuesToUpdateTo = [
+        this.projectZero,
+        this.accounts.artist2.address,
+        constants.ZERO_ADDRESS,
+        50,
+        this.accounts.additional2.address,
+        51,
+      ];
+      // artist proposes new values
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .proposeArtistPaymentAddressesAndSplits(...valuesToUpdateTo),
+        "Primary payee is zero address"
+      );
+      // update additional secondary to zero address and non-zero percentage
+      valuesToUpdateTo = [
+        this.projectZero,
+        this.accounts.artist2.address,
+        this.accounts.additional.address,
+        50,
+        constants.ZERO_ADDRESS,
+        51,
+      ];
+      // artist proposes new values
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.artist)
+          .proposeArtistPaymentAddressesAndSplits(...valuesToUpdateTo),
+        "Secondary payee is zero address"
+      );
+    });
+
+    it("automatically accepts when only percentages are changed", async function () {
+      // update additional primary to zero address and non-zero percentage
+      let valuesToUpdateTo = [
+        this.projectZero,
+        this.accounts.artist2.address,
+        this.accounts.additional.address,
+        50,
+        this.accounts.additional2.address,
+        51,
+      ];
+      // successful artist proposes new values
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .proposeArtistPaymentAddressesAndSplits(...valuesToUpdateTo);
+      // admin accept initial new values
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .adminAcceptArtistAddressesAndSplits(...this.valuesToUpdateTo);
+      // only change percentages
+      valuesToUpdateTo = [
+        valuesToUpdateTo[0],
+        valuesToUpdateTo[1],
+        valuesToUpdateTo[2],
+        90,
+        valuesToUpdateTo[4],
+        91,
+      ];
+      // artist proposes new values, is automatically accepted
+      expect(
+        await this.genArt721Core
+          .connect(this.accounts.artist2)
+          .proposeArtistPaymentAddressesAndSplits(...valuesToUpdateTo)
+      )
+        .to.emit(this.genArt721Core, "AcceptedArtistAddressesAndSplits")
+        .withArgs(this.projectZero);
+      // check that propose event was also emitted
+      expect(
+        await this.genArt721Core
+          .connect(this.accounts.artist2)
+          .proposeArtistPaymentAddressesAndSplits(...valuesToUpdateTo)
+      )
+        .to.emit(this.genArt721Core, "ProposedArtistAddressesAndSplits")
+        .withArgs(...valuesToUpdateTo);
+      // check that values were updated
+      expect(
+        await this.genArt721Core.projectIdToArtistAddress(this.projectZero)
+      ).to.equal(this.accounts.artist2.address);
+      expect(
+        await this.genArt721Core.projectIdToAdditionalPayeePrimarySales(
+          this.projectZero
+        )
+      ).to.equal(this.accounts.additional.address);
+      expect(
+        await this.genArt721Core.projectIdToAdditionalPayeeSecondarySales(
+          this.projectZero
+        )
+      ).to.equal(this.accounts.additional2.address);
+      expect(
+        await this.genArt721Core.projectIdToAdditionalPayeePrimarySalesPercentage(
+          this.projectZero
+        )
+      ).to.equal(90);
+      expect(
+        await this.genArt721Core.projectIdToAdditionalPayeeSecondarySalesPercentage(
+          this.projectZero
+        )
+      ).to.equal(91);
+    });
+
+    it("automatically accepts when only addresses are removed", async function () {
+      // update additional primary to zero address and non-zero percentage
+      let valuesToUpdateTo = [
+        this.projectZero,
+        this.accounts.artist2.address,
+        this.accounts.additional.address,
+        50,
+        this.accounts.additional2.address,
+        51,
+      ];
+      // successful artist proposes new values
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .proposeArtistPaymentAddressesAndSplits(...valuesToUpdateTo);
+      // admin accept initial new values
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .adminAcceptArtistAddressesAndSplits(...this.valuesToUpdateTo);
+      // only remove additional payees
+      valuesToUpdateTo = [
+        valuesToUpdateTo[0],
+        valuesToUpdateTo[1],
+        constants.ZERO_ADDRESS,
+        0,
+        constants.ZERO_ADDRESS,
+        0,
+      ];
+      // artist proposes new values, is automatically accepted
+      expect(
+        await this.genArt721Core
+          .connect(this.accounts.artist2)
+          .proposeArtistPaymentAddressesAndSplits(...valuesToUpdateTo)
+      )
+        .to.emit(this.genArt721Core, "AcceptedArtistAddressesAndSplits")
+        .withArgs(this.projectZero);
+      // check that propose event was also emitted
+      expect(
+        await this.genArt721Core
+          .connect(this.accounts.artist2)
+          .proposeArtistPaymentAddressesAndSplits(...valuesToUpdateTo)
+      )
+        .to.emit(this.genArt721Core, "ProposedArtistAddressesAndSplits")
+        .withArgs(...valuesToUpdateTo);
+      // check that values were updated
+      expect(
+        await this.genArt721Core.projectIdToArtistAddress(this.projectZero)
+      ).to.equal(this.accounts.artist2.address);
+      expect(
+        await this.genArt721Core.projectIdToAdditionalPayeePrimarySales(
+          this.projectZero
+        )
+      ).to.equal(constants.ZERO_ADDRESS);
+      expect(
+        await this.genArt721Core.projectIdToAdditionalPayeeSecondarySales(
+          this.projectZero
+        )
+      ).to.equal(constants.ZERO_ADDRESS);
+      expect(
+        await this.genArt721Core.projectIdToAdditionalPayeePrimarySalesPercentage(
+          this.projectZero
+        )
+      ).to.equal(0);
+      expect(
+        await this.genArt721Core.projectIdToAdditionalPayeeSecondarySalesPercentage(
+          this.projectZero
+        )
+      ).to.equal(0);
+    });
+
+    it("clears stale proposal hashes during auto-approval", async function () {
+      // update additional primary to zero address and non-zero percentage
+      let valuesToUpdateTo = [
+        this.projectZero,
+        this.accounts.artist2.address,
+        this.accounts.additional.address,
+        50,
+        this.accounts.additional2.address,
+        51,
+      ];
+      // successful artist proposes new values
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .proposeArtistPaymentAddressesAndSplits(...valuesToUpdateTo);
+      // admin accept initial new values
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .adminAcceptArtistAddressesAndSplits(...this.valuesToUpdateTo);
+      // propose a change that requires admin approval, hash stored on-chain
+      // change a payment address
+      valuesToUpdateTo = [
+        valuesToUpdateTo[0],
+        valuesToUpdateTo[1],
+        this.accounts.user.address,
+        90,
+        valuesToUpdateTo[4],
+        91,
+      ];
+      expect(
+        await this.genArt721Core
+          .connect(this.accounts.artist2)
+          .proposeArtistPaymentAddressesAndSplits(...valuesToUpdateTo)
+      )
+        .to.not.emit(this.genArt721Core, "AcceptedArtistAddressesAndSplits")
+        .withArgs(this.projectZero);
+      // artist changes to an auto-approved request (only percentages changed)
+      valuesToUpdateTo = [
+        valuesToUpdateTo[0],
+        valuesToUpdateTo[1],
+        this.accounts.additional.address, // back to current active additional primary
+        90,
+        valuesToUpdateTo[4],
+        91,
+      ];
+      // artist proposes new values, is automatically accepted
+      await this.genArt721Core
+        .connect(this.accounts.artist2)
+        .proposeArtistPaymentAddressesAndSplits(...valuesToUpdateTo);
+      // check that on-chain proposal hash is cleared after automatic approval
+      expect(
+        await this.genArt721Core.proposedArtistAddressesAndSplitsHash(
+          this.projectZero
+        )
+      ).to.equal(constants.ZERO_BYTES32);
+    });
   });
 
   describe("updateProjectSecondaryMarketRoyaltyPercentage", function () {
