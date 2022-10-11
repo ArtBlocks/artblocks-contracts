@@ -55,7 +55,8 @@ describe("GenArt721CoreV3 AminACL Requests", async function () {
     } = await deployCoreWithMinterFilter.call(
       this,
       "GenArt721CoreV3",
-      "MinterFilterV1"
+      "MinterFilterV1",
+      true
     ));
 
     this.minter = await deployAndGet.call(this, "MinterSetPriceV2", [
