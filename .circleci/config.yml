@@ -26,6 +26,8 @@ jobs:
       - node/install:
           install-yarn: true
           lts: true
+      - node/install-packages:
+          pkg-manager: yarn
       - run:
           name: Lint
           command: yarn lint
@@ -35,9 +37,12 @@ jobs:
     resource_class: large
     parallelism: 5
     steps:
+      - checkout
       - node/install:
           install-yarn: true
           lts: true
+      - node/install-packages:
+          pkg-manager: yarn
       - run:
           name: Hardhat Test
           command: |
