@@ -71,7 +71,7 @@ runForEach.forEach((params) => {
     });
 
     describe("common tests", async function () {
-      MinterFilterEvents_Common();
+      await MinterFilterEvents_Common();
     });
   });
 });

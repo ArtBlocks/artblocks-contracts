@@ -49,7 +49,7 @@ runForEach.forEach((params) => {
     });
 
     describe("common tests", async function () {
-      MinterFilterEnumeration_Common();
+      await MinterFilterEnumeration_Common();
     });
 
     describe("test specific to V1", async function () {

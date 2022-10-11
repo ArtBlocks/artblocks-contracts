@@ -105,15 +105,15 @@ describe("MinterDAExpV2_V3Core", async function () {
   });
 
   describe("common DAEXP tests", async function () {
-    MinterDAExp_Common();
+    await MinterDAExp_Common();
   });
 
   describe("common DA V1V2 tests", async function () {
-    MinterDAV1V2_Common();
+    await MinterDAV1V2_Common();
   });
 
   describe("common DA V2 tests", async function () {
-    MinterDAV2_Common();
+    await MinterDAV2_Common();
   });
 
   describe("setAuctionDetails", async function () {
