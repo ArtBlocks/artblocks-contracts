@@ -71,10 +71,10 @@ describe("GenArt721Minter", async function () {
       .connect(this.accounts.artist)
       .updateProjectMaxInvocations(this.projectOne, 15);
 
-    this.genArt721Core
+    await this.genArt721Core
       .connect(this.accounts.artist)
       .toggleProjectIsPaused(this.projectZero);
-    this.genArt721Core
+    await this.genArt721Core
       .connect(this.accounts.artist)
       .toggleProjectIsPaused(this.projectOne);
   });

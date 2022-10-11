@@ -148,8 +148,8 @@ describe("GenArt721CoreV3 Contract Configure", async function () {
         .connect(this.accounts.deployer)
         .forbidNewProjects();
       // update owner of core to null address, expect OwnershipTransferred event
-      expect(
-        await this.adminACL
+      await expect(
+        this.adminACL
           .connect(this.accounts.deployer)
           .renounceOwnershipOn(this.genArt721Core.address)
       )

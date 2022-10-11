@@ -747,16 +747,16 @@ describe("GenArt721CoreV3 Project Configure", async function () {
         91,
       ];
       // artist proposes new values, is automatically accepted
-      expect(
-        await this.genArt721Core
+      await expect(
+        this.genArt721Core
           .connect(this.accounts.artist2)
           .proposeArtistPaymentAddressesAndSplits(...valuesToUpdateTo)
       )
         .to.emit(this.genArt721Core, "AcceptedArtistAddressesAndSplits")
         .withArgs(this.projectZero);
       // check that propose event was also emitted
-      expect(
-        await this.genArt721Core
+      await expect(
+        this.genArt721Core
           .connect(this.accounts.artist2)
           .proposeArtistPaymentAddressesAndSplits(...valuesToUpdateTo)
       )
@@ -816,16 +816,16 @@ describe("GenArt721CoreV3 Project Configure", async function () {
         0,
       ];
       // artist proposes new values, is automatically accepted
-      expect(
-        await this.genArt721Core
+      await expect(
+        this.genArt721Core
           .connect(this.accounts.artist2)
           .proposeArtistPaymentAddressesAndSplits(...valuesToUpdateTo)
       )
         .to.emit(this.genArt721Core, "AcceptedArtistAddressesAndSplits")
         .withArgs(this.projectZero);
       // check that propose event was also emitted
-      expect(
-        await this.genArt721Core
+      await expect(
+        this.genArt721Core
           .connect(this.accounts.artist2)
           .proposeArtistPaymentAddressesAndSplits(...valuesToUpdateTo)
       )
@@ -885,8 +885,8 @@ describe("GenArt721CoreV3 Project Configure", async function () {
         valuesToUpdateTo[4],
         91,
       ];
-      expect(
-        await this.genArt721Core
+      await expect(
+        this.genArt721Core
           .connect(this.accounts.artist2)
           .proposeArtistPaymentAddressesAndSplits(...valuesToUpdateTo)
       )

@@ -50,6 +50,6 @@ describe("MinterFilterV0Events_V2PRTNRCore", async function () {
   });
 
   describe("common tests", async function () {
-    MinterFilterEvents_Common();
+    await MinterFilterEvents_Common();
   });
 });

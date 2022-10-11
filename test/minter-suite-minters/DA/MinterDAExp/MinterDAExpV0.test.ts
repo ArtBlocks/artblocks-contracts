@@ -109,7 +109,7 @@ describe("MinterDAExpV0_V1Core", async function () {
   });
 
   describe("common tests", async function () {
-    MinterDAExp_Common();
+    await MinterDAExp_Common();
   });
 
   describe("calculate gas", async function () {

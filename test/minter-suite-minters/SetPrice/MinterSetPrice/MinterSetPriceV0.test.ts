@@ -141,7 +141,7 @@ describe("MinterSetPriceV0_V1Core", async function () {
   });
 
   describe("common MinterSetPrice (ETH) tests", async () => {
-    MinterSetPrice_ETH_Common();
+    await MinterSetPrice_ETH_Common();
   });
 
   describe("calculates gas", async function () {
