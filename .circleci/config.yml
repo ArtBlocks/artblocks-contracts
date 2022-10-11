@@ -35,7 +35,7 @@ jobs:
           name: Hardhat Test
           command: |
             TEST_FILES="$(circleci tests glob "./test/**/*.ts" | circleci tests split)"
-            yarn test ${TEST_FILES}
+            yarn test:parallel ${TEST_FILES}
   lint-and-test:
     docker:
       - image: "cimg/base:stable"
