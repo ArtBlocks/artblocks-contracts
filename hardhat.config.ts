@@ -97,7 +97,18 @@ module.exports = {
   docgen: {
     path: "./docs",
     clear: true,
-    runOnCompile: true,
+    runOnCompile: false,
+    except: [
+      `^contracts/interfaces/0.5.x/`,
+      `^contracts/interfaces/0.8.x/IManifold.sol`,
+      `^contracts/interfaces/0.8.x/IBonusContract.sol`,
+      `^contracts/libs/0.5.x/`,
+      `^contracts/minter-suite/Minters/.*V0.sol`,
+      `^contracts/mock`,
+      `^contracts/PBAB\\+Collabs/.*/.*.sol`,
+      `^contracts/BasicRandomizer.sol`,
+      `^contracts/BasicRandomizerV2.sol`,
+    ],
   },
   gasReporter: {
     currency: "USD",
