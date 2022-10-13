@@ -4,6 +4,21 @@ _This document is intended to document and explain the Art Blocks Core V3 change
 
 ## The following changes were made in the Core V3 contract:
 
+- Improve gas efficiency of minting on the V3 core contract
+  - Derive from ERC721 instead of ERC721Enumerable
+  - Fork OpenZeppelin ERC721 implementation to pack token hash seed with owner address
+  - Minimize SLOAD operations & re-organize logic to minimize gas usage
+  - Pack project data by optimizing struct layout and variable types
+  - Pack project financial data by utilizing new struct and variable types
+  - Optimize mint function signature to reduce gas usage
+  - Utilize `unchecked{}` blocks where possible
+- Improve gas efficiency of V3-compatible minters
+  - Minimize costly SLOAD operations & re-organize logic to minimize gas usage
+  - Pack structs
+  - Optimize mint function signature to reduce gas usage
+  - Utilize `unchecked{}` blocks where possible
+- Improve gas efficiency of artist script uploading
+  - Update approach for script storage to use contracts-as-storage (as made widely known by sstore2 library) approach, using our newly introduced BytecodeStorage.sol library.
 - Force 1:1 relationship between core contract and minter filter
   - This is to ensure that the minter filter is always in sync with the core contract. Minter filters were developed after the V1 core contract was deployed.
 - Remove price and currency info from the core contract
@@ -29,7 +44,8 @@ _This document is intended to document and explain the Art Blocks Core V3 change
 - Follow propose/execute pattern for updates to artist payment accounts
   - Artists may propose updates to their artist, additional primary, and additional secondary payment accounts. These updates must be executed by the contract admin.
   - This is to ensure that artists remain in control of their payment accounts, but that the contract admin can step in to prevent non-compliant payment accounts from being used.
-  - If admin renounces ownership, artists can directly update their payment accounts.
+  - Automatic admin approval of proposed artist updates is implemented when an artist is not changing, or is only removing, their additional payee account(s).
+  - If admin renounces ownership, artists may directly update their payment accounts.
   - If admin has not renounced ownership, admin can directly update artist payment accounts in the event of a compromised or sanctioned artist account.
 - Only allow artist to update project description when project is unlocked; only allow admin to update project description when project is locked.
 - Add artist additionalPrimary and additionalSecondary payment accounts
@@ -43,7 +59,8 @@ _This document is intended to document and explain the Art Blocks Core V3 change
   - This is to allow for more flexible admin access control, and to allow for future admin access control changes without having to redeploy the core contract.
   - The core contract now does not distinguish between admin and whitelisted addresses. All admin access checks are delegated to the AdminACL contract.
 - Add public reference variables for prior Art Blocks flagship token addresses
-  - This helps define the relationship between the V3 core contract and the V1 and V2 core contracts
+  - This helps define the relationship between the V3 core contract and the V1 and V2 core contracts.
+- Add public reference variable for the V3 contract's `startingProjectId`.
 - Add public reference variables for the Art Blocks-managed Dependency and Curation registries
   - This helps more completely define, on-chain, the metadata and rendering dependencies of Art Blocks projects
 - Add events for all indexed platform and project state changes
@@ -54,17 +71,6 @@ _This document is intended to document and explain the Art Blocks Core V3 change
   - Placing splitter logic on core is preferred over creating something like a "common mint functions" external contract, because it avoids extra gas costs associated with EIP-2929 and calling cold addresses.
 - Update minters in minter suite to integrate with V3 core contract
   - A couple breaking changes were made on the V3 core contract that required changes to the minter suite contracts.
-- Improve gas efficiency of minting on the V3 core contract
-  - Derive from ERC721 instead of ERC721Enumerable
-  - Fork OpenZeppelin ERC721 implementation to pack token hash seed with owner address
-  - Minimize SLOAD operations & re-organize logic to minimize gas usage
-  - Pack project data by optimizing struct layout and variable types
-  - Pack project financial data by utilizing new struct and variable types
-  - Optimize mint function signature to reduce gas usage
-- Improve gas efficiency of V3-compatible minters
-  - Minimize costly SLOAD operations & re-organize logic to minimize gas usage
-  - Pack structs
-  - Optimize mint function signature to reduce gas usage
 - Update randomizer interface for V3 core contract
 - Only allow artists to reduce the number of maximum invocations
   - Remove any unnecessary minter logic accordingly
@@ -72,4 +78,7 @@ _This document is intended to document and explain the Art Blocks Core V3 change
   - This is to prevent the core contract from being used to mint new projects if Art Blocks ever changes to a new contract in the future.
 - Add new automatically-populated and admin-configurable `defaultBaseURI` field to V3 core contract
   - This is to have a default base URI for all **new** projects on the V3 core contract, and to allow the artist to update the base URI if needed.
-- Update approach for script storage to use contracts-as-storage (as made widely known by sstore2 library) approach, using newly introduced BytecodeStorage.sol library.
+- Improve data validation of function inputs
+  - This is to help ensure that the data stored on-chain is valid and is not accidentally invalid (e.g. an artist additional payee being set to the zero address, while also sending funds to the additional payee).
+- Improve natspec documentation, especially around privileged roles and functions
+- Achieve 100% test coverage of V3 core contract
