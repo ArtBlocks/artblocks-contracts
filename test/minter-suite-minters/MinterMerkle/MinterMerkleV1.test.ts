@@ -362,16 +362,6 @@ let fakeDelegationRegistry: FakeContract<IDelegationRegistry>
     });
   });
 
-// delegationRegistryContract should exist
-  // re-entrancy attack -- is this a concern with an external address? look at .common.ts
-
-  // call purchaseTo() with a delegate address --> check that token was sent to delegate AND token is not in msg.sender
-  // call purchaseTo() with NO delegate address --> check that token is in msg.sender and no token was sent to delegate
-
-  // fails with proof derived from msg.sender
-  // succeeds with proof derived from vault
-
-
   // delegation tests
   describe("Delegation Registry with a vault delegate", async function () {
     // mock delegate.cash Delegation Registry
@@ -394,6 +384,58 @@ let fakeDelegationRegistry: FakeContract<IDelegationRegistry>
             value: this.pricePerTokenInWei,
           }
         );
+    });
+
+    it("does not allow purchaseTo with an incorrect proof", async function () {
+      const userVault = this.accounts.additional2.address;
+
+      const userMerkleProofOne = this.merkleTreeOne.getHexProof(
+        hashAddress(this.accounts.user.address)
+      );
+
+      await expectRevert(this.minter
+        .connect(this.accounts.user)
+        ["purchaseTo(address,uint256,bytes32[],address)"](
+          userVault,
+          this.projectOne,
+          userMerkleProofOne,
+          userVault,  //  the allowlisted address
+          {
+            value: this.pricePerTokenInWei,
+          }
+        ), "Invalid Merkle proof")
+    });
+
+    it("vault cannot exceed mint limit", async function () {
+      const userVault = this.accounts.additional2.address;
+
+      const userMerkleProofOne = this.merkleTreeOne.getHexProof(
+        hashAddress(userVault)
+      );
+
+      await this.minter
+      .connect(this.accounts.user)
+      ["purchaseTo(address,uint256,bytes32[],address)"](
+        userVault,
+        this.projectOne,
+        userMerkleProofOne,
+        userVault,  //  the allowlisted address
+        {
+          value: this.pricePerTokenInWei,
+        }
+      );
+
+      await expectRevert(this.minter
+        .connect(this.accounts.user)
+        ["purchaseTo(address,uint256,bytes32[],address)"](
+          userVault,
+          this.projectOne,
+          userMerkleProofOne,
+          userVault,  //  the allowlisted address
+          {
+            value: this.pricePerTokenInWei,
+          }
+        ), "Maximum number of invocations per address reached")
     });
 
   });
