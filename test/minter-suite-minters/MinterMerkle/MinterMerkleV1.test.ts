@@ -1,6 +1,6 @@
 const { MerkleTree } = require("merkletreejs");
 const keccak256 = require("keccak256");
-import { expect } from "chai";
+import chai, { expect } from "chai";
 import { ethers } from "hardhat";
 import { Logger } from "@ethersproject/logger";
 import { constants, expectRevert } from "@openzeppelin/test-helpers";
@@ -17,12 +17,18 @@ import {
 } from "../../util/common";
 
 import { MinterMerkle_Common, hashAddress } from "./MinterMerkle.common";
+import {smock, FakeContract} from "@defi-wonderland/smock";
+import { IDelegationRegistry } from "../../../scripts/contracts";
+
+chai.use(smock.matchers);
 
 /**
  * These tests intended to ensure Filtered Minter integrates properly with V3
  * core contract.
  */
 describe("MinterMerkleV1", async function () {
+let fakeDelegationRegistry: FakeContract<IDelegationRegistry>
+
   beforeEach(async function () {
     // standard accounts and constants
     this.accounts = await getAccounts();
@@ -125,7 +131,7 @@ describe("MinterMerkleV1", async function () {
       this.accounts.user.address,
       this.accounts.user2.address
     );
-    elementsProjectOne.push(this.accounts.user.address);
+    elementsProjectOne.push(this.accounts.user.address, this.accounts.additional2.address);
     elementsProjectTwo.push(this.accounts.additional.address);
 
     // build Merkle trees for projects zero, one, and two
@@ -165,6 +171,11 @@ describe("MinterMerkleV1", async function () {
     // mock ERC20 genArt721Core
     const ERC20Factory = await ethers.getContractFactory("ERC20Mock");
     this.ERC20Mock = await ERC20Factory.deploy(ethers.utils.parseEther("100"));
+
+    fakeDelegationRegistry = await smock.fake('IDelegationRegistry', {
+      address: '0x00000000000076A84feF008CDAbe6409d2FE638B'
+    });
+    fakeDelegationRegistry.checkDelegateForContract.returns(true);
   });
 
   describe("common MinterMerkle tests", async () => {
@@ -350,6 +361,66 @@ describe("MinterMerkleV1", async function () {
         });
     });
   });
+
+// delegationRegistryContract should exist
+  // re-entrancy attack -- is this a concern with an external address? look at .common.ts
+
+  // call purchaseTo() with a delegate address --> check that token was sent to delegate AND token is not in msg.sender
+  // call purchaseTo() with NO delegate address --> check that token is in msg.sender and no token was sent to delegate
+
+  // fails with proof derived from msg.sender
+  // succeeds with proof derived from vault
+
+
+  // delegation tests
+  describe("Delegation Registry with a vault delegate", async function () {
+    // mock delegate.cash Delegation Registry
+
+    it("does allow purchaseTo with a vault delegate", async function () {
+      const userVault = this.accounts.additional2.address;
+
+      const userMerkleProofOne = this.merkleTreeOne.getHexProof(
+        hashAddress(userVault)
+      );
+
+      await this.minter
+        .connect(this.accounts.user)
+        ["purchaseTo(address,uint256,bytes32[],address)"](
+          userVault,
+          this.projectOne,
+          userMerkleProofOne,
+          userVault,  //  the allowlisted address
+          {
+            value: this.pricePerTokenInWei,
+          }
+        );
+    });
+
+  });
+
+  describe("Delegation Registry -- invalid vault delegate", async function () {
+    it("does NOT allow purchaseTo with a vault delegate", async function () {
+      fakeDelegationRegistry.checkDelegateForContract.returns(false);
+
+      const userVault = this.accounts.additional2.address;
+
+      const userMerkleProofOne = this.merkleTreeOne.getHexProof(
+        hashAddress(userVault)
+      );
+
+      await expectRevert(this.minter
+        .connect(this.accounts.user)
+        ["purchaseTo(address,uint256,bytes32[],address)"](
+          userVault,
+          this.projectOne,
+          userMerkleProofOne,
+          userVault,  //  the allowlisted address
+          {
+            value: this.pricePerTokenInWei,
+          }
+        ), "Invalid delegate-vault pairing")
+    });
+  })
 
   describe("calculates gas", async function () {
     it("mints and calculates gas values [ @skip-on-coverage ]", async function () {
