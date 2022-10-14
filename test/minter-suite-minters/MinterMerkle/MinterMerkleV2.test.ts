@@ -3,7 +3,7 @@ const keccak256 = require("keccak256");
 import chai, { expect } from "chai";
 import { ethers } from "hardhat";
 import { Logger } from "@ethersproject/logger";
-import { constants, expectRevert } from "@openzeppelin/test-helpers";
+import { expectRevert } from "@openzeppelin/test-helpers";
 // hide nuisance logs about event overloading
 Logger.setLogLevel(Logger.levels.ERROR);
 
@@ -17,7 +17,7 @@ import {
 } from "../../util/common";
 
 import { MinterMerkle_Common, hashAddress } from "./MinterMerkle.common";
-import {smock, FakeContract} from "@defi-wonderland/smock";
+import { smock, FakeContract } from "@defi-wonderland/smock";
 import { IDelegationRegistry } from "../../../scripts/contracts";
 
 chai.use(smock.matchers);
@@ -26,8 +26,8 @@ chai.use(smock.matchers);
  * These tests intended to ensure Filtered Minter integrates properly with V3
  * core contract.
  */
-describe("MinterMerkleV1", async function () {
-let fakeDelegationRegistry: FakeContract<IDelegationRegistry>
+describe("MinterMerkleV2", async function () {
+  let fakeDelegationRegistry: FakeContract<IDelegationRegistry>;
 
   beforeEach(async function () {
     // standard accounts and constants
@@ -47,7 +47,7 @@ let fakeDelegationRegistry: FakeContract<IDelegationRegistry>
       "MinterFilterV1"
     ));
 
-    this.minter = await deployAndGet.call(this, "MinterMerkleV1", [
+    this.minter = await deployAndGet.call(this, "MinterMerkleV2", [
       this.genArt721Core.address,
       this.minterFilter.address,
     ]);
@@ -131,7 +131,10 @@ let fakeDelegationRegistry: FakeContract<IDelegationRegistry>
       this.accounts.user.address,
       this.accounts.user2.address
     );
-    elementsProjectOne.push(this.accounts.user.address, this.accounts.additional2.address);
+    elementsProjectOne.push(
+      this.accounts.user.address,
+      this.accounts.additional2.address
+    );
     elementsProjectTwo.push(this.accounts.additional.address);
 
     // build Merkle trees for projects zero, one, and two
@@ -172,8 +175,8 @@ let fakeDelegationRegistry: FakeContract<IDelegationRegistry>
     const ERC20Factory = await ethers.getContractFactory("ERC20Mock");
     this.ERC20Mock = await ERC20Factory.deploy(ethers.utils.parseEther("100"));
 
-    fakeDelegationRegistry = await smock.fake('IDelegationRegistry', {
-      address: '0x00000000000076A84feF008CDAbe6409d2FE638B'
+    fakeDelegationRegistry = await smock.fake("IDelegationRegistry", {
+      address: "0x00000000000076A84feF008CDAbe6409d2FE638B",
     });
     fakeDelegationRegistry.checkDelegateForContract.returns(true);
   });
@@ -362,11 +365,8 @@ let fakeDelegationRegistry: FakeContract<IDelegationRegistry>
     });
   });
 
-  // delegation tests
-  describe("Delegation Registry with a vault delegate", async function () {
-    // mock delegate.cash Delegation Registry
-
-    it("does allow purchaseTo with a vault delegate", async function () {
+  describe("purchaseTo_kem with a VALID vault delegate", async function () {
+    it("does allow purchases", async function () {
       const userVault = this.accounts.additional2.address;
 
       const userMerkleProofOne = this.merkleTreeOne.getHexProof(
@@ -379,31 +379,52 @@ let fakeDelegationRegistry: FakeContract<IDelegationRegistry>
           userVault,
           this.projectOne,
           userMerkleProofOne,
-          userVault,  //  the allowlisted address
+          userVault, //  the allowlisted address
           {
             value: this.pricePerTokenInWei,
           }
         );
     });
 
-    it("does not allow purchaseTo with an incorrect proof", async function () {
+    it("allows purchases to vault if msg.sender is allowlisted and no vault is provided", async function () {
+      const userVault = this.accounts.additional2.address;
+
+      const userMerkleProofOne = this.merkleTreeOne.getHexProof(
+        hashAddress(this.accounts.user.address)
+      );
+      await this.minter
+        .connect(this.accounts.user)
+        ["purchaseTo(address,uint256,bytes32[])"](
+          userVault,
+          this.projectOne,
+          userMerkleProofOne,
+          {
+            value: this.pricePerTokenInWei,
+          }
+        );
+    });
+
+    it("does not allow purchases with an incorrect proof", async function () {
       const userVault = this.accounts.additional2.address;
 
       const userMerkleProofOne = this.merkleTreeOne.getHexProof(
         hashAddress(this.accounts.user.address)
       );
 
-      await expectRevert(this.minter
-        .connect(this.accounts.user)
-        ["purchaseTo(address,uint256,bytes32[],address)"](
-          userVault,
-          this.projectOne,
-          userMerkleProofOne,
-          userVault,  //  the allowlisted address
-          {
-            value: this.pricePerTokenInWei,
-          }
-        ), "Invalid Merkle proof")
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.user)
+          ["purchaseTo(address,uint256,bytes32[],address)"](
+            userVault,
+            this.projectOne,
+            userMerkleProofOne,
+            userVault, //  the allowlisted address
+            {
+              value: this.pricePerTokenInWei,
+            }
+          ),
+        "Invalid Merkle proof"
+      );
     });
 
     it("vault cannot exceed mint limit", async function () {
@@ -414,34 +435,36 @@ let fakeDelegationRegistry: FakeContract<IDelegationRegistry>
       );
 
       await this.minter
-      .connect(this.accounts.user)
-      ["purchaseTo(address,uint256,bytes32[],address)"](
-        userVault,
-        this.projectOne,
-        userMerkleProofOne,
-        userVault,  //  the allowlisted address
-        {
-          value: this.pricePerTokenInWei,
-        }
-      );
-
-      await expectRevert(this.minter
         .connect(this.accounts.user)
         ["purchaseTo(address,uint256,bytes32[],address)"](
           userVault,
           this.projectOne,
           userMerkleProofOne,
-          userVault,  //  the allowlisted address
+          userVault, //  the allowlisted address
           {
             value: this.pricePerTokenInWei,
           }
-        ), "Maximum number of invocations per address reached")
-    });
+        );
 
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.user)
+          ["purchaseTo(address,uint256,bytes32[],address)"](
+            userVault,
+            this.projectOne,
+            userMerkleProofOne,
+            userVault, //  the allowlisted address
+            {
+              value: this.pricePerTokenInWei,
+            }
+          ),
+        "Maximum number of invocations per address reached"
+      );
+    });
   });
 
-  describe("Delegation Registry -- invalid vault delegate", async function () {
-    it("does NOT allow purchaseTo with a vault delegate", async function () {
+  describe("purchaseTo_kem with an INVALID vault delegate", async function () {
+    it("does NOT allow purchases", async function () {
       fakeDelegationRegistry.checkDelegateForContract.returns(false);
 
       const userVault = this.accounts.additional2.address;
@@ -450,19 +473,22 @@ let fakeDelegationRegistry: FakeContract<IDelegationRegistry>
         hashAddress(userVault)
       );
 
-      await expectRevert(this.minter
-        .connect(this.accounts.user)
-        ["purchaseTo(address,uint256,bytes32[],address)"](
-          userVault,
-          this.projectOne,
-          userMerkleProofOne,
-          userVault,  //  the allowlisted address
-          {
-            value: this.pricePerTokenInWei,
-          }
-        ), "Invalid delegate-vault pairing")
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.user)
+          ["purchaseTo(address,uint256,bytes32[],address)"](
+            userVault,
+            this.projectOne,
+            userMerkleProofOne,
+            userVault, //  the allowlisted address
+            {
+              value: this.pricePerTokenInWei,
+            }
+          ),
+        "Invalid delegate-vault pairing"
+      );
     });
-  })
+  });
 
   describe("calculates gas", async function () {
     it("mints and calculates gas values [ @skip-on-coverage ]", async function () {

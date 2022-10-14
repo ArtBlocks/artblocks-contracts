@@ -33,7 +33,7 @@ pragma solidity 0.8.17;
  * Additional admin and artist privileged roles may be described on other
  * contracts that this minter integrates with.
  */
-contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
+contract MinterMerkleV2 is ReentrancyGuard, IFilteredMinterMerkleV0 {
     using MerkleProof for bytes32[];
 
     /// Delegation registry address
@@ -56,7 +56,7 @@ contract MinterMerkleV1 is ReentrancyGuard, IFilteredMinterMerkleV0 {
     IMinterFilterV0 private immutable minterFilter;
 
     /// minterType for this minter
-    string public constant minterType = "MinterMerkleV1";
+    string public constant minterType = "MinterMerkleV2";
 
     /// project minter configuration keys used by this minter
     bytes32 private constant CONFIG_MERKLE_ROOT = "merkleRoot";

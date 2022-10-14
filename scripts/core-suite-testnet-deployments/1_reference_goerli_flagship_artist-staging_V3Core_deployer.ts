@@ -12,7 +12,7 @@ import { MinterSetPriceV2__factory } from "../contracts/factories/MinterSetPrice
 import { MinterSetPriceERC20V2__factory } from "../contracts/factories/MinterSetPriceERC20V2__factory";
 import { MinterDALinV2__factory } from "../contracts/factories/MinterDALinV2__factory";
 import { MinterDAExpV2__factory } from "../contracts/factories/MinterDAExpV2__factory";
-import { MinterMerkleV1__factory } from "../contracts/factories/MinterMerkleV1__factory";
+import { MinterMerkleV2__factory } from "../contracts/factories/MinterMerkleV2__factory";
 import { MinterHolderV1__factory } from "../contracts/factories/MinterHolderV1__factory";
 
 // delay to avoid issues with reorgs and tx failures
@@ -121,7 +121,7 @@ async function main() {
   await minterDAExp.deployed();
   console.log(`Minter DA Exp V2 deployed at ${minterDAExp.address}`);
   // Merkle V1
-  const MinterMerkle__factory = new MinterMerkleV1__factory(deployer);
+  const MinterMerkle__factory = new MinterMerkleV2__factory(deployer);
   const minterMerkle = await MinterMerkle__factory.deploy(
     genArt721Core.address,
     minterFilter.address
