@@ -127,7 +127,7 @@ async function main() {
     minterFilter.address
   );
   await minterMerkle.deployed();
-  console.log(`Minter Merkle V1 deployed at ${minterMerkle.address}`);
+  console.log(`Minter Merkle V2 deployed at ${minterMerkle.address}`);
   // Holder V1
   const MinterHolder__factory = new MinterHolderV1__factory(deployer);
   const minterHolder = await MinterHolder__factory.deploy(
