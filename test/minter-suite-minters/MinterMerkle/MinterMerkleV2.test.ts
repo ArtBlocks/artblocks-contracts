@@ -175,10 +175,10 @@ describe("MinterMerkleV2", async function () {
     const ERC20Factory = await ethers.getContractFactory("ERC20Mock");
     this.ERC20Mock = await ERC20Factory.deploy(ethers.utils.parseEther("100"));
 
+    // mock delegate.cash registry with Goerli/mainnet-deployed address
     fakeDelegationRegistry = await smock.fake("IDelegationRegistry", {
       address: "0x00000000000076A84feF008CDAbe6409d2FE638B",
     });
-    fakeDelegationRegistry.checkDelegateForContract.returns(true);
   });
 
   describe("common MinterMerkle tests", async () => {
@@ -367,6 +367,8 @@ describe("MinterMerkleV2", async function () {
 
   describe("purchaseTo_kem with a VALID vault delegate", async function () {
     it("does allow purchases", async function () {
+      fakeDelegationRegistry.checkDelegateForContract.returns(true);
+
       const userVault = this.accounts.additional2.address;
 
       const userMerkleProofOne = this.merkleTreeOne.getHexProof(
@@ -387,6 +389,8 @@ describe("MinterMerkleV2", async function () {
     });
 
     it("allows purchases to vault if msg.sender is allowlisted and no vault is provided", async function () {
+      fakeDelegationRegistry.checkDelegateForContract.returns(true);
+
       const userVault = this.accounts.additional2.address;
 
       const userMerkleProofOne = this.merkleTreeOne.getHexProof(
@@ -405,6 +409,8 @@ describe("MinterMerkleV2", async function () {
     });
 
     it("does not allow purchases with an incorrect proof", async function () {
+      fakeDelegationRegistry.checkDelegateForContract.returns(true);
+
       const userVault = this.accounts.additional2.address;
 
       const userMerkleProofOne = this.merkleTreeOne.getHexProof(
@@ -428,6 +434,8 @@ describe("MinterMerkleV2", async function () {
     });
 
     it("vault cannot exceed mint limit", async function () {
+      fakeDelegationRegistry.checkDelegateForContract.returns(true);
+
       const userVault = this.accounts.additional2.address;
 
       const userMerkleProofOne = this.merkleTreeOne.getHexProof(
