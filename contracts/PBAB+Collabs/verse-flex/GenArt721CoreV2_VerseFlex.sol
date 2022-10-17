@@ -174,6 +174,68 @@ contract GenArt721CoreV2_VerseFlex is ERC721, IGenArt721CoreV2_PBAB {
      * @param _to Address to be the minted token's owner.
      * @param _projectId Project ID to mint a token on.
      * @param _by Purchaser of minted token.
+     * @param _hash Token hash.
+     * @dev sender must be a whitelisted minter
+     */
+    function mintWithHash(
+        address _to,
+        uint256 _projectId,
+        address _by,
+        bytes32 _hash,
+    ) external returns (uint256 _tokenId) {
+        require(
+            isMintWhitelisted[msg.sender],
+            "Must mint from whitelisted minter contract."
+        );
+        require(
+            projects[_projectId].invocations + 1 <=
+                projects[_projectId].maxInvocations,
+            "Must not exceed max invocations"
+        );
+        require(
+            projects[_projectId].active ||
+                _by == projectIdToArtistAddress[_projectId],
+            "Project must exist and be active"
+        );
+        require(
+            !projects[_projectId].paused ||
+                _by == projectIdToArtistAddress[_projectId],
+            "Purchases are paused."
+        );
+
+        uint256 tokenId = _mintTokenWithHash(_to, _projectId, _hash);
+
+        return tokenId;
+    }
+
+    function _mintTokenWithHash(
+        address _to,
+        uint256 _projectId,
+        bytes32 _hash
+    ) internal returns (uint256 _tokenId) {
+        uint256 tokenIdToBe = (_projectId * ONE_MILLION) +
+            projects[_projectId].invocations;
+
+        projects[_projectId].invocations = projects[_projectId].invocations + 1;
+
+        tokenIdToHash[tokenIdToBe] = _hash;
+        hashToTokenId[_hash] = tokenIdToBe;
+
+        _mint(_to, tokenIdToBe);
+
+        tokenIdToProjectId[tokenIdToBe] = _projectId;
+
+        emit Mint(_to, tokenIdToBe, _projectId);
+
+        return tokenIdToBe;
+    }
+
+    /**
+     * @notice Mints a token from project `_projectId` and sets the
+     * token's owner to `_to`.
+     * @param _to Address to be the minted token's owner.
+     * @param _projectId Project ID to mint a token on.
+     * @param _by Purchaser of minted token.
      * @dev sender must be a whitelisted minter
      */
     function mint(
