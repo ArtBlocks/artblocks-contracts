@@ -181,8 +181,8 @@ contract GenArt721CoreV2_VerseFlex is ERC721, IGenArt721CoreV2_PBAB {
         address _to,
         uint256 _projectId,
         address _by,
-        bytes32 _hash,
-    ) external returns (uint256 _tokenId) {
+        bytes32 _hash
+    ) public returns (uint256 _tokenId) {
         require(
             isMintWhitelisted[msg.sender],
             "Must mint from whitelisted minter contract."
@@ -228,6 +228,35 @@ contract GenArt721CoreV2_VerseFlex is ERC721, IGenArt721CoreV2_PBAB {
         emit Mint(_to, tokenIdToBe, _projectId);
 
         return tokenIdToBe;
+    }
+
+    /**
+     * @notice Mints a batch of tokens from project `_projectId[i]` and sets the
+     * token's owner to `_to[i]`.
+     * @param _to array of Addresses to be the minted token's owner.
+     * @param _projectId array of Project IDs to mint a tokens on.
+     * @param _by array of Purchasers of minted token.
+     * @param _hash array of Token hashes.
+     * @dev sender must be a whitelisted minter
+     */
+    function mintBatchWithHash(
+        address[] memory _to,
+        uint256[] memory _projectId,
+        address[] memory _by,
+        bytes32[] memory _hash
+    ) external {
+        require(
+            _to.length == _projectId.length,
+            "_projectId array length missmatch."
+        );
+
+        require(_to.length == _by.length, "_by array length missmatch.");
+
+        require(_to.length == _hash.length, "_hash array length missmatch.");
+
+        for (uint256 i; i < _to.length; i++) {
+            mintWithHash(_to[i], _projectId[i], _by[i], _hash[i]);
+        }
     }
 
     /**
