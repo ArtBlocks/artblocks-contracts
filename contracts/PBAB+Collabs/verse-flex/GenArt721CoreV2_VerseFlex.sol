@@ -108,9 +108,6 @@ contract GenArt721CoreV2_VerseFlex is ERC721, IGenArt721CoreV2_PBAB {
     /// next project ID to be created
     uint256 public nextProjectId = 0;
 
-    /// verse authorised minter address
-    address public verseMinter;
-
     modifier onlyValidTokenId(uint256 _tokenId) {
         require(_exists(_tokenId), "Token ID does not exist");
         _;
