@@ -1,9 +1,9 @@
 const { MerkleTree } = require("merkletreejs");
 const keccak256 = require("keccak256");
-import { expect } from "chai";
+import chai, { expect } from "chai";
 import { ethers } from "hardhat";
 import { Logger } from "@ethersproject/logger";
-import { constants, expectRevert } from "@openzeppelin/test-helpers";
+import { expectRevert } from "@openzeppelin/test-helpers";
 // hide nuisance logs about event overloading
 Logger.setLogLevel(Logger.levels.ERROR);
 
@@ -17,12 +17,18 @@ import {
 } from "../../util/common";
 
 import { MinterMerkle_Common, hashAddress } from "./MinterMerkle.common";
+import { smock, FakeContract } from "@defi-wonderland/smock";
+import { IDelegationRegistry } from "../../../scripts/contracts";
+
+chai.use(smock.matchers);
 
 /**
  * These tests intended to ensure Filtered Minter integrates properly with V3
  * core contract.
  */
-describe("MinterMerkleV1", async function () {
+describe("MinterMerkleV2", async function () {
+  let fakeDelegationRegistry: FakeContract<IDelegationRegistry>;
+
   beforeEach(async function () {
     // standard accounts and constants
     this.accounts = await getAccounts();
@@ -41,7 +47,7 @@ describe("MinterMerkleV1", async function () {
       "MinterFilterV1"
     ));
 
-    this.minter = await deployAndGet.call(this, "MinterMerkleV1", [
+    this.minter = await deployAndGet.call(this, "MinterMerkleV2", [
       this.genArt721Core.address,
       this.minterFilter.address,
     ]);
@@ -125,7 +131,10 @@ describe("MinterMerkleV1", async function () {
       this.accounts.user.address,
       this.accounts.user2.address
     );
-    elementsProjectOne.push(this.accounts.user.address);
+    elementsProjectOne.push(
+      this.accounts.user.address,
+      this.accounts.additional2.address
+    );
     elementsProjectTwo.push(this.accounts.additional.address);
 
     // build Merkle trees for projects zero, one, and two
@@ -165,6 +174,11 @@ describe("MinterMerkleV1", async function () {
     // mock ERC20 genArt721Core
     const ERC20Factory = await ethers.getContractFactory("ERC20Mock");
     this.ERC20Mock = await ERC20Factory.deploy(ethers.utils.parseEther("100"));
+
+    // mock delegate.cash registry with Goerli/mainnet-deployed address
+    fakeDelegationRegistry = await smock.fake("IDelegationRegistry", {
+      address: "0x00000000000076A84feF008CDAbe6409d2FE638B",
+    });
   });
 
   describe("common MinterMerkle tests", async () => {
@@ -348,6 +362,139 @@ describe("MinterMerkleV1", async function () {
         ["purchase(uint256,bytes32[])"](this.projectOne, userMerkleProofOne, {
           value: this.pricePerTokenInWei,
         });
+    });
+  });
+
+  describe("purchaseTo_kem with a VALID vault delegate", async function () {
+    it("does allow purchases", async function () {
+      fakeDelegationRegistry.checkDelegateForContract.returns(true);
+
+      const userVault = this.accounts.additional2.address;
+
+      const userMerkleProofOne = this.merkleTreeOne.getHexProof(
+        hashAddress(userVault)
+      );
+
+      await this.minter
+        .connect(this.accounts.user)
+        ["purchaseTo(address,uint256,bytes32[],address)"](
+          userVault,
+          this.projectOne,
+          userMerkleProofOne,
+          userVault, //  the allowlisted address
+          {
+            value: this.pricePerTokenInWei,
+          }
+        );
+    });
+
+    it("allows purchases to vault if msg.sender is allowlisted and no vault is provided", async function () {
+      fakeDelegationRegistry.checkDelegateForContract.returns(true);
+
+      const userVault = this.accounts.additional2.address;
+
+      const userMerkleProofOne = this.merkleTreeOne.getHexProof(
+        hashAddress(this.accounts.user.address)
+      );
+      await this.minter
+        .connect(this.accounts.user)
+        ["purchaseTo(address,uint256,bytes32[])"](
+          userVault,
+          this.projectOne,
+          userMerkleProofOne,
+          {
+            value: this.pricePerTokenInWei,
+          }
+        );
+    });
+
+    it("does not allow purchases with an incorrect proof", async function () {
+      fakeDelegationRegistry.checkDelegateForContract.returns(true);
+
+      const userVault = this.accounts.additional2.address;
+
+      const userMerkleProofOne = this.merkleTreeOne.getHexProof(
+        hashAddress(this.accounts.user.address)
+      );
+
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.user)
+          ["purchaseTo(address,uint256,bytes32[],address)"](
+            userVault,
+            this.projectOne,
+            userMerkleProofOne,
+            userVault, //  the allowlisted address
+            {
+              value: this.pricePerTokenInWei,
+            }
+          ),
+        "Invalid Merkle proof"
+      );
+    });
+
+    it("vault cannot exceed mint limit", async function () {
+      fakeDelegationRegistry.checkDelegateForContract.returns(true);
+
+      const userVault = this.accounts.additional2.address;
+
+      const userMerkleProofOne = this.merkleTreeOne.getHexProof(
+        hashAddress(userVault)
+      );
+
+      await this.minter
+        .connect(this.accounts.user)
+        ["purchaseTo(address,uint256,bytes32[],address)"](
+          userVault,
+          this.projectOne,
+          userMerkleProofOne,
+          userVault, //  the allowlisted address
+          {
+            value: this.pricePerTokenInWei,
+          }
+        );
+
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.user)
+          ["purchaseTo(address,uint256,bytes32[],address)"](
+            userVault,
+            this.projectOne,
+            userMerkleProofOne,
+            userVault, //  the allowlisted address
+            {
+              value: this.pricePerTokenInWei,
+            }
+          ),
+        "Maximum number of invocations per address reached"
+      );
+    });
+  });
+
+  describe("purchaseTo_kem with an INVALID vault delegate", async function () {
+    it("does NOT allow purchases", async function () {
+      fakeDelegationRegistry.checkDelegateForContract.returns(false);
+
+      const userVault = this.accounts.additional2.address;
+
+      const userMerkleProofOne = this.merkleTreeOne.getHexProof(
+        hashAddress(userVault)
+      );
+
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.user)
+          ["purchaseTo(address,uint256,bytes32[],address)"](
+            userVault,
+            this.projectOne,
+            userMerkleProofOne,
+            userVault, //  the allowlisted address
+            {
+              value: this.pricePerTokenInWei,
+            }
+          ),
+        "Invalid delegate-vault pairing"
+      );
     });
   });
 
