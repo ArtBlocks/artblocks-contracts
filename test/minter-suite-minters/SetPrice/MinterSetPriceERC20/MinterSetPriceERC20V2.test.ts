@@ -161,7 +161,7 @@ describe("MinterSetPriceERC20V2_V3Core", async function () {
       );
       await expectRevert(
         this.minter.connect(this.accounts.user).purchase(this.projectZero),
-        "Insufficient Funds Approved for TX"
+        "insufficient funds for intrinsic transaction cost"
       );
     });
 
