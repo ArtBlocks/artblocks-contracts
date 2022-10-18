@@ -13,6 +13,8 @@ pragma solidity 0.8.9;
  * @title Art Blocks Engine ERC-721 core contract with FLEX integration.
  * Allows for projects to specify external asset dependencies from either IPFS or ARWEAVE.
  * @author Art Blocks Inc.
+ * @dev Contracts is aimed to be used in one of two modes. First mode is standard AB approach
+ * together with the minter contract. Second mode is to be used with centralised minter.
  */
 contract GenArt721CoreV2_VerseFlex is ERC721, IGenArt721CoreV2_PBAB {
     /// randomizer contract
@@ -166,6 +168,97 @@ contract GenArt721CoreV2_VerseFlex is ERC721, IGenArt721CoreV2_PBAB {
         isWhitelisted[msg.sender] = true;
         renderProviderAddress = payable(msg.sender);
         randomizerContract = IRandomizer(_randomizerContract);
+    }
+
+    /**
+     * @notice Mints a token from project `_projectId`, sets the
+     * token's owner to `_to` with the provided hash `_hash`.
+     * @param _to Address to be the minted token's owner.
+     * @param _projectId Project ID to mint a token on.
+     * @param _by Purchaser of minted token.
+     * @param _hash Token hash.
+     * @dev sender must be a whitelisted minter
+     */
+    function mintWithHash(
+        address _to,
+        uint256 _projectId,
+        address _by,
+        bytes32 _hash
+    ) public returns (uint256 _tokenId) {
+        require(
+            isMintWhitelisted[msg.sender],
+            "Must mint from whitelisted minter contract."
+        );
+        require(
+            projects[_projectId].invocations + 1 <=
+                projects[_projectId].maxInvocations,
+            "Must not exceed max invocations"
+        );
+        require(
+            projects[_projectId].active ||
+                _by == projectIdToArtistAddress[_projectId],
+            "Project must exist and be active"
+        );
+        require(
+            !projects[_projectId].paused ||
+                _by == projectIdToArtistAddress[_projectId],
+            "Purchases are paused."
+        );
+
+        uint256 tokenId = _mintTokenWithHash(_to, _projectId, _hash);
+
+        return tokenId;
+    }
+
+    function _mintTokenWithHash(
+        address _to,
+        uint256 _projectId,
+        bytes32 _hash
+    ) internal returns (uint256 _tokenId) {
+        uint256 tokenIdToBe = (_projectId * ONE_MILLION) +
+            projects[_projectId].invocations;
+
+        projects[_projectId].invocations = projects[_projectId].invocations + 1;
+
+        tokenIdToHash[tokenIdToBe] = _hash;
+        hashToTokenId[_hash] = tokenIdToBe;
+
+        _mint(_to, tokenIdToBe);
+
+        tokenIdToProjectId[tokenIdToBe] = _projectId;
+
+        emit Mint(_to, tokenIdToBe, _projectId);
+
+        return tokenIdToBe;
+    }
+
+    /**
+     * @notice Mints a batch of tokens from project `_projectId[i]`, sets the
+     * token's owner to `_to[i]` with the provided hash `_hash[i]`.
+     * @param _to array of Addresses to be the minted token's owner.
+     * @param _projectId array of Project IDs to mint a tokens on.
+     * @param _by array of Purchasers of minted token.
+     * @param _hash array of Token hashes.
+     * @dev sender must be a whitelisted minter
+     */
+    function mintBatchWithHash(
+        address[] memory _to,
+        uint256[] memory _projectId,
+        address[] memory _by,
+        bytes32[] memory _hash
+    ) external {
+        require(
+            _to.length == _projectId.length,
+            "_projectId array length missmatch."
+        );
+
+        require(_to.length == _by.length, "_by array length missmatch.");
+
+        require(_to.length == _hash.length, "_hash array length missmatch.");
+
+        for (uint256 i; i < _to.length; i++) {
+            mintWithHash(_to[i], _projectId[i], _by[i], _hash[i]);
+        }
     }
 
     /**
