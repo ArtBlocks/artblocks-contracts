@@ -13,6 +13,8 @@ pragma solidity 0.8.9;
  * @title Art Blocks Engine ERC-721 core contract with FLEX integration.
  * Allows for projects to specify external asset dependencies from either IPFS or ARWEAVE.
  * @author Art Blocks Inc.
+ * @dev Contracts is aimed to be used in one of two modes. First mode is standard AB approach
+ * together with the minter contract. Second mode is to be used with centralised minter.
  */
 contract GenArt721CoreV2_VerseFlex is ERC721, IGenArt721CoreV2_PBAB {
     /// randomizer contract
@@ -106,6 +108,9 @@ contract GenArt721CoreV2_VerseFlex is ERC721, IGenArt721CoreV2_PBAB {
     /// next project ID to be created
     uint256 public nextProjectId = 0;
 
+    /// verse authorised minter address
+    address public verseMinter;
+
     modifier onlyValidTokenId(uint256 _tokenId) {
         require(_exists(_tokenId), "Token ID does not exist");
         _;
@@ -169,8 +174,8 @@ contract GenArt721CoreV2_VerseFlex is ERC721, IGenArt721CoreV2_PBAB {
     }
 
     /**
-     * @notice Mints a token from project `_projectId` and sets the
-     * token's owner to `_to`.
+     * @notice Mints a token from project `_projectId`, sets the
+     * token's owner to `_to` with the provided hash `_hash`.
      * @param _to Address to be the minted token's owner.
      * @param _projectId Project ID to mint a token on.
      * @param _by Purchaser of minted token.
@@ -231,8 +236,8 @@ contract GenArt721CoreV2_VerseFlex is ERC721, IGenArt721CoreV2_PBAB {
     }
 
     /**
-     * @notice Mints a batch of tokens from project `_projectId[i]` and sets the
-     * token's owner to `_to[i]`.
+     * @notice Mints a batch of tokens from project `_projectId[i]`, sets the
+     * token's owner to `_to[i]` with the provided hash `_hash[i]`.
      * @param _to array of Addresses to be the minted token's owner.
      * @param _projectId array of Project IDs to mint a tokens on.
      * @param _by array of Purchasers of minted token.
