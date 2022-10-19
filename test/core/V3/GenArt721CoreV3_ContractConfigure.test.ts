@@ -81,22 +81,32 @@ for (const coreContractName of coreContractsToTest) {
     });
 
     describe("updateArtblocksPrimarySalesPercentage", function () {
-      it("does not allow a value > 25%", async function () {
+      beforeEach(async function () {
+        if (coreContractName === "GenArt721CoreV3") {
+          this.maxABPrimarySalesPercentage = 25; // 25% maximum percentage on V3 core
+        } else if (coreContractName === "GenArt721CoreV3_Explorations") {
+          this.maxABPrimarySalesPercentage = 100; // 100% maximum percentage on V3 core explorations
+        } else {
+          throw new Error("Invalid core contract name");
+        }
+      });
+
+      it("does not allow a value > ART_BLOCKS_MAX_PRIMARY_SALES_PERCENTAGE", async function () {=
         await expectRevert(
           this.genArt721Core
             .connect(this.accounts.deployer)
-            .updateArtblocksPrimarySalesPercentage(26),
+            .updateArtblocksPrimarySalesPercentage(this.maxABPrimarySalesPercentage + 1),
           "Max of ART_BLOCKS_MAX_PRIMARY_SALES_PERCENTAGE percent"
         );
       });
 
-      it("does allow a value of 25%", async function () {
+      it("does allow a value of ART_BLOCKS_MAX_PRIMARY_SALES_PERCENTAGE", async function () {
         await this.genArt721Core
           .connect(this.accounts.deployer)
-          .updateArtblocksPrimarySalesPercentage(25);
+          .updateArtblocksPrimarySalesPercentage(this.maxABPrimarySalesPercentage);
       });
 
-      it("does allow a value of < 25%", async function () {
+      it("does allow a value of 0%", async function () {
         await this.genArt721Core
           .connect(this.accounts.deployer)
           .updateArtblocksPrimarySalesPercentage(0);
