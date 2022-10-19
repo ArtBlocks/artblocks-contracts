@@ -2,7 +2,7 @@
 // Created By: Art Blocks Inc.
 
 import { ethers } from "hardhat";
-// flagship
+// explorations
 import { GenArt721CoreV3Explorations__factory } from "../contracts/factories/GenArt721CoreV3Explorations__factory";
 import { AdminACLV0__factory } from "../contracts/factories/AdminACLV0__factory";
 import { BasicRandomizerV2__factory } from "../contracts/factories/BasicRandomizerV2__factory";
