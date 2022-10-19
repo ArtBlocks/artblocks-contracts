@@ -31,7 +31,7 @@ const EXTRA_DELAY_BETWEEN_TX = 5000; // ms
 // CONFIG BEGINS HERE
 //////////////////////////////////////////////////////////////////////////////
 const tokenName = "Art Blocks Explorations Dev (Goerli)";
-const tokenTicker = "BLOCKS_EXPLORATIONS_DEV_GOERLI";
+const tokenTicker = "EXPLORE_DEV_GOERLI";
 const superAdminAddress = undefined; // set to undefined to use deployer address
 const artblocksPrimarySalesAddress = undefined; // set to undefined to use deployer address
 const artblocksSecondarySalesAddress = undefined; // set to undefined to use deployer address

@@ -31,7 +31,7 @@ const EXTRA_DELAY_BETWEEN_TX = 5000; // ms
 // CONFIG BEGINS HERE
 //////////////////////////////////////////////////////////////////////////////
 const tokenName = "Art Blocks Explorations";
-const tokenTicker = "BLOCKS_EXPLORATIONS";
+const tokenTicker = "EXPLORE";
 const superAdminAddress = "0xCF00eC2B327BCfA2bee2D8A5Aee0A7671d08A283"; // Art Blocks contract-management multi-sig
 const artblocksPrimarySalesAddress =
   "0xf7A55108A6E830a809e88e74cbf5f5DE9D930153";
