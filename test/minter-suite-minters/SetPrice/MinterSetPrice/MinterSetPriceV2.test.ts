@@ -22,188 +22,200 @@ import { MinterSetPrice_ETH_Common } from "./MinterSetPrice.common";
 import { MinterSetPriceV1V2_Common } from "../MinterSetPriceV1V2.common";
 import { MinterSetPriceV2_Common } from "../MinterSetPriceV2.common";
 
+// test the following V3 core contract derivatives:
+const coreContractsToTest = [
+  "GenArt721CoreV3", // flagship V3 core
+  "GenArt721CoreV3_Explorations", // V3 core explorations contract
+];
+
 /**
  * These tests intended to ensure this Filtered Minter integrates properly with
  * V3 core contract.
  */
-describe("MinterSetPriceV2_V3Core", async function () {
-  beforeEach(async function () {
-    // standard accounts and constants
-    this.accounts = await getAccounts();
-    await assignDefaultConstants.call(this);
-    this.higherPricePerTokenInWei = this.pricePerTokenInWei.add(
-      ethers.utils.parseEther("0.1")
-    );
+for (const coreContractName of coreContractsToTest) {
+  describe(`MinterSetPriceV2_${coreContractName}`, async function () {
+    beforeEach(async function () {
+      // standard accounts and constants
+      this.accounts = await getAccounts();
+      await assignDefaultConstants.call(this);
+      this.higherPricePerTokenInWei = this.pricePerTokenInWei.add(
+        ethers.utils.parseEther("0.1")
+      );
 
-    // deploy and configure minter filter and minter
-    ({
-      genArt721Core: this.genArt721Core,
-      minterFilter: this.minterFilter,
-      randomizer: this.randomizer,
-    } = await deployCoreWithMinterFilter.call(
-      this,
-      "GenArt721CoreV3",
-      "MinterFilterV1"
-    ));
+      // deploy and configure minter filter and minter
+      ({
+        genArt721Core: this.genArt721Core,
+        minterFilter: this.minterFilter,
+        randomizer: this.randomizer,
+      } = await deployCoreWithMinterFilter.call(
+        this,
+        coreContractName,
+        "MinterFilterV1"
+      ));
 
-    const minterFactory = await ethers.getContractFactory("MinterSetPriceV2");
-    this.minter1 = await minterFactory.deploy(
-      this.genArt721Core.address,
-      this.minterFilter.address
-    );
+      const minterFactory = await ethers.getContractFactory("MinterSetPriceV2");
+      this.minter1 = await minterFactory.deploy(
+        this.genArt721Core.address,
+        this.minterFilter.address
+      );
 
-    // support common tests and also give access to this.minter1 at this.minter
-    this.minter = this.minter1;
+      // support common tests and also give access to this.minter1 at this.minter
+      this.minter = this.minter1;
 
-    this.minter2 = await minterFactory.deploy(
-      this.genArt721Core.address,
-      this.minterFilter.address
-    );
-    this.minter3 = await minterFactory.deploy(
-      this.genArt721Core.address,
-      this.minterFilter.address
-    );
-    await safeAddProject(
-      this.genArt721Core,
-      this.accounts.deployer,
-      this.accounts.artist.address
-    );
-    await safeAddProject(
-      this.genArt721Core,
-      this.accounts.deployer,
-      this.accounts.artist.address
-    );
-    await safeAddProject(
-      this.genArt721Core,
-      this.accounts.deployer,
-      this.accounts.artist.address
-    );
+      this.minter2 = await minterFactory.deploy(
+        this.genArt721Core.address,
+        this.minterFilter.address
+      );
+      this.minter3 = await minterFactory.deploy(
+        this.genArt721Core.address,
+        this.minterFilter.address
+      );
+      await safeAddProject(
+        this.genArt721Core,
+        this.accounts.deployer,
+        this.accounts.artist.address
+      );
+      await safeAddProject(
+        this.genArt721Core,
+        this.accounts.deployer,
+        this.accounts.artist.address
+      );
+      await safeAddProject(
+        this.genArt721Core,
+        this.accounts.deployer,
+        this.accounts.artist.address
+      );
 
-    await this.genArt721Core
-      .connect(this.accounts.deployer)
-      .toggleProjectIsActive(this.projectZero);
-    await this.genArt721Core
-      .connect(this.accounts.deployer)
-      .toggleProjectIsActive(this.projectOne);
-    await this.genArt721Core
-      .connect(this.accounts.deployer)
-      .toggleProjectIsActive(this.projectTwo);
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .toggleProjectIsActive(this.projectZero);
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .toggleProjectIsActive(this.projectOne);
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .toggleProjectIsActive(this.projectTwo);
 
-    await this.genArt721Core
-      .connect(this.accounts.artist)
-      .updateProjectMaxInvocations(this.projectZero, this.maxInvocations);
-    await this.genArt721Core
-      .connect(this.accounts.artist)
-      .updateProjectMaxInvocations(this.projectOne, this.maxInvocations);
-    await this.genArt721Core
-      .connect(this.accounts.artist)
-      .updateProjectMaxInvocations(this.projectTwo, this.maxInvocations);
-
-    await this.genArt721Core
-      .connect(this.accounts.artist)
-      .toggleProjectIsPaused(this.projectZero);
-    await this.genArt721Core
-      .connect(this.accounts.artist)
-      .toggleProjectIsPaused(this.projectOne);
-    await this.genArt721Core
-      .connect(this.accounts.artist)
-      .toggleProjectIsPaused(this.projectTwo);
-
-    await this.minterFilter
-      .connect(this.accounts.deployer)
-      .addApprovedMinter(this.minter1.address);
-    await this.minterFilter
-      .connect(this.accounts.deployer)
-      .addApprovedMinter(this.minter2.address);
-    await this.minterFilter
-      .connect(this.accounts.deployer)
-      .addApprovedMinter(this.minter3.address);
-
-    await this.minterFilter
-      .connect(this.accounts.deployer)
-      .setMinterForProject(this.projectZero, this.minter1.address);
-    await this.minterFilter
-      .connect(this.accounts.deployer)
-      .setMinterForProject(this.projectOne, this.minter2.address);
-    // We leave project three with no minter on purpose
-
-    // set token price for first two projects on minter one
-    await this.minter1
-      .connect(this.accounts.artist)
-      .updatePricePerTokenInWei(this.projectZero, this.pricePerTokenInWei);
-    await this.minter1
-      .connect(this.accounts.artist)
-      .updatePricePerTokenInWei(this.projectOne, this.pricePerTokenInWei);
-  });
-
-  describe("common MinterSetPrice (ETH) tests", async () => {
-    await MinterSetPrice_ETH_Common();
-  });
-
-  describe("common MinterSetPrice V1V2 tests", async function () {
-    await MinterSetPriceV1V2_Common();
-  });
-
-  describe("common MinterSetPrice V2 tests", async function () {
-    await MinterSetPriceV2_Common();
-  });
-
-  describe("setProjectMaxInvocations", async function () {
-    it("allows artist to call setProjectMaxInvocations", async function () {
-      await this.minter
+      await this.genArt721Core
         .connect(this.accounts.artist)
-        .setProjectMaxInvocations(this.projectZero);
-    });
+        .updateProjectMaxInvocations(this.projectZero, this.maxInvocations);
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectMaxInvocations(this.projectOne, this.maxInvocations);
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectMaxInvocations(this.projectTwo, this.maxInvocations);
 
-    it("allows user to call setProjectMaxInvocations", async function () {
-      await this.minter
-        .connect(this.accounts.user)
-        .setProjectMaxInvocations(this.projectZero);
-    });
-  });
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .toggleProjectIsPaused(this.projectZero);
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .toggleProjectIsPaused(this.projectOne);
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .toggleProjectIsPaused(this.projectTwo);
 
-  describe("calculates gas", async function () {
-    it("mints and calculates gas values [ @skip-on-coverage ]", async function () {
-      const tx = await this.minter1
-        .connect(this.accounts.user)
-        .purchase(this.projectZero, {
-          value: this.pricePerTokenInWei,
-        });
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .addApprovedMinter(this.minter1.address);
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .addApprovedMinter(this.minter2.address);
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .addApprovedMinter(this.minter3.address);
 
-      const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
-      const txCost = receipt.effectiveGasPrice.mul(receipt.gasUsed).toString();
-      console.log(
-        "Gas cost for a successful Ether mint: ",
-        ethers.utils.formatUnits(txCost, "ether").toString(),
-        "ETH"
-      );
-      expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.0128905")); // assuming a cost of 100 GWEI
-    });
-  });
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .setMinterForProject(this.projectZero, this.minter1.address);
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .setMinterForProject(this.projectOne, this.minter2.address);
+      // We leave project three with no minter on purpose
 
-  describe("purchaseTo", async function () {
-    it("does not support toggling of `purchaseToDisabled`", async function () {
-      await expectRevert(
-        this.minter1
-          .connect(this.accounts.artist)
-          .togglePurchaseToDisabled(this.projectZero),
-        "Action not supported"
-      );
-      // still allows `purchaseTo`.
+      // set token price for first two projects on minter one
       await this.minter1
-        .connect(this.accounts.user)
-        .purchaseTo(this.accounts.artist.address, this.projectZero, {
-          value: this.pricePerTokenInWei,
-        });
+        .connect(this.accounts.artist)
+        .updatePricePerTokenInWei(this.projectZero, this.pricePerTokenInWei);
+      await this.minter1
+        .connect(this.accounts.artist)
+        .updatePricePerTokenInWei(this.projectOne, this.pricePerTokenInWei);
     });
 
-    it("doesn't support `purchaseTo` toggling", async function () {
-      await expectRevert(
-        this.minter1
+    describe("common MinterSetPrice (ETH) tests", async () => {
+      await MinterSetPrice_ETH_Common();
+    });
+
+    describe("common MinterSetPrice V1V2 tests", async function () {
+      await MinterSetPriceV1V2_Common();
+    });
+
+    describe("common MinterSetPrice V2 tests", async function () {
+      await MinterSetPriceV2_Common();
+    });
+
+    describe("setProjectMaxInvocations", async function () {
+      it("allows artist to call setProjectMaxInvocations", async function () {
+        await this.minter
           .connect(this.accounts.artist)
-          .togglePurchaseToDisabled(this.projectZero),
-        "Action not supported"
-      );
+          .setProjectMaxInvocations(this.projectZero);
+      });
+
+      it("allows user to call setProjectMaxInvocations", async function () {
+        await this.minter
+          .connect(this.accounts.user)
+          .setProjectMaxInvocations(this.projectZero);
+      });
+    });
+
+    describe("calculates gas", async function () {
+      it("mints and calculates gas values [ @skip-on-coverage ]", async function () {
+        const tx = await this.minter1
+          .connect(this.accounts.user)
+          .purchase(this.projectZero, {
+            value: this.pricePerTokenInWei,
+          });
+
+        const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+        const txCost = receipt.effectiveGasPrice
+          .mul(receipt.gasUsed)
+          .toString();
+        console.log(
+          "Gas cost for a successful Ether mint: ",
+          ethers.utils.formatUnits(txCost, "ether").toString(),
+          "ETH"
+        );
+        expect(txCost.toString()).to.equal(
+          ethers.utils.parseEther("0.0128905")
+        ); // assuming a cost of 100 GWEI
+      });
+    });
+
+    describe("purchaseTo", async function () {
+      it("does not support toggling of `purchaseToDisabled`", async function () {
+        await expectRevert(
+          this.minter1
+            .connect(this.accounts.artist)
+            .togglePurchaseToDisabled(this.projectZero),
+          "Action not supported"
+        );
+        // still allows `purchaseTo`.
+        await this.minter1
+          .connect(this.accounts.user)
+          .purchaseTo(this.accounts.artist.address, this.projectZero, {
+            value: this.pricePerTokenInWei,
+          });
+      });
+
+      it("doesn't support `purchaseTo` toggling", async function () {
+        await expectRevert(
+          this.minter1
+            .connect(this.accounts.artist)
+            .togglePurchaseToDisabled(this.projectZero),
+          "Action not supported"
+        );
+      });
     });
   });
-});
+}
