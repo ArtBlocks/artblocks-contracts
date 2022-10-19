@@ -3,7 +3,7 @@
 
 import { ethers } from "hardhat";
 // flagship
-import { GenArt721CoreV3__factory } from "../contracts/factories/GenArt721CoreV3Explorations__factory";
+import { GenArt721CoreV3Explorations__factory } from "../contracts/factories/GenArt721CoreV3Explorations__factory";
 import { AdminACLV0__factory } from "../contracts/factories/AdminACLV0__factory";
 import { BasicRandomizerV2__factory } from "../contracts/factories/BasicRandomizerV2__factory";
 // minter suite
@@ -69,7 +69,9 @@ async function main() {
   console.log(`Admin ACL deployed at ${adminACLAddress}`);
 
   // Deploy Core contract
-  const genArt721CoreFactory = new GenArt721CoreV3__factory(deployer);
+  const genArt721CoreFactory = new GenArt721CoreV3Explorations__factory(
+    deployer
+  );
   const genArt721Core = await genArt721CoreFactory.deploy(
     tokenName,
     tokenTicker,
