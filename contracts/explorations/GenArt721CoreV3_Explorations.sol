@@ -33,7 +33,7 @@ import "../libs/0.8.x/Bytes32Strings.sol";
  * - updateArtblocksDependencyRegistryAddress
  * - updateArtblocksPrimarySalesAddress
  * - updateArtblocksSecondarySalesAddress
- * - updateArtblocksPrimarySalesPercentage (up to 25%)
+ * - updateArtblocksPrimarySalesPercentage (up to 100%)
  * - updateArtblocksSecondarySalesBPS (up to 100%)
  * - updateMinterContract
  * - updateRandomizerAddress
@@ -101,7 +101,7 @@ contract GenArt721CoreV3_Explorations is
     uint8 constant AT_CHARACTER_CODE = uint8(bytes1("@")); // 0x40
 
     // numeric constants
-    uint256 constant ART_BLOCKS_MAX_PRIMARY_SALES_PERCENTAGE = 25; // 25%
+    uint256 constant ART_BLOCKS_MAX_PRIMARY_SALES_PERCENTAGE = 100; // 100%
     uint256 constant ART_BLOCKS_MAX_SECONDARY_SALES_BPS = 10000; // 10_000 BPS = 100%
     uint256 constant ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE = 95; // 95%
 
