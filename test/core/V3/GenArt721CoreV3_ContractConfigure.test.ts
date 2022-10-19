@@ -91,11 +91,13 @@ for (const coreContractName of coreContractsToTest) {
         }
       });
 
-      it("does not allow a value > ART_BLOCKS_MAX_PRIMARY_SALES_PERCENTAGE", async function () {=
+      it("does not allow a value > ART_BLOCKS_MAX_PRIMARY_SALES_PERCENTAGE", async function () {
         await expectRevert(
           this.genArt721Core
             .connect(this.accounts.deployer)
-            .updateArtblocksPrimarySalesPercentage(this.maxABPrimarySalesPercentage + 1),
+            .updateArtblocksPrimarySalesPercentage(
+              this.maxABPrimarySalesPercentage + 1
+            ),
           "Max of ART_BLOCKS_MAX_PRIMARY_SALES_PERCENTAGE percent"
         );
       });
@@ -103,7 +105,9 @@ for (const coreContractName of coreContractsToTest) {
       it("does allow a value of ART_BLOCKS_MAX_PRIMARY_SALES_PERCENTAGE", async function () {
         await this.genArt721Core
           .connect(this.accounts.deployer)
-          .updateArtblocksPrimarySalesPercentage(this.maxABPrimarySalesPercentage);
+          .updateArtblocksPrimarySalesPercentage(
+            this.maxABPrimarySalesPercentage
+          );
       });
 
       it("does allow a value of 0%", async function () {
