@@ -125,7 +125,10 @@ export async function deployCoreWithMinterFilter(
     await genArt721Core
       .connect(this.accounts.deployer)
       .addMintWhitelisted(minterFilter.address);
-  } else if (coreContractName.endsWith("V3")) {
+  } else if (
+    coreContractName.endsWith("V3") ||
+    coreContractName.endsWith("V3_Explorations")
+  ) {
     randomizer = await deployAndGet.call(this, "BasicRandomizerV2", []);
     const adminACLContractName = useAdminACLWithEvents
       ? "MockAdminACLV0Events"

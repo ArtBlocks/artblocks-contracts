@@ -16,10 +16,16 @@ const runForEach = [
     minterFilter: "MinterFilterV1",
     minter: "MinterSetPriceERC20V2",
   },
+  {
+    core: "GenArt721CoreV3_Explorations",
+    coreFirstProjectNumber: 0,
+    minterFilter: "MinterFilterV1",
+    minter: "MinterSetPriceERC20V2",
+  },
 ];
 
 runForEach.forEach((params) => {
-  describe(`${params.minterFilter}Views`, async function () {
+  describe(`${params.minterFilter} Views w/${params.core} core`, async function () {
     beforeEach(async function () {
       // standard accounts and constants
       this.accounts = await getAccounts();
