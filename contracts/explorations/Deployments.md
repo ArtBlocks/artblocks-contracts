@@ -2,23 +2,19 @@
 
 ## Mainnet
 
+**AdminACLV0**:
+https://etherscan.io/address/0x286bA5808A98c9237449182E05740E4B7284389e#code
+
 **GenArt721CoreV3_Explorations**:
+https://etherscan.io/address/0x942BC2d3e7a589FE5bd4A5C6eF9727DFd82F5C8a#code
 
 **MinterFilterV1**:
+https://etherscan.io/address/0x3F4bbde879F9BB0E95AEa08fF12F55E171495C8f#code
 
-**MinterSetPriceERC20V2**:
+**MinterMerkleV1**:
+https://etherscan.io/address/0x4A4DA854AB5C73814b17dAdE167B9b8861566066#code
 
-**MinterSetPriceV2**:
-
-**MinterDALinV2**:
-
-**MinterDAExpV2**:
-
-**MinterMerkleV2**:
-
-**MinterHolderV1**:
-
-`TBD` set as superAdmin of adminACL contract.
+`0xCF00eC2B327BCfA2bee2D8A5Aee0A7671d08A283` set as superAdmin of adminACL contract.
 
 ## Goerli
 
