@@ -17,14 +17,14 @@ import { createPBABBucket } from "../../util/aws_s3";
 // CONFIG BEGINS HERE
 //////////////////////////////////////////////////////////////////////////////
 // FLEX contract file
-import { GenArt721CoreV2VerseFlex__factory } from "../../contracts/factories/GenArt721CoreV2VerseFlex__factory";
-import { GenArt721MinterVerseFlex__factory } from "../../contracts/factories/GenArt721MinterVerseFlex__factory";
+import { GenArt721CoreV2ATPFlex__factory } from "../../contracts/factories/GenArt721CoreV2ATPFlex__factory";
+import { GenArt721MinterATPFlex__factory } from "../../contracts/factories/GenArt721MinterATPFlex__factory";
 
 // Details pulled from https://github.com/ArtBlocks/artblocks/issues/275 (private repo)
-const tokenName = "VerseGen";
-const tokenTicker = "VERSEGEN";
-const transferAddress = "0x7DA651e4C4c1C4cEfbE9dfb030B9A85cc6a041B7";
-const artblocksAddress = "0x97e7CfDe2d975496d3f0AC4467D4D5e3c77f47Fd";
+const tokenName = "ATP Love";
+const tokenTicker = "ATP";
+const transferAddress = "0xbe88961cd1F0fc7Bf383dA4F2c2488065Ff62A93";
+const artblocksAddress = "0x89E0cCE4Bc79D9CB0cEFA4785783Ad6e66978527";
 // Shared **goerli** randomizer instance.
 const randomizerAddress = "0xEC5DaE4b11213290B2dBe5295093f75920bD2982";
 //////////////////////////////////////////////////////////////////////////////
@@ -46,7 +46,7 @@ async function main() {
   console.log(`Using shared randomizer at ${randomizerAddress}`);
 
   // deploy FLEX core contract
-  const coreFactory = new GenArt721CoreV2VerseFlex__factory(deployer);
+  const coreFactory = new GenArt721CoreV2ATPFlex__factory(deployer);
   const genArt721CoreFlex = await coreFactory.deploy(
     tokenName,
     tokenTicker,
@@ -56,9 +56,7 @@ async function main() {
   console.log(`GenArt721CoreV2 FLEX deployed at ${genArt721CoreFlex.address}`);
 
   // Deploy Minter contract.
-  const genArt721MinterFactory = new GenArt721MinterVerseFlex__factory(
-    deployer
-  );
+  const genArt721MinterFactory = new GenArt721MinterATPFlex__factory(deployer);
   const genArt721Minter = await genArt721MinterFactory.deploy(
     genArt721CoreFlex.address
   );
