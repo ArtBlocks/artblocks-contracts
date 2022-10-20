@@ -8,12 +8,7 @@ import { AdminACLV0__factory } from "../contracts/factories/AdminACLV0__factory"
 import { BasicRandomizerV2__factory } from "../contracts/factories/BasicRandomizerV2__factory";
 // minter suite
 import { MinterFilterV1__factory } from "../contracts/factories/MinterFilterV1__factory";
-import { MinterSetPriceV2__factory } from "../contracts/factories/MinterSetPriceV2__factory";
-import { MinterSetPriceERC20V2__factory } from "../contracts/factories/MinterSetPriceERC20V2__factory";
-import { MinterDALinV2__factory } from "../contracts/factories/MinterDALinV2__factory";
-import { MinterDAExpV2__factory } from "../contracts/factories/MinterDAExpV2__factory";
 import { MinterMerkleV1__factory } from "../contracts/factories/MinterMerkleV1__factory";
-import { MinterHolderV1__factory } from "../contracts/factories/MinterHolderV1__factory";
 
 // delay to avoid issues with reorgs and tx failures
 import { delay } from "../util/utils";
@@ -89,42 +84,6 @@ async function main() {
   console.log(`Minter Filter deployed at ${minterFilter.address}`);
 
   // Deploy Minter Suite contracts.
-  // set price V2
-  const minterSetPriceFactory = new MinterSetPriceV2__factory(deployer);
-  const minterSetPrice = await minterSetPriceFactory.deploy(
-    genArt721Core.address,
-    minterFilter.address
-  );
-  await minterSetPrice.deployed();
-  console.log(`MinterSetPrice V2 deployed at ${minterSetPrice.address}`);
-  // set price ERC20 V2
-  const minterSetPriceERC20Factory = new MinterSetPriceERC20V2__factory(
-    deployer
-  );
-  const minterSetPriceERC20 = await minterSetPriceERC20Factory.deploy(
-    genArt721Core.address,
-    minterFilter.address
-  );
-  await minterSetPriceERC20.deployed();
-  console.log(
-    `MinterSetPrice ERC20 V2 deployed at ${minterSetPriceERC20.address}`
-  );
-  // DA Lin V2
-  const MinterDALin__factory = new MinterDALinV2__factory(deployer);
-  const minterDALin = await MinterDALin__factory.deploy(
-    genArt721Core.address,
-    minterFilter.address
-  );
-  await minterDALin.deployed();
-  console.log(`Minter DA Lin V2 deployed at ${minterDALin.address}`);
-  // DA Exp V2
-  const MinterDAExp__factory = new MinterDAExpV2__factory(deployer);
-  const minterDAExp = await MinterDAExp__factory.deploy(
-    genArt721Core.address,
-    minterFilter.address
-  );
-  await minterDAExp.deployed();
-  console.log(`Minter DA Exp V2 deployed at ${minterDAExp.address}`);
   // Merkle V1
   const MinterMerkle__factory = new MinterMerkleV1__factory(deployer);
   const minterMerkle = await MinterMerkle__factory.deploy(
@@ -133,14 +92,6 @@ async function main() {
   );
   await minterMerkle.deployed();
   console.log(`Minter Merkle V1 deployed at ${minterMerkle.address}`);
-  // Holder V1
-  const MinterHolder__factory = new MinterHolderV1__factory(deployer);
-  const minterHolder = await MinterHolder__factory.deploy(
-    genArt721Core.address,
-    minterFilter.address
-  );
-  await minterHolder.deployed();
-  console.log(`Minter Holder V1 deployed at ${minterHolder.address}`);
 
   //////////////////////////////////////////////////////////////////////////////
   // DEPLOYMENT ENDS HERE
@@ -201,29 +152,8 @@ async function main() {
   }
 
   // Allowlist new Minters on MinterFilter.
-  await minterFilter
-    .connect(deployer)
-    .addApprovedMinter(minterSetPrice.address);
-  console.log(`Allowlisted minter ${minterSetPrice.address} on minter filter.`);
-  await delay(EXTRA_DELAY_BETWEEN_TX);
-  await minterFilter
-    .connect(deployer)
-    .addApprovedMinter(minterSetPriceERC20.address);
-  console.log(
-    `Allowlisted minter ${minterSetPriceERC20.address} on minter filter.`
-  );
-  await delay(EXTRA_DELAY_BETWEEN_TX);
-  await minterFilter.connect(deployer).addApprovedMinter(minterDALin.address);
-  console.log(`Allowlisted minter ${minterDALin.address} on minter filter.`);
-  await delay(EXTRA_DELAY_BETWEEN_TX);
-  await minterFilter.connect(deployer).addApprovedMinter(minterDAExp.address);
-  console.log(`Allowlisted minter ${minterDAExp.address} on minter filter.`);
-  await delay(EXTRA_DELAY_BETWEEN_TX);
   await minterFilter.connect(deployer).addApprovedMinter(minterMerkle.address);
   console.log(`Allowlisted minter ${minterMerkle.address} on minter filter.`);
-  await delay(EXTRA_DELAY_BETWEEN_TX);
-  await minterFilter.connect(deployer).addApprovedMinter(minterHolder.address);
-  console.log(`Allowlisted minter ${minterHolder.address} on minter filter.`);
   await delay(EXTRA_DELAY_BETWEEN_TX);
 
   // update super admin address
@@ -252,29 +182,9 @@ async function main() {
   console.log(
     `${standardVerify} --network ${networkName} ${minterFilter.address} ${genArt721Core.address}`
   );
-  console.log(`Verify MinterSetPrice deployment with:`);
-  console.log(
-    `${standardVerify} --network ${networkName} ${minterSetPrice.address} ${genArt721Core.address} ${minterFilter.address}`
-  );
-  console.log(`Verify MinterSetPriceERC20 deployment with:`);
-  console.log(
-    `${standardVerify} --network ${networkName} ${minterSetPriceERC20.address} ${genArt721Core.address} ${minterFilter.address}`
-  );
-  console.log(`Verify MinterDALin deployment with:`);
-  console.log(
-    `${standardVerify} --network ${networkName} ${minterDALin.address} ${genArt721Core.address} ${minterFilter.address}`
-  );
-  console.log(`Verify MinterDAExp deployment with:`);
-  console.log(
-    `${standardVerify} --network ${networkName} ${minterDAExp.address} ${genArt721Core.address} ${minterFilter.address}`
-  );
   console.log(`Verify MinterMerkle deployment with:`);
   console.log(
     `${standardVerify} --network ${networkName} ${minterMerkle.address} ${genArt721Core.address} ${minterFilter.address}`
-  );
-  console.log(`Verify MinterHolder deployment with:`);
-  console.log(
-    `${standardVerify} --network ${networkName} ${minterHolder.address} ${genArt721Core.address} ${minterFilter.address}`
   );
 
   //////////////////////////////////////////////////////////////////////////////

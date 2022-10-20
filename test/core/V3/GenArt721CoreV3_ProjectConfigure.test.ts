@@ -222,8 +222,8 @@ for (const coreContractName of coreContractsToTest) {
           .connect(this.accounts.user)
           .projectStateData(this.projectZero);
         expect(projectStateData.locked).to.equal(false);
-        // advance < 4 weeks
-        await advanceEVMByTime(FOUR_WEEKS - 1);
+        // advance < 4 weeks (10 seconds less)
+        await advanceEVMByTime(FOUR_WEEKS - 10);
         projectStateData = await this.genArt721Core
           .connect(this.accounts.user)
           .projectStateData(this.projectZero);

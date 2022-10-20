@@ -1709,7 +1709,15 @@ for (const coreContractName of coreContractsToTest) {
         const emptyProjectURI = await this.genArt721Core
           .connect(this.accounts.user)
           .projectURIInfo(this.projectZero);
-        expect(emptyProjectURI).to.be.equal("https://token.artblocks.io/");
+        if (coreContractName === "GenArt721CoreV3") {
+          expect(emptyProjectURI).to.be.equal("https://token.artblocks.io/");
+        } else if (coreContractName === "GenArt721CoreV3_Explorations") {
+          expect(emptyProjectURI).to.be.equal(
+            `https://token.artblocks.io/${this.genArt721Core.address.toLowerCase()}/`
+          );
+        } else {
+          throw new Error("Invalid core contract name");
+        }
       });
 
       it("returns expected populated projectURI", async function () {
@@ -1734,9 +1742,17 @@ for (const coreContractName of coreContractsToTest) {
         const tokenURIForDefaultProjectURI = await this.genArt721Core
           .connect(this.accounts.user)
           .tokenURI(this.projectZeroTokenZero.toNumber());
-        expect(tokenURIForDefaultProjectURI).to.be.equal(
-          `https://token.artblocks.io/${this.projectZeroTokenZero.toString()}`
-        );
+        if (coreContractName === "GenArt721CoreV3") {
+          expect(tokenURIForDefaultProjectURI).to.be.equal(
+            `https://token.artblocks.io/${this.projectZeroTokenZero.toString()}`
+          );
+        } else if (coreContractName === "GenArt721CoreV3_Explorations") {
+          expect(tokenURIForDefaultProjectURI).to.be.equal(
+            `https://token.artblocks.io/${this.genArt721Core.address.toLowerCase()}/${this.projectZeroTokenZero.toString()}`
+          );
+        } else {
+          throw new Error("Invalid core contract name");
+        }
       });
 
       it("returns updated default base URI if contract base URI is updated after constructor", async function () {
