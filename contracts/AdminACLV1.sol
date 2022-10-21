@@ -85,7 +85,7 @@ contract AdminACLV1 is IAdminACLV0, ERC165 {
             ERC165(_newAdminACL).supportsInterface(
                 type(IAdminACLV0).interfaceId
             ),
-            "AdminACLV0: new admin ACL does not support IAdminACLV0"
+            "AdminACLV1: new admin ACL does not support IAdminACLV0"
         );
         Ownable(_contract).transferOwnership(_newAdminACL);
     }
