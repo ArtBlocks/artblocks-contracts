@@ -23,7 +23,7 @@ import "@openzeppelin-4.7/contracts/utils/structs/EnumerableSet.sol";
  * This contract continues to broadcast support (and require future-adminACL
  * broadcasted support) for IAdminACLV0 via ERC165 interface detection.
  */
-contract AdminACLV0 is IAdminACLV0, ERC165 {
+contract AdminACLV1 is IAdminACLV0, ERC165 {
     /// New address added to set of addresses who may approve artist-proposed
     /// payment addresses.
     event PaymentApproverAdded(address indexed _approver);
