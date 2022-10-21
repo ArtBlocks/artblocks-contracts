@@ -99,7 +99,7 @@ describe("AdminACLV1", async function () {
     });
 
     it("adds address when called by superAdmin", async function () {
-      expect(
+      await expect(
         await this.adminACL
           .connect(this.accounts.deployer)
           .addPaymentApprover(this.accounts.user.address)
@@ -186,7 +186,7 @@ describe("AdminACLV1", async function () {
       await this.adminACL
         .connect(this.accounts.deployer)
         .addPaymentApprover(this.accounts.user.address);
-      expect(
+      await expect(
         await this.adminACL
           .connect(this.accounts.deployer)
           .removePaymentApprover(this.accounts.user.address)
