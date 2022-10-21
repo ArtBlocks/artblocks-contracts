@@ -9,14 +9,19 @@ import "@openzeppelin-4.7/contracts/utils/introspection/ERC165.sol";
 import "@openzeppelin-4.7/contracts/utils/structs/EnumerableSet.sol";
 
 /**
- * @title Admin ACL contract, V0.
+ * @title Admin ACL contract, V1.
  * @author Art Blocks Inc.
  * @notice Privileged Roles and Ownership:
- * This contract has a single superAdmin that passes all ACL checks. All checks
- * for any other address will return false.
+ * This contract has a single superAdmin that passes all ACL checks. It also
+ * contains a set of payment approvers who may only call the function
+ * `GenArt721CoreV3.adminAcceptArtistAddressesAndSplits`. All checks for any
+ * other address will return false.
  * The superAdmin can be changed by the current superAdmin.
+ * Payment approvers may only be changed by the current superAdmin.
  * Care must be taken to ensure that the admin ACL contract is secure behind a
  * multi-sig or other secure access control mechanism.
+ * This contract continues to broadcast support (and require future-adminACL
+ * broadcasted support) for IAdminACLV0 via ERC165 interface detection.
  */
 contract AdminACLV0 is IAdminACLV0, ERC165 {
     /// New address added to set of addresses who may approve artist-proposed
@@ -96,7 +101,10 @@ contract AdminACLV0 is IAdminACLV0, ERC165 {
 
     /**
      * @notice Checks if sender `_sender` is allowed to call function with selector
-     * `_selector` on contract `_contract`. Returns true if sender is superAdmin.
+     * `_selector` on contract `_contract`. Returns true if sender is superAdmin,
+     * or if `_selector` is
+     * GenArt721CoreV3.adminAcceptArtistAddressesAndSplits.selector and address
+     * is in set of payment approvers.
      */
     function allowed(
         address _sender,
