@@ -11,6 +11,9 @@ https://etherscan.io/address/0x942BC2d3e7a589FE5bd4A5C6eF9727DFd82F5C8a#code
 **MinterFilterV1**:
 https://etherscan.io/address/0x3F4bbde879F9BB0E95AEa08fF12F55E171495C8f#code
 
+**MinterSetPriceV2**:
+https://etherscan.io/address/0x6FB3104B0b3Cd665c7B8506b23eE833eA44d8E91#code
+
 **MinterMerkleV1**:
 https://etherscan.io/address/0x4A4DA854AB5C73814b17dAdE167B9b8861566066#code
 
