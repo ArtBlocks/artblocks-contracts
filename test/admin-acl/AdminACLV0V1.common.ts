@@ -89,5 +89,11 @@ export const AdminACLV0V1_Common = async (adminACLContractName: string) => {
         "Only superAdmin"
       );
     });
+
+    it("is callable by superAdmin", async function () {
+      await this.adminACL
+        .connect(this.accounts.deployer)
+        .renounceOwnershipOn(this.genArt721Core.address);
+    });
   });
 };

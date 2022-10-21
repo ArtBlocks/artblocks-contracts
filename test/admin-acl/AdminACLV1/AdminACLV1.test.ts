@@ -240,6 +240,18 @@ describe("AdminACLV1", async function () {
     });
   });
 
+  describe("allowed", async function () {
+    it("should return false when calling with non-superAdmin address and not GenArt721CoreV3.adminAcceptArtistAddressesAndSplits", async function () {
+      // expect non-superAdmin address to not be allowed to call V3 core's approve function
+      await expectRevert(
+        this.genArt721Core
+          .connect(this.accounts.user)
+          .updateArtblocksPrimarySalesAddress(this.accounts.additional.address),
+        "Only Admin ACL allowed"
+      );
+    });
+  });
+
   describe("getNumPaymentApprovers", async function () {
     it("should return correct number of approvers", async function () {
       expect(await this.adminACL.getNumPaymentApprovers()).to.equal(0);
