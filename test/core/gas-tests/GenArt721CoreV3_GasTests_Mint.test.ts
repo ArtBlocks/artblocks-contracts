@@ -83,7 +83,7 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
       this.minterFilter.address,
     ]);
 
-    this.minterHolder = await deployAndGet.call(this, "MinterHolderV1", [
+    this.minterHolder = await deployAndGet.call(this, "MinterHolderV2", [
       this.genArt721Core.address,
       this.minterFilter.address,
     ]);
