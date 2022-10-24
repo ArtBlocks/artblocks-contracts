@@ -71,7 +71,7 @@ Core contracts use the versioning schema below:
 |     PRTNR Cores      | V2_PRTNR |   All PRTNR   | Various - see PBAB+Collabs directory [DEPLOYMENTS.md files](https://github.com/search?q=repo%3AArtBlocks%2Fartblocks-contracts+extension%3Amd+filename%3ADEPLOYMENTS&type=Code&ref=advsearch&l=&l=) |
 | AB Core V3 (current) |    V3    |     374+      | `0x99a9B7c1116f9ceEB1652de04d5969CcE509B069`                                                                                                                                                        |
 
-> AB Core V3 [changelog here](./contracts/V3_CHANGELOG.md).
+> AB Core V3 [changelog here](./contracts/V3_CHANGELOG.md), and [performance metrics here](./contracts/V3_Performance.md).
 
 ### MinterFilter Suite Compatibility Chart
 
