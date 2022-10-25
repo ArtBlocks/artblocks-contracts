@@ -646,7 +646,7 @@ contract MinterHolderV2 is ReentrancyGuard, IFilteredMinterHolderV0 {
          */
         require(
             IERC721(_ownedNFTAddress).ownerOf(_ownedNFTTokenId) == vault,
-            "Only owner or delegate of NFT"
+            "Only owner of NFT"
         );
 
         // split funds

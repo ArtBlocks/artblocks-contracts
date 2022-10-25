@@ -1,13 +1,7 @@
 import {
-  BN,
-  constants,
-  expectEvent,
   expectRevert,
-  balance,
-  ether,
 } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
-import { BigNumber, Contract } from "ethers";
 import { ethers } from "hardhat";
 
 import {
@@ -20,6 +14,8 @@ import {
 } from "../../util/common";
 
 import { MinterHolder_Common } from "./MinterHolder.common";
+import { smock, FakeContract } from "@defi-wonderland/smock";
+import { IDelegationRegistry } from "../../../scripts/contracts";
 
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
@@ -33,6 +29,8 @@ const coreContractsToTest = [
  */
 for (const coreContractName of coreContractsToTest) {
   describe(`MinterHolderV2_${coreContractName}`, async function () {
+    let fakeDelegationRegistry: FakeContract<IDelegationRegistry>;
+
     beforeEach(async function () {
       // standard accounts and constants
       this.accounts = await getAccounts();
@@ -157,6 +155,11 @@ for (const coreContractName of coreContractsToTest) {
           [this.genArt721Core.address],
           [this.projectZero]
         );
+
+      // mock delegate.cash registry with Goerli/mainnet-deployed address
+      fakeDelegationRegistry = await smock.fake("IDelegationRegistry", {
+        address: "0x00000000000076A84feF008CDAbe6409d2FE638B",
+      });
     });
 
     describe("common MinterHolder tests", async () => {
@@ -358,6 +361,91 @@ for (const coreContractName of coreContractsToTest) {
               value: this.pricePerTokenInWei,
             }
           );
+      });
+    });
+
+    describe("purchaseTo_L69 with a VALID vault delegate", async function () {
+      it("does allow purchases", async function () {
+        fakeDelegationRegistry.checkDelegateForContract.returns(true);
+        
+        const allowlistedVault = this.accounts.artist.address;
+
+        await this.minter
+          .connect(this.accounts.user)
+          ["purchaseTo(address,uint256,address,uint256,address)"](
+            allowlistedVault,
+            this.projectZero,
+            this.genArt721Core.address,
+            this.projectZeroTokenZero.toNumber(),
+            allowlistedVault, //  the allowlisted address
+            {
+              value: this.pricePerTokenInWei,
+            }
+          );
+      });
+
+      it("allows purchases to vault if msg.sender is allowlisted and no vault is provided", async function () {
+        fakeDelegationRegistry.checkDelegateForContract.returns(true);
+
+        const allowlistedVault = this.accounts.artist.address;
+        
+        await this.minter
+          .connect(this.accounts.artist)
+          ["purchaseTo(address,uint256,address,uint256)"](
+            allowlistedVault,
+            this.projectZero,
+            this.genArt721Core.address,
+            this.projectZeroTokenZero.toNumber(),
+            {
+              value: this.pricePerTokenInWei,
+            }
+          );
+      });
+
+      it("does not allow purchases with an incorrect token", async function () {
+        fakeDelegationRegistry.checkDelegateForContract.returns(true);
+
+        const allowlistedVault = this.accounts.artist.address;
+
+        await expectRevert(
+          this.minter
+            .connect(this.accounts.user)
+            ["purchaseTo(address,uint256,address,uint256,address)"](
+              allowlistedVault,
+              this.projectOne,
+              this.genArt721Core.address,
+              this.projectZeroTokenOne.toNumber(),
+              allowlistedVault, //  the allowlisted address
+              {
+                value: this.pricePerTokenInWei,
+              }
+            ),
+          "Only allowlisted NFTs"
+        );
+      });
+    });
+
+    describe("purchaseTo_L69 with an INVALID vault delegate", async function () {
+      it("does NOT allow purchases", async function () {
+        fakeDelegationRegistry.checkDelegateForContract.returns(false);
+
+        const allowlistedVault = this.accounts.artist.address;
+
+        await expectRevert(
+          this.minter
+            .connect(this.accounts.user)
+            ["purchaseTo(address,uint256,address,uint256,address)"](
+              allowlistedVault,
+              this.projectZero,
+              this.genArt721Core.address,
+              this.projectZeroTokenZero.toNumber(),
+              allowlistedVault, //  the allowlisted address
+              {
+                value: this.pricePerTokenInWei,
+              }
+            ),
+          "Invalid delegate-vault pairing"
+        );
       });
     });
 
