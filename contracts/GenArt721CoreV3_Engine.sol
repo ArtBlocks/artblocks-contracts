@@ -661,9 +661,11 @@ contract GenArt721CoreV3_Engine is
         external
         onlyAdminACL(this.updateRenderProviderSecondarySalesBPS.selector)
     {
-        // TODO: validate that render+platform providers in sum don't exceed MAX_SECONDARY_SALES_BPS
+        // Validate that the sum of a) the current _platform_ provider BPS; and
+        // b) the proposed _render_ provider BPS, does not exceed 100%.
         require(
-            _renderProviderSecondarySalesBPS <= MAX_SECONDARY_SALES_BPS,
+            (_renderProviderSecondarySalesBPS +
+                platformProviderSecondarySalesBPS) <= MAX_SECONDARY_SALES_BPS,
             "Max of MAX_SECONDARY_SALES_BPS BPS"
         );
         renderProviderSecondarySalesBPS = _renderProviderSecondarySalesBPS;
@@ -687,9 +689,11 @@ contract GenArt721CoreV3_Engine is
         external
         onlyAdminACL(this.updatePlatformProviderSecondarySalesBPS.selector)
     {
-        // TODO: validate that render+platform providers in sum don't exceed MAX_SECONDARY_SALES_BPS
+        // Validate that the sum of a) the current _render_ provider BPS; and
+        // b) the proposed _platform_ provider BPS, does not exceed 100%.
         require(
-            _platformProviderSecondarySalesBPS <= MAX_SECONDARY_SALES_BPS,
+            (_platformProviderSecondarySalesBPS +
+                renderProviderSecondarySalesBPS) <= MAX_SECONDARY_SALES_BPS,
             "Max of MAX_SECONDARY_SALES_BPS BPS"
         );
         platformProviderSecondarySalesBPS = _platformProviderSecondarySalesBPS;
