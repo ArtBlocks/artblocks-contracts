@@ -187,7 +187,7 @@ library BytecodeStorage {
 
     /**
      * @notice Read a string from contract bytecode
-     * @param _address address of deployed contract with bytecode containing concat(gated-cleanup-logic, data)
+     * @param _address address of deployed contract with bytecode containing concat(gated-cleanup-logic, address, data)
      * @return data string read from contract bytecode
      */
     function readFromBytecode(address _address)
@@ -222,14 +222,14 @@ library BytecodeStorage {
             mstore(0x40, add(data, and(add(add(size, 0x20), 0x1f), not(0x1f))))
             // store length of data in first 32 bytes
             mstore(data, size)
-            // copy code to memory, excluding the gated-cleanup-logic
+            // copy code to memory, excluding the gated-cleanup-logic and address
             extcodecopy(_address, add(data, 0x20), DATA_OFFSET, size)
         }
     }
 
     /**
      * @notice Get address for deployer for given contract bytecode
-     * @param _address address of deployed contract with bytecode containing concat(gated-cleanup-logic, data)
+     * @param _address address of deployed contract with bytecode containing concat(gated-cleanup-logic, address, data)
      * @return writerAddress address read from contract bytecode
      */
     function getWriterAddressForBytecode(address _address)
@@ -277,7 +277,7 @@ library BytecodeStorage {
 
     /**
      * @notice Purge contract bytecode for cleanup purposes
-     * @param _address address of deployed contract with bytecode containing concat(gated-cleanup-logic, data)
+     * @param _address address of deployed contract with bytecode containing concat(gated-cleanup-logic, address, data)
      * @dev This contract is only callable by the address of the contract that originally deployed the bytecode
      *      being purged. If this method is called by any other address, it will revert with the `INVALID` op-code.
      *      Additionally, for security purposes, the contract must be called with calldata `0xFF` to ensure that
