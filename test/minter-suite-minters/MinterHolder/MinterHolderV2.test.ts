@@ -1,6 +1,4 @@
-import {
-  expectRevert,
-} from "@openzeppelin/test-helpers";
+import { expectRevert } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 
@@ -367,7 +365,7 @@ for (const coreContractName of coreContractsToTest) {
     describe("purchaseTo_L69 with a VALID vault delegate", async function () {
       it("does allow purchases", async function () {
         fakeDelegationRegistry.checkDelegateForContract.returns(true);
-        
+
         const allowlistedVault = this.accounts.artist.address;
 
         await this.minter
@@ -388,7 +386,7 @@ for (const coreContractName of coreContractsToTest) {
         fakeDelegationRegistry.checkDelegateForContract.returns(true);
 
         const allowlistedVault = this.accounts.artist.address;
-        
+
         await this.minter
           .connect(this.accounts.artist)
           ["purchaseTo(address,uint256,address,uint256)"](
