@@ -547,7 +547,9 @@ contract GenArt721CoreV3_Engine is
         onlyAdminACL(this.updateRenderProviderPrimarySalesAddress.selector)
         onlyNonZeroAddress(_renderProviderPrimarySalesAddress)
     {
-        _updateRenderProviderPrimarySalesAddress(_renderProviderPrimarySalesAddress);
+        _updateRenderProviderPrimarySalesAddress(
+            _renderProviderPrimarySalesAddress
+        );
     }
 
     /**
@@ -563,7 +565,9 @@ contract GenArt721CoreV3_Engine is
         onlyAdminACL(this.updatePlatformProviderPrimarySalesAddress.selector)
         onlyNonZeroAddress(_platformProviderPrimarySalesAddress)
     {
-        _updatePlatformProviderPrimarySalesAddress(_platformProviderPrimarySalesAddress);
+        _updatePlatformProviderPrimarySalesAddress(
+            _platformProviderPrimarySalesAddress
+        );
     }
 
     /**
@@ -579,7 +583,9 @@ contract GenArt721CoreV3_Engine is
         onlyAdminACL(this.updateRenderProviderSecondarySalesAddress.selector)
         onlyNonZeroAddress(_renderProviderSecondarySalesAddress)
     {
-        _updateRenderProviderSecondarySalesAddress(_renderProviderSecondarySalesAddress);
+        _updateRenderProviderSecondarySalesAddress(
+            _renderProviderSecondarySalesAddress
+        );
     }
 
     /**
@@ -595,7 +601,9 @@ contract GenArt721CoreV3_Engine is
         onlyAdminACL(this.updatePlatformProviderSecondarySalesAddress.selector)
         onlyNonZeroAddress(_platformProviderSecondarySalesAddress)
     {
-        _updatePlatformProviderSecondarySalesAddress(_platformProviderSecondarySalesAddress);
+        _updatePlatformProviderSecondarySalesAddress(
+            _platformProviderSecondarySalesAddress
+        );
     }
 
     /**
@@ -649,7 +657,10 @@ contract GenArt721CoreV3_Engine is
      */
     function updateRenderProviderSecondarySalesBPS(
         uint256 _renderProviderSecondarySalesBPS
-    ) external onlyAdminACL(this.updateRenderProviderSecondarySalesBPS.selector) {
+    )
+        external
+        onlyAdminACL(this.updateRenderProviderSecondarySalesBPS.selector)
+    {
         // TODO: validate that render+platform providers in sum don't exceed MAX_SECONDARY_SALES_BPS
         require(
             _renderProviderSecondarySalesBPS <= MAX_SECONDARY_SALES_BPS,
@@ -672,7 +683,10 @@ contract GenArt721CoreV3_Engine is
      */
     function updatePlatformProviderSecondarySalesBPS(
         uint256 _platformProviderSecondarySalesBPS
-    ) external onlyAdminACL(this.updatePlatformProviderSecondarySalesBPS.selector) {
+    )
+        external
+        onlyAdminACL(this.updatePlatformProviderSecondarySalesBPS.selector)
+    {
         // TODO: validate that render+platform providers in sum don't exceed MAX_SECONDARY_SALES_BPS
         require(
             _platformProviderSecondarySalesBPS <= MAX_SECONDARY_SALES_BPS,
@@ -1346,7 +1360,11 @@ contract GenArt721CoreV3_Engine is
      * @return uint256 The render provider portion of primary sales,
      * in percent.
      */
-    function renderProviderPrimarySalesPercentage() external view returns (uint256) {
+    function renderProviderPrimarySalesPercentage()
+        external
+        view
+        returns (uint256)
+    {
         return _renderProviderPrimarySalesPercentage;
     }
 
@@ -1356,7 +1374,11 @@ contract GenArt721CoreV3_Engine is
      * @return uint256 The platform provider portion of primary sales,
      * in percent.
      */
-    function platformProviderPrimarySalesPercentage() external view returns (uint256) {
+    function platformProviderPrimarySalesPercentage()
+        external
+        view
+        returns (uint256)
+    {
         return _platformProviderPrimarySalesPercentage;
     }
 
@@ -1954,7 +1976,9 @@ contract GenArt721CoreV3_Engine is
     function _updateRenderProviderPrimarySalesAddress(
         address _renderProviderPrimarySalesAddress
     ) internal {
-        renderProviderPrimarySalesAddress = payable(_renderProviderPrimarySalesAddress);
+        renderProviderPrimarySalesAddress = payable(
+            _renderProviderPrimarySalesAddress
+        );
         emit PlatformUpdated(FIELD_RENDER_PROVIDER_PRIMARY_SALES_ADDRESS);
     }
 
@@ -1968,7 +1992,9 @@ contract GenArt721CoreV3_Engine is
     function _updatePlatformProviderPrimarySalesAddress(
         address _platformProviderPrimarySalesAddress
     ) internal {
-        platformProviderPrimarySalesAddress = payable(_platformProviderPrimarySalesAddress);
+        platformProviderPrimarySalesAddress = payable(
+            _platformProviderPrimarySalesAddress
+        );
         emit PlatformUpdated(FIELD_PLATFORM_PROVIDER_PRIMARY_SALES_ADDRESS);
     }
 

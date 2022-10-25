@@ -137,10 +137,16 @@ interface IGenArt721CoreContractV3_Engine is IManifold {
         returns (address payable);
 
     // @dev Percentage of primary sales allocated to the render provider
-    function renderProviderPrimarySalesPercentage() external view returns (uint256);
+    function renderProviderPrimarySalesPercentage()
+        external
+        view
+        returns (uint256);
 
     // @dev Percentage of primary sales allocated to the render provider
-    function platformProviderPrimarySalesPercentage() external view returns (uint256);
+    function platformProviderPrimarySalesPercentage()
+        external
+        view
+        returns (uint256);
 
     // @dev The render provider secondary sales royalties payment address
     function renderProviderSecondarySalesAddress()
@@ -158,7 +164,10 @@ interface IGenArt721CoreContractV3_Engine is IManifold {
     function renderProviderSecondarySalesBPS() external view returns (uint256);
 
     // @dev Basis points of secondary sales allocated to the render provider
-    function platformProviderSecondarySalesBPS() external view returns (uint256);
+    function platformProviderSecondarySalesBPS()
+        external
+        view
+        returns (uint256);
 
     // function to set a token's hash (must be guarded)
     function setTokenHash_8PT(uint256 _tokenId, bytes32 _hash) external;
