@@ -61,12 +61,12 @@ module.exports = {
     mainnet: {
       url: MAINNET_JSON_RPC_PROVIDER_URL,
       accounts: [`0x${MAINNET_PRIVATE_KEY}`],
-      gasPrice: auto,
+      gasPrice: "auto",
     },
     goerli: {
       url: GOERLI_JSON_RPC_PROVIDER_URL,
       accounts: [`0x${TESTNET_PRIVATE_KEY}`],
-      gasPrice: auto,
+      gasPrice: "auto",
     },
     coverage: {
       url: "http://localhost:8545",
