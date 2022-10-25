@@ -11,5 +11,5 @@ V3 performance metrics are available in [V3_Performance.md](V3_Performance.md)
 - Changes "artblocks" payee to be split into a "renderProvider" and "platformProvider" set of payees
 - Removes "backwards compatible" oriented financial view-only methods
 - Updates royalty-limit logic to account for two providers – "render" and "platform" providers.
-- TODO: consider making a global "auto approve" proposals setting, that is determined at time of contract deployment, that likely should default to `true` based on most partners Engine settings
-- TODO: integrates with the Engine registration event emitter (https://github.com/ArtBlocks/artblocks-contracts/issues/358)
+- Added support for a global "auto approve" proposals setting `autoApproveArtistSplitProposals`, that is determined at time of contract deployment (this likely will default to `true` based on most Engine partners' onboarding processes currently)
+- TODO: integrates with the Engine registration-beacon event emitter (https://github.com/ArtBlocks/artblocks-contracts/issues/358)

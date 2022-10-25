@@ -86,6 +86,10 @@ import "./libs/0.8.x/Bytes32Strings.sol";
  * - transferOwnership
  * - renounceOwnership
  * ----------------------------------------------------------------------------
+ * The following configuration variables are set at time of contract deployment,
+ * and not modifiable thereafter (immutable after the point of deployment):
+ * - (bool) autoApproveArtistSplitProposals
+ * ----------------------------------------------------------------------------
  * Additional admin and artist privileged roles may be described on minters,
  * registries, and other contracts that may interact with this core contract.
  */
@@ -254,6 +258,15 @@ contract GenArt721CoreV3_Engine is
     /// default behavior is to allow new projects
     bool public newProjectsForbidden;
 
+    /// configuration variable (determined at time of deployment)
+    /// that determines whether or not admin approval^ should be required
+    /// to accept artist address change proposals, or if these proposals
+    /// should always auto-approve, as determined by the business process
+    /// requirements of the Engine partner using this contract.
+    ///
+    /// ^does not apply in the case where contract-ownership itself is revoked
+    bool public immutable autoApproveArtistSplitProposals;
+
     /// version & type of this core contract
     string public constant coreVersion = "v3.0.0";
     string public constant coreType = "GenArt721CoreV3";
@@ -344,6 +357,8 @@ contract GenArt721CoreV3_Engine is
      * @param _adminACLContract Address of admin access control contract, to be
      * set as contract owner.
      * @param _startingProjectId The initial next project ID.
+     * @param _autoApproveArtistSplitProposals Whether or not to always
+     * auto-approve proposed artist split updates.
      * @dev _startingProjectId should be set to a value much, much less than
      * max(uint248), but an explicit input type of `uint248` is used as it is
      * safer to cast up to `uint256` than it is to cast down for the purposes
@@ -356,7 +371,8 @@ contract GenArt721CoreV3_Engine is
         address _platformProviderAddress,
         address _randomizerContract,
         address _adminACLContract,
-        uint248 _startingProjectId
+        uint248 _startingProjectId,
+        bool _autoApproveArtistSplitProposals
     )
         ERC721_PackedHashSeed(_tokenName, _tokenSymbol)
         onlyNonZeroAddress(_randomizerContract)
@@ -382,6 +398,8 @@ contract GenArt721CoreV3_Engine is
         // initialize next project ID
         _nextProjectId = _startingProjectId;
         emit PlatformUpdated(FIELD_NEXT_PROJECT_ID);
+        // setup immutable `autoApproveArtistSplitProposals` config
+        autoApproveArtistSplitProposals = _autoApproveArtistSplitProposals;
     }
 
     /**
@@ -842,6 +860,10 @@ contract GenArt721CoreV3_Engine is
                 additionalPrimaryUnchangedOrRemoved &&
                 additionalSecondaryUnchangedOrRemoved;
         }
+        // if `autoApproveArtistSplitProposals` is `true`, always override
+        // `automaticAccept` to be `true` as admin approvals are not
+        // expected from a process perspective.
+        automaticAccept |= autoApproveArtistSplitProposals;
         if (automaticAccept) {
             // clear any previously proposed values
             proposedArtistAddressesAndSplitsHash[_projectId] = bytes32(0);
