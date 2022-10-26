@@ -1842,10 +1842,10 @@ contract GenArt721CoreV3_Engine is
             _projectId
         ];
         // calculate revenues
+        uint256 projectFunds;
         renderProviderRevenue_ =
             (_price * uint256(_renderProviderPrimarySalesPercentage)) /
             ONE_HUNDRED;
-        uint256 projectFunds;
         unchecked {
             // renderProviderRevenue_ percentage is always <=100, so guaranteed to never underflow
             projectFunds = _price - renderProviderRevenue_;
@@ -1853,7 +1853,6 @@ contract GenArt721CoreV3_Engine is
         platformProviderRevenue_ =
             (_price * uint256(_platformProviderPrimarySalesPercentage)) /
             ONE_HUNDRED;
-        uint256 projectFunds;
         unchecked {
             // platformProviderRevenue_ percentage is always <=100, so guaranteed to never underflow
             projectFunds = _price - platformProviderRevenue_;
