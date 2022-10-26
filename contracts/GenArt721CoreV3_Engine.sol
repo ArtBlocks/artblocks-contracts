@@ -35,8 +35,8 @@ import "./libs/0.8.x/Bytes32Strings.sol";
  * - updatePlatformProviderPrimarySalesAddress
  * - updateRenderProviderSecondarySalesAddress
  * - updatePlatformProviderSecondarySalesAddress
- * - updateRenderProviderPrimarySalesPercentage (up to 25%)
- * - updatePlatformProviderPrimarySalesPercentage (up to 25%)
+ * - updateRenderProviderPrimarySalesPercentage (up to 100%)
+ * - updatePlatformProviderPrimarySalesPercentage (up to 100%)
  * - updateRenderProviderSecondarySalesBPS (up to 100%)
  * - updatePlatformProviderSecondarySalesBPS (up to 100%)
  * - updateMinterContract
