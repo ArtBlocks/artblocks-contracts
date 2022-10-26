@@ -5,7 +5,7 @@ pragma solidity 0.8.17;
 
 import "./interfaces/0.8.x/IRandomizerV2.sol";
 import "./interfaces/0.8.x/IAdminACLV0.sol";
-import "./interfaces/0.8.x/IGenArt721CoreContractV3.sol";
+import "./interfaces/0.8.x/IGenArt721CoreContractV3_Engine.sol";
 import "./interfaces/0.8.x/IManifold.sol";
 
 import "@openzeppelin-4.7/contracts/utils/Strings.sol";
