@@ -43,7 +43,7 @@ library BytecodeStorage {
 
     /**
      * @notice Write a string to contract bytecode
-     * @param _data string to be written to contract
+     * @param _data string to be written to contract. No input validation is performed on this parameter.
      * @return address_ address of deployed contract with bytecode containing concat(gated-cleanup-logic, address, data)
      */
     function writeToBytecode(string memory _data)
@@ -277,6 +277,14 @@ library BytecodeStorage {
 
     /**
      * @notice Purge contract bytecode for cleanup purposes
+     * note: Although this does reduce usage of Ethereum state, it does not reduce the gas costs of removal
+     * transactions. We believe this is the best behavior at the time of writing, and do not expect this to
+     * result in any breaking changes in the future. All current proposals to change the self-destruct opcode
+     * are backwards compatible, but may result in not removing the bytecode from the blockchain state. This
+     * implementation is compatible with that architecture, as it does not rely on the bytecode being removed
+     * from the blockchain state (as opposed to using a CREATE2 style opcode when creating bytecode contracts,
+     * which could be used in a way that may rely on the bytecode being removed from the blockchain state,
+     * e.g. replacing a contract at a given deployed address).
      * @param _address address of deployed contract with bytecode containing concat(gated-cleanup-logic, address, data)
      * @dev This contract is only callable by the address of the contract that originally deployed the bytecode
      *      being purged. If this method is called by any other address, it will revert with the `INVALID` op-code.
