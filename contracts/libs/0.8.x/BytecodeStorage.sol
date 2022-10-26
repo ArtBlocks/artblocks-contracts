@@ -43,7 +43,7 @@ library BytecodeStorage {
 
     /**
      * @notice Write a string to contract bytecode
-     * @param _data string to be written to contract
+     * @param _data string to be written to contract. No input validation is performed on this parameter.
      * @return address_ address of deployed contract with bytecode containing concat(gated-cleanup-logic, data)
      */
     function writeToBytecode(string memory _data)
