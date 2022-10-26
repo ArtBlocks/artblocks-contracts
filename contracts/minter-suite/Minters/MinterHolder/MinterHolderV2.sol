@@ -43,7 +43,7 @@ pragma solidity 0.8.17;
  */
 contract MinterHolderV2 is ReentrancyGuard, IFilteredMinterHolderV0 {
     /// Delegation registry address
-    address public constant delegationRegistryAddress =
+    address public constant DELEGATION_REGISTRY_ADDRESS =
         0x00000000000076A84feF008CDAbe6409d2FE638B;
 
     /// Delegation registry address
@@ -164,7 +164,7 @@ contract MinterHolderV2 is ReentrancyGuard, IFilteredMinterHolderV0 {
         genArt721CoreAddress = _genArt721Address;
         genArtCoreContract = IGenArt721CoreContractV3(_genArt721Address);
         delegationRegistryContract = IDelegationRegistry(
-            delegationRegistryAddress
+            DELEGATION_REGISTRY_ADDRESS
         );
         minterFilterAddress = _minterFilter;
         minterFilter = IMinterFilterV0(_minterFilter);
@@ -476,7 +476,7 @@ contract MinterHolderV2 is ReentrancyGuard, IFilteredMinterHolderV0 {
         address _ownedNFTAddress,
         uint256 _ownedNFTTokenId
     ) external payable returns (uint256 tokenId) {
-        tokenId = purchaseTo_L69(
+        tokenId = purchaseTo_dlc(
             msg.sender,
             _projectId,
             _ownedNFTAddress,
@@ -494,7 +494,7 @@ contract MinterHolderV2 is ReentrancyGuard, IFilteredMinterHolderV0 {
         address _ownedNFTAddress,
         uint256 _ownedNFTTokenId
     ) external payable returns (uint256 tokenId) {
-        tokenId = purchaseTo_L69(
+        tokenId = purchaseTo_dlc(
             msg.sender,
             _projectId,
             _ownedNFTAddress,
@@ -522,7 +522,7 @@ contract MinterHolderV2 is ReentrancyGuard, IFilteredMinterHolderV0 {
         uint256 _ownedNFTTokenId
     ) external payable returns (uint256 tokenId) {
         return
-            purchaseTo_L69(
+            purchaseTo_dlc(
                 _to,
                 _projectId,
                 _ownedNFTAddress,
@@ -538,9 +538,9 @@ contract MinterHolderV2 is ReentrancyGuard, IFilteredMinterHolderV0 {
      * @param _to Address to be the new token's owner.
      * @param _projectId Project ID to mint a token on.
      * @param _ownedNFTAddress ERC-721 NFT address owned by msg.sender being used to
-     * claim right to purchase.
-     * @param _ownedNFTTokenId ERC-721 NFT token ID owned by msg.sender being used
-     * to claim right to purchase.
+     *         claim right to purchase.
+     * @param _ownedNFTTokenId ERC-721 NFT token ID owned by _vault being used
+     *         to claim right to purchase.
      * @param _vault Vault being purchased on behalf of.
      * @return tokenId Token ID of minted token
      */
@@ -552,7 +552,7 @@ contract MinterHolderV2 is ReentrancyGuard, IFilteredMinterHolderV0 {
         address _vault
     ) external payable returns (uint256 tokenId) {
         return
-            purchaseTo_L69(
+            purchaseTo_dlc(
                 _to,
                 _projectId,
                 _ownedNFTAddress,
@@ -563,8 +563,16 @@ contract MinterHolderV2 is ReentrancyGuard, IFilteredMinterHolderV0 {
 
     /**
      * @notice gas-optimized version of purchaseTo(address,uint256,address,uint256,address).
+     * @param _to Address to be the new token's owner.
+     * @param _projectId Project ID to mint a token on.
+     * @param _ownedNFTAddress ERC-721 NFT address owned by msg.sender being used to
+     *         claim right to purchase.
+     * @param _ownedNFTTokenId ERC-721 NFT token ID owned by _vault being used
+     *         to claim right to purchase.
+     * @param _vault Vault being purchased on behalf of.
+     * @return tokenId Token ID of minted token
      */
-    function purchaseTo_L69(
+    function purchaseTo_dlc(
         address _to,
         uint256 _projectId,
         address _ownedNFTAddress,
@@ -611,13 +619,14 @@ contract MinterHolderV2 is ReentrancyGuard, IFilteredMinterHolderV0 {
         if (_vault != address(0)) {
             // If a vault is provided, it must be valid, otherwise throw rather
             // than optimistically-minting with original `msg.sender`.
-            // Note, we do not check `checkDelegateForAll` as well, as it is known
-            // to be implicitly checked by calling `checkDelegateForContract`.
+            // Note, we do not check `checkDelegateForAll` or `checkDelegateForContract` as well, 
+            // as they are known to be implicitly checked by calling `checkDelegateForToken`.
             bool isValidVault = delegationRegistryContract
-                .checkDelegateForContract(
+                .checkDelegateForToken(
                     msg.sender, // delegate
-                    vault, // vault
-                    genArt721CoreAddress // contract
+                    _vault, // vault
+                    genArt721CoreAddress, // contract
+                    _ownedNFTTokenId // tokenId
                 );
             require(isValidVault, "Invalid delegate-vault pairing");
             vault = _vault;
