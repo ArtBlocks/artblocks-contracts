@@ -128,22 +128,25 @@ contract GenArt721CoreV3_Engine is
     bytes32 constant FIELD_RANDOMIZER_ADDRESS = "randomizerAddress";
     bytes32 constant FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS =
         "dependencyRegistryAddress";
+    // Note: for string-size reasons, the render/platform provider
+    //       constants below do not include the word "provider" in
+    //       the inline constants (so that they may fit in 32 bytes).
     bytes32 constant FIELD_RENDER_PROVIDER_PRIMARY_SALES_ADDRESS =
-        "renderProviderPrimarySalesAddress";
+        "renderPrimarySalesAddress";
     bytes32 constant FIELD_PLATFORM_PROVIDER_PRIMARY_SALES_ADDRESS =
-        "platformProviderPrimarySalesAddress";
+        "platformPrimarySalesAddress";
     bytes32 constant FIELD_RENDER_PROVIDER_SECONDARY_SALES_ADDRESS =
-        "renderProviderSecondarySalesAddress";
+        "renderSecondarySalesAddress";
     bytes32 constant FIELD_PLATFORM_PROVIDER_SECONDARY_SALES_ADDRESS =
-        "platformProviderSecondarySalesAddress";
+        "platformSecondarySalesAddress";
     bytes32 constant FIELD_RENDER_PROVIDER_PRIMARY_SALES_PERCENTAGE =
-        "renderProviderPrimaryPercentage";
+        "renderPrimaryPercentage";
     bytes32 constant FIELD_PLATFORM_PROVIDER_PRIMARY_SALES_PERCENTAGE =
-        "platformProviderPrimaryPercentage";
+        "platformPrimaryPercentage";
     bytes32 constant FIELD_RENDER_PROVIDER_SECONDARY_SALES_BPS =
-        "renderProviderSecondaryBPS";
+        "renderSecondaryBPS";
     bytes32 constant FIELD_PLATFORM_PROVIDER_SECONDARY_SALES_BPS =
-        "platformProviderSecondaryBPS";
+        "platformSecondaryBPS";
     // The following fields are used to indicate which project-level parameter
     // has been updated in the `ProjectUpdated` event:
     bytes32 constant FIELD_PROJECT_COMPLETED = "completed";
@@ -1938,7 +1941,7 @@ contract GenArt721CoreV3_Engine is
     function owner()
         public
         view
-        override(Ownable, IGenArt721CoreContractV3)
+        override(Ownable, IGenArt721CoreContractV3_Engine)
         returns (address)
     {
         return Ownable.owner();
