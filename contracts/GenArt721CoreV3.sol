@@ -1005,7 +1005,8 @@ contract GenArt721CoreV3 is
     /**
      * @notice Adds a script to project `_projectId`.
      * @param _projectId Project to be updated.
-     * @param _script Script to be added.
+     * @param _script Script to be added. Required to be a non-empty string,
+     * but no further validation is performed.
      */
     function addProjectScript(uint256 _projectId, string memory _script)
         external
@@ -1025,7 +1026,8 @@ contract GenArt721CoreV3 is
      * @notice Updates script for project `_projectId` at script ID `_scriptId`.
      * @param _projectId Project to be updated.
      * @param _scriptId Script ID to be updated.
-     * @param _script The updated script value.
+     * @param _script The updated script value. Required to be a non-empty
+     * string, but no further validation is performed.
      */
     function updateProjectScript(
         uint256 _projectId,
