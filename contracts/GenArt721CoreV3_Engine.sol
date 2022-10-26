@@ -380,6 +380,8 @@ contract GenArt721CoreV3_Engine is
         ERC721_PackedHashSeed(_tokenName, _tokenSymbol)
         onlyNonZeroAddress(_randomizerContract)
     {
+        // setup immutable `autoApproveArtistSplitProposals` config
+        autoApproveArtistSplitProposals = _autoApproveArtistSplitProposals;
         // record contracts starting project ID
         // casting-up is safe
         startingProjectId = uint256(_startingProjectId);
@@ -401,8 +403,6 @@ contract GenArt721CoreV3_Engine is
         // initialize next project ID
         _nextProjectId = _startingProjectId;
         emit PlatformUpdated(FIELD_NEXT_PROJECT_ID);
-        // setup immutable `autoApproveArtistSplitProposals` config
-        autoApproveArtistSplitProposals = _autoApproveArtistSplitProposals;
     }
 
     /**
