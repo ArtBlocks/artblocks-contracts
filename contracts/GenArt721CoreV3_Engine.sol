@@ -110,7 +110,7 @@ contract GenArt721CoreV3_Engine is
     uint8 constant AT_CHARACTER_CODE = uint8(bytes1("@")); // 0x40
 
     // numeric constants
-    uint256 constant MAX_SECONDARY_SALES_BPS = 10000; // 10_000 BPS = 100%
+    uint256 constant MAX_PROVIDER_SECONDARY_SALES_BPS = 10000; // 10_000 BPS = 100%
     uint256 constant ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE = 95; // 95%
 
     // This contract emits generic events that contain fields that indicate
@@ -699,8 +699,9 @@ contract GenArt721CoreV3_Engine is
         // b) the proposed *render* provider BPS, does not exceed 10_000 BPS.
         require(
             (_renderProviderSecondarySalesBPS + /* proposed */
-                platformProviderSecondarySalesBPS) <= MAX_SECONDARY_SALES_BPS, /* current */
-            "Max sum of MAX_SECONDARY_SALES_BPS BPS"
+                platformProviderSecondarySalesBPS) <=
+                MAX_PROVIDER_SECONDARY_SALES_BPS, /* current */
+            "Max sum of MAX_PROVIDER_SECONDARY_SALES_BPS BPS"
         );
         renderProviderSecondarySalesBPS = _renderProviderSecondarySalesBPS;
         emit PlatformUpdated(FIELD_RENDER_PROVIDER_SECONDARY_SALES_BPS);
@@ -727,8 +728,9 @@ contract GenArt721CoreV3_Engine is
         // b) the proposed *platform* provider BPS, does not exceed 10_000 BPS.
         require(
             (_platformProviderSecondarySalesBPS + /* proposed */
-                renderProviderSecondarySalesBPS) <= MAX_SECONDARY_SALES_BPS, /* current */
-            "Max sum of MAX_SECONDARY_SALES_BPS BPS"
+                renderProviderSecondarySalesBPS) <=
+                MAX_PROVIDER_SECONDARY_SALES_BPS, /* current */
+            "Max sum of MAX_PROVIDER_SECONDARY_SALES_BPS BPS"
         );
         platformProviderSecondarySalesBPS = _platformProviderSecondarySalesBPS;
         emit PlatformUpdated(FIELD_PLATFORM_PROVIDER_SECONDARY_SALES_BPS);
