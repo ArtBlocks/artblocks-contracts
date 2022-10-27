@@ -379,7 +379,10 @@ contract GenArt721CoreV3_Engine is
         bool _autoApproveArtistSplitProposals
     )
         ERC721_PackedHashSeed(_tokenName, _tokenSymbol)
+        onlyNonZeroAddress(_renderProviderAddress)
+        onlyNonZeroAddress(_platformProviderAddress)
         onlyNonZeroAddress(_randomizerContract)
+        onlyNonZeroAddress(_adminACLContract)
     {
         // setup immutable `autoApproveArtistSplitProposals` config
         autoApproveArtistSplitProposals = _autoApproveArtistSplitProposals;
