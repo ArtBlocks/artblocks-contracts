@@ -875,7 +875,7 @@ contract GenArt721CoreV3_Engine is
         // if `autoApproveArtistSplitProposals` is `true`, always override
         // `automaticAccept` to be `true` as admin approvals are not
         // expected from a process perspective.
-        automaticAccept |= autoApproveArtistSplitProposals;
+        automaticAccept = automaticAccept || autoApproveArtistSplitProposals;
         if (automaticAccept) {
             // clear any previously proposed values
             proposedArtistAddressesAndSplitsHash[_projectId] = bytes32(0);
