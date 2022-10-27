@@ -362,9 +362,9 @@ for (const coreContractName of coreContractsToTest) {
       });
     });
 
-    describe("purchaseTo_L69 with a VALID vault delegate", async function () {
+    describe("purchaseTo_dlc with a VALID vault delegate", async function () {
       it("does allow purchases", async function () {
-        fakeDelegationRegistry.checkDelegateForContract.returns(true);
+        fakeDelegationRegistry.checkDelegateForToken.returns(true);
 
         const allowlistedVault = this.accounts.artist.address;
 
@@ -383,7 +383,7 @@ for (const coreContractName of coreContractsToTest) {
       });
 
       it("allows purchases to vault if msg.sender is allowlisted and no vault is provided", async function () {
-        fakeDelegationRegistry.checkDelegateForContract.returns(true);
+        fakeDelegationRegistry.checkDelegateForToken.returns(true);
 
         const allowlistedVault = this.accounts.artist.address;
 
@@ -401,7 +401,7 @@ for (const coreContractName of coreContractsToTest) {
       });
 
       it("does not allow purchases with an incorrect token", async function () {
-        fakeDelegationRegistry.checkDelegateForContract.returns(true);
+        fakeDelegationRegistry.checkDelegateForToken.returns(true);
 
         const allowlistedVault = this.accounts.artist.address;
 
@@ -423,9 +423,9 @@ for (const coreContractName of coreContractsToTest) {
       });
     });
 
-    describe("purchaseTo_L69 with an INVALID vault delegate", async function () {
+    describe("purchaseTo_dlc with an INVALID vault delegate", async function () {
       it("does NOT allow purchases", async function () {
-        fakeDelegationRegistry.checkDelegateForContract.returns(false);
+        fakeDelegationRegistry.checkDelegateForToken.returns(false);
 
         const allowlistedVault = this.accounts.artist.address;
 

@@ -16,7 +16,9 @@ pragma solidity 0.8.17;
 
 /**
  * @title Filtered Minter contract that allows tokens to be minted with ETH
- * when purchaser owns an allowlisted ERC-721 NFT.
+ * when purchaser owns an allowlisted ERC-721 NFT. This contract does NOT track
+ * if a purchaser has/has not minted already -- it simply restricts purchasing
+ * to anybody that holds one or more of a specified list of ERC-721 NFTs.
  * This is designed to be used with IGenArt721CoreContractV3 contracts.
  * @author Art Blocks Inc.
  * @notice Privileged Roles and Ownership:
@@ -40,6 +42,18 @@ pragma solidity 0.8.17;
  * ----------------------------------------------------------------------------
  * Additional admin and artist privileged roles may be described on other
  * contracts that this minter integrates with.
+ * ----------------------------------------------------------------------------
+ * This contract allows vaults to configure token-level delegation of
+ * minting privileges. This allows a vault holding an allowed token to
+ * delegate minting privileges to a wallet that is not holding an allowed token,
+ * enabling the vault to remain air-gapped while still allowing minting. The
+ * delegation registry contract is responsible for managing these delegations,
+ * and is available at the address returned by the public constant
+ * `DELEGATION_REGISTRY_ADDRESS`. At the time of writing, the delegation
+ * registry enables easy delegation configuring at https://delegate.cash/.
+ * Art Blocks does not guarentee the security of the delegation registry, and
+ * users should take care to ensure that the delegation registry is secure.
+ * Token-level delegations must be configured by the vault owner prior to purchase.
  */
 contract MinterHolderV2 is ReentrancyGuard, IFilteredMinterHolderV0 {
     /// Delegation registry address
@@ -619,7 +633,7 @@ contract MinterHolderV2 is ReentrancyGuard, IFilteredMinterHolderV0 {
         if (_vault != address(0)) {
             // If a vault is provided, it must be valid, otherwise throw rather
             // than optimistically-minting with original `msg.sender`.
-            // Note, we do not check `checkDelegateForAll` or `checkDelegateForContract` as well, 
+            // Note, we do not check `checkDelegateForAll` or `checkDelegateForContract` as well,
             // as they are known to be implicitly checked by calling `checkDelegateForToken`.
             bool isValidVault = delegationRegistryContract
                 .checkDelegateForToken(
