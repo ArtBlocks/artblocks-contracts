@@ -3,7 +3,7 @@
 
 pragma solidity ^0.8.0;
 
-interface IEngineContractMintingAPIV0 {
+interface IMintingAPIMinterV0 {
     mapping(uint256 => bool) public projectMaxHasBeenInvoked;
 
     function purchaseTo(address _to, uint256 _projectId)
