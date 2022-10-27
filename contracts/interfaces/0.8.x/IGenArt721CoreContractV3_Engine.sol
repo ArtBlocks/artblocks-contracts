@@ -163,7 +163,7 @@ interface IGenArt721CoreContractV3_Engine is IManifold {
     // @dev Basis points of secondary sales allocated to the render provider
     function renderProviderSecondarySalesBPS() external view returns (uint256);
 
-    // @dev Basis points of secondary sales allocated to the render provider
+    // @dev Basis points of secondary sales allocated to the platform provider
     function platformProviderSecondarySalesBPS()
         external
         view
