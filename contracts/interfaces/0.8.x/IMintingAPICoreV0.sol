@@ -3,7 +3,7 @@
 
 pragma solidity ^0.8.0;
 
-interface IEngineContractMintingAPIV0 {
+interface IMintingAPICoreV0 {
     /**
      * @notice Token ID `_tokenId` minted on project ID `_projectId` to `_to`.
      */
