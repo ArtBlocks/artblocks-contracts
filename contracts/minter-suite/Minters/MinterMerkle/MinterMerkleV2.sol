@@ -453,7 +453,7 @@ contract MinterMerkleV2 is ReentrancyGuard, IFilteredMinterMerkleV0 {
             bool isValidDelegee = delegationRegistryContract
                 .checkDelegateForContract(
                     msg.sender, // delegate
-                    vault, // vault
+                    _vault, // vault
                     genArt721CoreAddress // contract
                 );
             require(isValidDelegee, "Invalid delegate-vault pairing");
