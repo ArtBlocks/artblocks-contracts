@@ -272,8 +272,8 @@ contract GenArt721CoreV3_Engine is
     bool public immutable autoApproveArtistSplitProposals;
 
     /// version & type of this core contract
-    string public constant coreVersion = "v3.0.0";
-    string public constant coreType = "GenArt721CoreV3";
+    string public constant coreVersion = "v3.1.0";
+    string public constant coreType = "GenArt721CoreV3_Engine";
 
     /// default base URI to initialize all new project projectBaseURI values to
     string public defaultBaseURI;
