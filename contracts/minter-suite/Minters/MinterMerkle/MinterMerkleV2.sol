@@ -32,12 +32,26 @@ pragma solidity 0.8.17;
  * ----------------------------------------------------------------------------
  * Additional admin and artist privileged roles may be described on other
  * contracts that this minter integrates with.
+ * ----------------------------------------------------------------------------
+ * This contract allows vaults to configure token-level or wallet-level
+ * delegation of minting privileges. This allows a vault on an allowlist to
+ * delegate minting privileges to a wallet that is not on the allowlist,
+ * enabling the vault to remain air-gapped while still allowing minting. The
+ * delegation registry contract is responsible for managing these delegations,
+ * and is available at the address returned by the public constant
+ * `DELEGATION_REGISTRY_ADDRESS`. At the time of writing, the delegation
+ * registry enables easy delegation configuring at https://delegate.cash/.
+ * Art Blocks does not guarentee the security of the delegation registry, and
+ * users should take care to ensure that the delegation registry is secure.
+ * Token-level delegations are configured by the vault owner, and contract-
+ * level delegations must be configured for the core token contract as returned
+ * by the public immutable variable `genArt721CoreAddress`.
  */
 contract MinterMerkleV2 is ReentrancyGuard, IFilteredMinterMerkleV0 {
     using MerkleProof for bytes32[];
 
     /// Delegation registry address
-    address public constant delegationRegistryAddress =
+    address public constant DELEGATION_REGISTRY_ADDRESS =
         0x00000000000076A84feF008CDAbe6409d2FE638B;
 
     /// Delegation registry address
@@ -115,7 +129,7 @@ contract MinterMerkleV2 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         genArt721CoreAddress = _genArt721Address;
         genArtCoreContract = IGenArt721CoreContractV3(_genArt721Address);
         delegationRegistryContract = IDelegationRegistry(
-            delegationRegistryAddress
+            DELEGATION_REGISTRY_ADDRESS
         );
         minterFilterAddress = _minterFilter;
         minterFilter = IMinterFilterV0(_minterFilter);
@@ -370,7 +384,7 @@ contract MinterMerkleV2 is ReentrancyGuard, IFilteredMinterMerkleV0 {
      * @param _to Address to be the new token's owner.
      * @param _projectId Project ID to mint a token on.
      * @param _proof Merkle proof.
-     * @param _vault Delegee being purchased on behalf of.
+     * @param _vault Vault being purchased on behalf of.
      * @return tokenId Token ID of minted token
      */
     function purchaseTo(
@@ -383,7 +397,14 @@ contract MinterMerkleV2 is ReentrancyGuard, IFilteredMinterMerkleV0 {
     }
 
     /**
-     * @notice gas-optimized version of purchaseTo(address,uint256,bytes32[]).
+     * @notice gas-optimized version of
+     * purchaseTo(address,uint256,bytes32[],address).
+     * @param _to Address to be the new token's owner.
+     * @param _projectId Project ID to mint a token on.
+     * @param _proof Merkle proof. Must be a valid proof of either `msg.sender`
+     * if `_vault` is `address(0)`, or `_vault` if `_vault` is not `address(0)`.
+     * @param _vault Vault being purchased on behalf of. Acceptable to be
+     * address(0) if no vault.
      */
     function purchaseTo_kem(
         address _to,
@@ -432,7 +453,7 @@ contract MinterMerkleV2 is ReentrancyGuard, IFilteredMinterMerkleV0 {
             bool isValidDelegee = delegationRegistryContract
                 .checkDelegateForContract(
                     msg.sender, // delegate
-                    vault, // vault
+                    _vault, // vault
                     genArt721CoreAddress // contract
                 );
             require(isValidDelegee, "Invalid delegate-vault pairing");
