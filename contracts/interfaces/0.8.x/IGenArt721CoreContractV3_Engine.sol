@@ -130,7 +130,7 @@ interface IGenArt721CoreContractV3_Engine is IManifold {
         view
         returns (address payable);
 
-    // @dev The render provider primary sales payment address
+    // @dev The platform provider primary sales payment address
     function platformProviderPrimarySalesAddress()
         external
         view
