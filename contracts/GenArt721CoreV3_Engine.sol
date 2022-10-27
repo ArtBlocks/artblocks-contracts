@@ -1853,31 +1853,28 @@ contract GenArt721CoreV3_Engine is
         ProjectFinance storage projectFinance = projectIdToFinancials[
             _projectId
         ];
-        // calculate revenues
+        // calculate revenues – this is a three-way split between the
+        // render provider, the platform provider, and the artist, and
+        // is safe to perform this given that in the case of loss of
+        // precision Solidity will round down.
         uint256 projectFunds;
         renderProviderRevenue_ =
             (_price * uint256(_renderProviderPrimarySalesPercentage)) /
             ONE_HUNDRED;
-        unchecked {
-            // renderProviderRevenue_ percentage is always <=100, so guaranteed to never underflow
-            projectFunds = _price - renderProviderRevenue_;
-        }
+        // renderProviderRevenue_ percentage is always <=100, so guaranteed to never underflow
+        projectFunds = _price - renderProviderRevenue_;
         platformProviderRevenue_ =
             (_price * uint256(_platformProviderPrimarySalesPercentage)) /
             ONE_HUNDRED;
-        unchecked {
-            // platformProviderRevenue_ percentage is always <=100, so guaranteed to never underflow
-            projectFunds = _price - platformProviderRevenue_;
-        }
+        // platformProviderRevenue_ percentage is always <=100, so guaranteed to never underflow
+        projectFunds = _price - platformProviderRevenue_;
         additionalPayeePrimaryRevenue_ =
             (projectFunds *
                 projectFinance.additionalPayeePrimarySalesPercentage) /
             ONE_HUNDRED;
-        unchecked {
-            // projectIdToAdditionalPayeePrimarySalesPercentage is always
-            // <=100, so guaranteed to never underflow
-            artistRevenue_ = projectFunds - additionalPayeePrimaryRevenue_;
-        }
+        // projectIdToAdditionalPayeePrimarySalesPercentage is always
+        // <=100, so guaranteed to never underflow
+        artistRevenue_ = projectFunds - additionalPayeePrimaryRevenue_;
         // set addresses from storage
         renderProviderAddress_ = renderProviderPrimarySalesAddress;
         platformProviderAddress_ = platformProviderPrimarySalesAddress;
