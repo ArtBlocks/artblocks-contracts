@@ -102,6 +102,7 @@ contract GenArt721CoreV3_Engine is
     using BytecodeStorage for address;
     using Bytes32Strings for bytes32;
     using Strings for uint256;
+    using Strings for address;
     uint256 constant ONE_HUNDRED = 100;
     uint256 constant ONE_MILLION = 1_000_000;
     uint24 constant ONE_MILLION_UINT24 = 1_000_000;
