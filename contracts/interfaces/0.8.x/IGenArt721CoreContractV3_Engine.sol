@@ -142,7 +142,7 @@ interface IGenArt721CoreContractV3_Engine is IManifold {
         view
         returns (uint256);
 
-    // @dev Percentage of primary sales allocated to the render provider
+    // @dev Percentage of primary sales allocated to the platform provider
     function platformProviderPrimarySalesPercentage()
         external
         view
