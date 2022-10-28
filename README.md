@@ -84,7 +84,7 @@ The following table shows which Minters and MinterFilters are compatible with wh
 | V0                       | -              | (legacy minter)                                                                                                 | -                                                                           |
 | V1, V1_PRTNR             | MinterFilterV0 | MinterSetPriceV1<br>MinterSetPriceERC20V1<br>MinterDAExpV1<br>MinterDALinV1<br>MinterMerkleV0<br>MinterHolderV0 | MinterSetPriceV0<br>MinterSetPriceERC20V0<br>MinterDAExpV0<br>MinterDALinV0 |
 | V2 (PBAB)                | -              | (various PBAB minters)                                                                                          | -                                                                           |
-| V3, V3_Explorations      | MinterFilterV1 | MinterSetPriceV2<br>MinterSetPriceERC20V2<br>MinterDAExpV2<br>MinterDALinV2<br>MinterMerkleV2<br>MinterHolderV1 | -                                                                           |
+| V3, V3_Explorations      | MinterFilterV1 | MinterSetPriceV2<br>MinterSetPriceERC20V2<br>MinterDAExpV2<br>MinterDALinV2<br>MinterMerkleV2<br>MinterHolderV1 | MinterMerkleV1                                                              |
 
 ### Active Minting Contract(s)
 
@@ -117,6 +117,7 @@ These are the smart contracts that receive funds, and split them between the art
 #### MinterMerkle (Address Allowlist)
 
 - V1: [0xae5A48D22Cd069c4d72dDe204A7fB4B302e614af](https://etherscan.io/address/0xae5A48D22Cd069c4d72dDe204A7fB4B302e614af)
+- V2: [0x6Ff3c104Ca9b4860D27079aFfF18701c4A532A4d](https://etherscan.io/address/0x6Ff3c104Ca9b4860D27079aFfF18701c4A532A4d)
 
 #### Minter Holder (Token Holder)
 
@@ -130,7 +131,7 @@ MinterFilterV1 for flagship V3 core: [0x092B8F64e713d66b38522978BCf4649db14b931E
 
 Legacy minting contract for flagship V0 core: [0x47e312d99c09ce61a866c83cbbbbed5a4b9d33e7](https://etherscan.io/address/0x47e312d99c09ce61a866c83cbbbbed5a4b9d33e7).
 
-For deployed PBAB/PRTNR minting contracts, see PBAB directory [DEPLOYMENTS.md files](https://github.com/search?q=repo%3AArtBlocks%2Fartblocks-contracts+extension%3Amd+filename%3ADEPLOYMENTS&type=Code&ref=advsearch&l=&l=).
+For deployed Engine/Partner/Explorations minting contracts, see PBAB directory [DEPLOYMENTS.md files](https://github.com/search?q=repo%3AArtBlocks%2Fartblocks-contracts+extension%3Amd+filename%3Adeployments&type=Code&ref=advsearch&l=&l=).
 
 ### Shared Randomizers
 

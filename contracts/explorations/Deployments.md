@@ -17,6 +17,9 @@ https://etherscan.io/address/0x6FB3104B0b3Cd665c7B8506b23eE833eA44d8E91#code
 **MinterMerkleV1**:
 https://etherscan.io/address/0x4A4DA854AB5C73814b17dAdE167B9b8861566066#code
 
+**MinterMerkleV2**:
+https://etherscan.io/address/0x0711A9767a41290D7f52714204618345C584f450#code
+
 `0xCF00eC2B327BCfA2bee2D8A5Aee0A7671d08A283` set as superAdmin of adminACL contract.
 
 ## Goerli
