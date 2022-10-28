@@ -51,8 +51,7 @@ contract MinterMerkleV2 is ReentrancyGuard, IFilteredMinterMerkleV0 {
     using MerkleProof for bytes32[];
 
     /// Delegation registry address
-    address public constant DELEGATION_REGISTRY_ADDRESS =
-        0x00000000000076A84feF008CDAbe6409d2FE638B;
+    address public immutable DELEGATION_REGISTRY_ADDRESS;
 
     /// Delegation registry address
     IDelegationRegistry private immutable delegationRegistryContract;
@@ -122,12 +121,16 @@ contract MinterMerkleV2 is ReentrancyGuard, IFilteredMinterMerkleV0 {
      * which this contract will be a minter.
      * @param _minterFilter Minter filter for which this will be a
      * filtered minter.
+     * @param _delegationRegistryAddress Delegation registry contract address.
      */
-    constructor(address _genArt721Address, address _minterFilter)
-        ReentrancyGuard()
-    {
+    constructor(
+        address _genArt721Address,
+        address _minterFilter,
+        address _delegationRegistryAddress
+    ) ReentrancyGuard() {
         genArt721CoreAddress = _genArt721Address;
         genArtCoreContract = IGenArt721CoreContractV3(_genArt721Address);
+        DELEGATION_REGISTRY_ADDRESS = _delegationRegistryAddress;
         delegationRegistryContract = IDelegationRegistry(
             DELEGATION_REGISTRY_ADDRESS
         );

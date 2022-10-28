@@ -22,6 +22,7 @@ const minterFilter_Flagship = "0x092B8F64e713d66b38522978BCf4649db14b931E";
 const genArt721V3Core_Explorations =
   "0x942BC2d3e7a589FE5bd4A5C6eF9727DFd82F5C8a";
 const minterFilter_Explorations = "0x3F4bbde879F9BB0E95AEa08fF12F55E171495C8f";
+const delegationRegistryAddress = "0xTODO"; // for ETH mainnet, use 0x00000000000076A84feF008CDAbe6409d2FE638B
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG ENDS HERE
 //////////////////////////////////////////////////////////////////////////////
@@ -42,7 +43,8 @@ async function main() {
   // flagship
   const minterMerkleFlagship = await minterMerkleFactory.deploy(
     genArt721V3Core_Flagship,
-    minterFilter_Flagship
+    minterFilter_Flagship,
+    delegationRegistryAddress
   );
   await minterMerkleFlagship.deployed();
   const minterMerkleFlagshipAddress = minterMerkleFlagship.address;
@@ -53,7 +55,8 @@ async function main() {
   // explorations
   const minterMerkleExplorations = await minterMerkleFactory.deploy(
     genArt721V3Core_Explorations,
-    minterFilter_Explorations
+    minterFilter_Explorations,
+    delegationRegistryAddress
   );
   await minterMerkleExplorations.deployed();
   const minterMerkleExplorationsAddress = minterMerkleExplorations.address;
@@ -78,11 +81,11 @@ async function main() {
   const standardVerify = "yarn hardhat verify";
   console.log(`Verify MinterMerkleV2 (flagship) contract deployment with:`);
   console.log(
-    `${standardVerify} --network ${networkName} ${minterMerkleFlagshipAddress} ${genArt721V3Core_Flagship} ${minterFilter_Flagship}`
+    `${standardVerify} --network ${networkName} ${minterMerkleFlagshipAddress} ${genArt721V3Core_Flagship} ${minterFilter_Flagship} ${delegationRegistryAddress}`
   );
   console.log(`Verify MinterMerkleV2 (explorations) contract deployment with:`);
   console.log(
-    `${standardVerify} --network ${networkName} ${minterMerkleExplorationsAddress} ${genArt721V3Core_Explorations} ${minterFilter_Explorations}`
+    `${standardVerify} --network ${networkName} ${minterMerkleExplorationsAddress} ${genArt721V3Core_Explorations} ${minterFilter_Explorations} ${delegationRegistryAddress}`
   );
 
   //////////////////////////////////////////////////////////////////////////////
