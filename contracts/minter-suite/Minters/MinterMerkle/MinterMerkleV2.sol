@@ -33,7 +33,7 @@ pragma solidity 0.8.17;
  * Additional admin and artist privileged roles may be described on other
  * contracts that this minter integrates with.
  * ----------------------------------------------------------------------------
- * This contract allows gated minting with support for vaults to delegate minting 
+ * This contract allows gated minting with support for vaults to delegate minting
  * privileges via an external delegation registry. This means a vault on an allowlist
  * can delegate minting privileges to a wallet that is not on the allowlist,
  * enabling the vault to remain air-gapped while still allowing minting. The
