@@ -43,17 +43,20 @@ pragma solidity 0.8.17;
  * Additional admin and artist privileged roles may be described on other
  * contracts that this minter integrates with.
  * ----------------------------------------------------------------------------
- * This contract allows vaults to configure token-level delegation of
- * minting privileges. This allows a vault holding an allowed token to
- * delegate minting privileges to a wallet that is not holding an allowed token,
- * enabling the vault to remain air-gapped while still allowing minting. The
- * delegation registry contract is responsible for managing these delegations,
+ * This contract allows gated minting with support for vaults to delegate minting 
+ * privileges via an external delegation registry. This means a vault holding an 
+ * allowed token can delegate minting privileges to a wallet that is not holding an
+ * allowed token, enabling the vault to remain air-gapped while still allowing minting.
+ * The delegation registry contract is responsible for managing these delegations,
  * and is available at the address returned by the public constant
  * `DELEGATION_REGISTRY_ADDRESS`. At the time of writing, the delegation
  * registry enables easy delegation configuring at https://delegate.cash/.
  * Art Blocks does not guarentee the security of the delegation registry, and
  * users should take care to ensure that the delegation registry is secure.
- * Token-level delegations must be configured by the vault owner prior to purchase.
+ * Delegations must be configured by the vault owner prior to purchase. Supported
+ * delegation types include token-level, contract-level (via genArt721CoreAddress), or
+ * wallet-level delegation. Contract-level delegations must be configured for the core 
+ * token contract as returned by the public immutable variable `genArt721CoreAddress`.
  */
 contract MinterHolderV2 is ReentrancyGuard, IFilteredMinterHolderV0 {
     /// Delegation registry address
