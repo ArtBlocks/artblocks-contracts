@@ -11,6 +11,7 @@ pragma solidity 0.8.9;
 /**
  * @title Powered by Art Blocks ERC-721 core contract.
  * Support for IYK pull mechanism to transfer tokens based on verified signatures
+ * @notice Due to the pull mechanism (claimNFT) being the only supported transfer function, these NFTs will NOT be tradeable on secondary marketplaces
  * @author Art Blocks Inc.
  */
 contract GenArt721CoreV2_IYK is GenArt721CoreV2_PBAB {
@@ -72,9 +73,8 @@ contract GenArt721CoreV2_IYK is GenArt721CoreV2_PBAB {
             _recipient,
             _tokenId
         ).toEthSignedMessageHash();
-        address signVerifier = signVerifierRegistry.get(signVerifierId);
         require(
-            ECDSA.recover(message, _sig) == signVerifier,
+            ECDSA.recover(message, _sig) == getSignVerifier(),
             "Permission to call this function failed"
         );
         require(block.number < _blockExpiry, "Sig expired");
@@ -110,7 +110,7 @@ contract GenArt721CoreV2_IYK is GenArt721CoreV2_PBAB {
      * @param _recipient The address who receives the token
      * @param _tokenId The tokenId being claimed
      * @return hash A bytes32 hash that is signed by the signVerifier
-     * @dev claimNFT uses this view to get the expected message to have been signed.
+     * @dev claimNFT uses this view to get the expected hash to have been signed - hashes cannot be replayed since claimNFT verifies using the current hash and increments the hash on a successful claim.
      */
     function getClaimSigningHash(
         uint256 _blockExpiry,
@@ -158,7 +158,7 @@ contract GenArt721CoreV2_IYK is GenArt721CoreV2_PBAB {
     /**
      * @notice Returns the address of the sign verifier
      */
-    function getSignVerifier() external view returns (address) {
+    function getSignVerifier() public view returns (address) {
         return signVerifierRegistry.get(signVerifierId);
     }
 

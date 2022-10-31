@@ -1,5 +1,6 @@
 import { expect } from "chai";
 import { Wallet } from "ethers";
+import { expectRevert } from "@openzeppelin/test-helpers";
 import { arrayify } from "ethers/lib/utils";
 import { ethers } from "hardhat";
 import {
@@ -222,7 +223,7 @@ describe("GenArt721CoreV2_IYK_Integration", async function () {
         await ethers.provider.send("evm_mine", []);
 
         // Expect claim to fail
-        expect(
+        await expect(
           this.genArt721Core
             .connect(this.accounts.user)
             .claimNFT(sig, blockExpiry, this.accounts.user.address, tokenId)
@@ -267,7 +268,7 @@ describe("GenArt721CoreV2_IYK_Integration", async function () {
         );
 
         // Expect claim to fail with same sig
-        expect(
+        await expect(
           this.genArt721Core
             .connect(this.accounts.user2)
             .claimNFT(sig, blockExpiry, this.accounts.user.address, tokenId)
@@ -299,7 +300,7 @@ describe("GenArt721CoreV2_IYK_Integration", async function () {
         );
 
         // Expect claim to fail
-        expect(
+        await expect(
           this.genArt721Core
             .connect(this.accounts.user)
             .claimNFT(sig, blockExpiry, this.accounts.user.address, tokenId)
