@@ -78,7 +78,7 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
       this.minterFilter.address,
     ]);
 
-    this.minterMerkle = await deployAndGet.call(this, "MinterMerkleV2", [
+    this.minterMerkle = await deployAndGet.call(this, "MinterMerkleV3", [
       this.genArt721Core.address,
       this.minterFilter.address,
       constants.ZERO_ADDRESS, // dummy delegation registry address since not used in these tests
