@@ -402,7 +402,7 @@ for (const coreContractName of coreContractsToTest) {
               this.artistVault = this.accounts.artist;
 
               this.userVault = this.accounts.additional2;
-              
+
               // delegate the vault to the user
               let delegationArgs;
               if (delegationType === "delegateForAll") {
@@ -418,7 +418,7 @@ for (const coreContractName of coreContractsToTest) {
                   this.accounts.user.address, // delegate
                   this.genArt721Core.address, // contract address
                   this.projectZeroTokenZero.toNumber(), // tokenID
-                  true
+                  true,
                 ];
               }
               await this.delegationRegistry
@@ -430,12 +430,12 @@ for (const coreContractName of coreContractsToTest) {
               // delegate the vault to the user
               await this.delegationRegistry
                 .connect(this.artistVault)
-                .delegateForToken(                  
+                .delegateForToken(
                   this.accounts.user.address, // delegate
                   this.genArt721Core.address, // contract address
                   this.projectZeroTokenZero.toNumber(), // tokenID
                   true
-                  );
+                );
 
               // expect no revert
               await this.minter
