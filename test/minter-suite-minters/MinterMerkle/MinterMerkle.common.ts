@@ -49,13 +49,22 @@ export const MinterMerkle_Common = async () => {
 
   describe("deploy", async () => {
     it("broadcasts default max mints per user during deployment", async function () {
+      const minterType = await this.minter.minterType();
       const minterFactory = await ethers.getContractFactory(
         // minterType is a function that returns the minter contract name
-        await this.minter.minterType()
+        minterType
       );
+      // fails when combine new minterFilter with the old token in constructor
+      const minterConstructorArgs = [
+        this.genArt721Core.address,
+        this.minterFilter.address,
+      ];
+      if (minterType == "MinterMerkleV3") {
+        minterConstructorArgs.push(this.delegationRegistry.address);
+      }
       const tx = await minterFactory
         .connect(this.accounts.deployer)
-        .deploy(this.genArt721Core.address, this.minterFilter.address);
+        .deploy(...minterConstructorArgs);
       const receipt = await tx.deployTransaction.wait();
       // check for expected event
       // target event is the last log

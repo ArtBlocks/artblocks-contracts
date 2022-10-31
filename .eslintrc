@@ -1,8 +1,9 @@
 {
   "parser": "@typescript-eslint/parser",
   "parserOptions": { "project": "./tsconfig.json" },
-  "plugins": ["@typescript-eslint"],
+  "plugins": ["@typescript-eslint", "mocha"],
   "rules": {
-    "@typescript-eslint/no-floating-promises": ["error"]
+    "@typescript-eslint/no-floating-promises": ["error"],
+    "mocha/no-exclusive-tests": ["error"]
   }
 }
