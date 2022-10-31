@@ -5,7 +5,7 @@ pragma solidity ^0.8.17;
 // The source code is copied from ETH mainnet, deployed at:0x00000000000076a84fef008cdabe6409d2fe638b
 // Updates are made to imports for compatibility with this repo.
 
-import "../../interfaces/0.8.x/IDelegationRegistry.sol";
+import "../../../interfaces/0.8.x/IDelegationRegistry.sol";
 import "@openzeppelin-4.7/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin-4.7/contracts/utils/introspection/ERC165.sol";
 
