@@ -249,6 +249,10 @@ After this config is finished, you'll notice a `usd (avg)` column in the auto-ge
   - [0x0E8BD86663e3c2418900178e96E14c51B2859957](https://etherscan.io/address/0x0E8BD86663e3c2418900178e96E14c51B2859957)
   - These are the Smart contract that received funds from primary sales and split them between the artist(s) and the platform. Artists received funds directly from this contract.These minter contracts are no longer in use.
 
+## Contributing
+
+All code must pass all tests and be formatted with prettier before being merged into the main branch. To run the tests, run `yarn test`. To format the code, run `yarn format`. For additional information about our testing philosophy at Art Blocks, please see our [Testing Philosophy](./test/README.md) document.
+
 ## Useful References
 
 [evm.codes](https://www.evm.codes/) - An interactive guide to EVM op-code costs.
