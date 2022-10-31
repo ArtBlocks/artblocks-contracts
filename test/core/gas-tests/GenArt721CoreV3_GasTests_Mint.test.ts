@@ -86,6 +86,7 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
     this.minterHolder = await deployAndGet.call(this, "MinterHolderV2", [
       this.genArt721Core.address,
       this.minterFilter.address,
+      constants.ZERO_ADDRESS, // dummy delegation registry address since not used in these tests
     ]);
 
     // add four projects, test on project three to directly compare to V1 core, which starts at projectId = 3

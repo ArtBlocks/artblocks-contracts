@@ -21,6 +21,8 @@
 
 ### MinterHolder
 - V0: Initial release
+- V1: Compatible with V3 core contract
+- V2: Adds support for integration with delegation registry
 
 ### MinterMerkle
 - V0: Initial release
