@@ -17,6 +17,8 @@ import {
 } from "../../util/common";
 
 import { MinterMerkle_Common, hashAddress } from "./MinterMerkle.common";
+import { BigNumber } from "ethers";
+import { AbiCoder } from "ethers/lib/utils";
 
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
@@ -188,6 +190,34 @@ for (const coreContractName of coreContractsToTest) {
 
     describe("common MinterMerkle tests", async () => {
       await MinterMerkle_Common();
+    });
+
+    describe("constructor", async function () {
+      it("emits an event indicating dependency registry in constructor", async function () {
+        const contractFactory = await ethers.getContractFactory(
+          "MinterMerkleV3"
+        );
+        const tx = await contractFactory.deploy(
+          this.genArt721Core.address,
+          this.minterFilter.address,
+          this.delegationRegistry.address
+        );
+        const receipt = await tx.deployTransaction.wait();
+        // target event is the last log
+        const targetLog = receipt.logs[0];
+        // expect "PlatformUpdated" event as log 0
+        await expect(targetLog.topics[0]).to.be.equal(
+          ethers.utils.keccak256(
+            ethers.utils.toUtf8Bytes("DelegationRegistryUpdated(address)")
+          )
+        );
+        // expect field to be address of delegation registry as data 1
+        // zero-pad address to 32 bytes when checking against event data
+        const abiCoder = new AbiCoder();
+        expect(targetLog.data).to.be.equal(
+          abiCoder.encode(["address"], [this.delegationRegistry.address])
+        );
+      });
     });
 
     describe("setProjectMaxInvocations", async function () {
