@@ -482,8 +482,8 @@ contract MinterHolderV2 is ReentrancyGuard, IFilteredMinterHolderV0 {
     /**
      * @notice Purchases a token from project `_projectId`.
      * @param _projectId Project ID to mint a token on.
-     * @param _ownedNFTAddress ERC-721 NFT address owned by msg.sender being used to
-     * prove right to purchase.
+     * @param _ownedNFTAddress ERC-721 NFT address holding the project token 
+     * owned by msg.sender being used to prove right to purchase.
      * @param _ownedNFTTokenId ERC-721 NFT token ID owned by msg.sender being used
      * to prove right to purchase.
      * @return tokenId Token ID of minted token
@@ -526,8 +526,8 @@ contract MinterHolderV2 is ReentrancyGuard, IFilteredMinterHolderV0 {
      * the token's owner to `_to`.
      * @param _to Address to be the new token's owner.
      * @param _projectId Project ID to mint a token on.
-     * @param _ownedNFTAddress ERC-721 NFT address owned by msg.sender being used to
-     * claim right to purchase.
+     * @param _ownedNFTAddress ERC-721 NFT holding the project token owned by 
+     * msg.sender being used to claim right to purchase.
      * @param _ownedNFTTokenId ERC-721 NFT token ID owned by msg.sender being used
      * to claim right to purchase.
      * @return tokenId Token ID of minted token
@@ -554,11 +554,11 @@ contract MinterHolderV2 is ReentrancyGuard, IFilteredMinterHolderV0 {
      *         on behalf of an explicitly defined vault.
      * @param _to Address to be the new token's owner.
      * @param _projectId Project ID to mint a token on.
-     * @param _ownedNFTAddress ERC-721 NFT address owned by msg.sender being used to
-     *         claim right to purchase.
-     * @param _ownedNFTTokenId ERC-721 NFT token ID owned by _vault being used
-     *         to claim right to purchase.
-     * @param _vault Vault being purchased on behalf of.
+     * @param _ownedNFTAddress ERC-721 NFT address holding the project token owned by 
+     *         _vault (or msg.sender if no _vault is provided) being used to claim right to purchase.
+     * @param _ownedNFTTokenId ERC-721 NFT token ID owned by _vault (or msg.sender if 
+     *         no _vault is provided) being used to claim right to purchase.
+     * @param _vault Vault being purchased on behalf of.  Acceptable to be `address(0)` if no vault.
      * @return tokenId Token ID of minted token
      */
     function purchaseTo(
@@ -582,11 +582,11 @@ contract MinterHolderV2 is ReentrancyGuard, IFilteredMinterHolderV0 {
      * @notice gas-optimized version of purchaseTo(address,uint256,address,uint256,address).
      * @param _to Address to be the new token's owner.
      * @param _projectId Project ID to mint a token on.
-     * @param _ownedNFTAddress ERC-721 NFT address owned by msg.sender being used to
-     *         claim right to purchase.
-     * @param _ownedNFTTokenId ERC-721 NFT token ID owned by _vault being used
-     *         to claim right to purchase.
-     * @param _vault Vault being purchased on behalf of.
+     * @param _ownedNFTAddress ERC-721 NFT address holding the project token owned by _vault 
+     *         (or msg.sender if no _vault is provided) being used to claim right to purchase.
+     * @param _ownedNFTTokenId ERC-721 NFT token ID owned by _vault (or msg.sender if
+     *         no _vault is provided) being used to claim right to purchase.
+     * @param _vault Vault being purchased on behalf of. Acceptable to be `address(0)` if no vault.
      * @return tokenId Token ID of minted token
      */
     function purchaseTo_dlc(
@@ -594,7 +594,7 @@ contract MinterHolderV2 is ReentrancyGuard, IFilteredMinterHolderV0 {
         uint256 _projectId,
         address _ownedNFTAddress,
         uint256 _ownedNFTTokenId,
-        address _vault // acceptable to be `address(0)` if no vault
+        address _vault
     ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
