@@ -84,11 +84,23 @@ Potential improvements that have benefits and drawbacks:
 
 # Helpful Examples
 
-## Mocking (smock)
+## Isolate Tests
+
+`describe.only()` is a helpful pattern to use while developing your tests. With this method any tests that fall outside of your isolated describe block(s) will be ignored, and this can speed up your development/testing cycle by an order of magnitude.
+
+```ts
+describe.only("common tests", async function () {
+  await AdminACLV0V1_Common("AdminACLV0");
+});
+```
+
+> Note there is a CI check that will fail if you commit a test with `describe.only()` in it, to prevent this from being accidentally committed.
+
+## Mocking contract at address(smock)
 
 Calls to external contracts at specific addresses can be faked -- this may be really helpful when your contract relies on dependency contracts. However, it can hide lots of complexity and edge-cases that could break your contract, so mocking contracts should be used carefully :) In general, it's better to test your contract against a real contract, if possible.
 
-```
+```ts
 import { expectRevert } from "@openzeppelin/test-helpers";
 import  { expect } from "chai";
 import { smock, FakeContract } from "@defi-wonderland/smock";
