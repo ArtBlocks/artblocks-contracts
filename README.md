@@ -79,12 +79,12 @@ The following table shows which Minters and MinterFilters are compatible with wh
 
 - **Note:** while the whole end-to-end MinterFilter+FilteredMinter architecture is likely not the ideal fit for PBAB partners due to the infrastructure complexity required for partners integrating with it, any of the individual minters from within the minter suite can readily be adapted to work with PBAB core contracts–if you are a PBAB partner and there is a minter in the suite that this would be appealing for, please contact your account manager!
 
-| Core Contract Version(s) | Minter Filter  | Recommended Minters                                                                                             | Deprecated Minters                                                          |
-| ------------------------ | -------------- | --------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| V0                       | -              | (legacy minter)                                                                                                 | -                                                                           |
-| V1, V1_PRTNR             | MinterFilterV0 | MinterSetPriceV1<br>MinterSetPriceERC20V1<br>MinterDAExpV1<br>MinterDALinV1<br>MinterMerkleV0<br>MinterHolderV0 | MinterSetPriceV0<br>MinterSetPriceERC20V0<br>MinterDAExpV0<br>MinterDALinV0 |
-| V2 (PBAB)                | -              | (various PBAB minters)                                                                                          | -                                                                           |
-| V3, V3_Explorations      | MinterFilterV1 | MinterSetPriceV2<br>MinterSetPriceERC20V2<br>MinterDAExpV2<br>MinterDALinV2<br>MinterMerkleV2<br>MinterHolderV1 | -                                                                           |
+| Core Contract Version(s) | Minter Filter  | Recommended Minters                                                                                                               | Deprecated Minters                                                          |
+| ------------------------ | -------------- | --------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| V0                       | -              | (legacy minter)                                                                                                                   | -                                                                           |
+| V1, V1_PRTNR             | MinterFilterV0 | MinterSetPriceV1<br>MinterSetPriceERC20V1<br>MinterDAExpV1<br>MinterDALinV1<br>MinterMerkleV0<br>MinterHolderV0                   | MinterSetPriceV0<br>MinterSetPriceERC20V0<br>MinterDAExpV0<br>MinterDALinV0 |
+| V2 (PBAB)                | -              | (various PBAB minters)                                                                                                            | -                                                                           |
+| V3, V3_Explorations      | MinterFilterV1 | MinterSetPriceV2<br>MinterSetPriceERC20V2<br>MinterDAExpV2<br>MinterDALinV2<br>MinterMerkleV2<br>MinterMerkleV3<br>MinterHolderV1 | -                                                                           |
 
 ### Active Minting Contract(s)
 
