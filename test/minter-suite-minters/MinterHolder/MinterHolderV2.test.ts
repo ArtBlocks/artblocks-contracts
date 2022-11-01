@@ -25,7 +25,7 @@ const coreContractsToTest = [
  * core contract.
  */
 for (const coreContractName of coreContractsToTest) {
-  describe.only(`MinterHolderV2_${coreContractName}`, async function () {
+  describe(`MinterHolderV2_${coreContractName}`, async function () {
     beforeEach(async function () {
       // standard accounts and constants
       this.accounts = await getAccounts();
