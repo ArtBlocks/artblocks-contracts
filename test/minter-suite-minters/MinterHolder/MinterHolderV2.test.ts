@@ -1,10 +1,6 @@
-const keccak256 = require("keccak256");
 import { expectRevert } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { Logger } from "@ethersproject/logger";
-// hide nuisance logs about event overloading
-Logger.setLogLevel(Logger.levels.ERROR);
 
 import {
   getAccounts,
@@ -29,7 +25,7 @@ const coreContractsToTest = [
  * core contract.
  */
 for (const coreContractName of coreContractsToTest) {
-  describe(`MinterHolderV2_${coreContractName}`, async function () {
+  describe.only(`MinterHolderV2_${coreContractName}`, async function () {
     beforeEach(async function () {
       // standard accounts and constants
       this.accounts = await getAccounts();
