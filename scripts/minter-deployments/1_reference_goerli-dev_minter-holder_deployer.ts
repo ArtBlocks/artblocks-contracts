@@ -82,11 +82,11 @@ async function main() {
   const standardVerify = "yarn hardhat verify";
   console.log(`Verify MinterHolderV2 (flagship) contract deployment with:`);
   console.log(
-    `${standardVerify} --network ${networkName} ${minterHolderFlagshipAddress} ${genArt721V3Core_Flagship} ${minterFilter_Flagship}`
+    `${standardVerify} --network ${networkName} ${minterHolderFlagshipAddress} ${genArt721V3Core_Flagship} ${minterFilter_Flagship} ${delegationRegistryAddress}`
   );
   console.log(`Verify MinterHolderV2 (explorations) contract deployment with:`);
   console.log(
-    `${standardVerify} --network ${networkName} ${minterHolderExplorationsAddress} ${genArt721V3Core_Explorations} ${minterFilter_Explorations}`
+    `${standardVerify} --network ${networkName} ${minterHolderExplorationsAddress} ${genArt721V3Core_Explorations} ${minterFilter_Explorations} ${delegationRegistryAddress}`
   );
 
   //////////////////////////////////////////////////////////////////////////////

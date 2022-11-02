@@ -10,7 +10,6 @@ import "@openzeppelin-4.5/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin-4.5/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin-4.5/contracts/utils/structs/EnumerableSet.sol";
-import "@openzeppelin-4.5/contracts/utils/structs/EnumerableMap.sol";
 
 pragma solidity 0.8.17;
 
@@ -59,52 +58,14 @@ pragma solidity 0.8.17;
  * token contract as returned by the public immutable variable `genArt721CoreAddress`.
  */
 contract MinterHolderV2 is ReentrancyGuard, IFilteredMinterHolderV1 {
+    // add Enumerable Set methods
+    using EnumerableSet for EnumerableSet.AddressSet;
+
     /// Delegation registry address
     address public immutable delegationRegistryAddress;
 
     /// Delegation registry address
     IDelegationRegistry private immutable delegationRegistryContract;
-
-    /**
-     * @notice Registered holders of NFTs at address `_NFTAddress` to be
-     * considered for minting.
-     */
-    event RegisteredNFTAddress(address indexed _NFTAddress);
-
-    /**
-     * @notice Unregistered holders of NFTs at address `_NFTAddress` to be
-     * considered for minting.
-     */
-    event UnregisteredNFTAddress(address indexed _NFTAddress);
-
-    /**
-     * @notice Allow holders of NFTs at addresses `_ownedNFTAddresses`, project
-     * IDs `_ownedNFTProjectIds` to mint on project `_projectId`.
-     * `_ownedNFTAddresses` assumed to be aligned with `_ownedNFTProjectIds`.
-     * e.g. Allows holders of project `_ownedNFTProjectIds[0]` on token
-     * contract `_ownedNFTAddresses[0]` to mint.
-     */
-    event AllowedHoldersOfProjects(
-        uint256 indexed _projectId,
-        address[] _ownedNFTAddresses,
-        uint256[] _ownedNFTProjectIds
-    );
-
-    /**
-     * @notice Remove holders of NFTs at addresses `_ownedNFTAddresses`,
-     * project IDs `_ownedNFTProjectIds` to mint on project `_projectId`.
-     * `_ownedNFTAddresses` assumed to be aligned with `_ownedNFTProjectIds`.
-     * e.g. Removes holders of project `_ownedNFTProjectIds[0]` on token
-     * contract `_ownedNFTAddresses[0]` from mint allowlist.
-     */
-    event RemovedHoldersOfProjects(
-        uint256 indexed _projectId,
-        address[] _ownedNFTAddresses,
-        uint256[] _ownedNFTProjectIds
-    );
-
-    // add Enumerable Set methods
-    using EnumerableSet for EnumerableSet.AddressSet;
 
     /// Core contract address this minter interacts with
     address public immutable genArt721CoreAddress;
