@@ -17,6 +17,15 @@ pragma solidity 0.8.9;
 contract GenArt721CoreV2_IYK is GenArt721CoreV2_PBAB {
     using ECDSA for bytes32;
 
+    event SignVerifierRegistryUpdated(
+        address indexed signVerifierRegistry,
+        address indexed oldSignVerifierRegistry
+    );
+    event SignVerifierIdUpdated(
+        bytes32 indexed signVerifierId,
+        bytes32 indexed oldSignVerifierId
+    );
+
     // Address of registry that resolves the signVerifier
     ISignVerifierRegistry public signVerifierRegistry;
     bytes32 public signVerifierId;
@@ -50,8 +59,26 @@ contract GenArt721CoreV2_IYK is GenArt721CoreV2_PBAB {
             _startingProjectId
         )
     {
+        require(
+            _signVerifierRegistry != address(0),
+            "_signVerifierRegistry cannot be the zero address"
+        );
+        require(
+            _signVerifierId != bytes32(0),
+            "_signVerifierId cannot be the zero ID"
+        );
+        require(
+            IERC165(_signVerifierRegistry).supportsInterface(
+                type(ISignVerifierRegistry).interfaceId
+            ),
+            "_signVerifierRegistry does not implement ISignVerifierRegistry"
+        );
+
         signVerifierRegistry = ISignVerifierRegistry(_signVerifierRegistry);
         signVerifierId = _signVerifierId;
+
+        emit SignVerifierRegistryUpdated(_signVerifierRegistry, address(0));
+        emit SignVerifierIdUpdated(_signVerifierId, bytes32(0));
     }
 
     /**
@@ -136,10 +163,26 @@ contract GenArt721CoreV2_IYK is GenArt721CoreV2_PBAB {
      */
     function setSignVerifierRegistry(address _signVerifierRegistry)
         external
-        virtual
         onlyAdmin
     {
+        require(
+            _signVerifierRegistry != address(0),
+            "_signVerifierRegistry cannot be the zero address"
+        );
+        require(
+            IERC165(_signVerifierRegistry).supportsInterface(
+                type(ISignVerifierRegistry).interfaceId
+            ),
+            "_signVerifierRegistry does not implement ISignVerifierRegistry"
+        );
+
+        address oldSignVerifierRegistry = address(signVerifierRegistry);
         signVerifierRegistry = ISignVerifierRegistry(_signVerifierRegistry);
+
+        emit SignVerifierRegistryUpdated(
+            _signVerifierRegistry,
+            oldSignVerifierRegistry
+        );
     }
 
     /**
@@ -147,12 +190,16 @@ contract GenArt721CoreV2_IYK is GenArt721CoreV2_PBAB {
      * @dev Requires the DEFAULT_ADMIN_ROLE to call
      * @param _signVerifierId The ID of the new sign verifier
      */
-    function setSignVerifierId(bytes32 _signVerifierId)
-        external
-        virtual
-        onlyAdmin
-    {
+    function setSignVerifierId(bytes32 _signVerifierId) external onlyAdmin {
+        require(
+            _signVerifierId != bytes32(0),
+            "_signVerifierId cannot be the zero ID"
+        );
+
+        bytes32 oldSignVerifierId = signVerifierId;
         signVerifierId = _signVerifierId;
+
+        emit SignVerifierIdUpdated(_signVerifierId, oldSignVerifierId);
     }
 
     /**

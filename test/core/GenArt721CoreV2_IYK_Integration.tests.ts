@@ -127,11 +127,15 @@ describe("GenArt721CoreV2_IYK_Integration", async function () {
 
     describe("setSignVerifierId should change the verifier address", () => {
       it("when called", async function () {
+        const oldId = await this.genArt721Core.signVerifierId();
+
         const newId = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("NEW"));
         const newVerifier = this.accounts.user.address;
 
         await this.signVerifierRegistry.register(newId, newVerifier);
-        await this.genArt721Core.setSignVerifierId(newId);
+        await expect(this.genArt721Core.setSignVerifierId(newId))
+          .to.emit(this.genArt721Core, "SignVerifierIdUpdated")
+          .withArgs(newId, oldId);
 
         const signVerifier = await this.genArt721Core.getSignVerifier();
         expect(signVerifier).to.equal(newVerifier);
@@ -140,13 +144,28 @@ describe("GenArt721CoreV2_IYK_Integration", async function () {
 
     describe("setSignVerifierRegistry should change the registry address", () => {
       it("when called", async function () {
-        await this.genArt721Core.setSignVerifierRegistry(
-          this.accounts.additional.address
+        const oldRegistry = await this.genArt721Core.signVerifierRegistry();
+
+        // deploy a new sign verifier registry
+        this.signVerifierRegistry2 = await deployAndGet.call(
+          this,
+          "SignVerifierRegistryMock",
+          []
         );
+
+        await expect(
+          this.genArt721Core.setSignVerifierRegistry(
+            this.signVerifierRegistry2.address
+          )
+        )
+          .to.emit(this.genArt721Core, "SignVerifierRegistryUpdated")
+          .withArgs(this.signVerifierRegistry2.address, oldRegistry);
 
         const signVerifierRegistry =
           await this.genArt721Core.signVerifierRegistry();
-        expect(signVerifierRegistry).to.equal(this.accounts.additional.address);
+        expect(signVerifierRegistry).to.equal(
+          this.signVerifierRegistry2.address
+        );
       });
     });
   });
