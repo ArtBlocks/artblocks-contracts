@@ -19,9 +19,8 @@ describe("GenArt721CoreV2_IYK_Integration", async function () {
     // standard accounts and constants
     this.accounts = await getAccounts();
     await assignDefaultConstants.call(this);
-    this.signVerifier = new Wallet(
-      "fb45bc2049e143fb168fd438ae6dd3eefffa7f798a7f4d865b6748831abaa625" as string
-    );
+    this.signVerifier = this.accounts.deployer;
+
     // deploy and configure core, randomizer, and minter
     this.randomizer = await deployAndGet.call(this, "BasicRandomizer", []);
 
@@ -324,6 +323,143 @@ describe("GenArt721CoreV2_IYK_Integration", async function () {
             .connect(this.accounts.user)
             .claimNFT(sig, blockExpiry, this.accounts.user.address, tokenId)
         ).to.be.revertedWith("ERC721: owner query for nonexistent token");
+      });
+      it("when a signature is used with incorrect hash input params", async function () {
+        // Mint token to owner
+        const tokenId = (
+          await this.genArt721Core
+            .connect(this.accounts.additional)
+            .mint(
+              this.accounts.deployer.address,
+              this.projectZero,
+              this.accounts.deployer.address
+            )
+        ).value;
+
+        // Get signing hash
+        const currentBlockNumber = await ethers.provider.getBlockNumber();
+        const blockExpiry = ethers.BigNumber.from(currentBlockNumber + 20);
+        const claimSigningHash = await this.genArt721Core.getClaimSigningHash(
+          blockExpiry,
+          this.accounts.user.address,
+          tokenId
+        );
+
+        // SignVerifier signs hash
+        const sig = await this.signVerifier.signMessage(
+          arrayify(claimSigningHash)
+        );
+
+        // Send claims from addr1
+        await expect(
+          this.genArt721Core.connect(this.accounts.user).claimNFT(
+            sig,
+            blockExpiry,
+            this.accounts.user.address,
+            ethers.BigNumber.from(5) // wrong tokenId !
+          )
+        ).to.be.revertedWith("Permission to call this function failed");
+
+        await expect(
+          this.genArt721Core.connect(this.accounts.user).claimNFT(
+            sig,
+            blockExpiry,
+            this.accounts.user2.address, // wrong recipient !
+            tokenId
+          )
+        ).to.be.revertedWith("Permission to call this function failed");
+
+        await expect(
+          this.genArt721Core.connect(this.accounts.user).claimNFT(
+            sig,
+            ethers.BigNumber.from(currentBlockNumber + 21), // wrong blockExpiry !
+            this.accounts.user2.address,
+            tokenId
+          )
+        ).to.be.revertedWith("Permission to call this function failed");
+      });
+    });
+  });
+
+  describe("ERC721 public transfer functions", () => {
+    describe("should revert", () => {
+      it("when transferFrom(address,address,uint256) is called", async function () {
+        // Mint token to owner
+        const tokenId = (
+          await this.genArt721Core
+            .connect(this.accounts.additional)
+            .mint(
+              this.accounts.deployer.address,
+              this.projectZero,
+              this.accounts.deployer.address
+            )
+        ).value;
+
+        // Expect transfer to fail
+        await expect(
+          this.genArt721Core
+            .connect(this.accounts.deployer)
+            .transferFrom(
+              this.accounts.deployer.address,
+              this.accounts.user.address,
+              tokenId
+            )
+        ).to.be.revertedWith(
+          "ERC721 public transfer functions are not allowed"
+        );
+      });
+
+      it("when safeTransferFrom(address,address,uint256) is called", async function () {
+        // Mint token to owner
+        const tokenId = (
+          await this.genArt721Core
+            .connect(this.accounts.additional)
+            .mint(
+              this.accounts.deployer.address,
+              this.projectZero,
+              this.accounts.deployer.address
+            )
+        ).value;
+
+        // Expect transfer to fail
+        await expect(
+          this.genArt721Core
+            .connect(this.accounts.deployer)
+            ["safeTransferFrom(address,address,uint256)"](
+              this.accounts.deployer.address,
+              this.accounts.user.address,
+              tokenId
+            )
+        ).to.be.revertedWith(
+          "ERC721 public transfer functions are not allowed"
+        );
+      });
+
+      it("when safeTransferFrom(address,address,uint256,bytes) is called", async function () {
+        // Mint token to owner
+        const tokenId = (
+          await this.genArt721Core
+            .connect(this.accounts.additional)
+            .mint(
+              this.accounts.deployer.address,
+              this.projectZero,
+              this.accounts.deployer.address
+            )
+        ).value;
+
+        // Expect transfer to fail
+        await expect(
+          this.genArt721Core
+            .connect(this.accounts.deployer)
+            ["safeTransferFrom(address,address,uint256,bytes)"](
+              this.accounts.deployer.address,
+              this.accounts.user.address,
+              tokenId,
+              0x0
+            )
+        ).to.be.revertedWith(
+          "ERC721 public transfer functions are not allowed"
+        );
       });
     });
   });

@@ -87,21 +87,21 @@ contract GenArt721CoreV2_IYK is GenArt721CoreV2_PBAB {
      * @param _blockExpiry The block as of which the signature is no longer valid
      * @param _recipient The address that receives the token
      * @param _tokenId The tokenId being claimed
-     * @dev ECDSA signatures are used to verify the permission to claim a NFT
+     * @dev ECDSA signatures are used to verify the permission to claim a NFT. ECDSA.recover will revert if the signer (signVerifier) is the zero address.
      */
     function claimNFT(
         bytes memory _sig,
         uint256 _blockExpiry,
         address _recipient,
         uint256 _tokenId
-    ) public virtual {
-        bytes32 message = getClaimSigningHash(
+    ) public {
+        bytes32 messageHash = getClaimSigningHash(
             _blockExpiry,
             _recipient,
             _tokenId
         ).toEthSignedMessageHash();
         require(
-            ECDSA.recover(message, _sig) == getSignVerifier(),
+            ECDSA.recover(messageHash, _sig) == getSignVerifier(),
             "Permission to call this function failed"
         );
         require(block.number < _blockExpiry, "Sig expired");
@@ -206,7 +206,12 @@ contract GenArt721CoreV2_IYK is GenArt721CoreV2_PBAB {
      * @notice Returns the address of the sign verifier
      */
     function getSignVerifier() public view returns (address) {
-        return signVerifierRegistry.get(signVerifierId);
+        address signVerifier = signVerifierRegistry.get(signVerifierId);
+        require(
+            signVerifier != address(0),
+            "cannot use zero address as sign verifier"
+        );
+        return signVerifier;
     }
 
     /**
@@ -217,7 +222,9 @@ contract GenArt721CoreV2_IYK is GenArt721CoreV2_PBAB {
         address _from,
         address _to,
         uint256 _tokenId
-    ) public virtual override {}
+    ) public virtual override {
+        revert("ERC721 public transfer functions are not allowed");
+    }
 
     /**
      * @notice safeTransferFrom has been overriden to make it useless
@@ -227,7 +234,9 @@ contract GenArt721CoreV2_IYK is GenArt721CoreV2_PBAB {
         address _from,
         address _to,
         uint256 _tokenId
-    ) public virtual override {}
+    ) public virtual override {
+        revert("ERC721 public transfer functions are not allowed");
+    }
 
     /**
      * @notice safeTransferFrom has been overriden to make it useless
@@ -238,5 +247,7 @@ contract GenArt721CoreV2_IYK is GenArt721CoreV2_PBAB {
         address _to,
         uint256 _tokenId,
         bytes memory _data
-    ) public virtual override {}
+    ) public virtual override {
+        revert("ERC721 public transfer functions are not allowed");
+    }
 }
