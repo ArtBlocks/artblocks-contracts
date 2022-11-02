@@ -31,7 +31,7 @@ export const Minter_Common = async () => {
         this.genArt721Core.address,
         minterFilter.address,
       ];
-      if (minterType == "MinterMerkleV3") {
+      if (minterType == "MinterMerkleV3" || minterType == "MinterHolderV2") {
         minterConstructorArgs.push(this.delegationRegistry.address);
       }
       await expectRevert(
