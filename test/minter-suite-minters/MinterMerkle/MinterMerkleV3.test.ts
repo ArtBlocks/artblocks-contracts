@@ -17,10 +17,8 @@ import {
 } from "../../util/common";
 
 import { MinterMerkle_Common, hashAddress } from "./MinterMerkle.common";
-import { smock, FakeContract } from "@defi-wonderland/smock";
-import { IDelegationRegistry } from "../../../scripts/contracts";
-
-chai.use(smock.matchers);
+import { BigNumber } from "ethers";
+import { AbiCoder } from "ethers/lib/utils";
 
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
@@ -33,7 +31,7 @@ const coreContractsToTest = [
  * core contract.
  */
 for (const coreContractName of coreContractsToTest) {
-  describe(`MinterMerkleV2_${coreContractName}`, async function () {
+  describe(`MinterMerkleV3_${coreContractName}`, async function () {
     beforeEach(async function () {
       // standard accounts and constants
       this.accounts = await getAccounts();
@@ -52,9 +50,16 @@ for (const coreContractName of coreContractsToTest) {
         "MinterFilterV1"
       ));
 
-      this.minter = await deployAndGet.call(this, "MinterMerkleV2", [
+      this.delegationRegistry = await deployAndGet.call(
+        this,
+        "DelegationRegistry",
+        []
+      );
+
+      this.minter = await deployAndGet.call(this, "MinterMerkleV3", [
         this.genArt721Core.address,
         this.minterFilter.address,
+        this.delegationRegistry.address,
       ]);
 
       await safeAddProject(
@@ -181,15 +186,38 @@ for (const coreContractName of coreContractsToTest) {
       this.ERC20Mock = await ERC20Factory.deploy(
         ethers.utils.parseEther("100")
       );
-
-      // mock delegate.cash registry with Goerli/mainnet-deployed address
-      this.fakeDelegationRegistry = await smock.fake("IDelegationRegistry", {
-        address: "0x00000000000076A84feF008CDAbe6409d2FE638B",
-      });
     });
 
     describe("common MinterMerkle tests", async () => {
       await MinterMerkle_Common();
+    });
+
+    describe("constructor", async function () {
+      it("emits an event indicating dependency registry in constructor", async function () {
+        const contractFactory = await ethers.getContractFactory(
+          "MinterMerkleV3"
+        );
+        const tx = await contractFactory.deploy(
+          this.genArt721Core.address,
+          this.minterFilter.address,
+          this.delegationRegistry.address
+        );
+        const receipt = await tx.deployTransaction.wait();
+        // target event is the last log
+        const targetLog = receipt.logs[0];
+        // expect "PlatformUpdated" event as log 0
+        await expect(targetLog.topics[0]).to.be.equal(
+          ethers.utils.keccak256(
+            ethers.utils.toUtf8Bytes("DelegationRegistryUpdated(address)")
+          )
+        );
+        // expect field to be address of delegation registry as data 1
+        // zero-pad address to 32 bytes when checking against event data
+        const abiCoder = new AbiCoder();
+        expect(targetLog.data).to.be.equal(
+          abiCoder.encode(["address"], [this.delegationRegistry.address])
+        );
+      });
     });
 
     describe("setProjectMaxInvocations", async function () {
@@ -380,140 +408,222 @@ for (const coreContractName of coreContractsToTest) {
       });
     });
 
-    describe("purchaseTo_kem with a VALID vault delegate", async function () {
-      it("does allow purchases", async function () {
-        // user vault is also in the allowlist
-        const userVault = this.accounts.additional2.address;
-
-        // specify a mock condition where registry at specifid address returns true
-        this.fakeDelegationRegistry.checkDelegateForContract
-          .whenCalledWith(
-            this.accounts.user.address, // delegate
-            userVault, // vault
-            this.genArt721Core.address // token contract
-          )
-          .returns(true);
-        // note that smock default is to return false
-
-        const userMerkleProofOne = this.merkleTreeOne.getHexProof(
-          hashAddress(userVault)
-        );
-
-        // purchase to, using the vault address's allowlist status
-        await this.minter
-          .connect(this.accounts.user)
-          ["purchaseTo(address,uint256,bytes32[],address)"](
-            userVault,
-            this.projectOne,
-            userMerkleProofOne,
-            userVault, //  the allowlisted vault address
-            {
-              value: this.pricePerTokenInWei,
+    describe("Works for different valid delegation levels", async function () {
+      ["delegateForAll", "delegateForContract"].forEach((delegationType) => {
+        describe(`purchaseTo_kem with a VALID vault delegate after ${delegationType}`, async function () {
+          beforeEach(async function () {
+            this.userVault = this.accounts.additional2;
+            // delegate the vault to the user
+            let delegationArgs;
+            if (delegationType === "delegateForAll") {
+              delegationArgs = [this.accounts.user.address, true];
+            } else if (delegationType === "delegateForContract") {
+              delegationArgs = [
+                this.accounts.user.address,
+                this.genArt721Core.address,
+                true,
+              ];
             }
-          );
-      });
+            await this.delegationRegistry
+              .connect(this.userVault)
+              [delegationType](...delegationArgs);
+          });
 
-      it("allows purchases to vault if msg.sender is allowlisted and no vault is provided", async function () {
-        const userMerkleProofOne = this.merkleTreeOne.getHexProof(
-          hashAddress(this.accounts.user.address)
-        );
-        await this.minter
-          .connect(this.accounts.user)
-          ["purchaseTo(address,uint256,bytes32[])"](
-            this.accounts.additional.address,
-            this.projectOne,
-            userMerkleProofOne,
-            {
-              value: this.pricePerTokenInWei,
-            }
-          );
-      });
+          it("does allow purchases", async function () {
+            // delegate the vault to the user
+            await this.delegationRegistry
+              .connect(this.userVault)
+              .delegateForAll(this.accounts.user.address, true);
 
-      it("does not allow purchases with an incorrect proof", async function () {
-        // delegation registry always returns true for this test
-        this.fakeDelegationRegistry.checkDelegateForContract.returns(true);
+            const userMerkleProofOne = this.merkleTreeOne.getHexProof(
+              hashAddress(this.userVault.address)
+            );
 
-        const userVault = this.accounts.additional2.address;
+            // expect no revert
+            await this.minter
+              .connect(this.accounts.user)
+              ["purchaseTo(address,uint256,bytes32[],address)"](
+                this.userVault.address,
+                this.projectOne,
+                userMerkleProofOne,
+                this.userVault.address, //  the allowlisted address
+                {
+                  value: this.pricePerTokenInWei,
+                }
+              );
+          });
 
-        // Merkle proof for an addres that is NOT the vault
-        const userMerkleProofOne = this.merkleTreeOne.getHexProof(
-          hashAddress(this.accounts.user.address)
-        );
+          it("allows purchases to vault if msg.sender is allowlisted and no vault is provided", async function () {
+            const userMerkleProofOne = this.merkleTreeOne.getHexProof(
+              hashAddress(this.accounts.user.address)
+            );
+            await this.minter
+              .connect(this.accounts.user)
+              ["purchaseTo(address,uint256,bytes32[])"](
+                this.userVault.address,
+                this.projectOne,
+                userMerkleProofOne,
+                {
+                  value: this.pricePerTokenInWei,
+                }
+              );
+          });
 
-        await expectRevert(
-          this.minter
-            .connect(this.accounts.user)
-            ["purchaseTo(address,uint256,bytes32[],address)"](
-              userVault,
-              this.projectOne,
-              userMerkleProofOne,
-              userVault, //  the allowlisted address
-              {
-                value: this.pricePerTokenInWei,
-              }
-            ),
-          "Invalid Merkle proof"
-        );
-      });
+          it("does not allow purchases with an incorrect proof", async function () {
+            const userMerkleProofOne = this.merkleTreeOne.getHexProof(
+              hashAddress(this.accounts.user.address)
+            );
 
-      it("vault cannot exceed mint limit", async function () {
-        // delegation registry always returns true for this test
-        this.fakeDelegationRegistry.checkDelegateForContract.returns(true);
+            await expectRevert(
+              this.minter
+                .connect(this.accounts.user)
+                ["purchaseTo(address,uint256,bytes32[],address)"](
+                  this.userVault.address,
+                  this.projectOne,
+                  userMerkleProofOne,
+                  this.userVault.address, //  the allowlisted address
+                  {
+                    value: this.pricePerTokenInWei,
+                  }
+                ),
+              "Invalid Merkle proof"
+            );
+          });
 
-        const userVault = this.accounts.additional2.address;
+          it("vault cannot exceed mint limit", async function () {
+            const userMerkleProofOne = this.merkleTreeOne.getHexProof(
+              hashAddress(this.userVault.address)
+            );
 
-        const userMerkleProofOne = this.merkleTreeOne.getHexProof(
-          hashAddress(userVault)
-        );
+            await this.minter
+              .connect(this.accounts.user)
+              ["purchaseTo(address,uint256,bytes32[],address)"](
+                this.userVault.address,
+                this.projectOne,
+                userMerkleProofOne,
+                this.userVault.address, //  the allowlisted address
+                {
+                  value: this.pricePerTokenInWei,
+                }
+              );
 
-        await this.minter
-          .connect(this.accounts.user)
-          ["purchaseTo(address,uint256,bytes32[],address)"](
-            userVault,
-            this.projectOne,
-            userMerkleProofOne,
-            userVault, //  the allowlisted address
-            {
-              value: this.pricePerTokenInWei,
-            }
-          );
-
-        await expectRevert(
-          this.minter
-            .connect(this.accounts.user)
-            ["purchaseTo(address,uint256,bytes32[],address)"](
-              userVault,
-              this.projectOne,
-              userMerkleProofOne,
-              userVault, //  the allowlisted address
-              {
-                value: this.pricePerTokenInWei,
-              }
-            ),
-          "Maximum number of invocations per address reached"
-        );
+            await expectRevert(
+              this.minter
+                .connect(this.accounts.user)
+                ["purchaseTo(address,uint256,bytes32[],address)"](
+                  this.userVault.address,
+                  this.projectOne,
+                  userMerkleProofOne,
+                  this.userVault.address, //  the allowlisted address
+                  {
+                    value: this.pricePerTokenInWei,
+                  }
+                ),
+              "Maximum number of invocations per address reached"
+            );
+          });
+        });
       });
     });
 
     describe("purchaseTo_kem with an INVALID vault delegate", async function () {
-      it("does NOT allow purchases", async function () {
-        // delegation registry always returns false for this test
-        this.fakeDelegationRegistry.checkDelegateForContract.returns(false);
+      beforeEach(async function () {
+        this.userVault = this.accounts.additional2;
+        // intentionally do add any delegations
+      });
 
-        const userVault = this.accounts.additional2.address;
-
+      it("does NOT allow purchases when no delegation has been set", async function () {
         const userMerkleProofOne = this.merkleTreeOne.getHexProof(
-          hashAddress(userVault)
+          hashAddress(this.userVault.address)
         );
 
         await expectRevert(
           this.minter
             .connect(this.accounts.user)
             ["purchaseTo(address,uint256,bytes32[],address)"](
-              userVault,
+              this.userVault.address,
               this.projectOne,
               userMerkleProofOne,
-              userVault, //  the allowlisted address
+              this.userVault.address, //  the allowlisted address
+              {
+                value: this.pricePerTokenInWei,
+              }
+            ),
+          "Invalid delegate-vault pairing"
+        );
+      });
+
+      it("does NOT allow purchases when a token-level delegation has been set", async function () {
+        await this.delegationRegistry.connect(this.userVault).delegateForToken(
+          this.accounts.user.address,
+          this.genArt721Core.address,
+          0, // token id zero
+          true
+        );
+        const userMerkleProofOne = this.merkleTreeOne.getHexProof(
+          hashAddress(this.userVault.address)
+        );
+
+        await expectRevert(
+          this.minter
+            .connect(this.accounts.user)
+            ["purchaseTo(address,uint256,bytes32[],address)"](
+              this.userVault.address,
+              this.projectOne,
+              userMerkleProofOne,
+              this.userVault.address, //  the allowlisted address
+              {
+                value: this.pricePerTokenInWei,
+              }
+            ),
+          "Invalid delegate-vault pairing"
+        );
+      });
+
+      it("does NOT allow purchases when a contract-level delegation has been set for a different contract", async function () {
+        await this.delegationRegistry
+          .connect(this.userVault)
+          .delegateForContract(
+            this.accounts.user.address,
+            this.minter.address,
+            true
+          );
+        const userMerkleProofOne = this.merkleTreeOne.getHexProof(
+          hashAddress(this.userVault.address)
+        );
+
+        await expectRevert(
+          this.minter
+            .connect(this.accounts.user)
+            ["purchaseTo(address,uint256,bytes32[],address)"](
+              this.userVault.address,
+              this.projectOne,
+              userMerkleProofOne,
+              this.userVault.address, //  the allowlisted address
+              {
+                value: this.pricePerTokenInWei,
+              }
+            ),
+          "Invalid delegate-vault pairing"
+        );
+      });
+
+      it("does NOT allow purchases when a wallet-level delegation has been set for a different hotwallet", async function () {
+        await this.delegationRegistry
+          .connect(this.userVault)
+          .delegateForAll(this.accounts.user2.address, true);
+        const userMerkleProofOne = this.merkleTreeOne.getHexProof(
+          hashAddress(this.userVault.address)
+        );
+
+        await expectRevert(
+          this.minter
+            .connect(this.accounts.user)
+            ["purchaseTo(address,uint256,bytes32[],address)"](
+              this.userVault.address,
+              this.projectOne,
+              userMerkleProofOne,
+              this.userVault.address, //  the allowlisted address
               {
                 value: this.pricePerTokenInWei,
               }
