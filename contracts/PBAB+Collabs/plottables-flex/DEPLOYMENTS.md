@@ -5,6 +5,8 @@
 **GenArt721CoreV2_ENGINE_FLEX:** https://etherscan.io/address/0x18dE6097cE5B5B2724C9Cae6Ac519917f3F178c0#code
 **GenArt721Minter:** https://etherscan.io/address/0xE6E728361b7C824Cba64cc1e5323EfB7a5Bb65DA#code
 
+`0x9f75C11383f5b93a72c61fb1Dd1a44f5Ec7e4187` set as minter owner, whitelisted on core contract, and admin of core contract.
+
 ## Goerli
 
 ### Upload 0
