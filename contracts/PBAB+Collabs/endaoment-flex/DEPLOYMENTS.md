@@ -2,8 +2,8 @@
 
 ## Mainnet
 
-**GenArt721CoreV2_ENGINE_FLEX:** https://etherscan.io/address/TODO#code
-**GenArt721Minter:** https://etherscan.io/address/TODO#code
+**GenArt721CoreV2_ENGINE_FLEX:** https://etherscan.io/address/0xEafE7b73A3cfA804b761debcF077D4574588dfe7#code
+**GenArt721Minter:** https://etherscan.io/address/0xd922fABCFbBa024FEf701A4D047637B16Ec5968B#code
 
 `0xD8bAB8C014Eb168b6870d4a1fD55d0C3A5A0AB13` set as minter owner, whitelisted on core contract, and admin of core contract.
 
