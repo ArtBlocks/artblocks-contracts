@@ -12,7 +12,7 @@ pragma solidity 0.8.9;
  * @title Powered by Art Blocks ERC-721 core contract.
  * Support for IYK pull mechanism to transfer tokens based on verified signatures
  * @notice Due to the pull mechanism (claimNFT) being the only supported transfer function, these NFTs will NOT be tradeable on secondary marketplaces
- * @author Art Blocks Inc.
+ * @author Art Blocks Inc. + IYK GMI Inc.
  */
 contract GenArt721CoreV2_IYK is GenArt721CoreV2_PBAB {
     using ECDSA for bytes32;

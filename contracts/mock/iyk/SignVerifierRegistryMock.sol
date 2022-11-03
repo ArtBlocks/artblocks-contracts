@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.9;
 
-import "./ISignVerifierRegistryMock.sol";
+import "../../PBAB+Collabs/iyk/ISignVerifierRegistry.sol";
 import "@openzeppelin-4.5/contracts/utils/introspection/ERC165.sol";
 
-contract SignVerifierRegistryMock is ERC165, ISignVerifierRegistryMock {
+contract SignVerifierRegistryMock is ERC165, ISignVerifierRegistry {
     mapping(bytes32 => address) signVerifiers;
 
     constructor() {}
@@ -25,11 +25,11 @@ contract SignVerifierRegistryMock is ERC165, ISignVerifierRegistryMock {
         public
         view
         virtual
-        override(ERC165)
+        override(IERC165, ERC165)
         returns (bool)
     {
         return
-            interfaceId == type(ISignVerifierRegistryMock).interfaceId ||
+            interfaceId == type(ISignVerifierRegistry).interfaceId ||
             super.supportsInterface(interfaceId);
     }
 }
