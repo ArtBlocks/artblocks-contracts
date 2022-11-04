@@ -21,13 +21,21 @@ export const Minter_Common = async () => {
         "MinterFilterV0"
       );
       const minterFilter = await minterFilterFactory.deploy(token2.address);
+      const minterType = await this.minter.minterType();
       const minterFactory = await ethers.getContractFactory(
         // minterType is a function that returns the minter contract name
-        await this.minter.minterType()
+        minterType
       );
       // fails when combine new minterFilter with the old token in constructor
+      const minterConstructorArgs = [
+        this.genArt721Core.address,
+        minterFilter.address,
+      ];
+      if (minterType == "MinterMerkleV3" || minterType == "MinterHolderV2") {
+        minterConstructorArgs.push(this.delegationRegistry.address);
+      }
       await expectRevert(
-        minterFactory.deploy(this.genArt721Core.address, minterFilter.address),
+        minterFactory.deploy(...minterConstructorArgs),
         "Illegal contract pairing"
       );
     });

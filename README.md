@@ -79,12 +79,12 @@ The following table shows which Minters and MinterFilters are compatible with wh
 
 - **Note:** while the whole end-to-end MinterFilter+FilteredMinter architecture is likely not the ideal fit for PBAB partners due to the infrastructure complexity required for partners integrating with it, any of the individual minters from within the minter suite can readily be adapted to work with PBAB core contracts–if you are a PBAB partner and there is a minter in the suite that this would be appealing for, please contact your account manager!
 
-| Core Contract Version(s) | Minter Filter  | Recommended Minters                                                                                             | Deprecated Minters                                                          |
-| ------------------------ | -------------- | --------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
-| V0                       | -              | (legacy minter)                                                                                                 | -                                                                           |
-| V1, V1_PRTNR             | MinterFilterV0 | MinterSetPriceV1<br>MinterSetPriceERC20V1<br>MinterDAExpV1<br>MinterDALinV1<br>MinterMerkleV0<br>MinterHolderV0 | MinterSetPriceV0<br>MinterSetPriceERC20V0<br>MinterDAExpV0<br>MinterDALinV0 |
-| V2 (PBAB)                | -              | (various PBAB minters)                                                                                          | -                                                                           |
-| V3, V3_Explorations      | MinterFilterV1 | MinterSetPriceV2<br>MinterSetPriceERC20V2<br>MinterDAExpV2<br>MinterDALinV2<br>MinterMerkleV2<br>MinterHolderV1 | -                                                                           |
+| Core Contract Version(s) | Minter Filter  | Recommended Minters                                                                                                               | Deprecated Minters                                                          |
+| ------------------------ | -------------- | --------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| V0                       | -              | (legacy minter)                                                                                                                   | -                                                                           |
+| V1, V1_PRTNR             | MinterFilterV0 | MinterSetPriceV1<br>MinterSetPriceERC20V1<br>MinterDAExpV1<br>MinterDALinV1<br>MinterMerkleV0<br>MinterHolderV0                   | MinterSetPriceV0<br>MinterSetPriceERC20V0<br>MinterDAExpV0<br>MinterDALinV0 |
+| V2 (PBAB)                | -              | (various PBAB minters)                                                                                                            | -                                                                           |
+| V3, V3_Explorations      | MinterFilterV1 | MinterSetPriceV2<br>MinterSetPriceERC20V2<br>MinterDAExpV2<br>MinterDALinV2<br>MinterMerkleV2<br>MinterMerkleV3<br>MinterHolderV1<br>MinterHolderV2 | -                                                                           |
 
 ### Active Minting Contract(s)
 
@@ -117,6 +117,7 @@ These are the smart contracts that receive funds, and split them between the art
 #### MinterMerkle (Address Allowlist)
 
 - V1: [0xae5A48D22Cd069c4d72dDe204A7fB4B302e614af](https://etherscan.io/address/0xae5A48D22Cd069c4d72dDe204A7fB4B302e614af)
+- V2: [0x6Ff3c104Ca9b4860D27079aFfF18701c4A532A4d](https://etherscan.io/address/0x6Ff3c104Ca9b4860D27079aFfF18701c4A532A4d)
 
 #### Minter Holder (Token Holder)
 
@@ -130,7 +131,7 @@ MinterFilterV1 for flagship V3 core: [0x092B8F64e713d66b38522978BCf4649db14b931E
 
 Legacy minting contract for flagship V0 core: [0x47e312d99c09ce61a866c83cbbbbed5a4b9d33e7](https://etherscan.io/address/0x47e312d99c09ce61a866c83cbbbbed5a4b9d33e7).
 
-For deployed PBAB/PRTNR minting contracts, see PBAB directory [DEPLOYMENTS.md files](https://github.com/search?q=repo%3AArtBlocks%2Fartblocks-contracts+extension%3Amd+filename%3ADEPLOYMENTS&type=Code&ref=advsearch&l=&l=).
+For deployed Engine/Partner/Explorations minting contracts, see PBAB directory [DEPLOYMENTS.md files](https://github.com/search?q=repo%3AArtBlocks%2Fartblocks-contracts+extension%3Amd+filename%3Adeployments&type=Code&ref=advsearch&l=&l=).
 
 ### Shared Randomizers
 
@@ -247,6 +248,10 @@ After this config is finished, you'll notice a `usd (avg)` column in the auto-ge
   - [0xAA6EBab3Bf3Ce561305bd53E4BD3B3945920B176](https://etherscan.io/address/0xAA6EBab3Bf3Ce561305bd53E4BD3B3945920B176)
   - [0x0E8BD86663e3c2418900178e96E14c51B2859957](https://etherscan.io/address/0x0E8BD86663e3c2418900178e96E14c51B2859957)
   - These are the Smart contract that received funds from primary sales and split them between the artist(s) and the platform. Artists received funds directly from this contract.These minter contracts are no longer in use.
+
+## Contributing
+
+All code must pass all tests and be formatted with prettier before being merged into the main branch. To run the tests, run `yarn test`. To format the code, run `yarn format`. For additional information about our testing philosophy at Art Blocks, please see our [Testing Philosophy](./test/README.md) document.
 
 ## Useful References
 
