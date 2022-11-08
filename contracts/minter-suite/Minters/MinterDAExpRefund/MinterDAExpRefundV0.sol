@@ -409,6 +409,10 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
             "May only reduce sellout price"
         );
         require(
+            _newSelloutPrice >= _projectConfig.basePrice,
+            "May only reduce sellout price to base price or greater"
+        );
+        require(
             _projectConfig.auctionIsValid == false,
             "Auction already marked as valid"
         );
