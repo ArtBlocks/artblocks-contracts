@@ -55,4 +55,13 @@ interface IFilteredMinterDAExpRefundV0 is IFilteredMinterV1 {
         uint256 _netPaid,
         uint256 _numPurchased
     );
+
+    /// receipt has an updated state
+    event DelayStarted(
+        uint256 indexed _projectId,
+        uint256 _activeDelayBeginTimestamp
+    );
+
+    /// receipt has an updated state
+    event DelayEnded(uint256 indexed _projectId, uint256 _delaySecondsAdded);
 }

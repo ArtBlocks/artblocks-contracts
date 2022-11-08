@@ -5,8 +5,8 @@ import "../../../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
 import "../../../interfaces/0.8.x/IMinterFilterV0.sol";
 import "../../../interfaces/0.8.x/IFilteredMinterDAExpRefundV0.sol";
 
-import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin-4.5/contracts/utils/math/SafeCast.sol";
+import "@openzeppelin-4.7/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
 
 pragma solidity 0.8.17;
 
@@ -87,9 +87,14 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
         // number of tokens minted that have potential of future refunds.
         // max uint24 > 16.7 million tokens > 1 million tokens/project max
         uint24 numRefundableInvocations;
-        // max uint64 ~= 1.8e19 sec ~= 570 billion years
-        uint64 timestampStart;
-        uint64 priceDecayHalfLifeSeconds;
+        // max uint48 ~= 2.8e14 sec ~= 8.9 million years
+        uint48 timestampStart;
+        uint48 priceDecayHalfLifeSeconds;
+        // This is the timestamp at which an ongoing delay period was started.
+        // If there is no ongoing delay period, this value is 0.
+        uint48 activeDelayBeginTimestamp;
+        // This is the total time, in seconds, of all completed delay periods.
+        uint48 totalDelaySeconds;
         uint256 startPrice;
         uint256 basePrice;
     }
@@ -329,9 +334,9 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
             "Price decay half life must fall between min and max allowable values"
         );
         // EFFECTS
-        _projectConfig.timestampStart = _auctionTimestampStart.toUint64();
+        _projectConfig.timestampStart = _auctionTimestampStart.toUint48();
         _projectConfig.priceDecayHalfLifeSeconds = _priceDecayHalfLifeSeconds
-            .toUint64();
+            .toUint48();
         _projectConfig.startPrice = _startPrice;
         _projectConfig.basePrice = _basePrice;
 
@@ -354,6 +359,9 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
      * This is because a refundable purchase represents an agreement between
      * the purchaser and the artist, and the artist should not be able to
      * change the terms of that agreement.
+     * Note that this function does handle and reset the cases where a delay
+     * has been set, even if it has not yet ended (this will, however, exit
+     * the delay period).
      * @param _projectId Project ID to set auction details for.
      */
     function resetAuctionDetails(uint256 _projectId)
@@ -369,11 +377,19 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
             "No modifications after refundable purchases"
         );
         // EFFECTS
+        // end any active delay period
+        if (_projectConfig.activeDelayBeginTimestamp != 0) {
+            _projectConfig.activeDelayBeginTimestamp = 0;
+            // nonsense value of zero for total delay seconds added sice we are
+            // resetting all values
+            emit DelayEnded(_projectId, 0);
+        }
         // reset to initial values
         _projectConfig.timestampStart = 0;
         _projectConfig.priceDecayHalfLifeSeconds = 0;
         _projectConfig.startPrice = 0;
         _projectConfig.basePrice = 0;
+        _projectConfig.totalDelaySeconds = 0;
 
         emit ResetAuctionDetails(_projectId);
     }
@@ -491,6 +507,79 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
         uint256 netRevenues = _projectConfig.numRefundableInvocations * _price;
         _splitETHRevenues(_projectId, netRevenues);
         emit ArtistAndAdminRevenuesWithdrawn(_projectId);
+    }
+
+    /**
+     * @notice This begins a delay period in an active auction.
+     * This function is only callable by the artist or admin, and only after
+     * a configured auction has started, but before it has sold out. It also
+     * must not already be in a delay period.
+     * This function is intended to be used in the case where for some reason,
+     * whether malicious or accidental, the auction is not behaving as
+     * expected. Examples of this include:
+     * - The Art Blocks website has a website issue that is preventing users
+     *  from purchasing the project. A delay period can be initiated to allow
+     *  the website to be fixed, at which point the auction can be resumed at
+     *  the previous price point.
+     * Note that a project may still be purchased during an active delay
+     * period. If an artist desires a project to be paused during a delay, that
+     * should be managed by toggling a project's paused state on the core
+     * contract.
+     * @param _projectId Project ID to begin delay.
+     */
+    function delayAuction(uint256 _projectId)
+        external
+        onlyCoreAdminACLOrArtist(_projectId, this.delayAuction.selector)
+    {
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        // CHECKS
+        require(_projectConfig.timestampStart > 0, "Auction not configured");
+        require(
+            _projectConfig.timestampStart < block.timestamp,
+            "Auction not started"
+        );
+        require(
+            !_projectConfig.maxHasBeenInvoked,
+            "Auction already at max invocations"
+        );
+        require(
+            _projectConfig.activeDelayBeginTimestamp == 0,
+            "Auction already delayed"
+        );
+        // EFFECTS
+        _projectConfig.activeDelayBeginTimestamp = block.timestamp.toUint48();
+        emit DelayStarted(_projectId, block.timestamp);
+    }
+
+    /**
+     * @notice This ends an active delay period in an auction on project
+     * `_projectId`.
+     * This function is only callable by the artist or admin, and only during
+     * an active delay period.
+     * An auction will resume at the price it was at when the delay began, and
+     * will continue to follow the same price curve as before the delay, offset
+     * by the time that has passed since the delay began.
+     * Note that a project does not disable or enable purchasing based off of
+     * being in or out of a delay period. If an artist has paused a project on
+     * the core contract, they should unpause it before ending the delay.
+     * @param _projectId Project ID to end delay.
+     */
+    function resumeAuction(uint256 _projectId)
+        external
+        onlyCoreAdminACLOrArtist(_projectId, this.delayAuction.selector)
+    {
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        // CHECKS
+        require(
+            _projectConfig.activeDelayBeginTimestamp > 0,
+            "Auction not in active delay"
+        );
+        // EFFECTS
+        uint48 delaySecondsAdded = block.timestamp.toUint48() -
+            _projectConfig.activeDelayBeginTimestamp;
+        _projectConfig.totalDelaySeconds += delaySecondsAdded;
+        _projectConfig.activeDelayBeginTimestamp = 0;
+        emit DelayEnded(_projectId, delaySecondsAdded);
     }
 
     /**
@@ -814,6 +903,16 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
         // auction configuration (will revert if auction has not started)
         // move parameters to memory if used more than once
         uint256 _timestampStart = uint256(_projectConfig.timestampStart);
+        // augment timestampStart and shift by total of all completed delay
+        // periods
+        _timestampStart += _projectConfig.totalDelaySeconds;
+        // augment timestampStart and shift by any active delay period
+        if (_projectConfig.activeDelayBeginTimestamp != 0) {
+            _timestampStart +=
+                block.timestamp -
+                _projectConfig.activeDelayBeginTimestamp;
+        }
+
         uint256 _priceDecayHalfLifeSeconds = uint256(
             _projectConfig.priceDecayHalfLifeSeconds
         );
