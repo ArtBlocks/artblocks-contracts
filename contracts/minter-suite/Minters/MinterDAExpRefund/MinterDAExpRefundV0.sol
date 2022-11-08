@@ -614,15 +614,35 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
         return tokenId;
     }
 
+    /**
+     * @notice Refunds the sender's payment above current amount due for
+     * project `_projectId`. This function is callable at any point, but is
+     * expected to typically be called after auction has sold out above base
+     * price or after the auction has reached base price. This minimizes the
+     * amount of gas required to refund the sender.
+     * Sends refund to msg.sender.
+     * @param _projectId Project ID to refund payment on.
+     */
     function claimRefund(uint256 _projectId) external {
         claimRefundTo(payable(msg.sender), _projectId);
     }
 
+    /**
+     * @notice Refunds the sender's payment above current amount due for
+     * project `_projectId`. This function is callable at any point, but is
+     * expected to typically be called after auction has sold out above base
+     * price or after the auction has reached base price. This minimizes the
+     * amount of gas required to refund the sender.
+     * Sends refund to address `_to`.
+     * @param _to Address to send refund to.
+     * @param _projectId Project ID to refund payment on.
+     */
     function claimRefundTo(address payable _to, uint256 _projectId)
         public
         nonReentrant
     {
         // CHECKS
+        require(_to != address(0), "No refund to the zero address");
         // get the current price, which returns the sellout price if the
         // auction sold out before reaching base price, or returns the base
         // price if auction has reached base price without reaching max
@@ -647,6 +667,75 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
         );
 
         // INTERACTIONS
+        bool success_;
+        (success_, ) = _to.call{value: refund}("");
+        require(success_, "Refund failed");
+    }
+
+    /**
+     * @notice Refunds the sender's payment above current amount due for
+     * projects `_projectIds`. This function is callable at any point, but is
+     * expected to typically be called after auctions sold out above base
+     * price or after an auction has reached base price. This minimizes the
+     * amount of gas required to refund the sender.
+     * Sends total of all refunds to msg.sender in a single chunk.
+     * @param _projectIds Array of project IDs to refund payments on.
+     */
+    function claimRefunds(uint256[] calldata _projectIds) external {
+        claimRefundsTo(payable(msg.sender), _projectIds);
+    }
+
+    /**
+     * @notice Refunds the sender's payment above current amount due for
+     * projects `_projectIds`. This function is callable at any point, but is
+     * expected to typically be called after auctions sold out above base
+     * price or after an auction has reached base price. This minimizes the
+     * amount of gas required to refund the sender.
+     * Sends total of all refunds to address `_to` in a single chunk.
+     * @param _to Address to send refund to.
+     * @param _projectIds Array of project IDs to refund payments on.
+     */
+    function claimRefundsTo(address payable _to, uint256[] memory _projectIds)
+        public
+        nonReentrant
+    {
+        // CHECKS
+        require(_to != address(0), "No refund to the zero address");
+        // EFFECTS
+        // for each project, tally up the refund amount and update the receipt
+        // in storage
+        uint256 refund;
+        uint256 projectIdsLength = _projectIds.length;
+        for (uint256 i = 0; i < projectIdsLength; ) {
+            uint256 projectId = _projectIds[i];
+            // get the current price, which returns the sellout price if the
+            // auction sold out before reaching base price, or returns the base
+            // price if auction has reached base price without reaching max
+            // invocations on this minter. Reverts if auction is unconfigured or
+            // has not started.
+            uint256 currentPriceInWei = _getPrice(projectId);
+            // calculate the refund amount
+            Receipt storage receipt = receipts[msg.sender][projectId];
+            // implicit overflow/underflow checks in solidity ^0.8
+            uint256 amountDue = receipt.numPurchased * currentPriceInWei;
+            refund += receipt.netPaid - amountDue;
+            // reduce the netPaid (in storage) to value after refund deducted
+            receipt.netPaid = amountDue;
+            // emit event indicating new receipt state
+            emit ReceiptUpdated(
+                msg.sender,
+                projectId,
+                receipt.numPurchased,
+                receipt.netPaid
+            );
+            // gas efficiently increment i
+            unchecked {
+                ++i;
+            }
+        }
+
+        // INTERACTIONS
+        // send refund in a single chunk for all projects
         bool success_;
         (success_, ) = _to.call{value: refund}("");
         require(success_, "Refund failed");
