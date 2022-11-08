@@ -33,12 +33,26 @@ interface IFilteredMinterDAExpRefundV0 is IFilteredMinterV1 {
     );
 
     /// sellout price updated for project `projectId`.
-    event SelloutPriceUpdated(uint256 _projectId, uint256 _selloutPrice);
+    event SelloutPriceUpdated(
+        uint256 indexed _projectId,
+        uint256 _selloutPrice
+    );
 
     /// admin validated a sellout price > base price for project `projectId`.
-    event SelloutPriceValidated(uint256 _projectId, uint256 _selloutPrice);
+    event SelloutPriceValidated(
+        uint256 indexed _projectId,
+        uint256 _selloutPrice
+    );
 
     /// artist and admin have withdrawn revenues from refundable purchases for
     /// project `projectId`.
-    event ArtistAndAdminRevenuesWithdrawn(uint256 _projectId);
+    event ArtistAndAdminRevenuesWithdrawn(uint256 indexed _projectId);
+
+    /// receipt has an updated state
+    event ReceiptUpdated(
+        address indexed _purchaser,
+        uint256 indexed _projectId,
+        uint256 _netPaid,
+        uint256 _numPurchased
+    );
 }

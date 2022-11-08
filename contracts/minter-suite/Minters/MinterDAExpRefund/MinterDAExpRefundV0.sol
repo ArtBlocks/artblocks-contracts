@@ -570,6 +570,14 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
             _receipt.numPurchased * currentPriceInWei >= _receipt.netPaid,
             "Must send minimum value to mint!"
         );
+        // emit event indicating new receipt state
+        emit ReceiptUpdated(
+            msg.sender,
+            _projectId,
+            _receipt.numPurchased,
+            _receipt.netPaid
+        );
+
         tokenId = minterFilter.mint(_to, _projectId, msg.sender);
 
         // Note that this requires that the core contract's maxInvocations
@@ -630,6 +638,13 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
         uint256 refund = receipt.netPaid - amountDue;
         // reduce the netPaid (in storage) to value after refund deducted
         receipt.netPaid = amountDue;
+        // emit event indicating new receipt state
+        emit ReceiptUpdated(
+            msg.sender,
+            _projectId,
+            receipt.numPurchased,
+            receipt.netPaid
+        );
 
         // INTERACTIONS
         bool success_;
