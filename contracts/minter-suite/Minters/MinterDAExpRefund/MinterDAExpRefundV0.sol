@@ -603,14 +603,16 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
     {
         // CHECKS
         // get the current price, which returns the sellout price if the
-        // auction sold out before reaching base price. Reverts if
-        // auction is unconfigured or has not started.
+        // auction sold out before reaching base price, or returns the base
+        // price if auction has reached base price without reaching max
+        // invocations on this minter. Reverts if auction is unconfigured or
+        // has not started.
         uint256 currentPriceInWei = _getPrice(_projectId);
 
         // EFFECTS
         // calculate the refund amount
         Receipt storage receipt = receipts[msg.sender][_projectId];
-        // implicit overflow check in solidity ^0.8
+        // implicit overflow/underflow checks in solidity ^0.8
         uint256 amountDue = receipt.numPurchased * currentPriceInWei;
         uint256 refund = receipt.netPaid - amountDue;
         // reduce the netPaid (in storage) to value after refund deducted
