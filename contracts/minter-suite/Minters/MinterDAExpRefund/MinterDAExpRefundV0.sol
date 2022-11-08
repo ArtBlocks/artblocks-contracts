@@ -347,10 +347,11 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
      * relevant auction fields. Not intended to be used in normal auction
      * operation, but rather only in case of the need to prevent an auction.
      * This function is only callable by the core admin before an auction has
-     * started. Once an auction has started, there is no way to reset the
-     * auction because an auction represents an agreement between the artist
-     * and the buyer that the artist will sell the NFT for the price that is
-     * the eventual settling price of the auction.
+     * had any refundable purchases have been made. Once a refundable purchase
+     * has been made, there is no way to reset the auction details.
+     * This is because a refundable purchase represents an agreement between
+     * the purchaser and the artist, and the artist should not be able to
+     * change the terms of that agreement.
      * @param _projectId Project ID to set auction details for.
      */
     function resetAuctionDetails(uint256 _projectId)
@@ -359,11 +360,11 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
     {
         // CHECKS
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
-        // once an auction has started, it cannot be reset due to refunds being
-        // possible on this minter
+        // once one or more refundable purchase have been made on this minter,
+        // a project's auction cannot be reset due to refunds possible on this minter
         require(
-            block.timestamp < _projectConfig.timestampStart,
-            "No modifications after auction start"
+            _projectConfig.numRefundableInvocations == 0,
+            "No modifications after refundable purchases"
         );
         // EFFECTS
         // reset to initial values
