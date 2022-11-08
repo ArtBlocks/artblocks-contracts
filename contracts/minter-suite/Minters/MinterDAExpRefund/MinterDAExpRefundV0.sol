@@ -566,9 +566,6 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
         );
         tokenId = minterFilter.mint(_to, _projectId, msg.sender);
 
-        // okay if this underflows because if statement will always eval false.
-        // this is only for gas optimization and recording selloutPrice
-        // (core enforces maxInvocations).
         // Note that this requires that the core contract's maxInvocations
         // be accurate to ensure that the minters selloutPrice is accurate,
         // so we get the value from the core contract directly.
@@ -576,6 +573,9 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
         (, maxInvocations, , , , ) = genArtCoreContract.projectStateData(
             _projectId
         );
+        // okay if this underflows because if statement will always eval false.
+        // this is only for gas optimization and recording selloutPrice
+        // (core enforces maxInvocations).
         unchecked {
             if (tokenId % ONE_MILLION == maxInvocations - 1) {
                 _projectConfig.maxHasBeenInvoked = true;
@@ -587,8 +587,10 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
         // INTERACTIONS
         if (currentPriceInWei == _projectConfig.basePrice) {
             // if the price is base price, split funds immediately since
-            // the auction is already at minimum price, and is valid by default
-            _splitFundsETHAuction(_projectId, currentPriceInWei);
+            // the auction is already at minimum price, and is valid by default.
+            // note that we don't refund msg.sender here, since a separate
+            // refund mechanism is provided for refunds, unrelated to msg.value
+            _splitETHRevenues(_projectId, currentPriceInWei);
         } else {
             // increment the number of refundable invocations that will be
             // claimable by the artist and admin once auction is validated.
@@ -627,63 +629,6 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
         bool success_;
         (success_, ) = _to.call{value: refund}("");
         require(success_, "Refund failed");
-    }
-
-    /**
-     * @dev splits ETH funds between sender (if refund), foundation,
-     * artist, and artist's additional payee for a token purchased on
-     * project `_projectId`.
-     * @dev possible DoS during splits is acknowledged, and mitigated by
-     * business practices, including end-to-end testing on mainnet, and
-     * admin-accepted artist payment addresses.
-     * @param _projectId Project ID for which funds shall be split.
-     * @param _currentPriceInWei Current price of token, in Wei.
-     */
-    function _splitFundsETHAuction(
-        uint256 _projectId,
-        uint256 _currentPriceInWei
-    ) internal {
-        if (msg.value > 0) {
-            bool success_;
-            // send refund to sender
-            uint256 refund = msg.value - _currentPriceInWei;
-            if (refund > 0) {
-                (success_, ) = msg.sender.call{value: refund}("");
-                require(success_, "Refund failed");
-            }
-            // split remaining funds between foundation, artist, and artist's
-            // additional payee
-            (
-                uint256 artblocksRevenue_,
-                address payable artblocksAddress_,
-                uint256 artistRevenue_,
-                address payable artistAddress_,
-                uint256 additionalPayeePrimaryRevenue_,
-                address payable additionalPayeePrimaryAddress_
-            ) = genArtCoreContract.getPrimaryRevenueSplits(
-                    _projectId,
-                    _currentPriceInWei
-                );
-            // Art Blocks payment
-            if (artblocksRevenue_ > 0) {
-                (success_, ) = artblocksAddress_.call{value: artblocksRevenue_}(
-                    ""
-                );
-                require(success_, "Art Blocks payment failed");
-            }
-            // artist payment
-            if (artistRevenue_ > 0) {
-                (success_, ) = artistAddress_.call{value: artistRevenue_}("");
-                require(success_, "Artist payment failed");
-            }
-            // additional payee payment
-            if (additionalPayeePrimaryRevenue_ > 0) {
-                (success_, ) = additionalPayeePrimaryAddress_.call{
-                    value: additionalPayeePrimaryRevenue_
-                }("");
-                require(success_, "Additional Payee payment failed");
-            }
-        }
     }
 
     /**
