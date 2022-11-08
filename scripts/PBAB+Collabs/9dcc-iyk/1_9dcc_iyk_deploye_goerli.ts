@@ -16,7 +16,7 @@ import { createPBABBucket } from "../../util/aws_s3";
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG BEGINS HERE
 //////////////////////////////////////////////////////////////////////////////
-// FLEX contract file
+// EngineIYK contract file
 import { GenArt721CoreV29DCCIYK__factory } from "../../contracts/factories/GenArt721CoreV29DCCIYK__factory";
 import { GenArt721Minter9DCCIYK__factory } from "../../contracts/factories/GenArt721Minter9DCCIYK__factory";
 
@@ -50,9 +50,9 @@ async function main() {
   // Randomizer contract
   console.log(`Using shared randomizer at ${randomizerAddress}`);
 
-  // deploy FLEX core contract
+  // deploy EngineIYK core contract
   const coreFactory = new GenArt721CoreV29DCCIYK__factory(deployer);
-  const genArt721CoreFlex = await coreFactory.deploy(
+  const genArt721CoreEngineIYK = await coreFactory.deploy(
     tokenName,
     tokenTicker,
     randomizerAddress,
@@ -60,13 +60,15 @@ async function main() {
     signVerifierRegistry,
     signVerifierId
   );
-  await genArt721CoreFlex.deployed();
-  console.log(`GenArt721CoreV2 FLEX deployed at ${genArt721CoreFlex.address}`);
+  await genArt721CoreEngineIYK.deployed();
+  console.log(
+    `GenArt721CoreV2 EngineIYK deployed at ${genArt721CoreEngineIYK.address}`
+  );
 
   // Deploy Minter contract.
   const genArt721MinterFactory = new GenArt721Minter9DCCIYK__factory(deployer);
   const genArt721Minter = await genArt721MinterFactory.deploy(
-    genArt721CoreFlex.address
+    genArt721CoreEngineIYK.address
   );
 
   await genArt721Minter.deployed();
@@ -81,7 +83,7 @@ async function main() {
   //////////////////////////////////////////////////////////////////////////////
   let tx = null;
   // Allowlist the Minter on the Core contract.
-  tx = await genArt721CoreFlex
+  tx = await genArt721CoreEngineIYK
     .connect(deployer)
     .addMintWhitelisted(genArt721Minter.address);
   await tx.wait();
@@ -89,7 +91,7 @@ async function main() {
   delay(EXTRA_DELAY_BETWEEN_TX);
 
   // Update the Art Blocks Address.
-  tx = await genArt721CoreFlex
+  tx = await genArt721CoreEngineIYK
     .connect(deployer)
     .updateRenderProviderAddress(artblocksAddress);
   await tx.wait();
@@ -115,7 +117,7 @@ async function main() {
       "0x0B7917b62BC98967e06e80EFBa9aBcAcCF3d4928", // ben_thank_you
     ];
     for (let i = 0; i < devAddresses.length; i++) {
-      tx = await genArt721CoreFlex
+      tx = await genArt721CoreEngineIYK
         .connect(deployer)
         .addWhitelisted(devAddresses[i]);
       await tx.wait();
@@ -126,7 +128,7 @@ async function main() {
   }
 
   // Allowlist new owner.
-  tx = await genArt721CoreFlex
+  tx = await genArt721CoreEngineIYK
     .connect(deployer)
     .addWhitelisted(transferAddress);
   await tx.wait();
@@ -135,7 +137,9 @@ async function main() {
   delay(EXTRA_DELAY_BETWEEN_TX);
 
   // Transfer Core contract to new owner.
-  tx = await genArt721CoreFlex.connect(deployer).updateAdmin(transferAddress);
+  tx = await genArt721CoreEngineIYK
+    .connect(deployer)
+    .updateAdmin(transferAddress);
   await tx.wait();
   console.log(`Transferred Core contract admin to: ${transferAddress}.`);
 
@@ -143,11 +147,11 @@ async function main() {
   const standardVerify = "yarn hardhat verify";
   console.log(`Verify core contract deployment with:`);
   console.log(
-    `${standardVerify} --network ${networkName} ${genArt721CoreFlex.address} "${tokenName}" "${tokenTicker}" ${randomizerAddress} 0 ${signVerifierRegistry} ${signVerifierId}`
+    `${standardVerify} --network ${networkName} ${genArt721CoreEngineIYK.address} "${tokenName}" "${tokenTicker}" ${randomizerAddress} 0 ${signVerifierRegistry} ${signVerifierId}`
   );
   console.log(`Verify Minter deployment with:`);
   console.log(
-    `${standardVerify} --network ${networkName} ${genArt721Minter.address} ${genArt721CoreFlex.address}`
+    `${standardVerify} --network ${networkName} ${genArt721Minter.address} ${genArt721CoreEngineIYK.address}`
   );
 
   //////////////////////////////////////////////////////////////////////////////
