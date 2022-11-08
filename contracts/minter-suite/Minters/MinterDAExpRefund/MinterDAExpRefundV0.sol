@@ -80,8 +80,10 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
         // the auction's base price.
         bool maxHasBeenInvoked;
         // set to true by the admin if the auction has ended and the sellout
-        // or base price is considered valid.
-        bool auctionIsValid;
+        // price is considered verified and final. This is not necessary to be
+        // true if the auction did not sell out before reaching base price,
+        // since base price is the lowest possible price.
+        bool auctionIsVerifiedComplete;
         // number of tokens minted that have potential of future refunds.
         // max uint24 > 16.7 million tokens > 1 million tokens/project max
         uint24 numRefundableInvocations;
@@ -414,8 +416,8 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
             "May only reduce sellout price to base price or greater"
         );
         require(
-            _projectConfig.auctionIsValid == false,
-            "Auction already marked as valid"
+            _projectConfig.auctionIsVerifiedComplete == false,
+            "Auction already verified"
         );
         _projectConfig.selloutPrice = _newSelloutPrice;
         emit SelloutPriceUpdated(_projectId, _newSelloutPrice);
@@ -452,7 +454,7 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
             "Only sellout price greater than base price"
         );
         // update state
-        _projectConfig.auctionIsValid = true;
+        _projectConfig.auctionIsVerifiedComplete = true;
         emit SelloutPriceValidated(_projectId, _projectConfig.selloutPrice);
     }
 
@@ -476,9 +478,13 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
         // get the current net price of the auction
         uint256 _price = _getPrice(_projectId);
         // if the price is not base price, the auction is only valid if the
-        // admin has validated the sellout price
+        // admin has validated the sellout price (since price is monotonically
+        // decreasing).
         if (_price != _projectConfig.basePrice) {
-            require(_projectConfig.auctionIsValid, "Auction not yet valid");
+            require(
+                _projectConfig.auctionIsVerifiedComplete,
+                "Auction not yet verified"
+            );
         }
         // if the price is base price, the auction is valid and may be claimed
         // calculate the artist and admin revenues (no check requuired)
