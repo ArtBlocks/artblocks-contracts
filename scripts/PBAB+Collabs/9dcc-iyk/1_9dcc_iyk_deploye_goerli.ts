@@ -26,7 +26,8 @@ const tokenTicker = "IT-02";
 const transferAddress = "0x5FE770CF8Ad1DF5DDe2c1447A898B087c275F6c1";
 // expected deployer wallet (testnet only)
 const artblocksAddress = "0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63";
-const signVerifierAddress = "0xfc95c9ffba80cb60f76c653ea8e5ce01253b6c6a";
+// **Goerli** deployment of `SignVerifierRegistry``
+const signVerifierRegistry = "0xc4aee06cd958a0b489edc0f2bea3d48629315916";
 const signVerifierId =
   "0x9f28225c7d0ace67fa2516bd7725f3949e9a591de0eae9db822b2cb79f38a6b0";
 // Shared **goerli** randomizer instance.
@@ -56,7 +57,7 @@ async function main() {
     tokenTicker,
     randomizerAddress,
     0, // startingProjectId
-    signVerifierAddress,
+    signVerifierRegistry,
     signVerifierId
   );
   await genArt721CoreFlex.deployed();
