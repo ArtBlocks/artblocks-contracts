@@ -14,7 +14,7 @@ pragma solidity 0.8.9;
  * @notice Due to the pull mechanism (claimNFT) being the only supported transfer function, these NFTs will NOT be tradeable on secondary marketplaces
  * @author Art Blocks Inc. + IYK GMI Inc.
  */
-contract GenArt721CoreV2_IYK is GenArt721CoreV2_PBAB {
+contract GenArt721CoreV2_9DCC_IYK is GenArt721CoreV2_PBAB {
     using ECDSA for bytes32;
 
     event SignVerifierRegistryUpdated(
