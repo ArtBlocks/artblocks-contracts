@@ -12,9 +12,9 @@ import {
 /**
  * These tests are intended to check the IYK integration's functionality.
  * These tests are not complete, and assume all GenArt721CoreV2_PBAB functionality
- * remains perfectly function, as GenArt721CoreV2_IYK subclasses it.
+ * remains perfectly function, as GenArt721CoreV2_9DCC_IYK subclasses it.
  */
-describe("GenArt721CoreV2_IYK_Integration", async function () {
+describe("GenArt721CoreV2_9DCC_IYK_Integration", async function () {
   beforeEach(async function () {
     // standard accounts and constants
     this.accounts = await getAccounts();
@@ -33,7 +33,7 @@ describe("GenArt721CoreV2_IYK_Integration", async function () {
     this.iykId = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("IYK"));
 
     // V2_PRTNR need additional arg for starting project ID
-    this.genArt721Core = await deployAndGet.call(this, "GenArt721CoreV2_IYK", [
+    this.genArt721Core = await deployAndGet.call(this, "GenArt721CoreV2_9DCC_IYK", [
       this.name,
       this.symbol,
       this.randomizer.address,
