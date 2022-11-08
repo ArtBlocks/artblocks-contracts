@@ -33,14 +33,18 @@ describe("GenArt721CoreV2_9DCC_IYK_Integration", async function () {
     this.iykId = ethers.utils.keccak256(ethers.utils.toUtf8Bytes("IYK"));
 
     // V2_PRTNR need additional arg for starting project ID
-    this.genArt721Core = await deployAndGet.call(this, "GenArt721CoreV2_9DCC_IYK", [
-      this.name,
-      this.symbol,
-      this.randomizer.address,
-      0,
-      this.signVerifierRegistry.address,
-      this.iykId,
-    ]);
+    this.genArt721Core = await deployAndGet.call(
+      this,
+      "GenArt721CoreV2_9DCC_IYK",
+      [
+        this.name,
+        this.symbol,
+        this.randomizer.address,
+        0,
+        this.signVerifierRegistry.address,
+        this.iykId,
+      ]
+    );
     this.minter = await deployAndGet.call(this, "GenArt721Minter_PBAB", [
       this.genArt721Core.address,
     ]);
