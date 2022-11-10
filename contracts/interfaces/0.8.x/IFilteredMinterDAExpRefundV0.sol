@@ -24,7 +24,7 @@ interface IFilteredMinterDAExpRefundV0 is IFilteredMinterV1 {
     );
 
     /// Auction details cleared for project `projectId`.
-    event ResetAuctionDetails(uint256 indexed projectId);
+    event ResetAuctionDetails(uint256 indexed projectId, uint256 priceAtReset);
 
     /// Maximum and minimum allowed price decay half lifes updated.
     event AuctionHalfLifeRangeSecondsUpdated(
