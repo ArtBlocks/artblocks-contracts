@@ -79,6 +79,8 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
         // this enables the minter to know when a sellout price is greater than
         // the auction's base price.
         bool maxHasBeenInvoked;
+        // set to true only after artist + admin revenues have been collected
+        bool auctionRevenuesCollected;
         // set to true by the admin if the auction has ended and the sellout
         // price is considered verified and final. This is not necessary to be
         // true if the auction did not sell out before reaching base price,
@@ -362,11 +364,17 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
     {
         // CHECKS
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        require(_projectConfig.startPrice != 0, "Auction must be configured");
         // once one or more refundable purchase have been made on this minter,
         // a project's auction cannot be reset due to refunds possible on this minter
         require(
             _projectConfig.numRefundableInvocations == 0,
             "No modifications after refundable purchases"
+        );
+        // no reset after revenues collected
+        require(
+            !_projectConfig.auctionRevenuesCollected,
+            "Cannot reset an auction after revenues collected"
         );
         // EFFECTS
         // reset to initial values
@@ -418,6 +426,10 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
         require(
             _projectConfig.auctionIsVerifiedComplete == false,
             "Auction already verified"
+        );
+        require(
+            !_projectConfig.auctionRevenuesCollected,
+            "Only before revenues collected"
         );
         _projectConfig.selloutPrice = _newSelloutPrice;
         emit SelloutPriceUpdated(_projectId, _newSelloutPrice);
@@ -475,7 +487,14 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
         )
     {
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
-        // get the current net price of the auction
+        // CHECKS
+        // require revenues to not have already been collected
+        require(
+            !_projectConfig.auctionRevenuesCollected,
+            "Revenues already collected"
+        );
+        // get the current net price of the auction - reverts if no auction
+        // is configured.
         uint256 _price = _getPrice(_projectId);
         // if the price is not base price, the auction is only valid if the
         // admin has validated the sellout price (since price is monotonically
@@ -486,9 +505,12 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
                 "Auction not yet verified"
             );
         }
+        // EFFECTS
+        _projectConfig.auctionRevenuesCollected = true;
         // if the price is base price, the auction is valid and may be claimed
         // calculate the artist and admin revenues (no check requuired)
         uint256 netRevenues = _projectConfig.numRefundableInvocations * _price;
+        // INTERACTIONS
         _splitETHRevenues(_projectId, netRevenues);
         emit ArtistAndAdminRevenuesWithdrawn(_projectId);
     }
@@ -608,6 +630,7 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
         } else {
             // increment the number of refundable invocations that will be
             // claimable by the artist and admin once auction is validated.
+            // do not split revenue here since will be claimed at a later time.
             _projectConfig.numRefundableInvocations++;
         }
 
