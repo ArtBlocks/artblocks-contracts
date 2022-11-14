@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.9;
 
-import "../../PBAB+Collabs/iyk/ISignVerifierRegistry.sol";
+import "../../PBAB+Collabs/9dcc-iyk/ISignVerifierRegistry.sol";
 import "@openzeppelin-4.5/contracts/utils/introspection/ERC165.sol";
 
 contract SignVerifierRegistryMock is ERC165, ISignVerifierRegistry {
