@@ -46,12 +46,6 @@ interface IFilteredMinterDAExpRefundV0 is IFilteredMinterV1 {
         uint256 _selloutPrice
     );
 
-    /// admin validated a sellout price > base price for project `projectId`.
-    event SelloutPriceValidated(
-        uint256 indexed _projectId,
-        uint256 _selloutPrice
-    );
-
     /// artist and admin have withdrawn revenues from refundable purchases for
     /// project `projectId`.
     event ArtistAndAdminRevenuesWithdrawn(uint256 indexed _projectId);
