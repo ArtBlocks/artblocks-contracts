@@ -82,11 +82,6 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
     uint256 constant ONE_MILLION = 1_000_000;
 
     struct ProjectConfig {
-        // this value is updated only if maxHasBeenInvoked is true, and
-        // represents the purchase price of the final token during a sellout
-        // auction. If a sellout is not achieved before the auction ends (i.e.
-        // reaches base price), this value will be 0.
-        uint256 selloutPrice;
         // on this minter, hasMaxBeenInvoked is updated only during every
         // purchase, and is only true if this minter minted the final token.
         // this enables the minter to know when a sellout price is greater than
@@ -110,6 +105,11 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
         // equal to this value, if one or more purchases have been made on this
         // minter.
         uint256 latestPurchasePrice;
+        // this value is updated only if maxHasBeenInvoked is true, and
+        // represents the purchase price of the final token during a sellout
+        // auction. If a sellout is not achieved before the auction ends (i.e.
+        // reaches base price), this value will be 0.
+        uint256 selloutPrice;
     }
 
     mapping(uint256 => ProjectConfig) public projectConfig;

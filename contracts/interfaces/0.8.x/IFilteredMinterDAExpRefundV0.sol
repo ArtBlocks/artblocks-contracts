@@ -11,7 +11,6 @@ pragma solidity ^0.8.0;
  * @dev keys represent strings of finite length encoded in bytes32 to minimize
  * gas.
  * @author Art Blocks Inc.
- * TODO - derive from IFilteredMinterV0 if generic events are not needed
  */
 interface IFilteredMinterDAExpRefundV0 is IFilteredMinterV1 {
     /// Auction details updated for project `projectId`.
@@ -41,6 +40,8 @@ interface IFilteredMinterDAExpRefundV0 is IFilteredMinterV1 {
     );
 
     /// sellout price updated for project `projectId`.
+    /// @dev does not use generic event because likely will trigger additional
+    /// actions in indexing layer
     event SelloutPriceUpdated(
         uint256 indexed _projectId,
         uint256 _selloutPrice
@@ -48,6 +49,8 @@ interface IFilteredMinterDAExpRefundV0 is IFilteredMinterV1 {
 
     /// artist and admin have withdrawn revenues from refundable purchases for
     /// project `projectId`.
+    /// @dev does not use generic event because likely will trigger additional
+    /// actions in indexing layer
     event ArtistAndAdminRevenuesWithdrawn(uint256 indexed _projectId);
 
     /// receipt has an updated state
