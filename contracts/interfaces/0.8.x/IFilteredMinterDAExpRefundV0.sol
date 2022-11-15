@@ -24,7 +24,15 @@ interface IFilteredMinterDAExpRefundV0 is IFilteredMinterV1 {
     );
 
     /// Auction details cleared for project `projectId`.
-    event ResetAuctionDetails(uint256 indexed projectId, uint256 priceAtReset);
+    /// At time of reset, the project has had `numPurchases` purchases on this
+    /// minter, with a most recent purchase price of `latestPurchasePrice`. If
+    /// the number of purchases is 0, the latest purchase price will have a
+    /// dummy value of 0.
+    event ResetAuctionDetails(
+        uint256 indexed projectId,
+        uint256 numPurchases,
+        uint256 latestPurchasePrice
+    );
 
     /// Maximum and minimum allowed price decay half lifes updated.
     event AuctionHalfLifeRangeSecondsUpdated(

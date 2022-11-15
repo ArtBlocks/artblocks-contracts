@@ -89,11 +89,14 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
         uint64 priceDecayHalfLifeSeconds;
         uint256 startPrice;
         uint256 basePrice;
-        // This represents the price at the point of that the most recent admin
-        // reset occured. This will be zero if no admin reset has occured,
-        // because a basePrice is required to be greater than 0 wei.
-        // This will be the maximum startPrice when a new auction is configured.
-        uint256 priceAtLastReset;
+        // This value is either zero if no purchases have been made, or the
+        // price when the most recent token of this project was purchased.
+        // This value is used as a reference when an auction is reset by admin,
+        // and then a new auction is configured by an artist. In that case, the
+        // new auction will be required to have a starting price less than or
+        // equal to this value, if one or more purchases have been made on this
+        // minter.
+        uint256 latestPurchasePrice;
     }
 
     mapping(uint256 => ProjectConfig) public projectConfig;
@@ -328,10 +331,17 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
             _startPrice > _basePrice,
             "Auction start price must be greater than auction end price"
         );
-        // require overal monatonically decreasing auction if purchases
+        // since we require a project to not have had revenues withdrawn prior
+        // to resetting an auction, we can safely assume that if the number of
+        // refundable invocations is zero, the project has not had any
+        // purchases made on this minter, and therefore the start price can be
+        // set to any value.
+        // If previous purchases have been made, require monotonically
+        // decreasing purchase prices to preserve refund and revenue claiming
+        // logic.
         require(
             _projectConfig.numRefundableInvocations == 0 || // never purchased
-                _startPrice <= _projectConfig.priceAtLastReset,
+                _startPrice <= _projectConfig.latestPurchasePrice,
             "Auction start price must be less than or equal to previous auction price"
         );
         require(
@@ -387,14 +397,20 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
             "Cannot reset an auction after revenues collected"
         );
         // EFFECTS
-        // record price at time of this reset for future reference
-        _projectConfig.priceAtLastReset = _getPrice(_projectId);
         // reset to initial values
         _projectConfig.timestampStart = 0;
         _projectConfig.priceDecayHalfLifeSeconds = 0;
         _projectConfig.startPrice = 0;
         _projectConfig.basePrice = 0;
-        emit ResetAuctionDetails(_projectId, _projectConfig.priceAtLastReset);
+        // Since auction revenues have not been collected, we can safely assume
+        // that numRefundableInvocations is the number of purchases made on
+        // this minter. A dummy value of 0 is used for latest purchase price if
+        // no purchases have been made.
+        emit ResetAuctionDetails(
+            _projectId,
+            _projectConfig.numRefundableInvocations,
+            _projectConfig.latestPurchasePrice
+        );
     }
 
     /**
@@ -574,6 +590,11 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
             _receipt.numPurchased,
             _receipt.netPaid
         );
+
+        // update latest purchase price (on this minter) in storage
+        // @dev this is used to enforce monotonically decreasing purchase price
+        // across multiple auctions
+        _projectConfig.latestPurchasePrice = currentPriceInWei;
 
         tokenId = minterFilter.mint(_to, _projectId, msg.sender);
 
