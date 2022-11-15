@@ -81,11 +81,6 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
         bool maxHasBeenInvoked;
         // set to true only after artist + admin revenues have been collected
         bool auctionRevenuesCollected;
-        // set to true by the admin if the auction has ended and the sellout
-        // price is considered verified and final. This is not necessary to be
-        // true if the auction did not sell out before reaching base price,
-        // since base price is the lowest possible price.
-        bool auctionIsVerifiedComplete;
         // number of tokens minted that have potential of future refunds.
         // max uint24 > 16.7 million tokens > 1 million tokens/project max
         uint24 numRefundableInvocations;
@@ -94,6 +89,14 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
         uint64 priceDecayHalfLifeSeconds;
         uint256 startPrice;
         uint256 basePrice;
+        // This value is either zero if no purchases have been made, or the
+        // price when the most recent token of this project was purchased.
+        // This value is used as a reference when an auction is reset by admin,
+        // and then a new auction is configured by an artist. In that case, the
+        // new auction will be required to have a starting price less than or
+        // equal to this value, if one or more purchases have been made on this
+        // minter.
+        uint256 latestPurchasePrice;
     }
 
     mapping(uint256 => ProjectConfig) public projectConfig;
@@ -298,6 +301,10 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
      * @param _priceDecayHalfLifeSeconds The half life with which to decay the
      *  price (in seconds).
      * @param _startPrice Price at which to start the auction, in Wei.
+     * If a previous auction existed on this minter and at least one refundable
+     * purchase has been made, this value must be less than or equal to the
+     * price when the previous auction was paused. This enforces an overall
+     * monatonically decreasing auction.
      * @param _basePrice Resting price of the auction, in Wei.
      * @dev Note that it is intentionally supported here that the configured
      * price may be explicitly set to `0`.
@@ -324,6 +331,19 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
             _startPrice > _basePrice,
             "Auction start price must be greater than auction end price"
         );
+        // since we require a project to not have had revenues withdrawn prior
+        // to resetting an auction, we can safely assume that if the number of
+        // refundable invocations is zero, the project has not had any
+        // purchases made on this minter, and therefore the start price can be
+        // set to any value.
+        // If previous purchases have been made, require monotonically
+        // decreasing purchase prices to preserve refund and revenue claiming
+        // logic.
+        require(
+            _projectConfig.numRefundableInvocations == 0 || // never purchased
+                _startPrice <= _projectConfig.latestPurchasePrice,
+            "Auction start price must be less than or equal to previous auction price"
+        );
         require(
             (_priceDecayHalfLifeSeconds >= minimumPriceDecayHalfLifeSeconds) &&
                 (_priceDecayHalfLifeSeconds <=
@@ -349,13 +369,19 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
     /**
      * @notice Resets auction details for project `_projectId`, zero-ing out all
      * relevant auction fields. Not intended to be used in normal auction
-     * operation, but rather only in case of the need to prevent an auction.
-     * This function is only callable by the core admin before an auction has
-     * had any refundable purchases have been made. Once a refundable purchase
-     * has been made, there is no way to reset the auction details.
-     * This is because a refundable purchase represents an agreement between
-     * the purchaser and the artist, and the artist should not be able to
-     * change the terms of that agreement.
+     * operation, but rather only in case of the need to reset an ongoing
+     * auction. An expected time this might occur would be when a frontend
+     * issue was occuring, and many typical users are actively being prevented
+     * from easily minting (even though minting would technically be possible
+     * directly from the contract).
+     * This function is only callable by the core admin during an active
+     * auction, before revenues have been collected.
+     * The price at the time of the reset will be the maximum starting price
+     * when re-configuring the next auction if one or more refundable
+     * purchases have been made.
+     * This is to ensure that purchases up through the block that this is
+     * called on will remain refundable, and that revenue claimed does not
+     * surpass (payments - refunds) for a given project.
      * @param _projectId Project ID to set auction details for.
      */
     function resetAuctionDetails(uint256 _projectId)
@@ -365,13 +391,7 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
         // CHECKS
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         require(_projectConfig.startPrice != 0, "Auction must be configured");
-        // once one or more refundable purchase have been made on this minter,
-        // a project's auction cannot be reset due to refunds possible on this minter
-        require(
-            _projectConfig.numRefundableInvocations == 0,
-            "No modifications after refundable purchases"
-        );
-        // no reset after revenues collected
+        // no reset after revenues collected, since that solidifies amount due
         require(
             !_projectConfig.auctionRevenuesCollected,
             "Cannot reset an auction after revenues collected"
@@ -382,15 +402,22 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
         _projectConfig.priceDecayHalfLifeSeconds = 0;
         _projectConfig.startPrice = 0;
         _projectConfig.basePrice = 0;
-
-        emit ResetAuctionDetails(_projectId);
+        // Since auction revenues have not been collected, we can safely assume
+        // that numRefundableInvocations is the number of purchases made on
+        // this minter. A dummy value of 0 is used for latest purchase price if
+        // no purchases have been made.
+        emit ResetAuctionDetails(
+            _projectId,
+            _projectConfig.numRefundableInvocations,
+            _projectConfig.latestPurchasePrice
+        );
     }
 
     /**
      * @notice This represents an admin stepping in and reducing the sellout
      * price of an auction. This is only callable by the core admin, only
-     * before the auction is marked as valid (which enables the artist or admin
-     * to initiate admin and artist withdrawals).
+     * after the auction is complete, but before project revenues are
+     * withdrawn.
      * This is only intended to be used in the case where for some reason,
      * whether malicious or accidental, the sellout price was too high.
      * Examples of this include:
@@ -424,10 +451,6 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
             "May only reduce sellout price to base price or greater"
         );
         require(
-            _projectConfig.auctionIsVerifiedComplete == false,
-            "Auction already verified"
-        );
-        require(
             !_projectConfig.auctionRevenuesCollected,
             "Only before revenues collected"
         );
@@ -436,48 +459,16 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
     }
 
     /**
-     * @notice This represents an admin agreeing with the auction's sellout
-     * price (if it is a sellout auction) and marking the auction as valid.
-     * This is only callable by the core admin, only after the auction has
-     * sold out.
-     * This function is only required to be called in the case where an auction
-     * is a sellout auction, in which case it must be called before the artist
-     * or admin can withdraw funds. It is not required to be called in the case
-     * of a non-sellout auction, because in that case, the auction reached its
-     * base price, which is the lowest possible price, and therefore is
-     * considered valid and fair by default.
-     * This is intended to provide a mechanism for the admin to prevent an
-     * artist from withdrawing funds from an auction that has sold out, but did
-     * not sell out at a price that the admin deems to be fair. See the comment
-     * in the `adminEmergencyReduceSelloutPrice` function for examples.
-     * @param _projectId Project ID to mark auction as valid for.
-     */
-    function adminValidateSelloutPrice(uint256 _projectId)
-        external
-        onlyCoreAdminACL(this.adminValidateSelloutPrice.selector)
-    {
-        ProjectConfig storage _projectConfig = projectConfig[_projectId];
-        // may only be called after the auction has hit max invocations while
-        // minting on this minter.
-        require(_projectConfig.maxHasBeenInvoked, "Auction must be sellout");
-        // only callable when the sellout price is greater than auction base price
-        require(
-            _projectConfig.selloutPrice > projectConfig[_projectId].basePrice,
-            "Only sellout price greater than base price"
-        );
-        // update state
-        _projectConfig.auctionIsVerifiedComplete = true;
-        emit SelloutPriceValidated(_projectId, _projectConfig.selloutPrice);
-    }
-
-    /**
      * @notice This withdraws project revenues for the artist and admin.
      * This function is only callable by the artist or admin, and only after
      * one of the following is true:
-     * - The auction has sold out above base price, and the admin has validated
-     *   the sellout price.
-     * - The auction has reached base price, and therefore is considered valid
-     *   by default.
+     * - the auction has sold out above base price
+     * - the auction has reached base price
+     * Note that revenues are not claimable if in a temporary state after
+     * an auction is reset.
+     * Revenues may only be collected a single time per project.
+     * After revenues are collected, auction parameters will never be allowed
+     * to be reset, and refunds will become immutable and fully deterministic.
      */
     function withdrawArtistAndAdminRevenues(uint256 _projectId)
         external
@@ -496,13 +487,13 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
         // get the current net price of the auction - reverts if no auction
         // is configured.
         uint256 _price = _getPrice(_projectId);
-        // if the price is not base price, the auction is only valid if the
-        // admin has validated the sellout price (since price is monotonically
-        // decreasing).
+        // if the price is not base price, require that the auction have
+        // reached max invocations. This prevents premature withdrawl
+        // before final auction price is possible to know.
         if (_price != _projectConfig.basePrice) {
             require(
-                _projectConfig.auctionIsVerifiedComplete,
-                "Auction not yet verified"
+                _projectConfig.maxHasBeenInvoked,
+                "Active auction not yet sold out"
             );
         }
         // EFFECTS
@@ -600,6 +591,11 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
             _receipt.netPaid
         );
 
+        // update latest purchase price (on this minter) in storage
+        // @dev this is used to enforce monotonically decreasing purchase price
+        // across multiple auctions
+        _projectConfig.latestPurchasePrice = currentPriceInWei;
+
         tokenId = minterFilter.mint(_to, _projectId, msg.sender);
 
         // Note that this requires that the core contract's maxInvocations
@@ -621,9 +617,10 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
         }
 
         // INTERACTIONS
-        if (currentPriceInWei == _projectConfig.basePrice) {
-            // if the price is base price, split funds immediately since
-            // the auction is already at minimum price, and is valid by default.
+        if (_projectConfig.auctionRevenuesCollected) {
+            // if revenues have been collected, split funds immediately.
+            // @dev note that we are guaranteed to be at auction base price,
+            // since we know we didn't sellout prior to this tx.
             // note that we don't refund msg.sender here, since a separate
             // refund mechanism is provided for refunds, unrelated to msg.value
             _splitETHRevenues(_projectId, currentPriceInWei);
@@ -643,6 +640,10 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
      * expected to typically be called after auction has sold out above base
      * price or after the auction has reached base price. This minimizes the
      * amount of gas required to refund the sender.
+     * Note that if an auction is reset, refunds will be temporarily
+     * unavailable, until a new auction is populated. Also note that artist and
+     * admin's ability to claim revenues is also temporarily unavailable,
+     * aligning interests.
      * Sends refund to msg.sender.
      * @param _projectId Project ID to refund payment on.
      */
@@ -656,6 +657,10 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
      * expected to typically be called after auction has sold out above base
      * price or after the auction has reached base price. This minimizes the
      * amount of gas required to refund the sender.
+     * Note that if an auction is reset, refunds will be temporarily
+     * unavailable, until a new auction is populated. Also note that artist and
+     * admin's ability to claim revenues is also temporarily unavailable,
+     * aligning interests.
      * Sends refund to address `_to`.
      * @param _to Address to send refund to.
      * @param _projectId Project ID to refund payment on.
@@ -701,6 +706,10 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
      * expected to typically be called after auctions sold out above base
      * price or after an auction has reached base price. This minimizes the
      * amount of gas required to refund the sender.
+     * Note that if an auction is reset, refunds will be temporarily
+     * unavailable, until a new auction is populated. Also note that artist and
+     * admin's ability to claim revenues is also temporarily unavailable,
+     * aligning interests.
      * Sends total of all refunds to msg.sender in a single chunk.
      * @param _projectIds Array of project IDs to refund payments on.
      */
@@ -714,6 +723,10 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
      * expected to typically be called after auctions sold out above base
      * price or after an auction has reached base price. This minimizes the
      * amount of gas required to refund the sender.
+     * Note that if an auction is reset, refunds will be temporarily
+     * unavailable, until a new auction is populated. Also note that artist and
+     * admin's ability to claim revenues is also temporarily unavailable,
+     * aligning interests.
      * Sends total of all refunds to address `_to` in a single chunk.
      * @param _to Address to send refund to.
      * @param _projectIds Array of project IDs to refund payments on.
