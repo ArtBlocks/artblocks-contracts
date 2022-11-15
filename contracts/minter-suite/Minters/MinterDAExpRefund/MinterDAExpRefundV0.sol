@@ -23,6 +23,14 @@ pragma solidity 0.8.17;
  * power and can modify minter details.
  * Care must be taken to ensure that the admin ACL contract and artist
  * addresses are secure behind a multi-sig or other access control mechanism.
+ * Additionally, the purchaser of a token has some trust assumptions regarding
+ * refunds, beyond typical minter Art Blocks trust assumptions. In general,
+ * Artists and Admin are trusted to not abuse their powers in a way that
+ * would artifically inflate the sellout price of a project. They are
+ * incentivized to not do so, as it would diminish their reputation and
+ * ability to sell future projects. Legal agreements between Admin and Artist
+ * may or may not be in place to further protect artificial inflation of an
+ * auction's sellout price.
  * ----------------------------------------------------------------------------
  * The following functions are restricted to the core contract's Admin ACL
  * contract:
@@ -30,23 +38,28 @@ pragma solidity 0.8.17;
  *   enforced when creating new auctions)
  * - resetAuctionDetails (note: this will prevent minting until a new auction
  *   is created)
- * - TODO
+ * - adminEmergencyReduceSelloutPrice
+ * ----------------------------------------------------------------------------
+ * The following functions are restricted to a project's artist or the core
+ * contract's Admin ACL contract:
+ * - withdrawArtistAndAdminRevenues (note: this may only be called after an
+ *   auction has sold out or has reached base price)
  * ----------------------------------------------------------------------------
  * The following functions are restricted to a project's artist:
  * - setAuctionDetails (note: this may only be called when there is no active
- *   auction)
- * - TODO
+ *   auction, and must start at a price less than or equal to any previously
+ *   made purchases)
  * ----------------------------------------------------------------------------
  * Additional admin and artist privileged roles may be described on other
  * contracts that this minter integrates with.
  *
  * @dev Note that while this minter makes use of `block.timestamp` and it is
- * technically possible that this value is manipulated by block producers, such
- * manipulation will not have material impact on the price values of this minter
- * given the business practices for how pricing is congfigured for this minter
- * and that variations on the order of less than a minute should not
- * meaningfully impact price given the minimum allowable price decay rate that
- * this minter intends to support.
+ * technically possible that this value is manipulated by block producers via
+ * denial of service (in PoS), such manipulation will not have material impact
+ * on the price values of this minter given the business practices for how
+ * pricing is congfigured for this minter and that variations on the order of
+ * less than a minute should not meaningfully impact price given the minimum
+ * allowable price decay rate that this minter intends to support.
  */
 contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
     using SafeCast for uint256;
