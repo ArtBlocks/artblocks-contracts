@@ -73,6 +73,12 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
       this.minterFilter.address,
     ]);
 
+    this.minterDAExpRefund = await deployAndGet.call(
+      this,
+      "MinterDAExpRefundV0",
+      [this.genArt721Core.address, this.minterFilter.address]
+    );
+
     this.minterDALin = await deployAndGet.call(this, "MinterDALinV2", [
       this.genArt721Core.address,
       this.minterFilter.address,
@@ -239,6 +245,65 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
       const receipts = [];
       for (let index = 0; index < numMintsToAverage; index++) {
         const tx = await this.minterDAExp
+          .connect(this.accounts.user)
+          .purchase_H4M(this.projectThree, { value: this.startingPrice });
+        receipts.push(await ethers.provider.getTransactionReceipt(tx.hash));
+      }
+      const gasUseds = receipts.map((receipt) => receipt.gasUsed);
+      const avgGasUsed = gasUseds
+        .reduce((a, b) => a.add(b))
+        .div(gasUseds.length);
+      console.log(`average gas used for mint optimization test: ${avgGasUsed}`);
+      const avgGasCostAt100gwei = receipts[0].effectiveGasPrice
+        .mul(avgGasUsed)
+        .toString();
+
+      const avgGasCostAt100gweiInETH = parseFloat(
+        ethers.utils.formatUnits(avgGasCostAt100gwei, "ether")
+      );
+      const avgGasCostAt100gweiAt2kUSDPerETH = avgGasCostAt100gweiInETH * 2e3;
+      console.log(
+        `=USD at 100gwei, $2k USD/ETH: \$${avgGasCostAt100gweiAt2kUSDPerETH}`
+      );
+    });
+
+    it("test gas cost of mint on MinterDAExpRefund [ @skip-on-coverage ]", async function () {
+      this.startingPrice = ethers.utils.parseEther("10");
+      this.basePrice = ethers.utils.parseEther("0.05");
+      this.defaultHalfLife = ONE_HOUR / 2;
+      this.auctionStartTimeOffset = ONE_HOUR;
+      if (!this.startTime) {
+        const blockNumber = await ethers.provider.getBlockNumber();
+        const block = await ethers.provider.getBlock(blockNumber);
+        this.startTime = block.timestamp;
+      }
+      this.startTime = this.startTime + ONE_DAY;
+
+      await ethers.provider.send("evm_mine", [this.startTime - ONE_MINUTE]);
+      // set project three minter to minterDAExpRefund, and configure
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .addApprovedMinter(this.minterDAExpRefund.address);
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .setMinterForProject(this.projectThree, this.minterDAExpRefund.address);
+      await this.minterDAExpRefund
+        .connect(this.accounts.artist)
+        .setAuctionDetails(
+          this.projectThree,
+          this.startTime + this.auctionStartTimeOffset,
+          this.defaultHalfLife,
+          this.startingPrice,
+          this.basePrice
+        );
+      await ethers.provider.send("evm_mine", [
+        this.startTime + this.auctionStartTimeOffset,
+      ]);
+
+      // report gas over an average of numMintsToAverage purchases
+      const receipts = [];
+      for (let index = 0; index < numMintsToAverage; index++) {
+        const tx = await this.minterDAExpRefund
           .connect(this.accounts.user)
           .purchase_H4M(this.projectThree, { value: this.startingPrice });
         receipts.push(await ethers.provider.getTransactionReceipt(tx.hash));
