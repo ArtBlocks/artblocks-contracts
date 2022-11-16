@@ -18,6 +18,69 @@ const DAExpAuctionParamsAreZero = (auctionParams) => {
 };
 
 /**
+ * helper function that:
+ *  - mints a single token during auction, then reaches base price
+ *  - artist withdraws revenues
+ * results in a state where revenues are split at time of sale
+ * @dev intended to be called with `this` bound to a test context
+ * @param projectId project ID to use for minting. assumes project exists and
+ * is configured with a minter that supports this test.
+ */
+export async function completeAuctionWithoutSellingOut(
+  projectId: number
+): Promise<void> {
+  // advance to auction start time
+  await ethers.provider.send("evm_mine", [
+    this.startTime + this.auctionStartTimeOffset,
+  ]);
+  // purchase one piece
+  await this.minter.connect(this.accounts.user).purchase_H4M(projectId, {
+    value: this.startingPrice,
+  });
+  // advance to end of auction
+  // @dev 10 half-lives is enough to reach base price
+  await ethers.provider.send("evm_mine", [
+    this.startTime + this.auctionStartTimeOffset + this.defaultHalfLife * 10,
+  ]);
+  // withdraw revenues
+  await this.minter
+    .connect(this.accounts.artist)
+    .withdrawArtistAndAdminRevenues(projectId);
+  // leave in a state where revenues are split at the time of the sale
+}
+
+/**
+ * helper function that:
+ *  - sells out a project during an auction, before reaching base price
+ * results in a state where revenues have not been withdrawn, but project has a
+ * sellout price
+ * @dev intended to be called with `this` bound to a test context
+ * @dev reduces project max invocations to 2, so that the project will sell out
+ * with a two purchases (ensuring that calculations involving
+ * numRefundableInvocations are tested properly)
+ * @param projectId project ID to use for minting. assumes project exists and
+ * is configured with a minter that supports this test.
+ */
+export async function selloutMidAuction(projectId: number): Promise<void> {
+  // reduce max invocations to 2
+  await this.genArt721Core
+    .connect(this.accounts.artist)
+    .updateProjectMaxInvocations(projectId, 2);
+  // advance to auction start time
+  await ethers.provider.send("evm_mine", [
+    this.startTime + this.auctionStartTimeOffset,
+  ]);
+  // purchase two pieces to achieve sellout
+  for (let i = 0; i < 2; i++) {
+    await this.minter.connect(this.accounts.user).purchase_H4M(projectId, {
+      value: this.startingPrice,
+    });
+  }
+  // leave in a state where sellout price is defined, but revenues have not been
+  // withdrawn
+}
+
+/**
  * These tests are intended to check common DAExp functionality.
  * @dev assumes common BeforeEach to populate accounts, constants, and setup
  */
@@ -457,6 +520,404 @@ export const MinterDAExpRefund_Common = async () => {
           .setAllowablePriceDecayHalfLifeRangeSeconds(60, 600),
         expectedErrorMsg
       );
+    });
+  });
+
+  describe("adminEmergencyReduceSelloutPrice", async function () {
+    it("allows admin to reduce sellout price to allowed values at allowed times", async function () {
+      // sellout the project mid-auction
+      await selloutMidAuction.call(this, this.projectZero);
+      // expect admin to be able to reduce sellout price to allowed values
+      await this.minter
+        .connect(this.accounts.deployer)
+        .adminEmergencyReduceSelloutPrice(
+          this.projectZero,
+          this.startingPrice.div(2)
+        );
+      await this.minter
+        .connect(this.accounts.deployer)
+        .adminEmergencyReduceSelloutPrice(this.projectZero, this.basePrice);
+    });
+
+    it("does not allow non-admin to reduce sellout price", async function () {
+      // sellout the project mid-auction
+      await selloutMidAuction.call(this, this.projectZero);
+      // expect revert
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.artist)
+          .adminEmergencyReduceSelloutPrice(
+            this.projectZero,
+            this.startingPrice.div(2)
+          ),
+        "Only Core AdminACL allowed"
+      );
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.user)
+          .adminEmergencyReduceSelloutPrice(
+            this.projectZero,
+            this.startingPrice.div(2)
+          ),
+        "Only Core AdminACL allowed"
+      );
+    });
+
+    it("does not allow admin to increase sellout price", async function () {
+      // sellout the project mid-auction
+      await selloutMidAuction.call(this, this.projectZero);
+      // expect revert
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.deployer)
+          .adminEmergencyReduceSelloutPrice(
+            this.projectZero,
+            this.startingPrice.mul(2)
+          ),
+        "May only reduce sellout price"
+      );
+    });
+
+    it("does not allow admin to decrease sellout price below auction base price", async function () {
+      // sellout the project mid-auction
+      await selloutMidAuction.call(this, this.projectZero);
+      // expect revert
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.deployer)
+          .adminEmergencyReduceSelloutPrice(
+            this.projectZero,
+            this.basePrice.sub(1)
+          ),
+        "May only reduce sellout price to base price or greater"
+      );
+    });
+
+    it("does not allow admin to decrease sellout price after revenues claimed", async function () {
+      // sellout the project mid-auction
+      await selloutMidAuction.call(this, this.projectZero);
+      // withdraw revenues
+      await this.minter
+        .connect(this.accounts.artist)
+        .withdrawArtistAndAdminRevenues(this.projectZero);
+      // expect revert
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.deployer)
+          .adminEmergencyReduceSelloutPrice(this.projectZero, this.basePrice),
+        "Only before revenues collected"
+      );
+    });
+
+    it("updates minter state after successful call", async function () {
+      // sellout the project mid-auction
+      await selloutMidAuction.call(this, this.projectZero);
+      // expect admin to be able to reduce sellout price to allowed values
+      await this.minter
+        .connect(this.accounts.deployer)
+        .adminEmergencyReduceSelloutPrice(this.projectZero, this.basePrice);
+      // expect sellout price to be updated
+      const priceInfo = await this.minter.getPriceInfo(this.projectZero);
+      expect(priceInfo.tokenPriceInWei).to.equal(this.basePrice);
+      // also check public struct
+      const projectConfig = await this.minter.projectConfig(this.projectZero);
+      expect(projectConfig.selloutPrice).to.equal(this.basePrice);
+    });
+
+    it("emits event upon successful call", async function () {
+      // sellout the project mid-auction
+      await selloutMidAuction.call(this, this.projectZero);
+      // expect admin to be able to reduce sellout price to allowed values
+      await expect(
+        this.minter
+          .connect(this.accounts.deployer)
+          .adminEmergencyReduceSelloutPrice(this.projectZero, this.basePrice)
+      )
+        .to.emit(this.minter, "SelloutPriceUpdated")
+        .withArgs(this.projectZero, this.basePrice);
+    });
+  });
+
+  describe.only("withdrawArtistAndAdminRevenues", async function () {
+    it("allows admin to withdraw revenues after sellout", async function () {
+      // sellout the project mid-auction
+      await selloutMidAuction.call(this, this.projectZero);
+      // expect successful withdrawal
+      await this.minter
+        .connect(this.accounts.deployer)
+        .withdrawArtistAndAdminRevenues(this.projectZero);
+    });
+
+    it("allows artist to withdraw revenues after sellout", async function () {
+      // sellout the project mid-auction
+      await selloutMidAuction.call(this, this.projectZero);
+      // expect successful withdrawal
+      await this.minter
+        .connect(this.accounts.artist)
+        .withdrawArtistAndAdminRevenues(this.projectZero);
+    });
+
+    it("does not allow non-admin non-artist to withdraw revenues after sellout", async function () {
+      // sellout the project mid-auction
+      await selloutMidAuction.call(this, this.projectZero);
+      // expect revert
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.user)
+          .withdrawArtistAndAdminRevenues(this.projectZero),
+        "Only Artist or Admin ACL"
+      );
+    });
+
+    it("updates revenue collected state after successful withdrawal", async function () {
+      // sellout the project mid-auction
+      await selloutMidAuction.call(this, this.projectZero);
+      // expect successful withdrawal
+      await this.minter
+        .connect(this.accounts.deployer)
+        .withdrawArtistAndAdminRevenues(this.projectZero);
+      // revenue collected state should be updated
+      const projectConfig = await this.minter.projectConfig(this.projectZero);
+      expect(projectConfig.auctionRevenuesCollected).to.be.true;
+    });
+
+    it("updates artist balances to expected values after sellout", async function () {
+      // sellout the project mid-auction
+      await selloutMidAuction.call(this, this.projectZero);
+      // advance to end of auction
+      // @dev 10 half-lives is enough to reach base price
+      await ethers.provider.send("evm_mine", [
+        this.startTime +
+          this.auctionStartTimeOffset +
+          this.defaultHalfLife * 10,
+      ]);
+      // record balances
+      const priceInfo = await this.minter.getPriceInfo(this.projectZero);
+      const originalBalanceArtist = await this.accounts.artist.getBalance();
+      // expect successful withdrawal by admin (artist doesn't spend gas)
+      await this.minter
+        .connect(this.accounts.deployer)
+        .withdrawArtistAndAdminRevenues(this.projectZero);
+      // artist and admin balances should be updated
+      const newBalanceArtist = await this.accounts.artist.getBalance();
+      // artist should have received 90% of the sellout price * two tokens minted
+      expect(newBalanceArtist).to.be.equal(
+        originalBalanceArtist.add(
+          priceInfo.tokenPriceInWei.mul(2).div(10).mul(9)
+        )
+      );
+    });
+
+    it("updates admin balances to expected values after sellout", async function () {
+      // sellout the project mid-auction
+      await selloutMidAuction.call(this, this.projectZero);
+      // advance to end of auction
+      // @dev 10 half-lives is enough to reach base price
+      await ethers.provider.send("evm_mine", [
+        this.startTime +
+          this.auctionStartTimeOffset +
+          this.defaultHalfLife * 10,
+      ]);
+      // record balances
+      const priceInfo = await this.minter.getPriceInfo(this.projectZero);
+      const originalBalanceAdmin = await this.accounts.deployer.getBalance();
+      // expect successful withdrawal by artist (admin doesn't spend gas)
+      await this.minter
+        .connect(this.accounts.artist)
+        .withdrawArtistAndAdminRevenues(this.projectZero);
+      // artist and admin balances should be updated
+      const newBalanceAdmin = await this.accounts.deployer.getBalance();
+      // admin should have received 10% of the sellout price * two tokens minted
+      expect(newBalanceAdmin).to.be.equal(
+        originalBalanceAdmin.add(priceInfo.tokenPriceInWei.mul(2).div(10))
+      );
+    });
+
+    it("updates artist balances to expected values after reaching base price and no sellout", async function () {
+      // advance to auction start time
+      await ethers.provider.send("evm_mine", [
+        this.startTime + this.auctionStartTimeOffset,
+      ]);
+      // purchase one piece
+      await this.minter
+        .connect(this.accounts.user)
+        .purchase_H4M(this.projectZero, {
+          value: this.startingPrice,
+        });
+      // advance to end of auction
+      // @dev 10 half-lives is enough to reach base price
+      await ethers.provider.send("evm_mine", [
+        this.startTime +
+          this.auctionStartTimeOffset +
+          this.defaultHalfLife * 10,
+      ]);
+      // record balances
+      const priceInfo = await this.minter.getPriceInfo(this.projectZero);
+      const originalBalanceArtist = await this.accounts.artist.getBalance();
+      // expect successful withdrawal by admin (artist doesn't spend gas)
+      await this.minter
+        .connect(this.accounts.deployer)
+        .withdrawArtistAndAdminRevenues(this.projectZero);
+      // artist and admin balances should be updated
+      const newBalanceArtist = await this.accounts.artist.getBalance();
+      // artist should have received 90% of the sellout price * one token minted
+      expect(newBalanceArtist).to.be.equal(
+        originalBalanceArtist.add(
+          priceInfo.tokenPriceInWei.mul(1).div(10).mul(9)
+        )
+      );
+    });
+
+    it("does not allow multiple withdraws", async function () {
+      // sellout the project mid-auction
+      await selloutMidAuction.call(this, this.projectZero);
+      // expect successful withdrawal
+      await this.minter
+        .connect(this.accounts.deployer)
+        .withdrawArtistAndAdminRevenues(this.projectZero);
+      // expect failed withdrawal after revenues already collected
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.deployer)
+          .withdrawArtistAndAdminRevenues(this.projectZero),
+        "Revenues already collected"
+      );
+    });
+
+    it("does not allow withdrawal if not sold out, not at base price", async function () {
+      // advance to auction start time
+      await ethers.provider.send("evm_mine", [
+        this.startTime + this.auctionStartTimeOffset,
+      ]);
+      // purchase a single piece (not enough to sellout)
+      await this.minter
+        .connect(this.accounts.user)
+        .purchase_H4M(this.projectZero, {
+          value: this.startingPrice,
+        });
+      // expect revert during withdrawal
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.deployer)
+          .withdrawArtistAndAdminRevenues(this.projectZero),
+        "Active auction not yet sold out"
+      );
+    });
+
+    it("does allow withdrawal if not sold out, but at base price", async function () {
+      // advance to auction start time
+      await ethers.provider.send("evm_mine", [
+        this.startTime + this.auctionStartTimeOffset,
+      ]);
+      // purchase one piece
+      await this.minter
+        .connect(this.accounts.user)
+        .purchase_H4M(this.projectZero, {
+          value: this.startingPrice,
+        });
+      // advance to end of auction
+      // @dev 10 half-lives is enough to reach base price
+      await ethers.provider.send("evm_mine", [
+        this.startTime +
+          this.auctionStartTimeOffset +
+          this.defaultHalfLife * 10,
+      ]);
+      // successfully withdraw revenues
+      await this.minter
+        .connect(this.accounts.artist)
+        .withdrawArtistAndAdminRevenues(this.projectZero);
+    });
+
+    it("emits event when revenues collected", async function () {
+      // sellout the project mid-auction
+      await selloutMidAuction.call(this, this.projectZero);
+      // expect proper event
+      await expect(
+        this.minter
+          .connect(this.accounts.deployer)
+          .withdrawArtistAndAdminRevenues(this.projectZero)
+      )
+        .to.emit(this.minter, "ArtistAndAdminRevenuesWithdrawn")
+        .withArgs(this.projectZero);
+    });
+
+    it("does not allow withdrawal while in a reset auction state", async function () {
+      // advance to auction start time
+      await ethers.provider.send("evm_mine", [
+        this.startTime + this.auctionStartTimeOffset,
+      ]);
+      // purchase one piece
+      await this.minter
+        .connect(this.accounts.user)
+        .purchase_H4M(this.projectZero, {
+          value: this.startingPrice,
+        });
+      // advance to end of auction
+      // @dev 10 half-lives is enough to reach base price
+      await ethers.provider.send("evm_mine", [
+        this.startTime +
+          this.auctionStartTimeOffset +
+          this.defaultHalfLife * 10,
+      ]);
+      // reset the auction
+      await this.minter
+        .connect(this.accounts.deployer)
+        .resetAuctionDetails(this.projectZero);
+      // expect revert while in a reset auction state
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.deployer)
+          .withdrawArtistAndAdminRevenues(this.projectZero),
+        "Only configured auctions"
+      );
+    });
+
+    it("allows withdrawal after reset+reconfiguring", async function () {
+      // advance to auction start time
+      await ethers.provider.send("evm_mine", [
+        this.startTime + this.auctionStartTimeOffset,
+      ]);
+      // purchase one piece
+      await this.minter
+        .connect(this.accounts.user)
+        .purchase_H4M(this.projectZero, {
+          value: this.startingPrice,
+        });
+      // advance to end of auction
+      // @dev 10 half-lives is enough to reach base price
+      await ethers.provider.send("evm_mine", [
+        this.startTime +
+          this.auctionStartTimeOffset +
+          this.defaultHalfLife * 10,
+      ]);
+      // reset the auction
+      await this.minter
+        .connect(this.accounts.deployer)
+        .resetAuctionDetails(this.projectZero);
+      // populate new auction details, starting at previous purchase price
+      const projectConfig = await this.minter.projectConfig(this.projectZero);
+      const latestPurchasePrice = projectConfig.latestPurchasePrice;
+      this.startTime = this.startTime + ONE_DAY;
+      await ethers.provider.send("evm_mine", [this.startTime - ONE_MINUTE]);
+      await this.minter
+        .connect(this.accounts.artist)
+        .setAuctionDetails(
+          this.projectZero,
+          this.startTime + this.auctionStartTimeOffset,
+          this.defaultHalfLife,
+          latestPurchasePrice,
+          this.basePrice
+        );
+      // advance to end of auction
+      await ethers.provider.send("evm_mine", [
+        this.startTime +
+          this.auctionStartTimeOffset +
+          this.defaultHalfLife * 10,
+      ]);
+      // expect successful withdrawal
+      await this.minter
+        .connect(this.accounts.artist)
+        .withdrawArtistAndAdminRevenues(this.projectZero);
     });
   });
 };

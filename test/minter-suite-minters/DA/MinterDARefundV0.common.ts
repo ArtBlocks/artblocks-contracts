@@ -8,39 +8,7 @@ import Safe from "@gnosis.pm/safe-core-sdk";
 import { SafeTransactionDataPartial } from "@gnosis.pm/safe-core-sdk-types";
 import { getGnosisSafe } from "../../util/GnosisSafeNetwork";
 import { isCoreV3, deployAndGet } from "../../util/common";
-
-/**
- * helper function that:
- *  - configures an auction
- *  - mints a single token during auction, then reaches base price
- *  - artist withdraws revenues
- * results in a state where revenues are split at time of sale
- * @dev intended to be called with `this` bound to a test context
- * @param projectId project ID to use for minting. assumes project exists and
- * is configured with a minter that supports this test.
- */
-export async function completeAuctionWithoutSellingOut(
-  projectId: number
-): Promise<void> {
-  // advance to auction start time
-  await ethers.provider.send("evm_mine", [
-    this.startTime + this.auctionStartTimeOffset,
-  ]);
-  // purchase one piece
-  await this.minter.connect(this.accounts.user).purchase_H4M(this.projectZero, {
-    value: this.startingPrice,
-  });
-  // advance to end of auction
-  // @dev 10 half-lives is enough to reach base price
-  await ethers.provider.send("evm_mine", [
-    this.startTime + this.auctionStartTimeOffset + this.defaultHalfLife * 10,
-  ]);
-  // withdraw revenues
-  await this.minter
-    .connect(this.accounts.artist)
-    .withdrawArtistAndAdminRevenues(projectId);
-  // leave in a state where revenues are split at the time of the sale
-}
+import { completeAuctionWithoutSellingOut } from "./MinterDAExpRefund/MinterDAExpRefund.common";
 
 /**
  * These tests are intended to check common DA w/Refund V0 functionality.
