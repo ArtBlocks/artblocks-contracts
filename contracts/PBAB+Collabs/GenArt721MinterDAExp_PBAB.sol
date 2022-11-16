@@ -121,14 +121,12 @@ contract GenArt721MinterDAExp_PBAB is ReentrancyGuard {
     }
 
     /**
-     * @notice Initializes contract to be integrated with 
+     * @notice Initializes contract to be integrated with
      * Art Blocks core contract at address `_genArt721Address`.
      * @param _genArt721Address Art Blocks core contract address for
      * which this contract will be a minter.
      */
-    constructor(address _genArt721Address)
-        ReentrancyGuard()
-    {
+    constructor(address _genArt721Address) ReentrancyGuard() {
         genArt721CoreAddress = _genArt721Address;
         genArtCoreContract = IGenArt721CoreV2_PBAB(_genArt721Address);
     }
