@@ -96,7 +96,7 @@ for (const coreContractName of coreContractsToTest) {
         const block = await ethers.provider.getBlock(blockNumber);
         this.startTime = block.timestamp;
       }
-      this.startTime = this.startTime + ONE_DAY;
+      this.startTime = this.startTime + ONE_DAY * 2;
 
       await ethers.provider.send("evm_mine", [this.startTime - ONE_MINUTE]);
       await this.minter

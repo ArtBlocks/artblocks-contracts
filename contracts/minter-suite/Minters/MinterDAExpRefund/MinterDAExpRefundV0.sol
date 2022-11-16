@@ -355,7 +355,7 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
         require(
             _projectConfig.numRefundableInvocations == 0 || // never purchased
                 _startPrice <= _projectConfig.latestPurchasePrice,
-            "Auction start price must be less than or equal to previous auction price"
+            "Auction start price must be <= to latest purchase price"
         );
         require(
             (_priceDecayHalfLifeSeconds >= minimumPriceDecayHalfLifeSeconds) &&
@@ -499,6 +499,8 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
         );
         // get the current net price of the auction - reverts if no auction
         // is configured.
+        // @dev _getPrice is guaranteed <= _projectConfig.latestPurchasePrice,
+        // since this minter enforces monotonically decreasing purchase prices.
         uint256 _price = _getPrice(_projectId);
         // if the price is not base price, require that the auction have
         // reached max invocations. This prevents premature withdrawl
@@ -508,6 +510,10 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
                 _projectConfig.maxHasBeenInvoked,
                 "Active auction not yet sold out"
             );
+        } else {
+            // update the latest purchase price to the base price, to ensure
+            // the base price is used for all future refund calculations
+            _projectConfig.latestPurchasePrice = _projectConfig.basePrice;
         }
         // EFFECTS
         _projectConfig.auctionRevenuesCollected = true;
@@ -649,14 +655,13 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
 
     /**
      * @notice Refunds the sender's payment above current amount due for
-     * project `_projectId`. This function is callable at any point, but is
-     * expected to typically be called after auction has sold out above base
-     * price or after the auction has reached base price. This minimizes the
-     * amount of gas required to refund the sender.
-     * Note that if an auction is reset, refunds will be temporarily
-     * unavailable, until a new auction is populated. Also note that artist and
-     * admin's ability to claim revenues is also temporarily unavailable,
-     * aligning interests.
+     * project `_projectId`. The current amount due is the the price paid for
+     * the most recently purchased token, or the base price if the artist has
+     * withdrawn revenues after the auction reached base price.
+     * This function is callable at any point, but is expected to typically be
+     * called after auction has sold out above base price or after the auction
+     * has been purchased at base price. This minimizes the amount of gas
+     * required to refund the sender.
      * Sends refund to msg.sender.
      * @param _projectId Project ID to refund payment on.
      */
@@ -666,14 +671,13 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
 
     /**
      * @notice Refunds the sender's payment above current amount due for
-     * project `_projectId`. This function is callable at any point, but is
-     * expected to typically be called after auction has sold out above base
-     * price or after the auction has reached base price. This minimizes the
-     * amount of gas required to refund the sender.
-     * Note that if an auction is reset, refunds will be temporarily
-     * unavailable, until a new auction is populated. Also note that artist and
-     * admin's ability to claim revenues is also temporarily unavailable,
-     * aligning interests.
+     * project `_projectId`. The current amount due is the the price paid for
+     * the most recently purchased token, or the base price if the artist has
+     * withdrawn revenues after the auction reached base price.
+     * This function is callable at any point, but is expected to typically be
+     * called after auction has sold out above base price or after the auction
+     * has been purchased at base price. This minimizes the amount of gas
+     * required to refund the sender.
      * Sends refund to address `_to`.
      * @param _to Address to send refund to.
      * @param _projectId Project ID to refund payment on.
@@ -682,20 +686,26 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
         public
         nonReentrant
     {
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        Receipt storage receipt = receipts[msg.sender][_projectId];
         // CHECKS
+        // input validation
         require(_to != address(0), "No refund to the zero address");
-        // get the current price, which returns the sellout price if the
+        // require that a user has purchased at least one token on this project
+        require(receipt.numPurchased > 0, "No purchases made by this address");
+        // get the latestPurchasePrice, which returns the sellout price if the
         // auction sold out before reaching base price, or returns the base
-        // price if auction has reached base price without reaching max
-        // invocations on this minter. Reverts if auction is unconfigured or
-        // has not started.
-        uint256 currentPriceInWei = _getPrice(_projectId);
+        // price if auction has reached base price and artist has withdrawn
+        // revenues.
+        // @dev if user is elligible for a refund, they have purchased a token,
+        // therefore we are guaranteed to not have a populated
+        // latestPurchasePrice
+        uint256 netTokenPrice = _projectConfig.latestPurchasePrice;
 
         // EFFECTS
         // calculate the refund amount
-        Receipt storage receipt = receipts[msg.sender][_projectId];
         // implicit overflow/underflow checks in solidity ^0.8
-        uint256 amountDue = receipt.numPurchased * currentPriceInWei;
+        uint256 amountDue = receipt.numPurchased * netTokenPrice;
         uint256 refund = receipt.netPaid - amountDue;
         // reduce the netPaid (in storage) to value after refund deducted
         receipt.netPaid = amountDue;
@@ -715,14 +725,13 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
 
     /**
      * @notice Refunds the sender's payment above current amount due for
-     * projects `_projectIds`. This function is callable at any point, but is
-     * expected to typically be called after auctions sold out above base
-     * price or after an auction has reached base price. This minimizes the
-     * amount of gas required to refund the sender.
-     * Note that if an auction is reset, refunds will be temporarily
-     * unavailable, until a new auction is populated. Also note that artist and
-     * admin's ability to claim revenues is also temporarily unavailable,
-     * aligning interests.
+     * project `_projectId`. The current amount due is the the price paid for
+     * the most recently purchased token, or the base price if the artist has
+     * withdrawn revenues after the auction reached base price.
+     * This function is callable at any point, but is expected to typically be
+     * called after auction has sold out above base price or after the auction
+     * has been purchased at base price. This minimizes the amount of gas
+     * required to refund the sender.
      * Sends total of all refunds to msg.sender in a single chunk.
      * @param _projectIds Array of project IDs to refund payments on.
      */
@@ -732,14 +741,13 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
 
     /**
      * @notice Refunds the sender's payment above current amount due for
-     * projects `_projectIds`. This function is callable at any point, but is
-     * expected to typically be called after auctions sold out above base
-     * price or after an auction has reached base price. This minimizes the
-     * amount of gas required to refund the sender.
-     * Note that if an auction is reset, refunds will be temporarily
-     * unavailable, until a new auction is populated. Also note that artist and
-     * admin's ability to claim revenues is also temporarily unavailable,
-     * aligning interests.
+     * project `_projectId`. The current amount due is the the price paid for
+     * the most recently purchased token, or the base price if the artist has
+     * withdrawn revenues after the auction reached base price.
+     * This function is callable at any point, but is expected to typically be
+     * called after auction has sold out above base price or after the auction
+     * has been purchased at base price. This minimizes the amount of gas
+     * required to refund the sender.
      * Sends total of all refunds to address `_to` in a single chunk.
      * @param _to Address to send refund to.
      * @param _projectIds Array of project IDs to refund payments on.
@@ -749,6 +757,7 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
         nonReentrant
     {
         // CHECKS
+        // input validation
         require(_to != address(0), "No refund to the zero address");
         // EFFECTS
         // for each project, tally up the refund amount and update the receipt
@@ -757,16 +766,25 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
         uint256 projectIdsLength = _projectIds.length;
         for (uint256 i = 0; i < projectIdsLength; ) {
             uint256 projectId = _projectIds[i];
-            // get the current price, which returns the sellout price if the
-            // auction sold out before reaching base price, or returns the base
-            // price if auction has reached base price without reaching max
-            // invocations on this minter. Reverts if auction is unconfigured or
-            // has not started.
-            uint256 currentPriceInWei = _getPrice(projectId);
-            // calculate the refund amount
+            ProjectConfig storage _projectConfig = projectConfig[projectId];
             Receipt storage receipt = receipts[msg.sender][projectId];
+            // input validation
+            // require that a user has purchased at least one token on this project
+            require(
+                receipt.numPurchased > 0,
+                "No purchases made by this address"
+            );
+            // get the latestPurchasePrice, which returns the sellout price if the
+            // auction sold out before reaching base price, or returns the base
+            // price if auction has reached base price and artist has withdrawn
+            // revenues.
+            // @dev if user is elligible for a refund, they have purchased a token,
+            // therefore we are guaranteed to not have a populated
+            // latestPurchasePrice
+            uint256 netTokenPrice = _projectConfig.latestPurchasePrice;
+            // calculate the refund amount
             // implicit overflow/underflow checks in solidity ^0.8
-            uint256 amountDue = receipt.numPurchased * currentPriceInWei;
+            uint256 amountDue = receipt.numPurchased * netTokenPrice;
             refund += receipt.netPaid - amountDue;
             // reduce the netPaid (in storage) to value after refund deducted
             receipt.netPaid = amountDue;
