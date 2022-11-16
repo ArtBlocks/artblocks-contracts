@@ -10,6 +10,39 @@ import { getGnosisSafe } from "../../util/GnosisSafeNetwork";
 import { isCoreV3, deployAndGet } from "../../util/common";
 
 /**
+ * helper function that:
+ *  - configures an auction
+ *  - mints a single token during auction, then reaches base price
+ *  - artist withdraws revenues
+ * results in a state where revenues are split at time of sale
+ * @dev intended to be called with `this` bound to a test context
+ * @param projectId project ID to use for minting. assumes project exists and
+ * is configured with a minter that supports this test.
+ */
+export async function completeAuctionWithoutSellingOut(
+  projectId: number
+): Promise<void> {
+  // advance to auction start time
+  await ethers.provider.send("evm_mine", [
+    this.startTime + this.auctionStartTimeOffset,
+  ]);
+  // purchase one piece
+  await this.minter.connect(this.accounts.user).purchase_H4M(this.projectZero, {
+    value: this.startingPrice,
+  });
+  // advance to end of auction
+  // @dev 10 half-lives is enough to reach base price
+  await ethers.provider.send("evm_mine", [
+    this.startTime + this.auctionStartTimeOffset + this.defaultHalfLife * 10,
+  ]);
+  // withdraw revenues
+  await this.minter
+    .connect(this.accounts.artist)
+    .withdrawArtistAndAdminRevenues(projectId);
+  // leave in a state where revenues are split at the time of the sale
+}
+
+/**
  * These tests are intended to check common DA w/Refund V0 functionality.
  * The tests are intended to be run on the any DA Refund V0 contract; for
  * example, if a linear DA Refund were to be created, these tests would
@@ -40,14 +73,13 @@ export const MinterDARefundV0_Common = async () => {
       });
 
       it("requires successful payment to platform", async function () {
+        // achieve a state that splits revenues at time of sale
+        await completeAuctionWithoutSellingOut.call(this, this.projectZero);
         // update platform address to a contract that reverts on receive
         await this.genArt721Core
           .connect(this.accounts.deployer)
           .updateArtblocksPrimarySalesAddress(this.deadReceiver.address);
         // expect revert when trying to purchase
-        await ethers.provider.send("evm_mine", [
-          this.startTime + this.auctionStartTimeOffset,
-        ]);
         await expectRevert(
           this.minter
             .connect(this.accounts.user)
@@ -59,6 +91,8 @@ export const MinterDARefundV0_Common = async () => {
       });
 
       it("requires successful payment to artist", async function () {
+        // achieve a state that splits revenues at time of sale
+        await completeAuctionWithoutSellingOut.call(this, this.projectZero);
         // update artist address to a contract that reverts on receive
         await this.genArt721Core
           .connect(this.accounts.deployer)
@@ -67,9 +101,6 @@ export const MinterDARefundV0_Common = async () => {
             this.deadReceiver.address
           );
         // expect revert when trying to purchase
-        await ethers.provider.send("evm_mine", [
-          this.startTime + this.auctionStartTimeOffset,
-        ]);
         await expectRevert(
           this.minter
             .connect(this.accounts.user)
@@ -81,6 +112,8 @@ export const MinterDARefundV0_Common = async () => {
       });
 
       it("requires successful payment to artist additional payee", async function () {
+        // achieve a state that splits revenues at time of sale
+        await completeAuctionWithoutSellingOut.call(this, this.projectZero);
         // update artist additional payee to a contract that reverts on receive
         const proposedAddressesAndSplits = [
           this.projectZero,
@@ -101,9 +134,6 @@ export const MinterDARefundV0_Common = async () => {
           .connect(this.accounts.deployer)
           .adminAcceptArtistAddressesAndSplits(...proposedAddressesAndSplits);
         // expect revert when trying to purchase
-        await ethers.provider.send("evm_mine", [
-          this.startTime + this.auctionStartTimeOffset,
-        ]);
         await expectRevert(
           this.minter
             .connect(this.accounts.user)
@@ -219,21 +249,21 @@ export const MinterDARefundV0_Common = async () => {
 
   describe("reentrancy attack", async function () {
     it("does not allow reentrant purchaseTo", async function () {
-      // TODO - must finish auction, withdraw revenues, THEN test reentrancy.
-      // this is because the reentrancy attack is only possible if there is a
-      // split & sending of funds during the purchase event, which only happens
-      // if the artist has withdrawn their revenue.
-      // advance to time when auction is active
-      await ethers.provider.send("evm_mine", [
-        this.startTime + this.auctionStartTimeOffset,
-      ]);
-      // attacker deploys reentrancy contract
+      // achieve a state that splits revenues at time of sale.
+      await completeAuctionWithoutSellingOut.call(this, this.projectZero);
+      // attacker is must be priviliged artist or admin, making this a somewhat
+      // silly reentrancy attack. Still worth testing to ensure nonReentrant
+      // modifier is working.
       const reentrancyMockFactory = await ethers.getContractFactory(
         "ReentrancyMock"
       );
       const reentrancyMock = await reentrancyMockFactory
         .connect(this.accounts.deployer)
         .deploy();
+      // update platform payment address to the reentrancy mock contract
+      await this.genArt721Core
+        .connect(this.accounts.deployer)
+        .updateArtblocksPrimarySalesAddress(reentrancyMock.address);
       // attacker should see revert when performing reentrancy attack
       const totalTokensToMint = 2;
       let numTokensToMint = BigNumber.from(totalTokensToMint.toString());
@@ -250,8 +280,9 @@ export const MinterDARefundV0_Common = async () => {
               value: totalValue,
             }
           ),
-        // failure message occurs during refund, where attack reentrency occurs
-        "Refund failed"
+        // failure message occurs during payment to platform, where reentrency
+        // attack occurs
+        "Art Blocks payment failed"
       );
       // attacker should be able to purchase ONE token at a time w/refunds
       numTokensToMint = BigNumber.from("1");
