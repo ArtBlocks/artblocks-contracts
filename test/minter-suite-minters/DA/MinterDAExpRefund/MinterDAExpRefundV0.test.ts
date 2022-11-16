@@ -99,9 +99,6 @@ for (const coreContractName of coreContractsToTest) {
       this.startTime = this.startTime + ONE_DAY;
 
       await ethers.provider.send("evm_mine", [this.startTime - ONE_MINUTE]);
-      // await this.minter
-      //   .connect(this.accounts.deployer)
-      //   .resetAuctionDetails(this.projectZero);
       await this.minter
         .connect(this.accounts.artist)
         .setAuctionDetails(

@@ -1,7 +1,7 @@
 import { constants, expectRevert } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { isCoreV3 } from "../../../util/common";
+import { isCoreV3, getTxResponseTimestamp } from "../../../util/common";
 
 import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../util/constants";
 
@@ -16,6 +16,33 @@ const DAExpAuctionParamsAreZero = (auctionParams) => {
     auctionParams.basePrice == 0
   );
 };
+
+/**
+ * helper function that returns the expected price for a set of auction params
+ * and a given timestamp. Emulates the pseudo-exponential decay formula defined
+ * in the MinterDAExp contracts.
+ */
+function calcPriceFromAuctionDetailsAndTimestamp(auctionParams, timestamp) {
+  const { timestampStart, priceDecayHalfLifeSeconds, startPrice, basePrice } =
+    auctionParams;
+  const secondsSinceStart = timestamp - timestampStart;
+  const completedHalfLivesSinceStart = Math.floor(
+    secondsSinceStart / priceDecayHalfLifeSeconds
+  );
+  // decay by number of full half-lives since start
+  let price = startPrice.div(Math.pow(2, completedHalfLivesSinceStart));
+  // linear interpolation between remaining partial half-life and next full half-life
+  const partialHalfLifeSeconds = secondsSinceStart % priceDecayHalfLifeSeconds;
+  const nextHalfLifePrice = price.div(2);
+  price = price.sub(
+    nextHalfLifePrice.mul(partialHalfLifeSeconds).div(priceDecayHalfLifeSeconds)
+  );
+  // ensure price never drops below base price
+  if (price.lt(basePrice)) {
+    return basePrice;
+  }
+  return price;
+}
 
 /**
  * helper function that:
@@ -47,6 +74,47 @@ export async function completeAuctionWithoutSellingOut(
     .connect(this.accounts.artist)
     .withdrawArtistAndAdminRevenues(projectId);
   // leave in a state where revenues are split at the time of the sale
+}
+
+/**
+ * helper function that:
+ *  - mints a single token during auction, then advances one minute
+ *  - mints a another token during auction, then advances one minute
+ * results in a state where refund may be executed for multiple tokens
+ * @dev intended to be called with `this` bound to a test context
+ * @param projectId project ID to use for minting. assumes project exists and
+ * is configured with a minter that supports this test.
+ */
+export async function purchaseTokensMidAuction(
+  projectId: number
+): Promise<void> {
+  // advance to auction start time
+  await ethers.provider.send("evm_mine", [
+    this.startTime + this.auctionStartTimeOffset,
+  ]);
+  // purchase one piece, no gas cost
+  let balanceBefore = await this.accounts.user.getBalance();
+  await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
+  await this.minter.connect(this.accounts.user).purchase_H4M(projectId, {
+    value: this.startingPrice,
+    gasPrice: 0,
+  });
+  // advance one minute
+  await ethers.provider.send("evm_mine", [
+    this.startTime + this.auctionStartTimeOffset + ONE_MINUTE,
+  ]);
+  // purchase another piece, no gas cost
+  await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
+  await this.minter.connect(this.accounts.user).purchase_H4M(projectId, {
+    value: this.startingPrice,
+    gasPrice: 0,
+  });
+  let balanceAfter = await this.accounts.user.getBalance();
+  expect(balanceBefore.sub(balanceAfter)).to.equal(this.startingPrice.mul(2));
+  // advance one minute
+  await ethers.provider.send("evm_mine", [
+    this.startTime + this.auctionStartTimeOffset + 2 * ONE_MINUTE,
+  ]);
 }
 
 /**
@@ -189,7 +257,7 @@ export const MinterDAExpRefund_Common = async () => {
     });
   });
 
-  describe.only("setAuctionDetails", async function () {
+  describe("setAuctionDetails", async function () {
     it("cannot be modified mid-auction", async function () {
       await ethers.provider.send("evm_mine", [
         this.startTime + 2 * this.auctionStartTimeOffset,
@@ -1038,6 +1106,87 @@ export const MinterDAExpRefund_Common = async () => {
       await this.minter
         .connect(this.accounts.artist)
         .withdrawArtistAndAdminRevenues(this.projectZero);
+    });
+  });
+
+  describe("claimRefund", async function () {
+    it("allows refund a few blocks after purchase", async function () {
+      await purchaseTokensMidAuction.call(this, this.projectZero);
+      // user can claim refund
+      await this.minter
+        .connect(this.accounts.user)
+        .claimRefund(this.projectZero);
+    });
+
+    it("sends proper refund value when calling mid-auction", async function () {
+      const originalBalanceUser = await this.accounts.user.getBalance();
+      // purchase tokens (at zero gas cost)
+      await purchaseTokensMidAuction.call(this, this.projectZero);
+      // user should only pay net price of token price at this time, after claiming refund
+      // advance one minute
+      await ethers.provider.send("evm_mine", [
+        this.startTime + this.auctionStartTimeOffset + 3 * ONE_MINUTE,
+      ]);
+      await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
+      const tx = await this.minter
+        .connect(this.accounts.user)
+        .claimRefund(this.projectZero, { gasPrice: 0 });
+      const timestamp = await getTxResponseTimestamp(tx);
+      const projectAuctionParameters =
+        await this.minter.projectAuctionParameters(this.projectZero);
+      // calculate net price of token at this time and compare to change in balance
+      const expectedPrice = calcPriceFromAuctionDetailsAndTimestamp(
+        projectAuctionParameters,
+        timestamp
+      );
+      console.log(expectedPrice);
+      const newBalanceUser = await this.accounts.user.getBalance();
+      expect(newBalanceUser).to.equal(
+        originalBalanceUser.sub(expectedPrice.mul(2))
+      );
+    });
+
+    it("sends proper refund value when calling after reaching resting price", async function () {
+      const originalBalanceUser = await this.accounts.user.getBalance();
+      // purchase tokens (at zero gas cost)
+      await purchaseTokensMidAuction.call(this, this.projectZero);
+      // user should only pay net price of token price at this time, after claiming refund
+      // advance one minute
+      // jump to end of auction (10 half-lives is sufficient)
+      await ethers.provider.send("evm_mine", [
+        this.startTime +
+          this.auctionStartTimeOffset +
+          10 * this.defaultHalfLife,
+      ]);
+      await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
+      const tx = await this.minter
+        .connect(this.accounts.user)
+        .claimRefund(this.projectZero, { gasPrice: 0 });
+      const timestamp = await getTxResponseTimestamp(tx);
+      const projectAuctionParameters =
+        await this.minter.projectAuctionParameters(this.projectZero);
+      // calculate net price of token at this time and compare to change in balance
+      const expectedPrice = calcPriceFromAuctionDetailsAndTimestamp(
+        projectAuctionParameters,
+        timestamp
+      );
+      const newBalanceUser = await this.accounts.user.getBalance();
+      expect(newBalanceUser).to.equal(
+        originalBalanceUser.sub(expectedPrice.mul(2))
+      );
+    });
+
+    it("does not allow refund while in a reset state", async function () {
+      await purchaseTokensMidAuction.call(this, this.projectZero);
+      // admin reset the auction
+      await this.minter
+        .connect(this.accounts.deployer)
+        .resetAuctionDetails(this.projectZero);
+      // user cannot claim refund
+      await expectRevert(
+        this.minter.connect(this.accounts.user).claimRefund(this.projectZero),
+        "Only configured auctions"
+      );
     });
   });
 };
