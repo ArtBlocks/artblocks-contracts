@@ -189,7 +189,7 @@ export const MinterDAExpRefund_Common = async () => {
     });
   });
 
-  describe("setAuctionDetails", async function () {
+  describe.only("setAuctionDetails", async function () {
     it("cannot be modified mid-auction", async function () {
       await ethers.provider.send("evm_mine", [
         this.startTime + 2 * this.auctionStartTimeOffset,
@@ -288,6 +288,126 @@ export const MinterDAExpRefund_Common = async () => {
           ),
         "Only future auctions"
       );
+    });
+
+    it("disallows starting price higher than latestPurchasePrice if num refundable invocations > 0", async function () {
+      // advance to auction start time
+      await ethers.provider.send("evm_mine", [
+        this.startTime + this.auctionStartTimeOffset,
+      ]);
+      // purchase one piece
+      await this.minter
+        .connect(this.accounts.user)
+        .purchase_H4M(this.projectZero, {
+          value: this.startingPrice,
+        });
+      // reset the auction
+      await this.minter
+        .connect(this.accounts.deployer)
+        .resetAuctionDetails(this.projectZero);
+      // expect revert when setting starting price higher than latestPurchasePrice
+      const projectConfig = await this.minter.projectConfig(this.projectZero);
+      const latestPurchasePrice = projectConfig.latestPurchasePrice;
+      const newStartTime = this.startTime + ONE_DAY;
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.artist)
+          .setAuctionDetails(
+            this.projectZero,
+            newStartTime + this.auctionStartTimeOffset,
+            this.defaultHalfLife,
+            latestPurchasePrice.add(1),
+            this.basePrice
+          ),
+        "Auction start price must be less than or equal to previous auction price"
+      );
+    });
+
+    it("allows starting price equal to latestPurchasePrice if num refundable invocations > 0", async function () {
+      // advance to auction start time
+      await ethers.provider.send("evm_mine", [
+        this.startTime + this.auctionStartTimeOffset,
+      ]);
+      // purchase one piece
+      await this.minter
+        .connect(this.accounts.user)
+        .purchase_H4M(this.projectZero, {
+          value: this.startingPrice,
+        });
+      // reset the auction
+      await this.minter
+        .connect(this.accounts.deployer)
+        .resetAuctionDetails(this.projectZero);
+      // expect success when setting starting price equal to latestPurchasePrice
+      const projectConfig = await this.minter.projectConfig(this.projectZero);
+      const latestPurchasePrice = projectConfig.latestPurchasePrice;
+      const newStartTime =
+        this.startTime + this.auctionStartTimeOffset + ONE_DAY;
+      await this.minter
+        .connect(this.accounts.artist)
+        .setAuctionDetails(
+          this.projectZero,
+          newStartTime + this.auctionStartTimeOffset,
+          this.defaultHalfLife,
+          latestPurchasePrice,
+          this.basePrice
+        );
+    });
+
+    it("allows starting price less than latestPurchasePrice if num refundable invocations > 0", async function () {
+      // advance to auction start time
+      await ethers.provider.send("evm_mine", [
+        this.startTime + this.auctionStartTimeOffset,
+      ]);
+      // purchase one piece
+      await this.minter
+        .connect(this.accounts.user)
+        .purchase_H4M(this.projectZero, {
+          value: this.startingPrice,
+        });
+      // reset the auction
+      await this.minter
+        .connect(this.accounts.deployer)
+        .resetAuctionDetails(this.projectZero);
+      // expect success when setting starting price equal to latestPurchasePrice
+      const projectConfig = await this.minter.projectConfig(this.projectZero);
+      const latestPurchasePrice = projectConfig.latestPurchasePrice;
+      const newStartTime =
+        this.startTime + this.auctionStartTimeOffset + ONE_DAY;
+      await this.minter
+        .connect(this.accounts.artist)
+        .setAuctionDetails(
+          this.projectZero,
+          newStartTime + this.auctionStartTimeOffset,
+          this.defaultHalfLife,
+          latestPurchasePrice.sub(1),
+          this.basePrice
+        );
+    });
+
+    it("emits event when auction details are updated", async function () {
+      await this.minter
+        .connect(this.accounts.deployer)
+        .resetAuctionDetails(this.projectZero);
+      await expect(
+        this.minter
+          .connect(this.accounts.artist)
+          .setAuctionDetails(
+            this.projectZero,
+            this.startTime + this.auctionStartTimeOffset,
+            this.defaultHalfLife,
+            this.startingPrice,
+            this.basePrice
+          )
+      )
+        .to.emit(this.minter, "SetAuctionDetails")
+        .withArgs(
+          this.projectZero,
+          this.startTime + this.auctionStartTimeOffset,
+          this.defaultHalfLife,
+          this.startingPrice,
+          this.basePrice
+        );
     });
   });
 
@@ -638,7 +758,7 @@ export const MinterDAExpRefund_Common = async () => {
     });
   });
 
-  describe.only("withdrawArtistAndAdminRevenues", async function () {
+  describe("withdrawArtistAndAdminRevenues", async function () {
     it("allows admin to withdraw revenues after sellout", async function () {
       // sellout the project mid-auction
       await selloutMidAuction.call(this, this.projectZero);
