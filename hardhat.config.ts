@@ -8,11 +8,17 @@ import "hardhat-contract-sizer";
 import "@nomiclabs/hardhat-etherscan";
 import "hardhat-docgen";
 
+
 const MAINNET_JSON_RPC_PROVIDER_URL = process.env.MAINNET_JSON_RPC_PROVIDER_URL;
 const GOERLI_JSON_RPC_PROVIDER_URL = process.env.GOERLI_JSON_RPC_PROVIDER_URL;
 const MAINNET_PRIVATE_KEY = process.env.MAINNET_PRIVATE_KEY;
 const TESTNET_PRIVATE_KEY = process.env.TESTNET_PRIVATE_KEY;
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
+
+
+// L2 Configuration
+const PALM_MAINNET_JSON_RPC_PROVIDER_URL = process.env.PALM_MAINNET_JSON_RPC_PROVIDER_URL;
+const PALM_TESTNET_JSON_RPC_PROVIDER_URL = process.env.PALM_TESTNET_JSON_RPC_PROVIDER_URL;
 
 // You need to export an object to set up your config
 // Go to https://hardhat.org/config/ to learn more
@@ -69,6 +75,18 @@ module.exports = {
       accounts: [`0x${TESTNET_PRIVATE_KEY}`],
       gasPrice: "auto",
       gasMultiplier: 1.5,
+    },
+    palm_mainnet: {
+      url: PALM_MAINNET_JSON_RPC_PROVIDER_URL,
+      accounts: [`0x${MAINNET_PRIVATE_KEY}`],
+      gasPrice: "auto",
+      gasMultiplier: 1.5
+    },
+    palm_testnet: {
+      url: PALM_TESTNET_JSON_RPC_PROVIDER_URL,
+      accounts: [`0x${TESTNET_PRIVATE_KEY}`],
+      gasPrice: "auto",
+      gasMultiplier: 1.5
     },
     coverage: {
       url: "http://localhost:8545",

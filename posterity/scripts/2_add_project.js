@@ -1,6 +1,5 @@
 var prompt = require("prompt-sync")();
-const GenArt721Core = require("../artifacts/GenArt721Core.json");
-const { BigNumber } = require("ethers");
+const GenArt721Core = require("../../artifacts/contracts/PBAB+Collabs/GenArt721CoreV2_ENGINE_FLEX.sol/GenArt721CoreV2_ENGINE_FLEX.json");
 
 async function main() {
   const [deployer] = await ethers.getSigners();
@@ -15,10 +14,9 @@ async function main() {
   );
 
   await genArt721Core.addProject(
-    "Flamingo1",
-    "0x8De4e517A6F0B84654625228D8293b70AB49cF6C",
-    "100000000000000000",
-    true
+    "TestProject1",
+    "0x6a3633883F704a631B8BF8CA8C4A416a3e5Ed30d",
+    "100000000000000000"
   );
 
   console.log("addProject done");
