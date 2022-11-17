@@ -355,7 +355,7 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
         require(
             _projectConfig.numRefundableInvocations == 0 || // never purchased
                 _startPrice <= _projectConfig.latestPurchasePrice,
-            "Auction start price must be <= to latest purchase price"
+            "Auction start price must be <= latest purchase price"
         );
         require(
             (_priceDecayHalfLifeSeconds >= minimumPriceDecayHalfLifeSeconds) &&

@@ -432,7 +432,7 @@ export const MinterDAExpRefund_Common = async () => {
             latestPurchasePrice.add(1),
             this.basePrice
           ),
-        "Auction start price must be <= to latest purchase price"
+        "Auction start price must be <= latest purchase price"
       );
     });
 
@@ -1976,7 +1976,7 @@ export const MinterDAExpRefund_Common = async () => {
     });
   });
 
-  describe.only("Base price of zero", async function () {
+  describe("Base price of zero", async function () {
     it("handles base price of zero, and associated eth split after artist withdraws revenue (edge case)", async function () {
       // record balances
       const originalBalanceUser = await this.accounts.user.getBalance();
@@ -2022,6 +2022,56 @@ export const MinterDAExpRefund_Common = async () => {
       expect(newBalanceUser).to.equal(originalBalanceUser);
       // artist should also have received no payment when withdrawing at base price of zero
       expect(newBalanceArtist).to.equal(originalBalanceArtist);
+    });
+  });
+
+  describe("Auction reset and configuration limits", async function () {
+    it("allows new auction to be configured up to latestPurchasePrice", async function () {
+      // purchase a couple tokens (gas fee 0), do not sell out auction
+      await purchaseTokensMidAuction.call(this, this.projectZero);
+      // advance past end of auction, so auction reaches base price
+      await ethers.provider.send("evm_mine", [
+        this.startTime +
+          this.auctionStartTimeOffset +
+          this.defaultHalfLife * 10,
+      ]);
+      // admin resets the auction
+      await this.minter
+        .connect(this.accounts.deployer)
+        .resetAuctionDetails(this.projectZero);
+      // artist may not configure a new auction with a base price higher than the latest purchase price
+      const projectConfig = await this.minter.projectConfig(this.projectZero);
+      const latestPurchasePrice = projectConfig.latestPurchasePrice;
+      expect(latestPurchasePrice).to.be.gt(this.basePrice);
+      expect(latestPurchasePrice).to.be.lt(this.startingPrice);
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.artist)
+          .setAuctionDetails(
+            this.projectZero,
+            this.startTime +
+              this.auctionStartTimeOffset +
+              this.defaultHalfLife * 10 +
+              ONE_MINUTE,
+            this.defaultHalfLife,
+            latestPurchasePrice.add(1),
+            this.basePrice
+          ),
+        "Auction start price must be <= latest purchase price"
+      );
+      // artist may configure a new auction with a base price equal to the latest purchase price
+      await this.minter
+        .connect(this.accounts.artist)
+        .setAuctionDetails(
+          this.projectZero,
+          this.startTime +
+            this.auctionStartTimeOffset +
+            this.defaultHalfLife * 10 +
+            ONE_MINUTE,
+          this.defaultHalfLife,
+          latestPurchasePrice,
+          this.basePrice
+        );
     });
   });
 };
