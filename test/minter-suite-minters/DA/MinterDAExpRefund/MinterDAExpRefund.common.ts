@@ -1540,7 +1540,7 @@ export const MinterDAExpRefund_Common = async () => {
       });
     });
 
-    describe.only("claimRefunds for multiple projects", async function () {
+    describe("claimRefunds for multiple projects", async function () {
       beforeEach(async function () {
         // add project one and configure auction
         await safeAddProject(
@@ -1973,6 +1973,55 @@ export const MinterDAExpRefund_Common = async () => {
           .togglePurchaseToDisabled(this.projectZero),
         "Action not supported"
       );
+    });
+  });
+
+  describe.only("Base price of zero", async function () {
+    it("handles base price of zero, and associated eth split after artist withdraws revenue (edge case)", async function () {
+      // record balances
+      const originalBalanceUser = await this.accounts.user.getBalance();
+      const originalBalanceArtist = await this.accounts.artist.getBalance();
+      // configure project with base price of zero
+      await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
+      await this.minter
+        .connect(this.accounts.artist)
+        .setAuctionDetails(
+          this.projectZero,
+          this.startTime + this.auctionStartTimeOffset,
+          this.defaultHalfLife,
+          100,
+          0,
+          { gasPrice: 0 }
+        );
+      // purchase a couple tokens (gas fee 0), do not sell out auction
+      await purchaseTokensMidAuction.call(this, this.projectZero);
+      // advance past end of auction, so base price becomes zero
+      await ethers.provider.send("evm_mine", [
+        this.startTime +
+          this.auctionStartTimeOffset +
+          this.defaultHalfLife * 10,
+      ]);
+      // artist withdraws revenue
+      await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
+      await this.minter
+        .connect(this.accounts.artist)
+        .withdrawArtistAndAdminRevenues(this.projectZero, { gasPrice: 0 });
+      // user collects refund
+      await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
+      await this.minter
+        .connect(this.accounts.user)
+        .claimRefund(this.projectZero, { gasPrice: 0 });
+      // check that eth split is zero for a new purchase is handled appropriately when no value sent
+      await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
+      await this.minter
+        .connect(this.accounts.user)
+        .purchase(this.projectZero, { gasPrice: 0 });
+      const newBalanceUser = await this.accounts.user.getBalance();
+      const newBalanceArtist = await this.accounts.artist.getBalance();
+      // check that user balance is unchanged (since net zero price should have been paid)
+      expect(newBalanceUser).to.equal(originalBalanceUser);
+      // artist should also have received no payment when withdrawing at base price of zero
+      expect(newBalanceArtist).to.equal(originalBalanceArtist);
     });
   });
 };

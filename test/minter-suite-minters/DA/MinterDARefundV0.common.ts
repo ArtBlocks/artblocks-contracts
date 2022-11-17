@@ -112,6 +112,36 @@ export const MinterDARefundV0_Common = async () => {
         );
       });
 
+      it("registers success when sending payment to valid artist additional payee", async function () {
+        // achieve a state that splits revenues at time of sale
+        await completeAuctionWithoutSellingOut.call(this, this.projectZero);
+        // update artist additional payee to a contract that reverts on receive
+        const proposedAddressesAndSplits = [
+          this.projectZero,
+          this.accounts.artist.address,
+          this.accounts.additional.address,
+          // @dev 50% to additional, 50% to artist, to ensure additional is paid
+          50,
+          this.accounts.additional2.address,
+          // @dev split for secondary sales doesn't matter for this test
+          50,
+        ];
+        await this.genArt721Core
+          .connect(this.accounts.artist)
+          .proposeArtistPaymentAddressesAndSplits(
+            ...proposedAddressesAndSplits
+          );
+        await this.genArt721Core
+          .connect(this.accounts.deployer)
+          .adminAcceptArtistAddressesAndSplits(...proposedAddressesAndSplits);
+        // expect success when purchasing
+        await this.minter
+          .connect(this.accounts.user)
+          .purchaseTo(this.accounts.additional.address, this.projectZero, {
+            value: this.startingPrice,
+          });
+      });
+
       it("handles zero platform and artist payment values", async function () {
         // update platform address to zero
         await this.genArt721Core
