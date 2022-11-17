@@ -191,20 +191,34 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
     }
 
     /**
-     * @notice This function is not implemented on this minter, and exists only
-     * for interface conformance reasons. This minter checks if max invocations
-     * have been reached during every purchase to determine if a sellout has
-     * occurred. Therefore, the local caching of max invocations is not
-     * beneficial or necessary.
+     * @notice Syncs local maximum invocations of project `_projectId` based on
+     * the value currently defined in the core contract.
+     * This minter syncs the maximum invocations every time a purchase is made
+     * because it needs to know when the final token of a project has been
+     * minted to record the sellout price. Therefore, this function is not
+     * expected to be called except for edge cases involving an artist reducing
+     * the maximum invocations of a project on the core contract mid-auction.
+     * @param _projectId Project ID to set the maximum invocations for.
+     * @dev this enables gas reduction after maxInvocations have been reached -
+     * core contracts shall still enforce a maxInvocation check during mint.
+     * @dev function is intentionally not gated to any specific access control;
+     * it only syncs a local state variable to the core contract's state.
      */
-    function setProjectMaxInvocations(
-        uint256 /*_projectId*/
-    ) external pure {
-        // not implemented because maxInvocations must be checked during every mint
-        // to know if final price should be set
-        revert(
-            "setProjectMaxInvocations not implemented - updated during every mint"
-        );
+    function setProjectMaxInvocations(uint256 _projectId) public {
+        uint256 invocations;
+        uint256 maxInvocations;
+        (invocations, maxInvocations, , , , ) = genArtCoreContract
+            .projectStateData(_projectId);
+        if (invocations == maxInvocations) {
+            ProjectConfig storage _projectConfig = projectConfig[_projectId];
+            if (!_projectConfig.maxHasBeenInvoked) {
+                // set the sellout price to the latest purchase price on this minter
+                _projectConfig.selloutPrice = _projectConfig
+                    .latestPurchasePrice;
+                // set the flag indicating that the max has been invoked
+                _projectConfig.maxHasBeenInvoked = true;
+            }
+        }
     }
 
     /**
@@ -497,6 +511,9 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
             !_projectConfig.auctionRevenuesCollected,
             "Revenues already collected"
         );
+        // syncmax invocations (and sellout price) to handle case where max
+        // invocations was reduced on core contract since latest purchase.
+        setProjectMaxInvocations(_projectId);
         // get the current net price of the auction - reverts if no auction
         // is configured.
         // @dev _getPrice is guaranteed <= _projectConfig.latestPurchasePrice,

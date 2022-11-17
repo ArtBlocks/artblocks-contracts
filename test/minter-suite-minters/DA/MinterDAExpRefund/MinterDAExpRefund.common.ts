@@ -2074,4 +2074,37 @@ export const MinterDAExpRefund_Common = async () => {
         );
     });
   });
+
+  describe.only("Invocations reduction on core mid-auction", async function () {
+    it("does not brick revenue withdrawals before reaching base price if artist reduces invocations on core contract mid-auction", async function () {
+      // models the following situation:
+      // - auction is not sold out
+      // artist reduces maxInvocations on core contract, completing the project
+      // desired state:
+      // - artist should be able to withdraw revenue
+      // - "sellout" price should be the latest purchased token price (not base price)
+
+      // purchase a couple tokens, do not sell out auction
+      await purchaseTokensMidAuction.call(this, this.projectZero);
+      // get current invocations on project
+      const projectState = await this.genArt721Core.projectStateData(
+        this.projectZero
+      );
+      const invocations = projectState.invocations;
+      // artist reduces invocations on core contract
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectMaxInvocations(this.projectZero, invocations);
+      // artist should be able to withdraw revenue, and sellout price should be updated to latest purchase price
+      await this.minter
+        .connect(this.accounts.artist)
+        .withdrawArtistAndAdminRevenues(this.projectZero);
+      // sellout price should be updated to latest purchase price, which is > base price
+      const projectConfig = await this.minter.projectConfig(this.projectZero);
+      expect(projectConfig.selloutPrice).to.be.equal(
+        projectConfig.latestPurchasePrice
+      );
+      expect(projectConfig.selloutPrice).to.be.gt(projectConfig.basePrice);
+    });
+  });
 };
