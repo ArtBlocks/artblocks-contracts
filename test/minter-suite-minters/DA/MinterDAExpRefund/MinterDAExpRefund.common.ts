@@ -1,7 +1,11 @@
 import { constants, expectRevert } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { isCoreV3, getTxResponseTimestamp } from "../../../util/common";
+import {
+  isCoreV3,
+  getTxResponseTimestamp,
+  deployAndGet,
+} from "../../../util/common";
 
 import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../util/constants";
 
@@ -254,6 +258,46 @@ export const MinterDAExpRefund_Common = async () => {
       await this.minter
         .connect(this.accounts.user)
         .purchaseTo(this.accounts.additional.address, this.projectZero, {});
+    });
+
+    it("enforces sending minimum required payment when calling `purchase`, with no previous purchases", async function () {
+      // advance to start of auction
+      await ethers.provider.send("evm_mine", [
+        this.startTime + this.auctionStartTimeOffset,
+      ]);
+      // expect mint success with call value of starting price
+      await this.minter
+        .connect(this.accounts.user)
+        .purchase(this.projectZero, { value: this.startingPrice });
+      // expect mint revert with call value of much less than purchase price
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.user)
+          .purchase(this.projectZero, { value: this.startingPrice.div(100) }),
+        "Must send minimum value to mint"
+      );
+    });
+
+    it("enforces sending minimum required payment when calling `purchase`, using previous purchase receipts", async function () {
+      // advance to start of auction
+      await ethers.provider.send("evm_mine", [
+        this.startTime + this.auctionStartTimeOffset,
+      ]);
+      // expect mint success with call value of starting price
+      await this.minter
+        .connect(this.accounts.user)
+        .purchase(this.projectZero, { value: this.startingPrice }); // advance to start of auction
+      // advance to end of auction
+      await ethers.provider.send("evm_mine", [
+        this.startTime +
+          this.auctionStartTimeOffset +
+          this.defaultHalfLife * 10,
+      ]);
+      // expect mint success with call value of much less than purchase price,
+      // because previous receipt funds the purchase
+      await this.minter
+        .connect(this.accounts.user)
+        .purchase(this.projectZero, { value: 0 });
     });
   });
 
@@ -1262,6 +1306,27 @@ export const MinterDAExpRefund_Common = async () => {
   });
 
   describe("claimRefundTo", async function () {
+    it("does not allow sending refunds to zero address", async function () {
+      await purchaseTokensMidAuction.call(this, this.projectZero);
+      // user claims refund, revert
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.user)
+          .claimRefundTo(constants.ZERO_ADDRESS, this.projectZero),
+        "No refund to the zero address"
+      );
+    });
+
+    it("does not allow collecting refunds prior to user making a purchase", async function () {
+      // user claims refund, revert
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.user)
+          .claimRefundTo(this.accounts.user2.address, this.projectZero),
+        "No purchases made by this address"
+      );
+    });
+
     it("allows refund a few blocks after purchase", async function () {
       await purchaseTokensMidAuction.call(this, this.projectZero);
       // user can claim refund
@@ -1311,6 +1376,22 @@ export const MinterDAExpRefund_Common = async () => {
       // user2 should have a net positive change in balance, since only received
       // refund, not paid for token
       expect(newBalanceUser2).to.be.gt(originalBalanceUser2);
+    });
+
+    it("reverts if payment to address fails", async function () {
+      const deadReceiver = await deployAndGet.call(
+        this,
+        "DeadReceiverMock",
+        []
+      );
+      await purchaseTokensMidAuction.call(this, this.projectZero);
+      // user claims refund, revert
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.user)
+          .claimRefundTo(deadReceiver.address, this.projectZero),
+        "Refund failed"
+      );
     });
   });
 

@@ -600,7 +600,7 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
         _receipt.numPurchased++;
         require(
             _receipt.netPaid >= _receipt.numPurchased * currentPriceInWei,
-            "Must send minimum value to mint!"
+            "Must send minimum value to mint"
         );
         // emit event indicating new receipt state
         emit ReceiptUpdated(
