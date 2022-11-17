@@ -5,6 +5,7 @@ import { ethers } from "hardhat";
 // delay to avoid issues with reorgs and tx failures
 import { delay } from "../../util/utils";
 const EXTRA_DELAY_BETWEEN_TX = 10000; // ms
+const PALM_TESTNET_CHAIN_ID = 11297108099;
 
 /**
  * This script was created to deploy partner contracts to the Palm Network
@@ -13,20 +14,21 @@ const EXTRA_DELAY_BETWEEN_TX = 10000; // ms
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG BEGINS HERE
 //////////////////////////////////////////////////////////////////////////////
-// FLEX contract file
-import { GenArt721CoreV2ENGINEFLEX__factory } from "../../contracts/factories/GenArt721CoreV2ENGINEFLEX__factory";
+// Contract files
+import { GenArt721CoreV2PBAB__factory } from "../../contracts/factories/GenArt721CoreV2PBAB__factory";
 import { GenArt721MinterPBAB__factory } from "../../contracts/factories/GenArt721MinterPBAB__factory";
 
-const tokenName = "Art Blocks Flex Engine Palm Testnet Demo";
-const tokenTicker = "ABFLEX_DEMO_PALM_TESTNET";
-const transferAddress = "0x2246475beddf9333b6a6D9217194576E7617Afd1";
-const artblocksAddress = "0x2246475beddf9333b6a6D9217194576E7617Afd1";
+const tokenName = "Art Blocks Engine Palm Testnet Demo";
+const tokenTicker = "ABENGINE_DEMO_PALM_TESTNET";
+const transferAddress = "0x3b9038fa89783CBA1933c1689043b4dae2032d1c";
+const artblocksAddress = "0x3b9038fa89783CBA1933c1689043b4dae2032d1c";
 const randomizerAddress = "0xB295b7de82C4903D96B7AAb0f6bB4a9815f33CE4";
+const startingProjectId = 0;
 
 // (optional) add initial project
 const doAddProjectZero = true;
 const projectZeroName = "projectZeroTest";
-const artistAddress = "0x2246475beddf9333b6a6D9217194576E7617Afd1";
+const artistAddress = "0x3b9038fa89783CBA1933c1689043b4dae2032d1c";
 const pricePerTokenInWei = 0;
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG ENDS HERE
@@ -44,20 +46,21 @@ async function main() {
   console.log(`Using shared randomizer at ${randomizerAddress}`);
 
   // Deploy Core contract
-  const coreFactory = new GenArt721CoreV2ENGINEFLEX__factory(deployer);
-  const genArt721CoreFlex = await coreFactory.deploy(
+  const coreFactory = new GenArt721CoreV2PBAB__factory(deployer);
+  const genArt721Core = await coreFactory.deploy(
     tokenName,
     tokenTicker,
-    randomizerAddress
+    randomizerAddress,
+    startingProjectId
   );
-  console.log(genArt721CoreFlex.deployTransaction);
-  await genArt721CoreFlex.deployed();
-  console.log(`GenArt721CoreV2 deployed at ${genArt721CoreFlex.address}`);
+  console.log(genArt721Core.deployTransaction);
+  await genArt721Core.deployed();
+  console.log(`GenArt721CoreV2 deployed at ${genArt721Core.address}`);
 
   // Deploy Minter contract.
   const genArt721MinterFactory = new GenArt721MinterPBAB__factory(deployer);
   const genArt721Minter = await genArt721MinterFactory.deploy(
-    genArt721CoreFlex.address
+    genArt721Core.address
   );
 
   await genArt721Minter.deployed();
@@ -73,7 +76,7 @@ async function main() {
   let tx = null;
 
   // Allowlist the Minter on the Core contract.
-  tx = await genArt721CoreFlex
+  tx = await genArt721Core
     .connect(deployer)
     .addMintWhitelisted(genArt721Minter.address);
 
@@ -84,7 +87,7 @@ async function main() {
   await delay(EXTRA_DELAY_BETWEEN_TX);
 
   // Update the Renderer provider.
-  tx = await genArt721CoreFlex
+  tx = await genArt721Core
     .connect(deployer)
     .updateRenderProviderAddress(artblocksAddress);
 
@@ -100,27 +103,30 @@ async function main() {
   await delay(EXTRA_DELAY_BETWEEN_TX);
 
   // Allowlist AB staff
-  console.log(`Detected testnet - Adding AB staff to the whitelist.`);
-  const devAddresses = [
-    "0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63", // purplehat
-    "0x3c3cAb03C83E48e2E773ef5FC86F52aD2B15a5b0", // dogbot
-    "0x0B7917b62BC98967e06e80EFBa9aBcAcCF3d4928", // ben_thank_you
-    "0x3b9038fa89783CBA1933c1689043b4dae2032d1c", // heylinds
-    "0x48631d49245185cB38C01a31E0AFFfA75c133d9a", // meck
-  ];
-  for (let i = 0; i < devAddresses.length; i++) {
-    tx = await genArt721CoreFlex
-      .connect(deployer)
-      .addWhitelisted(devAddresses[i]);
-    await tx.wait();
+  if (network.chainId === PALM_TESTNET_CHAIN_ID) {
+    console.log(`Detected testnet - Adding AB staff to the whitelist.`);
 
-    console.log(`Allowlisted ${devAddresses[i]} on the Core contract.`);
-    await delay(EXTRA_DELAY_BETWEEN_TX);
+    const devAddresses = [
+      "0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63", // purplehat
+      "0x3c3cAb03C83E48e2E773ef5FC86F52aD2B15a5b0", // dogbot
+      "0x0B7917b62BC98967e06e80EFBa9aBcAcCF3d4928", // ben_thank_you
+      "0x3b9038fa89783CBA1933c1689043b4dae2032d1c", // heylinds
+      "0x48631d49245185cB38C01a31E0AFFfA75c133d9a", // meck
+    ];
+    for (let i = 0; i < devAddresses.length; i++) {
+      tx = await genArt721Core
+        .connect(deployer)
+        .addWhitelisted(devAddresses[i]);
+      await tx.wait();
+
+      console.log(`Allowlisted ${devAddresses[i]} on the Core contract.`);
+      await delay(EXTRA_DELAY_BETWEEN_TX);
+    }
   }
 
   // (optional) add initial project
   if (doAddProjectZero) {
-    tx = await genArt721CoreFlex.addProject(
+    tx = await genArt721Core.addProject(
       projectZeroName,
       artistAddress,
       pricePerTokenInWei
@@ -128,11 +134,11 @@ async function main() {
     await tx.wait();
   }
   console.log(
-    `Added project zero ${projectZeroName} on core contract at ${genArt721CoreFlex.address}.`
+    `Added project zero ${projectZeroName} on core contract at ${genArt721Core.address}.`
   );
 
   // Allowlist new owner.
-  tx = await genArt721CoreFlex
+  tx = await genArt721Core
     .connect(deployer)
     .addWhitelisted(transferAddress);
   await tx.wait();
@@ -141,7 +147,7 @@ async function main() {
   await delay(EXTRA_DELAY_BETWEEN_TX);
 
   // Transfer Core contract to new owner.
-  tx = await genArt721CoreFlex.connect(deployer).updateAdmin(transferAddress);
+  tx = await genArt721Core.connect(deployer).updateAdmin(transferAddress);
   await tx.wait();
   console.log(`Transferred Core contract admin to: ${transferAddress}.`);
 
@@ -149,11 +155,11 @@ async function main() {
   const standardVerify = "yarn hardhat verify";
   console.log(`Verify core contract deployment with:`);
   console.log(
-    `${standardVerify} --network ${networkName} ${genArt721CoreFlex.address} "${tokenName}" "${tokenTicker}" ${randomizerAddress}`
+    `${standardVerify} --network ${networkName} ${genArt721Core.address} "${tokenName}" "${tokenTicker}" ${randomizerAddress}`
   );
   console.log(`Verify Minter deployment with:`);
   console.log(
-    `${standardVerify} --network ${networkName} ${genArt721Minter.address} ${genArt721CoreFlex.address}`
+    `${standardVerify} --network ${networkName} ${genArt721Minter.address} ${genArt721Core.address}`
   );
 
   //////////////////////////////////////////////////////////////////////////////

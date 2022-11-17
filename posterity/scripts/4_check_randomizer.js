@@ -1,5 +1,5 @@
 var prompt = require("prompt-sync")();
-const GenArt721Core = require("../../artifacts/contracts/PBAB+Collabs/GenArt721CoreV2_ENGINE_FLEX.sol/GenArt721CoreV2_ENGINE_FLEX.json");
+const GenArt721Core = require("../../artifacts/contracts/PBAB+Collabs/GenArt721CoreV2_PBAB.sol/GenArt721CoreV2_PBAB.json");
 
 async function main() {
   const [deployer] = await ethers.getSigners();
