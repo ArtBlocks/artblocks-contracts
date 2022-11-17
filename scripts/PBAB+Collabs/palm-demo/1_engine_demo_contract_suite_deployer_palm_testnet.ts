@@ -138,9 +138,7 @@ async function main() {
   );
 
   // Allowlist new owner.
-  tx = await genArt721Core
-    .connect(deployer)
-    .addWhitelisted(transferAddress);
+  tx = await genArt721Core.connect(deployer).addWhitelisted(transferAddress);
   await tx.wait();
 
   console.log(`Allowlisted Core contract access for: ${transferAddress}.`);
