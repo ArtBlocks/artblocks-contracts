@@ -603,6 +603,31 @@ export const MinterDAExpRefund_Common = async () => {
       );
     });
 
+    it("does not allow resetting an unconfigured auction", async function () {
+      // reset auction details
+      await this.minter
+        .connect(this.accounts.deployer)
+        .resetAuctionDetails(this.projectZero);
+      // expect revert after auction details have been reset and auction is unconfigured
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.deployer)
+          .resetAuctionDetails(this.projectZero),
+        "Auction must be configured"
+      );
+    });
+
+    it("does not allow resetting after revenues have been collected", async function () {
+      await completeAuctionWithoutSellingOut.call(this, this.projectZero);
+      // expect revert after auction details have been reset and auction is unconfigured
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.deployer)
+          .resetAuctionDetails(this.projectZero),
+        "Only before revenues collected"
+      );
+    });
+
     it("invalidates unpaused, ongoing auction (prevents price of zero)", async function () {
       // prove this.projectZero is mintable
       await ethers.provider.send("evm_mine", [
@@ -1233,6 +1258,88 @@ export const MinterDAExpRefund_Common = async () => {
       await this.minter
         .connect(this.accounts.user)
         .claimRefund(this.projectZero);
+    });
+  });
+
+  describe("claimRefundTo", async function () {
+    it("allows refund a few blocks after purchase", async function () {
+      await purchaseTokensMidAuction.call(this, this.projectZero);
+      // user can claim refund
+      await this.minter
+        .connect(this.accounts.user)
+        .claimRefundTo(this.accounts.user2.address, this.projectZero);
+    });
+
+    it("sends proper refund value to `_to` when calling mid-auction", async function () {
+      const originalBalanceUser = await this.accounts.user.getBalance();
+      const originalBalanceUser2 = await this.accounts.user2.getBalance();
+      // purchase tokens (at zero gas cost)
+      await purchaseTokensMidAuction.call(this, this.projectZero);
+      // user should only pay net price of token price at this time, after claiming refund
+      // advance one minute
+      await ethers.provider.send("evm_mine", [
+        this.startTime + this.auctionStartTimeOffset + 3 * ONE_MINUTE,
+      ]);
+      // user purchase another token
+      await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
+      const tx = await this.minter
+        .connect(this.accounts.user)
+        .purchase(this.projectZero, {
+          value: this.startingPrice,
+          gasPrice: 0,
+        });
+      const latestPurchaseTimestamp = await getTxResponseTimestamp(tx);
+      await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
+      await this.minter
+        .connect(this.accounts.user)
+        .claimRefundTo(this.accounts.user2.address, this.projectZero, {
+          gasPrice: 0,
+        });
+      const projectAuctionParameters =
+        await this.minter.projectAuctionParameters(this.projectZero);
+      // calculate net price of token at this time and compare to change in balance
+      const expectedPrice = calcPriceFromAuctionDetailsAndTimestamp(
+        projectAuctionParameters,
+        latestPurchaseTimestamp
+      );
+      const newBalanceUser = await this.accounts.user.getBalance();
+      const newBalanceUser2 = await this.accounts.user2.getBalance();
+      // combine user 2 and user balances to simplify in/out comparison
+      expect(originalBalanceUser.add(originalBalanceUser2)).to.equal(
+        newBalanceUser.add(newBalanceUser2).add(expectedPrice.mul(3))
+      );
+      // user2 should have a net positive change in balance, since only received
+      // refund, not paid for token
+      expect(newBalanceUser2).to.be.gt(originalBalanceUser2);
+    });
+  });
+
+  describe("getPriceInfo", async function () {
+    it("returns sellout price after project sells out", async function () {
+      await selloutMidAuction.call(this, this.projectZero);
+      // go forward in time to end of auction
+      await ethers.provider.send("evm_mine", [
+        this.startTime +
+          this.auctionStartTimeOffset +
+          10 * this.defaultHalfLife,
+      ]);
+      // price should still be sellout price, > auction base price
+      const priceInfo = await this.minter.getPriceInfo(this.projectZero);
+      const projectConfig = await this.minter.projectConfig(this.projectZero);
+      const selloutPrice = projectConfig.selloutPrice;
+      expect(priceInfo.tokenPriceInWei).to.equal(selloutPrice);
+      expect(priceInfo.tokenPriceInWei).to.be.gt(this.basePrice);
+    });
+  });
+
+  describe("togglePurchaseToDisabled", async function () {
+    it("is not supported", async function () {
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.artist)
+          .togglePurchaseToDisabled(this.projectZero),
+        "Action not supported"
+      );
     });
   });
 };

@@ -407,7 +407,7 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
         // no reset after revenues collected, since that solidifies amount due
         require(
             !_projectConfig.auctionRevenuesCollected,
-            "Cannot reset an auction after revenues collected"
+            "Only before revenues collected"
         );
         // EFFECTS
         // reset to initial values
