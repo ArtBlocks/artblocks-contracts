@@ -76,7 +76,7 @@ async function main() {
   tx = await genArt721CoreFlex
     .connect(deployer)
     .addMintWhitelisted(genArt721Minter.address);
-  
+
   await tx.wait();
 
   console.log(`Allowlisted the Minter Filter on the Core contract.`);
