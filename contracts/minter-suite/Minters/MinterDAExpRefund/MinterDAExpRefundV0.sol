@@ -724,15 +724,16 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
     }
 
     /**
-     * @notice Refunds the sender's payment above current amount due for
-     * project `_projectId`. The current amount due is the the price paid for
-     * the most recently purchased token, or the base price if the artist has
-     * withdrawn revenues after the auction reached base price.
+     * @notice Refunds the sender's payments above current amount due for
+     * projects in `_projectIds`. The amount due is the the price paid for
+     * the most recently purchased token on each project, or the base price if
+     * the artist has withdrawn revenues after the auction reached base price.
      * This function is callable at any point, but is expected to typically be
-     * called after auction has sold out above base price or after the auction
-     * has been purchased at base price. This minimizes the amount of gas
+     * called after auctions have sold out above base price, or after auctions
+     * have been purchased at base price. This minimizes the amount of gas
      * required to refund the sender.
      * Sends total of all refunds to msg.sender in a single chunk.
+     * Entire transaction reverts if any refund fails.
      * @param _projectIds Array of project IDs to refund payments on.
      */
     function claimRefunds(uint256[] calldata _projectIds) external {
@@ -740,14 +741,15 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
     }
 
     /**
-     * @notice Refunds the sender's payment above current amount due for
-     * project `_projectId`. The current amount due is the the price paid for
-     * the most recently purchased token, or the base price if the artist has
-     * withdrawn revenues after the auction reached base price.
+     * @notice Refunds the sender's payments above current amount due for
+     * projects in `_projectIds`. The amount due is the the price paid for
+     * the most recently purchased token on each project, or the base price if
+     * the artist has withdrawn revenues after the auction reached base price.
      * This function is callable at any point, but is expected to typically be
-     * called after auction has sold out above base price or after the auction
-     * has been purchased at base price. This minimizes the amount of gas
+     * called after auctions have sold out above base price, or after auctions
+     * have been purchased at base price. This minimizes the amount of gas
      * required to refund the sender.
+     * Entire transaction reverts if any refund fails.
      * Sends total of all refunds to address `_to` in a single chunk.
      * @param _to Address to send refund to.
      * @param _projectIds Array of project IDs to refund payments on.

@@ -5,6 +5,7 @@ import {
   isCoreV3,
   getTxResponseTimestamp,
   deployAndGet,
+  safeAddProject,
 } from "../../../util/common";
 
 import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../util/constants";
@@ -1392,6 +1393,557 @@ export const MinterDAExpRefund_Common = async () => {
           .claimRefundTo(deadReceiver.address, this.projectZero),
         "Refund failed"
       );
+    });
+  });
+
+  describe("claimRefunds", async function () {
+    describe("claimRefunds for single project", async function () {
+      it("allows refund a few blocks after purchase", async function () {
+        await purchaseTokensMidAuction.call(this, this.projectZero);
+        // user can claim refund
+        await this.minter
+          .connect(this.accounts.user)
+          .claimRefunds([this.projectZero]);
+      });
+
+      it("sends proper refund value when calling mid-auction", async function () {
+        const originalBalanceUser = await this.accounts.user.getBalance();
+        // purchase tokens (at zero gas cost)
+        await purchaseTokensMidAuction.call(this, this.projectZero);
+        // user should only pay net price of token price at this time, after claiming refund
+        // advance one minute
+        await ethers.provider.send("evm_mine", [
+          this.startTime + this.auctionStartTimeOffset + 3 * ONE_MINUTE,
+        ]);
+        // user purchase another token
+        await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", [
+          "0x0",
+        ]);
+        const tx = await this.minter
+          .connect(this.accounts.user)
+          .purchase(this.projectZero, {
+            value: this.startingPrice,
+            gasPrice: 0,
+          });
+        const latestPurchaseTimestamp = await getTxResponseTimestamp(tx);
+        await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", [
+          "0x0",
+        ]);
+        await this.minter
+          .connect(this.accounts.user)
+          .claimRefunds([this.projectZero], { gasPrice: 0 });
+        const projectAuctionParameters =
+          await this.minter.projectAuctionParameters(this.projectZero);
+        // calculate net price of token at this time and compare to change in balance
+        const expectedPrice = calcPriceFromAuctionDetailsAndTimestamp(
+          projectAuctionParameters,
+          latestPurchaseTimestamp
+        );
+        const newBalanceUser = await this.accounts.user.getBalance();
+        expect(newBalanceUser).to.equal(
+          originalBalanceUser.sub(expectedPrice.mul(3))
+        );
+      });
+
+      it("sends proper refund value when calling after reaching resting price, but before token purchased at resting price", async function () {
+        const originalBalanceUser = await this.accounts.user.getBalance();
+        // purchase tokens (at zero gas cost)
+        await purchaseTokensMidAuction.call(this, this.projectZero);
+        // user purchase another token
+        await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", [
+          "0x0",
+        ]);
+        const tx = await this.minter
+          .connect(this.accounts.user)
+          .purchase(this.projectZero, {
+            value: this.startingPrice,
+            gasPrice: 0,
+          });
+        const latestPurchaseTimestamp = await getTxResponseTimestamp(tx);
+        // user should only pay net price of token price at this time, after claiming refund
+        // jump to end of auction (10 half-lives is sufficient)
+        await ethers.provider.send("evm_mine", [
+          this.startTime +
+            this.auctionStartTimeOffset +
+            10 * this.defaultHalfLife,
+        ]);
+        await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", [
+          "0x0",
+        ]);
+        await this.minter
+          .connect(this.accounts.user)
+          .claimRefunds([this.projectZero], { gasPrice: 0 });
+        const projectAuctionParameters =
+          await this.minter.projectAuctionParameters(this.projectZero);
+        // calculate net price of token at this time and compare to change in balance
+        const expectedPrice = calcPriceFromAuctionDetailsAndTimestamp(
+          projectAuctionParameters,
+          latestPurchaseTimestamp
+        );
+        const newBalanceUser = await this.accounts.user.getBalance();
+        expect(newBalanceUser).to.equal(
+          originalBalanceUser.sub(expectedPrice.mul(3))
+        );
+      });
+
+      it("sends proper refund value when calling after reaching resting price, but after artist withdraws revenues at base price", async function () {
+        const originalBalanceUser = await this.accounts.user.getBalance();
+        // purchase tokens (at zero gas cost)
+        await purchaseTokensMidAuction.call(this, this.projectZero);
+        // user purchase another token
+        await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", [
+          "0x0",
+        ]);
+        await this.minter
+          .connect(this.accounts.user)
+          .purchase(this.projectZero, {
+            value: this.startingPrice,
+            gasPrice: 0,
+          });
+        // user should only pay net price of token price at this time, after claiming refund
+        // jump to end of auction (10 half-lives is sufficient)
+        await ethers.provider.send("evm_mine", [
+          this.startTime +
+            this.auctionStartTimeOffset +
+            10 * this.defaultHalfLife,
+        ]);
+        // artist withdraws revenues, locking in base price as refund net price
+        await this.minter
+          .connect(this.accounts.artist)
+          .withdrawArtistAndAdminRevenues(this.projectZero);
+        await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", [
+          "0x0",
+        ]);
+        await this.minter
+          .connect(this.accounts.user)
+          .claimRefunds([this.projectZero], { gasPrice: 0 });
+        const projectAuctionParameters =
+          await this.minter.projectAuctionParameters(this.projectZero);
+        // calculate net price of token at this time and compare to change in balance
+        const expectedPrice = projectAuctionParameters.basePrice;
+        const newBalanceUser = await this.accounts.user.getBalance();
+        expect(newBalanceUser).to.equal(
+          originalBalanceUser.sub(expectedPrice.mul(3))
+        );
+      });
+
+      it("allows refund while in a reset state", async function () {
+        await purchaseTokensMidAuction.call(this, this.projectZero);
+        // admin reset the auction
+        await this.minter
+          .connect(this.accounts.deployer)
+          .resetAuctionDetails(this.projectZero);
+        // user cannot claim refund
+        await this.minter
+          .connect(this.accounts.user)
+          .claimRefunds([this.projectZero]);
+      });
+    });
+
+    describe.only("claimRefunds for multiple projects", async function () {
+      beforeEach(async function () {
+        // add project one and configure auction
+        await safeAddProject(
+          this.genArt721Core,
+          this.accounts.deployer,
+          this.accounts.artist.address
+        );
+        await this.genArt721Core
+          .connect(this.accounts.deployer)
+          .toggleProjectIsActive(this.projectOne);
+        await this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectMaxInvocations(this.projectOne, 15);
+        await this.genArt721Core
+          .connect(this.accounts.artist)
+          .toggleProjectIsPaused(this.projectOne);
+        await this.minterFilter
+          .connect(this.accounts.deployer)
+          .setMinterForProject(this.projectOne, this.minter.address);
+        await this.minter.connect(this.accounts.artist).setAuctionDetails(
+          this.projectOne,
+          this.startTime + this.auctionStartTimeOffset,
+          this.defaultHalfLife,
+          this.startingPrice,
+          this.basePrice.div(2) // lower base price to introduce more variation
+        );
+      });
+
+      it("does not allow collecting refunds prior to user making a purchase on one of two projects", async function () {
+        // advance to auction start time
+        await ethers.provider.send("evm_mine", [
+          this.startTime + this.auctionStartTimeOffset,
+        ]);
+        // purchase token on project zero
+        await this.minter
+          .connect(this.accounts.user)
+          .purchase(this.projectZero, { value: this.startingPrice });
+        // user claims refund, revert
+        await expectRevert(
+          this.minter
+            .connect(this.accounts.user)
+            .claimRefunds([this.projectZero, this.projectOne]),
+          "No purchases made by this address"
+        );
+      });
+
+      it("does allow collecting refunds after user making a purchase on two of two projects", async function () {
+        // advance to auction start time
+        await ethers.provider.send("evm_mine", [
+          this.startTime + this.auctionStartTimeOffset,
+        ]);
+        // purchase token on project zero
+        await this.minter
+          .connect(this.accounts.user)
+          .purchase(this.projectZero, { value: this.startingPrice });
+        // purchase token on project one
+        await this.minter
+          .connect(this.accounts.user)
+          .purchase(this.projectOne, { value: this.startingPrice });
+        // user successfully claims refunds
+        await this.minter
+          .connect(this.accounts.user)
+          .claimRefunds([this.projectZero, this.projectOne]);
+      });
+
+      it("does not allow collecting refunds if non-existing project is included", async function () {
+        // advance to auction start time
+        await ethers.provider.send("evm_mine", [
+          this.startTime + this.auctionStartTimeOffset,
+        ]);
+        // purchase token on project zero
+        await this.minter
+          .connect(this.accounts.user)
+          .purchase(this.projectZero, { value: this.startingPrice });
+        // user successfully claims refunds
+        await expectRevert(
+          this.minter
+            .connect(this.accounts.user)
+            .claimRefunds([this.projectZero, this.projectOne]),
+          "No purchases made by this address"
+        );
+      });
+
+      it("properly calculates refund on two of two projects", async function () {
+        // record balance
+        const originalBalanceUser = await this.accounts.user.getBalance();
+        // advance to auction start time
+        await ethers.provider.send("evm_mine", [
+          this.startTime + this.auctionStartTimeOffset,
+        ]);
+        /// purchase two tokens on each project
+        for (let i = 0; i < 2; i++) {
+          // purchase token on project zero
+          await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", [
+            "0x0",
+          ]);
+          await this.minter
+            .connect(this.accounts.user)
+            .purchase(this.projectZero, {
+              value: this.startingPrice,
+              gasPrice: 0,
+            });
+          // purchase token on project one
+          await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", [
+            "0x0",
+          ]);
+          await this.minter
+            .connect(this.accounts.user)
+            .purchase(this.projectOne, {
+              value: this.startingPrice,
+              gasPrice: 0,
+            });
+        }
+        // advance to a state at auction base price
+        await ethers.provider.send("evm_mine", [
+          this.startTime +
+            this.auctionStartTimeOffset +
+            this.defaultHalfLife * 11, // 11 half lives since base price of projectOne is half of projectZero
+        ]);
+        // artist withdraws revenue on both projects to lock in base price
+        await this.minter
+          .connect(this.accounts.artist)
+          .withdrawArtistAndAdminRevenues(this.projectZero);
+        await this.minter
+          .connect(this.accounts.artist)
+          .withdrawArtistAndAdminRevenues(this.projectOne);
+        // user claims refunds to user2
+        await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", [
+          "0x0",
+        ]);
+        await this.minter
+          .connect(this.accounts.user)
+          .claimRefunds([this.projectZero, this.projectOne], { gasPrice: 0 });
+        // record new balances
+        const newBalanceUser = await this.accounts.user.getBalance();
+        // check that net change in balances is as expected
+        expect(originalBalanceUser).to.equal(
+          newBalanceUser
+            .add(this.basePrice.mul(2)) // 2 tokens on projectZero for basePrice
+            .add(this.basePrice.div(2).mul(2)) // 2 tokens on projectOne for basePrice/2
+        );
+        // check that net change in user balance is negative
+        expect(newBalanceUser).to.be.lt(originalBalanceUser);
+      });
+    });
+  });
+
+  describe("claimRefundsTo", async function () {
+    describe("claimRefunds for single project", async function () {
+      it("does not allow sending refunds to zero address", async function () {
+        await purchaseTokensMidAuction.call(this, this.projectZero);
+        // user claims refund, revert
+        await expectRevert(
+          this.minter
+            .connect(this.accounts.user)
+            .claimRefundsTo(constants.ZERO_ADDRESS, [this.projectZero]),
+          "No refund to the zero address"
+        );
+      });
+
+      it("does not allow collecting refunds prior to user making a purchase", async function () {
+        // user claims refund, revert
+        await expectRevert(
+          this.minter
+            .connect(this.accounts.user)
+            .claimRefundsTo(this.accounts.user2.address, [this.projectZero]),
+          "No purchases made by this address"
+        );
+      });
+
+      it("allows refund a few blocks after purchase", async function () {
+        await purchaseTokensMidAuction.call(this, this.projectZero);
+        // user can claim refund
+        await this.minter
+          .connect(this.accounts.user)
+          .claimRefundsTo(this.accounts.user2.address, [this.projectZero]);
+      });
+
+      it("sends proper refund value to `_to` when calling mid-auction", async function () {
+        const originalBalanceUser = await this.accounts.user.getBalance();
+        const originalBalanceUser2 = await this.accounts.user2.getBalance();
+        // purchase tokens (at zero gas cost)
+        await purchaseTokensMidAuction.call(this, this.projectZero);
+        // user should only pay net price of token price at this time, after claiming refund
+        // advance one minute
+        await ethers.provider.send("evm_mine", [
+          this.startTime + this.auctionStartTimeOffset + 3 * ONE_MINUTE,
+        ]);
+        // user purchase another token
+        await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", [
+          "0x0",
+        ]);
+        const tx = await this.minter
+          .connect(this.accounts.user)
+          .purchase(this.projectZero, {
+            value: this.startingPrice,
+            gasPrice: 0,
+          });
+        const latestPurchaseTimestamp = await getTxResponseTimestamp(tx);
+        await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", [
+          "0x0",
+        ]);
+        await this.minter
+          .connect(this.accounts.user)
+          .claimRefundsTo(this.accounts.user2.address, [this.projectZero], {
+            gasPrice: 0,
+          });
+        const projectAuctionParameters =
+          await this.minter.projectAuctionParameters(this.projectZero);
+        // calculate net price of token at this time and compare to change in balance
+        const expectedPrice = calcPriceFromAuctionDetailsAndTimestamp(
+          projectAuctionParameters,
+          latestPurchaseTimestamp
+        );
+        const newBalanceUser = await this.accounts.user.getBalance();
+        const newBalanceUser2 = await this.accounts.user2.getBalance();
+        // combine user 2 and user balances to simplify in/out comparison
+        expect(originalBalanceUser.add(originalBalanceUser2)).to.equal(
+          newBalanceUser.add(newBalanceUser2).add(expectedPrice.mul(3))
+        );
+        // user2 should have a net positive change in balance, since only received
+        // refund, not paid for token
+        expect(newBalanceUser2).to.be.gt(originalBalanceUser2);
+      });
+
+      it("reverts if payment to address fails", async function () {
+        const deadReceiver = await deployAndGet.call(
+          this,
+          "DeadReceiverMock",
+          []
+        );
+        await purchaseTokensMidAuction.call(this, this.projectZero);
+        // user claims refund, revert
+        await expectRevert(
+          this.minter
+            .connect(this.accounts.user)
+            .claimRefundsTo(deadReceiver.address, [this.projectZero]),
+          "Refund failed"
+        );
+      });
+    });
+
+    describe("claimRefundsTo for multiple projects", async function () {
+      beforeEach(async function () {
+        // add project one and configure auction
+        await safeAddProject(
+          this.genArt721Core,
+          this.accounts.deployer,
+          this.accounts.artist.address
+        );
+        await this.genArt721Core
+          .connect(this.accounts.deployer)
+          .toggleProjectIsActive(this.projectOne);
+        await this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectMaxInvocations(this.projectOne, 15);
+        await this.genArt721Core
+          .connect(this.accounts.artist)
+          .toggleProjectIsPaused(this.projectOne);
+        await this.minterFilter
+          .connect(this.accounts.deployer)
+          .setMinterForProject(this.projectOne, this.minter.address);
+        await this.minter.connect(this.accounts.artist).setAuctionDetails(
+          this.projectOne,
+          this.startTime + this.auctionStartTimeOffset,
+          this.defaultHalfLife,
+          this.startingPrice,
+          this.basePrice.div(2) // lower base price to introduce more variation
+        );
+      });
+
+      it("does not allow collecting refunds prior to user making a purchase on one of two projects", async function () {
+        // advance to auction start time
+        await ethers.provider.send("evm_mine", [
+          this.startTime + this.auctionStartTimeOffset,
+        ]);
+        // purchase token on project zero
+        await this.minter
+          .connect(this.accounts.user)
+          .purchase(this.projectZero, { value: this.startingPrice });
+        // user claims refund, revert
+        await expectRevert(
+          this.minter
+            .connect(this.accounts.user)
+            .claimRefundsTo(this.accounts.user2.address, [
+              this.projectZero,
+              this.projectOne,
+            ]),
+          "No purchases made by this address"
+        );
+      });
+
+      it("does allow collecting refunds after user making a purchase on two of two projects", async function () {
+        // advance to auction start time
+        await ethers.provider.send("evm_mine", [
+          this.startTime + this.auctionStartTimeOffset,
+        ]);
+        // purchase token on project zero
+        await this.minter
+          .connect(this.accounts.user)
+          .purchase(this.projectZero, { value: this.startingPrice });
+        // purchase token on project one
+        await this.minter
+          .connect(this.accounts.user)
+          .purchase(this.projectOne, { value: this.startingPrice });
+        // user successfully claims refunds
+        await this.minter
+          .connect(this.accounts.user)
+          .claimRefundsTo(this.accounts.user2.address, [
+            this.projectZero,
+            this.projectOne,
+          ]);
+      });
+
+      it("does not allow collecting refunds if non-existing project is included", async function () {
+        // advance to auction start time
+        await ethers.provider.send("evm_mine", [
+          this.startTime + this.auctionStartTimeOffset,
+        ]);
+        // purchase token on project zero
+        await this.minter
+          .connect(this.accounts.user)
+          .purchase(this.projectZero, { value: this.startingPrice });
+        // user successfully claims refunds
+        await expectRevert(
+          this.minter
+            .connect(this.accounts.user)
+            .claimRefundsTo(this.accounts.user2.address, [
+              this.projectZero,
+              this.projectOne,
+            ]),
+          "No purchases made by this address"
+        );
+      });
+
+      it("properly calculates refund on two of two projects", async function () {
+        // record balances
+        const originalBalanceUser = await this.accounts.user.getBalance();
+        const originalBalanceUser2 = await this.accounts.user2.getBalance();
+        // advance to auction start time
+        await ethers.provider.send("evm_mine", [
+          this.startTime + this.auctionStartTimeOffset,
+        ]);
+        /// purchase two tokens on each project
+        for (let i = 0; i < 2; i++) {
+          // purchase token on project zero
+          await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", [
+            "0x0",
+          ]);
+          await this.minter
+            .connect(this.accounts.user)
+            .purchase(this.projectZero, {
+              value: this.startingPrice,
+              gasPrice: 0,
+            });
+          // purchase token on project one
+          await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", [
+            "0x0",
+          ]);
+          await this.minter
+            .connect(this.accounts.user)
+            .purchase(this.projectOne, {
+              value: this.startingPrice,
+              gasPrice: 0,
+            });
+        }
+        // advance to a state at auction base price
+        await ethers.provider.send("evm_mine", [
+          this.startTime +
+            this.auctionStartTimeOffset +
+            this.defaultHalfLife * 11, // 11 half lives since base price of projectOne is half of projectZero
+        ]);
+        // artist withdraws revenue on both projects to lock in base price
+        await this.minter
+          .connect(this.accounts.artist)
+          .withdrawArtistAndAdminRevenues(this.projectZero);
+        await this.minter
+          .connect(this.accounts.artist)
+          .withdrawArtistAndAdminRevenues(this.projectOne);
+        // user claims refunds to user2
+        await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", [
+          "0x0",
+        ]);
+        await this.minter
+          .connect(this.accounts.user)
+          .claimRefundsTo(
+            this.accounts.user2.address,
+            [this.projectZero, this.projectOne],
+            { gasPrice: 0 }
+          );
+        // record new balances
+        const newBalanceUser = await this.accounts.user.getBalance();
+        const newBalanceUser2 = await this.accounts.user2.getBalance();
+        // check that net change in balances is as expected
+        expect(originalBalanceUser.add(originalBalanceUser2)).to.equal(
+          newBalanceUser
+            .add(newBalanceUser2)
+            .add(this.basePrice.mul(2)) // 2 tokens on projectZero for basePrice
+            .add(this.basePrice.div(2).mul(2)) // 2 tokens on projectOne for basePrice/2
+        );
+        // check that net change in user2 balance is positive
+        expect(newBalanceUser2).to.be.gt(originalBalanceUser2);
+      });
     });
   });
 
