@@ -20,7 +20,7 @@ import { createPBABBucket } from "../../util/aws_s3";
 import { GenArt721CoreV2ATP__factory } from "../../contracts/factories/GenArt721CoreV2ATP__factory";
 import { GenArt721MinterATP__factory } from "../../contracts/factories/GenArt721MinterATP__factory";
 
-// Details pulled from https://github.com/ArtBlocks/artblocks/issues/275 (private repo)
+// Details pulled from https://github.com/ArtBlocks/artblocks/issues/339 (private repo)
 const tokenName = "Tennis Art";
 const tokenTicker = "ATP";
 const transferAddress = "0x00F7d4fc9Ef2B9871b66E2265Aba3A1ebA65d345";
