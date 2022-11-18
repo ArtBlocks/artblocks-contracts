@@ -2,7 +2,6 @@
 // Created By: Art Blocks Inc.
 
 import { ethers } from "hardhat";
-import axios from "axios";
 // delay to avoid issues with reorgs and tx failures
 import { delay } from "../../util/utils";
 const EXTRA_DELAY_BETWEEN_TX = 10000; // ms
