@@ -9,8 +9,8 @@ const EXTRA_DELAY_BETWEEN_TX = 10000; // ms
 import { createPBABBucket } from "../../util/aws_s3";
 
 /**
- * This script was created to deploy partner contracts to the goerli
- * testnet. It is intended to document the deployment process and provide a
+ * This script was created to deploy partner contracts to the Ethereum
+ * mainnet. It is intended to document the deployment process and provide a
  * reference for the steps required to deploy contracts to a new network.
  */
 //////////////////////////////////////////////////////////////////////////////
@@ -21,12 +21,12 @@ import { GenArt721CoreV2ATP__factory } from "../../contracts/factories/GenArt721
 import { GenArt721MinterATP__factory } from "../../contracts/factories/GenArt721MinterATP__factory";
 
 // Details pulled from https://github.com/ArtBlocks/artblocks/issues/275 (private repo)
-const tokenName = "ATP Love";
+const tokenName = "Tennis Art";
 const tokenTicker = "ATP";
-const transferAddress = "0xbe88961cd1F0fc7Bf383dA4F2c2488065Ff62A93";
-const artblocksAddress = "0x89E0cCE4Bc79D9CB0cEFA4785783Ad6e66978527";
-// Shared **goerli** randomizer instance.
-const randomizerAddress = "0xEC5DaE4b11213290B2dBe5295093f75920bD2982";
+const transferAddress = "0x00F7d4fc9Ef2B9871b66E2265Aba3A1ebA65d345";
+const artblocksAddress = "0x2317Ef91F5D1dF2aC141520cF43581d8BdBf1d9b";
+// Shared **mainnet** randomizer instance.
+const randomizerAddress = "0x088098f7438773182b703625c4128aff85fcffc4";
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG ENDS HERE
 //////////////////////////////////////////////////////////////////////////////
