@@ -2,6 +2,7 @@
 // Created By: Art Blocks Inc.
 
 import { ethers } from "hardhat";
+import axios from "axios";
 // delay to avoid issues with reorgs and tx failures
 import { delay } from "../../util/utils";
 const EXTRA_DELAY_BETWEEN_TX = 10000; // ms
@@ -20,15 +21,15 @@ import { GenArt721MinterPBAB__factory } from "../../contracts/factories/GenArt72
 
 const tokenName = "Art Blocks Engine Palm Testnet Demo";
 const tokenTicker = "ABENGINE_DEMO_PALM_TESTNET";
-const transferAddress = "0x3b9038fa89783CBA1933c1689043b4dae2032d1c";
-const artblocksAddress = "0x3b9038fa89783CBA1933c1689043b4dae2032d1c";
+const transferAddress = "0x2246475beddf9333b6a6D9217194576E7617Afd1";
+const artblocksAddress = "0x2246475beddf9333b6a6D9217194576E7617Afd1";
 const randomizerAddress = "0xB295b7de82C4903D96B7AAb0f6bB4a9815f33CE4";
 const startingProjectId = 0;
 
 // (optional) add initial project
 const doAddProjectZero = true;
 const projectZeroName = "projectZeroTest";
-const artistAddress = "0x3b9038fa89783CBA1933c1689043b4dae2032d1c";
+const artistAddress = "0x2246475beddf9333b6a6D9217194576E7617Afd1";
 const pricePerTokenInWei = 0;
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG ENDS HERE
@@ -149,16 +150,9 @@ async function main() {
   await tx.wait();
   console.log(`Transferred Core contract admin to: ${transferAddress}.`);
 
-  // Output instructions for manual Etherscan verification.
-  const standardVerify = "yarn hardhat verify";
-  console.log(`Verify core contract deployment with:`);
-  console.log(
-    `${standardVerify} --network ${networkName} ${genArt721Core.address} "${tokenName}" "${tokenTicker}" ${randomizerAddress}`
-  );
-  console.log(`Verify Minter deployment with:`);
-  console.log(
-    `${standardVerify} --network ${networkName} ${genArt721Minter.address} ${genArt721Core.address}`
-  );
+  // Using Sourcify for verification at https://sourcify.dev/#/verifier
+  // Submit Contract Source Code and Metadata for Verification
+  // TODO: Document a working CLI tool solution
 
   //////////////////////////////////////////////////////////////////////////////
   // SETUP ENDS HERE
