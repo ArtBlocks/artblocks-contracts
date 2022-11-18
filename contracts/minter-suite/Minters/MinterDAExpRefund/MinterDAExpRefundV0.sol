@@ -506,6 +506,16 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
         // reached max invocations. This prevents premature withdrawl
         // before final auction price is possible to know.
         if (_price != _projectConfig.basePrice) {
+            // prefer to use locally cached value of maxHasBeenInvoked, which
+            // is only updated when a purchase is made. This is to handle the
+            // case where an artist reduced max invocations to current
+            // invocations on the core contract mid-auction. In that case, the
+            // the following _projectConfig.maxHasBeenInvoked check will fail
+            // (only a local cache is used). This is a valid state, and in that
+            // somewhat suspicious case, the artist must wait until the auction
+            // reaches base price before withdrawing funds, at which point the
+            // latestPurchasePrice will be set to base price, maximizing
+            // purchaser refund amounts, and minimizing artist/admin revenue.
             require(
                 _projectConfig.maxHasBeenInvoked,
                 "Active auction not yet sold out"

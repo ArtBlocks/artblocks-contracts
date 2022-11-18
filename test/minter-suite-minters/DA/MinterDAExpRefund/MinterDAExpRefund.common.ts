@@ -85,7 +85,8 @@ export async function completeAuctionWithoutSellingOut(
  * helper function that:
  *  - mints a single token during auction, then advances one minute
  *  - mints a another token during auction, then advances one minute
- * results in a state where refund may be executed for multiple tokens
+ * results in a state where refund may be executed for multiple tokens.
+ * All transactions are executed with zero gas fee to help balance calculations
  * @dev intended to be called with `this` bound to a test context
  * @param projectId project ID to use for minting. assumes project exists and
  * is configured with a minter that supports this test.
@@ -2072,6 +2073,177 @@ export const MinterDAExpRefund_Common = async () => {
           latestPurchasePrice,
           this.basePrice
         );
+    });
+  });
+
+  describe.only("Invocations reduction on core mid-auction", async function () {
+    it("prevents revenue withdrawals until reaching base price if artist reduces max invocations to current invocations on core contract mid-auction", async function () {
+      // models the following situation:
+      // - auction is not sold out
+      // artist reduces maxInvocations on core contract, completing the project
+      // desired state:
+      // - artist should not be able to withdraw revenue until end of auction
+      // - "latestPurchasePrice" price should be update to be the auction base price,
+      //    once revenue is withdrawn
+      const originalBalanceArtist = await this.accounts.artist.getBalance();
+      const originalBalanceUser = await this.accounts.user.getBalance();
+
+      // purchase a couple tokens (at zero gas fee), do not sell out auction
+      await purchaseTokensMidAuction.call(this, this.projectZero);
+      // get current invocations on project
+      const projectState = await this.genArt721Core.projectStateData(
+        this.projectZero
+      );
+      const invocations = projectState.invocations;
+      // artist reduces invocations on core contract
+      await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectMaxInvocations(this.projectZero, invocations, {
+          gasPrice: 0,
+        });
+      // artist should NOT be able to withdraw revenue, and sellout price should NOT be updated to latest purchase price
+      await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.artist)
+          .withdrawArtistAndAdminRevenues(this.projectZero, { gasPrice: 0 }),
+        "Active auction not yet sold out"
+      );
+      // sellout price should NOT be updated to latest purchase price, which is > base price
+      const projectConfig = await this.minter.projectConfig(this.projectZero);
+      expect(projectConfig.selloutPrice).to.be.equal(0);
+      expect(projectConfig.latestPurchasePrice).to.be.gt(
+        projectConfig.basePrice
+      );
+      // advance past end of auction, so base price becomes base price
+      await ethers.provider.send("evm_mine", [
+        this.startTime +
+          this.auctionStartTimeOffset +
+          this.defaultHalfLife * 10,
+      ]);
+      // artist should be able to withdraw revenue, and net proceedes should be as if sellout price was auction base price
+      await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
+      await this.minter
+        .connect(this.accounts.artist)
+        .withdrawArtistAndAdminRevenues(this.projectZero, { gasPrice: 0 });
+      // user should be able to withdraw refund as if sellout price was auction base price
+      await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
+      await this.minter
+        .connect(this.accounts.user)
+        .claimRefund(this.projectZero, { gasPrice: 0 });
+      // user balance should reflect proper refund amount
+      const newBalanceArtist = await this.accounts.artist.getBalance();
+      const newBalanceUser = await this.accounts.user.getBalance();
+      const totalRevenue = this.basePrice.mul(2); // 2 tokens purchased
+      // artist should have received 90% of total revenue (10% went to Art Blocks)
+      expect(newBalanceArtist).to.be.equal(
+        originalBalanceArtist.add(totalRevenue.mul(90).div(100))
+      );
+      // user should have spent 100% of total revenue (100% came from this user)
+      expect(newBalanceUser).to.be.equal(
+        originalBalanceUser.sub(this.basePrice.mul(2))
+      );
+    });
+
+    it("prevents revenue withdrawals until reaching base price if artist reduces max invocations to current invocations on core contract mid-auction", async function () {
+      // models the following situation:
+      // - auction is not sold out
+      // - auction is reset by admin
+      // artist reduces maxInvocations on core contract, completing the project
+      // desired state:
+      // - artist should not be able to withdraw revenue until a new auction is
+      //   configured, and the new auction reaches base price
+      // - "latestPurchasePrice" price should be update to be the auction base price,
+      //    once revenue is withdrawn
+      // (overall this is a very odd situation to be in, but we want to make sure no
+      // funds are lost or stuck in the contract)
+      const originalBalanceArtist = await this.accounts.artist.getBalance();
+      const originalBalanceUser = await this.accounts.user.getBalance();
+
+      // purchase a couple tokens (at zero gas fee), do not sell out auction
+      await purchaseTokensMidAuction.call(this, this.projectZero);
+      // admin resets auction
+      await this.minter
+        .connect(this.accounts.deployer)
+        .resetAuctionDetails(this.projectZero);
+      // get current invocations on project
+      const projectState = await this.genArt721Core.projectStateData(
+        this.projectZero
+      );
+      const invocations = projectState.invocations;
+      // artist reduces invocations on core contract
+      await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectMaxInvocations(this.projectZero, invocations, {
+          gasPrice: 0,
+        });
+      // artist should NOT be able to withdraw revenue, and sellout price should NOT be updated to latest purchase price
+      await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.artist)
+          .withdrawArtistAndAdminRevenues(this.projectZero, { gasPrice: 0 }),
+        "Only configured auctions"
+      );
+      // sellout price should NOT be updated to latest purchase price, which is > base price
+      const projectConfig = await this.minter.projectConfig(this.projectZero);
+      expect(projectConfig.selloutPrice).to.be.equal(0);
+      expect(projectConfig.latestPurchasePrice).to.be.gt(
+        projectConfig.basePrice
+      );
+      // artist configures new auction
+      await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
+      const newStartTime =
+        this.startTime + this.auctionStartTimeOffset * 2 + 2 * ONE_MINUTE;
+      await this.minter
+        .connect(this.accounts.artist)
+        .setAuctionDetails(
+          this.projectZero,
+          newStartTime,
+          this.defaultHalfLife,
+          projectConfig.latestPurchasePrice,
+          this.basePrice,
+          { gasPrice: 0 }
+        );
+      // advance past start of auction
+      await ethers.provider.send("evm_mine", [newStartTime + ONE_MINUTE]);
+      // artist should NOT be able to withdraw revenue
+      await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.artist)
+          .withdrawArtistAndAdminRevenues(this.projectZero, { gasPrice: 0 }),
+        "Active auction not yet sold out"
+      );
+
+      // advance past end of auction, so base price becomes base price
+      await ethers.provider.send("evm_mine", [
+        newStartTime + this.defaultHalfLife * 10,
+      ]);
+      // artist should be able to withdraw revenue, and net proceedes should be as if sellout price was auction base price
+      await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
+      await this.minter
+        .connect(this.accounts.artist)
+        .withdrawArtistAndAdminRevenues(this.projectZero, { gasPrice: 0 });
+      // user should be able to withdraw refund as if sellout price was auction base price
+      await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
+      await this.minter
+        .connect(this.accounts.user)
+        .claimRefund(this.projectZero, { gasPrice: 0 });
+      // user balance should reflect proper refund amount
+      const newBalanceArtist = await this.accounts.artist.getBalance();
+      const newBalanceUser = await this.accounts.user.getBalance();
+      const totalRevenue = this.basePrice.mul(2); // 2 tokens purchased
+      // artist should have received 90% of total revenue (10% went to Art Blocks)
+      expect(newBalanceArtist).to.be.equal(
+        originalBalanceArtist.add(totalRevenue.mul(90).div(100))
+      );
+      // user should have spent 100% of total revenue (100% came from this user)
+      expect(newBalanceUser).to.be.equal(
+        originalBalanceUser.sub(this.basePrice.mul(2))
+      );
     });
   });
 };
