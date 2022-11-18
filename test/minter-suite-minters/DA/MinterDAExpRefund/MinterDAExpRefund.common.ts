@@ -127,7 +127,7 @@ export async function purchaseTokensMidAuction(
  * helper function that:
  *  - sells out a project during an auction, before reaching base price
  * results in a state where revenues have not been withdrawn, but project has a
- * sellout price
+ * final price at which it sold out.
  * @dev intended to be called with `this` bound to a test context
  * @dev reduces project max invocations to 2, so that the project will sell out
  * with a two purchases (ensuring that calculations involving
@@ -150,7 +150,7 @@ export async function selloutMidAuction(projectId: number): Promise<void> {
       value: this.startingPrice,
     });
   }
-  // leave in a state where sellout price is defined, but revenues have not been
+  // leave in a state where project sold out, but revenues have not been
   // withdrawn
 }
 
@@ -235,31 +235,6 @@ export const MinterDAExpRefund_Common = async () => {
         .connect(this.accounts.user)
         .getPriceInfo(this.projectZero);
       expect(contractPriceInfo.tokenPriceInWei).to.be.equal(this.basePrice);
-    });
-
-    it("allows `purchaseTo` with price of zero", async function () {
-      // set auction parameters to prices of zero
-      await this.minter
-        .connect(this.accounts.deployer)
-        .resetAuctionDetails(this.projectZero);
-      await this.minter
-        .connect(this.accounts.deployer)
-        .setAllowablePriceDecayHalfLifeRangeSeconds(1, 100);
-      await this.minter.connect(this.accounts.artist).setAuctionDetails(
-        this.projectZero,
-        this.startTime + this.auctionStartTimeOffset,
-        1, // half-life of one second
-        1, // starting price of 1 wei
-        0 // base price of zero
-      );
-      // advance one half-life, >> bitshift of 1 should result in price of zero
-      await ethers.provider.send("evm_mine", [
-        this.startTime + this.auctionStartTimeOffset + 1,
-      ]);
-      // expect mint success with call value of zero
-      await this.minter
-        .connect(this.accounts.user)
-        .purchaseTo(this.accounts.additional.address, this.projectZero, {});
     });
 
     it("enforces sending minimum required payment when calling `purchase`, with no previous purchases", async function () {
@@ -880,7 +855,7 @@ export const MinterDAExpRefund_Common = async () => {
       expect(priceInfo.tokenPriceInWei).to.equal(this.basePrice);
       // also check public struct
       const projectConfig = await this.minter.projectConfig(this.projectZero);
-      expect(projectConfig.selloutPrice).to.equal(this.basePrice);
+      expect(projectConfig.latestPurchasePrice).to.equal(this.basePrice);
     });
 
     it("emits event upon successful call", async function () {
@@ -1957,11 +1932,11 @@ export const MinterDAExpRefund_Common = async () => {
           this.auctionStartTimeOffset +
           10 * this.defaultHalfLife,
       ]);
-      // price should still be sellout price, > auction base price
+      // price should still be latestTokenPrice price, > auction base price
       const priceInfo = await this.minter.getPriceInfo(this.projectZero);
       const projectConfig = await this.minter.projectConfig(this.projectZero);
-      const selloutPrice = projectConfig.selloutPrice;
-      expect(priceInfo.tokenPriceInWei).to.equal(selloutPrice);
+      const latestPurchasePrice = projectConfig.latestPurchasePrice;
+      expect(priceInfo.tokenPriceInWei).to.equal(latestPurchasePrice);
       expect(priceInfo.tokenPriceInWei).to.be.gt(this.basePrice);
     });
   });
@@ -1974,55 +1949,6 @@ export const MinterDAExpRefund_Common = async () => {
           .togglePurchaseToDisabled(this.projectZero),
         "Action not supported"
       );
-    });
-  });
-
-  describe("Base price of zero", async function () {
-    it("handles base price of zero, and associated eth split after artist withdraws revenue (edge case)", async function () {
-      // record balances
-      const originalBalanceUser = await this.accounts.user.getBalance();
-      const originalBalanceArtist = await this.accounts.artist.getBalance();
-      // configure project with base price of zero
-      await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
-      await this.minter
-        .connect(this.accounts.artist)
-        .setAuctionDetails(
-          this.projectZero,
-          this.startTime + this.auctionStartTimeOffset,
-          this.defaultHalfLife,
-          100,
-          0,
-          { gasPrice: 0 }
-        );
-      // purchase a couple tokens (gas fee 0), do not sell out auction
-      await purchaseTokensMidAuction.call(this, this.projectZero);
-      // advance past end of auction, so base price becomes zero
-      await ethers.provider.send("evm_mine", [
-        this.startTime +
-          this.auctionStartTimeOffset +
-          this.defaultHalfLife * 10,
-      ]);
-      // artist withdraws revenue
-      await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
-      await this.minter
-        .connect(this.accounts.artist)
-        .withdrawArtistAndAdminRevenues(this.projectZero, { gasPrice: 0 });
-      // user collects refund
-      await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
-      await this.minter
-        .connect(this.accounts.user)
-        .claimRefund(this.projectZero, { gasPrice: 0 });
-      // check that eth split is zero for a new purchase is handled appropriately when no value sent
-      await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
-      await this.minter
-        .connect(this.accounts.user)
-        .purchase(this.projectZero, { gasPrice: 0 });
-      const newBalanceUser = await this.accounts.user.getBalance();
-      const newBalanceArtist = await this.accounts.artist.getBalance();
-      // check that user balance is unchanged (since net zero price should have been paid)
-      expect(newBalanceUser).to.equal(originalBalanceUser);
-      // artist should also have received no payment when withdrawing at base price of zero
-      expect(newBalanceArtist).to.equal(originalBalanceArtist);
     });
   });
 
@@ -2102,7 +2028,7 @@ export const MinterDAExpRefund_Common = async () => {
         .updateProjectMaxInvocations(this.projectZero, invocations, {
           gasPrice: 0,
         });
-      // artist should NOT be able to withdraw revenue, and sellout price should NOT be updated to latest purchase price
+      // artist should NOT be able to withdraw revenue
       await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
       await expectRevert(
         this.minter
@@ -2110,9 +2036,8 @@ export const MinterDAExpRefund_Common = async () => {
           .withdrawArtistAndAdminRevenues(this.projectZero, { gasPrice: 0 }),
         "Active auction not yet sold out"
       );
-      // sellout price should NOT be updated to latest purchase price, which is > base price
+      // latestPurchasePrice is > base price
       const projectConfig = await this.minter.projectConfig(this.projectZero);
-      expect(projectConfig.selloutPrice).to.be.equal(0);
       expect(projectConfig.latestPurchasePrice).to.be.gt(
         projectConfig.basePrice
       );
@@ -2179,7 +2104,7 @@ export const MinterDAExpRefund_Common = async () => {
         .updateProjectMaxInvocations(this.projectZero, invocations, {
           gasPrice: 0,
         });
-      // artist should NOT be able to withdraw revenue, and sellout price should NOT be updated to latest purchase price
+      // artist should NOT be able to withdraw revenue
       await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
       await expectRevert(
         this.minter
@@ -2187,9 +2112,8 @@ export const MinterDAExpRefund_Common = async () => {
           .withdrawArtistAndAdminRevenues(this.projectZero, { gasPrice: 0 }),
         "Only configured auctions"
       );
-      // sellout price should NOT be updated to latest purchase price, which is > base price
+      // latestPurchasePrice is > base price
       const projectConfig = await this.minter.projectConfig(this.projectZero);
-      expect(projectConfig.selloutPrice).to.be.equal(0);
       expect(projectConfig.latestPurchasePrice).to.be.gt(
         projectConfig.basePrice
       );

@@ -96,20 +96,16 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
         uint64 timestampStart;
         uint64 priceDecayHalfLifeSeconds;
         uint256 startPrice;
+        // base price is non-zero for all configured auctions on this minter
         uint256 basePrice;
-        // This value is either zero if no purchases have been made, or the
-        // price when the most recent token of this project was purchased.
-        // This value is used as a reference when an auction is reset by admin,
-        // and then a new auction is configured by an artist. In that case, the
-        // new auction will be required to have a starting price less than or
-        // equal to this value, if one or more purchases have been made on this
+        // This value is only zero if no purchases have been made on this
         // minter.
+        // When non-zero, this value is used as a reference when an auction is
+        // reset by admin, and then a new auction is configured by an artist.
+        // In that case, the new auction will be required to have a starting
+        // price less than or equal to this value, if one or more purchases
+        // have been made on this minter.
         uint256 latestPurchasePrice;
-        // this value is updated only if maxHasBeenInvoked is true, and
-        // represents the purchase price of the final token during a sellout
-        // auction. If a sellout is not achieved before the auction ends (i.e.
-        // reaches base price), this value will be 0.
-        uint256 selloutPrice;
     }
 
     mapping(uint256 => ProjectConfig) public projectConfig;
@@ -237,7 +233,7 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
      * to something less than the current invocations, but more than max
      * invocations (with the hope of increasing the sellout price), an admin
      * function is provided to manually reduce the sellout price to a lower
-     * value, if desired, in the `adminEmergencyReduceAuctionSelloutPrice`
+     * value, if desired, in the `adminEmergencyReduceSelloutPrice`
      * function.
      * @param _projectId projectId to be queried
      *
@@ -344,16 +340,15 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
             _startPrice > _basePrice,
             "Auction start price must be greater than auction end price"
         );
-        // since we require a project to not have had revenues withdrawn prior
-        // to resetting an auction, we can safely assume that if the number of
-        // refundable invocations is zero, the project has not had any
-        // purchases made on this minter, and therefore the start price can be
-        // set to any value.
+        // require _basePrice is non-zero to simplify logic of this minter
+        require(_basePrice > 0, "Base price must be non-zero");
         // If previous purchases have been made, require monotonically
         // decreasing purchase prices to preserve refund and revenue claiming
-        // logic.
+        // logic. Since base price is always non-zero, if latestPurchasePrice
+        // is zero, then no previous purchases have been made, and startPrice
+        // may be set to any value.
         require(
-            _projectConfig.numRefundableInvocations == 0 || // never purchased
+            _projectConfig.latestPurchasePrice == 0 || // never purchased
                 _startPrice <= _projectConfig.latestPurchasePrice,
             "Auction start price must be <= latest purchase price"
         );
@@ -452,22 +447,26 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
         onlyCoreAdminACL(this.adminEmergencyReduceSelloutPrice.selector)
     {
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        require(_projectConfig.maxHasBeenInvoked, "Auction must be complete");
         // @dev no need to check that auction max invocations has been reached,
         // because if it was, the sellout price will be zero, and the following
         // check will fail.
         require(
-            _newSelloutPrice < _projectConfig.selloutPrice,
+            _newSelloutPrice < _projectConfig.latestPurchasePrice,
             "May only reduce sellout price"
         );
         require(
             _newSelloutPrice >= _projectConfig.basePrice,
             "May only reduce sellout price to base price or greater"
         );
+        // ensure latestPurchasePrice is non-zero if any purchases on minter
+        // @dev only possible to fail this if auction is in a reset state
+        require(_newSelloutPrice > 0, "Only sellout prices > 0");
         require(
             !_projectConfig.auctionRevenuesCollected,
             "Only before revenues collected"
         );
-        _projectConfig.selloutPrice = _newSelloutPrice;
+        _projectConfig.latestPurchasePrice = _newSelloutPrice;
         emit SelloutPriceUpdated(_projectId, _newSelloutPrice);
     }
 
@@ -628,19 +627,18 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
         tokenId = minterFilter.mint(_to, _projectId, msg.sender);
 
         // Note that this requires that the core contract's maxInvocations
-        // be accurate to ensure that the minters selloutPrice is accurate,
-        // so we get the value from the core contract directly.
+        // be accurate to ensure that the minters maxHasBeenInvoked is
+        // accurate, so we get the value from the core contract directly.
         uint256 maxInvocations;
         (, maxInvocations, , , , ) = genArtCoreContract.projectStateData(
             _projectId
         );
         // okay if this underflows because if statement will always eval false.
-        // this is only for gas optimization and recording selloutPrice
-        // (core enforces maxInvocations).
+        // this is only for gas optimization and recording sellout price in
+        // an event (core enforces maxInvocations).
         unchecked {
             if (tokenId % ONE_MILLION == maxInvocations - 1) {
                 _projectConfig.maxHasBeenInvoked = true;
-                _projectConfig.selloutPrice = currentPriceInWei;
                 emit SelloutPriceUpdated(_projectId, currentPriceInWei);
             }
         }
@@ -884,11 +882,11 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
      */
     function _getPrice(uint256 _projectId) private view returns (uint256) {
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
-        // if auction sold out on this minter, return the sellout price.
-        // this allows this function to return the amount due after an auction
-        // is complete.
+        // if auction sold out on this minter, return the latest purchase
+        // price (which is the sellout price). This is the price that is due
+        // after an auction is complete.
         if (_projectConfig.maxHasBeenInvoked) {
-            return _projectConfig.selloutPrice;
+            return _projectConfig.latestPurchasePrice;
         }
         // otherwise calculate price based on current block timestamp and
         // auction configuration (will revert if auction has not started)

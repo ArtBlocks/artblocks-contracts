@@ -29,7 +29,7 @@ import { MinterDARefundV0_Common } from "../MinterDARefundV0.common";
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
   "GenArt721CoreV3", // flagship V3 core
-  // TODO - uncomment this! "GenArt721CoreV3_Explorations", // V3 core explorations contract
+  "GenArt721CoreV3_Explorations", // V3 core explorations contract
 ];
 
 /**
