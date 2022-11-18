@@ -2076,7 +2076,7 @@ export const MinterDAExpRefund_Common = async () => {
     });
   });
 
-  describe.only("Invocations reduction on core mid-auction", async function () {
+  describe("Invocations reduction on core mid-auction", async function () {
     it("prevents revenue withdrawals until reaching base price if artist reduces max invocations to current invocations on core contract mid-auction", async function () {
       // models the following situation:
       // - auction is not sold out
