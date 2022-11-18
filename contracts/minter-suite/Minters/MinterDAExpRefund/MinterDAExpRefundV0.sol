@@ -797,7 +797,7 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
             // calculate the refund amount
             // implicit overflow/underflow checks in solidity ^0.8
             uint256 amountDue = receipt.numPurchased * netTokenPrice;
-            refund += receipt.netPaid - amountDue;
+            refund += (receipt.netPaid - amountDue);
             // reduce the netPaid (in storage) to value after refund deducted
             receipt.netPaid = amountDue;
             // emit event indicating new receipt state
@@ -808,6 +808,7 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
                 receipt.netPaid
             );
             // gas efficiently increment i
+            // won't overflow due to for loop, as well as gas limts
             unchecked {
                 ++i;
             }
