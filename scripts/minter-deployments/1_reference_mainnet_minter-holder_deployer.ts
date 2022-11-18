@@ -11,19 +11,18 @@ const EXTRA_DELAY_BETWEEN_TX = 5000; // ms
 
 /**
  * This script was created to deploy the MinterHolderV2 contract to the Ethereum
- * Goerli testnet, for the Art Blocks dev environment.
- * It is intended to document the deployment process and provide a reference
+ * mainnet. It is intended to document the deployment process and provide a reference
  * for the steps required to deploy the MinterHolderV2 contract.
  */
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG BEGINS HERE
 //////////////////////////////////////////////////////////////////////////////
-const genArt721V3Core_Flagship = "0xF396C180bb2f92EE28535D23F5224A5b9425ceca";
-const minterFilter_Flagship = "0x7EcFFfc1A3Eb7Ce76D4b29Df3e5098D2D921D367";
+const genArt721V3Core_Flagship = "0x99a9B7c1116f9ceEB1652de04d5969CcE509B069";
+const minterFilter_Flagship = "0x092B8F64e713d66b38522978BCf4649db14b931E";
 const genArt721V3Core_Explorations =
-  "0x7244352F6C7aFbB74D4b63Bd7e8189e84a83f179";
-const minterFilter_Explorations = "0x6600e8d744aa7545A8757eF928117866cF431A26";
-const delegationRegistryAddress = "0xTODO"; // for ETH mainnet, use 0x00000000000076A84feF008CDAbe6409d2FE638B
+  "0x942BC2d3e7a589FE5bd4A5C6eF9727DFd82F5C8a";
+const minterFilter_Explorations = "0x3F4bbde879F9BB0E95AEa08fF12F55E171495C8f";
+const delegationRegistryAddress = "0x00000000000076A84feF008CDAbe6409d2FE638B";
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG ENDS HERE
 //////////////////////////////////////////////////////////////////////////////
@@ -32,7 +31,7 @@ async function main() {
   const [deployer] = await ethers.getSigners();
   const network = await ethers.provider.getNetwork();
   const networkName = network.name == "homestead" ? "mainnet" : network.name;
-  if (networkName != "goerli") {
+  if (networkName != "mainnet") {
     throw new Error("This script is intended to be run on mainnet only");
   }
   //////////////////////////////////////////////////////////////////////////////
@@ -95,7 +94,7 @@ async function main() {
 
   console.log("Next Steps:");
   console.log(
-    "1. Verify Admin ACL V1 contract deployment on Etherscan (see above)"
+    "1. Verify MinterHolderV2 contract deployment on Etherscan (see above)"
   );
   console.log(
     "2. WAIT for subgraph to sync, and ensure enum with new minter type is added to subgraph"
