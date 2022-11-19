@@ -50,7 +50,8 @@ async function main() {
   const genArt721Core = await coreFactory.deploy(
     tokenName,
     tokenTicker,
-    randomizerAddress
+    randomizerAddress,
+    0
   );
   await genArt721Core.deployed();
   console.log(`GenArt721CoreV2 deployed at ${genArt721Core.address}`);
