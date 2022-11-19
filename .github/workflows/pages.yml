@@ -41,6 +41,8 @@ jobs:
           echo "ROPSTEN_JSON_RPC_PROVIDER_URL=https://ropsten.infura.io/v3/dummyApiKey" >> $GITHUB_ENV
           echo "RINKEBY_JSON_RPC_PROVIDER_URL=https://rinkeby.infura.io/v3/dummyApiKey" >> $GITHUB_ENV
           echo "KOVAN_JSON_RPC_PROVIDER_URL=https://kovan.infura.io/v3/dummyApiKey" >> $GITHUB_ENV
+          echo "PALM_MAINNET_JSON_RPC_PROVIDER_URL=https://palm-mainnet.infura.io/v3/dummyApiKey" >> $GITHUB_ENV
+          echo "PALM_TESTNET_JSON_RPC_PROVIDER_URL=https://palm-testnet.infura.io/v3/dummyApiKey" >> $GITHUB_ENV
           # dummy private keys (not connected to accounts)
           echo "MAINNET_PRIVATE_KEY=DEAD000000000000000000000000000000000000000000000000000000000000" >> $GITHUB_ENV
           echo "TESTNET_PRIVATE_KEY=DEAD000000000000000000000000000000000000000000000000000000000000" >> $GITHUB_ENV
