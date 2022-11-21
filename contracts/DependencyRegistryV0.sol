@@ -322,6 +322,11 @@ contract DependencyRegistryV0 is Ownable {
         emit DependencyTypeScriptUpdated(_dependencyTypeId);
     }
     
+    /**
+     * @notice Updates preferred CDN for dependency type `_dependencyTypeId`.
+     * @param _dependencyTypeId Dependency type to be updated.
+     * @param _preferredCDN URL for preferred CDN.
+     */
     function updateDependencyTypePreferredCDN(
         bytes32 _dependencyTypeId,
         string memory _preferredCDN
@@ -335,6 +340,11 @@ contract DependencyRegistryV0 is Ownable {
         emit DependencyTypePreferredCDNUpdated(_dependencyTypeId, _preferredCDN);
     }
 
+    /**
+     * @notice Updates preferred repository for dependency type `_dependencyTypeId`.
+     * @param _dependencyTypeId Dependency type to be updated.
+     * @param _preferredRepository URL for preferred repository.
+     */
     function updateDependencyTypePreferredRepository(
         bytes32 _dependencyTypeId,
         string memory _preferredRepository
@@ -351,6 +361,11 @@ contract DependencyRegistryV0 is Ownable {
         );
     }
 
+    /**
+     * @notice Updates project website for dependency type `_dependencyTypeId`.
+     * @param _dependencyTypeId Dependency type to be updated.
+     * @param _projectWebsite URL for project website.
+     */
     function updateDependencyTypeProjectWebsite(
         bytes32 _dependencyTypeId,
         string memory _projectWebsite
@@ -363,6 +378,12 @@ contract DependencyRegistryV0 is Ownable {
         );
     }
 
+    /**
+     * @notice Adds a new CDN url to dependencyType `_dependencyTypeId`.
+     * @param _dependencyTypeId Dependency type to be updated.
+     * @param _additionalCDN CDN URL to be added. Required to be a non-empty string,
+     * but no further validation is performed.
+     */
     function addDependencyTypeAdditionalCDN(
         bytes32 _dependencyTypeId,
         string memory _additionalCDN
@@ -387,6 +408,13 @@ contract DependencyRegistryV0 is Ownable {
         );
     }
 
+    /**
+     * @notice Removes additional CDN for depenency `_dependencyId` at index `_index`.
+     * Removal is done by swapping the element to be removed with the last element in the array, then deleting this last element.
+     * Assets with indices higher than `_index` can have their indices adjusted as a result of this operation.
+     * @param _dependencyTypeId Dependency type to be updated.
+     * @param _index Additional CDN index
+     */
     function removeDependencyTypeAdditionalCDNAtIndex(
         bytes32 _dependencyTypeId,
         uint256 _index
@@ -416,6 +444,12 @@ contract DependencyRegistryV0 is Ownable {
         emit DependencyTypeAdditionalCDNRemoved(_dependencyTypeId, _index);
     }
 
+    /**
+     * @notice Updates additional CDN for dependency type `_dependencyTypeId` at `_index`.
+     * @param _dependencyTypeId Dependency type to be updated.
+     * @param _index Additional CDN index.
+     * @param _additionalCDN New CDN URL.
+     */
     function updateDependencyTypeAdditionalCDNAtIndex(
         bytes32 _dependencyTypeId,
         uint256 _index,
@@ -439,6 +473,12 @@ contract DependencyRegistryV0 is Ownable {
         );
     }
 
+    /**
+     * @notice Adds a new repository URL to dependencyType `_dependencyTypeId`.
+     * @param _dependencyTypeId Dependency type to be updated.
+     * @param _additionalRepository Repository URL to be added. Required to be a non-empty string,
+     * but no further validation is performed.
+     */
     function addDependencyTypeAdditionalRepository(
         bytes32 _dependencyTypeId,
         string memory _additionalRepository
@@ -463,6 +503,13 @@ contract DependencyRegistryV0 is Ownable {
         );
     }
 
+    /**
+     * @notice Removes additional repository for depenency `_dependencyId` at index `_index`.
+     * Removal is done by swapping the element to be removed with the last element in the array, then deleting this last element.
+     * Assets with indices higher than `_index` can have their indices adjusted as a result of this operation.
+     * @param _dependencyTypeId Dependency type to be updated.
+     * @param _index Additional repository index.
+     */
     function removeDependencyTypeAdditionalRepositoryAtIndex(
         bytes32 _dependencyTypeId,
         uint256 _index
@@ -497,6 +544,12 @@ contract DependencyRegistryV0 is Ownable {
         );
     }
 
+    /**
+     * @notice Updates additional repository for dependency type `_dependencyTypeId` at `_index`.
+     * @param _dependencyTypeId Dependency type to be updated.
+     * @param _index Additional repository index.
+     * @param _additionalRepository New Repository URL.
+     */
     function updateDependencyTypeAdditionalRepositoryAtIndex(
         bytes32 _dependencyTypeId,
         uint256 _index,
@@ -522,6 +575,19 @@ contract DependencyRegistryV0 is Ownable {
         );
     }
 
+    /**
+     * @notice Returns details for depedency type `_dependencyTypeId`.
+     * @param _dependencyTypeId Dependency type to be queried.
+     * @return typeAndVersion String representation of `_dependencyTypeId`.
+     * (e.g. "p5js(atSymbol)1.0.0")
+     * @return preferredCDN Preferred CDN URL for dependency type
+     * @return additionalCDNCount Count of additional CDN URLs for dependency type
+     * @return preferredRepository Preferred repository URL for dependency type
+     * @return additionalRepositoryCount Count of additional repository URLs for dependency type
+     * @return projectWebsite Project website URL for dependency type
+     * @return availableOnChain Whether dependency type is available on chain
+     * @return scriptCount Count of on-chain scripts for dependency type
+     */
     function dependencyTypeDetails(bytes32 _dependencyTypeId)
         external
         view
@@ -552,6 +618,15 @@ contract DependencyRegistryV0 is Ownable {
         );
     }
 
+    /**
+     * @notice Overrides the script type and version that 
+     * would be returned by the core contract (`_contractAddress`)
+     * for a given project  (`projectId`) with the given dependency
+     * type (`_dependencyTypeId`).
+     * @param _contractAddress Core contract address.
+     * @param _projectId Project to override script type and version for.
+     * @param _dependencyTypeId Dependency type to return for project.
+     */
     function addProjectDependencyOverride(
         address _contractAddress,
         uint256 _projectId,
@@ -572,6 +647,12 @@ contract DependencyRegistryV0 is Ownable {
         );
     }
 
+    /**
+     * @notice Removes the script type and version override for a given 
+     * project (`projectId`) on a given core contract (`_contractAddress`).
+     * @param _contractAddress Core contract address.
+     * @param _projectId Project to remove override for.
+     */
     function removeProjectDependencyOverride(
         address _contractAddress,
         uint256 _projectId
@@ -584,6 +665,15 @@ contract DependencyRegistryV0 is Ownable {
         );
     }
 
+    /**
+     * @notice Returns the dependency type for a given project (`projectId`) 
+     * on a given core contract (`_contractAddress`). If no override is set,
+     * the core contract is called to retrieve the script type and version as
+     * dependency type.
+     * @param _contractAddress Core contract address.
+     * @param _projectId Project to return dependency type for.
+     * @return dependencyTypeId Dependency type used by project.
+     */
     function getDependencyForProject(
         address _contractAddress,
         uint256 _projectId
