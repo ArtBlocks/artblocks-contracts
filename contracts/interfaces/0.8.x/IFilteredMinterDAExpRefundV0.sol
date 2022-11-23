@@ -60,4 +60,11 @@ interface IFilteredMinterDAExpRefundV0 is IFilteredMinterV1 {
         uint256 _netPaid,
         uint256 _numPurchased
     );
+
+    /// returns latest purchase price for project `_projectId`, or 0 if no
+    /// purchases have been made.
+    function getProjectLatestPurchasePrice(uint256 _projectId)
+        external
+        view
+        returns (uint256 latestPurchasePrice);
 }

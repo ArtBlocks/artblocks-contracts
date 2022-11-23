@@ -931,6 +931,18 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
     }
 
     /**
+     * @notice Gets the latest purchase price for project `_projectId`, or 0 if
+     * no purchases have been made.
+     */
+    function getProjectLatestPurchasePrice(uint256 _projectId)
+        external
+        view
+        returns (uint256)
+    {
+        return projectConfig[_projectId].latestPurchasePrice;
+    }
+
+    /**
      * @notice Gets if price of token is configured, price of minting a
      * token on project `_projectId`, and currency symbol and address to be
      * used as payment. Supersedes any core contract price information.

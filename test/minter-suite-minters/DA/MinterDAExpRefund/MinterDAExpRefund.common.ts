@@ -1923,6 +1923,21 @@ export const MinterDAExpRefund_Common = async () => {
     });
   });
 
+  describe("getProjectLatestPurchasePrice", async function () {
+    it("retuns zero for project without any purchases", async function () {
+      const latestPurchasePrice =
+        await this.minter.getProjectLatestPurchasePrice(this.projectZero);
+      expect(latestPurchasePrice).to.equal(0);
+    });
+
+    it("retuns non-zero for project with purchases", async function () {
+      await selloutMidAuction.call(this, this.projectZero);
+      const latestPurchasePrice =
+        await this.minter.getProjectLatestPurchasePrice(this.projectZero);
+      expect(latestPurchasePrice).to.be.gt(0);
+    });
+  });
+
   describe("getPriceInfo", async function () {
     it("returns sellout price after project sells out", async function () {
       await selloutMidAuction.call(this, this.projectZero);
