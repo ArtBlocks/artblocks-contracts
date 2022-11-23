@@ -1938,6 +1938,21 @@ export const MinterDAExpRefund_Common = async () => {
     });
   });
 
+  describe("getNumRefundableInvocations", async function () {
+    it("retuns zero for project without any purchases", async function () {
+      const numRefundableInvocations =
+        await this.minter.getNumRefundableInvocations(this.projectZero);
+      expect(numRefundableInvocations).to.equal(0);
+    });
+
+    it("retuns non-zero for project with purchases", async function () {
+      await selloutMidAuction.call(this, this.projectZero);
+      const numRefundableInvocations =
+        await this.minter.getNumRefundableInvocations(this.projectZero);
+      expect(numRefundableInvocations).to.be.gt(0);
+    });
+  });
+
   describe("getPriceInfo", async function () {
     it("returns sellout price after project sells out", async function () {
       await selloutMidAuction.call(this, this.projectZero);

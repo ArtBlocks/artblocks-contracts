@@ -67,4 +67,10 @@ interface IFilteredMinterDAExpRefundV0 is IFilteredMinterV1 {
         external
         view
         returns (uint256 latestPurchasePrice);
+
+    /// returns the number of refundable invocations for project `_projectId`.
+    function getNumRefundableInvocations(uint256 _projectId)
+        external
+        view
+        returns (uint256 numRefundableInvocations);
 }

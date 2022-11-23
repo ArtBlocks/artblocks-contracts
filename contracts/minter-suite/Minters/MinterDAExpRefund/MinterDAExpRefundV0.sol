@@ -937,9 +937,20 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
     function getProjectLatestPurchasePrice(uint256 _projectId)
         external
         view
-        returns (uint256)
+        returns (uint256 latestPurchasePrice)
     {
         return projectConfig[_projectId].latestPurchasePrice;
+    }
+
+    /**
+     * @notice Gets the number of refundable invocations for project `_projectId`.
+     */
+    function getNumRefundableInvocations(uint256 _projectId)
+        external
+        view
+        returns (uint256 numRefundableInvocations)
+    {
+        return projectConfig[_projectId].numRefundableInvocations;
     }
 
     /**
