@@ -255,6 +255,8 @@ After this config is finished, you'll notice a `usd (avg)` column in the auto-ge
 
 All code must pass all tests and be formatted with prettier before being merged into the main branch. To run the tests, run `yarn test`. To format the code, run `yarn format`. For additional information about our testing philosophy at Art Blocks, please see our [Testing Philosophy](./test/README.md) document.
 
+We also recommend reading through our [Solidity Gotchas](./solidity-gotchas.md) document to avoid common pitfalls that we've encountered in the past.
+
 ## Useful References
 
 [evm.codes](https://www.evm.codes/) - An interactive guide to EVM op-code costs.

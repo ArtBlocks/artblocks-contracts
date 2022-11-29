@@ -15,7 +15,7 @@ pragma solidity 0.8.9;
  * minted with ETH or any ERC-20 token.
  * @author Art Blocks Inc.
  */
-contract GenArt721Minter_ATPFlex is ReentrancyGuard {
+contract GenArt721Minter_9DCC_IYK is ReentrancyGuard {
     /// PBAB core contract this minter may interact with.
     IGenArt721CoreV2_PBAB public genArtCoreContract;
 

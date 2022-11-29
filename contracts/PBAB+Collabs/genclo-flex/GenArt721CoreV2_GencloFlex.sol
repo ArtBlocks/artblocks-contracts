@@ -16,7 +16,7 @@ pragma solidity 0.8.9;
  * @dev Contracts is aimed to be used in one of two modes. First mode is standard AB approach
  * together with the minter contract. Second mode is to be used with centralised minter.
  */
-contract GenArt721CoreV2_ATPFlex is ERC721, IGenArt721CoreV2_PBAB {
+contract GenArt721CoreV2_GencloFlex is ERC721, IGenArt721CoreV2_PBAB {
     /// randomizer contract
     IRandomizer public randomizerContract;
 

@@ -1,25 +1,21 @@
 var prompt = require("prompt-sync")();
-const GenArt721 = require("../artifacts/GenArt721Core.json");
-const { BigNumber } = require("ethers");
+const GenArt721Core = require("../../artifacts/contracts/PBAB+Collabs/GenArt721CoreV2_PBAB.sol/GenArt721CoreV2_PBAB.json");
 
 async function main() {
   const [deployer] = await ethers.getSigners();
   const deployerAddress = await deployer.getAddress();
-  console.log("Checking:", deployerAddress);
+  console.log("checking supply:", deployerAddress);
 
   const genArt721Address = prompt("GenArt721 address? ");
-  const randomizerAddress = prompt("Randomizer address? ");
   const genArt721 = new ethers.Contract(
     genArt721Address,
-    GenArt721.abi,
+    GenArt721Core.abi,
     deployer //provider
   );
 
-  let randomizer = await genArt721.updateRandomizerAddress(randomizerAddress);
+  let supply = await genArt721.projectTokenInfo(0);
 
-  //console.log('randomizer: '+randomizer);
-  //let supply = await genArt721.totalSupply();
-  //console.log("supply:" +supply);
+  console.log("project details: " + supply);
 }
 
 main()
