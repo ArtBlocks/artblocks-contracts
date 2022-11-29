@@ -59,13 +59,9 @@ contract DelegationRegistry is IDelegationRegistry, ERC165 {
     /**
      * @inheritdoc ERC165
      */
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        virtual
-        override(ERC165)
-        returns (bool)
-    {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view virtual override(ERC165) returns (bool) {
         return
             interfaceId == type(IDelegationRegistry).interfaceId ||
             super.supportsInterface(interfaceId);
@@ -190,11 +186,10 @@ contract DelegationRegistry is IDelegationRegistry, ERC165 {
     /**
      * @dev Helper function to compute delegation hash for wallet delegation
      */
-    function _computeAllDelegationHash(address vault, address delegate)
-        internal
-        view
-        returns (bytes32)
-    {
+    function _computeAllDelegationHash(
+        address vault,
+        address delegate
+    ) internal view returns (bytes32) {
         uint256 vaultVersion_ = vaultVersion[vault];
         uint256 delegateVersion_ = delegateVersion[vault][delegate];
         return
@@ -287,11 +282,9 @@ contract DelegationRegistry is IDelegationRegistry, ERC165 {
     /**
      * @inheritdoc IDelegationRegistry
      */
-    function getDelegationsByDelegate(address delegate)
-        external
-        view
-        returns (IDelegationRegistry.DelegationInfo[] memory info)
-    {
+    function getDelegationsByDelegate(
+        address delegate
+    ) external view returns (IDelegationRegistry.DelegationInfo[] memory info) {
         EnumerableSet.Bytes32Set
             storage potentialDelegationHashes = delegationHashes[delegate];
         uint256 potentialDelegationHashesLength = potentialDelegationHashes
@@ -358,11 +351,9 @@ contract DelegationRegistry is IDelegationRegistry, ERC165 {
     /**
      * @inheritdoc IDelegationRegistry
      */
-    function getDelegatesForAll(address vault)
-        external
-        view
-        returns (address[] memory delegates)
-    {
+    function getDelegatesForAll(
+        address vault
+    ) external view returns (address[] memory delegates) {
         return
             _getDelegatesForLevel(
                 vault,
@@ -375,12 +366,10 @@ contract DelegationRegistry is IDelegationRegistry, ERC165 {
     /**
      * @inheritdoc IDelegationRegistry
      */
-    function getDelegatesForContract(address vault, address contract_)
-        external
-        view
-        override
-        returns (address[] memory delegates)
-    {
+    function getDelegatesForContract(
+        address vault,
+        address contract_
+    ) external view override returns (address[] memory delegates) {
         return
             _getDelegatesForLevel(
                 vault,
@@ -492,7 +481,9 @@ contract DelegationRegistry is IDelegationRegistry, ERC165 {
     /**
      * @inheritdoc IDelegationRegistry
      */
-    function getContractLevelDelegations(address vault)
+    function getContractLevelDelegations(
+        address vault
+    )
         external
         view
         returns (
@@ -550,7 +541,9 @@ contract DelegationRegistry is IDelegationRegistry, ERC165 {
     /**
      * @inheritdoc IDelegationRegistry
      */
-    function getTokenLevelDelegations(address vault)
+    function getTokenLevelDelegations(
+        address vault
+    )
         external
         view
         returns (IDelegationRegistry.TokenDelegation[] memory tokenDelegations)
@@ -605,12 +598,10 @@ contract DelegationRegistry is IDelegationRegistry, ERC165 {
     /**
      * @inheritdoc IDelegationRegistry
      */
-    function checkDelegateForAll(address delegate, address vault)
-        public
-        view
-        override
-        returns (bool)
-    {
+    function checkDelegateForAll(
+        address delegate,
+        address vault
+    ) public view override returns (bool) {
         bytes32 delegateHash = keccak256(
             abi.encode(
                 delegate,

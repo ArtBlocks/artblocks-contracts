@@ -99,9 +99,10 @@ contract MinterDALinV0 is ReentrancyGuard, IFilteredMinterV0 {
      * @param _minterFilter Minter filter for which
      * this will a filtered minter.
      */
-    constructor(address _genArt721Address, address _minterFilter)
-        ReentrancyGuard()
-    {
+    constructor(
+        address _genArt721Address,
+        address _minterFilter
+    ) ReentrancyGuard() {
         genArt721CoreAddress = _genArt721Address;
         genArtCoreContract = IGenArt721CoreContractV1(_genArt721Address);
         minterFilterAddress = _minterFilter;
@@ -119,10 +120,10 @@ contract MinterDALinV0 is ReentrancyGuard, IFilteredMinterV0 {
      * @param _limit Number of times a given address may mint the
      * project's tokens.
      */
-    function setProjectMintLimit(uint256 _projectId, uint8 _limit)
-        external
-        onlyCoreWhitelisted
-    {
+    function setProjectMintLimit(
+        uint256 _projectId,
+        uint8 _limit
+    ) external onlyCoreWhitelisted {
         projectMintLimit[_projectId] = _limit;
     }
 
@@ -134,10 +135,9 @@ contract MinterDALinV0 is ReentrancyGuard, IFilteredMinterV0 {
      * @dev this enables gas reduction after maxInvocations have been reached -
      * core contracts shall still enforce a maxInvocation check during mint.
      */
-    function setProjectMaxInvocations(uint256 _projectId)
-        external
-        onlyCoreWhitelisted
-    {
+    function setProjectMaxInvocations(
+        uint256 _projectId
+    ) external onlyCoreWhitelisted {
         uint256 invocations;
         uint256 maxInvocations;
         (, , invocations, maxInvocations, , , , , ) = genArtCoreContract
@@ -154,10 +154,9 @@ contract MinterDALinV0 is ReentrancyGuard, IFilteredMinterV0 {
      * project `_projectId`.
      * @param _projectId Project ID to be toggled.
      */
-    function toggleContractMintable(uint256 _projectId)
-        external
-        onlyCoreWhitelisted
-    {
+    function toggleContractMintable(
+        uint256 _projectId
+    ) external onlyCoreWhitelisted {
         contractMintable[_projectId] = !contractMintable[_projectId];
     }
 
@@ -166,10 +165,9 @@ contract MinterDALinV0 is ReentrancyGuard, IFilteredMinterV0 {
      * project `_projectId`.
      * @param _projectId Project ID to be toggled.
      */
-    function togglePurchaseToDisabled(uint256 _projectId)
-        external
-        onlyCoreWhitelisted
-    {
+    function togglePurchaseToDisabled(
+        uint256 _projectId
+    ) external onlyCoreWhitelisted {
         purchaseToDisabled[_projectId] = !purchaseToDisabled[_projectId];
         emit PurchaseToDisabledUpdated(
             _projectId,
@@ -251,10 +249,9 @@ contract MinterDALinV0 is ReentrancyGuard, IFilteredMinterV0 {
      * operation, but rather only in case of the need to halt an auction.
      * @param _projectId Project ID to set auction details for.
      */
-    function resetAuctionDetails(uint256 _projectId)
-        external
-        onlyCoreWhitelisted
-    {
+    function resetAuctionDetails(
+        uint256 _projectId
+    ) external onlyCoreWhitelisted {
         delete projectAuctionParameters[_projectId];
         emit ResetAuctionDetails(_projectId);
     }
@@ -264,11 +261,9 @@ contract MinterDALinV0 is ReentrancyGuard, IFilteredMinterV0 {
      * @param _projectId Project ID to mint a token on.
      * @return tokenId Token ID of minted token
      */
-    function purchase(uint256 _projectId)
-        external
-        payable
-        returns (uint256 tokenId)
-    {
+    function purchase(
+        uint256 _projectId
+    ) external payable returns (uint256 tokenId) {
         tokenId = purchaseTo(msg.sender, _projectId);
         return tokenId;
     }
@@ -280,12 +275,10 @@ contract MinterDALinV0 is ReentrancyGuard, IFilteredMinterV0 {
      * @param _projectId Project ID to mint a token on.
      * @return tokenId Token ID of minted token
      */
-    function purchaseTo(address _to, uint256 _projectId)
-        public
-        payable
-        nonReentrant
-        returns (uint256 tokenId)
-    {
+    function purchaseTo(
+        address _to,
+        uint256 _projectId
+    ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
         require(
             !projectMaxHasBeenInvoked[_projectId],
@@ -441,7 +434,9 @@ contract MinterDALinV0 is ReentrancyGuard, IFilteredMinterV0 {
      * @return currencyAddress currency address for purchases of project on
      * this minter. This minter always returns null address, reserved for ether
      */
-    function getPriceInfo(uint256 _projectId)
+    function getPriceInfo(
+        uint256 _projectId
+    )
         external
         view
         returns (

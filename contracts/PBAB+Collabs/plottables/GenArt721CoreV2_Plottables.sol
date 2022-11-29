@@ -143,10 +143,10 @@ contract GenArt721CoreV2_Plottables is CustomERC721Metadata {
         return tokenId;
     }
 
-    function _mintToken(address _to, uint256 _projectId)
-        internal
-        returns (uint256 _tokenId)
-    {
+    function _mintToken(
+        address _to,
+        uint256 _projectId
+    ) internal returns (uint256 _tokenId) {
         uint256 tokenIdToBe = (_projectId * ONE_MILLION) +
             projects[_projectId].invocations;
 
@@ -178,17 +178,15 @@ contract GenArt721CoreV2_Plottables is CustomERC721Metadata {
         admin = _adminAddress;
     }
 
-    function updateRenderProviderAddress(address _renderProviderAddress)
-        public
-        onlyAdmin
-    {
+    function updateRenderProviderAddress(
+        address _renderProviderAddress
+    ) public onlyAdmin {
         renderProviderAddress = _renderProviderAddress;
     }
 
-    function updateRenderProviderPercentage(uint256 _renderProviderPercentage)
-        public
-        onlyAdmin
-    {
+    function updateRenderProviderPercentage(
+        uint256 _renderProviderPercentage
+    ) public onlyAdmin {
         require(_renderProviderPercentage <= 25, "Max of 25%");
         renderProviderPercentage = _renderProviderPercentage;
     }
@@ -209,18 +207,15 @@ contract GenArt721CoreV2_Plottables is CustomERC721Metadata {
         isMintWhitelisted[_address] = false;
     }
 
-    function updateRandomizerAddress(address _randomizerAddress)
-        public
-        onlyWhitelisted
-    {
+    function updateRandomizerAddress(
+        address _randomizerAddress
+    ) public onlyWhitelisted {
         randomizerContract = IRandomizer(_randomizerAddress);
     }
 
-    function toggleProjectIsLocked(uint256 _projectId)
-        public
-        onlyWhitelisted
-        onlyUnlocked(_projectId)
-    {
+    function toggleProjectIsLocked(
+        uint256 _projectId
+    ) public onlyWhitelisted onlyUnlocked(_projectId) {
         projects[_projectId].locked = true;
     }
 
@@ -235,10 +230,9 @@ contract GenArt721CoreV2_Plottables is CustomERC721Metadata {
         projectIdToArtistAddress[_projectId] = _artistAddress;
     }
 
-    function toggleProjectIsPaused(uint256 _projectId)
-        public
-        onlyArtist(_projectId)
-    {
+    function toggleProjectIsPaused(
+        uint256 _projectId
+    ) public onlyArtist(_projectId) {
         projects[_projectId].paused = !projects[_projectId].paused;
     }
 
@@ -273,11 +267,10 @@ contract GenArt721CoreV2_Plottables is CustomERC721Metadata {
         projectIdToPricePerTokenInWei[_projectId] = _pricePerTokenInWei;
     }
 
-    function updateProjectName(uint256 _projectId, string memory _projectName)
-        public
-        onlyUnlocked(_projectId)
-        onlyArtistOrWhitelisted(_projectId)
-    {
+    function updateProjectName(
+        uint256 _projectId,
+        string memory _projectName
+    ) public onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) {
         projects[_projectId].name = _projectName;
     }
 
@@ -348,11 +341,10 @@ contract GenArt721CoreV2_Plottables is CustomERC721Metadata {
         projects[_projectId].maxInvocations = _maxInvocations;
     }
 
-    function addProjectScript(uint256 _projectId, string memory _script)
-        public
-        onlyUnlocked(_projectId)
-        onlyArtistOrWhitelisted(_projectId)
-    {
+    function addProjectScript(
+        uint256 _projectId,
+        string memory _script
+    ) public onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) {
         projects[_projectId].scripts[
             projects[_projectId].scriptCount
         ] = _script;
@@ -373,11 +365,9 @@ contract GenArt721CoreV2_Plottables is CustomERC721Metadata {
         projects[_projectId].scripts[_scriptId] = _script;
     }
 
-    function removeProjectLastScript(uint256 _projectId)
-        public
-        onlyUnlocked(_projectId)
-        onlyArtistOrWhitelisted(_projectId)
-    {
+    function removeProjectLastScript(
+        uint256 _projectId
+    ) public onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) {
         require(
             projects[_projectId].scriptCount > 0,
             "there are no scripts to remove"
@@ -397,22 +387,23 @@ contract GenArt721CoreV2_Plottables is CustomERC721Metadata {
         projects[_projectId].scriptJSON = _projectScriptJSON;
     }
 
-    function updateProjectIpfsHash(uint256 _projectId, string memory _ipfsHash)
-        public
-        onlyUnlocked(_projectId)
-        onlyArtistOrWhitelisted(_projectId)
-    {
+    function updateProjectIpfsHash(
+        uint256 _projectId,
+        string memory _ipfsHash
+    ) public onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) {
         projects[_projectId].ipfsHash = _ipfsHash;
     }
 
-    function updateProjectBaseURI(uint256 _projectId, string memory _newBaseURI)
-        public
-        onlyArtist(_projectId)
-    {
+    function updateProjectBaseURI(
+        uint256 _projectId,
+        string memory _newBaseURI
+    ) public onlyArtist(_projectId) {
         projects[_projectId].projectBaseURI = _newBaseURI;
     }
 
-    function projectDetails(uint256 _projectId)
+    function projectDetails(
+        uint256 _projectId
+    )
         public
         view
         returns (
@@ -430,7 +421,9 @@ contract GenArt721CoreV2_Plottables is CustomERC721Metadata {
         license = projects[_projectId].license;
     }
 
-    function projectTokenInfo(uint256 _projectId)
+    function projectTokenInfo(
+        uint256 _projectId
+    )
         public
         view
         returns (
@@ -458,7 +451,9 @@ contract GenArt721CoreV2_Plottables is CustomERC721Metadata {
         currencyAddress = projectIdToCurrencyAddress[_projectId];
     }
 
-    function projectScriptInfo(uint256 _projectId)
+    function projectScriptInfo(
+        uint256 _projectId
+    )
         public
         view
         returns (
@@ -476,31 +471,28 @@ contract GenArt721CoreV2_Plottables is CustomERC721Metadata {
         paused = projects[_projectId].paused;
     }
 
-    function projectScriptByIndex(uint256 _projectId, uint256 _index)
-        public
-        view
-        returns (string memory)
-    {
+    function projectScriptByIndex(
+        uint256 _projectId,
+        uint256 _index
+    ) public view returns (string memory) {
         return projects[_projectId].scripts[_index];
     }
 
-    function projectURIInfo(uint256 _projectId)
-        public
-        view
-        returns (string memory projectBaseURI)
-    {
+    function projectURIInfo(
+        uint256 _projectId
+    ) public view returns (string memory projectBaseURI) {
         projectBaseURI = projects[_projectId].projectBaseURI;
     }
 
-    function tokensOfOwner(address owner)
-        external
-        view
-        returns (uint256[] memory)
-    {
+    function tokensOfOwner(
+        address owner
+    ) external view returns (uint256[] memory) {
         return _tokensOfOwner(owner);
     }
 
-    function getRoyaltyData(uint256 _tokenId)
+    function getRoyaltyData(
+        uint256 _tokenId
+    )
         public
         view
         returns (
@@ -522,12 +514,9 @@ contract GenArt721CoreV2_Plottables is CustomERC721Metadata {
         ];
     }
 
-    function tokenURI(uint256 _tokenId)
-        external
-        view
-        onlyValidTokenId(_tokenId)
-        returns (string memory)
-    {
+    function tokenURI(
+        uint256 _tokenId
+    ) external view onlyValidTokenId(_tokenId) returns (string memory) {
         return
             Strings.strConcat(
                 projects[tokenIdToProjectId[_tokenId]].projectBaseURI,

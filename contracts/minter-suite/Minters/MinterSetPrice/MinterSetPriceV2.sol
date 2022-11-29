@@ -72,9 +72,10 @@ contract MinterSetPriceV2 is ReentrancyGuard, IFilteredMinterV0 {
      * @param _minterFilter Minter filter for which this will be a
      * filtered minter.
      */
-    constructor(address _genArt721Address, address _minterFilter)
-        ReentrancyGuard()
-    {
+    constructor(
+        address _genArt721Address,
+        address _minterFilter
+    ) ReentrancyGuard() {
         genArt721CoreAddress = _genArt721Address;
         genArtCoreContract = IGenArt721CoreContractV3(_genArt721Address);
         minterFilterAddress = _minterFilter;
@@ -108,11 +109,9 @@ contract MinterSetPriceV2 is ReentrancyGuard, IFilteredMinterV0 {
      * @notice Warning: Disabling purchaseTo is not supported on this minter.
      * This method exists purely for interface-conformance purposes.
      */
-    function togglePurchaseToDisabled(uint256 _projectId)
-        external
-        view
-        onlyArtist(_projectId)
-    {
+    function togglePurchaseToDisabled(
+        uint256 _projectId
+    ) external view onlyArtist(_projectId) {
         revert("Action not supported");
     }
 
@@ -129,11 +128,9 @@ contract MinterSetPriceV2 is ReentrancyGuard, IFilteredMinterV0 {
      * do not do input validation in this method as to whether or not the input
      * `_projectId` is an existing project ID.
      */
-    function projectMaxHasBeenInvoked(uint256 _projectId)
-        external
-        view
-        returns (bool)
-    {
+    function projectMaxHasBeenInvoked(
+        uint256 _projectId
+    ) external view returns (bool) {
         return projectConfig[_projectId].maxHasBeenInvoked;
     }
 
@@ -155,11 +152,9 @@ contract MinterSetPriceV2 is ReentrancyGuard, IFilteredMinterV0 {
      * rationale, we intentionally do not do input validation in this method as
      * to whether or not the input `_projectId` is an existing project ID.
      */
-    function projectMaxInvocations(uint256 _projectId)
-        external
-        view
-        returns (uint256)
-    {
+    function projectMaxInvocations(
+        uint256 _projectId
+    ) external view returns (uint256) {
         return uint256(projectConfig[_projectId].maxInvocations);
     }
 
@@ -185,11 +180,9 @@ contract MinterSetPriceV2 is ReentrancyGuard, IFilteredMinterV0 {
      * @param _projectId Project ID to mint a token on.
      * @return tokenId Token ID of minted token
      */
-    function purchase(uint256 _projectId)
-        external
-        payable
-        returns (uint256 tokenId)
-    {
+    function purchase(
+        uint256 _projectId
+    ) external payable returns (uint256 tokenId) {
         tokenId = purchaseTo_do6(msg.sender, _projectId);
         return tokenId;
     }
@@ -197,11 +190,9 @@ contract MinterSetPriceV2 is ReentrancyGuard, IFilteredMinterV0 {
     /**
      * @notice gas-optimized version of purchase(uint256).
      */
-    function purchase_H4M(uint256 _projectId)
-        external
-        payable
-        returns (uint256 tokenId)
-    {
+    function purchase_H4M(
+        uint256 _projectId
+    ) external payable returns (uint256 tokenId) {
         tokenId = purchaseTo_do6(msg.sender, _projectId);
         return tokenId;
     }
@@ -213,23 +204,20 @@ contract MinterSetPriceV2 is ReentrancyGuard, IFilteredMinterV0 {
      * @param _projectId Project ID to mint a token on.
      * @return tokenId Token ID of minted token
      */
-    function purchaseTo(address _to, uint256 _projectId)
-        external
-        payable
-        returns (uint256 tokenId)
-    {
+    function purchaseTo(
+        address _to,
+        uint256 _projectId
+    ) external payable returns (uint256 tokenId) {
         return purchaseTo_do6(_to, _projectId);
     }
 
     /**
      * @notice gas-optimized version of purchaseTo(address, uint256).
      */
-    function purchaseTo_do6(address _to, uint256 _projectId)
-        public
-        payable
-        nonReentrant
-        returns (uint256 tokenId)
-    {
+    function purchaseTo_do6(
+        address _to,
+        uint256 _projectId
+    ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
 
@@ -280,9 +268,10 @@ contract MinterSetPriceV2 is ReentrancyGuard, IFilteredMinterV0 {
      * business practices, including end-to-end testing on mainnet, and
      * admin-accepted artist payment addresses.
      */
-    function _splitFundsETH(uint256 _projectId, uint256 _pricePerTokenInWei)
-        internal
-    {
+    function _splitFundsETH(
+        uint256 _projectId,
+        uint256 _pricePerTokenInWei
+    ) internal {
         if (msg.value > 0) {
             bool success_;
             // send refund to sender
@@ -340,7 +329,9 @@ contract MinterSetPriceV2 is ReentrancyGuard, IFilteredMinterV0 {
      * @return currencyAddress currency address for purchases of project on
      * this minter. This minter always returns null address, reserved for ether
      */
-    function getPriceInfo(uint256 _projectId)
+    function getPriceInfo(
+        uint256 _projectId
+    )
         external
         view
         returns (

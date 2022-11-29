@@ -18,8 +18,7 @@ interface IManifold {
      *
      *  => 0xbb3bafd6 = 0xbb3bafd6
      */
-    function getRoyalties(uint256 tokenId)
-        external
-        view
-        returns (address payable[] memory, uint256[] memory);
+    function getRoyalties(
+        uint256 tokenId
+    ) external view returns (address payable[] memory, uint256[] memory);
 }
