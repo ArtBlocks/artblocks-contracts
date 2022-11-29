@@ -39,7 +39,7 @@ jobs:
   coverage:
     docker:
       - image: "cimg/base:stable"
-    resource_class: large
+    resource_class: X-large
     parallelism: 8
     steps:
       - checkout
