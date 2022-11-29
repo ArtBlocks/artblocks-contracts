@@ -75,6 +75,12 @@ jobs:
     docker:
       - image: "cimg/base:stable"
     steps:
+      - checkout
+      - node/install:
+          install-yarn: true
+          lts: true
+      - node/install-packages:
+          pkg-manager: yarn
       - attach_workspace:
           at: /tmp/coverage
       - run:
