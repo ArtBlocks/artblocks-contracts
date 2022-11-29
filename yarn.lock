@@ -1235,7 +1235,7 @@
     "@ethersproject/properties" ">=5.0.0-beta.131"
     "@ethersproject/strings" ">=5.0.0-beta.130"
 
-"@ethersproject/abi@5.7.0", "@ethersproject/abi@^5.0.0-beta.146", "@ethersproject/abi@^5.1.2", "@ethersproject/abi@^5.5.0", "@ethersproject/abi@^5.6.3", "@ethersproject/abi@^5.7.0":
+"@ethersproject/abi@5.7.0", "@ethersproject/abi@^5.0.0-beta.146", "@ethersproject/abi@^5.0.9", "@ethersproject/abi@^5.1.2", "@ethersproject/abi@^5.5.0", "@ethersproject/abi@^5.6.3", "@ethersproject/abi@^5.7.0":
   version "5.7.0"
   resolved "https://registry.yarnpkg.com/@ethersproject/abi/-/abi-5.7.0.tgz#b3f3e045bbbeed1af3947335c247ad625a44e449"
   integrity sha512-351ktp42TiRcYB3H1OP8yajPeAQstMW/yCFokj/AthP9bLHzQFPlOrxOcwYEDkUAICmOHljvN4K39OMTMUa9RA==
@@ -2278,7 +2278,7 @@
   resolved "https://registry.yarnpkg.com/@sinonjs/text-encoding/-/text-encoding-0.7.2.tgz#5981a8db18b56ba38ef0efb7d995b12aa7b51918"
   integrity sha512-sXXKG+uL9IrKqViTtao2Ws6dy0znu9sOaP1di/jKGW1M6VssO8vlpXCQcpZ+jisQ1tTFAC5Jo/EOzFbggBagFQ==
 
-"@solidity-parser/parser@^0.14.0", "@solidity-parser/parser@^0.14.5":
+"@solidity-parser/parser@^0.14.0", "@solidity-parser/parser@^0.14.1", "@solidity-parser/parser@^0.14.5":
   version "0.14.5"
   resolved "https://registry.yarnpkg.com/@solidity-parser/parser/-/parser-0.14.5.tgz#87bc3cc7b068e08195c219c91cd8ddff5ef1a804"
   integrity sha512-6dKnHZn7fg/iQATVEzqyUOyEidbn05q7YA2mQ9hC0MMXhhV3/JrsxmFSYZAcr7j1yUP700LLhTruvJ3MiQmjJg==
@@ -2396,16 +2396,6 @@
   dependencies:
     bn.js "^5.1.3"
     ethers "^4.0.32"
-    web3 "1.7.4"
-
-"@truffle/provider@^0.2.24":
-  version "0.2.64"
-  resolved "https://registry.yarnpkg.com/@truffle/provider/-/provider-0.2.64.tgz#7dd55117307fd019dcf81d08db5dc2bc5728f51c"
-  integrity sha512-ZwPsofw4EsCq/2h0t73SPnnFezu4YQWBmK4FxFaOUX0F+o8NsZuHKyfJzuZwyZbiktYmefM3yD9rM0Dj4BhNbw==
-  dependencies:
-    "@truffle/error" "^0.1.1"
-    "@truffle/interface-adapter" "^0.5.25"
-    debug "^4.3.1"
     web3 "1.7.4"
 
 "@trufflesuite/chromafi@^3.0.0":
@@ -5383,6 +5373,13 @@ diffie-hellman@^5.0.0:
     miller-rabin "^4.0.0"
     randombytes "^2.0.0"
 
+difflib@^0.2.4:
+  version "0.2.4"
+  resolved "https://registry.yarnpkg.com/difflib/-/difflib-0.2.4.tgz#b5e30361a6db023176d562892db85940a718f47e"
+  integrity sha512-9YVwmMb0wQHQNr5J9m6BSj6fk4pfGITGQOOs+D9Fl+INODWFOfvhIU1hNv6GgR1RBoC/9NJcwu77zShxV0kT7w==
+  dependencies:
+    heap ">= 0.2.0"
+
 dir-glob@^3.0.1:
   version "3.0.1"
   resolved "https://registry.yarnpkg.com/dir-glob/-/dir-glob-3.0.1.tgz#56dbf73d992a4a93ba1584f4534063fd2e41717f"
@@ -7581,6 +7578,11 @@ heap@0.2.6:
   resolved "https://registry.yarnpkg.com/heap/-/heap-0.2.6.tgz#087e1f10b046932fc8594dd9e6d378afc9d1e5ac"
   integrity sha512-MzzWcnfB1e4EG2vHi3dXHoBupmuXNZzx6pY6HldVS55JKKBoq3xOyzfSaZRkJp37HIhEYC78knabHff3zc4dQQ==
 
+"heap@>= 0.2.0":
+  version "0.2.7"
+  resolved "https://registry.yarnpkg.com/heap/-/heap-0.2.7.tgz#1e6adf711d3f27ce35a81fe3b7bd576c2260a8fc"
+  integrity sha512-2bsegYkkHO+h/9MGbn6KWcE45cHZgPANo5LXF7EvWdT0yT2EguSVO1nDgU5c8+ZOPwp2vMNa7YFsJhVcDR9Sdg==
+
 highlight.js@^10.4.1:
   version "10.7.3"
   resolved "https://registry.yarnpkg.com/highlight.js/-/highlight.js-10.7.3.tgz#697272e3991356e40c3cac566a74eef681756531"
@@ -9328,6 +9330,36 @@ mnemonist@^0.38.0:
   integrity sha512-bZTFT5rrPKtPJxj8KSV0WkPyNxl72vQepqqVUAW2ARUpUSF2qXMB6jZj7hW5/k7C1rtpzqbD/IIbJwLXUjCHeg==
   dependencies:
     obliterator "^2.0.0"
+
+mocha@7.1.2:
+  version "7.1.2"
+  resolved "https://registry.yarnpkg.com/mocha/-/mocha-7.1.2.tgz#8e40d198acf91a52ace122cd7599c9ab857b29e6"
+  integrity sha512-o96kdRKMKI3E8U0bjnfqW4QMk12MwZ4mhdBTf+B5a1q9+aq2HRnj+3ZdJu0B/ZhJeK78MgYuv6L8d/rA5AeBJA==
+  dependencies:
+    ansi-colors "3.2.3"
+    browser-stdout "1.3.1"
+    chokidar "3.3.0"
+    debug "3.2.6"
+    diff "3.5.0"
+    escape-string-regexp "1.0.5"
+    find-up "3.0.0"
+    glob "7.1.3"
+    growl "1.10.5"
+    he "1.2.0"
+    js-yaml "3.13.1"
+    log-symbols "3.0.0"
+    minimatch "3.0.4"
+    mkdirp "0.5.5"
+    ms "2.1.1"
+    node-environment-flags "1.0.6"
+    object.assign "4.1.0"
+    strip-json-comments "2.0.1"
+    supports-color "6.0.0"
+    which "1.3.1"
+    wide-align "1.1.3"
+    yargs "13.3.2"
+    yargs-parser "13.1.2"
+    yargs-unparser "1.6.0"
 
 mocha@^10.0.0:
   version "10.1.0"
@@ -11504,29 +11536,31 @@ solidity-comments-extractor@^0.0.7:
   resolved "https://registry.yarnpkg.com/solidity-comments-extractor/-/solidity-comments-extractor-0.0.7.tgz#99d8f1361438f84019795d928b931f4e5c39ca19"
   integrity sha512-wciNMLg/Irp8OKGrh3S2tfvZiZ0NEyILfcRCXCD4mp7SgK/i9gzLfhY2hY7VMCQJ3kH9UB9BzNdibIVMchzyYw==
 
-solidity-coverage@^0.7.21:
-  version "0.7.22"
-  resolved "https://registry.yarnpkg.com/solidity-coverage/-/solidity-coverage-0.7.22.tgz#168f414be4c0f5303addcf3ab9714cf64f72c080"
-  integrity sha512-I6Zd5tsFY+gmj1FDIp6w7OrUePx6ZpMgKQZg7dWgPaQHePLi3Jk+iJ8lwZxsWEoNy2Lcv91rMxATWHqRaFdQpw==
+solidity-coverage@^0.8.0:
+  version "0.8.2"
+  resolved "https://registry.yarnpkg.com/solidity-coverage/-/solidity-coverage-0.8.2.tgz#bc39604ab7ce0a3fa7767b126b44191830c07813"
+  integrity sha512-cv2bWb7lOXPE9/SSleDO6czkFiMHgP4NXPj+iW9W7iEKLBk7Cj0AGBiNmGX3V1totl9wjPrT0gHmABZKZt65rQ==
   dependencies:
-    "@solidity-parser/parser" "^0.14.0"
-    "@truffle/provider" "^0.2.24"
+    "@ethersproject/abi" "^5.0.9"
+    "@solidity-parser/parser" "^0.14.1"
     chalk "^2.4.2"
     death "^1.1.0"
     detect-port "^1.3.0"
+    difflib "^0.2.4"
     fs-extra "^8.1.0"
     ghost-testrpc "^0.0.2"
     global-modules "^2.0.0"
     globby "^10.0.1"
     jsonschema "^1.2.4"
     lodash "^4.17.15"
+    mocha "7.1.2"
     node-emoji "^1.10.0"
     pify "^4.0.1"
     recursive-readdir "^2.2.2"
     sc-istanbul "^0.4.5"
     semver "^7.3.4"
     shelljs "^0.8.3"
-    web3-utils "^1.3.0"
+    web3-utils "^1.3.6"
 
 source-map-js@^1.0.2:
   version "1.0.2"
@@ -13299,7 +13333,7 @@ web3-utils@1.7.4:
     randombytes "^2.1.0"
     utf8 "3.0.0"
 
-web3-utils@1.8.1, web3-utils@^1.0.0-beta.31, web3-utils@^1.2.5, web3-utils@^1.3.0, web3-utils@^1.3.4, web3-utils@^1.7.1, web3-utils@^1.8.1:
+web3-utils@1.8.1, web3-utils@^1.0.0-beta.31, web3-utils@^1.2.5, web3-utils@^1.3.4, web3-utils@^1.3.6, web3-utils@^1.7.1, web3-utils@^1.8.1:
   version "1.8.1"
   resolved "https://registry.yarnpkg.com/web3-utils/-/web3-utils-1.8.1.tgz#f2f7ca7eb65e6feb9f3d61056d0de6bbd57125ff"
   integrity sha512-LgnM9p6V7rHHUGfpMZod+NST8cRfGzJ1BTXAyNo7A9cJX9LczBfSRxJp+U/GInYe9mby40t3v22AJdlELibnsQ==
