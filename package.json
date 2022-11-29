@@ -48,6 +48,7 @@
     "@typescript-eslint/parser": "^5.40.0",
     "aws-sdk-client-mock": "^0.6.2",
     "chai": "^4.3.4",
+    "coveralls": "^3.1.1",
     "dotenv": "^8.2.0",
     "eslint": "^8.25.0",
     "eslint-plugin-mocha": "^10.1.0",
