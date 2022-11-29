@@ -1,4 +1,3 @@
-import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import {
   BN,
   constants,
@@ -28,19 +27,6 @@ async function validateAdminACLRequest(functionName: string, args: any[]) {
   )
     .to.emit(this.adminACL, "ACLCheck")
     .withArgs(this.accounts.deployer.address, targetSelector);
-}
-
-async function expectRevertFromAdminACLRequest(
-  functionName: string,
-  signer_: SignerWithAddress,
-  args: any[]
-) {
-  const targetSelector = this.coreInterface.getSighash(functionName);
-  // emits event when being minted out
-  await expectRevert(
-    this.genArt721Core.connect(signer_)[functionName](...args),
-    "Only Admin ACL allowed"
-  );
 }
 
 // test the following V3 core contract derivatives:
@@ -261,26 +247,6 @@ for (const coreContractName of coreContractsToTest) {
           this.projectZero,
           "post-locked admin description",
         ]);
-      });
-    });
-
-    describe("rejects non-admin calling admin-ACL protected functions", function () {
-      it("updateArtblocksPrimarySalesAddress", async function () {
-        await expectRevertFromAdminACLRequest.call(
-          this,
-          "updateArtblocksPrimarySalesAddress",
-          this.accounts.user,
-          [this.accounts.user.address]
-        );
-      });
-
-      it("updateArtblocksSecondarySalesAddress", async function () {
-        await expectRevertFromAdminACLRequest.call(
-          this,
-          "updateArtblocksSecondarySalesAddress",
-          this.accounts.user,
-          [this.accounts.user.address]
-        );
       });
     });
   });
