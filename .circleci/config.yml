@@ -70,7 +70,7 @@ jobs:
             - cov_6.json
             - cov_7.json
 
-  report_coverage:
+  report-coverage:
     docker:
       - image: "cimg/base:stable"
     steps:
