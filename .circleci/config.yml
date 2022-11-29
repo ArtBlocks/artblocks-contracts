@@ -52,10 +52,11 @@ jobs:
           name: coverage
           command: |
             TEST_FILES="{$(circleci tests glob "./test/**/*.ts" | circleci tests split | xargs | sed -e 's/ /,/g')}"
-            yarn coverage --max-old-space-size=8000 -- --testfiles "${TEST_FILES}"
+            yarn coverage --max-old-space-size=8000 --testfiles "${TEST_FILES}"
       - run:
           name: save coverage
           command: |
+            mkdir -p /tmp/coverage
             cp coverage.json /tmp/coverage/cov_$CIRCLE_NODE_INDEX.json
             chmod -R 777 /tmp/coverage/cov_$CIRCLE_NODE_INDEX.json
       - persist_to_workspace:
