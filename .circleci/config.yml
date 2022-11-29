@@ -52,7 +52,7 @@ jobs:
           name: coverage
           command: |
             TEST_FILES="{$(circleci tests glob "./test/**/*.ts" | circleci tests split | xargs | sed -e 's/ /,/g')}"
-            yarn coverage --max-old-space-size=8000 --testfiles "${TEST_FILES}"
+            yarn coverage --testfiles "${TEST_FILES}"
       - run:
           name: save coverage
           command: |
