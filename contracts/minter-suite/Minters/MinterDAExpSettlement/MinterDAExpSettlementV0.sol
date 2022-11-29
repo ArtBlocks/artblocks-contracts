@@ -3,7 +3,7 @@
 
 import "../../../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
 import "../../../interfaces/0.8.x/IMinterFilterV0.sol";
-import "../../../interfaces/0.8.x/IFilteredMinterDAExpRefundV0.sol";
+import "../../../interfaces/0.8.x/IFilteredMinterDAExpSettlementV0.sol";
 
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin-4.5/contracts/utils/math/SafeCast.sol";
@@ -13,7 +13,7 @@ pragma solidity 0.8.17;
 /**
  * @title Filtered Minter contract that allows tokens to be minted with ETH.
  * Pricing is achieved using an automated Dutch-auction mechanism, with a
- * refund mechanism for tokens purchased before the auction ends.
+ * settlement mechanism for tokens purchased before the auction ends.
  * This is designed to be used with IGenArt721CoreContractV3 contracts.
  * @author Art Blocks Inc.
  * @notice Privileged Roles and Ownership:
@@ -24,12 +24,12 @@ pragma solidity 0.8.17;
  * Care must be taken to ensure that the admin ACL contract and artist
  * addresses are secure behind a multi-sig or other access control mechanism.
  * Additionally, the purchaser of a token has some trust assumptions regarding
- * refunds, beyond typical minter Art Blocks trust assumptions. In general,
+ * settlement, beyond typical minter Art Blocks trust assumptions. In general,
  * Artists and Admin are trusted to not abuse their powers in a way that
  * would artifically inflate the sellout price of a project. They are
  * incentivized to not do so, as it would diminish their reputation and
- * ability to sell future projects. Legal agreements between Admin and Artist
- * may or may not be in place to further protect artificial inflation of an
+ * ability to sell future projects. Agreements between Admin and Artist
+ * may or may not be in place to further dissuade artificial inflation of an
  * auction's sellout price.
  * ----------------------------------------------------------------------------
  * The following functions are restricted to the core contract's Admin ACL
@@ -61,7 +61,10 @@ pragma solidity 0.8.17;
  * less than a minute should not meaningfully impact price given the minimum
  * allowable price decay rate that this minter intends to support.
  */
-contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
+contract MinterDAExpSettlementV0 is
+    ReentrancyGuard,
+    IFilteredMinterDAExpSettlementV0
+{
     using SafeCast for uint256;
 
     /// Core contract address this minter interacts with
@@ -77,7 +80,7 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
     IMinterFilterV0 private immutable minterFilter;
 
     /// minterType for this minter
-    string public constant minterType = "MinterDAExpRefundV0";
+    string public constant minterType = "MinterDAExpSettlementV0";
 
     uint256 constant ONE_MILLION = 1_000_000;
 
@@ -89,9 +92,9 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
         bool maxHasBeenInvoked;
         // set to true only after artist + admin revenues have been collected
         bool auctionRevenuesCollected;
-        // number of tokens minted that have potential of future refunds.
+        // number of tokens minted that have potential of future settlement.
         // max uint24 > 16.7 million tokens > 1 million tokens/project max
-        uint24 numRefundableInvocations;
+        uint24 numSettleableInvocations;
         // max uint64 ~= 1.8e19 sec ~= 570 billion years
         uint64 timestampStart;
         uint64 priceDecayHalfLifeSeconds;
@@ -118,7 +121,7 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
     uint256 public maximumPriceDecayHalfLifeSeconds = 3600; // 60 minutes
 
     struct Receipt {
-        uint256 netPaid;
+        uint256 netPosted;
         uint256 numPurchased;
     }
     /// user address => project ID => receipt
@@ -225,10 +228,10 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
      * minting. A false negative will also only occur if the max invocations
      * was either reduced on the core contract to equal current invocations, or
      * if the max invocations was reached by minting on a different minter.
-     * In both of these cases, we expect the net purchase price (after refund)
-     * shall be the base price of the project's auction. This prevents an
-     * an artist from benefiting by reducing max invocations on the core mid-
-     * auction, or by minting on a different minter.
+     * In both of these cases, we expect the net purchase price (after
+     * settlement) shall be the base price of the project's auction. This
+     * prevents an artist from benefiting by reducing max invocations on the
+     * core mid-auction, or by minting on a different minter.
      * Note that if an artist wishes to reduce the max invocations on the core
      * to something less than the current invocations, but more than max
      * invocations (with the hope of increasing the sellout price), an admin
@@ -310,7 +313,7 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
      * @param _priceDecayHalfLifeSeconds The half life with which to decay the
      *  price (in seconds).
      * @param _startPrice Price at which to start the auction, in Wei.
-     * If a previous auction existed on this minter and at least one refundable
+     * If a previous auction existed on this minter and at least one settleable
      * purchase has been made, this value must be less than or equal to the
      * price when the previous auction was paused. This enforces an overall
      * monatonically decreasing auction.
@@ -343,10 +346,10 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
         // require _basePrice is non-zero to simplify logic of this minter
         require(_basePrice > 0, "Base price must be non-zero");
         // If previous purchases have been made, require monotonically
-        // decreasing purchase prices to preserve refund and revenue claiming
-        // logic. Since base price is always non-zero, if latestPurchasePrice
-        // is zero, then no previous purchases have been made, and startPrice
-        // may be set to any value.
+        // decreasing purchase prices to preserve settlement and revenue
+        // claiming logic. Since base price is always non-zero, if
+        // latestPurchasePrice is zero, then no previous purchases have been
+        // made, and startPrice may be set to any value.
         require(
             _projectConfig.latestPurchasePrice == 0 || // never purchased
                 _startPrice <= _projectConfig.latestPurchasePrice,
@@ -385,11 +388,11 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
      * This function is only callable by the core admin during an active
      * auction, before revenues have been collected.
      * The price at the time of the reset will be the maximum starting price
-     * when re-configuring the next auction if one or more refundable
-     * purchases have been made.
+     * when re-configuring the next auction if one or more settleable purchases
+     * have been made.
      * This is to ensure that purchases up through the block that this is
-     * called on will remain refundable, and that revenue claimed does not
-     * surpass (payments - refunds) for a given project.
+     * called on will remain settleable, and that revenue claimed does not
+     * surpass (payments - excess_settlement_funds) for a given project.
      * @param _projectId Project ID to set auction details for.
      */
     function resetAuctionDetails(uint256 _projectId)
@@ -411,12 +414,12 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
         _projectConfig.startPrice = 0;
         _projectConfig.basePrice = 0;
         // Since auction revenues have not been collected, we can safely assume
-        // that numRefundableInvocations is the number of purchases made on
+        // that numSettleableInvocations is the number of purchases made on
         // this minter. A dummy value of 0 is used for latest purchase price if
         // no purchases have been made.
         emit ResetAuctionDetails(
             _projectId,
-            _projectConfig.numRefundableInvocations,
+            _projectConfig.numSettleableInvocations,
             _projectConfig.latestPurchasePrice
         );
     }
@@ -480,7 +483,8 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
      * an auction is reset.
      * Revenues may only be collected a single time per project.
      * After revenues are collected, auction parameters will never be allowed
-     * to be reset, and refunds will become immutable and fully deterministic.
+     * to be reset, and excess settlement funds will become immutable and fully
+     * deterministic.
      */
     function withdrawArtistAndAdminRevenues(uint256 _projectId)
         external
@@ -514,21 +518,22 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
             // somewhat suspicious case, the artist must wait until the auction
             // reaches base price before withdrawing funds, at which point the
             // latestPurchasePrice will be set to base price, maximizing
-            // purchaser refund amounts, and minimizing artist/admin revenue.
+            // purchaser excess settlement amounts, and minimizing artist/admin
+            // revenue.
             require(
                 _projectConfig.maxHasBeenInvoked,
                 "Active auction not yet sold out"
             );
         } else {
             // update the latest purchase price to the base price, to ensure
-            // the base price is used for all future refund calculations
+            // the base price is used for all future settlement calculations
             _projectConfig.latestPurchasePrice = _projectConfig.basePrice;
         }
         // EFFECTS
         _projectConfig.auctionRevenuesCollected = true;
         // if the price is base price, the auction is valid and may be claimed
         // calculate the artist and admin revenues (no check requuired)
-        uint256 netRevenues = _projectConfig.numRefundableInvocations * _price;
+        uint256 netRevenues = _projectConfig.numSettleableInvocations * _price;
         // INTERACTIONS
         _splitETHRevenues(_projectId, netRevenues);
         emit ArtistAndAdminRevenuesWithdrawn(_projectId);
@@ -605,10 +610,10 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
         // EFFECTS
         // update the purchaser's receipt and require sufficient net payment
         Receipt storage _receipt = receipts[msg.sender][_projectId];
-        _receipt.netPaid += msg.value;
+        _receipt.netPosted += msg.value;
         _receipt.numPurchased++;
         require(
-            _receipt.netPaid >= _receipt.numPurchased * currentPriceInWei,
+            _receipt.netPosted >= _receipt.numPurchased * currentPriceInWei,
             "Must send minimum value to mint"
         );
         // emit event indicating new receipt state
@@ -616,7 +621,7 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
             msg.sender,
             _projectId,
             _receipt.numPurchased,
-            _receipt.netPaid
+            _receipt.netPosted
         );
 
         // update latest purchase price (on this minter) in storage
@@ -649,130 +654,141 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
             // @dev note that we are guaranteed to be at auction base price,
             // since we know we didn't sellout prior to this tx.
             // note that we don't refund msg.sender here, since a separate
-            // refund mechanism is provided for refunds, unrelated to msg.value
+            // settlement mechanism is provided on this minter, unrelated to
+            // msg.value
             _splitETHRevenues(_projectId, currentPriceInWei);
         } else {
-            // increment the number of refundable invocations that will be
+            // increment the number of settleable invocations that will be
             // claimable by the artist and admin once auction is validated.
             // do not split revenue here since will be claimed at a later time.
-            _projectConfig.numRefundableInvocations++;
+            _projectConfig.numSettleableInvocations++;
         }
 
         return tokenId;
     }
 
     /**
-     * @notice Refunds the sender's payment above current amount due for
-     * project `_projectId`. The current amount due is the the price paid for
-     * the most recently purchased token, or the base price if the artist has
-     * withdrawn revenues after the auction reached base price.
+     * @notice Reclaims the sender's payment above current settled price for
+     * project `_projectId`. The current settled price is the the price paid
+     * for the most recently purchased token, or the base price if the artist
+     * has withdrawn revenues after the auction reached base price.
      * This function is callable at any point, but is expected to typically be
      * called after auction has sold out above base price or after the auction
      * has been purchased at base price. This minimizes the amount of gas
-     * required to refund the sender.
-     * Sends refund to msg.sender.
-     * @param _projectId Project ID to refund payment on.
+     * required to send all excess settlement funds to the sender.
+     * Sends excess settlement funds to msg.sender.
+     * @param _projectId Project ID to reclaim excess settlement funds on.
      */
-    function claimRefund(uint256 _projectId) external {
-        claimRefundTo(payable(msg.sender), _projectId);
+    function reclaimProjectExcessSettlementFunds(uint256 _projectId) external {
+        reclaimProjectExcessSettlementFundsTo(payable(msg.sender), _projectId);
     }
 
     /**
-     * @notice Refunds the sender's payment above current amount due for
-     * project `_projectId`. The current amount due is the the price paid for
-     * the most recently purchased token, or the base price if the artist has
-     * withdrawn revenues after the auction reached base price.
+     * @notice Reclaims the sender's payment above current settled price for
+     * project `_projectId`. The current settled price is the the price paid
+     * for the most recently purchased token, or the base price if the artist
+     * has withdrawn revenues after the auction reached base price.
      * This function is callable at any point, but is expected to typically be
      * called after auction has sold out above base price or after the auction
      * has been purchased at base price. This minimizes the amount of gas
-     * required to refund the sender.
-     * Sends refund to address `_to`.
-     * @param _to Address to send refund to.
-     * @param _projectId Project ID to refund payment on.
+     * required to send all excess settlement funds.
+     * Sends excess settlement funds to address `_to`.
+     * @param _to Address to send excess settlement funds to.
+     * @param _projectId Project ID to reclaim excess settlement funds on.
      */
-    function claimRefundTo(address payable _to, uint256 _projectId)
-        public
-        nonReentrant
-    {
+    function reclaimProjectExcessSettlementFundsTo(
+        address payable _to,
+        uint256 _projectId
+    ) public nonReentrant {
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         Receipt storage receipt = receipts[msg.sender][_projectId];
         // CHECKS
         // input validation
-        require(_to != address(0), "No refund to the zero address");
+        require(_to != address(0), "No claiming to the zero address");
         // require that a user has purchased at least one token on this project
         require(receipt.numPurchased > 0, "No purchases made by this address");
         // get the latestPurchasePrice, which returns the sellout price if the
         // auction sold out before reaching base price, or returns the base
         // price if auction has reached base price and artist has withdrawn
         // revenues.
-        // @dev if user is elligible for a refund, they have purchased a token,
-        // therefore we are guaranteed to not have a populated
+        // @dev if user is elligible for a reclaiming, they have purchased a
+        // token, therefore we are guaranteed to not have a populated
         // latestPurchasePrice
-        uint256 netTokenPrice = _projectConfig.latestPurchasePrice;
+        uint256 currentSettledTokenPrice = _projectConfig.latestPurchasePrice;
 
         // EFFECTS
-        // calculate the refund amount
+        // calculate the excess settlement funds amount
         // implicit overflow/underflow checks in solidity ^0.8
-        uint256 amountDue = receipt.numPurchased * netTokenPrice;
-        uint256 refund = receipt.netPaid - amountDue;
-        // reduce the netPaid (in storage) to value after refund deducted
-        receipt.netPaid = amountDue;
+        uint256 amountDue = receipt.numPurchased * currentSettledTokenPrice;
+        uint256 excessSettlementFunds = receipt.netPosted - amountDue;
+        // reduce the netPosted (in storage) to value after excess settlement is
+        // deducted
+        receipt.netPosted = amountDue;
         // emit event indicating new receipt state
         emit ReceiptUpdated(
             msg.sender,
             _projectId,
             receipt.numPurchased,
-            receipt.netPaid
+            receipt.netPosted
         );
 
         // INTERACTIONS
         bool success_;
-        (success_, ) = _to.call{value: refund}("");
-        require(success_, "Refund failed");
+        (success_, ) = _to.call{value: excessSettlementFunds}("");
+        require(success_, "Reclaiming failed");
     }
 
     /**
-     * @notice Refunds the sender's payments above current amount due for
-     * projects in `_projectIds`. The amount due is the the price paid for
-     * the most recently purchased token on each project, or the base price if
-     * the artist has withdrawn revenues after the auction reached base price.
+     * @notice Reclaims the sender's payment above current settled price for
+     * projects in `_projectIds`. The current settled price is the the price
+     * paid for the most recently purchased token, or the base price if the
+     * artist has withdrawn revenues after the auction reached base price.
      * This function is callable at any point, but is expected to typically be
-     * called after auctions have sold out above base price, or after auctions
-     * have been purchased at base price. This minimizes the amount of gas
-     * required to refund the sender.
-     * Sends total of all refunds to msg.sender in a single chunk.
-     * Entire transaction reverts if any refund fails.
-     * @param _projectIds Array of project IDs to refund payments on.
+     * called after auction has sold out above base price or after the auction
+     * has been purchased at base price. This minimizes the amount of gas
+     * required to send all excess settlement funds to the sender.
+     * Sends total of all excess settlement funds to msg.sender in a single
+     * chunk. Entire transaction reverts if any excess settlement calculation
+     * fails.
+     * @param _projectIds Array of project IDs to reclaim excess settlement
+     * funds on.
      */
-    function claimRefunds(uint256[] calldata _projectIds) external {
-        claimRefundsTo(payable(msg.sender), _projectIds);
+    function reclaimProjectsExcessSettlementFunds(
+        uint256[] calldata _projectIds
+    ) external {
+        reclaimProjectsExcessSettlementFundsTo(
+            payable(msg.sender),
+            _projectIds
+        );
     }
 
     /**
-     * @notice Refunds the sender's payments above current amount due for
-     * projects in `_projectIds`. The amount due is the the price paid for
-     * the most recently purchased token on each project, or the base price if
-     * the artist has withdrawn revenues after the auction reached base price.
+     * @notice Reclaims the sender's payment above current settled price for
+     * projects in `_projectIds`. The current settled price is the the price
+     * paid for the most recently purchased token, or the base price if the
+     * artist has withdrawn revenues after the auction reached base price.
      * This function is callable at any point, but is expected to typically be
-     * called after auctions have sold out above base price, or after auctions
-     * have been purchased at base price. This minimizes the amount of gas
-     * required to refund the sender.
-     * Entire transaction reverts if any refund fails.
-     * Sends total of all refunds to address `_to` in a single chunk.
-     * @param _to Address to send refund to.
-     * @param _projectIds Array of project IDs to refund payments on.
+     * called after auction has sold out above base price or after the auction
+     * has been purchased at base price. This minimizes the amount of gas
+     * required to send all excess settlement funds to the sender.
+     * Sends total of all excess settlement funds to `_to` in a single
+     * chunk. Entire transaction reverts if any excess settlement calculation
+     * fails.
+     * @param _to Address to send excess settlement funds to.
+     * @param _projectIds Array of project IDs to reclaim excess settlement
+     * funds on.
      */
-    function claimRefundsTo(address payable _to, uint256[] memory _projectIds)
-        public
-        nonReentrant
-    {
+    function reclaimProjectsExcessSettlementFundsTo(
+        address payable _to,
+        uint256[] memory _projectIds
+    ) public nonReentrant {
         // CHECKS
         // input validation
-        require(_to != address(0), "No refund to the zero address");
+        require(_to != address(0), "No claiming to the zero address");
         // EFFECTS
-        // for each project, tally up the refund amount and update the receipt
-        // in storage
-        uint256 refund;
+        // for each project, tally up the excess settlement funds and update
+        // the receipt in storage
+        uint256 excessSettlementFunds;
         uint256 projectIdsLength = _projectIds.length;
         for (uint256 i = 0; i < projectIdsLength; ) {
             uint256 projectId = _projectIds[i];
@@ -788,22 +804,24 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
             // auction sold out before reaching base price, or returns the base
             // price if auction has reached base price and artist has withdrawn
             // revenues.
-            // @dev if user is elligible for a refund, they have purchased a token,
+            // @dev if user is elligible for a claim, they have purchased a token,
             // therefore we are guaranteed to not have a populated
             // latestPurchasePrice
-            uint256 netTokenPrice = _projectConfig.latestPurchasePrice;
-            // calculate the refund amount
+            uint256 currentSettledTokenPrice = _projectConfig
+                .latestPurchasePrice;
+            // calculate the excessSettlementFunds amount
             // implicit overflow/underflow checks in solidity ^0.8
-            uint256 amountDue = receipt.numPurchased * netTokenPrice;
-            refund += (receipt.netPaid - amountDue);
-            // reduce the netPaid (in storage) to value after refund deducted
-            receipt.netPaid = amountDue;
+            uint256 amountDue = receipt.numPurchased * currentSettledTokenPrice;
+            excessSettlementFunds += (receipt.netPosted - amountDue);
+            // reduce the netPosted (in storage) to value after excess settlement
+            // funds deducted
+            receipt.netPosted = amountDue;
             // emit event indicating new receipt state
             emit ReceiptUpdated(
                 msg.sender,
                 projectId,
                 receipt.numPurchased,
-                receipt.netPaid
+                receipt.netPosted
             );
             // gas efficiently increment i
             // won't overflow due to for loop, as well as gas limts
@@ -813,10 +831,11 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
         }
 
         // INTERACTIONS
-        // send refund in a single chunk for all projects
+        // send excess settlement funds in a single chunk for all
+        // projects
         bool success_;
-        (success_, ) = _to.call{value: refund}("");
-        require(success_, "Refund failed");
+        (success_, ) = _to.call{value: excessSettlementFunds}("");
+        require(success_, "Reclaiming failed");
     }
 
     /**
@@ -943,14 +962,14 @@ contract MinterDAExpRefundV0 is ReentrancyGuard, IFilteredMinterDAExpRefundV0 {
     }
 
     /**
-     * @notice Gets the number of refundable invocations for project `_projectId`.
+     * @notice Gets the number of settleable invocations for project `_projectId`.
      */
-    function getNumRefundableInvocations(uint256 _projectId)
+    function getNumSettleableInvocations(uint256 _projectId)
         external
         view
-        returns (uint256 numRefundableInvocations)
+        returns (uint256 numSettleableInvocations)
     {
-        return projectConfig[_projectId].numRefundableInvocations;
+        return projectConfig[_projectId].numSettleableInvocations;
     }
 
     /**

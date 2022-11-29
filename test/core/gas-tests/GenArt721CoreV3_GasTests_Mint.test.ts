@@ -73,9 +73,9 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
       this.minterFilter.address,
     ]);
 
-    this.minterDAExpRefund = await deployAndGet.call(
+    this.minterDAExpSettlement = await deployAndGet.call(
       this,
-      "MinterDAExpRefundV0",
+      "MinterDAExpSettlementV0",
       [this.genArt721Core.address, this.minterFilter.address]
     );
 
@@ -267,7 +267,7 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
       );
     });
 
-    it("test gas cost of mint on MinterDAExpRefund [ @skip-on-coverage ]", async function () {
+    it("test gas cost of mint on MinterDAExpSettlement [ @skip-on-coverage ]", async function () {
       this.startingPrice = ethers.utils.parseEther("10");
       this.basePrice = ethers.utils.parseEther("0.05");
       this.defaultHalfLife = ONE_HOUR / 2;
@@ -280,14 +280,17 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
       this.startTime = this.startTime + ONE_DAY;
 
       await ethers.provider.send("evm_mine", [this.startTime - ONE_MINUTE]);
-      // set project three minter to minterDAExpRefund, and configure
+      // set project three minter to minterDAExpSettlement, and configure
       await this.minterFilter
         .connect(this.accounts.deployer)
-        .addApprovedMinter(this.minterDAExpRefund.address);
+        .addApprovedMinter(this.minterDAExpSettlement.address);
       await this.minterFilter
         .connect(this.accounts.deployer)
-        .setMinterForProject(this.projectThree, this.minterDAExpRefund.address);
-      await this.minterDAExpRefund
+        .setMinterForProject(
+          this.projectThree,
+          this.minterDAExpSettlement.address
+        );
+      await this.minterDAExpSettlement
         .connect(this.accounts.artist)
         .setAuctionDetails(
           this.projectThree,
@@ -303,7 +306,7 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
       // report gas over an average of numMintsToAverage purchases
       const receipts = [];
       for (let index = 0; index < numMintsToAverage; index++) {
-        const tx = await this.minterDAExpRefund
+        const tx = await this.minterDAExpSettlement
           .connect(this.accounts.user)
           .purchase_H4M(this.projectThree, { value: this.startingPrice });
         receipts.push(await ethers.provider.getTransactionReceipt(tx.hash));

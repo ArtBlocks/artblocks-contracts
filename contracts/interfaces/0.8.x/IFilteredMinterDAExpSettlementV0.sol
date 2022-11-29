@@ -7,12 +7,12 @@ pragma solidity ^0.8.0;
 
 /**
  * @title This interface extends the IFilteredMinterV1 interface in order to
- * add support for generic project minter configuration updates.
+ * add support for Dutch Auction with Settlement minter updates.
  * @dev keys represent strings of finite length encoded in bytes32 to minimize
  * gas.
  * @author Art Blocks Inc.
  */
-interface IFilteredMinterDAExpRefundV0 is IFilteredMinterV1 {
+interface IFilteredMinterDAExpSettlementV0 is IFilteredMinterV1 {
     /// Auction details updated for project `projectId`.
     event SetAuctionDetails(
         uint256 indexed projectId,
@@ -47,7 +47,7 @@ interface IFilteredMinterDAExpRefundV0 is IFilteredMinterV1 {
         uint256 _selloutPrice
     );
 
-    /// artist and admin have withdrawn revenues from refundable purchases for
+    /// artist and admin have withdrawn revenues from settleable purchases for
     /// project `projectId`.
     /// @dev does not use generic event because likely will trigger additional
     /// actions in indexing layer
@@ -57,7 +57,7 @@ interface IFilteredMinterDAExpRefundV0 is IFilteredMinterV1 {
     event ReceiptUpdated(
         address indexed _purchaser,
         uint256 indexed _projectId,
-        uint256 _netPaid,
+        uint256 _netPosted,
         uint256 _numPurchased
     );
 
@@ -68,9 +68,9 @@ interface IFilteredMinterDAExpRefundV0 is IFilteredMinterV1 {
         view
         returns (uint256 latestPurchasePrice);
 
-    /// returns the number of refundable invocations for project `_projectId`.
-    function getNumRefundableInvocations(uint256 _projectId)
+    /// returns the number of settleable invocations for project `_projectId`.
+    function getNumSettleableInvocations(uint256 _projectId)
         external
         view
-        returns (uint256 numRefundableInvocations);
+        returns (uint256 numSettleableInvocations);
 }

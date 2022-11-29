@@ -85,7 +85,7 @@ export async function completeAuctionWithoutSellingOut(
  * helper function that:
  *  - mints a single token during auction, then advances one minute
  *  - mints a another token during auction, then advances one minute
- * results in a state where refund may be executed for multiple tokens.
+ * results in a state where settlement may be executed for multiple tokens.
  * All transactions are executed with zero gas fee to help balance calculations
  * @dev intended to be called with `this` bound to a test context
  * @param projectId project ID to use for minting. assumes project exists and
@@ -131,7 +131,7 @@ export async function purchaseTokensMidAuction(
  * @dev intended to be called with `this` bound to a test context
  * @dev reduces project max invocations to 2, so that the project will sell out
  * with a two purchases (ensuring that calculations involving
- * numRefundableInvocations are tested properly)
+ * numSettleableInvocations are tested properly)
  * @param projectId project ID to use for minting. assumes project exists and
  * is configured with a minter that supports this test.
  */
@@ -158,7 +158,7 @@ export async function selloutMidAuction(projectId: number): Promise<void> {
  * These tests are intended to check common DAExp functionality.
  * @dev assumes common BeforeEach to populate accounts, constants, and setup
  */
-export const MinterDAExpRefund_Common = async () => {
+export const MinterDAExpSettlement_Common = async () => {
   describe("common minter tests", async () => {
     await Minter_Common();
   });
@@ -379,7 +379,7 @@ export const MinterDAExpRefund_Common = async () => {
       );
     });
 
-    it("disallows starting price higher than latestPurchasePrice if num refundable invocations > 0", async function () {
+    it("disallows starting price higher than latestPurchasePrice if num settleable invocations > 0", async function () {
       // advance to auction start time
       await ethers.provider.send("evm_mine", [
         this.startTime + this.auctionStartTimeOffset,
@@ -412,7 +412,7 @@ export const MinterDAExpRefund_Common = async () => {
       );
     });
 
-    it("allows starting price equal to latestPurchasePrice if num refundable invocations > 0", async function () {
+    it("allows starting price equal to latestPurchasePrice if num settleable invocations > 0", async function () {
       // advance to auction start time
       await ethers.provider.send("evm_mine", [
         this.startTime + this.auctionStartTimeOffset,
@@ -443,7 +443,7 @@ export const MinterDAExpRefund_Common = async () => {
         );
     });
 
-    it("allows starting price less than latestPurchasePrice if num refundable invocations > 0", async function () {
+    it("allows starting price less than latestPurchasePrice if num settleable invocations > 0", async function () {
       // advance to auction start time
       await ethers.provider.send("evm_mine", [
         this.startTime + this.auctionStartTimeOffset,
@@ -1153,20 +1153,20 @@ export const MinterDAExpRefund_Common = async () => {
     });
   });
 
-  describe("claimRefund", async function () {
-    it("allows refund a few blocks after purchase", async function () {
+  describe("reclaimProjectExcessSettlementFunds (single project)", async function () {
+    it("allows settlement a few blocks after purchase", async function () {
       await purchaseTokensMidAuction.call(this, this.projectZero);
-      // user can claim refund
+      // user can claim settlement
       await this.minter
         .connect(this.accounts.user)
-        .claimRefund(this.projectZero);
+        .reclaimProjectExcessSettlementFunds(this.projectZero);
     });
 
-    it("sends proper refund value when calling mid-auction", async function () {
+    it("sends proper settlement value when calling mid-auction", async function () {
       const originalBalanceUser = await this.accounts.user.getBalance();
       // purchase tokens (at zero gas cost)
       await purchaseTokensMidAuction.call(this, this.projectZero);
-      // user should only pay net price of token price at this time, after claiming refund
+      // user should only pay net price of token price at this time, after claiming settlement
       // advance one minute
       await ethers.provider.send("evm_mine", [
         this.startTime + this.auctionStartTimeOffset + 3 * ONE_MINUTE,
@@ -1183,7 +1183,9 @@ export const MinterDAExpRefund_Common = async () => {
       await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
       await this.minter
         .connect(this.accounts.user)
-        .claimRefund(this.projectZero, { gasPrice: 0 });
+        .reclaimProjectExcessSettlementFunds(this.projectZero, {
+          gasPrice: 0,
+        });
       const projectAuctionParameters =
         await this.minter.projectAuctionParameters(this.projectZero);
       // calculate net price of token at this time and compare to change in balance
@@ -1197,7 +1199,7 @@ export const MinterDAExpRefund_Common = async () => {
       );
     });
 
-    it("sends proper refund value when calling after reaching resting price, but before token purchased at resting price", async function () {
+    it("sends proper settlement value when calling after reaching resting price, but before token purchased at resting price", async function () {
       const originalBalanceUser = await this.accounts.user.getBalance();
       // purchase tokens (at zero gas cost)
       await purchaseTokensMidAuction.call(this, this.projectZero);
@@ -1210,7 +1212,7 @@ export const MinterDAExpRefund_Common = async () => {
           gasPrice: 0,
         });
       const latestPurchaseTimestamp = await getTxResponseTimestamp(tx);
-      // user should only pay net price of token price at this time, after claiming refund
+      // user should only pay net price of token price at this time, after claiming settlement
       // jump to end of auction (10 half-lives is sufficient)
       await ethers.provider.send("evm_mine", [
         this.startTime +
@@ -1220,7 +1222,9 @@ export const MinterDAExpRefund_Common = async () => {
       await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
       await this.minter
         .connect(this.accounts.user)
-        .claimRefund(this.projectZero, { gasPrice: 0 });
+        .reclaimProjectExcessSettlementFunds(this.projectZero, {
+          gasPrice: 0,
+        });
       const projectAuctionParameters =
         await this.minter.projectAuctionParameters(this.projectZero);
       // calculate net price of token at this time and compare to change in balance
@@ -1234,7 +1238,7 @@ export const MinterDAExpRefund_Common = async () => {
       );
     });
 
-    it("sends proper refund value when calling after reaching resting price, but after artist withdraws revenues at base price", async function () {
+    it("sends proper settlement value when calling after reaching resting price, but after artist withdraws revenues at base price", async function () {
       const originalBalanceUser = await this.accounts.user.getBalance();
       // purchase tokens (at zero gas cost)
       await purchaseTokensMidAuction.call(this, this.projectZero);
@@ -1244,21 +1248,23 @@ export const MinterDAExpRefund_Common = async () => {
         value: this.startingPrice,
         gasPrice: 0,
       });
-      // user should only pay net price of token price at this time, after claiming refund
+      // user should only pay net price of token price at this time, after claiming settlement
       // jump to end of auction (10 half-lives is sufficient)
       await ethers.provider.send("evm_mine", [
         this.startTime +
           this.auctionStartTimeOffset +
           10 * this.defaultHalfLife,
       ]);
-      // artist withdraws revenues, locking in base price as refund net price
+      // artist withdraws revenues, locking in base price as settlement net price
       await this.minter
         .connect(this.accounts.artist)
         .withdrawArtistAndAdminRevenues(this.projectZero);
       await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
       await this.minter
         .connect(this.accounts.user)
-        .claimRefund(this.projectZero, { gasPrice: 0 });
+        .reclaimProjectExcessSettlementFunds(this.projectZero, {
+          gasPrice: 0,
+        });
       const projectAuctionParameters =
         await this.minter.projectAuctionParameters(this.projectZero);
       // calculate net price of token at this time and compare to change in balance
@@ -1269,55 +1275,64 @@ export const MinterDAExpRefund_Common = async () => {
       );
     });
 
-    it("allows refund while in a reset state", async function () {
+    it("allows settlement while in a reset state", async function () {
       await purchaseTokensMidAuction.call(this, this.projectZero);
       // admin reset the auction
       await this.minter
         .connect(this.accounts.deployer)
         .resetAuctionDetails(this.projectZero);
-      // user cannot claim refund
+      // user cannot claim settlement
       await this.minter
         .connect(this.accounts.user)
-        .claimRefund(this.projectZero);
+        .reclaimProjectExcessSettlementFunds(this.projectZero);
     });
   });
 
-  describe("claimRefundTo", async function () {
-    it("does not allow sending refunds to zero address", async function () {
+  describe("reclaimProjectExcessSettlementFundsTo (for single project)", async function () {
+    it("does not allow sending settlements to zero address", async function () {
       await purchaseTokensMidAuction.call(this, this.projectZero);
-      // user claims refund, revert
+      // user claims settlement, revert
       await expectRevert(
         this.minter
           .connect(this.accounts.user)
-          .claimRefundTo(constants.ZERO_ADDRESS, this.projectZero),
-        "No refund to the zero address"
+          .reclaimProjectExcessSettlementFundsTo(
+            constants.ZERO_ADDRESS,
+            this.projectZero
+          ),
+        "No claiming to the zero address"
       );
     });
 
-    it("does not allow collecting refunds prior to user making a purchase", async function () {
-      // user claims refund, revert
+    it("does not allow collecting settlements prior to user making a purchase", async function () {
+      // user claims settlement, revert
       await expectRevert(
         this.minter
           .connect(this.accounts.user)
-          .claimRefundTo(this.accounts.user2.address, this.projectZero),
+          .reclaimProjectExcessSettlementFundsTo(
+            this.accounts.user2.address,
+            this.projectZero
+          ),
         "No purchases made by this address"
       );
     });
 
-    it("allows refund a few blocks after purchase", async function () {
+    it("allows settlement a few blocks after purchase", async function () {
       await purchaseTokensMidAuction.call(this, this.projectZero);
-      // user can claim refund
+      // user can claim settlement
       await this.minter
         .connect(this.accounts.user)
-        .claimRefundTo(this.accounts.user2.address, this.projectZero);
+        .reclaimProjectExcessSettlementFundsTo(
+          this.accounts.user2.address,
+          this.projectZero
+        );
     });
 
-    it("sends proper refund value to `_to` when calling mid-auction", async function () {
+    it("sends proper settlement value to `_to` when calling mid-auction", async function () {
       const originalBalanceUser = await this.accounts.user.getBalance();
       const originalBalanceUser2 = await this.accounts.user2.getBalance();
       // purchase tokens (at zero gas cost)
       await purchaseTokensMidAuction.call(this, this.projectZero);
-      // user should only pay net price of token price at this time, after claiming refund
+      // user should only pay net price of token price at this time, after claiming settlement
       // advance one minute
       await ethers.provider.send("evm_mine", [
         this.startTime + this.auctionStartTimeOffset + 3 * ONE_MINUTE,
@@ -1334,9 +1349,13 @@ export const MinterDAExpRefund_Common = async () => {
       await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
       await this.minter
         .connect(this.accounts.user)
-        .claimRefundTo(this.accounts.user2.address, this.projectZero, {
-          gasPrice: 0,
-        });
+        .reclaimProjectExcessSettlementFundsTo(
+          this.accounts.user2.address,
+          this.projectZero,
+          {
+            gasPrice: 0,
+          }
+        );
       const projectAuctionParameters =
         await this.minter.projectAuctionParameters(this.projectZero);
       // calculate net price of token at this time and compare to change in balance
@@ -1351,7 +1370,7 @@ export const MinterDAExpRefund_Common = async () => {
         newBalanceUser.add(newBalanceUser2).add(expectedPrice.mul(3))
       );
       // user2 should have a net positive change in balance, since only received
-      // refund, not paid for token
+      // settlement, not paid for token
       expect(newBalanceUser2).to.be.gt(originalBalanceUser2);
     });
 
@@ -1362,31 +1381,34 @@ export const MinterDAExpRefund_Common = async () => {
         []
       );
       await purchaseTokensMidAuction.call(this, this.projectZero);
-      // user claims refund, revert
+      // user claims settlement, revert
       await expectRevert(
         this.minter
           .connect(this.accounts.user)
-          .claimRefundTo(deadReceiver.address, this.projectZero),
-        "Refund failed"
+          .reclaimProjectExcessSettlementFundsTo(
+            deadReceiver.address,
+            this.projectZero
+          ),
+        "Reclaiming failed"
       );
     });
   });
 
-  describe("claimRefunds", async function () {
-    describe("claimRefunds for single project", async function () {
-      it("allows refund a few blocks after purchase", async function () {
+  describe("reclaimProjectsExcessSettlementFunds (array of projects)", async function () {
+    describe("reclaimProjectsExcessSettlementFunds for single project", async function () {
+      it("allows settlement a few blocks after purchase", async function () {
         await purchaseTokensMidAuction.call(this, this.projectZero);
-        // user can claim refund
+        // user can claim settlement
         await this.minter
           .connect(this.accounts.user)
-          .claimRefunds([this.projectZero]);
+          .reclaimProjectsExcessSettlementFunds([this.projectZero]);
       });
 
-      it("sends proper refund value when calling mid-auction", async function () {
+      it("sends proper settlement value when calling mid-auction", async function () {
         const originalBalanceUser = await this.accounts.user.getBalance();
         // purchase tokens (at zero gas cost)
         await purchaseTokensMidAuction.call(this, this.projectZero);
-        // user should only pay net price of token price at this time, after claiming refund
+        // user should only pay net price of token price at this time, after claiming settlement
         // advance one minute
         await ethers.provider.send("evm_mine", [
           this.startTime + this.auctionStartTimeOffset + 3 * ONE_MINUTE,
@@ -1407,7 +1429,9 @@ export const MinterDAExpRefund_Common = async () => {
         ]);
         await this.minter
           .connect(this.accounts.user)
-          .claimRefunds([this.projectZero], { gasPrice: 0 });
+          .reclaimProjectsExcessSettlementFunds([this.projectZero], {
+            gasPrice: 0,
+          });
         const projectAuctionParameters =
           await this.minter.projectAuctionParameters(this.projectZero);
         // calculate net price of token at this time and compare to change in balance
@@ -1421,7 +1445,7 @@ export const MinterDAExpRefund_Common = async () => {
         );
       });
 
-      it("sends proper refund value when calling after reaching resting price, but before token purchased at resting price", async function () {
+      it("sends proper settlement value when calling after reaching resting price, but before token purchased at resting price", async function () {
         const originalBalanceUser = await this.accounts.user.getBalance();
         // purchase tokens (at zero gas cost)
         await purchaseTokensMidAuction.call(this, this.projectZero);
@@ -1436,7 +1460,7 @@ export const MinterDAExpRefund_Common = async () => {
             gasPrice: 0,
           });
         const latestPurchaseTimestamp = await getTxResponseTimestamp(tx);
-        // user should only pay net price of token price at this time, after claiming refund
+        // user should only pay net price of token price at this time, after claiming settlement
         // jump to end of auction (10 half-lives is sufficient)
         await ethers.provider.send("evm_mine", [
           this.startTime +
@@ -1448,7 +1472,9 @@ export const MinterDAExpRefund_Common = async () => {
         ]);
         await this.minter
           .connect(this.accounts.user)
-          .claimRefunds([this.projectZero], { gasPrice: 0 });
+          .reclaimProjectsExcessSettlementFunds([this.projectZero], {
+            gasPrice: 0,
+          });
         const projectAuctionParameters =
           await this.minter.projectAuctionParameters(this.projectZero);
         // calculate net price of token at this time and compare to change in balance
@@ -1462,7 +1488,7 @@ export const MinterDAExpRefund_Common = async () => {
         );
       });
 
-      it("sends proper refund value when calling after reaching resting price, but after artist withdraws revenues at base price", async function () {
+      it("sends proper settlement value when calling after reaching resting price, but after artist withdraws revenues at base price", async function () {
         const originalBalanceUser = await this.accounts.user.getBalance();
         // purchase tokens (at zero gas cost)
         await purchaseTokensMidAuction.call(this, this.projectZero);
@@ -1476,14 +1502,14 @@ export const MinterDAExpRefund_Common = async () => {
             value: this.startingPrice,
             gasPrice: 0,
           });
-        // user should only pay net price of token price at this time, after claiming refund
+        // user should only pay net price of token price at this time, after claiming settlement
         // jump to end of auction (10 half-lives is sufficient)
         await ethers.provider.send("evm_mine", [
           this.startTime +
             this.auctionStartTimeOffset +
             10 * this.defaultHalfLife,
         ]);
-        // artist withdraws revenues, locking in base price as refund net price
+        // artist withdraws revenues, locking in base price as settlement net price
         await this.minter
           .connect(this.accounts.artist)
           .withdrawArtistAndAdminRevenues(this.projectZero);
@@ -1492,7 +1518,9 @@ export const MinterDAExpRefund_Common = async () => {
         ]);
         await this.minter
           .connect(this.accounts.user)
-          .claimRefunds([this.projectZero], { gasPrice: 0 });
+          .reclaimProjectsExcessSettlementFunds([this.projectZero], {
+            gasPrice: 0,
+          });
         const projectAuctionParameters =
           await this.minter.projectAuctionParameters(this.projectZero);
         // calculate net price of token at this time and compare to change in balance
@@ -1503,20 +1531,20 @@ export const MinterDAExpRefund_Common = async () => {
         );
       });
 
-      it("allows refund while in a reset state", async function () {
+      it("allows settlement while in a reset state", async function () {
         await purchaseTokensMidAuction.call(this, this.projectZero);
         // admin reset the auction
         await this.minter
           .connect(this.accounts.deployer)
           .resetAuctionDetails(this.projectZero);
-        // user cannot claim refund
+        // user cannot claim settlement
         await this.minter
           .connect(this.accounts.user)
-          .claimRefunds([this.projectZero]);
+          .reclaimProjectsExcessSettlementFunds([this.projectZero]);
       });
     });
 
-    describe("claimRefunds for multiple projects", async function () {
+    describe("reclaimProjectsExcessSettlementFunds for multiple projects", async function () {
       beforeEach(async function () {
         // add project one and configure auction
         await safeAddProject(
@@ -1545,7 +1573,7 @@ export const MinterDAExpRefund_Common = async () => {
         );
       });
 
-      it("does not allow collecting refunds prior to user making a purchase on one of two projects", async function () {
+      it("does not allow collecting settlements prior to user making a purchase on one of two projects", async function () {
         // advance to auction start time
         await ethers.provider.send("evm_mine", [
           this.startTime + this.auctionStartTimeOffset,
@@ -1554,16 +1582,19 @@ export const MinterDAExpRefund_Common = async () => {
         await this.minter
           .connect(this.accounts.user)
           .purchase(this.projectZero, { value: this.startingPrice });
-        // user claims refund, revert
+        // user claims settlement, revert
         await expectRevert(
           this.minter
             .connect(this.accounts.user)
-            .claimRefunds([this.projectZero, this.projectOne]),
+            .reclaimProjectsExcessSettlementFunds([
+              this.projectZero,
+              this.projectOne,
+            ]),
           "No purchases made by this address"
         );
       });
 
-      it("does allow collecting refunds after user making a purchase on two of two projects", async function () {
+      it("does allow collecting settlements after user making a purchase on two of two projects", async function () {
         // advance to auction start time
         await ethers.provider.send("evm_mine", [
           this.startTime + this.auctionStartTimeOffset,
@@ -1576,13 +1607,16 @@ export const MinterDAExpRefund_Common = async () => {
         await this.minter
           .connect(this.accounts.user)
           .purchase(this.projectOne, { value: this.startingPrice });
-        // user successfully claims refunds
+        // user successfully claims settlements
         await this.minter
           .connect(this.accounts.user)
-          .claimRefunds([this.projectZero, this.projectOne]);
+          .reclaimProjectsExcessSettlementFunds([
+            this.projectZero,
+            this.projectOne,
+          ]);
       });
 
-      it("does not allow collecting refunds if non-existing project is included", async function () {
+      it("does not allow collecting settlements if non-existing project is included", async function () {
         // advance to auction start time
         await ethers.provider.send("evm_mine", [
           this.startTime + this.auctionStartTimeOffset,
@@ -1591,16 +1625,19 @@ export const MinterDAExpRefund_Common = async () => {
         await this.minter
           .connect(this.accounts.user)
           .purchase(this.projectZero, { value: this.startingPrice });
-        // user successfully claims refunds
+        // user successfully claims settlements
         await expectRevert(
           this.minter
             .connect(this.accounts.user)
-            .claimRefunds([this.projectZero, this.projectOne]),
+            .reclaimProjectsExcessSettlementFunds([
+              this.projectZero,
+              this.projectOne,
+            ]),
           "No purchases made by this address"
         );
       });
 
-      it("properly calculates refund on two of two projects", async function () {
+      it("properly calculates settlement on two of two projects", async function () {
         // record balance
         const originalBalanceUser = await this.accounts.user.getBalance();
         // advance to auction start time
@@ -1643,13 +1680,18 @@ export const MinterDAExpRefund_Common = async () => {
         await this.minter
           .connect(this.accounts.artist)
           .withdrawArtistAndAdminRevenues(this.projectOne);
-        // user claims refunds to user2
+        // user claims settlements to user2
         await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", [
           "0x0",
         ]);
         await this.minter
           .connect(this.accounts.user)
-          .claimRefunds([this.projectZero, this.projectOne], { gasPrice: 0 });
+          .reclaimProjectsExcessSettlementFunds(
+            [this.projectZero, this.projectOne],
+            {
+              gasPrice: 0,
+            }
+          );
         // record new balances
         const newBalanceUser = await this.accounts.user.getBalance();
         // check that net change in balances is as expected
@@ -1664,43 +1706,50 @@ export const MinterDAExpRefund_Common = async () => {
     });
   });
 
-  describe("claimRefundsTo", async function () {
-    describe("claimRefunds for single project", async function () {
-      it("does not allow sending refunds to zero address", async function () {
+  describe("reclaimProjectsExcessSettlementFundsTo (array of projects)", async function () {
+    describe("reclaimProjectsExcessSettlementFundsTo for single project", async function () {
+      it("does not allow sending settlements to zero address", async function () {
         await purchaseTokensMidAuction.call(this, this.projectZero);
-        // user claims refund, revert
+        // user claims settlement, revert
         await expectRevert(
           this.minter
             .connect(this.accounts.user)
-            .claimRefundsTo(constants.ZERO_ADDRESS, [this.projectZero]),
-          "No refund to the zero address"
+            .reclaimProjectsExcessSettlementFundsTo(constants.ZERO_ADDRESS, [
+              this.projectZero,
+            ]),
+          "No claiming to the zero address"
         );
       });
 
-      it("does not allow collecting refunds prior to user making a purchase", async function () {
-        // user claims refund, revert
+      it("does not allow collecting settlements prior to user making a purchase", async function () {
+        // user claims settlement, revert
         await expectRevert(
           this.minter
             .connect(this.accounts.user)
-            .claimRefundsTo(this.accounts.user2.address, [this.projectZero]),
+            .reclaimProjectsExcessSettlementFundsTo(
+              this.accounts.user2.address,
+              [this.projectZero]
+            ),
           "No purchases made by this address"
         );
       });
 
-      it("allows refund a few blocks after purchase", async function () {
+      it("allows settlement a few blocks after purchase", async function () {
         await purchaseTokensMidAuction.call(this, this.projectZero);
-        // user can claim refund
+        // user can claim settlement
         await this.minter
           .connect(this.accounts.user)
-          .claimRefundsTo(this.accounts.user2.address, [this.projectZero]);
+          .reclaimProjectsExcessSettlementFundsTo(this.accounts.user2.address, [
+            this.projectZero,
+          ]);
       });
 
-      it("sends proper refund value to `_to` when calling mid-auction", async function () {
+      it("sends proper settlement value to `_to` when calling mid-auction", async function () {
         const originalBalanceUser = await this.accounts.user.getBalance();
         const originalBalanceUser2 = await this.accounts.user2.getBalance();
         // purchase tokens (at zero gas cost)
         await purchaseTokensMidAuction.call(this, this.projectZero);
-        // user should only pay net price of token price at this time, after claiming refund
+        // user should only pay net price of token price at this time, after claiming settlement
         // advance one minute
         await ethers.provider.send("evm_mine", [
           this.startTime + this.auctionStartTimeOffset + 3 * ONE_MINUTE,
@@ -1721,9 +1770,13 @@ export const MinterDAExpRefund_Common = async () => {
         ]);
         await this.minter
           .connect(this.accounts.user)
-          .claimRefundsTo(this.accounts.user2.address, [this.projectZero], {
-            gasPrice: 0,
-          });
+          .reclaimProjectsExcessSettlementFundsTo(
+            this.accounts.user2.address,
+            [this.projectZero],
+            {
+              gasPrice: 0,
+            }
+          );
         const projectAuctionParameters =
           await this.minter.projectAuctionParameters(this.projectZero);
         // calculate net price of token at this time and compare to change in balance
@@ -1738,7 +1791,7 @@ export const MinterDAExpRefund_Common = async () => {
           newBalanceUser.add(newBalanceUser2).add(expectedPrice.mul(3))
         );
         // user2 should have a net positive change in balance, since only received
-        // refund, not paid for token
+        // settlement, not paid for token
         expect(newBalanceUser2).to.be.gt(originalBalanceUser2);
       });
 
@@ -1749,17 +1802,19 @@ export const MinterDAExpRefund_Common = async () => {
           []
         );
         await purchaseTokensMidAuction.call(this, this.projectZero);
-        // user claims refund, revert
+        // user claims settlement, revert
         await expectRevert(
           this.minter
             .connect(this.accounts.user)
-            .claimRefundsTo(deadReceiver.address, [this.projectZero]),
-          "Refund failed"
+            .reclaimProjectsExcessSettlementFundsTo(deadReceiver.address, [
+              this.projectZero,
+            ]),
+          "Reclaiming failed"
         );
       });
     });
 
-    describe("claimRefundsTo for multiple projects", async function () {
+    describe("reclaimProjectsExcessSettlementFundsTo for multiple projects", async function () {
       beforeEach(async function () {
         // add project one and configure auction
         await safeAddProject(
@@ -1788,7 +1843,7 @@ export const MinterDAExpRefund_Common = async () => {
         );
       });
 
-      it("does not allow collecting refunds prior to user making a purchase on one of two projects", async function () {
+      it("does not allow collecting settlements prior to user making a purchase on one of two projects", async function () {
         // advance to auction start time
         await ethers.provider.send("evm_mine", [
           this.startTime + this.auctionStartTimeOffset,
@@ -1797,19 +1852,19 @@ export const MinterDAExpRefund_Common = async () => {
         await this.minter
           .connect(this.accounts.user)
           .purchase(this.projectZero, { value: this.startingPrice });
-        // user claims refund, revert
+        // user claims settlement, revert
         await expectRevert(
           this.minter
             .connect(this.accounts.user)
-            .claimRefundsTo(this.accounts.user2.address, [
-              this.projectZero,
-              this.projectOne,
-            ]),
+            .reclaimProjectsExcessSettlementFundsTo(
+              this.accounts.user2.address,
+              [this.projectZero, this.projectOne]
+            ),
           "No purchases made by this address"
         );
       });
 
-      it("does allow collecting refunds after user making a purchase on two of two projects", async function () {
+      it("does allow collecting settlements after user making a purchase on two of two projects", async function () {
         // advance to auction start time
         await ethers.provider.send("evm_mine", [
           this.startTime + this.auctionStartTimeOffset,
@@ -1822,16 +1877,16 @@ export const MinterDAExpRefund_Common = async () => {
         await this.minter
           .connect(this.accounts.user)
           .purchase(this.projectOne, { value: this.startingPrice });
-        // user successfully claims refunds
+        // user successfully claims settlements
         await this.minter
           .connect(this.accounts.user)
-          .claimRefundsTo(this.accounts.user2.address, [
+          .reclaimProjectsExcessSettlementFundsTo(this.accounts.user2.address, [
             this.projectZero,
             this.projectOne,
           ]);
       });
 
-      it("does not allow collecting refunds if non-existing project is included", async function () {
+      it("does not allow collecting settlements if non-existing project is included", async function () {
         // advance to auction start time
         await ethers.provider.send("evm_mine", [
           this.startTime + this.auctionStartTimeOffset,
@@ -1840,19 +1895,19 @@ export const MinterDAExpRefund_Common = async () => {
         await this.minter
           .connect(this.accounts.user)
           .purchase(this.projectZero, { value: this.startingPrice });
-        // user successfully claims refunds
+        // user successfully claims settlements
         await expectRevert(
           this.minter
             .connect(this.accounts.user)
-            .claimRefundsTo(this.accounts.user2.address, [
-              this.projectZero,
-              this.projectOne,
-            ]),
+            .reclaimProjectsExcessSettlementFundsTo(
+              this.accounts.user2.address,
+              [this.projectZero, this.projectOne]
+            ),
           "No purchases made by this address"
         );
       });
 
-      it("properly calculates refund on two of two projects", async function () {
+      it("properly calculates settlement on two of two projects", async function () {
         // record balances
         const originalBalanceUser = await this.accounts.user.getBalance();
         const originalBalanceUser2 = await this.accounts.user2.getBalance();
@@ -1896,13 +1951,13 @@ export const MinterDAExpRefund_Common = async () => {
         await this.minter
           .connect(this.accounts.artist)
           .withdrawArtistAndAdminRevenues(this.projectOne);
-        // user claims refunds to user2
+        // user claims settlements to user2
         await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", [
           "0x0",
         ]);
         await this.minter
           .connect(this.accounts.user)
-          .claimRefundsTo(
+          .reclaimProjectsExcessSettlementFundsTo(
             this.accounts.user2.address,
             [this.projectZero, this.projectOne],
             { gasPrice: 0 }
@@ -1938,18 +1993,18 @@ export const MinterDAExpRefund_Common = async () => {
     });
   });
 
-  describe("getNumRefundableInvocations", async function () {
+  describe("getNumSettleableInvocations", async function () {
     it("retuns zero for project without any purchases", async function () {
-      const numRefundableInvocations =
-        await this.minter.getNumRefundableInvocations(this.projectZero);
-      expect(numRefundableInvocations).to.equal(0);
+      const numSettleableInvocations =
+        await this.minter.getNumSettleableInvocations(this.projectZero);
+      expect(numSettleableInvocations).to.equal(0);
     });
 
     it("retuns non-zero for project with purchases", async function () {
       await selloutMidAuction.call(this, this.projectZero);
-      const numRefundableInvocations =
-        await this.minter.getNumRefundableInvocations(this.projectZero);
-      expect(numRefundableInvocations).to.be.gt(0);
+      const numSettleableInvocations =
+        await this.minter.getNumSettleableInvocations(this.projectZero);
+      expect(numSettleableInvocations).to.be.gt(0);
     });
   });
 
@@ -2082,12 +2137,14 @@ export const MinterDAExpRefund_Common = async () => {
       await this.minter
         .connect(this.accounts.artist)
         .withdrawArtistAndAdminRevenues(this.projectZero, { gasPrice: 0 });
-      // user should be able to withdraw refund as if sellout price was auction base price
+      // user should be able to withdraw settlement as if sellout price was auction base price
       await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
       await this.minter
         .connect(this.accounts.user)
-        .claimRefund(this.projectZero, { gasPrice: 0 });
-      // user balance should reflect proper refund amount
+        .reclaimProjectExcessSettlementFunds(this.projectZero, {
+          gasPrice: 0,
+        });
+      // user balance should reflect proper settlement amount
       const newBalanceArtist = await this.accounts.artist.getBalance();
       const newBalanceUser = await this.accounts.user.getBalance();
       const totalRevenue = this.basePrice.mul(2); // 2 tokens purchased
@@ -2181,12 +2238,14 @@ export const MinterDAExpRefund_Common = async () => {
       await this.minter
         .connect(this.accounts.artist)
         .withdrawArtistAndAdminRevenues(this.projectZero, { gasPrice: 0 });
-      // user should be able to withdraw refund as if sellout price was auction base price
+      // user should be able to withdraw settlement as if sellout price was auction base price
       await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
       await this.minter
         .connect(this.accounts.user)
-        .claimRefund(this.projectZero, { gasPrice: 0 });
-      // user balance should reflect proper refund amount
+        .reclaimProjectExcessSettlementFunds(this.projectZero, {
+          gasPrice: 0,
+        });
+      // user balance should reflect proper settlement amount
       const newBalanceArtist = await this.accounts.artist.getBalance();
       const newBalanceUser = await this.accounts.user.getBalance();
       const totalRevenue = this.basePrice.mul(2); // 2 tokens purchased
