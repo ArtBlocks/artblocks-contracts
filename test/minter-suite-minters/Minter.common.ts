@@ -82,13 +82,13 @@ export const Minter_Common = async () => {
   describe("setProjectMaxInvocations", async function () {
     it("allows deployer to call setProjectMaxInvocations", async function () {
       const minterType = await this.minter.minterType();
-      if (!minterType.includes("Refund")) {
-        // minters that don't refund should support this function
+      if (!minterType.includes("Settlement")) {
+        // minters that don't settle on-chain should support this function
         await this.minter
           .connect(this.accounts.deployer)
           .setProjectMaxInvocations(this.projectZero);
       } else {
-        // minters that refund should not support this function
+        // minters that settle on-chain should not support this function
         await expectRevert(
           this.minter
             .connect(this.accounts.deployer)
@@ -100,7 +100,7 @@ export const Minter_Common = async () => {
 
     it("updates local projectMaxInvocations after syncing to core", async function () {
       const minterType = await this.minter.minterType();
-      if (!minterType.includes("Refund")) {
+      if (!minterType.includes("Settlement")) {
         // update max invocations to 1 on the core
         await this.genArt721Core
           .connect(this.accounts.artist)
@@ -115,7 +115,7 @@ export const Minter_Common = async () => {
         ).to.be.equal(2);
       } else {
         console.info(
-          "skipping setProjectMaxInvocations test because not implemented on refund minters"
+          "skipping setProjectMaxInvocations test because not implemented on settlement minters"
         );
       }
     });

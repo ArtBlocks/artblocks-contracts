@@ -23,8 +23,8 @@ import {
   safeAddProject,
 } from "../../../util/common";
 import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../util/constants";
-import { MinterDAExpRefund_Common } from "./MinterDAExpRefund.common";
-import { MinterDARefundV0_Common } from "../MinterDARefundV0.common";
+import { MinterDAExpSettlement_Common } from "./MinterDAExpSettlement.common";
+import { MinterDASettlementV0_Common } from "../MinterDASettlementV0.common";
 
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
@@ -37,7 +37,7 @@ const coreContractsToTest = [
  * V3 core contract.
  */
 for (const coreContractName of coreContractsToTest) {
-  describe(`MinterDAExpRefundV0_${coreContractName}`, async function () {
+  describe(`MinterDAExpSettlementV0_${coreContractName}`, async function () {
     beforeEach(async function () {
       // standard accounts and constants
       this.accounts = await getAccounts();
@@ -61,7 +61,7 @@ for (const coreContractName of coreContractsToTest) {
         "MinterFilterV1"
       ));
 
-      this.minter = await deployAndGet.call(this, "MinterDAExpRefundV0", [
+      this.minter = await deployAndGet.call(this, "MinterDAExpSettlementV0", [
         this.genArt721Core.address,
         this.minterFilter.address,
       ]);
@@ -111,12 +111,12 @@ for (const coreContractName of coreContractsToTest) {
       await ethers.provider.send("evm_mine", [this.startTime]);
     });
 
-    describe("common DAEXPRefund tests", async function () {
-      await MinterDAExpRefund_Common();
+    describe("common DAEXPSettlement tests", async function () {
+      await MinterDAExpSettlement_Common();
     });
 
-    describe("common DA Refund V0 tests", async function () {
-      await MinterDARefundV0_Common();
+    describe("common DA Settlement V0 tests", async function () {
+      await MinterDASettlementV0_Common();
     });
 
     describe("setAuctionDetails", async function () {

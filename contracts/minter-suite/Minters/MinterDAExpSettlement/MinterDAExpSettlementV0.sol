@@ -679,8 +679,8 @@ contract MinterDAExpSettlementV0 is
      * Sends excess settlement funds to msg.sender.
      * @param _projectId Project ID to reclaim excess settlement funds on.
      */
-    function reclaimExcessSettlementFunds(uint256 _projectId) external {
-        reclaimExcessSettlementFundsTo(payable(msg.sender), _projectId);
+    function reclaimProjectExcessSettlementFunds(uint256 _projectId) external {
+        reclaimProjectExcessSettlementFundsTo(payable(msg.sender), _projectId);
     }
 
     /**
@@ -696,7 +696,7 @@ contract MinterDAExpSettlementV0 is
      * @param _to Address to send excess settlement funds to.
      * @param _projectId Project ID to reclaim excess settlement funds on.
      */
-    function reclaimExcessSettlementFundsTo(
+    function reclaimProjectExcessSettlementFundsTo(
         address payable _to,
         uint256 _projectId
     ) public nonReentrant {
@@ -753,10 +753,13 @@ contract MinterDAExpSettlementV0 is
      * @param _projectIds Array of project IDs to reclaim excess settlement
      * funds on.
      */
-    function reclaimExcessSettlementFunds(uint256[] calldata _projectIds)
-        external
-    {
-        reclaimExcessSettlementFundsTo(payable(msg.sender), _projectIds);
+    function reclaimProjectsExcessSettlementFunds(
+        uint256[] calldata _projectIds
+    ) external {
+        reclaimProjectsExcessSettlementFundsTo(
+            payable(msg.sender),
+            _projectIds
+        );
     }
 
     /**
@@ -775,7 +778,7 @@ contract MinterDAExpSettlementV0 is
      * @param _projectIds Array of project IDs to reclaim excess settlement
      * funds on.
      */
-    function reclaimExcessSettlementFundsTo(
+    function reclaimProjectsExcessSettlementFundsTo(
         address payable _to,
         uint256[] memory _projectIds
     ) public nonReentrant {

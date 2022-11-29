@@ -8,17 +8,17 @@ import Safe from "@gnosis.pm/safe-core-sdk";
 import { SafeTransactionDataPartial } from "@gnosis.pm/safe-core-sdk-types";
 import { getGnosisSafe } from "../../util/GnosisSafeNetwork";
 import { isCoreV3, deployAndGet } from "../../util/common";
-import { completeAuctionWithoutSellingOut } from "./MinterDAExpRefund/MinterDAExpRefund.common";
+import { completeAuctionWithoutSellingOut } from "./MinterDAExpSettlement/MinterDAExpSettlement.common";
 
 /**
- * These tests are intended to check common DA w/Refund V0 functionality.
- * The tests are intended to be run on the any DA Refund V0 contract; for
- * example, if a linear DA Refund were to be created, these tests would
+ * These tests are intended to check common DA w/Settlement V0 functionality.
+ * The tests are intended to be run on the any DA Settlement V0 contract; for
+ * example, if a linear DA Settlement were to be created, these tests would
  * be applicable to that contract.
  * @dev assumes common BeforeEach to populate accounts, constants, and setup
- * @dev does not call specific type of DA Refund common tests.
+ * @dev does not call specific type of DA Settlement common tests.
  */
-export const MinterDARefundV0_Common = async () => {
+export const MinterDASettlementV0_Common = async () => {
   describe("purchase_H4M", async function () {
     it("allows `purchase_H4M` by default", async function () {
       await ethers.provider.send("evm_mine", [
@@ -282,7 +282,7 @@ export const MinterDARefundV0_Common = async () => {
         // attack occurs
         "Art Blocks payment failed"
       );
-      // attacker should be able to purchase ONE token at a time w/refunds
+      // attacker should be able to purchase ONE token at a time w/settlements
       numTokensToMint = BigNumber.from("1");
       totalValue = this.higherPricePerTokenInWei.mul(numTokensToMint);
       for (let i = 0; i < totalTokensToMint; i++) {
