@@ -970,10 +970,10 @@ contract MinterDAExpSettlementV0 is
         address _walletAddress
     ) external view returns (uint256 excessSettlementFundsInWei) {
         // input validation
-        require(_walletAddress != address(0), "No zero wallet address");
+        require(_walletAddress != address(0), "No zero address");
         // load struct from storage
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
-        Receipt storage receipt = receipts[msg.sender][_projectId];
+        Receipt storage receipt = receipts[_walletAddress][_projectId];
         // require that a user has purchased at least one token on this project
         require(receipt.numPurchased > 0, "No purchases made by this address");
         // get the latestPurchasePrice, which returns the sellout price if the
