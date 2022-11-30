@@ -69,7 +69,7 @@ contract MinterMerkleV3 is ReentrancyGuard, IFilteredMinterMerkleV1 {
     IMinterFilterV0 private immutable minterFilter;
 
     /// minterType for this minter
-    string public constant minterType = "MinterMerkleV2";
+    string public constant minterType = "MinterMerkleV3";
 
     /// project minter configuration keys used by this minter
     bytes32 private constant CONFIG_MERKLE_ROOT = "merkleRoot";
