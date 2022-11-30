@@ -1978,10 +1978,10 @@ export const MinterDAExpSettlement_Common = async () => {
     });
   });
 
-  describe("estimateProjectExcessSettlementFunds", async function () {
-    it("reverts when estimating for zero address", async function () {
+  describe("getProjectExcessSettlementFunds", async function () {
+    it("reverts when getting for zero address", async function () {
       await expectRevert(
-        this.minter.estimateProjectExcessSettlementFunds(
+        this.minter.getProjectExcessSettlementFunds(
           this.projectZero,
           constants.ZERO_ADDRESS
         ),
@@ -1989,9 +1989,9 @@ export const MinterDAExpSettlement_Common = async () => {
       );
     });
 
-    it("reverts when estimating before a wallet purchases", async function () {
+    it("reverts when getting before a wallet purchases", async function () {
       await expectRevert(
-        this.minter.estimateProjectExcessSettlementFunds(
+        this.minter.getProjectExcessSettlementFunds(
           this.projectZero,
           this.accounts.user.address
         ),
@@ -2002,7 +2002,7 @@ export const MinterDAExpSettlement_Common = async () => {
     it("returns expected values for project after purchases", async function () {
       await purchaseTokensMidAuction.call(this, this.projectZero);
       const excessSettlementFunds =
-        await this.minter.estimateProjectExcessSettlementFunds(
+        await this.minter.getProjectExcessSettlementFunds(
           this.projectZero,
           this.accounts.user.address
         );
@@ -2013,7 +2013,7 @@ export const MinterDAExpSettlement_Common = async () => {
         .reclaimProjectExcessSettlementFunds(this.projectZero);
       // check that excess settlement funds are zero
       const excessSettlementFundsAfterReclaim =
-        await this.minter.estimateProjectExcessSettlementFunds(
+        await this.minter.getProjectExcessSettlementFunds(
           this.projectZero,
           this.accounts.user.address
         );

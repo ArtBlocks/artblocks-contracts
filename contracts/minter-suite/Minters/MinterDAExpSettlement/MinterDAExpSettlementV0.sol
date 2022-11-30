@@ -965,7 +965,7 @@ contract MinterDAExpSettlementV0 is
      * @return excessSettlementFundsInWei Amount of excess settlement funds, in
      * wei
      */
-    function estimateProjectExcessSettlementFunds(
+    function getProjectExcessSettlementFunds(
         uint256 _projectId,
         address _walletAddress
     ) external view returns (uint256 excessSettlementFundsInWei) {
