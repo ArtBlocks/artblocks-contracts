@@ -719,11 +719,13 @@ contract MinterDAExpSettlementV0 is
         // EFFECTS
         // calculate the excess settlement funds amount
         // implicit overflow/underflow checks in solidity ^0.8
-        uint256 amountDue = receipt.numPurchased * currentSettledTokenPrice;
-        uint256 excessSettlementFunds = receipt.netPosted - amountDue;
+        uint256 requiredAmountPosted = receipt.numPurchased *
+            currentSettledTokenPrice;
+        uint256 excessSettlementFunds = receipt.netPosted -
+            requiredAmountPosted;
         // reduce the netPosted (in storage) to value after excess settlement is
         // deducted
-        receipt.netPosted = amountDue;
+        receipt.netPosted = requiredAmountPosted;
         // emit event indicating new receipt state
         emit ReceiptUpdated(
             msg.sender,
@@ -811,11 +813,12 @@ contract MinterDAExpSettlementV0 is
                 .latestPurchasePrice;
             // calculate the excessSettlementFunds amount
             // implicit overflow/underflow checks in solidity ^0.8
-            uint256 amountDue = receipt.numPurchased * currentSettledTokenPrice;
-            excessSettlementFunds += (receipt.netPosted - amountDue);
+            uint256 requiredAmountPosted = receipt.numPurchased *
+                currentSettledTokenPrice;
+            excessSettlementFunds += (receipt.netPosted - requiredAmountPosted);
             // reduce the netPosted (in storage) to value after excess settlement
             // funds deducted
-            receipt.netPosted = amountDue;
+            receipt.netPosted = requiredAmountPosted;
             // emit event indicating new receipt state
             emit ReceiptUpdated(
                 msg.sender,
