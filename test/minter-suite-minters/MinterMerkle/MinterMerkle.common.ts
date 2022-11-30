@@ -68,7 +68,7 @@ export const MinterMerkle_Common = async () => {
       const receipt = await tx.deployTransaction.wait();
       // check for expected event
       // target event is the last log
-      const targetLog = receipt.logs[receipt.logs.length-1];
+      const targetLog = receipt.logs[receipt.logs.length - 1];
       // expect "DefaultMaxInvocationsPerAddress" event as topic 0
       expect(targetLog.topics[0]).to.be.equal(
         ethers.utils.keccak256(
