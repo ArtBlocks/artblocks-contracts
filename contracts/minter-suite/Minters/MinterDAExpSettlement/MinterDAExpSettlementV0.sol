@@ -711,8 +711,8 @@ contract MinterDAExpSettlementV0 is
         // auction sold out before reaching base price, or returns the base
         // price if auction has reached base price and artist has withdrawn
         // revenues.
-        // @dev if user is elligible for a reclaiming, they have purchased a
-        // token, therefore we are guaranteed to not have a populated
+        // @dev if user is eligible for a reclaiming, they have purchased a
+        // token, therefore we are guaranteed to have a populated
         // latestPurchasePrice
         uint256 currentSettledTokenPrice = _projectConfig.latestPurchasePrice;
 
@@ -804,8 +804,8 @@ contract MinterDAExpSettlementV0 is
             // auction sold out before reaching base price, or returns the base
             // price if auction has reached base price and artist has withdrawn
             // revenues.
-            // @dev if user is elligible for a claim, they have purchased a token,
-            // therefore we are guaranteed to not have a populated
+            // @dev if user is eligible for a claim, they have purchased a token,
+            // therefore we are guaranteed to have a populated
             // latestPurchasePrice
             uint256 currentSettledTokenPrice = _projectConfig
                 .latestPurchasePrice;
