@@ -1,3 +1,4 @@
+import { getContractFactory } from "@nomiclabs/hardhat-ethers/types";
 import { constants, expectRevert } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
@@ -9,6 +10,11 @@ import { ethers } from "hardhat";
  */
 export const Minter_Common = async () => {
   describe("constructor", async function () {
+    it("returns correct minter type", async function () {
+      const returnedMinterType = await this.minter.minterType();
+      expect(returnedMinterType).to.equal(this.targetMinterName);
+    });
+
     it("reverts when given incorrect minter filter and core addresses", async function () {
       const artblocksFactory = await ethers.getContractFactory(
         "GenArt721CoreV1"

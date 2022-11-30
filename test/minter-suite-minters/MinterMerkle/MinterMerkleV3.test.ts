@@ -56,7 +56,8 @@ for (const coreContractName of coreContractsToTest) {
         []
       );
 
-      this.minter = await deployAndGet.call(this, "MinterMerkleV3", [
+      this.targetMinterName = "MinterMerkleV3";
+      this.minter = await deployAndGet.call(this, this.targetMinterName, [
         this.genArt721Core.address,
         this.minterFilter.address,
         this.delegationRegistry.address,
@@ -195,7 +196,7 @@ for (const coreContractName of coreContractsToTest) {
     describe("constructor", async function () {
       it("emits an event indicating dependency registry in constructor", async function () {
         const contractFactory = await ethers.getContractFactory(
-          "MinterMerkleV3"
+          this.targetMinterName
         );
         const tx = await contractFactory.deploy(
           this.genArt721Core.address,
