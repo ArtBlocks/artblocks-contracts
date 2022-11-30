@@ -101,6 +101,15 @@ jobs:
           command: |
             cat coverage/lcov.info | node_modules/.bin/coveralls
 
+  lint-and-test:
+    docker:
+      - image: "cimg/base:stable"
+    resource_class: small
+    steps:
+      - run:
+          name: Success
+          command: echo "Success"
+
 workflows:
   run-ci:
     jobs:
@@ -110,3 +119,7 @@ workflows:
       - report-coverage:
           requires:
             - coverage-parallel
+      - lint-and-test:
+          requires:
+            - lint
+            - test
