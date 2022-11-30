@@ -36,6 +36,71 @@ jobs:
           command: |
             TEST_FILES="$(circleci tests glob "./test/**/*.ts" | circleci tests split)"
             yarn test ${TEST_FILES}
+  coverage-parallel:
+    docker:
+      - image: "cimg/base:stable"
+    resource_class: large
+    parallelism: 8
+    steps:
+      - checkout
+      - node/install:
+          install-yarn: true
+          lts: true
+      - node/install-packages:
+          pkg-manager: yarn
+      - run:
+          name: coverage
+          command: |
+            TEST_FILES="{$(circleci tests glob "./test/**/*.ts" | circleci tests split | xargs | sed -e 's/ /,/g')}"
+            yarn coverage --testfiles "${TEST_FILES}"
+      - run:
+          name: save coverage
+          command: |
+            mkdir -p /tmp/coverage
+            cp coverage.json /tmp/coverage/cov_$CIRCLE_NODE_INDEX.json
+            chmod -R 777 /tmp/coverage/cov_$CIRCLE_NODE_INDEX.json
+      - persist_to_workspace:
+          root: /tmp/coverage
+          paths:
+            - cov_0.json
+            - cov_1.json
+            - cov_2.json
+            - cov_3.json
+            - cov_4.json
+            - cov_5.json
+            - cov_6.json
+            - cov_7.json
+
+  report-coverage:
+    docker:
+      - image: "cimg/base:stable"
+    steps:
+      - checkout
+      - node/install:
+          install-yarn: true
+          lts: true
+      - node/install-packages:
+          pkg-manager: yarn
+      - attach_workspace:
+          at: /tmp/coverage
+      - run:
+          name: combine coverage reports
+          command: |
+            cp -R /tmp/coverage/* .
+            npx istanbul-combine-updated -r lcov \
+              cov_0.json \
+              cov_1.json \
+              cov_2.json \
+              cov_3.json \
+              cov_4.json \
+              cov_5.json \
+              cov_6.json \
+              cov_7.json
+      - run:
+          name: upload coverage
+          command: |
+            cat coverage/lcov.info | node_modules/.bin/coveralls
+
   lint-and-test:
     docker:
       - image: "cimg/base:stable"
@@ -50,6 +115,10 @@ workflows:
     jobs:
       - lint
       - test
+      - coverage-parallel
+      - report-coverage:
+          requires:
+            - coverage-parallel
       - lint-and-test:
           requires:
             - lint
