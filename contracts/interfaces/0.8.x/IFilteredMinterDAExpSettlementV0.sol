@@ -73,4 +73,10 @@ interface IFilteredMinterDAExpSettlementV0 is IFilteredMinterV1 {
         external
         view
         returns (uint256 numSettleableInvocations);
+
+    /// returns
+    function estimateProjectExcessSettlementFunds(
+        uint256 _projectId,
+        address _walletAddress
+    ) external view returns (uint256 excessSettlementFundsInWei);
 }
