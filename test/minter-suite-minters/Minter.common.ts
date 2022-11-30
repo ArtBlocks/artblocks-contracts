@@ -81,24 +81,43 @@ export const Minter_Common = async () => {
 
   describe("setProjectMaxInvocations", async function () {
     it("allows deployer to call setProjectMaxInvocations", async function () {
-      await this.minter
-        .connect(this.accounts.deployer)
-        .setProjectMaxInvocations(this.projectZero);
+      const minterType = await this.minter.minterType();
+      if (!minterType.includes("Settlement")) {
+        // minters that don't settle on-chain should support this function
+        await this.minter
+          .connect(this.accounts.deployer)
+          .setProjectMaxInvocations(this.projectZero);
+      } else {
+        // minters that settle on-chain should not support this function
+        await expectRevert(
+          this.minter
+            .connect(this.accounts.deployer)
+            .setProjectMaxInvocations(this.projectZero),
+          "setProjectMaxInvocations not implemented - updated during every mint"
+        );
+      }
     });
 
     it("updates local projectMaxInvocations after syncing to core", async function () {
-      // update max invocations to 1 on the core
-      await this.genArt721Core
-        .connect(this.accounts.artist)
-        .updateProjectMaxInvocations(this.projectZero, 2);
-      // sync max invocations on minter
-      await this.minter
-        .connect(this.accounts.deployer)
-        .setProjectMaxInvocations(this.projectZero);
-      // expect max invocations to be 1 on the minter
-      expect(
-        await this.minter.projectMaxInvocations(this.projectZero)
-      ).to.be.equal(2);
+      const minterType = await this.minter.minterType();
+      if (!minterType.includes("Settlement")) {
+        // update max invocations to 1 on the core
+        await this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectMaxInvocations(this.projectZero, 2);
+        // sync max invocations on minter
+        await this.minter
+          .connect(this.accounts.deployer)
+          .setProjectMaxInvocations(this.projectZero);
+        // expect max invocations to be 1 on the minter
+        expect(
+          await this.minter.projectMaxInvocations(this.projectZero)
+        ).to.be.equal(2);
+      } else {
+        console.info(
+          "skipping setProjectMaxInvocations test because not implemented on settlement minters"
+        );
+      }
     });
   });
 };
