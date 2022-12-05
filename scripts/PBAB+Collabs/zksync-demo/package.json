@@ -1,0 +1,15 @@
+{
+  "name": "zksync-demo",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "devDependencies": {
+    "@matterlabs/hardhat-zksync-deploy": "^0.5.2",
+    "@matterlabs/hardhat-zksync-solc": "^0.3.11-beta.1",
+    "ethers": "^5.7.2",
+    "hardhat": "^2.12.3",
+    "ts-node": "^10.9.1",
+    "typescript": "^4.9.3",
+    "zksync-web3": "^0.12.0"
+  }
+}

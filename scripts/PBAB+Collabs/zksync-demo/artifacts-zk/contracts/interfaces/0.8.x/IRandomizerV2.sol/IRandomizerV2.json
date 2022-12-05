@@ -1,0 +1,38 @@
+{
+  "_format": "hh-zksolc-artifact-1",
+  "contractName": "IRandomizerV2",
+  "sourceName": "contracts/interfaces/0.8.x/IRandomizerV2.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "internalType": "uint256",
+          "name": "_tokenId",
+          "type": "uint256"
+        }
+      ],
+      "name": "assignTokenHash",
+      "outputs": [],
+      "stateMutability": "nonpayable",
+      "type": "function"
+    },
+    {
+      "inputs": [],
+      "name": "genArt721Core",
+      "outputs": [
+        {
+          "internalType": "contract IGenArt721CoreContractV3",
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "stateMutability": "view",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x",
+  "deployedBytecode": "0x",
+  "linkReferences": {},
+  "deployedLinkReferences": {},
+  "factoryDeps": {}
+}
