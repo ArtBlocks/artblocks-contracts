@@ -1,4 +1,6 @@
-## zkSync2.0 Goerli Testing (LAST UPDATED: 9-19-22)
+## zkSync2.0 Goerli Testing (LAST UPDATED: 12-5-22)
+
+### UPDATE: deployments are currently failing due to a gas limit that was released on the zkSync testnet. Either an upcoming update will fix this or we should consider splitting the contracts to reduce bytecode size per block.
 
 This document describes the testing process for zkSync2.0 (goerli testnet). Our main goals here were:
 
@@ -21,9 +23,11 @@ Minor issue to note: Currently zksync-solc/zksync-deploy do not support multi-co
 
 Some other items worth mentioning around eth <> zkSync2.0 differences:
 
+- Gnosis multi-sig wallets are not currently supported https://discord.com/channels/722409280497516566/1048029201879539733/1048200573234716692
 - temporary zksync limitations https://v2-docs.zksync.io/dev/zksync-v2/temp-limits.html#using-libraries-in-solidity
 - zksync system contracts https://v2-docs.zksync.io/dev/zksync-v2/system-contracts.html
 - zksync fee model https://v2-docs.zksync.io/dev/zksync-v2/fee-model.html
+- we may need some UX changes & updated contract calls -- for example, zkSync fees may be paid in any ERC20 token and users will need to specify which to pay with (or we can set a default payment type)
 
 ### Gas Profiling
 
