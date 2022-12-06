@@ -49,7 +49,10 @@ describe("MinterSetPriceV0_V1Core", async function () {
       "MinterFilterV0"
     ));
 
-    const minterFactory = await ethers.getContractFactory("MinterSetPriceV0");
+    this.targetMinterName = "MinterSetPriceV0";
+    const minterFactory = await ethers.getContractFactory(
+      this.targetMinterName
+    );
     this.minter1 = await minterFactory.deploy(
       this.genArt721Core.address,
       this.minterFilter.address
