@@ -4,7 +4,7 @@ pragma solidity 0.8.17;
 // Created By: Art Blocks Inc.
 
 import "./interfaces/0.8.x/IAdminACLV0.sol";
-import "./interfaces/0.8.x/IGenArtDependencyConsumer.sol";
+import "./interfaces/0.8.x/IGenArt721CoreContractV3.sol";
 import "./interfaces/0.8.x/IDependencyRegistryV0.sol";
 
 import "@openzeppelin-4.7/contracts/utils/Strings.sol";
@@ -770,7 +770,7 @@ contract DependencyRegistryV0 is Ownable, IDependencyRegistryV0 {
         }
 
         try
-            IGenArtDependencyConsumer(_contractAddress).projectScriptDetails(
+            IGenArt721CoreContractV3(_contractAddress).projectScriptDetails(
                 _projectId
             )
         returns (string memory scriptTypeAndVersion, string memory, uint256) {

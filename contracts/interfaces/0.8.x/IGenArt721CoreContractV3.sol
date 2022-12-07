@@ -58,6 +58,12 @@ interface IGenArt721CoreContractV3 is IManifold {
     // backwards-compatible (pre-V3) admin - equal to owner()
     function admin() external view returns (address);
 
+    /// Dependency registry managed by Art Blocks
+    function artblocksDependencyRegistryAddress()
+        external
+        view
+        returns (address);
+
     /**
      * Function determining if _sender is allowed to call function with
      * selector _selector on contract `_contract`. Intended to be used with
@@ -175,5 +181,23 @@ interface IGenArt721CoreContractV3 is IManifold {
             address additionalPayee,
             uint256 additionalPayeePercentage,
             uint256 royaltyFeeByID
+        );
+
+    /**
+     * @notice Returns script information for project `_projectId`.
+     * @param _projectId Project to be queried.
+     * @return scriptTypeAndVersion Project's script type and version
+     * (e.g. "p5js(atSymbol)1.0.0")
+     * @return aspectRatio Aspect ratio of project (e.g. "1" for square,
+     * "1.77777778" for 16:9, etc.)
+     * @return scriptCount Count of scripts for project
+     */
+    function projectScriptDetails(uint256 _projectId)
+        external
+        view
+        returns (
+            string memory scriptTypeAndVersion,
+            string memory aspectRatio,
+            uint256 scriptCount
         );
 }
