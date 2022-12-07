@@ -26,5 +26,7 @@ declare module "mocha" {
     projectTwoTokenOne: BigNumber;
     projectThreeTokenZero: BigNumber;
     projectThreeTokenOne: BigNumber;
+    // target minter name (e.g. "MinterMerkleV3")
+    targetMinterName: string | undefined;
   }
 }

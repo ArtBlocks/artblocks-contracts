@@ -49,7 +49,8 @@ describe("MinterDALinV1_V2PRTNRCore", async function () {
       "MinterFilterV0"
     ));
 
-    this.minter = await deployAndGet.call(this, "MinterDALinV1", [
+    this.targetMinterName = "MinterDALinV1";
+    this.minter = await deployAndGet.call(this, this.targetMinterName, [
       this.genArt721Core.address,
       this.minterFilter.address,
     ]);

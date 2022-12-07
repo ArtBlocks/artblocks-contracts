@@ -61,7 +61,8 @@ for (const coreContractName of coreContractsToTest) {
         "MinterFilterV1"
       ));
 
-      this.minter = await deployAndGet.call(this, "MinterDAExpSettlementV0", [
+      this.targetMinterName = "MinterDAExpSettlementV0";
+      this.minter = await deployAndGet.call(this, this.targetMinterName, [
         this.genArt721Core.address,
         this.minterFilter.address,
       ]);

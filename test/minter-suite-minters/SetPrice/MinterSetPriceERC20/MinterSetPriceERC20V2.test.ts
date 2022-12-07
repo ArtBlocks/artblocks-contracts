@@ -45,8 +45,9 @@ for (const coreContractName of coreContractsToTest) {
         "MinterFilterV1"
       ));
 
+      this.targetMinterName = "MinterSetPriceERC20V2";
       const minterFactory = await ethers.getContractFactory(
-        "MinterSetPriceERC20V2"
+        this.targetMinterName
       );
       this.minter = await minterFactory.deploy(
         this.genArt721Core.address,
