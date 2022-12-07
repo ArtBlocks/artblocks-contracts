@@ -1978,6 +1978,49 @@ export const MinterDAExpSettlement_Common = async () => {
     });
   });
 
+  describe("getProjectExcessSettlementFunds", async function () {
+    it("reverts when getting for zero address", async function () {
+      await expectRevert(
+        this.minter.getProjectExcessSettlementFunds(
+          this.projectZero,
+          constants.ZERO_ADDRESS
+        ),
+        "No zero address"
+      );
+    });
+
+    it("reverts when getting before a wallet purchases", async function () {
+      await expectRevert(
+        this.minter.getProjectExcessSettlementFunds(
+          this.projectZero,
+          this.accounts.user.address
+        ),
+        "No purchases made by this address"
+      );
+    });
+
+    it("returns expected values for project after purchases", async function () {
+      await purchaseTokensMidAuction.call(this, this.projectZero);
+      const excessSettlementFunds =
+        await this.minter.getProjectExcessSettlementFunds(
+          this.projectZero,
+          this.accounts.user.address
+        );
+      expect(excessSettlementFunds).to.be.gt(0);
+      // reclaim funds
+      await this.minter
+        .connect(this.accounts.user)
+        .reclaimProjectExcessSettlementFunds(this.projectZero);
+      // check that excess settlement funds are zero
+      const excessSettlementFundsAfterReclaim =
+        await this.minter.getProjectExcessSettlementFunds(
+          this.projectZero,
+          this.accounts.user.address
+        );
+      expect(excessSettlementFundsAfterReclaim).to.equal(0);
+    });
+  });
+
   describe("getProjectLatestPurchasePrice", async function () {
     it("retuns zero for project without any purchases", async function () {
       const latestPurchasePrice =

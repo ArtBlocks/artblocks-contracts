@@ -176,7 +176,7 @@ for (const coreContractName of coreContractsToTest) {
           "ETH"
         );
         expect(txCost.toString()).to.equal(
-          ethers.utils.parseEther("0.0183211")
+          ethers.utils.parseEther("0.0182969")
         ); // assuming a cost of 100 GWEI
       });
     });

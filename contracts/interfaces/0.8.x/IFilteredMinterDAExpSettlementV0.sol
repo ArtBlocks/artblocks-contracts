@@ -73,4 +73,11 @@ interface IFilteredMinterDAExpSettlementV0 is IFilteredMinterV1 {
         external
         view
         returns (uint256 numSettleableInvocations);
+
+    /// Returns the current excess settlement funds on project `_projectId`
+    /// for address `_walletAddress`.
+    function getProjectExcessSettlementFunds(
+        uint256 _projectId,
+        address _walletAddress
+    ) external view returns (uint256 excessSettlementFundsInWei);
 }
