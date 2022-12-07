@@ -5,10 +5,13 @@ pragma solidity 0.8.17;
 
 import "./interfaces/0.8.x/IAdminACLV0.sol";
 import "./interfaces/0.8.x/IGenArtDependencyConsumer.sol";
+import "./interfaces/0.8.x/IDependencyRegistryV0.sol";
 
 import "@openzeppelin-4.7/contracts/utils/Strings.sol";
 import "@openzeppelin-4.7/contracts/access/Ownable.sol";
 import "@openzeppelin-4.7/contracts/utils/structs/EnumerableSet.sol";
+import "@openzeppelin-4.5/contracts/utils/math/SafeCast.sol";
+
 import "./libs/0.8.x/BytecodeStorage.sol";
 import "./libs/0.8.x/Bytes32Strings.sol";
 
@@ -18,92 +21,37 @@ import "./libs/0.8.x/Bytes32Strings.sol";
  * @notice Privileged Roles and Ownership:
  * Permissions managed by ACL contract
  */
-contract DependencyRegistryV0 is Ownable {
+contract DependencyRegistryV0 is Ownable, IDependencyRegistryV0 {
     using BytecodeStorage for string;
     using BytecodeStorage for address;
     using Bytes32Strings for bytes32;
     using Strings for uint256;
     using EnumerableSet for EnumerableSet.Bytes32Set;
+    using EnumerableSet for EnumerableSet.AddressSet;
+    using SafeCast for uint24;
 
     uint8 constant AT_CHARACTER_CODE = uint8(bytes1("@")); // 0x40
 
     /// admin ACL contract
     IAdminACLV0 public adminACLContract;
 
-    event ProjectDependencyOverrideAdded(
-        address indexed _coreContractAddress,
-        uint256 indexed _projectId,
-        bytes32 _dependencyTypeId
-    );
-
-    event ProjectDependencyOverrideRemoved(
-        address indexed _coreContractAddress,
-        uint256 indexed _projectId
-    );
-
-    event DependencyTypeAdded(
-        bytes32 indexed _dependencyTypeId,
-        string _preferredCDN,
-        string _preferredRepository,
-        string _projectWebsite
-    );
-
-    event DependencyTypeRemoved(bytes32 indexed _dependencyTypeId);
-
-    event DependencyTypeProjectWebsiteUpdated(
-        bytes32 indexed _dependencyTypeId,
-        string _projectWebsite
-    );
-
-    event DependencyTypePreferredCDNUpdated(
-        bytes32 indexed _dependencyTypeId,
-        string _preferredCDN
-    );
-
-    event DependencyTypePreferredRepositoryUpdated(
-        bytes32 indexed _dependencyTypeId,
-        string _preferredRepository
-    );
-
-    event DependencyTypeAdditionalCDNUpdated(
-        bytes32 indexed _dependencyTypeId,
-        string _additionalCDN,
-        uint256 _additionalCDNIndex
-    );
-
-    event DependencyTypeAdditionalCDNRemoved(
-        bytes32 indexed _dependencyTypeId,
-        uint256 indexed _additionalCDNIndex
-    );
-
-    event DependencyTypeAdditionalRepositoryUpdated(
-        bytes32 indexed _dependencyTypeId,
-        string _additionalRepository,
-        uint256 _additionalRepositoryIndex
-    );
-
-    event DependencyTypeAdditionalRepositoryRemoved(
-        bytes32 indexed _dependencyTypeId,
-        uint256 indexed _additionalRepositoryIndex
-    );
-
-    event DependencyTypeScriptUpdated(bytes32 indexed _dependencyTypeId);
-
     struct DependencyType {
         string preferredCDN;
         mapping(uint256 => string) additionalCDNs;
-        uint24 additionalCDNCount;
         string preferredRepository;
         mapping(uint256 => string) additionalRepositories;
-        uint24 additionalRepositoryCount;
-        string projectWebsite;
-        uint24 scriptCount;
+        string referenceWebsite;
         // mapping from script index to address storing script in bytecode
         mapping(uint256 => address) scriptBytecodeAddresses;
+        uint24 additionalCDNCount;
+        uint24 additionalRepositoryCount;
+        uint24 scriptCount;
     }
 
     EnumerableSet.Bytes32Set private _dependencyTypes;
     mapping(bytes32 => DependencyType) dependencyTypeInfo;
+
+    EnumerableSet.AddressSet private _supportedCoreContracts;
     mapping(address => mapping(uint256 => bytes32)) projectDependencyOverrides;
 
     modifier onlyNonZeroAddress(address _address) {
@@ -120,6 +68,14 @@ contract DependencyRegistryV0 is Ownable {
         require(
             adminACLAllowed(msg.sender, address(this), _selector),
             "Only Admin ACL allowed"
+        );
+        _;
+    }
+
+    modifier onlySupportedCoreContract(address _coreContractAddress) {
+        require(
+            _supportedCoreContracts.contains(_coreContractAddress),
+            "Core contract not supported"
         );
         _;
     }
@@ -152,7 +108,7 @@ contract DependencyRegistryV0 is Ownable {
         bytes32 _dependencyTypeId,
         string memory _preferredCDN,
         string memory _preferredRepository,
-        string memory _projectWebsite
+        string memory _referenceWebsite
     ) external onlyAdminACL(this.addDependencyType.selector) {
         require(
             !_dependencyTypes.contains(_dependencyTypeId),
@@ -167,54 +123,44 @@ contract DependencyRegistryV0 is Ownable {
         );
 
         _dependencyTypes.add(_dependencyTypeId);
-        dependencyTypeInfo[_dependencyTypeId].preferredCDN = _preferredCDN;
-        dependencyTypeInfo[_dependencyTypeId]
-            .preferredRepository = _preferredRepository;
-        dependencyTypeInfo[_dependencyTypeId].projectWebsite = _projectWebsite;
+        DependencyType storage dependencyType = dependencyTypeInfo[
+            _dependencyTypeId
+        ];
+        dependencyType.preferredCDN = _preferredCDN;
+        dependencyType.preferredRepository = _preferredRepository;
+        dependencyType.referenceWebsite = _referenceWebsite;
 
         emit DependencyTypeAdded(
             _dependencyTypeId,
             _preferredCDN,
             _preferredRepository,
-            _projectWebsite
+            _referenceWebsite
         );
     }
 
     /**
-     * @notice Removes a new dependency type.
+     * @notice Removes a dependency type.
      * @param _dependencyTypeId Name of dependency type (i.e. "type@version")
      */
     function removeDependencyType(bytes32 _dependencyTypeId)
         external
         onlyAdminACL(this.removeDependencyType.selector)
+        onlyExistingDependencyType(_dependencyTypeId)
     {
+        DependencyType storage dependencyType = dependencyTypeInfo[
+            _dependencyTypeId
+        ];
         require(
-            _dependencyTypes.contains(_dependencyTypeId),
-            "Dependency type does not exist"
+            dependencyType.additionalCDNCount == 0 &&
+                dependencyType.additionalRepositoryCount == 0 &&
+                dependencyType.scriptCount == 0,
+            "Cannot remove dependency type with additional CDNs, repositories, or scripts"
         );
 
         _dependencyTypes.remove(_dependencyTypeId);
         delete dependencyTypeInfo[_dependencyTypeId];
 
         emit DependencyTypeRemoved(_dependencyTypeId);
-    }
-
-    /**
-     * @notice Returns a list of registered depenency types.
-     * @return List of registered depenency types.
-     */
-    function getRegisteredDependencyTypes()
-        external
-        view
-        returns (string[] memory)
-    {
-        string[] memory dependencyTypes = new string[](
-            _dependencyTypes.length()
-        );
-        for (uint256 i = 0; i < _dependencyTypes.length(); i++) {
-            dependencyTypes[i] = _dependencyTypes.at(i).toString();
-        }
-        return dependencyTypes;
     }
 
     /**
@@ -230,6 +176,7 @@ contract DependencyRegistryV0 is Ownable {
         external
         onlyAdminACL(this.addDependencyTypeScript.selector)
         onlyNonEmptyString(_script)
+        onlyExistingDependencyType(_dependencyTypeId)
     {
         DependencyType storage dependencyType = dependencyTypeInfo[
             _dependencyTypeId
@@ -258,6 +205,7 @@ contract DependencyRegistryV0 is Ownable {
         external
         onlyAdminACL(this.updateDependencyTypeScript.selector)
         onlyNonEmptyString(_script)
+        onlyExistingDependencyType(_dependencyTypeId)
     {
         DependencyType storage dependencyType = dependencyTypeInfo[
             _dependencyTypeId
@@ -291,6 +239,7 @@ contract DependencyRegistryV0 is Ownable {
     function removeDependencyTypeLastScript(bytes32 _dependencyTypeId)
         external
         onlyAdminACL(this.removeDependencyTypeLastScript.selector)
+        onlyExistingDependencyType(_dependencyTypeId)
     {
         DependencyType storage dependencyType = dependencyTypeInfo[
             _dependencyTypeId
@@ -321,7 +270,7 @@ contract DependencyRegistryV0 is Ownable {
 
         emit DependencyTypeScriptUpdated(_dependencyTypeId);
     }
-    
+
     /**
      * @notice Updates preferred CDN for dependency type `_dependencyTypeId`.
      * @param _dependencyTypeId Dependency type to be updated.
@@ -333,11 +282,14 @@ contract DependencyRegistryV0 is Ownable {
     )
         external
         onlyAdminACL(this.updateDependencyTypePreferredCDN.selector)
-        onlyNonEmptyString(_preferredCDN)
+        onlyExistingDependencyType(_dependencyTypeId)
     {
         dependencyTypeInfo[_dependencyTypeId].preferredCDN = _preferredCDN;
 
-        emit DependencyTypePreferredCDNUpdated(_dependencyTypeId, _preferredCDN);
+        emit DependencyTypePreferredCDNUpdated(
+            _dependencyTypeId,
+            _preferredCDN
+        );
     }
 
     /**
@@ -351,9 +303,10 @@ contract DependencyRegistryV0 is Ownable {
     )
         external
         onlyAdminACL(this.updateDependencyTypePreferredRepository.selector)
-        onlyNonEmptyString(_preferredRepository)
+        onlyExistingDependencyType(_dependencyTypeId)
     {
-        dependencyTypeInfo[_dependencyTypeId].preferredRepository = _preferredRepository;
+        dependencyTypeInfo[_dependencyTypeId]
+            .preferredRepository = _preferredRepository;
 
         emit DependencyTypePreferredRepositoryUpdated(
             _dependencyTypeId,
@@ -364,17 +317,22 @@ contract DependencyRegistryV0 is Ownable {
     /**
      * @notice Updates project website for dependency type `_dependencyTypeId`.
      * @param _dependencyTypeId Dependency type to be updated.
-     * @param _projectWebsite URL for project website.
+     * @param _referenceWebsite URL for project website.
      */
-    function updateDependencyTypeProjectWebsite(
+    function updateDependencyTypeReferenceWebsite(
         bytes32 _dependencyTypeId,
-        string memory _projectWebsite
-    ) external onlyAdminACL(this.updateDependencyTypeProjectWebsite.selector) {
-        dependencyTypeInfo[_dependencyTypeId].projectWebsite = _projectWebsite;
+        string memory _referenceWebsite
+    )
+        external
+        onlyAdminACL(this.updateDependencyTypeReferenceWebsite.selector)
+        onlyExistingDependencyType(_dependencyTypeId)
+    {
+        dependencyTypeInfo[_dependencyTypeId]
+            .referenceWebsite = _referenceWebsite;
 
-        emit DependencyTypeProjectWebsiteUpdated(
+        emit DependencyTypeReferenceWebsiteUpdated(
             _dependencyTypeId,
-            _projectWebsite
+            _referenceWebsite
         );
     }
 
@@ -392,14 +350,13 @@ contract DependencyRegistryV0 is Ownable {
         onlyAdminACL(this.addDependencyTypeAdditionalCDN.selector)
         onlyNonEmptyString(_additionalCDN)
     {
-        uint24 additionalCDNCount = dependencyTypeInfo[_dependencyTypeId]
-            .additionalCDNCount;
-        dependencyTypeInfo[_dependencyTypeId].additionalCDNs[
-            additionalCDNCount
-        ] = _additionalCDN;
-        dependencyTypeInfo[_dependencyTypeId].additionalCDNCount =
-            additionalCDNCount +
-            1;
+        DependencyType storage dependencyType = dependencyTypeInfo[
+            _dependencyTypeId
+        ];
+
+        uint256 additionalCDNCount = uint256(dependencyType.additionalCDNCount);
+        dependencyType.additionalCDNs[additionalCDNCount] = _additionalCDN;
+        dependencyType.additionalCDNCount = uint24(additionalCDNCount + 1);
 
         emit DependencyTypeAdditionalCDNUpdated(
             _dependencyTypeId,
@@ -423,11 +380,11 @@ contract DependencyRegistryV0 is Ownable {
         onlyAdminACL(this.removeDependencyTypeAdditionalCDNAtIndex.selector)
         onlyExistingDependencyType(_dependencyTypeId)
     {
-        uint24 additionalCDNCount = dependencyTypeInfo[_dependencyTypeId]
+        uint256 additionalCDNCount = dependencyTypeInfo[_dependencyTypeId]
             .additionalCDNCount;
         require(_index < additionalCDNCount, "Asset index out of range");
 
-        uint24 lastElementIndex = additionalCDNCount - 1;
+        uint256 lastElementIndex = additionalCDNCount - 1;
 
         dependencyTypeInfo[_dependencyTypeId].additionalCDNs[
                 _index
@@ -438,8 +395,9 @@ contract DependencyRegistryV0 is Ownable {
             lastElementIndex
         ];
 
-        dependencyTypeInfo[_dependencyTypeId]
-            .additionalCDNCount = lastElementIndex;
+        dependencyTypeInfo[_dependencyTypeId].additionalCDNCount = uint24(
+            lastElementIndex
+        );
 
         emit DependencyTypeAdditionalCDNRemoved(_dependencyTypeId, _index);
     }
@@ -457,6 +415,8 @@ contract DependencyRegistryV0 is Ownable {
     )
         external
         onlyAdminACL(this.updateDependencyTypeAdditionalCDNAtIndex.selector)
+        onlyNonEmptyString(_additionalCDN)
+        onlyExistingDependencyType(_dependencyTypeId)
     {
         uint24 additionalCDNCount = dependencyTypeInfo[_dependencyTypeId]
             .additionalCDNCount;
@@ -486,15 +446,16 @@ contract DependencyRegistryV0 is Ownable {
         external
         onlyAdminACL(this.addDependencyTypeAdditionalRepository.selector)
         onlyNonEmptyString(_additionalRepository)
+        onlyExistingDependencyType(_dependencyTypeId)
     {
-        uint24 additionalRepositoryCount = dependencyTypeInfo[_dependencyTypeId]
-            .additionalRepositoryCount;
+        uint256 additionalRepositoryCount = uint256(
+            dependencyTypeInfo[_dependencyTypeId].additionalRepositoryCount
+        );
         dependencyTypeInfo[_dependencyTypeId].additionalRepositories[
                 additionalRepositoryCount
             ] = _additionalRepository;
-        dependencyTypeInfo[_dependencyTypeId].additionalRepositoryCount =
-            additionalRepositoryCount +
-            1;
+        dependencyTypeInfo[_dependencyTypeId]
+            .additionalRepositoryCount = uint24(additionalRepositoryCount + 1);
 
         emit DependencyTypeAdditionalRepositoryUpdated(
             _dependencyTypeId,
@@ -520,11 +481,12 @@ contract DependencyRegistryV0 is Ownable {
         )
         onlyExistingDependencyType(_dependencyTypeId)
     {
-        uint24 additionalRepositoryCount = dependencyTypeInfo[_dependencyTypeId]
-            .additionalRepositoryCount;
+        uint256 additionalRepositoryCount = uint256(
+            dependencyTypeInfo[_dependencyTypeId].additionalRepositoryCount
+        );
         require(_index < additionalRepositoryCount, "Asset index out of range");
 
-        uint24 lastElementIndex = additionalRepositoryCount - 1;
+        uint256 lastElementIndex = additionalRepositoryCount - 1;
 
         dependencyTypeInfo[_dependencyTypeId].additionalRepositories[
                 _index
@@ -536,7 +498,7 @@ contract DependencyRegistryV0 is Ownable {
         ];
 
         dependencyTypeInfo[_dependencyTypeId]
-            .additionalRepositoryCount = lastElementIndex;
+            .additionalRepositoryCount = uint24(lastElementIndex);
 
         emit DependencyTypeAdditionalRepositoryRemoved(
             _dependencyTypeId,
@@ -559,6 +521,8 @@ contract DependencyRegistryV0 is Ownable {
         onlyAdminACL(
             this.updateDependencyTypeAdditionalRepositoryAtIndex.selector
         )
+        onlyNonEmptyString(_additionalRepository)
+        onlyExistingDependencyType(_dependencyTypeId)
     {
         uint24 additionalRepositoryCount = dependencyTypeInfo[_dependencyTypeId]
             .additionalRepositoryCount;
@@ -576,6 +540,173 @@ contract DependencyRegistryV0 is Ownable {
     }
 
     /**
+     * @notice Returns the count of supported core contracts
+     * @return Number of supported core contracts.
+     */
+    function getSupportedCoreContractCount() external view returns (uint256) {
+        return _supportedCoreContracts.length();
+    }
+
+    /**
+     * @notice Returns the address of the supported core contract at index `_index`.
+     * @param _index Index of the core contract to be returned.
+     * @return address of the core contract.
+     */
+    function getSupportedCoreContractAtIndex(uint256 _index)
+        external
+        view
+        returns (address)
+    {
+        return _supportedCoreContracts.at(_index);
+    }
+
+    /**
+     * @notice Returns a list of supported core contracts.
+     * @return List of supported core contracts.
+     * @dev This is only intended to be called outside of block
+     * execution where there is no gas limit.
+     */
+    function getSupportedCoreContracts()
+        external
+        view
+        returns (address[] memory)
+    {
+        uint256 supportedCoreContractCount = _supportedCoreContracts.length();
+        address[] memory supportedCoreContracts = new address[](
+            supportedCoreContractCount
+        );
+
+        for (uint256 i = 0; i < supportedCoreContractCount; i++) {
+            supportedCoreContracts[i] = _supportedCoreContracts.at(i);
+        }
+
+        return supportedCoreContracts;
+    }
+
+    /**
+     * @notice Adds a new core contract to the list of supported core contracts.
+     * @param _contractAddress Address of the core contract to be added.
+     */
+    function addSupportedCoreContract(address _contractAddress)
+        external
+        onlyAdminACL(this.addSupportedCoreContract.selector)
+    {
+        require(
+            !_supportedCoreContracts.contains(_contractAddress),
+            "Contract already supported"
+        );
+
+        _supportedCoreContracts.add(_contractAddress);
+
+        emit SupportedCoreContractAdded(_contractAddress);
+    }
+
+    /**
+     * @notice Removes a core contract from the list of supported core contracts.
+     * @param _contractAddress Address of the core contract to be removed.
+     */
+    function removeSupportedCoreContract(address _contractAddress)
+        external
+        onlyAdminACL(this.removeSupportedCoreContract.selector)
+        onlySupportedCoreContract(_contractAddress)
+    {
+        _supportedCoreContracts.remove(_contractAddress);
+
+        emit SupportedCoreContractRemoved(_contractAddress);
+    }
+
+    /**
+     * @notice Overrides the script type and version that
+     * would be returned by the core contract (`_contractAddress`)
+     * for a given project  (`projectId`) with the given dependency
+     * type (`_dependencyTypeId`).
+     * @param _contractAddress Core contract address.
+     * @param _projectId Project to override script type and version for.
+     * @param _dependencyTypeId Dependency type to return for project.
+     */
+    function addProjectDependencyOverride(
+        address _contractAddress,
+        uint256 _projectId,
+        bytes32 _dependencyTypeId
+    )
+        external
+        onlyAdminACL(this.addProjectDependencyOverride.selector)
+        onlyExistingDependencyType(_dependencyTypeId)
+        onlySupportedCoreContract(_contractAddress)
+    {
+        projectDependencyOverrides[_contractAddress][
+            _projectId
+        ] = _dependencyTypeId;
+
+        emit ProjectDependencyOverrideAdded(
+            _contractAddress,
+            _projectId,
+            _dependencyTypeId
+        );
+    }
+
+    /**
+     * @notice Removes the script type and version override for a given
+     * project (`projectId`) on a given core contract (`_contractAddress`).
+     * @param _contractAddress Core contract address.
+     * @param _projectId Project to remove override for.
+     */
+    function removeProjectDependencyOverride(
+        address _contractAddress,
+        uint256 _projectId
+    ) external onlyAdminACL(this.addProjectDependencyOverride.selector) {
+        delete projectDependencyOverrides[_contractAddress][_projectId];
+
+        emit ProjectDependencyOverrideRemoved(_contractAddress, _projectId);
+    }
+
+    /**
+     * @notice Returns a list of registered depenency types.
+     * @return List of registered depenency types.
+     * @dev This is only intended to be called outside of block
+     * execution where there is no gas limit.
+     */
+    function getRegisteredDependencyTypes()
+        external
+        view
+        returns (string[] memory)
+    {
+        string[] memory dependencyTypes = new string[](
+            _dependencyTypes.length()
+        );
+        uint256 numDependencyTypes = _dependencyTypes.length();
+
+        for (uint256 i = 0; i < numDependencyTypes; i++) {
+            dependencyTypes[i] = _dependencyTypes.at(i).toString();
+        }
+        return dependencyTypes;
+    }
+
+    /**
+     * @notice Returns number of registered dependency types
+     * @return Number of registered dependencies.
+     */
+    function getRegisteredDependencyTypeCount()
+        external
+        view
+        returns (uint256)
+    {
+        return _dependencyTypes.length();
+    }
+
+    /**
+     * @notice Returns registered depenedency type at index `_index`.
+     * @return Registered dependency at `_index`.
+     */
+    function getRegisteredDependencyTypeAtIndex(uint256 _index)
+        external
+        view
+        returns (string memory)
+    {
+        return _dependencyTypes.at(_index).toString();
+    }
+
+    /**
      * @notice Returns details for depedency type `_dependencyTypeId`.
      * @param _dependencyTypeId Dependency type to be queried.
      * @return typeAndVersion String representation of `_dependencyTypeId`.
@@ -584,7 +715,7 @@ contract DependencyRegistryV0 is Ownable {
      * @return additionalCDNCount Count of additional CDN URLs for dependency type
      * @return preferredRepository Preferred repository URL for dependency type
      * @return additionalRepositoryCount Count of additional repository URLs for dependency type
-     * @return projectWebsite Project website URL for dependency type
+     * @return referenceWebsite Project website URL for dependency type
      * @return availableOnChain Whether dependency type is available on chain
      * @return scriptCount Count of on-chain scripts for dependency type
      */
@@ -597,7 +728,7 @@ contract DependencyRegistryV0 is Ownable {
             uint24 additionalCDNCount,
             string memory preferredRepository,
             uint24 additionalRepositoryCount,
-            string memory projectWebsite,
+            string memory referenceWebsite,
             bool availableOnChain,
             uint24 scriptCount
         )
@@ -612,61 +743,14 @@ contract DependencyRegistryV0 is Ownable {
             dependencyType.additionalCDNCount,
             dependencyType.preferredRepository,
             dependencyType.additionalRepositoryCount,
-            dependencyType.projectWebsite,
+            dependencyType.referenceWebsite,
             dependencyType.scriptCount > 0,
             dependencyType.scriptCount
         );
     }
 
     /**
-     * @notice Overrides the script type and version that 
-     * would be returned by the core contract (`_contractAddress`)
-     * for a given project  (`projectId`) with the given dependency
-     * type (`_dependencyTypeId`).
-     * @param _contractAddress Core contract address.
-     * @param _projectId Project to override script type and version for.
-     * @param _dependencyTypeId Dependency type to return for project.
-     */
-    function addProjectDependencyOverride(
-        address _contractAddress,
-        uint256 _projectId,
-        bytes32 _dependencyTypeId
-    ) external onlyAdminACL(this.addProjectDependencyOverride.selector) {
-        require(
-            _dependencyTypes.contains(_dependencyTypeId),
-            "Dependency type is not registered"
-        );
-        projectDependencyOverrides[_contractAddress][
-            _projectId
-        ] = _dependencyTypeId;
-
-        emit ProjectDependencyOverrideAdded(
-            _contractAddress,
-            _projectId,
-            _dependencyTypeId
-        );
-    }
-
-    /**
-     * @notice Removes the script type and version override for a given 
-     * project (`projectId`) on a given core contract (`_contractAddress`).
-     * @param _contractAddress Core contract address.
-     * @param _projectId Project to remove override for.
-     */
-    function removeProjectDependencyOverride(
-        address _contractAddress,
-        uint256 _projectId
-    ) external onlyAdminACL(this.addProjectDependencyOverride.selector) {
-        delete projectDependencyOverrides[_contractAddress][_projectId];
-
-        emit ProjectDependencyOverrideRemoved(
-            _contractAddress,
-            _projectId
-        );
-    }
-
-    /**
-     * @notice Returns the dependency type for a given project (`projectId`) 
+     * @notice Returns the dependency type for a given project (`projectId`)
      * on a given core contract (`_contractAddress`). If no override is set,
      * the core contract is called to retrieve the script type and version as
      * dependency type.
@@ -674,7 +758,7 @@ contract DependencyRegistryV0 is Ownable {
      * @param _projectId Project to return dependency type for.
      * @return dependencyTypeId Dependency type used by project.
      */
-    function getDependencyForProject(
+    function getDependencyTypeForProject(
         address _contractAddress,
         uint256 _projectId
     ) external view returns (string memory) {
