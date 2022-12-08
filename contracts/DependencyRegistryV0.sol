@@ -540,50 +540,6 @@ contract DependencyRegistryV0 is Ownable, IDependencyRegistryV0 {
     }
 
     /**
-     * @notice Returns the count of supported core contracts
-     * @return Number of supported core contracts.
-     */
-    function getSupportedCoreContractCount() external view returns (uint256) {
-        return _supportedCoreContracts.length();
-    }
-
-    /**
-     * @notice Returns the address of the supported core contract at index `_index`.
-     * @param _index Index of the core contract to be returned.
-     * @return address of the core contract.
-     */
-    function getSupportedCoreContractAtIndex(uint256 _index)
-        external
-        view
-        returns (address)
-    {
-        return _supportedCoreContracts.at(_index);
-    }
-
-    /**
-     * @notice Returns a list of supported core contracts.
-     * @return List of supported core contracts.
-     * @dev This is only intended to be called outside of block
-     * execution where there is no gas limit.
-     */
-    function getSupportedCoreContracts()
-        external
-        view
-        returns (address[] memory)
-    {
-        uint256 supportedCoreContractCount = _supportedCoreContracts.length();
-        address[] memory supportedCoreContracts = new address[](
-            supportedCoreContractCount
-        );
-
-        for (uint256 i = 0; i < supportedCoreContractCount; i++) {
-            supportedCoreContracts[i] = _supportedCoreContracts.at(i);
-        }
-
-        return supportedCoreContracts;
-    }
-
-    /**
      * @notice Adds a new core contract to the list of supported core contracts.
      * @param _contractAddress Address of the core contract to be added.
      */
@@ -719,7 +675,7 @@ contract DependencyRegistryV0 is Ownable, IDependencyRegistryV0 {
      * @return availableOnChain Whether dependency type is available on chain
      * @return scriptCount Count of on-chain scripts for dependency type
      */
-    function dependencyTypeDetails(bytes32 _dependencyTypeId)
+    function getDependencyTypeDetails(bytes32 _dependencyTypeId)
         external
         view
         returns (
@@ -747,6 +703,102 @@ contract DependencyRegistryV0 is Ownable, IDependencyRegistryV0 {
             dependencyType.scriptCount > 0,
             dependencyType.scriptCount
         );
+    }
+
+    /**
+     * @notice Returns the count of supported core contracts
+     * @return Number of supported core contracts.
+     */
+    function getSupportedCoreContractCount() external view returns (uint256) {
+        return _supportedCoreContracts.length();
+    }
+
+    /**
+     * @notice Returns the address of the supported core contract at index `_index`.
+     * @param _index Index of the core contract to be returned.
+     * @return address of the core contract.
+     */
+    function getSupportedCoreContractAtIndex(uint256 _index)
+        external
+        view
+        returns (address)
+    {
+        return _supportedCoreContracts.at(_index);
+    }
+
+    /**
+     * @notice Returns a list of supported core contracts.
+     * @return List of supported core contracts.
+     * @dev This is only intended to be called outside of block
+     * execution where there is no gas limit.
+     */
+    function getSupportedCoreContracts()
+        external
+        view
+        returns (address[] memory)
+    {
+        uint256 supportedCoreContractCount = _supportedCoreContracts.length();
+        address[] memory supportedCoreContracts = new address[](
+            supportedCoreContractCount
+        );
+
+        for (uint256 i = 0; i < supportedCoreContractCount; i++) {
+            supportedCoreContracts[i] = _supportedCoreContracts.at(i);
+        }
+
+        return supportedCoreContracts;
+    }
+
+    function getDependencyTypeAdditionalCDNAtIndex(
+        bytes32 _dependencyTypeId,
+        uint256 _index
+    ) external view returns (string memory) {
+        return dependencyTypeInfo[_dependencyTypeId].additionalCDNs[_index];
+    }
+
+    function getDependencyTypeAdditionalRepositoryAtIndex(
+        bytes32 _dependencyTypeId,
+        uint256 _index
+    ) external view returns (string memory) {
+        return
+            dependencyTypeInfo[_dependencyTypeId].additionalRepositories[
+                _index
+            ];
+    }
+
+    /**
+     * @notice Returns address with bytecode containing script for
+     * dependency type `_dependencyTypeIds` at script index `_index`.
+     */
+    function getDependencyTypeScriptBytecodeAddressAtIndex(
+        bytes32 _dependencyTypeId,
+        uint256 _index
+    ) external view returns (address) {
+        return
+            dependencyTypeInfo[_dependencyTypeId].scriptBytecodeAddresses[
+                _index
+            ];
+    }
+
+    /**
+     * @notice Returns script for dependency type `_dependencyTypeId` at script index `_index`.
+     * @param _dependencyTypeId Dependency type to be queried.
+     * @param _index Index of script to be queried.
+     */
+    function getDependencyTypeScriptAtIndex(
+        bytes32 _dependencyTypeId,
+        uint256 _index
+    ) external view returns (string memory) {
+        DependencyType storage dependencyType = dependencyTypeInfo[
+            _dependencyTypeId
+        ];
+        // If trying to access an out-of-index script, return the empty string.
+        if (_index >= dependencyType.scriptCount) {
+            return "";
+        }
+
+        return
+            dependencyType.scriptBytecodeAddresses[_index].readFromBytecode();
     }
 
     /**
