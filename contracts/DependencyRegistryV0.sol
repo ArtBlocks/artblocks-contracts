@@ -349,6 +349,7 @@ contract DependencyRegistryV0 is Ownable, IDependencyRegistryV0 {
         external
         onlyAdminACL(this.addDependencyTypeAdditionalCDN.selector)
         onlyNonEmptyString(_additionalCDN)
+        onlyExistingDependencyType(_dependencyTypeId)
     {
         DependencyType storage dependencyType = dependencyTypeInfo[
             _dependencyTypeId
@@ -546,6 +547,7 @@ contract DependencyRegistryV0 is Ownable, IDependencyRegistryV0 {
     function addSupportedCoreContract(address _contractAddress)
         external
         onlyAdminACL(this.addSupportedCoreContract.selector)
+        onlyNonZeroAddress(_contractAddress)
     {
         require(
             !_supportedCoreContracts.contains(_contractAddress),
@@ -611,6 +613,12 @@ contract DependencyRegistryV0 is Ownable, IDependencyRegistryV0 {
         address _contractAddress,
         uint256 _projectId
     ) external onlyAdminACL(this.addProjectDependencyOverride.selector) {
+        require(
+            projectDependencyOverrides[_contractAddress][_projectId] !=
+                bytes32(""),
+            "No override set for project"
+        );
+
         delete projectDependencyOverrides[_contractAddress][_projectId];
 
         emit ProjectDependencyOverrideRemoved(_contractAddress, _projectId);
@@ -659,6 +667,7 @@ contract DependencyRegistryV0 is Ownable, IDependencyRegistryV0 {
         view
         returns (string memory)
     {
+        require(_dependencyTypes.length() > _index, "Index out of range");
         return _dependencyTypes.at(_index).toString();
     }
 
@@ -723,6 +732,10 @@ contract DependencyRegistryV0 is Ownable, IDependencyRegistryV0 {
         view
         returns (address)
     {
+        require(
+            _supportedCoreContracts.length() > _index,
+            "Index out of bounds"
+        );
         return _supportedCoreContracts.at(_index);
     }
 
@@ -813,7 +826,12 @@ contract DependencyRegistryV0 is Ownable, IDependencyRegistryV0 {
     function getDependencyTypeForProject(
         address _contractAddress,
         uint256 _projectId
-    ) external view returns (string memory) {
+    )
+        external
+        view
+        onlySupportedCoreContract(_contractAddress)
+        returns (string memory)
+    {
         bytes32 dependencyType = projectDependencyOverrides[_contractAddress][
             _projectId
         ];
@@ -828,7 +846,9 @@ contract DependencyRegistryV0 is Ownable, IDependencyRegistryV0 {
         returns (string memory scriptTypeAndVersion, string memory, uint256) {
             return scriptTypeAndVersion;
         } catch {
-            return "";
+            revert(
+                "Contract does not implement projectScriptDetails and has no override set."
+            );
         }
     }
 
