@@ -3,6 +3,12 @@
 
 pragma solidity ^0.8.0;
 
+/* Provides an interface definition for compatibility with the Minting API.
+ *
+ * In order for a minter contract to be compatible with the REST API provided
+ * at https://minting-api.artblocks.io/ it must implement the interface defined
+ * below.
+ */
 interface IMintingAPIMinterV0 {
     mapping(uint256 => bool) public projectMaxHasBeenInvoked;
 

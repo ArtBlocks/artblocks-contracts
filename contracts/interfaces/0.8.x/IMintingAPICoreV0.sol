@@ -3,6 +3,12 @@
 
 pragma solidity ^0.8.0;
 
+/* Provides an interface definition for compatibility with the Minting API.
+ *
+ * In order for a core contract to be compatible with the REST API provided
+ * at https://minting-api.artblocks.io/ it must implement the interface defined
+ * below.
+ */
 interface IMintingAPICoreV0 {
     /**
      * @notice Token ID `_tokenId` minted on project ID `_projectId` to `_to`.
