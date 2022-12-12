@@ -257,3 +257,9 @@ export async function deployAndGetPBAB(): Promise<T_PBAB> {
   await pbabToken.connect(this.accounts.artist).toggleProjectIsPaused(0);
   return { pbabToken, pbabMinter };
 }
+
+export async function getTxResponseTimestamp(tx) {
+  const receipt = await tx.wait();
+  const block = await ethers.provider.getBlock(receipt.blockNumber);
+  return block.timestamp;
+}

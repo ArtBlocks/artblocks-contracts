@@ -3,16 +3,16 @@
 
 import { ethers } from "hardhat";
 // explorations
-import { MinterMerkleV2__factory } from "../contracts/factories/MinterMerkleV2__factory";
+import { MinterMerkleV3__factory } from "../contracts/factories/MinterMerkleV3__factory";
 
 // delay to avoid issues with reorgs and tx failures
 import { delay } from "../util/utils";
 const EXTRA_DELAY_BETWEEN_TX = 5000; // ms
 
 /**
- * This script was created to deploy the MinterMerkleV2 contract to the Ethereum
+ * This script was created to deploy the MinterMerkleV3 contract to the Ethereum
  * mainnet. It is intended to document the deployment process and provide a
- * reference for the steps required to deploy the MinterMerkleV2 contract.
+ * reference for the steps required to deploy the MinterMerkleV3 contract.
  */
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG BEGINS HERE
@@ -22,6 +22,7 @@ const minterFilter_Flagship = "0x092B8F64e713d66b38522978BCf4649db14b931E";
 const genArt721V3Core_Explorations =
   "0x942BC2d3e7a589FE5bd4A5C6eF9727DFd82F5C8a";
 const minterFilter_Explorations = "0x3F4bbde879F9BB0E95AEa08fF12F55E171495C8f";
+const delegationRegistryAddress = "0x00000000000076A84feF008CDAbe6409d2FE638B";
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG ENDS HERE
 //////////////////////////////////////////////////////////////////////////////
@@ -38,27 +39,29 @@ async function main() {
   //////////////////////////////////////////////////////////////////////////////
 
   // Deploy Minter contract(s)
-  const minterMerkleFactory = new MinterMerkleV2__factory(deployer);
+  const minterMerkleFactory = new MinterMerkleV3__factory(deployer);
   // flagship
   const minterMerkleFlagship = await minterMerkleFactory.deploy(
     genArt721V3Core_Flagship,
-    minterFilter_Flagship
+    minterFilter_Flagship,
+    delegationRegistryAddress
   );
   await minterMerkleFlagship.deployed();
   const minterMerkleFlagshipAddress = minterMerkleFlagship.address;
   console.log(
-    `MinterMerkleV2 (flagship) deployed at ${minterMerkleFlagshipAddress}`
+    `MinterMerkleV3 (flagship) deployed at ${minterMerkleFlagshipAddress}`
   );
   await delay(EXTRA_DELAY_BETWEEN_TX);
   // explorations
   const minterMerkleExplorations = await minterMerkleFactory.deploy(
     genArt721V3Core_Explorations,
-    minterFilter_Explorations
+    minterFilter_Explorations,
+    delegationRegistryAddress
   );
   await minterMerkleExplorations.deployed();
   const minterMerkleExplorationsAddress = minterMerkleExplorations.address;
   console.log(
-    `MinterMerkleV2 (explorations) deployed at ${minterMerkleExplorationsAddress}`
+    `MinterMerkleV3 (explorations) deployed at ${minterMerkleExplorationsAddress}`
   );
   await delay(EXTRA_DELAY_BETWEEN_TX);
 
@@ -76,13 +79,13 @@ async function main() {
 
   // Output instructions for manual Etherscan verification.
   const standardVerify = "yarn hardhat verify";
-  console.log(`Verify MinterMerkleV2 (flagship) contract deployment with:`);
+  console.log(`Verify MinterMerkleV3 (flagship) contract deployment with:`);
   console.log(
-    `${standardVerify} --network ${networkName} ${minterMerkleFlagshipAddress} ${genArt721V3Core_Flagship} ${minterFilter_Flagship}`
+    `${standardVerify} --network ${networkName} ${minterMerkleFlagshipAddress} ${genArt721V3Core_Flagship} ${minterFilter_Flagship} ${delegationRegistryAddress}`
   );
-  console.log(`Verify MinterMerkleV2 (explorations) contract deployment with:`);
+  console.log(`Verify MinterMerkleV3 (explorations) contract deployment with:`);
   console.log(
-    `${standardVerify} --network ${networkName} ${minterMerkleExplorationsAddress} ${genArt721V3Core_Explorations} ${minterFilter_Explorations}`
+    `${standardVerify} --network ${networkName} ${minterMerkleExplorationsAddress} ${genArt721V3Core_Explorations} ${minterFilter_Explorations} ${delegationRegistryAddress}`
   );
 
   //////////////////////////////////////////////////////////////////////////////
@@ -91,13 +94,13 @@ async function main() {
 
   console.log("Next Steps:");
   console.log(
-    "1. Verify Admin ACL V1 contract deployment on Etherscan (see above)"
+    "1. Verify MinterMerkleV3 contract deployment on Etherscan (see above)"
   );
   console.log(
     "2. WAIT for subgraph to sync, and ensure enum with new minter type is added to subgraph"
   );
   console.log(
-    "3. AFTER subgraph syncs with type MinterMerkleV2 included in MinterType enum, allowlist the new minters type on their corresponding minter filters"
+    "3. AFTER subgraph syncs with type MinterMerkleV3 included in MinterType enum, allowlist the new minters type on their corresponding minter filters"
   );
   console.log(
     `3a. e.g. Call addApprovedMinter on ${minterFilter_Flagship} with arg ${minterMerkleFlagshipAddress}`

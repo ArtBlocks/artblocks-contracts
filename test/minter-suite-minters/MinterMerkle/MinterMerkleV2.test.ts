@@ -34,8 +34,6 @@ const coreContractsToTest = [
  */
 for (const coreContractName of coreContractsToTest) {
   describe(`MinterMerkleV2_${coreContractName}`, async function () {
-    let fakeDelegationRegistry: FakeContract<IDelegationRegistry>;
-
     beforeEach(async function () {
       // standard accounts and constants
       this.accounts = await getAccounts();
@@ -54,7 +52,8 @@ for (const coreContractName of coreContractsToTest) {
         "MinterFilterV1"
       ));
 
-      this.minter = await deployAndGet.call(this, "MinterMerkleV2", [
+      this.targetMinterName = "MinterMerkleV2";
+      this.minter = await deployAndGet.call(this, this.targetMinterName, [
         this.genArt721Core.address,
         this.minterFilter.address,
       ]);
@@ -185,7 +184,7 @@ for (const coreContractName of coreContractsToTest) {
       );
 
       // mock delegate.cash registry with Goerli/mainnet-deployed address
-      fakeDelegationRegistry = await smock.fake("IDelegationRegistry", {
+      this.fakeDelegationRegistry = await smock.fake("IDelegationRegistry", {
         address: "0x00000000000076A84feF008CDAbe6409d2FE638B",
       });
     });
@@ -384,21 +383,31 @@ for (const coreContractName of coreContractsToTest) {
 
     describe("purchaseTo_kem with a VALID vault delegate", async function () {
       it("does allow purchases", async function () {
-        fakeDelegationRegistry.checkDelegateForContract.returns(true);
-
+        // user vault is also in the allowlist
         const userVault = this.accounts.additional2.address;
+
+        // specify a mock condition where registry at specifid address returns true
+        this.fakeDelegationRegistry.checkDelegateForContract
+          .whenCalledWith(
+            this.accounts.user.address, // delegate
+            userVault, // vault
+            this.genArt721Core.address // token contract
+          )
+          .returns(true);
+        // note that smock default is to return false
 
         const userMerkleProofOne = this.merkleTreeOne.getHexProof(
           hashAddress(userVault)
         );
 
+        // purchase to, using the vault address's allowlist status
         await this.minter
           .connect(this.accounts.user)
           ["purchaseTo(address,uint256,bytes32[],address)"](
             userVault,
             this.projectOne,
             userMerkleProofOne,
-            userVault, //  the allowlisted address
+            userVault, //  the allowlisted vault address
             {
               value: this.pricePerTokenInWei,
             }
@@ -406,17 +415,13 @@ for (const coreContractName of coreContractsToTest) {
       });
 
       it("allows purchases to vault if msg.sender is allowlisted and no vault is provided", async function () {
-        fakeDelegationRegistry.checkDelegateForContract.returns(true);
-
-        const userVault = this.accounts.additional2.address;
-
         const userMerkleProofOne = this.merkleTreeOne.getHexProof(
           hashAddress(this.accounts.user.address)
         );
         await this.minter
           .connect(this.accounts.user)
           ["purchaseTo(address,uint256,bytes32[])"](
-            userVault,
+            this.accounts.additional.address,
             this.projectOne,
             userMerkleProofOne,
             {
@@ -426,10 +431,12 @@ for (const coreContractName of coreContractsToTest) {
       });
 
       it("does not allow purchases with an incorrect proof", async function () {
-        fakeDelegationRegistry.checkDelegateForContract.returns(true);
+        // delegation registry always returns true for this test
+        this.fakeDelegationRegistry.checkDelegateForContract.returns(true);
 
         const userVault = this.accounts.additional2.address;
 
+        // Merkle proof for an addres that is NOT the vault
         const userMerkleProofOne = this.merkleTreeOne.getHexProof(
           hashAddress(this.accounts.user.address)
         );
@@ -451,7 +458,8 @@ for (const coreContractName of coreContractsToTest) {
       });
 
       it("vault cannot exceed mint limit", async function () {
-        fakeDelegationRegistry.checkDelegateForContract.returns(true);
+        // delegation registry always returns true for this test
+        this.fakeDelegationRegistry.checkDelegateForContract.returns(true);
 
         const userVault = this.accounts.additional2.address;
 
@@ -490,7 +498,8 @@ for (const coreContractName of coreContractsToTest) {
 
     describe("purchaseTo_kem with an INVALID vault delegate", async function () {
       it("does NOT allow purchases", async function () {
-        fakeDelegationRegistry.checkDelegateForContract.returns(false);
+        // delegation registry always returns false for this test
+        this.fakeDelegationRegistry.checkDelegateForContract.returns(false);
 
         const userVault = this.accounts.additional2.address;
 
