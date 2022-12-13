@@ -824,7 +824,8 @@ contract DependencyRegistryV0 is
      * @notice Returns the dependency type for a given project (`projectId`)
      * on a given core contract (`_contractAddress`). If no override is set,
      * the core contract is called to retrieve the script type and version as
-     * dependency type.
+     * dependency type. For any contract earlier than v3, that does not have
+     * an override set, this will revert.
      * @param _contractAddress Core contract address.
      * @param _projectId Project to return dependency type for.
      * @return dependencyTypeId Dependency type used by project.
