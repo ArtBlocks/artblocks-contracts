@@ -33,7 +33,8 @@ jobs:
           pkg-manager: yarn
       - run:
           name: compile contracts
-          command: yarn compile
+          command: |
+            yarn compile
       - run:
           name: generate types
           command: |
@@ -57,7 +58,8 @@ jobs:
           pkg-manager: yarn
       - run:
           name: compile contracts
-          command: yarn compile
+          command: |
+            yarn compile
       - run:
           name: generate types
           command: |
