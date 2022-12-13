@@ -1217,7 +1217,8 @@ contract GenArt721CoreV3_Engine is
     /**
      * @notice Adds a script to project `_projectId`.
      * @param _projectId Project to be updated.
-     * @param _script Script to be added.
+     * @param _script Script to be added. Required to be a non-empty string,
+     *                but no further validation is performed.
      */
     function addProjectScript(uint256 _projectId, string memory _script)
         external
@@ -1237,7 +1238,8 @@ contract GenArt721CoreV3_Engine is
      * @notice Updates script for project `_projectId` at script ID `_scriptId`.
      * @param _projectId Project to be updated.
      * @param _scriptId Script ID to be updated.
-     * @param _script The updated script value.
+     * @param _script The updated script value. Required to be a non-empty
+     *                string, but no further validation is performed.
      */
     function updateProjectScript(
         uint256 _projectId,
@@ -1252,6 +1254,14 @@ contract GenArt721CoreV3_Engine is
         Project storage project = projects[_projectId];
         require(_scriptId < project.scriptCount, "scriptId out of range");
         // purge old contract bytecode contract from the blockchain state
+        // note: Although this does reduce usage of Ethereum state, it does not
+        // reduce the gas costs of removal transactions. We believe this is the
+        // best behavior at the time of writing, and do not expect this to
+        // result in any breaking changes in the future. All current proposals
+        // to change the self-destruct opcode are backwards compatible, but may
+        // result in not removing the bytecode from the blockchain state. This
+        // implementation is compatible with that architecture, as it does not
+        // rely on the bytecode being removed from the blockchain state.
         project.scriptBytecodeAddresses[_scriptId].purgeBytecode();
         // store script in contract bytecode, replacing reference address from
         // the contract that no longer exists with the newly created one
@@ -1271,6 +1281,14 @@ contract GenArt721CoreV3_Engine is
         Project storage project = projects[_projectId];
         require(project.scriptCount > 0, "there are no scripts to remove");
         // purge old contract bytecode contract from the blockchain state
+        // note: Although this does reduce usage of Ethereum state, it does not
+        // reduce the gas costs of removal transactions. We believe this is the
+        // best behavior at the time of writing, and do not expect this to
+        // result in any breaking changes in the future. All current proposals
+        // to change the self-destruct opcode are backwards compatible, but may
+        // result in not removing the bytecode from the blockchain state. This
+        // implementation is compatible with that architecture, as it does not
+        // rely on the bytecode being removed from the blockchain state.
         project.scriptBytecodeAddresses[project.scriptCount - 1].purgeBytecode();
         // delete reference to contract address that no longer exists
         delete project.scriptBytecodeAddresses[project.scriptCount - 1];
