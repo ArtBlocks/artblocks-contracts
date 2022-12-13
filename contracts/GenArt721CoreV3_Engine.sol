@@ -1757,8 +1757,8 @@ contract GenArt721CoreV3_Engine is
         returns (address payable[] memory recipients, uint256[] memory bps)
     {
         // initialize arrays with maximum potential length
-        recipients = new address payable[](3);
-        bps = new uint256[](3);
+        recipients = new address payable[](4);
+        bps = new uint256[](4);
 
         uint256 projectId = tokenIdToProjectId(_tokenId);
         ProjectFinance storage projectFinance = projectIdToFinancials[
