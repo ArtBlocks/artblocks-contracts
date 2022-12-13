@@ -57,8 +57,8 @@ interface IFilteredMinterDAExpSettlementV0 is IFilteredMinterV1 {
     event ReceiptUpdated(
         address indexed _purchaser,
         uint256 indexed _projectId,
-        uint256 _netPosted,
-        uint256 _numPurchased
+        uint256 _numPurchased,
+        uint256 _netPosted
     );
 
     /// returns latest purchase price for project `_projectId`, or 0 if no
