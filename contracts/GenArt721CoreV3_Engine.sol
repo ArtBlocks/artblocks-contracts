@@ -651,6 +651,8 @@ contract GenArt721CoreV3_Engine is
                 _platformProviderPrimarySalesPercentage) <= ONE_HUNDRED, /* current */
             "Max sum of ONE_HUNDRED %"
         );
+        // Casting to `uint8` here is safe due check above, which does not allow
+        // overflow as of solidity version ^0.8.0.
         _renderProviderPrimarySalesPercentage = uint8(
             renderProviderPrimarySalesPercentage_
         );
@@ -676,6 +678,8 @@ contract GenArt721CoreV3_Engine is
                 _renderProviderPrimarySalesPercentage) <= ONE_HUNDRED, /* current */
             "Max sum of ONE_HUNDRED %"
         );
+        // Casting to `uint8` here is safe due check above, which does not allow
+        // overflow as of solidity version ^0.8.0.
         _platformProviderPrimarySalesPercentage = uint8(
             platformProviderPrimarySalesPercentage_
         );
