@@ -1,6 +1,5 @@
 var prompt = require("prompt-sync")();
-const GenArt721Minter = require("../artifacts/GenArt721Minter.json");
-const { BigNumber } = require("ethers");
+const GenArt721Minter = require("../../artifacts/contracts/PBAB+Collabs/GenArt721Minter_PBAB.sol/GenArt721Minter_PBAB.json");
 var utils = require("ethers").utils;
 
 async function main() {
@@ -8,18 +7,16 @@ async function main() {
   const deployerAddress = await deployer.getAddress();
   console.log("Minting:", deployerAddress);
 
-  const genArt721Address = "0x2251f7Dad12C25B233B6d51453Be5Da6D925Fad8"; //prompt('Minter address? ');
+  const minterAddress = prompt("Minting Contract Address? ");
   const genArt721Minter = new ethers.Contract(
-    genArt721Address,
+    minterAddress,
     GenArt721Minter.abi,
     deployer //provider
   );
 
-  await genArt721Minter.purchase("3", { value: utils.parseEther("0.1") });
+  await genArt721Minter.purchase("0", { value: utils.parseEther("0.000000000001") });
 
   console.log("mint done");
-  //let supply = await genArt721.totalSupply();
-  //console.log("supply:" +supply);
 }
 
 main()
