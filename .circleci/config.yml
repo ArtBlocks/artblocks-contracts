@@ -32,9 +32,9 @@ jobs:
       - node/install-packages:
           pkg-manager: yarn
       - run:
-        name: generate types
-        command: |
-          yarn generate:typechain
+          name: generate types
+          command: |
+            yarn generate:typechain
       - run:
           name: Hardhat Test
           command: |
