@@ -12,4 +12,5 @@ V3 performance metrics are available in [V3_Performance.md](V3_Performance.md)
 - Removes "backwards compatible" oriented financial view-only methods
 - Updates royalty-limit logic to account for two providers – "render" and "platform" providers.
 - Added support for a global "auto approve" proposals setting `autoApproveArtistSplitProposals`, that is determined at time of contract deployment (this likely will default to `true` based on most Engine partners' onboarding processes currently)
+- Update the EIP-173-conforming `owner()` method to proxy the `superAdmin` value for the currently assigned ACL contract, rather than returning the contract itself.
 - TODO: integrates with the Engine registration-beacon event emitter (https://github.com/ArtBlocks/artblocks-contracts/issues/358)
