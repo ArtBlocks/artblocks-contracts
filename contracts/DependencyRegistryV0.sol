@@ -8,8 +8,9 @@ import "./interfaces/0.8.x/IGenArt721CoreContractV3.sol";
 import "./interfaces/0.8.x/IDependencyRegistryV0.sol";
 
 import "@openzeppelin-4.7/contracts/utils/Strings.sol";
-import "@openzeppelin-4.7/contracts/access/Ownable.sol";
 import "@openzeppelin-4.7/contracts/utils/structs/EnumerableSet.sol";
+import "@openzeppelin-4.8/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin-4.8/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin-4.5/contracts/utils/math/SafeCast.sol";
 
 import "./libs/0.8.x/BytecodeStorage.sol";
@@ -21,7 +22,11 @@ import "./libs/0.8.x/Bytes32Strings.sol";
  * @notice Privileged Roles and Ownership:
  * Permissions managed by ACL contract
  */
-contract DependencyRegistryV0 is Ownable, IDependencyRegistryV0 {
+contract DependencyRegistryV0 is
+    Initializable,
+    OwnableUpgradeable,
+    IDependencyRegistryV0
+{
     using BytecodeStorage for string;
     using BytecodeStorage for address;
     using Bytes32Strings for bytes32;
@@ -93,7 +98,8 @@ contract DependencyRegistryV0 is Ownable, IDependencyRegistryV0 {
      * @param _adminACLContract Address of admin access control contract, to be
      * set as contract owner.
      */
-    constructor(address _adminACLContract) {
+    function initialize(address _adminACLContract) public initializer {
+        __Ownable_init();
         // set AdminACL management contract as owner
         _transferOwnership(_adminACLContract);
     }
@@ -888,8 +894,13 @@ contract DependencyRegistryV0 is Ownable, IDependencyRegistryV0 {
      * @dev ref: https://docs.openzeppelin.com/contracts/4.x/api/access#Ownable
      * @dev owner role was called `admin` prior to V3 core contract
      */
-    function owner() public view override(Ownable) returns (address) {
-        return Ownable.owner();
+    function owner()
+        public
+        view
+        override(OwnableUpgradeable)
+        returns (address)
+    {
+        return OwnableUpgradeable.owner();
     }
 
     /**
@@ -901,7 +912,7 @@ contract DependencyRegistryV0 is Ownable, IDependencyRegistryV0 {
      * also update adminACLContract for improved introspection.
      */
     function _transferOwnership(address newOwner) internal override {
-        Ownable._transferOwnership(newOwner);
+        OwnableUpgradeable._transferOwnership(newOwner);
         adminACLContract = IAdminACLV0(newOwner);
     }
 }

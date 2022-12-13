@@ -67,9 +67,11 @@ describe(`DependencyRegistryV0`, async function () {
 
     this.dependencyRegistry = await deployAndGet.call(
       this,
-      "DependencyRegistryV0",
-      [this.adminACL.address]
+      "DependencyRegistryV0"
     );
+    await this.dependencyRegistry
+      .connect(this.accounts.deployer)
+      .initialize(this.adminACL.address);
 
     // add project zero
     await this.genArt721Core
