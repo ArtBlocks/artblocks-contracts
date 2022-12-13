@@ -32,6 +32,9 @@ jobs:
       - node/install-packages:
           pkg-manager: yarn
       - run:
+        name: compile contracts
+        command: yarn compile
+      - run:
           name: generate types
           command: |
             yarn generate:typechain
@@ -52,6 +55,9 @@ jobs:
           lts: true
       - node/install-packages:
           pkg-manager: yarn
+      - run:
+        name: compile contracts
+        command: yarn compile
       - run:
         name: generate types
         command: |
