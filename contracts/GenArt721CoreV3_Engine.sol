@@ -5,6 +5,7 @@ pragma solidity 0.8.17;
 
 import "./interfaces/0.8.x/IRandomizerV2.sol";
 import "./interfaces/0.8.x/IAdminACLV0.sol";
+import "./interfaces/0.8.x/IEngineRegistryV0.sol";
 import "./interfaces/0.8.x/IGenArt721CoreContractV3_Engine.sol";
 import "./interfaces/0.8.x/IManifold.sol";
 
@@ -377,7 +378,8 @@ contract GenArt721CoreV3_Engine is
         address _randomizerContract,
         address _adminACLContract,
         uint248 _startingProjectId,
-        bool _autoApproveArtistSplitProposals
+        bool _autoApproveArtistSplitProposals,
+        address _engineRegistryContract
     )
         ERC721_PackedHashSeed(_tokenName, _tokenSymbol)
         onlyNonZeroAddress(_renderProviderAddress)
@@ -408,6 +410,12 @@ contract GenArt721CoreV3_Engine is
         // initialize next project ID
         _nextProjectId = _startingProjectId;
         emit PlatformUpdated(FIELD_NEXT_PROJECT_ID);
+        // register contract as an Engine contract
+        IEngineRegistryV0(_engineRegistryContract).registerContract(
+            address(this),
+            coreVersion,
+            coreType
+        );
     }
 
     /**
