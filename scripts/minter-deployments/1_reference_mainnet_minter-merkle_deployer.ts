@@ -22,7 +22,7 @@ const minterFilter_Flagship = "0x092B8F64e713d66b38522978BCf4649db14b931E";
 const genArt721V3Core_Explorations =
   "0x942BC2d3e7a589FE5bd4A5C6eF9727DFd82F5C8a";
 const minterFilter_Explorations = "0x3F4bbde879F9BB0E95AEa08fF12F55E171495C8f";
-const delegationRegistryAddress = "0xTODO"; // for ETH mainnet, use 0x00000000000076A84feF008CDAbe6409d2FE638B
+const delegationRegistryAddress = "0x00000000000076A84feF008CDAbe6409d2FE638B";
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG ENDS HERE
 //////////////////////////////////////////////////////////////////////////////
@@ -94,7 +94,7 @@ async function main() {
 
   console.log("Next Steps:");
   console.log(
-    "1. Verify Admin ACL V1 contract deployment on Etherscan (see above)"
+    "1. Verify MinterMerkleV3 contract deployment on Etherscan (see above)"
   );
   console.log(
     "2. WAIT for subgraph to sync, and ensure enum with new minter type is added to subgraph"

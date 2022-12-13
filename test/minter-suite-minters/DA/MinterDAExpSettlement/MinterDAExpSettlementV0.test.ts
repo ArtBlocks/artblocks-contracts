@@ -6,9 +6,14 @@ import {
   balance,
   ether,
 } from "@openzeppelin/test-helpers";
+
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
+
+// hide nuisance logs about event overloading
+import { Logger } from "@ethersproject/logger";
+Logger.setLogLevel(Logger.levels.ERROR);
 
 import {
   getAccounts,
@@ -18,9 +23,8 @@ import {
   safeAddProject,
 } from "../../../util/common";
 import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../util/constants";
-import { MinterDALin_Common } from "./MinterDALin.common";
-import { MinterDAV1V2_Common } from "../MinterDAV1V2.common";
-import { MinterDAV2_Common } from "../MinterDAV2.common";
+import { MinterDAExpSettlement_Common } from "./MinterDAExpSettlement.common";
+import { MinterDASettlementV0_Common } from "../MinterDASettlementV0.common";
 
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
@@ -33,7 +37,7 @@ const coreContractsToTest = [
  * V3 core contract.
  */
 for (const coreContractName of coreContractsToTest) {
-  describe(`MinterDALinV2_${coreContractName}`, async function () {
+  describe(`MinterDAExpSettlementV0_${coreContractName}`, async function () {
     beforeEach(async function () {
       // standard accounts and constants
       this.accounts = await getAccounts();
@@ -43,7 +47,7 @@ for (const coreContractName of coreContractsToTest) {
         ethers.utils.parseEther("0.1")
       );
       this.basePrice = ethers.utils.parseEther("0.05");
-
+      this.defaultHalfLife = ONE_HOUR / 2;
       this.auctionStartTimeOffset = ONE_HOUR;
 
       // deploy and configure minter filter and minter
@@ -57,7 +61,7 @@ for (const coreContractName of coreContractsToTest) {
         "MinterFilterV1"
       ));
 
-      this.targetMinterName = "MinterDALinV2";
+      this.targetMinterName = "MinterDAExpSettlementV0";
       this.minter = await deployAndGet.call(this, this.targetMinterName, [
         this.genArt721Core.address,
         this.minterFilter.address,
@@ -93,34 +97,27 @@ for (const coreContractName of coreContractsToTest) {
         const block = await ethers.provider.getBlock(blockNumber);
         this.startTime = block.timestamp;
       }
-      this.startTime = this.startTime + ONE_DAY;
+      this.startTime = this.startTime + ONE_DAY * 2;
 
       await ethers.provider.send("evm_mine", [this.startTime - ONE_MINUTE]);
-      await this.minter
-        .connect(this.accounts.deployer)
-        .resetAuctionDetails(this.projectZero);
       await this.minter
         .connect(this.accounts.artist)
         .setAuctionDetails(
           this.projectZero,
           this.startTime + this.auctionStartTimeOffset,
-          this.startTime + this.auctionStartTimeOffset + ONE_HOUR * 2,
+          this.defaultHalfLife,
           this.startingPrice,
           this.basePrice
         );
       await ethers.provider.send("evm_mine", [this.startTime]);
     });
 
-    describe("common DALin tests", async () => {
-      await MinterDALin_Common();
+    describe("common DAEXPSettlement tests", async function () {
+      await MinterDAExpSettlement_Common();
     });
 
-    describe("common DA V1V2 tests", async function () {
-      await MinterDAV1V2_Common();
-    });
-
-    describe("common DA V2 tests", async function () {
-      await MinterDAV2_Common();
+    describe("common DA Settlement V0 tests", async function () {
+      await MinterDASettlementV0_Common();
     });
 
     describe("setAuctionDetails", async function () {
@@ -131,14 +128,13 @@ for (const coreContractName of coreContractsToTest) {
         const overflowStartTime = ethers.BigNumber.from("2").pow(
           ethers.BigNumber.from("64")
         );
-        const overflowEndTime = overflowStartTime.add(ONE_HOUR * 2);
         await expectRevert(
           this.minter
             .connect(this.accounts.artist)
             .setAuctionDetails(
               this.projectZero,
               overflowStartTime,
-              overflowEndTime,
+              this.defaultHalfLife,
               this.startingPrice,
               this.basePrice
             ),
@@ -148,16 +144,13 @@ for (const coreContractName of coreContractsToTest) {
     });
 
     describe("setProjectMaxInvocations", async function () {
-      it("allows artist to call setProjectMaxInvocations", async function () {
-        await this.minter
-          .connect(this.accounts.artist)
-          .setProjectMaxInvocations(this.projectZero);
-      });
-
-      it("allows user to call setProjectMaxInvocations", async function () {
-        await this.minter
-          .connect(this.accounts.user)
-          .setProjectMaxInvocations(this.projectZero);
+      it("reverts as not implemented", async function () {
+        await expectRevert(
+          this.minter
+            .connect(this.accounts.artist)
+            .setProjectMaxInvocations(this.projectZero),
+          "setProjectMaxInvocations not implemented - updated during every mint"
+        );
       });
     });
 
@@ -177,14 +170,13 @@ for (const coreContractName of coreContractsToTest) {
         const txCost = receipt.effectiveGasPrice
           .mul(receipt.gasUsed)
           .toString();
-
         console.log(
-          "Gas cost for a successful Linear DA mint: ",
+          "Gas cost for a successful Exponential DA mint: ",
           ethers.utils.formatUnits(txCost, "ether").toString(),
           "ETH"
         );
         expect(txCost.toString()).to.equal(
-          ethers.utils.parseEther("0.0138498")
+          ethers.utils.parseEther("0.0182969")
         ); // assuming a cost of 100 GWEI
       });
     });

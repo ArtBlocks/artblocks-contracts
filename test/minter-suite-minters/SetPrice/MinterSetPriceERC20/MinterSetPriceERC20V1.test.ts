@@ -36,8 +36,9 @@ describe("MinterSetPriceERC20V1_V1Core", async function () {
       "MinterFilterV0"
     ));
 
+    this.targetMinterName = "MinterSetPriceERC20V1";
     const minterFactory = await ethers.getContractFactory(
-      "MinterSetPriceERC20V1"
+      this.targetMinterName
     );
     this.minter = await minterFactory.deploy(
       this.genArt721Core.address,

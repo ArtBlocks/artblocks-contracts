@@ -53,7 +53,10 @@ for (const coreContractName of coreContractsToTest) {
         "MinterFilterV1"
       ));
 
-      const minterFactory = await ethers.getContractFactory("MinterSetPriceV2");
+      this.targetMinterName = "MinterSetPriceV2";
+      const minterFactory = await ethers.getContractFactory(
+        this.targetMinterName
+      );
       this.minter1 = await minterFactory.deploy(
         this.genArt721Core.address,
         this.minterFilter.address
