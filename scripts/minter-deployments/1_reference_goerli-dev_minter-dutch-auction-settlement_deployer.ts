@@ -77,11 +77,15 @@ async function main() {
 
   // Output instructions for manual Etherscan verification.
   const standardVerify = "yarn hardhat verify";
-  console.log(`Verify MinterDAExpSettlementV0 (flagship) contract deployment with:`);
+  console.log(
+    `Verify MinterDAExpSettlementV0 (flagship) contract deployment with:`
+  );
   console.log(
     `${standardVerify} --network ${networkName} ${minterHolderFlagshipAddress} ${genArt721V3Core_Flagship} ${minterFilter_Flagship}`
   );
-  console.log(`Verify MinterDAExpSettlementV0 (explorations) contract deployment with:`);
+  console.log(
+    `Verify MinterDAExpSettlementV0 (explorations) contract deployment with:`
+  );
   console.log(
     `${standardVerify} --network ${networkName} ${minterHolderExplorationsAddress} ${genArt721V3Core_Explorations} ${minterFilter_Explorations}`
   );
