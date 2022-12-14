@@ -19,44 +19,6 @@ pragma solidity 0.8.9;
  * @author Art Blocks Inc.
  */
 contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
-    /**
-     * @notice Registered holders of NFTs at address `_NFTAddress` to be
-     * considered for minting.
-     */
-    event RegisteredNFTAddress(address indexed _NFTAddress);
-
-    /**
-     * @notice Unregistered holders of NFTs at address `_NFTAddress` to be
-     * considered for minting.
-     */
-    event UnregisteredNFTAddress(address indexed _NFTAddress);
-
-    /**
-     * @notice Allow holders of NFTs at addresses `_ownedNFTAddresses`, project
-     * IDs `_ownedNFTProjectIds` to mint on project `_projectId`.
-     * `_ownedNFTAddresses` assumed to be aligned with `_ownedNFTProjectIds`.
-     * e.g. Allows holders of project `_ownedNFTProjectIds[0]` on token
-     * contract `_ownedNFTAddresses[0]` to mint.
-     */
-    event AllowedHoldersOfProjects(
-        uint256 indexed _projectId,
-        address[] _ownedNFTAddresses,
-        uint256[] _ownedNFTProjectIds
-    );
-
-    /**
-     * @notice Remove holders of NFTs at addresses `_ownedNFTAddresses`,
-     * project IDs `_ownedNFTProjectIds` to mint on project `_projectId`.
-     * `_ownedNFTAddresses` assumed to be aligned with `_ownedNFTProjectIds`.
-     * e.g. Removes holders of project `_ownedNFTProjectIds[0]` on token
-     * contract `_ownedNFTAddresses[0]` from mint allowlist.
-     */
-    event RemovedHoldersOfProjects(
-        uint256 indexed _projectId,
-        address[] _ownedNFTAddresses,
-        uint256[] _ownedNFTProjectIds
-    );
-
     // add Enumerable Set methods
     using EnumerableSet for EnumerableSet.AddressSet;
 
