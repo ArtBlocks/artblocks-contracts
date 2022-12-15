@@ -2,8 +2,8 @@
 
 ## Mainnet
 
-**GenArt721CoreV2_ENGINE_FLEX:** https://etherscan.io/address/TODO#code
-**GenArt721Minter:** https://etherscan.io/address/TODO#code
+**GenArt721CoreV2_ENGINE_FLEX:** https://etherscan.io/address/0x7c3Ea2b7B3beFA1115aB51c09F0C9f245C500B18#code
+**GenArt721Minter:** https://etherscan.io/address/0xB5C1F9c5e8032264a10e618fb64042E3C3CDf39c#code
 
 ## Goerli
 
