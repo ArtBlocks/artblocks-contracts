@@ -3,7 +3,7 @@
 
 import "../../../interfaces/0.8.x/IGenArt721CoreContractV1.sol";
 import "../../../interfaces/0.8.x/IMinterFilterV0.sol";
-import "../../../interfaces/0.8.x/IFilteredMinterV0.sol";
+import "../../../interfaces/0.8.x/IFilteredMinterDALinV0.sol";
 
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
 
@@ -14,24 +14,7 @@ pragma solidity 0.8.9;
  * Pricing is achieved using an automated Dutch-auction mechanism.
  * @author Art Blocks Inc.
  */
-contract MinterDALinV0 is ReentrancyGuard, IFilteredMinterV0 {
-    /// Auction details updated for project `projectId`.
-    event SetAuctionDetails(
-        uint256 indexed projectId,
-        uint256 _auctionTimestampStart,
-        uint256 _auctionTimestampEnd,
-        uint256 _startPrice,
-        uint256 _basePrice
-    );
-
-    /// Auction details cleared for project `projectId`.
-    event ResetAuctionDetails(uint256 indexed projectId);
-
-    /// Minimum allowed auction length updated
-    event MinimumAuctionLengthSecondsUpdated(
-        uint256 _minimumAuctionLengthSeconds
-    );
-
+contract MinterDALinV0 is ReentrancyGuard, IFilteredMinterDALinV0 {
     /// Core contract address this minter interacts with
     address public immutable genArt721CoreAddress;
 
