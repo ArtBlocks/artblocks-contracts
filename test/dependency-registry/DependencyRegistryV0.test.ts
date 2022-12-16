@@ -1588,20 +1588,18 @@ describe(`DependencyRegistryV0`, async function () {
       // deploy new ACL with user as superAdmin
       const userAdminACLFactory = new AdminACLV0__factory(this.accounts.user);
       const userAdminACL = await userAdminACLFactory.deploy();
+
       // update owner of core to new userAdminACL, expect OwnershipTransferred event
       await expect(
-        this.adminACL
+        this.dependencyRegistry
           .connect(this.accounts.deployer)
-          .transferOwnershipOn(
-            this.dependencyRegistry.address,
-            userAdminACL.address
-          )
+          .transferOwnership(userAdminACL.address)
       )
         .to.emit(this.dependencyRegistry, "OwnershipTransferred")
         .withArgs(this.adminACL.address, userAdminACL.address);
       // ensure owner + public adminACLContract has been updated
       expect(await this.dependencyRegistry.owner()).to.be.equal(
-        userAdminACL.address
+        this.accounts.user.address
       );
       expect(await this.dependencyRegistry.adminACLContract()).to.be.equal(
         userAdminACL.address
@@ -1620,12 +1618,13 @@ describe(`DependencyRegistryV0`, async function () {
     it("behaves as expected when renouncing ownership", async function (this: DependencyRegistryV0TestContext) {
       // update owner of core to null address, expect OwnershipTransferred event
       await expect(
-        await this.adminACL
+        await this.dependencyRegistry
           .connect(this.accounts.deployer)
-          .renounceOwnershipOn(this.dependencyRegistry.address)
+          .renounceOwnership()
       )
         .to.emit(this.dependencyRegistry, "OwnershipTransferred")
         .withArgs(this.adminACL.address, constants.ZERO_ADDRESS);
+
       // ensure owner + public adminACLContract has been updated
       expect(await this.dependencyRegistry.owner()).to.be.equal(
         constants.ZERO_ADDRESS
