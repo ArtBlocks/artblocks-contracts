@@ -900,7 +900,7 @@ contract DependencyRegistryV0 is
         override(OwnableUpgradeable)
         returns (address)
     {
-        return OwnableUpgradeable.owner();
+        return adminACLContract.superAdmin();
     }
 
     /**
