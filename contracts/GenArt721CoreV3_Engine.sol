@@ -32,10 +32,8 @@ import "./libs/0.8.x/Bytes32Strings.sol";
  * The following functions are restricted to the Admin ACL contract:
  * - updateArtblocksDependencyRegistryAddress
  * - updateProviderSalesAddresses
- * - updateRenderProviderPrimarySalesPercentage (up to 100%)
- * - updatePlatformProviderPrimarySalesPercentage (up to 100%)
- * - updateRenderProviderSecondarySalesBPS (up to 100%)
- * - updatePlatformProviderSecondarySalesBPS (up to 100%)
+ * - updateProviderPrimarySalesPercentages (up to 100%)
+ * - updateProviderSecondarySalesBPS (up to 100%)
  * - updateMinterContract
  * - updateRandomizerAddress
  * - toggleProjectIsActive
@@ -127,25 +125,12 @@ contract GenArt721CoreV3_Engine is
     bytes32 constant FIELD_RANDOMIZER_ADDRESS = "randomizerAddress";
     bytes32 constant FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS =
         "dependencyRegistryAddress";
-    // Note: for string-size reasons, the render/platform provider
-    //       constants below do not include the word "provider" in
-    //       the inline constants (so that they may fit in 32 bytes).
-    bytes32 constant FIELD_RENDER_PROVIDER_PRIMARY_SALES_ADDRESS =
-        "renderPrimarySalesAddress";
-    bytes32 constant FIELD_PLATFORM_PROVIDER_PRIMARY_SALES_ADDRESS =
-        "platformPrimarySalesAddress";
-    bytes32 constant FIELD_RENDER_PROVIDER_SECONDARY_SALES_ADDRESS =
-        "renderSecondarySalesAddress";
-    bytes32 constant FIELD_PLATFORM_PROVIDER_SECONDARY_SALES_ADDRESS =
-        "platformSecondarySalesAddress";
-    bytes32 constant FIELD_RENDER_PROVIDER_PRIMARY_SALES_PERCENTAGE =
-        "renderPrimaryPercentage";
-    bytes32 constant FIELD_PLATFORM_PROVIDER_PRIMARY_SALES_PERCENTAGE =
-        "platformPrimaryPercentage";
-    bytes32 constant FIELD_RENDER_PROVIDER_SECONDARY_SALES_BPS =
-        "renderSecondaryBPS";
-    bytes32 constant FIELD_PLATFORM_PROVIDER_SECONDARY_SALES_BPS =
-        "platformSecondaryBPS";
+    bytes32 constant FIELD_PROVIDER_SALES_ADDRESSES = 
+        "providerSalesAddresses";
+    bytes32 constant FIELD_PROVIDER_PRIMARY_SALES_PERCENTAGES =
+        "providerPrimaryPercentages";
+    bytes32 constant FIELD_PROVIDER_SECONDARY_SALES_BPS =
+        "providerSecondaryBPS";
     // The following fields are used to indicate which project-level parameter
     // has been updated in the `ProjectUpdated` event:
     bytes32 constant FIELD_PROJECT_COMPLETED = "completed";
@@ -593,22 +578,22 @@ contract GenArt721CoreV3_Engine is
     }
 
     /**
-     * @notice Updates the render provider primary sales revenue percentage to
-     * `renderProviderPrimarySalesPercentage_`.
-     * @param renderProviderPrimarySalesPercentage_ New primary sales revenue
+     * @notice Updates the render and platform provider primary sales revenue percentage to
+     * the provided inputs.
+     * @param renderProviderPrimarySalesPercentage_ New primary sales revenue % for the render provider
+     * @param platformProviderPrimarySalesPercentage_ New primary sales revenue % for the platform provider
      * percentage.
      */
-    function updateRenderProviderPrimarySalesPercentage(
-        uint256 renderProviderPrimarySalesPercentage_
+    function updateProviderPrimarySalesPercentages(
+        uint256 renderProviderPrimarySalesPercentage_,
+        uint256 platformProviderPrimarySalesPercentage_
     )
         external
-        onlyAdminACL(this.updateRenderProviderPrimarySalesPercentage.selector)
+        onlyAdminACL(this.updateProviderPrimarySalesPercentages.selector)
     {
-        // Validate that the sum of a) the current *platform* provider %; and
-        // b) the proposed *render* provider %, does not exceed 100%.
+        // Validate that the sum of the proposed %s, does not exceed 100%.
         require(
-            (renderProviderPrimarySalesPercentage_ + /* proposed */
-                _platformProviderPrimarySalesPercentage) <= ONE_HUNDRED, /* current */
+            (renderProviderPrimarySalesPercentage_ + platformProviderPrimarySalesPercentage_) <= ONE_HUNDRED,
             "Max sum of ONE_HUNDRED %"
         );
         // Casting to `uint8` here is safe due check above, which does not allow
@@ -616,68 +601,17 @@ contract GenArt721CoreV3_Engine is
         _renderProviderPrimarySalesPercentage = uint8(
             renderProviderPrimarySalesPercentage_
         );
-        emit PlatformUpdated(FIELD_RENDER_PROVIDER_PRIMARY_SALES_PERCENTAGE);
-    }
-
-    /**
-     * @notice Updates the platform provider primary sales revenue percentage to
-     * `platformProviderPrimarySalesPercentage_`.
-     * @param platformProviderPrimarySalesPercentage_ New primary sales revenue
-     * percentage.
-     */
-    function updatePlatformProviderPrimarySalesPercentage(
-        uint256 platformProviderPrimarySalesPercentage_
-    )
-        external
-        onlyAdminACL(this.updatePlatformProviderPrimarySalesPercentage.selector)
-    {
-        // Validate that the sum of a) the current *render* provider %; and
-        // b) the proposed *platform* provider %, does not exceed 100%.
-        require(
-            (platformProviderPrimarySalesPercentage_ + /* proposed */
-                _renderProviderPrimarySalesPercentage) <= ONE_HUNDRED, /* current */
-            "Max sum of ONE_HUNDRED %"
-        );
-        // Casting to `uint8` here is safe due check above, which does not allow
-        // overflow as of solidity version ^0.8.0.
         _platformProviderPrimarySalesPercentage = uint8(
             platformProviderPrimarySalesPercentage_
         );
-        emit PlatformUpdated(FIELD_PLATFORM_PROVIDER_PRIMARY_SALES_PERCENTAGE);
+        emit PlatformUpdated(FIELD_PROVIDER_PRIMARY_SALES_PERCENTAGES);
     }
 
     /**
-     * @notice Updates render provider secondary sales royalty Basis Points to
-     * `_renderProviderSecondarySalesBPS`.
+     * @notice Updates render and platform provider secondary sales royalty Basis Points to
+     * the provided inputs.
      * @param _renderProviderSecondarySalesBPS New secondary sales royalty Basis
      * points.
-     * @dev Due to secondary royalties being ultimately enforced via social
-     * consensus, no hard upper limit is imposed on the BPS value, other than
-     * <= 100% royalty, which would not make mathematical sense. Realistically,
-     * changing this value is expected to either never occur, or be a rare
-     * occurrence.
-     */
-    function updateRenderProviderSecondarySalesBPS(
-        uint256 _renderProviderSecondarySalesBPS
-    )
-        external
-        onlyAdminACL(this.updateRenderProviderSecondarySalesBPS.selector)
-    {
-        // Validate that the sum of a) the current *platform* provider BPS; and
-        // b) the proposed *render* provider BPS, does not exceed 10_000 BPS.
-        require(
-            (_renderProviderSecondarySalesBPS + /* proposed */
-                platformProviderSecondarySalesBPS) <=
-                MAX_PROVIDER_SECONDARY_SALES_BPS, /* current */
-            "Max sum of MAX_PROVIDER_SECONDARY_SALES_BPS BPS"
-        );
-        renderProviderSecondarySalesBPS = _renderProviderSecondarySalesBPS;
-        emit PlatformUpdated(FIELD_RENDER_PROVIDER_SECONDARY_SALES_BPS);
-    }
-
-    /**
-     * @notice Updates platform provider secondary sales royalty Basis Points to
-     * `_platformProviderSecondarySalesBPS`.
      * @param _platformProviderSecondarySalesBPS New secondary sales royalty Basis
      * points.
      * @dev Due to secondary royalties being ultimately enforced via social
@@ -686,22 +620,22 @@ contract GenArt721CoreV3_Engine is
      * changing this value is expected to either never occur, or be a rare
      * occurrence.
      */
-    function updatePlatformProviderSecondarySalesBPS(
+    function updateProviderSecondarySalesBPS(
+        uint256 _renderProviderSecondarySalesBPS,
         uint256 _platformProviderSecondarySalesBPS
     )
         external
-        onlyAdminACL(this.updatePlatformProviderSecondarySalesBPS.selector)
+        onlyAdminACL(this.updateProviderSecondarySalesBPS.selector)
     {
-        // Validate that the sum of a) the current *render* provider BPS; and
-        // b) the proposed *platform* provider BPS, does not exceed 10_000 BPS.
+        // Validate that the sum of the proposed provider BPS, does not exceed 10_000 BPS.
         require(
-            (_platformProviderSecondarySalesBPS + /* proposed */
-                renderProviderSecondarySalesBPS) <=
-                MAX_PROVIDER_SECONDARY_SALES_BPS, /* current */
+            (_renderProviderSecondarySalesBPS + _platformProviderSecondarySalesBPS) <=
+                MAX_PROVIDER_SECONDARY_SALES_BPS,
             "Max sum of MAX_PROVIDER_SECONDARY_SALES_BPS BPS"
         );
+        renderProviderSecondarySalesBPS = _renderProviderSecondarySalesBPS;
         platformProviderSecondarySalesBPS = _platformProviderSecondarySalesBPS;
-        emit PlatformUpdated(FIELD_PLATFORM_PROVIDER_SECONDARY_SALES_BPS);
+        emit PlatformUpdated(FIELD_PROVIDER_SECONDARY_SALES_BPS);
     }
 
     /**
@@ -2020,19 +1954,16 @@ contract GenArt721CoreV3_Engine is
         platformProviderPrimarySalesAddress = payable(
             _platformProviderPrimarySalesAddress
         );
-        emit PlatformUpdated(FIELD_PLATFORM_PROVIDER_PRIMARY_SALES_ADDRESS);
         platformProviderSecondarySalesAddress = payable(
             _platformProviderSecondarySalesAddress
         );
-        emit PlatformUpdated(FIELD_PLATFORM_PROVIDER_SECONDARY_SALES_ADDRESS);
         renderProviderPrimarySalesAddress = payable(
             _renderProviderPrimarySalesAddress
         );
-        emit PlatformUpdated(FIELD_RENDER_PROVIDER_PRIMARY_SALES_ADDRESS);
         renderProviderSecondarySalesAddress = payable(
             _renderProviderSecondarySalesAddress
         );
-        emit PlatformUpdated(FIELD_RENDER_PROVIDER_SECONDARY_SALES_ADDRESS);
+        emit PlatformUpdated(FIELD_PROVIDER_SALES_ADDRESSES);
     }
 
 
