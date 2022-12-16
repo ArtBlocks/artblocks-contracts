@@ -118,7 +118,40 @@ for (const coreContractName of coreContractsToTest) {
 
     describe("requests appropriate selectors from AdminACL", function () {
       if (coreContractName === "GenArt721CoreV3_Engine") {
-        // TODO
+        it("updateProviderSalesAddresses", async function () {
+          await validateAdminACLRequest.call(
+            this,
+            "updateProviderSalesAddresses",
+            [
+              this.accounts.user.address,
+              this.accounts.user.address,
+              this.accounts.user.address,
+              this.accounts.user.address
+            ]
+          );
+        });
+  
+        it("updateProviderPrimarySalesPercentages", async function () {
+          await validateAdminACLRequest.call(
+            this,
+            "updateProviderPrimarySalesPercentages",
+            [
+              11,
+              22
+            ]
+          );
+        });
+  
+        it("updateProviderSecondarySalesBPS", async function () {
+          await validateAdminACLRequest.call(
+            this,
+            "updateProviderSecondarySalesBPS",
+            [
+              240,
+              420
+            ]
+          );
+        });
       } else {
         it("updateArtblocksPrimarySalesAddress", async function () {
           await validateAdminACLRequest.call(
@@ -271,39 +304,17 @@ for (const coreContractName of coreContractsToTest) {
 
     describe("rejects non-admin calling admin-ACL protected functions", function () {
       if (coreContractName === "GenArt721CoreV3_Engine") {
-        it("updateRenderProviderPrimarySalesAddress", async function () {
+        it("updateProviderSalesAddresses", async function () {
           await expectRevertFromAdminACLRequest.call(
             this,
-            "updateRenderProviderPrimarySalesAddress",
+            "updateProviderSalesAddresses",
             this.accounts.user,
-            [this.accounts.user.address]
-          );
-        });
-  
-        it("updateRenderProviderSecondarySalesAddress", async function () {
-          await expectRevertFromAdminACLRequest.call(
-            this,
-            "updateRenderProviderSecondarySalesAddress",
-            this.accounts.user,
-            [this.accounts.user.address]
-          );
-        }); 
-
-        it("updatePlatformProviderPrimarySalesAddress", async function () {
-          await expectRevertFromAdminACLRequest.call(
-            this,
-            "updatePlatformProviderPrimarySalesAddress",
-            this.accounts.user,
-            [this.accounts.user.address]
-          );
-        });
-  
-        it("updatePlatformProviderSecondarySalesAddress", async function () {
-          await expectRevertFromAdminACLRequest.call(
-            this,
-            "updatePlatformProviderSecondarySalesAddress",
-            this.accounts.user,
-            [this.accounts.user.address]
+            [
+              this.accounts.user.address,
+              this.accounts.user.address,
+              this.accounts.user.address,
+              this.accounts.user.address
+            ]
           );
         });
       } else {

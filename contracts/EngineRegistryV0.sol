@@ -37,11 +37,11 @@ contract EngineRegistryV0 is IEngineRegistryV0, ERC165 {
         string calldata _coreType
     ) external {
         // CHECKS
-        // Validate against `msg.sender` as it is intended that this registration be
-        // performed manually after the contract deployment for the `_contractAddress`.
+        // Validate against `tx.origin` rather than `msg.sender` as it is intended that this registration be
+        // performed in an automated fashion *at the time* of contract deployment for the `_contractAddress`.
         require(
-            msg.sender == deployerAddress,
-            "Only allowed deployer-address message sender"
+            tx.origin == deployerAddress,
+            "Only allowed deployer-address TX origin"
         );
 
         // EFFECTS
@@ -54,11 +54,11 @@ contract EngineRegistryV0 is IEngineRegistryV0, ERC165 {
      */
     function unregisterContract(address _contractAddress) external {
         // CHECKS
-        // Validate against `msg.sender` for consistency with the above approach,
-        // as we also expect any unregistrations to be performed manually.
+        // Validate against `tx.origin` rather than `msg.sender` for consistency with the above approach,
+        // as we expect in usage of this contract `msg.sender == tx.origin` to be a true assessment.
         require(
             tx.origin == deployerAddress,
-            "Only allowed deployer-address message sender"
+            "Only allowed deployer-address TX origin"
         );
         require(
             registeredContractAddresses[_contractAddress],
