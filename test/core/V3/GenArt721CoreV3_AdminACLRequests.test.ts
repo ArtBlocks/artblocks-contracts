@@ -47,6 +47,7 @@ async function expectRevertFromAdminACLRequest(
 const coreContractsToTest = [
   "GenArt721CoreV3", // flagship V3 core
   "GenArt721CoreV3_Explorations", // V3 core explorations contract
+  "GenArt721CoreV3_Engine", // V3 core Engine contract
 ];
 
 /**
@@ -57,7 +58,7 @@ const coreContractsToTest = [
  * requesting to authenticate.
  */
 for (const coreContractName of coreContractsToTest) {
-  describe(`${coreContractName} AminACL Requests`, async function () {
+  describe(`${coreContractName} AdminACL Requests`, async function () {
     beforeEach(async function () {
       // standard accounts and constants
       this.accounts = await getAccounts();
@@ -116,37 +117,41 @@ for (const coreContractName of coreContractsToTest) {
     });
 
     describe("requests appropriate selectors from AdminACL", function () {
-      it("updateArtblocksPrimarySalesAddress", async function () {
-        await validateAdminACLRequest.call(
-          this,
-          "updateArtblocksPrimarySalesAddress",
-          [this.accounts.user.address]
-        );
-      });
-
-      it("updateArtblocksSecondarySalesAddress", async function () {
-        await validateAdminACLRequest.call(
-          this,
-          "updateArtblocksSecondarySalesAddress",
-          [this.accounts.user.address]
-        );
-      });
-
-      it("updateArtblocksPrimarySalesPercentage", async function () {
-        await validateAdminACLRequest.call(
-          this,
-          "updateArtblocksPrimarySalesPercentage",
-          [11]
-        );
-      });
-
-      it("updateArtblocksSecondarySalesBPS", async function () {
-        await validateAdminACLRequest.call(
-          this,
-          "updateArtblocksSecondarySalesBPS",
-          [240]
-        );
-      });
+      if (coreContractName === "GenArt721CoreV3_Engine") {
+        // TODO
+      } else {
+        it("updateArtblocksPrimarySalesAddress", async function () {
+          await validateAdminACLRequest.call(
+            this,
+            "updateArtblocksPrimarySalesAddress",
+            [this.accounts.user.address]
+          );
+        });
+  
+        it("updateArtblocksSecondarySalesAddress", async function () {
+          await validateAdminACLRequest.call(
+            this,
+            "updateArtblocksSecondarySalesAddress",
+            [this.accounts.user.address]
+          );
+        });
+  
+        it("updateArtblocksPrimarySalesPercentage", async function () {
+          await validateAdminACLRequest.call(
+            this,
+            "updateArtblocksPrimarySalesPercentage",
+            [11]
+          );
+        });
+  
+        it("updateArtblocksSecondarySalesBPS", async function () {
+          await validateAdminACLRequest.call(
+            this,
+            "updateArtblocksSecondarySalesBPS",
+            [240]
+          );
+        });
+      }
 
       it("updateMinterContract", async function () {
         await validateAdminACLRequest.call(this, "updateMinterContract", [
@@ -265,23 +270,61 @@ for (const coreContractName of coreContractsToTest) {
     });
 
     describe("rejects non-admin calling admin-ACL protected functions", function () {
-      it("updateArtblocksPrimarySalesAddress", async function () {
-        await expectRevertFromAdminACLRequest.call(
-          this,
-          "updateArtblocksPrimarySalesAddress",
-          this.accounts.user,
-          [this.accounts.user.address]
-        );
-      });
+      if (coreContractName === "GenArt721CoreV3_Engine") {
+        it("updateRenderProviderPrimarySalesAddress", async function () {
+          await expectRevertFromAdminACLRequest.call(
+            this,
+            "updateRenderProviderPrimarySalesAddress",
+            this.accounts.user,
+            [this.accounts.user.address]
+          );
+        });
+  
+        it("updateRenderProviderSecondarySalesAddress", async function () {
+          await expectRevertFromAdminACLRequest.call(
+            this,
+            "updateRenderProviderSecondarySalesAddress",
+            this.accounts.user,
+            [this.accounts.user.address]
+          );
+        }); 
 
-      it("updateArtblocksSecondarySalesAddress", async function () {
-        await expectRevertFromAdminACLRequest.call(
-          this,
-          "updateArtblocksSecondarySalesAddress",
-          this.accounts.user,
-          [this.accounts.user.address]
-        );
-      });
+        it("updatePlatformProviderPrimarySalesAddress", async function () {
+          await expectRevertFromAdminACLRequest.call(
+            this,
+            "updatePlatformProviderPrimarySalesAddress",
+            this.accounts.user,
+            [this.accounts.user.address]
+          );
+        });
+  
+        it("updatePlatformProviderSecondarySalesAddress", async function () {
+          await expectRevertFromAdminACLRequest.call(
+            this,
+            "updatePlatformProviderSecondarySalesAddress",
+            this.accounts.user,
+            [this.accounts.user.address]
+          );
+        });
+      } else {
+        it("updateArtblocksPrimarySalesAddress", async function () {
+          await expectRevertFromAdminACLRequest.call(
+            this,
+            "updateArtblocksPrimarySalesAddress",
+            this.accounts.user,
+            [this.accounts.user.address]
+          );
+        });
+  
+        it("updateArtblocksSecondarySalesAddress", async function () {
+          await expectRevertFromAdminACLRequest.call(
+            this,
+            "updateArtblocksSecondarySalesAddress",
+            this.accounts.user,
+            [this.accounts.user.address]
+          );
+        });
+      }
     });
   });
 }

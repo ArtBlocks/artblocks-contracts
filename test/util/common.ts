@@ -144,8 +144,41 @@ export async function deployCoreWithMinterFilter(
       this.symbol,
       randomizer.address,
       adminACL.address,
-      0,
+      0, // _startingProjectId
     ]);
+    // assign core contract for randomizer to use
+    randomizer
+      .connect(this.accounts.deployer)
+      .assignCoreAndRenounce(genArt721Core.address);
+    // deploy minter filter
+    minterFilter = await deployAndGet.call(this, minterFilterName, [
+      genArt721Core.address,
+    ]);
+    // allowlist minterFilter on the core contract
+    await genArt721Core
+      .connect(this.accounts.deployer)
+      .updateMinterContract(minterFilter.address);
+  } else if (coreContractName.endsWith("V3_Engine")) {
+    randomizer = await deployAndGet.call(this, "BasicRandomizerV2", []);
+    let adminACLContractName = useAdminACLWithEvents
+      ? "MockAdminACLV0Events"
+      : "AdminACLV0";
+    // if function input has adminACL contract name, use that instead
+    adminACLContractName = _adminACLContractName
+      ? _adminACLContractName
+      : adminACLContractName;
+    adminACL = await deployAndGet.call(this, adminACLContractName, []);
+    genArt721Core = await deployAndGet.call(this, coreContractName, [
+      this.name,
+      this.symbol,
+      this.accounts.deployer.address,
+      this.accounts.deployer2.address,
+      randomizer.address,
+      adminACL.address,
+      0, // _startingProjectId
+      false, // _autoApproveArtistSplitProposals
+    ]);
+    console.log(genArt721Core.address);
     // assign core contract for randomizer to use
     randomizer
       .connect(this.accounts.deployer)

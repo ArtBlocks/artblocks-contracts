@@ -23,8 +23,9 @@ contract EngineRegistryV0 is IEngineRegistryV0, ERC165 {
     /// internal mapping for managing known list of registered contracts.
     mapping(address => bool) internal registeredContractAddresses;
 
-    constructor(address _deployerAddress) {
-        deployerAddress = _deployerAddress;
+    constructor() {
+        // The deployer of the registry becomes the permissioned deployer for speaking to the registry.
+        deployerAddress = tx.origin;
     }
 
     /**
@@ -36,11 +37,11 @@ contract EngineRegistryV0 is IEngineRegistryV0, ERC165 {
         string calldata _coreType
     ) external {
         // CHECKS
-        // Validate against `tx.origin` rather than `msg.sender` as it is intended that this registration be
-        // performed in an automated fashion *at the time* of contract deployment for the `_contractAddress`.
+        // Validate against `msg.sender` as it is intended that this registration be
+        // performed manually after the contract deployment for the `_contractAddress`.
         require(
-            tx.origin == deployerAddress,
-            "Only allowed deployer-address TX origin"
+            msg.sender == deployerAddress,
+            "Only allowed deployer-address message sender"
         );
 
         // EFFECTS
@@ -53,11 +54,11 @@ contract EngineRegistryV0 is IEngineRegistryV0, ERC165 {
      */
     function unregisterContract(address _contractAddress) external {
         // CHECKS
-        // Validate against `tx.origin` rather than `msg.sender` for consistency with the above approach,
-        // as we expect in usage of this contract `msg.sender == tx.origin` to be a true assessment.
+        // Validate against `msg.sender` for consistency with the above approach,
+        // as we also expect any unregistrations to be performed manually.
         require(
             tx.origin == deployerAddress,
-            "Only allowed deployer-address TX origin"
+            "Only allowed deployer-address message sender"
         );
         require(
             registeredContractAddresses[_contractAddress],

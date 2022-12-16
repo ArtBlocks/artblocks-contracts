@@ -15,3 +15,4 @@ V3 performance metrics are available in [V3_Performance.md](V3_Performance.md)
 - Update the EIP-173-conforming `owner()` method to proxy the `superAdmin` value for the currently assigned ACL contract, rather than returning the contract itself.
 - Integrates with a basic Engine registration-beacon event emitter, EngineRegistryV0, implementation.
 - Coalesced to a single contract standard for both Engine and Partner (Collaborations) contracts.
+- Consolidate renderer/platform provider address update methods to save on deployed contract size (fitting contract limits)

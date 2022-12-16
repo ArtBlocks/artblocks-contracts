@@ -5,7 +5,6 @@ pragma solidity 0.8.17;
 
 import "./interfaces/0.8.x/IRandomizerV2.sol";
 import "./interfaces/0.8.x/IAdminACLV0.sol";
-import "./interfaces/0.8.x/IEngineRegistryV0.sol";
 import "./interfaces/0.8.x/IGenArt721CoreContractV3_Engine.sol";
 import "./interfaces/0.8.x/IManifold.sol";
 
@@ -32,10 +31,7 @@ import "./libs/0.8.x/Bytes32Strings.sol";
  * ----------------------------------------------------------------------------
  * The following functions are restricted to the Admin ACL contract:
  * - updateArtblocksDependencyRegistryAddress
- * - updateRenderProviderPrimarySalesAddress
- * - updatePlatformProviderPrimarySalesAddress
- * - updateRenderProviderSecondarySalesAddress
- * - updatePlatformProviderSecondarySalesAddress
+ * - updateProviderSalesAddresses
  * - updateRenderProviderPrimarySalesPercentage (up to 100%)
  * - updatePlatformProviderPrimarySalesPercentage (up to 100%)
  * - updateRenderProviderSecondarySalesBPS (up to 100%)
@@ -378,8 +374,7 @@ contract GenArt721CoreV3_Engine is
         address _randomizerContract,
         address _adminACLContract,
         uint248 _startingProjectId,
-        bool _autoApproveArtistSplitProposals,
-        address _engineRegistryContract
+        bool _autoApproveArtistSplitProposals
     )
         ERC721_PackedHashSeed(_tokenName, _tokenSymbol)
         onlyNonZeroAddress(_renderProviderAddress)
@@ -392,10 +387,12 @@ contract GenArt721CoreV3_Engine is
         // record contracts starting project ID
         // casting-up is safe
         startingProjectId = uint256(_startingProjectId);
-        _updateRenderProviderPrimarySalesAddress(_renderProviderAddress);
-        _updateRenderProviderSecondarySalesAddress(_renderProviderAddress);
-        _updatePlatformProviderPrimarySalesAddress(_platformProviderAddress);
-        _updatePlatformProviderSecondarySalesAddress(_platformProviderAddress);
+        _updateProviderSalesAddresses(
+            _renderProviderAddress,
+            _renderProviderAddress,
+            _platformProviderAddress,
+            _platformProviderAddress
+        );
         _updateRandomizerAddress(_randomizerContract);
         // set AdminACL management contract as owner
         _transferOwnership(_adminACLContract);
@@ -410,12 +407,6 @@ contract GenArt721CoreV3_Engine is
         // initialize next project ID
         _nextProjectId = _startingProjectId;
         emit PlatformUpdated(FIELD_NEXT_PROJECT_ID);
-        // register contract as an Engine contract
-        IEngineRegistryV0(_engineRegistryContract).registerContract(
-            address(this),
-            coreVersion,
-            coreType
-        );
     }
 
     /**
@@ -569,73 +560,34 @@ contract GenArt721CoreV3_Engine is
     }
 
     /**
-     * @notice Updates renderProviderPrimarySalesAddress to
-     * `_renderProviderPrimarySalesAddress`.
+     * @notice Updates sales addresses for the platform and render providers to
+     * the input parameters.
      * @param _renderProviderPrimarySalesAddress Address of new primary sales
      * payment address.
-     */
-    function updateRenderProviderPrimarySalesAddress(
-        address payable _renderProviderPrimarySalesAddress
-    )
-        external
-        onlyAdminACL(this.updateRenderProviderPrimarySalesAddress.selector)
-        onlyNonZeroAddress(_renderProviderPrimarySalesAddress)
-    {
-        _updateRenderProviderPrimarySalesAddress(
-            _renderProviderPrimarySalesAddress
-        );
-    }
-
-    /**
-     * @notice Updates platformProviderPrimarySalesAddress to
-     * `_platformProviderPrimarySalesAddress`.
-     * @param _platformProviderPrimarySalesAddress Address of new primary sales
-     * payment address.
-     */
-    function updatePlatformProviderPrimarySalesAddress(
-        address payable _platformProviderPrimarySalesAddress
-    )
-        external
-        onlyAdminACL(this.updatePlatformProviderPrimarySalesAddress.selector)
-        onlyNonZeroAddress(_platformProviderPrimarySalesAddress)
-    {
-        _updatePlatformProviderPrimarySalesAddress(
-            _platformProviderPrimarySalesAddress
-        );
-    }
-
-    /**
-     * @notice Updates the render provider secondary sales royalty payment address to
-     * `_renderProviderSecondarySalesAddress`.
      * @param _renderProviderSecondarySalesAddress Address of new secondary sales
      * payment address.
-     */
-    function updateRenderProviderSecondarySalesAddress(
-        address payable _renderProviderSecondarySalesAddress
-    )
-        external
-        onlyAdminACL(this.updateRenderProviderSecondarySalesAddress.selector)
-        onlyNonZeroAddress(_renderProviderSecondarySalesAddress)
-    {
-        _updateRenderProviderSecondarySalesAddress(
-            _renderProviderSecondarySalesAddress
-        );
-    }
-
-    /**
-     * @notice Updates the platform provider secondary sales royalty payment address to
-     * `_platformProviderSecondarySalesAddress`.
+     * @param _platformProviderPrimarySalesAddress Address of new primary sales
+     * payment address.
      * @param _platformProviderSecondarySalesAddress Address of new secondary sales
      * payment address.
      */
-    function updatePlatformProviderSecondarySalesAddress(
+    function updateProviderSalesAddresses(
+        address payable _renderProviderPrimarySalesAddress,
+        address payable _renderProviderSecondarySalesAddress,
+        address payable _platformProviderPrimarySalesAddress,
         address payable _platformProviderSecondarySalesAddress
     )
         external
-        onlyAdminACL(this.updatePlatformProviderSecondarySalesAddress.selector)
+        onlyAdminACL(this.updateProviderSalesAddresses.selector)
+        onlyNonZeroAddress(_renderProviderPrimarySalesAddress)
+        onlyNonZeroAddress(_renderProviderSecondarySalesAddress)
+        onlyNonZeroAddress(_platformProviderPrimarySalesAddress)
         onlyNonZeroAddress(_platformProviderSecondarySalesAddress)
     {
-        _updatePlatformProviderSecondarySalesAddress(
+        _updateProviderSalesAddresses(
+            _renderProviderPrimarySalesAddress,
+            _renderProviderSecondarySalesAddress,
+            _platformProviderPrimarySalesAddress,
             _platformProviderSecondarySalesAddress
         );
     }
@@ -2043,72 +1995,46 @@ contract GenArt721CoreV3_Engine is
     }
 
     /**
-     * @notice Updates render provider payment address to `_renderProviderPrimarySalesAddress`.
-     * @param _renderProviderPrimarySalesAddress New render provider payment address.
-     * @dev Note that this method does not check that the input address is
-     * not `address(0)`, as it is expected that callers of this method should
-     * perform input validation where applicable.
-     */
-    function _updateRenderProviderPrimarySalesAddress(
-        address _renderProviderPrimarySalesAddress
-    ) internal {
-        renderProviderPrimarySalesAddress = payable(
-            _renderProviderPrimarySalesAddress
-        );
-        emit PlatformUpdated(FIELD_RENDER_PROVIDER_PRIMARY_SALES_ADDRESS);
-    }
-
-    /**
-     * @notice Updates platform provider payment address to `_platformProviderPrimarySalesAddress`.
-     * @param _platformProviderPrimarySalesAddress New platform provider payment address.
-     * @dev Note that this method does not check that the input address is
-     * not `address(0)`, as it is expected that callers of this method should
-     * perform input validation where applicable.
-     */
-    function _updatePlatformProviderPrimarySalesAddress(
-        address _platformProviderPrimarySalesAddress
-    ) internal {
-        platformProviderPrimarySalesAddress = payable(
-            _platformProviderPrimarySalesAddress
-        );
-        emit PlatformUpdated(FIELD_PLATFORM_PROVIDER_PRIMARY_SALES_ADDRESS);
-    }
-
-    /**
-     * @notice Updates the render provider secondary sales royalty payment address to
-     * `_renderProviderSecondarySalesAddress`.
-     * @param _renderProviderSecondarySalesAddress New render provider secondary sales
+     * @notice Updates sales addresses for the platform and render providers to
+     * the input parameters.
+     * @param _renderProviderPrimarySalesAddress Address of new primary sales
+     * payment address.
+     * @param _renderProviderSecondarySalesAddress Address of new secondary sales
+     * payment address.
+     * @param _platformProviderPrimarySalesAddress Address of new primary sales
+     * payment address.
+     * @param _platformProviderSecondarySalesAddress Address of new secondary sales
      * payment address.
      * @dev Note that this method does not check that the input address is
      * not `address(0)`, as it is expected that callers of this method should
      * perform input validation where applicable.
      */
-    function _updateRenderProviderSecondarySalesAddress(
-        address _renderProviderSecondarySalesAddress
-    ) internal {
+    function _updateProviderSalesAddresses(
+        address _renderProviderPrimarySalesAddress,
+        address _renderProviderSecondarySalesAddress,
+        address _platformProviderPrimarySalesAddress,
+        address _platformProviderSecondarySalesAddress
+    )
+        internal
+    {
+        platformProviderPrimarySalesAddress = payable(
+            _platformProviderPrimarySalesAddress
+        );
+        emit PlatformUpdated(FIELD_PLATFORM_PROVIDER_PRIMARY_SALES_ADDRESS);
+        platformProviderSecondarySalesAddress = payable(
+            _platformProviderSecondarySalesAddress
+        );
+        emit PlatformUpdated(FIELD_PLATFORM_PROVIDER_SECONDARY_SALES_ADDRESS);
+        renderProviderPrimarySalesAddress = payable(
+            _renderProviderPrimarySalesAddress
+        );
+        emit PlatformUpdated(FIELD_RENDER_PROVIDER_PRIMARY_SALES_ADDRESS);
         renderProviderSecondarySalesAddress = payable(
             _renderProviderSecondarySalesAddress
         );
         emit PlatformUpdated(FIELD_RENDER_PROVIDER_SECONDARY_SALES_ADDRESS);
     }
 
-    /**
-     * @notice Updates the platform provider secondary sales royalty payment address to
-     * `_platformProviderSecondarySalesAddress`.
-     * @param _platformProviderSecondarySalesAddress New platform provider secondary sales
-     * payment address.
-     * @dev Note that this method does not check that the input address is
-     * not `address(0)`, as it is expected that callers of this method should
-     * perform input validation where applicable.
-     */
-    function _updatePlatformProviderSecondarySalesAddress(
-        address _platformProviderSecondarySalesAddress
-    ) internal {
-        platformProviderSecondarySalesAddress = payable(
-            _platformProviderSecondarySalesAddress
-        );
-        emit PlatformUpdated(FIELD_PLATFORM_PROVIDER_SECONDARY_SALES_ADDRESS);
-    }
 
     /**
      * @notice Updates randomizer address to `_randomizerAddress`.
