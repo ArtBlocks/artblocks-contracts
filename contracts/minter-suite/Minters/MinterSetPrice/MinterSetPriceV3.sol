@@ -41,7 +41,7 @@ contract MinterSetPriceV3 is ReentrancyGuard, IFilteredMinterV2 {
     IMinterFilterV0 private immutable minterFilter;
 
     /// minterType for this minter
-    string public constant minterType = "MinterSetPriceV2";
+    string public constant minterType = "MinterSetPriceV3";
 
     uint256 constant ONE_MILLION = 1_000_000;
 
@@ -108,7 +108,7 @@ contract MinterSetPriceV3 is ReentrancyGuard, IFilteredMinterV2 {
      * @notice Manually sets the local maximum invocations of project `_projectId`
      * with the provided `_maxInvocations`, checking that `_maxInvocations` is less
      * than or equal to the value of project `_project_id`'s maximum invocations that is
-     * set onthe core contract.
+     * set on the core contract.
      * @param _projectId Project ID to set the maximum invocations for.
      * @param _maxInvocations Maximum invocations to set for the project.
      */
@@ -124,7 +124,7 @@ contract MinterSetPriceV3 is ReentrancyGuard, IFilteredMinterV2 {
         );
         require(
             _maxInvocations <= maxInvocations,
-            "Cannot increase max invocations for this project beyond what is set on the core contract"
+            "Cannot increase project max invocations above core contract set project max invocations"
         );
 
         // EFFECTS
