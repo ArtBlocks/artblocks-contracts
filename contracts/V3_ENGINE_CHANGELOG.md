@@ -16,3 +16,4 @@ V3 performance metrics are available in [V3_Performance.md](V3_Performance.md)
 - Integrates with a basic Engine registration-beacon event emitter, EngineRegistryV0, implementation.
 - Coalesced to a single contract standard for both Engine and Partner (Collaborations) contracts.
 - Consolidate renderer/platform provider payment address + percentage update methods to save on deployed contract size (to fit within current contract size limits).
+- Expose a `tokenIdToHashSeed` method in addition to `tokenIdToHash` on the CoreContract, and expose both via the Engine interface.

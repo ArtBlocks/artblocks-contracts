@@ -126,8 +126,7 @@ contract GenArt721CoreV3_Engine is
     bytes32 constant FIELD_RANDOMIZER_ADDRESS = "randomizerAddress";
     bytes32 constant FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS =
         "dependencyRegistryAddress";
-    bytes32 constant FIELD_PROVIDER_SALES_ADDRESSES = 
-        "providerSalesAddresses";
+    bytes32 constant FIELD_PROVIDER_SALES_ADDRESSES = "providerSalesAddresses";
     bytes32 constant FIELD_PROVIDER_PRIMARY_SALES_PERCENTAGES =
         "providerPrimaryPercentages";
     bytes32 constant FIELD_PROVIDER_SECONDARY_SALES_BPS =
@@ -601,7 +600,8 @@ contract GenArt721CoreV3_Engine is
     {
         // Validate that the sum of the proposed %s, does not exceed 100%.
         require(
-            (renderProviderPrimarySalesPercentage_ + platformProviderPrimarySalesPercentage_) <= ONE_HUNDRED,
+            (renderProviderPrimarySalesPercentage_ +
+                platformProviderPrimarySalesPercentage_) <= ONE_HUNDRED,
             "Max sum of ONE_HUNDRED %"
         );
         // Casting to `uint8` here is safe due check above, which does not allow
@@ -631,13 +631,11 @@ contract GenArt721CoreV3_Engine is
     function updateProviderSecondarySalesBPS(
         uint256 _renderProviderSecondarySalesBPS,
         uint256 _platformProviderSecondarySalesBPS
-    )
-        external
-        onlyAdminACL(this.updateProviderSecondarySalesBPS.selector)
-    {
+    ) external onlyAdminACL(this.updateProviderSecondarySalesBPS.selector) {
         // Validate that the sum of the proposed provider BPS, does not exceed 10_000 BPS.
         require(
-            (_renderProviderSecondarySalesBPS + _platformProviderSecondarySalesBPS) <=
+            (_renderProviderSecondarySalesBPS +
+                _platformProviderSecondarySalesBPS) <=
                 MAX_PROVIDER_SECONDARY_SALES_BPS,
             "Max sum of MAX_PROVIDER_SECONDARY_SALES_BPS BPS"
         );
@@ -1329,6 +1327,20 @@ contract GenArt721CoreV3_Engine is
     }
 
     /**
+     * @notice Returns token hash **seed** for token ID `_tokenId`.
+     * @param _tokenId Token ID to be queried.
+     * @return bytes12 Token hash seed.
+     * @dev token hash seed is keccak256 hashed to give the token hash
+     */
+    function tokenIdToHashSeed(uint256 _tokenId)
+        external
+        view
+        returns (bytes12)
+    {
+        return _ownersAndHashSeeds[_tokenId].hashSeed;
+    }
+
+    /**
      * @notice View function returning the render provider portion of
      * primary sales, in percent.
      * @return uint256 The render provider portion of primary sales,
@@ -1956,9 +1968,7 @@ contract GenArt721CoreV3_Engine is
         address _renderProviderSecondarySalesAddress,
         address _platformProviderPrimarySalesAddress,
         address _platformProviderSecondarySalesAddress
-    )
-        internal
-    {
+    ) internal {
         platformProviderPrimarySalesAddress = payable(
             _platformProviderPrimarySalesAddress
         );
@@ -1973,7 +1983,6 @@ contract GenArt721CoreV3_Engine is
         );
         emit PlatformUpdated(FIELD_PROVIDER_SALES_ADDRESSES);
     }
-
 
     /**
      * @notice Updates randomizer address to `_randomizerAddress`.

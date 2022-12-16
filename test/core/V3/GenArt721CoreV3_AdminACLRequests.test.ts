@@ -126,30 +126,24 @@ for (const coreContractName of coreContractsToTest) {
               this.accounts.user.address,
               this.accounts.user.address,
               this.accounts.user.address,
-              this.accounts.user.address
+              this.accounts.user.address,
             ]
           );
         });
-  
+
         it("updateProviderPrimarySalesPercentages", async function () {
           await validateAdminACLRequest.call(
             this,
             "updateProviderPrimarySalesPercentages",
-            [
-              11,
-              22
-            ]
+            [11, 22]
           );
         });
-  
+
         it("updateProviderSecondarySalesBPS", async function () {
           await validateAdminACLRequest.call(
             this,
             "updateProviderSecondarySalesBPS",
-            [
-              240,
-              420
-            ]
+            [240, 420]
           );
         });
       } else {
@@ -160,7 +154,7 @@ for (const coreContractName of coreContractsToTest) {
             [this.accounts.user.address]
           );
         });
-  
+
         it("updateArtblocksSecondarySalesAddress", async function () {
           await validateAdminACLRequest.call(
             this,
@@ -168,7 +162,7 @@ for (const coreContractName of coreContractsToTest) {
             [this.accounts.user.address]
           );
         });
-  
+
         it("updateArtblocksPrimarySalesPercentage", async function () {
           await validateAdminACLRequest.call(
             this,
@@ -176,7 +170,7 @@ for (const coreContractName of coreContractsToTest) {
             [11]
           );
         });
-  
+
         it("updateArtblocksSecondarySalesBPS", async function () {
           await validateAdminACLRequest.call(
             this,
@@ -313,7 +307,7 @@ for (const coreContractName of coreContractsToTest) {
               this.accounts.user.address,
               this.accounts.user.address,
               this.accounts.user.address,
-              this.accounts.user.address
+              this.accounts.user.address,
             ]
           );
         });
@@ -326,7 +320,7 @@ for (const coreContractName of coreContractsToTest) {
             [this.accounts.user.address]
           );
         });
-  
+
         it("updateArtblocksSecondarySalesAddress", async function () {
           await expectRevertFromAdminACLRequest.call(
             this,

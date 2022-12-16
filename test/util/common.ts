@@ -178,7 +178,7 @@ export async function deployCoreWithMinterFilter(
       adminACL.address,
       0, // _startingProjectId
       false, // _autoApproveArtistSplitProposals
-      engineRegistry.address
+      engineRegistry.address,
     ]);
     // assign core contract for randomizer to use
     randomizer
