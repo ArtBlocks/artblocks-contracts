@@ -20,7 +20,12 @@ import "./libs/0.8.x/Bytes32Strings.sol";
  * @title Art Blocks Dependency Registry, V0.
  * @author Art Blocks Inc.
  * @notice Privileged Roles and Ownership:
- * Permissions managed by ACL contract
+ * Permissions managed by ACL contract. If/when we ever call
+ * renounceOwnership() this will becom a frozen, immutable registry
+ * as no upgrades will be possible.
+ * Note: This contract has been made upgradeable as we expect
+ * its required functionality in relation to the Art Blocks ecosystem
+ * to evolve over time.
  */
 contract DependencyRegistryV0 is
     Initializable,
