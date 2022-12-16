@@ -28,4 +28,8 @@ interface IFilteredMinterDAExpV0 is IFilteredMinterV0 {
         uint256 _minimumPriceDecayHalfLifeSeconds,
         uint256 _maximumPriceDecayHalfLifeSeconds
     );
+
+    function minimumPriceDecayHalfLifeSeconds() external view returns (uint256);
+
+    function maximumPriceDecayHalfLifeSeconds() external view returns (uint256);
 }
