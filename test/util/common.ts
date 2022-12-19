@@ -173,7 +173,7 @@ export async function deployCoreWithMinterFilter(
       this.name,
       this.symbol,
       this.accounts.deployer.address,
-      this.accounts.deployer2.address,
+      this.accounts.additional.address,
       randomizer.address,
       adminACL.address,
       0, // _startingProjectId

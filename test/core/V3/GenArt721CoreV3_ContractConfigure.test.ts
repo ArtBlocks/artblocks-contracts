@@ -23,6 +23,7 @@ import { FOUR_WEEKS } from "../../util/constants";
 const coreContractsToTest = [
   "GenArt721CoreV3", // flagship V3 core
   "GenArt721CoreV3_Explorations", // V3 core explorations contract
+  "GenArt721CoreV3_Engine", // V3 core Engine contract
 ];
 
 /**
@@ -80,64 +81,169 @@ for (const coreContractName of coreContractsToTest) {
         .updatePricePerTokenInWei(this.projectZero, 0);
     });
 
-    describe("updateArtblocksPrimarySalesPercentage", function () {
+    describe("update{Artblocks,Provider}PrimarySalesPercentage", function () {
       beforeEach(async function () {
         if (coreContractName === "GenArt721CoreV3") {
           this.maxABPrimarySalesPercentage = 25; // 25% maximum percentage on V3 core
         } else if (coreContractName === "GenArt721CoreV3_Explorations") {
           this.maxABPrimarySalesPercentage = 100; // 100% maximum percentage on V3 core explorations
+        } else if (coreContractName === "GenArt721CoreV3_Engine") {
+          this.maxProviderPrimarySalesPercentage = 100; // 100% maxmimum percentage on V3 core engine
         } else {
           throw new Error("Invalid core contract name");
         }
       });
 
-      it("does not allow a value > ART_BLOCKS_MAX_PRIMARY_SALES_PERCENTAGE", async function () {
-        await expectRevert(
-          this.genArt721Core
+      if (coreContractName === "GenArt721CoreV3_Engine") {
+        it("does not allow a value > ONE_HUNDRED", async function () {
+          await expectRevert(
+            this.genArt721Core
+              .connect(this.accounts.deployer)
+              .updateProviderPrimarySalesPercentages(
+                this.maxProviderPrimarySalesPercentage + 1, // renderProviderPrimarySalesPercentage_
+                0 // platformProviderPrimarySalesPercentage_
+              ),
+            "Max sum of ONE_HUNDRED %"
+          );
+          await expectRevert(
+            this.genArt721Core
+              .connect(this.accounts.deployer)
+              .updateProviderPrimarySalesPercentages(
+                0, // renderProviderPrimarySalesPercentage_
+                this.maxProviderPrimarySalesPercentage + 1 // platformProviderPrimarySalesPercentage_
+              ),
+            "Max sum of ONE_HUNDRED %"
+          );
+        });
+
+        it("does allow a value of ONE_HUNDRED", async function () {
+          await this.genArt721Core
+            .connect(this.accounts.deployer)
+            .updateProviderPrimarySalesPercentages(
+              this.maxProviderPrimarySalesPercentage, // renderProviderPrimarySalesPercentage_
+              0 // platformProviderPrimarySalesPercentage_
+            );
+          await this.genArt721Core
+            .connect(this.accounts.deployer)
+            .updateProviderPrimarySalesPercentages(
+              0, // renderProviderPrimarySalesPercentage_
+              this.maxProviderPrimarySalesPercentage // platformProviderPrimarySalesPercentage_
+            );
+        });
+
+        it("does allow a value of 0%", async function () {
+          await this.genArt721Core
+            .connect(this.accounts.deployer)
+            .updateProviderPrimarySalesPercentages(
+              0, // renderProviderPrimarySalesPercentage_
+              0 // platformProviderPrimarySalesPercentage_
+            );
+        });
+      } else {
+        it("does not allow a value > ART_BLOCKS_MAX_PRIMARY_SALES_PERCENTAGE", async function () {
+          await expectRevert(
+            this.genArt721Core
+              .connect(this.accounts.deployer)
+              .updateArtblocksPrimarySalesPercentage(
+                this.maxABPrimarySalesPercentage + 1
+              ),
+            "Max of ART_BLOCKS_MAX_PRIMARY_SALES_PERCENTAGE percent"
+          );
+        });
+
+        it("does allow a value of ART_BLOCKS_MAX_PRIMARY_SALES_PERCENTAGE", async function () {
+          await this.genArt721Core
             .connect(this.accounts.deployer)
             .updateArtblocksPrimarySalesPercentage(
-              this.maxABPrimarySalesPercentage + 1
-            ),
-          "Max of ART_BLOCKS_MAX_PRIMARY_SALES_PERCENTAGE percent"
-        );
-      });
+              this.maxABPrimarySalesPercentage
+            );
+        });
 
-      it("does allow a value of ART_BLOCKS_MAX_PRIMARY_SALES_PERCENTAGE", async function () {
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .updateArtblocksPrimarySalesPercentage(
-            this.maxABPrimarySalesPercentage
-          );
-      });
-
-      it("does allow a value of 0%", async function () {
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .updateArtblocksPrimarySalesPercentage(0);
-      });
+        it("does allow a value of 0%", async function () {
+          await this.genArt721Core
+            .connect(this.accounts.deployer)
+            .updateArtblocksPrimarySalesPercentage(0);
+        });
+      }
     });
 
-    describe("updateArtblocksSecondarySalesBPS", function () {
-      it("does not allow a value > 100%", async function () {
-        await expectRevert(
-          this.genArt721Core
+    describe("update{Artblocks,Provider}SecondarySalesBPS", function () {
+      if (coreContractName === "GenArt721CoreV3_Engine") {
+        it("does not allow a value > 100%", async function () {
+          await expectRevert(
+            this.genArt721Core
+              .connect(this.accounts.deployer)
+              .updateProviderSecondarySalesBPS(
+                10001, // _renderProviderSecondarySalesBPS
+                0 // _platformProviderSecondarySalesBPS
+              ),
+            "Max sum of MAX_PROVIDER_SECONDARY_SALES_BPS BPS"
+          );
+          await expectRevert(
+            this.genArt721Core
+              .connect(this.accounts.deployer)
+              .updateProviderSecondarySalesBPS(
+                0, // _renderProviderSecondarySalesBPS
+                10001 // _platformProviderSecondarySalesBPS
+              ),
+            "Max sum of MAX_PROVIDER_SECONDARY_SALES_BPS BPS"
+          );
+        });
+
+        it("does allow a value of 2.5%", async function () {
+          await this.genArt721Core
             .connect(this.accounts.deployer)
-            .updateArtblocksSecondarySalesBPS(10001),
-          "Max of ART_BLOCKS_MAX_SECONDARY_SALES_BPS BPS"
-        );
-      });
+            .updateProviderSecondarySalesBPS(
+              250, // _renderProviderSecondarySalesBPS
+              0 // _platformProviderSecondarySalesBPS
+            );
+          await this.genArt721Core
+            .connect(this.accounts.deployer)
+            .updateProviderSecondarySalesBPS(
+              0, // _renderProviderSecondarySalesBPS
+              250 // _platformProviderSecondarySalesBPS
+            );
+        });
 
-      it("does allow a value of 2.5%", async function () {
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .updateArtblocksSecondarySalesBPS(250);
-      });
+        it("does allow a value of 2.5% + 2.5%", async function () {
+          await this.genArt721Core
+            .connect(this.accounts.deployer)
+            .updateProviderSecondarySalesBPS(
+              250, // _renderProviderSecondarySalesBPS
+              250 // _platformProviderSecondarySalesBPS
+            );
+        });
 
-      it("does allow a value of < 2.5%", async function () {
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .updateArtblocksSecondarySalesBPS(0);
-      });
+        it("does allow a value of < 2.5%", async function () {
+          await this.genArt721Core
+            .connect(this.accounts.deployer)
+            .updateProviderSecondarySalesBPS(
+              0, // _renderProviderSecondarySalesBPS
+              0 // _platformProviderSecondarySalesBPS
+            );
+        });
+      } else {
+        it("does not allow a value > 100%", async function () {
+          await expectRevert(
+            this.genArt721Core
+              .connect(this.accounts.deployer)
+              .updateArtblocksSecondarySalesBPS(10001),
+            "Max of ART_BLOCKS_MAX_SECONDARY_SALES_BPS BPS"
+          );
+        });
+
+        it("does allow a value of 2.5%", async function () {
+          await this.genArt721Core
+            .connect(this.accounts.deployer)
+            .updateArtblocksSecondarySalesBPS(250);
+        });
+
+        it("does allow a value of < 2.5%", async function () {
+          await this.genArt721Core
+            .connect(this.accounts.deployer)
+            .updateArtblocksSecondarySalesBPS(0);
+        });
+      }
     });
 
     describe("forbidNewProjects", function () {
@@ -153,7 +259,7 @@ for (const coreContractName of coreContractsToTest) {
         );
       });
 
-      it("does allow to call forbidNewProjects more than once", async function () {
+      it("does not allow to call forbidNewProjects more than once", async function () {
         await this.genArt721Core
           .connect(this.accounts.deployer)
           .forbidNewProjects();
@@ -162,6 +268,23 @@ for (const coreContractName of coreContractsToTest) {
             .connect(this.accounts.deployer)
             .forbidNewProjects(),
           "Already forbidden"
+        );
+      });
+
+      it("does not allow to call forbidNewProjects after revoking ownership", async function () {
+        // update owner of core to null address, expect OwnershipTransferred event
+        await expect(
+          this.adminACL
+            .connect(this.accounts.deployer)
+            .renounceOwnershipOn(this.genArt721Core.address)
+        )
+          .to.emit(this.genArt721Core, "OwnershipTransferred")
+          .withArgs(this.adminACL.address, constants.ZERO_ADDRESS);
+        await expectRevert(
+          this.genArt721Core
+            .connect(this.accounts.deployer)
+            .forbidNewProjects(),
+          "Only Admin ACL allowed" // there is no longer ownership, so this will always throw
         );
       });
 
