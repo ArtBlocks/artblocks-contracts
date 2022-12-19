@@ -183,9 +183,7 @@ for (const coreContractName of coreContractsToTest) {
           ethers.utils.formatUnits(txCost, "ether").toString(),
           "ETH"
         );
-        expect(txCost.toString()).to.equal(
-          ethers.utils.parseEther("0.013852")
-        ); // assuming a cost of 100 GWEI
+        expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.013852")); // assuming a cost of 100 GWEI
       });
     });
   });
