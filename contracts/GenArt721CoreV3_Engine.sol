@@ -255,8 +255,17 @@ contract GenArt721CoreV3_Engine is
     bool public immutable autoApproveArtistSplitProposals;
 
     /// version & type of this core contract
-    string public constant coreVersion = "v3.1.0";
-    string public constant coreType = "GenArt721CoreV3_Engine";
+    bytes32 constant CORE_VERSION = "v3.1.0";
+
+    function coreVersion() external pure returns (string memory) {
+        return CORE_VERSION.toString();
+    }
+
+    bytes32 constant CORE_TYPE = "GenArt721CoreV3_Engine";
+
+    function coreType() external pure returns (string memory) {
+        return CORE_TYPE.toString();
+    }
 
     /// default base URI to initialize all new project projectBaseURI values to
     string public defaultBaseURI;
@@ -396,8 +405,8 @@ contract GenArt721CoreV3_Engine is
         // register contract as an Engine contract
         IEngineRegistryV0(_engineRegistryContract).registerContract(
             address(this),
-            coreVersion,
-            coreType
+            CORE_VERSION,
+            CORE_TYPE
         );
     }
 

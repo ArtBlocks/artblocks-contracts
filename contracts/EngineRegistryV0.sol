@@ -33,8 +33,8 @@ contract EngineRegistryV0 is IEngineRegistryV0, ERC165 {
      */
     function registerContract(
         address _contractAddress,
-        string calldata _coreVersion,
-        string calldata _coreType
+        bytes32 _coreVersion,
+        bytes32 _coreType
     ) external {
         // CHECKS
         // Validate against `tx.origin` rather than `msg.sender` as it is intended that this registration be

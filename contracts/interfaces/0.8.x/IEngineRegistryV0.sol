@@ -10,8 +10,8 @@ interface IEngineRegistryV0 {
      */
     event ContractRegistered(
         address indexed _contractAddress,
-        string _coreVersion,
-        string _coreType
+        bytes32 _coreVersion,
+        bytes32 _coreType
     );
 
     /// ADDRESS
@@ -26,8 +26,8 @@ interface IEngineRegistryV0 {
      */
     function registerContract(
         address _contractAddress,
-        string calldata _coreVersion,
-        string calldata _coreType
+        bytes32 _coreVersion,
+        bytes32 _coreType
     ) external;
 
     /**
