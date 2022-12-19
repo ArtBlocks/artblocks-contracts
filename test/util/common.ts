@@ -170,15 +170,15 @@ export async function deployCoreWithMinterFilter(
     adminACL = await deployAndGet.call(this, adminACLContractName, []);
     let engineRegistry = await deployAndGet.call(this, "EngineRegistryV0", []);
     genArt721Core = await deployAndGet.call(this, coreContractName, [
-      this.name,
-      this.symbol,
-      this.accounts.deployer.address,
-      this.accounts.additional.address,
-      randomizer.address,
-      adminACL.address,
+      this.name, // _tokenName
+      this.symbol, // _tokenSymbol
+      this.accounts.deployer.address, // _renderProviderAddress
+      this.accounts.additional.address, // _platformProviderAddress
+      randomizer.address, // _randomizerContract
+      adminACL.address, // _adminACLContract
       0, // _startingProjectId
       false, // _autoApproveArtistSplitProposals
-      engineRegistry.address,
+      engineRegistry.address, // _engineRegistryContract
     ]);
     // assign core contract for randomizer to use
     randomizer
