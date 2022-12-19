@@ -24,7 +24,7 @@ const coreContractsToTest = [
  * V3 core contract.
  */
 for (const coreContractName of coreContractsToTest) {
-  describe(`MinterSetPriceERC20V2_${coreContractName}`, async function () {
+  describe(`MinterSetPriceERC20V3_${coreContractName}`, async function () {
     beforeEach(async function () {
       // standard accounts and constants
       this.accounts = await getAccounts();
@@ -312,7 +312,9 @@ for (const coreContractName of coreContractsToTest) {
           ethers.utils.formatUnits(txCost, "ether").toString(),
           "ETH"
         );
-        expect(txCost.toString()).to.equal(ethers.utils.parseEther("0.012912"));
+        expect(txCost.toString()).to.equal(
+          ethers.utils.parseEther("0.0129142")
+        );
       });
     });
 
