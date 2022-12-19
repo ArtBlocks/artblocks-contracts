@@ -6,10 +6,8 @@ import "./IFilteredMinterDAExpSettlementV0.sol";
 pragma solidity ^0.8.0;
 
 /**
- * @title This interface extends the IFilteredMinterV1 interface in order to
- * add support for Dutch Auction with Settlement minter updates.
- * @dev keys represent strings of finite length encoded in bytes32 to minimize
- * gas.
+ * @title This interface extends the IFilteredMinterDAExpSettlementV0 in order to
+ * add support for manually setting project max invocations.
  * @author Art Blocks Inc.
  */
 interface IFilteredMinterDAExpSettlementV1 is IFilteredMinterDAExpSettlementV0 {

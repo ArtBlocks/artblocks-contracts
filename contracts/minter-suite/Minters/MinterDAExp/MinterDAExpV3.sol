@@ -61,7 +61,7 @@ contract MinterDAExpV3 is ReentrancyGuard, IFilteredMinterDAExpV1 {
     IMinterFilterV0 private immutable minterFilter;
 
     /// minterType for this minter
-    string public constant minterType = "MinterDAExpV2";
+    string public constant minterType = "MinterDAExpV3";
 
     uint256 constant ONE_MILLION = 1_000_000;
 

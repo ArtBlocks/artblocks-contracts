@@ -78,7 +78,7 @@ contract MinterDALinV3 is ReentrancyGuard, IFilteredMinterV2 {
     IMinterFilterV0 private immutable minterFilter;
 
     /// minterType for this minter
-    string public constant minterType = "MinterDALinV2";
+    string public constant minterType = "MinterDALinV3";
 
     uint256 constant ONE_MILLION = 1_000_000;
 

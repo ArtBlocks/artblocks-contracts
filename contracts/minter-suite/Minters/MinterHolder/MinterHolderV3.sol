@@ -80,7 +80,7 @@ contract MinterHolderV3 is ReentrancyGuard, IFilteredMinterHolderV2 {
     IMinterFilterV0 private immutable minterFilter;
 
     /// minterType for this minter
-    string public constant minterType = "MinterHolderV2";
+    string public constant minterType = "MinterHolderV3";
 
     uint256 constant ONE_MILLION = 1_000_000;
 

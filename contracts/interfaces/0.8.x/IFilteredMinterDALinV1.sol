@@ -6,8 +6,8 @@ import "./IFilteredMinterDALinV0.sol";
 pragma solidity ^0.8.0;
 
 /**
- * @title This interface extends the IFilteredMinterV0 interface in order to
- * add support for linear descending auctions.
+ * @title This interface extends the IFilteredMinterDALinV0 interface in order to
+ * add support for manually setting project max invocations.
  * @author Art Blocks Inc.
  */
 interface IFilteredMinterDALinV1 is IFilteredMinterDALinV0 {

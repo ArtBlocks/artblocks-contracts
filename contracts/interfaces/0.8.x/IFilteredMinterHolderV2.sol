@@ -6,8 +6,8 @@ import "./IFilteredMinterHolderV1.sol";
 pragma solidity ^0.8.0;
 
 /**
- * @title This interface extends the IFilteredMinterHolderV0 interface in order
- * to add support for configuring and indexing the delegation registry address.
+ * @title This interface extends the IFilteredMinterHolderV1 interface in order to
+ * add support for manually setting project max invocations.
  * @author Art Blocks Inc.
  */
 interface IFilteredMinterHolderV2 is IFilteredMinterHolderV1 {
