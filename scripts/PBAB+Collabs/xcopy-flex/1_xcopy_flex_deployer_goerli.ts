@@ -20,7 +20,7 @@ import { createPBABBucket } from "../../util/aws_s3";
 import { GenArt721CoreV2XCOREFlex__factory } from "../../contracts/factories/GenArt721CoreV2XCOREFlex__factory";
 import { GenArt721MinterXCOREFlex__factory } from "../../contracts/factories/GenArt721MinterXCOREFlex__factory";
 
-// Details pulled from https://github.com/ArtBlocks/artblocks/issues/275 (private repo)
+// Details pulled from https://github.com/ArtBlocks/artblocks/issues/324 (private repo)
 const tokenName = "XCORE";
 const tokenTicker = "XCORE";
 const transferAddress = "0xA4acfE833B9aAa3C488c05DcBC9Dcd29a8252C84";

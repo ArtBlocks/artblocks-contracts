@@ -20,7 +20,7 @@ import { createPBABBucket } from "../../util/aws_s3";
 import { GenArt721CoreV2VerticalCrypto__factory } from "../../contracts/factories/GenArt721CoreV2VerticalCrypto__factory";
 import { GenArt721MinterVerticalCrypto__factory } from "../../contracts/factories/GenArt721MinterVerticalCrypto__factory";
 
-// Details pulled from https://github.com/ArtBlocks/artblocks/issues/339 (private repo)
+// Details pulled from https://github.com/ArtBlocks/artblocks/issues/388 (private repo)
 const tokenName = "VerticalCrypto Gen Art";
 const tokenTicker = "VCAG";
 const transferAddress = "0x65FEca334780160e3420B097590fd6D02dE663f0";
