@@ -2,6 +2,7 @@
 // Created By: Art Blocks Inc.
 
 import "./IFilteredMinterV1.sol";
+import "./IFilteredMinterDAExpV0.sol";
 
 pragma solidity ^0.8.0;
 
@@ -12,16 +13,10 @@ pragma solidity ^0.8.0;
  * gas.
  * @author Art Blocks Inc.
  */
-interface IFilteredMinterDAExpSettlementV0 is IFilteredMinterV1 {
-    /// Auction details updated for project `projectId`.
-    event SetAuctionDetails(
-        uint256 indexed projectId,
-        uint256 _auctionTimestampStart,
-        uint256 _priceDecayHalfLifeSeconds,
-        uint256 _startPrice,
-        uint256 _basePrice
-    );
-
+interface IFilteredMinterDAExpSettlementV0 is
+    IFilteredMinterV1,
+    IFilteredMinterDAExpV0
+{
     /// Auction details cleared for project `projectId`.
     /// At time of reset, the project has had `numPurchases` purchases on this
     /// minter, with a most recent purchase price of `latestPurchasePrice`. If
@@ -31,12 +26,6 @@ interface IFilteredMinterDAExpSettlementV0 is IFilteredMinterV1 {
         uint256 indexed projectId,
         uint256 numPurchases,
         uint256 latestPurchasePrice
-    );
-
-    /// Maximum and minimum allowed price decay half lifes updated.
-    event AuctionHalfLifeRangeSecondsUpdated(
-        uint256 _minimumPriceDecayHalfLifeSeconds,
-        uint256 _maximumPriceDecayHalfLifeSeconds
     );
 
     /// sellout price updated for project `projectId`.
