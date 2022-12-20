@@ -168,7 +168,7 @@ describe("GenArt721CoreV2_PRTNR_Integration", async function () {
       ).to.equal(ethers.utils.parseEther("0.1"));
       expect(
         (await this.accounts.additional.getBalance()).sub(additionalBalance)
-      ).to.equal(ethers.utils.parseEther("0.09"));
+      ).to.equal(ethers.utils.parseEther("0.0"));
       expect(
         (await this.accounts.user.getBalance()).sub(ownerBalance)
       ).to.equal(ethers.utils.parseEther("1.0199105").mul("-1")); // spent 1 ETH
