@@ -596,7 +596,7 @@ export const MinterDAExpSettlement_Common = async () => {
           .connect(this.accounts.deployer)
           .resetAuctionDetails(this.projectZero)
       )
-        .to.emit(this.minter, "ResetAuctionDetails")
+        .to.emit(this.minter, "ResetAuctionDetails(uint256,uint256,uint256)")
         .withArgs(this.projectZero, 0, 0);
     });
 
