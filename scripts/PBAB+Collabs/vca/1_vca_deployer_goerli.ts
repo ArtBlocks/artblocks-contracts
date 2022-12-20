@@ -58,7 +58,9 @@ async function main() {
   console.log(`GenArt721CoreV2 deployed at ${genArt721Core.address}`);
 
   // Deploy Minter contract.
-  const genArt721MinterFactory = new GenArt721MinterVerticalCrypto__factory(deployer);
+  const genArt721MinterFactory = new GenArt721MinterVerticalCrypto__factory(
+    deployer
+  );
   const genArt721Minter = await genArt721MinterFactory.deploy(
     genArt721Core.address
   );
