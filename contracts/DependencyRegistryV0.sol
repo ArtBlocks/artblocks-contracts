@@ -893,8 +893,9 @@ contract DependencyRegistryV0 is
     }
 
     /**
-     * @notice Returns thad super admin address of the Admin ACL contract.
-     * @return address Super admin of Admin ACL contract.
+     * @notice Returns contract owner. Set to deployer's address by default on
+     * contract deployment.
+     * @return address Address of contract owner.
      * @dev ref: https://docs.openzeppelin.com/contracts/4.x/api/access#Ownable
      * @dev owner role was called `admin` prior to V3 core contract
      */
@@ -904,11 +905,7 @@ contract DependencyRegistryV0 is
         override(OwnableUpgradeable)
         returns (address)
     {
-        if (address(adminACLContract) == address(0)) {
-            return address(0);
-        }
-
-        return adminACLContract.superAdmin();
+        return OwnableUpgradeable.owner();
     }
 
     /**

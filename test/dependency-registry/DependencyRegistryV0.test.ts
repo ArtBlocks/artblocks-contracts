@@ -1591,15 +1591,18 @@ describe(`DependencyRegistryV0`, async function () {
 
       // update owner of core to new userAdminACL, expect OwnershipTransferred event
       await expect(
-        this.dependencyRegistry
+        this.adminACL
           .connect(this.accounts.deployer)
-          .transferOwnership(userAdminACL.address)
+          .transferOwnershipOn(
+            this.dependencyRegistry.address,
+            userAdminACL.address
+          )
       )
         .to.emit(this.dependencyRegistry, "OwnershipTransferred")
         .withArgs(this.adminACL.address, userAdminACL.address);
       // ensure owner + public adminACLContract has been updated
       expect(await this.dependencyRegistry.owner()).to.be.equal(
-        this.accounts.user.address
+        userAdminACL.address
       );
       expect(await this.dependencyRegistry.adminACLContract()).to.be.equal(
         userAdminACL.address
@@ -1618,9 +1621,9 @@ describe(`DependencyRegistryV0`, async function () {
     it("behaves as expected when renouncing ownership", async function (this: DependencyRegistryV0TestContext) {
       // update owner of core to null address, expect OwnershipTransferred event
       await expect(
-        await this.dependencyRegistry
+        await this.adminACL
           .connect(this.accounts.deployer)
-          .renounceOwnership()
+          .renounceOwnershipOn(this.dependencyRegistry.address)
       )
         .to.emit(this.dependencyRegistry, "OwnershipTransferred")
         .withArgs(this.adminACL.address, constants.ZERO_ADDRESS);
