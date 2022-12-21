@@ -1892,7 +1892,7 @@ contract GenArt721CoreV3_Engine is
     function owner()
         public
         view
-        override(Ownable, IGenArt721CoreContractV3)
+        override(Ownable, IGenArt721CoreContractV3_Engine)
         returns (address)
     {
         return Ownable.owner();
