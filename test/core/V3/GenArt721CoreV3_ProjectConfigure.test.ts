@@ -961,9 +961,9 @@ for (const coreContractName of coreContractsToTest) {
         const royaltiesData = await this.genArt721Core
           .connect(this.accounts.user)
           .getRoyalties(this.projectZeroTokenZero.toNumber());
-        expect(
-          royaltiesData.recipients[0]
-        ).to.be.equal(this.accounts.artist.address);
+        expect(royaltiesData.recipients[0]).to.be.equal(
+          this.accounts.artist.address
+        );
         expect(royaltiesData.bps[0]).to.be.equal(
           adjustedRoyaltyPercentage * 100
         );
