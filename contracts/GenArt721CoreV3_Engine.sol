@@ -1883,19 +1883,19 @@ contract GenArt721CoreV3_Engine is
     }
 
     /**
-     * @notice Returns contract owner, as determined by the `superAdmin` of the underlying
-     *         `IAdminACLV0` ACL management contract.
-     * @return address Address of contract owner, as determined by underlying ACL contract
+     * @notice Returns contract owner. Set to deployer's address by default on
+     * contract deployment.
+     * @return address Address of contract owner.
      * @dev ref: https://docs.openzeppelin.com/contracts/4.x/api/access#Ownable
      * @dev owner role was called `admin` prior to V3 core contract
      */
     function owner()
         public
         view
-        override(Ownable, IGenArt721CoreContractV3_Engine)
+        override(Ownable, IGenArt721CoreContractV3)
         returns (address)
     {
-        return adminACLContract.superAdmin();
+        return Ownable.owner();
     }
 
     /**
