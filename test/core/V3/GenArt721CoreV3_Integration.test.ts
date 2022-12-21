@@ -167,33 +167,17 @@ for (const coreContractName of coreContractsToTest) {
 
     describe("owner", function () {
       it("returns expected owner", async function () {
-        if (coreContractName === "GenArt721CoreV3_Engine") {
-          // Starting with GenArt721CoreV3_Engine v3.1.0, the backwards-compatible
-          // admin that is returned is the underlying admin ACL's superAdmin.
-          expect(await this.genArt721Core.owner()).to.be.equal(
-            await this.adminACL.superAdmin()
-          );
-        } else {
-          expect(await this.genArt721Core.owner()).to.be.equal(
-            this.adminACL.address
-          );
-        }
+        expect(await this.genArt721Core.owner()).to.be.equal(
+          this.adminACL.address
+        );
       });
     });
 
     describe("admin", function () {
       it("returns expected backwards-compatible admin (owner)", async function () {
-        if (coreContractName === "GenArt721CoreV3_Engine") {
-          // Starting with GenArt721CoreV3_Engine v3.1.0, the backwards-compatible
-          // admin that is returned is the underlying admin ACL's superAdmin.
-          expect(await this.genArt721Core.admin()).to.be.equal(
-            await this.adminACL.superAdmin()
-          );
-        } else {
-          expect(await this.genArt721Core.admin()).to.be.equal(
-            this.adminACL.address
-          );
-        }
+        expect(await this.genArt721Core.admin()).to.be.equal(
+          this.adminACL.address
+        );
       });
     });
 
