@@ -535,6 +535,12 @@ describe(`DependencyRegistryV0`, async function () {
 
         expect(dependencyDetails.scriptCount).to.eq(1);
 
+        const scriptCount =
+          await this.dependencyRegistry.getDependencyScriptCount(
+            dependencyTypeBytes
+          );
+        expect(scriptCount).to.eq(1);
+
         const storedScript =
           await this.dependencyRegistry.getDependencyScriptAtIndex(
             dependencyTypeBytes,
@@ -595,6 +601,12 @@ describe(`DependencyRegistryV0`, async function () {
           );
 
         expect(dependencyDetails.scriptCount).to.eq(0);
+
+        const scriptCount =
+          await this.dependencyRegistry.getDependencyScriptCount(
+            dependencyTypeBytes
+          );
+        expect(scriptCount).to.eq(0);
 
         const storedScript =
           await this.dependencyRegistry.getDependencyScriptAtIndex(
@@ -675,6 +687,12 @@ describe(`DependencyRegistryV0`, async function () {
           );
 
         expect(dependencyDetails.scriptCount).to.eq(1);
+
+        const scriptCount =
+          await this.dependencyRegistry.getDependencyScriptCount(
+            dependencyTypeBytes
+          );
+        expect(scriptCount).to.eq(1);
 
         const storedScript =
           await this.dependencyRegistry.getDependencyScriptAtIndex(

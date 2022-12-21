@@ -721,6 +721,11 @@ contract DependencyRegistryV0 is
         return supportedCoreContracts;
     }
 
+    /**
+     * @notice Returns the additional CDN URL at index `_index` for dependency `_dependencyType`.
+     * @param _dependencyType Dependency type to be queried.
+     * @param _index Index of the additional CDN URL to be returned.
+     */
     function getDependencyAdditionalCDNAtIndex(
         bytes32 _dependencyType,
         uint256 _index
@@ -728,12 +733,29 @@ contract DependencyRegistryV0 is
         return dependencyDetails[_dependencyType].additionalCDNs[_index];
     }
 
+    /**
+     * @notice Returns the additional repository URL at index `_index` for dependency `_dependencyType`.
+     * @param _dependencyType Dependency type to be queried.
+     * @param _index Index of the additional repository URL to be returned.
+     */
     function getDependencyAdditionalRepositoryAtIndex(
         bytes32 _dependencyType,
         uint256 _index
     ) external view returns (string memory) {
         return
             dependencyDetails[_dependencyType].additionalRepositories[_index];
+    }
+
+    /**
+     * @notice Returns the count of scripts for dependency `_dependencyType`.
+     * @param _dependencyType Dependency type to be queried.
+     */
+    function getDependencyScriptCount(bytes32 _dependencyType)
+        external
+        view
+        returns (uint256)
+    {
+        return dependencyDetails[_dependencyType].scriptCount;
     }
 
     /**

@@ -65,46 +65,13 @@ interface IDependencyRegistryV0 {
     event DependencyScriptUpdated(bytes32 indexed _dependencyTypeId);
 
     /**
-     * @notice Returns number of registered dependency types
-     * @return Number of registered dependencies.
+     * @notice Returns the count of scripts for dependency `_dependencyType`.
+     * @param _dependencyType Dependency type to be queried.
      */
-    function getDependencyTypeCount() external view returns (uint256);
-
-    /**
-     * @notice Returns registered depenedency type at index `_index`.
-     * @return Registered dependency at `_index`.
-     */
-    function getDependencyTypeAtIndex(uint256 _index)
+    function getDependencyScriptCount(bytes32 _dependencyType)
         external
         view
-        returns (string memory);
-
-    /**
-     * @notice Returns details for depedency type `_dependencyTypeId`.
-     * @param _dependencyTypeId Dependency type to be queried.
-     * @return typeAndVersion String representation of `_dependencyTypeId`.
-     * (e.g. "p5js(atSymbol)1.0.0")
-     * @return preferredCDN Preferred CDN URL for dependency type
-     * @return additionalCDNCount Count of additional CDN URLs for dependency type
-     * @return preferredRepository Preferred repository URL for dependency type
-     * @return additionalRepositoryCount Count of additional repository URLs for dependency type
-     * @return referenceWebsite Project website URL for dependency type
-     * @return availableOnChain Whether dependency type is available on chain
-     * @return scriptCount Count of on-chain scripts for dependency type
-     */
-    function getDependencyDetails(bytes32 _dependencyTypeId)
-        external
-        view
-        returns (
-            string memory typeAndVersion,
-            string memory preferredCDN,
-            uint24 additionalCDNCount,
-            string memory preferredRepository,
-            uint24 additionalRepositoryCount,
-            string memory referenceWebsite,
-            bool availableOnChain,
-            uint24 scriptCount
-        );
+        returns (uint256);
 
     /**
      * @notice Returns address with bytecode containing script for
@@ -123,20 +90,5 @@ interface IDependencyRegistryV0 {
     function getDependencyScriptAtIndex(
         bytes32 _dependencyTypeId,
         uint256 _index
-    ) external view returns (string memory);
-
-    /**
-     * @notice Returns the dependency type for a given project (`projectId`)
-     * on a given core contract (`_contractAddress`). If no override is set,
-     * the core contract is called to retrieve the script type and version as
-     * dependency type. For any contract earlier than v3, that does not have
-     * an override set, this will revert.
-     * @param _contractAddress Core contract address.
-     * @param _projectId Project to return dependency type for.
-     * @return dependencyTypeId Dependency type used by project.
-     */
-    function getDependencyTypeForProject(
-        address _contractAddress,
-        uint256 _projectId
     ) external view returns (string memory);
 }
