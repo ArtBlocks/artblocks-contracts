@@ -1802,17 +1802,17 @@ contract GenArt721CoreV3_Engine is
         // render provider, the platform provider, and the artist, and
         // is safe to perform this given that in the case of loss of
         // precision Solidity will round down.
-        uint256 projectFunds;
+        uint256 projectFunds = _price;
         renderProviderRevenue_ =
             (_price * uint256(_renderProviderPrimarySalesPercentage)) /
             ONE_HUNDRED;
         // renderProviderRevenue_ percentage is always <=100, so guaranteed to never underflow
-        projectFunds = _price - renderProviderRevenue_;
+        projectFunds -= renderProviderRevenue_;
         platformProviderRevenue_ =
             (_price * uint256(_platformProviderPrimarySalesPercentage)) /
             ONE_HUNDRED;
         // platformProviderRevenue_ percentage is always <=100, so guaranteed to never underflow
-        projectFunds = _price - platformProviderRevenue_;
+        projectFunds -= platformProviderRevenue_;
         additionalPayeePrimaryRevenue_ =
             (projectFunds *
                 projectFinance.additionalPayeePrimarySalesPercentage) /
