@@ -30,7 +30,7 @@ import {
 const coreContractsToTest = [
   "GenArt721CoreV3", // flagship V3 core
   "GenArt721CoreV3_Explorations", // V3 core explorations contract
-  "GenArt721CoreV3_Engine", // V3 core Engine contracty
+  "GenArt721CoreV3_Engine", // V3 core Engine contract
 ];
 
 /**
@@ -942,14 +942,31 @@ for (const coreContractName of coreContractsToTest) {
       });
 
       it("artist can update when unlocked", async function () {
+        // mint a token on project zero,
+        // so that royalties for that token may be read
+        await this.minter
+          .connect(this.accounts.artist)
+          .purchase(this.projectZero);
+
+        const adjustedRoyaltyPercentage = 10;
         await this.genArt721Core
           .connect(this.accounts.artist)
-          .updateProjectSecondaryMarketRoyaltyPercentage(this.projectZero, 10);
+          .updateProjectSecondaryMarketRoyaltyPercentage(
+            this.projectZero,
+            adjustedRoyaltyPercentage
+          );
+
         // expect view to be updated
-        const royaltyData = await this.genArt721Core
+        // implicitly expect artist payee info to be last item
+        const royaltiesData = await this.genArt721Core
           .connect(this.accounts.user)
-          .getRoyaltyData(this.projectZero);
-        expect(royaltyData.royaltyFeeByID).to.equal(10);
+          .getRoyalties(this.projectZeroTokenZero.toNumber());
+        expect(
+          royaltiesData.recipients[0]
+        ).to.be.equal(this.accounts.artist.address);
+        expect(royaltiesData.bps[0]).to.be.equal(
+          adjustedRoyaltyPercentage * 100
+        );
       });
 
       it("artist can update when locked", async function () {
@@ -960,14 +977,26 @@ for (const coreContractName of coreContractsToTest) {
           0
         );
         await advanceEVMByTime(FOUR_WEEKS + 1);
+
+        const adjustedRoyaltyPercentage = 11;
         await this.genArt721Core
           .connect(this.accounts.artist)
-          .updateProjectSecondaryMarketRoyaltyPercentage(this.projectZero, 11);
+          .updateProjectSecondaryMarketRoyaltyPercentage(
+            this.projectZero,
+            adjustedRoyaltyPercentage
+          );
+
         // expect view to be updated
-        const royaltyData = await this.genArt721Core
+        // implicitly expect artist payee info to be last item
+        const royaltiesData = await this.genArt721Core
           .connect(this.accounts.user)
-          .getRoyaltyData(this.projectZero);
-        expect(royaltyData.royaltyFeeByID).to.equal(11);
+          .getRoyalties(this.projectZeroTokenZero.toNumber());
+        expect(royaltiesData.recipients[0]).to.be.equal(
+          this.accounts.artist.address
+        );
+        expect(royaltiesData.bps[0]).to.be.equal(
+          adjustedRoyaltyPercentage * 100
+        );
       });
 
       it("artist cannot update > 95%", async function () {

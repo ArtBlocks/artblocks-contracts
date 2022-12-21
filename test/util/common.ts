@@ -169,6 +169,8 @@ export async function deployCoreWithMinterFilter(
       : adminACLContractName;
     adminACL = await deployAndGet.call(this, adminACLContractName, []);
     let engineRegistry = await deployAndGet.call(this, "EngineRegistryV0", []);
+    // Note: in the common tests, set `autoApproveArtistSplitProposals` to false, which
+    //       mirrors the approval-flow behavior of the other (non-Engine) V3 contracts
     genArt721Core = await deployAndGet.call(this, coreContractName, [
       this.name, // _tokenName
       this.symbol, // _tokenSymbol
