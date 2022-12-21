@@ -24,6 +24,7 @@ import { FOUR_WEEKS } from "../../util/constants";
 const coreContractsToTest = [
   "GenArt721CoreV3", // flagship V3 core
   "GenArt721CoreV3_Explorations", // V3 core explorations contract
+  "GenArt721CoreV3_Engine", // V3 core Engine contract
 ];
 
 /**
@@ -76,34 +77,92 @@ for (const coreContractName of coreContractsToTest) {
         .updatePricePerTokenInWei(this.projectZero, 0);
     });
 
-    describe("artblocksPrimarySalesAddress", function () {
-      it("returns expected artblocksPrimarySalesAddress", async function () {
-        expect(
-          await this.genArt721Core.artblocksPrimarySalesAddress()
-        ).to.be.equal(this.accounts.deployer.address);
-      });
+    describe("{artblocks,provider}PrimarySalesAddress", function () {
+      if (coreContractName === "GenArt721CoreV3_Engine") {
+        it("returns expected renderProviderPrimarySalesAddress", async function () {
+          expect(
+            await this.genArt721Core.renderProviderPrimarySalesAddress()
+          ).to.be.equal(this.accounts.deployer.address);
+        });
+        it("returns expected renderProviderPrimarySalesAddress", async function () {
+          expect(
+            await this.genArt721Core.platformProviderPrimarySalesAddress()
+          ).to.be.equal(this.accounts.additional.address);
+        });
+      } else {
+        it("returns expected artblocksPrimarySalesAddress", async function () {
+          expect(
+            await this.genArt721Core.artblocksPrimarySalesAddress()
+          ).to.be.equal(this.accounts.deployer.address);
+        });
+      }
     });
 
     describe("artblocksAddress", function () {
-      it("returns expected artblocksAddress", async function () {
-        expect(await this.genArt721Core.artblocksAddress()).to.be.equal(
-          this.accounts.deployer.address
-        );
-      });
+      if (coreContractName === "GenArt721CoreV3_Engine") {
+        it("always passes, non-relevant", async function () {
+          // This test is non-relevant for Engine variant V3 contracts.
+          expect(true);
+        });
+      } else {
+        it("returns expected artblocksAddress", async function () {
+          expect(await this.genArt721Core.artblocksAddress()).to.be.equal(
+            this.accounts.deployer.address
+          );
+        });
+      }
     });
 
-    describe("artblocksSecondarySalesAddress", function () {
-      it("returns expected artblocksSecondarySalesAddress", async function () {
-        expect(
-          await this.genArt721Core.artblocksSecondarySalesAddress()
-        ).to.be.equal(this.accounts.deployer.address);
-      });
+    describe("{artblocks,provider}SecondarySalesAddress", function () {
+      if (coreContractName === "GenArt721CoreV3_Engine") {
+        it("returns expected renderProviderSecondarySalesAddress", async function () {
+          expect(
+            await this.genArt721Core.renderProviderSecondarySalesAddress()
+          ).to.be.equal(this.accounts.deployer.address);
+        });
+        it("returns expected renderProviderSecondarySalesAddress", async function () {
+          expect(
+            await this.genArt721Core.platformProviderSecondarySalesAddress()
+          ).to.be.equal(this.accounts.additional.address);
+        });
+      } else {
+        it("returns expected artblocksSecondarySalesAddress", async function () {
+          expect(
+            await this.genArt721Core.artblocksSecondarySalesAddress()
+          ).to.be.equal(this.accounts.deployer.address);
+        });
+      }
     });
 
-    describe("artblocksPercentage", function () {
-      it("returns expected artblocksPercentage", async function () {
-        expect(await this.genArt721Core.artblocksPercentage()).to.be.equal(10);
-      });
+    describe("{artblocks,provider}Percentage", function () {
+      if (coreContractName === "GenArt721CoreV3_Engine") {
+        it("returns expected renderProviderPrimarySalesPercentage", async function () {
+          expect(
+            await this.genArt721Core.renderProviderPrimarySalesPercentage()
+          ).to.be.equal(10);
+        });
+        it("returns expected platformProviderPrimarySalesPercentage", async function () {
+          expect(
+            await this.genArt721Core.platformProviderPrimarySalesPercentage()
+          ).to.be.equal(10);
+        });
+        it("returns expected renderProviderSecondarySalesBPS", async function () {
+          expect(
+            await this.genArt721Core.renderProviderSecondarySalesBPS()
+          ).to.be.equal(250);
+        });
+        it("returns expected platformProviderSecondarySalesBPS", async function () {
+          expect(
+            await this.genArt721Core.platformProviderSecondarySalesBPS()
+          ).to.be.equal(250);
+        });
+      } else {
+        it("returns expected artblocksPercentage", async function () {
+          expect(await this.genArt721Core.artblocksPercentage()).to.be.equal(
+            10
+          );
+        });
+      }
     });
 
     describe("owner", function () {
@@ -209,9 +268,15 @@ for (const coreContractName of coreContractsToTest) {
 
     describe("coreVersion", function () {
       it("returns expected value", async function () {
-        let targetCoreVersion = "v3.0.0";
-        if (coreContractName === "GenArt721CoreV3_Explorations") {
+        let targetCoreVersion;
+        if (coreContractName === "GenArt721CoreV3") {
+          targetCoreVersion = "v3.0.0";
+        } else if (coreContractName === "GenArt721CoreV3_Explorations") {
           targetCoreVersion = "v3.0.1";
+        } else if (coreContractName === "GenArt721CoreV3_Engine") {
+          targetCoreVersion = "v3.1.0";
+        } else {
+          throw new Error("Unexpected core contract name");
         }
         const coreVersion = await this.genArt721Core
           .connect(this.accounts.deployer)
@@ -225,8 +290,14 @@ for (const coreContractName of coreContractsToTest) {
         const coreType = await this.genArt721Core
           .connect(this.accounts.deployer)
           .coreType();
-        // coreType is same for GenArt721CoreV3 & GenArt721CoreV3_Explorations
-        expect(coreType).to.be.equal("GenArt721CoreV3");
+        if (coreContractName === "GenArt721CoreV3_Engine") {
+          // coreType is same for GenArt721CoreV3 & GenArt721CoreV3_Explorations,
+          // as they have same interface expectations
+          expect(coreType).to.be.equal("GenArt721CoreV3_Engine");
+        } else {
+          // coreType is same for GenArt721CoreV3 & GenArt721CoreV3_Explorations
+          expect(coreType).to.be.equal("GenArt721CoreV3");
+        }
       });
     });
 
@@ -274,17 +345,43 @@ for (const coreContractName of coreContractsToTest) {
       });
 
       it("returns >0 when initialized to >0 nextProjectId", async function () {
-        const differentGenArt721Core = await deployAndGet.call(
-          this,
-          coreContractName,
-          [
-            this.name,
-            this.symbol,
-            this.randomizer.address,
-            this.adminACL.address,
-            365,
-          ]
-        );
+        const nextProjectId = 365;
+        let differentGenArt721Core;
+        if (coreContractName === "GenArt721CoreV3_Engine") {
+          const engineRegistryFactory = await ethers.getContractFactory(
+            "EngineRegistryV0"
+          );
+          const engineRegistry = await engineRegistryFactory
+            .connect(this.accounts.deployer)
+            .deploy();
+          differentGenArt721Core = await deployAndGet.call(
+            this,
+            coreContractName,
+            [
+              this.name,
+              this.symbol,
+              this.accounts.deployer.address,
+              this.accounts.additional.address,
+              this.randomizer.address,
+              this.adminACL.address,
+              nextProjectId,
+              false,
+              engineRegistry.address, // Note: important to use a real engine registry
+            ]
+          );
+        } else {
+          differentGenArt721Core = await deployAndGet.call(
+            this,
+            coreContractName,
+            [
+              this.name,
+              this.symbol,
+              this.randomizer.address,
+              this.adminACL.address,
+              nextProjectId,
+            ]
+          );
+        }
         expect(await differentGenArt721Core.nextProjectId()).to.be.equal(365);
       });
     });
@@ -296,19 +393,45 @@ for (const coreContractName of coreContractsToTest) {
       });
 
       it("returns >0 when initialized to >0 nextProjectId", async function () {
-        const differentGenArt721Core = await deployAndGet.call(
-          this,
-          coreContractName,
-          [
-            this.name,
-            this.symbol,
-            this.randomizer.address,
-            this.adminACL.address,
-            365,
-          ]
-        );
+        const nextProjectId = 365;
+        let differentGenArt721Core;
+        if (coreContractName === "GenArt721CoreV3_Engine") {
+          const engineRegistryFactory = await ethers.getContractFactory(
+            "EngineRegistryV0"
+          );
+          const engineRegistry = await engineRegistryFactory
+            .connect(this.accounts.deployer)
+            .deploy();
+          differentGenArt721Core = await deployAndGet.call(
+            this,
+            coreContractName,
+            [
+              this.name,
+              this.symbol,
+              this.accounts.deployer.address,
+              this.accounts.additional.address,
+              this.randomizer.address,
+              this.adminACL.address,
+              nextProjectId,
+              false,
+              engineRegistry.address, // Note: important to use a real engine registry
+            ]
+          );
+        } else {
+          differentGenArt721Core = await deployAndGet.call(
+            this,
+            coreContractName,
+            [
+              this.name,
+              this.symbol,
+              this.randomizer.address,
+              this.adminACL.address,
+              nextProjectId,
+            ]
+          );
+        }
         expect(await differentGenArt721Core.startingProjectId()).to.be.equal(
-          365
+          nextProjectId
         );
       });
     });
