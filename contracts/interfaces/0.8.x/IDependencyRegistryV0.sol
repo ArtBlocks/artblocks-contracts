@@ -5,76 +5,76 @@ interface IDependencyRegistryV0 {
 
     event SupportedCoreContractRemoved(address indexed _coreContractAddress);
 
-    event ProjectDependencyOverrideAdded(
+    event ProjectDependencyTypeOverrideAdded(
         address indexed _coreContractAddress,
         uint256 indexed _projectId,
         bytes32 _dependencyTypeId
     );
 
-    event ProjectDependencyOverrideRemoved(
+    event ProjectDependencyTypeOverrideRemoved(
         address indexed _coreContractAddress,
         uint256 indexed _projectId
     );
 
-    event DependencyTypeAdded(
+    event DependencyAdded(
         bytes32 indexed _dependencyTypeId,
         string _preferredCDN,
         string _preferredRepository,
         string _projectWebsite
     );
 
-    event DependencyTypeRemoved(bytes32 indexed _dependencyTypeId);
+    event DependencyRemoved(bytes32 indexed _dependencyTypeId);
 
-    event DependencyTypeReferenceWebsiteUpdated(
+    event DependencyReferenceWebsiteUpdated(
         bytes32 indexed _dependencyTypeId,
         string _projectWebsite
     );
 
-    event DependencyTypePreferredCDNUpdated(
+    event DependencyPreferredCDNUpdated(
         bytes32 indexed _dependencyTypeId,
         string _preferredCDN
     );
 
-    event DependencyTypePreferredRepositoryUpdated(
+    event DependencyPreferredRepositoryUpdated(
         bytes32 indexed _dependencyTypeId,
         string _preferredRepository
     );
 
-    event DependencyTypeAdditionalCDNUpdated(
+    event DependencyAdditionalCDNUpdated(
         bytes32 indexed _dependencyTypeId,
         string _additionalCDN,
         uint256 _additionalCDNIndex
     );
 
-    event DependencyTypeAdditionalCDNRemoved(
+    event DependencyAdditionalCDNRemoved(
         bytes32 indexed _dependencyTypeId,
         uint256 indexed _additionalCDNIndex
     );
 
-    event DependencyTypeAdditionalRepositoryUpdated(
+    event DependencyAdditionalRepositoryUpdated(
         bytes32 indexed _dependencyTypeId,
         string _additionalRepository,
         uint256 _additionalRepositoryIndex
     );
 
-    event DependencyTypeAdditionalRepositoryRemoved(
+    event DependencyAdditionalRepositoryRemoved(
         bytes32 indexed _dependencyTypeId,
         uint256 indexed _additionalRepositoryIndex
     );
 
-    event DependencyTypeScriptUpdated(bytes32 indexed _dependencyTypeId);
+    event DependencyScriptUpdated(bytes32 indexed _dependencyTypeId);
 
     /**
      * @notice Returns number of registered dependency types
      * @return Number of registered dependencies.
      */
-    function getRegisteredDependencyTypeCount() external view returns (uint256);
+    function getDependencyTypeCount() external view returns (uint256);
 
     /**
      * @notice Returns registered depenedency type at index `_index`.
      * @return Registered dependency at `_index`.
      */
-    function getRegisteredDependencyTypeAtIndex(uint256 _index)
+    function getDependencyTypeAtIndex(uint256 _index)
         external
         view
         returns (string memory);
@@ -92,7 +92,7 @@ interface IDependencyRegistryV0 {
      * @return availableOnChain Whether dependency type is available on chain
      * @return scriptCount Count of on-chain scripts for dependency type
      */
-    function getDependencyTypeDetails(bytes32 _dependencyTypeId)
+    function getDependencyDetails(bytes32 _dependencyTypeId)
         external
         view
         returns (
@@ -110,7 +110,7 @@ interface IDependencyRegistryV0 {
      * @notice Returns address with bytecode containing script for
      * dependency type `_dependencyTypeIds` at script index `_index`.
      */
-    function getDependencyTypeScriptBytecodeAddressAtIndex(
+    function getDependencyScriptBytecodeAddressAtIndex(
         bytes32 _dependencyTypeId,
         uint256 _index
     ) external view returns (address);
@@ -120,7 +120,7 @@ interface IDependencyRegistryV0 {
      * @param _dependencyTypeId Dependency type to be queried.
      * @param _index Index of script to be queried.
      */
-    function getDependencyTypeScriptAtIndex(
+    function getDependencyScriptAtIndex(
         bytes32 _dependencyTypeId,
         uint256 _index
     ) external view returns (string memory);

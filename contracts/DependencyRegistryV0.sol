@@ -46,7 +46,7 @@ contract DependencyRegistryV0 is
     /// admin ACL contract
     IAdminACLV0 public adminACLContract;
 
-    struct DependencyType {
+    struct Dependency {
         string preferredCDN;
         mapping(uint256 => string) additionalCDNs;
         string preferredRepository;
@@ -60,10 +60,10 @@ contract DependencyRegistryV0 is
     }
 
     EnumerableSet.Bytes32Set private _dependencyTypes;
-    mapping(bytes32 => DependencyType) dependencyTypeInfo;
+    mapping(bytes32 => Dependency) dependencyDetails;
 
     EnumerableSet.AddressSet private _supportedCoreContracts;
-    mapping(address => mapping(uint256 => bytes32)) projectDependencyOverrides;
+    mapping(address => mapping(uint256 => bytes32)) projectDependencyTypeOverrides;
 
     modifier onlyNonZeroAddress(address _address) {
         require(_address != address(0), "Must input non-zero address");
@@ -91,9 +91,9 @@ contract DependencyRegistryV0 is
         _;
     }
 
-    modifier onlyExistingDependencyType(bytes32 _dependencyTypeId) {
+    modifier onlyExistingDependencyType(bytes32 _dependencyType) {
         require(
-            _dependencyTypes.contains(_dependencyTypeId),
+            _dependencyTypes.contains(_dependencyType),
             "Dependency type does not exist"
         );
         _;
@@ -111,39 +111,37 @@ contract DependencyRegistryV0 is
     }
 
     /**
-     * @notice Adds a new dependency type.
-     * @param _dependencyTypeId Name of dependency type (i.e. "type@version")
-     * @param _preferredCDN Preferred CDN for dependency type.
-     * @param _preferredRepository Preferred repository for dependency type.
+     * @notice Adds a new dependency.
+     * @param _dependencyType Name of dependency type (i.e. "type@version") used to identify dependency.
+     * @param _preferredCDN Preferred CDN for dependency.
+     * @param _preferredRepository Preferred repository for dependency.
      */
-    function addDependencyType(
-        bytes32 _dependencyTypeId,
+    function addDependency(
+        bytes32 _dependencyType,
         string memory _preferredCDN,
         string memory _preferredRepository,
         string memory _referenceWebsite
-    ) external onlyAdminACL(this.addDependencyType.selector) {
+    ) external onlyAdminACL(this.addDependency.selector) {
         require(
-            !_dependencyTypes.contains(_dependencyTypeId),
+            !_dependencyTypes.contains(_dependencyType),
             "Dependency type already exists"
         );
         require(
-            _dependencyTypeId.containsExactCharacterQty(
+            _dependencyType.containsExactCharacterQty(
                 AT_CHARACTER_CODE,
                 uint8(1)
             ),
             "must contain exactly one @"
         );
 
-        _dependencyTypes.add(_dependencyTypeId);
-        DependencyType storage dependencyType = dependencyTypeInfo[
-            _dependencyTypeId
-        ];
+        _dependencyTypes.add(_dependencyType);
+        Dependency storage dependencyType = dependencyDetails[_dependencyType];
         dependencyType.preferredCDN = _preferredCDN;
         dependencyType.preferredRepository = _preferredRepository;
         dependencyType.referenceWebsite = _referenceWebsite;
 
-        emit DependencyTypeAdded(
-            _dependencyTypeId,
+        emit DependencyAdded(
+            _dependencyType,
             _preferredCDN,
             _preferredRepository,
             _referenceWebsite
@@ -151,77 +149,67 @@ contract DependencyRegistryV0 is
     }
 
     /**
-     * @notice Removes a dependency type.
-     * @param _dependencyTypeId Name of dependency type (i.e. "type@version")
+     * @notice Removes a dependency.
+     * @param _dependencyType Name of dependency type (i.e. "type@version")
      */
-    function removeDependencyType(bytes32 _dependencyTypeId)
+    function removeDependency(bytes32 _dependencyType)
         external
-        onlyAdminACL(this.removeDependencyType.selector)
-        onlyExistingDependencyType(_dependencyTypeId)
+        onlyAdminACL(this.removeDependency.selector)
+        onlyExistingDependencyType(_dependencyType)
     {
-        DependencyType storage dependencyType = dependencyTypeInfo[
-            _dependencyTypeId
-        ];
+        Dependency storage dependency = dependencyDetails[_dependencyType];
         require(
-            dependencyType.additionalCDNCount == 0 &&
-                dependencyType.additionalRepositoryCount == 0 &&
-                dependencyType.scriptCount == 0,
-            "Cannot remove dependency type with additional CDNs, repositories, or scripts"
+            dependency.additionalCDNCount == 0 &&
+                dependency.additionalRepositoryCount == 0 &&
+                dependency.scriptCount == 0,
+            "Cannot remove dependency with additional CDNs, repositories, or scripts"
         );
 
-        _dependencyTypes.remove(_dependencyTypeId);
-        delete dependencyTypeInfo[_dependencyTypeId];
+        _dependencyTypes.remove(_dependencyType);
+        delete dependencyDetails[_dependencyType];
 
-        emit DependencyTypeRemoved(_dependencyTypeId);
+        emit DependencyRemoved(_dependencyType);
     }
 
     /**
-     * @notice Adds a script to dependencyType `_dependencyTypeId`.
-     * @param _dependencyTypeId Dependency type to be updated.
+     * @notice Adds a script to dependency `_dependencyType`.
+     * @param _dependencyType dependency to be updated.
      * @param _script Script to be added. Required to be a non-empty string,
      * but no further validation is performed.
      */
-    function addDependencyTypeScript(
-        bytes32 _dependencyTypeId,
-        string memory _script
-    )
+    function addDependencyScript(bytes32 _dependencyType, string memory _script)
         external
-        onlyAdminACL(this.addDependencyTypeScript.selector)
+        onlyAdminACL(this.addDependencyScript.selector)
         onlyNonEmptyString(_script)
-        onlyExistingDependencyType(_dependencyTypeId)
+        onlyExistingDependencyType(_dependencyType)
     {
-        DependencyType storage dependencyType = dependencyTypeInfo[
-            _dependencyTypeId
-        ];
+        Dependency storage dependency = dependencyDetails[_dependencyType];
         // store script in contract bytecode
-        dependencyType.scriptBytecodeAddresses[
-            dependencyType.scriptCount
-        ] = _script.writeToBytecode();
-        dependencyType.scriptCount = dependencyType.scriptCount + 1;
+        dependency.scriptBytecodeAddresses[dependency.scriptCount] = _script
+            .writeToBytecode();
+        dependency.scriptCount = dependency.scriptCount + 1;
 
-        emit DependencyTypeScriptUpdated(_dependencyTypeId);
+        emit DependencyScriptUpdated(_dependencyType);
     }
 
     /**
-     * @notice Updates script for dependencyType `_dependencyTypeId` at script ID `_scriptId`.
-     * @param _dependencyTypeId Dependency Type to be updated.
+     * @notice Updates script for dependencyType `_dependencyType` at script ID `_scriptId`.
+     * @param _dependencyType dependency to be updated.
      * @param _scriptId Script ID to be updated.
      * @param _script The updated script value. Required to be a non-empty
      * string, but no further validation is performed.
      */
-    function updateDependencyTypeScript(
-        bytes32 _dependencyTypeId,
+    function updateDependencyScript(
+        bytes32 _dependencyType,
         uint256 _scriptId,
         string memory _script
     )
         external
-        onlyAdminACL(this.updateDependencyTypeScript.selector)
+        onlyAdminACL(this.updateDependencyScript.selector)
         onlyNonEmptyString(_script)
-        onlyExistingDependencyType(_dependencyTypeId)
+        onlyExistingDependencyType(_dependencyType)
     {
-        DependencyType storage dependencyType = dependencyTypeInfo[
-            _dependencyTypeId
-        ];
+        Dependency storage dependencyType = dependencyDetails[_dependencyType];
         require(
             _scriptId < dependencyType.scriptCount,
             "scriptId out of range"
@@ -241,25 +229,20 @@ contract DependencyRegistryV0 is
         dependencyType.scriptBytecodeAddresses[_scriptId] = _script
             .writeToBytecode();
 
-        emit DependencyTypeScriptUpdated(_dependencyTypeId);
+        emit DependencyScriptUpdated(_dependencyType);
     }
 
     /**
-     * @notice Removes last script from dependency type `_dependencyTypeId`.
-     * @param _dependencyTypeId Dependency type to be updated.
+     * @notice Removes last script from dependency `_dependencyType`.
+     * @param _dependencyType dependency to be updated.
      */
-    function removeDependencyTypeLastScript(bytes32 _dependencyTypeId)
+    function removeDependencyLastScript(bytes32 _dependencyType)
         external
-        onlyAdminACL(this.removeDependencyTypeLastScript.selector)
-        onlyExistingDependencyType(_dependencyTypeId)
+        onlyAdminACL(this.removeDependencyLastScript.selector)
+        onlyExistingDependencyType(_dependencyType)
     {
-        DependencyType storage dependencyType = dependencyTypeInfo[
-            _dependencyTypeId
-        ];
-        require(
-            dependencyType.scriptCount > 0,
-            "there are no scripts to remove"
-        );
+        Dependency storage dependency = dependencyDetails[_dependencyType];
+        require(dependency.scriptCount > 0, "there are no scripts to remove");
         // purge old contract bytecode contract from the blockchain state
         // note: Although this does reduce usage of Ethereum state, it does not
         // reduce the gas costs of removal transactions. We believe this is the
@@ -269,209 +252,196 @@ contract DependencyRegistryV0 is
         // result in not removing the bytecode from the blockchain state. This
         // implementation is compatible with that architecture, as it does not
         // rely on the bytecode being removed from the blockchain state.
-        dependencyType
-            .scriptBytecodeAddresses[dependencyType.scriptCount - 1]
+        dependency
+            .scriptBytecodeAddresses[dependency.scriptCount - 1]
             .purgeBytecode();
         // delete reference to contract address that no longer exists
-        delete dependencyType.scriptBytecodeAddresses[
-            dependencyType.scriptCount - 1
-        ];
+        delete dependency.scriptBytecodeAddresses[dependency.scriptCount - 1];
         unchecked {
-            dependencyType.scriptCount = dependencyType.scriptCount - 1;
+            dependency.scriptCount = dependency.scriptCount - 1;
         }
 
-        emit DependencyTypeScriptUpdated(_dependencyTypeId);
+        emit DependencyScriptUpdated(_dependencyType);
     }
 
     /**
-     * @notice Updates preferred CDN for dependency type `_dependencyTypeId`.
-     * @param _dependencyTypeId Dependency type to be updated.
+     * @notice Updates preferred CDN for dependency `_dependencyType`.
+     * @param _dependencyType dependency to be updated.
      * @param _preferredCDN URL for preferred CDN.
      */
-    function updateDependencyTypePreferredCDN(
-        bytes32 _dependencyTypeId,
+    function updateDependencyPreferredCDN(
+        bytes32 _dependencyType,
         string memory _preferredCDN
     )
         external
-        onlyAdminACL(this.updateDependencyTypePreferredCDN.selector)
-        onlyExistingDependencyType(_dependencyTypeId)
+        onlyAdminACL(this.updateDependencyPreferredCDN.selector)
+        onlyExistingDependencyType(_dependencyType)
     {
-        dependencyTypeInfo[_dependencyTypeId].preferredCDN = _preferredCDN;
+        dependencyDetails[_dependencyType].preferredCDN = _preferredCDN;
 
-        emit DependencyTypePreferredCDNUpdated(
-            _dependencyTypeId,
-            _preferredCDN
-        );
+        emit DependencyPreferredCDNUpdated(_dependencyType, _preferredCDN);
     }
 
     /**
-     * @notice Updates preferred repository for dependency type `_dependencyTypeId`.
-     * @param _dependencyTypeId Dependency type to be updated.
+     * @notice Updates preferred repository for dependency `_dependencyType`.
+     * @param _dependencyType dependency to be updated.
      * @param _preferredRepository URL for preferred repository.
      */
-    function updateDependencyTypePreferredRepository(
-        bytes32 _dependencyTypeId,
+    function updateDependencyPreferredRepository(
+        bytes32 _dependencyType,
         string memory _preferredRepository
     )
         external
-        onlyAdminACL(this.updateDependencyTypePreferredRepository.selector)
-        onlyExistingDependencyType(_dependencyTypeId)
+        onlyAdminACL(this.updateDependencyPreferredRepository.selector)
+        onlyExistingDependencyType(_dependencyType)
     {
-        dependencyTypeInfo[_dependencyTypeId]
+        dependencyDetails[_dependencyType]
             .preferredRepository = _preferredRepository;
 
-        emit DependencyTypePreferredRepositoryUpdated(
-            _dependencyTypeId,
+        emit DependencyPreferredRepositoryUpdated(
+            _dependencyType,
             _preferredRepository
         );
     }
 
     /**
-     * @notice Updates project website for dependency type `_dependencyTypeId`.
-     * @param _dependencyTypeId Dependency type to be updated.
+     * @notice Updates project website for dependency `_dependencyType`.
+     * @param _dependencyType dependency to be updated.
      * @param _referenceWebsite URL for project website.
      */
-    function updateDependencyTypeReferenceWebsite(
-        bytes32 _dependencyTypeId,
+    function updateDependencyReferenceWebsite(
+        bytes32 _dependencyType,
         string memory _referenceWebsite
     )
         external
-        onlyAdminACL(this.updateDependencyTypeReferenceWebsite.selector)
-        onlyExistingDependencyType(_dependencyTypeId)
+        onlyAdminACL(this.updateDependencyReferenceWebsite.selector)
+        onlyExistingDependencyType(_dependencyType)
     {
-        dependencyTypeInfo[_dependencyTypeId]
-            .referenceWebsite = _referenceWebsite;
+        dependencyDetails[_dependencyType].referenceWebsite = _referenceWebsite;
 
-        emit DependencyTypeReferenceWebsiteUpdated(
-            _dependencyTypeId,
+        emit DependencyReferenceWebsiteUpdated(
+            _dependencyType,
             _referenceWebsite
         );
     }
 
     /**
-     * @notice Adds a new CDN url to dependencyType `_dependencyTypeId`.
-     * @param _dependencyTypeId Dependency type to be updated.
+     * @notice Adds a new CDN url to `_dependencyType`.
+     * @param _dependencyType dependency to be updated.
      * @param _additionalCDN CDN URL to be added. Required to be a non-empty string,
      * but no further validation is performed.
      */
-    function addDependencyTypeAdditionalCDN(
-        bytes32 _dependencyTypeId,
+    function addDependencyAdditionalCDN(
+        bytes32 _dependencyType,
         string memory _additionalCDN
     )
         external
-        onlyAdminACL(this.addDependencyTypeAdditionalCDN.selector)
+        onlyAdminACL(this.addDependencyAdditionalCDN.selector)
         onlyNonEmptyString(_additionalCDN)
-        onlyExistingDependencyType(_dependencyTypeId)
+        onlyExistingDependencyType(_dependencyType)
     {
-        DependencyType storage dependencyType = dependencyTypeInfo[
-            _dependencyTypeId
-        ];
+        Dependency storage dependency = dependencyDetails[_dependencyType];
 
-        uint256 additionalCDNCount = uint256(dependencyType.additionalCDNCount);
-        dependencyType.additionalCDNs[additionalCDNCount] = _additionalCDN;
-        dependencyType.additionalCDNCount = uint24(additionalCDNCount + 1);
+        uint256 additionalCDNCount = uint256(dependency.additionalCDNCount);
+        dependency.additionalCDNs[additionalCDNCount] = _additionalCDN;
+        dependency.additionalCDNCount = uint24(additionalCDNCount + 1);
 
-        emit DependencyTypeAdditionalCDNUpdated(
-            _dependencyTypeId,
+        emit DependencyAdditionalCDNUpdated(
+            _dependencyType,
             _additionalCDN,
             additionalCDNCount
         );
     }
 
     /**
-     * @notice Removes additional CDN for depenency `_dependencyId` at index `_index`.
+     * @notice Removes additional CDN for dependency `_dependencyId` at index `_index`.
      * Removal is done by swapping the element to be removed with the last element in the array, then deleting this last element.
      * Assets with indices higher than `_index` can have their indices adjusted as a result of this operation.
-     * @param _dependencyTypeId Dependency type to be updated.
+     * @param _dependencyType dependency to be updated.
      * @param _index Additional CDN index
      */
-    function removeDependencyTypeAdditionalCDNAtIndex(
-        bytes32 _dependencyTypeId,
+    function removeDependencyAdditionalCDNAtIndex(
+        bytes32 _dependencyType,
         uint256 _index
     )
         external
-        onlyAdminACL(this.removeDependencyTypeAdditionalCDNAtIndex.selector)
-        onlyExistingDependencyType(_dependencyTypeId)
+        onlyAdminACL(this.removeDependencyAdditionalCDNAtIndex.selector)
+        onlyExistingDependencyType(_dependencyType)
     {
-        uint256 additionalCDNCount = dependencyTypeInfo[_dependencyTypeId]
-            .additionalCDNCount;
+        Dependency storage dependency = dependencyDetails[_dependencyType];
+
+        uint256 additionalCDNCount = dependency.additionalCDNCount;
         require(_index < additionalCDNCount, "Asset index out of range");
 
         uint256 lastElementIndex = additionalCDNCount - 1;
 
-        dependencyTypeInfo[_dependencyTypeId].additionalCDNs[
-                _index
-            ] = dependencyTypeInfo[_dependencyTypeId].additionalCDNs[
+        dependency.additionalCDNs[_index] = dependency.additionalCDNs[
             lastElementIndex
         ];
-        delete dependencyTypeInfo[_dependencyTypeId].additionalCDNs[
-            lastElementIndex
-        ];
+        delete dependency.additionalCDNs[lastElementIndex];
 
-        dependencyTypeInfo[_dependencyTypeId].additionalCDNCount = uint24(
-            lastElementIndex
-        );
+        dependency.additionalCDNCount = uint24(lastElementIndex);
 
-        emit DependencyTypeAdditionalCDNRemoved(_dependencyTypeId, _index);
+        emit DependencyAdditionalCDNRemoved(_dependencyType, _index);
     }
 
     /**
-     * @notice Updates additional CDN for dependency type `_dependencyTypeId` at `_index`.
-     * @param _dependencyTypeId Dependency type to be updated.
+     * @notice Updates additional CDN for dependency `_dependencyType` at `_index`.
+     * @param _dependencyType dependency to be updated.
      * @param _index Additional CDN index.
      * @param _additionalCDN New CDN URL.
      */
-    function updateDependencyTypeAdditionalCDNAtIndex(
-        bytes32 _dependencyTypeId,
+    function updateDependencyAdditionalCDNAtIndex(
+        bytes32 _dependencyType,
         uint256 _index,
         string memory _additionalCDN
     )
         external
-        onlyAdminACL(this.updateDependencyTypeAdditionalCDNAtIndex.selector)
+        onlyAdminACL(this.updateDependencyAdditionalCDNAtIndex.selector)
         onlyNonEmptyString(_additionalCDN)
-        onlyExistingDependencyType(_dependencyTypeId)
+        onlyExistingDependencyType(_dependencyType)
     {
-        uint24 additionalCDNCount = dependencyTypeInfo[_dependencyTypeId]
-            .additionalCDNCount;
+        Dependency storage dependency = dependencyDetails[_dependencyType];
+        uint24 additionalCDNCount = dependency.additionalCDNCount;
         require(_index < additionalCDNCount, "Asset index out of range");
 
-        dependencyTypeInfo[_dependencyTypeId].additionalCDNs[
-            _index
-        ] = _additionalCDN;
+        dependency.additionalCDNs[_index] = _additionalCDN;
 
-        emit DependencyTypeAdditionalCDNUpdated(
-            _dependencyTypeId,
+        emit DependencyAdditionalCDNUpdated(
+            _dependencyType,
             _additionalCDN,
             _index
         );
     }
 
     /**
-     * @notice Adds a new repository URL to dependencyType `_dependencyTypeId`.
-     * @param _dependencyTypeId Dependency type to be updated.
+     * @notice Adds a new repository URL to dependency `_dependencyType`.
+     * @param _dependencyType dependency to be updated.
      * @param _additionalRepository Repository URL to be added. Required to be a non-empty string,
      * but no further validation is performed.
      */
-    function addDependencyTypeAdditionalRepository(
-        bytes32 _dependencyTypeId,
+    function addDependencyAdditionalRepository(
+        bytes32 _dependencyType,
         string memory _additionalRepository
     )
         external
-        onlyAdminACL(this.addDependencyTypeAdditionalRepository.selector)
+        onlyAdminACL(this.addDependencyAdditionalRepository.selector)
         onlyNonEmptyString(_additionalRepository)
-        onlyExistingDependencyType(_dependencyTypeId)
+        onlyExistingDependencyType(_dependencyType)
     {
+        Dependency storage dependency = dependencyDetails[_dependencyType];
         uint256 additionalRepositoryCount = uint256(
-            dependencyTypeInfo[_dependencyTypeId].additionalRepositoryCount
+            dependency.additionalRepositoryCount
         );
-        dependencyTypeInfo[_dependencyTypeId].additionalRepositories[
-                additionalRepositoryCount
-            ] = _additionalRepository;
-        dependencyTypeInfo[_dependencyTypeId]
-            .additionalRepositoryCount = uint24(additionalRepositoryCount + 1);
+        dependency.additionalRepositories[
+            additionalRepositoryCount
+        ] = _additionalRepository;
+        dependency.additionalRepositoryCount = uint24(
+            additionalRepositoryCount + 1
+        );
 
-        emit DependencyTypeAdditionalRepositoryUpdated(
-            _dependencyTypeId,
+        emit DependencyAdditionalRepositoryUpdated(
+            _dependencyType,
             _additionalRepository,
             additionalRepositoryCount
         );
@@ -481,72 +451,59 @@ contract DependencyRegistryV0 is
      * @notice Removes additional repository for depenency `_dependencyId` at index `_index`.
      * Removal is done by swapping the element to be removed with the last element in the array, then deleting this last element.
      * Assets with indices higher than `_index` can have their indices adjusted as a result of this operation.
-     * @param _dependencyTypeId Dependency type to be updated.
+     * @param _dependencyType dependency to be updated.
      * @param _index Additional repository index.
      */
-    function removeDependencyTypeAdditionalRepositoryAtIndex(
-        bytes32 _dependencyTypeId,
+    function removeDependencyAdditionalRepositoryAtIndex(
+        bytes32 _dependencyType,
         uint256 _index
     )
         external
-        onlyAdminACL(
-            this.removeDependencyTypeAdditionalRepositoryAtIndex.selector
-        )
-        onlyExistingDependencyType(_dependencyTypeId)
+        onlyAdminACL(this.removeDependencyAdditionalRepositoryAtIndex.selector)
+        onlyExistingDependencyType(_dependencyType)
     {
+        Dependency storage dependency = dependencyDetails[_dependencyType];
         uint256 additionalRepositoryCount = uint256(
-            dependencyTypeInfo[_dependencyTypeId].additionalRepositoryCount
+            dependency.additionalRepositoryCount
         );
         require(_index < additionalRepositoryCount, "Asset index out of range");
 
         uint256 lastElementIndex = additionalRepositoryCount - 1;
 
-        dependencyTypeInfo[_dependencyTypeId].additionalRepositories[
-                _index
-            ] = dependencyTypeInfo[_dependencyTypeId].additionalRepositories[
-            lastElementIndex
-        ];
-        delete dependencyTypeInfo[_dependencyTypeId].additionalRepositories[
-            lastElementIndex
-        ];
+        dependency.additionalRepositories[_index] = dependencyDetails[
+            _dependencyType
+        ].additionalRepositories[lastElementIndex];
+        delete dependency.additionalRepositories[lastElementIndex];
 
-        dependencyTypeInfo[_dependencyTypeId]
-            .additionalRepositoryCount = uint24(lastElementIndex);
+        dependency.additionalRepositoryCount = uint24(lastElementIndex);
 
-        emit DependencyTypeAdditionalRepositoryRemoved(
-            _dependencyTypeId,
-            _index
-        );
+        emit DependencyAdditionalRepositoryRemoved(_dependencyType, _index);
     }
 
     /**
-     * @notice Updates additional repository for dependency type `_dependencyTypeId` at `_index`.
-     * @param _dependencyTypeId Dependency type to be updated.
+     * @notice Updates additional repository for dependency `_dependencyType` at `_index`.
+     * @param _dependencyType dependency to be updated.
      * @param _index Additional repository index.
      * @param _additionalRepository New Repository URL.
      */
-    function updateDependencyTypeAdditionalRepositoryAtIndex(
-        bytes32 _dependencyTypeId,
+    function updateDependencyAdditionalRepositoryAtIndex(
+        bytes32 _dependencyType,
         uint256 _index,
         string memory _additionalRepository
     )
         external
-        onlyAdminACL(
-            this.updateDependencyTypeAdditionalRepositoryAtIndex.selector
-        )
+        onlyAdminACL(this.updateDependencyAdditionalRepositoryAtIndex.selector)
         onlyNonEmptyString(_additionalRepository)
-        onlyExistingDependencyType(_dependencyTypeId)
+        onlyExistingDependencyType(_dependencyType)
     {
-        uint24 additionalRepositoryCount = dependencyTypeInfo[_dependencyTypeId]
-            .additionalRepositoryCount;
+        Dependency storage dependency = dependencyDetails[_dependencyType];
+        uint24 additionalRepositoryCount = dependency.additionalRepositoryCount;
         require(_index < additionalRepositoryCount, "Asset index out of range");
 
-        dependencyTypeInfo[_dependencyTypeId].additionalRepositories[
-                _index
-            ] = _additionalRepository;
+        dependency.additionalRepositories[_index] = _additionalRepository;
 
-        emit DependencyTypeAdditionalRepositoryUpdated(
-            _dependencyTypeId,
+        emit DependencyAdditionalRepositoryUpdated(
+            _dependencyType,
             _additionalRepository,
             _index
         );
@@ -589,29 +546,29 @@ contract DependencyRegistryV0 is
      * @notice Overrides the script type and version that
      * would be returned by the core contract (`_contractAddress`)
      * for a given project  (`projectId`) with the given dependency
-     * type (`_dependencyTypeId`).
+     * type (`_dependencyType`).
      * @param _contractAddress Core contract address.
      * @param _projectId Project to override script type and version for.
-     * @param _dependencyTypeId Dependency type to return for project.
+     * @param _dependencyType Dependency type to return for project.
      */
-    function addProjectDependencyOverride(
+    function addProjectDependencyTypeOverride(
         address _contractAddress,
         uint256 _projectId,
-        bytes32 _dependencyTypeId
+        bytes32 _dependencyType
     )
         external
-        onlyAdminACL(this.addProjectDependencyOverride.selector)
-        onlyExistingDependencyType(_dependencyTypeId)
+        onlyAdminACL(this.addProjectDependencyTypeOverride.selector)
+        onlyExistingDependencyType(_dependencyType)
         onlySupportedCoreContract(_contractAddress)
     {
-        projectDependencyOverrides[_contractAddress][
+        projectDependencyTypeOverrides[_contractAddress][
             _projectId
-        ] = _dependencyTypeId;
+        ] = _dependencyType;
 
-        emit ProjectDependencyOverrideAdded(
+        emit ProjectDependencyTypeOverrideAdded(
             _contractAddress,
             _projectId,
-            _dependencyTypeId
+            _dependencyType
         );
     }
 
@@ -621,19 +578,19 @@ contract DependencyRegistryV0 is
      * @param _contractAddress Core contract address.
      * @param _projectId Project to remove override for.
      */
-    function removeProjectDependencyOverride(
+    function removeProjectDependencyTypeOverride(
         address _contractAddress,
         uint256 _projectId
-    ) external onlyAdminACL(this.addProjectDependencyOverride.selector) {
+    ) external onlyAdminACL(this.removeProjectDependencyTypeOverride.selector) {
         require(
-            projectDependencyOverrides[_contractAddress][_projectId] !=
+            projectDependencyTypeOverrides[_contractAddress][_projectId] !=
                 bytes32(""),
             "No override set for project"
         );
 
-        delete projectDependencyOverrides[_contractAddress][_projectId];
+        delete projectDependencyTypeOverrides[_contractAddress][_projectId];
 
-        emit ProjectDependencyOverrideRemoved(_contractAddress, _projectId);
+        emit ProjectDependencyTypeOverrideRemoved(_contractAddress, _projectId);
     }
 
     /**
@@ -642,11 +599,7 @@ contract DependencyRegistryV0 is
      * @dev This is only intended to be called outside of block
      * execution where there is no gas limit.
      */
-    function getRegisteredDependencyTypes()
-        external
-        view
-        returns (string[] memory)
-    {
+    function getDependencyTypes() external view returns (string[] memory) {
         string[] memory dependencyTypes = new string[](
             _dependencyTypes.length()
         );
@@ -662,11 +615,7 @@ contract DependencyRegistryV0 is
      * @notice Returns number of registered dependency types
      * @return Number of registered dependencies.
      */
-    function getRegisteredDependencyTypeCount()
-        external
-        view
-        returns (uint256)
-    {
+    function getDependencyTypeCount() external view returns (uint256) {
         return _dependencyTypes.length();
     }
 
@@ -674,7 +623,7 @@ contract DependencyRegistryV0 is
      * @notice Returns registered depenedency type at index `_index`.
      * @return Registered dependency at `_index`.
      */
-    function getRegisteredDependencyTypeAtIndex(uint256 _index)
+    function getDependencyTypeAtIndex(uint256 _index)
         external
         view
         returns (string memory)
@@ -684,19 +633,19 @@ contract DependencyRegistryV0 is
     }
 
     /**
-     * @notice Returns details for depedency type `_dependencyTypeId`.
-     * @param _dependencyTypeId Dependency type to be queried.
-     * @return typeAndVersion String representation of `_dependencyTypeId`.
+     * @notice Returns details for depedency type `_dependencyType`.
+     * @param _dependencyType Dependency type to be queried.
+     * @return typeAndVersion String representation of `_dependencyType`.
      * (e.g. "p5js(atSymbol)1.0.0")
-     * @return preferredCDN Preferred CDN URL for dependency type
-     * @return additionalCDNCount Count of additional CDN URLs for dependency type
-     * @return preferredRepository Preferred repository URL for dependency type
-     * @return additionalRepositoryCount Count of additional repository URLs for dependency type
-     * @return referenceWebsite Project website URL for dependency type
-     * @return availableOnChain Whether dependency type is available on chain
-     * @return scriptCount Count of on-chain scripts for dependency type
+     * @return preferredCDN Preferred CDN URL for dependency
+     * @return additionalCDNCount Count of additional CDN URLs for dependency
+     * @return preferredRepository Preferred repository URL for dependency
+     * @return additionalRepositoryCount Count of additional repository URLs for dependency
+     * @return referenceWebsite Project website URL for dependency
+     * @return availableOnChain Whether dependency is available on chain
+     * @return scriptCount Count of on-chain scripts for dependency
      */
-    function getDependencyTypeDetails(bytes32 _dependencyTypeId)
+    function getDependencyDetails(bytes32 _dependencyType)
         external
         view
         returns (
@@ -710,19 +659,17 @@ contract DependencyRegistryV0 is
             uint24 scriptCount
         )
     {
-        DependencyType storage dependencyType = dependencyTypeInfo[
-            _dependencyTypeId
-        ];
+        Dependency storage dependency = dependencyDetails[_dependencyType];
 
         return (
-            _dependencyTypeId.toString(),
-            dependencyType.preferredCDN,
-            dependencyType.additionalCDNCount,
-            dependencyType.preferredRepository,
-            dependencyType.additionalRepositoryCount,
-            dependencyType.referenceWebsite,
-            dependencyType.scriptCount > 0,
-            dependencyType.scriptCount
+            _dependencyType.toString(),
+            dependency.preferredCDN,
+            dependency.additionalCDNCount,
+            dependency.preferredRepository,
+            dependency.additionalRepositoryCount,
+            dependency.referenceWebsite,
+            dependency.scriptCount > 0,
+            dependency.scriptCount
         );
     }
 
@@ -774,56 +721,50 @@ contract DependencyRegistryV0 is
         return supportedCoreContracts;
     }
 
-    function getDependencyTypeAdditionalCDNAtIndex(
-        bytes32 _dependencyTypeId,
+    function getDependencyAdditionalCDNAtIndex(
+        bytes32 _dependencyType,
         uint256 _index
     ) external view returns (string memory) {
-        return dependencyTypeInfo[_dependencyTypeId].additionalCDNs[_index];
+        return dependencyDetails[_dependencyType].additionalCDNs[_index];
     }
 
-    function getDependencyTypeAdditionalRepositoryAtIndex(
-        bytes32 _dependencyTypeId,
+    function getDependencyAdditionalRepositoryAtIndex(
+        bytes32 _dependencyType,
         uint256 _index
     ) external view returns (string memory) {
         return
-            dependencyTypeInfo[_dependencyTypeId].additionalRepositories[
-                _index
-            ];
+            dependencyDetails[_dependencyType].additionalRepositories[_index];
     }
 
     /**
      * @notice Returns address with bytecode containing script for
-     * dependency type `_dependencyTypeIds` at script index `_index`.
+     * dependency `_dependencyTypes` at script index `_index`.
      */
-    function getDependencyTypeScriptBytecodeAddressAtIndex(
-        bytes32 _dependencyTypeId,
+    function getDependencyScriptBytecodeAddressAtIndex(
+        bytes32 _dependencyType,
         uint256 _index
     ) external view returns (address) {
         return
-            dependencyTypeInfo[_dependencyTypeId].scriptBytecodeAddresses[
-                _index
-            ];
+            dependencyDetails[_dependencyType].scriptBytecodeAddresses[_index];
     }
 
     /**
-     * @notice Returns script for dependency type `_dependencyTypeId` at script index `_index`.
-     * @param _dependencyTypeId Dependency type to be queried.
+     * @notice Returns script for dependency `_dependencyType` at script index `_index`.
+     * @param _dependencyType dependency to be queried.
      * @param _index Index of script to be queried.
      */
-    function getDependencyTypeScriptAtIndex(
-        bytes32 _dependencyTypeId,
-        uint256 _index
-    ) external view returns (string memory) {
-        DependencyType storage dependencyType = dependencyTypeInfo[
-            _dependencyTypeId
-        ];
+    function getDependencyScriptAtIndex(bytes32 _dependencyType, uint256 _index)
+        external
+        view
+        returns (string memory)
+    {
+        Dependency storage dependency = dependencyDetails[_dependencyType];
         // If trying to access an out-of-index script, return the empty string.
-        if (_index >= dependencyType.scriptCount) {
+        if (_index >= dependency.scriptCount) {
             return "";
         }
 
-        return
-            dependencyType.scriptBytecodeAddresses[_index].readFromBytecode();
+        return dependency.scriptBytecodeAddresses[_index].readFromBytecode();
     }
 
     /**
@@ -834,7 +775,7 @@ contract DependencyRegistryV0 is
      * an override set, this will revert.
      * @param _contractAddress Core contract address.
      * @param _projectId Project to return dependency type for.
-     * @return dependencyTypeId Dependency type used by project.
+     * @return dependencyType Dependency type used by project.
      */
     function getDependencyTypeForProject(
         address _contractAddress,
@@ -845,9 +786,9 @@ contract DependencyRegistryV0 is
         onlySupportedCoreContract(_contractAddress)
         returns (string memory)
     {
-        bytes32 dependencyType = projectDependencyOverrides[_contractAddress][
-            _projectId
-        ];
+        bytes32 dependencyType = projectDependencyTypeOverrides[
+            _contractAddress
+        ][_projectId];
         if (dependencyType != bytes32(0)) {
             return dependencyType.toString();
         }
