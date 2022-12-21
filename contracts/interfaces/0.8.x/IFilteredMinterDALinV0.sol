@@ -27,4 +27,6 @@ interface IFilteredMinterDALinV0 is IFilteredMinterV0 {
     event MinimumAuctionLengthSecondsUpdated(
         uint256 _minimumAuctionLengthSeconds
     );
+
+    function minimumAuctionLengthSeconds() external view returns (uint256);
 }
