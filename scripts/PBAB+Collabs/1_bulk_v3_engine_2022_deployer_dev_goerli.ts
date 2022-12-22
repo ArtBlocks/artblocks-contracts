@@ -62,14 +62,6 @@ async function main() {
   // DEPLOYMENT (SHARED) BEGINS HERE
   //////////////////////////////////////////////////////////////////////////////
 
-  // Deploy randomizer contract
-  // @dev - comment out deployment if using existing randomizer
-  const randomizerFactory = new BasicRandomizerV2__factory(deployer);
-  const randomizer = await randomizerFactory.deploy();
-  await randomizer.deployed();
-  const randomizerAddress = randomizer.address;
-  console.log(`Randomizer deployed at ${randomizerAddress}`);
-
   // Deploy AdminACL contract
   // @dev - comment out deployment if using existing ACL contract
   const adminACLFactory = new AdminACLV1__factory(deployer);
@@ -97,6 +89,13 @@ async function main() {
     //////////////////////////////////////////////////////////////////////////////
     // DEPLOYMENT (PER-CONTRACT) BEGINS HERE
     //////////////////////////////////////////////////////////////////////////////
+
+    // Deploy randomizer contract
+    const randomizerFactory = new BasicRandomizerV2__factory(deployer);
+    const randomizer = await randomizerFactory.deploy();
+    await randomizer.deployed();
+    const randomizerAddress = randomizer.address;
+    console.log(`Randomizer deployed at ${randomizerAddress}`);
 
     // Deploy Core contract
     const genArt721CoreFactory = new GenArt721CoreV3Engine__factory(deployer);
