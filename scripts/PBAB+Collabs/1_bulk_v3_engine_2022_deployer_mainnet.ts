@@ -15,6 +15,7 @@ import { MinterSetPriceV2__factory } from "../contracts/factories/MinterSetPrice
 // delay to avoid issues with reorgs and tx failures
 import { delay } from "../util/utils";
 const EXTRA_DELAY_BETWEEN_TX = 1000; // ms
+const MANUAL_GAS_LIMIT = 500000; // gas
 
 /**
  * This script was created to deploy the V3 core Engine contracts,
@@ -164,10 +165,10 @@ async function main() {
     await delay(EXTRA_DELAY_BETWEEN_TX);
     await minterFilter
       .connect(deployer)
-      .setMinterForProject(0, minterSetPrice.address);
+      .setMinterForProject(0, minterSetPrice.address, {gasLimit: MANUAL_GAS_LIMIT}); // provide manual gas limit
     console.log(`Configured set price minter (${minterSetPrice.address}) for project 0.`);
     await delay(EXTRA_DELAY_BETWEEN_TX);
-    await minterSetPrice.connect(deployer).purchase(0);
+    await minterSetPrice.connect(deployer).purchase(0, {gasLimit: MANUAL_GAS_LIMIT}); // provide manual gas limit
     console.log(`Minted token 0 for project 0.`);
     await delay(EXTRA_DELAY_BETWEEN_TX);
 
