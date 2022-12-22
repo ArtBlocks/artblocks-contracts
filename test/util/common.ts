@@ -144,7 +144,43 @@ export async function deployCoreWithMinterFilter(
       this.symbol,
       randomizer.address,
       adminACL.address,
-      0,
+      0, // _startingProjectId
+    ]);
+    // assign core contract for randomizer to use
+    randomizer
+      .connect(this.accounts.deployer)
+      .assignCoreAndRenounce(genArt721Core.address);
+    // deploy minter filter
+    minterFilter = await deployAndGet.call(this, minterFilterName, [
+      genArt721Core.address,
+    ]);
+    // allowlist minterFilter on the core contract
+    await genArt721Core
+      .connect(this.accounts.deployer)
+      .updateMinterContract(minterFilter.address);
+  } else if (coreContractName.endsWith("V3_Engine")) {
+    randomizer = await deployAndGet.call(this, "BasicRandomizerV2", []);
+    let adminACLContractName = useAdminACLWithEvents
+      ? "MockAdminACLV0Events"
+      : "AdminACLV0";
+    // if function input has adminACL contract name, use that instead
+    adminACLContractName = _adminACLContractName
+      ? _adminACLContractName
+      : adminACLContractName;
+    adminACL = await deployAndGet.call(this, adminACLContractName, []);
+    let engineRegistry = await deployAndGet.call(this, "EngineRegistryV0", []);
+    // Note: in the common tests, set `autoApproveArtistSplitProposals` to false, which
+    //       mirrors the approval-flow behavior of the other (non-Engine) V3 contracts
+    genArt721Core = await deployAndGet.call(this, coreContractName, [
+      this.name, // _tokenName
+      this.symbol, // _tokenSymbol
+      this.accounts.deployer.address, // _renderProviderAddress
+      this.accounts.additional.address, // _platformProviderAddress
+      randomizer.address, // _randomizerContract
+      adminACL.address, // _adminACLContract
+      0, // _startingProjectId
+      false, // _autoApproveArtistSplitProposals
+      engineRegistry.address, // _engineRegistryContract
     ]);
     // assign core contract for randomizer to use
     randomizer
