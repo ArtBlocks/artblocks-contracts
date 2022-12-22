@@ -14,7 +14,7 @@ import { MinterSetPriceV2__factory } from "../contracts/factories/MinterSetPrice
 
 // delay to avoid issues with reorgs and tx failures
 import { delay } from "../util/utils";
-const EXTRA_DELAY_BETWEEN_TX = 5000; // ms
+const EXTRA_DELAY_BETWEEN_TX = 1000; // ms
 
 /**
  * This script was created to deploy the V3 core Engine contracts,
@@ -102,7 +102,7 @@ async function main() {
     );
 
     await genArt721Core.deployed();
-    console.log(`GenArt721Core deployed at ${genArt721Core.address}`);
+    console.log(`GenArt721CoreV3_Engine deployed at ${genArt721Core.address}`);
 
     // Deploy Minter Filter contract.
     const minterFilterFactory = new MinterFilterV1__factory(deployer);
