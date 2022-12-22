@@ -115,7 +115,7 @@ async function main() {
       adminACLAddress,
       startingProjectId,
       autoApproveArtistSplitProposals,
-      engineRegistryAddress,
+      engineRegistryAddress
     );
 
     await genArt721Core.deployed();
@@ -181,10 +181,16 @@ async function main() {
     await delay(EXTRA_DELAY_BETWEEN_TX);
     await minterFilter
       .connect(deployer)
-      .setMinterForProject(0, minterSetPrice.address, {gasLimit: MANUAL_GAS_LIMIT}); // provide manual gas limit
-    console.log(`Configured set price minter (${minterSetPrice.address}) for project 0.`);
+      .setMinterForProject(0, minterSetPrice.address, {
+        gasLimit: MANUAL_GAS_LIMIT,
+      }); // provide manual gas limit
+    console.log(
+      `Configured set price minter (${minterSetPrice.address}) for project 0.`
+    );
     await delay(EXTRA_DELAY_BETWEEN_TX);
-    await minterSetPrice.connect(deployer).purchase(0, {gasLimit: MANUAL_GAS_LIMIT}); // provide manual gas limit
+    await minterSetPrice
+      .connect(deployer)
+      .purchase(0, { gasLimit: MANUAL_GAS_LIMIT }); // provide manual gas limit
     console.log(`Minted token 0 for project 0.`);
     await delay(EXTRA_DELAY_BETWEEN_TX);
 

@@ -30,10 +30,23 @@ const MANUAL_GAS_LIMIT = 500000; // gas
 //////////////////////////////////////////////////////////////////////////////
 const contractDeployDetailsArray = [
   {
-    tokenName: "TESTCONTRACT",
-    tokenTicker: "TEST",
-    startingProjectId: 69,
-  }
+    tokenName: "Art Blocks x Pace",
+    tokenTicker: "ABXPACE",
+    // current deployment already has 0-4 (see: https://etherscan.io/address/0x64780ce53f6e966e18a22af13a2f97369580ec11)
+    startingProjectId: 5,
+  },
+  {
+    tokenName: "Art Blocks x Bright Moments",
+    tokenTicker: "ABXBMG",
+    // new contract, starts at 0
+    startingProjectId: 0,
+  },
+  {
+    tokenName: "Art Blocks Managed Engine",
+    tokenTicker: "ABENGINE",
+    // new contract, starts at 0
+    startingProjectId: 0,
+  },
 ];
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG ENDS HERE
@@ -99,7 +112,7 @@ async function main() {
       adminACLAddress,
       startingProjectId,
       autoApproveArtistSplitProposals,
-      engineRegistryAddress,
+      engineRegistryAddress
     );
 
     await genArt721Core.deployed();
@@ -165,10 +178,16 @@ async function main() {
     await delay(EXTRA_DELAY_BETWEEN_TX);
     await minterFilter
       .connect(deployer)
-      .setMinterForProject(0, minterSetPrice.address, {gasLimit: MANUAL_GAS_LIMIT}); // provide manual gas limit
-    console.log(`Configured set price minter (${minterSetPrice.address}) for project 0.`);
+      .setMinterForProject(0, minterSetPrice.address, {
+        gasLimit: MANUAL_GAS_LIMIT,
+      }); // provide manual gas limit
+    console.log(
+      `Configured set price minter (${minterSetPrice.address}) for project 0.`
+    );
     await delay(EXTRA_DELAY_BETWEEN_TX);
-    await minterSetPrice.connect(deployer).purchase(0, {gasLimit: MANUAL_GAS_LIMIT}); // provide manual gas limit
+    await minterSetPrice
+      .connect(deployer)
+      .purchase(0, { gasLimit: MANUAL_GAS_LIMIT }); // provide manual gas limit
     console.log(`Minted token 0 for project 0.`);
     await delay(EXTRA_DELAY_BETWEEN_TX);
 
