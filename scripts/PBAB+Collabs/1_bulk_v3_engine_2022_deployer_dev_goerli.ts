@@ -3,11 +3,10 @@
 
 import { ethers } from "hardhat";
 // engine registry
-// TODO
+import { EngineRegistryV0__factory } from "../contracts/factories/EngineRegistryV0__factory";
 // engine
 import { GenArt721CoreV3Engine__factory } from "../contracts/factories/GenArt721CoreV3Engine__factory";
 import { AdminACLV1__factory } from "../contracts/factories/AdminACLV1__factory";
-import { EngineRegistryV0__factory } from "../contracts/factories/EngineRegistryV0__factory";
 import { BasicRandomizerV2__factory } from "../contracts/factories/BasicRandomizerV2__factory";
 // minter suite
 import { MinterFilterV1__factory } from "../contracts/factories/MinterFilterV1__factory";
@@ -83,7 +82,7 @@ async function main() {
   const engineRegistryFactory = new EngineRegistryV0__factory(deployer);
   const engineRegistry = await engineRegistryFactory.deploy();
   await engineRegistry.deployed();
-  const engineRegistryAddress = randomizer.address;
+  const engineRegistryAddress = engineRegistry.address;
   console.log(`Engine Registry deployed at ${engineRegistryAddress}`);
 
   //////////////////////////////////////////////////////////////////////////////
@@ -116,7 +115,6 @@ async function main() {
       startingProjectId,
       autoApproveArtistSplitProposals,
       engineRegistryAddress,
-      {gasLimit: 30000000} // Set gas limit override.
     );
 
     await genArt721Core.deployed();
@@ -183,7 +181,7 @@ async function main() {
     await minterFilter
       .connect(deployer)
       .setMinterForProject(0, minterSetPrice.address);
-    console.log(`Configured set price minter for project 0.`);
+    console.log(`Configured set price minter (${minterSetPrice.address}) for project 0.`);
     await delay(EXTRA_DELAY_BETWEEN_TX);
     await minterSetPrice.connect(deployer).purchase(0);
     console.log(`Minted token 0 for project 0.`);
