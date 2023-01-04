@@ -186,7 +186,9 @@ async function main() {
     await delay(EXTRA_DELAY_BETWEEN_TX);
     await minterSetPrice
       .connect(deployer)
-      .updatePricePerTokenInWei(startingProjectId, 0, { gasLimit: MANUAL_GAS_LIMIT }); // provide manual gas limit
+      .updatePricePerTokenInWei(startingProjectId, 0, {
+        gasLimit: MANUAL_GAS_LIMIT,
+      }); // provide manual gas limit
     console.log(`Configured minter price project ${startingProjectId}.`);
     await delay(EXTRA_DELAY_BETWEEN_TX);
     await minterSetPrice
@@ -206,7 +208,9 @@ async function main() {
 
     // Output instructions for manual Etherscan verification.
     const standardVerify = "yarn hardhat verify";
-    console.log(`Save the following constructor args config file to a constructor-args.js file, then verify core contract deployment with:`);
+    console.log(
+      `Save the following constructor args config file to a constructor-args.js file, then verify core contract deployment with:`
+    );
     console.log(
       `module.exports = [
         "${tokenName}", // name
