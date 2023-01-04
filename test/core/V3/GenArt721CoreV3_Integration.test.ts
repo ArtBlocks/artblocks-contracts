@@ -595,5 +595,17 @@ for (const coreContractName of coreContractsToTest) {
         );
       });
     });
+
+    describe("onlyValidProjectId", function () {
+      it("does not allow invalid project when using onlyValidProjectId modifier", async function () {
+        // mint token zero so it is a valid token
+        await expectRevert(
+          this.genArt721Core
+            .connect(this.accounts.deployer)
+            .toggleProjectIsActive(999),
+          "Project ID does not exist"
+        );
+      });
+    });
   });
 }
