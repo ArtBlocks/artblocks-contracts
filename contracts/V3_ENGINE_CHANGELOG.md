@@ -20,3 +20,4 @@ V3 performance metrics are available in [V3_Performance.md](V3_Performance.md)
 ## The following changes were made in the Core V3 Engine (3.1.1) contract:
 
 - Bug fix a bug to update new artist address in storage when the contract-level state variable `autoApproveArtistSplitProposals` is set to `true`. This bug was introduced in the 3.1.0 release, but all 3.1.0 contracts were deployed with `autoApproveArtistSplitProposals` set to `false`, so this bug was not exposed on mainnet.
+- Minor refactoring and code cleanup.
