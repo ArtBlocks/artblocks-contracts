@@ -1384,7 +1384,7 @@ for (const coreContractName of coreContractsToTest) {
       });
     });
 
-    describe.only("Engine autoApproveArtistSplitProposals is true", function () {
+    describe("Engine autoApproveArtistSplitProposals is true", function () {
       beforeEach(async function () {
         if (!coreContractName.endsWith("_Engine")) {
           return;
