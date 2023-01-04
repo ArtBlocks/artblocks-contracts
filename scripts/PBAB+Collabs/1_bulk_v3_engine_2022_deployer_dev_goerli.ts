@@ -175,22 +175,27 @@ async function main() {
       deployer.address // Use `deployer.address` as placeholder for project 0 owner
     );
     console.log(
-      `Added ${tokenName} project 0 placeholder on ${tokenName} contract.`
+      `Added ${tokenName} project ${startingProjectId} placeholder on ${tokenName} contract.`
     );
     await delay(EXTRA_DELAY_BETWEEN_TX);
     await minterFilter
       .connect(deployer)
-      .setMinterForProject(0, minterSetPrice.address, {
+      .setMinterForProject(startingProjectId, minterSetPrice.address, {
         gasLimit: MANUAL_GAS_LIMIT,
       }); // provide manual gas limit
     console.log(
-      `Configured set price minter (${minterSetPrice.address}) for project 0.`
+      `Configured set price minter (${minterSetPrice.address}) for project ${startingProjectId}.`
     );
     await delay(EXTRA_DELAY_BETWEEN_TX);
     await minterSetPrice
       .connect(deployer)
-      .purchase(0, { gasLimit: MANUAL_GAS_LIMIT }); // provide manual gas limit
-    console.log(`Minted token 0 for project 0.`);
+      .updatePricePerTokenInWei(startingProjectId, 0, { gasLimit: MANUAL_GAS_LIMIT }); // provide manual gas limit
+    console.log(`Configured minter price project ${startingProjectId}.`);
+    await delay(EXTRA_DELAY_BETWEEN_TX);
+    await minterSetPrice
+      .connect(deployer)
+      .purchase(startingProjectId, { gasLimit: MANUAL_GAS_LIMIT }); // provide manual gas limit
+    console.log(`Minted token 0 for project ${startingProjectId}.`);
     await delay(EXTRA_DELAY_BETWEEN_TX);
 
     // Note reminders about config addresses that have been left as the deployer for now.
@@ -204,9 +209,22 @@ async function main() {
 
     // Output instructions for manual Etherscan verification.
     const standardVerify = "yarn hardhat verify";
-    console.log(`Verify core contract deployment with:`);
+    console.log(`Save the following constructor args config file to a constructor-args.js file, then verify core contract deployment with:`);
     console.log(
-      `${standardVerify} --network ${networkName} ${genArt721Core.address} "${tokenName}" "${tokenTicker}" ${renderProviderAddress} ${platformProviderAddress} ${randomizerAddress} ${adminACLAddress} ${startingProjectId} ${autoApproveArtistSplitProposals} ${engineRegistryAddress}`
+      `module.exports = [
+        "${tokenName}", // name
+        "${tokenTicker}", // ticker
+        "${renderProviderAddress}", // render provider
+        "${platformProviderAddress}", // platform provider
+        "${randomizerAddress}", // randomizer
+        "${adminACLAddress}", // admin acl
+        ${startingProjectId}, // starting project id
+        ${autoApproveArtistSplitProposals}, // auto approve artist split proposals
+        "${engineRegistryAddress}" // engine registry
+      ];`
+    );
+    console.log(
+      `${standardVerify} --network ${networkName} --constructor-args constructor-args.js ${genArt721Core.address}`
     );
     console.log(`Verify Admin ACL contract deployment with:`);
     console.log(
