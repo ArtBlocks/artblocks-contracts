@@ -48,8 +48,8 @@ for (const coreContractName of coreContractsToTest) {
 
     describe("registerContract", function () {
       it("allows deployer to register arbitrary address", async function () {
-        expect(
-          await this.engineRegistry
+        await expect(
+          this.engineRegistry
             .connect(this.accounts.deployer)
             .registerContract(
               this.accounts.additional.address,
@@ -81,8 +81,8 @@ for (const coreContractName of coreContractsToTest) {
 
     describe("unregisterContract", function () {
       it("allows deployer to register arbitrary address", async function () {
-        expect(
-          await this.engineRegistry
+        await expect(
+          this.engineRegistry
             .connect(this.accounts.deployer)
             .unregisterContract(this.genArt721Core.address)
         )
