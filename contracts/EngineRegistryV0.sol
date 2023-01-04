@@ -49,8 +49,8 @@ contract EngineRegistryV0 is IEngineRegistryV0, ERC165 {
             "Only call by deployerAddress or _contractAddress"
         );
         // EFFECTS
-        emit ContractRegistered(_contractAddress, _coreVersion, _coreType);
         registeredContractAddresses[_contractAddress] = true;
+        emit ContractRegistered(_contractAddress, _coreVersion, _coreType);
     }
 
     /**
@@ -75,7 +75,7 @@ contract EngineRegistryV0 is IEngineRegistryV0, ERC165 {
         );
 
         // EFFECTS
-        emit ContractUnregistered(_contractAddress);
         registeredContractAddresses[_contractAddress] = false;
+        emit ContractUnregistered(_contractAddress);
     }
 }
