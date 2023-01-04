@@ -32,6 +32,14 @@ jobs:
       - node/install-packages:
           pkg-manager: yarn
       - run:
+          name: compile contracts
+          command: |
+            yarn compile
+      - run:
+          name: generate types
+          command: |
+            yarn generate:typechain
+      - run:
           name: Hardhat Test
           command: |
             TEST_FILES="$(circleci tests glob "./test/**/*.ts" | circleci tests split)"
@@ -48,6 +56,14 @@ jobs:
           lts: true
       - node/install-packages:
           pkg-manager: yarn
+      - run:
+          name: compile contracts
+          command: |
+            yarn compile
+      - run:
+          name: generate types
+          command: |
+            yarn generate:typechain
       - run:
           name: coverage
           command: |

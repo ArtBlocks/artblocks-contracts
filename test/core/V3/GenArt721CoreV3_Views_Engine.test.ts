@@ -27,10 +27,7 @@ export type ArtistFinanceProposal = {
 
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
-  "GenArt721CoreV3", // flagship V3 core
-  "GenArt721CoreV3_Explorations", // V3 core explorations contract
-  // Given the many differences for the views for betwen CoreV3 and CoreV3_Engine,
-  // for this set of _Views tests, the _Engine variants have been split out.
+  "GenArt721CoreV3_Engine", // V3 core engine contract
 ];
 
 // helper function to update artist financial data
@@ -111,10 +108,7 @@ for (const coreContractName of coreContractsToTest) {
 
     describe("coreVersion", function () {
       it("returns expected value", async function () {
-        let targetCoreVersion = "v3.0.0";
-        if (coreContractName === "GenArt721CoreV3_Explorations") {
-          targetCoreVersion = "v3.0.1";
-        }
+        let targetCoreVersion = "v3.1.0";
         const coreVersion = await this.genArt721Core
           .connect(this.accounts.deployer)
           .coreVersion();
@@ -127,123 +121,7 @@ for (const coreContractName of coreContractsToTest) {
         const coreType = await this.genArt721Core
           .connect(this.accounts.deployer)
           .coreType();
-        // coreType is same for GenArt721CoreV3 and GenArt721CoreV3_Explorations
-        expect(coreType).to.be.equal("GenArt721CoreV3");
-      });
-    });
-
-    describe("ART_BLOCKS_ERC721TOKEN_ADDRESS_V0", function () {
-      it("returns expected value", async function () {
-        if (coreContractName === "GenArt721CoreV3_Explorations") {
-          try {
-            await this.genArt721Core
-              .connect(this.accounts.deployer)
-              .ART_BLOCKS_ERC721TOKEN_ADDRESS_V0();
-            throw new Error("expected no function to be found");
-          } catch (error) {
-            console.log("throws as expected for GenArt721CoreV3_Explorations");
-          }
-        } else if (coreContractName === "GenArt721CoreV3") {
-          const reference = await this.genArt721Core
-            .connect(this.accounts.deployer)
-            .ART_BLOCKS_ERC721TOKEN_ADDRESS_V0();
-          expect(reference).to.be.equal(
-            "0x059EDD72Cd353dF5106D2B9cC5ab83a52287aC3a"
-          );
-        } else {
-          throw new Error("unexpected core contract name");
-        }
-      });
-    });
-
-    describe("ART_BLOCKS_ERC721TOKEN_ADDRESS_V1", function () {
-      it("returns expected value", async function () {
-        if (coreContractName === "GenArt721CoreV3_Explorations") {
-          try {
-            await this.genArt721Core
-              .connect(this.accounts.deployer)
-              .ART_BLOCKS_ERC721TOKEN_ADDRESS_V1();
-            throw new Error("expected no function to be found");
-          } catch (error) {
-            console.log("throws as expected for GenArt721CoreV3_Explorations");
-          }
-        } else if (coreContractName === "GenArt721CoreV3") {
-          const reference = await this.genArt721Core
-            .connect(this.accounts.deployer)
-            .ART_BLOCKS_ERC721TOKEN_ADDRESS_V1();
-          expect(reference).to.be.equal(
-            "0xa7d8d9ef8D8Ce8992Df33D8b8CF4Aebabd5bD270"
-          );
-        } else {
-          throw new Error("unexpected core contract name");
-        }
-      });
-    });
-
-    describe("artblocksCurationRegistryAddress", function () {
-      it("returns expected default value", async function () {
-        const reference = await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .artblocksCurationRegistryAddress();
-        expect(reference).to.be.equal(constants.ZERO_ADDRESS);
-      });
-
-      it("returns expected populated value", async function () {
-        if (coreContractName === "GenArt721CoreV3_Explorations") {
-          await expectRevert(
-            this.genArt721Core
-              .connect(this.accounts.deployer)
-              .updateArtblocksCurationRegistryAddress(
-                this.accounts.additional.address
-              ),
-            "Action not supported"
-          );
-        } else if (coreContractName === "GenArt721CoreV3") {
-          // admin set to dummy address
-          await this.genArt721Core
-            .connect(this.accounts.deployer)
-            .updateArtblocksCurationRegistryAddress(
-              this.accounts.additional.address
-            );
-          // expect value to be updated
-          const reference = await this.genArt721Core
-            .connect(this.accounts.deployer)
-            .artblocksCurationRegistryAddress();
-          expect(reference).to.be.equal(this.accounts.additional.address);
-        } else {
-          throw new Error("Unexpected core contract name");
-        }
-      });
-
-      it("only allows admin to update value", async function () {
-        // expect revert when non-admin attempts to update
-        for (const account of [
-          this.accounts.artist,
-          this.accounts.additional,
-        ]) {
-          await expectRevert(
-            this.genArt721Core
-              .connect(account)
-              .updateArtblocksCurationRegistryAddress(
-                this.accounts.additional.address
-              ),
-            "Only Admin ACL allowed"
-          );
-        }
-        if (coreContractName === "GenArt721CoreV3_Explorations") {
-          console.log(
-            "skipping portion of test confirming admin can update due to unsupported action"
-          );
-        } else if (coreContractName === "GenArt721CoreV3") {
-          // admin allowed to update
-          await this.genArt721Core
-            .connect(this.accounts.deployer)
-            .updateArtblocksCurationRegistryAddress(
-              this.accounts.additional.address
-            );
-        } else {
-          throw new Error("Unexpected core contract name");
-        }
+        expect(coreType).to.be.equal("GenArt721CoreV3_Engine");
       });
     });
 
@@ -502,11 +380,22 @@ for (const coreContractName of coreContractsToTest) {
             ethers.utils.parseEther("1")
           );
         // expect revenue splits to be properly calculated
-        // Art Blocks
-        const artblocksAddress =
-          await this.genArt721Core.artblocksPrimarySalesAddress();
-        expect(revenueSplits.artblocksAddress_).to.be.equal(artblocksAddress);
-        expect(revenueSplits.artblocksRevenue_).to.be.equal(
+        // Render provider
+        const renderProviderAddress =
+          await this.genArt721Core.renderProviderPrimarySalesAddress();
+        expect(revenueSplits.renderProviderAddress_).to.be.equal(
+          renderProviderAddress
+        );
+        expect(revenueSplits.renderProviderRevenue_).to.be.equal(
+          ethers.utils.parseEther("0.10")
+        );
+        // Render provider
+        const platformProviderAddress =
+          await this.genArt721Core.platformProviderPrimarySalesAddress();
+        expect(revenueSplits.platformProviderAddress_).to.be.equal(
+          platformProviderAddress
+        );
+        expect(revenueSplits.platformProviderRevenue_).to.be.equal(
           ethers.utils.parseEther("0.10")
         );
         // Additional Payee
@@ -524,7 +413,7 @@ for (const coreContractName of coreContractsToTest) {
         );
         expect(revenueSplits.artistAddress_).to.be.equal(artistAddress);
         expect(revenueSplits.artistRevenue_).to.be.equal(
-          ethers.utils.parseEther("0.90")
+          ethers.utils.parseEther("0.80")
         );
       });
 
@@ -546,14 +435,26 @@ for (const coreContractName of coreContractsToTest) {
             additionalPayeeSecondarySalesPercentage: 52,
           }
         );
-        // update Art Blocks percentage to 20%
+        // update Render and Platform percentages to 5% and 15% respectively
         await this.genArt721Core
           .connect(this.accounts.deployer)
-          .updateArtblocksPrimarySalesPercentage(20);
-        // change Art Blocks payment address to random address
+          .updateProviderPrimarySalesPercentages(
+            // intentionally use different values for render and platform provider for
+            // testing purposes
+            5, // renderProviderPrimarySalesPercentage_
+            15 // platformProviderPrimarySalesPercentage_
+          );
+        // change Render and Platform payment addresses to random address
         await this.genArt721Core
           .connect(this.accounts.deployer)
-          .updateArtblocksPrimarySalesAddress(this.accounts.user.address);
+          .updateProviderSalesAddresses(
+            this.accounts.user.address, // _renderProviderPrimarySalesAddress
+            // secondary address is intentionally different than primary for testing here
+            this.accounts.additional.address, // _renderProviderSecondarySalesAddress
+            this.accounts.user2.address, // _platformProviderPrimarySalesAddress
+            // secondary address is intentionally different than primary for testing here
+            this.accounts.additional2.address // _platformProviderSecondarySalesAddress
+          );
         // check for expected values
         const revenueSplits = await this.genArt721Core
           .connect(this.accounts.user)
@@ -562,21 +463,32 @@ for (const coreContractName of coreContractsToTest) {
             ethers.utils.parseEther("1")
           );
         // expect revenue splits to be properly calculated
-        // Art Blocks
-        expect(revenueSplits.artblocksAddress_).to.be.equal(
+        // Render provider
+        // (5%)
+        expect(revenueSplits.renderProviderAddress_).to.be.equal(
           this.accounts.user.address
         );
-        expect(revenueSplits.artblocksRevenue_).to.be.equal(
-          ethers.utils.parseEther("0.20")
+        expect(revenueSplits.renderProviderRevenue_).to.be.equal(
+          ethers.utils.parseEther("0.05")
         );
-        // Additional Payee (0.8 * 0.51 = 0.408)
+        // Platform provider
+        // (15%)
+        expect(revenueSplits.platformProviderAddress_).to.be.equal(
+          this.accounts.user2.address
+        );
+        expect(revenueSplits.platformProviderRevenue_).to.be.equal(
+          ethers.utils.parseEther("0.15")
+        );
+        // Additional Payee
+        // (0.8 * 0.51 = 0.408)
         expect(revenueSplits.additionalPayeePrimaryAddress_).to.be.equal(
           this.accounts.additional2.address
         );
         expect(revenueSplits.additionalPayeePrimaryRevenue_).to.be.equal(
           ethers.utils.parseEther("0.408")
         );
-        // Artist (0.8 * 0.51 = 0.392)
+        // Artist
+        // (0.8 * 0.49 = 0.392)
         expect(revenueSplits.artistAddress_).to.be.equal(
           this.accounts.artist2.address
         );
@@ -593,13 +505,6 @@ for (const coreContractName of coreContractsToTest) {
             .addProject("name", constants.ZERO_ADDRESS),
           "Must input non-zero address"
         );
-        // updateArtblocksCurationRegistryAddress
-        expectRevert(
-          this.genArt721Core
-            .connect(this.accounts.deployer)
-            .updateArtblocksCurationRegistryAddress(constants.ZERO_ADDRESS),
-          "Must input non-zero address"
-        );
         // updateArtblocksDependencyRegistryAddress
         expectRevert(
           this.genArt721Core
@@ -607,18 +512,49 @@ for (const coreContractName of coreContractsToTest) {
             .updateArtblocksDependencyRegistryAddress(constants.ZERO_ADDRESS),
           "Must input non-zero address"
         );
-        // updateArtblocksPrimarySalesAddress
+        // updateProviderSalesAddresses
         expectRevert(
           this.genArt721Core
             .connect(this.accounts.deployer)
-            .updateArtblocksPrimarySalesAddress(constants.ZERO_ADDRESS),
+            .updateProviderSalesAddresses(
+              constants.ZERO_ADDRESS,
+              this.accounts.additional.address,
+              this.accounts.additional.address,
+              this.accounts.additional.address
+            ),
           "Must input non-zero address"
         );
-        // updateArtblocksSecondarySalesAddress
         expectRevert(
           this.genArt721Core
             .connect(this.accounts.deployer)
-            .updateArtblocksSecondarySalesAddress(constants.ZERO_ADDRESS),
+            .updateProviderSalesAddresses(
+              this.accounts.additional.address,
+              constants.ZERO_ADDRESS,
+              this.accounts.additional.address,
+              this.accounts.additional.address
+            ),
+          "Must input non-zero address"
+        );
+        expectRevert(
+          this.genArt721Core
+            .connect(this.accounts.deployer)
+            .updateProviderSalesAddresses(
+              this.accounts.additional.address,
+              this.accounts.additional.address,
+              constants.ZERO_ADDRESS,
+              this.accounts.additional.address
+            ),
+          "Must input non-zero address"
+        );
+        expectRevert(
+          this.genArt721Core
+            .connect(this.accounts.deployer)
+            .updateProviderSalesAddresses(
+              this.accounts.additional.address,
+              this.accounts.additional.address,
+              this.accounts.additional.address,
+              constants.ZERO_ADDRESS
+            ),
           "Must input non-zero address"
         );
         // updateMinterContract
@@ -759,14 +695,26 @@ for (const coreContractName of coreContractsToTest) {
             additionalPayeeSecondarySalesPercentage: 0,
           }
         );
-        // update Art Blocks primary sales percentage to 20%
+        // update Render and Platform percentages to 5% and 15% respectively
         await this.genArt721Core
           .connect(this.accounts.deployer)
-          .updateArtblocksPrimarySalesPercentage(20);
-        // change Art Blocks primary sales payment address to random address
+          .updateProviderPrimarySalesPercentages(
+            // intentionally use different values for render and platform provider for
+            // testing purposes
+            5, // renderProviderPrimarySalesPercentage_
+            15 // platformProviderPrimarySalesPercentage_
+          );
+        // change Render and Platform payment addresses to random address
         await this.genArt721Core
           .connect(this.accounts.deployer)
-          .updateArtblocksPrimarySalesAddress(this.accounts.user.address);
+          .updateProviderSalesAddresses(
+            this.accounts.user.address, // _renderProviderPrimarySalesAddress
+            // secondary address is intentionally different than primary for testing here
+            this.accounts.additional.address, // _renderProviderSecondarySalesAddress
+            this.accounts.user2.address, // _platformProviderPrimarySalesAddress
+            // secondary address is intentionally different than primary for testing here
+            this.accounts.additional2.address // _platformProviderSecondarySalesAddress
+          );
         // check for expected values
         const revenueSplits = await this.genArt721Core
           .connect(this.accounts.user)
@@ -775,14 +723,23 @@ for (const coreContractName of coreContractsToTest) {
             ethers.utils.parseEther("1")
           );
         // expect revenue splits to be properly calculated
-        // Art Blocks
-        expect(revenueSplits.artblocksAddress_).to.be.equal(
+        // Render provider
+        // (5%)
+        expect(revenueSplits.renderProviderAddress_).to.be.equal(
           this.accounts.user.address
         );
-        expect(revenueSplits.artblocksRevenue_).to.be.equal(
-          ethers.utils.parseEther("0.20")
+        expect(revenueSplits.renderProviderRevenue_).to.be.equal(
+          ethers.utils.parseEther("0.05")
         );
-        // Additional Payee (0.8 * 1.00 = 0.0.8)
+        // Platform provider
+        // (15%)
+        expect(revenueSplits.platformProviderAddress_).to.be.equal(
+          this.accounts.user2.address
+        );
+        expect(revenueSplits.platformProviderRevenue_).to.be.equal(
+          ethers.utils.parseEther("0.15")
+        );
+        // Additional Payee (0.8 * 1.00 = 0.6)
         expect(revenueSplits.additionalPayeePrimaryAddress_).to.be.equal(
           this.accounts.additional2.address
         );
@@ -809,19 +766,27 @@ for (const coreContractName of coreContractsToTest) {
         const royaltiesData = await this.genArt721Core
           .connect(this.accounts.user)
           .getRoyalties(this.projectZeroTokenZero.toNumber());
+        // generalized check on response size
+        expect(royaltiesData.recipients.length).to.be.equal(2);
+        expect(royaltiesData.bps.length).to.be.equal(2);
         // Artist
         // This is a special case where expected revenue is 0, so not included in the array
         // Additional Payee
         // This is a special case where expected revenue is 0, so not included in the array
-        // Art Blocks
-        const artblocksSecondarySalesAddress =
-          await this.genArt721Core.artblocksSecondarySalesAddress();
+        // Render provider
+        const renderProviderSecondarySalesAddress =
+          await this.genArt721Core.renderProviderSecondarySalesAddress();
         expect(royaltiesData.recipients[0]).to.be.equal(
-          artblocksSecondarySalesAddress
+          renderProviderSecondarySalesAddress
         );
         expect(royaltiesData.bps[0]).to.be.equal(250);
-        expect(royaltiesData.recipients.length).to.be.equal(1);
-        expect(royaltiesData.bps.length).to.be.equal(1);
+        // Platform provider
+        const platformProviderSecondarySalesAddress =
+          await this.genArt721Core.platformProviderSecondarySalesAddress();
+        expect(royaltiesData.recipients[1]).to.be.equal(
+          platformProviderSecondarySalesAddress
+        );
+        expect(royaltiesData.bps[1]).to.be.equal(250);
       });
 
       it("returns expected configured values for valid projectOne token, three non-zero royalties", async function () {
@@ -867,19 +832,34 @@ for (const coreContractName of coreContractsToTest) {
             additionalPayeeSecondarySalesPercentage: 51,
           }
         );
-        // update Art Blocks secondary BPS to 2.4%
+        // update provider secondary BPS to 2.25% and 2.75%
         await this.genArt721Core
           .connect(this.accounts.deployer)
-          .updateArtblocksSecondarySalesBPS(240);
-        // change Art Blocks payment address to random address
+          .updateProviderSecondarySalesBPS(
+            // intentionally use different render and platform provider values
+            // for purposes of testing
+            225, // _renderProviderSecondarySalesBPS
+            275 // _platformProviderSecondarySalesBPS
+          );
+        // change provider payment addresses to random address
         await this.genArt721Core
           .connect(this.accounts.deployer)
-          .updateArtblocksSecondarySalesAddress(this.accounts.user.address);
+          .updateProviderSalesAddresses(
+            // primary address is intentionally different than primary for testing here
+            this.accounts.additional.address, // _renderProviderPrimarySalesAddress
+            this.accounts.user.address, // _renderProviderSecondarySalesAddress
+            // primary address is intentionally different than primary for testing here
+            this.accounts.additional2.address, // _platformProviderPrimarySalesAddress
+            this.accounts.user2.address // _platformProviderSecondarySalesAddress
+          );
 
         // check for expected values
         const royaltiesData = await this.genArt721Core
           .connect(this.accounts.user)
           .getRoyalties(this.projectOneTokenZero.toNumber());
+        // validate data size
+        expect(royaltiesData.recipients.length).to.be.equal(4);
+        expect(royaltiesData.bps.length).to.be.equal(4);
         // Artist
         const artistAddress = this.accounts.artist2.address;
         expect(royaltiesData.recipients[0]).to.be.equal(artistAddress);
@@ -893,12 +873,19 @@ for (const coreContractName of coreContractsToTest) {
         );
         // artist BPS = 10% * 100 (BPS/%) * 0.51 to additional = 510 BPS
         expect(royaltiesData.bps[1]).to.be.equal(510);
-        // Art Blocks
-        const artblocksSecondarySalesAddress = this.accounts.user.address;
+        // Render provider
+        const renderProviderSecondarySalesAddress = this.accounts.user.address;
         expect(royaltiesData.recipients[2]).to.be.equal(
-          artblocksSecondarySalesAddress
+          renderProviderSecondarySalesAddress
         );
-        expect(royaltiesData.bps[2]).to.be.equal(240);
+        expect(royaltiesData.bps[2]).to.be.equal(225);
+        // Platform provider
+        const platformProviderSecondarySalesAddress =
+          this.accounts.user2.address;
+        expect(royaltiesData.recipients[3]).to.be.equal(
+          platformProviderSecondarySalesAddress
+        );
+        expect(royaltiesData.bps[3]).to.be.equal(275);
       });
 
       it("returns expected configured values for valid projectOne token, only artist royalties are zero", async function () {
@@ -949,19 +936,34 @@ for (const coreContractName of coreContractsToTest) {
           .adminAcceptArtistAddressesAndSplits(
             ...proposeArtistPaymentAddressesAndSplitsArgs
           );
-        // update Art Blocks secondary BPS to 2.4%
+        // update provider secondary BPS to 2.25% and 2.75%
         await this.genArt721Core
           .connect(this.accounts.deployer)
-          .updateArtblocksSecondarySalesBPS(240);
-        // change Art Blocks payment address to random address
+          .updateProviderSecondarySalesBPS(
+            // intentionally use different render and platform provider values
+            // for purposes of testing
+            225, // _renderProviderSecondarySalesBPS
+            275 // _platformProviderSecondarySalesBPS
+          );
+        // change Render and Platform payment addresses to random address
         await this.genArt721Core
           .connect(this.accounts.deployer)
-          .updateArtblocksSecondarySalesAddress(this.accounts.user.address);
+          .updateProviderSalesAddresses(
+            // primary address is intentionally different than primary for testing here
+            this.accounts.additional.address, // _renderProviderPrimarySalesAddress
+            this.accounts.user.address, // _renderProviderSecondarySalesAddress
+            // primary address is intentionally different than primary for testing here
+            this.accounts.additional2.address, // _platformProviderPrimarySalesAddress
+            this.accounts.user2.address // _platformProviderSecondarySalesAddress
+          );
 
         // check for expected values
         const royaltiesData = await this.genArt721Core
           .connect(this.accounts.user)
           .getRoyalties(this.projectOneTokenZero.toNumber());
+        // validate data size
+        expect(royaltiesData.recipients.length).to.be.equal(3);
+        expect(royaltiesData.bps.length).to.be.equal(3);
         // Artist
         // This is a special case where expected revenue is 0, so not included in the array
         // Additional Payee
@@ -972,12 +974,19 @@ for (const coreContractName of coreContractsToTest) {
         );
         // artist BPS = 10% * 100 (BPS/%) * 1.00 to additional = 1000 BPS
         expect(royaltiesData.bps[0]).to.be.equal(1000);
-        // Art Blocks
-        const artblocksSecondarySalesAddress = this.accounts.user.address;
+        // Render provider
+        const renderProviderSecondarySalesAddress = this.accounts.user.address;
         expect(royaltiesData.recipients[1]).to.be.equal(
-          artblocksSecondarySalesAddress
+          renderProviderSecondarySalesAddress
         );
-        expect(royaltiesData.bps[1]).to.be.equal(240);
+        expect(royaltiesData.bps[1]).to.be.equal(225);
+        // Platform provider
+        const platformProviderSecondarySalesAddress =
+          this.accounts.user2.address;
+        expect(royaltiesData.recipients[2]).to.be.equal(
+          platformProviderSecondarySalesAddress
+        );
+        expect(royaltiesData.bps[2]).to.be.equal(275);
       });
 
       it("returns expected configured values for valid projectOne token, only additional payee royalties are zero", async function () {
@@ -1023,19 +1032,34 @@ for (const coreContractName of coreContractsToTest) {
             additionalPayeeSecondarySalesPercentage: 0,
           }
         );
-        // update Art Blocks secondary BPS to 2.4%
+        // update provider secondary BPS to 2.25% and 2.75%
         await this.genArt721Core
           .connect(this.accounts.deployer)
-          .updateArtblocksSecondarySalesBPS(240);
-        // change Art Blocks payment address to random address
+          .updateProviderSecondarySalesBPS(
+            // intentionally use different render and platform provider values
+            // for purposes of testing
+            225, // _renderProviderSecondarySalesBPS
+            275 // _platformProviderSecondarySalesBPS
+          );
+        // change Render and Platform payment addresses to random address
         await this.genArt721Core
           .connect(this.accounts.deployer)
-          .updateArtblocksSecondarySalesAddress(this.accounts.user.address);
+          .updateProviderSalesAddresses(
+            // primary address is intentionally different than primary for testing here
+            this.accounts.additional.address, // _renderProviderPrimarySalesAddress
+            this.accounts.user.address, // _renderProviderSecondarySalesAddress
+            // primary address is intentionally different than primary for testing here
+            this.accounts.additional2.address, // _platformProviderPrimarySalesAddress
+            this.accounts.user2.address // _platformProviderSecondarySalesAddress
+          );
 
         // check for expected values
         const royaltiesData = await this.genArt721Core
           .connect(this.accounts.user)
           .getRoyalties(this.projectOneTokenZero.toNumber());
+        // validate data size
+        expect(royaltiesData.recipients.length).to.be.equal(3);
+        expect(royaltiesData.bps.length).to.be.equal(3);
         // Artist
         const artistAddress = this.accounts.artist2.address;
         expect(royaltiesData.recipients[0]).to.be.equal(artistAddress);
@@ -1043,12 +1067,19 @@ for (const coreContractName of coreContractsToTest) {
         expect(royaltiesData.bps[0]).to.be.equal(1000);
         // Additional Payee
         // This is a special case where expected revenue is 0, so not included in the array
-        // Art Blocks
-        const artblocksSecondarySalesAddress = this.accounts.user.address;
+        // Render provider
+        const renderProviderSecondarySalesAddress = this.accounts.user.address;
         expect(royaltiesData.recipients[1]).to.be.equal(
-          artblocksSecondarySalesAddress
+          renderProviderSecondarySalesAddress
         );
-        expect(royaltiesData.bps[1]).to.be.equal(240);
+        expect(royaltiesData.bps[1]).to.be.equal(225);
+        // Platform provider
+        const platformProviderSecondarySalesAddress =
+          this.accounts.user2.address;
+        expect(royaltiesData.recipients[2]).to.be.equal(
+          platformProviderSecondarySalesAddress
+        );
+        expect(royaltiesData.bps[2]).to.be.equal(275);
       });
 
       it("returns expected configured values for valid projectOne token, only Art Blocks royalties are zero", async function () {
@@ -1094,19 +1125,32 @@ for (const coreContractName of coreContractsToTest) {
             additionalPayeeSecondarySalesPercentage: 51,
           }
         );
-        // update Art Blocks secondary BPS to 0%
+        // update provider secondary BPS to 0%
         await this.genArt721Core
           .connect(this.accounts.deployer)
-          .updateArtblocksSecondarySalesBPS(0);
-        // change Art Blocks payment address to random address
+          .updateProviderSecondarySalesBPS(
+            0, // _renderProviderSecondarySalesBPS
+            0 // _platformProviderSecondarySalesBPS
+          );
+        // change Render and Platform payment addresses to random address
         await this.genArt721Core
           .connect(this.accounts.deployer)
-          .updateArtblocksSecondarySalesAddress(this.accounts.user.address);
+          .updateProviderSalesAddresses(
+            // primary address is intentionally different than primary for testing here
+            this.accounts.additional.address, // _renderProviderPrimarySalesAddress
+            this.accounts.user.address, // _renderProviderSecondarySalesAddress
+            // primary address is intentionally different than primary for testing here
+            this.accounts.additional2.address, // _platformProviderPrimarySalesAddress
+            this.accounts.user2.address // _platformProviderSecondarySalesAddress
+          );
 
         // check for expected values
         const royaltiesData = await this.genArt721Core
           .connect(this.accounts.user)
           .getRoyalties(this.projectOneTokenZero.toNumber());
+        // validate data size
+        expect(royaltiesData.recipients.length).to.be.equal(2);
+        expect(royaltiesData.bps.length).to.be.equal(2);
         // Artist
         const artistAddress = this.accounts.artist2.address;
         expect(royaltiesData.recipients[0]).to.be.equal(artistAddress);
@@ -1122,8 +1166,6 @@ for (const coreContractName of coreContractsToTest) {
         expect(royaltiesData.bps[1]).to.be.equal(510);
         // Art Blocks
         // This is a special case where expected revenue is 0, so not included in the array
-        expect(royaltiesData.recipients.length).to.be.equal(2);
-        expect(royaltiesData.bps.length).to.be.equal(2);
       });
 
       it("returns expected configured values for valid projectOne token, all royalties are zero", async function () {
@@ -1169,14 +1211,24 @@ for (const coreContractName of coreContractsToTest) {
             additionalPayeeSecondarySalesPercentage: 51,
           }
         );
-        // update Art Blocks secondary BPS to 0%
+        // update provider secondary BPS to 0%
         await this.genArt721Core
           .connect(this.accounts.deployer)
-          .updateArtblocksSecondarySalesBPS(0);
-        // change Art Blocks payment address to random address
+          .updateProviderSecondarySalesBPS(
+            0, // _renderProviderSecondarySalesBPS
+            0 // _platformProviderSecondarySalesBPS
+          );
+        // change Render and Platform payment addresses to random address
         await this.genArt721Core
           .connect(this.accounts.deployer)
-          .updateArtblocksSecondarySalesAddress(this.accounts.user.address);
+          .updateProviderSalesAddresses(
+            // primary address is intentionally different than primary for testing here
+            this.accounts.additional.address, // _renderProviderPrimarySalesAddress
+            this.accounts.user.address, // _renderProviderSecondarySalesAddress
+            // primary address is intentionally different than primary for testing here
+            this.accounts.additional2.address, // _platformProviderPrimarySalesAddress
+            this.accounts.user2.address // _platformProviderSecondarySalesAddress
+          );
 
         // check for expected values
         const royaltiesData = await this.genArt721Core
@@ -1202,256 +1254,37 @@ for (const coreContractName of coreContractsToTest) {
       });
     });
 
-    describe("getRoyaltyData", function () {
-      it("returns expected default values for valid projectZero token", async function () {
-        // mint token for projectZero
-        await this.minter
-          .connect(this.accounts.artist)
-          .purchase(this.projectZero);
-        // check for expected values
-        const royaltyData = await this.genArt721Core
-          .connect(this.accounts.user)
-          .getRoyaltyData(this.projectZeroTokenZero.toNumber());
-        // Expect proper royalty data
-        expect(royaltyData.artistAddress).to.be.equal(
-          this.accounts.artist.address
-        );
-        expect(royaltyData.additionalPayee).to.be.equal(constants.ZERO_ADDRESS);
-        expect(royaltyData.additionalPayeePercentage).to.be.equal(0);
-        expect(royaltyData.royaltyFeeByID).to.be.equal(0);
-      });
-
-      it("returns expected configured values for valid projectOne token, three non-zero royalties", async function () {
-        // add project
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .addProject("name", this.accounts.artist2.address);
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .toggleProjectIsActive(this.projectOne);
-        await this.genArt721Core
-          .connect(this.accounts.artist2)
-          .updateProjectMaxInvocations(this.projectOne, this.maxInvocations);
-
-        // configure minter for project one
-        await this.minterFilter
-          .connect(this.accounts.deployer)
-          .setMinterForProject(this.projectOne, this.minter.address);
-        await this.minter
-          .connect(this.accounts.artist2)
-          .updatePricePerTokenInWei(this.projectOne, 0);
-
-        // mint token for projectOne
-        await this.minter
-          .connect(this.accounts.artist2)
-          .purchase(this.projectOne);
-
-        // configure royalties for projectOne
-        await this.genArt721Core
-          .connect(this.accounts.artist2)
-          .updateProjectSecondaryMarketRoyaltyPercentage(this.projectOne, 10);
-        // artist2 populates an addditional payee
-        await updateArtistFinance.call(
-          this,
-          this.projectOne,
-          this.accounts.artist2,
-          {
-            artistAddress: this.accounts.artist2.address,
-            additionalPayeePrimarySalesAddress: constants.ZERO_ADDRESS,
-            additionalPayeePrimarySalesPercentage: 0,
-            additionalPayeeSecondarySalesAddress:
-              this.accounts.additional2.address,
-            additionalPayeeSecondarySalesPercentage: 51,
-          }
-        );
-        // update Art Blocks secondary BPS to 2.4%
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .updateArtblocksSecondarySalesBPS(240);
-        // change Art Blocks payment address to random address
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .updateArtblocksSecondarySalesAddress(this.accounts.user.address);
-
-        // check for expected values
-        const royaltyData = await this.genArt721Core
-          .connect(this.accounts.user)
-          .getRoyaltyData(this.projectOneTokenZero.toNumber());
-        // Expect proper royalty data
-        expect(royaltyData.artistAddress).to.be.equal(
-          this.accounts.artist2.address
-        );
-        expect(royaltyData.additionalPayee).to.be.equal(
-          this.accounts.additional2.address
-        );
-        expect(royaltyData.additionalPayeePercentage).to.be.equal(51);
-        expect(royaltyData.royaltyFeeByID).to.be.equal(10);
-      });
-
-      it("returns expected configured values for valid projectOne token, only artist royalties are zero", async function () {
-        // add project
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .addProject("name", this.accounts.artist2.address);
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .toggleProjectIsActive(this.projectOne);
-        await this.genArt721Core
-          .connect(this.accounts.artist2)
-          .updateProjectMaxInvocations(this.projectOne, this.maxInvocations);
-
-        // configure minter for project one
-        await this.minterFilter
-          .connect(this.accounts.deployer)
-          .setMinterForProject(this.projectOne, this.minter.address);
-        await this.minter
-          .connect(this.accounts.artist2)
-          .updatePricePerTokenInWei(this.projectOne, 0);
-
-        // mint token for projectOne
-        await this.minter
-          .connect(this.accounts.artist2)
-          .purchase(this.projectOne);
-
-        // configure royalties for projectOne
-        await this.genArt721Core
-          .connect(this.accounts.artist2)
-          .updateProjectSecondaryMarketRoyaltyPercentage(this.projectOne, 10);
-        // artist2 populates an addditional payee
-        await updateArtistFinance.call(
-          this,
-          this.projectOne,
-          this.accounts.artist2,
-          {
-            artistAddress: this.accounts.artist2.address,
-            additionalPayeePrimarySalesAddress: constants.ZERO_ADDRESS,
-            additionalPayeePrimarySalesPercentage: 0,
-            additionalPayeeSecondarySalesAddress:
-              this.accounts.additional2.address,
-            additionalPayeeSecondarySalesPercentage: 100,
-          }
-        );
-        // update Art Blocks secondary BPS to 2.4%
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .updateArtblocksSecondarySalesBPS(240);
-        // change Art Blocks payment address to random address
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .updateArtblocksSecondarySalesAddress(this.accounts.user.address);
-
-        // check for expected values
-        const royaltyData = await this.genArt721Core
-          .connect(this.accounts.user)
-          .getRoyaltyData(this.projectOneTokenZero.toNumber());
-        // Expect proper royalty data
-        expect(royaltyData.artistAddress).to.be.equal(
-          this.accounts.artist2.address
-        );
-        expect(royaltyData.additionalPayee).to.be.equal(
-          this.accounts.additional2.address
-        );
-        expect(royaltyData.additionalPayeePercentage).to.be.equal(100);
-        expect(royaltyData.royaltyFeeByID).to.be.equal(10);
-      });
-
-      it("returns expected configured values for valid projectOne token, only additional payee royalties are zero", async function () {
-        // add project
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .addProject("name", this.accounts.artist2.address);
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .toggleProjectIsActive(this.projectOne);
-        await this.genArt721Core
-          .connect(this.accounts.artist2)
-          .updateProjectMaxInvocations(this.projectOne, this.maxInvocations);
-
-        // configure minter for project one
-        await this.minterFilter
-          .connect(this.accounts.deployer)
-          .setMinterForProject(this.projectOne, this.minter.address);
-        await this.minter
-          .connect(this.accounts.artist2)
-          .updatePricePerTokenInWei(this.projectOne, 0);
-
-        // mint token for projectOne
-        await this.minter
-          .connect(this.accounts.artist2)
-          .purchase(this.projectOne);
-
-        // configure royalties for projectOne
-        await this.genArt721Core
-          .connect(this.accounts.artist2)
-          .updateProjectSecondaryMarketRoyaltyPercentage(this.projectOne, 10);
-        // artist2 populates an addditional payee
-        await updateArtistFinance.call(
-          this,
-          this.projectOne,
-          this.accounts.artist2,
-          {
-            artistAddress: this.accounts.artist2.address,
-            additionalPayeePrimarySalesAddress: constants.ZERO_ADDRESS,
-            additionalPayeePrimarySalesPercentage: 0,
-            additionalPayeeSecondarySalesAddress:
-              this.accounts.additional2.address,
-            additionalPayeeSecondarySalesPercentage: 0,
-          }
-        );
-        // update Art Blocks secondary BPS to 2.4%
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .updateArtblocksSecondarySalesBPS(240);
-        // change Art Blocks payment address to random address
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .updateArtblocksSecondarySalesAddress(this.accounts.user.address);
-
-        // check for expected values
-        const royaltyData = await this.genArt721Core
-          .connect(this.accounts.user)
-          .getRoyaltyData(this.projectOneTokenZero.toNumber());
-        // Expect proper royalty data
-        expect(royaltyData.artistAddress).to.be.equal(
-          this.accounts.artist2.address
-        );
-        expect(royaltyData.additionalPayee).to.be.equal(
-          this.accounts.additional2.address
-        );
-        expect(royaltyData.additionalPayeePercentage).to.be.equal(0);
-        expect(royaltyData.royaltyFeeByID).to.be.equal(10);
-      });
-
-      it("reverts when asking for invalid token", async function () {
-        await expectRevert(
-          this.genArt721Core
-            .connect(this.accounts.user)
-            .getRoyalties(this.projectZeroTokenZero.toNumber()),
-          "Token ID does not exist"
-        );
-      });
-    });
-
-    describe("artblocksPrimarySalesPercentage", function () {
+    describe("providerPrimarySalesPercentages", function () {
       it("returns expected default value", async function () {
         // check for expected values
-        const viewData = await this.genArt721Core
+        const renderViewData = await this.genArt721Core
           .connect(this.accounts.user)
-          .artblocksPrimarySalesPercentage();
-        expect(viewData).to.be.equal(10);
+          .renderProviderPrimarySalesPercentage();
+        expect(renderViewData).to.be.equal(10);
+        const platformViewData = await this.genArt721Core
+          .connect(this.accounts.user)
+          .platformProviderPrimarySalesPercentage();
+        expect(platformViewData).to.be.equal(10);
       });
 
       it("returns expected configured values for projectZero", async function () {
         // configure Art Blocks primary sales percentage
         await this.genArt721Core
           .connect(this.accounts.deployer)
-          .updateArtblocksPrimarySalesPercentage(11);
+          .updateProviderPrimarySalesPercentages(
+            5, // renderProviderPrimarySalesPercentage_
+            15 // platformProviderPrimarySalesPercentage_
+          );
 
         // check for expected values
-        const viewData = await this.genArt721Core
+        const renderViewData = await this.genArt721Core
           .connect(this.accounts.user)
-          .artblocksPrimarySalesPercentage();
-        expect(viewData).to.be.equal(11);
+          .renderProviderPrimarySalesPercentage();
+        expect(renderViewData).to.be.equal(5);
+        const platformViewData = await this.genArt721Core
+          .connect(this.accounts.user)
+          .platformProviderPrimarySalesPercentage();
+        expect(platformViewData).to.be.equal(15);
       });
     });
 
@@ -1711,15 +1544,9 @@ for (const coreContractName of coreContractsToTest) {
         const emptyProjectURI = await this.genArt721Core
           .connect(this.accounts.user)
           .projectURIInfo(this.projectZero);
-        if (coreContractName === "GenArt721CoreV3") {
-          expect(emptyProjectURI).to.be.equal("https://token.artblocks.io/");
-        } else if (coreContractName === "GenArt721CoreV3_Explorations") {
-          expect(emptyProjectURI).to.be.equal(
-            `https://token.artblocks.io/${this.genArt721Core.address.toLowerCase()}/`
-          );
-        } else {
-          throw new Error("Invalid core contract name");
-        }
+        expect(emptyProjectURI).to.be.equal(
+          `https://token.artblocks.io/${this.genArt721Core.address.toLowerCase()}/`
+        );
       });
 
       it("returns expected populated projectURI", async function () {
@@ -1744,17 +1571,9 @@ for (const coreContractName of coreContractsToTest) {
         const tokenURIForDefaultProjectURI = await this.genArt721Core
           .connect(this.accounts.user)
           .tokenURI(this.projectZeroTokenZero.toNumber());
-        if (coreContractName === "GenArt721CoreV3") {
-          expect(tokenURIForDefaultProjectURI).to.be.equal(
-            `https://token.artblocks.io/${this.projectZeroTokenZero.toString()}`
-          );
-        } else if (coreContractName === "GenArt721CoreV3_Explorations") {
-          expect(tokenURIForDefaultProjectURI).to.be.equal(
-            `https://token.artblocks.io/${this.genArt721Core.address.toLowerCase()}/${this.projectZeroTokenZero.toString()}`
-          );
-        } else {
-          throw new Error("Invalid core contract name");
-        }
+        expect(tokenURIForDefaultProjectURI).to.be.equal(
+          `https://token.artblocks.io/${this.genArt721Core.address.toLowerCase()}/${this.projectZeroTokenZero.toString()}`
+        );
       });
 
       it("returns updated default base URI if contract base URI is updated after constructor", async function () {
