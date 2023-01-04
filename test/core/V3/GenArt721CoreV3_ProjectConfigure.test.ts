@@ -1383,5 +1383,90 @@ for (const coreContractName of coreContractsToTest) {
         );
       });
     });
+
+    describe.only("Engine autoApproveArtistSplitProposals is true", function () {
+      beforeEach(async function () {
+        if (!coreContractName.endsWith("_Engine")) {
+          return;
+        }
+        this.randomizer = await deployAndGet.call(
+          this,
+          "BasicRandomizerV2",
+          []
+        );
+        this.adminACL = await deployAndGet.call(this, "AdminACLV0", []);
+        this.engineRegistry = await deployAndGet.call(
+          this,
+          "EngineRegistryV0",
+          []
+        );
+        // set `autoApproveArtistSplitProposals` to true
+        this.genArt721Core = await deployAndGet.call(this, coreContractName, [
+          this.name, // _tokenName
+          this.symbol, // _tokenSymbol
+          this.accounts.deployer.address, // _renderProviderAddress
+          this.accounts.additional.address, // _platformProviderAddress
+          this.randomizer.address, // _randomizerContract
+          this.adminACL.address, // _adminACLContract
+          0, // _startingProjectId
+          true, // _autoApproveArtistSplitProposals
+          this.engineRegistry.address, // _engineRegistryContract
+        ]);
+        // assign core contract for randomizer to use
+        this.randomizer
+          .connect(this.accounts.deployer)
+          .assignCoreAndRenounce(this.genArt721Core.address);
+        // deploy minter filter
+        this.minterFilter = await deployAndGet.call(this, "MinterFilterV1", [
+          this.genArt721Core.address,
+        ]);
+        // allowlist minterFilter on the core contract
+        await this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateMinterContract(this.minterFilter.address);
+        // add project zero
+        await this.genArt721Core
+          .connect(this.accounts.deployer)
+          .addProject("name", this.accounts.artist.address);
+        // define valid artist proposed values, not typically auto-approved
+        this.valuesToUpdateTo = [
+          this.projectZero,
+          this.accounts.artist2.address,
+          this.accounts.additional.address,
+          50,
+          this.accounts.additional2.address,
+          51,
+        ];
+      });
+
+      it("new artist proposals are automatically accepted", async function () {
+        if (!coreContractName.endsWith("_Engine")) {
+          console.info("skipping test for non-engine contract");
+          return;
+        }
+        // allows artist to propose new values
+        await this.genArt721Core
+          .connect(this.accounts.artist)
+          .proposeArtistPaymentAddressesAndSplits(...this.valuesToUpdateTo);
+        // expect artist payment addresses and splits to be updated due to auto-approval
+        const projectArtistPaymentInfo =
+          await this.genArt721Core.projectArtistPaymentInfo(this.projectZero);
+        expect(projectArtistPaymentInfo.artistAddress).to.equal(
+          this.accounts.artist2.address
+        );
+        expect(projectArtistPaymentInfo.additionalPayeePrimarySales).to.equal(
+          this.accounts.additional.address
+        );
+        expect(
+          projectArtistPaymentInfo.additionalPayeePrimarySalesPercentage
+        ).to.equal(50);
+        expect(projectArtistPaymentInfo.additionalPayeeSecondarySales).to.equal(
+          this.accounts.additional2.address
+        );
+        expect(
+          projectArtistPaymentInfo.additionalPayeeSecondarySalesPercentage
+        ).to.equal(51);
+      });
+    });
   });
 }

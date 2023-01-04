@@ -790,7 +790,9 @@ contract GenArt721CoreV3_Engine is
             // clear any previously proposed values
             proposedArtistAddressesAndSplitsHash[_projectId] = bytes32(0);
             // update storage
-            // (artist address cannot change during automatic accept)
+            // artist address can change during automatic accept if
+            // autoApproveArtistSplitProposals is true
+            projectFinance.artistAddress = _artistAddress;
             projectFinance
                 .additionalPayeePrimarySales = _additionalPayeePrimarySales;
             // safe to cast as uint8 as max is 100%, max uint8 is 255
