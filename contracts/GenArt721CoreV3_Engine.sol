@@ -767,10 +767,11 @@ contract GenArt721CoreV3_Engine is
             _additionalPayeeSecondarySalesPercentage
         );
         // automatically accept if no proposed addresses modifications, or if
-        // the proposal only removes payee addresses.
+        // the proposal only removes payee addresses, or if contract is set to
+        // always auto-approve.
         // store proposal hash on-chain, only if not automatic accept
-        bool automaticAccept;
-        {
+        bool automaticAccept = autoApproveArtistSplitProposals;
+        if (!automaticAccept) {
             // block scope to avoid stack too deep error
             bool artistUnchanged = _artistAddress ==
                 projectFinance.artistAddress;
@@ -785,10 +786,6 @@ contract GenArt721CoreV3_Engine is
                 additionalPrimaryUnchangedOrRemoved &&
                 additionalSecondaryUnchangedOrRemoved;
         }
-        // if `autoApproveArtistSplitProposals` is `true`, always override
-        // `automaticAccept` to be `true` as admin approvals are not
-        // expected from a process perspective.
-        automaticAccept = automaticAccept || autoApproveArtistSplitProposals;
         if (automaticAccept) {
             // clear any previously proposed values
             proposedArtistAddressesAndSplitsHash[_projectId] = bytes32(0);
@@ -1336,7 +1333,9 @@ contract GenArt721CoreV3_Engine is
     }
 
     /**
-     * @notice Returns token hash **seed** for token ID `_tokenId`.
+     * @notice Returns token hash **seed** for token ID `_tokenId`. Returns
+     * null if hash seed has not been set. The hash seed id the bytes12 value
+     * which is hashed to produce the token hash.
      * @param _tokenId Token ID to be queried.
      * @return bytes12 Token hash seed.
      * @dev token hash seed is keccak256 hashed to give the token hash

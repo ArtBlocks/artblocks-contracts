@@ -43,7 +43,11 @@ contract EngineRegistryV0 is IEngineRegistryV0, ERC165 {
             tx.origin == deployerAddress,
             "Only allowed deployer-address TX origin"
         );
-
+        // Prevent registration of a contract by an unrelated contract
+        require(
+            msg.sender == _contractAddress || msg.sender == deployerAddress,
+            "Only call by deployerAddress or _contractAddress"
+        );
         // EFFECTS
         emit ContractRegistered(_contractAddress, _coreVersion, _coreType);
         registeredContractAddresses[_contractAddress] = true;
@@ -59,6 +63,11 @@ contract EngineRegistryV0 is IEngineRegistryV0, ERC165 {
         require(
             tx.origin == deployerAddress,
             "Only allowed deployer-address TX origin"
+        );
+        // Prevent unregistration of a contract by an unrelated contract
+        require(
+            msg.sender == _contractAddress || msg.sender == deployerAddress,
+            "Only call by deployerAddress or _contractAddress"
         );
         require(
             registeredContractAddresses[_contractAddress],
