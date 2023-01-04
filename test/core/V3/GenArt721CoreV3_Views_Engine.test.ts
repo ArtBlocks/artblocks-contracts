@@ -1727,5 +1727,25 @@ for (const coreContractName of coreContractsToTest) {
         expect(projectId).to.be.equal(this.projectTwo);
       });
     });
+
+    describe("tokenIdToHashSeed", function () {
+      it("updates token hash seed from null to non-null when token is minted", async function () {
+        // ensure token hash is initially zero
+        expect(
+          await this.genArt721Core.tokenIdToHashSeed(
+            this.projectZeroTokenZero.toNumber()
+          )
+        ).to.be.equal("0x000000000000000000000000"); // bytes12(0)
+        // mint a token and expect token hash seed to be updated to a non-zero hash
+        await this.minter
+          .connect(this.accounts.artist)
+          .purchase(this.projectZero);
+        expect(
+          await this.genArt721Core.tokenIdToHashSeed(
+            this.projectZeroTokenZero.toNumber()
+          )
+        ).to.not.be.equal(ethers.constants.HashZero);
+      });
+    });
   });
 }
