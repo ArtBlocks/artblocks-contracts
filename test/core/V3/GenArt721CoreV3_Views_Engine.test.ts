@@ -108,7 +108,7 @@ for (const coreContractName of coreContractsToTest) {
 
     describe("coreVersion", function () {
       it("returns expected value", async function () {
-        let targetCoreVersion = "v3.1.0";
+        let targetCoreVersion = "v3.1.1";
         const coreVersion = await this.genArt721Core
           .connect(this.accounts.deployer)
           .coreVersion();
