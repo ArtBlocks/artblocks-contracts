@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.17;
 
-import "./interfaces/0.8.x/IEngineRegistryV0.sol";
+import "../interfaces/0.8.x/IEngineRegistryV0.sol";
 import "@openzeppelin-4.7/contracts/utils/introspection/ERC165.sol";
 
 /**
@@ -43,14 +43,10 @@ contract EngineRegistryV0 is IEngineRegistryV0, ERC165 {
             tx.origin == deployerAddress,
             "Only allowed deployer-address TX origin"
         );
-        // Prevent registration of a contract by an unrelated contract
-        require(
-            msg.sender == _contractAddress || msg.sender == deployerAddress,
-            "Only call by deployerAddress or _contractAddress"
-        );
+
         // EFFECTS
-        registeredContractAddresses[_contractAddress] = true;
         emit ContractRegistered(_contractAddress, _coreVersion, _coreType);
+        registeredContractAddresses[_contractAddress] = true;
     }
 
     /**
@@ -64,18 +60,13 @@ contract EngineRegistryV0 is IEngineRegistryV0, ERC165 {
             tx.origin == deployerAddress,
             "Only allowed deployer-address TX origin"
         );
-        // Prevent unregistration of a contract by an unrelated contract
-        require(
-            msg.sender == _contractAddress || msg.sender == deployerAddress,
-            "Only call by deployerAddress or _contractAddress"
-        );
         require(
             registeredContractAddresses[_contractAddress],
             "Only unregister already registered contracts"
         );
 
         // EFFECTS
-        registeredContractAddresses[_contractAddress] = false;
         emit ContractUnregistered(_contractAddress);
+        registeredContractAddresses[_contractAddress] = false;
     }
 }
