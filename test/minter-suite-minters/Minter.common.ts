@@ -91,18 +91,18 @@ export const Minter_Common = async () => {
   });
 
   describe("setProjectMaxInvocations", async function () {
-    it("allows deployer to call setProjectMaxInvocations", async function () {
+    it("allows artist to call setProjectMaxInvocations", async function () {
       const minterType = await this.minter.minterType();
       if (!minterType.includes("Settlement")) {
         // minters that don't settle on-chain should support this function
         await this.minter
-          .connect(this.accounts.deployer)
+          .connect(this.accounts.artist)
           .setProjectMaxInvocations(this.projectZero);
       } else {
         // minters that settle on-chain should not support this function
         await expectRevert(
           this.minter
-            .connect(this.accounts.deployer)
+            .connect(this.accounts.artist)
             .setProjectMaxInvocations(this.projectZero),
           "setProjectMaxInvocations not implemented - updated during every mint"
         );
@@ -118,7 +118,7 @@ export const Minter_Common = async () => {
           .updateProjectMaxInvocations(this.projectZero, 2);
         // sync max invocations on minter
         await this.minter
-          .connect(this.accounts.deployer)
+          .connect(this.accounts.artist)
           .setProjectMaxInvocations(this.projectZero);
         // expect max invocations to be 1 on the minter
         expect(

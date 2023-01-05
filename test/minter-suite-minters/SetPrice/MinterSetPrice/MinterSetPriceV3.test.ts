@@ -160,10 +160,13 @@ for (const coreContractName of coreContractsToTest) {
           .setProjectMaxInvocations(this.projectZero);
       });
 
-      it("allows user to call setProjectMaxInvocations", async function () {
-        await this.minter
-          .connect(this.accounts.user)
-          .setProjectMaxInvocations(this.projectZero);
+      it("does not allow public to call setProjectMaxInvocations", async function () {
+        await expectRevert(
+          this.minter
+            .connect(this.accounts.user)
+            .setProjectMaxInvocations(this.projectZero),
+          "Only Artist"
+        );
       });
     });
 

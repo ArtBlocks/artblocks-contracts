@@ -651,7 +651,7 @@ export const MinterMerkle_Common = async () => {
 
       // Try with setProjectMaxInvocations, store gas cost
       await this.minter
-        .connect(this.accounts.deployer)
+        .connect(this.accounts.artist)
         .setProjectMaxInvocations(this.projectOne);
       const maxSetTx = await this.minter
         .connect(this.accounts.user)
@@ -723,7 +723,7 @@ export const MinterMerkle_Common = async () => {
 
       // Try with setProjectMaxInvocations, store gas cost
       await this.minter
-        .connect(this.accounts.deployer)
+        .connect(this.accounts.artist)
         .setProjectMaxInvocations(this.projectOne);
       await this.minter
         .connect(this.accounts.artist)
@@ -856,7 +856,7 @@ export const MinterMerkle_Common = async () => {
   describe("setProjectMaxInvocations", async function () {
     it("handles getting genArt721CoreInfo invocation info with V1 core", async function () {
       await this.minter
-        .connect(this.accounts.deployer)
+        .connect(this.accounts.artist)
         .setProjectMaxInvocations(this.projectOne);
       // minter should update storage with accurate projectMaxInvocations
       let maxInvocations = await this.minter
@@ -874,9 +874,7 @@ export const MinterMerkle_Common = async () => {
       // trying to set this on unconfigured project (e.g. 99) should cause
       // revert on the underlying CoreContract.
       expectRevert(
-        this.minter
-          .connect(this.accounts.deployer)
-          .setProjectMaxInvocations(99),
+        this.minter.connect(this.accounts.artist).setProjectMaxInvocations(99),
         "Project ID does not exist"
       );
     });
