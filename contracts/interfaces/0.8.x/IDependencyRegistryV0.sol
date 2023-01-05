@@ -22,14 +22,14 @@ interface IDependencyRegistryV0 {
         bytes32 indexed _dependencyTypeId,
         string _preferredCDN,
         string _preferredRepository,
-        string _projectWebsite
+        string _referenceWebsite
     );
 
     event DependencyRemoved(bytes32 indexed _dependencyTypeId);
 
     event DependencyReferenceWebsiteUpdated(
         bytes32 indexed _dependencyTypeId,
-        string _projectWebsite
+        string _referenceWebsite
     );
 
     event DependencyPreferredCDNUpdated(
