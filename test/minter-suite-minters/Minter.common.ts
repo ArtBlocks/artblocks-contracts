@@ -91,12 +91,15 @@ export const Minter_Common = async () => {
   });
 
   describe("setProjectMaxInvocations", async function () {
-    it("allows artist to call setProjectMaxInvocations", async function () {
+    it("allows artist/deployer to call setProjectMaxInvocations", async function () {
       const minterType = await this.minter.minterType();
       if (!minterType.includes("Settlement")) {
+        const accountToTestWith = !minterType.includes("V0")
+          ? this.accounts.deployer
+          : this.accounts.artist;
         // minters that don't settle on-chain should support this function
         await this.minter
-          .connect(this.accounts.artist)
+          .connect(accountToTestWith)
           .setProjectMaxInvocations(this.projectZero);
       } else {
         // minters that settle on-chain should not support this function
