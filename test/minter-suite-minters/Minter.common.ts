@@ -94,10 +94,11 @@ export const Minter_Common = async () => {
     it("allows artist/deployer to call setProjectMaxInvocations", async function () {
       const minterType = await this.minter.minterType();
       if (!minterType.includes("Settlement")) {
-        // v0 minters use onlyCoreWhitelisted modifier for setProjectMaxInvocations
-        const accountToTestWith = minterType.includes("V0")
-          ? this.accounts.deployer
-          : this.accounts.artist;
+        // minters above v2 do NOT use onlyCoreWhitelisted modifier for setProjectMaxInvocations
+        const accountToTestWith =
+          minterType.includes("V0") || minterType.includes("V1")
+            ? this.accounts.deployer
+            : this.accounts.artist;
         // minters that don't settle on-chain should support this function
         await this.minter
           .connect(accountToTestWith)
