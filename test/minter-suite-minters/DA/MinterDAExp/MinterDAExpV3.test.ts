@@ -156,11 +156,11 @@ for (const coreContractName of coreContractsToTest) {
       });
     });
 
-    describe("manuallySetProjectMaxInvocations", async function () {
-      it("allows artist to call manuallySetProjectMaxInvocations", async function () {
+    describe("manuallyLimitProjectMaxInvocations", async function () {
+      it("allows artist to call manuallyLimitProjectMaxInvocations", async function () {
         await this.minter
           .connect(this.accounts.artist)
-          .manuallySetProjectMaxInvocations(
+          .manuallyLimitProjectMaxInvocations(
             this.projectZero,
             this.maxInvocations - 1
           );
@@ -169,7 +169,7 @@ for (const coreContractName of coreContractsToTest) {
         await expectRevert(
           this.minter
             .connect(this.accounts.artist)
-            .manuallySetProjectMaxInvocations(
+            .manuallyLimitProjectMaxInvocations(
               this.projectZero,
               this.maxInvocations + 1
             ),

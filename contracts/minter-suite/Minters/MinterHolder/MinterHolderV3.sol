@@ -363,7 +363,7 @@ contract MinterHolderV3 is ReentrancyGuard, IFilteredMinterHolderV2 {
      * @param _projectId Project ID to set the maximum invocations for.
      * @param _maxInvocations Maximum invocations to set for the project.
      */
-    function manuallySetProjectMaxInvocations(
+    function manuallyLimitProjectMaxInvocations(
         uint256 _projectId,
         uint256 _maxInvocations
     ) external onlyArtist(_projectId) {
@@ -381,11 +381,7 @@ contract MinterHolderV3 is ReentrancyGuard, IFilteredMinterHolderV2 {
         // EFFECTS
         // update storage with results
         projectConfig[_projectId].maxInvocations = uint24(_maxInvocations);
-        emit ManuallySetProjectMaxInvocations(
-            _projectId,
-            genArt721CoreAddress,
-            _maxInvocations
-        );
+        emit ProjectMaxInvocationsManuallyLimited(_projectId, _maxInvocations);
     }
 
     /**

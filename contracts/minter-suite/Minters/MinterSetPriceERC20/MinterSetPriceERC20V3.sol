@@ -141,7 +141,10 @@ contract MinterSetPriceERC20V3 is ReentrancyGuard, IFilteredMinterV2 {
      * @dev function is intentionally not gated to any specific access control;
      * it only syncs a local state variable to the core contract's state.
      */
-    function setProjectMaxInvocations(uint256 _projectId) external {
+    function setProjectMaxInvocations(uint256 _projectId)
+        external
+        onlyArtist(_projectId)
+    {
         uint256 maxInvocations;
         (, maxInvocations, , , , ) = genArtCoreContract.projectStateData(
             _projectId
@@ -158,7 +161,7 @@ contract MinterSetPriceERC20V3 is ReentrancyGuard, IFilteredMinterV2 {
      * @param _projectId Project ID to set the maximum invocations for.
      * @param _maxInvocations Maximum invocations to set for the project.
      */
-    function manuallySetProjectMaxInvocations(
+    function manuallyLimitProjectMaxInvocations(
         uint256 _projectId,
         uint256 _maxInvocations
     ) external onlyArtist(_projectId) {
@@ -176,11 +179,7 @@ contract MinterSetPriceERC20V3 is ReentrancyGuard, IFilteredMinterV2 {
         // EFFECTS
         // update storage with results
         projectConfig[_projectId].maxInvocations = uint24(_maxInvocations);
-        emit ManuallySetProjectMaxInvocations(
-            _projectId,
-            genArt721CoreAddress,
-            _maxInvocations
-        );
+        emit ProjectMaxInvocationsManuallyLimited(_projectId, _maxInvocations);
     }
 
     /**

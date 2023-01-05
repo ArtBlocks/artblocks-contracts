@@ -139,13 +139,72 @@ contract MinterDAExpV3 is ReentrancyGuard, IFilteredMinterDAExpV1 {
      * @dev function is intentionally not gated to any specific access control;
      * it only syncs a local state variable to the core contract's state.
      */
-    function setProjectMaxInvocations(uint256 _projectId) external {
+    function setProjectMaxInvocations(uint256 _projectId)
+        external
+        onlyArtist(_projectId)
+    {
         uint256 maxInvocations;
-        (, maxInvocations, , , , ) = genArtCoreContract.projectStateData(
-            _projectId
-        );
+        uint256 invocations;
+        (invocations, maxInvocations, , , , ) = genArtCoreContract
+            .projectStateData(_projectId);
+
         // update storage with results
         projectConfig[_projectId].maxInvocations = uint24(maxInvocations);
+
+        // We need to ensure maxHasBeenInvoked is now set to false if the maxInvocations value coming from the
+        // core contract is greater than the previous maxInvocations value stored locally and maxHasBeenInvoked
+        // is currently set to true. There will never be a situation where maxHasBeenInvoked is currently set
+        // to false and needs to be set to true after syncing the value of maxInvocations from the core contract.
+        // This is because the synced value of maxInvocations from the core contract will always be greater than or
+        // equal to the previous value of maxInvocations stored locally.
+        unchecked {
+            // okay if this underflows because if statement will always eval false.
+            if (
+                invocations % ONE_MILLION !=
+                projectConfig[_projectId].maxInvocations - 1
+            ) {
+                projectConfig[_projectId].maxHasBeenInvoked = false;
+            }
+        }
+    }
+
+    /**
+     * @notice Manually sets the local maximum invocations of project `_projectId`
+     * with the provided `_maxInvocations`, checking that `_maxInvocations` is less
+     * than or equal to the value of project `_project_id`'s maximum invocations that is
+     * set on the core contract.
+     * @param _projectId Project ID to set the maximum invocations for.
+     * @param _maxInvocations Maximum invocations to set for the project.
+     */
+    function manuallyLimitProjectMaxInvocations(
+        uint256 _projectId,
+        uint256 _maxInvocations
+    ) external onlyArtist(_projectId) {
+        // CHECKS
+        // ensure that the manually set maxInvocations is not greater than what is set on the core contract
+        uint256 maxInvocations;
+        uint256 invocations;
+        (invocations, maxInvocations, , , , ) = genArtCoreContract
+            .projectStateData(_projectId);
+        require(
+            _maxInvocations <= maxInvocations,
+            "Cannot increase project max invocations above core contract set project max invocations"
+        );
+
+        // EFFECTS
+        // update storage with results
+        projectConfig[_projectId].maxInvocations = uint24(_maxInvocations);
+        // We need to ensure maxHasBeenInvoked is correctly set after manually setting the
+        // local maxInvocations value.
+        if (
+            invocations % ONE_MILLION < projectConfig[_projectId].maxInvocations
+        ) {
+            projectConfig[_projectId].maxHasBeenInvoked = false;
+        } else {
+            projectConfig[_projectId].maxHasBeenInvoked = true;
+        }
+
+        emit ProjectMaxInvocationsManuallyLimited(_projectId, _maxInvocations);
     }
 
     /**
@@ -206,39 +265,6 @@ contract MinterDAExpV3 is ReentrancyGuard, IFilteredMinterDAExpV1 {
         returns (uint256)
     {
         return uint256(projectConfig[_projectId].maxInvocations);
-    }
-
-    /**
-     * @notice Manually sets the local maximum invocations of project `_projectId`
-     * with the provided `_maxInvocations`, checking that `_maxInvocations` is less
-     * than or equal to the value of project `_project_id`'s maximum invocations that is
-     * set on the core contract.
-     * @param _projectId Project ID to set the maximum invocations for.
-     * @param _maxInvocations Maximum invocations to set for the project.
-     */
-    function manuallySetProjectMaxInvocations(
-        uint256 _projectId,
-        uint256 _maxInvocations
-    ) external onlyArtist(_projectId) {
-        // CHECKS
-        // ensure that the manually set maxInvocations is not greater than what is set on the core contract
-        uint256 maxInvocations;
-        (, maxInvocations, , , , ) = genArtCoreContract.projectStateData(
-            _projectId
-        );
-        require(
-            _maxInvocations <= maxInvocations,
-            "Cannot increase project max invocations above core contract set project max invocations"
-        );
-
-        // EFFECTS
-        // update storage with results
-        projectConfig[_projectId].maxInvocations = uint24(_maxInvocations);
-        emit ManuallySetProjectMaxInvocations(
-            _projectId,
-            genArt721CoreAddress,
-            _maxInvocations
-        );
     }
 
     /**
