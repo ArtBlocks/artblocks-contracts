@@ -7,6 +7,7 @@ import "./interfaces/0.8.x/IRandomizerV2.sol";
 import "./interfaces/0.8.x/IAdminACLV0.sol";
 import "./interfaces/0.8.x/IEngineRegistryV0.sol";
 import "./interfaces/0.8.x/IGenArt721CoreContractV3_Engine.sol";
+import "./interfaces/0.8.x/IDependencyRegistryCompatibleV0.sol";
 import "./interfaces/0.8.x/IManifold.sol";
 
 import "@openzeppelin-4.7/contracts/utils/Strings.sol";
@@ -93,6 +94,8 @@ import "./libs/0.8.x/Bytes32Strings.sol";
 contract GenArt721CoreV3_Engine is
     ERC721_PackedHashSeed,
     Ownable,
+    IDependencyRegistryCompatibleV0,
+    IManifold,
     IGenArt721CoreContractV3_Engine
 {
     using BytecodeStorage for string;
@@ -255,7 +258,7 @@ contract GenArt721CoreV3_Engine is
     bool public immutable autoApproveArtistSplitProposals;
 
     /// version & type of this core contract
-    bytes32 constant CORE_VERSION = "v3.1.0";
+    bytes32 constant CORE_VERSION = "v3.1.1";
 
     function coreVersion() external pure returns (string memory) {
         return CORE_VERSION.toString();
@@ -767,10 +770,11 @@ contract GenArt721CoreV3_Engine is
             _additionalPayeeSecondarySalesPercentage
         );
         // automatically accept if no proposed addresses modifications, or if
-        // the proposal only removes payee addresses.
+        // the proposal only removes payee addresses, or if contract is set to
+        // always auto-approve.
         // store proposal hash on-chain, only if not automatic accept
-        bool automaticAccept;
-        {
+        bool automaticAccept = autoApproveArtistSplitProposals;
+        if (!automaticAccept) {
             // block scope to avoid stack too deep error
             bool artistUnchanged = _artistAddress ==
                 projectFinance.artistAddress;
@@ -785,15 +789,13 @@ contract GenArt721CoreV3_Engine is
                 additionalPrimaryUnchangedOrRemoved &&
                 additionalSecondaryUnchangedOrRemoved;
         }
-        // if `autoApproveArtistSplitProposals` is `true`, always override
-        // `automaticAccept` to be `true` as admin approvals are not
-        // expected from a process perspective.
-        automaticAccept = automaticAccept || autoApproveArtistSplitProposals;
         if (automaticAccept) {
             // clear any previously proposed values
             proposedArtistAddressesAndSplitsHash[_projectId] = bytes32(0);
             // update storage
-            // (artist address cannot change during automatic accept)
+            // artist address can change during automatic accept if
+            // autoApproveArtistSplitProposals is true
+            projectFinance.artistAddress = _artistAddress;
             projectFinance
                 .additionalPayeePrimarySales = _additionalPayeePrimarySales;
             // safe to cast as uint8 as max is 100%, max uint8 is 255
@@ -1336,7 +1338,9 @@ contract GenArt721CoreV3_Engine is
     }
 
     /**
-     * @notice Returns token hash **seed** for token ID `_tokenId`.
+     * @notice Returns token hash **seed** for token ID `_tokenId`. Returns
+     * null if hash seed has not been set. The hash seed id the bytes12 value
+     * which is hashed to produce the token hash.
      * @param _tokenId Token ID to be queried.
      * @return bytes12 Token hash seed.
      * @dev token hash seed is keccak256 hashed to give the token hash

@@ -22,6 +22,7 @@ export type CoreWithMinterSuite = {
   genArt721Core: Contract;
   minterFilter: Contract;
   adminACL: Contract;
+  engineRegistry?: Contract;
 };
 
 export async function getAccounts(): Promise<TestAccountsArtBlocks> {
@@ -92,7 +93,7 @@ export async function deployCoreWithMinterFilter(
   if (coreContractName.endsWith("V2_PBAB")) {
     throw new Error("V2_PBAB not supported");
   }
-  let randomizer, genArt721Core, minterFilter, adminACL;
+  let randomizer, genArt721Core, minterFilter, adminACL, engineRegistry;
   randomizer = await deployAndGet.call(this, "BasicRandomizer", []);
   if (
     coreContractName.endsWith("V0") ||
@@ -168,7 +169,7 @@ export async function deployCoreWithMinterFilter(
       ? _adminACLContractName
       : adminACLContractName;
     adminACL = await deployAndGet.call(this, adminACLContractName, []);
-    let engineRegistry = await deployAndGet.call(this, "EngineRegistryV0", []);
+    engineRegistry = await deployAndGet.call(this, "EngineRegistryV0", []);
     // Note: in the common tests, set `autoApproveArtistSplitProposals` to false, which
     //       mirrors the approval-flow behavior of the other (non-Engine) V3 contracts
     genArt721Core = await deployAndGet.call(this, coreContractName, [
@@ -195,7 +196,7 @@ export async function deployCoreWithMinterFilter(
       .connect(this.accounts.deployer)
       .updateMinterContract(minterFilter.address);
   }
-  return { randomizer, genArt721Core, minterFilter, adminACL };
+  return { randomizer, genArt721Core, minterFilter, adminACL, engineRegistry };
 }
 
 // utility function to call addProject on core for either V0/V1 core,
