@@ -124,7 +124,7 @@ export const Minter_Common = async () => {
             : this.accounts.artist;
         // update max invocations to 1 on the core
         await this.genArt721Core
-          .connect(accountToTestWith)
+          .connect(this.accounts.artist)
           .updateProjectMaxInvocations(this.projectZero, 2);
         // sync max invocations on minter
         await this.minter
