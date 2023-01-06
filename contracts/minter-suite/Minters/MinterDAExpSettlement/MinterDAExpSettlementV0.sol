@@ -5,8 +5,8 @@ import "../../../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
 import "../../../interfaces/0.8.x/IMinterFilterV0.sol";
 import "../../../interfaces/0.8.x/IFilteredMinterDAExpSettlementV0.sol";
 
-import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin-4.5/contracts/utils/math/SafeCast.sol";
+import "@openzeppelin-4.7/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
 
 pragma solidity 0.8.17;
 
@@ -121,8 +121,10 @@ contract MinterDAExpSettlementV0 is
     uint256 public maximumPriceDecayHalfLifeSeconds = 3600; // 60 minutes
 
     struct Receipt {
-        uint256 netPosted;
-        uint256 numPurchased;
+        // max uint232 allows for > 1e51 ETH (much more than max supply)
+        uint232 netPosted;
+        // max uint24 still allows for > max project supply of 1 million tokens
+        uint24 numPurchased;
     }
     /// user address => project ID => receipt
     mapping(address => mapping(uint256 => Receipt)) receipts;
@@ -617,7 +619,7 @@ contract MinterDAExpSettlementV0 is
         // EFFECTS
         // update the purchaser's receipt and require sufficient net payment
         Receipt storage _receipt = receipts[msg.sender][_projectId];
-        _receipt.netPosted += msg.value;
+        _receipt.netPosted += msg.value.toUint232();
         _receipt.numPurchased++;
         require(
             _receipt.netPosted >= _receipt.numPurchased * currentPriceInWei,
@@ -732,7 +734,7 @@ contract MinterDAExpSettlementV0 is
             requiredAmountPosted;
         // reduce the netPosted (in storage) to value after excess settlement is
         // deducted
-        receipt.netPosted = requiredAmountPosted;
+        receipt.netPosted = requiredAmountPosted.toUint232();
         // emit event indicating new receipt state
         emit ReceiptUpdated(
             msg.sender,
@@ -825,7 +827,7 @@ contract MinterDAExpSettlementV0 is
             excessSettlementFunds += (receipt.netPosted - requiredAmountPosted);
             // reduce the netPosted (in storage) to value after excess settlement
             // funds deducted
-            receipt.netPosted = requiredAmountPosted;
+            receipt.netPosted = requiredAmountPosted.toUint232();
             // emit event indicating new receipt state
             emit ReceiptUpdated(
                 msg.sender,
