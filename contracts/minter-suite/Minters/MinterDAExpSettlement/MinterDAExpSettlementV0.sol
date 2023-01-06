@@ -488,6 +488,7 @@ contract MinterDAExpSettlementV0 is
      */
     function withdrawArtistAndAdminRevenues(uint256 _projectId)
         external
+        nonReentrant
         onlyCoreAdminACLOrArtist(
             _projectId,
             this.withdrawArtistAndAdminRevenues.selector
