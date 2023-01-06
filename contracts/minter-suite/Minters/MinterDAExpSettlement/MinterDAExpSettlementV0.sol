@@ -98,6 +98,9 @@ contract MinterDAExpSettlementV0 is
         // max uint64 ~= 1.8e19 sec ~= 570 billion years
         uint64 timestampStart;
         uint64 priceDecayHalfLifeSeconds;
+        // Prices are packed internally as uint128, resulting in a maximum
+        // allowed price of ~3.4e20 ETH. This is many orders of magnitude
+        // greater than current ETH supply.
         uint128 startPrice;
         // base price is non-zero for all configured auctions on this minter
         uint128 basePrice;
