@@ -98,9 +98,9 @@ contract MinterDAExpSettlementV0 is
         // max uint64 ~= 1.8e19 sec ~= 570 billion years
         uint64 timestampStart;
         uint64 priceDecayHalfLifeSeconds;
-        uint256 startPrice;
+        uint128 startPrice;
         // base price is non-zero for all configured auctions on this minter
-        uint256 basePrice;
+        uint128 basePrice;
         // This value is only zero if no purchases have been made on this
         // minter.
         // When non-zero, this value is used as a reference when an auction is
@@ -316,10 +316,16 @@ contract MinterDAExpSettlementV0 is
      * If a previous auction existed on this minter and at least one settleable
      * purchase has been made, this value must be less than or equal to the
      * price when the previous auction was paused. This enforces an overall
-     * monatonically decreasing auction.
-     * @param _basePrice Resting price of the auction, in Wei.
-     * @dev Note that it is intentionally supported here that the configured
-     * price may be explicitly set to `0`.
+     * monatonically decreasing auction. Must be greater than or equal to
+     * max(uint128) for internal storage packing purposes.
+     * @param _basePrice Resting price of the auction, in Wei. Must be greater
+     * than or equal to max(uint128) for internal storage packing purposes.
+     * @dev Note that setting the auction price explicitly to `0` is
+     * intentionally not allowed. This allows the minter to use the assumption
+     * that a price of `0` indicates that the auction is not configured.
+     * @dev Note that prices must be <= max(128) for internal storage packing
+     * efficiency purposes only. This function's interface remains unchanged
+     * for interface conformance purposes.
      */
     function setAuctionDetails(
         uint256 _projectId,
@@ -365,8 +371,8 @@ contract MinterDAExpSettlementV0 is
         _projectConfig.timestampStart = _auctionTimestampStart.toUint64();
         _projectConfig.priceDecayHalfLifeSeconds = _priceDecayHalfLifeSeconds
             .toUint64();
-        _projectConfig.startPrice = _startPrice;
-        _projectConfig.basePrice = _basePrice;
+        _projectConfig.startPrice = _startPrice.toUint128();
+        _projectConfig.basePrice = _basePrice.toUint128();
 
         emit SetAuctionDetails(
             _projectId,
