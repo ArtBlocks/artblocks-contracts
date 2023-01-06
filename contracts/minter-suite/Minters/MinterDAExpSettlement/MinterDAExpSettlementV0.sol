@@ -807,7 +807,7 @@ contract MinterDAExpSettlementV0 is
         // the receipt in storage
         uint256 excessSettlementFunds;
         uint256 projectIdsLength = _projectIds.length;
-        for (uint256 i = 0; i < projectIdsLength; ) {
+        for (uint256 i; i < projectIdsLength; ) {
             uint256 projectId = _projectIds[i];
             ProjectConfig storage _projectConfig = projectConfig[projectId];
             Receipt storage receipt = receipts[msg.sender][projectId];
