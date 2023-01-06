@@ -619,18 +619,23 @@ contract MinterDAExpSettlementV0 is
         // EFFECTS
         // update the purchaser's receipt and require sufficient net payment
         Receipt storage _receipt = receipts[msg.sender][_projectId];
-        _receipt.netPosted += msg.value.toUint232();
-        _receipt.numPurchased++;
+        // calculate new receipt state in memory (gas optimization)
+        uint256 receiptNetPosted = _receipt.netPosted + msg.value;
+        uint256 receiptNumPurchased = _receipt.numPurchased + 1;
+        // update Receipt in storage
+        _receipt.netPosted = receiptNetPosted.toUint232();
+        _receipt.numPurchased = receiptNumPurchased.toUint24();
+        // require sufficient payment on project
         require(
-            _receipt.netPosted >= _receipt.numPurchased * currentPriceInWei,
+            receiptNetPosted >= receiptNumPurchased * currentPriceInWei,
             "Must send minimum value to mint"
         );
         // emit event indicating new receipt state
         emit ReceiptUpdated(
             msg.sender,
             _projectId,
-            _receipt.numPurchased,
-            _receipt.netPosted
+            receiptNumPurchased,
+            receiptNetPosted
         );
 
         // update latest purchase price (on this minter) in storage
