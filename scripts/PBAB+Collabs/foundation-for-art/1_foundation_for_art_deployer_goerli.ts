@@ -137,7 +137,7 @@ async function main() {
   const standardVerify = "yarn hardhat verify";
   console.log(`Verify core contract deployment with:`);
   console.log(
-    `${standardVerify} --network ${networkName} ${genArt721Core.address} "${tokenName}" "${tokenTicker}" ${randomizerAddress}`
+    `${standardVerify} --network ${networkName} ${genArt721Core.address} "${tokenName}" "${tokenTicker}" ${randomizerAddress} 0`
   );
   console.log(`Verify Minter deployment with:`);
   console.log(
