@@ -11,32 +11,30 @@ interface IGenArt721CoreContractV1 {
     function nextProjectId() external view returns (uint256);
 
     // getter function of public mapping
-    function tokenIdToProjectId(uint256 tokenId)
-        external
-        view
-        returns (uint256 projectId);
+    function tokenIdToProjectId(
+        uint256 tokenId
+    ) external view returns (uint256 projectId);
 
     function isWhitelisted(address sender) external view returns (bool);
 
     // @dev this is not available in V0
     function isMintWhitelisted(address minter) external view returns (bool);
 
-    function projectIdToArtistAddress(uint256 _projectId)
-        external
-        view
-        returns (address payable);
+    function projectIdToArtistAddress(
+        uint256 _projectId
+    ) external view returns (address payable);
 
-    function projectIdToAdditionalPayee(uint256 _projectId)
-        external
-        view
-        returns (address payable);
+    function projectIdToAdditionalPayee(
+        uint256 _projectId
+    ) external view returns (address payable);
 
-    function projectIdToAdditionalPayeePercentage(uint256 _projectId)
-        external
-        view
-        returns (uint256);
+    function projectIdToAdditionalPayeePercentage(
+        uint256 _projectId
+    ) external view returns (uint256);
 
-    function projectTokenInfo(uint256 _projectId)
+    function projectTokenInfo(
+        uint256 _projectId
+    )
         external
         view
         returns (
@@ -61,7 +59,9 @@ interface IGenArt721CoreContractV1 {
         address _by
     ) external returns (uint256 tokenId);
 
-    function getRoyaltyData(uint256 _tokenId)
+    function getRoyaltyData(
+        uint256 _tokenId
+    )
         external
         view
         returns (

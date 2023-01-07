@@ -58,12 +58,9 @@ contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
     /**
      * @dev See {IERC165-supportsInterface}.
      */
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        override(ERC165, IERC165)
-        returns (bool)
-    {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view override(ERC165, IERC165) returns (bool) {
         return
             // register interface 0x9ca7dc7a - getRoyalties(address,uint256)
             interfaceId == type(IArtblocksRoyaltyOverride).interfaceId ||
@@ -96,10 +93,10 @@ contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
      * @param _bps Art Blocks royalty basis points.
      * @dev `_bps` must be less than or equal to default bps
      */
-    function updateArtblocksBpsForContract(address _tokenContract, uint256 _bps)
-        external
-        onlyAdminOnContract(_tokenContract)
-    {
+    function updateArtblocksBpsForContract(
+        address _tokenContract,
+        uint256 _bps
+    ) external onlyAdminOnContract(_tokenContract) {
         require(
             _bps <= ARTBLOCKS_DEFAULT_BPS,
             "override bps for contract must be less than or equal to default"
@@ -117,10 +114,9 @@ contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
      * @param _tokenContract Token contract to be cleared.
      * @dev token contracts without overrides use default BPS value.
      */
-    function clearArtblocksBpsForContract(address _tokenContract)
-        external
-        onlyAdminOnContract(_tokenContract)
-    {
+    function clearArtblocksBpsForContract(
+        address _tokenContract
+    ) external onlyAdminOnContract(_tokenContract) {
         tokenAddressToArtblocksBpsOverride[_tokenContract] = BpsOverride(
             false,
             0
@@ -136,7 +132,10 @@ contract GenArt721RoyaltyOverride is ERC165, IArtblocksRoyaltyOverride {
      * @return recipients_ array of royalty recipients
      * @return bps array of basis points for each recipient, aligned by index
      */
-    function getRoyalties(address _tokenAddress, uint256 _tokenId)
+    function getRoyalties(
+        address _tokenAddress,
+        uint256 _tokenId
+    )
         external
         view
         returns (address payable[] memory recipients_, uint256[] memory bps)

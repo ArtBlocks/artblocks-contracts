@@ -21,44 +21,39 @@ interface IGenArt721CoreV2_PBAB {
     function nextProjectId() external view returns (uint256);
 
     // getter function of public mapping
-    function tokenIdToProjectId(uint256 tokenId)
-        external
-        view
-        returns (uint256 projectId);
+    function tokenIdToProjectId(
+        uint256 tokenId
+    ) external view returns (uint256 projectId);
 
     function isWhitelisted(address sender) external view returns (bool);
 
-    function projectIdToCurrencySymbol(uint256 _projectId)
-        external
-        view
-        returns (string memory);
+    function projectIdToCurrencySymbol(
+        uint256 _projectId
+    ) external view returns (string memory);
 
-    function projectIdToCurrencyAddress(uint256 _projectId)
-        external
-        view
-        returns (address);
+    function projectIdToCurrencyAddress(
+        uint256 _projectId
+    ) external view returns (address);
 
-    function projectIdToArtistAddress(uint256 _projectId)
-        external
-        view
-        returns (address payable);
+    function projectIdToArtistAddress(
+        uint256 _projectId
+    ) external view returns (address payable);
 
-    function projectIdToPricePerTokenInWei(uint256 _projectId)
-        external
-        view
-        returns (uint256);
+    function projectIdToPricePerTokenInWei(
+        uint256 _projectId
+    ) external view returns (uint256);
 
-    function projectIdToAdditionalPayee(uint256 _projectId)
-        external
-        view
-        returns (address payable);
+    function projectIdToAdditionalPayee(
+        uint256 _projectId
+    ) external view returns (address payable);
 
-    function projectIdToAdditionalPayeePercentage(uint256 _projectId)
-        external
-        view
-        returns (uint256);
+    function projectIdToAdditionalPayeePercentage(
+        uint256 _projectId
+    ) external view returns (uint256);
 
-    function projectTokenInfo(uint256 _projectId)
+    function projectTokenInfo(
+        uint256 _projectId
+    )
         external
         view
         returns (
@@ -83,7 +78,9 @@ interface IGenArt721CoreV2_PBAB {
         address _by
     ) external returns (uint256 tokenId);
 
-    function getRoyaltyData(uint256 _tokenId)
+    function getRoyaltyData(
+        uint256 _tokenId
+    )
         external
         view
         returns (

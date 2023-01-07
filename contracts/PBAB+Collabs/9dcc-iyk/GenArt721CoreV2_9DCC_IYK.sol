@@ -122,12 +122,9 @@ contract GenArt721CoreV2_9DCC_IYK is GenArt721CoreV2_PBAB {
      * By including a nonce in the signature and updating the nonce on every claim,
      * we prevent replay signature attacks, as signatures can only be used once.
      */
-    function getClaimNonce(address _recipient)
-        external
-        view
-        virtual
-        returns (uint256)
-    {
+    function getClaimNonce(
+        address _recipient
+    ) external view virtual returns (uint256) {
         return claimNonces[_recipient];
     }
 
@@ -161,10 +158,9 @@ contract GenArt721CoreV2_9DCC_IYK is GenArt721CoreV2_PBAB {
      * @param _signVerifierRegistry The address the new registry
      * @dev Requires the DEFAULT_ADMIN_ROLE to call
      */
-    function setSignVerifierRegistry(address _signVerifierRegistry)
-        external
-        onlyAdmin
-    {
+    function setSignVerifierRegistry(
+        address _signVerifierRegistry
+    ) external onlyAdmin {
         require(
             _signVerifierRegistry != address(0),
             "_signVerifierRegistry cannot be the zero address"

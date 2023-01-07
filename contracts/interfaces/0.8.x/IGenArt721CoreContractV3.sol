@@ -74,30 +74,30 @@ interface IGenArt721CoreContractV3 is IManifold {
     function nextProjectId() external view returns (uint256);
 
     // getter function of public mapping
-    function tokenIdToProjectId(uint256 tokenId)
-        external
-        view
-        returns (uint256 projectId);
+    function tokenIdToProjectId(
+        uint256 tokenId
+    ) external view returns (uint256 projectId);
 
     // @dev this is not available in V0
     function isMintWhitelisted(address minter) external view returns (bool);
 
-    function projectIdToArtistAddress(uint256 _projectId)
-        external
-        view
-        returns (address payable);
+    function projectIdToArtistAddress(
+        uint256 _projectId
+    ) external view returns (address payable);
 
-    function projectIdToAdditionalPayeePrimarySales(uint256 _projectId)
-        external
-        view
-        returns (address payable);
+    function projectIdToAdditionalPayeePrimarySales(
+        uint256 _projectId
+    ) external view returns (address payable);
 
     function projectIdToAdditionalPayeePrimarySalesPercentage(
         uint256 _projectId
     ) external view returns (uint256);
 
     // @dev new function in V3
-    function getPrimaryRevenueSplits(uint256 _projectId, uint256 _price)
+    function getPrimaryRevenueSplits(
+        uint256 _projectId,
+        uint256 _price
+    )
         external
         view
         returns (
@@ -110,7 +110,9 @@ interface IGenArt721CoreContractV3 is IManifold {
         );
 
     // @dev new function in V3
-    function projectStateData(uint256 _projectId)
+    function projectStateData(
+        uint256 _projectId
+    )
         external
         view
         returns (
@@ -167,7 +169,9 @@ interface IGenArt721CoreContractV3 is IManifold {
      * artist's additional payee royalty data for token ID `_tokenId`.
      * WARNING: Does not include Art Blocks portion of royalties.
      */
-    function getRoyaltyData(uint256 _tokenId)
+    function getRoyaltyData(
+        uint256 _tokenId
+    )
         external
         view
         returns (
