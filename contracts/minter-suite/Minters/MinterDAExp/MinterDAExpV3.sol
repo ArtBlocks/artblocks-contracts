@@ -190,19 +190,17 @@ contract MinterDAExpV3 is ReentrancyGuard, IFilteredMinterDAExpV1 {
             _maxInvocations <= maxInvocations,
             "Cannot increase project max invocations above core contract set project max invocations"
         );
-
+        require(
+            _maxInvocations >= invocations,
+            "Cannot set project max invocations to less than current invocations"
+        );
         // EFFECTS
         // update storage with results
         projectConfig[_projectId].maxInvocations = uint24(_maxInvocations);
         // We need to ensure maxHasBeenInvoked is correctly set after manually setting the
         // local maxInvocations value.
-        if (
-            invocations % ONE_MILLION < projectConfig[_projectId].maxInvocations
-        ) {
-            projectConfig[_projectId].maxHasBeenInvoked = false;
-        } else {
-            projectConfig[_projectId].maxHasBeenInvoked = true;
-        }
+        projectConfig[_projectId].maxHasBeenInvoked =
+            invocations == _maxInvocations
 
         emit ProjectMaxInvocationsManuallyLimited(_projectId, _maxInvocations);
     }
