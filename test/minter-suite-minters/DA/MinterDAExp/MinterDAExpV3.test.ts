@@ -148,12 +148,6 @@ for (const coreContractName of coreContractsToTest) {
           .connect(this.accounts.artist)
           .setProjectMaxInvocations(this.projectZero);
       });
-
-      it("allows user to call setProjectMaxInvocations", async function () {
-        await this.minter
-          .connect(this.accounts.user)
-          .setProjectMaxInvocations(this.projectZero);
-      });
     });
 
     describe("manuallyLimitProjectMaxInvocations", async function () {

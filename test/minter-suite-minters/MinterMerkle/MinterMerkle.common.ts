@@ -695,6 +695,12 @@ export const MinterMerkle_Common = async () => {
     });
 
     it("fails more cheaply if setProjectMaxInvocations is set", async function () {
+      const minterType = await this.minter.minterType();
+      const accountToTestWith =
+        minterType.includes("V0") || minterType.includes("V1")
+          ? this.accounts.deployer
+          : this.accounts.artist;
+
       await this.minter
         .connect(this.accounts.artist)
         .setProjectInvocationsPerAddress(this.projectZero, 0);
@@ -729,7 +735,7 @@ export const MinterMerkle_Common = async () => {
 
       // Try with setProjectMaxInvocations, store gas cost
       await this.minter
-        .connect(this.accounts.artist)
+        .connect(accountToTestWith)
         .setProjectMaxInvocations(this.projectOne);
       await this.minter
         .connect(this.accounts.artist)
