@@ -292,13 +292,18 @@ export const MinterDAExp_Common = async () => {
     });
 
     it("returns true after a project is minted out", async function () {
+      const minterType = await this.minter.minterType();
+      const accountToTestWith =
+        minterType.includes("V0") || minterType.includes("V1")
+          ? this.accounts.deployer
+          : this.accounts.artist;
       // reduce maxInvocations to 2 on core
       await this.genArt721Core
         .connect(this.accounts.artist)
         .updateProjectMaxInvocations(this.projectZero, 1);
       // sync max invocations on minter
       await this.minter
-        .connect(this.accounts.deployer)
+        .connect(accountToTestWith)
         .setProjectMaxInvocations(this.projectZero);
       // mint a token
       await ethers.provider.send("evm_mine", [
@@ -315,13 +320,18 @@ export const MinterDAExp_Common = async () => {
     });
 
     it("blocks minting after a project max has been invoked", async function () {
+      const minterType = await this.minter.minterType();
+      const accountToTestWith =
+        minterType.includes("V0") || minterType.includes("V1")
+          ? this.accounts.deployer
+          : this.accounts.artist;
       // reduce maxInvocations to 2 on core
       await this.genArt721Core
         .connect(this.accounts.artist)
         .updateProjectMaxInvocations(this.projectZero, 1);
       // sync max invocations on minter
       await this.minter
-        .connect(this.accounts.deployer)
+        .connect(accountToTestWith)
         .setProjectMaxInvocations(this.projectZero);
       // mint a token
       await ethers.provider.send("evm_mine", [
