@@ -247,7 +247,7 @@ for (const coreContractName of coreContractsToTest) {
           .projectConfig(this.projectZero);
         expect(localMaxInvocations3.maxInvocations).to.equal(1);
 
-        // expect projectMaxHasBeenInvoked to now be false
+        // expect projectMaxHasBeenInvoked to now be true
         const hasMaxBeenInvoked3 = await this.minter.projectMaxHasBeenInvoked(
           this.projectZero
         );
