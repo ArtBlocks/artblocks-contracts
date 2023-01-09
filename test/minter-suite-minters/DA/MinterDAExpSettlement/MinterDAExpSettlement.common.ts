@@ -2008,9 +2008,17 @@ export const MinterDAExpSettlement_Common = async () => {
         );
       expect(excessSettlementFunds).to.be.gt(0);
       // reclaim funds
-      await this.minter
+      const tx = await this.minter
         .connect(this.accounts.user)
         .reclaimProjectExcessSettlementFunds(this.projectZero);
+      // log gas cost for debugging and performance evaluation studies
+      const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
+      const txCost = receipt.effectiveGasPrice.mul(receipt.gasUsed).toString();
+      console.log(
+        "Gas cost for a single reclaiming of excess settlement funds: ",
+        ethers.utils.formatUnits(txCost, "ether").toString(),
+        "ETH"
+      );
       // check that excess settlement funds are zero
       const excessSettlementFundsAfterReclaim =
         await this.minter.getProjectExcessSettlementFunds(
