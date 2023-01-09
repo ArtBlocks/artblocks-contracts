@@ -2252,7 +2252,7 @@
     web3-core "^1.8.1"
     web3-utils "^1.8.1"
 
-"@gnosis.pm/safe-core-sdk-utils@^1.5.0":
+"@gnosis.pm/safe-core-sdk-utils@^1.1.0":
   version "1.5.0"
   resolved "https://registry.yarnpkg.com/@gnosis.pm/safe-core-sdk-utils/-/safe-core-sdk-utils-1.5.0.tgz#0b63a8ad2cba6a7452e8cd1e81e5daca5e547b7d"
   integrity sha512-rfcCdqBnxj9QKYzqO1UpR9+a0fhvVoHD8aYb1FBimAoMbYwcKEjY/OpEQs1m5wl6VBrDkMiUmq5a+aSTsi6W6w==
@@ -2285,14 +2285,13 @@
   resolved "https://registry.yarnpkg.com/@gnosis.pm/safe-deployments/-/safe-deployments-1.12.0.tgz#aabad66f5467821b9a965411f9747016811d7554"
   integrity sha512-fNwQqTdBushxlkqp8WpgXVP9HTePa/VFWM9VYPzbSsdqYqSUnXYDDOMyHH3H6eNltwRV8RVp/cxqUZLrvQ3YPg==
 
-"@gnosis.pm/safe-ethers-lib@^1.7.0":
-  version "1.7.0"
-  resolved "https://registry.yarnpkg.com/@gnosis.pm/safe-ethers-lib/-/safe-ethers-lib-1.7.0.tgz#73a23a060fad98c750aaec1458fbad36061bdc9c"
-  integrity sha512-+1GAGEGNil/y9R54sgvU2y3M0R50vYYIcs4Zh+C6qaw700bPUAUNkkxPoh4Xa0U/OUEPkI6MlTXTm0XKIU1u7A==
+"@gnosis.pm/safe-ethers-lib@1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@gnosis.pm/safe-ethers-lib/-/safe-ethers-lib-1.1.0.tgz#06dfe132f3590fbc5406918a193812cd922c641e"
+  integrity sha512-MG01hGu/3q/sl9fXE3sU7CMVpVMJ4k9/ro1JVZaE29jmsar1cHFUOJNws7Do3orxTLQZ2egkARcmyv+l673FoA==
   dependencies:
-    "@gnosis.pm/safe-core-sdk-types" "^1.7.0"
-    "@gnosis.pm/safe-core-sdk-utils" "^1.5.0"
-    ethers "^5.7.2"
+    "@gnosis.pm/safe-core-sdk-types" "^1.1.0"
+    "@gnosis.pm/safe-core-sdk-utils" "^1.1.0"
 
 "@gnosis.pm/safe-service-client@^1.4.0":
   version "1.4.0"
@@ -10994,12 +10993,7 @@ node-environment-flags@1.0.6:
     object.getownpropertydescriptors "^2.0.3"
     semver "^5.7.0"
 
-node-fetch@2.6.1:
-  version "2.6.1"
-  resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-2.6.1.tgz#045bd323631f76ed2e2b55573394416b639a0052"
-  integrity sha512-V4aYg89jEoVRxRb2fJdAg8FHvI7cEyYdVAh94HH0UIK8oJxUfkjlDQN9RbMx+bEjP7+ggMiFRprSti032Oipxw==
-
-node-fetch@2.6.7, node-fetch@^2.6.6:
+node-fetch@2.6.7, node-fetch@^2.6.6, node-fetch@^2.6.7:
   version "2.6.7"
   resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-2.6.7.tgz#24de9fba827e3b4ae44dc8b20256a379160052ad"
   integrity sha512-ZjMPFEfVx5j+y2yF35Kzx5sF7kDzxuDj6ziH4FFbOp87zKDZNx8yExJIb05OGF4Nlt9IHFIMBkRl41VdvcNdbQ==
