@@ -632,6 +632,8 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV1 {
         );
         uint256 _newTokenId = (_projectId * ONE_MILLION) + _invocations;
 
+        address _artist = genArtCoreContract.projectIdToArtistAddress(_projectId);
+
         // EFFECTS
 
         // we need to store the new token ID before it is minted so the randomizer can query it
@@ -670,7 +672,7 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV1 {
          * in case other NFTs are registered, better to check here. Also,
          * function is non-reentrant, so being extra cautious.
          */
-        if (msg.sender == genArtCoreContract.projectIdToArtistAddress(_projectId)) {
+        if (msg.sender == _artist) {
             require(
                 IERC721(_ownedNFTAddress).ownerOf(_ownedNFTTokenId) == vault,
                 "Only owner of NFT"
