@@ -88,13 +88,14 @@ export async function deployCoreWithMinterFilter(
   coreContractName: string,
   minterFilterName: string,
   useAdminACLWithEvents: boolean = false,
-  _adminACLContractName?: string
+  _adminACLContractName?: string,
+  _randomizerName: string = "BasicRandomizer"
 ): Promise<CoreWithMinterSuite> {
   if (coreContractName.endsWith("V2_PBAB")) {
     throw new Error("V2_PBAB not supported");
   }
   let randomizer, genArt721Core, minterFilter, adminACL, engineRegistry;
-  randomizer = await deployAndGet.call(this, "BasicRandomizer", []);
+  randomizer = await deployAndGet.call(this, _randomizerName, []);
   if (
     coreContractName.endsWith("V0") ||
     coreContractName.endsWith("V1") ||
@@ -131,7 +132,7 @@ export async function deployCoreWithMinterFilter(
     coreContractName.endsWith("V3") ||
     coreContractName.endsWith("V3_Explorations")
   ) {
-    randomizer = await deployAndGet.call(this, "BasicRandomizerV2", []);
+    randomizer = await deployAndGet.call(this, _randomizerName, []);
     let adminACLContractName = useAdminACLWithEvents
       ? "MockAdminACLV0Events"
       : "AdminACLV0";
@@ -160,7 +161,7 @@ export async function deployCoreWithMinterFilter(
       .connect(this.accounts.deployer)
       .updateMinterContract(minterFilter.address);
   } else if (coreContractName.endsWith("V3_Engine")) {
-    randomizer = await deployAndGet.call(this, "BasicRandomizerV2", []);
+    randomizer = await deployAndGet.call(this, _randomizerName, []);
     let adminACLContractName = useAdminACLWithEvents
       ? "MockAdminACLV0Events"
       : "AdminACLV0";
