@@ -35,7 +35,10 @@ interface IGenArt721CoreContractV3WithRandomizer is IGenArt721CoreContractV3_Eng
  * when purchaser owns an allowlisted ERC-721 NFT. This contract does NOT track
  * if a purchaser has/has not minted already -- it simply restricts purchasing
  * to anybody that holds one or more of a specified list of ERC-721 NFTs.
- * This is designed to be used with IGenArt721CoreContractV3 contracts.
+ * This is designed to be used with IGenArt721CoreContractV3_Engine contracts with an
+ * active IPolyptychRandomizerV0 randomizer available for this minter to use.
+ * This minter requires both a properly configured engine core contract and polyptych
+ * randomizer in order to mint polyptych tokens.
  * @author Art Blocks Inc.
  * @notice Privileged Roles and Ownership:
  * This contract is designed to be managed, with limited powers.
