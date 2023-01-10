@@ -15,6 +15,14 @@ import "@openzeppelin-4.5/contracts/utils/structs/EnumerableSet.sol";
 
 pragma solidity 0.8.17;
 
+/**
+ * @title Core contract interface for accessing the randomizer from the minter
+ * @notice This interface provides the minter with access to the randomizer, allowing the
+ * token hash seed for a newly-minted token to be assigned by the minter if the artist
+ * has enabled the project as a polyptych. Polytptych projects must use the V3 engine
+ * core contract, polyptych minter, and polyptych randomizer - this interface allows the
+ * minter to access the randomizer.
+ */
 interface IGenArt721CoreContractV3WithRandomizer is IGenArt721CoreContractV3_Engine {
     /// current randomizer contract
     function randomizerContract()
