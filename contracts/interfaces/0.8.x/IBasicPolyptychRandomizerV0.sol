@@ -14,10 +14,5 @@ interface IBasicPolyptychRandomizerV0 is IRandomizerV2 {
     /**
      * @notice Store the token hash seed for an existing token to be re-used in a polyptych panel.
      */
-    function setPolyptychHashSeed(
-        address _baseTokenAddress,
-        uint256 _baseTokenId,
-        uint256 _tokenId,
-        bytes12 _hashSeed
-    ) external;
+    function setPolyptychHashSeed(uint256 _tokenId, bytes12 _hashSeed) external;
 }

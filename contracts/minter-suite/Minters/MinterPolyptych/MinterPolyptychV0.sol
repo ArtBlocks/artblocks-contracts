@@ -654,12 +654,7 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV1 {
 
         genArtCoreContractWithRandomizer
             .randomizerContract()
-            .setPolyptychHashSeed(
-                _ownedNFTAddress,
-                _ownedNFTTokenId,
-                _newTokenId,
-                targetHashSeed
-            );
+            .setPolyptychHashSeed(_newTokenId, targetHashSeed);
 
         // once mint() is called, the polyptych randomizer will either:
         // 1) assign a random token hash
