@@ -19,6 +19,10 @@ contract BasicPolyptychRandomizerV0 is IBasicPolyptychRandomizerV0, Ownable {
     // Mapping of token IDs to hash seeds
     mapping(uint256 => bytes12) public polyptychHashSeeds;
 
+    // Mapping of source token hashes to qty of tokens minted with that hash
+    mapping(address => mapping(uint256 => mapping(uint256 => bool)))
+        public baseTokenToUsedOnProject;
+
     // The second/subsequent panels of polyptychs should be configured to bypass randomizing
     mapping(uint256 => bool) projectIsPolyptych;
 
@@ -57,14 +61,28 @@ contract BasicPolyptychRandomizerV0 is IBasicPolyptychRandomizerV0, Ownable {
 
     // Sets the token hash seed to be re-used in the subsequent panels of a polyptych
     function setPolyptychHashSeed(
+        address _baseTokenAddress,
+        uint256 _baseTokenId,
         uint256 _tokenId,
         bytes12 _hashSeed
     ) external {
+        // CHECKS
         require(
             msg.sender == hashSeedSetterContract,
             "Only hashSeedSetterContract"
         );
+        uint256 projectId = _tokenId / ONE_MILLION;
+        require(
+            !baseTokenToUsedOnProject[_baseTokenAddress][_baseTokenId][
+                projectId
+            ],
+            "Token already used on project"
+        );
+        // EFFECTS
         polyptychHashSeeds[_tokenId] = _hashSeed;
+        baseTokenToUsedOnProject[_baseTokenAddress][_baseTokenId][
+            projectId
+        ] = true;
     }
 
     // When `genArt721Core` calls this, it can be assured that the randomizer
