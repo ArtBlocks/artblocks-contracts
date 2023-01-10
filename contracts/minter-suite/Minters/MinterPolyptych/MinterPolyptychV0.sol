@@ -23,7 +23,9 @@ pragma solidity 0.8.17;
  * core contract, polyptych minter, and polyptych randomizer - this interface allows the
  * minter to access the randomizer.
  */
-interface IGenArt721CoreContractV3WithRandomizer is IGenArt721CoreContractV3_Engine {
+interface IGenArt721CoreContractV3WithRandomizer is
+    IGenArt721CoreContractV3_Engine
+{
     /// current randomizer contract
     function randomizerContract()
         external
@@ -187,7 +189,9 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV1 {
         address _NFTAddress
     ) external onlyCoreAdminACL(this.registerNFTAddress.selector) {
         // check that core contract implements the `tokenIdToHashSeed` function
-        IGenArt721CoreContractV3WithRandomizer(_NFTAddress).tokenIdToHashSeed(0);
+        IGenArt721CoreContractV3WithRandomizer(_NFTAddress).tokenIdToHashSeed(
+            0
+        );
         _registeredNFTAddresses.add(_NFTAddress);
         emit RegisteredNFTAddress(_NFTAddress);
     }
@@ -634,18 +638,22 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV1 {
         );
         uint256 _newTokenId = (_projectId * ONE_MILLION) + _invocations;
 
-        address _artist = genArtCoreContract.projectIdToArtistAddress(_projectId);
+        address _artist = genArtCoreContract.projectIdToArtistAddress(
+            _projectId
+        );
 
         // EFFECTS
 
         // we need to store the new token ID before it is minted so the randomizer can query it
-        IGenArt721CoreContractV3WithRandomizer genArtCoreContractWithRandomizer = IGenArt721CoreContractV3WithRandomizer(_ownedNFTAddress);
-        bytes12 targetHashSeed = genArtCoreContractWithRandomizer.tokenIdToHashSeed(
-            _ownedNFTTokenId
-        );
+        IGenArt721CoreContractV3WithRandomizer genArtCoreContractWithRandomizer = IGenArt721CoreContractV3WithRandomizer(
+                _ownedNFTAddress
+            );
+        bytes12 targetHashSeed = genArtCoreContractWithRandomizer
+            .tokenIdToHashSeed(_ownedNFTTokenId);
         require(targetHashSeed != 0);
 
-        genArtCoreContractWithRandomizer.randomizerContract()
+        genArtCoreContractWithRandomizer
+            .randomizerContract()
             .setPolyptychHashSeed(_newTokenId, targetHashSeed);
 
         // once mint() is called, the polyptych randomizer will either:
@@ -656,15 +664,13 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV1 {
         // NOTE: delegate-vault handling **ends here**.
 
         // redundant check against reentrancy
-        bytes12 _assignedHashSeed = genArtCoreContractWithRandomizer.tokenIdToHashSeed(
-            tokenId
-        );
+        bytes12 _assignedHashSeed = genArtCoreContractWithRandomizer
+            .tokenIdToHashSeed(tokenId);
         require(_assignedHashSeed == targetHashSeed);
 
         if (_invocations == _projectConfig.maxInvocations) {
             _projectConfig.maxHasBeenInvoked = true;
         }
-
 
         // INTERACTIONS
         // require sender to own NFT used to redeem

@@ -1,5 +1,3 @@
-
-
 import {
   BN,
   constants,

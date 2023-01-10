@@ -42,13 +42,13 @@ describe("PolyptychRandomizerV0 w/V3 core", async function () {
       false,
       undefined,
       "BasicPolyptychRandomizerV0"
-      ));
+    ));
 
     this.delegationRegistry = await deployAndGet.call(
-        this,
-        "DelegationRegistry",
-        []
-      )
+      this,
+      "DelegationRegistry",
+      []
+    );
 
     this.minter = await deployAndGet.call(this, "MinterPolyptychV0", [
       this.genArt721Core.address,

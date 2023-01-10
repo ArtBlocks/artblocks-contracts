@@ -34,32 +34,36 @@ contract BasicPolyptychRandomizerV0 is IBasicPolyptychRandomizerV0, Ownable {
     // @dev defers which ACL contract is used to the core contract
     modifier onlyCoreAdminACL(bytes4 _selector) {
         require(
-            genArt721Core.adminACLAllowed(
-                msg.sender,
-                address(this),
-                _selector
-            ),
+            genArt721Core.adminACLAllowed(msg.sender, address(this), _selector),
             "Only Core AdminACL allowed"
         );
         _;
     }
 
     // Allows the owner of the core contract to set the minter that is allowed to assign hash seeds
-    function setHashSeedSetterContract(address _contractAddress) external onlyCoreAdminACL(this.setHashSeedSetterContract.selector) {
+    function setHashSeedSetterContract(
+        address _contractAddress
+    ) external onlyCoreAdminACL(this.setHashSeedSetterContract.selector) {
         hashSeedSetterContract = _contractAddress;
         emit HashSeedSetterUpdated(_contractAddress);
     }
 
     // Allows the owner of the core contract to configure a project as a polyptych
-    function toggleProjectIsPolyptych(uint256 _projectId) external onlyCoreAdminACL(this.toggleProjectIsPolyptych.selector) {
+    function toggleProjectIsPolyptych(
+        uint256 _projectId
+    ) external onlyCoreAdminACL(this.toggleProjectIsPolyptych.selector) {
         projectIsPolyptych[_projectId] = !projectIsPolyptych[_projectId];
     }
 
     // Sets the token hash seed to be re-used in the subsequent panels of a polyptych
-    function setPolyptychHashSeed(uint256 _tokenId, bytes12 _hashSeed)
-        external
-    {
-        require(msg.sender == hashSeedSetterContract, "Only hashSeedSetterContract");
+    function setPolyptychHashSeed(
+        uint256 _tokenId,
+        bytes12 _hashSeed
+    ) external {
+        require(
+            msg.sender == hashSeedSetterContract,
+            "Only hashSeedSetterContract"
+        );
         polyptychHashSeeds[_tokenId] = _hashSeed;
     }
 
