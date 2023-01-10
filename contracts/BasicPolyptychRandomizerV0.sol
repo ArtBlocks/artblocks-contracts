@@ -3,7 +3,7 @@
 
 pragma solidity 0.8.17;
 
-import "./interfaces/0.8.x/IRandomizerV2.sol";
+import "./interfaces/0.8.x/IBasicPolyptychRandomizerV0.sol";
 import "./interfaces/0.8.x/IGenArt721CoreContractV3.sol";
 import "./interfaces/0.8.x/IFilteredMinterHolderV1.sol";
 
@@ -47,6 +47,7 @@ contract BasicPolyptychRandomizerV0 is IBasicPolyptychRandomizerV0, Ownable {
     // Allows the owner of the core contract to set the minter that is allowed to assign hash seeds
     function setHashSeedSetterContract(address _contractAddress) external onlyCoreAdminACL(this.setHashSeedSetterContract.selector) {
         hashSeedSetterContract = _contractAddress;
+        emit HashSeedSetterUpdated(_contractAddress);
     }
 
     // Allows the owner of the core contract to configure a project as a polyptych

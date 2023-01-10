@@ -3,6 +3,8 @@
 
 pragma solidity 0.8.17;
 
+import "./IRandomizerV2.sol";
+
 interface IBasicPolyptychRandomizerV0 is IRandomizerV2 {
     /**
      * @notice Minter contract at `_contractAddress` allowed to assign token hash seeds.
