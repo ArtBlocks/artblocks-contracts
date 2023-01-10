@@ -71,7 +71,7 @@ contract BasicPolyptychRandomizerV0 is IBasicPolyptychRandomizerV0, Ownable {
         uint256 projectId = _tokenId / ONE_MILLION;
         require(
             !hashUsedOnProject[projectId][_hashSeed],
-            "Token already used on project"
+            "Hash already exists on project"
         );
         // EFFECTS
         polyptychHashSeeds[_tokenId] = _hashSeed;
