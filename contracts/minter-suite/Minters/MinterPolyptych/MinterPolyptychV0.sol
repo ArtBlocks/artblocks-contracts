@@ -2,7 +2,7 @@
 // Created By: Art Blocks Inc.
 
 import "../../../interfaces/0.8.x/IRandomizerV2.sol";
-import "../../../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
+import "../../../interfaces/0.8.x/IGenArt721CoreContractV3_Engine.sol";
 import "../../../interfaces/0.8.x/IMinterFilterV0.sol";
 import "../../../interfaces/0.8.x/IFilteredMinterHolderV1.sol";
 import "../../../interfaces/0.8.x/IBasicPolyptychRandomizerV0.sol";
@@ -15,22 +15,11 @@ import "@openzeppelin-4.5/contracts/utils/structs/EnumerableSet.sol";
 
 pragma solidity 0.8.17;
 
-interface IGenArt721CoreContractV3WithRandomizer is IGenArt721CoreContractV3 {
+interface IGenArt721CoreContractV3WithRandomizer is IGenArt721CoreContractV3_Engine {
     /// current randomizer contract
     function randomizerContract()
         external
         returns (IBasicPolyptychRandomizerV0);
-
-    /**
-     * @notice Returns token hash **seed** for token ID `_tokenId`.
-     * @param _tokenId Token ID to be queried.
-     * @return bytes12 Token hash seed.
-     * @dev token hash seed is keccak256 hashed to give the token hash
-     */
-    function tokenIdToHashSeed(uint256 _tokenId)
-        external
-        view
-        returns (bytes12);
 }
 
 /**
