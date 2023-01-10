@@ -657,13 +657,10 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV1 {
         );
         require(_assignedHashSeed == targetHashSeed);
 
-        // okay if this underflows because if statement will always eval false.
-        // this is only for gas optimization (core enforces maxInvocations).
-        unchecked {
-            if (_invocations == _projectConfig.maxInvocations) {
-                _projectConfig.maxHasBeenInvoked = true;
-            }
+        if (_invocations == _projectConfig.maxInvocations) {
+            _projectConfig.maxHasBeenInvoked = true;
         }
+
 
         // INTERACTIONS
         // require sender to own NFT used to redeem
