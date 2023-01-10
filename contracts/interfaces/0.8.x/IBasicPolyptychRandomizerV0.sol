@@ -3,6 +3,6 @@
 
 pragma solidity 0.8.17;
 
-interface IBasicPolyptychRandomizerV0 {
+interface IBasicPolyptychRandomizerV0 is IRandomizerV2 {
     function setPolyptychHashSeed(uint256 _tokenId, bytes12 _hashSeed) external;
 }

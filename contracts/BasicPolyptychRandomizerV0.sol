@@ -9,7 +9,7 @@ import "./interfaces/0.8.x/IFilteredMinterHolderV1.sol";
 
 import "@openzeppelin-4.7/contracts/access/Ownable.sol";
 
-contract BasicPolyptychRandomizerV0 is IRandomizerV2, Ownable {
+contract BasicPolyptychRandomizerV0 is IBasicPolyptychRandomizerV0, Ownable {
     // The core contract that may interact with this randomizer contract.
     IGenArt721CoreContractV3 public genArt721Core;
 
@@ -22,7 +22,7 @@ contract BasicPolyptychRandomizerV0 is IRandomizerV2, Ownable {
     // The second/subsequent panels of polyptychs should be configured to bypass randomizing
     mapping(uint256 => bool) projectIsPolyptych;
 
-    // The contract allowed to copy hash seeds from one token to another (PolyptychMinterV0)
+    // The contract allowed to assign hash seeds (e.g. PolyptychMinterV0)
     address hashSeedSetterContract;
 
     function assignCoreAndRenounce(address _genArt721Core) external onlyOwner {
@@ -30,7 +30,7 @@ contract BasicPolyptychRandomizerV0 is IRandomizerV2, Ownable {
         genArt721Core = IGenArt721CoreContractV3(_genArt721Core);
     }
 
-    // Allows the owner of the core contract to set the minter that is allowed to copy token hashes
+    // Allows the owner of the core contract to set the minter that is allowed to assign hash seeds
     function setHashSeedSetterContract(address _contractAddress) external {
         require(
             genArt721Core.adminACLAllowed(

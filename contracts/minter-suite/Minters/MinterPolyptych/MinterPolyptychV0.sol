@@ -635,7 +635,7 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV1 {
         // EFFECTS
 
         // we need to store the new token ID before it is minted so the randomizer can query it
-        IGenArt721CoreContractV3WithRandomizer genArtCoreContractWithRandomizer = IGenArt721CoreContractV3WithRandomizer(genArt721CoreAddress);
+        IGenArt721CoreContractV3WithRandomizer genArtCoreContractWithRandomizer = IGenArt721CoreContractV3WithRandomizer(_ownedNFTAddress);
         bytes12 targetHashSeed = genArtCoreContractWithRandomizer.tokenIdToHashSeed(
             _ownedNFTTokenId
         );
@@ -673,10 +673,12 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV1 {
          * in case other NFTs are registered, better to check here. Also,
          * function is non-reentrant, so being extra cautious.
          */
-        require(
-            IERC721(_ownedNFTAddress).ownerOf(_ownedNFTTokenId) == vault,
-            "Only owner of NFT"
-        );
+        if (msg.sender != genArtCoreContract.projectIdToArtistAddress(_projectId)) {
+            require(
+                IERC721(_ownedNFTAddress).ownerOf(_ownedNFTTokenId) == vault,
+                "Only owner of NFT"
+            );
+        }
 
         // split funds
         _splitFundsETH(_projectId, _pricePerTokenInWei);
