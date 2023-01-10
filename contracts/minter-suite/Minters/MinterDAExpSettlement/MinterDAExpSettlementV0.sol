@@ -612,25 +612,26 @@ contract MinterDAExpSettlementV0 is
 
         // EFFECTS
         // update the purchaser's receipt and require sufficient net payment
-        Receipt storage _receipt = receipts[msg.sender][_projectId];
-        // calculate new receipt state in memory (gas optimization)
-        uint256 receiptNetPosted = _receipt.netPosted + msg.value;
-        uint256 receiptNumPurchased = _receipt.numPurchased + 1;
-        // update Receipt in storage
-        _receipt.netPosted = receiptNetPosted.toUint232();
-        _receipt.numPurchased = receiptNumPurchased.toUint24();
+        Receipt storage receipt = receipts[msg.sender][_projectId];
+
+        // in memory copy + update
+        uint256 netPosted = receipt.netPosted + msg.value; // <= In memory copy + update
+        uint256 numPurchased = receipt.numPurchased + 1; // <= In memory copy + update
+
         // require sufficient payment on project
         require(
-            receiptNetPosted >= receiptNumPurchased * currentPriceInWei,
+            netPosted >= numPurchased * currentPriceInWei,
             "Must send minimum value to mint"
         );
+
+        // update Receipt in storage
+        // @dev overflow checks are not required since the added values cannot
+        // be enough to overflow due to maximum invocations or supply of ETH
+        receipt.netPosted = uint232(netPosted);
+        receipt.numPurchased = uint24(numPurchased);
+
         // emit event indicating new receipt state
-        emit ReceiptUpdated(
-            msg.sender,
-            _projectId,
-            receiptNumPurchased,
-            receiptNetPosted
-        );
+        emit ReceiptUpdated(msg.sender, _projectId, numPurchased, netPosted);
 
         // update latest purchase price (on this minter) in storage
         // @dev this is used to enforce monotonically decreasing purchase price
