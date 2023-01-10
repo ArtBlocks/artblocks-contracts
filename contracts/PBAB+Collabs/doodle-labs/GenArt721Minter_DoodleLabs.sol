@@ -17,10 +17,10 @@ interface ERC20 {
         uint256 _value
     ) external returns (bool success);
 
-    function allowance(address _owner, address _spender)
-        external
-        view
-        returns (uint256 remaining);
+    function allowance(
+        address _owner,
+        address _spender
+    ) external view returns (uint256 remaining);
 }
 
 interface BonusContract {
@@ -51,22 +51,18 @@ contract GenArt721Minter_DoodleLabs {
         genArtCoreContract = IGenArt721CoreV2_PBAB(_genArt721Address);
     }
 
-    function getYourBalanceOfProjectERC20(uint256 _projectId)
-        public
-        view
-        returns (uint256)
-    {
+    function getYourBalanceOfProjectERC20(
+        uint256 _projectId
+    ) public view returns (uint256) {
         uint256 balance = ERC20(
             genArtCoreContract.projectIdToCurrencyAddress(_projectId)
         ).balanceOf(msg.sender);
         return balance;
     }
 
-    function checkYourAllowanceOfProjectERC20(uint256 _projectId)
-        public
-        view
-        returns (uint256)
-    {
+    function checkYourAllowanceOfProjectERC20(
+        uint256 _projectId
+    ) public view returns (uint256) {
         uint256 remaining = ERC20(
             genArtCoreContract.projectIdToCurrencyAddress(_projectId)
         ).allowance(msg.sender, address(this));
@@ -138,21 +134,18 @@ contract GenArt721Minter_DoodleLabs {
         projectIdToBonusContractAddress[_projectId] = _bonusContractAddress;
     }
 
-    function purchase(uint256 _projectId)
-        public
-        payable
-        returns (uint256 _tokenId)
-    {
+    function purchase(
+        uint256 _projectId
+    ) public payable returns (uint256 _tokenId) {
         return purchaseTo(msg.sender, _projectId);
     }
 
     // Remove `public`` and `payable`` to prevent public use
     // of the `purchaseTo`` function.
-    function purchaseTo(address _to, uint256 _projectId)
-        public
-        payable
-        returns (uint256 _tokenId)
-    {
+    function purchaseTo(
+        address _to,
+        uint256 _projectId
+    ) public payable returns (uint256 _tokenId) {
         require(
             !projectMaxHasBeenInvoked[_projectId],
             "Maximum number of invocations reached"

@@ -181,9 +181,10 @@ contract MinterDAExpSettlementV0 is
      * @param _minterFilter Minter filter for which
      * this will a filtered minter.
      */
-    constructor(address _genArt721Address, address _minterFilter)
-        ReentrancyGuard()
-    {
+    constructor(
+        address _genArt721Address,
+        address _minterFilter
+    ) ReentrancyGuard() {
         genArt721CoreAddress = _genArt721Address;
         genArtCoreContract = IGenArt721CoreContractV3(_genArt721Address);
         minterFilterAddress = _minterFilter;
@@ -201,9 +202,7 @@ contract MinterDAExpSettlementV0 is
      * occurred. Therefore, the local caching of max invocations is not
      * beneficial or necessary.
      */
-    function setProjectMaxInvocations(
-        uint256 /*_projectId*/
-    ) external pure {
+    function setProjectMaxInvocations(uint256 /*_projectId*/) external pure {
         // not implemented because maxInvocations must be checked during every mint
         // to know if final price should be set
         revert(
@@ -215,11 +214,9 @@ contract MinterDAExpSettlementV0 is
      * @notice Warning: Disabling purchaseTo is not supported on this minter.
      * This method exists purely for interface-conformance purposes.
      */
-    function togglePurchaseToDisabled(uint256 _projectId)
-        external
-        view
-        onlyArtist(_projectId)
-    {
+    function togglePurchaseToDisabled(
+        uint256 _projectId
+    ) external view onlyArtist(_projectId) {
         revert("Action not supported");
     }
 
@@ -246,18 +243,18 @@ contract MinterDAExpSettlementV0 is
      * @param _projectId projectId to be queried
      *
      */
-    function projectMaxHasBeenInvoked(uint256 _projectId)
-        external
-        view
-        returns (bool)
-    {
+    function projectMaxHasBeenInvoked(
+        uint256 _projectId
+    ) external view returns (bool) {
         return projectConfig[_projectId].maxHasBeenInvoked;
     }
 
     /**
      * @notice projectId => auction parameters
      */
-    function projectAuctionParameters(uint256 _projectId)
+    function projectAuctionParameters(
+        uint256 _projectId
+    )
         external
         view
         returns (
@@ -406,10 +403,9 @@ contract MinterDAExpSettlementV0 is
      * surpass (payments - excess_settlement_funds) for a given project.
      * @param _projectId Project ID to set auction details for.
      */
-    function resetAuctionDetails(uint256 _projectId)
-        external
-        onlyCoreAdminACL(this.resetAuctionDetails.selector)
-    {
+    function resetAuctionDetails(
+        uint256 _projectId
+    ) external onlyCoreAdminACL(this.resetAuctionDetails.selector) {
         // CHECKS
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         require(_projectConfig.startPrice != 0, "Auction must be configured");
@@ -497,7 +493,9 @@ contract MinterDAExpSettlementV0 is
      * to be reset, and excess settlement funds will become immutable and fully
      * deterministic.
      */
-    function withdrawArtistAndAdminRevenues(uint256 _projectId)
+    function withdrawArtistAndAdminRevenues(
+        uint256 _projectId
+    )
         external
         nonReentrant
         onlyCoreAdminACLOrArtist(
@@ -556,11 +554,9 @@ contract MinterDAExpSettlementV0 is
      * @param _projectId Project ID to mint a token on.
      * @return tokenId Token ID of minted token
      */
-    function purchase(uint256 _projectId)
-        external
-        payable
-        returns (uint256 tokenId)
-    {
+    function purchase(
+        uint256 _projectId
+    ) external payable returns (uint256 tokenId) {
         tokenId = purchaseTo_do6(msg.sender, _projectId);
         return tokenId;
     }
@@ -568,11 +564,9 @@ contract MinterDAExpSettlementV0 is
     /**
      * @notice gas-optimized version of purchase(uint256).
      */
-    function purchase_H4M(uint256 _projectId)
-        external
-        payable
-        returns (uint256 tokenId)
-    {
+    function purchase_H4M(
+        uint256 _projectId
+    ) external payable returns (uint256 tokenId) {
         tokenId = purchaseTo_do6(msg.sender, _projectId);
         return tokenId;
     }
@@ -584,23 +578,20 @@ contract MinterDAExpSettlementV0 is
      * @param _projectId Project ID to mint a token on.
      * @return tokenId Token ID of minted token
      */
-    function purchaseTo(address _to, uint256 _projectId)
-        external
-        payable
-        returns (uint256 tokenId)
-    {
+    function purchaseTo(
+        address _to,
+        uint256 _projectId
+    ) external payable returns (uint256 tokenId) {
         return purchaseTo_do6(_to, _projectId);
     }
 
     /**
      * @notice gas-optimized version of purchaseTo(address, uint256).
      */
-    function purchaseTo_do6(address _to, uint256 _projectId)
-        public
-        payable
-        nonReentrant
-        returns (uint256 tokenId)
-    {
+    function purchaseTo_do6(
+        address _to,
+        uint256 _projectId
+    ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
 
@@ -869,9 +860,10 @@ contract MinterDAExpSettlementV0 is
      * @param _projectId Project ID for which funds shall be split.
      * @param _valueInWei Value to be split, in Wei.
      */
-    function _splitETHRevenues(uint256 _projectId, uint256 _valueInWei)
-        internal
-    {
+    function _splitETHRevenues(
+        uint256 _projectId,
+        uint256 _valueInWei
+    ) internal {
         if (_valueInWei > 0) {
             bool success_;
             // split funds between foundation, artist, and artist's
@@ -1017,22 +1009,18 @@ contract MinterDAExpSettlementV0 is
      * @notice Gets the latest purchase price for project `_projectId`, or 0 if
      * no purchases have been made.
      */
-    function getProjectLatestPurchasePrice(uint256 _projectId)
-        external
-        view
-        returns (uint256 latestPurchasePrice)
-    {
+    function getProjectLatestPurchasePrice(
+        uint256 _projectId
+    ) external view returns (uint256 latestPurchasePrice) {
         return projectConfig[_projectId].latestPurchasePrice;
     }
 
     /**
      * @notice Gets the number of settleable invocations for project `_projectId`.
      */
-    function getNumSettleableInvocations(uint256 _projectId)
-        external
-        view
-        returns (uint256 numSettleableInvocations)
-    {
+    function getNumSettleableInvocations(
+        uint256 _projectId
+    ) external view returns (uint256 numSettleableInvocations) {
         return projectConfig[_projectId].numSettleableInvocations;
     }
 
@@ -1050,7 +1038,9 @@ contract MinterDAExpSettlementV0 is
      * @return currencyAddress currency address for purchases of project on
      * this minter. This minter always returns null address, reserved for ether
      */
-    function getPriceInfo(uint256 _projectId)
+    function getPriceInfo(
+        uint256 _projectId
+    )
         external
         view
         returns (

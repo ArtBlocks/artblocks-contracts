@@ -28,8 +28,10 @@ interface IAdminACLV0 {
      * This is useful for updating to a new AdminACL contract.
      * @dev this function should be gated to only superAdmin-like addresses.
      */
-    function transferOwnershipOn(address _contract, address _newAdminACL)
-        external;
+    function transferOwnershipOn(
+        address _contract,
+        address _newAdminACL
+    ) external;
 
     /**
      * @notice Calls renounceOwnership on other contract from this contract.

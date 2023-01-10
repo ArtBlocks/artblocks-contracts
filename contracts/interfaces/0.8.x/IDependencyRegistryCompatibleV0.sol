@@ -18,7 +18,9 @@ interface IDependencyRegistryCompatibleV0 {
      * "1.77777778" for 16:9, etc.)
      * @return scriptCount Count of scripts for project
      */
-    function projectScriptDetails(uint256 _projectId)
+    function projectScriptDetails(
+        uint256 _projectId
+    )
         external
         view
         returns (

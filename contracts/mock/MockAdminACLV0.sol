@@ -35,7 +35,7 @@ contract MockAdminACLV0Events is IAdminACLV0, ERC165 {
      */
     function allowed(
         address _sender,
-        address, /*_contract*/
+        address /*_contract*/,
         bytes4 _selector
     ) external returns (bool) {
         emit ACLCheck(_sender, _selector);
@@ -46,9 +46,10 @@ contract MockAdminACLV0Events is IAdminACLV0, ERC165 {
      * @dev Allows superAdmin to call transferOwnership on other contract from
      * this contract.
      */
-    function transferOwnershipOn(address _contract, address _newAdminACL)
-        external
-    {
+    function transferOwnershipOn(
+        address _contract,
+        address _newAdminACL
+    ) external {
         require(msg.sender == superAdmin, "Only superAdmin");
         Ownable(_contract).transferOwnership(_newAdminACL);
     }
