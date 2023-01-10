@@ -186,6 +186,8 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV1 {
     function registerNFTAddress(
         address _NFTAddress
     ) external onlyCoreAdminACL(this.registerNFTAddress.selector) {
+        // check that core contract implements the `tokenIdToHashSeed` function
+        IGenArt721CoreContractV3WithRandomizer(_NFTAddress).tokenIdToHashSeed(0);
         _registeredNFTAddresses.add(_NFTAddress);
         emit RegisteredNFTAddress(_NFTAddress);
     }
