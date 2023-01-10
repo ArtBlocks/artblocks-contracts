@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.17;
 
-import "./interfaces/0.8.x/IEngineRegistryV0.sol";
+import "../interfaces/0.8.x/IEngineRegistryV0.sol";
 import "@openzeppelin-4.7/contracts/utils/introspection/ERC165.sol";
 
 /**

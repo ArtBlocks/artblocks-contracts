@@ -52,16 +52,14 @@ interface IFilteredMinterDAExpSettlementV0 is
 
     /// returns latest purchase price for project `_projectId`, or 0 if no
     /// purchases have been made.
-    function getProjectLatestPurchasePrice(uint256 _projectId)
-        external
-        view
-        returns (uint256 latestPurchasePrice);
+    function getProjectLatestPurchasePrice(
+        uint256 _projectId
+    ) external view returns (uint256 latestPurchasePrice);
 
     /// returns the number of settleable invocations for project `_projectId`.
-    function getNumSettleableInvocations(uint256 _projectId)
-        external
-        view
-        returns (uint256 numSettleableInvocations);
+    function getNumSettleableInvocations(
+        uint256 _projectId
+    ) external view returns (uint256 numSettleableInvocations);
 
     /// Returns the current excess settlement funds on project `_projectId`
     /// for address `_walletAddress`.

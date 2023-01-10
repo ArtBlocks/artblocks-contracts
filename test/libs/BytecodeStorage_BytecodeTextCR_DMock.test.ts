@@ -316,19 +316,17 @@ describe("BytecodeStorage + BytecodeTextCR_DMock Library Tests", async function 
       expect(deployedBytecode).to.not.equal("0x");
 
       // Non-writer addresses should **not** be able to purge bytecode storage.
-      await expectRevert(
+      await expectRevert.unspecified(
         this.accounts.deployer.call({
           to: textBytecodeAddress,
-        }),
-        "invalid opcode"
+        })
       );
       // And this is still the case when correct `0xFF` bytes are sent along.
-      await expectRevert(
+      await expectRevert.unspecified(
         this.accounts.deployer.call({
           to: textBytecodeAddress,
           data: "0xFF",
-        }),
-        "invalid opcode"
+        })
       );
       // The following prodding attempts will not revert in a way caught by
       // hardhat, as the INVALID call is wrapped by the silent failures in

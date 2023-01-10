@@ -72,9 +72,10 @@ contract MinterSetPriceERC20V1 is ReentrancyGuard, IFilteredMinterV0 {
      * @param _minterFilter Minter filter for which
      * this will a filtered minter.
      */
-    constructor(address _genArt721Address, address _minterFilter)
-        ReentrancyGuard()
-    {
+    constructor(
+        address _genArt721Address,
+        address _minterFilter
+    ) ReentrancyGuard() {
         genArt721CoreAddress = _genArt721Address;
         genArtCoreContract = IGenArt721CoreContractV1(_genArt721Address);
         minterFilterAddress = _minterFilter;
@@ -91,11 +92,9 @@ contract MinterSetPriceERC20V1 is ReentrancyGuard, IFilteredMinterV0 {
      * @param _projectId Project ID to be queried.
      * @return balance Balance of ERC-20
      */
-    function getYourBalanceOfProjectERC20(uint256 _projectId)
-        external
-        view
-        returns (uint256 balance)
-    {
+    function getYourBalanceOfProjectERC20(
+        uint256 _projectId
+    ) external view returns (uint256 balance) {
         balance = IERC20(projectIdToCurrencyAddress[_projectId]).balanceOf(
             msg.sender
         );
@@ -109,11 +108,9 @@ contract MinterSetPriceERC20V1 is ReentrancyGuard, IFilteredMinterV0 {
      * @param _projectId Project ID to be queried.
      * @return remaining Remaining allowance of ERC-20
      */
-    function checkYourAllowanceOfProjectERC20(uint256 _projectId)
-        external
-        view
-        returns (uint256 remaining)
-    {
+    function checkYourAllowanceOfProjectERC20(
+        uint256 _projectId
+    ) external view returns (uint256 remaining) {
         remaining = IERC20(projectIdToCurrencyAddress[_projectId]).allowance(
             msg.sender,
             address(this)
@@ -129,10 +126,9 @@ contract MinterSetPriceERC20V1 is ReentrancyGuard, IFilteredMinterV0 {
      * @dev this enables gas reduction after maxInvocations have been reached -
      * core contracts shall still enforce a maxInvocation check during mint.
      */
-    function setProjectMaxInvocations(uint256 _projectId)
-        external
-        onlyCoreWhitelisted
-    {
+    function setProjectMaxInvocations(
+        uint256 _projectId
+    ) external onlyCoreWhitelisted {
         uint256 invocations;
         uint256 maxInvocations;
         (, , invocations, maxInvocations, , , , , ) = genArtCoreContract
@@ -148,11 +144,9 @@ contract MinterSetPriceERC20V1 is ReentrancyGuard, IFilteredMinterV0 {
      * @notice Warning: Disabling purchaseTo is not supported on this minter.
      * This method exists purely for interface-conformance purposes.
      */
-    function togglePurchaseToDisabled(uint256 _projectId)
-        external
-        view
-        onlyArtist(_projectId)
-    {
+    function togglePurchaseToDisabled(
+        uint256 _projectId
+    ) external view onlyArtist(_projectId) {
         revert("Action not supported");
     }
 
@@ -203,11 +197,9 @@ contract MinterSetPriceERC20V1 is ReentrancyGuard, IFilteredMinterV0 {
      * @param _projectId Project ID to mint a token on.
      * @return tokenId Token ID of minted token
      */
-    function purchase(uint256 _projectId)
-        external
-        payable
-        returns (uint256 tokenId)
-    {
+    function purchase(
+        uint256 _projectId
+    ) external payable returns (uint256 tokenId) {
         tokenId = purchaseTo(msg.sender, _projectId);
         return tokenId;
     }
@@ -219,12 +211,10 @@ contract MinterSetPriceERC20V1 is ReentrancyGuard, IFilteredMinterV0 {
      * @param _projectId Project ID to mint a token on.
      * @return tokenId Token ID of minted token
      */
-    function purchaseTo(address _to, uint256 _projectId)
-        public
-        payable
-        nonReentrant
-        returns (uint256 tokenId)
-    {
+    function purchaseTo(
+        address _to,
+        uint256 _projectId
+    ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
         require(
             !projectMaxHasBeenInvoked[_projectId],
@@ -396,7 +386,9 @@ contract MinterSetPriceERC20V1 is ReentrancyGuard, IFilteredMinterV0 {
      * @return currencyAddress currency address for purchases of project on
      * this minter. Null address reserved for ether.
      */
-    function getPriceInfo(uint256 _projectId)
+    function getPriceInfo(
+        uint256 _projectId
+    )
         external
         view
         returns (

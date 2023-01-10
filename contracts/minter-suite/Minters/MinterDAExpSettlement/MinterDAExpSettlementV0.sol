@@ -5,8 +5,8 @@ import "../../../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
 import "../../../interfaces/0.8.x/IMinterFilterV0.sol";
 import "../../../interfaces/0.8.x/IFilteredMinterDAExpSettlementV0.sol";
 
-import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin-4.5/contracts/utils/math/SafeCast.sol";
+import "@openzeppelin-4.7/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
 
 pragma solidity 0.8.17;
 
@@ -98,9 +98,12 @@ contract MinterDAExpSettlementV0 is
         // max uint64 ~= 1.8e19 sec ~= 570 billion years
         uint64 timestampStart;
         uint64 priceDecayHalfLifeSeconds;
-        uint256 startPrice;
+        // Prices are packed internally as uint128, resulting in a maximum
+        // allowed price of ~3.4e20 ETH. This is many orders of magnitude
+        // greater than current ETH supply.
+        uint128 startPrice;
         // base price is non-zero for all configured auctions on this minter
-        uint256 basePrice;
+        uint128 basePrice;
         // This value is only zero if no purchases have been made on this
         // minter.
         // When non-zero, this value is used as a reference when an auction is
@@ -121,8 +124,10 @@ contract MinterDAExpSettlementV0 is
     uint256 public maximumPriceDecayHalfLifeSeconds = 3600; // 60 minutes
 
     struct Receipt {
-        uint256 netPosted;
-        uint256 numPurchased;
+        // max uint232 allows for > 1e51 ETH (much more than max supply)
+        uint232 netPosted;
+        // max uint24 still allows for > max project supply of 1 million tokens
+        uint24 numPurchased;
     }
     /// user address => project ID => receipt
     mapping(address => mapping(uint256 => Receipt)) receipts;
@@ -176,9 +181,10 @@ contract MinterDAExpSettlementV0 is
      * @param _minterFilter Minter filter for which
      * this will a filtered minter.
      */
-    constructor(address _genArt721Address, address _minterFilter)
-        ReentrancyGuard()
-    {
+    constructor(
+        address _genArt721Address,
+        address _minterFilter
+    ) ReentrancyGuard() {
         genArt721CoreAddress = _genArt721Address;
         genArtCoreContract = IGenArt721CoreContractV3(_genArt721Address);
         minterFilterAddress = _minterFilter;
@@ -196,9 +202,7 @@ contract MinterDAExpSettlementV0 is
      * occurred. Therefore, the local caching of max invocations is not
      * beneficial or necessary.
      */
-    function setProjectMaxInvocations(
-        uint256 /*_projectId*/
-    ) external pure {
+    function setProjectMaxInvocations(uint256 /*_projectId*/) external pure {
         // not implemented because maxInvocations must be checked during every mint
         // to know if final price should be set
         revert(
@@ -210,11 +214,9 @@ contract MinterDAExpSettlementV0 is
      * @notice Warning: Disabling purchaseTo is not supported on this minter.
      * This method exists purely for interface-conformance purposes.
      */
-    function togglePurchaseToDisabled(uint256 _projectId)
-        external
-        view
-        onlyArtist(_projectId)
-    {
+    function togglePurchaseToDisabled(
+        uint256 _projectId
+    ) external view onlyArtist(_projectId) {
         revert("Action not supported");
     }
 
@@ -241,18 +243,18 @@ contract MinterDAExpSettlementV0 is
      * @param _projectId projectId to be queried
      *
      */
-    function projectMaxHasBeenInvoked(uint256 _projectId)
-        external
-        view
-        returns (bool)
-    {
+    function projectMaxHasBeenInvoked(
+        uint256 _projectId
+    ) external view returns (bool) {
         return projectConfig[_projectId].maxHasBeenInvoked;
     }
 
     /**
      * @notice projectId => auction parameters
      */
-    function projectAuctionParameters(uint256 _projectId)
+    function projectAuctionParameters(
+        uint256 _projectId
+    )
         external
         view
         returns (
@@ -316,10 +318,16 @@ contract MinterDAExpSettlementV0 is
      * If a previous auction existed on this minter and at least one settleable
      * purchase has been made, this value must be less than or equal to the
      * price when the previous auction was paused. This enforces an overall
-     * monatonically decreasing auction.
-     * @param _basePrice Resting price of the auction, in Wei.
-     * @dev Note that it is intentionally supported here that the configured
-     * price may be explicitly set to `0`.
+     * monatonically decreasing auction. Must be greater than or equal to
+     * max(uint128) for internal storage packing purposes.
+     * @param _basePrice Resting price of the auction, in Wei. Must be greater
+     * than or equal to max(uint128) for internal storage packing purposes.
+     * @dev Note that setting the auction price explicitly to `0` is
+     * intentionally not allowed. This allows the minter to use the assumption
+     * that a price of `0` indicates that the auction is not configured.
+     * @dev Note that prices must be <= max(128) for internal storage packing
+     * efficiency purposes only. This function's interface remains unchanged
+     * for interface conformance purposes.
      */
     function setAuctionDetails(
         uint256 _projectId,
@@ -365,8 +373,8 @@ contract MinterDAExpSettlementV0 is
         _projectConfig.timestampStart = _auctionTimestampStart.toUint64();
         _projectConfig.priceDecayHalfLifeSeconds = _priceDecayHalfLifeSeconds
             .toUint64();
-        _projectConfig.startPrice = _startPrice;
-        _projectConfig.basePrice = _basePrice;
+        _projectConfig.startPrice = _startPrice.toUint128();
+        _projectConfig.basePrice = _basePrice.toUint128();
 
         emit SetAuctionDetails(
             _projectId,
@@ -395,10 +403,9 @@ contract MinterDAExpSettlementV0 is
      * surpass (payments - excess_settlement_funds) for a given project.
      * @param _projectId Project ID to set auction details for.
      */
-    function resetAuctionDetails(uint256 _projectId)
-        external
-        onlyCoreAdminACL(this.resetAuctionDetails.selector)
-    {
+    function resetAuctionDetails(
+        uint256 _projectId
+    ) external onlyCoreAdminACL(this.resetAuctionDetails.selector) {
         // CHECKS
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         require(_projectConfig.startPrice != 0, "Auction must be configured");
@@ -486,8 +493,11 @@ contract MinterDAExpSettlementV0 is
      * to be reset, and excess settlement funds will become immutable and fully
      * deterministic.
      */
-    function withdrawArtistAndAdminRevenues(uint256 _projectId)
+    function withdrawArtistAndAdminRevenues(
+        uint256 _projectId
+    )
         external
+        nonReentrant
         onlyCoreAdminACLOrArtist(
             _projectId,
             this.withdrawArtistAndAdminRevenues.selector
@@ -544,11 +554,9 @@ contract MinterDAExpSettlementV0 is
      * @param _projectId Project ID to mint a token on.
      * @return tokenId Token ID of minted token
      */
-    function purchase(uint256 _projectId)
-        external
-        payable
-        returns (uint256 tokenId)
-    {
+    function purchase(
+        uint256 _projectId
+    ) external payable returns (uint256 tokenId) {
         tokenId = purchaseTo_do6(msg.sender, _projectId);
         return tokenId;
     }
@@ -556,11 +564,9 @@ contract MinterDAExpSettlementV0 is
     /**
      * @notice gas-optimized version of purchase(uint256).
      */
-    function purchase_H4M(uint256 _projectId)
-        external
-        payable
-        returns (uint256 tokenId)
-    {
+    function purchase_H4M(
+        uint256 _projectId
+    ) external payable returns (uint256 tokenId) {
         tokenId = purchaseTo_do6(msg.sender, _projectId);
         return tokenId;
     }
@@ -572,23 +578,20 @@ contract MinterDAExpSettlementV0 is
      * @param _projectId Project ID to mint a token on.
      * @return tokenId Token ID of minted token
      */
-    function purchaseTo(address _to, uint256 _projectId)
-        external
-        payable
-        returns (uint256 tokenId)
-    {
+    function purchaseTo(
+        address _to,
+        uint256 _projectId
+    ) external payable returns (uint256 tokenId) {
         return purchaseTo_do6(_to, _projectId);
     }
 
     /**
      * @notice gas-optimized version of purchaseTo(address, uint256).
      */
-    function purchaseTo_do6(address _to, uint256 _projectId)
-        public
-        payable
-        nonReentrant
-        returns (uint256 tokenId)
-    {
+    function purchaseTo_do6(
+        address _to,
+        uint256 _projectId
+    ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
 
@@ -610,18 +613,23 @@ contract MinterDAExpSettlementV0 is
         // EFFECTS
         // update the purchaser's receipt and require sufficient net payment
         Receipt storage _receipt = receipts[msg.sender][_projectId];
-        _receipt.netPosted += msg.value;
-        _receipt.numPurchased++;
+        // calculate new receipt state in memory (gas optimization)
+        uint256 receiptNetPosted = _receipt.netPosted + msg.value;
+        uint256 receiptNumPurchased = _receipt.numPurchased + 1;
+        // update Receipt in storage
+        _receipt.netPosted = receiptNetPosted.toUint232();
+        _receipt.numPurchased = receiptNumPurchased.toUint24();
+        // require sufficient payment on project
         require(
-            _receipt.netPosted >= _receipt.numPurchased * currentPriceInWei,
+            receiptNetPosted >= receiptNumPurchased * currentPriceInWei,
             "Must send minimum value to mint"
         );
         // emit event indicating new receipt state
         emit ReceiptUpdated(
             msg.sender,
             _projectId,
-            _receipt.numPurchased,
-            _receipt.netPosted
+            receiptNumPurchased,
+            receiptNetPosted
         );
 
         // update latest purchase price (on this minter) in storage
@@ -702,11 +710,12 @@ contract MinterDAExpSettlementV0 is
     ) public nonReentrant {
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         Receipt storage receipt = receipts[msg.sender][_projectId];
+        uint256 receiptNumPurchased = receipt.numPurchased;
         // CHECKS
         // input validation
         require(_to != address(0), "No claiming to the zero address");
         // require that a user has purchased at least one token on this project
-        require(receipt.numPurchased > 0, "No purchases made by this address");
+        require(receiptNumPurchased > 0, "No purchases made by this address");
         // get the latestPurchasePrice, which returns the sellout price if the
         // auction sold out before reaching base price, or returns the base
         // price if auction has reached base price and artist has withdrawn
@@ -719,19 +728,19 @@ contract MinterDAExpSettlementV0 is
         // EFFECTS
         // calculate the excess settlement funds amount
         // implicit overflow/underflow checks in solidity ^0.8
-        uint256 requiredAmountPosted = receipt.numPurchased *
+        uint256 requiredAmountPosted = receiptNumPurchased *
             currentSettledTokenPrice;
         uint256 excessSettlementFunds = receipt.netPosted -
             requiredAmountPosted;
         // reduce the netPosted (in storage) to value after excess settlement is
         // deducted
-        receipt.netPosted = requiredAmountPosted;
+        receipt.netPosted = requiredAmountPosted.toUint232();
         // emit event indicating new receipt state
         emit ReceiptUpdated(
             msg.sender,
             _projectId,
-            receipt.numPurchased,
-            receipt.netPosted
+            receiptNumPurchased,
+            requiredAmountPosted
         );
 
         // INTERACTIONS
@@ -792,14 +801,15 @@ contract MinterDAExpSettlementV0 is
         // the receipt in storage
         uint256 excessSettlementFunds;
         uint256 projectIdsLength = _projectIds.length;
-        for (uint256 i = 0; i < projectIdsLength; ) {
+        for (uint256 i; i < projectIdsLength; ) {
             uint256 projectId = _projectIds[i];
             ProjectConfig storage _projectConfig = projectConfig[projectId];
             Receipt storage receipt = receipts[msg.sender][projectId];
+            uint256 receiptNumPurchased = receipt.numPurchased;
             // input validation
             // require that a user has purchased at least one token on this project
             require(
-                receipt.numPurchased > 0,
+                receiptNumPurchased > 0,
                 "No purchases made by this address"
             );
             // get the latestPurchasePrice, which returns the sellout price if the
@@ -813,18 +823,18 @@ contract MinterDAExpSettlementV0 is
                 .latestPurchasePrice;
             // calculate the excessSettlementFunds amount
             // implicit overflow/underflow checks in solidity ^0.8
-            uint256 requiredAmountPosted = receipt.numPurchased *
+            uint256 requiredAmountPosted = receiptNumPurchased *
                 currentSettledTokenPrice;
             excessSettlementFunds += (receipt.netPosted - requiredAmountPosted);
             // reduce the netPosted (in storage) to value after excess settlement
             // funds deducted
-            receipt.netPosted = requiredAmountPosted;
+            receipt.netPosted = requiredAmountPosted.toUint232();
             // emit event indicating new receipt state
             emit ReceiptUpdated(
                 msg.sender,
                 projectId,
-                receipt.numPurchased,
-                receipt.netPosted
+                receiptNumPurchased,
+                requiredAmountPosted
             );
             // gas efficiently increment i
             // won't overflow due to for loop, as well as gas limts
@@ -850,9 +860,10 @@ contract MinterDAExpSettlementV0 is
      * @param _projectId Project ID for which funds shall be split.
      * @param _valueInWei Value to be split, in Wei.
      */
-    function _splitETHRevenues(uint256 _projectId, uint256 _valueInWei)
-        internal
-    {
+    function _splitETHRevenues(
+        uint256 _projectId,
+        uint256 _valueInWei
+    ) internal {
         if (_valueInWei > 0) {
             bool success_;
             // split funds between foundation, artist, and artist's
@@ -998,22 +1009,18 @@ contract MinterDAExpSettlementV0 is
      * @notice Gets the latest purchase price for project `_projectId`, or 0 if
      * no purchases have been made.
      */
-    function getProjectLatestPurchasePrice(uint256 _projectId)
-        external
-        view
-        returns (uint256 latestPurchasePrice)
-    {
+    function getProjectLatestPurchasePrice(
+        uint256 _projectId
+    ) external view returns (uint256 latestPurchasePrice) {
         return projectConfig[_projectId].latestPurchasePrice;
     }
 
     /**
      * @notice Gets the number of settleable invocations for project `_projectId`.
      */
-    function getNumSettleableInvocations(uint256 _projectId)
-        external
-        view
-        returns (uint256 numSettleableInvocations)
-    {
+    function getNumSettleableInvocations(
+        uint256 _projectId
+    ) external view returns (uint256 numSettleableInvocations) {
         return projectConfig[_projectId].numSettleableInvocations;
     }
 
@@ -1031,7 +1038,9 @@ contract MinterDAExpSettlementV0 is
      * @return currencyAddress currency address for purchases of project on
      * this minter. This minter always returns null address, reserved for ether
      */
-    function getPriceInfo(uint256 _projectId)
+    function getPriceInfo(
+        uint256 _projectId
+    )
         external
         view
         returns (

@@ -4,7 +4,7 @@ _This document is intended to document and explain the differences between the A
 
 V3 performance metrics are available in [V3_Performance.md](V3_Performance.md)
 
-## The following changes were made in the Core V3 Engine contract:
+## The following changes were made in the Core V3 Engine (3.1.0) contract:
 
 - Removes reference to "curation registry" concept
 - Removes on-chain reference to previous flagship core contracts
@@ -16,3 +16,8 @@ V3 performance metrics are available in [V3_Performance.md](V3_Performance.md)
 - Coalesced to a single contract standard for both Engine and Partner (Collaborations) contracts.
 - Consolidate renderer/platform provider payment address + percentage update methods to save on deployed contract size (to fit within current contract size limits).
 - Expose a `tokenIdToHashSeed` method in addition to `tokenIdToHash` on the CoreContract, and expose both via the Engine interface.
+
+## The following changes were made in the Core V3 Engine (3.1.1) contract:
+
+- Bug fix a bug to update new artist address in storage when the contract-level state variable `autoApproveArtistSplitProposals` is set to `true`. This bug was introduced in the 3.1.0 release, but all 3.1.0 contracts were deployed with `autoApproveArtistSplitProposals` set to `false`, so this bug was not exposed on mainnet.
+- Minor refactoring and code cleanup.

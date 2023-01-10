@@ -91,9 +91,10 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
      * @param _minterFilter Minter filter for which this will be a
      * filtered minter.
      */
-    constructor(address _genArt721Address, address _minterFilter)
-        ReentrancyGuard()
-    {
+    constructor(
+        address _genArt721Address,
+        address _minterFilter
+    ) ReentrancyGuard() {
         genArt721CoreAddress = _genArt721Address;
         genArtCoreContract = IGenArt721CoreContractV1(_genArt721Address);
         minterFilterAddress = _minterFilter;
@@ -114,10 +115,10 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
      * @param _root root of Merkle tree defining addresses allowed to mint
      * on project `_projectId`.
      */
-    function updateMerkleRoot(uint256 _projectId, bytes32 _root)
-        external
-        onlyArtist(_projectId)
-    {
+    function updateMerkleRoot(
+        uint256 _projectId,
+        bytes32 _root
+    ) external onlyArtist(_projectId) {
         require(_root != bytes32(0), "Root must be provided");
         projectMerkleRoot[_projectId] = _root;
         emit ConfigValueSet(_projectId, CONFIG_MERKLE_ROOT, _root);
@@ -199,10 +200,9 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
      * @dev this enables gas reduction after maxInvocations have been reached -
      * core contracts shall still enforce a maxInvocation check during mint.
      */
-    function setProjectMaxInvocations(uint256 _projectId)
-        external
-        onlyCoreWhitelisted
-    {
+    function setProjectMaxInvocations(
+        uint256 _projectId
+    ) external onlyCoreWhitelisted {
         uint256 invocations;
         uint256 maxInvocations;
         (, , invocations, maxInvocations, , , , , ) = genArtCoreContract
@@ -218,11 +218,9 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
      * @notice Warning: Disabling purchaseTo is not supported on this minter.
      * This method exists purely for interface-conformance purposes.
      */
-    function togglePurchaseToDisabled(uint256 _projectId)
-        external
-        view
-        onlyArtist(_projectId)
-    {
+    function togglePurchaseToDisabled(
+        uint256 _projectId
+    ) external view onlyArtist(_projectId) {
         revert("Action not supported");
     }
 
@@ -260,11 +258,10 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
      * @param _proof Merkle proof.
      * @return tokenId Token ID of minted token
      */
-    function purchase(uint256 _projectId, bytes32[] calldata _proof)
-        external
-        payable
-        returns (uint256 tokenId)
-    {
+    function purchase(
+        uint256 _projectId,
+        bytes32[] calldata _proof
+    ) external payable returns (uint256 tokenId) {
         tokenId = purchaseTo(msg.sender, _projectId, _proof);
         return tokenId;
     }
@@ -414,11 +411,9 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
      * @dev default value stated above must be updated if the value of
      * CONFIG_USE_MAX_INVOCATIONS_PER_ADDRESS_OVERRIDE is changed.
      */
-    function projectMaxInvocationsPerAddress(uint256 _projectId)
-        public
-        view
-        returns (uint256)
-    {
+    function projectMaxInvocationsPerAddress(
+        uint256 _projectId
+    ) public view returns (uint256) {
         if (projectUseMaxInvocationsPerAddressOverride[_projectId]) {
             return uint256(projectMaxInvocationsPerAddressOverride[_projectId]);
         } else {
@@ -487,11 +482,10 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
      * @param _address Address to process.
      * @return merkleRoot Merkle root for `_address` and `_proof`
      */
-    function processProofForAddress(bytes32[] calldata _proof, address _address)
-        external
-        pure
-        returns (bytes32)
-    {
+    function processProofForAddress(
+        bytes32[] calldata _proof,
+        address _address
+    ) external pure returns (bytes32) {
         return _proof.processProofCalldata(hashAddress(_address));
     }
 
@@ -509,7 +503,9 @@ contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
      * @return currencyAddress currency address for purchases of project on
      * this minter. This minter always returns null address, reserved for ether
      */
-    function getPriceInfo(uint256 _projectId)
+    function getPriceInfo(
+        uint256 _projectId
+    )
         external
         view
         returns (

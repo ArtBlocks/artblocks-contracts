@@ -108,7 +108,7 @@ for (const coreContractName of coreContractsToTest) {
 
     describe("coreVersion", function () {
       it("returns expected value", async function () {
-        let targetCoreVersion = "v3.1.0";
+        let targetCoreVersion = "v3.1.1";
         const coreVersion = await this.genArt721Core
           .connect(this.accounts.deployer)
           .coreVersion();
@@ -1725,6 +1725,26 @@ for (const coreContractName of coreContractsToTest) {
           .connect(this.accounts.user)
           .tokenIdToProjectId(this.projectTwoTokenOne.toNumber());
         expect(projectId).to.be.equal(this.projectTwo);
+      });
+    });
+
+    describe("tokenIdToHashSeed", function () {
+      it("updates token hash seed from null to non-null when token is minted", async function () {
+        // ensure token hash is initially zero
+        expect(
+          await this.genArt721Core.tokenIdToHashSeed(
+            this.projectZeroTokenZero.toNumber()
+          )
+        ).to.be.equal("0x000000000000000000000000"); // bytes12(0)
+        // mint a token and expect token hash seed to be updated to a non-zero hash
+        await this.minter
+          .connect(this.accounts.artist)
+          .purchase(this.projectZero);
+        expect(
+          await this.genArt721Core.tokenIdToHashSeed(
+            this.projectZeroTokenZero.toNumber()
+          )
+        ).to.not.be.equal(ethers.constants.HashZero);
       });
     });
   });

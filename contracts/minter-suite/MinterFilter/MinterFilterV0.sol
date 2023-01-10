@@ -109,10 +109,9 @@ contract MinterFilterV0 is IMinterFilterV0 {
      * @notice Approves minter `_minterAddress`.
      * @param _minterAddress Minter to be added as an approved minter.
      */
-    function addApprovedMinter(address _minterAddress)
-        external
-        onlyCoreWhitelisted
-    {
+    function addApprovedMinter(
+        address _minterAddress
+    ) external onlyCoreWhitelisted {
         isApprovedMinter[_minterAddress] = true;
         emit MinterApproved(
             _minterAddress,
@@ -124,10 +123,9 @@ contract MinterFilterV0 is IMinterFilterV0 {
      * @notice Removes previously approved minter `_minterAddress`.
      * @param _minterAddress Minter to remove.
      */
-    function removeApprovedMinter(address _minterAddress)
-        external
-        onlyCoreWhitelisted
-    {
+    function removeApprovedMinter(
+        address _minterAddress
+    ) external onlyCoreWhitelisted {
         require(
             numProjectsUsingMinter[_minterAddress] == 0,
             "Only unused minters"
@@ -142,7 +140,10 @@ contract MinterFilterV0 is IMinterFilterV0 {
      * @param _projectId Project ID to set minter for.
      * @param _minterAddress Minter to be the project's minter.
      */
-    function setMinterForProject(uint256 _projectId, address _minterAddress)
+    function setMinterForProject(
+        uint256 _projectId,
+        address _minterAddress
+    )
         external
         onlyCoreWhitelistedOrArtist(_projectId)
         usingApprovedMinter(_minterAddress)
@@ -169,10 +170,9 @@ contract MinterFilterV0 is IMinterFilterV0 {
      * @param _projectId Project ID to remove minter.
      * @dev requires project to have an assigned minter
      */
-    function removeMinterForProject(uint256 _projectId)
-        external
-        onlyCoreWhitelistedOrArtist(_projectId)
-    {
+    function removeMinterForProject(
+        uint256 _projectId
+    ) external onlyCoreWhitelistedOrArtist(_projectId) {
         _removeMinterForProject(_projectId);
     }
 
@@ -182,10 +182,9 @@ contract MinterFilterV0 is IMinterFilterV0 {
      * @dev requires all project IDs to have an assigned minter
      * @dev caution with respect to single tx gas limits
      */
-    function removeMintersForProjects(uint256[] calldata _projectIds)
-        external
-        onlyCoreWhitelisted
-    {
+    function removeMintersForProjects(
+        uint256[] calldata _projectIds
+    ) external onlyCoreWhitelisted {
         uint256 numProjects = _projectIds.length;
         for (uint256 i; i < numProjects; i++) {
             _removeMinterForProject(_projectIds[i]);
@@ -236,11 +235,9 @@ contract MinterFilterV0 is IMinterFilterV0 {
      * @return address Minter address assigned to project `_projectId`
      * @dev requires project to have an assigned minter
      */
-    function getMinterForProject(uint256 _projectId)
-        external
-        view
-        returns (address)
-    {
+    function getMinterForProject(
+        uint256 _projectId
+    ) external view returns (address) {
         (bool _hasMinter, address _currentMinter) = minterForProject.tryGet(
             _projectId
         );
@@ -276,7 +273,9 @@ contract MinterFilterV0 is IMinterFilterV0 {
      * @return minterType minter type of minter at minterAddress
      * @dev index must be < quantity of projects that have assigned minters
      */
-    function getProjectAndMinterInfoAt(uint256 _index)
+    function getProjectAndMinterInfoAt(
+        uint256 _index
+    )
         external
         view
         returns (
