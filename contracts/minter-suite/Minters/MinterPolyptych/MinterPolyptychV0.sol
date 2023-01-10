@@ -670,9 +670,14 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV1 {
          * in case other NFTs are registered, better to check here. Also,
          * function is non-reentrant, so being extra cautious.
          */
-        if (msg.sender != genArtCoreContract.projectIdToArtistAddress(_projectId)) {
+        if (msg.sender == genArtCoreContract.projectIdToArtistAddress(_projectId)) {
             require(
                 IERC721(_ownedNFTAddress).ownerOf(_ownedNFTTokenId) == vault,
+                "Only owner of NFT"
+            );
+        } else {
+            require(
+                IERC721(_ownedNFTAddress).ownerOf(_ownedNFTTokenId) == _to,
                 "Only owner of NFT"
             );
         }
