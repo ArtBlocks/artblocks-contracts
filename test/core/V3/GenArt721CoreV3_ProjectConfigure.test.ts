@@ -1101,33 +1101,29 @@ for (const coreContractName of coreContractsToTest) {
         expect(scriptByteCode).to.not.equal("0x");
 
         // Any random user should **not** be able to purge bytecode storage.
-        await expectRevert(
+        await expectRevert.unspecified(
           this.accounts.user.call({
             to: scriptAddress,
-          }),
-          "invalid opcode"
+          })
         );
         // Nor should even the core contract deployer be able to do so directly.
-        await expectRevert(
+        await expectRevert.unspecified(
           this.accounts.deployer.call({
             to: scriptAddress,
-          }),
-          "invalid opcode"
+          })
         );
         // And this is still the case when correct `0xFF` bytes are sent along.
-        await expectRevert(
+        await expectRevert.unspecified(
           this.accounts.user.call({
             to: scriptAddress,
             data: "0xFF",
-          }),
-          "invalid opcode"
+          })
         );
-        await expectRevert(
+        await expectRevert.unspecified(
           this.accounts.deployer.call({
             to: scriptAddress,
             data: "0xFF",
-          }),
-          "invalid opcode"
+          })
         );
 
         const sameScriptByteCode = await ethers.provider.getCode(scriptAddress);

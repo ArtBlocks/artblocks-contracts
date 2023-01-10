@@ -21,13 +21,9 @@ contract SignVerifierRegistryMock is ERC165, ISignVerifierRegistry {
         return signVerifiers[id];
     }
 
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        virtual
-        override(IERC165, ERC165)
-        returns (bool)
-    {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view virtual override(IERC165, ERC165) returns (bool) {
         return
             interfaceId == type(ISignVerifierRegistry).interfaceId ||
             super.supportsInterface(interfaceId);

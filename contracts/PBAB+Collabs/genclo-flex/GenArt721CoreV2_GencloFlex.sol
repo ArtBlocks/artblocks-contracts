@@ -299,10 +299,10 @@ contract GenArt721CoreV2_GencloFlex is ERC721, IGenArt721CoreV2_PBAB {
         return tokenId;
     }
 
-    function _mintToken(address _to, uint256 _projectId)
-        internal
-        returns (uint256 _tokenId)
-    {
+    function _mintToken(
+        address _to,
+        uint256 _projectId
+    ) internal returns (uint256 _tokenId) {
         uint256 tokenIdToBe = (_projectId * ONE_MILLION) +
             projects[_projectId].invocations;
 
@@ -331,10 +331,9 @@ contract GenArt721CoreV2_GencloFlex is ERC721, IGenArt721CoreV2_PBAB {
     /**
      * @notice Updates preferredIPFSGateway to `_gateway`.
      */
-    function updateIPFSGateway(string calldata _gateway)
-        public
-        onlyWhitelisted
-    {
+    function updateIPFSGateway(
+        string calldata _gateway
+    ) public onlyWhitelisted {
         preferredIPFSGateway = _gateway;
         emit GatewayUpdated(ExternalAssetDependencyType.IPFS, _gateway);
     }
@@ -342,10 +341,9 @@ contract GenArt721CoreV2_GencloFlex is ERC721, IGenArt721CoreV2_PBAB {
     /**
      * @notice Updates preferredArweaveGateway to `_gateway`.
      */
-    function updateArweaveGateway(string calldata _gateway)
-        public
-        onlyWhitelisted
-    {
+    function updateArweaveGateway(
+        string calldata _gateway
+    ) public onlyWhitelisted {
         preferredArweaveGateway = _gateway;
         emit GatewayUpdated(ExternalAssetDependencyType.ARWEAVE, _gateway);
     }
@@ -360,10 +358,9 @@ contract GenArt721CoreV2_GencloFlex is ERC721, IGenArt721CoreV2_PBAB {
     /**
      * @notice Updates render provider address to `_renderProviderAddress`.
      */
-    function updateRenderProviderAddress(address payable _renderProviderAddress)
-        public
-        onlyAdmin
-    {
+    function updateRenderProviderAddress(
+        address payable _renderProviderAddress
+    ) public onlyAdmin {
         renderProviderAddress = _renderProviderAddress;
     }
 
@@ -371,10 +368,9 @@ contract GenArt721CoreV2_GencloFlex is ERC721, IGenArt721CoreV2_PBAB {
      * @notice Updates render provider mint revenue percentage to
      * `_renderProviderPercentage`.
      */
-    function updateRenderProviderPercentage(uint256 _renderProviderPercentage)
-        public
-        onlyAdmin
-    {
+    function updateRenderProviderPercentage(
+        uint256 _renderProviderPercentage
+    ) public onlyAdmin {
         require(_renderProviderPercentage <= 25, "Max of 25%");
         renderProviderPercentage = _renderProviderPercentage;
     }
@@ -410,28 +406,27 @@ contract GenArt721CoreV2_GencloFlex is ERC721, IGenArt721CoreV2_PBAB {
     /**
      * @notice Updates randomizer to `_randomizerAddress`.
      */
-    function updateRandomizerAddress(address _randomizerAddress)
-        public
-        onlyWhitelisted
-    {
+    function updateRandomizerAddress(
+        address _randomizerAddress
+    ) public onlyWhitelisted {
         randomizerContract = IRandomizer(_randomizerAddress);
     }
 
     /**
      * @notice Locks project `_projectId`.
      */
-    function toggleProjectIsLocked(uint256 _projectId)
-        public
-        onlyWhitelisted
-        onlyUnlocked(_projectId)
-    {
+    function toggleProjectIsLocked(
+        uint256 _projectId
+    ) public onlyWhitelisted onlyUnlocked(_projectId) {
         projects[_projectId].locked = true;
     }
 
     /**
      * @notice Locks external asset dependencies for project `_projectId`.
      */
-    function lockProjectExternalAssetDependencies(uint256 _projectId)
+    function lockProjectExternalAssetDependencies(
+        uint256 _projectId
+    )
         external
         onlyArtistOrWhitelisted(_projectId)
         onlyUnlockedProjectExternalAssetDependencies(_projectId)
@@ -460,10 +455,9 @@ contract GenArt721CoreV2_GencloFlex is ERC721, IGenArt721CoreV2_PBAB {
     /**
      * @notice Toggles paused state of project `_projectId`.
      */
-    function toggleProjectIsPaused(uint256 _projectId)
-        public
-        onlyArtist(_projectId)
-    {
+    function toggleProjectIsPaused(
+        uint256 _projectId
+    ) public onlyArtist(_projectId) {
         projects[_projectId].paused = !projects[_projectId].paused;
     }
 
@@ -518,11 +512,10 @@ contract GenArt721CoreV2_GencloFlex is ERC721, IGenArt721CoreV2_PBAB {
     /**
      * @notice Updates name of project `_projectId` to be `_projectName`.
      */
-    function updateProjectName(uint256 _projectId, string memory _projectName)
-        public
-        onlyUnlocked(_projectId)
-        onlyArtistOrWhitelisted(_projectId)
-    {
+    function updateProjectName(
+        uint256 _projectId,
+        string memory _projectName
+    ) public onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) {
         projects[_projectId].name = _projectName;
     }
 
@@ -624,11 +617,10 @@ contract GenArt721CoreV2_GencloFlex is ERC721, IGenArt721CoreV2_PBAB {
      * @param _projectId Project to be updated.
      * @param _script Script to be added.
      */
-    function addProjectScript(uint256 _projectId, string memory _script)
-        public
-        onlyUnlocked(_projectId)
-        onlyArtistOrWhitelisted(_projectId)
-    {
+    function addProjectScript(
+        uint256 _projectId,
+        string memory _script
+    ) public onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) {
         projects[_projectId].scripts[
             projects[_projectId].scriptCount
         ] = _script;
@@ -754,11 +746,9 @@ contract GenArt721CoreV2_GencloFlex is ERC721, IGenArt721CoreV2_PBAB {
     /**
      * @notice Removes last script from project `_projectId`.
      */
-    function removeProjectLastScript(uint256 _projectId)
-        public
-        onlyUnlocked(_projectId)
-        onlyArtistOrWhitelisted(_projectId)
-    {
+    function removeProjectLastScript(
+        uint256 _projectId
+    ) public onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) {
         require(
             projects[_projectId].scriptCount > 0,
             "there are no scripts to remove"
@@ -782,21 +772,20 @@ contract GenArt721CoreV2_GencloFlex is ERC721, IGenArt721CoreV2_PBAB {
     /**
      * @notice Updates ipfs hash for project `_projectId`.
      */
-    function updateProjectIpfsHash(uint256 _projectId, string memory _ipfsHash)
-        public
-        onlyUnlocked(_projectId)
-        onlyArtistOrWhitelisted(_projectId)
-    {
+    function updateProjectIpfsHash(
+        uint256 _projectId,
+        string memory _ipfsHash
+    ) public onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) {
         projects[_projectId].ipfsHash = _ipfsHash;
     }
 
     /**
      * @notice Updates base URI for project `_projectId` to `_newBaseURI`.
      */
-    function updateProjectBaseURI(uint256 _projectId, string memory _newBaseURI)
-        public
-        onlyArtist(_projectId)
-    {
+    function updateProjectBaseURI(
+        uint256 _projectId,
+        string memory _newBaseURI
+    ) public onlyArtist(_projectId) {
         projects[_projectId].projectBaseURI = _newBaseURI;
     }
 
@@ -809,7 +798,9 @@ contract GenArt721CoreV2_GencloFlex is ERC721, IGenArt721CoreV2_PBAB {
      * @return website Project website
      * @return license Project license
      */
-    function projectDetails(uint256 _projectId)
+    function projectDetails(
+        uint256 _projectId
+    )
         public
         view
         returns (
@@ -841,7 +832,9 @@ contract GenArt721CoreV2_GencloFlex is ERC721, IGenArt721CoreV2_PBAB {
      * @return currency Symbol of project's currency
      * @return currencyAddress Address of project's currency
      */
-    function projectTokenInfo(uint256 _projectId)
+    function projectTokenInfo(
+        uint256 _projectId
+    )
         public
         view
         returns (
@@ -878,7 +871,9 @@ contract GenArt721CoreV2_GencloFlex is ERC721, IGenArt721CoreV2_PBAB {
      * @return locked Boolean representing if project is locked
      * @return paused Boolean representing if project is paused
      */
-    function projectScriptInfo(uint256 _projectId)
+    function projectScriptInfo(
+        uint256 _projectId
+    )
         public
         view
         returns (
@@ -900,11 +895,10 @@ contract GenArt721CoreV2_GencloFlex is ERC721, IGenArt721CoreV2_PBAB {
      * @notice Returns script for project `_projectId` at script index `_index`
 
      */
-    function projectScriptByIndex(uint256 _projectId, uint256 _index)
-        public
-        view
-        returns (string memory)
-    {
+    function projectScriptByIndex(
+        uint256 _projectId,
+        uint256 _index
+    ) public view returns (string memory) {
         return projects[_projectId].scripts[_index];
     }
 
@@ -921,22 +915,18 @@ contract GenArt721CoreV2_GencloFlex is ERC721, IGenArt721CoreV2_PBAB {
     /**
      * @notice Returns external asset dependency count for project `_projectId` at index `_index`.
      */
-    function projectExternalAssetDependencyCount(uint256 _projectId)
-        public
-        view
-        returns (uint256)
-    {
+    function projectExternalAssetDependencyCount(
+        uint256 _projectId
+    ) public view returns (uint256) {
         return uint256(projects[_projectId].externalAssetDependencyCount);
     }
 
     /**
      * @notice Returns base URI for project `_projectId`.
      */
-    function projectURIInfo(uint256 _projectId)
-        public
-        view
-        returns (string memory projectBaseURI)
-    {
+    function projectURIInfo(
+        uint256 _projectId
+    ) public view returns (string memory projectBaseURI) {
         projectBaseURI = projects[_projectId].projectBaseURI;
     }
 
@@ -950,7 +940,9 @@ contract GenArt721CoreV2_GencloFlex is ERC721, IGenArt721CoreV2_PBAB {
      * @return royaltyFeeByID Total royalty percentage to be sent to
      * combination of artist and additional payee
      */
-    function getRoyaltyData(uint256 _tokenId)
+    function getRoyaltyData(
+        uint256 _tokenId
+    )
         public
         view
         returns (
@@ -975,13 +967,9 @@ contract GenArt721CoreV2_GencloFlex is ERC721, IGenArt721CoreV2_PBAB {
     /**
      * @notice Gets token URI for token ID `_tokenId`.
      */
-    function tokenURI(uint256 _tokenId)
-        public
-        view
-        override
-        onlyValidTokenId(_tokenId)
-        returns (string memory)
-    {
+    function tokenURI(
+        uint256 _tokenId
+    ) public view override onlyValidTokenId(_tokenId) returns (string memory) {
         return
             string(
                 abi.encodePacked(

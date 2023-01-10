@@ -24,7 +24,10 @@ interface IArtblocksRoyaltyOverride is IERC165 {
      *
      * => 0x9ca7dc7a = 0x9ca7dc7a
      */
-    function getRoyalties(address tokenAddress, uint256 tokenId)
+    function getRoyalties(
+        address tokenAddress,
+        uint256 tokenId
+    )
         external
         view
         returns (address payable[] memory recipients_, uint256[] memory bps);

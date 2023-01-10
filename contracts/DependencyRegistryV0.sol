@@ -152,7 +152,9 @@ contract DependencyRegistryV0 is
      * @notice Removes a dependency.
      * @param _dependencyType Name of dependency type (i.e. "type@version")
      */
-    function removeDependency(bytes32 _dependencyType)
+    function removeDependency(
+        bytes32 _dependencyType
+    )
         external
         onlyAdminACL(this.removeDependency.selector)
         onlyExistingDependencyType(_dependencyType)
@@ -177,7 +179,10 @@ contract DependencyRegistryV0 is
      * @param _script Script to be added. Required to be a non-empty string,
      * but no further validation is performed.
      */
-    function addDependencyScript(bytes32 _dependencyType, string memory _script)
+    function addDependencyScript(
+        bytes32 _dependencyType,
+        string memory _script
+    )
         external
         onlyAdminACL(this.addDependencyScript.selector)
         onlyNonEmptyString(_script)
@@ -236,7 +241,9 @@ contract DependencyRegistryV0 is
      * @notice Removes last script from dependency `_dependencyType`.
      * @param _dependencyType dependency to be updated.
      */
-    function removeDependencyLastScript(bytes32 _dependencyType)
+    function removeDependencyLastScript(
+        bytes32 _dependencyType
+    )
         external
         onlyAdminACL(this.removeDependencyLastScript.selector)
         onlyExistingDependencyType(_dependencyType)
@@ -513,7 +520,9 @@ contract DependencyRegistryV0 is
      * @notice Adds a new core contract to the list of supported core contracts.
      * @param _contractAddress Address of the core contract to be added.
      */
-    function addSupportedCoreContract(address _contractAddress)
+    function addSupportedCoreContract(
+        address _contractAddress
+    )
         external
         onlyAdminACL(this.addSupportedCoreContract.selector)
         onlyNonZeroAddress(_contractAddress)
@@ -532,7 +541,9 @@ contract DependencyRegistryV0 is
      * @notice Removes a core contract from the list of supported core contracts.
      * @param _contractAddress Address of the core contract to be removed.
      */
-    function removeSupportedCoreContract(address _contractAddress)
+    function removeSupportedCoreContract(
+        address _contractAddress
+    )
         external
         onlyAdminACL(this.removeSupportedCoreContract.selector)
         onlySupportedCoreContract(_contractAddress)
@@ -623,11 +634,9 @@ contract DependencyRegistryV0 is
      * @notice Returns registered depenedency type at index `_index`.
      * @return Registered dependency at `_index`.
      */
-    function getDependencyTypeAtIndex(uint256 _index)
-        external
-        view
-        returns (string memory)
-    {
+    function getDependencyTypeAtIndex(
+        uint256 _index
+    ) external view returns (string memory) {
         require(_dependencyTypes.length() > _index, "Index out of range");
         return _dependencyTypes.at(_index).toString();
     }
@@ -645,7 +654,9 @@ contract DependencyRegistryV0 is
      * @return availableOnChain Whether dependency is available on chain
      * @return scriptCount Count of on-chain scripts for dependency
      */
-    function getDependencyDetails(bytes32 _dependencyType)
+    function getDependencyDetails(
+        bytes32 _dependencyType
+    )
         external
         view
         returns (
@@ -686,11 +697,9 @@ contract DependencyRegistryV0 is
      * @param _index Index of the core contract to be returned.
      * @return address of the core contract.
      */
-    function getSupportedCoreContractAtIndex(uint256 _index)
-        external
-        view
-        returns (address)
-    {
+    function getSupportedCoreContractAtIndex(
+        uint256 _index
+    ) external view returns (address) {
         require(
             _supportedCoreContracts.length() > _index,
             "Index out of bounds"
@@ -750,11 +759,9 @@ contract DependencyRegistryV0 is
      * @notice Returns the count of scripts for dependency `_dependencyType`.
      * @param _dependencyType Dependency type to be queried.
      */
-    function getDependencyScriptCount(bytes32 _dependencyType)
-        external
-        view
-        returns (uint256)
-    {
+    function getDependencyScriptCount(
+        bytes32 _dependencyType
+    ) external view returns (uint256) {
         return dependencyDetails[_dependencyType].scriptCount;
     }
 
@@ -775,11 +782,10 @@ contract DependencyRegistryV0 is
      * @param _dependencyType dependency to be queried.
      * @param _index Index of script to be queried.
      */
-    function getDependencyScriptAtIndex(bytes32 _dependencyType, uint256 _index)
-        external
-        view
-        returns (string memory)
-    {
+    function getDependencyScriptAtIndex(
+        bytes32 _dependencyType,
+        uint256 _index
+    ) external view returns (string memory) {
         Dependency storage dependency = dependencyDetails[_dependencyType];
         // If trying to access an out-of-index script, return the empty string.
         if (_index >= dependency.scriptCount) {

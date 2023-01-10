@@ -70,10 +70,9 @@ interface IDependencyRegistryV0 {
      * @notice Returns the count of scripts for dependency `_dependencyType`.
      * @param _dependencyType Dependency type to be queried.
      */
-    function getDependencyScriptCount(bytes32 _dependencyType)
-        external
-        view
-        returns (uint256);
+    function getDependencyScriptCount(
+        bytes32 _dependencyType
+    ) external view returns (uint256);
 
     /**
      * @notice Returns address with bytecode containing script for
