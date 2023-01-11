@@ -4,11 +4,11 @@
 
 [![Coverage Status](https://coveralls.io/repos/github/ArtBlocks/artblocks-contracts/badge.svg?branch=main)](https://coveralls.io/github/ArtBlocks/artblocks-contracts?branch=main)
 
-## License
+A collection of smart contracts used by [Art Blocks](https://artblocks.io) for our flagship product, as well as Artblocks Engine products.
 
-The Art Blocks `artblocks-contracts` repo is open source software licensed under the GNU Lesser General Public License v3.0. For full license text, please see our [LICENSE](https://github.com/ArtBlocks/artblocks-contracts/blob/main/LICENSE) declaration file.
+This repository is actively used and maintained by the Art Blocks team. We welcome contributions from the community. Please see our [Contributing](#contributing) section more information.
 
-## Initial Setup
+# Initial Setup
 
 ### install packages
 
@@ -44,7 +44,29 @@ Create a `.env` file by duplicating `.env.example` and populating all variables.
 
 `yarn format`
 
-## Deployments
+## Contributing
+
+We welcome contributions from the community!
+
+Please read through our [Design Guidelines](#design-guidelines), [Solidity Gotchas](./solidity-gotchas.md), and [Testing Philosophy](./test/README.md) sections before contributing.
+
+In addition to meeting our design guidelines, all code must pass all tests and be formatted with prettier before being merged into the main branch. To run the tests, run `yarn test`. To format the code, run `yarn format`.
+
+## Design Guidelines
+
+While not all existing code may strictly adhere to these guidelines, we are working to improve the codebase over time.
+
+We aim to follow the [OpenZeppelin Design Guidelines](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/GUIDELINES.md) when contributing new code. Importantly, this includes following the recommendations documented in the [Solidity style guide](https://docs.soliditylang.org/en/latest/style-guide.html).
+
+# Documentation
+
+Documentation for contracts us deployed via GitHub pages at: https://artblocks.github.io/artblocks-contracts/
+
+Documentation for contracts may also be generated via `yarn docgen`. Most Art Blocks contracts use [NatSpec](https://docs.soliditylang.org/en/v0.8.9/natspec-format.html#documentation-example) comments to automatically enrich generated documentation. Some contracts use [dynamic expressions](https://docs.soliditylang.org/en/v0.8.9/natspec-format.html#dynamic-expressions) to improve user experience.
+
+# Deployments
+
+## Deploying New Contracts
 
 Deployment script templates are located in the `./scripts` directory. To run a deployment script `deploy.ts`:
 
@@ -166,13 +188,7 @@ For deployed core contracts, see the archived source code in the `/posterity/eng
 
 In an effort to ensure source code verification is easily completed by anyone, After 10, January 2023, all mainnet deployments should also have a corresponding tag+release in this GitHub repository. For deployments prior to this date, PR history may be used to determine the commit hash used for a given deployment. Currently, all mainnet deployments of contracts developed in this repositiory are verified on Etherscan.
 
-## Contract Documentation
-
-Documentation for contracts is deployed via GitHub pages at: https://artblocks.github.io/artblocks-contracts/
-
-Documentation for contracts may also be generated via `yarn docgen`. Most Art Blocks contracts use [NatSpec](https://docs.soliditylang.org/en/v0.8.9/natspec-format.html#documentation-example) comments to automatically enrich generated documentation. Some contracts use [dynamic expressions](https://docs.soliditylang.org/en/v0.8.9/natspec-format.html#dynamic-expressions) to improve user experience.
-
-## Royalty Registry
+# Royalty Registry
 
 Art Blocks supports lookups of all mainnet flagship, partnership, and PBAB tokens on Manifold's [Royalty Registry](https://royaltyregistry.xyz/lookup). This enables on-chain royalty lookups for all Art Blocks NFTs, and allows for the creation of royalty streams for artists and other creators.
 
@@ -230,6 +246,8 @@ Additionally, the following settings may be configured/changed by a core contrac
 - **Change Art Blocks Royalty Payment Address**
   - The address to receive Art Blocks royalty payments may be updated by a core contract's admin via the royalty override contract's function `updateArtblocksRoyaltyAddressForContract`.
 
+# References
+
 ## Running Gas Reports for Solidity Methods & Deployments
 
 Your `.env` file should contain a `COINMARKETCAP_API_KEY` param in order to calculate ethereum gas costs. The key value can be found in the Engineering team's shared 1Password account. Additionally, you'll need to add the following object within the `module.exports` key in hardhat.config.ts:
@@ -259,12 +277,10 @@ After this config is finished, you'll notice a `usd (avg)` column in the auto-ge
   - [0x0E8BD86663e3c2418900178e96E14c51B2859957](https://etherscan.io/address/0x0E8BD86663e3c2418900178e96E14c51B2859957)
   - These are the Smart contract that received funds from primary sales and split them between the artist(s) and the platform. Artists received funds directly from this contract. These minter contracts are no longer in use.
 
-## Contributing
-
-All code must pass all tests and be formatted with prettier before being merged into the main branch. To run the tests, run `yarn test`. To format the code, run `yarn format`. Testing coverage is also required for all new code. For additional information about our testing philosophy at Art Blocks, please see our [Testing Philosophy](./test/README.md) document.
-
-We also recommend reading through our [Solidity Gotchas](./solidity-gotchas.md) document to avoid common pitfalls that we've encountered in the past.
-
-## Useful References
+## Other Useful References
 
 [evm.codes](https://www.evm.codes/) - An interactive guide to EVM op-code costs.
+
+# License
+
+The Art Blocks `artblocks-contracts` repo is open source software licensed under the GNU Lesser General Public License v3.0. For full license text, please see our [LICENSE](https://github.com/ArtBlocks/artblocks-contracts/blob/main/LICENSE) declaration file.
