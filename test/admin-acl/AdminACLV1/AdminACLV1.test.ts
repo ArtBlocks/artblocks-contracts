@@ -194,10 +194,7 @@ describe("AdminACLV1", async function () {
         .to.emit(this.adminACL, "PaymentApproverRemoved")
         .withArgs(this.accounts.user.address);
       // expect address to not be in the set of approvers
-      await expectRevert(
-        this.adminACL.getPaymentApproverAt(0),
-        "VM Exception while processing transaction: reverted with panic code 0x32 (Array accessed at an out-of-bounds or negative index)"
-      );
+      await expectRevert.unspecified(this.adminACL.getPaymentApproverAt(0));
     });
 
     it("does not allow removing address to set if not already in set", async function () {

@@ -76,9 +76,10 @@ contract AdminACLV1 is IAdminACLV0, ERC165 {
      * @dev This implementation requires that the new AdminACL contract
      * broadcasts support of IAdminACLV0 via ERC165 interface detection.
      */
-    function transferOwnershipOn(address _contract, address _newAdminACL)
-        external
-    {
+    function transferOwnershipOn(
+        address _contract,
+        address _newAdminACL
+    ) external {
         require(msg.sender == superAdmin, "Only superAdmin");
         // ensure new AdminACL contract supports IAdminACLV0
         require(
@@ -108,7 +109,7 @@ contract AdminACLV1 is IAdminACLV0, ERC165 {
      */
     function allowed(
         address _sender,
-        address, /*_contract*/
+        address /*_contract*/,
         bytes4 _selector
     ) external view returns (bool) {
         // always allow superAdmin
@@ -173,24 +174,18 @@ contract AdminACLV1 is IAdminACLV0, ERC165 {
      * @return NFTAddress payment approver address at index `_index`
      * @dev index must be < quantity of registered payment approvers
      */
-    function getPaymentApproverAt(uint256 _index)
-        external
-        view
-        returns (address NFTAddress)
-    {
+    function getPaymentApproverAt(
+        uint256 _index
+    ) external view returns (address NFTAddress) {
         return _paymentApprovers.at(_index);
     }
 
     /**
      * @inheritdoc ERC165
      */
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        virtual
-        override(ERC165)
-        returns (bool)
-    {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view virtual override(ERC165) returns (bool) {
         return
             interfaceId == type(IAdminACLV0).interfaceId ||
             super.supportsInterface(interfaceId);

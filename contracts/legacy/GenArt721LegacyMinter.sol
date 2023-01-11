@@ -29,22 +29,18 @@ contract GenArt721LegacyMinter {
         artblocksContract = IGenArt721CoreContractV1(_genArt721Address);
     }
 
-    function getYourBalanceOfProjectERC20(uint256 _projectId)
-        public
-        view
-        returns (uint256)
-    {
+    function getYourBalanceOfProjectERC20(
+        uint256 _projectId
+    ) public view returns (uint256) {
         uint256 balance = IERC20(
             artblocksContract.projectIdToCurrencyAddress(_projectId)
         ).balanceOf(msg.sender);
         return balance;
     }
 
-    function checkYourAllowanceOfProjectERC20(uint256 _projectId)
-        public
-        view
-        returns (uint256)
-    {
+    function checkYourAllowanceOfProjectERC20(
+        uint256 _projectId
+    ) public view returns (uint256) {
         uint256 remaining = IERC20(
             artblocksContract.projectIdToCurrencyAddress(_projectId)
         ).allowance(msg.sender, address(this));
@@ -103,19 +99,17 @@ contract GenArt721LegacyMinter {
         projectIdToBonusContractAddress[_projectId] = _bonusContractAddress;
     }
 
-    function purchase(uint256 _projectId)
-        public
-        payable
-        returns (uint256 _tokenId)
-    {
+    function purchase(
+        uint256 _projectId
+    ) public payable returns (uint256 _tokenId) {
         return purchaseTo(msg.sender, _projectId);
     }
 
     //removed public and payable
-    function purchaseTo(address _to, uint256 _projectId)
-        private
-        returns (uint256 _tokenId)
-    {
+    function purchaseTo(
+        address _to,
+        uint256 _projectId
+    ) private returns (uint256 _tokenId) {
         require(
             !projectMaxHasBeenInvoked[_projectId],
             "Maximum number of invocations reached"
@@ -226,8 +220,8 @@ contract GenArt721LegacyMinter {
             uint256 creatorFunds = projectFunds.sub(additionalPayeeAmount);
             if (creatorFunds > 0) {
                 artblocksContract.projectIdToArtistAddress(_projectId).transfer(
-                        creatorFunds
-                    );
+                    creatorFunds
+                );
             }
         }
     }

@@ -56,11 +56,9 @@ contract BytecodeTextCR_DMock {
      * @dev Intentionally do not perform input validation, instead allowing
      *      the underlying BytecodeStorage lib to throw errors where applicable.
      */
-    function createText(string memory _text)
-        external
-        onlyDeployer
-        returns (uint256)
-    {
+    function createText(
+        string memory _text
+    ) external onlyDeployer returns (uint256) {
         // store text in contract bytecode
         storedTextBytecodeAddresses[nextTextSlotId] = _text.writeToBytecode();
         // record written slot before incrementing
@@ -109,11 +107,9 @@ contract BytecodeTextCR_DMock {
      * @dev Intentionally do not perform input validation, instead allowing
      *      the underlying BytecodeStorage lib to throw errors where applicable.
      */
-    function readTextAtAddress(address _bytecodeAddress)
-        public
-        view
-        returns (string memory)
-    {
+    function readTextAtAddress(
+        address _bytecodeAddress
+    ) public view returns (string memory) {
         return _bytecodeAddress.readFromBytecode();
     }
 
@@ -126,11 +122,9 @@ contract BytecodeTextCR_DMock {
      * @dev Intentionally do not perform input validation, instead allowing
      *      the underlying BytecodeStorage lib to throw errors where applicable.
      */
-    function readAuthorForTextAtAddress(address _bytecodeAddress)
-        public
-        view
-        returns (address)
-    {
+    function readAuthorForTextAtAddress(
+        address _bytecodeAddress
+    ) public view returns (address) {
         return _bytecodeAddress.getWriterAddressForBytecode();
     }
 
@@ -141,10 +135,9 @@ contract BytecodeTextCR_DMock {
      * @dev Intentionally do not perform input validation, instead allowing
      *      the underlying BytecodeStorage lib to throw errors where applicable.
      */
-    function deleteTextAtAddress(address _bytecodeAddress)
-        external
-        onlyDeployer
-    {
+    function deleteTextAtAddress(
+        address _bytecodeAddress
+    ) external onlyDeployer {
         // purge old contract bytecode contract from the blockchain state
         _bytecodeAddress.purgeBytecode();
     }
@@ -157,14 +150,11 @@ contract BytecodeTextCR_DMock {
      * @param _data aribtrary data to send as call-data for raw `.call`.
      * @dev WARNING - THIS IS NOT SECURE AND SHOULD NOT BE USED IN PRODUCTION.
      */
-    function callWithNonsenseData(address _bytecodeAddress, bytes memory _data)
-        external
-        onlyDeployer
-    {
-        (
-            bool success, /* `data` not needed */
-
-        ) = _bytecodeAddress.call(_data);
+    function callWithNonsenseData(
+        address _bytecodeAddress,
+        bytes memory _data
+    ) external onlyDeployer {
+        (bool success /* `data` not needed */, ) = _bytecodeAddress.call(_data);
         if (success) {
             // WARNING - This implementation does not make use of the low-level
             //           call return result indicating success/failure. This is
@@ -182,10 +172,7 @@ contract BytecodeTextCR_DMock {
      * @dev WARNING - THIS IS NOT SECURE AND SHOULD NOT BE USED IN PRODUCTION.
      */
     function callWithoutData(address _bytecodeAddress) external onlyDeployer {
-        (
-            bool success, /* `data` not needed */
-
-        ) = _bytecodeAddress.call("");
+        (bool success /* `data` not needed */, ) = _bytecodeAddress.call("");
         if (success) {
             // WARNING - This implementation does not make use of the low-level
             //           call return result indicating success/failure. This is

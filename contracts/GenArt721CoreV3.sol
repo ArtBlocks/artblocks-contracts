@@ -43,7 +43,7 @@ import "./libs/0.8.x/Bytes32Strings.sol";
  * - forbidNewProjects (forever forbidding new projects)
  * - updateDefaultBaseURI (used to initialize new project base URIs)
  * ----------------------------------------------------------------------------
- * The following functions are restricted to either the the Artist address or
+ * The following functions are restricted to either the Artist address or
  * the Admin ACL contract, only when the project is not locked:
  * - updateProjectName
  * - updateProjectArtistName
@@ -447,10 +447,10 @@ contract GenArt721CoreV3 is
      * for indexing purposes, it must be emitted by the randomizer. This is to
      * minimize gas when minting.
      */
-    function setTokenHash_8PT(uint256 _tokenId, bytes32 _hashSeed)
-        external
-        onlyValidTokenId(_tokenId)
-    {
+    function setTokenHash_8PT(
+        uint256 _tokenId,
+        bytes32 _hashSeed
+    ) external onlyValidTokenId(_tokenId) {
         OwnerAndHashSeed storage ownerAndHashSeed = _ownersAndHashSeeds[
             _tokenId
         ];
@@ -606,7 +606,9 @@ contract GenArt721CoreV3 is
      * @notice Updates minter to `_address`.
      * @param _address Address of new minter.
      */
-    function updateMinterContract(address _address)
+    function updateMinterContract(
+        address _address
+    )
         external
         onlyAdminACL(this.updateMinterContract.selector)
         onlyNonZeroAddress(_address)
@@ -619,7 +621,9 @@ contract GenArt721CoreV3 is
      * @notice Updates randomizer to `_randomizerAddress`.
      * @param _randomizerAddress Address of new randomizer.
      */
-    function updateRandomizerAddress(address _randomizerAddress)
+    function updateRandomizerAddress(
+        address _randomizerAddress
+    )
         external
         onlyAdminACL(this.updateRandomizerAddress.selector)
         onlyNonZeroAddress(_randomizerAddress)
@@ -631,7 +635,9 @@ contract GenArt721CoreV3 is
      * @notice Toggles project `_projectId` as active/inactive.
      * @param _projectId Project ID to be toggled.
      */
-    function toggleProjectIsActive(uint256 _projectId)
+    function toggleProjectIsActive(
+        uint256 _projectId
+    )
         external
         onlyAdminACL(this.toggleProjectIsActive.selector)
         onlyValidProjectId(_projectId)
@@ -867,10 +873,9 @@ contract GenArt721CoreV3 is
      * @notice Toggles paused state of project `_projectId`.
      * @param _projectId Project ID to be toggled.
      */
-    function toggleProjectIsPaused(uint256 _projectId)
-        external
-        onlyArtist(_projectId)
-    {
+    function toggleProjectIsPaused(
+        uint256 _projectId
+    ) external onlyArtist(_projectId) {
         projects[_projectId].paused = !projects[_projectId].paused;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_PAUSED);
     }
@@ -918,7 +923,10 @@ contract GenArt721CoreV3 is
      * @param _projectId Project ID.
      * @param _projectName New project name.
      */
-    function updateProjectName(uint256 _projectId, string memory _projectName)
+    function updateProjectName(
+        uint256 _projectId,
+        string memory _projectName
+    )
         external
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.updateProjectName.selector)
@@ -1072,7 +1080,10 @@ contract GenArt721CoreV3 is
      * @param _script Script to be added. Required to be a non-empty string,
      * but no further validation is performed.
      */
-    function addProjectScript(uint256 _projectId, string memory _script)
+    function addProjectScript(
+        uint256 _projectId,
+        string memory _script
+    )
         external
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.addProjectScript.selector)
@@ -1125,7 +1136,9 @@ contract GenArt721CoreV3 is
      * @notice Removes last script from project `_projectId`.
      * @param _projectId Project to be updated.
      */
-    function removeProjectLastScript(uint256 _projectId)
+    function removeProjectLastScript(
+        uint256 _projectId
+    )
         external
         onlyUnlocked(_projectId)
         onlyArtistOrAdminACL(_projectId, this.removeProjectLastScript.selector)
@@ -1141,7 +1154,9 @@ contract GenArt721CoreV3 is
         // result in not removing the bytecode from the blockchain state. This
         // implementation is compatible with that architecture, as it does not
         // rely on the bytecode being removed from the blockchain state.
-        project.scriptBytecodeAddresses[project.scriptCount - 1].purgeBytecode();
+        project
+            .scriptBytecodeAddresses[project.scriptCount - 1]
+            .purgeBytecode();
         // delete reference to contract address that no longer exists
         delete project.scriptBytecodeAddresses[project.scriptCount - 1];
         unchecked {
@@ -1232,11 +1247,10 @@ contract GenArt721CoreV3 is
      * @param _projectId Project to be updated.
      * @param _newBaseURI New base URI.
      */
-    function updateProjectBaseURI(uint256 _projectId, string memory _newBaseURI)
-        external
-        onlyArtist(_projectId)
-        onlyNonEmptyString(_newBaseURI)
-    {
+    function updateProjectBaseURI(
+        uint256 _projectId,
+        string memory _newBaseURI
+    ) external onlyArtist(_projectId) onlyNonEmptyString(_newBaseURI) {
         projects[_projectId].projectBaseURI = _newBaseURI;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_BASE_URI);
     }
@@ -1247,7 +1261,9 @@ contract GenArt721CoreV3 is
      * projects. Token URIs are determined by their project's `projectBaseURI`.
      * @param _defaultBaseURI New default base URI.
      */
-    function updateDefaultBaseURI(string memory _defaultBaseURI)
+    function updateDefaultBaseURI(
+        string memory _defaultBaseURI
+    )
         external
         onlyAdminACL(this.updateDefaultBaseURI.selector)
         onlyNonEmptyString(_defaultBaseURI)
@@ -1293,11 +1309,9 @@ contract GenArt721CoreV3 is
      * @param _projectId Project ID to be queried.
      * @return address Artist's address.
      */
-    function projectIdToArtistAddress(uint256 _projectId)
-        external
-        view
-        returns (address payable)
-    {
+    function projectIdToArtistAddress(
+        uint256 _projectId
+    ) external view returns (address payable) {
         return projectIdToFinancials[_projectId].artistAddress;
     }
 
@@ -1308,11 +1322,9 @@ contract GenArt721CoreV3 is
      * @param _projectId Project ID to be queried.
      * @return uint256 Artist's secondary market royalty percentage.
      */
-    function projectIdToSecondaryMarketRoyaltyPercentage(uint256 _projectId)
-        external
-        view
-        returns (uint256)
-    {
+    function projectIdToSecondaryMarketRoyaltyPercentage(
+        uint256 _projectId
+    ) external view returns (uint256) {
         return
             projectIdToFinancials[_projectId].secondaryMarketRoyaltyPercentage;
     }
@@ -1323,11 +1335,9 @@ contract GenArt721CoreV3 is
      * @param _projectId Project ID to be queried.
      * @return address Artist's additional payee address for primary sales.
      */
-    function projectIdToAdditionalPayeePrimarySales(uint256 _projectId)
-        external
-        view
-        returns (address payable)
-    {
+    function projectIdToAdditionalPayeePrimarySales(
+        uint256 _projectId
+    ) external view returns (address payable) {
         return projectIdToFinancials[_projectId].additionalPayeePrimarySales;
     }
 
@@ -1352,11 +1362,9 @@ contract GenArt721CoreV3 is
      * @return address payable Artist's additional payee address for secondary
      * sales.
      */
-    function projectIdToAdditionalPayeeSecondarySales(uint256 _projectId)
-        external
-        view
-        returns (address payable)
-    {
+    function projectIdToAdditionalPayeeSecondarySales(
+        uint256 _projectId
+    ) external view returns (address payable) {
         return projectIdToFinancials[_projectId].additionalPayeeSecondarySales;
     }
 
@@ -1384,7 +1392,9 @@ contract GenArt721CoreV3 is
      * @return license Project license
      * @dev this function was named projectDetails prior to V3 core contract.
      */
-    function projectDetails(uint256 _projectId)
+    function projectDetails(
+        uint256 _projectId
+    )
         external
         view
         returns (
@@ -1415,7 +1425,9 @@ contract GenArt721CoreV3 is
      * @return locked Boolean representing if project is locked
      * @dev price and currency info are located on minter contracts
      */
-    function projectStateData(uint256 _projectId)
+    function projectStateData(
+        uint256 _projectId
+    )
         external
         view
         returns (
@@ -1453,7 +1465,9 @@ contract GenArt721CoreV3 is
      * platform's percentage of secondary sales royalties, which is defined by
      * `artblocksSecondarySalesBPS`.
      */
-    function projectArtistPaymentInfo(uint256 _projectId)
+    function projectArtistPaymentInfo(
+        uint256 _projectId
+    )
         external
         view
         returns (
@@ -1490,7 +1504,9 @@ contract GenArt721CoreV3 is
      * "1.77777778" for 16:9, etc.)
      * @return scriptCount Count of scripts for project
      */
-    function projectScriptDetails(uint256 _projectId)
+    function projectScriptDetails(
+        uint256 _projectId
+    )
         external
         view
         returns (
@@ -1521,11 +1537,10 @@ contract GenArt721CoreV3 is
      * @param _projectId Project to be queried.
      * @param _index Index of script to be queried.
      */
-    function projectScriptByIndex(uint256 _projectId, uint256 _index)
-        external
-        view
-        returns (string memory)
-    {
+    function projectScriptByIndex(
+        uint256 _projectId,
+        uint256 _index
+    ) external view returns (string memory) {
         Project storage project = projects[_projectId];
         // If trying to access an out-of-index script, return the empty string.
         if (_index >= project.scriptCount) {
@@ -1539,11 +1554,9 @@ contract GenArt721CoreV3 is
      * @param _projectId Project to be queried.
      * @return projectBaseURI Base URI for project
      */
-    function projectURIInfo(uint256 _projectId)
-        external
-        view
-        returns (string memory projectBaseURI)
-    {
+    function projectURIInfo(
+        uint256 _projectId
+    ) external view returns (string memory projectBaseURI) {
         projectBaseURI = projects[_projectId].projectBaseURI;
     }
 
@@ -1575,11 +1588,9 @@ contract GenArt721CoreV3 is
      * @dev If a randomizer is switched away from and then switched back to, it
      * will show up in the history twice.
      */
-    function getHistoricalRandomizerAt(uint256 _index)
-        external
-        view
-        returns (address)
-    {
+    function getHistoricalRandomizerAt(
+        uint256 _index
+    ) external view returns (address) {
         require(
             _index < _historicalRandomizerAddresses.length,
             "Index out of bounds"
@@ -1619,7 +1630,9 @@ contract GenArt721CoreV3 is
      * combination of artist and additional payee
      * @dev Does not include Art Blocks portion of royalties.
      */
-    function getRoyaltyData(uint256 _tokenId)
+    function getRoyaltyData(
+        uint256 _tokenId
+    )
         external
         view
         returns (
@@ -1652,7 +1665,9 @@ contract GenArt721CoreV3 is
      * @dev reverts if invalid _tokenId
      * @dev only returns recipients that have a non-zero BPS allocation
      */
-    function getRoyalties(uint256 _tokenId)
+    function getRoyalties(
+        uint256 _tokenId
+    )
         external
         view
         onlyValidTokenId(_tokenId)
@@ -1732,7 +1747,10 @@ contract GenArt721CoreV3 is
      * to the contract performing the revenue split to handle this
      * appropriately.
      */
-    function getPrimaryRevenueSplits(uint256 _projectId, uint256 _price)
+    function getPrimaryRevenueSplits(
+        uint256 _projectId,
+        uint256 _price
+    )
         external
         view
         returns (
@@ -1789,11 +1807,9 @@ contract GenArt721CoreV3 is
      * @param _tokenId Token ID to be queried.
      * @return _projectId Project ID for given `_tokenId`.
      */
-    function tokenIdToProjectId(uint256 _tokenId)
-        public
-        pure
-        returns (uint256 _projectId)
-    {
+    function tokenIdToProjectId(
+        uint256 _tokenId
+    ) public pure returns (uint256 _projectId) {
         return _tokenId / ONE_MILLION;
     }
 
@@ -1849,13 +1865,9 @@ contract GenArt721CoreV3 is
      * @dev token URIs are the concatenation of the project base URI and the
      * token ID.
      */
-    function tokenURI(uint256 _tokenId)
-        public
-        view
-        override
-        onlyValidTokenId(_tokenId)
-        returns (string memory)
-    {
+    function tokenURI(
+        uint256 _tokenId
+    ) public view override onlyValidTokenId(_tokenId) returns (string memory) {
         string memory _projectBaseURI = projects[tokenIdToProjectId(_tokenId)]
             .projectBaseURI;
         return string.concat(_projectBaseURI, _tokenId.toString());
@@ -1864,13 +1876,9 @@ contract GenArt721CoreV3 is
     /**
      * @dev See {IERC165-supportsInterface}.
      */
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        virtual
-        override
-        returns (bool)
-    {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view virtual override returns (bool) {
         return
             interfaceId == type(IManifold).interfaceId ||
             super.supportsInterface(interfaceId);
@@ -1979,12 +1987,9 @@ contract GenArt721CoreV3 is
      * @return bool true if project is unlocked, false otherwise.
      * @dev This also enforces that the `_projectId` passed in is valid.
      */
-    function _projectUnlocked(uint256 _projectId)
-        internal
-        view
-        onlyValidProjectId(_projectId)
-        returns (bool)
-    {
+    function _projectUnlocked(
+        uint256 _projectId
+    ) internal view onlyValidProjectId(_projectId) returns (bool) {
         uint256 projectCompletedTimestamp = projects[_projectId]
             .completedTimestamp;
         bool projectOpen = projectCompletedTimestamp == 0;

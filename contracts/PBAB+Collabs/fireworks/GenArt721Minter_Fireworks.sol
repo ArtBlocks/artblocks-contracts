@@ -46,11 +46,9 @@ contract GenArt721Minter_Fireworks is ReentrancyGuard {
      * @param _projectId Project ID to be queried.
      * @return balance Balance of ERC-20
      */
-    function getYourBalanceOfProjectERC20(uint256 _projectId)
-        public
-        view
-        returns (uint256)
-    {
+    function getYourBalanceOfProjectERC20(
+        uint256 _projectId
+    ) public view returns (uint256) {
         uint256 balance = IERC20(
             genArtCoreContract.projectIdToCurrencyAddress(_projectId)
         ).balanceOf(msg.sender);
@@ -64,11 +62,9 @@ contract GenArt721Minter_Fireworks is ReentrancyGuard {
      * @param _projectId Project ID to be queried.
      * @return remaining Remaining allowance of ERC-20
      */
-    function checkYourAllowanceOfProjectERC20(uint256 _projectId)
-        public
-        view
-        returns (uint256)
-    {
+    function checkYourAllowanceOfProjectERC20(
+        uint256 _projectId
+    ) public view returns (uint256) {
         uint256 remaining = IERC20(
             genArtCoreContract.projectIdToCurrencyAddress(_projectId)
         ).allowance(msg.sender, address(this));
@@ -184,11 +180,9 @@ contract GenArt721Minter_Fireworks is ReentrancyGuard {
      * @param _projectId Project ID to mint a token on.
      * @return _tokenId Token ID of minted token
      */
-    function purchase(uint256 _projectId)
-        public
-        payable
-        returns (uint256 _tokenId)
-    {
+    function purchase(
+        uint256 _projectId
+    ) public payable returns (uint256 _tokenId) {
         return purchaseTo(msg.sender, _projectId);
     }
 
@@ -199,12 +193,10 @@ contract GenArt721Minter_Fireworks is ReentrancyGuard {
      * @param _projectId Project ID to mint a token on.
      * @return _tokenId Token ID of minted token
      */
-    function purchaseTo(address _to, uint256 _projectId)
-        public
-        payable
-        nonReentrant
-        returns (uint256 _tokenId)
-    {
+    function purchaseTo(
+        address _to,
+        uint256 _projectId
+    ) public payable nonReentrant returns (uint256 _tokenId) {
         // CHECKS
         require(
             !projectMaxHasBeenInvoked[_projectId],

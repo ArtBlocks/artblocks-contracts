@@ -14,9 +14,7 @@ import "../BasicRandomizerV2.sol";
 contract RandomizerV2_NoAssignMock is BasicRandomizerV2 {
     // When `genArt721Core` calls this, the call is ignored and nothing is set
     // on the core contract. Used for test purposes only.
-    function assignTokenHash(
-        uint256 /*_tokenId*/
-    ) external pure override {}
+    function assignTokenHash(uint256 /*_tokenId*/) external pure override {}
 
     // When ANYONE calls this, token `_tokenId`'s hash is set
     // on the core contract. Used for test purposes only.

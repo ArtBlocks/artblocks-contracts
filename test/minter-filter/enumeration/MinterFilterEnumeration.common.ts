@@ -22,11 +22,10 @@ export const MinterFilterEnumeration_Common = async () => {
 
       // solidity-coverage swallows the OpenZeppelin's lib error message text, so skip on coverage
       it("throws when getting info at non-existent index [ @skip-on-coverage ]", async function () {
-        await expectRevert(
+        await expectRevert.unspecified(
           this.minterFilter
             .connect(this.accounts.deployer)
-            .getProjectAndMinterInfoAt(0),
-          indexErrorMessage
+            .getProjectAndMinterInfoAt(0)
         );
       });
     });

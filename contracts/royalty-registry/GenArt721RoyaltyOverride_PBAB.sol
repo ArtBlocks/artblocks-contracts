@@ -73,12 +73,9 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
     /**
      * @dev See {IERC165-supportsInterface}.
      */
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        override(ERC165, IERC165)
-        returns (bool)
-    {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view override(ERC165, IERC165) returns (bool) {
         return
             // register interface 0x9ca7dc7a - getRoyalties(address,uint256)
             interfaceId == type(IArtblocksRoyaltyOverride).interfaceId ||
@@ -128,10 +125,10 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
      * @param _tokenContract Token contract to be updated.
      * @param _bps Platform royalty payment basis points.
      */
-    function updatePlatformBpsForContract(address _tokenContract, uint256 _bps)
-        external
-        onlyAdminOnContract(_tokenContract)
-    {
+    function updatePlatformBpsForContract(
+        address _tokenContract,
+        uint256 _bps
+    ) external onlyAdminOnContract(_tokenContract) {
         require(_bps <= 10000, "invalid bps");
         tokenAddressToPlatformBpsOverride[_tokenContract] = BpsOverride(
             true,
@@ -146,10 +143,9 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
      * @param _tokenContract Token contract to be cleared.
      * @dev token contracts without overrides use default BPS value.
      */
-    function clearRenderProviderBpsForContract(address _tokenContract)
-        external
-        onlyAdminOnContract(_tokenContract)
-    {
+    function clearRenderProviderBpsForContract(
+        address _tokenContract
+    ) external onlyAdminOnContract(_tokenContract) {
         tokenAddressToRenderProviderBpsOverride[_tokenContract] = BpsOverride(
             false,
             0
@@ -163,10 +159,9 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
      * @param _tokenContract Token contract to be cleared.
      * @dev token contracts without overrides use default BPS value.
      */
-    function clearPlatformBpsForContract(address _tokenContract)
-        external
-        onlyAdminOnContract(_tokenContract)
-    {
+    function clearPlatformBpsForContract(
+        address _tokenContract
+    ) external onlyAdminOnContract(_tokenContract) {
         tokenAddressToPlatformBpsOverride[_tokenContract] = BpsOverride(
             false,
             0
@@ -182,7 +177,10 @@ contract GenArt721RoyaltyOverride_PBAB is ERC165, IArtblocksRoyaltyOverride {
      * @return recipients_ array of royalty recipients
      * @return bps array of basis points for each recipient, aligned by index
      */
-    function getRoyalties(address _tokenAddress, uint256 _tokenId)
+    function getRoyalties(
+        address _tokenAddress,
+        uint256 _tokenId
+    )
         external
         view
         returns (address payable[] memory recipients_, uint256[] memory bps)
