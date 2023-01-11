@@ -88,8 +88,8 @@ interface IDependencyRegistryV0 {
      * @param _dependencyType Dependency type to be queried.
      * @param _index Index of script to be queried.
      */
-    function getDependencyScriptAtIndex(bytes32 _dependencyType, uint256 _index)
-        external
-        view
-        returns (string memory);
+    function getDependencyScriptAtIndex(
+        bytes32 _dependencyType,
+        uint256 _index
+    ) external view returns (string memory);
 }
