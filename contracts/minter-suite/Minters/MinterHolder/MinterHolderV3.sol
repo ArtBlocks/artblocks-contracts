@@ -378,10 +378,8 @@ contract MinterHolderV3 is ReentrancyGuard, IFilteredMinterHolderV2 {
         // ensure that the manually set maxInvocations is not greater than what is set on the core contract
         uint256 maxInvocations;
         uint256 invocations;
-        (
-        (invocations, maxInvocations, , , , ) = genArtCoreContract.projectStateData(
-            _projectId
-        );
+        (invocations, maxInvocations, , , , ) = genArtCoreContract
+            .projectStateData(_projectId);
         require(
             _maxInvocations <= maxInvocations,
             "Cannot increase project max invocations above core contract set project max invocations"
@@ -394,7 +392,7 @@ contract MinterHolderV3 is ReentrancyGuard, IFilteredMinterHolderV2 {
         // local maxInvocations value.
         projectConfig[_projectId].maxHasBeenInvoked =
             invocations == _maxInvocations;
-            
+
         emit ProjectMaxInvocationsManuallyLimited(_projectId, _maxInvocations);
     }
 
