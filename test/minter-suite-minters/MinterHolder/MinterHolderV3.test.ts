@@ -198,10 +198,48 @@ for (const coreContractName of coreContractsToTest) {
           .setProjectMaxInvocations(this.projectZero);
       });
 
-      it("allows user to call setProjectMaxInvocations", async function () {
+      it("resets maxHasBeenInvoked after it's been set to true locally and then max project invocations is synced from the core contract", async function () {
+        // reduce local maxInvocations to 2 on minter
+        await this.minter
+          .connect(this.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(this.projectZero, 1);
+        const localMaxInvocations = await this.minter
+          .connect(this.accounts.artist)
+          .projectConfig(this.projectZero);
+        expect(localMaxInvocations.maxInvocations).to.equal(1);
+
+        // mint a token
+        await ethers.provider.send("evm_mine", [
+          this.startTime + this.auctionStartTimeOffset,
+        ]);
         await this.minter
           .connect(this.accounts.user)
+          .purchase(this.projectZero, {
+            value: this.startingPrice,
+          });
+
+        // expect projectMaxHasBeenInvoked to be true
+        const hasMaxBeenInvoked = await this.minter.projectMaxHasBeenInvoked(
+          this.projectZero
+        );
+        expect(hasMaxBeenInvoked).to.be.true;
+
+        // sync max invocations from core to minter
+        await this.minter
+          .connect(this.accounts.artist)
           .setProjectMaxInvocations(this.projectZero);
+
+        // expect projectMaxHasBeenInvoked to now be false
+        const hasMaxBeenInvoked2 = await this.minter.projectMaxHasBeenInvoked(
+          this.projectZero
+        );
+        expect(hasMaxBeenInvoked2).to.be.false;
+
+        // expect maxInvocations on the minter to be 15
+        const syncedMaxInvocations = await this.minter
+          .connect(this.accounts.artist)
+          .projectConfig(this.projectZero);
+        expect(syncedMaxInvocations.maxInvocations).to.equal(15);
       });
     });
 
@@ -224,6 +262,66 @@ for (const coreContractName of coreContractsToTest) {
             ),
           "Cannot increase project max invocations above core contract set project max invocations"
         );
+      });
+      it("appropriately sets maxHasBeenInvoked after calling manuallyLimitProjectMaxInvocations", async function () {
+        // reduce local maxInvocations to 2 on minter
+        await this.minter
+          .connect(this.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(this.projectZero, 1);
+        const localMaxInvocations = await this.minter
+          .connect(this.accounts.artist)
+          .projectConfig(this.projectZero);
+        expect(localMaxInvocations.maxInvocations).to.equal(1);
+
+        // mint a token
+        await ethers.provider.send("evm_mine", [
+          this.startTime + this.auctionStartTimeOffset,
+        ]);
+        await this.minter
+          .connect(this.accounts.user)
+          .purchase(this.projectZero, {
+            value: this.startingPrice,
+          });
+
+        // expect projectMaxHasBeenInvoked to be true
+        const hasMaxBeenInvoked = await this.minter.projectMaxHasBeenInvoked(
+          this.projectZero
+        );
+        expect(hasMaxBeenInvoked).to.be.true;
+
+        // increase invocations on the minter
+        await this.minter
+          .connect(this.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(this.projectZero, 3);
+
+        // expect maxInvocations on the minter to be 3
+        const localMaxInvocations2 = await this.minter
+          .connect(this.accounts.artist)
+          .projectConfig(this.projectZero);
+        expect(localMaxInvocations2.maxInvocations).to.equal(3);
+
+        // expect projectMaxHasBeenInvoked to now be false
+        const hasMaxBeenInvoked2 = await this.minter.projectMaxHasBeenInvoked(
+          this.projectZero
+        );
+        expect(hasMaxBeenInvoked2).to.be.false;
+
+        // reduce invocations on the minter
+        await this.minter
+          .connect(this.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(this.projectZero, 1);
+
+        // expect maxInvocations on the minter to be 1
+        const localMaxInvocations3 = await this.minter
+          .connect(this.accounts.artist)
+          .projectConfig(this.projectZero);
+        expect(localMaxInvocations3.maxInvocations).to.equal(1);
+
+        // expect projectMaxHasBeenInvoked to now be true
+        const hasMaxBeenInvoked3 = await this.minter.projectMaxHasBeenInvoked(
+          this.projectZero
+        );
+        expect(hasMaxBeenInvoked3).to.be.true;
       });
     });
 

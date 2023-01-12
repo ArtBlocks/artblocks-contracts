@@ -151,21 +151,12 @@ contract MinterDAExpV3 is ReentrancyGuard, IFilteredMinterDAExpV1 {
         // update storage with results
         projectConfig[_projectId].maxInvocations = uint24(maxInvocations);
 
-        // We need to ensure maxHasBeenInvoked is now set to false if the maxInvocations value coming from the
-        // core contract is greater than the previous maxInvocations value stored locally and maxHasBeenInvoked
-        // is currently set to true. There will never be a situation where maxHasBeenInvoked is currently set
-        // to false and needs to be set to true after syncing the value of maxInvocations from the core contract.
-        // This is because the synced value of maxInvocations from the core contract will always be greater than or
-        // equal to the previous value of maxInvocations stored locally.
-        unchecked {
-            // okay if this underflows because if statement will always eval false.
-            if (
-                invocations % ONE_MILLION !=
-                projectConfig[_projectId].maxInvocations - 1
-            ) {
-                projectConfig[_projectId].maxHasBeenInvoked = false;
-            }
-        }
+        // We need to ensure maxHasBeenInvoked is correctly set after manually syncing the
+        // local maxInvocations value with the core contract's maxInvocations value.
+        // This synced value of maxInvocations from the core contract will always be greater
+        // than or equal to the previous value of maxInvocations stored locally.
+        projectConfig[_projectId].maxHasBeenInvoked =
+            invocations == maxInvocations;
     }
 
     /**
@@ -200,7 +191,7 @@ contract MinterDAExpV3 is ReentrancyGuard, IFilteredMinterDAExpV1 {
         // We need to ensure maxHasBeenInvoked is correctly set after manually setting the
         // local maxInvocations value.
         projectConfig[_projectId].maxHasBeenInvoked =
-            invocations == _maxInvocations
+            invocations == _maxInvocations;
 
         emit ProjectMaxInvocationsManuallyLimited(_projectId, _maxInvocations);
     }

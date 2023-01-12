@@ -192,7 +192,28 @@ for (const coreContractName of coreContractsToTest) {
           .projectConfig(this.projectZero);
         expect(syncedMaxInvocations.maxInvocations).to.equal(15);
       });
+    });
 
+    describe("manuallyLimitProjectMaxInvocations", async function () {
+      it("allows artist to call manuallyLimitProjectMaxInvocations", async function () {
+        await this.minter
+          .connect(this.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(
+            this.projectZero,
+            this.maxInvocations - 1
+          );
+      });
+      it("does not support manually setting project max invocations to be greater than the project max invocations set on the core contract", async function () {
+        await expectRevert(
+          this.minter
+            .connect(this.accounts.artist)
+            .manuallyLimitProjectMaxInvocations(
+              this.projectZero,
+              this.maxInvocations + 1
+            ),
+          "Cannot increase project max invocations above core contract set project max invocations"
+        );
+      });
       it("appropriately sets maxHasBeenInvoked after calling manuallyLimitProjectMaxInvocations", async function () {
         // reduce local maxInvocations to 2 on minter
         await this.minter
@@ -252,28 +273,6 @@ for (const coreContractName of coreContractsToTest) {
           this.projectZero
         );
         expect(hasMaxBeenInvoked3).to.be.true;
-      });
-    });
-
-    describe("manuallyLimitProjectMaxInvocations", async function () {
-      it("allows artist to call manuallyLimitProjectMaxInvocations", async function () {
-        await this.minter
-          .connect(this.accounts.artist)
-          .manuallyLimitProjectMaxInvocations(
-            this.projectZero,
-            this.maxInvocations - 1
-          );
-      });
-      it("does not support manually setting project max invocations to be greater than the project max invocations set on the core contract", async function () {
-        await expectRevert(
-          this.minter
-            .connect(this.accounts.artist)
-            .manuallyLimitProjectMaxInvocations(
-              this.projectZero,
-              this.maxInvocations + 1
-            ),
-          "Cannot increase project max invocations above core contract set project max invocations"
-        );
       });
     });
 

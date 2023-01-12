@@ -146,11 +146,18 @@ contract MinterSetPriceERC20V3 is ReentrancyGuard, IFilteredMinterV2 {
         onlyArtist(_projectId)
     {
         uint256 maxInvocations;
-        (, maxInvocations, , , , ) = genArtCoreContract.projectStateData(
-            _projectId
-        );
+        uint256 invocations;
+        (invocations, maxInvocations, , , , ) = genArtCoreContract
+            .projectStateData(_projectId);
         // update storage with results
         projectConfig[_projectId].maxInvocations = uint24(maxInvocations);
+
+        // We need to ensure maxHasBeenInvoked is correctly set after manually syncing the
+        // local maxInvocations value with the core contract's maxInvocations value.
+        // This synced value of maxInvocations from the core contract will always be greater
+        // than or equal to the previous value of maxInvocations stored locally.
+        projectConfig[_projectId].maxHasBeenInvoked =
+            invocations == maxInvocations;
     }
 
     /**
@@ -168,9 +175,9 @@ contract MinterSetPriceERC20V3 is ReentrancyGuard, IFilteredMinterV2 {
         // CHECKS
         // ensure that the manually set maxInvocations is not greater than what is set on the core contract
         uint256 maxInvocations;
-        (, maxInvocations, , , , ) = genArtCoreContract.projectStateData(
-            _projectId
-        );
+        uint256 invocations;
+        (invocations, maxInvocations, , , , ) = genArtCoreContract
+            .projectStateData(_projectId);
         require(
             _maxInvocations <= maxInvocations,
             "Cannot increase project max invocations above core contract set project max invocations"
@@ -179,6 +186,11 @@ contract MinterSetPriceERC20V3 is ReentrancyGuard, IFilteredMinterV2 {
         // EFFECTS
         // update storage with results
         projectConfig[_projectId].maxInvocations = uint24(_maxInvocations);
+        // We need to ensure maxHasBeenInvoked is correctly set after manually setting the
+        // local maxInvocations value.
+        projectConfig[_projectId].maxHasBeenInvoked =
+            invocations == _maxInvocations;
+
         emit ProjectMaxInvocationsManuallyLimited(_projectId, _maxInvocations);
     }
 
