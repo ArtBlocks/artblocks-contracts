@@ -154,10 +154,10 @@ contract MinterMerkleV4 is ReentrancyGuard, IFilteredMinterMerkleV2 {
      * @param _root root of Merkle tree defining addresses allowed to mint
      * on project `_projectId`.
      */
-    function updateMerkleRoot(uint256 _projectId, bytes32 _root)
-        external
-        onlyArtist(_projectId)
-    {
+    function updateMerkleRoot(
+        uint256 _projectId,
+        bytes32 _root
+    ) external onlyArtist(_projectId) {
         require(_root != bytes32(0), "Root must be provided");
         projectMerkleRoot[_projectId] = _root;
         emit ConfigValueSet(_projectId, CONFIG_MERKLE_ROOT, _root);
@@ -241,10 +241,9 @@ contract MinterMerkleV4 is ReentrancyGuard, IFilteredMinterMerkleV2 {
      * @dev function is intentionally not gated to any specific access control;
      * it only syncs a local state variable to the core contract's state.
      */
-    function setProjectMaxInvocations(uint256 _projectId)
-        external
-        onlyArtist(_projectId)
-    {
+    function setProjectMaxInvocations(
+        uint256 _projectId
+    ) external onlyArtist(_projectId) {
         uint256 maxInvocations;
         uint256 invocations;
         (invocations, maxInvocations, , , , ) = genArtCoreContract
@@ -302,11 +301,9 @@ contract MinterMerkleV4 is ReentrancyGuard, IFilteredMinterMerkleV2 {
      * @notice Warning: Disabling purchaseTo is not supported on this minter.
      * This method exists purely for interface-conformance purposes.
      */
-    function togglePurchaseToDisabled(uint256 _projectId)
-        external
-        view
-        onlyArtist(_projectId)
-    {
+    function togglePurchaseToDisabled(
+        uint256 _projectId
+    ) external view onlyArtist(_projectId) {
         revert("Action not supported");
     }
 
@@ -323,11 +320,9 @@ contract MinterMerkleV4 is ReentrancyGuard, IFilteredMinterMerkleV2 {
      * do not do input validation in this method as to whether or not the input
      * `_projectId` is an existing project ID.
      */
-    function projectMaxHasBeenInvoked(uint256 _projectId)
-        external
-        view
-        returns (bool)
-    {
+    function projectMaxHasBeenInvoked(
+        uint256 _projectId
+    ) external view returns (bool) {
         return projectConfig[_projectId].maxHasBeenInvoked;
     }
 
@@ -349,11 +344,9 @@ contract MinterMerkleV4 is ReentrancyGuard, IFilteredMinterMerkleV2 {
      * rationale, we intentionally do not do input validation in this method as
      * to whether or not the input `_projectId` is an existing project ID.
      */
-    function projectMaxInvocations(uint256 _projectId)
-        external
-        view
-        returns (uint256)
-    {
+    function projectMaxInvocations(
+        uint256 _projectId
+    ) external view returns (uint256) {
         return uint256(projectConfig[_projectId].maxInvocations);
     }
 
@@ -393,11 +386,10 @@ contract MinterMerkleV4 is ReentrancyGuard, IFilteredMinterMerkleV2 {
      * @param _proof Merkle proof.
      * @return tokenId Token ID of minted token
      */
-    function purchase(uint256 _projectId, bytes32[] calldata _proof)
-        external
-        payable
-        returns (uint256 tokenId)
-    {
+    function purchase(
+        uint256 _projectId,
+        bytes32[] calldata _proof
+    ) external payable returns (uint256 tokenId) {
         tokenId = purchaseTo_kem(msg.sender, _projectId, _proof, address(0));
         return tokenId;
     }
@@ -405,11 +397,10 @@ contract MinterMerkleV4 is ReentrancyGuard, IFilteredMinterMerkleV2 {
     /**
      * @notice gas-optimized version of purchase(uint256,bytes32[]).
      */
-    function purchase_gD5(uint256 _projectId, bytes32[] calldata _proof)
-        external
-        payable
-        returns (uint256 tokenId)
-    {
+    function purchase_gD5(
+        uint256 _projectId,
+        bytes32[] calldata _proof
+    ) external payable returns (uint256 tokenId) {
         tokenId = purchaseTo_kem(msg.sender, _projectId, _proof, address(0));
         return tokenId;
     }
@@ -568,9 +559,10 @@ contract MinterMerkleV4 is ReentrancyGuard, IFilteredMinterMerkleV2 {
      * business practices, including end-to-end testing on mainnet, and
      * admin-accepted artist payment addresses.
      */
-    function _splitFundsETH(uint256 _projectId, uint256 _pricePerTokenInWei)
-        internal
-    {
+    function _splitFundsETH(
+        uint256 _projectId,
+        uint256 _pricePerTokenInWei
+    ) internal {
         if (msg.value > 0) {
             bool success_;
             // send refund to sender
@@ -623,11 +615,9 @@ contract MinterMerkleV4 is ReentrancyGuard, IFilteredMinterMerkleV2 {
      * @dev default value stated above must be updated if the value of
      * CONFIG_USE_MAX_INVOCATIONS_PER_ADDRESS_OVERRIDE is changed.
      */
-    function projectMaxInvocationsPerAddress(uint256 _projectId)
-        public
-        view
-        returns (uint256)
-    {
+    function projectMaxInvocationsPerAddress(
+        uint256 _projectId
+    ) public view returns (uint256) {
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         if (_projectConfig.useMaxInvocationsPerAddressOverride) {
             return uint256(_projectConfig.maxInvocationsPerAddressOverride);
@@ -697,11 +687,10 @@ contract MinterMerkleV4 is ReentrancyGuard, IFilteredMinterMerkleV2 {
      * @param _address Address to process.
      * @return merkleRoot Merkle root for `_address` and `_proof`
      */
-    function processProofForAddress(bytes32[] calldata _proof, address _address)
-        external
-        pure
-        returns (bytes32)
-    {
+    function processProofForAddress(
+        bytes32[] calldata _proof,
+        address _address
+    ) external pure returns (bytes32) {
         return _proof.processProofCalldata(hashAddress(_address));
     }
 
@@ -719,7 +708,9 @@ contract MinterMerkleV4 is ReentrancyGuard, IFilteredMinterMerkleV2 {
      * @return currencyAddress currency address for purchases of project on
      * this minter. This minter always returns null address, reserved for ether
      */
-    function getPriceInfo(uint256 _projectId)
+    function getPriceInfo(
+        uint256 _projectId
+    )
         external
         view
         returns (
