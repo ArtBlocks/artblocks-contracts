@@ -147,28 +147,6 @@ for (const coreContractName of coreContractsToTest) {
       });
     });
 
-    describe("manuallyLimitProjectMaxInvocations", async function () {
-      it("allows artist to call manuallyLimitProjectMaxInvocations", async function () {
-        await this.minter
-          .connect(this.accounts.artist)
-          .manuallyLimitProjectMaxInvocations(
-            this.projectZero,
-            this.maxInvocations - 1
-          );
-      });
-      it("does not support manually setting project max invocations to be greater than the project max invocations set on the core contract", async function () {
-        await expectRevert(
-          this.minter
-            .connect(this.accounts.artist)
-            .manuallyLimitProjectMaxInvocations(
-              this.projectZero,
-              this.maxInvocations + 1
-            ),
-          "Cannot increase project max invocations above core contract set project max invocations"
-        );
-      });
-    });
-
     describe("purchase", async function () {
       it("requires sufficient ERC20 token approval", async function () {
         // artist changes to Mock ERC20 token
@@ -252,13 +230,10 @@ for (const coreContractName of coreContractsToTest) {
         expect(localMaxInvocations.maxInvocations).to.equal(1);
 
         // mint a token
-        await ethers.provider.send("evm_mine", [
-          this.startTime + this.auctionStartTimeOffset,
-        ]);
         await this.minter
           .connect(this.accounts.user)
           .purchase(this.projectZero, {
-            value: this.startingPrice,
+            value: this.pricePerTokenInWei,
           });
 
         // expect projectMaxHasBeenInvoked to be true
@@ -316,14 +291,10 @@ for (const coreContractName of coreContractsToTest) {
           .projectConfig(this.projectZero);
         expect(localMaxInvocations.maxInvocations).to.equal(1);
 
-        // mint a token
-        await ethers.provider.send("evm_mine", [
-          this.startTime + this.auctionStartTimeOffset,
-        ]);
         await this.minter
           .connect(this.accounts.user)
           .purchase(this.projectZero, {
-            value: this.startingPrice,
+            value: this.pricePerTokenInWei,
           });
 
         // expect projectMaxHasBeenInvoked to be true

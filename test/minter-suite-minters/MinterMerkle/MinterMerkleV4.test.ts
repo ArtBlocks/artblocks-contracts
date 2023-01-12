@@ -31,7 +31,7 @@ const coreContractsToTest = [
  * core contract.
  */
 for (const coreContractName of coreContractsToTest) {
-  describe(`MinterMerkleV3_${coreContractName}`, async function () {
+  describe(`MinterMerkleV4_${coreContractName}`, async function () {
     beforeEach(async function () {
       // standard accounts and constants
       this.accounts = await getAccounts();
@@ -239,14 +239,18 @@ for (const coreContractName of coreContractsToTest) {
         expect(localMaxInvocations.maxInvocations).to.equal(1);
 
         // mint a token
-        await ethers.provider.send("evm_mine", [
-          this.startTime + this.auctionStartTimeOffset,
-        ]);
+        const userMerkleProofZero = this.merkleTreeZero.getHexProof(
+          hashAddress(this.accounts.user.address)
+        );
         await this.minter
           .connect(this.accounts.user)
-          .purchase(this.projectZero, {
-            value: this.startingPrice,
-          });
+          ["purchase(uint256,bytes32[])"](
+            this.projectZero,
+            userMerkleProofZero,
+            {
+              value: this.pricePerTokenInWei,
+            }
+          );
 
         // expect projectMaxHasBeenInvoked to be true
         const hasMaxBeenInvoked = await this.minter.projectMaxHasBeenInvoked(
@@ -303,15 +307,18 @@ for (const coreContractName of coreContractsToTest) {
           .projectConfig(this.projectZero);
         expect(localMaxInvocations.maxInvocations).to.equal(1);
 
-        // mint a token
-        await ethers.provider.send("evm_mine", [
-          this.startTime + this.auctionStartTimeOffset,
-        ]);
+        const userMerkleProofZero = this.merkleTreeZero.getHexProof(
+          hashAddress(this.accounts.user.address)
+        );
         await this.minter
           .connect(this.accounts.user)
-          .purchase(this.projectZero, {
-            value: this.startingPrice,
-          });
+          ["purchase(uint256,bytes32[])"](
+            this.projectZero,
+            userMerkleProofZero,
+            {
+              value: this.pricePerTokenInWei,
+            }
+          );
 
         // expect projectMaxHasBeenInvoked to be true
         const hasMaxBeenInvoked = await this.minter.projectMaxHasBeenInvoked(

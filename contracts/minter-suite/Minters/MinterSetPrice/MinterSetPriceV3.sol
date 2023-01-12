@@ -136,6 +136,10 @@ contract MinterSetPriceV3 is ReentrancyGuard, IFilteredMinterV2 {
             _maxInvocations <= maxInvocations,
             "Cannot increase project max invocations above core contract set project max invocations"
         );
+        require(
+            _maxInvocations >= invocations,
+            "Cannot set project max invocations to less than current invocations"
+        );
 
         // EFFECTS
         // update storage with results

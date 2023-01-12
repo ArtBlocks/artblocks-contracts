@@ -171,13 +171,10 @@ for (const coreContractName of coreContractsToTest) {
         expect(localMaxInvocations.maxInvocations).to.equal(1);
 
         // mint a token
-        await ethers.provider.send("evm_mine", [
-          this.startTime + this.auctionStartTimeOffset,
-        ]);
         await this.minter
           .connect(this.accounts.user)
           .purchase(this.projectZero, {
-            value: this.startingPrice,
+            value: this.pricePerTokenInWei,
           });
 
         // expect projectMaxHasBeenInvoked to be true
@@ -236,13 +233,10 @@ for (const coreContractName of coreContractsToTest) {
         expect(localMaxInvocations.maxInvocations).to.equal(1);
 
         // mint a token
-        await ethers.provider.send("evm_mine", [
-          this.startTime + this.auctionStartTimeOffset,
-        ]);
         await this.minter
           .connect(this.accounts.user)
           .purchase(this.projectZero, {
-            value: this.startingPrice,
+            value: this.pricePerTokenInWei,
           });
 
         // expect projectMaxHasBeenInvoked to be true
