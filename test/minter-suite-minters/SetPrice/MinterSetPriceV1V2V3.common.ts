@@ -10,24 +10,13 @@ import { getGnosisSafe } from "../../util/GnosisSafeNetwork";
 import { isCoreV3 } from "../../util/common";
 
 /**
- * These tests are intended to check common DA V1/V2 functionality.
- * The tests are intended to be run on the any DA V1 || V2 contract (not the V0 contracts).
+ * These tests are intended to check common MinterSetPriceV1 || V2 functionality.
+ * The tests are intended to be run on the any MinterSetPriceV1 || V2 contract (not the V0 contracts).
+ * (this includes V1ERC20 contracts)
  * @dev assumes common BeforeEach to populate accounts, constants, and setup
- * @dev does not call specific type of DA common tests (e.g MinterDALin_Common)
  */
-export const MinterDAV1V2_Common = async () => {
+export const MinterSetPriceV1V2V3_Common = async () => {
   describe("purchaseTo", async function () {
-    it("allows `purchaseTo` by default", async function () {
-      await ethers.provider.send("evm_mine", [
-        this.startTime + this.auctionStartTimeOffset,
-      ]);
-      await this.minter
-        .connect(this.accounts.user)
-        .purchaseTo(this.accounts.additional.address, this.projectZero, {
-          value: this.startingPrice,
-        });
-    });
-
     it("does not support toggling of `purchaseToDisabled`", async function () {
       await expectRevert(
         this.minter
@@ -36,13 +25,10 @@ export const MinterDAV1V2_Common = async () => {
         "Action not supported"
       );
       // still allows `purchaseTo`.
-      await ethers.provider.send("evm_mine", [
-        this.startTime + this.auctionStartTimeOffset,
-      ]);
       await this.minter
         .connect(this.accounts.user)
         .purchaseTo(this.accounts.artist.address, this.projectZero, {
-          value: this.startingPrice,
+          value: this.pricePerTokenInWei,
         });
     });
 
@@ -58,10 +44,6 @@ export const MinterDAV1V2_Common = async () => {
 
   describe("reentrancy attack", async function () {
     it("does not allow reentrant purchaseTo", async function () {
-      // advance to time when auction is active
-      await ethers.provider.send("evm_mine", [
-        this.startTime + this.auctionStartTimeOffset,
-      ]);
       // attacker deploys reentrancy contract
       const reentrancyMockFactory = await ethers.getContractFactory(
         "ReentrancyMock"
@@ -109,11 +91,6 @@ export const MinterDAV1V2_Common = async () => {
 
   describe("gnosis safe", async function () {
     it("allows gnosis safe to purchase in ETH", async function () {
-      // advance to time when auction is active
-      await ethers.provider.send("evm_mine", [
-        this.startTime + this.auctionStartTimeOffset,
-      ]);
-
       // deploy new Gnosis Safe
       const safeSdk: Safe = await getGnosisSafe(
         this.accounts.artist,
@@ -129,7 +106,7 @@ export const MinterDAV1V2_Common = async () => {
       const transaction: SafeTransactionDataPartial = {
         to: this.minter.address,
         data: unsignedTx.data,
-        value: this.higherPricePerTokenInWei.toHexString(),
+        value: this.pricePerTokenInWei.toHexString(),
       };
       const safeTransaction = await safeSdk.createTransaction(transaction);
 
@@ -137,12 +114,12 @@ export const MinterDAV1V2_Common = async () => {
       // artist signs
       await safeSdk.signTransaction(safeTransaction);
       // additional signs
-      const ethAdapterOwner2 = new EthersAdapter({
+      const ethAdapteruser2 = new EthersAdapter({
         ethers,
         signer: this.accounts.additional,
       });
       const safeSdk2 = await safeSdk.connect({
-        ethAdapter: ethAdapterOwner2,
+        ethAdapter: ethAdapteruser2,
         safeAddress,
       });
       const txHash = await safeSdk2.getTransactionHash(safeTransaction);
@@ -152,7 +129,7 @@ export const MinterDAV1V2_Common = async () => {
       // fund the safe and execute transaction
       await this.accounts.artist.sendTransaction({
         to: safeAddress,
-        value: this.higherPricePerTokenInWei,
+        value: this.pricePerTokenInWei,
       });
       const viewFunctionWithInvocations = (await isCoreV3(this.genArt721Core))
         ? this.genArt721Core.projectStateData

@@ -15,7 +15,7 @@ import { isCoreV3, deployAndGet } from "../../util/common";
  * (this includes V2ERC20 contracts)
  * @dev assumes common BeforeEach to populate accounts, constants, and setup
  */
-export const MinterSetPriceV2_Common = async () => {
+export const MinterSetPriceV2V3_Common = async () => {
   describe("purchase_H4M", async function () {
     it("allows `purchase_H4M` by default", async function () {
       await this.minter
