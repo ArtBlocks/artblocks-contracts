@@ -97,17 +97,10 @@ contract GenArt721MinterDAExp_PBAB is ReentrancyGuard {
     /// more than this amount (may cut in half at no more than every N seconds).
     uint256 public maximumPriceDecayHalfLifeSeconds = 3600; // 60 minutes
 
-    // modifier to restrict access to only AdminACL allowed calls
-    // @dev defers which ACL contract is used to the core contract
-    modifier onlyCoreAdminACL(bytes4 _selector) {
-        require(
-            genArtCoreContract.adminACLAllowed(
-                msg.sender,
-                address(this),
-                _selector
-            ),
-            "Only Core AdminACL allowed"
-        );
+    // modifier to restrict access to only addresses specified by the 
+    // `onlyWhitelisted()` method on the associated core contract
+    modifier onlyCoreAllowlisted() {
+        require(genArtCoreContract.isWhitelisted(msg.sender), "Only Core allowlisted");
         _;
     }
 
@@ -245,9 +238,7 @@ contract GenArt721MinterDAExp_PBAB is ReentrancyGuard {
         uint256 _maximumPriceDecayHalfLifeSeconds
     )
         external
-        onlyCoreAdminACL(
-            this.setAllowablePriceDecayHalfLifeRangeSeconds.selector
-        )
+        onlyCoreAllowlisted
     {
         require(
             _maximumPriceDecayHalfLifeSeconds >
@@ -330,7 +321,7 @@ contract GenArt721MinterDAExp_PBAB is ReentrancyGuard {
      */
     function resetAuctionDetails(uint256 _projectId)
         external
-        onlyCoreAdminACL(this.resetAuctionDetails.selector)
+        onlyCoreAllowlisted
     {
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         // reset to initial values
