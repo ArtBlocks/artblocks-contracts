@@ -165,10 +165,9 @@ contract MinterHolderV3 is ReentrancyGuard, IFilteredMinterHolderV2 {
      * `projectId = tokenId / 1_000_000`
      * @param _NFTAddress NFT core address to be registered.
      */
-    function registerNFTAddress(address _NFTAddress)
-        external
-        onlyCoreAdminACL(this.registerNFTAddress.selector)
-    {
+    function registerNFTAddress(
+        address _NFTAddress
+    ) external onlyCoreAdminACL(this.registerNFTAddress.selector) {
         _registeredNFTAddresses.add(_NFTAddress);
         emit RegisteredNFTAddress(_NFTAddress);
     }
@@ -179,10 +178,9 @@ contract MinterHolderV3 is ReentrancyGuard, IFilteredMinterHolderV2 {
      * considered for adding to future allowlists.
      * @param _NFTAddress NFT core address to be unregistered.
      */
-    function unregisterNFTAddress(address _NFTAddress)
-        external
-        onlyCoreAdminACL(this.unregisterNFTAddress.selector)
-    {
+    function unregisterNFTAddress(
+        address _NFTAddress
+    ) external onlyCoreAdminACL(this.unregisterNFTAddress.selector) {
         _registeredNFTAddresses.remove(_NFTAddress);
         emit UnregisteredNFTAddress(_NFTAddress);
     }
@@ -408,11 +406,9 @@ contract MinterHolderV3 is ReentrancyGuard, IFilteredMinterHolderV2 {
      * @notice Warning: Disabling purchaseTo is not supported on this minter.
      * This method exists purely for interface-conformance purposes.
      */
-    function togglePurchaseToDisabled(uint256 _projectId)
-        external
-        view
-        onlyArtist(_projectId)
-    {
+    function togglePurchaseToDisabled(
+        uint256 _projectId
+    ) external view onlyArtist(_projectId) {
         revert("Action not supported");
     }
 
@@ -429,11 +425,9 @@ contract MinterHolderV3 is ReentrancyGuard, IFilteredMinterHolderV2 {
      * do not do input validation in this method as to whether or not the input
      * `_projectId` is an existing project ID.
      */
-    function projectMaxHasBeenInvoked(uint256 _projectId)
-        external
-        view
-        returns (bool)
-    {
+    function projectMaxHasBeenInvoked(
+        uint256 _projectId
+    ) external view returns (bool) {
         return projectConfig[_projectId].maxHasBeenInvoked;
     }
 
@@ -455,11 +449,9 @@ contract MinterHolderV3 is ReentrancyGuard, IFilteredMinterHolderV2 {
      * rationale, we intentionally do not do input validation in this method as
      * to whether or not the input `_projectId` is an existing project ID.
      */
-    function projectMaxInvocations(uint256 _projectId)
-        external
-        view
-        returns (uint256)
-    {
+    function projectMaxInvocations(
+        uint256 _projectId
+    ) external view returns (uint256) {
         return uint256(projectConfig[_projectId].maxInvocations);
     }
 
@@ -703,9 +695,10 @@ contract MinterHolderV3 is ReentrancyGuard, IFilteredMinterHolderV2 {
      * business practices, including end-to-end testing on mainnet, and
      * admin-accepted artist payment addresses.
      */
-    function _splitFundsETH(uint256 _projectId, uint256 _pricePerTokenInWei)
-        internal
-    {
+    function _splitFundsETH(
+        uint256 _projectId,
+        uint256 _pricePerTokenInWei
+    ) internal {
         if (msg.value > 0) {
             bool success_;
             // send refund to sender
@@ -764,11 +757,9 @@ contract MinterHolderV3 is ReentrancyGuard, IFilteredMinterHolderV2 {
      * @return NFTAddress NFT core contract address at index `_index`
      * @dev index must be < quantity of registered NFT addresses
      */
-    function getRegisteredNFTAddressAt(uint256 _index)
-        external
-        view
-        returns (address NFTAddress)
-    {
+    function getRegisteredNFTAddressAt(
+        uint256 _index
+    ) external view returns (address NFTAddress) {
         return _registeredNFTAddresses.at(_index);
     }
 
@@ -786,7 +777,9 @@ contract MinterHolderV3 is ReentrancyGuard, IFilteredMinterHolderV2 {
      * @return currencyAddress currency address for purchases of project on
      * this minter. This minter always returns null address, reserved for ether
      */
-    function getPriceInfo(uint256 _projectId)
+    function getPriceInfo(
+        uint256 _projectId
+    )
         external
         view
         returns (
