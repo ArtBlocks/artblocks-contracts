@@ -70,11 +70,8 @@ contract GenArt721MinterDAExp_PBAB is ReentrancyGuard {
     /// Core contract address this minter interacts with
     address public immutable genArt721CoreAddress;
 
-    /// This contract handles cores with interface IV3
+    /// This contract handles cores with interface IGenArt721CoreV2_PBAB
     IGenArt721CoreV2_PBAB private immutable genArtCoreContract;
-
-    /// minterType for this minter
-    string public constant minterType = "MinterDAExpEngineV0";
 
     uint256 constant ONE_MILLION = 1_000_000;
 
@@ -163,7 +160,7 @@ contract GenArt721MinterDAExp_PBAB is ReentrancyGuard {
      * project's maximum invocations has been reached. A false negative will
      * only result in a gas cost increase, since the core contract will still
      * enforce a maxInvocation check during minting. A false positive is not
-     * possible because the V3 core contract only allows maximum invocations
+     * possible because the V2 engine core contract only allows maximum invocations
      * to be reduced, not increased. Based on this rationale, we intentionally
      * do not do input validation in this method as to whether or not the input
      * `_projectId` is an existing project ID.
@@ -189,7 +186,7 @@ contract GenArt721MinterDAExp_PBAB is ReentrancyGuard {
      * still enforce a maxInvocation check during minting. A number less than
      * the core contract's project max invocations is only possible when the
      * project's max invocations have not been synced on this minter, since the
-     * V3 core contract only allows maximum invocations to be reduced, not
+     * V2 engine core contract only allows maximum invocations to be reduced, not
      * increased. When this happens, the minter will enable minting, allowing
      * the core contract to enforce the max invocations check. Based on this
      * rationale, we intentionally do not do input validation in this method as
