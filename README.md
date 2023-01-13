@@ -155,7 +155,7 @@ MinterFilterV1 for flagship V3 core: [0x092B8F64e713d66b38522978BCf4649db14b931E
 
 Legacy minting contract for flagship V0 core: [0x47e312d99c09ce61a866c83cbbbbed5a4b9d33e7](https://etherscan.io/address/0x47e312d99c09ce61a866c83cbbbbed5a4b9d33e7).
 
-For deployed Engine/Partner/Explorations minting contracts, see PBAB directory [DEPLOYMENTS.md files](https://github.com/search?q=repo%3AArtBlocks%2Fartblocks-contracts+extension%3Amd+filename%3Adeployments&type=Code&ref=advsearch&l=&l=).
+For deployed Engine/Partner/Explorations minting contracts, see the archived source code in the `/posterity/engine/` directory and the deployment logs in `/scripts/engine/` directories.
 
 ### Shared Randomizers
 
@@ -178,7 +178,15 @@ The following represents the current set of flagship core contracts deployed on 
   - V1 Core (deprecated): https://goerli.etherscan.io/address/0x1Bf03F29c4FEFFFe4eE26704aaA31d85c026aCE6
   - V3 Core: https://goerli.etherscan.io/address/0xF396C180bb2f92EE28535D23F5224A5b9425ceca
 
-> For deployed PBAB/PRTNR core contracts, see PBAB+Collabs directory DEPLOYMENTS.md files.
+## Art Blocks Engine core contracts
+
+> Formerly known as PBAB or PRTNR core contracts
+
+For deployed core contracts, see the archived source code in the `/posterity/engine/` directory and the deployment logs in `/scripts/engine/` directories.
+
+## Contract Source Code Verification
+
+In an effort to ensure source code verification is easily completed by anyone, After 10, January 2023, all mainnet deployments should also have a corresponding tag+release in this GitHub repository. For deployments prior to this date, PR history may be used to determine the commit hash used for a given deployment. Currently, all mainnet deployments of contracts developed in this repositiory are verified on Etherscan.
 
 # Royalty Registry
 

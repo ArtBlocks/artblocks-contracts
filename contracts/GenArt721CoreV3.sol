@@ -1852,7 +1852,7 @@ contract GenArt721CoreV3 is
     function owner()
         public
         view
-        override(Ownable, IGenArt721CoreContractV3)
+        override(Ownable, IGenArt721CoreContractV3_Base)
         returns (address)
     {
         return Ownable.owner();
