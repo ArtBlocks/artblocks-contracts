@@ -74,7 +74,7 @@ contract GenArt721MinterDAExp_PBAB is ReentrancyGuard {
     IGenArt721CoreV2_PBAB private immutable genArtCoreContract;
 
     /// minterType for this minter
-    string public constant minterType = "GenArt721MinterDAExp_PBAB";
+    string public constant minterType = "MinterDAExpEngineV0";
 
     uint256 constant ONE_MILLION = 1_000_000;
 
