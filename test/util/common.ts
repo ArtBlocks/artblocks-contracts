@@ -25,6 +25,44 @@ export type CoreWithMinterSuite = {
   engineRegistry?: Contract;
 };
 
+export type T_Config = {
+  // standard hardhat accounts
+  accounts: TestAccountsArtBlocks;
+  // token info
+  name?: string;
+  symbol?: string;
+  // project IDs
+  projectZero?: number;
+  projectOne?: number;
+  projectTwo?: number;
+  projectThree?: number;
+  // token IDs
+  projectZeroTokenZero?: BigNumber;
+  projectZeroTokenOne?: BigNumber;
+  projectOneTokenZero?: BigNumber;
+  projectOneTokenOne?: BigNumber;
+  projectTwoTokenZero?: BigNumber;
+  projectTwoTokenOne?: BigNumber;
+  projectThreeTokenZero?: BigNumber;
+  projectThreeTokenOne?: BigNumber;
+  // minter/auction
+  pricePerTokenInWei?: BigNumber;
+  maxInvocations?: number;
+  startingPrice?: BigNumber;
+  higherPricePerTokenInWei?: BigNumber;
+  basePrice?: BigNumber;
+  defaultHalfLife?: number;
+  startTime?: number;
+  auctionStartTimeOffset?: number;
+  targetMinterName?: string;
+  // contracts
+  genArt721Core?: Contract;
+  randomizer?: Contract;
+  minterFilter?: Contract;
+  minter?: Contract;
+  adminACL?: Contract;
+};
+
 export async function getAccounts(): Promise<TestAccountsArtBlocks> {
   const [
     deployer,
@@ -49,42 +87,50 @@ export async function getAccounts(): Promise<TestAccountsArtBlocks> {
 }
 
 export async function assignDefaultConstants(
+  config: T_Config,
   projectZero: number = 0
-): Promise<void> {
-  this.name = "Non Fungible Token";
-  this.symbol = "NFT";
-  this.pricePerTokenInWei = ethers.utils.parseEther("1");
-  this.maxInvocations = 15;
+): Promise<T_Config> {
+  config.name = "Non Fungible Token";
+  config.symbol = "NFT";
+  config.pricePerTokenInWei = ethers.utils.parseEther("1");
+  config.maxInvocations = 15;
   // project IDs
-  this.projectZero = projectZero;
-  this.projectOne = projectZero + 1;
-  this.projectTwo = projectZero + 2;
-  this.projectThree = projectZero + 3;
+  config.projectZero = projectZero;
+  config.projectOne = projectZero + 1;
+  config.projectTwo = projectZero + 2;
+  config.projectThree = projectZero + 3;
   // token IDs
-  this.projectZeroTokenZero = new BN(this.projectZero).mul(new BN("1000000"));
-  this.projectZeroTokenOne = this.projectZeroTokenZero.add(new BN("1"));
-  this.projectOneTokenZero = new BN(this.projectOne).mul(new BN("1000000"));
-  this.projectOneTokenOne = this.projectOneTokenZero.add(new BN("1"));
-  this.projectTwoTokenZero = new BN(this.projectTwo).mul(new BN("1000000"));
-  this.projectTwoTokenOne = this.projectTwoTokenZero.add(new BN("1"));
-  this.projectThreeTokenZero = new BN(this.projectThree).mul(new BN("1000000"));
-  this.projectThreeTokenOne = this.projectThreeTokenZero.add(new BN("1"));
+  config.projectZeroTokenZero = new BN(config.projectZero).mul(
+    new BN("1000000")
+  );
+  config.projectZeroTokenOne = config.projectZeroTokenZero.add(new BN("1"));
+  config.projectOneTokenZero = new BN(config.projectOne).mul(new BN("1000000"));
+  config.projectOneTokenOne = config.projectOneTokenZero.add(new BN("1"));
+  config.projectTwoTokenZero = new BN(config.projectTwo).mul(new BN("1000000"));
+  config.projectTwoTokenOne = config.projectTwoTokenZero.add(new BN("1"));
+  config.projectThreeTokenZero = new BN(config.projectThree).mul(
+    new BN("1000000")
+  );
+  config.projectThreeTokenOne = config.projectThreeTokenZero.add(new BN("1"));
+  return config;
 }
 
 // utility function to simplify code when deploying any contract from factory
 export async function deployAndGet(
+  config: T_Config,
   coreContractName: string,
   deployArgs?: any[]
 ): Promise<Contract> {
   const contractFactory = await ethers.getContractFactory(coreContractName);
   return await contractFactory
-    .connect(this.accounts.deployer)
+    .connect(config.accounts.deployer)
     .deploy(...deployArgs);
 }
 
 // utility function to deploy basic randomizer, core, and MinterFilter
 // works for core versions V0, V1, V2_PRTNR, V3
 export async function deployCoreWithMinterFilter(
+  config: T_Config,
   coreContractName: string,
   minterFilterName: string,
   useAdminACLWithEvents: boolean = false,
@@ -94,7 +140,7 @@ export async function deployCoreWithMinterFilter(
     throw new Error("V2_PBAB not supported");
   }
   let randomizer, genArt721Core, minterFilter, adminACL, engineRegistry;
-  randomizer = await deployAndGet.call(this, "BasicRandomizer", []);
+  randomizer = await deployAndGet(config, "BasicRandomizer", []);
   if (
     coreContractName.endsWith("V0") ||
     coreContractName.endsWith("V1") ||
@@ -106,32 +152,32 @@ export async function deployCoreWithMinterFilter(
       coreContractName.endsWith("V1") ||
       coreContractName.endsWith("V2_ENGINE_FLEX")
     ) {
-      genArt721Core = await deployAndGet.call(this, coreContractName, [
-        this.name,
-        this.symbol,
+      genArt721Core = await deployAndGet(config, coreContractName, [
+        config.name,
+        config.symbol,
         randomizer.address,
       ]);
     } else {
       // V2_PRTNR need additional arg for starting project ID
-      genArt721Core = await deployAndGet.call(this, coreContractName, [
-        this.name,
-        this.symbol,
+      genArt721Core = await deployAndGet(config, coreContractName, [
+        config.name,
+        config.symbol,
         randomizer.address,
         0,
       ]);
     }
-    minterFilter = await deployAndGet.call(this, minterFilterName, [
+    minterFilter = await deployAndGet(config, minterFilterName, [
       genArt721Core.address,
     ]);
     // allowlist minterFilter on the core contract
     await genArt721Core
-      .connect(this.accounts.deployer)
+      .connect(config.accounts.deployer)
       .addMintWhitelisted(minterFilter.address);
   } else if (
     coreContractName.endsWith("V3") ||
     coreContractName.endsWith("V3_Explorations")
   ) {
-    randomizer = await deployAndGet.call(this, "BasicRandomizerV2", []);
+    randomizer = await deployAndGet(config, "BasicRandomizerV2", []);
     let adminACLContractName = useAdminACLWithEvents
       ? "MockAdminACLV0Events"
       : "AdminACLV0";
@@ -139,28 +185,28 @@ export async function deployCoreWithMinterFilter(
     adminACLContractName = _adminACLContractName
       ? _adminACLContractName
       : adminACLContractName;
-    adminACL = await deployAndGet.call(this, adminACLContractName, []);
-    genArt721Core = await deployAndGet.call(this, coreContractName, [
-      this.name,
-      this.symbol,
+    adminACL = await deployAndGet(config, adminACLContractName, []);
+    genArt721Core = await deployAndGet(config, coreContractName, [
+      config.name,
+      config.symbol,
       randomizer.address,
       adminACL.address,
       0, // _startingProjectId
     ]);
     // assign core contract for randomizer to use
     randomizer
-      .connect(this.accounts.deployer)
+      .connect(config.accounts.deployer)
       .assignCoreAndRenounce(genArt721Core.address);
     // deploy minter filter
-    minterFilter = await deployAndGet.call(this, minterFilterName, [
+    minterFilter = await deployAndGet(config, minterFilterName, [
       genArt721Core.address,
     ]);
     // allowlist minterFilter on the core contract
     await genArt721Core
-      .connect(this.accounts.deployer)
+      .connect(config.accounts.deployer)
       .updateMinterContract(minterFilter.address);
   } else if (coreContractName.endsWith("V3_Engine")) {
-    randomizer = await deployAndGet.call(this, "BasicRandomizerV2", []);
+    randomizer = await deployAndGet(config, "BasicRandomizerV2", []);
     let adminACLContractName = useAdminACLWithEvents
       ? "MockAdminACLV0Events"
       : "AdminACLV0";
@@ -168,15 +214,15 @@ export async function deployCoreWithMinterFilter(
     adminACLContractName = _adminACLContractName
       ? _adminACLContractName
       : adminACLContractName;
-    adminACL = await deployAndGet.call(this, adminACLContractName, []);
-    engineRegistry = await deployAndGet.call(this, "EngineRegistryV0", []);
+    adminACL = await deployAndGet(config, adminACLContractName, []);
+    engineRegistry = await deployAndGet(config, "EngineRegistryV0", []);
     // Note: in the common tests, set `autoApproveArtistSplitProposals` to false, which
     //       mirrors the approval-flow behavior of the other (non-Engine) V3 contracts
-    genArt721Core = await deployAndGet.call(this, coreContractName, [
-      this.name, // _tokenName
-      this.symbol, // _tokenSymbol
-      this.accounts.deployer.address, // _renderProviderAddress
-      this.accounts.additional.address, // _platformProviderAddress
+    genArt721Core = await deployAndGet(config, coreContractName, [
+      config.name, // _tokenName
+      config.symbol, // _tokenSymbol
+      config.accounts.deployer.address, // _renderProviderAddress
+      config.accounts.additional.address, // _platformProviderAddress
       randomizer.address, // _randomizerContract
       adminACL.address, // _adminACLContract
       0, // _startingProjectId
@@ -185,15 +231,15 @@ export async function deployCoreWithMinterFilter(
     ]);
     // assign core contract for randomizer to use
     randomizer
-      .connect(this.accounts.deployer)
+      .connect(config.accounts.deployer)
       .assignCoreAndRenounce(genArt721Core.address);
     // deploy minter filter
-    minterFilter = await deployAndGet.call(this, minterFilterName, [
+    minterFilter = await deployAndGet(config, minterFilterName, [
       genArt721Core.address,
     ]);
     // allowlist minterFilter on the core contract
     await genArt721Core
-      .connect(this.accounts.deployer)
+      .connect(config.accounts.deployer)
       .updateMinterContract(minterFilter.address);
   }
   return { randomizer, genArt721Core, minterFilter, adminACL, engineRegistry };

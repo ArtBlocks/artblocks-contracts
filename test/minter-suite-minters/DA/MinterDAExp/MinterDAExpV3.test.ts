@@ -12,11 +12,13 @@ import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 
 import {
+  T_Config,
   getAccounts,
   assignDefaultConstants,
   deployAndGet,
   deployCoreWithMinterFilter,
   safeAddProject,
+  TestAccountsArtBlocks,
 } from "../../../util/common";
 import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../util/constants";
 import { MinterDAExp_Common } from "./MinterDAExp.common";
@@ -24,6 +26,7 @@ import { MinterDAV1V2V3_Common } from "../MinterDAV1V2V3.common";
 import { MinterDAV2V3_Common } from "../MinterDAV2V3.common";
 
 import { Logger } from "@ethersproject/logger";
+import { loadFixture } from "ethereum-waffle";
 // hide nuisance logs about event overloading
 Logger.setLogLevel(Logger.levels.ERROR);
 
@@ -38,113 +41,118 @@ const coreContractsToTest = [
  * V3 core contract.
  */
 for (const coreContractName of coreContractsToTest) {
-  describe(`MinterDAExpV3_${coreContractName}`, async function () {
-    beforeEach(async function () {
+  describe.only(`MinterDAExpV3_${coreContractName}`, async function () {
+    async function _beforeEach() {
       // standard accounts and constants
-      this.accounts = await getAccounts();
-      await assignDefaultConstants.call(this);
-      this.startingPrice = ethers.utils.parseEther("10");
-      this.higherPricePerTokenInWei = this.startingPrice.add(
+      let config: T_Config = {
+        accounts: await getAccounts(),
+      };
+      config = await assignDefaultConstants(config);
+      config.startingPrice = ethers.utils.parseEther("10");
+      config.higherPricePerTokenInWei = config.startingPrice.add(
         ethers.utils.parseEther("0.1")
       );
-      this.basePrice = ethers.utils.parseEther("0.05");
-      this.defaultHalfLife = ONE_HOUR / 2;
-      this.auctionStartTimeOffset = ONE_HOUR;
+      config.basePrice = ethers.utils.parseEther("0.05");
+      config.defaultHalfLife = ONE_HOUR / 2;
+      config.auctionStartTimeOffset = ONE_HOUR;
 
       // deploy and configure minter filter and minter
       ({
-        genArt721Core: this.genArt721Core,
-        minterFilter: this.minterFilter,
-        randomizer: this.randomizer,
-      } = await deployCoreWithMinterFilter.call(
-        this,
+        genArt721Core: config.genArt721Core,
+        minterFilter: config.minterFilter,
+        randomizer: config.randomizer,
+      } = await deployCoreWithMinterFilter(
+        config,
         coreContractName,
         "MinterFilterV1"
       ));
 
-      this.targetMinterName = "MinterDAExpV3";
-      this.minter = await deployAndGet.call(this, this.targetMinterName, [
-        this.genArt721Core.address,
-        this.minterFilter.address,
+      config.targetMinterName = "MinterDAExpV3";
+      config.minter = await deployAndGet(config, config.targetMinterName, [
+        config.genArt721Core.address,
+        config.minterFilter.address,
       ]);
 
       await safeAddProject(
-        this.genArt721Core,
-        this.accounts.deployer,
-        this.accounts.artist.address
+        config.genArt721Core,
+        config.accounts.deployer,
+        config.accounts.artist.address
       );
 
-      await this.genArt721Core
-        .connect(this.accounts.deployer)
-        .toggleProjectIsActive(this.projectZero);
+      await config.genArt721Core
+        .connect(config.accounts.deployer)
+        .toggleProjectIsActive(config.projectZero);
 
-      await this.genArt721Core
-        .connect(this.accounts.artist)
-        .updateProjectMaxInvocations(this.projectZero, 15);
+      await config.genArt721Core
+        .connect(config.accounts.artist)
+        .updateProjectMaxInvocations(config.projectZero, 15);
 
-      await this.genArt721Core
-        .connect(this.accounts.artist)
-        .toggleProjectIsPaused(this.projectZero);
+      await config.genArt721Core
+        .connect(config.accounts.artist)
+        .toggleProjectIsPaused(config.projectZero);
 
-      await this.minterFilter
-        .connect(this.accounts.deployer)
-        .addApprovedMinter(this.minter.address);
-      await this.minterFilter
-        .connect(this.accounts.deployer)
-        .setMinterForProject(this.projectZero, this.minter.address);
+      await config.minterFilter
+        .connect(config.accounts.deployer)
+        .addApprovedMinter(config.minter.address);
+      await config.minterFilter
+        .connect(config.accounts.deployer)
+        .setMinterForProject(config.projectZero, config.minter.address);
 
-      if (!this.startTime) {
+      if (!config.startTime) {
         const blockNumber = await ethers.provider.getBlockNumber();
         const block = await ethers.provider.getBlock(blockNumber);
-        this.startTime = block.timestamp;
+        config.startTime = block.timestamp;
       }
-      this.startTime = this.startTime + ONE_DAY;
+      config.startTime = config.startTime + ONE_DAY;
 
-      await ethers.provider.send("evm_mine", [this.startTime - ONE_MINUTE]);
-      await this.minter
-        .connect(this.accounts.deployer)
-        .resetAuctionDetails(this.projectZero);
-      await this.minter
-        .connect(this.accounts.artist)
+      await ethers.provider.send("evm_mine", [config.startTime - ONE_MINUTE]);
+      await config.minter
+        .connect(config.accounts.deployer)
+        .resetAuctionDetails(config.projectZero);
+      await config.minter
+        .connect(config.accounts.artist)
         .setAuctionDetails(
-          this.projectZero,
-          this.startTime + this.auctionStartTimeOffset,
-          this.defaultHalfLife,
-          this.startingPrice,
-          this.basePrice
+          config.projectZero,
+          config.startTime + config.auctionStartTimeOffset,
+          config.defaultHalfLife,
+          config.startingPrice,
+          config.basePrice
         );
-      await ethers.provider.send("evm_mine", [this.startTime]);
-    });
+      await ethers.provider.send("evm_mine", [config.startTime]);
+      return config;
+    }
 
-    describe("common DAEXP tests", async function () {
-      await MinterDAExp_Common();
-    });
+    // describe("common DAEXP tests", async function () {
+    //   this = await _beforeEach();
+    //   await MinterDAExp_Common();
+    // });
 
-    describe("common DA V1V2V3 tests", async function () {
-      await MinterDAV1V2V3_Common();
-    });
+    // describe("common DA V1V2V3 tests", async function () {
+    //   await MinterDAV1V2V3_Common();
+    // });
 
-    describe("common DA V2V3 tests", async function () {
-      await MinterDAV2V3_Common();
-    });
+    // describe("common DA V2V3 tests", async function () {
+    //   await MinterDAV2V3_Common();
+    // });
 
     describe("setAuctionDetails", async function () {
       it("does not unsafely cast auction time start > type(uint64).max", async function () {
-        await this.minter
-          .connect(this.accounts.deployer)
-          .resetAuctionDetails(this.projectZero);
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.deployer)
+          .resetAuctionDetails(config.projectZero);
         const overflowStartTime = ethers.BigNumber.from("2").pow(
           ethers.BigNumber.from("64")
         );
         await expectRevert(
-          this.minter
-            .connect(this.accounts.artist)
+          config.minter
+            .connect(config.accounts.artist)
             .setAuctionDetails(
-              this.projectZero,
+              config.projectZero,
               overflowStartTime,
-              this.defaultHalfLife,
-              this.startingPrice,
-              this.basePrice
+              config.defaultHalfLife,
+              config.startingPrice,
+              config.basePrice
             ),
           "SafeCast: value doesn't fit in 64 bits"
         );
@@ -153,133 +161,138 @@ for (const coreContractName of coreContractsToTest) {
 
     describe("setProjectMaxInvocations", async function () {
       it("allows artist to call setProjectMaxInvocations", async function () {
-        await this.minter
-          .connect(this.accounts.artist)
-          .setProjectMaxInvocations(this.projectZero);
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
+          .setProjectMaxInvocations(config.projectZero);
       });
 
       it("resets maxHasBeenInvoked after it's been set to true locally and then max project invocations is synced from the core contract", async function () {
+        const config = await loadFixture(_beforeEach);
         // reduce local maxInvocations to 2 on minter
-        await this.minter
-          .connect(this.accounts.artist)
-          .manuallyLimitProjectMaxInvocations(this.projectZero, 1);
-        const localMaxInvocations = await this.minter
-          .connect(this.accounts.artist)
-          .projectConfig(this.projectZero);
+        await config.minter
+          .connect(config.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(config.projectZero, 1);
+        const localMaxInvocations = await config.minter
+          .connect(config.accounts.artist)
+          .projectConfig(config.projectZero);
         expect(localMaxInvocations.maxInvocations).to.equal(1);
 
         // mint a token
         await ethers.provider.send("evm_mine", [
-          this.startTime + this.auctionStartTimeOffset,
+          config.startTime + config.auctionStartTimeOffset,
         ]);
-        await this.minter
-          .connect(this.accounts.user)
-          .purchase(this.projectZero, {
-            value: this.startingPrice,
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, {
+            value: config.startingPrice,
           });
 
         // expect projectMaxHasBeenInvoked to be true
-        const hasMaxBeenInvoked = await this.minter.projectMaxHasBeenInvoked(
-          this.projectZero
+        const hasMaxBeenInvoked = await config.minter.projectMaxHasBeenInvoked(
+          config.projectZero
         );
         expect(hasMaxBeenInvoked).to.be.true;
 
         // sync max invocations from core to minter
-        await this.minter
-          .connect(this.accounts.artist)
-          .setProjectMaxInvocations(this.projectZero);
+        await config.minter
+          .connect(config.accounts.artist)
+          .setProjectMaxInvocations(config.projectZero);
 
         // expect projectMaxHasBeenInvoked to now be false
-        const hasMaxBeenInvoked2 = await this.minter.projectMaxHasBeenInvoked(
-          this.projectZero
+        const hasMaxBeenInvoked2 = await config.minter.projectMaxHasBeenInvoked(
+          config.projectZero
         );
         expect(hasMaxBeenInvoked2).to.be.false;
 
         // expect maxInvocations on the minter to be 15
-        const syncedMaxInvocations = await this.minter
-          .connect(this.accounts.artist)
-          .projectConfig(this.projectZero);
+        const syncedMaxInvocations = await config.minter
+          .connect(config.accounts.artist)
+          .projectConfig(config.projectZero);
         expect(syncedMaxInvocations.maxInvocations).to.equal(15);
       });
     });
 
     describe("manuallyLimitProjectMaxInvocations", async function () {
       it("allows artist to call manuallyLimitProjectMaxInvocations", async function () {
-        await this.minter
-          .connect(this.accounts.artist)
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
           .manuallyLimitProjectMaxInvocations(
-            this.projectZero,
-            this.maxInvocations - 1
+            config.projectZero,
+            config.maxInvocations - 1
           );
       });
       it("does not support manually setting project max invocations to be greater than the project max invocations set on the core contract", async function () {
+        const config = await loadFixture(_beforeEach);
         await expectRevert(
-          this.minter
-            .connect(this.accounts.artist)
+          config.minter
+            .connect(config.accounts.artist)
             .manuallyLimitProjectMaxInvocations(
-              this.projectZero,
-              this.maxInvocations + 1
+              config.projectZero,
+              config.maxInvocations + 1
             ),
           "Cannot increase project max invocations above core contract set project max invocations"
         );
       });
       it("appropriately sets maxHasBeenInvoked after calling manuallyLimitProjectMaxInvocations", async function () {
+        const config = await loadFixture(_beforeEach);
         // reduce local maxInvocations to 2 on minter
-        await this.minter
-          .connect(this.accounts.artist)
-          .manuallyLimitProjectMaxInvocations(this.projectZero, 1);
-        const localMaxInvocations = await this.minter
-          .connect(this.accounts.artist)
-          .projectConfig(this.projectZero);
+        await config.minter
+          .connect(config.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(config.projectZero, 1);
+        const localMaxInvocations = await config.minter
+          .connect(config.accounts.artist)
+          .projectConfig(config.projectZero);
         expect(localMaxInvocations.maxInvocations).to.equal(1);
 
         // mint a token
         await ethers.provider.send("evm_mine", [
-          this.startTime + this.auctionStartTimeOffset,
+          config.startTime + config.auctionStartTimeOffset,
         ]);
-        await this.minter
-          .connect(this.accounts.user)
-          .purchase(this.projectZero, {
-            value: this.startingPrice,
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, {
+            value: config.startingPrice,
           });
 
         // expect projectMaxHasBeenInvoked to be true
-        const hasMaxBeenInvoked = await this.minter.projectMaxHasBeenInvoked(
-          this.projectZero
+        const hasMaxBeenInvoked = await config.minter.projectMaxHasBeenInvoked(
+          config.projectZero
         );
         expect(hasMaxBeenInvoked).to.be.true;
 
         // increase invocations on the minter
-        await this.minter
-          .connect(this.accounts.artist)
-          .manuallyLimitProjectMaxInvocations(this.projectZero, 3);
+        await config.minter
+          .connect(config.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(config.projectZero, 3);
 
         // expect maxInvocations on the minter to be 3
-        const localMaxInvocations2 = await this.minter
-          .connect(this.accounts.artist)
-          .projectConfig(this.projectZero);
+        const localMaxInvocations2 = await config.minter
+          .connect(config.accounts.artist)
+          .projectConfig(config.projectZero);
         expect(localMaxInvocations2.maxInvocations).to.equal(3);
 
         // expect projectMaxHasBeenInvoked to now be false
-        const hasMaxBeenInvoked2 = await this.minter.projectMaxHasBeenInvoked(
-          this.projectZero
+        const hasMaxBeenInvoked2 = await config.minter.projectMaxHasBeenInvoked(
+          config.projectZero
         );
         expect(hasMaxBeenInvoked2).to.be.false;
 
         // reduce invocations on the minter
-        await this.minter
-          .connect(this.accounts.artist)
-          .manuallyLimitProjectMaxInvocations(this.projectZero, 1);
+        await config.minter
+          .connect(config.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(config.projectZero, 1);
 
         // expect maxInvocations on the minter to be 1
-        const localMaxInvocations3 = await this.minter
-          .connect(this.accounts.artist)
-          .projectConfig(this.projectZero);
+        const localMaxInvocations3 = await config.minter
+          .connect(config.accounts.artist)
+          .projectConfig(config.projectZero);
         expect(localMaxInvocations3.maxInvocations).to.equal(1);
 
         // expect projectMaxHasBeenInvoked to now be true
-        const hasMaxBeenInvoked3 = await this.minter.projectMaxHasBeenInvoked(
-          this.projectZero
+        const hasMaxBeenInvoked3 = await config.minter.projectMaxHasBeenInvoked(
+          config.projectZero
         );
         expect(hasMaxBeenInvoked3).to.be.true;
       });
@@ -287,14 +300,15 @@ for (const coreContractName of coreContractsToTest) {
 
     describe("calculate gas", async function () {
       it("mints and calculates gas values [ @skip-on-coverage ]", async function () {
+        const config = await loadFixture(_beforeEach);
         await ethers.provider.send("evm_mine", [
-          this.startTime + this.auctionStartTimeOffset,
+          config.startTime + config.auctionStartTimeOffset,
         ]);
 
-        const tx = await this.minter
-          .connect(this.accounts.user)
-          .purchase(this.projectZero, {
-            value: this.startingPrice,
+        const tx = await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, {
+            value: config.startingPrice,
           });
 
         const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
