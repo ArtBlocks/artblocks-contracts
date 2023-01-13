@@ -19,8 +19,8 @@ import {
 } from "../../../util/common";
 import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../util/constants";
 import { MinterDALin_Common } from "./MinterDALin.common";
-import { MinterDAV1V2_Common } from "../MinterDAV1V2.common";
-import { MinterDAV2_Common } from "../MinterDAV2.common";
+import { MinterDAV1V2V3_Common } from "../MinterDAV1V2V3.common";
+import { MinterDAV2V3_Common } from "../MinterDAV2V3.common";
 
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
@@ -115,12 +115,12 @@ for (const coreContractName of coreContractsToTest) {
       await MinterDALin_Common();
     });
 
-    describe("common DA V1V2 tests", async function () {
-      await MinterDAV1V2_Common();
+    describe("common DA V1V2V3 tests", async function () {
+      await MinterDAV1V2V3_Common();
     });
 
-    describe("common DA V2 tests", async function () {
-      await MinterDAV2_Common();
+    describe("common DA V2V3 tests", async function () {
+      await MinterDAV2V3_Common();
     });
 
     describe("setAuctionDetails", async function () {
