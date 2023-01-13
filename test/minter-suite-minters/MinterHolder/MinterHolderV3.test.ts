@@ -14,6 +14,10 @@ import {
 import { MinterHolder_Common } from "./MinterHolder.common";
 import { AbiCoder } from "ethers/lib/utils";
 
+import { Logger } from "@ethersproject/logger";
+// hide nuisance logs about event overloading
+Logger.setLogLevel(Logger.levels.ERROR);
+
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
   "GenArt721CoreV3", // flagship V3 core

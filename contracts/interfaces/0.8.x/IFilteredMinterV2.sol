@@ -15,7 +15,7 @@ interface IFilteredMinterV2 is IFilteredMinterV1 {
      * @notice Local max invocations for project `_projectId`, tied to core contract `_coreContractAddress`,
      * updated to `_maxInvocations`.
      */
-    event ProjectMaxInvocationsManuallyLimited(
+    event ProjectMaxInvocationsLimitUpdated(
         uint256 indexed _projectId,
         uint256 _maxInvocations
     );

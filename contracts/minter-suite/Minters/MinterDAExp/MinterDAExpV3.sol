@@ -33,6 +33,8 @@ pragma solidity 0.8.17;
  * The following functions are restricted to a project's artist:
  * - setAuctionDetails (note: this may only be called when there is no active
  *   auction)
+ * - setProjectMaxInvocations
+ * - manuallyLimitProjectMaxInvocations
  * ----------------------------------------------------------------------------
  * Additional admin and artist privileged roles may be described on other
  * contracts that this minter integrates with.
@@ -116,10 +118,9 @@ contract MinterDAExpV3 is ReentrancyGuard, IFilteredMinterDAExpV1 {
      * @param _minterFilter Minter filter for which
      * this will a filtered minter.
      */
-    constructor(
-        address _genArt721Address,
-        address _minterFilter
-    ) ReentrancyGuard() {
+    constructor(address _genArt721Address, address _minterFilter)
+        ReentrancyGuard()
+    {
         genArt721CoreAddress = _genArt721Address;
         genArtCoreContract = IGenArt721CoreContractV3(_genArt721Address);
         minterFilterAddress = _minterFilter;
@@ -132,17 +133,15 @@ contract MinterDAExpV3 is ReentrancyGuard, IFilteredMinterDAExpV1 {
 
     /**
      * @notice Syncs local maximum invocations of project `_projectId` based on
-     * the value currently defined in the core contract. Only used for gas
-     * optimization of mints after maxInvocations has been reached.
+     * the value currently defined in the core contract.
      * @param _projectId Project ID to set the maximum invocations for.
      * @dev this enables gas reduction after maxInvocations have been reached -
      * core contracts shall still enforce a maxInvocation check during mint.
-     * @dev function is intentionally not gated to any specific access control;
-     * it only syncs a local state variable to the core contract's state.
      */
-    function setProjectMaxInvocations(
-        uint256 _projectId
-    ) external onlyArtist(_projectId) {
+    function setProjectMaxInvocations(uint256 _projectId)
+        external
+        onlyArtist(_projectId)
+    {
         uint256 maxInvocations;
         uint256 invocations;
         (invocations, maxInvocations, , , , ) = genArtCoreContract
@@ -157,6 +156,8 @@ contract MinterDAExpV3 is ReentrancyGuard, IFilteredMinterDAExpV1 {
         // than or equal to the previous value of maxInvocations stored locally.
         projectConfig[_projectId].maxHasBeenInvoked =
             invocations == maxInvocations;
+
+        emit ProjectMaxInvocationsLimitUpdated(_projectId, maxInvocations);
     }
 
     /**
@@ -164,6 +165,9 @@ contract MinterDAExpV3 is ReentrancyGuard, IFilteredMinterDAExpV1 {
      * with the provided `_maxInvocations`, checking that `_maxInvocations` is less
      * than or equal to the value of project `_project_id`'s maximum invocations that is
      * set on the core contract.
+     * @dev Note that a `_maxInvocations` of 0 can only be set if the current `invocations`
+     * value is also 0 and this would also set `maxHasBeenInvoked` to true, correctly short-circuiting
+     * this minter's purchase function, avoiding extra gas costs from the core contract's maxInvocations check.
      * @param _projectId Project ID to set the maximum invocations for.
      * @param _maxInvocations Maximum invocations to set for the project.
      */
@@ -193,16 +197,18 @@ contract MinterDAExpV3 is ReentrancyGuard, IFilteredMinterDAExpV1 {
         projectConfig[_projectId].maxHasBeenInvoked =
             invocations == _maxInvocations;
 
-        emit ProjectMaxInvocationsManuallyLimited(_projectId, _maxInvocations);
+        emit ProjectMaxInvocationsLimitUpdated(_projectId, _maxInvocations);
     }
 
     /**
      * @notice Warning: Disabling purchaseTo is not supported on this minter.
      * This method exists purely for interface-conformance purposes.
      */
-    function togglePurchaseToDisabled(
-        uint256 _projectId
-    ) external view onlyArtist(_projectId) {
+    function togglePurchaseToDisabled(uint256 _projectId)
+        external
+        view
+        onlyArtist(_projectId)
+    {
         revert("Action not supported");
     }
 
@@ -220,9 +226,11 @@ contract MinterDAExpV3 is ReentrancyGuard, IFilteredMinterDAExpV1 {
      * `_projectId` is an existing project ID.
      *
      */
-    function projectMaxHasBeenInvoked(
-        uint256 _projectId
-    ) external view returns (bool) {
+    function projectMaxHasBeenInvoked(uint256 _projectId)
+        external
+        view
+        returns (bool)
+    {
         return projectConfig[_projectId].maxHasBeenInvoked;
     }
 
@@ -244,18 +252,18 @@ contract MinterDAExpV3 is ReentrancyGuard, IFilteredMinterDAExpV1 {
      * rationale, we intentionally do not do input validation in this method as
      * to whether or not the input `_projectId` is an existing project ID.
      */
-    function projectMaxInvocations(
-        uint256 _projectId
-    ) external view returns (uint256) {
+    function projectMaxInvocations(uint256 _projectId)
+        external
+        view
+        returns (uint256)
+    {
         return uint256(projectConfig[_projectId].maxInvocations);
     }
 
     /**
      * @notice projectId => auction parameters
      */
-    function projectAuctionParameters(
-        uint256 _projectId
-    )
+    function projectAuctionParameters(uint256 _projectId)
         external
         view
         returns (
@@ -370,9 +378,10 @@ contract MinterDAExpV3 is ReentrancyGuard, IFilteredMinterDAExpV1 {
      * operation, but rather only in case of the need to halt an auction.
      * @param _projectId Project ID to set auction details for.
      */
-    function resetAuctionDetails(
-        uint256 _projectId
-    ) external onlyCoreAdminACL(this.resetAuctionDetails.selector) {
+    function resetAuctionDetails(uint256 _projectId)
+        external
+        onlyCoreAdminACL(this.resetAuctionDetails.selector)
+    {
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         // reset to initial values
         _projectConfig.timestampStart = 0;
@@ -388,9 +397,11 @@ contract MinterDAExpV3 is ReentrancyGuard, IFilteredMinterDAExpV1 {
      * @param _projectId Project ID to mint a token on.
      * @return tokenId Token ID of minted token
      */
-    function purchase(
-        uint256 _projectId
-    ) external payable returns (uint256 tokenId) {
+    function purchase(uint256 _projectId)
+        external
+        payable
+        returns (uint256 tokenId)
+    {
         tokenId = purchaseTo_do6(msg.sender, _projectId);
         return tokenId;
     }
@@ -398,9 +409,11 @@ contract MinterDAExpV3 is ReentrancyGuard, IFilteredMinterDAExpV1 {
     /**
      * @notice gas-optimized version of purchase(uint256).
      */
-    function purchase_H4M(
-        uint256 _projectId
-    ) external payable returns (uint256 tokenId) {
+    function purchase_H4M(uint256 _projectId)
+        external
+        payable
+        returns (uint256 tokenId)
+    {
         tokenId = purchaseTo_do6(msg.sender, _projectId);
         return tokenId;
     }
@@ -412,20 +425,23 @@ contract MinterDAExpV3 is ReentrancyGuard, IFilteredMinterDAExpV1 {
      * @param _projectId Project ID to mint a token on.
      * @return tokenId Token ID of minted token
      */
-    function purchaseTo(
-        address _to,
-        uint256 _projectId
-    ) external payable returns (uint256 tokenId) {
+    function purchaseTo(address _to, uint256 _projectId)
+        external
+        payable
+        returns (uint256 tokenId)
+    {
         return purchaseTo_do6(_to, _projectId);
     }
 
     /**
      * @notice gas-optimized version of purchaseTo(address, uint256).
      */
-    function purchaseTo_do6(
-        address _to,
-        uint256 _projectId
-    ) public payable nonReentrant returns (uint256 tokenId) {
+    function purchaseTo_do6(address _to, uint256 _projectId)
+        public
+        payable
+        nonReentrant
+        returns (uint256 tokenId)
+    {
         // CHECKS
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
 
@@ -586,9 +602,7 @@ contract MinterDAExpV3 is ReentrancyGuard, IFilteredMinterDAExpV1 {
      * @return currencyAddress currency address for purchases of project on
      * this minter. This minter always returns null address, reserved for ether
      */
-    function getPriceInfo(
-        uint256 _projectId
-    )
+    function getPriceInfo(uint256 _projectId)
         external
         view
         returns (

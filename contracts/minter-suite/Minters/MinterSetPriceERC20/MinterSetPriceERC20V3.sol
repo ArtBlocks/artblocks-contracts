@@ -26,6 +26,8 @@ pragma solidity 0.8.17;
  * The following functions are restricted to a project's artist:
  * - updatePricePerTokenInWei
  * - updateProjectCurrencyInfo
+ * - setProjectMaxInvocations
+ * - manuallyLimitProjectMaxInvocations
  * ----------------------------------------------------------------------------
  * Additional admin and artist privileged roles may be described on other
  * contracts that this minter integrates with.
@@ -82,10 +84,9 @@ contract MinterSetPriceERC20V3 is ReentrancyGuard, IFilteredMinterV2 {
      * @param _minterFilter Minter filter for which
      * this will a filtered minter.
      */
-    constructor(
-        address _genArt721Address,
-        address _minterFilter
-    ) ReentrancyGuard() {
+    constructor(address _genArt721Address, address _minterFilter)
+        ReentrancyGuard()
+    {
         genArt721CoreAddress = _genArt721Address;
         genArtCoreContract = IGenArt721CoreContractV3(_genArt721Address);
         minterFilterAddress = _minterFilter;
@@ -102,9 +103,11 @@ contract MinterSetPriceERC20V3 is ReentrancyGuard, IFilteredMinterV2 {
      * @param _projectId Project ID to be queried.
      * @return balance Balance of ERC-20
      */
-    function getYourBalanceOfProjectERC20(
-        uint256 _projectId
-    ) external view returns (uint256 balance) {
+    function getYourBalanceOfProjectERC20(uint256 _projectId)
+        external
+        view
+        returns (uint256 balance)
+    {
         balance = IERC20(projectConfig[_projectId].currencyAddress).balanceOf(
             msg.sender
         );
@@ -118,29 +121,29 @@ contract MinterSetPriceERC20V3 is ReentrancyGuard, IFilteredMinterV2 {
      * @param _projectId Project ID to be queried.
      * @return remaining Remaining allowance of ERC-20
      */
-    function checkYourAllowanceOfProjectERC20(
-        uint256 _projectId
-    ) external view returns (uint256 remaining) {
+    function checkYourAllowanceOfProjectERC20(uint256 _projectId)
+        external
+        view
+        returns (uint256 remaining)
+    {
         remaining = IERC20(projectConfig[_projectId].currencyAddress).allowance(
-            msg.sender,
-            address(this)
-        );
+                msg.sender,
+                address(this)
+            );
         return remaining;
     }
 
     /**
      * @notice Syncs local maximum invocations of project `_projectId` based on
-     * the value currently defined in the core contract. Only used for gas
-     * optimization of mints after maxInvocations has been reached.
+     * the value currently defined in the core contract.
      * @param _projectId Project ID to set the maximum invocations for.
      * @dev this enables gas reduction after maxInvocations have been reached -
      * core contracts shall still enforce a maxInvocation check during mint.
-     * @dev function is intentionally not gated to any specific access control;
-     * it only syncs a local state variable to the core contract's state.
      */
-    function setProjectMaxInvocations(
-        uint256 _projectId
-    ) external onlyArtist(_projectId) {
+    function setProjectMaxInvocations(uint256 _projectId)
+        external
+        onlyArtist(_projectId)
+    {
         uint256 maxInvocations;
         uint256 invocations;
         (invocations, maxInvocations, , , , ) = genArtCoreContract
@@ -154,6 +157,8 @@ contract MinterSetPriceERC20V3 is ReentrancyGuard, IFilteredMinterV2 {
         // than or equal to the previous value of maxInvocations stored locally.
         projectConfig[_projectId].maxHasBeenInvoked =
             invocations == maxInvocations;
+
+        emit ProjectMaxInvocationsLimitUpdated(_projectId, maxInvocations);
     }
 
     /**
@@ -161,6 +166,9 @@ contract MinterSetPriceERC20V3 is ReentrancyGuard, IFilteredMinterV2 {
      * with the provided `_maxInvocations`, checking that `_maxInvocations` is less
      * than or equal to the value of project `_project_id`'s maximum invocations that is
      * set on the core contract.
+     * @dev Note that a `_maxInvocations` of 0 can only be set if the current `invocations`
+     * value is also 0 and this would also set `maxHasBeenInvoked` to true, correctly short-circuiting
+     * this minter's purchase function, avoiding extra gas costs from the core contract's maxInvocations check.
      * @param _projectId Project ID to set the maximum invocations for.
      * @param _maxInvocations Maximum invocations to set for the project.
      */
@@ -191,16 +199,18 @@ contract MinterSetPriceERC20V3 is ReentrancyGuard, IFilteredMinterV2 {
         projectConfig[_projectId].maxHasBeenInvoked =
             invocations == _maxInvocations;
 
-        emit ProjectMaxInvocationsManuallyLimited(_projectId, _maxInvocations);
+        emit ProjectMaxInvocationsLimitUpdated(_projectId, _maxInvocations);
     }
 
     /**
      * @notice Warning: Disabling purchaseTo is not supported on this minter.
      * This method exists purely for interface-conformance purposes.
      */
-    function togglePurchaseToDisabled(
-        uint256 _projectId
-    ) external view onlyArtist(_projectId) {
+    function togglePurchaseToDisabled(uint256 _projectId)
+        external
+        view
+        onlyArtist(_projectId)
+    {
         revert("Action not supported");
     }
 
@@ -217,9 +227,11 @@ contract MinterSetPriceERC20V3 is ReentrancyGuard, IFilteredMinterV2 {
      * do not do input validation in this method as to whether or not the input
      * `_projectId` is an existing project ID.
      */
-    function projectMaxHasBeenInvoked(
-        uint256 _projectId
-    ) external view returns (bool) {
+    function projectMaxHasBeenInvoked(uint256 _projectId)
+        external
+        view
+        returns (bool)
+    {
         return projectConfig[_projectId].maxHasBeenInvoked;
     }
 
@@ -241,9 +253,11 @@ contract MinterSetPriceERC20V3 is ReentrancyGuard, IFilteredMinterV2 {
      * rationale, we intentionally do not do input validation in this method as
      * to whether or not the input `_projectId` is an existing project ID.
      */
-    function projectMaxInvocations(
-        uint256 _projectId
-    ) external view returns (uint256) {
+    function projectMaxInvocations(uint256 _projectId)
+        external
+        view
+        returns (uint256)
+    {
         return uint256(projectConfig[_projectId].maxInvocations);
     }
 
@@ -295,9 +309,11 @@ contract MinterSetPriceERC20V3 is ReentrancyGuard, IFilteredMinterV2 {
      * @param _projectId Project ID to mint a token on.
      * @return tokenId Token ID of minted token
      */
-    function purchase(
-        uint256 _projectId
-    ) external payable returns (uint256 tokenId) {
+    function purchase(uint256 _projectId)
+        external
+        payable
+        returns (uint256 tokenId)
+    {
         tokenId = purchaseTo_do6(msg.sender, _projectId);
         return tokenId;
     }
@@ -305,9 +321,11 @@ contract MinterSetPriceERC20V3 is ReentrancyGuard, IFilteredMinterV2 {
     /**
      * @notice gas-optimized version of purchase(uint256).
      */
-    function purchase_H4M(
-        uint256 _projectId
-    ) external payable returns (uint256 tokenId) {
+    function purchase_H4M(uint256 _projectId)
+        external
+        payable
+        returns (uint256 tokenId)
+    {
         tokenId = purchaseTo_do6(msg.sender, _projectId);
         return tokenId;
     }
@@ -319,20 +337,23 @@ contract MinterSetPriceERC20V3 is ReentrancyGuard, IFilteredMinterV2 {
      * @param _projectId Project ID to mint a token on.
      * @return tokenId Token ID of minted token
      */
-    function purchaseTo(
-        address _to,
-        uint256 _projectId
-    ) external payable returns (uint256 tokenId) {
+    function purchaseTo(address _to, uint256 _projectId)
+        external
+        payable
+        returns (uint256 tokenId)
+    {
         return purchaseTo_do6(_to, _projectId);
     }
 
     /**
      * @notice gas-optimized version of purchaseTo(address, uint256).
      */
-    function purchaseTo_do6(
-        address _to,
-        uint256 _projectId
-    ) public payable nonReentrant returns (uint256 tokenId) {
+    function purchaseTo_do6(address _to, uint256 _projectId)
+        public
+        payable
+        nonReentrant
+        returns (uint256 tokenId)
+    {
         // CHECKS
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
 
@@ -399,10 +420,9 @@ contract MinterSetPriceERC20V3 is ReentrancyGuard, IFilteredMinterV2 {
      * business practices, including end-to-end testing on mainnet, and
      * admin-accepted artist payment addresses.
      */
-    function _splitFundsETH(
-        uint256 _projectId,
-        uint256 _pricePerTokenInWei
-    ) internal {
+    function _splitFundsETH(uint256 _projectId, uint256 _pricePerTokenInWei)
+        internal
+    {
         if (msg.value > 0) {
             bool success_;
             // send refund to sender
@@ -512,9 +532,7 @@ contract MinterSetPriceERC20V3 is ReentrancyGuard, IFilteredMinterV2 {
      * @return currencyAddress currency address for purchases of project on
      * this minter. Null address reserved for ether.
      */
-    function getPriceInfo(
-        uint256 _projectId
-    )
+    function getPriceInfo(uint256 _projectId)
         external
         view
         returns (

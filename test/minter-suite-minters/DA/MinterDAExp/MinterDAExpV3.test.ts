@@ -22,6 +22,10 @@ import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../util/constants";
 import { MinterDAExp_Common } from "./MinterDAExp.common";
 import { MinterDAV1V2_Common } from "../MinterDAV1V2.common";
 
+import { Logger } from "@ethersproject/logger";
+// hide nuisance logs about event overloading
+Logger.setLogLevel(Logger.levels.ERROR);
+
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
   "GenArt721CoreV3", // flagship V3 core
