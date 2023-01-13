@@ -19,7 +19,7 @@ import {
 } from "../../../util/common";
 import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../util/constants";
 import { MinterDALin_Common } from "./MinterDALin.common";
-import { MinterDAV1V2_Common } from "../MinterDAV1V2.common";
+import { MinterDAV1V2V3_Common } from "../MinterDAV1V2V3.common";
 
 /**
  * These tests intended to ensure this Filtered Minter integrates properly with
@@ -107,8 +107,8 @@ describe("MinterDALinV1_V1Core", async function () {
     await MinterDALin_Common();
   });
 
-  describe("common DA V1V2 tests", async function () {
-    await MinterDAV1V2_Common();
+  describe("common DA V1V2V3 tests", async function () {
+    await MinterDAV1V2V3_Common();
   });
 
   describe("calculate gas", async function () {

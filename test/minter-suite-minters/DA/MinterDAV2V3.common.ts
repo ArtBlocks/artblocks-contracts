@@ -15,7 +15,7 @@ import { isCoreV3, deployAndGet } from "../../util/common";
  * @dev assumes common BeforeEach to populate accounts, constants, and setup
  * @dev does not call specific type of DA common tests (e.g MinterDALin_Common)
  */
-export const MinterDAV2_Common = async () => {
+export const MinterDAV2V3_Common = async () => {
   describe("purchase_H4M", async function () {
     it("allows `purchase_H4M` by default", async function () {
       await ethers.provider.send("evm_mine", [

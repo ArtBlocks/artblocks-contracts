@@ -6,6 +6,7 @@ import {
   balance,
   ether,
 } from "@openzeppelin/test-helpers";
+
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
@@ -18,9 +19,13 @@ import {
   safeAddProject,
 } from "../../../util/common";
 import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../util/constants";
-import { MinterDALin_Common } from "./MinterDALin.common";
+import { MinterDAExp_Common } from "./MinterDAExp.common";
 import { MinterDAV1V2V3_Common } from "../MinterDAV1V2V3.common";
 import { MinterDAV2V3_Common } from "../MinterDAV2V3.common";
+
+import { Logger } from "@ethersproject/logger";
+// hide nuisance logs about event overloading
+Logger.setLogLevel(Logger.levels.ERROR);
 
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
@@ -33,7 +38,7 @@ const coreContractsToTest = [
  * V3 core contract.
  */
 for (const coreContractName of coreContractsToTest) {
-  describe(`MinterDALinV2_${coreContractName}`, async function () {
+  describe(`MinterDAExpV3_${coreContractName}`, async function () {
     beforeEach(async function () {
       // standard accounts and constants
       this.accounts = await getAccounts();
@@ -43,7 +48,7 @@ for (const coreContractName of coreContractsToTest) {
         ethers.utils.parseEther("0.1")
       );
       this.basePrice = ethers.utils.parseEther("0.05");
-
+      this.defaultHalfLife = ONE_HOUR / 2;
       this.auctionStartTimeOffset = ONE_HOUR;
 
       // deploy and configure minter filter and minter
@@ -57,7 +62,7 @@ for (const coreContractName of coreContractsToTest) {
         "MinterFilterV1"
       ));
 
-      this.targetMinterName = "MinterDALinV2";
+      this.targetMinterName = "MinterDAExpV3";
       this.minter = await deployAndGet.call(this, this.targetMinterName, [
         this.genArt721Core.address,
         this.minterFilter.address,
@@ -104,15 +109,15 @@ for (const coreContractName of coreContractsToTest) {
         .setAuctionDetails(
           this.projectZero,
           this.startTime + this.auctionStartTimeOffset,
-          this.startTime + this.auctionStartTimeOffset + ONE_HOUR * 2,
+          this.defaultHalfLife,
           this.startingPrice,
           this.basePrice
         );
       await ethers.provider.send("evm_mine", [this.startTime]);
     });
 
-    describe("common DALin tests", async () => {
-      await MinterDALin_Common();
+    describe("common DAEXP tests", async function () {
+      await MinterDAExp_Common();
     });
 
     describe("common DA V1V2V3 tests", async function () {
@@ -131,14 +136,13 @@ for (const coreContractName of coreContractsToTest) {
         const overflowStartTime = ethers.BigNumber.from("2").pow(
           ethers.BigNumber.from("64")
         );
-        const overflowEndTime = overflowStartTime.add(ONE_HOUR * 2);
         await expectRevert(
           this.minter
             .connect(this.accounts.artist)
             .setAuctionDetails(
               this.projectZero,
               overflowStartTime,
-              overflowEndTime,
+              this.defaultHalfLife,
               this.startingPrice,
               this.basePrice
             ),
@@ -154,10 +158,130 @@ for (const coreContractName of coreContractsToTest) {
           .setProjectMaxInvocations(this.projectZero);
       });
 
-      it("allows user to call setProjectMaxInvocations", async function () {
+      it("resets maxHasBeenInvoked after it's been set to true locally and then max project invocations is synced from the core contract", async function () {
+        // reduce local maxInvocations to 2 on minter
+        await this.minter
+          .connect(this.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(this.projectZero, 1);
+        const localMaxInvocations = await this.minter
+          .connect(this.accounts.artist)
+          .projectConfig(this.projectZero);
+        expect(localMaxInvocations.maxInvocations).to.equal(1);
+
+        // mint a token
+        await ethers.provider.send("evm_mine", [
+          this.startTime + this.auctionStartTimeOffset,
+        ]);
         await this.minter
           .connect(this.accounts.user)
+          .purchase(this.projectZero, {
+            value: this.startingPrice,
+          });
+
+        // expect projectMaxHasBeenInvoked to be true
+        const hasMaxBeenInvoked = await this.minter.projectMaxHasBeenInvoked(
+          this.projectZero
+        );
+        expect(hasMaxBeenInvoked).to.be.true;
+
+        // sync max invocations from core to minter
+        await this.minter
+          .connect(this.accounts.artist)
           .setProjectMaxInvocations(this.projectZero);
+
+        // expect projectMaxHasBeenInvoked to now be false
+        const hasMaxBeenInvoked2 = await this.minter.projectMaxHasBeenInvoked(
+          this.projectZero
+        );
+        expect(hasMaxBeenInvoked2).to.be.false;
+
+        // expect maxInvocations on the minter to be 15
+        const syncedMaxInvocations = await this.minter
+          .connect(this.accounts.artist)
+          .projectConfig(this.projectZero);
+        expect(syncedMaxInvocations.maxInvocations).to.equal(15);
+      });
+    });
+
+    describe("manuallyLimitProjectMaxInvocations", async function () {
+      it("allows artist to call manuallyLimitProjectMaxInvocations", async function () {
+        await this.minter
+          .connect(this.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(
+            this.projectZero,
+            this.maxInvocations - 1
+          );
+      });
+      it("does not support manually setting project max invocations to be greater than the project max invocations set on the core contract", async function () {
+        await expectRevert(
+          this.minter
+            .connect(this.accounts.artist)
+            .manuallyLimitProjectMaxInvocations(
+              this.projectZero,
+              this.maxInvocations + 1
+            ),
+          "Cannot increase project max invocations above core contract set project max invocations"
+        );
+      });
+      it("appropriately sets maxHasBeenInvoked after calling manuallyLimitProjectMaxInvocations", async function () {
+        // reduce local maxInvocations to 2 on minter
+        await this.minter
+          .connect(this.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(this.projectZero, 1);
+        const localMaxInvocations = await this.minter
+          .connect(this.accounts.artist)
+          .projectConfig(this.projectZero);
+        expect(localMaxInvocations.maxInvocations).to.equal(1);
+
+        // mint a token
+        await ethers.provider.send("evm_mine", [
+          this.startTime + this.auctionStartTimeOffset,
+        ]);
+        await this.minter
+          .connect(this.accounts.user)
+          .purchase(this.projectZero, {
+            value: this.startingPrice,
+          });
+
+        // expect projectMaxHasBeenInvoked to be true
+        const hasMaxBeenInvoked = await this.minter.projectMaxHasBeenInvoked(
+          this.projectZero
+        );
+        expect(hasMaxBeenInvoked).to.be.true;
+
+        // increase invocations on the minter
+        await this.minter
+          .connect(this.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(this.projectZero, 3);
+
+        // expect maxInvocations on the minter to be 3
+        const localMaxInvocations2 = await this.minter
+          .connect(this.accounts.artist)
+          .projectConfig(this.projectZero);
+        expect(localMaxInvocations2.maxInvocations).to.equal(3);
+
+        // expect projectMaxHasBeenInvoked to now be false
+        const hasMaxBeenInvoked2 = await this.minter.projectMaxHasBeenInvoked(
+          this.projectZero
+        );
+        expect(hasMaxBeenInvoked2).to.be.false;
+
+        // reduce invocations on the minter
+        await this.minter
+          .connect(this.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(this.projectZero, 1);
+
+        // expect maxInvocations on the minter to be 1
+        const localMaxInvocations3 = await this.minter
+          .connect(this.accounts.artist)
+          .projectConfig(this.projectZero);
+        expect(localMaxInvocations3.maxInvocations).to.equal(1);
+
+        // expect projectMaxHasBeenInvoked to now be true
+        const hasMaxBeenInvoked3 = await this.minter.projectMaxHasBeenInvoked(
+          this.projectZero
+        );
+        expect(hasMaxBeenInvoked3).to.be.true;
       });
     });
 
@@ -177,14 +301,13 @@ for (const coreContractName of coreContractsToTest) {
         const txCost = receipt.effectiveGasPrice
           .mul(receipt.gasUsed)
           .toString();
-
         console.log(
-          "Gas cost for a successful Linear DA mint: ",
+          "Gas cost for a successful Exponential DA mint: ",
           ethers.utils.formatUnits(txCost, "ether").toString(),
           "ETH"
         );
         expect(txCost.toString()).to.equal(
-          ethers.utils.parseEther("0.0138498")
+          ethers.utils.parseEther("0.0138437")
         ); // assuming a cost of 100 GWEI
       });
     });
