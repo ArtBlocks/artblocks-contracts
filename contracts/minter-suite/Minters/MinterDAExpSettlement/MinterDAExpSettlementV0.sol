@@ -612,25 +612,26 @@ contract MinterDAExpSettlementV0 is
 
         // EFFECTS
         // update the purchaser's receipt and require sufficient net payment
-        Receipt storage _receipt = receipts[msg.sender][_projectId];
-        // calculate new receipt state in memory (gas optimization)
-        uint256 receiptNetPosted = _receipt.netPosted + msg.value;
-        uint256 receiptNumPurchased = _receipt.numPurchased + 1;
-        // update Receipt in storage
-        _receipt.netPosted = receiptNetPosted.toUint232();
-        _receipt.numPurchased = receiptNumPurchased.toUint24();
+        Receipt storage receipt = receipts[msg.sender][_projectId];
+
+        // in memory copy + update
+        uint256 netPosted = receipt.netPosted + msg.value;
+        uint256 numPurchased = receipt.numPurchased + 1;
+
         // require sufficient payment on project
         require(
-            receiptNetPosted >= receiptNumPurchased * currentPriceInWei,
+            netPosted >= numPurchased * currentPriceInWei,
             "Must send minimum value to mint"
         );
+
+        // update Receipt in storage
+        // @dev overflow checks are not required since the added values cannot
+        // be enough to overflow due to maximum invocations or supply of ETH
+        receipt.netPosted = uint232(netPosted);
+        receipt.numPurchased = uint24(numPurchased);
+
         // emit event indicating new receipt state
-        emit ReceiptUpdated(
-            msg.sender,
-            _projectId,
-            receiptNumPurchased,
-            receiptNetPosted
-        );
+        emit ReceiptUpdated(msg.sender, _projectId, numPurchased, netPosted);
 
         // update latest purchase price (on this minter) in storage
         // @dev this is used to enforce monotonically decreasing purchase price
@@ -710,12 +711,12 @@ contract MinterDAExpSettlementV0 is
     ) public nonReentrant {
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         Receipt storage receipt = receipts[msg.sender][_projectId];
-        uint256 receiptNumPurchased = receipt.numPurchased;
+        uint256 numPurchased = receipt.numPurchased;
         // CHECKS
         // input validation
         require(_to != address(0), "No claiming to the zero address");
         // require that a user has purchased at least one token on this project
-        require(receiptNumPurchased > 0, "No purchases made by this address");
+        require(numPurchased > 0, "No purchases made by this address");
         // get the latestPurchasePrice, which returns the sellout price if the
         // auction sold out before reaching base price, or returns the base
         // price if auction has reached base price and artist has withdrawn
@@ -728,18 +729,16 @@ contract MinterDAExpSettlementV0 is
         // EFFECTS
         // calculate the excess settlement funds amount
         // implicit overflow/underflow checks in solidity ^0.8
-        uint256 requiredAmountPosted = receiptNumPurchased *
-            currentSettledTokenPrice;
+        uint256 requiredAmountPosted = numPurchased * currentSettledTokenPrice;
         uint256 excessSettlementFunds = receipt.netPosted -
             requiredAmountPosted;
-        // reduce the netPosted (in storage) to value after excess settlement is
-        // deducted
+        // update Receipt in storage
         receipt.netPosted = requiredAmountPosted.toUint232();
         // emit event indicating new receipt state
         emit ReceiptUpdated(
             msg.sender,
             _projectId,
-            receiptNumPurchased,
+            numPurchased,
             requiredAmountPosted
         );
 
@@ -805,13 +804,10 @@ contract MinterDAExpSettlementV0 is
             uint256 projectId = _projectIds[i];
             ProjectConfig storage _projectConfig = projectConfig[projectId];
             Receipt storage receipt = receipts[msg.sender][projectId];
-            uint256 receiptNumPurchased = receipt.numPurchased;
+            uint256 numPurchased = receipt.numPurchased;
             // input validation
             // require that a user has purchased at least one token on this project
-            require(
-                receiptNumPurchased > 0,
-                "No purchases made by this address"
-            );
+            require(numPurchased > 0, "No purchases made by this address");
             // get the latestPurchasePrice, which returns the sellout price if the
             // auction sold out before reaching base price, or returns the base
             // price if auction has reached base price and artist has withdrawn
@@ -823,7 +819,7 @@ contract MinterDAExpSettlementV0 is
                 .latestPurchasePrice;
             // calculate the excessSettlementFunds amount
             // implicit overflow/underflow checks in solidity ^0.8
-            uint256 requiredAmountPosted = receiptNumPurchased *
+            uint256 requiredAmountPosted = numPurchased *
                 currentSettledTokenPrice;
             excessSettlementFunds += (receipt.netPosted - requiredAmountPosted);
             // reduce the netPosted (in storage) to value after excess settlement
@@ -833,7 +829,7 @@ contract MinterDAExpSettlementV0 is
             emit ReceiptUpdated(
                 msg.sender,
                 projectId,
-                receiptNumPurchased,
+                numPurchased,
                 requiredAmountPosted
             );
             // gas efficiently increment i
