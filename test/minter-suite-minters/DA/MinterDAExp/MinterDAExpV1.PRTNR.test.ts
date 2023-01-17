@@ -20,7 +20,7 @@ import {
 } from "../../../util/common";
 import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../util/constants";
 import { MinterDAExp_Common } from "./MinterDAExp.common";
-import { MinterDAV1V2_Common } from "../MinterDAV1V2.common";
+import { MinterDAV1V2V3_Common } from "../MinterDAV1V2V3.common";
 
 /**
  * These tests intended to ensure this Filtered Minter integrates properly with
@@ -50,7 +50,8 @@ describe("MinterDAExpV1_V1PRTNRCore", async function () {
       "MinterFilterV0"
     ));
 
-    this.minter = await deployAndGet.call(this, "MinterDAExpV1", [
+    this.targetMinterName = "MinterDAExpV1";
+    this.minter = await deployAndGet.call(this, this.targetMinterName, [
       this.genArt721Core.address,
       this.minterFilter.address,
     ]);
@@ -107,8 +108,8 @@ describe("MinterDAExpV1_V1PRTNRCore", async function () {
     await MinterDAExp_Common();
   });
 
-  describe("common DA V1V2 tests", async function () {
-    await MinterDAV1V2_Common();
+  describe("common DA V1V2V3 tests", async function () {
+    await MinterDAV1V2V3_Common();
   });
 
   describe("calculate gas", async function () {

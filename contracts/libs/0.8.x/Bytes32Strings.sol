@@ -12,11 +12,9 @@ library Bytes32Strings {
      * @dev Intended to convert a `bytes32`-encoded string literal to `string`.
      * Trims zero padding to arrive at original string literal.
      */
-    function toString(bytes32 source)
-        internal
-        pure
-        returns (string memory result)
-    {
+    function toString(
+        bytes32 source
+    ) internal pure returns (string memory result) {
         uint8 length = 0;
         while (source[length] != 0 && length < 32) {
             length++;

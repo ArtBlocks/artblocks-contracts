@@ -22,6 +22,7 @@ export type CoreWithMinterSuite = {
   genArt721Core: Contract;
   minterFilter: Contract;
   adminACL: Contract;
+  engineRegistry?: Contract;
 };
 
 export async function getAccounts(): Promise<TestAccountsArtBlocks> {
@@ -92,7 +93,7 @@ export async function deployCoreWithMinterFilter(
   if (coreContractName.endsWith("V2_PBAB")) {
     throw new Error("V2_PBAB not supported");
   }
-  let randomizer, genArt721Core, minterFilter, adminACL;
+  let randomizer, genArt721Core, minterFilter, adminACL, engineRegistry;
   randomizer = await deployAndGet.call(this, "BasicRandomizer", []);
   if (
     coreContractName.endsWith("V0") ||
@@ -144,7 +145,43 @@ export async function deployCoreWithMinterFilter(
       this.symbol,
       randomizer.address,
       adminACL.address,
-      0,
+      0, // _startingProjectId
+    ]);
+    // assign core contract for randomizer to use
+    randomizer
+      .connect(this.accounts.deployer)
+      .assignCoreAndRenounce(genArt721Core.address);
+    // deploy minter filter
+    minterFilter = await deployAndGet.call(this, minterFilterName, [
+      genArt721Core.address,
+    ]);
+    // allowlist minterFilter on the core contract
+    await genArt721Core
+      .connect(this.accounts.deployer)
+      .updateMinterContract(minterFilter.address);
+  } else if (coreContractName.endsWith("V3_Engine")) {
+    randomizer = await deployAndGet.call(this, "BasicRandomizerV2", []);
+    let adminACLContractName = useAdminACLWithEvents
+      ? "MockAdminACLV0Events"
+      : "AdminACLV0";
+    // if function input has adminACL contract name, use that instead
+    adminACLContractName = _adminACLContractName
+      ? _adminACLContractName
+      : adminACLContractName;
+    adminACL = await deployAndGet.call(this, adminACLContractName, []);
+    engineRegistry = await deployAndGet.call(this, "EngineRegistryV0", []);
+    // Note: in the common tests, set `autoApproveArtistSplitProposals` to false, which
+    //       mirrors the approval-flow behavior of the other (non-Engine) V3 contracts
+    genArt721Core = await deployAndGet.call(this, coreContractName, [
+      this.name, // _tokenName
+      this.symbol, // _tokenSymbol
+      this.accounts.deployer.address, // _renderProviderAddress
+      this.accounts.additional.address, // _platformProviderAddress
+      randomizer.address, // _randomizerContract
+      adminACL.address, // _adminACLContract
+      0, // _startingProjectId
+      false, // _autoApproveArtistSplitProposals
+      engineRegistry.address, // _engineRegistryContract
     ]);
     // assign core contract for randomizer to use
     randomizer
@@ -159,7 +196,7 @@ export async function deployCoreWithMinterFilter(
       .connect(this.accounts.deployer)
       .updateMinterContract(minterFilter.address);
   }
-  return { randomizer, genArt721Core, minterFilter, adminACL };
+  return { randomizer, genArt721Core, minterFilter, adminACL, engineRegistry };
 }
 
 // utility function to call addProject on core for either V0/V1 core,
@@ -256,4 +293,10 @@ export async function deployAndGetPBAB(): Promise<T_PBAB> {
     .updateProjectMaxInvocations(0, this.maxInvocations);
   await pbabToken.connect(this.accounts.artist).toggleProjectIsPaused(0);
   return { pbabToken, pbabMinter };
+}
+
+export async function getTxResponseTimestamp(tx) {
+  const receipt = await tx.wait();
+  const block = await ethers.provider.getBlock(receipt.blockNumber);
+  return block.timestamp;
 }

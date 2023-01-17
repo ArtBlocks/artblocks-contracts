@@ -2,11 +2,13 @@
 
 [![CircleCI](https://circleci.com/gh/ArtBlocks/artblocks-contracts/tree/main.svg?style=svg&circle-token=757a2689792bc9c126834396d6fa47e8f023bc2d)](https://circleci.com/gh/ArtBlocks/artblocks-contracts/tree/main)
 
-## License
+[![Coverage Status](https://coveralls.io/repos/github/ArtBlocks/artblocks-contracts/badge.svg?branch=main)](https://coveralls.io/github/ArtBlocks/artblocks-contracts?branch=main)
 
-The Art Blocks `artblocks-contracts` repo is open source software licensed under the GNU Lesser General Public License v3.0. For full license text, please see our [LICENSE](https://github.com/ArtBlocks/artblocks-contracts/blob/main/LICENSE) declaration file.
+A collection of smart contracts used by [Art Blocks](https://artblocks.io) for our flagship product, as well as Artblocks Engine products.
 
-## Initial Setup
+This repository is actively used and maintained by the Art Blocks team. We welcome contributions from the community. Please see our [Contributing](#contributing) section more information.
+
+# Initial Setup
 
 ### install packages
 
@@ -42,7 +44,29 @@ Create a `.env` file by duplicating `.env.example` and populating all variables.
 
 `yarn format`
 
-## Deployments
+## Contributing
+
+We welcome contributions from the community!
+
+Please read through our [Design Guidelines](#design-guidelines), [Solidity Gotchas](./solidity-gotchas.md), and [Testing Philosophy](./test/README.md) sections before contributing.
+
+In addition to meeting our design guidelines, all code must pass all tests and be formatted with prettier before being merged into the main branch. To run the tests, run `yarn test`. To format the code, run `yarn format`.
+
+## Design Guidelines
+
+While not all existing code may strictly adhere to these guidelines, we are working to improve the codebase over time.
+
+We aim to follow the [OpenZeppelin Design Guidelines](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/GUIDELINES.md) when contributing new code. Importantly, this includes following the recommendations documented in the [Solidity style guide](https://docs.soliditylang.org/en/latest/style-guide.html).
+
+# Documentation
+
+Documentation for contracts us deployed via GitHub pages at: https://artblocks.github.io/artblocks-contracts/
+
+Documentation for contracts may also be generated via `yarn docgen`. Most Art Blocks contracts use [NatSpec](https://docs.soliditylang.org/en/v0.8.9/natspec-format.html#documentation-example) comments to automatically enrich generated documentation. Some contracts use [dynamic expressions](https://docs.soliditylang.org/en/v0.8.9/natspec-format.html#dynamic-expressions) to improve user experience.
+
+# Deployments
+
+## Deploying New Contracts
 
 Deployment script templates are located in the `./scripts` directory. To run a deployment script `deploy.ts`:
 
@@ -131,7 +155,7 @@ MinterFilterV1 for flagship V3 core: [0x092B8F64e713d66b38522978BCf4649db14b931E
 
 Legacy minting contract for flagship V0 core: [0x47e312d99c09ce61a866c83cbbbbed5a4b9d33e7](https://etherscan.io/address/0x47e312d99c09ce61a866c83cbbbbed5a4b9d33e7).
 
-For deployed Engine/Partner/Explorations minting contracts, see PBAB directory [DEPLOYMENTS.md files](https://github.com/search?q=repo%3AArtBlocks%2Fartblocks-contracts+extension%3Amd+filename%3Adeployments&type=Code&ref=advsearch&l=&l=).
+For deployed Engine/Partner/Explorations minting contracts, see the archived source code in the `/posterity/engine/` directory and the deployment logs in `/scripts/engine/` directories.
 
 ### Shared Randomizers
 
@@ -143,7 +167,7 @@ For deployed Engine/Partner/Explorations minting contracts, see PBAB directory [
 
 ### Testnet Contracts
 
-The following represent the current set of flagship core contracts deployed on the Goerli testnet, and their active Minter Filters:
+The following represents the current set of flagship core contracts deployed on the Goerli testnet, and their active Minter Filters:
 
 - Art Blocks Artist Staging (Goerli):
 
@@ -154,15 +178,17 @@ The following represent the current set of flagship core contracts deployed on t
   - V1 Core (deprecated): https://goerli.etherscan.io/address/0x1Bf03F29c4FEFFFe4eE26704aaA31d85c026aCE6
   - V3 Core: https://goerli.etherscan.io/address/0xF396C180bb2f92EE28535D23F5224A5b9425ceca
 
-> For deployed PBAB/PRTNR core contracts, see PBAB+Collabs directory DEPLOYMENTS.md files.
+## Art Blocks Engine core contracts
 
-## Contract Documentation
+> Formerly known as PBAB or PRTNR core contracts
 
-Documentation for contracts us deployed via GitHub pages at: https://artblocks.github.io/artblocks-contracts/
+For deployed core contracts, see the archived source code in the `/posterity/engine/` directory and the deployment logs in `/scripts/engine/` directories.
 
-Documentation for contracts may also be generated via `yarn docgen`. Most Art Blocks contracts use [NatSpec](https://docs.soliditylang.org/en/v0.8.9/natspec-format.html#documentation-example) comments to automatically enrich generated documentation. Some contracts use [dynamic expressions](https://docs.soliditylang.org/en/v0.8.9/natspec-format.html#dynamic-expressions) to improve user experience.
+## Contract Source Code Verification
 
-## Royalty Registry
+In an effort to ensure source code verification is easily completed by anyone, After 10, January 2023, all mainnet deployments should also have a corresponding tag+release in this GitHub repository. For deployments prior to this date, PR history may be used to determine the commit hash used for a given deployment. Currently, all mainnet deployments of contracts developed in this repositiory are verified on Etherscan.
+
+# Royalty Registry
 
 Art Blocks supports lookups of all mainnet flagship, partnership, and PBAB tokens on Manifold's [Royalty Registry](https://royaltyregistry.xyz/lookup). This enables on-chain royalty lookups for all Art Blocks NFTs, and allows for the creation of royalty streams for artists and other creators.
 
@@ -220,9 +246,11 @@ Additionally, the following settings may be configured/changed by a core contrac
 - **Change Art Blocks Royalty Payment Address**
   - The address to receive Art Blocks royalty payments may be updated by a core contract's admin via the royalty override contract's function `updateArtblocksRoyaltyAddressForContract`.
 
+# References
+
 ## Running Gas Reports for Solidity Methods & Deployments
 
-Your `.env` file should contain a `COINMARKETCAP_API_KEY` param in order to calculate ethereum gas costs. The key value can be found in the Engineering team's shared 1Password acccount. Additionally, you'll need to add the following object within the `module.exports` key in hardhat.config.ts:
+Your `.env` file should contain a `COINMARKETCAP_API_KEY` param in order to calculate ethereum gas costs. The key value can be found in the Engineering team's shared 1Password account. Additionally, you'll need to add the following object within the `module.exports` key in hardhat.config.ts:
 
 ```
   gasReporter: {
@@ -241,20 +269,18 @@ After this config is finished, you'll notice a `usd (avg)` column in the auto-ge
 - **Primary Sales and Minting Contract (no longer in use) [0x059edd72cd353df5106d2b9cc5ab83a52287ac3a](https://etherscan.io/address/0x059edd72cd353df5106d2b9cc5ab83a52287ac3a)**
   - This is the original Art Blocks smart contract which had a built in minter. This contract represents only projects 0 (Chromie Squiggle), 1 (Genesis), 2 (Construction Token) and handled both control of the NFTs and the purchase transactions. This smart contract received funds and automatically split them between the artist and the platform.
 - Secondary Sales Receiving and Sending Address (no longer in use) [0x8e9398907d036e904fff116132ff2be459592277](https://etherscan.io/address/0x8e9398907d036e904fff116132ff2be459592277)
-  - This address received secondary market royalties from https://opensea.io until July 29th 2021. These royalties were subsequently distributed to artists directly from this address. After July 29th the secondary royalty address was changes to the current one on the first page of this doc.
+  - This address received secondary market royalties from https://opensea.io until July 29th 2021. These royalties were subsequently distributed to artists directly from this address. After July 29th the secondary royalty address was changed to the current one on the first page of this doc.
 - Primary Sales Minting Contracts (no longer in use) –
   - [0x091dcd914fCEB1d47423e532955d1E62d1b2dAEf](https://etherscan.io/address/0x091dcd914fCEB1d47423e532955d1E62d1b2dAEf)
   - [0x1Db80B860081AF41Bc0ceb3c877F8AcA8379F869](https://etherscan.io/address/0x1Db80B860081AF41Bc0ceb3c877F8AcA8379F869)
   - [0xAA6EBab3Bf3Ce561305bd53E4BD3B3945920B176](https://etherscan.io/address/0xAA6EBab3Bf3Ce561305bd53E4BD3B3945920B176)
   - [0x0E8BD86663e3c2418900178e96E14c51B2859957](https://etherscan.io/address/0x0E8BD86663e3c2418900178e96E14c51B2859957)
-  - These are the Smart contract that received funds from primary sales and split them between the artist(s) and the platform. Artists received funds directly from this contract.These minter contracts are no longer in use.
+  - These are the Smart contract that received funds from primary sales and split them between the artist(s) and the platform. Artists received funds directly from this contract. These minter contracts are no longer in use.
 
-## Contributing
-
-All code must pass all tests and be formatted with prettier before being merged into the main branch. To run the tests, run `yarn test`. To format the code, run `yarn format`. For additional information about our testing philosophy at Art Blocks, please see our [Testing Philosophy](./test/README.md) document.
-
-We also recommend reading through our [Solidity Gotchas](./solidity-gotchas.md) document to avoid common pitfalls that we've encountered in the past.
-
-## Useful References
+## Other Useful References
 
 [evm.codes](https://www.evm.codes/) - An interactive guide to EVM op-code costs.
+
+# License
+
+The Art Blocks `artblocks-contracts` repo is open source software licensed under the GNU Lesser General Public License v3.0. For full license text, please see our [LICENSE](https://github.com/ArtBlocks/artblocks-contracts/blob/main/LICENSE) declaration file.

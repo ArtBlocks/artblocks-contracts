@@ -30,6 +30,7 @@ import {
 const coreContractsToTest = [
   "GenArt721CoreV3", // flagship V3 core
   "GenArt721CoreV3_Explorations", // V3 core explorations contract
+  "GenArt721CoreV3_Engine", // V3 core Engine contract
 ];
 
 /**
@@ -941,14 +942,31 @@ for (const coreContractName of coreContractsToTest) {
       });
 
       it("artist can update when unlocked", async function () {
+        // mint a token on project zero,
+        // so that royalties for that token may be read
+        await this.minter
+          .connect(this.accounts.artist)
+          .purchase(this.projectZero);
+
+        const adjustedRoyaltyPercentage = 10;
         await this.genArt721Core
           .connect(this.accounts.artist)
-          .updateProjectSecondaryMarketRoyaltyPercentage(this.projectZero, 10);
+          .updateProjectSecondaryMarketRoyaltyPercentage(
+            this.projectZero,
+            adjustedRoyaltyPercentage
+          );
+
         // expect view to be updated
-        const royaltyData = await this.genArt721Core
+        // implicitly expect artist payee info to be last item
+        const royaltiesData = await this.genArt721Core
           .connect(this.accounts.user)
-          .getRoyaltyData(this.projectZero);
-        expect(royaltyData.royaltyFeeByID).to.equal(10);
+          .getRoyalties(this.projectZeroTokenZero.toNumber());
+        expect(royaltiesData.recipients[0]).to.be.equal(
+          this.accounts.artist.address
+        );
+        expect(royaltiesData.bps[0]).to.be.equal(
+          adjustedRoyaltyPercentage * 100
+        );
       });
 
       it("artist can update when locked", async function () {
@@ -959,14 +977,26 @@ for (const coreContractName of coreContractsToTest) {
           0
         );
         await advanceEVMByTime(FOUR_WEEKS + 1);
+
+        const adjustedRoyaltyPercentage = 11;
         await this.genArt721Core
           .connect(this.accounts.artist)
-          .updateProjectSecondaryMarketRoyaltyPercentage(this.projectZero, 11);
+          .updateProjectSecondaryMarketRoyaltyPercentage(
+            this.projectZero,
+            adjustedRoyaltyPercentage
+          );
+
         // expect view to be updated
-        const royaltyData = await this.genArt721Core
+        // implicitly expect artist payee info to be last item
+        const royaltiesData = await this.genArt721Core
           .connect(this.accounts.user)
-          .getRoyaltyData(this.projectZero);
-        expect(royaltyData.royaltyFeeByID).to.equal(11);
+          .getRoyalties(this.projectZeroTokenZero.toNumber());
+        expect(royaltiesData.recipients[0]).to.be.equal(
+          this.accounts.artist.address
+        );
+        expect(royaltiesData.bps[0]).to.be.equal(
+          adjustedRoyaltyPercentage * 100
+        );
       });
 
       it("artist cannot update > 95%", async function () {
@@ -1071,33 +1101,29 @@ for (const coreContractName of coreContractsToTest) {
         expect(scriptByteCode).to.not.equal("0x");
 
         // Any random user should **not** be able to purge bytecode storage.
-        await expectRevert(
+        await expectRevert.unspecified(
           this.accounts.user.call({
             to: scriptAddress,
-          }),
-          "invalid opcode"
+          })
         );
         // Nor should even the core contract deployer be able to do so directly.
-        await expectRevert(
+        await expectRevert.unspecified(
           this.accounts.deployer.call({
             to: scriptAddress,
-          }),
-          "invalid opcode"
+          })
         );
         // And this is still the case when correct `0xFF` bytes are sent along.
-        await expectRevert(
+        await expectRevert.unspecified(
           this.accounts.user.call({
             to: scriptAddress,
             data: "0xFF",
-          }),
-          "invalid opcode"
+          })
         );
-        await expectRevert(
+        await expectRevert.unspecified(
           this.accounts.deployer.call({
             to: scriptAddress,
             data: "0xFF",
-          }),
-          "invalid opcode"
+          })
         );
 
         const sameScriptByteCode = await ethers.provider.getCode(scriptAddress);
@@ -1351,6 +1377,91 @@ for (const coreContractName of coreContractsToTest) {
             .removeProjectLastScript(this.projectZero),
           "there are no scripts to remove"
         );
+      });
+    });
+
+    describe("Engine autoApproveArtistSplitProposals is true", function () {
+      beforeEach(async function () {
+        if (!coreContractName.endsWith("_Engine")) {
+          return;
+        }
+        this.randomizer = await deployAndGet.call(
+          this,
+          "BasicRandomizerV2",
+          []
+        );
+        this.adminACL = await deployAndGet.call(this, "AdminACLV0", []);
+        this.engineRegistry = await deployAndGet.call(
+          this,
+          "EngineRegistryV0",
+          []
+        );
+        // set `autoApproveArtistSplitProposals` to true
+        this.genArt721Core = await deployAndGet.call(this, coreContractName, [
+          this.name, // _tokenName
+          this.symbol, // _tokenSymbol
+          this.accounts.deployer.address, // _renderProviderAddress
+          this.accounts.additional.address, // _platformProviderAddress
+          this.randomizer.address, // _randomizerContract
+          this.adminACL.address, // _adminACLContract
+          0, // _startingProjectId
+          true, // _autoApproveArtistSplitProposals
+          this.engineRegistry.address, // _engineRegistryContract
+        ]);
+        // assign core contract for randomizer to use
+        this.randomizer
+          .connect(this.accounts.deployer)
+          .assignCoreAndRenounce(this.genArt721Core.address);
+        // deploy minter filter
+        this.minterFilter = await deployAndGet.call(this, "MinterFilterV1", [
+          this.genArt721Core.address,
+        ]);
+        // allowlist minterFilter on the core contract
+        await this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateMinterContract(this.minterFilter.address);
+        // add project zero
+        await this.genArt721Core
+          .connect(this.accounts.deployer)
+          .addProject("name", this.accounts.artist.address);
+        // define valid artist proposed values, not typically auto-approved
+        this.valuesToUpdateTo = [
+          this.projectZero,
+          this.accounts.artist2.address,
+          this.accounts.additional.address,
+          50,
+          this.accounts.additional2.address,
+          51,
+        ];
+      });
+
+      it("new artist proposals are automatically accepted", async function () {
+        if (!coreContractName.endsWith("_Engine")) {
+          console.info("skipping test for non-engine contract");
+          return;
+        }
+        // allows artist to propose new values
+        await this.genArt721Core
+          .connect(this.accounts.artist)
+          .proposeArtistPaymentAddressesAndSplits(...this.valuesToUpdateTo);
+        // expect artist payment addresses and splits to be updated due to auto-approval
+        const projectArtistPaymentInfo =
+          await this.genArt721Core.projectArtistPaymentInfo(this.projectZero);
+        expect(projectArtistPaymentInfo.artistAddress).to.equal(
+          this.accounts.artist2.address
+        );
+        expect(projectArtistPaymentInfo.additionalPayeePrimarySales).to.equal(
+          this.accounts.additional.address
+        );
+        expect(
+          projectArtistPaymentInfo.additionalPayeePrimarySalesPercentage
+        ).to.equal(50);
+        expect(projectArtistPaymentInfo.additionalPayeeSecondarySales).to.equal(
+          this.accounts.additional2.address
+        );
+        expect(
+          projectArtistPaymentInfo.additionalPayeeSecondarySalesPercentage
+        ).to.equal(51);
       });
     });
   });

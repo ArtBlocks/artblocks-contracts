@@ -29,6 +29,8 @@ export type ArtistFinanceProposal = {
 const coreContractsToTest = [
   "GenArt721CoreV3", // flagship V3 core
   "GenArt721CoreV3_Explorations", // V3 core explorations contract
+  // Given the many differences for the views for betwen CoreV3 and CoreV3_Engine,
+  // for this set of _Views tests, the _Engine variants have been split out.
 ];
 
 // helper function to update artist financial data

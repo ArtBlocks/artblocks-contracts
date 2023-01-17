@@ -19,7 +19,7 @@ import {
 } from "../../../util/common";
 
 import { MinterSetPrice_ETH_Common } from "./MinterSetPrice.common";
-import { MinterSetPriceV1V2_Common } from "../MinterSetPriceV1V2.common";
+import { MinterSetPriceV1V2V3_Common } from "../MinterSetPriceV1V2V3.common";
 
 /**
  * These tests intended to ensure this Filtered Minter integrates properly with
@@ -45,7 +45,10 @@ describe("MinterSetPriceV1_V1Core", async function () {
       "MinterFilterV0"
     ));
 
-    const minterFactory = await ethers.getContractFactory("MinterSetPriceV1");
+    this.targetMinterName = "MinterSetPriceV1";
+    const minterFactory = await ethers.getContractFactory(
+      this.targetMinterName
+    );
     this.minter1 = await minterFactory.deploy(
       this.genArt721Core.address,
       this.minterFilter.address
@@ -136,8 +139,8 @@ describe("MinterSetPriceV1_V1Core", async function () {
     await MinterSetPrice_ETH_Common();
   });
 
-  describe("common MinterSetPrice V1V2 tests", async function () {
-    await MinterSetPriceV1V2_Common();
+  describe("common MinterSetPrice V1V2V3 tests", async function () {
+    await MinterSetPriceV1V2V3_Common();
   });
 
   describe("calculates gas", async function () {

@@ -8,6 +8,7 @@ import {
 } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
+import { hexDataSlice } from "@ethersproject/bytes";
 
 import {
   getAccounts,
@@ -22,6 +23,7 @@ import {
 const coreContractsToTest = [
   "GenArt721CoreV3", // flagship V3 core
   "GenArt721CoreV3_Explorations", // V3 core explorations contract
+  "GenArt721CoreV3_Engine", // V3 core Engine contract
 ];
 
 /**
@@ -88,48 +90,117 @@ for (const coreContractName of coreContractsToTest) {
     });
 
     describe("PlatformUpdated", function () {
-      it("emits nextProjectId", async function () {
+      it("deployment events (nextProjectId, etc.)", async function () {
         // typical expect event helper doesn't work for deploy event
         const contractFactory = await ethers.getContractFactory(
           coreContractName
         );
-        // it is OK that this randomizer address isn't a particularly valid
-        // address for the purposes of this test
-        const tx = await contractFactory
-          .connect(this.accounts.deployer)
-          .deploy(
+        // it is OK that this construction addresses aren't particularly valid
+        // addresses for the purposes of this test
+        let tx;
+        if (coreContractName === "GenArt721CoreV3_Engine") {
+          const engineRegistryFactory = await ethers.getContractFactory(
+            "EngineRegistryV0"
+          );
+          const engineRegistry = await engineRegistryFactory
+            .connect(this.accounts.deployer)
+            .deploy();
+          tx = await contractFactory.connect(this.accounts.deployer).deploy(
             "name",
             "symbol",
             this.accounts.additional.address,
-            constants.ZERO_ADDRESS,
-            365
+            this.accounts.additional.address,
+            this.accounts.additional.address,
+            this.accounts.additional.address,
+            365,
+            false,
+            engineRegistry.address // Note: important to use a real engine registry
           );
-        const receipt = await tx.deployTransaction.wait();
-        // target event is the last log
-        const targetLog = receipt.logs[receipt.logs.length - 1];
-        // expect "PlatformUpdated" event as log 0
-        await expect(targetLog.topics[0]).to.be.equal(
-          ethers.utils.keccak256(
-            ethers.utils.toUtf8Bytes("PlatformUpdated(bytes32)")
-          )
-        );
-        // expect field to be bytes32 of "nextProjectId" as log 1
-        await expect(targetLog.topics[1]).to.be.equal(
-          ethers.utils.formatBytes32String("nextProjectId")
-        );
+          const receipt = await tx.deployTransaction.wait();
+          const registrationLog = receipt.logs[receipt.logs.length - 1];
+          // expect "ContractRegistered" event as log 0
+          await expect(registrationLog.topics[0]).to.be.equal(
+            ethers.utils.keccak256(
+              ethers.utils.toUtf8Bytes(
+                "ContractRegistered(address,bytes32,bytes32)"
+              )
+            )
+          );
+          // expect field to be address of registered contract as log 1
+          await expect(
+            hexDataSlice(registrationLog.topics[1], 12).toLowerCase()
+          ).to.be.equal(tx.address.toLowerCase());
+          console.log(registrationLog.topics);
+          // target event is in the second-to-last log,
+          // given that engine registry event comes before it
+          const targetLog = receipt.logs[receipt.logs.length - 2];
+          // expect "PlatformUpdated" event as log 0
+          await expect(targetLog.topics[0]).to.be.equal(
+            ethers.utils.keccak256(
+              ethers.utils.toUtf8Bytes("PlatformUpdated(bytes32)")
+            )
+          );
+          // expect field to be bytes32 of "nextProjectId" as log 1
+          await expect(targetLog.topics[1]).to.be.equal(
+            ethers.utils.formatBytes32String("nextProjectId")
+          );
+        } else {
+          tx = await contractFactory
+            .connect(this.accounts.deployer)
+            .deploy(
+              "name",
+              "symbol",
+              this.accounts.additional.address,
+              constants.ZERO_ADDRESS,
+              365
+            );
+          const receipt = await tx.deployTransaction.wait();
+          // target event is the last log
+          const targetLog = receipt.logs[receipt.logs.length - 1];
+          // expect "PlatformUpdated" event as log 0
+          await expect(targetLog.topics[0]).to.be.equal(
+            ethers.utils.keccak256(
+              ethers.utils.toUtf8Bytes("PlatformUpdated(bytes32)")
+            )
+          );
+          // expect field to be bytes32 of "nextProjectId" as log 1
+          await expect(targetLog.topics[1]).to.be.equal(
+            ethers.utils.formatBytes32String("nextProjectId")
+          );
+        }
       });
 
-      it("emits artblocksSecondarySalesAddress", async function () {
-        // emits expected event arg(s)
-        await expect(
-          this.genArt721Core
-            .connect(this.accounts.deployer)
-            .updateArtblocksSecondarySalesAddress(this.accounts.artist.address)
-        )
-          .to.emit(this.genArt721Core, "PlatformUpdated")
-          .withArgs(
-            ethers.utils.formatBytes32String("artblocksSecondarySalesAddress")
-          );
+      it("emits {artblocksSecondary,provider}SalesAddress", async function () {
+        if (coreContractName === "GenArt721CoreV3_Engine") {
+          // emits expected event arg(s)
+          await expect(
+            this.genArt721Core
+              .connect(this.accounts.deployer)
+              .updateProviderSalesAddresses(
+                this.accounts.deployer2.address,
+                this.accounts.deployer2.address,
+                this.accounts.deployer2.address,
+                this.accounts.deployer2.address
+              )
+          )
+            .to.emit(this.genArt721Core, "PlatformUpdated")
+            .withArgs(
+              ethers.utils.formatBytes32String("providerSalesAddresses")
+            );
+        } else {
+          // emits expected event arg(s)
+          await expect(
+            this.genArt721Core
+              .connect(this.accounts.deployer)
+              .updateArtblocksSecondarySalesAddress(
+                this.accounts.artist.address
+              )
+          )
+            .to.emit(this.genArt721Core, "PlatformUpdated")
+            .withArgs(
+              ethers.utils.formatBytes32String("artblocksSecondarySalesAddress")
+            );
+        }
       });
 
       it("emits 'randomizerAddress'", async function () {
@@ -169,6 +240,9 @@ for (const coreContractName of coreContractsToTest) {
             .withArgs(
               ethers.utils.formatBytes32String("curationRegistryAddress")
             );
+        } else if (coreContractName === "GenArt721CoreV3_Engine") {
+          // Do nothing.
+          // This core contract variant doesn't support this interface component.
         } else {
           throw new Error("Unexpected core contract name");
         }
@@ -189,28 +263,54 @@ for (const coreContractName of coreContractsToTest) {
           );
       });
 
-      it("emits 'artblocksPrimaryPercentage'", async function () {
-        // emits expected event arg(s)
-        await expect(
-          this.genArt721Core
-            .connect(this.accounts.deployer)
-            .updateArtblocksPrimarySalesPercentage(11)
-        )
-          .to.emit(this.genArt721Core, "PlatformUpdated")
-          .withArgs(
-            ethers.utils.formatBytes32String("artblocksPrimaryPercentage")
-          );
+      it("emits '{artblocks,provider}PrimaryPercentage'", async function () {
+        if (coreContractName === "GenArt721CoreV3_Engine") {
+          // emits expected event arg(s)
+          await expect(
+            this.genArt721Core
+              .connect(this.accounts.deployer)
+              .updateProviderPrimarySalesPercentages(11, 11)
+          )
+            .to.emit(this.genArt721Core, "PlatformUpdated")
+            .withArgs(
+              ethers.utils.formatBytes32String("providerPrimaryPercentages")
+            );
+        } else {
+          // emits expected event arg(s)
+          await expect(
+            this.genArt721Core
+              .connect(this.accounts.deployer)
+              .updateArtblocksPrimarySalesPercentage(11)
+          )
+            .to.emit(this.genArt721Core, "PlatformUpdated")
+            .withArgs(
+              ethers.utils.formatBytes32String("artblocksPrimaryPercentage")
+            );
+        }
       });
 
-      it("emits 'artblocksSecondaryBPS'", async function () {
-        // emits expected event arg(s)
-        await expect(
-          this.genArt721Core
-            .connect(this.accounts.deployer)
-            .updateArtblocksSecondarySalesBPS(240)
-        )
-          .to.emit(this.genArt721Core, "PlatformUpdated")
-          .withArgs(ethers.utils.formatBytes32String("artblocksSecondaryBPS"));
+      it("emits '{artblocks,provider}SecondaryBPS'", async function () {
+        if (coreContractName === "GenArt721CoreV3_Engine") {
+          // emits expected event arg(s)
+          await expect(
+            this.genArt721Core
+              .connect(this.accounts.deployer)
+              .updateProviderSecondarySalesBPS(240, 240)
+          )
+            .to.emit(this.genArt721Core, "PlatformUpdated")
+            .withArgs(ethers.utils.formatBytes32String("providerSecondaryBPS"));
+        } else {
+          // emits expected event arg(s)
+          await expect(
+            this.genArt721Core
+              .connect(this.accounts.deployer)
+              .updateArtblocksSecondarySalesBPS(240)
+          )
+            .to.emit(this.genArt721Core, "PlatformUpdated")
+            .withArgs(
+              ethers.utils.formatBytes32String("artblocksSecondaryBPS")
+            );
+        }
       });
 
       it("emits 'newProjectsForbidden'", async function () {

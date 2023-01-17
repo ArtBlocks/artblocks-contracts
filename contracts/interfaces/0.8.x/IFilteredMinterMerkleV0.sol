@@ -22,10 +22,10 @@ interface IFilteredMinterMerkleV0 is IFilteredMinterV1 {
 
     // Triggers a purchase of a token from the desired project, to the
     // TX-sending address. Requires Merkle proof.
-    function purchase(uint256 _projectId, bytes32[] memory _proof)
-        external
-        payable
-        returns (uint256 tokenId);
+    function purchase(
+        uint256 _projectId,
+        bytes32[] memory _proof
+    ) external payable returns (uint256 tokenId);
 
     // Triggers a purchase of a token from the desired project, to the specified
     // receiving address. Requires Merkle proof.

@@ -19,44 +19,6 @@ pragma solidity 0.8.9;
  * @author Art Blocks Inc.
  */
 contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
-    /**
-     * @notice Registered holders of NFTs at address `_NFTAddress` to be
-     * considered for minting.
-     */
-    event RegisteredNFTAddress(address indexed _NFTAddress);
-
-    /**
-     * @notice Unregistered holders of NFTs at address `_NFTAddress` to be
-     * considered for minting.
-     */
-    event UnregisteredNFTAddress(address indexed _NFTAddress);
-
-    /**
-     * @notice Allow holders of NFTs at addresses `_ownedNFTAddresses`, project
-     * IDs `_ownedNFTProjectIds` to mint on project `_projectId`.
-     * `_ownedNFTAddresses` assumed to be aligned with `_ownedNFTProjectIds`.
-     * e.g. Allows holders of project `_ownedNFTProjectIds[0]` on token
-     * contract `_ownedNFTAddresses[0]` to mint.
-     */
-    event AllowedHoldersOfProjects(
-        uint256 indexed _projectId,
-        address[] _ownedNFTAddresses,
-        uint256[] _ownedNFTProjectIds
-    );
-
-    /**
-     * @notice Remove holders of NFTs at addresses `_ownedNFTAddresses`,
-     * project IDs `_ownedNFTProjectIds` to mint on project `_projectId`.
-     * `_ownedNFTAddresses` assumed to be aligned with `_ownedNFTProjectIds`.
-     * e.g. Removes holders of project `_ownedNFTProjectIds[0]` on token
-     * contract `_ownedNFTAddresses[0]` from mint allowlist.
-     */
-    event RemovedHoldersOfProjects(
-        uint256 indexed _projectId,
-        address[] _ownedNFTAddresses,
-        uint256[] _ownedNFTProjectIds
-    );
-
     // add Enumerable Set methods
     using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -121,9 +83,10 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
      * @param _minterFilter Minter filter for which
      * this will a filtered minter.
      */
-    constructor(address _genArt721Address, address _minterFilter)
-        ReentrancyGuard()
-    {
+    constructor(
+        address _genArt721Address,
+        address _minterFilter
+    ) ReentrancyGuard() {
         genArt721CoreAddress = _genArt721Address;
         genArtCoreContract = IGenArt721CoreContractV1(_genArt721Address);
         minterFilterAddress = _minterFilter;
@@ -141,10 +104,9 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
      * `projectId = tokenId / 1_000_000`
      * @param _NFTAddress NFT core address to be registered.
      */
-    function registerNFTAddress(address _NFTAddress)
-        external
-        onlyCoreWhitelisted
-    {
+    function registerNFTAddress(
+        address _NFTAddress
+    ) external onlyCoreWhitelisted {
         _registeredNFTAddresses.add(_NFTAddress);
         emit RegisteredNFTAddress(_NFTAddress);
     }
@@ -155,10 +117,9 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
      * considered for adding to future allowlists.
      * @param _NFTAddress NFT core address to be unregistered.
      */
-    function unregisterNFTAddress(address _NFTAddress)
-        external
-        onlyCoreWhitelisted
-    {
+    function unregisterNFTAddress(
+        address _NFTAddress
+    ) external onlyCoreWhitelisted {
         _registeredNFTAddresses.remove(_NFTAddress);
         emit UnregisteredNFTAddress(_NFTAddress);
     }
@@ -322,10 +283,9 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
      * @dev this enables gas reduction after maxInvocations have been reached -
      * core contracts shall still enforce a maxInvocation check during mint.
      */
-    function setProjectMaxInvocations(uint256 _projectId)
-        external
-        onlyCoreWhitelisted
-    {
+    function setProjectMaxInvocations(
+        uint256 _projectId
+    ) external onlyCoreWhitelisted {
         uint256 invocations;
         uint256 maxInvocations;
         (, , invocations, maxInvocations, , , , , ) = genArtCoreContract
@@ -341,11 +301,9 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
      * @notice Warning: Disabling purchaseTo is not supported on this minter.
      * This method exists purely for interface-conformance purposes.
      */
-    function togglePurchaseToDisabled(uint256 _projectId)
-        external
-        view
-        onlyArtist(_projectId)
-    {
+    function togglePurchaseToDisabled(
+        uint256 _projectId
+    ) external view onlyArtist(_projectId) {
         revert("Action not supported");
     }
 
@@ -542,11 +500,9 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
      * @return NFTAddress NFT core contract address at index `_index`
      * @dev index must be < quantity of registered NFT addresses
      */
-    function getRegisteredNFTAddressAt(uint256 _index)
-        external
-        view
-        returns (address NFTAddress)
-    {
+    function getRegisteredNFTAddressAt(
+        uint256 _index
+    ) external view returns (address NFTAddress) {
         return _registeredNFTAddresses.at(_index);
     }
 
@@ -564,7 +520,9 @@ contract MinterHolderV0 is ReentrancyGuard, IFilteredMinterHolderV0 {
      * @return currencyAddress currency address for purchases of project on
      * this minter. This minter always returns null address, reserved for ether
      */
-    function getPriceInfo(uint256 _projectId)
+    function getPriceInfo(
+        uint256 _projectId
+    )
         external
         view
         returns (

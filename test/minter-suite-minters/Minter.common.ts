@@ -1,3 +1,4 @@
+import { getContractFactory } from "@nomiclabs/hardhat-ethers/types";
 import { constants, expectRevert } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
@@ -9,6 +10,11 @@ import { ethers } from "hardhat";
  */
 export const Minter_Common = async () => {
   describe("constructor", async function () {
+    it("returns correct minter type", async function () {
+      const returnedMinterType = await this.minter.minterType();
+      expect(returnedMinterType).to.equal(this.targetMinterName);
+    });
+
     it("reverts when given incorrect minter filter and core addresses", async function () {
       const artblocksFactory = await ethers.getContractFactory(
         "GenArt721CoreV1"
@@ -31,7 +37,12 @@ export const Minter_Common = async () => {
         this.genArt721Core.address,
         minterFilter.address,
       ];
-      if (minterType == "MinterMerkleV3" || minterType == "MinterHolderV2") {
+      if (
+        minterType == "MinterMerkleV3" ||
+        minterType == "MinterMerkleV4" ||
+        minterType == "MinterHolderV2" ||
+        minterType == "MinterHolderV3"
+      ) {
         minterConstructorArgs.push(this.delegationRegistry.address);
       }
       await expectRevert(
@@ -80,25 +91,54 @@ export const Minter_Common = async () => {
   });
 
   describe("setProjectMaxInvocations", async function () {
-    it("allows deployer to call setProjectMaxInvocations", async function () {
-      await this.minter
-        .connect(this.accounts.deployer)
-        .setProjectMaxInvocations(this.projectZero);
+    it("allows artist/deployer to call setProjectMaxInvocations", async function () {
+      const minterType = await this.minter.minterType();
+      if (!minterType.includes("Settlement")) {
+        // minters above v2 do NOT use onlyCoreWhitelisted modifier for setProjectMaxInvocations
+        const accountToTestWith =
+          minterType.includes("V0") || minterType.includes("V1")
+            ? this.accounts.deployer
+            : this.accounts.artist;
+        // minters that don't settle on-chain should support this function
+        await this.minter
+          .connect(accountToTestWith)
+          .setProjectMaxInvocations(this.projectZero);
+      } else {
+        // minters that settle on-chain should not support this function
+        await expectRevert(
+          this.minter
+            .connect(this.accounts.artist)
+            .setProjectMaxInvocations(this.projectZero),
+          "setProjectMaxInvocations not implemented - updated during every mint"
+        );
+      }
     });
 
     it("updates local projectMaxInvocations after syncing to core", async function () {
-      // update max invocations to 1 on the core
-      await this.genArt721Core
-        .connect(this.accounts.artist)
-        .updateProjectMaxInvocations(this.projectZero, 2);
-      // sync max invocations on minter
-      await this.minter
-        .connect(this.accounts.deployer)
-        .setProjectMaxInvocations(this.projectZero);
-      // expect max invocations to be 1 on the minter
-      expect(
-        await this.minter.projectMaxInvocations(this.projectZero)
-      ).to.be.equal(2);
+      const minterType = await this.minter.minterType();
+      if (!minterType.includes("Settlement")) {
+        // minters above v2 do NOT use onlyCoreWhitelisted modifier for setProjectMaxInvocations
+        const accountToTestWith =
+          minterType.includes("V0") || minterType.includes("V1")
+            ? this.accounts.deployer
+            : this.accounts.artist;
+        // update max invocations to 1 on the core
+        await this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectMaxInvocations(this.projectZero, 2);
+        // sync max invocations on minter
+        await this.minter
+          .connect(accountToTestWith)
+          .setProjectMaxInvocations(this.projectZero);
+        // expect max invocations to be 1 on the minter
+        expect(
+          await this.minter.projectMaxInvocations(this.projectZero)
+        ).to.be.equal(2);
+      } else {
+        console.info(
+          "skipping setProjectMaxInvocations test because not implemented on settlement minters"
+        );
+      }
     });
   });
 };

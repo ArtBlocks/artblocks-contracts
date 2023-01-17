@@ -46,10 +46,9 @@ library BytecodeStorage {
      * @param _data string to be written to contract. No input validation is performed on this parameter.
      * @return address_ address of deployed contract with bytecode containing concat(gated-cleanup-logic, address, data)
      */
-    function writeToBytecode(string memory _data)
-        internal
-        returns (address address_)
-    {
+    function writeToBytecode(
+        string memory _data
+    ) internal returns (address address_) {
         // prefix bytecode with
         bytes memory creationCode = abi.encodePacked(
             //---------------------------------------------------------------------------------------------------------------//
@@ -190,11 +189,9 @@ library BytecodeStorage {
      * @param _address address of deployed contract with bytecode containing concat(gated-cleanup-logic, address, data)
      * @return data string read from contract bytecode
      */
-    function readFromBytecode(address _address)
-        internal
-        view
-        returns (string memory data)
-    {
+    function readFromBytecode(
+        address _address
+    ) internal view returns (string memory data) {
         // get the size of the bytecode
         uint256 bytecodeSize = _bytecodeSizeAt(_address);
         // handle case where address contains code < DATA_OFFSET
@@ -232,11 +229,9 @@ library BytecodeStorage {
      * @param _address address of deployed contract with bytecode containing concat(gated-cleanup-logic, address, data)
      * @return writerAddress address read from contract bytecode
      */
-    function getWriterAddressForBytecode(address _address)
-        internal
-        view
-        returns (address)
-    {
+    function getWriterAddressForBytecode(
+        address _address
+    ) internal view returns (address) {
         // get the size of the data
         uint256 bytecodeSize = _bytecodeSizeAt(_address);
         // handle case where address contains code < DATA_OFFSET
@@ -294,10 +289,7 @@ library BytecodeStorage {
     function purgeBytecode(address _address) internal {
         // deployed bytecode (above) handles all logic for purging state, so no
         // call data is expected to be passed along to perform data purge
-        (
-            bool success, /* `data` not needed */
-
-        ) = _address.call(hex"FF");
+        (bool success /* `data` not needed */, ) = _address.call(hex"FF");
         if (!success) {
             revert("ContractAsStorage: Delete Error");
         }
@@ -312,11 +304,9 @@ library BytecodeStorage {
         @param _address address that may or may not contain bytecode
         @return size size of the bytecode code at `_address`
     */
-    function _bytecodeSizeAt(address _address)
-        private
-        view
-        returns (uint256 size)
-    {
+    function _bytecodeSizeAt(
+        address _address
+    ) private view returns (uint256 size) {
         assembly {
             size := extcodesize(_address)
         }
