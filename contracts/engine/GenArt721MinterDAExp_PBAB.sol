@@ -18,14 +18,14 @@ pragma solidity 0.8.17;
  * @author Art Blocks Inc.
  * @notice Privileged Roles and Ownership:
  * This contract is designed to be managed, with limited powers.
- * Privileged roles and abilities are controlled by the core contract's Admin
- * ACL contract and a project's artist. Both of these roles hold extensive
- * power and can modify minter details.
- * Care must be taken to ensure that the admin ACL contract and artist
+ * Privileged roles and abilities are controlled by the core contract's allowlisted
+ * (`isWhitelisted` conforming) addresses and a project's artist. Both of these
+ * roles hold extensive power and can modify minter details.
+ * Care must be taken to ensure that the core contract permissions and artist
  * addresses are secure behind a multi-sig or other access control mechanism.
  * ----------------------------------------------------------------------------
- * The following functions are restricted to the core contract's Admin ACL
- * contract:
+ * The following functions are restricted to the core contract's allowlisted
+ * (`isWhitelisted` conforming) address(es):
  * - setAllowablePriceDecayHalfLifeRangeSeconds (note: this range is only
  *   enforced when creating new auctions)
  * - resetAuctionDetails (note: this will prevent minting until a new auction
@@ -94,18 +94,32 @@ contract GenArt721MinterDAExp_PBAB is ReentrancyGuard {
     /// more than this amount (may cut in half at no more than every N seconds).
     uint256 public maximumPriceDecayHalfLifeSeconds = 3600; // 60 minutes
 
-    // modifier to restrict access to only addresses specified by the 
+    // modifier to restrict access to only addresses specified by the
     // `onlyWhitelisted()` method on the associated core contract
     modifier onlyCoreAllowlisted() {
-        require(genArtCoreContract.isWhitelisted(msg.sender), "Only Core allowlisted");
+        require(
+            genArtCoreContract.isWhitelisted(msg.sender),
+            "Only Core allowlisted"
+        );
         _;
     }
 
+    // modifier to restrict access to only the artist for a given project
     modifier onlyArtist(uint256 _projectId) {
         require(
             (msg.sender ==
                 genArtCoreContract.projectIdToArtistAddress(_projectId)),
             "Only Artist"
+        );
+        _;
+    }
+
+    // modifier to restrict access to calls only involving a valid projectId
+    // (an existing project)
+    modifier onlyValidProjectId(uint256 _projectId) {
+        require(
+            _projectId < genArtCoreContract.nextProjectId(),
+            "Only existing projects"
         );
         _;
     }
@@ -144,11 +158,9 @@ contract GenArt721MinterDAExp_PBAB is ReentrancyGuard {
      * @notice Warning: Disabling purchaseTo is not supported on this minter.
      * This method exists purely for interface-conformance purposes.
      */
-    function togglePurchaseToDisabled(uint256 _projectId)
-        external
-        view
-        onlyArtist(_projectId)
-    {
+    function togglePurchaseToDisabled(
+        uint256 _projectId
+    ) external view onlyArtist(_projectId) {
         revert("Action not supported");
     }
 
@@ -166,11 +178,9 @@ contract GenArt721MinterDAExp_PBAB is ReentrancyGuard {
      * `_projectId` is an existing project ID.
      *
      */
-    function projectMaxHasBeenInvoked(uint256 _projectId)
-        external
-        view
-        returns (bool)
-    {
+    function projectMaxHasBeenInvoked(
+        uint256 _projectId
+    ) external view returns (bool) {
         return projectConfig[_projectId].maxHasBeenInvoked;
     }
 
@@ -192,18 +202,18 @@ contract GenArt721MinterDAExp_PBAB is ReentrancyGuard {
      * rationale, we intentionally do not do input validation in this method as
      * to whether or not the input `_projectId` is an existing project ID.
      */
-    function projectMaxInvocations(uint256 _projectId)
-        external
-        view
-        returns (uint256)
-    {
+    function projectMaxInvocations(
+        uint256 _projectId
+    ) external view returns (uint256) {
         return uint256(projectConfig[_projectId].maxInvocations);
     }
 
     /**
      * @notice projectId => auction parameters
      */
-    function projectAuctionParameters(uint256 _projectId)
+    function projectAuctionParameters(
+        uint256 _projectId
+    )
         external
         view
         returns (
@@ -233,10 +243,7 @@ contract GenArt721MinterDAExp_PBAB is ReentrancyGuard {
     function setAllowablePriceDecayHalfLifeRangeSeconds(
         uint256 _minimumPriceDecayHalfLifeSeconds,
         uint256 _maximumPriceDecayHalfLifeSeconds
-    )
-        external
-        onlyCoreAllowlisted
-    {
+    ) external onlyCoreAllowlisted {
         require(
             _maximumPriceDecayHalfLifeSeconds >
                 _minimumPriceDecayHalfLifeSeconds,
@@ -272,7 +279,7 @@ contract GenArt721MinterDAExp_PBAB is ReentrancyGuard {
         uint256 _priceDecayHalfLifeSeconds,
         uint256 _startPrice,
         uint256 _basePrice
-    ) external onlyArtist(_projectId) {
+    ) external onlyArtist(_projectId) onlyValidProjectId(_projectId) {
         // CHECKS
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         require(
@@ -316,9 +323,12 @@ contract GenArt721MinterDAExp_PBAB is ReentrancyGuard {
      * operation, but rather only in case of the need to halt an auction.
      * @param _projectId Project ID to set auction details for.
      */
-    function resetAuctionDetails(uint256 _projectId)
-        external
-        onlyCoreAllowlisted
+    function resetAuctionDetails(
+        uint256 _projectId
+    ) 
+        external 
+        onlyCoreAllowlisted 
+        onlyValidProjectId(_projectId)
     {
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         // reset to initial values
@@ -335,11 +345,9 @@ contract GenArt721MinterDAExp_PBAB is ReentrancyGuard {
      * @param _projectId Project ID to mint a token on.
      * @return tokenId Token ID of minted token
      */
-    function purchase(uint256 _projectId)
-        external
-        payable
-        returns (uint256 tokenId)
-    {
+    function purchase(
+        uint256 _projectId
+    ) external payable returns (uint256 tokenId) {
         tokenId = purchaseTo_do6(msg.sender, _projectId);
         return tokenId;
     }
@@ -347,11 +355,9 @@ contract GenArt721MinterDAExp_PBAB is ReentrancyGuard {
     /**
      * @notice gas-optimized version of purchase(uint256).
      */
-    function purchase_H4M(uint256 _projectId)
-        external
-        payable
-        returns (uint256 tokenId)
-    {
+    function purchase_H4M(
+        uint256 _projectId
+    ) external payable returns (uint256 tokenId) {
         tokenId = purchaseTo_do6(msg.sender, _projectId);
         return tokenId;
     }
@@ -363,23 +369,20 @@ contract GenArt721MinterDAExp_PBAB is ReentrancyGuard {
      * @param _projectId Project ID to mint a token on.
      * @return tokenId Token ID of minted token
      */
-    function purchaseTo(address _to, uint256 _projectId)
-        external
-        payable
-        returns (uint256 tokenId)
-    {
+    function purchaseTo(
+        address _to,
+        uint256 _projectId
+    ) external payable returns (uint256 tokenId) {
         return purchaseTo_do6(_to, _projectId);
     }
 
     /**
      * @notice gas-optimized version of purchaseTo(address, uint256).
      */
-    function purchaseTo_do6(address _to, uint256 _projectId)
-        public
-        payable
-        nonReentrant
-        returns (uint256 tokenId)
-    {
+    function purchaseTo_do6(
+        address _to,
+        uint256 _projectId
+    ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
 
@@ -540,7 +543,9 @@ contract GenArt721MinterDAExp_PBAB is ReentrancyGuard {
      * @return currencyAddress currency address for purchases of project on
      * this minter. This minter always returns null address, reserved for ether
      */
-    function getPriceInfo(uint256 _projectId)
+    function getPriceInfo(
+        uint256 _projectId
+    )
         external
         view
         returns (
