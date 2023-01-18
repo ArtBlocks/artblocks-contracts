@@ -75,6 +75,9 @@ contract GenArt721MinterDAExp_PBAB is ReentrancyGuard {
 
     uint256 constant ONE_MILLION = 1_000_000;
 
+    address payable public ownerAddress;
+    uint256 public ownerPercentage;
+
     struct ProjectConfig {
         bool maxHasBeenInvoked;
         uint24 maxInvocations;
@@ -133,6 +136,30 @@ contract GenArt721MinterDAExp_PBAB is ReentrancyGuard {
     constructor(address _genArt721Address) ReentrancyGuard() {
         genArt721CoreAddress = _genArt721Address;
         genArtCoreContract = IGenArt721CoreV2_PBAB(_genArt721Address);
+    }
+
+    /**
+     * @notice Sets the minter owner (the platform provider) address to `_ownerAddress`.
+     * @param _ownerAddress New owner address.
+     */
+    function setOwnerAddress(address payable _ownerAddress) public {
+        require(
+            genArtCoreContract.isWhitelisted(msg.sender),
+            "can only be set by admin"
+        );
+        ownerAddress = _ownerAddress;
+    }
+
+    /**
+     * @notice Sets the minter owner (the platform provider) revenue % to `_ownerPercentage` percent.
+     * @param _ownerPercentage New owner percentage.
+     */
+    function setOwnerPercentage(uint256 _ownerPercentage) public {
+        require(
+            genArtCoreContract.isWhitelisted(msg.sender),
+            "can only be set by admin"
+        );
+        ownerPercentage = _ownerPercentage;
     }
 
     /**
@@ -442,37 +469,50 @@ contract GenArt721MinterDAExp_PBAB is ReentrancyGuard {
                 (success_, ) = msg.sender.call{value: refund}("");
                 require(success_, "Refund failed");
             }
-            // split remaining funds between foundation, artist, and artist's
-            // additional payee
-            (
-                uint256 artblocksRevenue_,
-                address payable artblocksAddress_,
-                uint256 artistRevenue_,
-                address payable artistAddress_,
-                uint256 additionalPayeePrimaryRevenue_,
-                address payable additionalPayeePrimaryAddress_
-            ) = genArtCoreContract.getPrimaryRevenueSplits(
-                    _projectId,
-                    _currentPriceInWei
-                );
-            // Art Blocks payment
-            if (artblocksRevenue_ > 0) {
-                (success_, ) = artblocksAddress_.call{value: artblocksRevenue_}(
-                    ""
-                );
-                require(success_, "Art Blocks payment failed");
+            // split remaining funds between render provider, platform provider, 
+            // artist, and artist's additional payee
+            uint256 remainingFunds = _currentPriceInWei;
+            
+            // Render provider payment
+            uint256 renderProviderAmount = (_currentPriceInWei *
+                genArtCoreContract.renderProviderPercentage()) / 100;
+            if (renderProviderAmount > 0) {
+                (success_, ) = genArtCoreContract
+                    .renderProviderAddress()
+                    .call{value: renderProviderAmount}("");
+                require(success_, "Renderer payment failed");
+                remainingFunds -= renderProviderAmount;
             }
-            // artist payment
-            if (artistRevenue_ > 0) {
-                (success_, ) = artistAddress_.call{value: artistRevenue_}("");
+
+            // Owner (platform provider) payment
+            uint256 ownerFunds = (remainingFunds * ownerPercentage) / 100;
+            if (ownerFunds > 0) {
+                (success_, ) = ownerAddress.call{value: ownerFunds}("");
+                require(success_, "Owner payment failed");
+                remainingFunds -= ownerFunds;
+            }
+
+            // Artist additional payee payment
+            uint256 additionalPayeePercentage = genArtCoreContract.projectIdToAdditionalPayeePercentage(
+                    _projectId
+                );
+            if (additionalPayeePercentage > 0) {
+                uint256 additionalPayeeAmount = (remainingFunds * additionalPayeePercentage) / 100;
+                if (additionalPayeeAmount > 0) {
+                    (success_, ) = genArtCoreContract
+                        .projectIdToAdditionalPayee(_projectId)
+                        .call{value: additionalPayeeAmount}("");
+                    require(success_, "Additional payment failed");
+                    remainingFunds -= additionalPayeeAmount;
+                }
+            }
+
+            // Artist payment
+            if (remainingFunds > 0) {
+                (success_, ) = genArtCoreContract
+                    .projectIdToArtistAddress(_projectId)
+                    .call{value: remainingFunds}("");
                 require(success_, "Artist payment failed");
-            }
-            // additional payee payment
-            if (additionalPayeePrimaryRevenue_ > 0) {
-                (success_, ) = additionalPayeePrimaryAddress_.call{
-                    value: additionalPayeePrimaryRevenue_
-                }("");
-                require(success_, "Additional Payee payment failed");
             }
         }
     }
