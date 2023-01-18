@@ -352,11 +352,7 @@ contract GenArt721MinterDAExp_PBAB is ReentrancyGuard {
      */
     function resetAuctionDetails(
         uint256 _projectId
-    ) 
-        external 
-        onlyCoreAllowlisted 
-        onlyValidProjectId(_projectId)
-    {
+    ) external onlyCoreAllowlisted onlyValidProjectId(_projectId) {
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         // reset to initial values
         _projectConfig.timestampStart = 0;
@@ -469,17 +465,17 @@ contract GenArt721MinterDAExp_PBAB is ReentrancyGuard {
                 (success_, ) = msg.sender.call{value: refund}("");
                 require(success_, "Refund failed");
             }
-            // split remaining funds between render provider, platform provider, 
+            // split remaining funds between render provider, platform provider,
             // artist, and artist's additional payee
             uint256 remainingFunds = _currentPriceInWei;
-            
+
             // Render provider payment
             uint256 renderProviderAmount = (_currentPriceInWei *
                 genArtCoreContract.renderProviderPercentage()) / 100;
             if (renderProviderAmount > 0) {
-                (success_, ) = genArtCoreContract
-                    .renderProviderAddress()
-                    .call{value: renderProviderAmount}("");
+                (success_, ) = genArtCoreContract.renderProviderAddress().call{
+                    value: renderProviderAmount
+                }("");
                 require(success_, "Renderer payment failed");
                 remainingFunds -= renderProviderAmount;
             }
@@ -493,11 +489,11 @@ contract GenArt721MinterDAExp_PBAB is ReentrancyGuard {
             }
 
             // Artist additional payee payment
-            uint256 additionalPayeePercentage = genArtCoreContract.projectIdToAdditionalPayeePercentage(
-                    _projectId
-                );
+            uint256 additionalPayeePercentage = genArtCoreContract
+                .projectIdToAdditionalPayeePercentage(_projectId);
             if (additionalPayeePercentage > 0) {
-                uint256 additionalPayeeAmount = (remainingFunds * additionalPayeePercentage) / 100;
+                uint256 additionalPayeeAmount = (remainingFunds *
+                    additionalPayeePercentage) / 100;
                 if (additionalPayeeAmount > 0) {
                     (success_, ) = genArtCoreContract
                         .projectIdToAdditionalPayee(_projectId)
