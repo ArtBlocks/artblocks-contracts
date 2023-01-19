@@ -251,7 +251,7 @@ export function compareBN(
 // utility function to return if core is V3
 export async function isCoreV3(core: Contract): Promise<boolean> {
   try {
-    if ((await core.coreType()) === "GenArt721CoreV3") {
+    if ((await core.coreType()).startsWith("GenArt721CoreV3")) {
       return true;
     }
   } catch {
