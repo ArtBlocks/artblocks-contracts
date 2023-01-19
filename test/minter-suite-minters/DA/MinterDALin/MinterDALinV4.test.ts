@@ -6,10 +6,13 @@ import {
   balance,
   ether,
 } from "@openzeppelin/test-helpers";
-
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
+
+import { Logger } from "@ethersproject/logger";
+// hide nuisance logs about event overloading
+Logger.setLogLevel(Logger.levels.ERROR);
 
 import {
   getAccounts,
@@ -19,13 +22,9 @@ import {
   safeAddProject,
 } from "../../../util/common";
 import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../util/constants";
-import { MinterDAExp_Common } from "./MinterDAExp.common";
+import { MinterDALin_Common } from "./MinterDALin.common";
 import { MinterDAV1V2V3_Common } from "../MinterDAV1V2V3.common";
 import { MinterDAV4_Common } from "../MinterDAV4.common";
-
-import { Logger } from "@ethersproject/logger";
-// hide nuisance logs about event overloading
-Logger.setLogLevel(Logger.levels.ERROR);
 
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
@@ -39,7 +38,7 @@ const coreContractsToTest = [
  * V3 core contracts, both flagship and explorations.
  */
 for (const coreContractName of coreContractsToTest) {
-  describe(`MinterDAExpV4_${coreContractName}`, async function () {
+  describe(`MinterDALinV4_${coreContractName}`, async function () {
     beforeEach(async function () {
       // standard accounts and constants
       this.accounts = await getAccounts();
@@ -49,7 +48,7 @@ for (const coreContractName of coreContractsToTest) {
         ethers.utils.parseEther("0.1")
       );
       this.basePrice = ethers.utils.parseEther("0.05");
-      this.defaultHalfLife = ONE_HOUR / 2;
+
       this.auctionStartTimeOffset = ONE_HOUR;
 
       // deploy and configure minter filter and minter
@@ -63,7 +62,7 @@ for (const coreContractName of coreContractsToTest) {
         "MinterFilterV1"
       ));
 
-      this.targetMinterName = "MinterDAExpV4";
+      this.targetMinterName = "MinterDALinV4";
       this.minter = await deployAndGet.call(this, this.targetMinterName, [
         this.genArt721Core.address,
         this.minterFilter.address,
@@ -111,15 +110,15 @@ for (const coreContractName of coreContractsToTest) {
         .setAuctionDetails(
           this.projectZero,
           this.startTime + this.auctionStartTimeOffset,
-          this.defaultHalfLife,
+          this.startTime + this.auctionStartTimeOffset + ONE_HOUR * 2,
           this.startingPrice,
           this.basePrice
         );
       await ethers.provider.send("evm_mine", [this.startTime]);
     });
 
-    describe("common DAEXP tests", async function () {
-      await MinterDAExp_Common();
+    describe("common DALin tests", async () => {
+      await MinterDALin_Common();
     });
 
     describe("common DA V1V2V3 tests", async function () {
@@ -138,13 +137,14 @@ for (const coreContractName of coreContractsToTest) {
         const overflowStartTime = ethers.BigNumber.from("2").pow(
           ethers.BigNumber.from("64")
         );
+        const overflowEndTime = overflowStartTime.add(ONE_HOUR * 2);
         await expectRevert(
           this.minter
             .connect(this.accounts.artist)
             .setAuctionDetails(
               this.projectZero,
               overflowStartTime,
-              this.defaultHalfLife,
+              overflowEndTime,
               this.startingPrice,
               this.basePrice
             ),
@@ -310,19 +310,20 @@ for (const coreContractName of coreContractsToTest) {
         const txCost = receipt.effectiveGasPrice
           .mul(receipt.gasUsed)
           .toString();
+
         console.log(
-          "Gas cost for a successful Exponential DA mint: ",
+          "Gas cost for a successful Linear DA mint: ",
           ethers.utils.formatUnits(txCost, "ether").toString(),
           "ETH"
         );
         // assuming a cost of 100 GWEI
         if (this.isEngine) {
           expect(txCost.toString()).to.equal(
-            ethers.utils.parseEther("0.0150787")
+            ethers.utils.parseEther("0.015087")
           );
         } else {
           expect(txCost.toString()).to.equal(
-            ethers.utils.parseEther("0.0138469")
+            ethers.utils.parseEther("0.0138552")
           );
         }
       });
