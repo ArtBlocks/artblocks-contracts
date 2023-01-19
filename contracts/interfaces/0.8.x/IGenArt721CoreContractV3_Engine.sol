@@ -8,10 +8,7 @@ import "./IGenArt721CoreContractV3_Base.sol";
 
 interface IGenArt721CoreContractV3_Engine is IGenArt721CoreContractV3_Base {
     // @dev new function in V3
-    function getPrimaryRevenueSplits(
-        uint256 _projectId,
-        uint256 _price
-    )
+    function getPrimaryRevenueSplits(uint256 _projectId, uint256 _price)
         external
         view
         returns (
@@ -74,7 +71,8 @@ interface IGenArt721CoreContractV3_Engine is IGenArt721CoreContractV3_Base {
     function tokenIdToHash(uint256 _tokenId) external view returns (bytes32);
 
     // function to read the hash-seed for a given tokenId
-    function tokenIdToHashSeed(
-        uint256 _tokenId
-    ) external view returns (bytes12);
+    function tokenIdToHashSeed(uint256 _tokenId)
+        external
+        view
+        returns (bytes12);
 }
