@@ -44,12 +44,12 @@ describe("GenArt721CoreV2_EngineDAMinter_Integration", async function () {
     await this.genArt721Core
       .connect(this.accounts.deployer)
       .addProject("name", this.accounts.artist.address, 0);
-      await this.genArt721Core
-        .connect(this.accounts.deployer)
-        .toggleProjectIsActive(this.projectZero);
-      await this.genArt721Core
-        .connect(this.accounts.artist)
-        .updateProjectMaxInvocations(this.projectZero, this.maxInvocations);
+    await this.genArt721Core
+      .connect(this.accounts.deployer)
+      .toggleProjectIsActive(this.projectZero);
+    await this.genArt721Core
+      .connect(this.accounts.artist)
+      .updateProjectMaxInvocations(this.projectZero, this.maxInvocations);
     // deploy + add minter
     this.minter = await deployAndGet.call(this, "GenArt721MinterDAExp_PBAB", [
       this.genArt721Core.address,
@@ -66,26 +66,28 @@ describe("GenArt721CoreV2_EngineDAMinter_Integration", async function () {
     this.defaultHalfLife = ONE_HOUR / 2;
     this.auctionStartTimeOffset = ONE_HOUR;
     if (!this.startTime) {
-        const blockNumber = await ethers.provider.getBlockNumber();
-        const block = await ethers.provider.getBlock(blockNumber);
-        this.startTime = block.timestamp;
+      const blockNumber = await ethers.provider.getBlockNumber();
+      const block = await ethers.provider.getBlock(blockNumber);
+      this.startTime = block.timestamp;
     }
     this.startTime = this.startTime + ONE_DAY;
     await ethers.provider.send("evm_mine", [this.startTime - ONE_MINUTE]);
     await this.minter
-        .connect(this.accounts.deployer)
-        .resetAuctionDetails(this.projectZero);
+      .connect(this.accounts.deployer)
+      .resetAuctionDetails(this.projectZero);
     // TODO: temporary for now that the below assumes fixed-price-mode
     await this.minter
-        .connect(this.accounts.artist)
-        .setAuctionDetails(
-            this.projectZero,
-            this.startTime + this.auctionStartTimeOffset,
-            this.defaultHalfLife,
-            this.pricePerTokenInWei,
-            this.pricePerTokenInWei
-    );
-    await ethers.provider.send("evm_mine", [this.startTime + this.auctionStartTimeOffset]);
+      .connect(this.accounts.artist)
+      .setAuctionDetails(
+        this.projectZero,
+        this.startTime + this.auctionStartTimeOffset,
+        this.defaultHalfLife,
+        this.pricePerTokenInWei,
+        this.pricePerTokenInWei
+      );
+    await ethers.provider.send("evm_mine", [
+      this.startTime + this.auctionStartTimeOffset,
+    ]);
   });
 
   describe("common tests", async function () {
