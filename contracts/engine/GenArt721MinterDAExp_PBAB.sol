@@ -319,8 +319,8 @@ contract GenArt721MinterDAExp_PBAB is ReentrancyGuard {
             "Only future auctions"
         );
         require(
-            _startPrice > _basePrice,
-            "Auction start price must be greater than auction end price"
+            _startPrice >= _basePrice,
+            "Auction start price must be greater than or equal to auction end price"
         );
         require(
             (_priceDecayHalfLifeSeconds >= minimumPriceDecayHalfLifeSeconds) &&
