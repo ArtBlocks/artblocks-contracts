@@ -89,49 +89,47 @@ describe("GenArt721CoreV2_EngineDAMinter_Integration", async function () {
     await GenArt721MinterV1V2PRTNR_Common();
   });
 
-  describe("core allowlisted ACL checks", function() {
+  describe("core allowlisted ACL checks", function () {
     const expectedErrorMessage = "Only Core allowlisted";
-    it("setAllowablePriceDecayHalfLifeRangeSeconds is gated", async function() {
-        await expectRevert(
-          this.minter
-            .connect(this.accounts.additional)
-            .setAllowablePriceDecayHalfLifeRangeSeconds(60, 600),
-            expectedErrorMessage
-        );
+    it("setAllowablePriceDecayHalfLifeRangeSeconds is gated", async function () {
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.additional)
+          .setAllowablePriceDecayHalfLifeRangeSeconds(60, 600),
+        expectedErrorMessage
+      );
     });
-    it("resetAuctionDetails is gated", async function() {
-        await expectRevert(
-          this.minter
-            .connect(this.accounts.additional)
-            .resetAuctionDetails(this.projectZero),
-            expectedErrorMessage
-        );
+    it("resetAuctionDetails is gated", async function () {
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.additional)
+          .resetAuctionDetails(this.projectZero),
+        expectedErrorMessage
+      );
     });
   });
 
-  describe("valid project ID checks", function() {
+  describe("valid project ID checks", function () {
     const expectedErrorMessage = "Only existing projects";
-    it("resetAuctionDetails is gated", async function() {
-        await expectRevert(
-            this.minter
-              .connect(this.accounts.deployer)
-              .resetAuctionDetails(this.projectOne),
-              expectedErrorMessage
-          );
+    it("resetAuctionDetails is gated", async function () {
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.deployer)
+          .resetAuctionDetails(this.projectOne),
+        expectedErrorMessage
+      );
     });
-    it("setAuctionDetails is gated", async function() {
-        await expectRevert(
-            this.minter
-              .connect(this.accounts.artist)
-              .setAuctionDetails(
-                this.projectOne,
-                0, // not relevant for this test, as it is checked later
-                0, // not relevant for this test, as it is checked later
-                0, // not relevant for this test, as it is checked later
-                0  // not relevant for this test, as it is checked later
-              ),
-              expectedErrorMessage
-          );
+    it("setAuctionDetails is gated", async function () {
+      await expectRevert(
+        this.minter.connect(this.accounts.artist).setAuctionDetails(
+          this.projectOne,
+          0, // not relevant for this test, as it is checked later
+          0, // not relevant for this test, as it is checked later
+          0, // not relevant for this test, as it is checked later
+          0 // not relevant for this test, as it is checked later
+        ),
+        expectedErrorMessage
+      );
     });
   });
 
