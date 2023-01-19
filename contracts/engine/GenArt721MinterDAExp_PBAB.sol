@@ -306,7 +306,7 @@ contract GenArt721MinterDAExp_PBAB is ReentrancyGuard {
         uint256 _priceDecayHalfLifeSeconds,
         uint256 _startPrice,
         uint256 _basePrice
-    ) external onlyArtist(_projectId) onlyValidProjectId(_projectId) {
+    ) external onlyValidProjectId(_projectId) onlyArtist(_projectId) {
         // CHECKS
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         require(
