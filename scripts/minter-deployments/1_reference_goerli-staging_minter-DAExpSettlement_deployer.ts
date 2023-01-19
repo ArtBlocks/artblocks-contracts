@@ -10,10 +10,10 @@ import { delay } from "../util/utils";
 const EXTRA_DELAY_BETWEEN_TX = 5000; // ms
 
 /**
- * This script was created to deploy the MinterMerkleV3 contract to the Ethereum
- * Goerli testnet, for the Art Blocks dev environment.
+ * This script was created to deploy the DAExpSettlementV0 contract to the Ethereum
+ * Goerli testnet, for the Art Blocks artist-staging environment.
  * It is intended to document the deployment process and provide a reference
- * for the steps required to deploy the MinterMerkleV3 contract.
+ * for the steps required to deploy the DAExpSettlementV0 contract.
  */
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG BEGINS HERE
