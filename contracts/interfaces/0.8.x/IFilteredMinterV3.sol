@@ -2,22 +2,17 @@
 // Created By: Art Blocks Inc.
 
 import "./IFilteredMinterV2.sol";
+import "./IFilteredMinterV3_Mixin.sol";
 
 pragma solidity ^0.8.0;
 
 /**
  * @title This interface extends the IFilteredMinterV2 interface to support
  * emitting an event and exposing a getter function for if a minter is
- * configured to integrate with a V3 flagship or V3 engine contract, `isEngine`
+ * configured to integrate with a V3 flagship or V3 engine contract, `isEngine`.
+ * Additional funcitonality is provided by the IFilteredMinterV3_Mixin interface.
  * @author Art Blocks Inc.
  */
-interface IFilteredMinterV3 is IFilteredMinterV2 {
-    /**
-     * @notice Emitted when a minter is configured to integrate with a V3 flagship or V3 engine contract
-     */
-    event ConfiguredIsEngine(bool indexed isEngine);
+interface IFilteredMinterV3 is IFilteredMinterV2, IFilteredMinterV3_Mixin {
 
-    // Function that returns if a minter is configured to integrate with a V3 flagship or V3 engine contract.
-    // Returns true only if the minter is configured to integrate with an engine contract.
-    function isEngine() external returns (bool isEngine);
 }

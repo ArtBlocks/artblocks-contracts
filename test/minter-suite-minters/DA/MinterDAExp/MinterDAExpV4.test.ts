@@ -288,9 +288,9 @@ for (const coreContractName of coreContractsToTest) {
     });
 
     describe("isEngine", async function () {
-      it("returns expected value from public getter function", async function () {
-        const isEngine = await this.minter.isEngine();
-        expect(isEngine).to.equal(this.isEngine);
+      it("correctly reports isEngine", async function () {
+        const coreType = await this.genArt721Core.coreType();
+        expect(coreType === "GenArt721CoreV3").to.be.equal(!this.isEngine);
       });
     });
 
