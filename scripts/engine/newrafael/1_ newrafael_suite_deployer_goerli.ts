@@ -16,7 +16,7 @@ const hre = require("hardhat");
 const DEAD = "0x000000000000000000000000000000000000dEaD";
 enum MinterTypes {
   FixedPrice,
-  DutchAuction
+  DutchAuction,
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -206,7 +206,9 @@ async function main() {
   //////////////////////////////////////////////////////////////////////////////
 
   // Output instructions for manual Etherscan verification.
-  console.log(`If automated verification below fails, verify deployment with the following:`);
+  console.log(
+    `If automated verification below fails, verify deployment with the following:`
+  );
   const standardVerify = "yarn hardhat verify";
   console.log(`Verify core contract deployment with:`);
   console.log(
@@ -225,7 +227,7 @@ async function main() {
       pbabTokenName,
       pbabTokenTicker,
       randomizerAddress,
-      startingProjectId
+      startingProjectId,
     ],
   });
   await hre.run("verify:verify", {
