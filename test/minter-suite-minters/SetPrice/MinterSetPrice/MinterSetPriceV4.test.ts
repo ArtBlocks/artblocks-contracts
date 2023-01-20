@@ -20,20 +20,25 @@ import {
 
 import { MinterSetPrice_ETH_Common } from "./MinterSetPrice.common";
 import { MinterSetPriceV1V2V3V4_Common } from "../MinterSetPriceV1V2V3V4.common";
-import { MinterSetPriceV2V3_Common } from "../MinterSetPriceV2V3.common";
+import { MinterSetPriceV4_Common } from "../MinterSetPriceV4.common";
+
+import { Logger } from "@ethersproject/logger";
+// hide nuisance logs about event overloading
+Logger.setLogLevel(Logger.levels.ERROR);
 
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
   "GenArt721CoreV3", // flagship V3 core
   "GenArt721CoreV3_Explorations", // V3 core explorations contract
+  "GenArt721CoreV3_Engine", // V3 core engine contract
 ];
 
 /**
  * These tests intended to ensure this Filtered Minter integrates properly with
- * V3 core contract.
+ * V3 core contracts, both flagship and explorations.
  */
 for (const coreContractName of coreContractsToTest) {
-  describe(`MinterSetPriceV2_${coreContractName}`, async function () {
+  describe(`MinterSetPriceV4_${coreContractName}`, async function () {
     beforeEach(async function () {
       // standard accounts and constants
       this.accounts = await getAccounts();
@@ -53,7 +58,7 @@ for (const coreContractName of coreContractsToTest) {
         "MinterFilterV1"
       ));
 
-      this.targetMinterName = "MinterSetPriceV2";
+      this.targetMinterName = "MinterSetPriceV4";
       const minterFactory = await ethers.getContractFactory(
         this.targetMinterName
       );
@@ -64,6 +69,7 @@ for (const coreContractName of coreContractsToTest) {
 
       // support common tests and also give access to this.minter1 at this.minter
       this.minter = this.minter1;
+      this.isEngine = await this.minter.isEngine();
 
       this.minter2 = await minterFactory.deploy(
         this.genArt721Core.address,
@@ -154,8 +160,8 @@ for (const coreContractName of coreContractsToTest) {
       await MinterSetPriceV1V2V3V4_Common();
     });
 
-    describe("common MinterSetPrice V2V3 tests", async function () {
-      await MinterSetPriceV2V3_Common();
+    describe("common MinterSetPrice V4 tests", async function () {
+      await MinterSetPriceV4_Common();
     });
 
     describe("setProjectMaxInvocations", async function () {
@@ -165,10 +171,124 @@ for (const coreContractName of coreContractsToTest) {
           .setProjectMaxInvocations(this.projectZero);
       });
 
-      it("allows user to call setProjectMaxInvocations", async function () {
+      it("resets maxHasBeenInvoked after it's been set to true locally and then max project invocations is synced from the core contract", async function () {
+        // reduce local maxInvocations to 2 on minter
+        await this.minter
+          .connect(this.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(this.projectZero, 1);
+        const localMaxInvocations = await this.minter
+          .connect(this.accounts.artist)
+          .projectConfig(this.projectZero);
+        expect(localMaxInvocations.maxInvocations).to.equal(1);
+
+        // mint a token
         await this.minter
           .connect(this.accounts.user)
+          .purchase(this.projectZero, {
+            value: this.pricePerTokenInWei,
+          });
+
+        // expect projectMaxHasBeenInvoked to be true
+        const hasMaxBeenInvoked = await this.minter.projectMaxHasBeenInvoked(
+          this.projectZero
+        );
+        expect(hasMaxBeenInvoked).to.be.true;
+
+        // sync max invocations from core to minter
+        await this.minter
+          .connect(this.accounts.artist)
           .setProjectMaxInvocations(this.projectZero);
+
+        // expect projectMaxHasBeenInvoked to now be false
+        const hasMaxBeenInvoked2 = await this.minter.projectMaxHasBeenInvoked(
+          this.projectZero
+        );
+        expect(hasMaxBeenInvoked2).to.be.false;
+
+        // expect maxInvocations on the minter to be 15
+        const syncedMaxInvocations = await this.minter
+          .connect(this.accounts.artist)
+          .projectConfig(this.projectZero);
+        expect(syncedMaxInvocations.maxInvocations).to.equal(15);
+      });
+    });
+
+    describe("manuallyLimitProjectMaxInvocations", async function () {
+      it("allows artist to call manuallyLimitProjectMaxInvocations", async function () {
+        await this.minter
+          .connect(this.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(
+            this.projectZero,
+            this.maxInvocations - 1
+          );
+      });
+      it("does not support manually setting project max invocations to be greater than the project max invocations set on the core contract", async function () {
+        await expectRevert(
+          this.minter
+            .connect(this.accounts.artist)
+            .manuallyLimitProjectMaxInvocations(
+              this.projectZero,
+              this.maxInvocations + 1
+            ),
+          "Cannot increase project max invocations above core contract set project max invocations"
+        );
+      });
+      it("appropriately sets maxHasBeenInvoked after calling manuallyLimitProjectMaxInvocations", async function () {
+        // reduce local maxInvocations to 2 on minter
+        await this.minter
+          .connect(this.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(this.projectZero, 1);
+        const localMaxInvocations = await this.minter
+          .connect(this.accounts.artist)
+          .projectConfig(this.projectZero);
+        expect(localMaxInvocations.maxInvocations).to.equal(1);
+
+        // mint a token
+        await this.minter
+          .connect(this.accounts.user)
+          .purchase(this.projectZero, {
+            value: this.pricePerTokenInWei,
+          });
+
+        // expect projectMaxHasBeenInvoked to be true
+        const hasMaxBeenInvoked = await this.minter.projectMaxHasBeenInvoked(
+          this.projectZero
+        );
+        expect(hasMaxBeenInvoked).to.be.true;
+
+        // increase invocations on the minter
+        await this.minter
+          .connect(this.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(this.projectZero, 3);
+
+        // expect maxInvocations on the minter to be 3
+        const localMaxInvocations2 = await this.minter
+          .connect(this.accounts.artist)
+          .projectConfig(this.projectZero);
+        expect(localMaxInvocations2.maxInvocations).to.equal(3);
+
+        // expect projectMaxHasBeenInvoked to now be false
+        const hasMaxBeenInvoked2 = await this.minter.projectMaxHasBeenInvoked(
+          this.projectZero
+        );
+        expect(hasMaxBeenInvoked2).to.be.false;
+
+        // reduce invocations on the minter
+        await this.minter
+          .connect(this.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(this.projectZero, 1);
+
+        // expect maxInvocations on the minter to be 1
+        const localMaxInvocations3 = await this.minter
+          .connect(this.accounts.artist)
+          .projectConfig(this.projectZero);
+        expect(localMaxInvocations3.maxInvocations).to.equal(1);
+
+        // expect projectMaxHasBeenInvoked to now be true
+        const hasMaxBeenInvoked3 = await this.minter.projectMaxHasBeenInvoked(
+          this.projectZero
+        );
+        expect(hasMaxBeenInvoked3).to.be.true;
       });
     });
 
@@ -189,9 +309,16 @@ for (const coreContractName of coreContractsToTest) {
           ethers.utils.formatUnits(txCost, "ether").toString(),
           "ETH"
         );
-        expect(txCost.toString()).to.equal(
-          ethers.utils.parseEther("0.0128905")
-        ); // assuming a cost of 100 GWEI
+        // assuming a cost of 100 GWEI
+        if (this.isEngine) {
+          expect(txCost.toString()).to.equal(
+            ethers.utils.parseEther("0.0141277")
+          );
+        } else {
+          expect(txCost.toString()).to.equal(
+            ethers.utils.parseEther("0.0128959")
+          );
+        }
       });
     });
 
@@ -218,6 +345,13 @@ for (const coreContractName of coreContractsToTest) {
             .togglePurchaseToDisabled(this.projectZero),
           "Action not supported"
         );
+      });
+    });
+
+    describe("isEngine", async function () {
+      it("correctly reports isEngine", async function () {
+        const coreType = await this.genArt721Core.coreType();
+        expect(coreType === "GenArt721CoreV3").to.be.equal(!this.isEngine);
       });
     });
   });

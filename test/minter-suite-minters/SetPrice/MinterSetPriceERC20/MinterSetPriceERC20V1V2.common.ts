@@ -7,7 +7,7 @@ import Safe from "@gnosis.pm/safe-core-sdk";
 import { SafeTransactionDataPartial } from "@gnosis.pm/safe-core-sdk-types";
 import { getGnosisSafe } from "../../../util/GnosisSafeNetwork";
 
-import { MinterSetPriceV1V2V3_Common } from "../MinterSetPriceV1V2V3.common";
+import { MinterSetPriceV1V2V3_Common } from "../MinterSetPriceV1V2V3V4.common";
 import { isCoreV3 } from "../../../util/common";
 
 /**
