@@ -44,12 +44,10 @@ async function main() {
   // DEPLOYMENT ENDS HERE
   //////////////////////////////////////////////////////////////////////////////
 
-  // Perform automated verification 
+  // Perform automated verification
   await hre.run("verify:verify", {
     address: minter.address,
-    constructorArguments: [
-        coreContractAddress,
-    ],
+    constructorArguments: [coreContractAddress],
   });
 }
 
