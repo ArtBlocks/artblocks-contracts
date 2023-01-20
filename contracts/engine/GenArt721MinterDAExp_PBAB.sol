@@ -170,11 +170,14 @@ contract GenArt721MinterDAExp_PBAB is ReentrancyGuard {
      */
     function setProjectMaxInvocations(uint256 _projectId) external {
         uint256 maxInvocations;
-        (, , , maxInvocations, , , , , ) = genArtCoreContract.projectTokenInfo(
-            _projectId
-        );
+        uint256 invocations;
+        (, , invocations, maxInvocations, , , , , ) = genArtCoreContract
+            .projectTokenInfo(_projectId);
         // update storage with results
         projectConfig[_projectId].maxInvocations = uint24(maxInvocations);
+        if (invocations < maxInvocations) {
+            projectConfig[_projectId].maxHasBeenInvoked = false;
+        }
     }
 
     /**
