@@ -4,6 +4,8 @@
 import { ethers } from "hardhat";
 import { GenArt721MinterDAExpPBAB__factory } from "../../contracts/factories/GenArt721MinterDAExpPBAB__factory";
 
+const hre = require("hardhat");
+
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG BEGINS HERE
 //////////////////////////////////////////////////////////////////////////////
@@ -30,7 +32,7 @@ async function main() {
 
   await minter.deployed();
   console.log(`MinterDAExp deployed at ${minter.address}`);
-  console.log(`Verify deployment with:`);
+  console.log(`If automated verification below fails, verify deployment with:`);
   console.log(
     `yarn hardhat verify --network ${networkName} ${minter.address} ${coreContractAddress}`
   );
@@ -41,6 +43,14 @@ async function main() {
   //////////////////////////////////////////////////////////////////////////////
   // DEPLOYMENT ENDS HERE
   //////////////////////////////////////////////////////////////////////////////
+
+  // Perform automated verification 
+  await hre.run("verify:verify", {
+    address: minter.address,
+    constructorArguments: [
+        coreContractAddress,
+    ],
+  });
 }
 
 main()
