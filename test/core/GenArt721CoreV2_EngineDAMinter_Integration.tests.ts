@@ -107,6 +107,20 @@ describe("GenArt721CoreV2_EngineDAMinter_Integration", async function () {
         expectedErrorMessage
       );
     });
+    it("setOwnerAddress is gated", async function () {
+      await expectRevert(
+        this.minter
+          .connect(this.accounts.additional)
+          .setOwnerAddress(this.accounts.deployer2.address),
+        expectedErrorMessage
+      );
+    });
+    it("setOwnerPercentage is gated", async function () {
+      await expectRevert(
+        this.minter.connect(this.accounts.additional).setOwnerPercentage(10),
+        expectedErrorMessage
+      );
+    });
   });
 
   describe("valid project ID checks", function () {
@@ -151,13 +165,21 @@ describe("GenArt721CoreV2_EngineDAMinter_Integration", async function () {
 
   describe("purchase payments and gas", async function () {
     it("can create a token then funds distributed (no additional payee) [ @skip-on-coverage ]", async function () {
+      await this.minter
+        .connect(this.accounts.deployer)
+        .setOwnerAddress(this.accounts.deployer2.address);
+      await this.minter
+        .connect(this.accounts.deployer)
+        .setOwnerPercentage(10 /* 10% */);
+
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .toggleProjectIsPaused(this.projectZero);
+
       const artistBalance = await this.accounts.artist.getBalance();
       const ownerBalance = await this.accounts.user.getBalance();
       const deployerBalance = await this.accounts.deployer.getBalance();
-
-      this.genArt721Core
-        .connect(this.accounts.artist)
-        .toggleProjectIsPaused(this.projectZero);
+      const partnerBalance = await this.accounts.deployer2.getBalance();
 
       // pricePerTokenInWei setup above to be 1 ETH
       await expect(
@@ -180,30 +202,41 @@ describe("GenArt721CoreV2_EngineDAMinter_Integration", async function () {
         (await this.accounts.deployer.getBalance()).sub(deployerBalance)
       ).to.equal(ethers.utils.parseEther("0.1"));
       expect(
+        (await this.accounts.deployer2.getBalance()).sub(partnerBalance)
+      ).to.equal(ethers.utils.parseEther("0.09"));
+      expect(
         (await this.accounts.artist.getBalance()).sub(artistBalance)
-      ).to.equal(ethers.utils.parseEther("0.8971085"));
+      ).to.equal(ethers.utils.parseEther("0.81"));
       expect(
         (await this.accounts.user.getBalance()).sub(ownerBalance)
-      ).to.equal(ethers.utils.parseEther("1.017956").mul("-1")); // spent 1 ETH
+      ).to.equal(ethers.utils.parseEther("1.0191179").mul("-1")); // spent 1 ETH
     });
 
     it("can create a token then funds distributed (with additional payee) [ @skip-on-coverage ]", async function () {
-      const additionalBalance = await this.accounts.additional.getBalance();
-      const artistBalance = await this.accounts.artist.getBalance();
-      const ownerBalance = await this.accounts.user.getBalance();
-      const deployerBalance = await this.accounts.deployer.getBalance();
+      await this.minter
+        .connect(this.accounts.deployer)
+        .setOwnerAddress(this.accounts.deployer2.address);
+      await this.minter
+        .connect(this.accounts.deployer)
+        .setOwnerPercentage(10 /* 10% */);
 
       const additionalPayeePercentage = 10;
-      this.genArt721Core
+      await this.genArt721Core
         .connect(this.accounts.artist)
         .updateProjectAdditionalPayeeInfo(
           this.projectZero,
           this.accounts.additional.address,
           additionalPayeePercentage
         );
-      this.genArt721Core
+      await this.genArt721Core
         .connect(this.accounts.artist)
         .toggleProjectIsPaused(this.projectZero);
+
+      const additionalBalance = await this.accounts.additional.getBalance();
+      const artistBalance = await this.accounts.artist.getBalance();
+      const ownerBalance = await this.accounts.user.getBalance();
+      const deployerBalance = await this.accounts.deployer.getBalance();
+      const partnerBalance = await this.accounts.deployer2.getBalance();
 
       // pricePerTokenInWei setup above to be 1 ETH
       await expect(
@@ -222,26 +255,30 @@ describe("GenArt721CoreV2_EngineDAMinter_Integration", async function () {
         this.projectZero
       );
       expect(this.projectZeroInfo.invocations).to.equal("1");
-
       expect(
         (await this.accounts.deployer.getBalance()).sub(deployerBalance)
       ).to.equal(ethers.utils.parseEther("0.1"));
       expect(
-        (await this.accounts.additional.getBalance()).sub(additionalBalance)
+        (await this.accounts.deployer2.getBalance()).sub(partnerBalance)
       ).to.equal(ethers.utils.parseEther("0.09"));
       expect(
-        (await this.accounts.user.getBalance()).sub(ownerBalance)
-      ).to.equal(ethers.utils.parseEther("1.019235").mul("-1")); // spent 1 ETH
+        (await this.accounts.additional.getBalance()).sub(additionalBalance)
+      ).to.equal(ethers.utils.parseEther("0.081"));
       expect(
         (await this.accounts.artist.getBalance()).sub(artistBalance)
-      ).to.equal(ethers.utils.parseEther("0.8002178"));
+      ).to.equal(ethers.utils.parseEther("0.729"));
+      expect(
+        (await this.accounts.user.getBalance()).sub(ownerBalance)
+      ).to.equal(ethers.utils.parseEther("1.0203969").mul("-1")); // spent 1 ETH
     });
 
     it("can create a token then funds distributed (with additional payee getting 100%) [ @skip-on-coverage ]", async function () {
-      const additionalBalance = await this.accounts.additional.getBalance();
-      const artistBalance = await this.accounts.artist.getBalance();
-      const ownerBalance = await this.accounts.user.getBalance();
-      const deployerBalance = await this.accounts.deployer.getBalance();
+      await this.minter
+        .connect(this.accounts.deployer)
+        .setOwnerAddress(this.accounts.deployer2.address);
+      await this.minter
+        .connect(this.accounts.deployer)
+        .setOwnerPercentage(10 /* 10% */);
 
       const additionalPayeePercentage = 100;
       await this.genArt721Core
@@ -254,6 +291,12 @@ describe("GenArt721CoreV2_EngineDAMinter_Integration", async function () {
       await this.genArt721Core
         .connect(this.accounts.artist)
         .toggleProjectIsPaused(this.projectZero);
+
+      const additionalBalance = await this.accounts.additional.getBalance();
+      const artistBalance = await this.accounts.artist.getBalance();
+      const ownerBalance = await this.accounts.user.getBalance();
+      const deployerBalance = await this.accounts.deployer.getBalance();
+      const partnerBalance = await this.accounts.deployer2.getBalance();
 
       // pricePerTokenInWei setup above to be 1 ETH
       await expect(
@@ -272,19 +315,21 @@ describe("GenArt721CoreV2_EngineDAMinter_Integration", async function () {
         this.projectZero
       );
       expect(projectZeroInfo.invocations).to.equal("1");
-
       expect(
         (await this.accounts.deployer.getBalance()).sub(deployerBalance)
       ).to.equal(ethers.utils.parseEther("0.1"));
       expect(
-        (await this.accounts.additional.getBalance()).sub(additionalBalance)
-      ).to.equal(ethers.utils.parseEther("0.9"));
+        (await this.accounts.deployer2.getBalance()).sub(partnerBalance)
+      ).to.equal(ethers.utils.parseEther("0.09"));
       expect(
-        (await this.accounts.user.getBalance()).sub(ownerBalance)
-      ).to.equal(ethers.utils.parseEther("1.017978").mul("-1")); // spent 1 ETH
+        (await this.accounts.additional.getBalance()).sub(additionalBalance)
+      ).to.equal(ethers.utils.parseEther("0.81"));
       expect(
         (await this.accounts.artist.getBalance()).sub(artistBalance)
-      ).to.equal(ethers.utils.parseEther("0.0097822").mul("-1"));
+      ).to.equal(ethers.utils.parseEther("0"));
+      expect(
+        (await this.accounts.user.getBalance()).sub(ownerBalance)
+      ).to.equal(ethers.utils.parseEther("1.0191399").mul("-1")); // spent 1 ETH
     });
   });
 });

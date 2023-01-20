@@ -142,11 +142,9 @@ contract GenArt721MinterDAExp_PBAB is ReentrancyGuard {
      * @notice Sets the minter owner (the platform provider) address to `_ownerAddress`.
      * @param _ownerAddress New owner address.
      */
-    function setOwnerAddress(address payable _ownerAddress) public {
-        require(
-            genArtCoreContract.isWhitelisted(msg.sender),
-            "can only be set by admin"
-        );
+    function setOwnerAddress(
+        address payable _ownerAddress
+    ) public onlyCoreAllowlisted {
         ownerAddress = _ownerAddress;
     }
 
@@ -154,11 +152,9 @@ contract GenArt721MinterDAExp_PBAB is ReentrancyGuard {
      * @notice Sets the minter owner (the platform provider) revenue % to `_ownerPercentage` percent.
      * @param _ownerPercentage New owner percentage.
      */
-    function setOwnerPercentage(uint256 _ownerPercentage) public {
-        require(
-            genArtCoreContract.isWhitelisted(msg.sender),
-            "can only be set by admin"
-        );
+    function setOwnerPercentage(
+        uint256 _ownerPercentage
+    ) public onlyCoreAllowlisted {
         ownerPercentage = _ownerPercentage;
     }
 
@@ -470,7 +466,7 @@ contract GenArt721MinterDAExp_PBAB is ReentrancyGuard {
             uint256 remainingFunds = _currentPriceInWei;
 
             // Render provider payment
-            uint256 renderProviderAmount = (_currentPriceInWei *
+            uint256 renderProviderAmount = (remainingFunds *
                 genArtCoreContract.renderProviderPercentage()) / 100;
             if (renderProviderAmount > 0) {
                 (success_, ) = genArtCoreContract.renderProviderAddress().call{
