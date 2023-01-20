@@ -23,7 +23,7 @@ interface IMintingAPICoreV0 {
     function nextProjectId() external view returns (uint256);
 
     function projectDetails(uint256 _projectId)
-        public
+        external
         view
         returns (
             string memory projectName,
