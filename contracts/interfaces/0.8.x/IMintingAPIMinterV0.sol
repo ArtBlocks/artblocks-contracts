@@ -13,7 +13,7 @@ interface IMintingAPIMinterV0 {
     function projectMaxHasBeenInvoked(uint256) external returns (bool);
 
     function purchaseTo(address _to, uint256 _projectId)
-        private
+        external
         returns (uint256 _tokenId);
 
     function getPriceInfo(uint256 _projectId)
