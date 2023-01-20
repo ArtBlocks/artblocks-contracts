@@ -10,7 +10,7 @@ pragma solidity ^0.8.0;
  * below.
  */
 interface IMintingAPIMinterV0 {
-    mapping(uint256 => bool) public projectMaxHasBeenInvoked;
+    function projectMaxHasBeenInvoked(uint256) external returns (bool);
 
     function purchaseTo(address _to, uint256 _projectId)
         private
