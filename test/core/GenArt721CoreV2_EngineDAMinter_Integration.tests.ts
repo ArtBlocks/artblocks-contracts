@@ -209,7 +209,7 @@ describe("GenArt721CoreV2_EngineDAMinter_Integration", async function () {
       ).to.equal(ethers.utils.parseEther("0.81"));
       expect(
         (await this.accounts.user.getBalance()).sub(ownerBalance)
-      ).to.equal(ethers.utils.parseEther("1.0191179").mul("-1")); // spent 1 ETH
+      ).to.equal(ethers.utils.parseEther("1.0191029").mul("-1")); // spent 1 ETH
     });
 
     it("can create a token then funds distributed (with additional payee) [ @skip-on-coverage ]", async function () {
@@ -269,7 +269,7 @@ describe("GenArt721CoreV2_EngineDAMinter_Integration", async function () {
       ).to.equal(ethers.utils.parseEther("0.729"));
       expect(
         (await this.accounts.user.getBalance()).sub(ownerBalance)
-      ).to.equal(ethers.utils.parseEther("1.0203969").mul("-1")); // spent 1 ETH
+      ).to.equal(ethers.utils.parseEther("1.0203819").mul("-1")); // spent 1 ETH
     });
 
     it("can create a token then funds distributed (with additional payee getting 100%) [ @skip-on-coverage ]", async function () {
@@ -329,7 +329,7 @@ describe("GenArt721CoreV2_EngineDAMinter_Integration", async function () {
       ).to.equal(ethers.utils.parseEther("0"));
       expect(
         (await this.accounts.user.getBalance()).sub(ownerBalance)
-      ).to.equal(ethers.utils.parseEther("1.0191399").mul("-1")); // spent 1 ETH
+      ).to.equal(ethers.utils.parseEther("1.0191249").mul("-1")); // spent 1 ETH
     });
   });
 });

@@ -532,6 +532,10 @@ contract GenArt721MinterDAExp_PBAB is ReentrancyGuard {
         require(_priceDecayHalfLifeSeconds > 0, "Only configured auctions");
         uint256 decayedPrice = _projectConfig.startPrice;
         uint256 elapsedTimeSeconds;
+        // Return early if configured in "fixed price mode" for gas efficiency
+        if (decayedPrice /* startPrice */ == _basePrice) {
+            return _basePrice;
+        }
         unchecked {
             // already checked that block.timestamp > _timestampStart above
             elapsedTimeSeconds = block.timestamp - _timestampStart;
