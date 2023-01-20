@@ -61,13 +61,9 @@ contract ERC721_PackedHashSeed is Context, ERC165, IERC721, IERC721Metadata {
     /**
      * @dev See {IERC165-supportsInterface}.
      */
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        virtual
-        override(ERC165, IERC165)
-        returns (bool)
-    {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view virtual override(ERC165, IERC165) returns (bool) {
         return
             interfaceId == type(IERC721).interfaceId ||
             interfaceId == type(IERC721Metadata).interfaceId ||
@@ -77,13 +73,9 @@ contract ERC721_PackedHashSeed is Context, ERC165, IERC721, IERC721Metadata {
     /**
      * @dev See {IERC721-balanceOf}.
      */
-    function balanceOf(address owner)
-        public
-        view
-        virtual
-        override
-        returns (uint256)
-    {
+    function balanceOf(
+        address owner
+    ) public view virtual override returns (uint256) {
         require(
             owner != address(0),
             "ERC721: address zero is not a valid owner"
@@ -94,13 +86,9 @@ contract ERC721_PackedHashSeed is Context, ERC165, IERC721, IERC721Metadata {
     /**
      * @dev See {IERC721-ownerOf}.
      */
-    function ownerOf(uint256 tokenId)
-        public
-        view
-        virtual
-        override
-        returns (address)
-    {
+    function ownerOf(
+        uint256 tokenId
+    ) public view virtual override returns (address) {
         address owner = _ownersAndHashSeeds[tokenId].owner;
         require(owner != address(0), "ERC721: invalid token ID");
         return owner;
@@ -123,13 +111,9 @@ contract ERC721_PackedHashSeed is Context, ERC165, IERC721, IERC721Metadata {
     /**
      * @dev See {IERC721Metadata-tokenURI}.
      */
-    function tokenURI(uint256 tokenId)
-        public
-        view
-        virtual
-        override
-        returns (string memory)
-    {
+    function tokenURI(
+        uint256 tokenId
+    ) public view virtual override returns (string memory) {
         _requireMinted(tokenId);
 
         string memory baseURI = _baseURI();
@@ -166,13 +150,9 @@ contract ERC721_PackedHashSeed is Context, ERC165, IERC721, IERC721Metadata {
     /**
      * @dev See {IERC721-getApproved}.
      */
-    function getApproved(uint256 tokenId)
-        public
-        view
-        virtual
-        override
-        returns (address)
-    {
+    function getApproved(
+        uint256 tokenId
+    ) public view virtual override returns (address) {
         _requireMinted(tokenId);
 
         return _tokenApprovals[tokenId];
@@ -181,24 +161,20 @@ contract ERC721_PackedHashSeed is Context, ERC165, IERC721, IERC721Metadata {
     /**
      * @dev See {IERC721-setApprovalForAll}.
      */
-    function setApprovalForAll(address operator, bool approved)
-        public
-        virtual
-        override
-    {
+    function setApprovalForAll(
+        address operator,
+        bool approved
+    ) public virtual override {
         _setApprovalForAll(_msgSender(), operator, approved);
     }
 
     /**
      * @dev See {IERC721-isApprovedForAll}.
      */
-    function isApprovedForAll(address owner, address operator)
-        public
-        view
-        virtual
-        override
-        returns (bool)
-    {
+    function isApprovedForAll(
+        address owner,
+        address operator
+    ) public view virtual override returns (bool) {
         return _operatorApprovals[owner][operator];
     }
 
@@ -296,12 +272,10 @@ contract ERC721_PackedHashSeed is Context, ERC165, IERC721, IERC721Metadata {
      *
      * - `tokenId` must exist.
      */
-    function _isApprovedOrOwner(address spender, uint256 tokenId)
-        internal
-        view
-        virtual
-        returns (bool)
-    {
+    function _isApprovedOrOwner(
+        address spender,
+        uint256 tokenId
+    ) internal view virtual returns (bool) {
         address owner = ERC721_PackedHashSeed.ownerOf(tokenId);
         return (spender == owner ||
             isApprovedForAll(owner, spender) ||

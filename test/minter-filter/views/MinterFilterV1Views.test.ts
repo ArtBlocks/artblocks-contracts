@@ -56,6 +56,10 @@ runForEach.forEach((params) => {
       );
     });
 
+    describe("common tests", async function () {
+      await MinterFilterViews_Common();
+    });
+
     describe("V1+ specific input checks", async function () {
       it("reverts on improper address inputs", async function () {
         // addProject

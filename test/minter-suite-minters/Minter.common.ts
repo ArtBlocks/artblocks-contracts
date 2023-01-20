@@ -17,14 +17,15 @@ export const Minter_Common = async () => {
 
     it("reverts when given incorrect minter filter and core addresses", async function () {
       const artblocksFactory = await ethers.getContractFactory(
-        "GenArt721CoreV1"
+        "GenArt721CoreV3"
       );
+      const adminACL = await this.genArt721Core.owner();
       const token2 = await artblocksFactory
         .connect(this.accounts.deployer)
-        .deploy(this.name, this.symbol, this.randomizer.address);
+        .deploy(this.name, this.symbol, this.randomizer.address, adminACL, 0);
 
       const minterFilterFactory = await ethers.getContractFactory(
-        "MinterFilterV0"
+        "MinterFilterV1"
       );
       const minterFilter = await minterFilterFactory.deploy(token2.address);
       const minterType = await this.minter.minterType();
@@ -37,7 +38,12 @@ export const Minter_Common = async () => {
         this.genArt721Core.address,
         minterFilter.address,
       ];
-      if (minterType == "MinterMerkleV3" || minterType == "MinterHolderV2") {
+      if (
+        minterType == "MinterMerkleV3" ||
+        minterType == "MinterMerkleV4" ||
+        minterType == "MinterHolderV2" ||
+        minterType == "MinterHolderV3"
+      ) {
         minterConstructorArgs.push(this.delegationRegistry.address);
       }
       await expectRevert(
@@ -86,18 +92,23 @@ export const Minter_Common = async () => {
   });
 
   describe("setProjectMaxInvocations", async function () {
-    it("allows deployer to call setProjectMaxInvocations", async function () {
+    it("allows artist/deployer to call setProjectMaxInvocations", async function () {
       const minterType = await this.minter.minterType();
       if (!minterType.includes("Settlement")) {
+        // minters above v2 do NOT use onlyCoreWhitelisted modifier for setProjectMaxInvocations
+        const accountToTestWith =
+          minterType.includes("V0") || minterType.includes("V1")
+            ? this.accounts.deployer
+            : this.accounts.artist;
         // minters that don't settle on-chain should support this function
         await this.minter
-          .connect(this.accounts.deployer)
+          .connect(accountToTestWith)
           .setProjectMaxInvocations(this.projectZero);
       } else {
         // minters that settle on-chain should not support this function
         await expectRevert(
           this.minter
-            .connect(this.accounts.deployer)
+            .connect(this.accounts.artist)
             .setProjectMaxInvocations(this.projectZero),
           "setProjectMaxInvocations not implemented - updated during every mint"
         );
@@ -107,13 +118,18 @@ export const Minter_Common = async () => {
     it("updates local projectMaxInvocations after syncing to core", async function () {
       const minterType = await this.minter.minterType();
       if (!minterType.includes("Settlement")) {
+        // minters above v2 do NOT use onlyCoreWhitelisted modifier for setProjectMaxInvocations
+        const accountToTestWith =
+          minterType.includes("V0") || minterType.includes("V1")
+            ? this.accounts.deployer
+            : this.accounts.artist;
         // update max invocations to 1 on the core
         await this.genArt721Core
           .connect(this.accounts.artist)
           .updateProjectMaxInvocations(this.projectZero, 2);
         // sync max invocations on minter
         await this.minter
-          .connect(this.accounts.deployer)
+          .connect(accountToTestWith)
           .setProjectMaxInvocations(this.projectZero);
         // expect max invocations to be 1 on the minter
         expect(

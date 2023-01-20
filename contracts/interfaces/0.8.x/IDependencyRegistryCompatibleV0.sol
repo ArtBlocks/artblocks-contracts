@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
-
 pragma solidity ^0.8.17;
 
 interface IDependencyRegistryCompatibleV0 {
@@ -19,7 +18,9 @@ interface IDependencyRegistryCompatibleV0 {
      * "1.77777778" for 16:9, etc.)
      * @return scriptCount Count of scripts for project
      */
-    function projectScriptDetails(uint256 _projectId)
+    function projectScriptDetails(
+        uint256 _projectId
+    )
         external
         view
         returns (

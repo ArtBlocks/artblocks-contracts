@@ -20,12 +20,6 @@ import {
 
 const runForEach = [
   {
-    core: "GenArt721CoreV1",
-    coreFirstProjectNumber: 3,
-    minterFilter: "MinterFilterV0",
-    minter: "MinterSetPriceV0",
-  },
-  {
     core: "GenArt721CoreV3",
     coreFirstProjectNumber: 0,
     minterFilter: "MinterFilterV1",

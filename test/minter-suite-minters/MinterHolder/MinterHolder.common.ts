@@ -788,6 +788,12 @@ export const MinterHolder_Common = async () => {
 
     it("doesnt add too much gas if setProjectMaxInvocations is set", async function () {
       // Try without setProjectMaxInvocations, store gas cost
+      const minterType = await this.minter.minterType();
+      const accountToTestWith =
+        minterType.includes("V0") || minterType.includes("V1")
+          ? this.accounts.deployer
+          : this.accounts.artist;
+
       const tx = await this.minter
         .connect(this.accounts.artist)
         ["purchase(uint256,address,uint256)"](
@@ -809,7 +815,7 @@ export const MinterHolder_Common = async () => {
 
       // Try with setProjectMaxInvocations, store gas cost
       await this.minter
-        .connect(this.accounts.deployer)
+        .connect(accountToTestWith)
         .setProjectMaxInvocations(this.projectZero);
       const maxSetTx = await this.minter
         .connect(this.accounts.artist)
@@ -992,17 +998,23 @@ export const MinterHolder_Common = async () => {
 
   describe("setProjectMaxInvocations", async function () {
     it("handles getting tokenInfo invocation info with V1 core", async function () {
+      const minterType = await this.minter.minterType();
+      const accountToTestWith =
+        minterType.includes("V0") || minterType.includes("V1")
+          ? this.accounts.deployer
+          : this.accounts.artist;
+
       await this.minter
-        .connect(this.accounts.deployer)
+        .connect(accountToTestWith)
         .setProjectMaxInvocations(this.projectOne);
       // minter should update storage with accurate this.maxInvocations
       let maxInvocations = await this.minter
-        .connect(this.accounts.deployer)
+        .connect(accountToTestWith)
         .projectMaxInvocations(this.projectOne);
       expect(maxInvocations).to.be.equal(this.maxInvocations);
       // ensure hasMaxBeenReached did not unexpectedly get set as true
       let hasMaxBeenInvoked = await this.minter
-        .connect(this.accounts.deployer)
+        .connect(accountToTestWith)
         .projectMaxHasBeenInvoked(this.projectOne);
       expect(hasMaxBeenInvoked).to.be.false;
     });
@@ -1010,10 +1022,14 @@ export const MinterHolder_Common = async () => {
     it("reverts for unconfigured/non-existent project", async function () {
       // trying to set this on unconfigured project (e.g. 99) should cause
       // revert on the underlying CoreContract.
+      const minterType = await this.minter.minterType();
+      const accountToTestWith =
+        minterType.includes("V0") || minterType.includes("V1")
+          ? this.accounts.deployer
+          : this.accounts.artist;
+
       expectRevert(
-        this.minter
-          .connect(this.accounts.deployer)
-          .setProjectMaxInvocations(99),
+        this.minter.connect(accountToTestWith).setProjectMaxInvocations(99),
         "Project ID does not exist"
       );
     });

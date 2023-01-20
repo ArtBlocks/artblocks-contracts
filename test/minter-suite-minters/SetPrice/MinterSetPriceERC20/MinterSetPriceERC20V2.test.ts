@@ -10,8 +10,8 @@ import {
 } from "../../../util/common";
 
 import { MinterSetPriceERC20_Common } from "./MinterSetPriceERC20.common";
-import { MinterSetPriceV1V2_Common } from "../MinterSetPriceV1V2.common";
-import { MinterSetPriceV2_Common } from "../MinterSetPriceV2.common";
+import { MinterSetPriceV1V2V3_Common } from "../MinterSetPriceV1V2V3.common";
+import { MinterSetPriceV2V3_Common } from "../MinterSetPriceV2V3.common";
 import { BigNumber } from "ethers";
 
 // test the following V3 core contract derivatives:
@@ -132,12 +132,12 @@ for (const coreContractName of coreContractsToTest) {
       await MinterSetPriceERC20_Common();
     });
 
-    describe("common MinterSetPrice V1V2 tests", async function () {
-      await MinterSetPriceV1V2_Common();
+    describe("common MinterSetPrice V1V2V3 tests", async function () {
+      await MinterSetPriceV1V2V3_Common();
     });
 
-    describe("common MinterSetPrice V2 tests", async function () {
-      await MinterSetPriceV2_Common();
+    describe("common MinterSetPrice V2V3 tests", async function () {
+      await MinterSetPriceV2V3_Common();
     });
 
     describe("updatePricePerTokenInWei", async function () {

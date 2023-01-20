@@ -274,7 +274,7 @@ for (const coreContractName of coreContractsToTest) {
         } else if (coreContractName === "GenArt721CoreV3_Explorations") {
           targetCoreVersion = "v3.0.1";
         } else if (coreContractName === "GenArt721CoreV3_Engine") {
-          targetCoreVersion = "v3.1.0";
+          targetCoreVersion = "v3.1.1";
         } else {
           throw new Error("Unexpected core contract name");
         }
@@ -592,6 +592,18 @@ for (const coreContractName of coreContractsToTest) {
             this.projectZeroTokenZero.toNumber()
           ),
           "Token ID does not exist"
+        );
+      });
+    });
+
+    describe("onlyValidProjectId", function () {
+      it("does not allow invalid project when using onlyValidProjectId modifier", async function () {
+        // mint token zero so it is a valid token
+        await expectRevert(
+          this.genArt721Core
+            .connect(this.accounts.deployer)
+            .toggleProjectIsActive(999),
+          "Project ID does not exist"
         );
       });
     });
