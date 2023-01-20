@@ -4,4 +4,6 @@ This directory is intended to contain all common Art Blocks Engine smart contrac
 
 ## Data Management Process
 
-After a partner's contracts are deployed to mainnet and no longer in development, the contracts should be migrated to the `/posterity/engine/` directory, and any deployment logs should be migrated to the `/scripts/engine/<partner>/` directory.
+After a partner's contracts are deployed to mainnet and no longer in development, the contracts should be migrated to the `/posterity/engine/` directory.
+
+Note: any deployment logs should be maintained in the `/scripts/engine/<partner>/` directory.
