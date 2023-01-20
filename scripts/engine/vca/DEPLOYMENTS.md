@@ -13,3 +13,5 @@
 **GenArt721Minter:** https://goerli.etherscan.io/address/0xcf36796425618410Eaa67fA34018d037daDe3747#code
 
 `0x65FEca334780160e3420B097590fd6D02dE663f0` set as minter owner, whitelisted on core contract, and admin of core contract.
+
+**GenArt721MinterDAExp:** https://goerli.etherscan.io/address/TODO#code
