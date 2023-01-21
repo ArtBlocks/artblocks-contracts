@@ -6,6 +6,7 @@ import "../../../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
 import "../../../interfaces/0.8.x/IGenArt721CoreContractV3_Engine.sol";
 import "../../../interfaces/0.8.x/IMinterFilterV0.sol";
 import "../../../interfaces/0.8.x/IFilteredMinterV3.sol";
+import "../../../libs/0.8.x/MinterUtils_v0_1_0.sol";
 
 import "@openzeppelin-4.5/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
@@ -36,6 +37,8 @@ pragma solidity 0.8.17;
  * contracts that this minter integrates with.
  */
 contract MinterSetPriceERC20V4 is ReentrancyGuard, IFilteredMinterV3 {
+    using MinterUtils for *;
+
     /// Core contract address this minter interacts with
     address public immutable genArt721CoreAddress;
 
@@ -113,7 +116,11 @@ contract MinterSetPriceERC20V4 is ReentrancyGuard, IFilteredMinterV3 {
         bool isEngine_ = (hashedCoreType != keccak256("GenArt721CoreV3"));
         isEngine = isEngine_;
         emit ConfiguredIsEngine(isEngine_);
-        _validateCoreTypeGetPrimaryRevenueSplitsResponseLength();
+        // validate that the core contract's `getPrimaryRevenueSplits` function
+        MinterUtils.ValidateV3CoreGetPrimaryRevenueSplitsResponse(
+            isEngine_,
+            _genArt721Address
+        );
 
         minterFilterAddress = _minterFilter;
         minterFilter = IMinterFilterV0(_minterFilter);
@@ -121,40 +128,6 @@ contract MinterSetPriceERC20V4 is ReentrancyGuard, IFilteredMinterV3 {
             minterFilter.genArt721CoreAddress() == _genArt721Address,
             "Illegal contract pairing"
         );
-    }
-
-    /**
-     * @notice Validates that the core contract's `getPrimaryRevenueSplits`
-     * function returns the expected number of return values based on the
-     * `isEngine` state of this contract.
-     * @dev This function is called in the constructor to ensure that the
-     * `isEngine` state of this contract is configured correctly.
-     */
-    function _validateCoreTypeGetPrimaryRevenueSplitsResponseLength() internal {
-        // confirm split payment returns expected qty of return values to
-        // add protection against a misconfigured isEngine state
-        bytes memory payload = abi.encodeWithSignature(
-            "getPrimaryRevenueSplits(uint256,uint256)",
-            0,
-            0
-        );
-        (bool success, bytes memory returnData) = genArt721CoreAddress.call(
-            payload
-        );
-        require(success);
-        if (isEngine) {
-            // require 8 32-byte words returned if engine
-            require(
-                returnData.length == 8 * 32,
-                "Unexpected revenue split bytes"
-            );
-        } else {
-            // require 6 32-byte words returned if flagship (not engine)
-            require(
-                returnData.length == 6 * 32,
-                "Unexpected revenue split bytes"
-            );
-        }
     }
 
     /**

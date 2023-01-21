@@ -34,12 +34,14 @@ const coreContractsToTest = [
   "GenArt721CoreV3_Engine", // V3 core engine contract
 ];
 
+const TARGET_MINTER_NAME = "MinterDAExpV4";
+
 /**
  * These tests intended to ensure this Filtered Minter integrates properly with
  * V3 core contracts, both flagship and explorations.
  */
 for (const coreContractName of coreContractsToTest) {
-  describe(`MinterDAExpV4_${coreContractName}`, async function () {
+  describe(`${TARGET_MINTER_NAME}_${coreContractName}`, async function () {
     beforeEach(async function () {
       // standard accounts and constants
       this.accounts = await getAccounts();
@@ -63,7 +65,7 @@ for (const coreContractName of coreContractsToTest) {
         "MinterFilterV1"
       ));
 
-      this.targetMinterName = "MinterDAExpV4";
+      this.targetMinterName = TARGET_MINTER_NAME;
       this.minter = await deployAndGet.call(this, this.targetMinterName, [
         this.genArt721Core.address,
         this.minterFilter.address,
@@ -329,3 +331,35 @@ for (const coreContractName of coreContractsToTest) {
     });
   });
 }
+
+// single-iteration tests with mock core contract(s)
+describe(`${TARGET_MINTER_NAME} tests using mock core contract(s)`, async function () {
+  beforeEach(async function () {
+    // standard accounts and constants
+    this.accounts = await getAccounts();
+    await assignDefaultConstants.call(this);
+  });
+
+  describe("constructor", async function () {
+    it("requires correct quantity of return values from `getPrimaryRevenueSplits`", async function () {
+      // deploy and configure core contract that returns incorrect quanty of return values for coreType response
+      const coreContractName = "GenArt721CoreV3_Engine_IncorrectCoreType";
+      const { genArt721Core, minterFilter, randomizer } =
+        await deployCoreWithMinterFilter.call(
+          this,
+          coreContractName,
+          "MinterFilterV1"
+        );
+      console.log(genArt721Core.address);
+      const minterFactory = await ethers.getContractFactory(TARGET_MINTER_NAME);
+      // we should revert during deployment because the core contract returns an incorrect number of return values
+      // for the given coreType response
+      await expectRevert(
+        minterFactory.deploy(genArt721Core.address, minterFilter.address, {
+          gasLimit: 30000000,
+        }),
+        "Unexpected revenue split bytes"
+      );
+    });
+  });
+});

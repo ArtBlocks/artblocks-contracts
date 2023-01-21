@@ -6,6 +6,7 @@ import "../../../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
 import "../../../interfaces/0.8.x/IGenArt721CoreContractV3_Engine.sol";
 import "../../../interfaces/0.8.x/IMinterFilterV0.sol";
 import "../../../interfaces/0.8.x/IFilteredMinterDALinV2.sol";
+import "../../../libs/0.8.x/MinterUtils_v0_1_0.sol";
 
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin-4.5/contracts/utils/math/SafeCast.sol";
@@ -52,6 +53,7 @@ pragma solidity 0.8.17;
  */
 contract MinterDALinV4 is ReentrancyGuard, IFilteredMinterDALinV2 {
     using SafeCast for uint256;
+    using MinterUtils for *;
 
     /// Core contract address this minter interacts with
     address public immutable genArt721CoreAddress;
@@ -143,6 +145,11 @@ contract MinterDALinV4 is ReentrancyGuard, IFilteredMinterDALinV2 {
         bool isEngine_ = (hashedCoreType != keccak256("GenArt721CoreV3"));
         isEngine = isEngine_;
         emit ConfiguredIsEngine(isEngine_);
+        // validate that the core contract's `getPrimaryRevenueSplits` function
+        MinterUtils.ValidateV3CoreGetPrimaryRevenueSplitsResponse(
+            isEngine_,
+            _genArt721Address
+        );
 
         minterFilterAddress = _minterFilter;
         minterFilter = IMinterFilterV0(_minterFilter);

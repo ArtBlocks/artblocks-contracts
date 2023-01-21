@@ -26,12 +26,14 @@ const coreContractsToTest = [
   "GenArt721CoreV3_Engine", // V3 core engine contract
 ];
 
+const TARGET_MINTER_NAME = "MinterSetPriceERC20V4";
+
 /**
  * These tests intended to ensure this Filtered Minter integrates properly with
  * V3 core contracts, both flagship and engine.
  */
 for (const coreContractName of coreContractsToTest) {
-  describe(`MinterSetPriceERC20V4_${coreContractName}`, async function () {
+  describe(`${TARGET_MINTER_NAME}_${coreContractName}`, async function () {
     beforeEach(async function () {
       // standard accounts and constants
       this.accounts = await getAccounts();
@@ -51,7 +53,7 @@ for (const coreContractName of coreContractsToTest) {
         "MinterFilterV1"
       ));
 
-      this.targetMinterName = "MinterSetPriceERC20V4";
+      this.targetMinterName = TARGET_MINTER_NAME;
       const minterFactory = await ethers.getContractFactory(
         this.targetMinterName
       );
@@ -595,21 +597,18 @@ for (const coreContractName of coreContractsToTest) {
   });
 }
 
-// single-iteration tests
-
-describe(`MinterSetPriceERC20V4 tests not dependent on tested cores`, async function () {
+// single-iteration tests with mock core contract(s)
+describe(`${TARGET_MINTER_NAME} tests using mock core contract(s)`, async function () {
   beforeEach(async function () {
     // standard accounts and constants
     this.accounts = await getAccounts();
     await assignDefaultConstants.call(this);
   });
 
-  describe.only("constructor", async function () {
+  describe("constructor", async function () {
     it("requires correct quantity of return values from `getPrimaryRevenueSplits`", async function () {
       // deploy and configure core contract that returns incorrect quanty of return values for coreType response
       const coreContractName = "GenArt721CoreV3_Engine_IncorrectCoreType";
-      const minterFilterName = "MinterFilterV1";
-      const minterName = "MinterSetPriceERC20V4";
       const { genArt721Core, minterFilter, randomizer } =
         await deployCoreWithMinterFilter.call(
           this,
@@ -617,9 +616,7 @@ describe(`MinterSetPriceERC20V4 tests not dependent on tested cores`, async func
           "MinterFilterV1"
         );
       console.log(genArt721Core.address);
-      const minterFactory = await ethers.getContractFactory(
-        "MinterSetPriceERC20V4"
-      );
+      const minterFactory = await ethers.getContractFactory(TARGET_MINTER_NAME);
       // we should revert during deployment because the core contract returns an incorrect number of return values
       // for the given coreType response
       await expectRevert(
