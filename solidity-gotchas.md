@@ -39,3 +39,92 @@ Through trial and error, we have learned that including all Solidity events in a
 All capability in Solidity code can lead to an almost exponential amount of complexity in downstream products such as a frontend. It also adds complexity that can lead to bugs, and can also make it harder to test your contract. Therefore, it is best to only add capability to your contract when it is needed. This is especially true for capability that is not needed for the core functionality of your contract.
 
 For example, we used to have a `disablePurchaseTo` functionality on our minter contracts. It was determined that we no longer wanted to support this functionality (for philosophical reasons), so instead of leaving the capability in the smart contract, we removed it entirely. This resulted in a simpler contract, a simpler subgraph, and also a simpler frontend (since one less state had to be handled). Just because you can do something in Solidity, doesn't mean you should :)
+
+## Function Return Values
+
+When a function is called on an external contract, the return values can be decoded via use of interfaces. For example, in the ficticious example below:
+
+```solidity
+interface IERC721Core {
+  function getPaymentSplit(
+    uint256 value
+  )
+    external
+    view
+    returns (
+      uint256 renderProviderPayment,
+      uint256 artistPayment,
+      uint256 additionalPayment
+    );
+}
+
+contract Minter {
+  IERC721Core public immutable erc721Core;
+
+  constructor(address erc721CoreAddress) {
+    erc721Core = IERC721Core(erc721CoreAddress);
+  }
+
+  function mint(uint256 value) external {
+    // ...
+    (
+      uint256 renderProviderPayment,
+      uint256 artistPayment,
+      uint256 additionalPayment
+    ) = erc721Core.getPaymentSplit(value);
+    // ...
+  }
+}
+```
+
+The gotcha come in when a contract is mis-cast as an interface that it is actually not. For example, what if `erc721Core` is actually a contract that returns four payees?
+
+```solidity
+Contract Core {
+    function getPaymentSplit(
+        uint256 value
+    )
+        external
+        view
+        returns (
+        uint256 renderProviderPayment,
+        uint256 artistPayment,
+        uint256 additionalPayment,
+        uint256 additionalPayment2
+        );
+}
+```
+
+If the `Minter` contract were to call `getPaymentSplit`, the call would succeed, and the return value associated with `additionalPayment2` would be silently ignored. This could lead to unexpected behavior, and is a gotcha that is easy to miss.
+
+One option to avoid silently missing this is to never use function names that are the same across multiple contracts, but have different return args. This is not always possible (since our contracts are immutable), but it is a good practice to follow when possible.
+
+Another option is to validate the response length of the return value, if all return values are of deterministic length. For example, the following solution is used in our Minters that integrate with either flagship or engine core contracts (which have different return values when calling `getPrimaryRevenueSplits`):
+
+```solidity
+/**
+ * @notice Validates that the core contract's `getPrimaryRevenueSplits`
+ * function returns the expected number of return values based on the
+ * `isEngine` state of this contract.
+ * @dev This function is called in the constructor to ensure that the
+ * `isEngine` state of this contract is configured correctly.
+ */
+function _validateCoreTypeGetPrimaryRevenueSplitsResponseLength() internal {
+  // confirm split payment returns expected qty of return values to
+  // add protection against a misconfigured isEngine state
+  bytes memory payload = abi.encodeWithSignature(
+    "getPrimaryRevenueSplits(uint256,uint256)",
+    0,
+    0
+  );
+  (bool success, bytes memory returnData) = genArt721CoreAddress.call(payload);
+  require(success);
+  if (isEngine) {
+    // require 8 32-byte words returned if engine
+    require(returnData.length == 8 * 32);
+  } else {
+    // require 6 32-byte words returned if flagship
+    require(returnData.length == 6 * 32);
+  }
+}
+```

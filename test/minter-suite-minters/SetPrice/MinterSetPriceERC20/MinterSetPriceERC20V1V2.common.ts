@@ -7,7 +7,7 @@ import Safe from "@gnosis.pm/safe-core-sdk";
 import { SafeTransactionDataPartial } from "@gnosis.pm/safe-core-sdk-types";
 import { getGnosisSafe } from "../../../util/GnosisSafeNetwork";
 
-import { MinterSetPriceV1V2V3_Common } from "../MinterSetPriceV1V2V3V4.common";
+import { MinterSetPriceV1V2V3V4_Common } from "../MinterSetPriceV1V2V3V4.common";
 import { isCoreV3 } from "../../../util/common";
 
 /**
@@ -16,7 +16,7 @@ import { isCoreV3 } from "../../../util/common";
  */
 export const MinterSetPriceERC20V1V2_Common = async () => {
   describe("common MinterSetPrice V1V2V3 minter tests", async () => {
-    await MinterSetPriceV1V2V3_Common();
+    await MinterSetPriceV1V2V3V4_Common();
   });
 
   describe("gnosis safe V1V2", async function () {

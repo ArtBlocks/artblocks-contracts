@@ -159,7 +159,10 @@ export async function deployCoreWithMinterFilter(
     await genArt721Core
       .connect(this.accounts.deployer)
       .updateMinterContract(minterFilter.address);
-  } else if (coreContractName.endsWith("V3_Engine")) {
+  } else if (
+    coreContractName.endsWith("V3_Engine") ||
+    coreContractName === "GenArt721CoreV3_Engine_IncorrectCoreType"
+  ) {
     randomizer = await deployAndGet.call(this, "BasicRandomizerV2", []);
     let adminACLContractName = useAdminACLWithEvents
       ? "MockAdminACLV0Events"

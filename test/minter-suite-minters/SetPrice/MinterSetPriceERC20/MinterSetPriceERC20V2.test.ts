@@ -10,7 +10,7 @@ import {
 } from "../../../util/common";
 
 import { MinterSetPriceERC20_Common } from "./MinterSetPriceERC20.common";
-import { MinterSetPriceV1V2V3_Common } from "../MinterSetPriceV1V2V3V4.common";
+import { MinterSetPriceV1V2V3V4_Common } from "../MinterSetPriceV1V2V3V4.common";
 import { MinterSetPriceV2V3_Common } from "../MinterSetPriceV2V3.common";
 import { BigNumber } from "ethers";
 
@@ -133,7 +133,7 @@ for (const coreContractName of coreContractsToTest) {
     });
 
     describe("common MinterSetPrice V1V2V3 tests", async function () {
-      await MinterSetPriceV1V2V3_Common();
+      await MinterSetPriceV1V2V3V4_Common();
     });
 
     describe("common MinterSetPrice V2V3 tests", async function () {
