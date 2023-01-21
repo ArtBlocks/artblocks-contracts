@@ -2,9 +2,9 @@
 // Created By: Art Blocks Inc.
 
 import { ethers } from "hardhat";
-import { GenArt721CoreV2PBAB__factory } from "./contracts/factories/GenArt721CoreV2PBAB__factory";
-import { GenArt721MinterPBAB__factory } from "./contracts/factories/GenArt721MinterPBAB__factory";
-import { createPBABBucket } from "./util/aws_s3";
+import { GenArt721CoreV2PBAB__factory } from "../../scripts/contracts/factories/GenArt721CoreV2PBAB__factory";
+import { GenArt721MinterPBAB__factory } from "../../scripts/contracts/factories/GenArt721MinterPBAB__factory";
+import { createPBABBucket } from "../../scripts/util/aws_s3";
 
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG BEGINS HERE
@@ -16,6 +16,7 @@ const startingProjectId = 0; // TODO
 const pbabTransferAddress = "0x000000000000000000000000000000000000dEaD";
 const rendererProviderAddress = "0x000000000000000000000000000000000000dEaD";
 const randomizerAddress = "0x000000000000000000000000000000000000dEaD";
+const minterType = "fixedPrice";
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG ENDS HERE
 //////////////////////////////////////////////////////////////////////////////
