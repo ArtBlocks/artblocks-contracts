@@ -360,7 +360,7 @@ for (const coreContractName of coreContractsToTest) {
 }
 
 // single-iteration tests with mock core contract(s)
-describe.only(`${TARGET_MINTER_NAME} tests using mock core contract(s)`, async function () {
+describe(`${TARGET_MINTER_NAME} tests using mock core contract(s)`, async function () {
   beforeEach(async function () {
     // standard accounts and constants
     this.accounts = await getAccounts();

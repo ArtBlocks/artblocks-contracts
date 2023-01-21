@@ -41,6 +41,7 @@ export const Minter_Common = async () => {
       if (
         minterType == "MinterMerkleV3" ||
         minterType == "MinterMerkleV4" ||
+        minterType == "MinterMerkleV5" ||
         minterType == "MinterHolderV2" ||
         minterType == "MinterHolderV3"
       ) {

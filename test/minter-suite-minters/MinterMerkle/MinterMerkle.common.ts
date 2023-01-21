@@ -59,7 +59,11 @@ export const MinterMerkle_Common = async () => {
         this.genArt721Core.address,
         this.minterFilter.address,
       ];
-      if (minterType == "MinterMerkleV3" || minterType == "MinterMerkleV4") {
+      if (
+        minterType != "MinterMerkleV0" &&
+        minterType != "MinterMerkleV1" &&
+        minterType != "MinterMerkleV2"
+      ) {
         minterConstructorArgs.push(this.delegationRegistry.address);
       }
       const tx = await minterFactory
