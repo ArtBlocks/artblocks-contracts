@@ -2,28 +2,37 @@
 // Created By: Art Blocks Inc.
 
 import { ethers } from "hardhat";
-import { GenArt721CoreV2PBAB__factory } from "./contracts/factories/GenArt721CoreV2PBAB__factory";
-import { GenArt721MinterPBAB__factory } from "./contracts/factories/GenArt721MinterPBAB__factory";
-import { createPBABBucket } from "./util/aws_s3";
-import royaltyRegistryABI from "../contracts/libs/abi/RoyaltyRegistry.json";
-import { GenArt721RoyaltyOverridePBAB__factory } from "./contracts/factories/GenArt721RoyaltyOverridePBAB__factory";
+import { GenArt721CoreV2ENGINEFLEX__factory } from "../../contracts/factories/GenArt721CoreV2ENGINEFLEX__factory";
+import { GenArt721MinterPBAB__factory } from "../../contracts/factories/GenArt721MinterPBAB__factory";
+import { GenArt721MinterDAExpPBAB__factory } from "../../contracts/factories/GenArt721MinterDAExpPBAB__factory";
+
+import royaltyRegistryABI from "../../../contracts/libs/abi/RoyaltyRegistry.json";
+import { GenArt721RoyaltyOverridePBAB__factory } from "../../contracts/factories/GenArt721RoyaltyOverridePBAB__factory";
+
+import { createPBABBucket } from "../../util/aws_s3";
+
+const hre = require("hardhat");
 
 const DEAD = "0x000000000000000000000000000000000000dEaD";
+enum MinterTypes {
+  FixedPrice,
+  DutchAuction,
+}
 
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG BEGINS HERE
-// TODO: Update and verify the below configuration items before deploying!
 //////////////////////////////////////////////////////////////////////////////
-const pbabTokenName = "TODO :: Placeholder";
-const pbabTokenTicker = "TODO";
-const startingProjectId = 0; // TODO
-const pbabTransferAddress = "0x000000000000000000000000000000000000dEaD";
-const rendererProviderAddress = "0x000000000000000000000000000000000000dEaD";
-const randomizerAddress = "0x000000000000000000000000000000000000dEaD";
+const pbabTokenName = "Venus Over Manhattan";
+const pbabTokenTicker = "VENUS";
+const pbabTransferAddress = "0x724412085F80593A22E8E7B8Af136aC6B38AA5Bc";
+// ab-wallet, **testnet ONLY**
+const rendererProviderAddress = "0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63";
+// goerli address
+const randomizerAddress = "0xec5dae4b11213290b2dbe5295093f75920bd2982";
+const minterType = MinterTypes.FixedPrice;
 // The following is not required, but if not set, must be set later by platform
 // for Royalty Registry to work (will be ignored of set to "0x0...dEaD")
-const platformRoyaltyPaymentAddress =
-  "0x000000000000000000000000000000000000dEaD";
+const platformRoyaltyPaymentAddress = DEAD;
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG ENDS HERE
 //////////////////////////////////////////////////////////////////////////////
@@ -60,12 +69,11 @@ async function main() {
   //////////////////////////////////////////////////////////////////////////////
 
   // Deploy Core contract.
-  const genArt721CoreFactory = new GenArt721CoreV2PBAB__factory(deployer);
+  const genArt721CoreFactory = new GenArt721CoreV2ENGINEFLEX__factory(deployer);
   const genArt721Core = await genArt721CoreFactory.deploy(
     pbabTokenName,
     pbabTokenTicker,
-    randomizerAddress,
-    startingProjectId
+    randomizerAddress
   );
 
   await createPBABBucket(pbabTokenName, networkName);
@@ -74,7 +82,15 @@ async function main() {
   console.log(`GenArt721Core deployed at ${genArt721Core.address}`);
 
   // Deploy Minter contract.
-  const genArt721MinterFactory = new GenArt721MinterPBAB__factory(deployer);
+  let genArt721MinterFactory;
+  if (minterType === MinterTypes.FixedPrice) {
+    genArt721MinterFactory = new GenArt721MinterPBAB__factory(deployer);
+  } else if (minterType === MinterTypes.DutchAuction) {
+    genArt721MinterFactory = new GenArt721MinterDAExpPBAB__factory(deployer);
+  } else {
+    console.log(`MinterType to deploy not specified!`);
+    return;
+  }
   const genArt721Minter = await genArt721MinterFactory.deploy(
     genArt721Core.address
   );
@@ -179,19 +195,41 @@ async function main() {
   await genArt721Core.connect(deployer).updateAdmin(pbabTransferAddress);
   console.log(`Transferred Core contract admin to: ${pbabTransferAddress}.`);
 
+  //////////////////////////////////////////////////////////////////////////////
+  // SETUP ENDS HERE
+  //////////////////////////////////////////////////////////////////////////////
+
+  //////////////////////////////////////////////////////////////////////////////
+  // VERIFICATION BEGINS HERE
+  //////////////////////////////////////////////////////////////////////////////
+
   // Output instructions for manual Etherscan verification.
-  const standardVerify = "yarn hardhat verify";
-  console.log(`Verify GenArt721CoreV2 deployment with:`);
   console.log(
-    `${standardVerify} --network ${networkName} ${genArt721Core.address} "${pbabTokenName}" "${pbabTokenTicker}" ${randomizerAddress} ${startingProjectId}`
+    `If automated verification below fails, verify deployment with the following:`
   );
-  console.log(`Verify GenArt721Minter deployment with:`);
+  const standardVerify = "yarn hardhat verify";
+  console.log(`Verify core contract deployment with:`);
+  console.log(
+    `${standardVerify} --network ${networkName} ${genArt721Core.address} "${pbabTokenName}" "${pbabTokenTicker}" ${randomizerAddress}`
+  );
+  console.log(`Verify minter deployment with:`);
   console.log(
     `${standardVerify} --network ${networkName} ${genArt721Minter.address} ${genArt721Core.address}`
   );
+  console.log(`BEING AUTOMATED VERIFICATION`);
+
+  // Perform automated verification
+  await hre.run("verify:verify", {
+    address: genArt721Core.address,
+    constructorArguments: [pbabTokenName, pbabTokenTicker, randomizerAddress],
+  });
+  await hre.run("verify:verify", {
+    address: genArt721Minter.address,
+    constructorArguments: [genArt721Core.address],
+  });
 
   //////////////////////////////////////////////////////////////////////////////
-  // SETUP ENDS HERE
+  // VERIFICATION ENDS HERE
   //////////////////////////////////////////////////////////////////////////////
 }
 
