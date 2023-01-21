@@ -99,7 +99,7 @@ If the `Minter` contract were to call `getPaymentSplit`, the call would succeed,
 
 One option to avoid silently missing this is to never use function names that are the same across multiple contracts, but have different return args. This is not always possible (since our contracts are immutable), but it is a good practice to follow when possible.
 
-Another option is to validate the response length of the return value, if all return values are of deterministic length. For example, the following solution is used in our Minters that integrate with either flagship or engine core contracts (which have different return values when calling `getPrimaryRevenueSplits`):
+Another option is to validate the number of bytes of a function's return value, if all return values are of deterministic length. For example, the following solution is used in our Minters that integrate with either flagship or engine core contracts (which have different return values when calling `getPrimaryRevenueSplits`):
 
 ```solidity
 /**
@@ -121,10 +121,10 @@ function _validateCoreTypeGetPrimaryRevenueSplitsResponseLength() internal {
   require(success);
   if (isEngine) {
     // require 8 32-byte words returned if engine
-    require(returnData.length == 8 * 32);
+    require(returnData.length == 8 * 32, "Unexpected revenue split bytes");
   } else {
     // require 6 32-byte words returned if flagship
-    require(returnData.length == 6 * 32);
+    require(returnData.length == 6 * 32, "Unexpected revenue split bytes");
   }
 }
 ```

@@ -144,10 +144,16 @@ contract MinterSetPriceERC20V4 is ReentrancyGuard, IFilteredMinterV3 {
         require(success);
         if (isEngine) {
             // require 8 32-byte words returned if engine
-            require(returnData.length == 8 * 32);
+            require(
+                returnData.length == 8 * 32,
+                "Unexpected revenue split bytes"
+            );
         } else {
             // require 6 32-byte words returned if flagship (not engine)
-            require(returnData.length == 6 * 32);
+            require(
+                returnData.length == 6 * 32,
+                "Unexpected revenue split bytes"
+            );
         }
     }
 

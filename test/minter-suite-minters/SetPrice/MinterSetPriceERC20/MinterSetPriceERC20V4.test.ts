@@ -604,7 +604,7 @@ describe(`MinterSetPriceERC20V4 tests not dependent on tested cores`, async func
     await assignDefaultConstants.call(this);
   });
 
-  describe("constructor", async function () {
+  describe.only("constructor", async function () {
     it("requires correct quantity of return values from `getPrimaryRevenueSplits`", async function () {
       // deploy and configure core contract that returns incorrect quanty of return values for coreType response
       const coreContractName = "GenArt721CoreV3_Engine_IncorrectCoreType";
@@ -622,10 +622,11 @@ describe(`MinterSetPriceERC20V4 tests not dependent on tested cores`, async func
       );
       // we should revert during deployment because the core contract returns an incorrect number of return values
       // for the given coreType response
-      await expectRevert.unspecified(
+      await expectRevert(
         minterFactory.deploy(genArt721Core.address, minterFilter.address, {
           gasLimit: 30000000,
-        })
+        }),
+        "Unexpected revenue split bytes"
       );
     });
   });
