@@ -184,7 +184,7 @@ export const PolyptychMinter_Common = async () => {
         );
       // cannot purchase token with ETH
       await expectRevert(
-        this.minter.connect(this.accounts.user).purchase(this.projectZero, {
+        this.minter.connect(this.accounts.user)["purchase(uint256,address,uint256)"](this.projectZero, this.genArt721Core.address, this.projectZeroTokenZero, {
           value: this.pricePerTokenInWei,
         }),
         "this project accepts a different currency and cannot accept ETH"
@@ -194,14 +194,14 @@ export const PolyptychMinter_Common = async () => {
         this.minter.address,
         ethers.utils.parseEther("100")
       );
-      await this.minter.connect(this.accounts.user).purchase(this.projectZero);
+      await this.minter.connect(this.accounts.user)["purchase(uint256,address,uint256)"](this.projectZero, this.genArt721Core.address, this.projectZeroTokenZero);
       // cannot purchase token with ERC20 token when insufficient balance
       await this.ERC20Mock.connect(this.accounts.user).transfer(
         this.accounts.artist.address,
         ethers.utils.parseEther("100").sub(this.pricePerTokenInWei)
       );
       await expectRevert(
-        this.minter.connect(this.accounts.user).purchase(this.projectZero),
+        this.minter.connect(this.accounts.user)["purchase(uint256,address,uint256)"](this.projectZero, this.genArt721Core.address, this.projectZeroTokenZero),
         "Insufficient balance"
       );
       // artist changes back to ETH
@@ -213,7 +213,7 @@ export const PolyptychMinter_Common = async () => {
           constants.ZERO_ADDRESS
         );
       // able to mint with ETH
-      await this.minter.connect(this.accounts.user).purchase(this.projectZero, {
+      await this.minter.connect(this.accounts.user)["purchase(uint256,address,uint256)"](this.projectZero, this.genArt721Core.address, this.projectZeroTokenZero, {
         value: this.pricePerTokenInWei,
       });
     });
@@ -229,7 +229,7 @@ export const PolyptychMinter_Common = async () => {
           this.ERC20Mock.address
         );
       // can purchase project one token with ETH
-      await this.minter.connect(this.accounts.user).purchase(this.projectOne, {
+      await this.minter.connect(this.accounts.user)["purchase(uint256,address,uint256)"](this.projectOne, this.genArt721Core.address, this.projectZeroTokenZero, {
         value: this.pricePerTokenInWei,
       });
     });

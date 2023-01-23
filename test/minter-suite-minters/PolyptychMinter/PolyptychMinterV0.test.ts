@@ -216,6 +216,12 @@ for (const coreContractName of coreContractsToTest) {
       await this.randomizer
         .connect(this.accounts.artist)
         .toggleProjectIsPolyptych(2);
+
+      // mock ERC20 token
+      const ERC20Factory = await ethers.getContractFactory("ERC20Mock");
+      this.ERC20Mock = await ERC20Factory.connect(this.accounts.user).deploy(
+        ethers.utils.parseEther("100")
+      );
     });
 
     describe("common PolyptychMinter tests", async () => {
