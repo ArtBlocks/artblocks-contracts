@@ -104,7 +104,8 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
 
     // Stores whether a panel with an index has been minted for a given base token
     // panelIndex => baseTokenAddress => baseTokenId => panelIsMinted
-    mapping(uint256 => mapping(address => mapping(uint256 => bool))) public polyptychPanelIsMinted;
+    mapping(uint256 => mapping(address => mapping(uint256 => bool)))
+        public polyptychPanelIsMinted;
 
     // Identifies a project's current panel ID
     mapping(uint256 => uint256) public polyptychProjectPanelId;

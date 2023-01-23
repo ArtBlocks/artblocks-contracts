@@ -184,9 +184,16 @@ export const PolyptychMinter_Common = async () => {
         );
       // cannot purchase token with ETH
       await expectRevert(
-        this.minter.connect(this.accounts.user)["purchase(uint256,address,uint256)"](this.projectZero, this.genArt721Core.address, this.projectZeroTokenZero, {
-          value: this.pricePerTokenInWei,
-        }),
+        this.minter
+          .connect(this.accounts.user)
+          ["purchase(uint256,address,uint256)"](
+            this.projectZero,
+            this.genArt721Core.address,
+            this.projectZeroTokenZero,
+            {
+              value: this.pricePerTokenInWei,
+            }
+          ),
         "this project accepts a different currency and cannot accept ETH"
       );
       // approve contract and able to mint with Mock token
@@ -194,14 +201,26 @@ export const PolyptychMinter_Common = async () => {
         this.minter.address,
         ethers.utils.parseEther("100")
       );
-      await this.minter.connect(this.accounts.user)["purchase(uint256,address,uint256)"](this.projectZero, this.genArt721Core.address, this.projectZeroTokenZero);
+      await this.minter
+        .connect(this.accounts.user)
+        ["purchase(uint256,address,uint256)"](
+          this.projectZero,
+          this.genArt721Core.address,
+          this.projectZeroTokenZero
+        );
       // cannot purchase token with ERC20 token when insufficient balance
       await this.ERC20Mock.connect(this.accounts.user).transfer(
         this.accounts.artist.address,
         ethers.utils.parseEther("100").sub(this.pricePerTokenInWei)
       );
       await expectRevert(
-        this.minter.connect(this.accounts.user)["purchase(uint256,address,uint256)"](this.projectZero, this.genArt721Core.address, this.projectZeroTokenZero),
+        this.minter
+          .connect(this.accounts.user)
+          ["purchase(uint256,address,uint256)"](
+            this.projectZero,
+            this.genArt721Core.address,
+            this.projectZeroTokenZero
+          ),
         "Insufficient balance"
       );
       // artist changes back to ETH
@@ -213,9 +232,16 @@ export const PolyptychMinter_Common = async () => {
           constants.ZERO_ADDRESS
         );
       // able to mint with ETH
-      await this.minter.connect(this.accounts.user)["purchase(uint256,address,uint256)"](this.projectZero, this.genArt721Core.address, this.projectZeroTokenZero, {
-        value: this.pricePerTokenInWei,
-      });
+      await this.minter
+        .connect(this.accounts.user)
+        ["purchase(uint256,address,uint256)"](
+          this.projectZero,
+          this.genArt721Core.address,
+          this.projectZeroTokenZero,
+          {
+            value: this.pricePerTokenInWei,
+          }
+        );
     });
 
     it("enforces currency update only on desired project", async function () {
@@ -229,9 +255,16 @@ export const PolyptychMinter_Common = async () => {
           this.ERC20Mock.address
         );
       // can purchase project one token with ETH
-      await this.minter.connect(this.accounts.user)["purchase(uint256,address,uint256)"](this.projectOne, this.genArt721Core.address, this.projectZeroTokenZero, {
-        value: this.pricePerTokenInWei,
-      });
+      await this.minter
+        .connect(this.accounts.user)
+        ["purchase(uint256,address,uint256)"](
+          this.projectOne,
+          this.genArt721Core.address,
+          this.projectZeroTokenZero,
+          {
+            value: this.pricePerTokenInWei,
+          }
+        );
     });
 
     it("emits event upon currency update", async function () {
@@ -614,13 +647,13 @@ export const PolyptychMinter_Common = async () => {
 
     it("does not allow purchase without sending enough funds", async function () {
       // allow holders of this.projectZero to purchase tokens on this.projectOne
-        await this.minter
-          .connect(this.accounts.artist)
-          .allowHoldersOfProjects(
-            this.projectOne,
-            [this.genArt721Core.address],
-            [this.projectZero]
-          );
+      await this.minter
+        .connect(this.accounts.artist)
+        .allowHoldersOfProjects(
+          this.projectOne,
+          [this.genArt721Core.address],
+          [this.projectZero]
+        );
       // expect revert due when sending zero funds
       await expectRevert(
         this.minter
