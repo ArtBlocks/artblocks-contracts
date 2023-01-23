@@ -9,6 +9,7 @@ import {
   deployCoreWithMinterFilter,
   compareBN,
   safeAddProject,
+  deployAndGetPBAB,
 } from "../../util/common";
 
 import { MinterHolder_Common } from "./MinterHolder.common";
@@ -612,13 +613,56 @@ for (const coreContractName of coreContractsToTest) {
       );
     });
 
+    describe.only("Works for delegation with different contract", async function () {
+      it("enables delegation when owned token is on different contracts", async function () {
+        // deploy different contract (for this case, use PBAB contract)
+        const tokenOwner = this.accounts.additional; // alias for test readability
+        const { pbabToken, pbabMinter } = await deployAndGetPBAB.bind(this)();
+        await pbabMinter
+          .connect(this.accounts.artist)
+          .purchaseTo(tokenOwner.address, 0, {
+            value: this.pricePerTokenInWei,
+          });
+        // register the PBAB token on our minter
+        await this.minter
+          .connect(this.accounts.deployer)
+          .registerNFTAddress(pbabToken.address);
+        // allow holders of PBAB project 0 to purchase tokens on this.projectTwo
+        await this.minter
+          .connect(this.accounts.artist)
+          .allowHoldersOfProjects(this.projectTwo, [pbabToken.address], [0]);
+        // configure price per token to be zero
+        await this.minter
+          .connect(this.accounts.artist)
+          .updatePricePerTokenInWei(this.projectTwo, 0);
+        // additional sets delegate to user2 for the PBAB token
+        const delegee = this.accounts.user2; // alias for test readability
+        await this.delegationRegistry.connect(tokenOwner).delegateForToken(
+          delegee.address, // delegate
+          pbabToken.address, // contract address
+          0, // tokenID
+          true
+        );
+        // does allow purchase when holder of token in PBAB this.projectZero is used as pass
+        await this.minter
+          .connect(delegee)
+          ["purchaseTo(address,uint256,address,uint256,address)"](
+            delegee.address, // address being minted to (irrelevant for this test)
+            this.projectTwo, // the project being minted
+            pbabToken.address, // the allowlisted token address
+            0, // tokenID of the owned token
+            tokenOwner.address, // the allowlisted vault address
+            {
+              value: this.pricePerTokenInWei,
+            }
+          );
+      });
+    });
+
     describe("purchaseTo_dlc with an INVALID vault delegate", async function () {
-      beforeEach(async function () {
+      it("does NOT allow purchases when no delegation exists", async function () {
         this.userVault = this.accounts.additional2;
         // intentionally do not add any delegations
-      });
-
-      it("does NOT allow purchases", async function () {
         await expectRevert(
           this.minter
             .connect(this.accounts.user)

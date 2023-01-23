@@ -648,7 +648,7 @@ contract MinterHolderV3 is ReentrancyGuard, IFilteredMinterHolderV2 {
                 .checkDelegateForToken(
                     msg.sender, // delegate
                     _vault, // vault
-                    _ownedNFTAddress, // contract
+                    genArt721CoreAddress, // contract
                     _ownedNFTTokenId // tokenId
                 );
             require(isValidVault, "Invalid delegate-vault pairing");
