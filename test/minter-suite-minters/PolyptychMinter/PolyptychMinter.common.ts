@@ -476,10 +476,18 @@ export const PolyptychMinter_Common = async () => {
     });
 
     it("does not allow purchase without sending enough funds", async function () {
+      // allow holders of this.projectZero to purchase tokens on this.projectOne
+        await this.minter
+          .connect(this.accounts.artist)
+          .allowHoldersOfProjects(
+            this.projectOne,
+            [this.genArt721Core.address],
+            [this.projectZero]
+          );
       // expect revert due when sending zero funds
       await expectRevert(
         this.minter
-          .connect(this.accounts.additional)
+          .connect(this.accounts.artist)
           ["purchase(uint256,address,uint256)"](
             this.projectOne,
             this.genArt721Core.address,
@@ -493,7 +501,7 @@ export const PolyptychMinter_Common = async () => {
       // expect revert due when sending funds less than price
       await expectRevert(
         this.minter
-          .connect(this.accounts.additional)
+          .connect(this.accounts.artist)
           ["purchase(uint256,address,uint256)"](
             this.projectOne,
             this.genArt721Core.address,

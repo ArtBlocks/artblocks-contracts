@@ -118,7 +118,9 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
         bool maxHasBeenInvoked;
         bool priceIsConfigured;
         uint24 maxInvocations;
+        address currencyAddress;
         uint256 pricePerTokenInWei;
+        string currencySymbol;
     }
 
     mapping(uint256 => ProjectConfig) public projectConfig;
@@ -186,6 +188,38 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
             minterFilter.genArt721CoreAddress() == _genArt721Address,
             "Illegal contract pairing"
         );
+    }
+
+    /**
+     * @notice Gets your balance of the ERC-20 token currently set
+     * as the payment currency for project `_projectId`.
+     * @param _projectId Project ID to be queried.
+     * @return balance Balance of ERC-20
+     */
+    function getYourBalanceOfProjectERC20(
+        uint256 _projectId
+    ) external view returns (uint256 balance) {
+        balance = IERC20(projectConfig[_projectId].currencyAddress).balanceOf(
+            msg.sender
+        );
+        return balance;
+    }
+
+    /**
+     * @notice Gets your allowance for this minter of the ERC-20
+     * token currently set as the payment currency for project
+     * `_projectId`.
+     * @param _projectId Project ID to be queried.
+     * @return remaining Remaining allowance of ERC-20
+     */
+    function checkYourAllowanceOfProjectERC20(
+        uint256 _projectId
+    ) external view returns (uint256 remaining) {
+        remaining = IERC20(projectConfig[_projectId].currencyAddress).allowance(
+            msg.sender,
+            address(this)
+        );
+        return remaining;
     }
 
     /**
@@ -516,6 +550,34 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
     }
 
     /**
+     * @notice Updates payment currency of project `_projectId` to be
+     * `_currencySymbol` at address `_currencyAddress`.
+     * @param _projectId Project ID to update.
+     * @param _currencySymbol Currency symbol.
+     * @param _currencyAddress Currency address.
+     */
+    function updateProjectCurrencyInfo(
+        uint256 _projectId,
+        string memory _currencySymbol,
+        address _currencyAddress
+    ) external onlyArtist(_projectId) {
+        // require null address if symbol is "ETH"
+        require(
+            (keccak256(abi.encodePacked(_currencySymbol)) ==
+                keccak256(abi.encodePacked("ETH"))) ==
+                (_currencyAddress == address(0)),
+            "ETH is only null address"
+        );
+        projectConfig[_projectId].currencySymbol = _currencySymbol;
+        projectConfig[_projectId].currencyAddress = _currencyAddress;
+        emit ProjectCurrencyInfoUpdated(
+            _projectId,
+            _currencyAddress,
+            _currencySymbol
+        );
+    }
+
+    /**
      * @notice Inactive function - requires NFT ownership to purchase.
      */
     function purchase(uint256) external payable returns (uint256) {
@@ -678,14 +740,6 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
             "Maximum number of invocations reached"
         );
 
-        // load price of token into memory
-        uint256 _pricePerTokenInWei = _projectConfig.pricePerTokenInWei;
-
-        require(
-            msg.value >= _pricePerTokenInWei,
-            "Must send minimum value to mint!"
-        );
-
         // require artist to have configured price of token on this minter
         require(_projectConfig.priceIsConfigured, "Price not configured");
 
@@ -795,7 +849,31 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
         }
 
         // split funds
-        _splitFundsETH(_projectId, _pricePerTokenInWei);
+        uint256 _pricePerTokenInWei = _projectConfig.pricePerTokenInWei;
+        address _currencyAddress = _projectConfig.currencyAddress;
+        if (_currencyAddress != address(0)) {
+            require(
+                msg.value == 0,
+                "this project accepts a different currency and cannot accept ETH"
+            );
+            require(
+                IERC20(_currencyAddress).allowance(msg.sender, address(this)) >=
+                    _pricePerTokenInWei,
+                "Insufficient Funds Approved for TX"
+            );
+            require(
+                IERC20(_currencyAddress).balanceOf(msg.sender) >=
+                    _pricePerTokenInWei,
+                "Insufficient balance."
+            );
+            _splitFundsERC20(_projectId, _pricePerTokenInWei, _currencyAddress);
+        } else {
+            require(
+                msg.value >= _pricePerTokenInWei,
+                "Must send minimum value to mint!"
+            );
+            _splitFundsETH(_projectId, _pricePerTokenInWei);
+        }
 
         return tokenId;
     }
@@ -865,6 +943,68 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
     }
 
     /**
+     * @dev splits ERC-20 funds between foundation, artist, and artist's
+     * additional payee, for a token purchased on project `_projectId`.
+     * @dev possible DoS during splits is acknowledged, and mitigated by
+     * business practices, including end-to-end testing on mainnet, and
+     * admin-accepted artist payment addresses.
+     */
+    function _splitFundsERC20(
+        uint256 _projectId,
+        uint256 _pricePerTokenInWei,
+        address _currencyAddress
+    ) internal {
+        // split remaining funds between foundation, artist, and artist's
+        // additional payee
+        (
+            uint256 renderProviderRevenue_,
+            address payable renderProviderAddress_,
+            uint256 platformProviderRevenue_,
+            address payable platformProviderAddress_,
+            uint256 artistRevenue_,
+            address payable artistAddress_,
+            uint256 additionalPayeePrimaryRevenue_,
+            address payable additionalPayeePrimaryAddress_
+        ) = genArtCoreContract.getPrimaryRevenueSplits(
+                _projectId,
+                _pricePerTokenInWei
+            );
+        IERC20 _projectCurrency = IERC20(_currencyAddress);
+        // Render provider (e.g. Art Blocks) payment
+        if (renderProviderRevenue_ > 0) {
+            _projectCurrency.transferFrom(
+                msg.sender,
+                renderProviderAddress_,
+                renderProviderRevenue_
+            );
+        }
+        // Platform provider (e.g. engine partner) payment
+        if (platformProviderRevenue_ > 0) {
+            _projectCurrency.transferFrom(
+                msg.sender,
+                platformProviderAddress_,
+                platformProviderRevenue_
+            );
+        }
+        // artist payment
+        if (artistRevenue_ > 0) {
+            _projectCurrency.transferFrom(
+                msg.sender,
+                artistAddress_,
+                artistRevenue_
+            );
+        }
+        // additional payee payment
+        if (additionalPayeePrimaryRevenue_ > 0) {
+            _projectCurrency.transferFrom(
+                msg.sender,
+                additionalPayeePrimaryAddress_,
+                additionalPayeePrimaryRevenue_
+            );
+        }
+    }
+
+    /**
      * @notice Gets quantity of NFT addresses registered on this minter.
      * @return uint256 quantity of NFT addresses registered
      */
@@ -914,7 +1054,12 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         isConfigured = _projectConfig.priceIsConfigured;
         tokenPriceInWei = _projectConfig.pricePerTokenInWei;
-        currencySymbol = "ETH";
-        currencyAddress = address(0);
+        currencyAddress = _projectConfig.currencyAddress;
+        if (currencyAddress == address(0)) {
+            // defaults to ETH
+            currencySymbol = "ETH";
+        } else {
+            currencySymbol = _projectConfig.currencySymbol;
+        }
     }
 }
