@@ -613,7 +613,7 @@ for (const coreContractName of coreContractsToTest) {
       );
     });
 
-    describe.only("Works for delegation with different contract", async function () {
+    describe("Works for delegation with different contract", async function () {
       it("enables delegation when owned token is on different contracts", async function () {
         // deploy different contract (for this case, use PBAB contract)
         const tokenOwner = this.accounts.additional; // alias for test readability
