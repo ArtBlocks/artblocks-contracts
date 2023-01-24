@@ -3,7 +3,7 @@
 
 import "../../../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
 import "../../../interfaces/0.8.x/IMinterFilterV0.sol";
-import "../../../interfaces/0.8.x/IFilteredMinterV0.sol";
+import "../../../interfaces/0.8.x/IFilteredMinterDALinV0.sol";
 
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin-4.5/contracts/utils/math/SafeCast.sol";
@@ -45,25 +45,8 @@ pragma solidity 0.8.17;
  * meaningfully impact price given the minimum allowable price decay rate that
  * this minter intends to support.
  */
-contract MinterDALinV2 is ReentrancyGuard, IFilteredMinterV0 {
+contract MinterDALinV2 is ReentrancyGuard, IFilteredMinterDALinV0 {
     using SafeCast for uint256;
-
-    /// Auction details updated for project `projectId`.
-    event SetAuctionDetails(
-        uint256 indexed projectId,
-        uint256 _auctionTimestampStart,
-        uint256 _auctionTimestampEnd,
-        uint256 _startPrice,
-        uint256 _basePrice
-    );
-
-    /// Auction details cleared for project `projectId`.
-    event ResetAuctionDetails(uint256 indexed projectId);
-
-    /// Minimum allowed auction length updated
-    event MinimumAuctionLengthSecondsUpdated(
-        uint256 _minimumAuctionLengthSeconds
-    );
 
     /// Core contract address this minter interacts with
     address public immutable genArt721CoreAddress;

@@ -55,7 +55,7 @@ pragma solidity 0.8.17;
  * Delegations must be configured by the vault owner prior to purchase. Supported
  * delegation types include token-level, contract-level (via genArt721CoreAddress), or
  * wallet-level delegation. Contract-level delegations must be configured for the core
- * token contract as returned by the public immutable variable `genArt721CoreAddress`.
+ * token contract as returned by owned token's core contract address.
  */
 contract MinterHolderV2 is ReentrancyGuard, IFilteredMinterHolderV1 {
     // add Enumerable Set methods
@@ -599,7 +599,7 @@ contract MinterHolderV2 is ReentrancyGuard, IFilteredMinterHolderV1 {
                 .checkDelegateForToken(
                     msg.sender, // delegate
                     _vault, // vault
-                    genArt721CoreAddress, // contract
+                    _ownedNFTAddress, // contract
                     _ownedNFTTokenId // tokenId
                 );
             require(isValidVault, "Invalid delegate-vault pairing");
