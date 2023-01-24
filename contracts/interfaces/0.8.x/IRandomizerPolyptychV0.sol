@@ -5,7 +5,7 @@ pragma solidity 0.8.17;
 
 import "./IRandomizerV2.sol";
 
-interface IBasicPolyptychRandomizerV0 is IRandomizerV2 {
+interface IRandomizerPolyptychV0 is IRandomizerV2 {
     // The core contract that may interact with this randomizer contract.
     function genArt721Core()
         external

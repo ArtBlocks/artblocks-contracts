@@ -4,7 +4,7 @@
 pragma solidity 0.8.17;
 
 import "./interfaces/0.8.x/IGenArt721CoreContractV3_Engine.sol";
-import "./interfaces/0.8.x/IBasicPolyptychRandomizerV0.sol";
+import "./interfaces/0.8.x/IRandomizerPolyptychV0.sol";
 
 import "@openzeppelin-4.7/contracts/access/Ownable.sol";
 
@@ -23,7 +23,7 @@ import "@openzeppelin-4.7/contracts/access/Ownable.sol";
  * Once the contract is configured, it will enable newly-minted tokens to use a copy of the hash
  * seed from a previously-minted token.
  */
-contract BasicPolyptychRandomizerV0 is IBasicPolyptychRandomizerV0, Ownable {
+contract BasicPolyptychRandomizerV0 is IRandomizerPolyptychV0, Ownable {
     // The core contract that may interact with this randomizer contract.
     IGenArt721CoreContractV3_Engine public genArt721Core;
 

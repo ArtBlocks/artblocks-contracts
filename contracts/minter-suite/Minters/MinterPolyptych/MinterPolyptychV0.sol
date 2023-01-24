@@ -4,7 +4,7 @@
 import "../../../interfaces/0.8.x/IGenArt721CoreContractV3_Engine.sol";
 import "../../../interfaces/0.8.x/IMinterFilterV0.sol";
 import "../../../interfaces/0.8.x/IFilteredMinterHolderV2.sol";
-import "../../../interfaces/0.8.x/IBasicPolyptychRandomizerV0.sol";
+import "../../../interfaces/0.8.x/IRandomizerPolyptychV0.sol";
 import "../../../interfaces/0.8.x/IDelegationRegistry.sol";
 
 import "@openzeppelin-4.5/contracts/token/ERC721/IERC721.sol";
@@ -28,7 +28,7 @@ interface IGenArt721CoreContractV3WithRandomizer is
     /// current randomizer contract
     function randomizerContract()
         external
-        returns (IBasicPolyptychRandomizerV0);
+        returns (IRandomizerPolyptychV0);
 }
 
 /**
