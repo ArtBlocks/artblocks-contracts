@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "./IFilteredMinterMerkleV1.sol";
+import "./IFilteredMinterMerkleV2.sol";
 import "./IFilteredMinterV3.sol";
 
 pragma solidity ^0.8.0;
@@ -12,7 +12,7 @@ pragma solidity ^0.8.0;
  * @author Art Blocks Inc.
  */
 interface IFilteredMinterMerkleV3 is
-    IFilteredMinterMerkleV1,
+    IFilteredMinterMerkleV2,
     IFilteredMinterV3
 {
 

@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "./IFilteredMinterDAExpSettlement_Mixin.sol";
-import "./IFilteredMinterV1.sol";
+import "./IFilteredMinterDAExpSettlementV0.sol";
 import "./IFilteredMinterV3_Mixin.sol";
-import "./IFilteredMinterDAExpV0.sol";
 
 pragma solidity ^0.8.0;
 
@@ -17,10 +15,8 @@ pragma solidity ^0.8.0;
  * @author Art Blocks Inc.
  */
 interface IFilteredMinterDAExpSettlementV1 is
-    IFilteredMinterDAExpSettlement_Mixin,
-    IFilteredMinterV1,
-    IFilteredMinterV3_Mixin,
-    IFilteredMinterDAExpV0
+    IFilteredMinterDAExpSettlementV0,
+    IFilteredMinterV3_Mixin
 {
 
 }
