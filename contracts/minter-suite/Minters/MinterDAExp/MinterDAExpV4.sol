@@ -484,40 +484,14 @@ contract MinterDAExpV4 is ReentrancyGuard, IFilteredMinterDAExpV2 {
         }
 
         // INTERACTIONS
-        _splitFundsETH(_projectId, pricePerTokenInWei);
-        return tokenId;
-    }
+        MinterUtils.splitFundsETH(
+            _projectId,
+            pricePerTokenInWei,
+            genArt721CoreAddress,
+            isEngine
+        );
 
-    /**
-     * @dev splits ETH funds between sender (if refund), providers,
-     * artist, and artist's additional payee for a token purchased on
-     * project `_projectId`.
-     * @dev possible DoS during splits is acknowledged, and mitigated by
-     * business practices, including end-to-end testing on mainnet, and
-     * admin-accepted artist payment addresses.
-     * @param _projectId Project ID for which funds shall be split.
-     * @param _pricePerTokenInWei Current price of token, in Wei.
-     */
-    function _splitFundsETH(
-        uint256 _projectId,
-        uint256 _pricePerTokenInWei
-    ) internal {
-        if (msg.value > 0) {
-            bool success_;
-            // send refund to sender
-            uint256 refund = msg.value - _pricePerTokenInWei;
-            if (refund > 0) {
-                (success_, ) = msg.sender.call{value: refund}("");
-                require(success_, "Refund failed");
-            }
-            // split revenues
-            MinterUtils.splitRevenuesETH(
-                _projectId,
-                _pricePerTokenInWei,
-                genArt721CoreAddress,
-                isEngine
-            );
-        }
+        return tokenId;
     }
 
     /**

@@ -496,10 +496,10 @@ contract MinterMerkleV5 is ReentrancyGuard, IFilteredMinterMerkleV3 {
         );
 
         // load price of token into memory
-        uint256 _pricePerTokenInWei = _projectConfig.pricePerTokenInWei;
+        uint256 pricePerTokenInWei = _projectConfig.pricePerTokenInWei;
 
         require(
-            msg.value >= _pricePerTokenInWei,
+            msg.value >= pricePerTokenInWei,
             "Must send minimum value to mint!"
         );
 
@@ -571,39 +571,14 @@ contract MinterMerkleV5 is ReentrancyGuard, IFilteredMinterMerkleV3 {
         }
 
         // INTERACTIONS
-        _splitFundsETH(_projectId, _pricePerTokenInWei);
+        MinterUtils.splitFundsETH(
+            _projectId,
+            pricePerTokenInWei,
+            genArt721CoreAddress,
+            isEngine
+        );
 
         return tokenId;
-    }
-
-    /**
-     * @dev splits ETH funds between sender (if refund), foundation,
-     * artist, and artist's additional payee for a token purchased on
-     * project `_projectId`.
-     * @dev possible DoS during splits is acknowledged, and mitigated by
-     * business practices, including end-to-end testing on mainnet, and
-     * admin-accepted artist payment addresses.
-     */
-    function _splitFundsETH(
-        uint256 _projectId,
-        uint256 _pricePerTokenInWei
-    ) internal {
-        if (msg.value > 0) {
-            bool success_;
-            // send refund to sender
-            uint256 refund = msg.value - _pricePerTokenInWei;
-            if (refund > 0) {
-                (success_, ) = msg.sender.call{value: refund}("");
-                require(success_, "Refund failed");
-            }
-            // split revenues
-            MinterUtils.splitRevenuesETH(
-                _projectId,
-                _pricePerTokenInWei,
-                genArt721CoreAddress,
-                isEngine
-            );
-        }
     }
 
     /**

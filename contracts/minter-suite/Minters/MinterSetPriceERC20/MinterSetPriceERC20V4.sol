@@ -388,7 +388,7 @@ contract MinterSetPriceERC20V4 is ReentrancyGuard, IFilteredMinterV3 {
         }
 
         // INTERACTIONS
-        uint256 _pricePerTokenInWei = _projectConfig.pricePerTokenInWei;
+        uint256 pricePerTokenInWei = _projectConfig.pricePerTokenInWei;
         address _currencyAddress = _projectConfig.currencyAddress;
         if (_currencyAddress != address(0)) {
             require(
@@ -397,54 +397,29 @@ contract MinterSetPriceERC20V4 is ReentrancyGuard, IFilteredMinterV3 {
             );
             require(
                 IERC20(_currencyAddress).allowance(msg.sender, address(this)) >=
-                    _pricePerTokenInWei,
+                    pricePerTokenInWei,
                 "Insufficient Funds Approved for TX"
             );
             require(
                 IERC20(_currencyAddress).balanceOf(msg.sender) >=
-                    _pricePerTokenInWei,
+                    pricePerTokenInWei,
                 "Insufficient balance."
             );
-            _splitFundsERC20(_projectId, _pricePerTokenInWei, _currencyAddress);
+            _splitFundsERC20(_projectId, pricePerTokenInWei, _currencyAddress);
         } else {
             require(
-                msg.value >= _pricePerTokenInWei,
+                msg.value >= pricePerTokenInWei,
                 "Must send minimum value to mint!"
             );
-            _splitFundsETH(_projectId, _pricePerTokenInWei);
-        }
-
-        return tokenId;
-    }
-
-    /**
-     * @dev splits ETH funds between sender (if refund), foundation,
-     * artist, and artist's additional payee for a token purchased on
-     * project `_projectId`.
-     * @dev possible DoS during splits is acknowledged, and mitigated by
-     * business practices, including end-to-end testing on mainnet, and
-     * admin-accepted artist payment addresses.
-     */
-    function _splitFundsETH(
-        uint256 _projectId,
-        uint256 _pricePerTokenInWei
-    ) internal {
-        if (msg.value > 0) {
-            bool success_;
-            // send refund to sender
-            uint256 refund = msg.value - _pricePerTokenInWei;
-            if (refund > 0) {
-                (success_, ) = msg.sender.call{value: refund}("");
-                require(success_, "Refund failed");
-            }
-            // split revenues
-            MinterUtils.splitRevenuesETH(
+            MinterUtils.splitFundsETH(
                 _projectId,
-                _pricePerTokenInWei,
+                pricePerTokenInWei,
                 genArt721CoreAddress,
                 isEngine
             );
         }
+
+        return tokenId;
     }
 
     /**
