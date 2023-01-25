@@ -1,6 +1,6 @@
 {
   "name": "@artblocks/contracts",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Smart contracts used by Art Blocks",
   "files": [
     "/contracts/**/*.sol",
