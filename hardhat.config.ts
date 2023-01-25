@@ -8,6 +8,7 @@ import "hardhat-contract-sizer";
 import "@nomiclabs/hardhat-etherscan";
 import "hardhat-docgen";
 import "@openzeppelin/hardhat-upgrades";
+import { solidityConfig } from "./hardhat.solidity-config";
 
 const MAINNET_JSON_RPC_PROVIDER_URL = process.env.MAINNET_JSON_RPC_PROVIDER_URL;
 const GOERLI_JSON_RPC_PROVIDER_URL = process.env.GOERLI_JSON_RPC_PROVIDER_URL;
@@ -29,37 +30,7 @@ const PALM_TESTNET_JSON_RPC_PROVIDER_URL =
  */
 
 module.exports = {
-  solidity: {
-    compilers: [
-      {
-        version: "0.5.17",
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 100,
-          },
-        },
-      },
-      {
-        version: "0.8.9",
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 25,
-          },
-        },
-      },
-      {
-        version: "0.8.17",
-        settings: {
-          optimizer: {
-            enabled: true,
-            runs: 25,
-          },
-        },
-      },
-    ],
-  },
+  solidity: solidityConfig,
   networks: {
     hardhat: {
       gasPrice: 100000000000, // 100 gwei
