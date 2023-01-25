@@ -9,6 +9,7 @@
   "scripts": {
     "clean": "hardhat clean",
     "compile": "hardhat compile",
+    "gh-action-compile": "hardhat --config gh-action.config.ts compile",
     "docgen": "hardhat docgen",
     "generate:typechain": "typechain --target ethers-v5 --outDir ./scripts/contracts './artifacts/contracts/**/!(*.dbg)*.json'",
     "test": "hardhat test",
