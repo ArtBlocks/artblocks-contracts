@@ -5,6 +5,7 @@ const formatTitleCaseToKebabCase = (str: string, networkName: string) => {
     .replace(/\s/g, "-") // remove whitespace
     .replace(/\(/g, "") // remove (
     .replace(/\)/g, "") // remove )
+    .replace(/\./g, "-") // replace "." w/ "-"
     .replace(/-x-/g, "-") // replace "-x-" w/ "-" (partner contracts)
     .replace(`${networkName}-${networkName}`, `${networkName}`); // remove double network name
 };
