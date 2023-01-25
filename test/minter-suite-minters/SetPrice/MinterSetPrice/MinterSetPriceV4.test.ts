@@ -1,6 +1,15 @@
+import {
+  BN,
+  constants,
+  expectEvent,
+  expectRevert,
+  balance,
+  ether,
+} from "@openzeppelin/test-helpers";
 import { expect } from "chai";
+import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
-import { expectRevert } from "@openzeppelin/test-helpers";
+
 import {
   getAccounts,
   assignDefaultConstants,
@@ -9,11 +18,9 @@ import {
   safeAddProject,
 } from "../../../util/common";
 
-import { MinterSetPriceERC20_Common } from "./MinterSetPriceERC20.common";
+import { MinterSetPrice_ETH_Common } from "./MinterSetPrice.common";
 import { MinterSetPriceV1V2V3V4_Common } from "../MinterSetPriceV1V2V3V4.common";
-import { MinterSetPriceV2V3_Common } from "../MinterSetPriceV2V3.common";
-
-import { BigNumber } from "ethers";
+import { MinterSetPriceV4_Common } from "../MinterSetPriceV4.common";
 
 import { Logger } from "@ethersproject/logger";
 // hide nuisance logs about event overloading
@@ -23,14 +30,17 @@ Logger.setLogLevel(Logger.levels.ERROR);
 const coreContractsToTest = [
   "GenArt721CoreV3", // flagship V3 core
   "GenArt721CoreV3_Explorations", // V3 core explorations contract
+  "GenArt721CoreV3_Engine", // V3 core engine contract
 ];
+
+const TARGET_MINTER_NAME = "MinterSetPriceV4";
 
 /**
  * These tests intended to ensure this Filtered Minter integrates properly with
- * V3 core contract.
+ * V3 core contracts, both flagship and explorations.
  */
 for (const coreContractName of coreContractsToTest) {
-  describe(`MinterSetPriceERC20V3_${coreContractName}`, async function () {
+  describe(`${TARGET_MINTER_NAME}_${coreContractName}`, async function () {
     beforeEach(async function () {
       // standard accounts and constants
       this.accounts = await getAccounts();
@@ -50,15 +60,27 @@ for (const coreContractName of coreContractsToTest) {
         "MinterFilterV1"
       ));
 
-      this.targetMinterName = "MinterSetPriceERC20V3";
+      this.targetMinterName = TARGET_MINTER_NAME;
       const minterFactory = await ethers.getContractFactory(
         this.targetMinterName
       );
-      this.minter = await minterFactory.deploy(
+      this.minter1 = await minterFactory.deploy(
         this.genArt721Core.address,
         this.minterFilter.address
       );
 
+      // support common tests and also give access to this.minter1 at this.minter
+      this.minter = this.minter1;
+      this.isEngine = await this.minter.isEngine();
+
+      this.minter2 = await minterFactory.deploy(
+        this.genArt721Core.address,
+        this.minterFilter.address
+      );
+      this.minter3 = await minterFactory.deploy(
+        this.genArt721Core.address,
+        this.minterFilter.address
+      );
       await safeAddProject(
         this.genArt721Core,
         this.accounts.deployer,
@@ -107,119 +129,41 @@ for (const coreContractName of coreContractsToTest) {
 
       await this.minterFilter
         .connect(this.accounts.deployer)
-        .addApprovedMinter(this.minter.address);
+        .addApprovedMinter(this.minter1.address);
       await this.minterFilter
         .connect(this.accounts.deployer)
-        .setMinterForProject(this.projectZero, this.minter.address);
+        .addApprovedMinter(this.minter2.address);
       await this.minterFilter
         .connect(this.accounts.deployer)
-        .setMinterForProject(this.projectOne, this.minter.address);
-      await this.minterFilter
-        .connect(this.accounts.deployer)
-        .setMinterForProject(this.projectTwo, this.minter.address);
+        .addApprovedMinter(this.minter3.address);
 
-      // set token price for projects zero and one on minter
-      await this.minter
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .setMinterForProject(this.projectZero, this.minter1.address);
+      await this.minterFilter
+        .connect(this.accounts.deployer)
+        .setMinterForProject(this.projectOne, this.minter2.address);
+      // We leave project three with no minter on purpose
+
+      // set token price for first two projects on minter one
+      await this.minter1
         .connect(this.accounts.artist)
         .updatePricePerTokenInWei(this.projectZero, this.pricePerTokenInWei);
-      await this.minter
+      await this.minter1
         .connect(this.accounts.artist)
         .updatePricePerTokenInWei(this.projectOne, this.pricePerTokenInWei);
-
-      // mock ERC20 token
-      const ERC20Factory = await ethers.getContractFactory("ERC20Mock");
-      this.ERC20Mock = await ERC20Factory.connect(this.accounts.user).deploy(
-        ethers.utils.parseEther("100")
-      );
     });
 
     describe("common MinterSetPrice (ETH) tests", async () => {
-      await MinterSetPriceERC20_Common();
+      await MinterSetPrice_ETH_Common();
     });
 
-    describe("common MinterSetPrice V1V2V3 tests", async function () {
+    describe("common MinterSetPrice V1V2V3V4 tests", async function () {
       await MinterSetPriceV1V2V3V4_Common();
     });
 
-    describe("common MinterSetPrice V2V3 tests", async function () {
-      await MinterSetPriceV2V3_Common();
-    });
-
-    describe("updatePricePerTokenInWei", async function () {
-      it("does not allow price update to be zero", async function () {
-        // does allow artist
-        await expectRevert(
-          this.minter
-            .connect(this.accounts.artist)
-            .updatePricePerTokenInWei(this.projectZero, 0),
-          "Price may not be 0"
-        );
-      });
-    });
-
-    describe("purchase", async function () {
-      it("requires sufficient ERC20 token approval", async function () {
-        // artist changes to Mock ERC20 token
-        await this.minter
-          .connect(this.accounts.artist)
-          .updateProjectCurrencyInfo(
-            this.projectZero,
-            "MOCK",
-            this.ERC20Mock.address
-          );
-        // approve contract and able to mint with Mock token, but insufficient qty approved
-        await this.ERC20Mock.connect(this.accounts.user).approve(
-          this.minter.address,
-          this.pricePerTokenInWei.sub(1)
-        );
-        await expectRevert(
-          this.minter.connect(this.accounts.user).purchase(this.projectZero),
-          "insufficient funds for intrinsic transaction cost"
-        );
-      });
-
-      it("handles ERC20 splits when platform and artist have zero revenues", async function () {
-        // artist changes to Mock ERC20 token
-        await this.minter
-          .connect(this.accounts.artist)
-          .updateProjectCurrencyInfo(
-            this.projectZero,
-            "MOCK",
-            this.ERC20Mock.address
-          );
-        // approve contract and able to mint with Mock token
-        await this.ERC20Mock.connect(this.accounts.user).approve(
-          this.minter.address,
-          this.pricePerTokenInWei
-        );
-        // update platform to zero percent
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .updateArtblocksPrimarySalesPercentage(0);
-        // update artist primary split to zero
-        const proposedAddressesAndSplits = [
-          this.projectZero,
-          this.accounts.artist.address,
-          this.accounts.additional.address,
-          // @dev 100% to additional, 0% to artist, to induce zero artist payment value
-          100,
-          this.accounts.additional2.address,
-          // @dev split for secondary sales doesn't matter for this test
-          50,
-        ];
-        await this.genArt721Core
-          .connect(this.accounts.artist)
-          .proposeArtistPaymentAddressesAndSplits(
-            ...proposedAddressesAndSplits
-          );
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .adminAcceptArtistAddressesAndSplits(...proposedAddressesAndSplits);
-        // expect successful purchase of token
-        await this.minter
-          .connect(this.accounts.user)
-          .purchase(this.projectZero);
-      });
+    describe("common MinterSetPrice V4 tests", async function () {
+      await MinterSetPriceV4_Common();
     });
 
     describe("setProjectMaxInvocations", async function () {
@@ -301,6 +245,7 @@ for (const coreContractName of coreContractsToTest) {
           .projectConfig(this.projectZero);
         expect(localMaxInvocations.maxInvocations).to.equal(1);
 
+        // mint a token
         await this.minter
           .connect(this.accounts.user)
           .purchase(this.projectZero, {
@@ -351,9 +296,9 @@ for (const coreContractName of coreContractsToTest) {
 
     describe("calculates gas", async function () {
       it("mints and calculates gas values [ @skip-on-coverage ]", async function () {
-        const tx = await this.minter
+        const tx = await this.minter1
           .connect(this.accounts.user)
-          .purchase(this.projectOne, {
+          .purchase(this.projectZero, {
             value: this.pricePerTokenInWei,
           });
 
@@ -361,18 +306,87 @@ for (const coreContractName of coreContractsToTest) {
         const txCost = receipt.effectiveGasPrice
           .mul(receipt.gasUsed)
           .toString();
-
         console.log(
-          "Gas cost for a successful ERC20 mint: ",
+          "Gas cost for a successful Ether mint: ",
           ethers.utils.formatUnits(txCost, "ether").toString(),
           "ETH"
         );
-        expect(txCost.toString()).to.equal(
-          ethers.utils.parseEther("0.0129142")
+        // assuming a cost of 100 GWEI
+        if (this.isEngine) {
+          expect(txCost.toString()).to.equal(
+            ethers.utils.parseEther("0.0141277")
+          );
+        } else {
+          expect(txCost.toString()).to.equal(
+            ethers.utils.parseEther("0.0128959")
+          );
+        }
+      });
+    });
+
+    describe("purchaseTo", async function () {
+      it("does not support toggling of `purchaseToDisabled`", async function () {
+        await expectRevert(
+          this.minter1
+            .connect(this.accounts.artist)
+            .togglePurchaseToDisabled(this.projectZero),
+          "Action not supported"
+        );
+        // still allows `purchaseTo`.
+        await this.minter1
+          .connect(this.accounts.user)
+          .purchaseTo(this.accounts.artist.address, this.projectZero, {
+            value: this.pricePerTokenInWei,
+          });
+      });
+
+      it("doesn't support `purchaseTo` toggling", async function () {
+        await expectRevert(
+          this.minter1
+            .connect(this.accounts.artist)
+            .togglePurchaseToDisabled(this.projectZero),
+          "Action not supported"
         );
       });
     });
 
-    describe("purchaseTo", async function () {});
+    describe("isEngine", async function () {
+      it("correctly reports isEngine", async function () {
+        const coreType = await this.genArt721Core.coreType();
+        expect(coreType === "GenArt721CoreV3").to.be.equal(!this.isEngine);
+      });
+    });
   });
 }
+
+// single-iteration tests with mock core contract(s)
+describe(`${TARGET_MINTER_NAME} tests using mock core contract(s)`, async function () {
+  beforeEach(async function () {
+    // standard accounts and constants
+    this.accounts = await getAccounts();
+    await assignDefaultConstants.call(this);
+  });
+
+  describe("constructor", async function () {
+    it("requires correct quantity of return values from `getPrimaryRevenueSplits`", async function () {
+      // deploy and configure core contract that returns incorrect quanty of return values for coreType response
+      const coreContractName = "GenArt721CoreV3_Engine_IncorrectCoreType";
+      const { genArt721Core, minterFilter, randomizer } =
+        await deployCoreWithMinterFilter.call(
+          this,
+          coreContractName,
+          "MinterFilterV1"
+        );
+      console.log(genArt721Core.address);
+      const minterFactory = await ethers.getContractFactory(TARGET_MINTER_NAME);
+      // we should revert during deployment because the core contract returns an incorrect number of return values
+      // for the given coreType response
+      await expectRevert(
+        minterFactory.deploy(genArt721Core.address, minterFilter.address, {
+          gasLimit: 30000000,
+        }),
+        "Unexpected revenue split bytes"
+      );
+    });
+  });
+});

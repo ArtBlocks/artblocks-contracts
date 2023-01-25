@@ -11,7 +11,7 @@ import {
 
 import { MinterSetPriceERC20_Common } from "./MinterSetPriceERC20.common";
 import { MinterSetPriceV1V2V3V4_Common } from "../MinterSetPriceV1V2V3V4.common";
-import { MinterSetPriceV2V3_Common } from "../MinterSetPriceV2V3.common";
+import { MinterSetPriceV4_Common } from "../MinterSetPriceV4.common";
 
 import { BigNumber } from "ethers";
 
@@ -23,14 +23,17 @@ Logger.setLogLevel(Logger.levels.ERROR);
 const coreContractsToTest = [
   "GenArt721CoreV3", // flagship V3 core
   "GenArt721CoreV3_Explorations", // V3 core explorations contract
+  "GenArt721CoreV3_Engine", // V3 core engine contract
 ];
+
+const TARGET_MINTER_NAME = "MinterSetPriceERC20V4";
 
 /**
  * These tests intended to ensure this Filtered Minter integrates properly with
- * V3 core contract.
+ * V3 core contracts, both flagship and engine.
  */
 for (const coreContractName of coreContractsToTest) {
-  describe(`MinterSetPriceERC20V3_${coreContractName}`, async function () {
+  describe(`${TARGET_MINTER_NAME}_${coreContractName}`, async function () {
     beforeEach(async function () {
       // standard accounts and constants
       this.accounts = await getAccounts();
@@ -50,7 +53,7 @@ for (const coreContractName of coreContractsToTest) {
         "MinterFilterV1"
       ));
 
-      this.targetMinterName = "MinterSetPriceERC20V3";
+      this.targetMinterName = TARGET_MINTER_NAME;
       const minterFactory = await ethers.getContractFactory(
         this.targetMinterName
       );
@@ -58,6 +61,7 @@ for (const coreContractName of coreContractsToTest) {
         this.genArt721Core.address,
         this.minterFilter.address
       );
+      this.isEngine = await this.minter.isEngine();
 
       await safeAddProject(
         this.genArt721Core,
@@ -141,8 +145,8 @@ for (const coreContractName of coreContractsToTest) {
       await MinterSetPriceV1V2V3V4_Common();
     });
 
-    describe("common MinterSetPrice V2V3 tests", async function () {
-      await MinterSetPriceV2V3_Common();
+    describe("common MinterSetPrice V4 tests", async function () {
+      await MinterSetPriceV4_Common();
     });
 
     describe("updatePricePerTokenInWei", async function () {
@@ -193,9 +197,15 @@ for (const coreContractName of coreContractsToTest) {
           this.pricePerTokenInWei
         );
         // update platform to zero percent
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .updateArtblocksPrimarySalesPercentage(0);
+        if (this.isEngine) {
+          await this.genArt721Core
+            .connect(this.accounts.deployer)
+            .updateProviderPrimarySalesPercentages(0, 0);
+        } else {
+          await this.genArt721Core
+            .connect(this.accounts.deployer)
+            .updateArtblocksPrimarySalesPercentage(0);
+        }
         // update artist primary split to zero
         const proposedAddressesAndSplits = [
           this.projectZero,
@@ -219,6 +229,202 @@ for (const coreContractName of coreContractsToTest) {
         await this.minter
           .connect(this.accounts.user)
           .purchase(this.projectZero);
+      });
+
+      it("Engine: handles ERC20 splits when every party receives revenues", async function () {
+        if (!this.isEngine) {
+          console.log("skipping Engine-specific test");
+          return;
+        }
+        // artist changes to Mock ERC20 token
+        await this.minter
+          .connect(this.accounts.artist)
+          .updateProjectCurrencyInfo(
+            this.projectZero,
+            "MOCK",
+            this.ERC20Mock.address
+          );
+        // approve contract and able to mint with Mock token
+        await this.ERC20Mock.connect(this.accounts.user).approve(
+          this.minter.address,
+          this.pricePerTokenInWei
+        );
+        // update 10 and 11 percent to render provider and engine platform provider, respectively
+        await this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateProviderPrimarySalesPercentages(10, 11);
+        // update artist primary split to zero
+        const proposedAddressesAndSplits = [
+          this.projectZero,
+          this.accounts.artist.address,
+          this.accounts.additional2.address,
+          // @dev 49% to additional, 51% to artist, to induce payment to all parties
+          49,
+          this.accounts.additional2.address,
+          // @dev split for secondary sales doesn't matter for this test
+          50,
+        ];
+        await this.genArt721Core
+          .connect(this.accounts.artist)
+          .proposeArtistPaymentAddressesAndSplits(
+            ...proposedAddressesAndSplits
+          );
+        await this.genArt721Core
+          .connect(this.accounts.deployer)
+          .adminAcceptArtistAddressesAndSplits(...proposedAddressesAndSplits);
+        const artistOriginalBalance = await this.ERC20Mock.balanceOf(
+          this.accounts.artist.address
+        );
+        const additional2OriginalBalance = await this.ERC20Mock.balanceOf(
+          this.accounts.additional2.address
+        );
+        const deployerOriginalBalance = await this.ERC20Mock.balanceOf(
+          this.accounts.deployer.address
+        );
+        // additional is platform provider on engine tests
+        const additionalOriginalBalance = await this.ERC20Mock.balanceOf(
+          this.accounts.additional.address
+        );
+        // expect successful purchase of token
+        await this.minter
+          .connect(this.accounts.user)
+          .purchase(this.projectZero);
+        // confirm balances
+        const artistNewBalance = await this.ERC20Mock.balanceOf(
+          this.accounts.artist.address
+        );
+        const additional2NewBalance = await this.ERC20Mock.balanceOf(
+          this.accounts.additional2.address
+        );
+        const deployerNewBalance = await this.ERC20Mock.balanceOf(
+          this.accounts.deployer.address
+        );
+        const additionalNewBalance = await this.ERC20Mock.balanceOf(
+          this.accounts.additional.address
+        );
+        // calculate balance changes
+        const artistBalanceChange = artistNewBalance.sub(artistOriginalBalance);
+        const additional2BalanceChange = additional2NewBalance.sub(
+          additional2OriginalBalance
+        );
+        const deployerBalanceChange = deployerNewBalance.sub(
+          deployerOriginalBalance
+        );
+        const additionalBalanceChange = additionalNewBalance.sub(
+          additionalOriginalBalance
+        );
+        // calculate target balance changes
+        const targetRenderProviderRevenue = this.pricePerTokenInWei
+          .mul(10)
+          .div(100);
+        const targetPlatformProviderRevenue = this.pricePerTokenInWei
+          .mul(11)
+          .div(100);
+        const remainingfunds = this.pricePerTokenInWei
+          .sub(targetRenderProviderRevenue)
+          .sub(targetPlatformProviderRevenue);
+        const targetAdditional2Revenue = remainingfunds.mul(49).div(100);
+        const targetArtistRevenue = remainingfunds.sub(
+          targetAdditional2Revenue
+        );
+        // expect balance changes to be as expected
+        expect(artistBalanceChange).to.equal(targetArtistRevenue);
+        expect(additional2BalanceChange).to.equal(targetAdditional2Revenue);
+        expect(deployerBalanceChange).to.equal(targetRenderProviderRevenue);
+        expect(additionalBalanceChange).to.equal(targetPlatformProviderRevenue);
+      });
+
+      it("Flagship: handles ERC20 splits when every party receives revenues", async function () {
+        if (this.isEngine) {
+          console.log("skipping Flagship-specific test");
+          return;
+        }
+        // artist changes to Mock ERC20 token
+        await this.minter
+          .connect(this.accounts.artist)
+          .updateProjectCurrencyInfo(
+            this.projectZero,
+            "MOCK",
+            this.ERC20Mock.address
+          );
+        // approve contract and able to mint with Mock token
+        await this.ERC20Mock.connect(this.accounts.user).approve(
+          this.minter.address,
+          this.pricePerTokenInWei
+        );
+        // update 10 percent to render provider
+        await this.genArt721Core
+          .connect(this.accounts.deployer)
+          .updateArtblocksPrimarySalesPercentage(10);
+        // update artist primary split to zero
+        const proposedAddressesAndSplits = [
+          this.projectZero,
+          this.accounts.artist.address,
+          this.accounts.additional2.address,
+          // @dev 49% to additional, 51% to artist, to induce payment to all parties
+          49,
+          this.accounts.additional2.address,
+          // @dev split for secondary sales doesn't matter for this test
+          50,
+        ];
+        await this.genArt721Core
+          .connect(this.accounts.artist)
+          .proposeArtistPaymentAddressesAndSplits(
+            ...proposedAddressesAndSplits
+          );
+        await this.genArt721Core
+          .connect(this.accounts.deployer)
+          .adminAcceptArtistAddressesAndSplits(...proposedAddressesAndSplits);
+        const artistOriginalBalance = await this.ERC20Mock.balanceOf(
+          this.accounts.artist.address
+        );
+        const additional2OriginalBalance = await this.ERC20Mock.balanceOf(
+          this.accounts.additional2.address
+        );
+        const deployerOriginalBalance = await this.ERC20Mock.balanceOf(
+          this.accounts.deployer.address
+        );
+        // additional is platform provider on engine tests
+        const additionalOriginalBalance = await this.ERC20Mock.balanceOf(
+          this.accounts.additional.address
+        );
+        // expect successful purchase of token
+        await this.minter
+          .connect(this.accounts.user)
+          .purchase(this.projectZero);
+        // confirm balances
+        const artistNewBalance = await this.ERC20Mock.balanceOf(
+          this.accounts.artist.address
+        );
+        const additional2NewBalance = await this.ERC20Mock.balanceOf(
+          this.accounts.additional2.address
+        );
+        const deployerNewBalance = await this.ERC20Mock.balanceOf(
+          this.accounts.deployer.address
+        );
+        // calculate balance changes
+        const artistBalanceChange = artistNewBalance.sub(artistOriginalBalance);
+        const additional2BalanceChange = additional2NewBalance.sub(
+          additional2OriginalBalance
+        );
+        const deployerBalanceChange = deployerNewBalance.sub(
+          deployerOriginalBalance
+        );
+        // calculate target balance changes
+        const targetRenderProviderRevenue = this.pricePerTokenInWei
+          .mul(10)
+          .div(100);
+        const remainingfunds = this.pricePerTokenInWei.sub(
+          targetRenderProviderRevenue
+        );
+        const targetAdditional2Revenue = remainingfunds.mul(49).div(100);
+        const targetArtistRevenue = remainingfunds.sub(
+          targetAdditional2Revenue
+        );
+        // expect balance changes to be as expected
+        expect(artistBalanceChange).to.equal(targetArtistRevenue);
+        expect(additional2BalanceChange).to.equal(targetAdditional2Revenue);
+        expect(deployerBalanceChange).to.equal(targetRenderProviderRevenue);
       });
     });
 
@@ -367,12 +573,58 @@ for (const coreContractName of coreContractsToTest) {
           ethers.utils.formatUnits(txCost, "ether").toString(),
           "ETH"
         );
-        expect(txCost.toString()).to.equal(
-          ethers.utils.parseEther("0.0129142")
-        );
+        // assuming a cost of 100 GWEI
+        if (this.isEngine) {
+          expect(txCost.toString()).to.equal(
+            ethers.utils.parseEther("0.0141492")
+          );
+        } else {
+          expect(txCost.toString()).to.equal(
+            ethers.utils.parseEther("0.0129174")
+          );
+        }
       });
     });
 
     describe("purchaseTo", async function () {});
+
+    describe("isEngine", async function () {
+      it("correctly reports isEngine", async function () {
+        const coreType = await this.genArt721Core.coreType();
+        expect(coreType === "GenArt721CoreV3").to.be.equal(!this.isEngine);
+      });
+    });
   });
 }
+
+// single-iteration tests with mock core contract(s)
+describe(`${TARGET_MINTER_NAME} tests using mock core contract(s)`, async function () {
+  beforeEach(async function () {
+    // standard accounts and constants
+    this.accounts = await getAccounts();
+    await assignDefaultConstants.call(this);
+  });
+
+  describe("constructor", async function () {
+    it("requires correct quantity of return values from `getPrimaryRevenueSplits`", async function () {
+      // deploy and configure core contract that returns incorrect quanty of return values for coreType response
+      const coreContractName = "GenArt721CoreV3_Engine_IncorrectCoreType";
+      const { genArt721Core, minterFilter, randomizer } =
+        await deployCoreWithMinterFilter.call(
+          this,
+          coreContractName,
+          "MinterFilterV1"
+        );
+      console.log(genArt721Core.address);
+      const minterFactory = await ethers.getContractFactory(TARGET_MINTER_NAME);
+      // we should revert during deployment because the core contract returns an incorrect number of return values
+      // for the given coreType response
+      await expectRevert(
+        minterFactory.deploy(genArt721Core.address, minterFilter.address, {
+          gasLimit: 30000000,
+        }),
+        "Unexpected revenue split bytes"
+      );
+    });
+  });
+});

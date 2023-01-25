@@ -934,11 +934,13 @@ export const MinterDAExpSettlement_Common = async () => {
         .withdrawArtistAndAdminRevenues(this.projectZero);
       // artist and admin balances should be updated
       const newBalanceArtist = await this.accounts.artist.getBalance();
-      // artist should have received 90% of the sellout price * two tokens minted
+      // target revenue is 90% of sellout price * two tokens minted, 80% if engine
+      const targetRevenue = this.isEngine
+        ? priceInfo.tokenPriceInWei.mul(2).div(10).mul(8)
+        : priceInfo.tokenPriceInWei.mul(2).div(10).mul(9);
+      // artist should have received target revenue
       expect(newBalanceArtist).to.be.equal(
-        originalBalanceArtist.add(
-          priceInfo.tokenPriceInWei.mul(2).div(10).mul(9)
-        )
+        originalBalanceArtist.add(targetRevenue)
       );
     });
 
@@ -967,6 +969,40 @@ export const MinterDAExpSettlement_Common = async () => {
       );
     });
 
+    it("updates platform provider balances to expected values after sellout", async function () {
+      if (!this.isEngine) {
+        console.log("Skipping platform provider balance test for non-engine");
+        return;
+      }
+      // sellout the project mid-auction
+      await selloutMidAuction.call(this, this.projectZero);
+      // advance to end of auction
+      // @dev 10 half-lives is enough to reach base price
+      await ethers.provider.send("evm_mine", [
+        this.startTime +
+          this.auctionStartTimeOffset +
+          this.defaultHalfLife * 10,
+      ]);
+      // record balances
+      const priceInfo = await this.minter.getPriceInfo(this.projectZero);
+      // note: additional account is used as platform provider
+      const originalBalancePlatformProvider =
+        await this.accounts.additional.getBalance();
+      // expect successful withdrawal by artist (admin doesn't spend gas)
+      await this.minter
+        .connect(this.accounts.artist)
+        .withdrawArtistAndAdminRevenues(this.projectZero);
+      // artist and platform provider balances should be updated
+      const newBalancePlatformProvider =
+        await this.accounts.additional.getBalance();
+      // platform provider should have received 10% of the sellout price * two tokens minted
+      expect(newBalancePlatformProvider).to.be.equal(
+        originalBalancePlatformProvider.add(
+          priceInfo.tokenPriceInWei.mul(2).div(10)
+        )
+      );
+    });
+
     it("updates artist balances to expected values after reaching base price and no sellout", async function () {
       // advance to auction start time
       await ethers.provider.send("evm_mine", [
@@ -986,18 +1022,20 @@ export const MinterDAExpSettlement_Common = async () => {
           this.defaultHalfLife * 10,
       ]);
       // record balances
-      const priceInfo = await this.minter.getPriceInfo(this.projectZero);
       const originalBalanceArtist = await this.accounts.artist.getBalance();
       // expect successful withdrawal by admin (artist doesn't spend gas)
       await this.minter
         .connect(this.accounts.deployer)
         .withdrawArtistAndAdminRevenues(this.projectZero);
+      const priceInfo = await this.minter.getPriceInfo(this.projectZero);
+      expect(priceInfo.tokenPriceInWei).to.be.equal(this.basePrice);
       // artist and admin balances should be updated
       const newBalanceArtist = await this.accounts.artist.getBalance();
-      // artist should have received 90% of the sellout price * one token minted
+      // artist should have received expected portion of the sellout price * one token minted
+      const targetArtistPercentage = this.isEngine ? 80 : 90;
       expect(newBalanceArtist).to.be.equal(
         originalBalanceArtist.add(
-          priceInfo.tokenPriceInWei.mul(1).div(10).mul(9)
+          priceInfo.tokenPriceInWei.mul(1).mul(targetArtistPercentage).div(100)
         )
       );
     });
@@ -2198,18 +2236,23 @@ export const MinterDAExpSettlement_Common = async () => {
       // user balance should reflect proper settlement amount
       const newBalanceArtist = await this.accounts.artist.getBalance();
       const newBalanceUser = await this.accounts.user.getBalance();
-      const totalRevenue = this.basePrice.mul(2); // 2 tokens purchased
-      // artist should have received 90% of total revenue (10% went to Art Blocks)
+      // artist should have received 90% of total revenue (10% went to Art Blocks), or 80% of total revenue if engine
+      const targetArtistPercentage = this.isEngine ? 80 : 90;
+      const targetArtistRevenue = this.basePrice
+        .mul(targetArtistPercentage)
+        .div(100)
+        .mul(2); // 2 tokens purchased
       expect(newBalanceArtist).to.be.equal(
-        originalBalanceArtist.add(totalRevenue.mul(90).div(100))
+        originalBalanceArtist.add(targetArtistRevenue)
       );
+      const totalRevenue = this.basePrice.mul(2); // 2 tokens purchased
       // user should have spent 100% of total revenue (100% came from this user)
       expect(newBalanceUser).to.be.equal(
         originalBalanceUser.sub(this.basePrice.mul(2))
       );
     });
 
-    it("prevents revenue withdrawals until reaching base price if artist reduces max invocations to current invocations on core contract mid-auction", async function () {
+    it("prevents revenue withdrawals until reaching base price if artist reduces max invocations to current invocations on core contract mid-auction2", async function () {
       // models the following situation:
       // - auction is not sold out
       // - auction is reset by admin
@@ -2299,12 +2342,17 @@ export const MinterDAExpSettlement_Common = async () => {
       // user balance should reflect proper settlement amount
       const newBalanceArtist = await this.accounts.artist.getBalance();
       const newBalanceUser = await this.accounts.user.getBalance();
-      const totalRevenue = this.basePrice.mul(2); // 2 tokens purchased
-      // artist should have received 90% of total revenue (10% went to Art Blocks)
+      // artist should have received 90% of total revenue (10% went to Art Blocks), or 80% of total revenue if engine
+      const targetArtistPercentage = this.isEngine ? 80 : 90;
+      const targetArtistRevenue = this.basePrice
+        .mul(targetArtistPercentage)
+        .div(100)
+        .mul(2); // 2 tokens purchased
       expect(newBalanceArtist).to.be.equal(
-        originalBalanceArtist.add(totalRevenue.mul(90).div(100))
+        originalBalanceArtist.add(targetArtistRevenue)
       );
       // user should have spent 100% of total revenue (100% came from this user)
+      const totalRevenue = this.basePrice.mul(2); // 2 tokens purchased
       expect(newBalanceUser).to.be.equal(
         originalBalanceUser.sub(this.basePrice.mul(2))
       );
