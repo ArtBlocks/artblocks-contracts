@@ -353,71 +353,13 @@ contract MinterSetPriceV4 is ReentrancyGuard, IFilteredMinterV3 {
                 (success_, ) = msg.sender.call{value: refund}("");
                 require(success_, "Refund failed");
             }
-            // split remaining funds between foundation, artist, and artist's
-            // additional payee
-            uint256 renderProviderRevenue_;
-            address payable renderProviderAddress_;
-            uint256 artistRevenue_;
-            address payable artistAddress_;
-            uint256 additionalPayeePrimaryRevenue_;
-            address payable additionalPayeePrimaryAddress_;
-            if (!isEngine) {
-                // get flagship splits
-                (
-                    renderProviderRevenue_, // artblocks revenue
-                    renderProviderAddress_, // artblocks address
-                    artistRevenue_,
-                    artistAddress_,
-                    additionalPayeePrimaryRevenue_,
-                    additionalPayeePrimaryAddress_
-                ) = genArtCoreContract.getPrimaryRevenueSplits(
-                    _projectId,
-                    _pricePerTokenInWei
-                );
-            } else {
-                // get engine splits
-                uint256 platformProviderRevenue_;
-                address payable platformProviderAddress_;
-                (
-                    renderProviderRevenue_,
-                    renderProviderAddress_,
-                    platformProviderRevenue_,
-                    platformProviderAddress_,
-                    artistRevenue_,
-                    artistAddress_,
-                    additionalPayeePrimaryRevenue_,
-                    additionalPayeePrimaryAddress_
-                ) = genArtCoreContract_Engine.getPrimaryRevenueSplits(
-                    _projectId,
-                    _pricePerTokenInWei
-                );
-                // Platform Provider payment (only possible if engine)
-                if (platformProviderRevenue_ > 0) {
-                    (success_, ) = platformProviderAddress_.call{
-                        value: platformProviderRevenue_
-                    }("");
-                    require(success_, "Platform Provider payment failed");
-                }
-            }
-            // Render Provider / Art Blocks payment
-            if (renderProviderRevenue_ > 0) {
-                (success_, ) = renderProviderAddress_.call{
-                    value: renderProviderRevenue_
-                }("");
-                require(success_, "Render Provider payment failed");
-            }
-            // artist payment
-            if (artistRevenue_ > 0) {
-                (success_, ) = artistAddress_.call{value: artistRevenue_}("");
-                require(success_, "Artist payment failed");
-            }
-            // additional payee payment
-            if (additionalPayeePrimaryRevenue_ > 0) {
-                (success_, ) = additionalPayeePrimaryAddress_.call{
-                    value: additionalPayeePrimaryRevenue_
-                }("");
-                require(success_, "Additional Payee payment failed");
-            }
+            // split revenues
+            MinterUtils.splitRevenuesETH(
+                _projectId,
+                _pricePerTokenInWei,
+                genArt721CoreAddress,
+                isEngine
+            );
         }
     }
 
