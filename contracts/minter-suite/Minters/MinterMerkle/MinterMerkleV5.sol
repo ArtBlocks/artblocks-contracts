@@ -7,7 +7,7 @@ import "../../../interfaces/0.8.x/IGenArt721CoreContractV3_Engine.sol";
 import "../../../interfaces/0.8.x/IMinterFilterV0.sol";
 import "../../../interfaces/0.8.x/IFilteredMinterMerkleV3.sol";
 import "../../../interfaces/0.8.x/IDelegationRegistry.sol";
-import "../../../libs/0.8.x/MinterUtils_v0_1_0.sol";
+import "../../../libs/0.8.x/MinterUtils_v0_1_1.sol";
 
 import "@openzeppelin-4.7/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin-4.7/contracts/token/ERC20/IERC20.sol";
@@ -150,19 +150,9 @@ contract MinterMerkleV5 is ReentrancyGuard, IFilteredMinterMerkleV3 {
         genArtCoreContract_Engine = IGenArt721CoreContractV3_Engine(
             _genArt721Address
         );
-        // Assume that if the core contract is not flagship, it is engine
-        // @dev intentionally non-gas-optimal for clarity
-        bytes32 hashedCoreType = keccak256(
-            abi.encodePacked(genArtCoreContract_Base.coreType())
-        );
-        bool isEngine_ = (hashedCoreType != keccak256("GenArt721CoreV3"));
+        bool isEngine_ = MinterUtils.getV3CoreIsEngine(genArtCoreContract_Base);
         isEngine = isEngine_;
         emit ConfiguredIsEngine(isEngine_);
-        // validate that the core contract's `getPrimaryRevenueSplits` function
-        MinterUtils.ValidateV3CoreGetPrimaryRevenueSplitsResponse(
-            isEngine_,
-            _genArt721Address
-        );
 
         delegationRegistryAddress = _delegationRegistryAddress;
         emit DelegationRegistryUpdated(_delegationRegistryAddress);
