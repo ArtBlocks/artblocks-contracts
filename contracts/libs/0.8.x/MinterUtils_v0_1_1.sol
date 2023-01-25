@@ -5,6 +5,8 @@ import "../../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
 import "../../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
 import "../../interfaces/0.8.x/IGenArt721CoreContractV3_Engine.sol";
 
+import "@openzeppelin-4.7/contracts/token/ERC20/IERC20.sol";
+
 pragma solidity ^0.8.0;
 
 /**
@@ -133,6 +135,90 @@ library MinterUtils {
                 }("");
                 require(success, "Additional Payee payment failed");
             }
+        }
+    }
+
+    /**
+     * @notice splits ERC-20 funds between providers, artist, and artist's
+     * additional payee, for a token purchased on project `_projectId`.
+     * @dev possible DoS during splits is acknowledged, and mitigated by
+     * business practices, including end-to-end testing on mainnet, and
+     * admin-accepted artist payment addresses.
+     */
+    function splitFundsERC20(
+        uint256 projectId,
+        uint256 pricePerTokenInWei,
+        address currencyAddress,
+        address genArtCoreContract,
+        bool isEngine
+    ) internal {
+        IERC20 _projectCurrency = IERC20(currencyAddress);
+        // split remaining funds between foundation, artist, and artist's
+        // additional payee
+        uint256 renderProviderRevenue_;
+        address payable renderProviderAddress_;
+        uint256 artistRevenue_;
+        address payable artistAddress_;
+        uint256 additionalPayeePrimaryRevenue_;
+        address payable additionalPayeePrimaryAddress_;
+        if (!isEngine) {
+            // get flagship splits
+            (
+                renderProviderRevenue_, // artblocks revenue
+                renderProviderAddress_, // artblocks address
+                artistRevenue_,
+                artistAddress_,
+                additionalPayeePrimaryRevenue_,
+                additionalPayeePrimaryAddress_
+            ) = IGenArt721CoreContractV3(genArtCoreContract)
+                .getPrimaryRevenueSplits(projectId, pricePerTokenInWei);
+        } else {
+            // get engine splits
+            uint256 platformProviderRevenue_;
+            address payable platformProviderAddress_;
+            (
+                renderProviderRevenue_,
+                renderProviderAddress_,
+                platformProviderRevenue_,
+                platformProviderAddress_,
+                artistRevenue_,
+                artistAddress_,
+                additionalPayeePrimaryRevenue_,
+                additionalPayeePrimaryAddress_
+            ) = IGenArt721CoreContractV3_Engine(genArtCoreContract)
+                .getPrimaryRevenueSplits(projectId, pricePerTokenInWei);
+            // Platform Provider payment (only possible if engine)
+            if (platformProviderRevenue_ > 0) {
+                _projectCurrency.transferFrom(
+                    msg.sender,
+                    platformProviderAddress_,
+                    platformProviderRevenue_
+                );
+            }
+        }
+        // Art Blocks payment
+        if (renderProviderRevenue_ > 0) {
+            _projectCurrency.transferFrom(
+                msg.sender,
+                renderProviderAddress_,
+                renderProviderRevenue_
+            );
+        }
+        // artist payment
+        if (artistRevenue_ > 0) {
+            _projectCurrency.transferFrom(
+                msg.sender,
+                artistAddress_,
+                artistRevenue_
+            );
+        }
+        // additional payee payment
+        if (additionalPayeePrimaryRevenue_ > 0) {
+            _projectCurrency.transferFrom(
+                msg.sender,
+                additionalPayeePrimaryAddress_,
+                additionalPayeePrimaryRevenue_
+            );
         }
     }
 

@@ -10,7 +10,6 @@ import "../../../libs/0.8.x/MinterUtils_v0_1_1.sol";
 import "../../../interfaces/0.8.x/IDelegationRegistry.sol";
 
 import "@openzeppelin-4.5/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin-4.5/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin-4.5/contracts/utils/structs/EnumerableSet.sol";
 
