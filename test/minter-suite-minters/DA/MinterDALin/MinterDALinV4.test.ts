@@ -1,6 +1,19 @@
+import {
+  BN,
+  constants,
+  expectEvent,
+  expectRevert,
+  balance,
+  ether,
+} from "@openzeppelin/test-helpers";
 import { expect } from "chai";
+import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
-import { expectRevert } from "@openzeppelin/test-helpers";
+
+import { Logger } from "@ethersproject/logger";
+// hide nuisance logs about event overloading
+Logger.setLogLevel(Logger.levels.ERROR);
+
 import {
   getAccounts,
   assignDefaultConstants,
@@ -8,36 +21,37 @@ import {
   deployCoreWithMinterFilter,
   safeAddProject,
 } from "../../../util/common";
-
-import { MinterSetPriceERC20_Common } from "./MinterSetPriceERC20.common";
-import { MinterSetPriceV1V2V3V4_Common } from "../MinterSetPriceV1V2V3V4.common";
-import { MinterSetPriceV2V3_Common } from "../MinterSetPriceV2V3.common";
-
-import { BigNumber } from "ethers";
-
-import { Logger } from "@ethersproject/logger";
-// hide nuisance logs about event overloading
-Logger.setLogLevel(Logger.levels.ERROR);
+import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../util/constants";
+import { MinterDALin_Common } from "./MinterDALin.common";
+import { MinterDAV1V2V3_Common } from "../MinterDAV1V2V3.common";
+import { MinterDAV4_Common } from "../MinterDAV4.common";
 
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
   "GenArt721CoreV3", // flagship V3 core
   "GenArt721CoreV3_Explorations", // V3 core explorations contract
+  "GenArt721CoreV3_Engine", // V3 core engine contract
 ];
+
+const TARGET_MINTER_NAME = "MinterDALinV4";
 
 /**
  * These tests intended to ensure this Filtered Minter integrates properly with
- * V3 core contract.
+ * V3 core contracts, both flagship and explorations.
  */
 for (const coreContractName of coreContractsToTest) {
-  describe(`MinterSetPriceERC20V3_${coreContractName}`, async function () {
+  describe(`${TARGET_MINTER_NAME}_${coreContractName}`, async function () {
     beforeEach(async function () {
       // standard accounts and constants
       this.accounts = await getAccounts();
       await assignDefaultConstants.call(this);
-      this.higherPricePerTokenInWei = this.pricePerTokenInWei.add(
+      this.startingPrice = ethers.utils.parseEther("10");
+      this.higherPricePerTokenInWei = this.startingPrice.add(
         ethers.utils.parseEther("0.1")
       );
+      this.basePrice = ethers.utils.parseEther("0.05");
+
+      this.auctionStartTimeOffset = ONE_HOUR;
 
       // deploy and configure minter filter and minter
       ({
@@ -50,25 +64,13 @@ for (const coreContractName of coreContractsToTest) {
         "MinterFilterV1"
       ));
 
-      this.targetMinterName = "MinterSetPriceERC20V3";
-      const minterFactory = await ethers.getContractFactory(
-        this.targetMinterName
-      );
-      this.minter = await minterFactory.deploy(
+      this.targetMinterName = TARGET_MINTER_NAME;
+      this.minter = await deployAndGet.call(this, this.targetMinterName, [
         this.genArt721Core.address,
-        this.minterFilter.address
-      );
+        this.minterFilter.address,
+      ]);
+      this.isEngine = await this.minter.isEngine();
 
-      await safeAddProject(
-        this.genArt721Core,
-        this.accounts.deployer,
-        this.accounts.artist.address
-      );
-      await safeAddProject(
-        this.genArt721Core,
-        this.accounts.deployer,
-        this.accounts.artist.address
-      );
       await safeAddProject(
         this.genArt721Core,
         this.accounts.deployer,
@@ -78,32 +80,14 @@ for (const coreContractName of coreContractsToTest) {
       await this.genArt721Core
         .connect(this.accounts.deployer)
         .toggleProjectIsActive(this.projectZero);
-      await this.genArt721Core
-        .connect(this.accounts.deployer)
-        .toggleProjectIsActive(this.projectOne);
-      await this.genArt721Core
-        .connect(this.accounts.deployer)
-        .toggleProjectIsActive(this.projectTwo);
 
       await this.genArt721Core
         .connect(this.accounts.artist)
-        .updateProjectMaxInvocations(this.projectZero, this.maxInvocations);
-      await this.genArt721Core
-        .connect(this.accounts.artist)
-        .updateProjectMaxInvocations(this.projectOne, this.maxInvocations);
-      await this.genArt721Core
-        .connect(this.accounts.artist)
-        .updateProjectMaxInvocations(this.projectTwo, this.maxInvocations);
+        .updateProjectMaxInvocations(this.projectZero, 15);
 
       await this.genArt721Core
         .connect(this.accounts.artist)
         .toggleProjectIsPaused(this.projectZero);
-      await this.genArt721Core
-        .connect(this.accounts.artist)
-        .toggleProjectIsPaused(this.projectOne);
-      await this.genArt721Core
-        .connect(this.accounts.artist)
-        .toggleProjectIsPaused(this.projectTwo);
 
       await this.minterFilter
         .connect(this.accounts.deployer)
@@ -111,114 +95,63 @@ for (const coreContractName of coreContractsToTest) {
       await this.minterFilter
         .connect(this.accounts.deployer)
         .setMinterForProject(this.projectZero, this.minter.address);
-      await this.minterFilter
-        .connect(this.accounts.deployer)
-        .setMinterForProject(this.projectOne, this.minter.address);
-      await this.minterFilter
-        .connect(this.accounts.deployer)
-        .setMinterForProject(this.projectTwo, this.minter.address);
 
-      // set token price for projects zero and one on minter
+      if (!this.startTime) {
+        const blockNumber = await ethers.provider.getBlockNumber();
+        const block = await ethers.provider.getBlock(blockNumber);
+        this.startTime = block.timestamp;
+      }
+      this.startTime = this.startTime + ONE_DAY;
+
+      await ethers.provider.send("evm_mine", [this.startTime - ONE_MINUTE]);
+      await this.minter
+        .connect(this.accounts.deployer)
+        .resetAuctionDetails(this.projectZero);
       await this.minter
         .connect(this.accounts.artist)
-        .updatePricePerTokenInWei(this.projectZero, this.pricePerTokenInWei);
-      await this.minter
-        .connect(this.accounts.artist)
-        .updatePricePerTokenInWei(this.projectOne, this.pricePerTokenInWei);
-
-      // mock ERC20 token
-      const ERC20Factory = await ethers.getContractFactory("ERC20Mock");
-      this.ERC20Mock = await ERC20Factory.connect(this.accounts.user).deploy(
-        ethers.utils.parseEther("100")
-      );
+        .setAuctionDetails(
+          this.projectZero,
+          this.startTime + this.auctionStartTimeOffset,
+          this.startTime + this.auctionStartTimeOffset + ONE_HOUR * 2,
+          this.startingPrice,
+          this.basePrice
+        );
+      await ethers.provider.send("evm_mine", [this.startTime]);
     });
 
-    describe("common MinterSetPrice (ETH) tests", async () => {
-      await MinterSetPriceERC20_Common();
+    describe("common DALin tests", async () => {
+      await MinterDALin_Common();
     });
 
-    describe("common MinterSetPrice V1V2V3 tests", async function () {
-      await MinterSetPriceV1V2V3V4_Common();
+    describe("common DA V1V2V3 tests", async function () {
+      await MinterDAV1V2V3_Common();
     });
 
-    describe("common MinterSetPrice V2V3 tests", async function () {
-      await MinterSetPriceV2V3_Common();
+    describe("common DA V4 tests", async function () {
+      await MinterDAV4_Common();
     });
 
-    describe("updatePricePerTokenInWei", async function () {
-      it("does not allow price update to be zero", async function () {
-        // does allow artist
+    describe("setAuctionDetails", async function () {
+      it("does not unsafely cast auction time start > type(uint64).max", async function () {
+        await this.minter
+          .connect(this.accounts.deployer)
+          .resetAuctionDetails(this.projectZero);
+        const overflowStartTime = ethers.BigNumber.from("2").pow(
+          ethers.BigNumber.from("64")
+        );
+        const overflowEndTime = overflowStartTime.add(ONE_HOUR * 2);
         await expectRevert(
           this.minter
             .connect(this.accounts.artist)
-            .updatePricePerTokenInWei(this.projectZero, 0),
-          "Price may not be 0"
+            .setAuctionDetails(
+              this.projectZero,
+              overflowStartTime,
+              overflowEndTime,
+              this.startingPrice,
+              this.basePrice
+            ),
+          "SafeCast: value doesn't fit in 64 bits"
         );
-      });
-    });
-
-    describe("purchase", async function () {
-      it("requires sufficient ERC20 token approval", async function () {
-        // artist changes to Mock ERC20 token
-        await this.minter
-          .connect(this.accounts.artist)
-          .updateProjectCurrencyInfo(
-            this.projectZero,
-            "MOCK",
-            this.ERC20Mock.address
-          );
-        // approve contract and able to mint with Mock token, but insufficient qty approved
-        await this.ERC20Mock.connect(this.accounts.user).approve(
-          this.minter.address,
-          this.pricePerTokenInWei.sub(1)
-        );
-        await expectRevert(
-          this.minter.connect(this.accounts.user).purchase(this.projectZero),
-          "insufficient funds for intrinsic transaction cost"
-        );
-      });
-
-      it("handles ERC20 splits when platform and artist have zero revenues", async function () {
-        // artist changes to Mock ERC20 token
-        await this.minter
-          .connect(this.accounts.artist)
-          .updateProjectCurrencyInfo(
-            this.projectZero,
-            "MOCK",
-            this.ERC20Mock.address
-          );
-        // approve contract and able to mint with Mock token
-        await this.ERC20Mock.connect(this.accounts.user).approve(
-          this.minter.address,
-          this.pricePerTokenInWei
-        );
-        // update platform to zero percent
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .updateArtblocksPrimarySalesPercentage(0);
-        // update artist primary split to zero
-        const proposedAddressesAndSplits = [
-          this.projectZero,
-          this.accounts.artist.address,
-          this.accounts.additional.address,
-          // @dev 100% to additional, 0% to artist, to induce zero artist payment value
-          100,
-          this.accounts.additional2.address,
-          // @dev split for secondary sales doesn't matter for this test
-          50,
-        ];
-        await this.genArt721Core
-          .connect(this.accounts.artist)
-          .proposeArtistPaymentAddressesAndSplits(
-            ...proposedAddressesAndSplits
-          );
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
-          .adminAcceptArtistAddressesAndSplits(...proposedAddressesAndSplits);
-        // expect successful purchase of token
-        await this.minter
-          .connect(this.accounts.user)
-          .purchase(this.projectZero);
       });
     });
 
@@ -240,10 +173,13 @@ for (const coreContractName of coreContractsToTest) {
         expect(localMaxInvocations.maxInvocations).to.equal(1);
 
         // mint a token
+        await ethers.provider.send("evm_mine", [
+          this.startTime + this.auctionStartTimeOffset,
+        ]);
         await this.minter
           .connect(this.accounts.user)
           .purchase(this.projectZero, {
-            value: this.pricePerTokenInWei,
+            value: this.startingPrice,
           });
 
         // expect projectMaxHasBeenInvoked to be true
@@ -301,10 +237,14 @@ for (const coreContractName of coreContractsToTest) {
           .projectConfig(this.projectZero);
         expect(localMaxInvocations.maxInvocations).to.equal(1);
 
+        // mint a token
+        await ethers.provider.send("evm_mine", [
+          this.startTime + this.auctionStartTimeOffset,
+        ]);
         await this.minter
           .connect(this.accounts.user)
           .purchase(this.projectZero, {
-            value: this.pricePerTokenInWei,
+            value: this.startingPrice,
           });
 
         // expect projectMaxHasBeenInvoked to be true
@@ -349,12 +289,23 @@ for (const coreContractName of coreContractsToTest) {
       });
     });
 
-    describe("calculates gas", async function () {
+    describe("isEngine", async function () {
+      it("correctly reports isEngine", async function () {
+        const coreType = await this.genArt721Core.coreType();
+        expect(coreType === "GenArt721CoreV3").to.be.equal(!this.isEngine);
+      });
+    });
+
+    describe("calculate gas", async function () {
       it("mints and calculates gas values [ @skip-on-coverage ]", async function () {
+        await ethers.provider.send("evm_mine", [
+          this.startTime + this.auctionStartTimeOffset,
+        ]);
+
         const tx = await this.minter
           .connect(this.accounts.user)
-          .purchase(this.projectOne, {
-            value: this.pricePerTokenInWei,
+          .purchase(this.projectZero, {
+            value: this.startingPrice,
           });
 
         const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
@@ -363,16 +314,53 @@ for (const coreContractName of coreContractsToTest) {
           .toString();
 
         console.log(
-          "Gas cost for a successful ERC20 mint: ",
+          "Gas cost for a successful Linear DA mint: ",
           ethers.utils.formatUnits(txCost, "ether").toString(),
           "ETH"
         );
-        expect(txCost.toString()).to.equal(
-          ethers.utils.parseEther("0.0129142")
-        );
+        // assuming a cost of 100 GWEI
+        if (this.isEngine) {
+          expect(txCost.toString()).to.equal(
+            ethers.utils.parseEther("0.015087")
+          );
+        } else {
+          expect(txCost.toString()).to.equal(
+            ethers.utils.parseEther("0.0138552")
+          );
+        }
       });
     });
-
-    describe("purchaseTo", async function () {});
   });
 }
+
+// single-iteration tests with mock core contract(s)
+describe(`${TARGET_MINTER_NAME} tests using mock core contract(s)`, async function () {
+  beforeEach(async function () {
+    // standard accounts and constants
+    this.accounts = await getAccounts();
+    await assignDefaultConstants.call(this);
+  });
+
+  describe("constructor", async function () {
+    it("requires correct quantity of return values from `getPrimaryRevenueSplits`", async function () {
+      // deploy and configure core contract that returns incorrect quanty of return values for coreType response
+      const coreContractName = "GenArt721CoreV3_Engine_IncorrectCoreType";
+      const { genArt721Core, minterFilter, randomizer } =
+        await deployCoreWithMinterFilter.call(
+          this,
+          coreContractName,
+          "MinterFilterV1"
+        );
+      console.log(genArt721Core.address);
+      const minterFactory = await ethers.getContractFactory(TARGET_MINTER_NAME);
+      // we should revert during deployment because the core contract returns an incorrect number of return values
+      // for the given coreType response
+      await expectRevert(
+        minterFactory.deploy(genArt721Core.address, minterFilter.address, {
+          gasLimit: 30000000,
+        }),
+        "Unexpected revenue split bytes"
+      );
+    });
+  });
+});

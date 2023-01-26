@@ -10,12 +10,12 @@ import { getGnosisSafe } from "../../util/GnosisSafeNetwork";
 import { isCoreV3 } from "../../util/common";
 
 /**
- * These tests are intended to check common MinterSetPriceV1 || V2 functionality.
- * The tests are intended to be run on the any MinterSetPriceV1 || V2 contract (not the V0 contracts).
+ * These tests are intended to check common MinterSetPriceV1-V4 functionality.
+ * The tests are intended to be run on the any MinterSetPriceV1-V4 contract (not the V0 contracts).
  * (this includes V1ERC20 contracts)
  * @dev assumes common BeforeEach to populate accounts, constants, and setup
  */
-export const MinterSetPriceV1V2V3_Common = async () => {
+export const MinterSetPriceV1V2V3V4_Common = async () => {
   describe("purchaseTo", async function () {
     it("does not support toggling of `purchaseToDisabled`", async function () {
       await expectRevert(
