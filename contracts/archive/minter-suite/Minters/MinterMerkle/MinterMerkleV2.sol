@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../../../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
-import "../../../interfaces/0.8.x/IMinterFilterV0.sol";
-import "../../../interfaces/0.8.x/IFilteredMinterMerkleV1.sol";
-import "../../../interfaces/0.8.x/IDelegationRegistry.sol";
+import "../../../../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
+import "../../../../interfaces/0.8.x/IMinterFilterV0.sol";
+import "../../../../interfaces/0.8.x/IFilteredMinterMerkleV0.sol";
+import "../../../../interfaces/0.8.x/IDelegationRegistry.sol";
 
 import "@openzeppelin-4.7/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin-4.7/contracts/token/ERC20/IERC20.sol";
@@ -33,25 +33,27 @@ pragma solidity 0.8.17;
  * Additional admin and artist privileged roles may be described on other
  * contracts that this minter integrates with.
  * ----------------------------------------------------------------------------
- * This contract allows vaults to configure token-level or wallet-level
- * delegation of minting privileges. This allows a vault on an allowlist to
- * delegate minting privileges to a wallet that is not on the allowlist,
+ * This contract allows gated minting with support for vaults to delegate minting
+ * privileges via an external delegation registry. This means a vault on an allowlist
+ * can delegate minting privileges to a wallet that is not on the allowlist,
  * enabling the vault to remain air-gapped while still allowing minting. The
  * delegation registry contract is responsible for managing these delegations,
- * and is available at the address returned by the public immutable
- * `delegationRegistryAddress`. At the time of writing, the delegation
+ * and is available at the address returned by the public constant
+ * `DELEGATION_REGISTRY_ADDRESS`. At the time of writing, the delegation
  * registry enables easy delegation configuring at https://delegate.cash/.
  * Art Blocks does not guarentee the security of the delegation registry, and
  * users should take care to ensure that the delegation registry is secure.
- * Token-level delegations are configured by the vault owner, and contract-
+ * Delegations must be configured by the vault owner prior to purchase. Supported
+ * delegation types include contract-level or wallet-level delegation. Contract-
  * level delegations must be configured for the core token contract as returned
  * by the public immutable variable `genArt721CoreAddress`.
  */
-contract MinterMerkleV3 is ReentrancyGuard, IFilteredMinterMerkleV1 {
+contract MinterMerkleV2 is ReentrancyGuard, IFilteredMinterMerkleV0 {
     using MerkleProof for bytes32[];
 
     /// Delegation registry address
-    address public immutable delegationRegistryAddress;
+    address public constant DELEGATION_REGISTRY_ADDRESS =
+        0x00000000000076A84feF008CDAbe6409d2FE638B;
 
     /// Delegation registry address
     IDelegationRegistry private immutable delegationRegistryContract;
@@ -69,7 +71,7 @@ contract MinterMerkleV3 is ReentrancyGuard, IFilteredMinterMerkleV1 {
     IMinterFilterV0 private immutable minterFilter;
 
     /// minterType for this minter
-    string public constant minterType = "MinterMerkleV3";
+    string public constant minterType = "MinterMerkleV2";
 
     /// project minter configuration keys used by this minter
     bytes32 private constant CONFIG_MERKLE_ROOT = "merkleRoot";
@@ -116,25 +118,20 @@ contract MinterMerkleV3 is ReentrancyGuard, IFilteredMinterMerkleV1 {
     /**
      * @notice Initializes contract to be a Filtered Minter for
      * `_minterFilter`, integrated with Art Blocks core contract
-     * at address `_genArt721Address`. Also configures the delegation
-     * registry address to be address `_delegationRegistryAddress`.
+     * at address `_genArt721Address`.
      * @param _genArt721Address Art Blocks core contract address for
      * which this contract will be a minter.
      * @param _minterFilter Minter filter for which this will be a
      * filtered minter.
-     * @param _delegationRegistryAddress Delegation registry contract address.
      */
     constructor(
         address _genArt721Address,
-        address _minterFilter,
-        address _delegationRegistryAddress
+        address _minterFilter
     ) ReentrancyGuard() {
         genArt721CoreAddress = _genArt721Address;
         genArtCoreContract = IGenArt721CoreContractV3(_genArt721Address);
-        delegationRegistryAddress = _delegationRegistryAddress;
-        emit DelegationRegistryUpdated(_delegationRegistryAddress);
         delegationRegistryContract = IDelegationRegistry(
-            _delegationRegistryAddress
+            DELEGATION_REGISTRY_ADDRESS
         );
         minterFilterAddress = _minterFilter;
         minterFilter = IMinterFilterV0(_minterFilter);

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../../../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
-import "../../../interfaces/0.8.x/IMinterFilterV0.sol";
-import "../../../interfaces/0.8.x/IFilteredMinterDAExpV0.sol";
+import "../../../../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
+import "../../../../interfaces/0.8.x/IMinterFilterV0.sol";
+import "../../../../interfaces/0.8.x/IFilteredMinterDALinV0.sol";
 
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin-4.5/contracts/utils/math/SafeCast.sol";
@@ -25,8 +25,8 @@ pragma solidity 0.8.17;
  * ----------------------------------------------------------------------------
  * The following functions are restricted to the core contract's Admin ACL
  * contract:
- * - setAllowablePriceDecayHalfLifeRangeSeconds (note: this range is only
- *   enforced when creating new auctions)
+ * - setMinimumAuctionLengthSeconds (note: this is only enforced when creating
+ *   new auctions)
  * - resetAuctionDetails (note: this will prevent minting until a new auction
  *   is created)
  * ----------------------------------------------------------------------------
@@ -45,13 +45,13 @@ pragma solidity 0.8.17;
  * meaningfully impact price given the minimum allowable price decay rate that
  * this minter intends to support.
  */
-contract MinterDAExpV2 is ReentrancyGuard, IFilteredMinterDAExpV0 {
+contract MinterDALinV2 is ReentrancyGuard, IFilteredMinterDALinV0 {
     using SafeCast for uint256;
 
     /// Core contract address this minter interacts with
     address public immutable genArt721CoreAddress;
 
-    /// This contract handles cores with interface IV3
+    /// This contract handles cores with interface IV
     IGenArt721CoreContractV3 private immutable genArtCoreContract;
 
     /// Minter filter address this minter interacts with
@@ -61,7 +61,7 @@ contract MinterDAExpV2 is ReentrancyGuard, IFilteredMinterDAExpV0 {
     IMinterFilterV0 private immutable minterFilter;
 
     /// minterType for this minter
-    string public constant minterType = "MinterDAExpV2";
+    string public constant minterType = "MinterDALinV2";
 
     uint256 constant ONE_MILLION = 1_000_000;
 
@@ -70,19 +70,15 @@ contract MinterDAExpV2 is ReentrancyGuard, IFilteredMinterDAExpV0 {
         uint24 maxInvocations;
         // max uint64 ~= 1.8e19 sec ~= 570 billion years
         uint64 timestampStart;
-        uint64 priceDecayHalfLifeSeconds;
+        uint64 timestampEnd;
         uint256 startPrice;
         uint256 basePrice;
     }
 
     mapping(uint256 => ProjectConfig) public projectConfig;
 
-    /// Minimum price decay half life: price must decay with a half life of at
-    /// least this amount (must cut in half at least every N seconds).
-    uint256 public minimumPriceDecayHalfLifeSeconds = 300; // 5 minutes
-    /// Maximum price decay half life: price may decay with a half life of no
-    /// more than this amount (may cut in half at no more than every N seconds).
-    uint256 public maximumPriceDecayHalfLifeSeconds = 3600; // 60 minutes
+    /// Minimum auction length in seconds
+    uint256 public minimumAuctionLengthSeconds = 3600;
 
     // modifier to restrict access to only AdminACL allowed calls
     // @dev defers which ACL contract is used to the core contract
@@ -171,7 +167,6 @@ contract MinterDAExpV2 is ReentrancyGuard, IFilteredMinterDAExpV0 {
      * to be reduced, not increased. Based on this rationale, we intentionally
      * do not do input validation in this method as to whether or not the input
      * `_projectId` is an existing project ID.
-     *
      */
     function projectMaxHasBeenInvoked(
         uint256 _projectId
@@ -213,7 +208,7 @@ contract MinterDAExpV2 is ReentrancyGuard, IFilteredMinterDAExpV0 {
         view
         returns (
             uint256 timestampStart,
-            uint256 priceDecayHalfLifeSeconds,
+            uint256 timestampEnd,
             uint256 startPrice,
             uint256 basePrice
         )
@@ -221,44 +216,22 @@ contract MinterDAExpV2 is ReentrancyGuard, IFilteredMinterDAExpV0 {
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         return (
             _projectConfig.timestampStart,
-            _projectConfig.priceDecayHalfLifeSeconds,
+            _projectConfig.timestampEnd,
             _projectConfig.startPrice,
             _projectConfig.basePrice
         );
     }
 
     /**
-     * @notice Sets the minimum and maximum values that are settable for
-     * `_priceDecayHalfLifeSeconds` across all projects.
-     * @param _minimumPriceDecayHalfLifeSeconds Minimum price decay half life
-     * (in seconds).
-     * @param _maximumPriceDecayHalfLifeSeconds Maximum price decay half life
-     * (in seconds).
+     * @notice Sets minimum auction length to `_minimumAuctionLengthSeconds`
+     * for all projects.
+     * @param _minimumAuctionLengthSeconds Minimum auction length in seconds.
      */
-    function setAllowablePriceDecayHalfLifeRangeSeconds(
-        uint256 _minimumPriceDecayHalfLifeSeconds,
-        uint256 _maximumPriceDecayHalfLifeSeconds
-    )
-        external
-        onlyCoreAdminACL(
-            this.setAllowablePriceDecayHalfLifeRangeSeconds.selector
-        )
-    {
-        require(
-            _maximumPriceDecayHalfLifeSeconds >
-                _minimumPriceDecayHalfLifeSeconds,
-            "Maximum half life must be greater than minimum"
-        );
-        require(
-            _minimumPriceDecayHalfLifeSeconds > 0,
-            "Half life of zero not allowed"
-        );
-        minimumPriceDecayHalfLifeSeconds = _minimumPriceDecayHalfLifeSeconds;
-        maximumPriceDecayHalfLifeSeconds = _maximumPriceDecayHalfLifeSeconds;
-        emit AuctionHalfLifeRangeSecondsUpdated(
-            _minimumPriceDecayHalfLifeSeconds,
-            _maximumPriceDecayHalfLifeSeconds
-        );
+    function setMinimumAuctionLengthSeconds(
+        uint256 _minimumAuctionLengthSeconds
+    ) external onlyCoreAdminACL(this.setMinimumAuctionLengthSeconds.selector) {
+        minimumAuctionLengthSeconds = _minimumAuctionLengthSeconds;
+        emit MinimumAuctionLengthSecondsUpdated(_minimumAuctionLengthSeconds);
     }
 
     ////// Auction Functions
@@ -266,8 +239,7 @@ contract MinterDAExpV2 is ReentrancyGuard, IFilteredMinterDAExpV0 {
      * @notice Sets auction details for project `_projectId`.
      * @param _projectId Project ID to set auction details for.
      * @param _auctionTimestampStart Timestamp at which to start the auction.
-     * @param _priceDecayHalfLifeSeconds The half life with which to decay the
-     *  price (in seconds).
+     * @param _auctionTimestampEnd Timestamp at which to end the auction.
      * @param _startPrice Price at which to start the auction, in Wei.
      * @param _basePrice Resting price of the auction, in Wei.
      * @dev Note that it is intentionally supported here that the configured
@@ -276,7 +248,7 @@ contract MinterDAExpV2 is ReentrancyGuard, IFilteredMinterDAExpV0 {
     function setAuctionDetails(
         uint256 _projectId,
         uint256 _auctionTimestampStart,
-        uint256 _priceDecayHalfLifeSeconds,
+        uint256 _auctionTimestampEnd,
         uint256 _startPrice,
         uint256 _basePrice
     ) external onlyArtist(_projectId) {
@@ -292,26 +264,27 @@ contract MinterDAExpV2 is ReentrancyGuard, IFilteredMinterDAExpV0 {
             "Only future auctions"
         );
         require(
+            _auctionTimestampEnd > _auctionTimestampStart,
+            "Auction end must be greater than auction start"
+        );
+        require(
+            _auctionTimestampEnd >=
+                _auctionTimestampStart + minimumAuctionLengthSeconds,
+            "Auction length must be at least minimumAuctionLengthSeconds"
+        );
+        require(
             _startPrice > _basePrice,
             "Auction start price must be greater than auction end price"
         );
-        require(
-            (_priceDecayHalfLifeSeconds >= minimumPriceDecayHalfLifeSeconds) &&
-                (_priceDecayHalfLifeSeconds <=
-                    maximumPriceDecayHalfLifeSeconds),
-            "Price decay half life must fall between min and max allowable values"
-        );
         // EFFECTS
         _projectConfig.timestampStart = _auctionTimestampStart.toUint64();
-        _projectConfig.priceDecayHalfLifeSeconds = _priceDecayHalfLifeSeconds
-            .toUint64();
+        _projectConfig.timestampEnd = _auctionTimestampEnd.toUint64();
         _projectConfig.startPrice = _startPrice;
         _projectConfig.basePrice = _basePrice;
-
         emit SetAuctionDetails(
             _projectId,
             _auctionTimestampStart,
-            _priceDecayHalfLifeSeconds,
+            _auctionTimestampEnd,
             _startPrice,
             _basePrice
         );
@@ -329,7 +302,7 @@ contract MinterDAExpV2 is ReentrancyGuard, IFilteredMinterDAExpV0 {
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         // reset to initial values
         _projectConfig.timestampStart = 0;
-        _projectConfig.priceDecayHalfLifeSeconds = 0;
+        _projectConfig.timestampEnd = 0;
         _projectConfig.startPrice = 0;
         _projectConfig.basePrice = 0;
 
@@ -413,6 +386,7 @@ contract MinterDAExpV2 is ReentrancyGuard, IFilteredMinterDAExpV0 {
 
         // INTERACTIONS
         _splitFundsETHAuction(_projectId, currentPriceInWei);
+
         return tokenId;
     }
 
@@ -479,50 +453,32 @@ contract MinterDAExpV2 is ReentrancyGuard, IFilteredMinterDAExpV0 {
      * Reverts if auction has not yet started or auction is unconfigured.
      * @param _projectId Project ID to get price of token for.
      * @return current price of token in Wei
-     * @dev This method calculates price decay using a linear interpolation
-     * of exponential decay based on the artist-provided half-life for price
-     * decay, `_priceDecayHalfLifeSeconds`.
      */
     function _getPrice(uint256 _projectId) private view returns (uint256) {
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         // move parameters to memory if used more than once
         uint256 _timestampStart = uint256(_projectConfig.timestampStart);
-        uint256 _priceDecayHalfLifeSeconds = uint256(
-            _projectConfig.priceDecayHalfLifeSeconds
-        );
+        uint256 _timestampEnd = uint256(_projectConfig.timestampEnd);
+        uint256 _startPrice = _projectConfig.startPrice;
         uint256 _basePrice = _projectConfig.basePrice;
 
         require(block.timestamp > _timestampStart, "Auction not yet started");
-        require(_priceDecayHalfLifeSeconds > 0, "Only configured auctions");
-        uint256 decayedPrice = _projectConfig.startPrice;
-        uint256 elapsedTimeSeconds;
-        unchecked {
-            // already checked that block.timestamp > _timestampStart above
-            elapsedTimeSeconds = block.timestamp - _timestampStart;
-        }
-        // Divide by two (via bit-shifting) for the number of entirely completed
-        // half-lives that have elapsed since auction start time.
-        unchecked {
-            // already required _priceDecayHalfLifeSeconds > 0
-            decayedPrice >>= elapsedTimeSeconds / _priceDecayHalfLifeSeconds;
-        }
-        // Perform a linear interpolation between partial half-life points, to
-        // approximate the current place on a perfect exponential decay curve.
-        unchecked {
-            // value of expression is provably always less than decayedPrice,
-            // so no underflow is possible when the subtraction assignment
-            // operator is used on decayedPrice.
-            decayedPrice -=
-                (decayedPrice *
-                    (elapsedTimeSeconds % _priceDecayHalfLifeSeconds)) /
-                _priceDecayHalfLifeSeconds /
-                2;
-        }
-        if (decayedPrice < _basePrice) {
-            // Price may not decay below stay `basePrice`.
+        if (block.timestamp >= _timestampEnd) {
+            require(_timestampEnd > 0, "Only configured auctions");
             return _basePrice;
         }
-        return decayedPrice;
+        uint256 elapsedTime;
+        uint256 duration;
+        uint256 startToEndDiff;
+        unchecked {
+            // already checked that block.timestamp > _timestampStart
+            elapsedTime = block.timestamp - _timestampStart;
+            // _timestampEnd > _timestampStart enforced during assignment
+            duration = _timestampEnd - _timestampStart;
+            // _startPrice > _basePrice enforced during assignment
+            startToEndDiff = _startPrice - _basePrice;
+        }
+        return _startPrice - ((elapsedTime * startToEndDiff) / duration);
     }
 
     /**
@@ -558,7 +514,7 @@ contract MinterDAExpV2 is ReentrancyGuard, IFilteredMinterDAExpV0 {
             // Provide a reasonable value for `tokenPriceInWei` when it would
             // otherwise revert, using the starting price before auction starts.
             tokenPriceInWei = _projectConfig.startPrice;
-        } else if (_projectConfig.startPrice == 0) {
+        } else if (_projectConfig.timestampEnd == 0) {
             // In the case of unconfigured auction, return price of zero when
             // it would otherwise revert
             tokenPriceInWei = 0;

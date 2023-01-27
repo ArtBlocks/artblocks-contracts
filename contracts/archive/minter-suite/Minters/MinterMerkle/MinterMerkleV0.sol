@@ -1,68 +1,29 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../../../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
-import "../../../interfaces/0.8.x/IMinterFilterV0.sol";
-import "../../../interfaces/0.8.x/IFilteredMinterMerkleV0.sol";
-import "../../../interfaces/0.8.x/IDelegationRegistry.sol";
+import "../../../../interfaces/0.8.x/IGenArt721CoreContractV1.sol";
+import "../../../../interfaces/0.8.x/IMinterFilterV0.sol";
+import "../../../../interfaces/0.8.x/IFilteredMinterMerkleV0.sol";
 
 import "@openzeppelin-4.7/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin-4.7/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin-4.7/contracts/security/ReentrancyGuard.sol";
 
-pragma solidity 0.8.17;
+pragma solidity 0.8.9;
 
 /**
  * @title Filtered Minter contract that allows tokens to be minted with ETH
  * for addresses in a Merkle allowlist.
- * This is designed to be used with IGenArt721CoreContractV3 contracts.
  * @author Art Blocks Inc.
- * @notice Privileged Roles and Ownership:
- * This contract is designed to be managed, with limited powers.
- * Privileged roles and abilities are controlled by the project's artist, which
- * can be modified by the core contract's Admin ACL contract. Both of these
- * roles hold extensive power and can modify minter details.
- * Care must be taken to ensure that the admin ACL contract and artist
- * addresses are secure behind a multi-sig or other access control mechanism.
- * ----------------------------------------------------------------------------
- * The following functions are restricted to a project's artist:
- * - updateMerkleRoot
- * - updatePricePerTokenInWei
- * - setProjectInvocationsPerAddress
- * ----------------------------------------------------------------------------
- * Additional admin and artist privileged roles may be described on other
- * contracts that this minter integrates with.
- * ----------------------------------------------------------------------------
- * This contract allows gated minting with support for vaults to delegate minting
- * privileges via an external delegation registry. This means a vault on an allowlist
- * can delegate minting privileges to a wallet that is not on the allowlist,
- * enabling the vault to remain air-gapped while still allowing minting. The
- * delegation registry contract is responsible for managing these delegations,
- * and is available at the address returned by the public constant
- * `DELEGATION_REGISTRY_ADDRESS`. At the time of writing, the delegation
- * registry enables easy delegation configuring at https://delegate.cash/.
- * Art Blocks does not guarentee the security of the delegation registry, and
- * users should take care to ensure that the delegation registry is secure.
- * Delegations must be configured by the vault owner prior to purchase. Supported
- * delegation types include contract-level or wallet-level delegation. Contract-
- * level delegations must be configured for the core token contract as returned
- * by the public immutable variable `genArt721CoreAddress`.
  */
-contract MinterMerkleV2 is ReentrancyGuard, IFilteredMinterMerkleV0 {
+contract MinterMerkleV0 is ReentrancyGuard, IFilteredMinterMerkleV0 {
     using MerkleProof for bytes32[];
-
-    /// Delegation registry address
-    address public constant DELEGATION_REGISTRY_ADDRESS =
-        0x00000000000076A84feF008CDAbe6409d2FE638B;
-
-    /// Delegation registry address
-    IDelegationRegistry private immutable delegationRegistryContract;
 
     /// Core contract address this minter interacts with
     address public immutable genArt721CoreAddress;
 
-    /// This contract handles cores with interface IV3
-    IGenArt721CoreContractV3 private immutable genArtCoreContract;
+    /// This contract handles cores with interface IV1
+    IGenArt721CoreContractV1 private immutable genArtCoreContract;
 
     /// Minter filter address this minter interacts with
     address public immutable minterFilterAddress;
@@ -71,7 +32,7 @@ contract MinterMerkleV2 is ReentrancyGuard, IFilteredMinterMerkleV0 {
     IMinterFilterV0 private immutable minterFilter;
 
     /// minterType for this minter
-    string public constant minterType = "MinterMerkleV2";
+    string public constant minterType = "MinterMerkleV0";
 
     /// project minter configuration keys used by this minter
     bytes32 private constant CONFIG_MERKLE_ROOT = "merkleRoot";
@@ -84,27 +45,33 @@ contract MinterMerkleV2 is ReentrancyGuard, IFilteredMinterMerkleV0 {
 
     uint256 public constant DEFAULT_MAX_INVOCATIONS_PER_ADDRESS = 1;
 
-    struct ProjectConfig {
-        bool maxHasBeenInvoked;
-        bool priceIsConfigured;
-        // initial value is false, so by default, projects limit allowlisted
-        // addresses to a mint qty of `DEFAULT_MAX_INVOCATIONS_PER_ADDRESS`
-        bool useMaxInvocationsPerAddressOverride;
-        // a value of 0 means no limit
-        // (only used if `useMaxInvocationsPerAddressOverride` is true)
-        uint24 maxInvocationsPerAddressOverride;
-        uint24 maxInvocations;
-        uint256 pricePerTokenInWei;
-    }
-
-    mapping(uint256 => ProjectConfig) public projectConfig;
-
     /// projectId => merkle root
     mapping(uint256 => bytes32) public projectMerkleRoot;
+    /// projectId => are max invocations per address overrides enabled
+    /// (default is false, so DEFAULT_MAX_INVOCATIONS_PER_ADDRESS per address)
+    mapping(uint256 => bool) public projectUseMaxInvocationsPerAddressOverride;
+    /// projectId => max invocations per address override
+    mapping(uint256 => uint256) public projectMaxInvocationsPerAddressOverride;
+    /// projectId => has project reached its maximum number of invocations?
+    mapping(uint256 => bool) public projectMaxHasBeenInvoked;
+    /// projectId => project's maximum number of invocations
+    mapping(uint256 => uint256) public projectMaxInvocations;
+    /// projectId => price per token in wei - supersedes any defined core price
+    mapping(uint256 => uint256) private projectIdToPricePerTokenInWei;
+    /// projectId => price per token has been configured on this minter
+    mapping(uint256 => bool) private projectIdToPriceIsConfigured;
 
     /// projectId => purchaser address => qty of mints purchased for project
     mapping(uint256 => mapping(address => uint256))
         public projectUserMintInvocations;
+
+    modifier onlyCoreWhitelisted() {
+        require(
+            genArtCoreContract.isWhitelisted(msg.sender),
+            "Only Core whitelisted"
+        );
+        _;
+    }
 
     modifier onlyArtist(uint256 _projectId) {
         require(
@@ -129,10 +96,7 @@ contract MinterMerkleV2 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         address _minterFilter
     ) ReentrancyGuard() {
         genArt721CoreAddress = _genArt721Address;
-        genArtCoreContract = IGenArt721CoreContractV3(_genArt721Address);
-        delegationRegistryContract = IDelegationRegistry(
-            DELEGATION_REGISTRY_ADDRESS
-        );
+        genArtCoreContract = IGenArt721CoreContractV1(_genArt721Address);
         minterFilterAddress = _minterFilter;
         minterFilter = IMinterFilterV0(_minterFilter);
         require(
@@ -207,14 +171,14 @@ contract MinterMerkleV2 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         uint256 _projectId,
         uint24 _maxInvocationsPerAddress
     ) external onlyArtist(_projectId) {
-        ProjectConfig storage _projectConfig = projectConfig[_projectId];
         // use override value instead of the contract's default
         // @dev this never changes from true to false; default value is only
         // used if artist has never configured project invocations per address
-        _projectConfig.useMaxInvocationsPerAddressOverride = true;
+        projectUseMaxInvocationsPerAddressOverride[_projectId] = true;
         // update the override value
-        _projectConfig
-            .maxInvocationsPerAddressOverride = _maxInvocationsPerAddress;
+        projectMaxInvocationsPerAddressOverride[
+            _projectId
+        ] = _maxInvocationsPerAddress;
         // generic events
         emit ConfigValueSet(
             _projectId,
@@ -229,22 +193,25 @@ contract MinterMerkleV2 is ReentrancyGuard, IFilteredMinterMerkleV0 {
     }
 
     /**
-     * @notice Syncs local maximum invocations of project `_projectId` based on
-     * the value currently defined in the core contract. Only used for gas
-     * optimization of mints after maxInvocations has been reached.
+     * @notice Sets the maximum invocations of project `_projectId` based
+     * on the value currently defined in the core contract.
      * @param _projectId Project ID to set the maximum invocations for.
+     * @dev also checks and may refresh projectMaxHasBeenInvoked for project
      * @dev this enables gas reduction after maxInvocations have been reached -
      * core contracts shall still enforce a maxInvocation check during mint.
-     * @dev function is intentionally not gated to any specific access control;
-     * it only syncs a local state variable to the core contract's state.
      */
-    function setProjectMaxInvocations(uint256 _projectId) external {
+    function setProjectMaxInvocations(
+        uint256 _projectId
+    ) external onlyCoreWhitelisted {
+        uint256 invocations;
         uint256 maxInvocations;
-        (, maxInvocations, , , , ) = genArtCoreContract.projectStateData(
-            _projectId
-        );
+        (, , invocations, maxInvocations, , , , , ) = genArtCoreContract
+            .projectTokenInfo(_projectId);
         // update storage with results
-        projectConfig[_projectId].maxInvocations = uint24(maxInvocations);
+        projectMaxInvocations[_projectId] = maxInvocations;
+        if (invocations < maxInvocations) {
+            projectMaxHasBeenInvoked[_projectId] = false;
+        }
     }
 
     /**
@@ -258,61 +225,16 @@ contract MinterMerkleV2 is ReentrancyGuard, IFilteredMinterMerkleV0 {
     }
 
     /**
-     * @notice projectId => has project reached its maximum number of
-     * invocations? Note that this returns a local cache of the core contract's
-     * state, and may be out of sync with the core contract. This is
-     * intentional, as it only enables gas optimization of mints after a
-     * project's maximum invocations has been reached. A false negative will
-     * only result in a gas cost increase, since the core contract will still
-     * enforce a maxInvocation check during minting. A false positive is not
-     * possible because the V3 core contract only allows maximum invocations
-     * to be reduced, not increased. Based on this rationale, we intentionally
-     * do not do input validation in this method as to whether or not the input
-     * `_projectId` is an existing project ID.
-     */
-    function projectMaxHasBeenInvoked(
-        uint256 _projectId
-    ) external view returns (bool) {
-        return projectConfig[_projectId].maxHasBeenInvoked;
-    }
-
-    /**
-     * @notice projectId => project's maximum number of invocations.
-     * Optionally synced with core contract value, for gas optimization.
-     * Note that this returns a local cache of the core contract's
-     * state, and may be out of sync with the core contract. This is
-     * intentional, as it only enables gas optimization of mints after a
-     * project's maximum invocations has been reached.
-     * @dev A number greater than the core contract's project max invocations
-     * will only result in a gas cost increase, since the core contract will
-     * still enforce a maxInvocation check during minting. A number less than
-     * the core contract's project max invocations is only possible when the
-     * project's max invocations have not been synced on this minter, since the
-     * V3 core contract only allows maximum invocations to be reduced, not
-     * increased. When this happens, the minter will enable minting, allowing
-     * the core contract to enforce the max invocations check. Based on this
-     * rationale, we intentionally do not do input validation in this method as
-     * to whether or not the input `_projectId` is an existing project ID.
-     */
-    function projectMaxInvocations(
-        uint256 _projectId
-    ) external view returns (uint256) {
-        return uint256(projectConfig[_projectId].maxInvocations);
-    }
-
-    /**
      * @notice Updates this minter's price per token of project `_projectId`
      * to be '_pricePerTokenInWei`, in Wei.
      * This price supersedes any legacy core contract price per token value.
-     * @dev Note that it is intentionally supported here that the configured
-     * price may be explicitly set to `0`.
      */
     function updatePricePerTokenInWei(
         uint256 _projectId,
         uint256 _pricePerTokenInWei
     ) external onlyArtist(_projectId) {
-        projectConfig[_projectId].pricePerTokenInWei = _pricePerTokenInWei;
-        projectConfig[_projectId].priceIsConfigured = true;
+        projectIdToPricePerTokenInWei[_projectId] = _pricePerTokenInWei;
+        projectIdToPriceIsConfigured[_projectId] = true;
         emit PricePerTokenInWeiUpdated(_projectId, _pricePerTokenInWei);
     }
 
@@ -340,18 +262,7 @@ contract MinterMerkleV2 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         uint256 _projectId,
         bytes32[] calldata _proof
     ) external payable returns (uint256 tokenId) {
-        tokenId = purchaseTo_kem(msg.sender, _projectId, _proof, address(0));
-        return tokenId;
-    }
-
-    /**
-     * @notice gas-optimized version of purchase(uint256,bytes32[]).
-     */
-    function purchase_gD5(
-        uint256 _projectId,
-        bytes32[] calldata _proof
-    ) external payable returns (uint256 tokenId) {
-        tokenId = purchaseTo_kem(msg.sender, _projectId, _proof, address(0));
+        tokenId = purchaseTo(msg.sender, _projectId, _proof);
         return tokenId;
     }
 
@@ -367,108 +278,42 @@ contract MinterMerkleV2 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         address _to,
         uint256 _projectId,
         bytes32[] calldata _proof
-    ) external payable returns (uint256 tokenId) {
-        return purchaseTo_kem(_to, _projectId, _proof, address(0));
-    }
-
-    /**
-     * @notice Purchases a token from project `_projectId` and sets
-     *         the token's owner to `_to`, as a delegate, (the `msg.sender`)
-     *         on behalf of an explicitly defined vault.
-     * @param _to Address to be the new token's owner.
-     * @param _projectId Project ID to mint a token on.
-     * @param _proof Merkle proof.
-     * @param _vault Vault being purchased on behalf of.
-     * @return tokenId Token ID of minted token
-     */
-    function purchaseTo(
-        address _to,
-        uint256 _projectId,
-        bytes32[] calldata _proof,
-        address _vault
-    ) external payable returns (uint256 tokenId) {
-        return purchaseTo_kem(_to, _projectId, _proof, _vault);
-    }
-
-    /**
-     * @notice gas-optimized version of
-     * purchaseTo(address,uint256,bytes32[],address).
-     * @param _to Address to be the new token's owner.
-     * @param _projectId Project ID to mint a token on.
-     * @param _proof Merkle proof. Must be a valid proof of either `msg.sender`
-     * if `_vault` is `address(0)`, or `_vault` if `_vault` is not `address(0)`.
-     * @param _vault Vault being purchased on behalf of. Acceptable to be
-     * address(0) if no vault.
-     */
-    function purchaseTo_kem(
-        address _to,
-        uint256 _projectId,
-        bytes32[] calldata _proof,
-        address _vault // acceptable to be `address(0)` if no vault
     ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
-        ProjectConfig storage _projectConfig = projectConfig[_projectId];
-
-        // Note that `maxHasBeenInvoked` is only checked here to reduce gas
-        // consumption after a project has been fully minted.
-        // `_projectConfig.maxHasBeenInvoked` is locally cached to reduce
-        // gas consumption, but if not in sync with the core contract's value,
-        // the core contract also enforces its own max invocation check during
-        // minting.
         require(
-            !_projectConfig.maxHasBeenInvoked,
+            !projectMaxHasBeenInvoked[_projectId],
             "Maximum number of invocations reached"
         );
 
-        // load price of token into memory
-        uint256 _pricePerTokenInWei = _projectConfig.pricePerTokenInWei;
-
         require(
-            msg.value >= _pricePerTokenInWei,
+            msg.value >= projectIdToPricePerTokenInWei[_projectId],
             "Must send minimum value to mint!"
         );
 
         // require artist to have configured price of token on this minter
-        require(_projectConfig.priceIsConfigured, "Price not configured");
+        require(
+            projectIdToPriceIsConfigured[_projectId],
+            "Price not configured"
+        );
 
         // no contract filter since Merkle tree controls allowed addresses
 
-        // NOTE: delegate-vault handling **begins here**.
-
-        // handle that the vault may be either the `msg.sender` in the case
-        // that there is not a true vault, or may be `_vault` if one is
-        // provided explicitly (and it is valid).
-        address vault = msg.sender;
-        if (_vault != address(0)) {
-            // If a vault is provided, it must be valid, otherwise throw rather
-            // than optimistically-minting with original `msg.sender`.
-            // Note, we do not check `checkDelegateForAll` as well, as it is known
-            // to be implicitly checked by calling `checkDelegateForContract`.
-            bool isValidDelegee = delegationRegistryContract
-                .checkDelegateForContract(
-                    msg.sender, // delegate
-                    _vault, // vault
-                    genArt721CoreAddress // contract
-                );
-            require(isValidDelegee, "Invalid delegate-vault pairing");
-            vault = _vault;
-        }
-
         // require valid Merkle proof
         require(
-            verifyAddress(_projectId, _proof, vault),
+            verifyAddress(_projectId, _proof, msg.sender),
             "Invalid Merkle proof"
         );
 
         // limit mints per address by project
-        uint256 _maxProjectInvocationsPerAddress = _projectConfig
-            .useMaxInvocationsPerAddressOverride
-            ? _projectConfig.maxInvocationsPerAddressOverride
-            : DEFAULT_MAX_INVOCATIONS_PER_ADDRESS;
+        uint256 _maxProjectInvocationsPerAddress = projectUseMaxInvocationsPerAddressOverride[
+                _projectId
+            ]
+                ? projectMaxInvocationsPerAddressOverride[_projectId]
+                : DEFAULT_MAX_INVOCATIONS_PER_ADDRESS;
 
-        // note that mint limits index off of the `vault` (when applicable)
+        // FINAL CHECK, WITH FOLLOW-ON EFFECTS
         require(
-            projectUserMintInvocations[_projectId][vault] <
+            projectUserMintInvocations[_projectId][msg.sender] <
                 _maxProjectInvocationsPerAddress ||
                 _maxProjectInvocationsPerAddress == 0,
             "Maximum number of invocations per address reached"
@@ -479,24 +324,25 @@ contract MinterMerkleV2 is ReentrancyGuard, IFilteredMinterMerkleV0 {
         unchecked {
             // this will never overflow since user's invocations on a project
             // are limited by the project's max invocations
-            projectUserMintInvocations[_projectId][vault]++;
+            projectUserMintInvocations[_projectId][msg.sender]++;
         }
 
         // mint token
-        tokenId = minterFilter.mint(_to, _projectId, vault);
+        tokenId = minterFilter.mint(_to, _projectId, msg.sender);
 
-        // NOTE: delegate-vault handling **ends here**.
-
-        // okay if this underflows because if statement will always eval false.
-        // this is only for gas optimization (core enforces maxInvocations).
-        unchecked {
-            if (tokenId % ONE_MILLION == _projectConfig.maxInvocations - 1) {
-                _projectConfig.maxHasBeenInvoked = true;
-            }
+        // what if projectMaxInvocations[_projectId] is 0 (default value)?
+        // that is intended, so that by default the minter allows infinite transactions,
+        // allowing the artblocks contract to stop minting
+        // uint256 tokenInvocation = tokenId % ONE_MILLION;
+        if (
+            projectMaxInvocations[_projectId] > 0 &&
+            tokenId % ONE_MILLION == projectMaxInvocations[_projectId] - 1
+        ) {
+            projectMaxHasBeenInvoked[_projectId] = true;
         }
 
         // INTERACTIONS
-        _splitFundsETH(_projectId, _pricePerTokenInWei);
+        _splitFundsETH(_projectId);
 
         return tokenId;
     }
@@ -505,53 +351,53 @@ contract MinterMerkleV2 is ReentrancyGuard, IFilteredMinterMerkleV0 {
      * @dev splits ETH funds between sender (if refund), foundation,
      * artist, and artist's additional payee for a token purchased on
      * project `_projectId`.
-     * @dev possible DoS during splits is acknowledged, and mitigated by
-     * business practices, including end-to-end testing on mainnet, and
-     * admin-accepted artist payment addresses.
+     * @dev utilizes transfer() to send ETH, so access lists may need to be
+     * populated when purchasing tokens.
      */
-    function _splitFundsETH(
-        uint256 _projectId,
-        uint256 _pricePerTokenInWei
-    ) internal {
+    function _splitFundsETH(uint256 _projectId) internal {
         if (msg.value > 0) {
-            bool success_;
-            // send refund to sender
-            uint256 refund = msg.value - _pricePerTokenInWei;
+            uint256 pricePerTokenInWei = projectIdToPricePerTokenInWei[
+                _projectId
+            ];
+            uint256 refund = msg.value - pricePerTokenInWei;
             if (refund > 0) {
-                (success_, ) = msg.sender.call{value: refund}("");
+                (bool success_, ) = msg.sender.call{value: refund}("");
                 require(success_, "Refund failed");
             }
-            // split remaining funds between foundation, artist, and artist's
-            // additional payee
-            (
-                uint256 artblocksRevenue_,
-                address payable artblocksAddress_,
-                uint256 artistRevenue_,
-                address payable artistAddress_,
-                uint256 additionalPayeePrimaryRevenue_,
-                address payable additionalPayeePrimaryAddress_
-            ) = genArtCoreContract.getPrimaryRevenueSplits(
-                    _projectId,
-                    _pricePerTokenInWei
-                );
-            // Art Blocks payment
-            if (artblocksRevenue_ > 0) {
-                (success_, ) = artblocksAddress_.call{value: artblocksRevenue_}(
-                    ""
-                );
-                require(success_, "Art Blocks payment failed");
-            }
-            // artist payment
-            if (artistRevenue_ > 0) {
-                (success_, ) = artistAddress_.call{value: artistRevenue_}("");
-                require(success_, "Artist payment failed");
-            }
-            // additional payee payment
-            if (additionalPayeePrimaryRevenue_ > 0) {
-                (success_, ) = additionalPayeePrimaryAddress_.call{
-                    value: additionalPayeePrimaryRevenue_
+            uint256 foundationAmount = (pricePerTokenInWei *
+                genArtCoreContract.artblocksPercentage()) / 100;
+            if (foundationAmount > 0) {
+                (bool success_, ) = genArtCoreContract.artblocksAddress().call{
+                    value: foundationAmount
                 }("");
-                require(success_, "Additional Payee payment failed");
+                require(success_, "Foundation payment failed");
+            }
+            uint256 projectFunds = pricePerTokenInWei - foundationAmount;
+            uint256 additionalPayeeAmount;
+            if (
+                genArtCoreContract.projectIdToAdditionalPayeePercentage(
+                    _projectId
+                ) > 0
+            ) {
+                additionalPayeeAmount =
+                    (projectFunds *
+                        genArtCoreContract.projectIdToAdditionalPayeePercentage(
+                            _projectId
+                        )) /
+                    100;
+                if (additionalPayeeAmount > 0) {
+                    (bool success_, ) = genArtCoreContract
+                        .projectIdToAdditionalPayee(_projectId)
+                        .call{value: additionalPayeeAmount}("");
+                    require(success_, "Additional payment failed");
+                }
+            }
+            uint256 creatorFunds = projectFunds - additionalPayeeAmount;
+            if (creatorFunds > 0) {
+                (bool success_, ) = genArtCoreContract
+                    .projectIdToArtistAddress(_projectId)
+                    .call{value: creatorFunds}("");
+                require(success_, "Artist payment failed");
             }
         }
     }
@@ -568,9 +414,8 @@ contract MinterMerkleV2 is ReentrancyGuard, IFilteredMinterMerkleV0 {
     function projectMaxInvocationsPerAddress(
         uint256 _projectId
     ) public view returns (uint256) {
-        ProjectConfig storage _projectConfig = projectConfig[_projectId];
-        if (_projectConfig.useMaxInvocationsPerAddressOverride) {
-            return uint256(_projectConfig.maxInvocationsPerAddressOverride);
+        if (projectUseMaxInvocationsPerAddressOverride[_projectId]) {
+            return uint256(projectMaxInvocationsPerAddressOverride[_projectId]);
         } else {
             return DEFAULT_MAX_INVOCATIONS_PER_ADDRESS;
         }
@@ -670,9 +515,8 @@ contract MinterMerkleV2 is ReentrancyGuard, IFilteredMinterMerkleV0 {
             address currencyAddress
         )
     {
-        ProjectConfig storage _projectConfig = projectConfig[_projectId];
-        isConfigured = _projectConfig.priceIsConfigured;
-        tokenPriceInWei = _projectConfig.pricePerTokenInWei;
+        isConfigured = projectIdToPriceIsConfigured[_projectId];
+        tokenPriceInWei = projectIdToPricePerTokenInWei[_projectId];
         currencySymbol = "ETH";
         currencyAddress = address(0);
     }

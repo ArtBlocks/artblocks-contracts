@@ -1,23 +1,21 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../../../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
-import "../../../interfaces/0.8.x/IMinterFilterV0.sol";
-import "../../../interfaces/0.8.x/IFilteredMinterHolderV1.sol";
-import "../../../interfaces/0.8.x/IDelegationRegistry.sol";
+import "../../../../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
+import "../../../../interfaces/0.8.x/IMinterFilterV0.sol";
+import "../../../../interfaces/0.8.x/IFilteredMinterHolderV0.sol";
 
 import "@openzeppelin-4.5/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin-4.5/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin-4.5/contracts/utils/structs/EnumerableSet.sol";
+import "@openzeppelin-4.5/contracts/utils/structs/EnumerableMap.sol";
 
 pragma solidity 0.8.17;
 
 /**
  * @title Filtered Minter contract that allows tokens to be minted with ETH
- * when purchaser owns an allowlisted ERC-721 NFT. This contract does NOT track
- * if a purchaser has/has not minted already -- it simply restricts purchasing
- * to anybody that holds one or more of a specified list of ERC-721 NFTs.
+ * when purchaser owns an allowlisted ERC-721 NFT.
  * This is designed to be used with IGenArt721CoreContractV3 contracts.
  * @author Art Blocks Inc.
  * @notice Privileged Roles and Ownership:
@@ -41,31 +39,10 @@ pragma solidity 0.8.17;
  * ----------------------------------------------------------------------------
  * Additional admin and artist privileged roles may be described on other
  * contracts that this minter integrates with.
- * ----------------------------------------------------------------------------
- * This contract allows gated minting with support for vaults to delegate minting
- * privileges via an external delegation registry. This means a vault holding an
- * allowed token can delegate minting privileges to a wallet that is not holding an
- * allowed token, enabling the vault to remain air-gapped while still allowing minting.
- * The delegation registry contract is responsible for managing these delegations,
- * and is available at the address returned by the public immutable
- * `delegationRegistryAddress`. At the time of writing, the delegation
- * registry enables easy delegation configuring at https://delegate.cash/.
- * Art Blocks does not guarentee the security of the delegation registry, and
- * users should take care to ensure that the delegation registry is secure.
- * Delegations must be configured by the vault owner prior to purchase. Supported
- * delegation types include token-level, contract-level (via genArt721CoreAddress), or
- * wallet-level delegation. Contract-level delegations must be configured for the core
- * token contract as returned by owned token's core contract address.
  */
-contract MinterHolderV2 is ReentrancyGuard, IFilteredMinterHolderV1 {
+contract MinterHolderV1 is ReentrancyGuard, IFilteredMinterHolderV0 {
     // add Enumerable Set methods
     using EnumerableSet for EnumerableSet.AddressSet;
-
-    /// Delegation registry address
-    address public immutable delegationRegistryAddress;
-
-    /// Delegation registry address
-    IDelegationRegistry private immutable delegationRegistryContract;
 
     /// Core contract address this minter interacts with
     address public immutable genArt721CoreAddress;
@@ -80,7 +57,7 @@ contract MinterHolderV2 is ReentrancyGuard, IFilteredMinterHolderV1 {
     IMinterFilterV0 private immutable minterFilter;
 
     /// minterType for this minter
-    string public constant minterType = "MinterHolderV2";
+    string public constant minterType = "MinterHolderV1";
 
     uint256 constant ONE_MILLION = 1_000_000;
 
@@ -134,20 +111,13 @@ contract MinterHolderV2 is ReentrancyGuard, IFilteredMinterHolderV1 {
      * contract will be a minter.
      * @param _minterFilter Minter filter for which
      * this will a filtered minter.
-     * @param _delegationRegistryAddress Delegation registry contract address.
      */
     constructor(
         address _genArt721Address,
-        address _minterFilter,
-        address _delegationRegistryAddress
+        address _minterFilter
     ) ReentrancyGuard() {
         genArt721CoreAddress = _genArt721Address;
         genArtCoreContract = IGenArt721CoreContractV3(_genArt721Address);
-        delegationRegistryAddress = _delegationRegistryAddress;
-        emit DelegationRegistryUpdated(_delegationRegistryAddress);
-        delegationRegistryContract = IDelegationRegistry(
-            _delegationRegistryAddress
-        );
         minterFilterAddress = _minterFilter;
         minterFilter = IMinterFilterV0(_minterFilter);
         require(
@@ -439,8 +409,8 @@ contract MinterHolderV2 is ReentrancyGuard, IFilteredMinterHolderV1 {
     /**
      * @notice Purchases a token from project `_projectId`.
      * @param _projectId Project ID to mint a token on.
-     * @param _ownedNFTAddress ERC-721 NFT address holding the project token
-     * owned by msg.sender being used to prove right to purchase.
+     * @param _ownedNFTAddress ERC-721 NFT address owned by msg.sender being used to
+     * prove right to purchase.
      * @param _ownedNFTTokenId ERC-721 NFT token ID owned by msg.sender being used
      * to prove right to purchase.
      * @return tokenId Token ID of minted token
@@ -450,12 +420,11 @@ contract MinterHolderV2 is ReentrancyGuard, IFilteredMinterHolderV1 {
         address _ownedNFTAddress,
         uint256 _ownedNFTTokenId
     ) external payable returns (uint256 tokenId) {
-        tokenId = purchaseTo_dlc(
+        tokenId = purchaseTo_L69(
             msg.sender,
             _projectId,
             _ownedNFTAddress,
-            _ownedNFTTokenId,
-            address(0)
+            _ownedNFTTokenId
         );
         return tokenId;
     }
@@ -468,12 +437,11 @@ contract MinterHolderV2 is ReentrancyGuard, IFilteredMinterHolderV1 {
         address _ownedNFTAddress,
         uint256 _ownedNFTTokenId
     ) external payable returns (uint256 tokenId) {
-        tokenId = purchaseTo_dlc(
+        tokenId = purchaseTo_L69(
             msg.sender,
             _projectId,
             _ownedNFTAddress,
-            _ownedNFTTokenId,
-            address(0)
+            _ownedNFTTokenId
         );
         return tokenId;
     }
@@ -483,8 +451,8 @@ contract MinterHolderV2 is ReentrancyGuard, IFilteredMinterHolderV1 {
      * the token's owner to `_to`.
      * @param _to Address to be the new token's owner.
      * @param _projectId Project ID to mint a token on.
-     * @param _ownedNFTAddress ERC-721 NFT holding the project token owned by
-     * msg.sender being used to claim right to purchase.
+     * @param _ownedNFTAddress ERC-721 NFT address owned by msg.sender being used to
+     * claim right to purchase.
      * @param _ownedNFTTokenId ERC-721 NFT token ID owned by msg.sender being used
      * to claim right to purchase.
      * @return tokenId Token ID of minted token
@@ -496,62 +464,17 @@ contract MinterHolderV2 is ReentrancyGuard, IFilteredMinterHolderV1 {
         uint256 _ownedNFTTokenId
     ) external payable returns (uint256 tokenId) {
         return
-            purchaseTo_dlc(
-                _to,
-                _projectId,
-                _ownedNFTAddress,
-                _ownedNFTTokenId,
-                address(0)
-            );
+            purchaseTo_L69(_to, _projectId, _ownedNFTAddress, _ownedNFTTokenId);
     }
 
     /**
-     * @notice Purchases a token from project `_projectId` and sets
-     *         the token's owner to `_to`, as a delegate, (the `msg.sender`)
-     *         on behalf of an explicitly defined vault.
-     * @param _to Address to be the new token's owner.
-     * @param _projectId Project ID to mint a token on.
-     * @param _ownedNFTAddress ERC-721 NFT address holding the project token owned by
-     *         _vault (or msg.sender if no _vault is provided) being used to claim right to purchase.
-     * @param _ownedNFTTokenId ERC-721 NFT token ID owned by _vault (or msg.sender if
-     *         no _vault is provided) being used to claim right to purchase.
-     * @param _vault Vault being purchased on behalf of.  Acceptable to be `address(0)` if no vault.
-     * @return tokenId Token ID of minted token
+     * @notice gas-optimized version of purchaseTo(address,uint256,address,uint256).
      */
-    function purchaseTo(
+    function purchaseTo_L69(
         address _to,
         uint256 _projectId,
         address _ownedNFTAddress,
-        uint256 _ownedNFTTokenId,
-        address _vault
-    ) external payable returns (uint256 tokenId) {
-        return
-            purchaseTo_dlc(
-                _to,
-                _projectId,
-                _ownedNFTAddress,
-                _ownedNFTTokenId,
-                _vault
-            );
-    }
-
-    /**
-     * @notice gas-optimized version of purchaseTo(address,uint256,address,uint256,address).
-     * @param _to Address to be the new token's owner.
-     * @param _projectId Project ID to mint a token on.
-     * @param _ownedNFTAddress ERC-721 NFT address holding the project token owned by _vault
-     *         (or msg.sender if no _vault is provided) being used to claim right to purchase.
-     * @param _ownedNFTTokenId ERC-721 NFT token ID owned by _vault (or msg.sender if
-     *         no _vault is provided) being used to claim right to purchase.
-     * @param _vault Vault being purchased on behalf of. Acceptable to be `address(0)` if no vault.
-     * @return tokenId Token ID of minted token
-     */
-    function purchaseTo_dlc(
-        address _to,
-        uint256 _projectId,
-        address _ownedNFTAddress,
-        uint256 _ownedNFTTokenId,
-        address _vault
+        uint256 _ownedNFTTokenId
     ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
@@ -584,32 +507,8 @@ contract MinterHolderV2 is ReentrancyGuard, IFilteredMinterHolderV1 {
             "Only allowlisted NFTs"
         );
 
-        // NOTE: delegate-vault handling **begins here**.
-
-        // handle that the vault may be either the `msg.sender` in the case
-        // that there is not a true vault, or may be `_vault` if one is
-        // provided explicitly (and it is valid).
-        address vault = msg.sender;
-        if (_vault != address(0)) {
-            // If a vault is provided, it must be valid, otherwise throw rather
-            // than optimistically-minting with original `msg.sender`.
-            // Note, we do not check `checkDelegateForAll` or `checkDelegateForContract` as well,
-            // as they are known to be implicitly checked by calling `checkDelegateForToken`.
-            bool isValidVault = delegationRegistryContract
-                .checkDelegateForToken(
-                    msg.sender, // delegate
-                    _vault, // vault
-                    _ownedNFTAddress, // contract
-                    _ownedNFTTokenId // tokenId
-                );
-            require(isValidVault, "Invalid delegate-vault pairing");
-            vault = _vault;
-        }
-
         // EFFECTS
-        tokenId = minterFilter.mint(_to, _projectId, vault);
-
-        // NOTE: delegate-vault handling **ends here**.
+        tokenId = minterFilter.mint(_to, _projectId, msg.sender);
 
         // okay if this underflows because if statement will always eval false.
         // this is only for gas optimization (core enforces maxInvocations).
@@ -628,7 +527,7 @@ contract MinterHolderV2 is ReentrancyGuard, IFilteredMinterHolderV1 {
          * function is non-reentrant, so being extra cautious.
          */
         require(
-            IERC721(_ownedNFTAddress).ownerOf(_ownedNFTTokenId) == vault,
+            IERC721(_ownedNFTAddress).ownerOf(_ownedNFTTokenId) == msg.sender,
             "Only owner of NFT"
         );
 
