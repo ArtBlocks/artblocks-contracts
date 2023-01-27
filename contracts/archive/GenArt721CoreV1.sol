@@ -62,11 +62,9 @@ contract ERC165 is IERC165 {
      *
      * Time complexity O(1), guaranteed to always use less than 30 000 gas.
      */
-    function supportsInterface(bytes4 interfaceId)
-        external
-        view
-        returns (bool)
-    {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) external view returns (bool) {
         return _supportedInterfaces[interfaceId];
     }
 
@@ -135,11 +133,7 @@ contract IERC721 is IERC165 {
      * - If the caller is not `from`, it must be have been allowed to move this
      * NFT by either `approve` or `setApproveForAll`.
      */
-    function safeTransferFrom(
-        address from,
-        address to,
-        uint256 tokenId
-    ) public;
+    function safeTransferFrom(address from, address to, uint256 tokenId) public;
 
     /**
      * @dev Transfers a specific NFT (`tokenId`) from one account (`from`) to
@@ -149,25 +143,20 @@ contract IERC721 is IERC165 {
      * - If the caller is not `from`, it must be approved to move this NFT by
      * either `approve` or `setApproveForAll`.
      */
-    function transferFrom(
-        address from,
-        address to,
-        uint256 tokenId
-    ) public;
+    function transferFrom(address from, address to, uint256 tokenId) public;
 
     function approve(address to, uint256 tokenId) public;
 
-    function getApproved(uint256 tokenId)
-        public
-        view
-        returns (address operator);
+    function getApproved(
+        uint256 tokenId
+    ) public view returns (address operator);
 
     function setApprovalForAll(address operator, bool _approved) public;
 
-    function isApprovedForAll(address owner, address operator)
-        public
-        view
-        returns (bool);
+    function isApprovedForAll(
+        address owner,
+        address operator
+    ) public view returns (bool);
 
     function safeTransferFrom(
         address from,
@@ -453,19 +442,14 @@ contract ERC721 is ERC165, IERC721 {
         emit ApprovalForAll(msg.sender, to, approved);
     }
 
-    function isApprovedForAll(address owner, address operator)
-        public
-        view
-        returns (bool)
-    {
+    function isApprovedForAll(
+        address owner,
+        address operator
+    ) public view returns (bool) {
         return _operatorApprovals[owner][operator];
     }
 
-    function transferFrom(
-        address from,
-        address to,
-        uint256 tokenId
-    ) public {
+    function transferFrom(address from, address to, uint256 tokenId) public {
         //solhint-disable-next-line max-line-length
         require(
             _isApprovedOrOwner(msg.sender, tokenId),
@@ -501,11 +485,10 @@ contract ERC721 is ERC165, IERC721 {
         return owner != address(0);
     }
 
-    function _isApprovedOrOwner(address spender, uint256 tokenId)
-        internal
-        view
-        returns (bool)
-    {
+    function _isApprovedOrOwner(
+        address spender,
+        uint256 tokenId
+    ) internal view returns (bool) {
         require(
             _exists(tokenId),
             "ERC721: operator query for nonexistent token"
@@ -544,11 +527,7 @@ contract ERC721 is ERC165, IERC721 {
         _burn(ownerOf(tokenId), tokenId);
     }
 
-    function _transferFrom(
-        address from,
-        address to,
-        uint256 tokenId
-    ) internal {
+    function _transferFrom(address from, address to, uint256 tokenId) internal {
         require(
             ownerOf(tokenId) == from,
             "ERC721: transfer of token that is not own"
@@ -604,10 +583,10 @@ pragma solidity ^0.5.0;
 contract IERC721Enumerable is IERC721 {
     function totalSupply() public view returns (uint256);
 
-    function tokenOfOwnerByIndex(address owner, uint256 index)
-        public
-        view
-        returns (uint256 tokenId);
+    function tokenOfOwnerByIndex(
+        address owner,
+        uint256 index
+    ) public view returns (uint256 tokenId);
 
     function tokenByIndex(uint256 index) public view returns (uint256);
 }
@@ -658,11 +637,10 @@ contract ERC721Enumerable is ERC165, ERC721, IERC721Enumerable {
      * @param index uint256 representing the index to be accessed of the requested tokens list
      * @return uint256 token ID at the given index of the tokens list owned by the requested address
      */
-    function tokenOfOwnerByIndex(address owner, uint256 index)
-        public
-        view
-        returns (uint256)
-    {
+    function tokenOfOwnerByIndex(
+        address owner,
+        uint256 index
+    ) public view returns (uint256) {
         require(
             index < balanceOf(owner),
             "ERC721Enumerable: owner index out of bounds"
@@ -699,11 +677,7 @@ contract ERC721Enumerable is ERC165, ERC721, IERC721Enumerable {
      * @param to address to receive the ownership of the given token ID
      * @param tokenId uint256 ID of the token to be transferred
      */
-    function _transferFrom(
-        address from,
-        address to,
-        uint256 tokenId
-    ) internal {
+    function _transferFrom(address from, address to, uint256 tokenId) internal {
         super._transferFrom(from, to, tokenId);
 
         _removeTokenFromOwnerEnumeration(from, tokenId);
@@ -747,11 +721,9 @@ contract ERC721Enumerable is ERC165, ERC721, IERC721Enumerable {
      * @param owner address owning the tokens
      * @return uint256[] List of token IDs owned by the requested address
      */
-    function _tokensOfOwner(address owner)
-        internal
-        view
-        returns (uint256[] storage)
-    {
+    function _tokensOfOwner(
+        address owner
+    ) internal view returns (uint256[] storage) {
         return _ownedTokens[owner];
     }
 
@@ -782,9 +754,10 @@ contract ERC721Enumerable is ERC165, ERC721, IERC721Enumerable {
      * @param from address representing the previous owner of the given token ID
      * @param tokenId uint256 ID of the token to be removed from the tokens list of the given address
      */
-    function _removeTokenFromOwnerEnumeration(address from, uint256 tokenId)
-        private
-    {
+    function _removeTokenFromOwnerEnumeration(
+        address from,
+        uint256 tokenId
+    ) private {
         // To prevent a gap in from's tokens array, we store the last token in the index of the token to delete, and
         // then delete the last slot (swap and pop).
 
@@ -886,11 +859,10 @@ pragma solidity ^0.5.0;
 
 //https://github.com/oraclize/ethereum-api/blob/master/oraclizeAPI_0.5.sol
 library Strings {
-    function strConcat(string memory _a, string memory _b)
-        internal
-        pure
-        returns (string memory _concatenatedString)
-    {
+    function strConcat(
+        string memory _a,
+        string memory _b
+    ) internal pure returns (string memory _concatenatedString) {
         return strConcat(_a, _b, "", "", "");
     }
 
@@ -947,11 +919,9 @@ library Strings {
         return string(babcde);
     }
 
-    function uint2str(uint256 _i)
-        internal
-        pure
-        returns (string memory _uintAsString)
-    {
+    function uint2str(
+        uint256 _i
+    ) internal pure returns (string memory _uintAsString) {
         if (_i == 0) {
             return "0";
         }
@@ -1124,10 +1094,10 @@ contract GenArt721Core is CustomERC721Metadata {
         return tokenId;
     }
 
-    function _mintToken(address _to, uint256 _projectId)
-        internal
-        returns (uint256 _tokenId)
-    {
+    function _mintToken(
+        address _to,
+        uint256 _projectId
+    ) internal returns (uint256 _tokenId) {
         uint256 tokenIdToBe = (_projectId * ONE_MILLION) +
             projects[_projectId].invocations;
 
@@ -1157,17 +1127,15 @@ contract GenArt721Core is CustomERC721Metadata {
         return tokenIdToBe;
     }
 
-    function updateArtblocksAddress(address _artblocksAddress)
-        public
-        onlyAdmin
-    {
+    function updateArtblocksAddress(
+        address _artblocksAddress
+    ) public onlyAdmin {
         artblocksAddress = _artblocksAddress;
     }
 
-    function updateArtblocksPercentage(uint256 _artblocksPercentage)
-        public
-        onlyAdmin
-    {
+    function updateArtblocksPercentage(
+        uint256 _artblocksPercentage
+    ) public onlyAdmin {
         require(_artblocksPercentage <= 25, "Max of 25%");
         artblocksPercentage = _artblocksPercentage;
     }
@@ -1188,18 +1156,15 @@ contract GenArt721Core is CustomERC721Metadata {
         isMintWhitelisted[_address] = false;
     }
 
-    function updateRandomizerAddress(address _randomizerAddress)
-        public
-        onlyWhitelisted
-    {
+    function updateRandomizerAddress(
+        address _randomizerAddress
+    ) public onlyWhitelisted {
         randomizerContract = Randomizer(_randomizerAddress);
     }
 
-    function toggleProjectIsLocked(uint256 _projectId)
-        public
-        onlyWhitelisted
-        onlyUnlocked(_projectId)
-    {
+    function toggleProjectIsLocked(
+        uint256 _projectId
+    ) public onlyWhitelisted onlyUnlocked(_projectId) {
         projects[_projectId].locked = true;
     }
 
@@ -1214,10 +1179,9 @@ contract GenArt721Core is CustomERC721Metadata {
         projectIdToArtistAddress[_projectId] = _artistAddress;
     }
 
-    function toggleProjectIsPaused(uint256 _projectId)
-        public
-        onlyArtist(_projectId)
-    {
+    function toggleProjectIsPaused(
+        uint256 _projectId
+    ) public onlyArtist(_projectId) {
         projects[_projectId].paused = !projects[_projectId].paused;
     }
 
@@ -1259,11 +1223,10 @@ contract GenArt721Core is CustomERC721Metadata {
         projectIdToPricePerTokenInWei[_projectId] = _pricePerTokenInWei;
     }
 
-    function updateProjectName(uint256 _projectId, string memory _projectName)
-        public
-        onlyUnlocked(_projectId)
-        onlyArtistOrWhitelisted(_projectId)
-    {
+    function updateProjectName(
+        uint256 _projectId,
+        string memory _projectName
+    ) public onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) {
         projects[_projectId].name = _projectName;
     }
 
@@ -1334,11 +1297,9 @@ contract GenArt721Core is CustomERC721Metadata {
         projects[_projectId].maxInvocations = _maxInvocations;
     }
 
-    function toggleProjectUseHashString(uint256 _projectId)
-        public
-        onlyUnlocked(_projectId)
-        onlyArtistOrWhitelisted(_projectId)
-    {
+    function toggleProjectUseHashString(
+        uint256 _projectId
+    ) public onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) {
         require(
             projects[_projectId].invocations == 0,
             "Cannot modify after a token is minted."
@@ -1347,11 +1308,10 @@ contract GenArt721Core is CustomERC721Metadata {
             .useHashString;
     }
 
-    function addProjectScript(uint256 _projectId, string memory _script)
-        public
-        onlyUnlocked(_projectId)
-        onlyArtistOrWhitelisted(_projectId)
-    {
+    function addProjectScript(
+        uint256 _projectId,
+        string memory _script
+    ) public onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) {
         projects[_projectId].scripts[
             projects[_projectId].scriptCount
         ] = _script;
@@ -1372,11 +1332,9 @@ contract GenArt721Core is CustomERC721Metadata {
         projects[_projectId].scripts[_scriptId] = _script;
     }
 
-    function removeProjectLastScript(uint256 _projectId)
-        public
-        onlyUnlocked(_projectId)
-        onlyArtistOrWhitelisted(_projectId)
-    {
+    function removeProjectLastScript(
+        uint256 _projectId
+    ) public onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) {
         require(
             projects[_projectId].scriptCount > 0,
             "there are no scripts to remove"
@@ -1396,18 +1354,17 @@ contract GenArt721Core is CustomERC721Metadata {
         projects[_projectId].scriptJSON = _projectScriptJSON;
     }
 
-    function updateProjectIpfsHash(uint256 _projectId, string memory _ipfsHash)
-        public
-        onlyUnlocked(_projectId)
-        onlyArtistOrWhitelisted(_projectId)
-    {
+    function updateProjectIpfsHash(
+        uint256 _projectId,
+        string memory _ipfsHash
+    ) public onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) {
         projects[_projectId].ipfsHash = _ipfsHash;
     }
 
-    function updateProjectBaseURI(uint256 _projectId, string memory _newBaseURI)
-        public
-        onlyArtist(_projectId)
-    {
+    function updateProjectBaseURI(
+        uint256 _projectId,
+        string memory _newBaseURI
+    ) public onlyArtist(_projectId) {
         projects[_projectId].projectBaseURI = _newBaseURI;
     }
 
@@ -1418,10 +1375,9 @@ contract GenArt721Core is CustomERC721Metadata {
         projects[_projectId].projectBaseIpfsURI = _projectBaseIpfsURI;
     }
 
-    function toggleProjectUseIpfsForStatic(uint256 _projectId)
-        public
-        onlyArtist(_projectId)
-    {
+    function toggleProjectUseIpfsForStatic(
+        uint256 _projectId
+    ) public onlyArtist(_projectId) {
         require(
             !projects[_projectId].dynamic,
             "can only set static IPFS hash for static projects"
@@ -1429,11 +1385,9 @@ contract GenArt721Core is CustomERC721Metadata {
         projects[_projectId].useIpfs = !projects[_projectId].useIpfs;
     }
 
-    function toggleProjectIsDynamic(uint256 _projectId)
-        public
-        onlyUnlocked(_projectId)
-        onlyArtistOrWhitelisted(_projectId)
-    {
+    function toggleProjectIsDynamic(
+        uint256 _projectId
+    ) public onlyUnlocked(_projectId) onlyArtistOrWhitelisted(_projectId) {
         require(
             projects[_projectId].invocations == 0,
             "Can not switch after a token is minted."
@@ -1453,14 +1407,15 @@ contract GenArt721Core is CustomERC721Metadata {
         staticIpfsImageLink[_tokenId] = _ipfsHash;
     }
 
-    function clearTokenIpfsImageUri(uint256 _tokenId)
-        public
-        onlyArtist(tokenIdToProjectId[_tokenId])
-    {
+    function clearTokenIpfsImageUri(
+        uint256 _tokenId
+    ) public onlyArtist(tokenIdToProjectId[_tokenId]) {
         delete staticIpfsImageLink[tokenIdToProjectId[_tokenId]];
     }
 
-    function projectDetails(uint256 _projectId)
+    function projectDetails(
+        uint256 _projectId
+    )
         public
         view
         returns (
@@ -1480,7 +1435,9 @@ contract GenArt721Core is CustomERC721Metadata {
         dynamic = projects[_projectId].dynamic;
     }
 
-    function projectTokenInfo(uint256 _projectId)
+    function projectTokenInfo(
+        uint256 _projectId
+    )
         public
         view
         returns (
@@ -1508,7 +1465,9 @@ contract GenArt721Core is CustomERC721Metadata {
         currencyAddress = projectIdToCurrencyAddress[_projectId];
     }
 
-    function projectScriptInfo(uint256 _projectId)
+    function projectScriptInfo(
+        uint256 _projectId
+    )
         public
         view
         returns (
@@ -1528,15 +1487,16 @@ contract GenArt721Core is CustomERC721Metadata {
         paused = projects[_projectId].paused;
     }
 
-    function projectScriptByIndex(uint256 _projectId, uint256 _index)
-        public
-        view
-        returns (string memory)
-    {
+    function projectScriptByIndex(
+        uint256 _projectId,
+        uint256 _index
+    ) public view returns (string memory) {
         return projects[_projectId].scripts[_index];
     }
 
-    function projectURIInfo(uint256 _projectId)
+    function projectURIInfo(
+        uint256 _projectId
+    )
         public
         view
         returns (
@@ -1550,23 +1510,21 @@ contract GenArt721Core is CustomERC721Metadata {
         useIpfs = projects[_projectId].useIpfs;
     }
 
-    function projectShowAllTokens(uint256 _projectId)
-        public
-        view
-        returns (uint256[] memory)
-    {
+    function projectShowAllTokens(
+        uint256 _projectId
+    ) public view returns (uint256[] memory) {
         return projectIdToTokenIds[_projectId];
     }
 
-    function tokensOfOwner(address owner)
-        external
-        view
-        returns (uint256[] memory)
-    {
+    function tokensOfOwner(
+        address owner
+    ) external view returns (uint256[] memory) {
         return _tokensOfOwner(owner);
     }
 
-    function getRoyaltyData(uint256 _tokenId)
+    function getRoyaltyData(
+        uint256 _tokenId
+    )
         public
         view
         returns (
@@ -1588,12 +1546,9 @@ contract GenArt721Core is CustomERC721Metadata {
         ];
     }
 
-    function tokenURI(uint256 _tokenId)
-        external
-        view
-        onlyValidTokenId(_tokenId)
-        returns (string memory)
-    {
+    function tokenURI(
+        uint256 _tokenId
+    ) external view onlyValidTokenId(_tokenId) returns (string memory) {
         if (bytes(staticIpfsImageLink[_tokenId]).length > 0) {
             return
                 Strings.strConcat(
