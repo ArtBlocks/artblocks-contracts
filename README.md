@@ -155,7 +155,7 @@ MinterFilterV1 for flagship V3 core: [0x092B8F64e713d66b38522978BCf4649db14b931E
 
 Legacy minting contract for flagship V0 core: [0x47e312d99c09ce61a866c83cbbbbed5a4b9d33e7](https://etherscan.io/address/0x47e312d99c09ce61a866c83cbbbbed5a4b9d33e7).
 
-For deployed Engine/Partner/Explorations minting contracts, see the archived source code in the `/posterity/engine/` directory and the deployment logs in `/scripts/engine/` directories.
+For deployed Engine/Partner/Explorations minting contracts, see the archived source code in the `/posterity/engine/<engine-partner>/` directory and the deployment logs in `/deployments/engine/[V2|V3]/<engine-partner>/` directories. For V3 deployments, deployment script inputs are also available in the `/deployments/engine/[V2|V3]/<engine-partner>/` directories.
 
 ### Shared Randomizers
 
@@ -182,7 +182,7 @@ The following represents the current set of flagship core contracts deployed on 
 
 > Formerly known as PBAB or PRTNR core contracts
 
-For deployed core contracts, see the archived source code in the `/posterity/engine/` directory and the deployment logs in `/scripts/engine/` directories.
+For deployed core contracts, see the archived source code in the `/posterity/engine/` directory and the deployment logs in `/deployments/engine/[V2|V3]/<engine-partner>/` directories.
 
 ## Contract Source Code Verification
 
