@@ -1,14 +1,15 @@
 {
-  "name": "gen721",
+  "name": "@artblocks/contracts",
   "version": "1.0.0",
-  "description": "",
-  "main": "truffle-config.js",
-  "directories": {
-    "test": "test"
-  },
+  "description": "Smart contracts used by Art Blocks",
+  "files": [
+    "/contracts/**/*.sol",
+    "/artifacts/contracts/**/!(*.dbg)*.json"
+  ],
   "scripts": {
     "clean": "hardhat clean",
     "compile": "hardhat compile",
+    "gh-action-compile": "hardhat --config gh-action.config.ts compile",
     "docgen": "hardhat docgen",
     "generate:typechain": "typechain --target ethers-v5 --outDir ./scripts/contracts './artifacts/contracts/**/!(*.dbg)*.json'",
     "test": "hardhat test",
