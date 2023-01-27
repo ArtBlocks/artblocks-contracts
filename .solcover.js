@@ -8,6 +8,7 @@ module.exports = {
     "libs/integration-refs/",
     "archive/",
     "mock/",
+    "engine-registry/future/"
     "BasicRandomizer.sol",
     "BasicRandomizerV2.sol",
   ],
