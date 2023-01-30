@@ -112,9 +112,6 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
     mapping(uint256 => mapping(address => mapping(uint256 => bool)))
         public polyptychPanelIsMinted;
 
-    // Identifies a project's current panel ID
-    mapping(uint256 => uint256) public polyptychProjectPanelId;
-
     /// minterType for this minter
     string public constant minterType = "MinterPolyptychV0";
 
@@ -127,6 +124,7 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
         address currencyAddress;
         uint256 pricePerTokenInWei;
         string currencySymbol;
+        uint24 polyptychPanelId;
     }
 
     mapping(uint256 => ProjectConfig) public projectConfig;
@@ -417,7 +415,7 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
     function incrementPolyptychProjectPanelId(
         uint256 _projectId
     ) public onlyArtist(_projectId) {
-        polyptychProjectPanelId[_projectId]++;
+        projectConfig[_projectId].polyptychPanelId++;
     }
 
     /**
@@ -672,7 +670,7 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
         uint256 _ownedNFTTokenId
     ) private {
         // mark the polyptych panel as minted so the same panel cannot be minted twice
-        uint256 currentPanelId = polyptychProjectPanelId[_projectId];
+        uint256 currentPanelId = projectConfig[_projectId].polyptychPanelId;
         require(
             !polyptychPanelIsMinted[currentPanelId][_ownedNFTAddress][
                 _ownedNFTTokenId
