@@ -12,11 +12,14 @@ pragma solidity ^0.8.0;
 interface IMintingAPIMinterV0 {
     function projectMaxHasBeenInvoked(uint256) external returns (bool);
 
-    function purchaseTo(address _to, uint256 _projectId)
-        external
-        returns (uint256 _tokenId);
+    function purchaseTo(
+        address _to,
+        uint256 _projectId
+    ) external returns (uint256 _tokenId);
 
-    function getPriceInfo(uint256 _projectId)
+    function getPriceInfo(
+        uint256 _projectId
+    )
         external
         view
         returns (

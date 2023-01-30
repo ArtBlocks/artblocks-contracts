@@ -22,7 +22,9 @@ interface IMintingAPICoreV0 {
     // getter function of public variable
     function nextProjectId() external view returns (uint256);
 
-    function projectDetails(uint256 _projectId)
+    function projectDetails(
+        uint256 _projectId
+    )
         external
         view
         returns (
@@ -33,12 +35,13 @@ interface IMintingAPICoreV0 {
             string memory license
         );
 
-    function projectIdToPricePerTokenInWei(uint256 _projectId)
-        external
-        view
-        returns (uint256);
+    function projectIdToPricePerTokenInWei(
+        uint256 _projectId
+    ) external view returns (uint256);
 
-    function projectTokenInfo(uint256 _projectId)
+    function projectTokenInfo(
+        uint256 _projectId
+    )
         external
         view
         returns (
@@ -53,8 +56,7 @@ interface IMintingAPICoreV0 {
             address
         );
 
-    function tokensOfOwner(address owner)
-        external
-        view
-        returns (uint256[] memory);
+    function tokensOfOwner(
+        address owner
+    ) external view returns (uint256[] memory);
 }
