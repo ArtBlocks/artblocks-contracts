@@ -17,14 +17,20 @@ import { MinterSetPriceERC20V4__factory } from "./contracts/factories/MinterSetP
 //////////////////////////////////////////////////////////////////////////////
 
 // GOERLI (ARTIST-STAGING) ADDRESSSES
-const CORE_CONTRACT_ADDRESS = "TODO";
-const FILTER_CONTRACT_ADDRESS = "TODO";
-const DELEGATION_REGISTRY_ADDRESS = "TODO";
+// Art Blocks V3 Core Staging (Goerli)
+const CORE_CONTRACT_ADDRESS = "0xb614c578062a62714c927cd8193f0b8bfb90055c";
+// MinterFilterV1
+const FILTER_CONTRACT_ADDRESS = "0x6eA558Bb1A3C5437970AdA80f8c686448A9c31fC";
+// Note: deployed w/ same mainnet/testnet address
+const DELEGATION_REGISTRY_ADDRESS = "0x00000000000076A84feF008CDAbe6409d2FE638B";
 
 // MAINNET ADDRESSES
-// const CORE_CONTRACT_ADDRESS = "TODO";
-// const FILTER_CONTRACT_ADDRESS = "TODO";
-// const DELEGATION_REGISTRY_ADDRESS = "TODO";
+// Art Blocks (BLOCKS)
+// const CORE_CONTRACT_ADDRESS = "0x99a9B7c1116f9ceEB1652de04d5969CcE509B069";
+// MinterFilterV1
+// const FILTER_CONTRACT_ADDRESS = "0x092B8F64e713d66b38522978BCf4649db14b931E";
+// Note: deployed w/ same mainnet/testnet address
+// const DELEGATION_REGISTRY_ADDRESS = "0x00000000000076A84feF008CDAbe6409d2FE638B";
 
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG ENDS HERE
