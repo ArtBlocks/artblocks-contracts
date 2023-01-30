@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../../../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
-import "../../../interfaces/0.8.x/IMinterFilterV0.sol";
-import "../../../interfaces/0.8.x/IFilteredMinterMerkleV2.sol";
-import "../../../interfaces/0.8.x/IDelegationRegistry.sol";
+import "../../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
+import "../../interfaces/0.8.x/IMinterFilterV0.sol";
+import "../../interfaces/0.8.x/IFilteredMinterMerkleV2.sol";
+import "../../interfaces/0.8.x/IDelegationRegistry.sol";
+import "./MinterBase_v0_1_1.sol";
 
 import "@openzeppelin-4.7/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin-4.7/contracts/token/ERC20/IERC20.sol";
@@ -15,7 +16,8 @@ pragma solidity 0.8.17;
 /**
  * @title Filtered Minter contract that allows tokens to be minted with ETH
  * for addresses in a Merkle allowlist.
- * This is designed to be used with IGenArt721CoreContractV3 contracts.
+ * This is designed to be used with GenArt721CoreContractV3 flagship or
+ * engine contracts.
  * @author Art Blocks Inc.
  * @notice Privileged Roles and Ownership:
  * This contract is designed to be managed, with limited powers.
@@ -49,7 +51,11 @@ pragma solidity 0.8.17;
  * level delegations must be configured for the core token contract as returned
  * by the public immutable variable `genArt721CoreAddress`.
  */
-contract MinterMerkleV4 is ReentrancyGuard, IFilteredMinterMerkleV2 {
+contract MinterMerkleV5 is
+    ReentrancyGuard,
+    MinterBase,
+    IFilteredMinterMerkleV2
+{
     using MerkleProof for bytes32[];
 
     /// Delegation registry address
@@ -61,8 +67,8 @@ contract MinterMerkleV4 is ReentrancyGuard, IFilteredMinterMerkleV2 {
     /// Core contract address this minter interacts with
     address public immutable genArt721CoreAddress;
 
-    /// This contract handles cores with interface IV3
-    IGenArt721CoreContractV3 private immutable genArtCoreContract;
+    /// The core contract integrates with V3 contracts
+    IGenArt721CoreContractV3_Base private immutable genArtCoreContract_Base;
 
     /// Minter filter address this minter interacts with
     address public immutable minterFilterAddress;
@@ -71,7 +77,7 @@ contract MinterMerkleV4 is ReentrancyGuard, IFilteredMinterMerkleV2 {
     IMinterFilterV0 private immutable minterFilter;
 
     /// minterType for this minter
-    string public constant minterType = "MinterMerkleV4";
+    string public constant minterType = "MinterMerkleV5";
 
     /// project minter configuration keys used by this minter
     bytes32 private constant CONFIG_MERKLE_ROOT = "merkleRoot";
@@ -109,7 +115,7 @@ contract MinterMerkleV4 is ReentrancyGuard, IFilteredMinterMerkleV2 {
     modifier onlyArtist(uint256 _projectId) {
         require(
             msg.sender ==
-                genArtCoreContract.projectIdToArtistAddress(_projectId),
+                genArtCoreContract_Base.projectIdToArtistAddress(_projectId),
             "Only Artist"
         );
         _;
@@ -130,9 +136,13 @@ contract MinterMerkleV4 is ReentrancyGuard, IFilteredMinterMerkleV2 {
         address _genArt721Address,
         address _minterFilter,
         address _delegationRegistryAddress
-    ) ReentrancyGuard() {
+    ) ReentrancyGuard() MinterBase(_genArt721Address) {
         genArt721CoreAddress = _genArt721Address;
-        genArtCoreContract = IGenArt721CoreContractV3(_genArt721Address);
+        // always populate immutable engine contracts, but only use appropriate
+        // interface based on isEngine in the rest of the contract
+        genArtCoreContract_Base = IGenArt721CoreContractV3_Base(
+            _genArt721Address
+        );
         delegationRegistryAddress = _delegationRegistryAddress;
         emit DelegationRegistryUpdated(_delegationRegistryAddress);
         delegationRegistryContract = IDelegationRegistry(
@@ -245,7 +255,7 @@ contract MinterMerkleV4 is ReentrancyGuard, IFilteredMinterMerkleV2 {
     ) external onlyArtist(_projectId) {
         uint256 maxInvocations;
         uint256 invocations;
-        (invocations, maxInvocations, , , , ) = genArtCoreContract
+        (invocations, maxInvocations, , , , ) = genArtCoreContract_Base
             .projectStateData(_projectId);
         // update storage with results
         projectConfig[_projectId].maxInvocations = uint24(maxInvocations);
@@ -279,7 +289,7 @@ contract MinterMerkleV4 is ReentrancyGuard, IFilteredMinterMerkleV2 {
         // ensure that the manually set maxInvocations is not greater than what is set on the core contract
         uint256 maxInvocations;
         uint256 invocations;
-        (invocations, maxInvocations, , , , ) = genArtCoreContract
+        (invocations, maxInvocations, , , , ) = genArtCoreContract_Base
             .projectStateData(_projectId);
         require(
             _maxInvocations <= maxInvocations,
@@ -475,10 +485,10 @@ contract MinterMerkleV4 is ReentrancyGuard, IFilteredMinterMerkleV2 {
         );
 
         // load price of token into memory
-        uint256 _pricePerTokenInWei = _projectConfig.pricePerTokenInWei;
+        uint256 pricePerTokenInWei = _projectConfig.pricePerTokenInWei;
 
         require(
-            msg.value >= _pricePerTokenInWei,
+            msg.value >= pricePerTokenInWei,
             "Must send minimum value to mint!"
         );
 
@@ -550,64 +560,9 @@ contract MinterMerkleV4 is ReentrancyGuard, IFilteredMinterMerkleV2 {
         }
 
         // INTERACTIONS
-        _splitFundsETH(_projectId, _pricePerTokenInWei);
+        splitFundsETH(_projectId, pricePerTokenInWei, genArt721CoreAddress);
 
         return tokenId;
-    }
-
-    /**
-     * @dev splits ETH funds between sender (if refund), foundation,
-     * artist, and artist's additional payee for a token purchased on
-     * project `_projectId`.
-     * @dev possible DoS during splits is acknowledged, and mitigated by
-     * business practices, including end-to-end testing on mainnet, and
-     * admin-accepted artist payment addresses.
-     */
-    function _splitFundsETH(
-        uint256 _projectId,
-        uint256 _pricePerTokenInWei
-    ) internal {
-        if (msg.value > 0) {
-            bool success_;
-            // send refund to sender
-            uint256 refund = msg.value - _pricePerTokenInWei;
-            if (refund > 0) {
-                (success_, ) = msg.sender.call{value: refund}("");
-                require(success_, "Refund failed");
-            }
-            // split remaining funds between foundation, artist, and artist's
-            // additional payee
-            (
-                uint256 artblocksRevenue_,
-                address payable artblocksAddress_,
-                uint256 artistRevenue_,
-                address payable artistAddress_,
-                uint256 additionalPayeePrimaryRevenue_,
-                address payable additionalPayeePrimaryAddress_
-            ) = genArtCoreContract.getPrimaryRevenueSplits(
-                    _projectId,
-                    _pricePerTokenInWei
-                );
-            // Art Blocks payment
-            if (artblocksRevenue_ > 0) {
-                (success_, ) = artblocksAddress_.call{value: artblocksRevenue_}(
-                    ""
-                );
-                require(success_, "Art Blocks payment failed");
-            }
-            // artist payment
-            if (artistRevenue_ > 0) {
-                (success_, ) = artistAddress_.call{value: artistRevenue_}("");
-                require(success_, "Artist payment failed");
-            }
-            // additional payee payment
-            if (additionalPayeePrimaryRevenue_ > 0) {
-                (success_, ) = additionalPayeePrimaryAddress_.call{
-                    value: additionalPayeePrimaryRevenue_
-                }("");
-                require(success_, "Additional Payee payment failed");
-            }
-        }
     }
 
     /**

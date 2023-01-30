@@ -1,45 +1,57 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../../../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
-import "../../../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
-import "../../../interfaces/0.8.x/IGenArt721CoreContractV3_Engine.sol";
-import "../../../interfaces/0.8.x/IMinterFilterV0.sol";
-import "../../../interfaces/0.8.x/IFilteredMinterV2.sol";
-import "../MinterBase_v0_1_1.sol";
+import "../../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
+import "../../interfaces/0.8.x/IMinterFilterV0.sol";
+import "../../interfaces/0.8.x/IFilteredMinterDAExpV1.sol";
+import "./MinterBase_v0_1_1.sol";
 
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin-4.5/contracts/utils/math/SafeCast.sol";
 
 pragma solidity 0.8.17;
 
 /**
- * @title Filtered Minter contract that allows tokens to be minted with ETH
- * or any ERC-20 token.
+ * @title Filtered Minter contract that allows tokens to be minted with ETH.
+ * Pricing is achieved using an automated Dutch-auction mechanism.
  * This is designed to be used with GenArt721CoreContractV3 flagship or
  * engine contracts.
  * @author Art Blocks Inc.
  * @notice Privileged Roles and Ownership:
  * This contract is designed to be managed, with limited powers.
- * Privileged roles and abilities are controlled by the project's artist, which
- * can be modified by the core contract's Admin ACL contract. Both of these
- * roles hold extensive power and can modify minter details.
+ * Privileged roles and abilities are controlled by the core contract's Admin
+ * ACL contract and a project's artist. Both of these roles hold extensive
+ * power and can modify minter details.
  * Care must be taken to ensure that the admin ACL contract and artist
  * addresses are secure behind a multi-sig or other access control mechanism.
  * ----------------------------------------------------------------------------
+ * The following functions are restricted to the core contract's Admin ACL
+ * contract:
+ * - setAllowablePriceDecayHalfLifeRangeSeconds (note: this range is only
+ *   enforced when creating new auctions)
+ * - resetAuctionDetails (note: this will prevent minting until a new auction
+ *   is created)
+ * ----------------------------------------------------------------------------
  * The following functions are restricted to a project's artist:
- * - updatePricePerTokenInWei
- * - updateProjectCurrencyInfo
+ * - setAuctionDetails (note: this may only be called when there is no active
+ *   auction)
  * - setProjectMaxInvocations
  * - manuallyLimitProjectMaxInvocations
  * ----------------------------------------------------------------------------
  * Additional admin and artist privileged roles may be described on other
  * contracts that this minter integrates with.
+ *
+ * @dev Note that while this minter makes use of `block.timestamp` and it is
+ * technically possible that this value is manipulated by block producers, such
+ * manipulation will not have material impact on the price values of this minter
+ * given the business practices for how pricing is congfigured for this minter
+ * and that variations on the order of less than a minute should not
+ * meaningfully impact price given the minimum allowable price decay rate that
+ * this minter intends to support.
  */
-contract MinterSetPriceERC20V4 is
-    ReentrancyGuard,
-    MinterBase,
-    IFilteredMinterV2
-{
+contract MinterDAExpV4 is ReentrancyGuard, MinterBase, IFilteredMinterDAExpV1 {
+    using SafeCast for uint256;
+
     /// Core contract address this minter interacts with
     address public immutable genArt721CoreAddress;
 
@@ -53,30 +65,47 @@ contract MinterSetPriceERC20V4 is
     IMinterFilterV0 private immutable minterFilter;
 
     /// minterType for this minter
-    string public constant minterType = "MinterSetPriceERC20V4";
+    string public constant minterType = "MinterDAExpV4";
 
     uint256 constant ONE_MILLION = 1_000_000;
 
     struct ProjectConfig {
         bool maxHasBeenInvoked;
-        bool priceIsConfigured;
         uint24 maxInvocations;
-        address currencyAddress;
-        uint256 pricePerTokenInWei;
-        string currencySymbol;
+        // max uint64 ~= 1.8e19 sec ~= 570 billion years
+        uint64 timestampStart;
+        uint64 priceDecayHalfLifeSeconds;
+        uint256 startPrice;
+        uint256 basePrice;
     }
 
     mapping(uint256 => ProjectConfig) public projectConfig;
 
-    // /// projectId => currency symbol - supersedes any defined core value
-    // mapping(uint256 => string) private projectIdToCurrencySymbol;
-    // /// projectId => currency address - supersedes any defined core value
-    // mapping(uint256 => address) private projectIdToCurrencyAddress;
+    /// Minimum price decay half life: price must decay with a half life of at
+    /// least this amount (must cut in half at least every N seconds).
+    uint256 public minimumPriceDecayHalfLifeSeconds = 300; // 5 minutes
+    /// Maximum price decay half life: price may decay with a half life of no
+    /// more than this amount (may cut in half at no more than every N seconds).
+    uint256 public maximumPriceDecayHalfLifeSeconds = 3600; // 60 minutes
+
+    // modifier to restrict access to only AdminACL allowed calls
+    // @dev defers which ACL contract is used to the core contract
+    modifier onlyCoreAdminACL(bytes4 _selector) {
+        require(
+            genArtCoreContract_Base.adminACLAllowed(
+                msg.sender,
+                address(this),
+                _selector
+            ),
+            "Only Core AdminACL allowed"
+        );
+        _;
+    }
 
     modifier onlyArtist(uint256 _projectId) {
         require(
-            msg.sender ==
-                genArtCoreContract_Base.projectIdToArtistAddress(_projectId),
+            (msg.sender ==
+                genArtCoreContract_Base.projectIdToArtistAddress(_projectId)),
             "Only Artist"
         );
         _;
@@ -86,8 +115,8 @@ contract MinterSetPriceERC20V4 is
      * @notice Initializes contract to be a Filtered Minter for
      * `_minterFilter`, integrated with Art Blocks core contract
      * at address `_genArt721Address`.
-     * @param _genArt721Address Art Blocks core contract for which this
-     * contract will be a minter.
+     * @param _genArt721Address Art Blocks core contract address for
+     * which this contract will be a minter.
      * @param _minterFilter Minter filter for which
      * this will a filtered minter.
      */
@@ -110,38 +139,6 @@ contract MinterSetPriceERC20V4 is
     }
 
     /**
-     * @notice Gets your balance of the ERC-20 token currently set
-     * as the payment currency for project `_projectId`.
-     * @param _projectId Project ID to be queried.
-     * @return balance Balance of ERC-20
-     */
-    function getYourBalanceOfProjectERC20(
-        uint256 _projectId
-    ) external view returns (uint256 balance) {
-        balance = IERC20(projectConfig[_projectId].currencyAddress).balanceOf(
-            msg.sender
-        );
-        return balance;
-    }
-
-    /**
-     * @notice Gets your allowance for this minter of the ERC-20
-     * token currently set as the payment currency for project
-     * `_projectId`.
-     * @param _projectId Project ID to be queried.
-     * @return remaining Remaining allowance of ERC-20
-     */
-    function checkYourAllowanceOfProjectERC20(
-        uint256 _projectId
-    ) external view returns (uint256 remaining) {
-        remaining = IERC20(projectConfig[_projectId].currencyAddress).allowance(
-            msg.sender,
-            address(this)
-        );
-        return remaining;
-    }
-
-    /**
      * @notice Syncs local maximum invocations of project `_projectId` based on
      * the value currently defined in the core contract.
      * @param _projectId Project ID to set the maximum invocations for.
@@ -155,6 +152,7 @@ contract MinterSetPriceERC20V4 is
         uint256 invocations;
         (invocations, maxInvocations, , , , ) = genArtCoreContract_Base
             .projectStateData(_projectId);
+
         // update storage with results
         projectConfig[_projectId].maxInvocations = uint24(maxInvocations);
 
@@ -197,7 +195,6 @@ contract MinterSetPriceERC20V4 is
             _maxInvocations >= invocations,
             "Cannot set project max invocations to less than current invocations"
         );
-
         // EFFECTS
         // update storage with results
         projectConfig[_projectId].maxInvocations = uint24(_maxInvocations);
@@ -231,6 +228,7 @@ contract MinterSetPriceERC20V4 is
      * to be reduced, not increased. Based on this rationale, we intentionally
      * do not do input validation in this method as to whether or not the input
      * `_projectId` is an existing project ID.
+     *
      */
     function projectMaxHasBeenInvoked(
         uint256 _projectId
@@ -263,46 +261,136 @@ contract MinterSetPriceERC20V4 is
     }
 
     /**
-     * @notice Updates this minter's price per token of project `_projectId`
-     * to be '_pricePerTokenInWei`, in Wei.
-     * This price supersedes any legacy core contract price per token value.
+     * @notice projectId => auction parameters
      */
-    function updatePricePerTokenInWei(
-        uint256 _projectId,
-        uint256 _pricePerTokenInWei
-    ) external onlyArtist(_projectId) {
-        require(_pricePerTokenInWei > 0, "Price may not be 0");
-        projectConfig[_projectId].pricePerTokenInWei = _pricePerTokenInWei;
-        projectConfig[_projectId].priceIsConfigured = true;
-        emit PricePerTokenInWeiUpdated(_projectId, _pricePerTokenInWei);
+    function projectAuctionParameters(
+        uint256 _projectId
+    )
+        external
+        view
+        returns (
+            uint256 timestampStart,
+            uint256 priceDecayHalfLifeSeconds,
+            uint256 startPrice,
+            uint256 basePrice
+        )
+    {
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        return (
+            _projectConfig.timestampStart,
+            _projectConfig.priceDecayHalfLifeSeconds,
+            _projectConfig.startPrice,
+            _projectConfig.basePrice
+        );
     }
 
     /**
-     * @notice Updates payment currency of project `_projectId` to be
-     * `_currencySymbol` at address `_currencyAddress`.
-     * @param _projectId Project ID to update.
-     * @param _currencySymbol Currency symbol.
-     * @param _currencyAddress Currency address.
+     * @notice Sets the minimum and maximum values that are settable for
+     * `_priceDecayHalfLifeSeconds` across all projects.
+     * @param _minimumPriceDecayHalfLifeSeconds Minimum price decay half life
+     * (in seconds).
+     * @param _maximumPriceDecayHalfLifeSeconds Maximum price decay half life
+     * (in seconds).
      */
-    function updateProjectCurrencyInfo(
-        uint256 _projectId,
-        string memory _currencySymbol,
-        address _currencyAddress
-    ) external onlyArtist(_projectId) {
-        // require null address if symbol is "ETH"
+    function setAllowablePriceDecayHalfLifeRangeSeconds(
+        uint256 _minimumPriceDecayHalfLifeSeconds,
+        uint256 _maximumPriceDecayHalfLifeSeconds
+    )
+        external
+        onlyCoreAdminACL(
+            this.setAllowablePriceDecayHalfLifeRangeSeconds.selector
+        )
+    {
         require(
-            (keccak256(abi.encodePacked(_currencySymbol)) ==
-                keccak256(abi.encodePacked("ETH"))) ==
-                (_currencyAddress == address(0)),
-            "ETH is only null address"
+            _maximumPriceDecayHalfLifeSeconds >
+                _minimumPriceDecayHalfLifeSeconds,
+            "Maximum half life must be greater than minimum"
         );
-        projectConfig[_projectId].currencySymbol = _currencySymbol;
-        projectConfig[_projectId].currencyAddress = _currencyAddress;
-        emit ProjectCurrencyInfoUpdated(
+        require(
+            _minimumPriceDecayHalfLifeSeconds > 0,
+            "Half life of zero not allowed"
+        );
+        minimumPriceDecayHalfLifeSeconds = _minimumPriceDecayHalfLifeSeconds;
+        maximumPriceDecayHalfLifeSeconds = _maximumPriceDecayHalfLifeSeconds;
+        emit AuctionHalfLifeRangeSecondsUpdated(
+            _minimumPriceDecayHalfLifeSeconds,
+            _maximumPriceDecayHalfLifeSeconds
+        );
+    }
+
+    ////// Auction Functions
+    /**
+     * @notice Sets auction details for project `_projectId`.
+     * @param _projectId Project ID to set auction details for.
+     * @param _auctionTimestampStart Timestamp at which to start the auction.
+     * @param _priceDecayHalfLifeSeconds The half life with which to decay the
+     *  price (in seconds).
+     * @param _startPrice Price at which to start the auction, in Wei.
+     * @param _basePrice Resting price of the auction, in Wei.
+     * @dev Note that it is intentionally supported here that the configured
+     * price may be explicitly set to `0`.
+     */
+    function setAuctionDetails(
+        uint256 _projectId,
+        uint256 _auctionTimestampStart,
+        uint256 _priceDecayHalfLifeSeconds,
+        uint256 _startPrice,
+        uint256 _basePrice
+    ) external onlyArtist(_projectId) {
+        // CHECKS
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        require(
+            _projectConfig.timestampStart == 0 ||
+                block.timestamp < _projectConfig.timestampStart,
+            "No modifications mid-auction"
+        );
+        require(
+            block.timestamp < _auctionTimestampStart,
+            "Only future auctions"
+        );
+        require(
+            _startPrice > _basePrice,
+            "Auction start price must be greater than auction end price"
+        );
+        require(
+            (_priceDecayHalfLifeSeconds >= minimumPriceDecayHalfLifeSeconds) &&
+                (_priceDecayHalfLifeSeconds <=
+                    maximumPriceDecayHalfLifeSeconds),
+            "Price decay half life must fall between min and max allowable values"
+        );
+        // EFFECTS
+        _projectConfig.timestampStart = _auctionTimestampStart.toUint64();
+        _projectConfig.priceDecayHalfLifeSeconds = _priceDecayHalfLifeSeconds
+            .toUint64();
+        _projectConfig.startPrice = _startPrice;
+        _projectConfig.basePrice = _basePrice;
+
+        emit SetAuctionDetails(
             _projectId,
-            _currencyAddress,
-            _currencySymbol
+            _auctionTimestampStart,
+            _priceDecayHalfLifeSeconds,
+            _startPrice,
+            _basePrice
         );
+    }
+
+    /**
+     * @notice Resets auction details for project `_projectId`, zero-ing out all
+     * relevant auction fields. Not intended to be used in normal auction
+     * operation, but rather only in case of the need to halt an auction.
+     * @param _projectId Project ID to set auction details for.
+     */
+    function resetAuctionDetails(
+        uint256 _projectId
+    ) external onlyCoreAdminACL(this.resetAuctionDetails.selector) {
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        // reset to initial values
+        _projectConfig.timestampStart = 0;
+        _projectConfig.priceDecayHalfLifeSeconds = 0;
+        _projectConfig.startPrice = 0;
+        _projectConfig.basePrice = 0;
+
+        emit ResetAuctionDetails(_projectId);
     }
 
     /**
@@ -362,8 +450,12 @@ contract MinterSetPriceERC20V4 is
             "Maximum number of invocations reached"
         );
 
-        // require artist to have configured price of token on this minter
-        require(_projectConfig.priceIsConfigured, "Price not configured");
+        // _getPrice reverts if auction is unconfigured or has not started
+        uint256 pricePerTokenInWei = _getPrice(_projectId);
+        require(
+            msg.value >= pricePerTokenInWei,
+            "Must send minimum value to mint!"
+        );
 
         // EFFECTS
         tokenId = minterFilter.mint(_to, _projectId, msg.sender);
@@ -377,38 +469,61 @@ contract MinterSetPriceERC20V4 is
         }
 
         // INTERACTIONS
-        uint256 pricePerTokenInWei = _projectConfig.pricePerTokenInWei;
-        address _currencyAddress = _projectConfig.currencyAddress;
-        if (_currencyAddress != address(0)) {
-            require(
-                msg.value == 0,
-                "this project accepts a different currency and cannot accept ETH"
-            );
-            require(
-                IERC20(_currencyAddress).allowance(msg.sender, address(this)) >=
-                    pricePerTokenInWei,
-                "Insufficient Funds Approved for TX"
-            );
-            require(
-                IERC20(_currencyAddress).balanceOf(msg.sender) >=
-                    pricePerTokenInWei,
-                "Insufficient balance."
-            );
-            splitFundsERC20(
-                _projectId,
-                pricePerTokenInWei,
-                _currencyAddress,
-                genArt721CoreAddress
-            );
-        } else {
-            require(
-                msg.value >= pricePerTokenInWei,
-                "Must send minimum value to mint!"
-            );
-            splitFundsETH(_projectId, pricePerTokenInWei, genArt721CoreAddress);
-        }
+        splitFundsETH(_projectId, pricePerTokenInWei, genArt721CoreAddress);
 
         return tokenId;
+    }
+
+    /**
+     * @notice Gets price of minting a token on project `_projectId` given
+     * the project's AuctionParameters and current block timestamp.
+     * Reverts if auction has not yet started or auction is unconfigured.
+     * @param _projectId Project ID to get price of token for.
+     * @return current price of token in Wei
+     * @dev This method calculates price decay using a linear interpolation
+     * of exponential decay based on the artist-provided half-life for price
+     * decay, `_priceDecayHalfLifeSeconds`.
+     */
+    function _getPrice(uint256 _projectId) private view returns (uint256) {
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        // move parameters to memory if used more than once
+        uint256 _timestampStart = uint256(_projectConfig.timestampStart);
+        uint256 _priceDecayHalfLifeSeconds = uint256(
+            _projectConfig.priceDecayHalfLifeSeconds
+        );
+        uint256 _basePrice = _projectConfig.basePrice;
+
+        require(block.timestamp > _timestampStart, "Auction not yet started");
+        require(_priceDecayHalfLifeSeconds > 0, "Only configured auctions");
+        uint256 decayedPrice = _projectConfig.startPrice;
+        uint256 elapsedTimeSeconds;
+        unchecked {
+            // already checked that block.timestamp > _timestampStart above
+            elapsedTimeSeconds = block.timestamp - _timestampStart;
+        }
+        // Divide by two (via bit-shifting) for the number of entirely completed
+        // half-lives that have elapsed since auction start time.
+        unchecked {
+            // already required _priceDecayHalfLifeSeconds > 0
+            decayedPrice >>= elapsedTimeSeconds / _priceDecayHalfLifeSeconds;
+        }
+        // Perform a linear interpolation between partial half-life points, to
+        // approximate the current place on a perfect exponential decay curve.
+        unchecked {
+            // value of expression is provably always less than decayedPrice,
+            // so no underflow is possible when the subtraction assignment
+            // operator is used on decayedPrice.
+            decayedPrice -=
+                (decayedPrice *
+                    (elapsedTimeSeconds % _priceDecayHalfLifeSeconds)) /
+                _priceDecayHalfLifeSeconds /
+                2;
+        }
+        if (decayedPrice < _basePrice) {
+            // Price may not decay below stay `basePrice`.
+            return _basePrice;
+        }
+        return decayedPrice;
     }
 
     /**
@@ -416,14 +531,14 @@ contract MinterSetPriceERC20V4 is
      * token on project `_projectId`, and currency symbol and address to be
      * used as payment. Supersedes any core contract price information.
      * @param _projectId Project ID to get price information for.
-     * @return isConfigured true only if token price has been configured on
-     * this minter
+     * @return isConfigured true only if project's auction parameters have been
+     * configured on this minter
      * @return tokenPriceInWei current price of token on this minter - invalid
-     * if price has not yet been configured
+     * if auction has not yet been configured
      * @return currencySymbol currency symbol for purchases of project on this
-     * minter. "ETH" reserved for ether.
+     * minter. This minter always returns "ETH"
      * @return currencyAddress currency address for purchases of project on
-     * this minter. Null address reserved for ether.
+     * this minter. This minter always returns null address, reserved for ether
      */
     function getPriceInfo(
         uint256 _projectId
@@ -438,14 +553,20 @@ contract MinterSetPriceERC20V4 is
         )
     {
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
-        isConfigured = _projectConfig.priceIsConfigured;
-        tokenPriceInWei = _projectConfig.pricePerTokenInWei;
-        currencyAddress = _projectConfig.currencyAddress;
-        if (currencyAddress == address(0)) {
-            // defaults to ETH
-            currencySymbol = "ETH";
+
+        isConfigured = (_projectConfig.startPrice > 0);
+        if (block.timestamp <= _projectConfig.timestampStart) {
+            // Provide a reasonable value for `tokenPriceInWei` when it would
+            // otherwise revert, using the starting price before auction starts.
+            tokenPriceInWei = _projectConfig.startPrice;
+        } else if (_projectConfig.startPrice == 0) {
+            // In the case of unconfigured auction, return price of zero when
+            // it would otherwise revert
+            tokenPriceInWei = 0;
         } else {
-            currencySymbol = _projectConfig.currencySymbol;
+            tokenPriceInWei = _getPrice(_projectId);
         }
+        currencySymbol = "ETH";
+        currencyAddress = address(0);
     }
 }
