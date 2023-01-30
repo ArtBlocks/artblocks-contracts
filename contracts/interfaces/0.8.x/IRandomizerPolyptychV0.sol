@@ -16,12 +16,6 @@ interface IRandomizerPolyptychV0 is IRandomizerV2 {
      */
     event ProjectIsPolyptychUpdated(uint256 _projectId, bool _isPolyptych);
 
-    // The core contract that may interact with this randomizer contract.
-    function genArt721Core()
-        external
-        view
-        returns (IGenArt721CoreContractV3_Base);
-
     /**
      * @notice When a core contract calls this, it can be assured that the randomizer
      * will set a bytes32 hash for tokenId `_tokenId` on the core contract. This function

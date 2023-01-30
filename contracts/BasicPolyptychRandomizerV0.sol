@@ -3,7 +3,7 @@
 
 pragma solidity 0.8.17;
 
-import "./interfaces/0.8.x/IGenArt721CoreContractV3_Engine.sol";
+import "./interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
 import "./interfaces/0.8.x/IRandomizerPolyptychV0.sol";
 
 import "@openzeppelin-4.7/contracts/access/Ownable.sol";
@@ -25,7 +25,7 @@ import "@openzeppelin-4.7/contracts/access/Ownable.sol";
  */
 contract BasicPolyptychRandomizerV0 is IRandomizerPolyptychV0, Ownable {
     // The core contract that may interact with this randomizer contract.
-    IGenArt721CoreContractV3_Engine public genArt721Core;
+    IGenArt721CoreContractV3_Base public genArt721Core;
 
     // Used to obtain the project ID from the token ID
     uint256 constant ONE_MILLION = 1_000_000;
@@ -41,7 +41,7 @@ contract BasicPolyptychRandomizerV0 is IRandomizerPolyptychV0, Ownable {
 
     function assignCoreAndRenounce(address _genArt721Core) external onlyOwner {
         renounceOwnership();
-        genArt721Core = IGenArt721CoreContractV3_Engine(_genArt721Core);
+        genArt721Core = IGenArt721CoreContractV3_Base(_genArt721Core);
     }
 
     // modifier to restrict access to only AdminACL allowed calls

@@ -664,7 +664,7 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
             );
     }
 
-    function requireCurrentPanelIsMintedOnce(
+    function _requireCurrentPanelIsMintedOnce(
         uint256 _projectId,
         address _ownedNFTAddress,
         uint256 _ownedNFTTokenId
@@ -780,7 +780,7 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
             _projectId
         );
 
-        requireCurrentPanelIsMintedOnce(
+        _requireCurrentPanelIsMintedOnce(
             _projectId,
             _ownedNFTAddress,
             _ownedNFTTokenId
