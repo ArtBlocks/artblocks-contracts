@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../../../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
-import "../../../interfaces/0.8.x/IMinterFilterV0.sol";
-import "../../../interfaces/0.8.x/IFilteredMinterDAExpV1.sol";
-import "../MinterBase_v0_1_1.sol";
+import "../../../../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
+import "../../../../interfaces/0.8.x/IMinterFilterV0.sol";
+import "../../../../interfaces/0.8.x/IFilteredMinterDAExpV1.sol";
 
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin-4.5/contracts/utils/math/SafeCast.sol";
@@ -14,8 +13,7 @@ pragma solidity 0.8.17;
 /**
  * @title Filtered Minter contract that allows tokens to be minted with ETH.
  * Pricing is achieved using an automated Dutch-auction mechanism.
- * This is designed to be used with GenArt721CoreContractV3 flagship or
- * engine contracts.
+ * This is designed to be used with IGenArt721CoreContractV3 contracts.
  * @author Art Blocks Inc.
  * @notice Privileged Roles and Ownership:
  * This contract is designed to be managed, with limited powers.
@@ -49,14 +47,14 @@ pragma solidity 0.8.17;
  * meaningfully impact price given the minimum allowable price decay rate that
  * this minter intends to support.
  */
-contract MinterDAExpV4 is ReentrancyGuard, MinterBase, IFilteredMinterDAExpV1 {
+contract MinterDAExpV3 is ReentrancyGuard, IFilteredMinterDAExpV1 {
     using SafeCast for uint256;
 
     /// Core contract address this minter interacts with
     address public immutable genArt721CoreAddress;
 
-    /// The core contract integrates with V3 contracts
-    IGenArt721CoreContractV3_Base private immutable genArtCoreContract_Base;
+    /// This contract handles cores with interface IV3
+    IGenArt721CoreContractV3 private immutable genArtCoreContract;
 
     /// Minter filter address this minter interacts with
     address public immutable minterFilterAddress;
@@ -65,7 +63,7 @@ contract MinterDAExpV4 is ReentrancyGuard, MinterBase, IFilteredMinterDAExpV1 {
     IMinterFilterV0 private immutable minterFilter;
 
     /// minterType for this minter
-    string public constant minterType = "MinterDAExpV4";
+    string public constant minterType = "MinterDAExpV3";
 
     uint256 constant ONE_MILLION = 1_000_000;
 
@@ -92,7 +90,7 @@ contract MinterDAExpV4 is ReentrancyGuard, MinterBase, IFilteredMinterDAExpV1 {
     // @dev defers which ACL contract is used to the core contract
     modifier onlyCoreAdminACL(bytes4 _selector) {
         require(
-            genArtCoreContract_Base.adminACLAllowed(
+            genArtCoreContract.adminACLAllowed(
                 msg.sender,
                 address(this),
                 _selector
@@ -105,7 +103,7 @@ contract MinterDAExpV4 is ReentrancyGuard, MinterBase, IFilteredMinterDAExpV1 {
     modifier onlyArtist(uint256 _projectId) {
         require(
             (msg.sender ==
-                genArtCoreContract_Base.projectIdToArtistAddress(_projectId)),
+                genArtCoreContract.projectIdToArtistAddress(_projectId)),
             "Only Artist"
         );
         _;
@@ -123,13 +121,9 @@ contract MinterDAExpV4 is ReentrancyGuard, MinterBase, IFilteredMinterDAExpV1 {
     constructor(
         address _genArt721Address,
         address _minterFilter
-    ) ReentrancyGuard() MinterBase(_genArt721Address) {
+    ) ReentrancyGuard() {
         genArt721CoreAddress = _genArt721Address;
-        // always populate immutable engine contracts, but only use appropriate
-        // interface based on isEngine in the rest of the contract
-        genArtCoreContract_Base = IGenArt721CoreContractV3_Base(
-            _genArt721Address
-        );
+        genArtCoreContract = IGenArt721CoreContractV3(_genArt721Address);
         minterFilterAddress = _minterFilter;
         minterFilter = IMinterFilterV0(_minterFilter);
         require(
@@ -150,7 +144,7 @@ contract MinterDAExpV4 is ReentrancyGuard, MinterBase, IFilteredMinterDAExpV1 {
     ) external onlyArtist(_projectId) {
         uint256 maxInvocations;
         uint256 invocations;
-        (invocations, maxInvocations, , , , ) = genArtCoreContract_Base
+        (invocations, maxInvocations, , , , ) = genArtCoreContract
             .projectStateData(_projectId);
 
         // update storage with results
@@ -185,7 +179,7 @@ contract MinterDAExpV4 is ReentrancyGuard, MinterBase, IFilteredMinterDAExpV1 {
         // ensure that the manually set maxInvocations is not greater than what is set on the core contract
         uint256 maxInvocations;
         uint256 invocations;
-        (invocations, maxInvocations, , , , ) = genArtCoreContract_Base
+        (invocations, maxInvocations, , , , ) = genArtCoreContract
             .projectStateData(_projectId);
         require(
             _maxInvocations <= maxInvocations,
@@ -451,9 +445,9 @@ contract MinterDAExpV4 is ReentrancyGuard, MinterBase, IFilteredMinterDAExpV1 {
         );
 
         // _getPrice reverts if auction is unconfigured or has not started
-        uint256 pricePerTokenInWei = _getPrice(_projectId);
+        uint256 currentPriceInWei = _getPrice(_projectId);
         require(
-            msg.value >= pricePerTokenInWei,
+            msg.value >= currentPriceInWei,
             "Must send minimum value to mint!"
         );
 
@@ -469,9 +463,65 @@ contract MinterDAExpV4 is ReentrancyGuard, MinterBase, IFilteredMinterDAExpV1 {
         }
 
         // INTERACTIONS
-        splitFundsETH(_projectId, pricePerTokenInWei, genArt721CoreAddress);
-
+        _splitFundsETHAuction(_projectId, currentPriceInWei);
         return tokenId;
+    }
+
+    /**
+     * @dev splits ETH funds between sender (if refund), foundation,
+     * artist, and artist's additional payee for a token purchased on
+     * project `_projectId`.
+     * @dev possible DoS during splits is acknowledged, and mitigated by
+     * business practices, including end-to-end testing on mainnet, and
+     * admin-accepted artist payment addresses.
+     * @param _projectId Project ID for which funds shall be split.
+     * @param _currentPriceInWei Current price of token, in Wei.
+     */
+    function _splitFundsETHAuction(
+        uint256 _projectId,
+        uint256 _currentPriceInWei
+    ) internal {
+        if (msg.value > 0) {
+            bool success_;
+            // send refund to sender
+            uint256 refund = msg.value - _currentPriceInWei;
+            if (refund > 0) {
+                (success_, ) = msg.sender.call{value: refund}("");
+                require(success_, "Refund failed");
+            }
+            // split remaining funds between foundation, artist, and artist's
+            // additional payee
+            (
+                uint256 artblocksRevenue_,
+                address payable artblocksAddress_,
+                uint256 artistRevenue_,
+                address payable artistAddress_,
+                uint256 additionalPayeePrimaryRevenue_,
+                address payable additionalPayeePrimaryAddress_
+            ) = genArtCoreContract.getPrimaryRevenueSplits(
+                    _projectId,
+                    _currentPriceInWei
+                );
+            // Art Blocks payment
+            if (artblocksRevenue_ > 0) {
+                (success_, ) = artblocksAddress_.call{value: artblocksRevenue_}(
+                    ""
+                );
+                require(success_, "Art Blocks payment failed");
+            }
+            // artist payment
+            if (artistRevenue_ > 0) {
+                (success_, ) = artistAddress_.call{value: artistRevenue_}("");
+                require(success_, "Artist payment failed");
+            }
+            // additional payee payment
+            if (additionalPayeePrimaryRevenue_ > 0) {
+                (success_, ) = additionalPayeePrimaryAddress_.call{
+                    value: additionalPayeePrimaryRevenue_
+                }("");
+                require(success_, "Additional Payee payment failed");
+            }
+        }
     }
 
     /**

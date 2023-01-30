@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../../../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
-import "../../../interfaces/0.8.x/IMinterFilterV0.sol";
-import "../../../interfaces/0.8.x/IFilteredMinterDAExpSettlementV0.sol";
-import "../MinterBase_v0_1_1.sol";
+import "../../../../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
+import "../../../../interfaces/0.8.x/IMinterFilterV0.sol";
+import "../../../../interfaces/0.8.x/IFilteredMinterDAExpSettlementV0.sol";
 
 import "@openzeppelin-4.7/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
@@ -15,8 +14,7 @@ pragma solidity 0.8.17;
  * @title Filtered Minter contract that allows tokens to be minted with ETH.
  * Pricing is achieved using an automated Dutch-auction mechanism, with a
  * settlement mechanism for tokens purchased before the auction ends.
- * This is designed to be used with GenArt721CoreContractV3 flagship or
- * engine contracts.
+ * This is designed to be used with IGenArt721CoreContractV3 contracts.
  * @author Art Blocks Inc.
  * @notice Privileged Roles and Ownership:
  * This contract is designed to be managed, with limited powers.
@@ -63,17 +61,17 @@ pragma solidity 0.8.17;
  * less than a minute should not meaningfully impact price given the minimum
  * allowable price decay rate that this minter intends to support.
  */
-contract MinterDAExpSettlementV1 is
+contract MinterDAExpSettlementV0 is
     ReentrancyGuard,
-    MinterBase,
     IFilteredMinterDAExpSettlementV0
 {
     using SafeCast for uint256;
 
     /// Core contract address this minter interacts with
     address public immutable genArt721CoreAddress;
-    /// The core contract integrates with V3 contracts
-    IGenArt721CoreContractV3_Base private immutable genArtCoreContract_Base;
+
+    /// This contract handles cores with interface IV3
+    IGenArt721CoreContractV3 private immutable genArtCoreContract;
 
     /// Minter filter address this minter interacts with
     address public immutable minterFilterAddress;
@@ -82,7 +80,7 @@ contract MinterDAExpSettlementV1 is
     IMinterFilterV0 private immutable minterFilter;
 
     /// minterType for this minter
-    string public constant minterType = "MinterDAExpSettlementV1";
+    string public constant minterType = "MinterDAExpSettlementV0";
 
     uint256 constant ONE_MILLION = 1_000_000;
 
@@ -138,9 +136,9 @@ contract MinterDAExpSettlementV1 is
     modifier onlyCoreAdminACLOrArtist(uint256 _projectId, bytes4 _selector) {
         require(
             (msg.sender ==
-                genArtCoreContract_Base.projectIdToArtistAddress(_projectId)) ||
+                genArtCoreContract.projectIdToArtistAddress(_projectId)) ||
                 (
-                    genArtCoreContract_Base.adminACLAllowed(
+                    genArtCoreContract.adminACLAllowed(
                         msg.sender,
                         address(this),
                         _selector
@@ -155,7 +153,7 @@ contract MinterDAExpSettlementV1 is
     // @dev defers which ACL contract is used to the core contract
     modifier onlyCoreAdminACL(bytes4 _selector) {
         require(
-            genArtCoreContract_Base.adminACLAllowed(
+            genArtCoreContract.adminACLAllowed(
                 msg.sender,
                 address(this),
                 _selector
@@ -168,7 +166,7 @@ contract MinterDAExpSettlementV1 is
     modifier onlyArtist(uint256 _projectId) {
         require(
             (msg.sender ==
-                genArtCoreContract_Base.projectIdToArtistAddress(_projectId)),
+                genArtCoreContract.projectIdToArtistAddress(_projectId)),
             "Only Artist"
         );
         _;
@@ -186,13 +184,9 @@ contract MinterDAExpSettlementV1 is
     constructor(
         address _genArt721Address,
         address _minterFilter
-    ) ReentrancyGuard() MinterBase(_genArt721Address) {
+    ) ReentrancyGuard() {
         genArt721CoreAddress = _genArt721Address;
-        // always populate immutable engine contracts, but only use appropriate
-        // interface based on isEngine in the rest of the contract
-        genArtCoreContract_Base = IGenArt721CoreContractV3_Base(
-            _genArt721Address
-        );
+        genArtCoreContract = IGenArt721CoreContractV3(_genArt721Address);
         minterFilterAddress = _minterFilter;
         minterFilter = IMinterFilterV0(_minterFilter);
         require(
@@ -551,7 +545,7 @@ contract MinterDAExpSettlementV1 is
         // calculate the artist and admin revenues (no check requuired)
         uint256 netRevenues = _projectConfig.numSettleableInvocations * _price;
         // INTERACTIONS
-        splitRevenuesETH(_projectId, netRevenues, genArt721CoreAddress);
+        _splitETHRevenues(_projectId, netRevenues);
         emit ArtistAndAdminRevenuesWithdrawn(_projectId);
     }
 
@@ -650,7 +644,7 @@ contract MinterDAExpSettlementV1 is
         // be accurate to ensure that the minters maxHasBeenInvoked is
         // accurate, so we get the value from the core contract directly.
         uint256 maxInvocations;
-        (, maxInvocations, , , , ) = genArtCoreContract_Base.projectStateData(
+        (, maxInvocations, , , , ) = genArtCoreContract.projectStateData(
             _projectId
         );
         // okay if this underflows because if statement will always eval false.
@@ -671,11 +665,7 @@ contract MinterDAExpSettlementV1 is
             // note that we don't refund msg.sender here, since a separate
             // settlement mechanism is provided on this minter, unrelated to
             // msg.value
-            splitRevenuesETH(
-                _projectId,
-                currentPriceInWei,
-                genArt721CoreAddress
-            );
+            _splitETHRevenues(_projectId, currentPriceInWei);
         } else {
             // increment the number of settleable invocations that will be
             // claimable by the artist and admin once auction is validated.
@@ -855,6 +845,56 @@ contract MinterDAExpSettlementV1 is
         bool success_;
         (success_, ) = _to.call{value: excessSettlementFunds}("");
         require(success_, "Reclaiming failed");
+    }
+
+    /**
+     * @dev splits ETH revenues between foundation, artist, and artist's
+     * additional payee for revenue generated by project `_projectId`.
+     * @dev possible DoS during splits is acknowledged, and mitigated by
+     * business practices, including end-to-end testing on mainnet, and
+     * admin-accepted artist payment addresses.
+     * @param _projectId Project ID for which funds shall be split.
+     * @param _valueInWei Value to be split, in Wei.
+     */
+    function _splitETHRevenues(
+        uint256 _projectId,
+        uint256 _valueInWei
+    ) internal {
+        if (_valueInWei > 0) {
+            bool success_;
+            // split funds between foundation, artist, and artist's
+            // additional payee
+            (
+                uint256 artblocksRevenue_,
+                address payable artblocksAddress_,
+                uint256 artistRevenue_,
+                address payable artistAddress_,
+                uint256 additionalPayeePrimaryRevenue_,
+                address payable additionalPayeePrimaryAddress_
+            ) = genArtCoreContract.getPrimaryRevenueSplits(
+                    _projectId,
+                    _valueInWei
+                );
+            // Art Blocks payment
+            if (artblocksRevenue_ > 0) {
+                (success_, ) = artblocksAddress_.call{value: artblocksRevenue_}(
+                    ""
+                );
+                require(success_, "Art Blocks payment failed");
+            }
+            // artist payment
+            if (artistRevenue_ > 0) {
+                (success_, ) = artistAddress_.call{value: artistRevenue_}("");
+                require(success_, "Artist payment failed");
+            }
+            // additional payee payment
+            if (additionalPayeePrimaryRevenue_ > 0) {
+                (success_, ) = additionalPayeePrimaryAddress_.call{
+                    value: additionalPayeePrimaryRevenue_
+                }("");
+                require(success_, "Additional Payee payment failed");
+            }
+        }
     }
 
     /**
