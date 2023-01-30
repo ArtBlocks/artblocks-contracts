@@ -41,17 +41,13 @@ async function main() {
   console.log(`Using MinterFilterV1 deployed at ${FILTER_CONTRACT_ADDRESS}`);
 
   // Deploy MinterDAExpV4 minter.
-  const minterDAExpV4Factory = new MinterDAExpV4__factory(
-    deployer
-  );
+  const minterDAExpV4Factory = new MinterDAExpV4__factory(deployer);
   const minterDAExpV4 = await minterDAExpV4Factory.deploy(
     CORE_CONTRACT_ADDRESS,
     FILTER_CONTRACT_ADDRESS
   );
   await minterDAExpV4.deployed();
-  console.log(
-    `MinterDAExpV4 deployed at ${minterDAExpV4.address}`
-  );
+  console.log(`MinterDAExpV4 deployed at ${minterDAExpV4.address}`);
 
   // Deploy MinterDAExpSettlementV1 minter.
   const minterDAExpSettlementV1Factory = new MinterDAExpSettlementV1__factory(
@@ -67,58 +63,42 @@ async function main() {
   );
 
   // Deploy MinterDALinV4 minter.
-  const minterDALinV4Factory = new MinterDALinV4__factory(
-    deployer
-  );
+  const minterDALinV4Factory = new MinterDALinV4__factory(deployer);
   const minterDALinV4 = await minterDALinV4Factory.deploy(
     CORE_CONTRACT_ADDRESS,
     FILTER_CONTRACT_ADDRESS
   );
   await minterDALinV4.deployed();
-  console.log(
-    `MinterDALinV4 deployed at ${minterDALinV4.address}`
-  );
+  console.log(`MinterDALinV4 deployed at ${minterDALinV4.address}`);
 
   // Deploy MinterHolderV4 minter.
-  const minterHolderV4Factory = new MinterHolderV4__factory(
-    deployer
-  );
+  const minterHolderV4Factory = new MinterHolderV4__factory(deployer);
   const minterHolderV4 = await minterHolderV4Factory.deploy(
     CORE_CONTRACT_ADDRESS,
     FILTER_CONTRACT_ADDRESS,
     DELEGATION_REGISTRY_ADDRESS
   );
   await minterHolderV4.deployed();
-  console.log(
-    `MinterHolderV4 deployed at ${minterHolderV4.address}`
-  );
+  console.log(`MinterHolderV4 deployed at ${minterHolderV4.address}`);
 
   // Deploy MinterMerkleV5 minter.
-  const minterMerkleV5Factory = new MinterMerkleV5__factory(
-    deployer
-  );
+  const minterMerkleV5Factory = new MinterMerkleV5__factory(deployer);
   const minterMerkleV5 = await minterMerkleV5Factory.deploy(
     CORE_CONTRACT_ADDRESS,
     FILTER_CONTRACT_ADDRESS,
     DELEGATION_REGISTRY_ADDRESS
   );
   await minterMerkleV5.deployed();
-  console.log(
-    `MinterMerkleV5 deployed at ${minterMerkleV5.address}`
-  );
+  console.log(`MinterMerkleV5 deployed at ${minterMerkleV5.address}`);
 
   // Deploy MinterSetPriceV4 minter.
-  const minterSetPriceV4Factory = new MinterSetPriceV4__factory(
-    deployer
-  );
+  const minterSetPriceV4Factory = new MinterSetPriceV4__factory(deployer);
   const minterSetPriceV4 = await minterSetPriceV4Factory.deploy(
     CORE_CONTRACT_ADDRESS,
     FILTER_CONTRACT_ADDRESS
   );
   await minterSetPriceV4.deployed();
-  console.log(
-    `MinterSetPriceV4 deployed at ${minterSetPriceV4.address}`
-  );
+  console.log(`MinterSetPriceV4 deployed at ${minterSetPriceV4.address}`);
 
   // Deploy MinterSetPriceERC20V4 minter.
   const minterSetPriceERC20V4Factory = new MinterSetPriceERC20V4__factory(
@@ -142,7 +122,6 @@ async function main() {
   // DEPLOYMENT ENDS HERE
   //////////////////////////////////////////////////////////////////////////////
 
-
   //////////////////////////////////////////////////////////////////////////////
   // VERIFICATION BEGINS HERE
   //////////////////////////////////////////////////////////////////////////////
@@ -157,16 +136,16 @@ async function main() {
     `${standardVerify} --network ${networkName} ${minterDAExpV4.address} ${CORE_CONTRACT_ADDRESS} ${FILTER_CONTRACT_ADDRESS}`
   );
   console.log(
-    `${standardVerify} --network ${networkName} ${minterDAExpSettlementV1.address} ${CORE_CONTRACT_ADDRESS} ${FILTER_CONTRACT_ADDRESS}` 
+    `${standardVerify} --network ${networkName} ${minterDAExpSettlementV1.address} ${CORE_CONTRACT_ADDRESS} ${FILTER_CONTRACT_ADDRESS}`
   );
   console.log(
-    `${standardVerify} --network ${networkName} ${minterDALinV4.address} ${CORE_CONTRACT_ADDRESS} ${FILTER_CONTRACT_ADDRESS}` 
+    `${standardVerify} --network ${networkName} ${minterDALinV4.address} ${CORE_CONTRACT_ADDRESS} ${FILTER_CONTRACT_ADDRESS}`
   );
   console.log(
-    `${standardVerify} --network ${networkName} ${minterHolderV4.address} ${CORE_CONTRACT_ADDRESS} ${FILTER_CONTRACT_ADDRESS} ${DELEGATION_REGISTRY_ADDRESS}` 
+    `${standardVerify} --network ${networkName} ${minterHolderV4.address} ${CORE_CONTRACT_ADDRESS} ${FILTER_CONTRACT_ADDRESS} ${DELEGATION_REGISTRY_ADDRESS}`
   );
   console.log(
-    `${standardVerify} --network ${networkName} ${minterMerkleV5.address} ${CORE_CONTRACT_ADDRESS} ${FILTER_CONTRACT_ADDRESS} ${DELEGATION_REGISTRY_ADDRESS}` 
+    `${standardVerify} --network ${networkName} ${minterMerkleV5.address} ${CORE_CONTRACT_ADDRESS} ${FILTER_CONTRACT_ADDRESS} ${DELEGATION_REGISTRY_ADDRESS}`
   );
   console.log(
     `${standardVerify} --network ${networkName} ${minterSetPriceV4.address} ${CORE_CONTRACT_ADDRESS} ${FILTER_CONTRACT_ADDRESS}`
@@ -178,54 +157,39 @@ async function main() {
   // Perform automated verification
   await hre.run("verify:verify", {
     address: minterDAExpV4.address,
-    constructorArguments: [
-        CORE_CONTRACT_ADDRESS,
-        FILTER_CONTRACT_ADDRESS
-    ],
+    constructorArguments: [CORE_CONTRACT_ADDRESS, FILTER_CONTRACT_ADDRESS],
   });
   await hre.run("verify:verify", {
     address: minterDAExpSettlementV1.address,
-    constructorArguments: [
-        CORE_CONTRACT_ADDRESS,
-        FILTER_CONTRACT_ADDRESS
-    ],
+    constructorArguments: [CORE_CONTRACT_ADDRESS, FILTER_CONTRACT_ADDRESS],
   });
   await hre.run("verify:verify", {
     address: minterDALinV4.address,
-    constructorArguments: [
-        CORE_CONTRACT_ADDRESS,
-        FILTER_CONTRACT_ADDRESS
-    ],
+    constructorArguments: [CORE_CONTRACT_ADDRESS, FILTER_CONTRACT_ADDRESS],
   });
   await hre.run("verify:verify", {
     address: minterHolderV4.address,
     constructorArguments: [
-        CORE_CONTRACT_ADDRESS,
-        FILTER_CONTRACT_ADDRESS,
-        DELEGATION_REGISTRY_ADDRESS
+      CORE_CONTRACT_ADDRESS,
+      FILTER_CONTRACT_ADDRESS,
+      DELEGATION_REGISTRY_ADDRESS,
     ],
   });
   await hre.run("verify:verify", {
     address: minterMerkleV5.address,
     constructorArguments: [
-        CORE_CONTRACT_ADDRESS,
-        FILTER_CONTRACT_ADDRESS,
-        DELEGATION_REGISTRY_ADDRESS
+      CORE_CONTRACT_ADDRESS,
+      FILTER_CONTRACT_ADDRESS,
+      DELEGATION_REGISTRY_ADDRESS,
     ],
   });
   await hre.run("verify:verify", {
     address: minterSetPriceV4.address,
-    constructorArguments: [
-        CORE_CONTRACT_ADDRESS,
-        FILTER_CONTRACT_ADDRESS
-    ],
+    constructorArguments: [CORE_CONTRACT_ADDRESS, FILTER_CONTRACT_ADDRESS],
   });
   await hre.run("verify:verify", {
     address: minterSetPriceERC20V4.address,
-    constructorArguments: [
-        CORE_CONTRACT_ADDRESS,
-        FILTER_CONTRACT_ADDRESS
-    ],
+    constructorArguments: [CORE_CONTRACT_ADDRESS, FILTER_CONTRACT_ADDRESS],
   });
 
   //////////////////////////////////////////////////////////////////////////////
