@@ -195,6 +195,25 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
     }
 
     /**
+     * @notice Returns whether or not a token has been used to mint a panel with the given ID.
+     * @param _panelId The ID of the polyptych panel being checked
+     * @param _ownedNFTAddress ERC-721 NFT address holding the project token
+     * owned by msg.sender being used to prove right to purchase
+     * @param _ownedNFTTokenId ERC-721 NFT token ID owned by msg.sender being used
+     * to prove right to purchase
+     */
+    function polyptychPanelMintedWithToken(
+        uint24 _panelId,
+        address _ownedNFTAddress,
+        uint256 _ownedNFTTokenId
+    ) external view returns (bool panelMinted) {
+        return
+            polyptychPanelIsMinted[_panelId][_ownedNFTAddress][
+                _ownedNFTTokenId
+            ];
+    }
+
+    /**
      *
      * @notice Registers holders of NFTs at address `_NFTAddress` to be
      * considered for minting. New core address is assumed to follow syntax of:
