@@ -121,10 +121,10 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
         bool maxHasBeenInvoked;
         bool priceIsConfigured;
         uint24 maxInvocations;
+        uint24 polyptychPanelId;
         address currencyAddress;
         uint256 pricePerTokenInWei;
         string currencySymbol;
-        uint24 polyptychPanelId;
     }
 
     mapping(uint256 => ProjectConfig) public projectConfig;
