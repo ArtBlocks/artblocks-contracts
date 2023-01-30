@@ -16,7 +16,7 @@ import "@openzeppelin-4.7/contracts/access/Ownable.sol";
  *
  * Requirements to use the polyptych randomizer:
  * - Core contract must be an instance of `GenArt721CoreV3_Engine`
- * - The initial project used as the first panel must be minted with a completely random token hash
+ * - The initial project used as the first panel should be minted with a pseudo random token hash
  * - An `MinterPolyptychV0` contract or similar must be deployed and configured as the `hashSeedSetterContract`
  * - The `projectDuplicateHashSeedLimit` should be configured for each project
  *
@@ -107,7 +107,7 @@ contract BasicPolyptychRandomizerV0 is IRandomizerPolyptychV0, Ownable {
 
         if (projectIsPolyptych[_tokenId / ONE_MILLION]) {
             bytes12 seededHash = polyptychHashSeeds[_tokenId];
-            require(seededHash != 0);
+            require(seededHash != 0, "Only non-zero hash seed");
             genArt721Core.setTokenHash_8PT(_tokenId, seededHash);
         } else {
             uint256 time = block.timestamp;
