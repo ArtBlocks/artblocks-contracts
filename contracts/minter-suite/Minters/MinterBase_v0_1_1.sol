@@ -103,18 +103,7 @@ contract MinterBase {
             address payable artistAddress_;
             uint256 additionalPayeePrimaryRevenue_;
             address payable additionalPayeePrimaryAddress_;
-            if (!isEngine) {
-                // get flagship splits
-                (
-                    renderProviderRevenue_, // artblocks revenue
-                    renderProviderAddress_, // artblocks address
-                    artistRevenue_,
-                    artistAddress_,
-                    additionalPayeePrimaryRevenue_,
-                    additionalPayeePrimaryAddress_
-                ) = IGenArt721CoreContractV3(genArtCoreContract)
-                    .getPrimaryRevenueSplits(projectId, valueInWei);
-            } else {
+            if (isEngine) {
                 // get engine splits
                 uint256 platformProviderRevenue_;
                 address payable platformProviderAddress_;
@@ -136,6 +125,17 @@ contract MinterBase {
                     }("");
                     require(success, "Platform Provider payment failed");
                 }
+            } else {
+                // get flagship splits
+                (
+                    renderProviderRevenue_, // artblocks revenue
+                    renderProviderAddress_, // artblocks address
+                    artistRevenue_,
+                    artistAddress_,
+                    additionalPayeePrimaryRevenue_,
+                    additionalPayeePrimaryAddress_
+                ) = IGenArt721CoreContractV3(genArtCoreContract)
+                    .getPrimaryRevenueSplits(projectId, valueInWei);
             }
             // Render Provider / Art Blocks payment
             if (renderProviderRevenue_ > 0) {
@@ -181,18 +181,7 @@ contract MinterBase {
         address payable artistAddress_;
         uint256 additionalPayeePrimaryRevenue_;
         address payable additionalPayeePrimaryAddress_;
-        if (!isEngine) {
-            // get flagship splits
-            (
-                renderProviderRevenue_, // artblocks revenue
-                renderProviderAddress_, // artblocks address
-                artistRevenue_,
-                artistAddress_,
-                additionalPayeePrimaryRevenue_,
-                additionalPayeePrimaryAddress_
-            ) = IGenArt721CoreContractV3(genArtCoreContract)
-                .getPrimaryRevenueSplits(projectId, pricePerTokenInWei);
-        } else {
+        if (isEngine) {
             // get engine splits
             uint256 platformProviderRevenue_;
             address payable platformProviderAddress_;
@@ -215,6 +204,17 @@ contract MinterBase {
                     platformProviderRevenue_
                 );
             }
+        } else {
+            // get flagship splits
+            (
+                renderProviderRevenue_, // artblocks revenue
+                renderProviderAddress_, // artblocks address
+                artistRevenue_,
+                artistAddress_,
+                additionalPayeePrimaryRevenue_,
+                additionalPayeePrimaryAddress_
+            ) = IGenArt721CoreContractV3(genArtCoreContract)
+                .getPrimaryRevenueSplits(projectId, pricePerTokenInWei);
         }
         // Art Blocks payment
         if (renderProviderRevenue_ > 0) {
