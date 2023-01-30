@@ -256,6 +256,42 @@ for (const coreContractName of coreContractsToTest) {
       });
     });
 
+    describe("polyptychPanelMintedWithToken", async function () {
+      it("describes the current state of the panel being minted", async function () {
+        expect(
+          await this.minter
+            .connect(this.accounts.artist)
+            .polyptychPanelMintedWithToken(
+              this.projectZero,
+              this.genArt721Core.address,
+              this.projectZeroTokenZero.toNumber()
+            )
+        ).to.be.false;
+
+        // mint a token
+        await this.minter
+          .connect(this.accounts.artist)
+          ["purchase(uint256,address,uint256)"](
+            this.projectZero,
+            this.genArt721Core.address,
+            this.projectZeroTokenZero.toNumber(),
+            {
+              value: this.pricePerTokenInWei,
+            }
+          );
+
+        expect(
+          await this.minter
+            .connect(this.accounts.artist)
+            .polyptychPanelMintedWithToken(
+              this.projectZero,
+              this.genArt721Core.address,
+              this.projectZeroTokenZero.toNumber()
+            )
+        ).to.be.true;
+      });
+    });
+
     describe("setProjectMaxInvocations", async function () {
       it("allows artist to call setProjectMaxInvocations", async function () {
         await this.minter
