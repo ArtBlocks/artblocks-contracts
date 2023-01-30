@@ -19,7 +19,7 @@ import {
 } from "../../../util/common";
 
 import { MinterSetPrice_ETH_Common } from "./MinterSetPrice.common";
-import { MinterSetPriceV1V2V3_Common } from "../MinterSetPriceV1V2V3.common";
+import { MinterSetPriceV1V2V3V4_Common } from "../MinterSetPriceV1V2V3V4.common";
 import { MinterSetPriceV2V3_Common } from "../MinterSetPriceV2V3.common";
 
 import { Logger } from "@ethersproject/logger";
@@ -154,8 +154,8 @@ for (const coreContractName of coreContractsToTest) {
       await MinterSetPrice_ETH_Common();
     });
 
-    describe("common MinterSetPrice V1V2V3 tests", async function () {
-      await MinterSetPriceV1V2V3_Common();
+    describe("common MinterSetPrice V1V2V3V4 tests", async function () {
+      await MinterSetPriceV1V2V3V4_Common();
     });
 
     describe("common MinterSetPrice V2V3 tests", async function () {

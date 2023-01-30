@@ -159,7 +159,10 @@ export async function deployCoreWithMinterFilter(
     await genArt721Core
       .connect(this.accounts.deployer)
       .updateMinterContract(minterFilter.address);
-  } else if (coreContractName.endsWith("V3_Engine")) {
+  } else if (
+    coreContractName.endsWith("V3_Engine") ||
+    coreContractName === "GenArt721CoreV3_Engine_IncorrectCoreType"
+  ) {
     randomizer = await deployAndGet.call(this, "BasicRandomizerV2", []);
     let adminACLContractName = useAdminACLWithEvents
       ? "MockAdminACLV0Events"
@@ -251,7 +254,7 @@ export function compareBN(
 // utility function to return if core is V3
 export async function isCoreV3(core: Contract): Promise<boolean> {
   try {
-    if ((await core.coreType()) === "GenArt721CoreV3") {
+    if ((await core.coreType()).startsWith("GenArt721CoreV3")) {
       return true;
     }
   } catch {

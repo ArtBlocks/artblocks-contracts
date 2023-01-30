@@ -155,7 +155,7 @@ MinterFilterV1 for flagship V3 core: [0x092B8F64e713d66b38522978BCf4649db14b931E
 
 Legacy minting contract for flagship V0 core: [0x47e312d99c09ce61a866c83cbbbbed5a4b9d33e7](https://etherscan.io/address/0x47e312d99c09ce61a866c83cbbbbed5a4b9d33e7).
 
-For deployed Engine/Partner/Explorations minting contracts, see the archived source code in the `/posterity/engine/` directory and the deployment logs in `/scripts/engine/` directories.
+For deployed Engine/Partner/Explorations minting contracts that integrate with V2 core contracts, see the archived source code in the `/posterity/engine/<engine-partner>/` directory and the deployment logs in `/deployments/engine/[V2|V3]/<engine-partner>/` directories. For V3 deployments, deployment script inputs are also available in the `/deployments/engine/[V2|V3]/<engine-partner>/` directories.
 
 ### Shared Randomizers
 
@@ -182,7 +182,7 @@ The following represents the current set of flagship core contracts deployed on 
 
 > Formerly known as PBAB or PRTNR core contracts
 
-For deployed core contracts, see the archived source code in the `/posterity/engine/` directory and the deployment logs in `/scripts/engine/` directories.
+For deployed core contracts, see the archived source code in the `/posterity/engine/` directory and the deployment logs in `/deployments/engine/[V2|V3]/<engine-partner>/` directories.
 
 ## Contract Source Code Verification
 
@@ -245,6 +245,10 @@ Additionally, the following settings may be configured/changed by a core contrac
   - Royalty [BPS](https://www.investopedia.com/terms/b/basispoint.asp) may be changed from default values of 2.5% to any value less than or equal to the default (cannot be increased above default). This can be configured by a core contract's `admin` via the override contract's function `updateArtblocksBpsForContract`.
 - **Change Art Blocks Royalty Payment Address**
   - The address to receive Art Blocks royalty payments may be updated by a core contract's admin via the royalty override contract's function `updateArtblocksRoyaltyAddressForContract`.
+
+# Source Code Archival
+
+An NPM package is published that includes all contracts in the `/contracts/` directory. The `/contracts/archive/` directory contains contracts that were previously published, but are no longer actively developed, but should still be included in our published npm package. For example, the original Art Blocks core contracts are included in the `/contracts/archive/` directory so they may be actively integrated with subgraphs and frontends, even though they are no longer actively developed.
 
 # References
 
