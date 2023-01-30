@@ -1070,7 +1070,10 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
         // mark the polyptych panel as minted so the same panel cannot be minted twice
         uint256 _panelId = projectConfig[_projectId].polyptychPanelId;
 
-        require(_tokenHashSeed != bytes12(0), "Cannot have an empty hash seed to copy.");
+        require(
+            _tokenHashSeed != bytes12(0),
+            "Cannot have an empty hash seed to copy."
+        );
 
         require(
             !polyptychPanelHashSeedIsMinted[_panelId][_tokenHashSeed],
