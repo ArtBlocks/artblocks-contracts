@@ -208,8 +208,8 @@ for (const coreContractName of coreContractsToTest) {
           this.delegationRegistry.address
         );
         const receipt = await tx.deployTransaction.wait();
-        // target event "DelegationRegistryUpdated" is the log at index 1
-        const targetLog = receipt.logs[1];
+        // target event "DelegationRegistryUpdated" is the log at index 0
+        const targetLog = receipt.logs[0];
         // expect log 0 to be keccak256 of event signature
         await expect(targetLog.topics[0]).to.be.equal(
           ethers.utils.keccak256(
