@@ -671,11 +671,10 @@ contract MinterDAExpSettlementV1 is
             // note that we don't refund msg.sender here, since a separate
             // settlement mechanism is provided on this minter, unrelated to
             // msg.value
-            MinterUtils.splitRevenuesETH(
+            splitRevenuesETH(
                 _projectId,
                 currentPriceInWei,
-                genArt721CoreAddress,
-                isEngine
+                genArt721CoreAddress
             );
         } else {
             // increment the number of settleable invocations that will be
