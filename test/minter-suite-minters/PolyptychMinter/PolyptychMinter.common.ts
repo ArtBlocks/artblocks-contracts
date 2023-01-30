@@ -213,7 +213,7 @@ export const PolyptychMinter_Common = async () => {
         .incrementPolyptychProjectPanelId(this.projectZero);
       // cannot purchase token with ERC20 token when insufficient balance
       await this.ERC20Mock.connect(this.accounts.artist).transfer(
-        this.accounts.artist.address,
+        this.accounts.user.address,
         ethers.utils.parseEther("100").sub(this.pricePerTokenInWei)
       );
       await expectRevert(
