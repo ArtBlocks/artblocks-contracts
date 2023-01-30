@@ -219,7 +219,7 @@ for (const coreContractName of coreContractsToTest) {
 
       // mock ERC20 token
       const ERC20Factory = await ethers.getContractFactory("ERC20Mock");
-      this.ERC20Mock = await ERC20Factory.connect(this.accounts.user).deploy(
+      this.ERC20Mock = await ERC20Factory.connect(this.accounts.artist).deploy(
         ethers.utils.parseEther("100")
       );
     });

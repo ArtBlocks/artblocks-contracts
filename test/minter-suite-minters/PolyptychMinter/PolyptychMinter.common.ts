@@ -208,6 +208,9 @@ export const PolyptychMinter_Common = async () => {
           this.genArt721Core.address,
           this.projectZeroTokenZero.toNumber()
         );
+      await this.minter
+        .connect(this.accounts.artist)
+        .incrementPolyptychProjectPanelId(this.projectZero);
       // cannot purchase token with ERC20 token when insufficient balance
       await this.ERC20Mock.connect(this.accounts.artist).transfer(
         this.accounts.artist.address,
@@ -1466,12 +1469,12 @@ export const PolyptychMinter_Common = async () => {
       // reports expected value
       expect(
         await this.minter
-          .connect(this.accounts.user)
+          .connect(this.accounts.artist)
           .getYourBalanceOfProjectERC20(this.projectZero)
       ).to.be.equal(ethers.utils.parseEther("100"));
       expect(
         await this.minter
-          .connect(this.accounts.artist)
+          .connect(this.accounts.user)
           .getYourBalanceOfProjectERC20(this.projectZero)
       ).to.be.equal(0);
     });
