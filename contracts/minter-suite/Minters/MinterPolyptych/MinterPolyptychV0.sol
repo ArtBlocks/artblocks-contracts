@@ -195,7 +195,7 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
     }
 
     /**
-     * @notice Returns whether or not a token has been used to mint a panel with the given ID.
+     * @notice Return whether or not a token has been used to mint a polyptych panel with the given ID
      * @param _panelId The ID of the polyptych panel being checked
      * @param _ownedNFTAddress ERC-721 NFT address holding the project token
      * owned by msg.sender being used to prove right to purchase
