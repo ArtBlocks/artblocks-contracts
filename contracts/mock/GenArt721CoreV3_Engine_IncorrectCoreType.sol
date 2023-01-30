@@ -27,8 +27,8 @@ contract GenArt721CoreV3_Engine_IncorrectCoreType is
     ERC721_PackedHashSeed,
     Ownable,
     IDependencyRegistryCompatibleV0,
-    IManifold,
-    IGenArt721CoreContractV3_Engine
+    IManifold
+    // INTERFACE CONFORMANCE INTENTIONALLY OMITTED TO ENABLE MOCKING BUGGED CONTRACT
 {
     using BytecodeStorage for string;
     using BytecodeStorage for address;
@@ -344,7 +344,7 @@ contract GenArt721CoreV3_Engine_IncorrectCoreType is
         );
         // initialize next project ID
         _nextProjectId = _startingProjectId;
-        emit PlatformUpdated(FIELD_NEXT_PROJECT_ID);
+        // emit PlatformUpdated(FIELD_NEXT_PROJECT_ID);
         // register contract as an Engine contract
         IEngineRegistryV0(_engineRegistryContract).registerContract(
             address(this),
@@ -423,7 +423,7 @@ contract GenArt721CoreV3_Engine_IncorrectCoreType is
         // Do not need to also log `projectId` in event, as the `projectId` for
         // a given token can be derived from the `tokenId` with:
         //   projectId = tokenId / 1_000_000
-        emit Mint(_to, thisTokenId);
+        // emit Mint(_to, thisTokenId);
 
         return thisTokenId;
     }
@@ -500,7 +500,7 @@ contract GenArt721CoreV3_Engine_IncorrectCoreType is
         onlyNonZeroAddress(_artblocksDependencyRegistryAddress)
     {
         artblocksDependencyRegistryAddress = _artblocksDependencyRegistryAddress;
-        emit PlatformUpdated(FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS);
+        // emit PlatformUpdated(FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS);
     }
 
     /**
@@ -564,7 +564,7 @@ contract GenArt721CoreV3_Engine_IncorrectCoreType is
         _platformProviderPrimarySalesPercentage = uint8(
             platformProviderPrimarySalesPercentage_
         );
-        emit PlatformUpdated(FIELD_PROVIDER_PRIMARY_SALES_PERCENTAGES);
+        // emit PlatformUpdated(FIELD_PROVIDER_PRIMARY_SALES_PERCENTAGES);
     }
 
     /**
@@ -593,7 +593,7 @@ contract GenArt721CoreV3_Engine_IncorrectCoreType is
         );
         renderProviderSecondarySalesBPS = _renderProviderSecondarySalesBPS;
         platformProviderSecondarySalesBPS = _platformProviderSecondarySalesBPS;
-        emit PlatformUpdated(FIELD_PROVIDER_SECONDARY_SALES_BPS);
+        // emit PlatformUpdated(FIELD_PROVIDER_SECONDARY_SALES_BPS);
     }
 
     /**
@@ -608,7 +608,7 @@ contract GenArt721CoreV3_Engine_IncorrectCoreType is
         onlyNonZeroAddress(_address)
     {
         minterContract = _address;
-        emit MinterUpdated(_address);
+        // emit MinterUpdated(_address);
     }
 
     /**
@@ -637,7 +637,7 @@ contract GenArt721CoreV3_Engine_IncorrectCoreType is
         onlyValidProjectId(_projectId)
     {
         projects[_projectId].active = !projects[_projectId].active;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_ACTIVE);
+        // emit ProjectUpdated(_projectId, FIELD_PROJECT_ACTIVE);
     }
 
     /**
@@ -707,14 +707,14 @@ contract GenArt721CoreV3_Engine_IncorrectCoreType is
         // emit event for off-chain indexing
         // note: always emit a proposal event, even in the pathway of
         // automatic approval, to simplify indexing expectations
-        emit ProposedArtistAddressesAndSplits(
-            _projectId,
-            _artistAddress,
-            _additionalPayeePrimarySales,
-            _additionalPayeePrimarySalesPercentage,
-            _additionalPayeeSecondarySales,
-            _additionalPayeeSecondarySalesPercentage
-        );
+        // emit ProposedArtistAddressesAndSplits(
+        //     _projectId,
+        //     _artistAddress,
+        //     _additionalPayeePrimarySales,
+        //     _additionalPayeePrimarySalesPercentage,
+        //     _additionalPayeeSecondarySales,
+        //     _additionalPayeeSecondarySalesPercentage
+        // );
         // automatically accept if no proposed addresses modifications, or if
         // the proposal only removes payee addresses, or if contract is set to
         // always auto-approve.
@@ -755,7 +755,7 @@ contract GenArt721CoreV3_Engine_IncorrectCoreType is
                 _additionalPayeeSecondarySalesPercentage
             );
             // emit event for off-chain indexing
-            emit AcceptedArtistAddressesAndSplits(_projectId);
+            // emit AcceptedArtistAddressesAndSplits(_projectId);
         } else {
             proposedArtistAddressesAndSplitsHash[_projectId] = keccak256(
                 abi.encode(
@@ -842,7 +842,7 @@ contract GenArt721CoreV3_Engine_IncorrectCoreType is
         // clear proposed values
         proposedArtistAddressesAndSplitsHash[_projectId] = bytes32(0);
         // emit event for off-chain indexing
-        emit AcceptedArtistAddressesAndSplits(_projectId);
+        // emit AcceptedArtistAddressesAndSplits(_projectId);
     }
 
     /**
@@ -865,7 +865,7 @@ contract GenArt721CoreV3_Engine_IncorrectCoreType is
         onlyNonZeroAddress(_artistAddress)
     {
         projectIdToFinancials[_projectId].artistAddress = _artistAddress;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_ARTIST_ADDRESS);
+        // emit ProjectUpdated(_projectId, FIELD_PROJECT_ARTIST_ADDRESS);
     }
 
     /**
@@ -876,7 +876,7 @@ contract GenArt721CoreV3_Engine_IncorrectCoreType is
         uint256 _projectId
     ) external onlyArtist(_projectId) {
         projects[_projectId].paused = !projects[_projectId].paused;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_PAUSED);
+        // emit ProjectUpdated(_projectId, FIELD_PROJECT_PAUSED);
     }
 
     /**
@@ -903,7 +903,7 @@ contract GenArt721CoreV3_Engine_IncorrectCoreType is
         projects[projectId].projectBaseURI = defaultBaseURI;
 
         _nextProjectId = uint248(projectId) + 1;
-        emit ProjectUpdated(projectId, FIELD_PROJECT_CREATED);
+        // emit ProjectUpdated(projectId, FIELD_PROJECT_CREATED);
     }
 
     /**
@@ -932,7 +932,7 @@ contract GenArt721CoreV3_Engine_IncorrectCoreType is
         onlyNonEmptyString(_projectName)
     {
         projects[_projectId].name = _projectName;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_NAME);
+        // emit ProjectUpdated(_projectId, FIELD_PROJECT_NAME);
     }
 
     /**
@@ -951,7 +951,7 @@ contract GenArt721CoreV3_Engine_IncorrectCoreType is
         onlyNonEmptyString(_projectArtistName)
     {
         projects[_projectId].artist = _projectArtistName;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_ARTIST_NAME);
+        // emit ProjectUpdated(_projectId, FIELD_PROJECT_ARTIST_NAME);
     }
 
     /**
@@ -975,10 +975,10 @@ contract GenArt721CoreV3_Engine_IncorrectCoreType is
         );
         projectIdToFinancials[_projectId]
             .secondaryMarketRoyaltyPercentage = uint8(_secondMarketRoyalty);
-        emit ProjectUpdated(
-            _projectId,
-            FIELD_PROJECT_SECONDARY_MARKET_ROYALTY_PERCENTAGE
-        );
+        // emit ProjectUpdated(
+        //     _projectId,
+        //     FIELD_PROJECT_SECONDARY_MARKET_ROYALTY_PERCENTAGE
+        // );
     }
 
     /**
@@ -1004,7 +1004,7 @@ contract GenArt721CoreV3_Engine_IncorrectCoreType is
         );
         // effects
         projects[_projectId].description = _projectDescription;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_DESCRIPTION);
+        // emit ProjectUpdated(_projectId, FIELD_PROJECT_DESCRIPTION);
     }
 
     /**
@@ -1018,7 +1018,7 @@ contract GenArt721CoreV3_Engine_IncorrectCoreType is
         string memory _projectWebsite
     ) external onlyArtist(_projectId) {
         projects[_projectId].website = _projectWebsite;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_WEBSITE);
+        // emit ProjectUpdated(_projectId, FIELD_PROJECT_WEBSITE);
     }
 
     /**
@@ -1036,7 +1036,7 @@ contract GenArt721CoreV3_Engine_IncorrectCoreType is
         onlyNonEmptyString(_projectLicense)
     {
         projects[_projectId].license = _projectLicense;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_LICENSE);
+        // emit ProjectUpdated(_projectId, FIELD_PROJECT_LICENSE);
     }
 
     /**
@@ -1065,7 +1065,7 @@ contract GenArt721CoreV3_Engine_IncorrectCoreType is
         );
         // EFFECTS
         project.maxInvocations = _maxInvocations;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_MAX_INVOCATIONS);
+        // emit ProjectUpdated(_projectId, FIELD_PROJECT_MAX_INVOCATIONS);
 
         // register completed timestamp if action completed the project
         if (_maxInvocations == _invocations) {
@@ -1093,7 +1093,7 @@ contract GenArt721CoreV3_Engine_IncorrectCoreType is
         project.scriptBytecodeAddresses[project.scriptCount] = _script
             .writeToBytecode();
         project.scriptCount = project.scriptCount + 1;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
+        // emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
     }
 
     /**
@@ -1128,7 +1128,7 @@ contract GenArt721CoreV3_Engine_IncorrectCoreType is
         // store script in contract bytecode, replacing reference address from
         // the contract that no longer exists with the newly created one
         project.scriptBytecodeAddresses[_scriptId] = _script.writeToBytecode();
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
+        // emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
     }
 
     /**
@@ -1161,7 +1161,7 @@ contract GenArt721CoreV3_Engine_IncorrectCoreType is
         unchecked {
             project.scriptCount = project.scriptCount - 1;
         }
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
+        // emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
     }
 
     /**
@@ -1188,7 +1188,7 @@ contract GenArt721CoreV3_Engine_IncorrectCoreType is
             "must contain exactly one @"
         );
         project.scriptTypeAndVersion = _scriptTypeAndVersion;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT_TYPE);
+        // emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT_TYPE);
     }
 
     /**
@@ -1235,7 +1235,7 @@ contract GenArt721CoreV3_Engine_IncorrectCoreType is
         require(hasSeenNumber, "Aspect ratio has no numbers");
 
         projects[_projectId].aspectRatio = _aspectRatio;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_ASPECT_RATIO);
+        // emit ProjectUpdated(_projectId, FIELD_PROJECT_ASPECT_RATIO);
     }
 
     /**
@@ -1251,7 +1251,7 @@ contract GenArt721CoreV3_Engine_IncorrectCoreType is
         string memory _newBaseURI
     ) external onlyArtist(_projectId) onlyNonEmptyString(_newBaseURI) {
         projects[_projectId].projectBaseURI = _newBaseURI;
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_BASE_URI);
+        // emit ProjectUpdated(_projectId, FIELD_PROJECT_BASE_URI);
     }
 
     /**
@@ -1704,17 +1704,7 @@ contract GenArt721CoreV3_Engine_IncorrectCoreType is
     }
 
     /**
-     * @notice View function that returns appropriate revenue splits between
-     * different render provider, platform provider, Artist, and Artist's
-     * additional primary sales payee given a sale price of `_price` on
-     * project `_projectId`.
-     * This always returns four revenue amounts and four addresses, but if a
-     * revenue is zero for either Artist or additional payee, the corresponding
-     * address returned will also be null (for gas optimization).
-     * Does not account for refund if user overpays for a token (minter should
-     * handle a refund of the difference, if appropriate).
-     * Some minters may have alternative methods of splitting payments, in
-     * which case they should implement their own payment splitting logic.
+     * @notice WARNING - DO NOT USE - THIS IS AN INTENTIONALLY BUGGED FUNCTION
      * @param _projectId Project ID to be queried.
      * @param _price Sale price of token.
      * @return renderProviderRevenue_ amount of revenue to be sent to the
@@ -1728,9 +1718,6 @@ contract GenArt721CoreV3_Engine_IncorrectCoreType is
      * if no revenue is due to artist (gas optimization).
      * @return additionalPayeePrimaryRevenue_ amount of revenue to be sent to
      * additional payee for primary sales
-     * @return additionalPayeePrimaryAddress_ address to send Artist's
-     * additional payee for primary sales revenue to. Will be null if no
-     * revenue is due to additional payee for primary sales (gas optimization).
      * @dev this always returns four addresses and four revenues, but if the
      * revenue is zero, the corresponding address will be address(0). It is up
      * to the contract performing the revenue split to handle this
@@ -1749,9 +1736,9 @@ contract GenArt721CoreV3_Engine_IncorrectCoreType is
             address payable platformProviderAddress_,
             uint256 artistRevenue_,
             address payable artistAddress_,
-            uint256 additionalPayeePrimaryRevenue_,
-            address payable additionalPayeePrimaryAddress_
+            uint256 additionalPayeePrimaryRevenue_
         )
+    // intentionally returning 7 values to invoke failure during minter deployment
     {
         ProjectFinance storage projectFinance = projectIdToFinancials[
             _projectId
@@ -1783,10 +1770,6 @@ contract GenArt721CoreV3_Engine_IncorrectCoreType is
         platformProviderAddress_ = platformProviderPrimarySalesAddress;
         if (artistRevenue_ > 0) {
             artistAddress_ = projectFinance.artistAddress;
-        }
-        if (additionalPayeePrimaryRevenue_ > 0) {
-            additionalPayeePrimaryAddress_ = projectFinance
-                .additionalPayeePrimarySales;
         }
     }
 
@@ -1845,12 +1828,7 @@ contract GenArt721CoreV3_Engine_IncorrectCoreType is
      * @dev ref: https://docs.openzeppelin.com/contracts/4.x/api/access#Ownable
      * @dev owner role was called `admin` prior to V3 core contract
      */
-    function owner()
-        public
-        view
-        override(Ownable, IGenArt721CoreContractV3_Base)
-        returns (address)
-    {
+    function owner() public view override(Ownable) returns (address) {
         return Ownable.owner();
     }
 
@@ -1888,7 +1866,7 @@ contract GenArt721CoreV3_Engine_IncorrectCoreType is
     function _forbidNewProjects() internal {
         if (!newProjectsForbidden) {
             newProjectsForbidden = true;
-            emit PlatformUpdated(FIELD_NEW_PROJECTS_FORBIDDEN);
+            // emit PlatformUpdated(FIELD_NEW_PROJECTS_FORBIDDEN);
         }
     }
 
@@ -1938,7 +1916,7 @@ contract GenArt721CoreV3_Engine_IncorrectCoreType is
         renderProviderSecondarySalesAddress = payable(
             _renderProviderSecondarySalesAddress
         );
-        emit PlatformUpdated(FIELD_PROVIDER_SALES_ADDRESSES);
+        // emit PlatformUpdated(FIELD_PROVIDER_SALES_ADDRESSES);
     }
 
     /**
@@ -1952,7 +1930,7 @@ contract GenArt721CoreV3_Engine_IncorrectCoreType is
         randomizerContract = IRandomizerV2(_randomizerAddress);
         // populate historical randomizer array
         _historicalRandomizerAddresses.push(_randomizerAddress);
-        emit PlatformUpdated(FIELD_RANDOMIZER_ADDRESS);
+        // emit PlatformUpdated(FIELD_RANDOMIZER_ADDRESS);
     }
 
     /**
@@ -1966,7 +1944,7 @@ contract GenArt721CoreV3_Engine_IncorrectCoreType is
      */
     function _updateDefaultBaseURI(string memory _defaultBaseURI) internal {
         defaultBaseURI = _defaultBaseURI;
-        emit PlatformUpdated(FIELD_DEFAULT_BASE_URI);
+        // emit PlatformUpdated(FIELD_DEFAULT_BASE_URI);
     }
 
     /**
@@ -1975,7 +1953,7 @@ contract GenArt721CoreV3_Engine_IncorrectCoreType is
      */
     function _completeProject(uint256 _projectId) internal {
         projects[_projectId].completedTimestamp = uint64(block.timestamp);
-        emit ProjectUpdated(_projectId, FIELD_PROJECT_COMPLETED);
+        // emit ProjectUpdated(_projectId, FIELD_PROJECT_COMPLETED);
     }
 
     /**
