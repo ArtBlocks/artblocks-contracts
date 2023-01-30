@@ -3,7 +3,7 @@
 
 import "../../../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
 import "../../../interfaces/0.8.x/IMinterFilterV0.sol";
-import "../../../interfaces/0.8.x/IFilteredMinterDAExpV2.sol";
+import "../../../interfaces/0.8.x/IFilteredMinterDAExpV1.sol";
 import "../MinterBase_v0_1_1.sol";
 
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
@@ -49,7 +49,7 @@ pragma solidity 0.8.17;
  * meaningfully impact price given the minimum allowable price decay rate that
  * this minter intends to support.
  */
-contract MinterDAExpV4 is ReentrancyGuard, MinterBase, IFilteredMinterDAExpV2 {
+contract MinterDAExpV4 is ReentrancyGuard, MinterBase, IFilteredMinterDAExpV1 {
     using SafeCast for uint256;
 
     /// Core contract address this minter interacts with

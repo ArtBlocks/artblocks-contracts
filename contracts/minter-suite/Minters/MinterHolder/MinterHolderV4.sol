@@ -3,7 +3,7 @@
 
 import "../../../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
 import "../../../interfaces/0.8.x/IMinterFilterV0.sol";
-import "../../../interfaces/0.8.x/IFilteredMinterHolderV3.sol";
+import "../../../interfaces/0.8.x/IFilteredMinterHolderV2.sol";
 import "../MinterBase_v0_1_1.sol";
 import "../../../interfaces/0.8.x/IDelegationRegistry.sol";
 
@@ -63,7 +63,7 @@ pragma solidity 0.8.17;
 contract MinterHolderV4 is
     ReentrancyGuard,
     MinterBase,
-    IFilteredMinterHolderV3
+    IFilteredMinterHolderV2
 {
     // add Enumerable Set methods
     using EnumerableSet for EnumerableSet.AddressSet;

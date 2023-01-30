@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
+import "../../interfaces/0.8.x/IMinterBaseV0.sol";
 import "../../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
 import "../../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
 import "../../interfaces/0.8.x/IGenArt721CoreContractV3_Engine.sol";
@@ -23,7 +24,7 @@ pragma solidity ^0.8.0;
  * controlled by contracts importing the appropriate filename version.
  * @author Art Blocks Inc.
  */
-contract MinterBase {
+abstract contract MinterBase is IMinterBaseV0 {
     /// state variable that tracks whether this contract's associated core
     /// contract is an Engine contract, where Engine contracts have an
     /// additional revenue split for the platform provider

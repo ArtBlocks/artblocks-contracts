@@ -3,7 +3,7 @@
 
 import "../../../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
 import "../../../interfaces/0.8.x/IMinterFilterV0.sol";
-import "../../../interfaces/0.8.x/IFilteredMinterDAExpSettlementV1.sol";
+import "../../../interfaces/0.8.x/IFilteredMinterDAExpSettlementV0.sol";
 import "../MinterBase_v0_1_1.sol";
 
 import "@openzeppelin-4.7/contracts/security/ReentrancyGuard.sol";
@@ -66,7 +66,7 @@ pragma solidity 0.8.17;
 contract MinterDAExpSettlementV1 is
     ReentrancyGuard,
     MinterBase,
-    IFilteredMinterDAExpSettlementV1
+    IFilteredMinterDAExpSettlementV0
 {
     using SafeCast for uint256;
 

@@ -3,7 +3,7 @@
 
 import "../../../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
 import "../../../interfaces/0.8.x/IMinterFilterV0.sol";
-import "../../../interfaces/0.8.x/IFilteredMinterV3.sol";
+import "../../../interfaces/0.8.x/IFilteredMinterV2.sol";
 import "../MinterBase_v0_1_1.sol";
 
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
@@ -31,7 +31,7 @@ pragma solidity 0.8.17;
  * Additional admin and artist privileged roles may be described on other
  * contracts that this minter integrates with.
  */
-contract MinterSetPriceV4 is ReentrancyGuard, MinterBase, IFilteredMinterV3 {
+contract MinterSetPriceV4 is ReentrancyGuard, MinterBase, IFilteredMinterV2 {
     /// Core contract address this minter interacts with
     address public immutable genArt721CoreAddress;
 

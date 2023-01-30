@@ -3,7 +3,7 @@
 
 import "../../../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
 import "../../../interfaces/0.8.x/IMinterFilterV0.sol";
-import "../../../interfaces/0.8.x/IFilteredMinterMerkleV3.sol";
+import "../../../interfaces/0.8.x/IFilteredMinterMerkleV2.sol";
 import "../../../interfaces/0.8.x/IDelegationRegistry.sol";
 import "../MinterBase_v0_1_1.sol";
 
@@ -54,7 +54,7 @@ pragma solidity 0.8.17;
 contract MinterMerkleV5 is
     ReentrancyGuard,
     MinterBase,
-    IFilteredMinterMerkleV3
+    IFilteredMinterMerkleV2
 {
     using MerkleProof for bytes32[];
 
