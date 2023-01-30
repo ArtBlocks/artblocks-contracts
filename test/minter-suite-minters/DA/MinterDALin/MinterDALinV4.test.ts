@@ -321,11 +321,11 @@ for (const coreContractName of coreContractsToTest) {
         // assuming a cost of 100 GWEI
         if (this.isEngine) {
           expect(txCost.toString()).to.equal(
-            ethers.utils.parseEther("0.015087")
+            ethers.utils.parseEther("0.0150955")
           );
         } else {
           expect(txCost.toString()).to.equal(
-            ethers.utils.parseEther("0.0138552")
+            ethers.utils.parseEther("0.0138617")
           );
         }
       });
