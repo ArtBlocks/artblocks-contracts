@@ -108,9 +108,9 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
     IMinterFilterV0 private immutable minterFilter;
 
     // Stores whether a panel with an ID has been minted for a given base token
-    // panelId => baseTokenAddress => baseTokenId => panelIsMinted
-    mapping(uint256 => mapping(address => mapping(uint256 => bool)))
-        public polyptychPanelIsMinted;
+    // panelId => hash seed => panelHashSeedIsMinted
+    mapping(uint256 => mapping(bytes32 => bool))
+        public polyptychPanelHashSeedIsMinted;
 
     /// minterType for this minter
     string public constant minterType = "MinterPolyptychV0";
@@ -198,7 +198,8 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
      * @notice Return whether or not a token has been used to mint a polyptych panel with the given ID
      * @param _panelId The ID of the polyptych panel being checked
      * @param _ownedNFTAddress ERC-721 NFT address holding the project token
-     * owned by msg.sender being used to prove right to purchase
+     * owned by msg.sender being used to prove right to purchase. Must support
+     * `tokenIdToHashSeed` method.
      * @param _ownedNFTTokenId ERC-721 NFT token ID owned by msg.sender being used
      * to prove right to purchase
      */
@@ -207,10 +208,10 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
         address _ownedNFTAddress,
         uint256 _ownedNFTTokenId
     ) external view returns (bool panelMinted) {
-        return
-            polyptychPanelIsMinted[_panelId][_ownedNFTAddress][
-                _ownedNFTTokenId
-            ];
+        bytes32 tokenHash = IGenArt721CoreContractV3_Engine(_ownedNFTAddress)
+            .tokenIdToHashSeed(_ownedNFTTokenId);
+        require(tokenHash != bytes32(0), "Invalid token hash seed");
+        return polyptychPanelHashSeedIsMinted[_panelId][tokenHash];
     }
 
     /**
@@ -726,12 +727,6 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
             _projectId
         );
 
-        _requireCurrentPanelIsMintedOnce(
-            _projectId,
-            _ownedNFTAddress,
-            _ownedNFTTokenId
-        );
-
         address _artist = genArtCoreContract.projectIdToArtistAddress(
             _projectId
         );
@@ -748,6 +743,8 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
             _ownedNFTTokenId
         );
         require(targetHashSeed != 0, "Cannot have an empty hash seed to copy.");
+
+        _requireCurrentPanelHashSeedIsMintedOnce(_projectId, targetHashSeed);
 
         genArtCoreContract.randomizerContract().setPolyptychHashSeed(
             _newTokenId,
@@ -1068,21 +1065,16 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
         }
     }
 
-    function _requireCurrentPanelIsMintedOnce(
+    function _requireCurrentPanelHashSeedIsMintedOnce(
         uint256 _projectId,
-        address _ownedNFTAddress,
-        uint256 _ownedNFTTokenId
+        bytes32 _hashSeed
     ) private {
         // mark the polyptych panel as minted so the same panel cannot be minted twice
         uint256 currentPanelId = projectConfig[_projectId].polyptychPanelId;
         require(
-            !polyptychPanelIsMinted[currentPanelId][_ownedNFTAddress][
-                _ownedNFTTokenId
-            ],
+            !polyptychPanelHashSeedIsMinted[currentPanelId][_hashSeed],
             "Panel already minted"
         );
-        polyptychPanelIsMinted[currentPanelId][_ownedNFTAddress][
-            _ownedNFTTokenId
-        ] = true;
+        polyptychPanelHashSeedIsMinted[currentPanelId][_hashSeed] = true;
     }
 }
