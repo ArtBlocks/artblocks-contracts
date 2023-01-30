@@ -2,11 +2,9 @@
 // Created By: Art Blocks Inc.
 
 import "../../../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
-import "../../../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
-import "../../../interfaces/0.8.x/IGenArt721CoreContractV3_Engine.sol";
 import "../../../interfaces/0.8.x/IMinterFilterV0.sol";
 import "../../../interfaces/0.8.x/IFilteredMinterDAExpSettlementV1.sol";
-import "../../../libs/0.8.x/MinterUtils_v0_1_1.sol";
+import "../MinterBase_v0_1_1.sol";
 
 import "@openzeppelin-4.7/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
@@ -67,19 +65,15 @@ pragma solidity 0.8.17;
  */
 contract MinterDAExpSettlementV1 is
     ReentrancyGuard,
+    MinterBase,
     IFilteredMinterDAExpSettlementV1
 {
     using SafeCast for uint256;
-    using MinterUtils for *;
 
     /// Core contract address this minter interacts with
     address public immutable genArt721CoreAddress;
-    /// This minter handles either flagship or engine V3 core contracts
-    bool public immutable isEngine;
-    /// The following two items will always be populated with the same address
+    /// The core contract integrates with V3 contracts
     IGenArt721CoreContractV3_Base private immutable genArtCoreContract_Base;
-    IGenArt721CoreContractV3 private immutable genArtCoreContract;
-    IGenArt721CoreContractV3_Engine private immutable genArtCoreContract_Engine;
 
     /// Minter filter address this minter interacts with
     address public immutable minterFilterAddress;
@@ -192,21 +186,13 @@ contract MinterDAExpSettlementV1 is
     constructor(
         address _genArt721Address,
         address _minterFilter
-    ) ReentrancyGuard() {
+    ) ReentrancyGuard() MinterBase(_genArt721Address) {
         genArt721CoreAddress = _genArt721Address;
         // always populate immutable engine contracts, but only use appropriate
         // interface based on isEngine in the rest of the contract
         genArtCoreContract_Base = IGenArt721CoreContractV3_Base(
             _genArt721Address
         );
-        genArtCoreContract = IGenArt721CoreContractV3(_genArt721Address);
-        genArtCoreContract_Engine = IGenArt721CoreContractV3_Engine(
-            _genArt721Address
-        );
-        bool isEngine_ = MinterUtils.getV3CoreIsEngine(genArtCoreContract_Base);
-        isEngine = isEngine_;
-        emit ConfiguredIsEngine(isEngine_);
-
         minterFilterAddress = _minterFilter;
         minterFilter = IMinterFilterV0(_minterFilter);
         require(
@@ -565,12 +551,7 @@ contract MinterDAExpSettlementV1 is
         // calculate the artist and admin revenues (no check requuired)
         uint256 netRevenues = _projectConfig.numSettleableInvocations * _price;
         // INTERACTIONS
-        MinterUtils.splitRevenuesETH(
-            _projectId,
-            netRevenues,
-            genArt721CoreAddress,
-            isEngine
-        );
+        splitRevenuesETH(_projectId, netRevenues, genArt721CoreAddress);
         emit ArtistAndAdminRevenuesWithdrawn(_projectId);
     }
 

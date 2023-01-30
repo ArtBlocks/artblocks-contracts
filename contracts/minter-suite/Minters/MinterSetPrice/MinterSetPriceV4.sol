@@ -2,11 +2,9 @@
 // Created By: Art Blocks Inc.
 
 import "../../../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
-import "../../../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
-import "../../../interfaces/0.8.x/IGenArt721CoreContractV3_Engine.sol";
 import "../../../interfaces/0.8.x/IMinterFilterV0.sol";
 import "../../../interfaces/0.8.x/IFilteredMinterV3.sol";
-import "../../../libs/0.8.x/MinterUtils_v0_1_1.sol";
+import "../MinterBase_v0_1_1.sol";
 
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
 
@@ -33,18 +31,12 @@ pragma solidity 0.8.17;
  * Additional admin and artist privileged roles may be described on other
  * contracts that this minter integrates with.
  */
-contract MinterSetPriceV4 is ReentrancyGuard, IFilteredMinterV3 {
-    using MinterUtils for *;
-
+contract MinterSetPriceV4 is ReentrancyGuard, MinterBase, IFilteredMinterV3 {
     /// Core contract address this minter interacts with
     address public immutable genArt721CoreAddress;
 
-    /// This minter handles either flagship or engine V3 core contracts
-    bool public immutable isEngine;
-    /// The following two items will always be populated with the same address
+    /// The core contract integrates with V3 contracts
     IGenArt721CoreContractV3_Base private immutable genArtCoreContract_Base;
-    IGenArt721CoreContractV3 private immutable genArtCoreContract;
-    IGenArt721CoreContractV3_Engine private immutable genArtCoreContract_Engine;
 
     /// Minter filter address this minter interacts with
     address public immutable minterFilterAddress;
@@ -87,21 +79,13 @@ contract MinterSetPriceV4 is ReentrancyGuard, IFilteredMinterV3 {
     constructor(
         address _genArt721Address,
         address _minterFilter
-    ) ReentrancyGuard() {
+    ) ReentrancyGuard() MinterBase(_genArt721Address) {
         genArt721CoreAddress = _genArt721Address;
         // always populate immutable engine contracts, but only use appropriate
         // interface based on isEngine in the rest of the contract
         genArtCoreContract_Base = IGenArt721CoreContractV3_Base(
             _genArt721Address
         );
-        genArtCoreContract = IGenArt721CoreContractV3(_genArt721Address);
-        genArtCoreContract_Engine = IGenArt721CoreContractV3_Engine(
-            _genArt721Address
-        );
-        bool isEngine_ = MinterUtils.getV3CoreIsEngine(genArtCoreContract_Base);
-        isEngine = isEngine_;
-        emit ConfiguredIsEngine(isEngine_);
-
         minterFilterAddress = _minterFilter;
         minterFilter = IMinterFilterV0(_minterFilter);
         require(
@@ -328,12 +312,7 @@ contract MinterSetPriceV4 is ReentrancyGuard, IFilteredMinterV3 {
         }
 
         // INTERACTIONS
-        MinterUtils.splitFundsETH(
-            _projectId,
-            pricePerTokenInWei,
-            genArt721CoreAddress,
-            isEngine
-        );
+        splitFundsETH(_projectId, pricePerTokenInWei, genArt721CoreAddress);
 
         return tokenId;
     }

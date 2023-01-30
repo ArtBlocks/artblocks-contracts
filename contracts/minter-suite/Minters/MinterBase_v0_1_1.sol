@@ -10,15 +10,39 @@ import "@openzeppelin-4.7/contracts/token/ERC20/IERC20.sol";
 pragma solidity ^0.8.0;
 
 /**
- * @title Art Blocks Minter Utils Library
- * @notice A collection of utility functions that may be used across the Art
- * Blocks minter ecosystem.
- * Semantic versioning is used in the solidity file name, and is therefore
+ * @title Art Blocks Minter Base Class
+ * @notice A base class for Art Blocks minter contracts that provides common
+ * functionality used across minter contracts.
+ * This contract is not intended to be deployed directly, but rather to be
+ * inherited by other minter contracts.
+ * From a design perspective, this contract is intended to remain simple and
+ * easy to understand. It is not intended to cause a complex inheritance tree,
+ * and instead should keep minter contracts as readable as possible for
+ * collectors and developers.
+ * @dev Semantic versioning is used in the solidity file name, and is therefore
  * controlled by contracts importing the appropriate filename version.
  * @author Art Blocks Inc.
  */
-library MinterUtils {
-    string private constant FLAGSHIP_CORE_TYPE = "GenArt721CoreV3";
+contract MinterBase {
+    /// state variable that tracks whether this contract's associated core
+    /// contract is an Engine contract, where Engine contracts have an
+    /// additional revenue split for the platform provider
+    bool public immutable isEngine;
+
+    // @dev we do not track an initialization state, as the only state variable
+    // is immutable, which the compiler enforces to be assigned during
+    // construction.
+
+    /**
+     * @notice Initializes contract to ensure state variable `isEngine` is set
+     * appropriately based on the minter's associated core contract address.
+     * @param genArt721Address Art Blocks core contract address for
+     * which this contract will be a minter.
+     */
+    constructor(address genArt721Address) {
+        // set state variable isEngine
+        isEngine = _getV3CoreIsEngine(genArt721Address);
+    }
 
     /**
      * @notice splits ETH funds between sender (if refund), providers,
@@ -36,8 +60,7 @@ library MinterUtils {
     function splitFundsETH(
         uint256 projectId,
         uint256 pricePerTokenInWei,
-        address genArt721CoreAddress,
-        bool isEngine
+        address genArt721CoreAddress
     ) internal {
         if (msg.value > 0) {
             bool success_;
@@ -51,8 +74,7 @@ library MinterUtils {
             splitRevenuesETH(
                 projectId,
                 pricePerTokenInWei,
-                genArt721CoreAddress,
-                isEngine
+                genArt721CoreAddress
             );
         }
     }
@@ -69,8 +91,7 @@ library MinterUtils {
     function splitRevenuesETH(
         uint256 projectId,
         uint256 valueInWei,
-        address genArtCoreContract,
-        bool isEngine
+        address genArtCoreContract
     ) internal {
         if (valueInWei > 0) {
             bool success;
@@ -149,8 +170,7 @@ library MinterUtils {
         uint256 projectId,
         uint256 pricePerTokenInWei,
         address currencyAddress,
-        address genArtCoreContract,
-        bool isEngine
+        address genArtCoreContract
     ) internal {
         IERC20 _projectCurrency = IERC20(currencyAddress);
         // split remaining funds between foundation, artist, and artist's
@@ -222,55 +242,39 @@ library MinterUtils {
         }
     }
 
-    function getV3CoreIsEngine(
-        IGenArt721CoreContractV3_Base genArt721CoreV3_Base
-    ) internal returns (bool isEngine) {
-        // determine if core is engine based off of coreType() response
-        isEngine =
-            keccak256(abi.encodePacked(genArt721CoreV3_Base.coreType())) ==
-            keccak256(abi.encodePacked(FLAGSHIP_CORE_TYPE));
-        // validate the above logic by confirming the payment split response
-        _validateV3CoreGetPrimaryRevenueSplitsResponse(
-            isEngine,
-            address(genArt721CoreV3_Base)
-        );
-        return isEngine;
-    }
-
     /**
-     * @notice Validates that a GenArt721CoreV3 core contract's
-     * `getPrimaryRevenueSplits` function returns the expected number of
-     * return values based on the `isEngine` expected state of the core
-     * contract.
-     * @param isEngine Whether the core contract is expected to be an Art
-     * Blocks Engine contract or not.
+     * @notice Returns whether a V3 core contract is an Art Blocks Engine
+     * contract or not. Return value of false indicates that the core is a
+     * flagship contract.
+     * @dev this function reverts if a core contract does not return the
+     * expected number of return values from getPrimaryRevenueSplits() for
+     * either a flagship or engine core contract.
+     * @dev this function uses the length of the return data (in bytes) to
+     * determine whether the core is an engine or not.
      * @param genArt721CoreV3 The address of the deployed core contract.
      */
-    function _validateV3CoreGetPrimaryRevenueSplitsResponse(
-        bool isEngine,
+    function _getV3CoreIsEngine(
         address genArt721CoreV3
-    ) private {
-        // confirm split payment returns expected qty of return values to
-        // add protection against a misconfigured isEngine state
+    ) private returns (bool) {
+        // call getPrimaryRevenueSplits() on core contract
         bytes memory payload = abi.encodeWithSignature(
             "getPrimaryRevenueSplits(uint256,uint256)",
             0,
             0
         );
         (bool success, bytes memory returnData) = genArt721CoreV3.call(payload);
-        require(success);
-        if (isEngine) {
-            // require 8 32-byte words returned if engine
-            require(
-                returnData.length == 8 * 32,
-                "Unexpected revenue split bytes"
-            );
+        require(success, "getPrimaryRevenueSplits() call failed");
+        // determine whether core is engine or not, based on return data length
+        uint256 returnDataLength = returnData.length;
+        if (returnDataLength == 6 * 32) {
+            // 6 32-byte words returned if flagship (not engine)
+            return false;
+        } else if (returnDataLength == 8 * 32) {
+            // 8 32-byte words returned if engine
+            return true;
         } else {
-            // require 6 32-byte words returned if flagship (not engine)
-            require(
-                returnData.length == 6 * 32,
-                "Unexpected revenue split bytes"
-            );
+            // unexpected return value length
+            revert("Unexpected revenue split bytes");
         }
     }
 }

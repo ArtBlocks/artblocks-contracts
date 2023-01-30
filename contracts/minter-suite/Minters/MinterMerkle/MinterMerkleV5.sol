@@ -2,12 +2,10 @@
 // Created By: Art Blocks Inc.
 
 import "../../../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
-import "../../../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
-import "../../../interfaces/0.8.x/IGenArt721CoreContractV3_Engine.sol";
 import "../../../interfaces/0.8.x/IMinterFilterV0.sol";
 import "../../../interfaces/0.8.x/IFilteredMinterMerkleV3.sol";
 import "../../../interfaces/0.8.x/IDelegationRegistry.sol";
-import "../../../libs/0.8.x/MinterUtils_v0_1_1.sol";
+import "../MinterBase_v0_1_1.sol";
 
 import "@openzeppelin-4.7/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin-4.7/contracts/token/ERC20/IERC20.sol";
@@ -53,9 +51,12 @@ pragma solidity 0.8.17;
  * level delegations must be configured for the core token contract as returned
  * by the public immutable variable `genArt721CoreAddress`.
  */
-contract MinterMerkleV5 is ReentrancyGuard, IFilteredMinterMerkleV3 {
+contract MinterMerkleV5 is
+    ReentrancyGuard,
+    MinterBase,
+    IFilteredMinterMerkleV3
+{
     using MerkleProof for bytes32[];
-    using MinterUtils for *;
 
     /// Delegation registry address
     address public immutable delegationRegistryAddress;
@@ -66,12 +67,8 @@ contract MinterMerkleV5 is ReentrancyGuard, IFilteredMinterMerkleV3 {
     /// Core contract address this minter interacts with
     address public immutable genArt721CoreAddress;
 
-    /// This minter handles either flagship or engine V3 core contracts
-    bool public immutable isEngine;
-    /// The following two items will always be populated with the same address
+    /// The core contract integrates with V3 contracts
     IGenArt721CoreContractV3_Base private immutable genArtCoreContract_Base;
-    IGenArt721CoreContractV3 private immutable genArtCoreContract;
-    IGenArt721CoreContractV3_Engine private immutable genArtCoreContract_Engine;
 
     /// Minter filter address this minter interacts with
     address public immutable minterFilterAddress;
@@ -139,21 +136,13 @@ contract MinterMerkleV5 is ReentrancyGuard, IFilteredMinterMerkleV3 {
         address _genArt721Address,
         address _minterFilter,
         address _delegationRegistryAddress
-    ) ReentrancyGuard() {
+    ) ReentrancyGuard() MinterBase(_genArt721Address) {
         genArt721CoreAddress = _genArt721Address;
         // always populate immutable engine contracts, but only use appropriate
         // interface based on isEngine in the rest of the contract
         genArtCoreContract_Base = IGenArt721CoreContractV3_Base(
             _genArt721Address
         );
-        genArtCoreContract = IGenArt721CoreContractV3(_genArt721Address);
-        genArtCoreContract_Engine = IGenArt721CoreContractV3_Engine(
-            _genArt721Address
-        );
-        bool isEngine_ = MinterUtils.getV3CoreIsEngine(genArtCoreContract_Base);
-        isEngine = isEngine_;
-        emit ConfiguredIsEngine(isEngine_);
-
         delegationRegistryAddress = _delegationRegistryAddress;
         emit DelegationRegistryUpdated(_delegationRegistryAddress);
         delegationRegistryContract = IDelegationRegistry(
@@ -571,12 +560,7 @@ contract MinterMerkleV5 is ReentrancyGuard, IFilteredMinterMerkleV3 {
         }
 
         // INTERACTIONS
-        MinterUtils.splitFundsETH(
-            _projectId,
-            pricePerTokenInWei,
-            genArt721CoreAddress,
-            isEngine
-        );
+        splitFundsETH(_projectId, pricePerTokenInWei, genArt721CoreAddress);
 
         return tokenId;
     }

@@ -12,11 +12,6 @@ pragma solidity ^0.8.0;
  * @author Art Blocks Inc.
  */
 interface IFilteredMinterV3_Mixin {
-    /**
-     * @notice Emitted when a minter is configured to integrate with a V3 flagship or V3 engine contract
-     */
-    event ConfiguredIsEngine(bool indexed isEngine);
-
     // Function that returns if a minter is configured to integrate with a V3 flagship or V3 engine contract.
     // Returns true only if the minter is configured to integrate with an engine contract.
     function isEngine() external returns (bool isEngine);
