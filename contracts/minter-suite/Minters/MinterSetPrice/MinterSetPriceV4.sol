@@ -2,11 +2,9 @@
 // Created By: Art Blocks Inc.
 
 import "../../../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
-import "../../../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
-import "../../../interfaces/0.8.x/IGenArt721CoreContractV3_Engine.sol";
 import "../../../interfaces/0.8.x/IMinterFilterV0.sol";
-import "../../../interfaces/0.8.x/IFilteredMinterV3.sol";
-import "../../../libs/0.8.x/MinterUtils_v0_1_0.sol";
+import "../../../interfaces/0.8.x/IFilteredMinterV2.sol";
+import "../MinterBase_v0_1_1.sol";
 
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
 
@@ -33,18 +31,12 @@ pragma solidity 0.8.17;
  * Additional admin and artist privileged roles may be described on other
  * contracts that this minter integrates with.
  */
-contract MinterSetPriceV4 is ReentrancyGuard, IFilteredMinterV3 {
-    using MinterUtils for *;
-
+contract MinterSetPriceV4 is ReentrancyGuard, MinterBase, IFilteredMinterV2 {
     /// Core contract address this minter interacts with
     address public immutable genArt721CoreAddress;
 
-    /// This minter handles either flagship or engine V3 core contracts
-    bool public immutable isEngine;
-    /// The following two items will always be populated with the same address
+    /// The core contract integrates with V3 contracts
     IGenArt721CoreContractV3_Base private immutable genArtCoreContract_Base;
-    IGenArt721CoreContractV3 private immutable genArtCoreContract;
-    IGenArt721CoreContractV3_Engine private immutable genArtCoreContract_Engine;
 
     /// Minter filter address this minter interacts with
     address public immutable minterFilterAddress;
@@ -87,31 +79,13 @@ contract MinterSetPriceV4 is ReentrancyGuard, IFilteredMinterV3 {
     constructor(
         address _genArt721Address,
         address _minterFilter
-    ) ReentrancyGuard() {
+    ) ReentrancyGuard() MinterBase(_genArt721Address) {
         genArt721CoreAddress = _genArt721Address;
         // always populate immutable engine contracts, but only use appropriate
         // interface based on isEngine in the rest of the contract
         genArtCoreContract_Base = IGenArt721CoreContractV3_Base(
             _genArt721Address
         );
-        genArtCoreContract = IGenArt721CoreContractV3(_genArt721Address);
-        genArtCoreContract_Engine = IGenArt721CoreContractV3_Engine(
-            _genArt721Address
-        );
-        // Assume that if the core contract is not flagship, it is engine
-        // @dev intentionally non-gas-optimal for clarity
-        bytes32 hashedCoreType = keccak256(
-            abi.encodePacked(genArtCoreContract_Base.coreType())
-        );
-        bool isEngine_ = (hashedCoreType != keccak256("GenArt721CoreV3"));
-        isEngine = isEngine_;
-        emit ConfiguredIsEngine(isEngine_);
-        // validate that the core contract's `getPrimaryRevenueSplits` function
-        MinterUtils.ValidateV3CoreGetPrimaryRevenueSplitsResponse(
-            isEngine_,
-            _genArt721Address
-        );
-
         minterFilterAddress = _minterFilter;
         minterFilter = IMinterFilterV0(_minterFilter);
         require(
@@ -319,10 +293,10 @@ contract MinterSetPriceV4 is ReentrancyGuard, IFilteredMinterV3 {
         require(_projectConfig.priceIsConfigured, "Price not configured");
 
         // load price of token into memory
-        uint256 _pricePerTokenInWei = _projectConfig.pricePerTokenInWei;
+        uint256 pricePerTokenInWei = _projectConfig.pricePerTokenInWei;
 
         require(
-            msg.value >= _pricePerTokenInWei,
+            msg.value >= pricePerTokenInWei,
             "Must send minimum value to mint!"
         );
 
@@ -338,97 +312,9 @@ contract MinterSetPriceV4 is ReentrancyGuard, IFilteredMinterV3 {
         }
 
         // INTERACTIONS
-        _splitFundsETH(_projectId, _pricePerTokenInWei);
+        splitFundsETH(_projectId, pricePerTokenInWei, genArt721CoreAddress);
 
         return tokenId;
-    }
-
-    /**
-     * @dev splits ETH funds between sender (if refund), foundation,
-     * artist, and artist's additional payee for a token purchased on
-     * project `_projectId`.
-     * @dev possible DoS during splits is acknowledged, and mitigated by
-     * business practices, including end-to-end testing on mainnet, and
-     * admin-accepted artist payment addresses.
-     */
-    function _splitFundsETH(
-        uint256 _projectId,
-        uint256 _pricePerTokenInWei
-    ) internal {
-        if (msg.value > 0) {
-            bool success_;
-            // send refund to sender
-            uint256 refund = msg.value - _pricePerTokenInWei;
-            if (refund > 0) {
-                (success_, ) = msg.sender.call{value: refund}("");
-                require(success_, "Refund failed");
-            }
-            // split remaining funds between foundation, artist, and artist's
-            // additional payee
-            uint256 renderProviderRevenue_;
-            address payable renderProviderAddress_;
-            uint256 artistRevenue_;
-            address payable artistAddress_;
-            uint256 additionalPayeePrimaryRevenue_;
-            address payable additionalPayeePrimaryAddress_;
-            if (!isEngine) {
-                // get flagship splits
-                (
-                    renderProviderRevenue_, // artblocks revenue
-                    renderProviderAddress_, // artblocks address
-                    artistRevenue_,
-                    artistAddress_,
-                    additionalPayeePrimaryRevenue_,
-                    additionalPayeePrimaryAddress_
-                ) = genArtCoreContract.getPrimaryRevenueSplits(
-                    _projectId,
-                    _pricePerTokenInWei
-                );
-            } else {
-                // get engine splits
-                uint256 platformProviderRevenue_;
-                address payable platformProviderAddress_;
-                (
-                    renderProviderRevenue_,
-                    renderProviderAddress_,
-                    platformProviderRevenue_,
-                    platformProviderAddress_,
-                    artistRevenue_,
-                    artistAddress_,
-                    additionalPayeePrimaryRevenue_,
-                    additionalPayeePrimaryAddress_
-                ) = genArtCoreContract_Engine.getPrimaryRevenueSplits(
-                    _projectId,
-                    _pricePerTokenInWei
-                );
-                // Platform Provider payment (only possible if engine)
-                if (platformProviderRevenue_ > 0) {
-                    (success_, ) = platformProviderAddress_.call{
-                        value: platformProviderRevenue_
-                    }("");
-                    require(success_, "Platform Provider payment failed");
-                }
-            }
-            // Render Provider / Art Blocks payment
-            if (renderProviderRevenue_ > 0) {
-                (success_, ) = renderProviderAddress_.call{
-                    value: renderProviderRevenue_
-                }("");
-                require(success_, "Render Provider payment failed");
-            }
-            // artist payment
-            if (artistRevenue_ > 0) {
-                (success_, ) = artistAddress_.call{value: artistRevenue_}("");
-                require(success_, "Artist payment failed");
-            }
-            // additional payee payment
-            if (additionalPayeePrimaryRevenue_ > 0) {
-                (success_, ) = additionalPayeePrimaryAddress_.call{
-                    value: additionalPayeePrimaryRevenue_
-                }("");
-                require(success_, "Additional Payee payment failed");
-            }
-        }
     }
 
     /**
