@@ -22,8 +22,12 @@ interface IRandomizerPolyptychV0 is IRandomizerV2 {
         view
         returns (IGenArt721CoreContractV3_Base);
 
-    // When a core contract calls this, it can be assured that the randomizer
-    // will set a bytes32 hash for tokenId `_tokenId` on the core contract.
+    /**
+     * @notice When a core contract calls this, it can be assured that the randomizer
+     * will set a bytes32 hash for tokenId `_tokenId` on the core contract. This function
+     * may only be called by the contract configured as the `hashSeedSetterContract` via
+     * the `setHashSeedSetterContract` available to the core contract admin.
+     */
     function assignTokenHash(uint256 _tokenId) external;
 
     /**

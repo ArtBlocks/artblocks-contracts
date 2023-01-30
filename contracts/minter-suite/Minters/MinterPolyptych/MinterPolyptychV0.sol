@@ -32,7 +32,7 @@ interface IGenArt721CoreContractV3WithRandomizer is
 }
 
 /**
- * @title Filtered Minter contract that allows tokens to be minted with ETH
+ * @title Filtered Minter contract that allows tokens to be minted with ETH or ERC20 tokens
  * when purchaser owns an allowlisted ERC-721 NFT. This contract does NOT track
  * if a purchaser has/has not minted already -- it simply restricts purchasing
  * to anybody that holds one or more of a specified list of ERC-721 NFTs.
@@ -59,6 +59,7 @@ interface IGenArt721CoreContractV3WithRandomizer is
  * - removeHoldersOfProjects
  * - allowRemoveHoldersOfProjects
  * - updatePricePerTokenInWei
+ * - updateProjectCurrencyInfo
  * - setProjectMaxInvocations
  * - manuallyLimitProjectMaxInvocations
  * ----------------------------------------------------------------------------
@@ -78,7 +79,7 @@ interface IGenArt721CoreContractV3WithRandomizer is
  * Delegations must be configured by the vault owner prior to purchase. Supported
  * delegation types include token-level, contract-level (via genArt721CoreAddress), or
  * wallet-level delegation. Contract-level delegations must be configured for the core
- * token contract as returned by the public immutable variable `genArt721CoreAddress`.
+ * token contract as returned by the owned token's core contract address.
  */
 contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
     // add Enumerable Set methods
@@ -765,7 +766,7 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
                 .checkDelegateForToken(
                     msg.sender, // delegate
                     _vault, // vault
-                    genArt721CoreAddress, // contract
+                    _ownedNFTAddress, // contract
                     _ownedNFTTokenId // tokenId
                 );
             require(isValidVault, "Invalid delegate-vault pairing");
