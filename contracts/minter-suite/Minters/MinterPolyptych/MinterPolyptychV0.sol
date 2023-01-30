@@ -31,9 +31,15 @@ interface IGenArt721CoreContractV3WithRandomizer is
 
 /**
  * @title Filtered Minter contract that allows tokens to be minted with ETH or ERC20 tokens
- * when purchaser owns an allowlisted ERC-721 NFT. This contract does NOT track
- * if a purchaser has/has not minted already -- it simply restricts purchasing
- * to anybody that holds one or more of a specified list of ERC-721 NFTs.
+ * when purchaser owns an allowlisted ERC-721 NFT. This contract must be used with
+ * an accompanying randomizer contract that is configured to copy the token hash seed
+ * from the allowlisted token to a corresponding newly-minted token.
+ * The source token may only be used to mint one additional polyptych "panel" if the token
+ * has not yet been used to mint a panel with the currently configured panel ID. To add 
+ * an additional panel to a project, the panel ID may be incremented for the project
+ * using the `incrementPolyptychProjectPanelId` function. Panel IDs for a project may only 
+ * be incremented such that panels must be minted in the order of their panel ID. Tokens
+ * of the same project and panel ID may be minted in any order.
  * This is designed to be used with IGenArt721CoreContractV3_Engine contracts with an
  * active IPolyptychRandomizerV0 randomizer available for this minter to use.
  * This minter requires both a properly configured engine core contract and polyptych
