@@ -103,8 +103,8 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
     /// Minter filter this minter may interact with.
     IMinterFilterV0 private immutable minterFilter;
 
-    // Stores whether a panel with an index has been minted for a given base token
-    // panelIndex => baseTokenAddress => baseTokenId => panelIsMinted
+    // Stores whether a panel with an ID has been minted for a given base token
+    // panelId => baseTokenAddress => baseTokenId => panelIsMinted
     mapping(uint256 => mapping(address => mapping(uint256 => bool)))
         public polyptychPanelIsMinted;
 
