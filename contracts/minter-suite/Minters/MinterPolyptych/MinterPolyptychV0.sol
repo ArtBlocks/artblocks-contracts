@@ -258,89 +258,6 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
     }
 
     /**
-     * @notice Allows holders of NFTs at addresses `_ownedNFTAddresses`,
-     * project IDs `_ownedNFTProjectIds` to mint on project `_projectId`.
-     * `_ownedNFTAddresses` assumed to be aligned with `_ownedNFTProjectIds`.
-     * e.g. Allows holders of project `_ownedNFTProjectIds[0]` on token
-     * contract `_ownedNFTAddresses[0]` to mint `_projectId`.
-     * @param _projectId Project ID to enable minting on.
-     * @param _ownedNFTAddresses NFT core addresses of projects to be
-     * allowlisted. Indexes must align with `_ownedNFTProjectIds`.
-     * @param _ownedNFTProjectIds Project IDs on `_ownedNFTAddresses` whose
-     * holders shall be allowlisted to mint project `_projectId`. Indexes must
-     * align with `_ownedNFTAddresses`.
-     */
-    function allowHoldersOfProjects(
-        uint256 _projectId,
-        address[] memory _ownedNFTAddresses,
-        uint256[] memory _ownedNFTProjectIds
-    ) public onlyArtist(_projectId) {
-        // require same length arrays
-        require(
-            _ownedNFTAddresses.length == _ownedNFTProjectIds.length,
-            "Length of add arrays must match"
-        );
-        // for each approved project
-        for (uint256 i = 0; i < _ownedNFTAddresses.length; i++) {
-            // ensure registered address
-            require(
-                _registeredNFTAddresses.contains(_ownedNFTAddresses[i]),
-                "Only Registered NFT Addresses"
-            );
-            // approve
-            allowedProjectHolders[_projectId][_ownedNFTAddresses[i]][
-                _ownedNFTProjectIds[i]
-            ] = true;
-        }
-        // emit approve event
-        emit AllowedHoldersOfProjects(
-            _projectId,
-            _ownedNFTAddresses,
-            _ownedNFTProjectIds
-        );
-    }
-
-    /**
-     * @notice Removes holders of NFTs at addresses `_ownedNFTAddresses`,
-     * project IDs `_ownedNFTProjectIds` to mint on project `_projectId`. If
-     * other projects owned by a holder are still allowed to mint, holder will
-     * maintain ability to purchase.
-     * `_ownedNFTAddresses` assumed to be aligned with `_ownedNFTProjectIds`.
-     * e.g. Removes holders of project `_ownedNFTProjectIds[0]` on token
-     * contract `_ownedNFTAddresses[0]` from mint allowlist of `_projectId`.
-     * @param _projectId Project ID to enable minting on.
-     * @param _ownedNFTAddresses NFT core addresses of projects to be removed
-     * from allowlist. Indexes must align with `_ownedNFTProjectIds`.
-     * @param _ownedNFTProjectIds Project IDs on `_ownedNFTAddresses` whose
-     * holders will be removed from allowlist to mint project `_projectId`.
-     * Indexes must align with `_ownedNFTAddresses`.
-     */
-    function removeHoldersOfProjects(
-        uint256 _projectId,
-        address[] memory _ownedNFTAddresses,
-        uint256[] memory _ownedNFTProjectIds
-    ) public onlyArtist(_projectId) {
-        // require same length arrays
-        require(
-            _ownedNFTAddresses.length == _ownedNFTProjectIds.length,
-            "Length of remove arrays must match"
-        );
-        // for each removed project
-        for (uint256 i = 0; i < _ownedNFTAddresses.length; i++) {
-            // revoke
-            allowedProjectHolders[_projectId][_ownedNFTAddresses[i]][
-                _ownedNFTProjectIds[i]
-            ] = false;
-        }
-        // emit removed event
-        emit RemovedHoldersOfProjects(
-            _projectId,
-            _ownedNFTAddresses,
-            _ownedNFTProjectIds
-        );
-    }
-
-    /**
      * @notice Allows holders of NFTs at addresses `_ownedNFTAddressesAdd`,
      * project IDs `_ownedNFTProjectIdsAdd` to mint on project `_projectId`.
      * Also removes holders of NFTs at addresses `_ownedNFTAddressesRemove`,
@@ -385,37 +302,6 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
             _ownedNFTAddressesRemove,
             _ownedNFTProjectIdsRemove
         );
-    }
-
-    /**
-     * @notice Returns if token is an allowlisted NFT for project `_projectId`.
-     * @param _projectId Project ID to be checked.
-     * @param _ownedNFTAddress ERC-721 NFT token address to be checked.
-     * @param _ownedNFTTokenId ERC-721 NFT token ID to be checked.
-     * @return bool Token is allowlisted
-     * @dev does not check if token has been used to purchase
-     * @dev assumes project ID can be derived from tokenId / 1_000_000
-     */
-    function isAllowlistedNFT(
-        uint256 _projectId,
-        address _ownedNFTAddress,
-        uint256 _ownedNFTTokenId
-    ) public view returns (bool) {
-        uint256 ownedNFTProjectId = _ownedNFTTokenId / ONE_MILLION;
-        return
-            allowedProjectHolders[_projectId][_ownedNFTAddress][
-                ownedNFTProjectId
-            ];
-    }
-
-    /**
-     * @notice Allows the artist to increment the minter to the next polyptych panel
-     * @param _projectId Project ID to increment to its next polyptych panel
-     */
-    function incrementPolyptychProjectPanelId(
-        uint256 _projectId
-    ) public onlyArtist(_projectId) {
-        projectConfig[_projectId].polyptychPanelId++;
     }
 
     /**
@@ -582,20 +468,6 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
     }
 
     /**
-     * @notice Inactive function - requires NFT ownership to purchase.
-     */
-    function purchase(uint256) external payable returns (uint256) {
-        revert("Must claim NFT ownership");
-    }
-
-    /**
-     * @notice Inactive function - requires NFT ownership to purchase.
-     */
-    function purchaseTo(address, uint256) public payable returns (uint256) {
-        revert("Must claim NFT ownership");
-    }
-
-    /**
      * @notice Purchases a token from project `_projectId`.
      * @param _projectId Project ID to mint a token on.
      * @param _ownedNFTAddress ERC-721 NFT address holding the project token
@@ -664,24 +536,6 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
             );
     }
 
-    function _requireCurrentPanelIsMintedOnce(
-        uint256 _projectId,
-        address _ownedNFTAddress,
-        uint256 _ownedNFTTokenId
-    ) private {
-        // mark the polyptych panel as minted so the same panel cannot be minted twice
-        uint256 currentPanelId = projectConfig[_projectId].polyptychPanelId;
-        require(
-            !polyptychPanelIsMinted[currentPanelId][_ownedNFTAddress][
-                _ownedNFTTokenId
-            ],
-            "Panel already minted"
-        );
-        polyptychPanelIsMinted[currentPanelId][_ownedNFTAddress][
-            _ownedNFTTokenId
-        ] = true;
-    }
-
     /**
      * @notice Purchases a token from project `_projectId` and sets
      *         the token's owner to `_to`, as a delegate, (the `msg.sender`)
@@ -710,6 +564,79 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
                 _ownedNFTTokenId,
                 _vault
             );
+    }
+
+    /**
+     * @notice Gets quantity of NFT addresses registered on this minter.
+     * @return uint256 quantity of NFT addresses registered
+     */
+    function getNumRegisteredNFTAddresses() external view returns (uint256) {
+        return _registeredNFTAddresses.length();
+    }
+
+    /**
+     * @notice Get registered NFT core contract address at index `_index` of
+     * enumerable set.
+     * @param _index enumerable set index to query.
+     * @return NFTAddress NFT core contract address at index `_index`
+     * @dev index must be < quantity of registered NFT addresses
+     */
+    function getRegisteredNFTAddressAt(
+        uint256 _index
+    ) external view returns (address NFTAddress) {
+        return _registeredNFTAddresses.at(_index);
+    }
+
+    /**
+     * @notice Gets if price of token is configured, price of minting a
+     * token on project `_projectId`, and currency symbol and address to be
+     * used as payment. Supersedes any core contract price information.
+     * @param _projectId Project ID to get price information for.
+     * @return isConfigured true only if token price has been configured on
+     * this minter
+     * @return tokenPriceInWei current price of token on this minter - invalid
+     * if price has not yet been configured
+     * @return currencySymbol currency symbol for purchases of project on this
+     * minter. This minter always returns "ETH"
+     * @return currencyAddress currency address for purchases of project on
+     * this minter. This minter always returns null address, reserved for ether
+     */
+    function getPriceInfo(
+        uint256 _projectId
+    )
+        external
+        view
+        returns (
+            bool isConfigured,
+            uint256 tokenPriceInWei,
+            string memory currencySymbol,
+            address currencyAddress
+        )
+    {
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        isConfigured = _projectConfig.priceIsConfigured;
+        tokenPriceInWei = _projectConfig.pricePerTokenInWei;
+        currencyAddress = _projectConfig.currencyAddress;
+        if (currencyAddress == address(0)) {
+            // defaults to ETH
+            currencySymbol = "ETH";
+        } else {
+            currencySymbol = _projectConfig.currencySymbol;
+        }
+    }
+
+    /**
+     * @notice Inactive function - requires NFT ownership to purchase.
+     */
+    function purchase(uint256) external payable returns (uint256) {
+        revert("Must claim NFT ownership");
+    }
+
+    /**
+     * @notice Inactive function - requires NFT ownership to purchase.
+     */
+    function purchaseTo(address, uint256) public payable returns (uint256) {
+        revert("Must claim NFT ownership");
     }
 
     /**
@@ -883,6 +810,120 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
     }
 
     /**
+     * @notice Allows holders of NFTs at addresses `_ownedNFTAddresses`,
+     * project IDs `_ownedNFTProjectIds` to mint on project `_projectId`.
+     * `_ownedNFTAddresses` assumed to be aligned with `_ownedNFTProjectIds`.
+     * e.g. Allows holders of project `_ownedNFTProjectIds[0]` on token
+     * contract `_ownedNFTAddresses[0]` to mint `_projectId`.
+     * @param _projectId Project ID to enable minting on.
+     * @param _ownedNFTAddresses NFT core addresses of projects to be
+     * allowlisted. Indexes must align with `_ownedNFTProjectIds`.
+     * @param _ownedNFTProjectIds Project IDs on `_ownedNFTAddresses` whose
+     * holders shall be allowlisted to mint project `_projectId`. Indexes must
+     * align with `_ownedNFTAddresses`.
+     */
+    function allowHoldersOfProjects(
+        uint256 _projectId,
+        address[] memory _ownedNFTAddresses,
+        uint256[] memory _ownedNFTProjectIds
+    ) public onlyArtist(_projectId) {
+        // require same length arrays
+        require(
+            _ownedNFTAddresses.length == _ownedNFTProjectIds.length,
+            "Length of add arrays must match"
+        );
+        // for each approved project
+        for (uint256 i = 0; i < _ownedNFTAddresses.length; i++) {
+            // ensure registered address
+            require(
+                _registeredNFTAddresses.contains(_ownedNFTAddresses[i]),
+                "Only Registered NFT Addresses"
+            );
+            // approve
+            allowedProjectHolders[_projectId][_ownedNFTAddresses[i]][
+                _ownedNFTProjectIds[i]
+            ] = true;
+        }
+        // emit approve event
+        emit AllowedHoldersOfProjects(
+            _projectId,
+            _ownedNFTAddresses,
+            _ownedNFTProjectIds
+        );
+    }
+
+    /**
+     * @notice Removes holders of NFTs at addresses `_ownedNFTAddresses`,
+     * project IDs `_ownedNFTProjectIds` to mint on project `_projectId`. If
+     * other projects owned by a holder are still allowed to mint, holder will
+     * maintain ability to purchase.
+     * `_ownedNFTAddresses` assumed to be aligned with `_ownedNFTProjectIds`.
+     * e.g. Removes holders of project `_ownedNFTProjectIds[0]` on token
+     * contract `_ownedNFTAddresses[0]` from mint allowlist of `_projectId`.
+     * @param _projectId Project ID to enable minting on.
+     * @param _ownedNFTAddresses NFT core addresses of projects to be removed
+     * from allowlist. Indexes must align with `_ownedNFTProjectIds`.
+     * @param _ownedNFTProjectIds Project IDs on `_ownedNFTAddresses` whose
+     * holders will be removed from allowlist to mint project `_projectId`.
+     * Indexes must align with `_ownedNFTAddresses`.
+     */
+    function removeHoldersOfProjects(
+        uint256 _projectId,
+        address[] memory _ownedNFTAddresses,
+        uint256[] memory _ownedNFTProjectIds
+    ) public onlyArtist(_projectId) {
+        // require same length arrays
+        require(
+            _ownedNFTAddresses.length == _ownedNFTProjectIds.length,
+            "Length of remove arrays must match"
+        );
+        // for each removed project
+        for (uint256 i = 0; i < _ownedNFTAddresses.length; i++) {
+            // revoke
+            allowedProjectHolders[_projectId][_ownedNFTAddresses[i]][
+                _ownedNFTProjectIds[i]
+            ] = false;
+        }
+        // emit removed event
+        emit RemovedHoldersOfProjects(
+            _projectId,
+            _ownedNFTAddresses,
+            _ownedNFTProjectIds
+        );
+    }
+
+    /**
+     * @notice Returns if token is an allowlisted NFT for project `_projectId`.
+     * @param _projectId Project ID to be checked.
+     * @param _ownedNFTAddress ERC-721 NFT token address to be checked.
+     * @param _ownedNFTTokenId ERC-721 NFT token ID to be checked.
+     * @return bool Token is allowlisted
+     * @dev does not check if token has been used to purchase
+     * @dev assumes project ID can be derived from tokenId / 1_000_000
+     */
+    function isAllowlistedNFT(
+        uint256 _projectId,
+        address _ownedNFTAddress,
+        uint256 _ownedNFTTokenId
+    ) public view returns (bool) {
+        uint256 ownedNFTProjectId = _ownedNFTTokenId / ONE_MILLION;
+        return
+            allowedProjectHolders[_projectId][_ownedNFTAddress][
+                ownedNFTProjectId
+            ];
+    }
+
+    /**
+     * @notice Allows the artist to increment the minter to the next polyptych panel
+     * @param _projectId Project ID to increment to its next polyptych panel
+     */
+    function incrementPolyptychProjectPanelId(
+        uint256 _projectId
+    ) public onlyArtist(_projectId) {
+        projectConfig[_projectId].polyptychPanelId++;
+    }
+
+    /**
      * @dev splits ETH funds between sender (if refund), foundation,
      * artist, and artist's additional payee for a token purchased on
      * project `_projectId`.
@@ -1008,62 +1049,21 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
         }
     }
 
-    /**
-     * @notice Gets quantity of NFT addresses registered on this minter.
-     * @return uint256 quantity of NFT addresses registered
-     */
-    function getNumRegisteredNFTAddresses() external view returns (uint256) {
-        return _registeredNFTAddresses.length();
-    }
-
-    /**
-     * @notice Get registered NFT core contract address at index `_index` of
-     * enumerable set.
-     * @param _index enumerable set index to query.
-     * @return NFTAddress NFT core contract address at index `_index`
-     * @dev index must be < quantity of registered NFT addresses
-     */
-    function getRegisteredNFTAddressAt(
-        uint256 _index
-    ) external view returns (address NFTAddress) {
-        return _registeredNFTAddresses.at(_index);
-    }
-
-    /**
-     * @notice Gets if price of token is configured, price of minting a
-     * token on project `_projectId`, and currency symbol and address to be
-     * used as payment. Supersedes any core contract price information.
-     * @param _projectId Project ID to get price information for.
-     * @return isConfigured true only if token price has been configured on
-     * this minter
-     * @return tokenPriceInWei current price of token on this minter - invalid
-     * if price has not yet been configured
-     * @return currencySymbol currency symbol for purchases of project on this
-     * minter. This minter always returns "ETH"
-     * @return currencyAddress currency address for purchases of project on
-     * this minter. This minter always returns null address, reserved for ether
-     */
-    function getPriceInfo(
-        uint256 _projectId
-    )
-        external
-        view
-        returns (
-            bool isConfigured,
-            uint256 tokenPriceInWei,
-            string memory currencySymbol,
-            address currencyAddress
-        )
-    {
-        ProjectConfig storage _projectConfig = projectConfig[_projectId];
-        isConfigured = _projectConfig.priceIsConfigured;
-        tokenPriceInWei = _projectConfig.pricePerTokenInWei;
-        currencyAddress = _projectConfig.currencyAddress;
-        if (currencyAddress == address(0)) {
-            // defaults to ETH
-            currencySymbol = "ETH";
-        } else {
-            currencySymbol = _projectConfig.currencySymbol;
-        }
+    function _requireCurrentPanelIsMintedOnce(
+        uint256 _projectId,
+        address _ownedNFTAddress,
+        uint256 _ownedNFTTokenId
+    ) private {
+        // mark the polyptych panel as minted so the same panel cannot be minted twice
+        uint256 currentPanelId = projectConfig[_projectId].polyptychPanelId;
+        require(
+            !polyptychPanelIsMinted[currentPanelId][_ownedNFTAddress][
+                _ownedNFTTokenId
+            ],
+            "Panel already minted"
+        );
+        polyptychPanelIsMinted[currentPanelId][_ownedNFTAddress][
+            _ownedNFTTokenId
+        ] = true;
     }
 }
