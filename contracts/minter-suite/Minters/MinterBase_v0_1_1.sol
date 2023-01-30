@@ -93,69 +93,70 @@ contract MinterBase {
         uint256 valueInWei,
         address genArtCoreContract
     ) internal {
-        if (valueInWei > 0) {
-            bool success;
-            // split funds between platforms, artist, and artist's
-            // additional payee
-            uint256 renderProviderRevenue_;
-            address payable renderProviderAddress_;
-            uint256 artistRevenue_;
-            address payable artistAddress_;
-            uint256 additionalPayeePrimaryRevenue_;
-            address payable additionalPayeePrimaryAddress_;
-            if (isEngine) {
-                // get engine splits
-                uint256 platformProviderRevenue_;
-                address payable platformProviderAddress_;
-                (
-                    renderProviderRevenue_,
-                    renderProviderAddress_,
-                    platformProviderRevenue_,
-                    platformProviderAddress_,
-                    artistRevenue_,
-                    artistAddress_,
-                    additionalPayeePrimaryRevenue_,
-                    additionalPayeePrimaryAddress_
-                ) = IGenArt721CoreContractV3_Engine(genArtCoreContract)
-                    .getPrimaryRevenueSplits(projectId, valueInWei);
-                // Platform Provider payment (only possible if engine)
-                if (platformProviderRevenue_ > 0) {
-                    (success, ) = platformProviderAddress_.call{
-                        value: platformProviderRevenue_
-                    }("");
-                    require(success, "Platform Provider payment failed");
-                }
-            } else {
-                // get flagship splits
-                (
-                    renderProviderRevenue_, // artblocks revenue
-                    renderProviderAddress_, // artblocks address
-                    artistRevenue_,
-                    artistAddress_,
-                    additionalPayeePrimaryRevenue_,
-                    additionalPayeePrimaryAddress_
-                ) = IGenArt721CoreContractV3(genArtCoreContract)
-                    .getPrimaryRevenueSplits(projectId, valueInWei);
-            }
-            // Render Provider / Art Blocks payment
-            if (renderProviderRevenue_ > 0) {
-                (success, ) = renderProviderAddress_.call{
-                    value: renderProviderRevenue_
+        if (valueInWei <= 0) {
+            return; // return early
+        }
+        bool success;
+        // split funds between platforms, artist, and artist's
+        // additional payee
+        uint256 renderProviderRevenue_;
+        address payable renderProviderAddress_;
+        uint256 artistRevenue_;
+        address payable artistAddress_;
+        uint256 additionalPayeePrimaryRevenue_;
+        address payable additionalPayeePrimaryAddress_;
+        if (isEngine) {
+            // get engine splits
+            uint256 platformProviderRevenue_;
+            address payable platformProviderAddress_;
+            (
+                renderProviderRevenue_,
+                renderProviderAddress_,
+                platformProviderRevenue_,
+                platformProviderAddress_,
+                artistRevenue_,
+                artistAddress_,
+                additionalPayeePrimaryRevenue_,
+                additionalPayeePrimaryAddress_
+            ) = IGenArt721CoreContractV3_Engine(genArtCoreContract)
+                .getPrimaryRevenueSplits(projectId, valueInWei);
+            // Platform Provider payment (only possible if engine)
+            if (platformProviderRevenue_ > 0) {
+                (success, ) = platformProviderAddress_.call{
+                    value: platformProviderRevenue_
                 }("");
-                require(success, "Render Provider payment failed");
+                require(success, "Platform Provider payment failed");
             }
-            // artist payment
-            if (artistRevenue_ > 0) {
-                (success, ) = artistAddress_.call{value: artistRevenue_}("");
-                require(success, "Artist payment failed");
-            }
-            // additional payee payment
-            if (additionalPayeePrimaryRevenue_ > 0) {
-                (success, ) = additionalPayeePrimaryAddress_.call{
-                    value: additionalPayeePrimaryRevenue_
-                }("");
-                require(success, "Additional Payee payment failed");
-            }
+        } else {
+            // get flagship splits
+            (
+                renderProviderRevenue_, // artblocks revenue
+                renderProviderAddress_, // artblocks address
+                artistRevenue_,
+                artistAddress_,
+                additionalPayeePrimaryRevenue_,
+                additionalPayeePrimaryAddress_
+            ) = IGenArt721CoreContractV3(genArtCoreContract)
+                .getPrimaryRevenueSplits(projectId, valueInWei);
+        }
+        // Render Provider / Art Blocks payment
+        if (renderProviderRevenue_ > 0) {
+            (success, ) = renderProviderAddress_.call{
+                value: renderProviderRevenue_
+            }("");
+            require(success, "Render Provider payment failed");
+        }
+        // artist payment
+        if (artistRevenue_ > 0) {
+            (success, ) = artistAddress_.call{value: artistRevenue_}("");
+            require(success, "Artist payment failed");
+        }
+        // additional payee payment
+        if (additionalPayeePrimaryRevenue_ > 0) {
+            (success, ) = additionalPayeePrimaryAddress_.call{
+                value: additionalPayeePrimaryRevenue_
+            }("");
+            require(success, "Additional Payee payment failed");
         }
     }
 
