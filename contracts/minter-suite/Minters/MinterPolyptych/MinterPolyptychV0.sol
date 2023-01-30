@@ -35,9 +35,9 @@ interface IGenArt721CoreContractV3WithRandomizer is
  * an accompanying randomizer contract that is configured to copy the token hash seed
  * from the allowlisted token to a corresponding newly-minted token.
  * The source token may only be used to mint one additional polyptych "panel" if the token
- * has not yet been used to mint a panel with the currently configured panel ID. To add 
+ * has not yet been used to mint a panel with the currently configured panel ID. To add
  * an additional panel to a project, the panel ID may be incremented for the project
- * using the `incrementPolyptychProjectPanelId` function. Panel IDs for a project may only 
+ * using the `incrementPolyptychProjectPanelId` function. Panel IDs for a project may only
  * be incremented such that panels must be minted in the order of their panel ID. Tokens
  * of the same project and panel ID may be minted in any order.
  * This is designed to be used with IGenArt721CoreContractV3_Engine contracts with an
@@ -195,38 +195,6 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
     }
 
     /**
-     * @notice Gets your balance of the ERC-20 token currently set
-     * as the payment currency for project `_projectId`.
-     * @param _projectId Project ID to be queried.
-     * @return balance Balance of ERC-20
-     */
-    function getYourBalanceOfProjectERC20(
-        uint256 _projectId
-    ) external view returns (uint256 balance) {
-        balance = IERC20(projectConfig[_projectId].currencyAddress).balanceOf(
-            msg.sender
-        );
-        return balance;
-    }
-
-    /**
-     * @notice Gets your allowance for this minter of the ERC-20
-     * token currently set as the payment currency for project
-     * `_projectId`.
-     * @param _projectId Project ID to be queried.
-     * @return remaining Remaining allowance of ERC-20
-     */
-    function checkYourAllowanceOfProjectERC20(
-        uint256 _projectId
-    ) external view returns (uint256 remaining) {
-        remaining = IERC20(projectConfig[_projectId].currencyAddress).allowance(
-            msg.sender,
-            address(this)
-        );
-        return remaining;
-    }
-
-    /**
      *
      * @notice Registers holders of NFTs at address `_NFTAddress` to be
      * considered for minting. New core address is assumed to follow syntax of:
@@ -368,59 +336,6 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
             invocations == _maxInvocations;
 
         emit ProjectMaxInvocationsLimitUpdated(_projectId, _maxInvocations);
-    }
-
-    /**
-     * @notice Warning: Disabling purchaseTo is not supported on this minter.
-     * This method exists purely for interface-conformance purposes.
-     */
-    function togglePurchaseToDisabled(
-        uint256 _projectId
-    ) external view onlyArtist(_projectId) {
-        revert("Action not supported");
-    }
-
-    /**
-     * @notice projectId => has project reached its maximum number of
-     * invocations? Note that this returns a local cache of the core contract's
-     * state, and may be out of sync with the core contract. This is
-     * intentional, as it only enables gas optimization of mints after a
-     * project's maximum invocations has been reached. A false negative will
-     * only result in a gas cost increase, since the core contract will still
-     * enforce a maxInvocation check during minting. A false positive is not
-     * possible because the V3 core contract only allows maximum invocations
-     * to be reduced, not increased. Based on this rationale, we intentionally
-     * do not do input validation in this method as to whether or not the input
-     * `_projectId` is an existing project ID.
-     */
-    function projectMaxHasBeenInvoked(
-        uint256 _projectId
-    ) external view returns (bool) {
-        return projectConfig[_projectId].maxHasBeenInvoked;
-    }
-
-    /**
-     * @notice projectId => project's maximum number of invocations.
-     * Optionally synced with core contract value, for gas optimization.
-     * Note that this returns a local cache of the core contract's
-     * state, and may be out of sync with the core contract. This is
-     * intentional, as it only enables gas optimization of mints after a
-     * project's maximum invocations has been reached.
-     * @dev A number greater than the core contract's project max invocations
-     * will only result in a gas cost increase, since the core contract will
-     * still enforce a maxInvocation check during minting. A number less than
-     * the core contract's project max invocations is only possible when the
-     * project's max invocations have not been synced on this minter, since the
-     * V3 core contract only allows maximum invocations to be reduced, not
-     * increased. When this happens, the minter will enable minting, allowing
-     * the core contract to enforce the max invocations check. Based on this
-     * rationale, we intentionally do not do input validation in this method as
-     * to whether or not the input `_projectId` is an existing project ID.
-     */
-    function projectMaxInvocations(
-        uint256 _projectId
-    ) external view returns (uint256) {
-        return uint256(projectConfig[_projectId].maxInvocations);
     }
 
     /**
@@ -567,6 +482,98 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
     }
 
     /**
+     * @notice Inactive function - requires NFT ownership to purchase.
+     */
+    function purchase(uint256) external payable returns (uint256) {
+        revert("Must claim NFT ownership");
+    }
+
+    /**
+     * @notice Warning: Disabling purchaseTo is not supported on this minter.
+     * This method exists purely for interface-conformance purposes.
+     */
+    function togglePurchaseToDisabled(
+        uint256 _projectId
+    ) external view onlyArtist(_projectId) {
+        revert("Action not supported");
+    }
+
+    /**
+     * @notice projectId => has project reached its maximum number of
+     * invocations? Note that this returns a local cache of the core contract's
+     * state, and may be out of sync with the core contract. This is
+     * intentional, as it only enables gas optimization of mints after a
+     * project's maximum invocations has been reached. A false negative will
+     * only result in a gas cost increase, since the core contract will still
+     * enforce a maxInvocation check during minting. A false positive is not
+     * possible because the V3 core contract only allows maximum invocations
+     * to be reduced, not increased. Based on this rationale, we intentionally
+     * do not do input validation in this method as to whether or not the input
+     * `_projectId` is an existing project ID.
+     */
+    function projectMaxHasBeenInvoked(
+        uint256 _projectId
+    ) external view returns (bool) {
+        return projectConfig[_projectId].maxHasBeenInvoked;
+    }
+
+    /**
+     * @notice projectId => project's maximum number of invocations.
+     * Optionally synced with core contract value, for gas optimization.
+     * Note that this returns a local cache of the core contract's
+     * state, and may be out of sync with the core contract. This is
+     * intentional, as it only enables gas optimization of mints after a
+     * project's maximum invocations has been reached.
+     * @dev A number greater than the core contract's project max invocations
+     * will only result in a gas cost increase, since the core contract will
+     * still enforce a maxInvocation check during minting. A number less than
+     * the core contract's project max invocations is only possible when the
+     * project's max invocations have not been synced on this minter, since the
+     * V3 core contract only allows maximum invocations to be reduced, not
+     * increased. When this happens, the minter will enable minting, allowing
+     * the core contract to enforce the max invocations check. Based on this
+     * rationale, we intentionally do not do input validation in this method as
+     * to whether or not the input `_projectId` is an existing project ID.
+     */
+    function projectMaxInvocations(
+        uint256 _projectId
+    ) external view returns (uint256) {
+        return uint256(projectConfig[_projectId].maxInvocations);
+    }
+
+    /**
+     * @notice Gets your balance of the ERC-20 token currently set
+     * as the payment currency for project `_projectId`.
+     * @param _projectId Project ID to be queried.
+     * @return balance Balance of ERC-20
+     */
+    function getYourBalanceOfProjectERC20(
+        uint256 _projectId
+    ) external view returns (uint256 balance) {
+        balance = IERC20(projectConfig[_projectId].currencyAddress).balanceOf(
+            msg.sender
+        );
+        return balance;
+    }
+
+    /**
+     * @notice Gets your allowance for this minter of the ERC-20
+     * token currently set as the payment currency for project
+     * `_projectId`.
+     * @param _projectId Project ID to be queried.
+     * @return remaining Remaining allowance of ERC-20
+     */
+    function checkYourAllowanceOfProjectERC20(
+        uint256 _projectId
+    ) external view returns (uint256 remaining) {
+        remaining = IERC20(projectConfig[_projectId].currencyAddress).allowance(
+            msg.sender,
+            address(this)
+        );
+        return remaining;
+    }
+
+    /**
      * @notice Gets quantity of NFT addresses registered on this minter.
      * @return uint256 quantity of NFT addresses registered
      */
@@ -623,13 +630,6 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
         } else {
             currencySymbol = _projectConfig.currencySymbol;
         }
-    }
-
-    /**
-     * @notice Inactive function - requires NFT ownership to purchase.
-     */
-    function purchase(uint256) external payable returns (uint256) {
-        revert("Must claim NFT ownership");
     }
 
     /**
@@ -893,6 +893,16 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
     }
 
     /**
+     * @notice Allows the artist to increment the minter to the next polyptych panel
+     * @param _projectId Project ID to increment to its next polyptych panel
+     */
+    function incrementPolyptychProjectPanelId(
+        uint256 _projectId
+    ) public onlyArtist(_projectId) {
+        projectConfig[_projectId].polyptychPanelId++;
+    }
+
+    /**
      * @notice Returns if token is an allowlisted NFT for project `_projectId`.
      * @param _projectId Project ID to be checked.
      * @param _ownedNFTAddress ERC-721 NFT token address to be checked.
@@ -911,16 +921,6 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
             allowedProjectHolders[_projectId][_ownedNFTAddress][
                 ownedNFTProjectId
             ];
-    }
-
-    /**
-     * @notice Allows the artist to increment the minter to the next polyptych panel
-     * @param _projectId Project ID to increment to its next polyptych panel
-     */
-    function incrementPolyptychProjectPanelId(
-        uint256 _projectId
-    ) public onlyArtist(_projectId) {
-        projectConfig[_projectId].polyptychPanelId++;
     }
 
     /**
