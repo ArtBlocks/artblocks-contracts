@@ -268,9 +268,20 @@ contract MinterBase {
         uint256 returnDataLength = returnData.length;
         if (returnDataLength == 6 * 32) {
             // 6 32-byte words returned if flagship (not engine)
+            // @dev 6 32-byte words are expected because the non-engine core
+            // contracts return a payout address and uint256 payment value for
+            // the artist, and artist's additional payee, and Art Blocks.
+            // also note that per Solidity ABI encoding, the address return
+            // values are padded to 32 bytes.
             return false;
         } else if (returnDataLength == 8 * 32) {
             // 8 32-byte words returned if engine
+            // @dev 8 32-byte words are expected because the engine core
+            // contracts return a payout address and uint256 payment value for
+            // the artist, artist's additional payee, render provider
+            // typically Art Blocks, and platform provider (partner).
+            // also note that per Solidity ABI encoding, the address return
+            // values are padded to 32 bytes.
             return true;
         } else {
             // unexpected return value length
