@@ -9,7 +9,6 @@ import {
   deployCoreWithMinterFilter,
   compareBN,
   safeAddProject,
-  deployAndGetPBAB,
 } from "../../util/common";
 
 import { PolyptychMinter_Common } from "./PolyptychMinter.common";
@@ -708,7 +707,8 @@ for (const coreContractName of coreContractsToTest) {
       it("enables delegation when owned token is on different contracts", async function () {
         // deploy different contract (for this case, use PBAB contract)
         const tokenOwner = this.accounts.additional; // alias for test readability
-        const { pbabToken, pbabMinter } = await deployAndGetPBAB.bind(this)();
+        const pbabToken = this.genArt721Core2;
+        const pbabMinter = this.minterSetPrice2;
         await pbabMinter
           .connect(this.accounts.artist)
           .purchaseTo(tokenOwner.address, 0, {

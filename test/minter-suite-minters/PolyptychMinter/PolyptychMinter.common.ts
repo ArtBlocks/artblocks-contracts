@@ -185,11 +185,11 @@ export const PolyptychMinter_Common = async () => {
       // cannot purchase token with ETH
       await expectRevert(
         this.minter
-          .connect(this.accounts.user)
+          .connect(this.accounts.artist)
           ["purchase(uint256,address,uint256)"](
             this.projectZero,
             this.genArt721Core.address,
-            this.projectZeroTokenZero,
+            this.projectZeroTokenZero.toNumber(),
             {
               value: this.pricePerTokenInWei,
             }
@@ -197,29 +197,29 @@ export const PolyptychMinter_Common = async () => {
         "this project accepts a different currency and cannot accept ETH"
       );
       // approve contract and able to mint with Mock token
-      await this.ERC20Mock.connect(this.accounts.user).approve(
+      await this.ERC20Mock.connect(this.accounts.artist).approve(
         this.minter.address,
         ethers.utils.parseEther("100")
       );
       await this.minter
-        .connect(this.accounts.user)
+        .connect(this.accounts.artist)
         ["purchase(uint256,address,uint256)"](
           this.projectZero,
           this.genArt721Core.address,
-          this.projectZeroTokenZero
+          this.projectZeroTokenZero.toNumber()
         );
       // cannot purchase token with ERC20 token when insufficient balance
-      await this.ERC20Mock.connect(this.accounts.user).transfer(
+      await this.ERC20Mock.connect(this.accounts.artist).transfer(
         this.accounts.artist.address,
         ethers.utils.parseEther("100").sub(this.pricePerTokenInWei)
       );
       await expectRevert(
         this.minter
-          .connect(this.accounts.user)
+          .connect(this.accounts.artist)
           ["purchase(uint256,address,uint256)"](
             this.projectZero,
             this.genArt721Core.address,
-            this.projectZeroTokenZero
+            this.projectZeroTokenZero.toNumber()
           ),
         "Insufficient balance"
       );
@@ -233,11 +233,11 @@ export const PolyptychMinter_Common = async () => {
         );
       // able to mint with ETH
       await this.minter
-        .connect(this.accounts.user)
+        .connect(this.accounts.artist)
         ["purchase(uint256,address,uint256)"](
           this.projectZero,
           this.genArt721Core.address,
-          this.projectZeroTokenZero,
+          this.projectZeroTokenZero.toNumber(),
           {
             value: this.pricePerTokenInWei,
           }
@@ -245,22 +245,21 @@ export const PolyptychMinter_Common = async () => {
     });
 
     it("enforces currency update only on desired project", async function () {
-      const needMoreValueErrorMessage = "Must send minimum value to mint!";
       // artist changes currency info for project zero
       await this.minter
         .connect(this.accounts.artist)
         .updateProjectCurrencyInfo(
-          this.projectZero,
+          this.projectOne,
           "MOCK",
           this.ERC20Mock.address
         );
       // can purchase project one token with ETH
       await this.minter
-        .connect(this.accounts.user)
+        .connect(this.accounts.artist)
         ["purchase(uint256,address,uint256)"](
-          this.projectOne,
+          this.projectZero,
           this.genArt721Core.address,
-          this.projectZeroTokenZero,
+          this.projectZeroTokenZero.toNumber(),
           {
             value: this.pricePerTokenInWei,
           }
