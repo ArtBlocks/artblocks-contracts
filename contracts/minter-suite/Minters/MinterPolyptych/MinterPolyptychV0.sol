@@ -26,9 +26,7 @@ interface IGenArt721CoreContractV3WithRandomizer is
     IGenArt721CoreContractV3_Engine
 {
     /// current randomizer contract
-    function randomizerContract()
-        external
-        returns (IRandomizerPolyptychV0);
+    function randomizerContract() external returns (IRandomizerPolyptychV0);
 }
 
 /**
