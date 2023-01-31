@@ -2,14 +2,14 @@
 // Created By: Art Blocks Inc.
 
 import { ethers } from "hardhat";
-import { GenArt721CoreV2PBAB__factory } from "../../contracts/factories/GenArt721CoreV2PBAB__factory";
-import { GenArt721MinterPBAB__factory } from "../../contracts/factories/GenArt721MinterPBAB__factory";
-import { GenArt721MinterDAExpPBAB__factory } from "../../contracts/factories/GenArt721MinterDAExpPBAB__factory";
+import { GenArt721CoreV2PBAB__factory } from "../../../contracts/factories/GenArt721CoreV2PBAB__factory";
+import { GenArt721MinterPBAB__factory } from "../../../contracts/factories/GenArt721MinterPBAB__factory";
+import { GenArt721MinterDAExpPBAB__factory } from "../../../contracts/factories/GenArt721MinterDAExpPBAB__factory";
 
-import royaltyRegistryABI from "../../../contracts/libs/abi/RoyaltyRegistry.json";
-import { GenArt721RoyaltyOverridePBAB__factory } from "../../contracts/factories/GenArt721RoyaltyOverridePBAB__factory";
+import royaltyRegistryABI from "../../../../contracts/libs/abi/RoyaltyRegistry.json";
+import { GenArt721RoyaltyOverridePBAB__factory } from "../../../contracts/factories/GenArt721RoyaltyOverridePBAB__factory";
 
-import { createPBABBucket } from "../../util/aws_s3";
+import { createPBABBucket } from "../../../util/aws_s3";
 
 const hre = require("hardhat");
 
@@ -25,7 +25,7 @@ enum MinterTypes {
 const pbabTokenName = "CoinDesk Deployer";
 const pbabTokenTicker = "CDESK";
 const startingProjectId = 0;
-const pbabTransferAddress = "0x739a4278481D35bbCdB2dB0D9ae845C2a75BF3Ec";
+const pbabTransferAddress = "0x218162EA0AF740Ad3cCb50E7C15FBEe52CFDc6B3";
 // ab-wallet, **testnet ONLY**
 const rendererProviderAddress = "0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63";
 // goerli address
