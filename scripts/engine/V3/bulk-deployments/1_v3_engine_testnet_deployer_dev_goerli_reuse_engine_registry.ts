@@ -3,19 +3,22 @@
 
 import { ethers } from "hardhat";
 // engine registry
-import { EngineRegistryV0__factory } from "../contracts/factories/EngineRegistryV0__factory";
+import { EngineRegistryV0__factory } from "../../../contracts/factories/EngineRegistryV0__factory";
 // engine
-import { GenArt721CoreV3Engine__factory } from "../contracts/factories/GenArt721CoreV3Engine__factory";
-import { AdminACLV1__factory } from "../contracts/factories/AdminACLV1__factory";
-import { BasicRandomizerV2__factory } from "../contracts/factories/BasicRandomizerV2__factory";
+import { GenArt721CoreV3Engine__factory } from "../../../contracts/factories/GenArt721CoreV3Engine__factory";
+import { AdminACLV1__factory } from "../../../contracts/factories/AdminACLV1__factory";
+import { BasicRandomizerV2__factory } from "../../../contracts/factories/BasicRandomizerV2__factory";
 // minter suite
-import { MinterFilterV1__factory } from "../contracts/factories/MinterFilterV1__factory";
-import { MinterSetPriceV2__factory } from "../contracts/factories/MinterSetPriceV2__factory";
+import { MinterFilterV1__factory } from "../../../contracts/factories/MinterFilterV1__factory";
+import { MinterSetPriceV4__factory } from "../../../contracts/factories/MinterSetPriceV4__factory";
 
+// image bucket creation
+import { createPBABBucket } from "../../../util/aws_s3";
 // delay to avoid issues with reorgs and tx failures
-import { delay } from "../util/utils";
+import { delay } from "../../../util/utils";
 const EXTRA_DELAY_BETWEEN_TX = 1000; // ms
 const MANUAL_GAS_LIMIT = 500000; // gas
+const AUTO_APPROVE_ARTIST_SPLIT_PROPOSALS = true;
 
 /**
  * This script was created to deploy the V3 core Engine contracts,
@@ -30,24 +33,14 @@ const MANUAL_GAS_LIMIT = 500000; // gas
 //////////////////////////////////////////////////////////////////////////////
 const contractDeployDetailsArray = [
   {
-    tokenName: "Art Blocks x Pace",
-    tokenTicker: "ABXPACE",
-    // current deployment already has 0-4 (see: https://etherscan.io/address/0x64780ce53f6e966e18a22af13a2f97369580ec11)
-    startingProjectId: 5,
-  },
-  {
-    tokenName: "Art Blocks x Bright Moments",
-    tokenTicker: "ABXBMG",
-    // new contract, starts at 0
-    startingProjectId: 0,
-  },
-  {
-    tokenName: "Art Blocks Managed Engine",
-    tokenTicker: "ABENGINE",
-    // new contract, starts at 0
+    tokenName: "Art Blocks V3 Engine Testnet Dev #2",
+    tokenTicker: "ABV3ENGDEV_2",
     startingProjectId: 0,
   },
 ];
+// the following engine registry address must be used by admin dev deployer wallet
+// 0x2246475beddf9333b6a6D9217194576E7617Afd1
+const engineRegistryAddress = "0x2A39132E8d594d2c840D6656327fB26d900C05bA";
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG ENDS HERE
 //////////////////////////////////////////////////////////////////////////////
@@ -72,11 +65,7 @@ async function main() {
 
   // Deploy engine registry contract
   // @dev - comment out deployment if using existing engine registry
-  const engineRegistryFactory = new EngineRegistryV0__factory(deployer);
-  const engineRegistry = await engineRegistryFactory.deploy();
-  await engineRegistry.deployed();
-  const engineRegistryAddress = engineRegistry.address;
-  console.log(`Engine Registry deployed at ${engineRegistryAddress}`);
+  console.log(`Engine Registry being used at ${engineRegistryAddress}`);
 
   //////////////////////////////////////////////////////////////////////////////
   // DEPLOYMENT (SHARED) ENDS HERE
@@ -104,7 +93,6 @@ async function main() {
     const renderProviderAddress = deployer.address;
     const platformProviderAddress = deployer.address;
     const startingProjectId = contractDeployDetails.startingProjectId;
-    const autoApproveArtistSplitProposals = false;
     const genArt721Core = await genArt721CoreFactory.deploy(
       tokenName,
       tokenTicker,
@@ -113,7 +101,7 @@ async function main() {
       randomizerAddress,
       adminACLAddress,
       startingProjectId,
-      autoApproveArtistSplitProposals,
+      AUTO_APPROVE_ARTIST_SPLIT_PROPOSALS,
       engineRegistryAddress
     );
 
@@ -130,13 +118,13 @@ async function main() {
 
     // Deploy Minter Suite contracts.
     // set price V2
-    const minterSetPriceFactory = new MinterSetPriceV2__factory(deployer);
+    const minterSetPriceFactory = new MinterSetPriceV4__factory(deployer);
     const minterSetPrice = await minterSetPriceFactory.deploy(
       genArt721Core.address,
       minterFilter.address
     );
     await minterSetPrice.deployed();
-    console.log(`MinterSetPrice V2 deployed at ${minterSetPrice.address}`);
+    console.log(`MinterSetPrice V4 deployed at ${minterSetPrice.address}`);
 
     //////////////////////////////////////////////////////////////////////////////
     // DEPLOYMENT (PER-CONTRACT) ENDS HERE
@@ -223,7 +211,7 @@ async function main() {
         "${randomizerAddress}", // randomizer
         "${adminACLAddress}", // admin acl
         ${startingProjectId}, // starting project id
-        ${autoApproveArtistSplitProposals}, // auto approve artist split proposals
+        ${AUTO_APPROVE_ARTIST_SPLIT_PROPOSALS}, // auto approve artist split proposals
         "${engineRegistryAddress}" // engine registry
       ];`
     );
@@ -234,10 +222,6 @@ async function main() {
     console.log(
       `${standardVerify} --network ${networkName} ${adminACL.address}`
     );
-    console.log(`Verify Engine Registry contract deployment with:`);
-    console.log(
-      `${standardVerify} --network ${networkName} ${engineRegistry.address}`
-    );
     console.log(`Verify MinterFilter deployment with:`);
     console.log(
       `${standardVerify} --network ${networkName} ${minterFilter.address} ${genArt721Core.address}`
@@ -246,6 +230,12 @@ async function main() {
     console.log(
       `${standardVerify} --network ${networkName} ${minterSetPrice.address} ${genArt721Core.address} ${minterFilter.address}`
     );
+    // create image bucket
+    const payload = await createPBABBucket(tokenName, networkName);
+    console.log(`Set image bucket for this core contract to ${payload["url"]}`);
+    // reminder to set core contract type in db
+    const coreType = await genArt721Core.coreType();
+    console.log(`Set core contract type to ${coreType}`);
 
     //////////////////////////////////////////////////////////////////////////////
     // SETUP ENDS HERE

@@ -3,17 +3,20 @@
 
 import { ethers } from "hardhat";
 // engine registry
-import { EngineRegistryV0__factory } from "../contracts/factories/EngineRegistryV0__factory";
+import { EngineRegistryV0__factory } from "../../../contracts/factories/EngineRegistryV0__factory";
 // engine
-import { GenArt721CoreV3Engine__factory } from "../contracts/factories/GenArt721CoreV3Engine__factory";
-import { AdminACLV1__factory } from "../contracts/factories/AdminACLV1__factory";
-import { BasicRandomizerV2__factory } from "../contracts/factories/BasicRandomizerV2__factory";
+import { GenArt721CoreV3Engine__factory } from "../../../contracts/factories/GenArt721CoreV3Engine__factory";
+import { AdminACLV1__factory } from "../../../contracts/factories/AdminACLV1__factory";
+import { BasicRandomizerV2__factory } from "../../../contracts/factories/BasicRandomizerV2__factory";
 // minter suite
-import { MinterFilterV1__factory } from "../contracts/factories/MinterFilterV1__factory";
-import { MinterSetPriceV4__factory } from "../contracts/factories/MinterSetPriceV4__factory";
+import { MinterFilterV1__factory } from "../../../contracts/factories/MinterFilterV1__factory";
+import { MinterSetPriceV4__factory } from "../../../contracts/factories/MinterSetPriceV4__factory";
+
+// image bucket creation
+import { createPBABBucket } from "../../../util/aws_s3";
 
 // delay to avoid issues with reorgs and tx failures
-import { delay } from "../util/utils";
+import { delay } from "../../../util/utils";
 const EXTRA_DELAY_BETWEEN_TX = 1000; // ms
 const MANUAL_GAS_LIMIT = 500000; // gas
 const AUTO_APPROVE_ARTIST_SPLIT_PROPOSALS = true;
@@ -233,6 +236,12 @@ async function main() {
     console.log(
       `${standardVerify} --network ${networkName} ${minterSetPrice.address} ${genArt721Core.address} ${minterFilter.address}`
     );
+    // create image bucket
+    const payload = await createPBABBucket(tokenName, networkName);
+    console.log(`Set image bucket for this core contract to ${payload["url"]}`);
+    // reminder to set core contract type in db
+    const coreType = await genArt721Core.coreType();
+    console.log(`Set core contract type to ${coreType}`);
 
     //////////////////////////////////////////////////////////////////////////////
     // SETUP ENDS HERE

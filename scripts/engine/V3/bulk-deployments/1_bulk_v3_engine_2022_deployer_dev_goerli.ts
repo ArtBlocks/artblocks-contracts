@@ -3,17 +3,17 @@
 
 import { ethers } from "hardhat";
 // engine registry
-import { EngineRegistryV0__factory } from "../contracts/factories/EngineRegistryV0__factory";
+import { EngineRegistryV0__factory } from "../../../contracts/factories/EngineRegistryV0__factory";
 // engine
-import { GenArt721CoreV3Engine__factory } from "../contracts/factories/GenArt721CoreV3Engine__factory";
-import { AdminACLV1__factory } from "../contracts/factories/AdminACLV1__factory";
-import { BasicRandomizerV2__factory } from "../contracts/factories/BasicRandomizerV2__factory";
+import { GenArt721CoreV3Engine__factory } from "../../../contracts/factories/GenArt721CoreV3Engine__factory";
+import { AdminACLV1__factory } from "../../../contracts/factories/AdminACLV1__factory";
+import { BasicRandomizerV2__factory } from "../../../contracts/factories/BasicRandomizerV2__factory";
 // minter suite
-import { MinterFilterV1__factory } from "../contracts/factories/MinterFilterV1__factory";
-import { MinterSetPriceV2__factory } from "../contracts/factories/MinterSetPriceV2__factory";
+import { MinterFilterV1__factory } from "../../../contracts/factories/MinterFilterV1__factory";
+import { MinterSetPriceV2__factory } from "../../../contracts/factories/MinterSetPriceV2__factory";
 
 // delay to avoid issues with reorgs and tx failures
-import { delay } from "../util/utils";
+import { delay } from "../../../util/utils";
 const EXTRA_DELAY_BETWEEN_TX = 1000; // ms
 const MANUAL_GAS_LIMIT = 500000; // gas
 
@@ -55,6 +55,9 @@ async function main() {
   const [deployer] = await ethers.getSigners();
   const network = await ethers.provider.getNetwork();
   const networkName = network.name == "homestead" ? "mainnet" : network.name;
+  if (networkName != "goerli") {
+    throw new Error("This script is intended to be run on goerli only");
+  }
   //////////////////////////////////////////////////////////////////////////////
   // DEPLOYMENT (SHARED) BEGINS HERE
   //////////////////////////////////////////////////////////////////////////////
