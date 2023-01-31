@@ -25,11 +25,10 @@ enum MinterTypes {
 const pbabTokenName = "VerticalCrypto Gen Art";
 const pbabTokenTicker = "VCAG";
 const pbabTransferAddress = "0x65FEca334780160e3420B097590fd6D02dE663f0";
-// ab-wallet, **testnet ONLY**
-const rendererProviderAddress = "0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63";
-// goerli address
-const randomizerAddress = "0xec5dae4b11213290b2dbe5295093f75920bd2982";
-const minterType = MinterTypes.DutchAuction;
+const rendererProviderAddress = "0xA55B7B2eb2565280cacF4C5DD9cBd775bB8dDafb";
+// mainnet address
+const randomizerAddress = "0x088098f7438773182b703625c4128aff85fcffc4";
+const minterType = MinterTypes.FixedPrice;
 // The following is not required, but if not set, must be set later by platform
 // for Royalty Registry to work (will be ignored of set to "0x0...dEaD")
 const platformRoyaltyPaymentAddress = DEAD;
