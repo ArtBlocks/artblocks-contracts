@@ -1,42 +1,60 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../../../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
-import "../../../interfaces/0.8.x/IMinterFilterV0.sol";
-import "../../../interfaces/0.8.x/IFilteredMinterV2.sol";
-import "../MinterBase_v0_1_1.sol";
+import "../../../../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
+import "../../../../interfaces/0.8.x/IMinterFilterV0.sol";
+import "../../../../interfaces/0.8.x/IFilteredMinterDALinV1.sol";
 
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin-4.5/contracts/utils/math/SafeCast.sol";
 
 pragma solidity 0.8.17;
 
 /**
  * @title Filtered Minter contract that allows tokens to be minted with ETH.
- * This is designed to be used with GenArt721CoreContractV3 flagship or
- * engine contracts.
+ * Pricing is achieved using an automated Dutch-auction mechanism.
+ * This is designed to be used with IGenArt721CoreContractV3 contracts.
  * @author Art Blocks Inc.
  * @notice Privileged Roles and Ownership:
  * This contract is designed to be managed, with limited powers.
- * Privileged roles and abilities are controlled by the project's artist, which
- * can be modified by the core contract's Admin ACL contract. Both of these
- * roles hold extensive power and can modify minter details.
+ * Privileged roles and abilities are controlled by the core contract's Admin
+ * ACL contract and a project's artist. Both of these roles hold extensive
+ * power and can modify minter details.
  * Care must be taken to ensure that the admin ACL contract and artist
  * addresses are secure behind a multi-sig or other access control mechanism.
  * ----------------------------------------------------------------------------
+ * The following functions are restricted to the core contract's Admin ACL
+ * contract:
+ * - setMinimumAuctionLengthSeconds (note: this is only enforced when creating
+ *   new auctions)
+ * - resetAuctionDetails (note: this will prevent minting until a new auction
+ *   is created)
+ * ----------------------------------------------------------------------------
  * The following functions are restricted to a project's artist:
- * - updatePricePerTokenInWei
+ * - setAuctionDetails (note: this may only be called when there is no active
+ *   auction)
  * - setProjectMaxInvocations
  * - manuallyLimitProjectMaxInvocations
  * ----------------------------------------------------------------------------
  * Additional admin and artist privileged roles may be described on other
  * contracts that this minter integrates with.
+ *
+ * @dev Note that while this minter makes use of `block.timestamp` and it is
+ * technically possible that this value is manipulated by block producers, such
+ * manipulation will not have material impact on the price values of this minter
+ * given the business practices for how pricing is congfigured for this minter
+ * and that variations on the order of less than a minute should not
+ * meaningfully impact price given the minimum allowable price decay rate that
+ * this minter intends to support.
  */
-contract MinterSetPriceV4 is ReentrancyGuard, MinterBase, IFilteredMinterV2 {
+contract MinterDALinV3 is ReentrancyGuard, IFilteredMinterDALinV1 {
+    using SafeCast for uint256;
+
     /// Core contract address this minter interacts with
     address public immutable genArt721CoreAddress;
 
-    /// The core contract integrates with V3 contracts
-    IGenArt721CoreContractV3_Base private immutable genArtCoreContract_Base;
+    /// This contract handles cores with interface IV
+    IGenArt721CoreContractV3 private immutable genArtCoreContract;
 
     /// Minter filter address this minter interacts with
     address public immutable minterFilterAddress;
@@ -45,23 +63,43 @@ contract MinterSetPriceV4 is ReentrancyGuard, MinterBase, IFilteredMinterV2 {
     IMinterFilterV0 private immutable minterFilter;
 
     /// minterType for this minter
-    string public constant minterType = "MinterSetPriceV4";
+    string public constant minterType = "MinterDALinV3";
 
     uint256 constant ONE_MILLION = 1_000_000;
 
     struct ProjectConfig {
         bool maxHasBeenInvoked;
-        bool priceIsConfigured;
         uint24 maxInvocations;
-        uint256 pricePerTokenInWei;
+        // max uint64 ~= 1.8e19 sec ~= 570 billion years
+        uint64 timestampStart;
+        uint64 timestampEnd;
+        uint256 startPrice;
+        uint256 basePrice;
     }
 
     mapping(uint256 => ProjectConfig) public projectConfig;
 
+    /// Minimum auction length in seconds
+    uint256 public minimumAuctionLengthSeconds = 3600;
+
+    // modifier to restrict access to only AdminACL allowed calls
+    // @dev defers which ACL contract is used to the core contract
+    modifier onlyCoreAdminACL(bytes4 _selector) {
+        require(
+            genArtCoreContract.adminACLAllowed(
+                msg.sender,
+                address(this),
+                _selector
+            ),
+            "Only Core AdminACL allowed"
+        );
+        _;
+    }
+
     modifier onlyArtist(uint256 _projectId) {
         require(
-            msg.sender ==
-                genArtCoreContract_Base.projectIdToArtistAddress(_projectId),
+            (msg.sender ==
+                genArtCoreContract.projectIdToArtistAddress(_projectId)),
             "Only Artist"
         );
         _;
@@ -73,19 +111,15 @@ contract MinterSetPriceV4 is ReentrancyGuard, MinterBase, IFilteredMinterV2 {
      * at address `_genArt721Address`.
      * @param _genArt721Address Art Blocks core contract address for
      * which this contract will be a minter.
-     * @param _minterFilter Minter filter for which this will be a
-     * filtered minter.
+     * @param _minterFilter Minter filter for which
+     * this will a filtered minter.
      */
     constructor(
         address _genArt721Address,
         address _minterFilter
-    ) ReentrancyGuard() MinterBase(_genArt721Address) {
+    ) ReentrancyGuard() {
         genArt721CoreAddress = _genArt721Address;
-        // always populate immutable engine contracts, but only use appropriate
-        // interface based on isEngine in the rest of the contract
-        genArtCoreContract_Base = IGenArt721CoreContractV3_Base(
-            _genArt721Address
-        );
+        genArtCoreContract = IGenArt721CoreContractV3(_genArt721Address);
         minterFilterAddress = _minterFilter;
         minterFilter = IMinterFilterV0(_minterFilter);
         require(
@@ -106,7 +140,7 @@ contract MinterSetPriceV4 is ReentrancyGuard, MinterBase, IFilteredMinterV2 {
     ) external onlyArtist(_projectId) {
         uint256 maxInvocations;
         uint256 invocations;
-        (invocations, maxInvocations, , , , ) = genArtCoreContract_Base
+        (invocations, maxInvocations, , , , ) = genArtCoreContract
             .projectStateData(_projectId);
         // update storage with results
         projectConfig[_projectId].maxInvocations = uint24(maxInvocations);
@@ -140,7 +174,7 @@ contract MinterSetPriceV4 is ReentrancyGuard, MinterBase, IFilteredMinterV2 {
         // ensure that the manually set maxInvocations is not greater than what is set on the core contract
         uint256 maxInvocations;
         uint256 invocations;
-        (invocations, maxInvocations, , , , ) = genArtCoreContract_Base
+        (invocations, maxInvocations, , , , ) = genArtCoreContract
             .projectStateData(_projectId);
         require(
             _maxInvocations <= maxInvocations,
@@ -154,8 +188,6 @@ contract MinterSetPriceV4 is ReentrancyGuard, MinterBase, IFilteredMinterV2 {
         // EFFECTS
         // update storage with results
         projectConfig[_projectId].maxInvocations = uint24(_maxInvocations);
-        // We need to ensure maxHasBeenInvoked is correctly set after manually setting the
-        // local maxInvocations value.
         projectConfig[_projectId].maxHasBeenInvoked =
             invocations == _maxInvocations;
 
@@ -216,20 +248,114 @@ contract MinterSetPriceV4 is ReentrancyGuard, MinterBase, IFilteredMinterV2 {
     }
 
     /**
-     * @notice Updates this minter's price per token of project `_projectId`
-     * to be '_pricePerTokenInWei`, in Wei.
-     * This price supersedes any legacy core contract price per token value.
+     * @notice projectId => auction parameters
+     */
+    function projectAuctionParameters(
+        uint256 _projectId
+    )
+        external
+        view
+        returns (
+            uint256 timestampStart,
+            uint256 timestampEnd,
+            uint256 startPrice,
+            uint256 basePrice
+        )
+    {
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        return (
+            _projectConfig.timestampStart,
+            _projectConfig.timestampEnd,
+            _projectConfig.startPrice,
+            _projectConfig.basePrice
+        );
+    }
+
+    /**
+     * @notice Sets minimum auction length to `_minimumAuctionLengthSeconds`
+     * for all projects.
+     * @param _minimumAuctionLengthSeconds Minimum auction length in seconds.
+     */
+    function setMinimumAuctionLengthSeconds(
+        uint256 _minimumAuctionLengthSeconds
+    ) external onlyCoreAdminACL(this.setMinimumAuctionLengthSeconds.selector) {
+        minimumAuctionLengthSeconds = _minimumAuctionLengthSeconds;
+        emit MinimumAuctionLengthSecondsUpdated(_minimumAuctionLengthSeconds);
+    }
+
+    ////// Auction Functions
+    /**
+     * @notice Sets auction details for project `_projectId`.
+     * @param _projectId Project ID to set auction details for.
+     * @param _auctionTimestampStart Timestamp at which to start the auction.
+     * @param _auctionTimestampEnd Timestamp at which to end the auction.
+     * @param _startPrice Price at which to start the auction, in Wei.
+     * @param _basePrice Resting price of the auction, in Wei.
      * @dev Note that it is intentionally supported here that the configured
      * price may be explicitly set to `0`.
      */
-    function updatePricePerTokenInWei(
+    function setAuctionDetails(
         uint256 _projectId,
-        uint256 _pricePerTokenInWei
+        uint256 _auctionTimestampStart,
+        uint256 _auctionTimestampEnd,
+        uint256 _startPrice,
+        uint256 _basePrice
     ) external onlyArtist(_projectId) {
+        // CHECKS
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
-        _projectConfig.pricePerTokenInWei = _pricePerTokenInWei;
-        _projectConfig.priceIsConfigured = true;
-        emit PricePerTokenInWeiUpdated(_projectId, _pricePerTokenInWei);
+        require(
+            _projectConfig.timestampStart == 0 ||
+                block.timestamp < _projectConfig.timestampStart,
+            "No modifications mid-auction"
+        );
+        require(
+            block.timestamp < _auctionTimestampStart,
+            "Only future auctions"
+        );
+        require(
+            _auctionTimestampEnd > _auctionTimestampStart,
+            "Auction end must be greater than auction start"
+        );
+        require(
+            _auctionTimestampEnd >=
+                _auctionTimestampStart + minimumAuctionLengthSeconds,
+            "Auction length must be at least minimumAuctionLengthSeconds"
+        );
+        require(
+            _startPrice > _basePrice,
+            "Auction start price must be greater than auction end price"
+        );
+        // EFFECTS
+        _projectConfig.timestampStart = _auctionTimestampStart.toUint64();
+        _projectConfig.timestampEnd = _auctionTimestampEnd.toUint64();
+        _projectConfig.startPrice = _startPrice;
+        _projectConfig.basePrice = _basePrice;
+        emit SetAuctionDetails(
+            _projectId,
+            _auctionTimestampStart,
+            _auctionTimestampEnd,
+            _startPrice,
+            _basePrice
+        );
+    }
+
+    /**
+     * @notice Resets auction details for project `_projectId`, zero-ing out all
+     * relevant auction fields. Not intended to be used in normal auction
+     * operation, but rather only in case of the need to halt an auction.
+     * @param _projectId Project ID to set auction details for.
+     */
+    function resetAuctionDetails(
+        uint256 _projectId
+    ) external onlyCoreAdminACL(this.resetAuctionDetails.selector) {
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        // reset to initial values
+        _projectConfig.timestampStart = 0;
+        _projectConfig.timestampEnd = 0;
+        _projectConfig.startPrice = 0;
+        _projectConfig.basePrice = 0;
+
+        emit ResetAuctionDetails(_projectId);
     }
 
     /**
@@ -289,14 +415,10 @@ contract MinterSetPriceV4 is ReentrancyGuard, MinterBase, IFilteredMinterV2 {
             "Maximum number of invocations reached"
         );
 
-        // require artist to have configured price of token on this minter
-        require(_projectConfig.priceIsConfigured, "Price not configured");
-
-        // load price of token into memory
-        uint256 pricePerTokenInWei = _projectConfig.pricePerTokenInWei;
-
+        // _getPrice reverts if auction is unconfigured or has not started
+        uint256 currentPriceInWei = _getPrice(_projectId);
         require(
-            msg.value >= pricePerTokenInWei,
+            msg.value >= currentPriceInWei,
             "Must send minimum value to mint!"
         );
 
@@ -312,9 +434,100 @@ contract MinterSetPriceV4 is ReentrancyGuard, MinterBase, IFilteredMinterV2 {
         }
 
         // INTERACTIONS
-        splitFundsETH(_projectId, pricePerTokenInWei, genArt721CoreAddress);
+        _splitFundsETHAuction(_projectId, currentPriceInWei);
 
         return tokenId;
+    }
+
+    /**
+     * @dev splits ETH funds between sender (if refund), foundation,
+     * artist, and artist's additional payee for a token purchased on
+     * project `_projectId`.
+     * @dev possible DoS during splits is acknowledged, and mitigated by
+     * business practices, including end-to-end testing on mainnet, and
+     * admin-accepted artist payment addresses.
+     * @param _projectId Project ID for which funds shall be split.
+     * @param _currentPriceInWei Current price of token, in Wei.
+     */
+    function _splitFundsETHAuction(
+        uint256 _projectId,
+        uint256 _currentPriceInWei
+    ) internal {
+        if (msg.value > 0) {
+            bool success_;
+            // send refund to sender
+            uint256 refund = msg.value - _currentPriceInWei;
+            if (refund > 0) {
+                (success_, ) = msg.sender.call{value: refund}("");
+                require(success_, "Refund failed");
+            }
+            // split remaining funds between foundation, artist, and artist's
+            // additional payee
+            (
+                uint256 artblocksRevenue_,
+                address payable artblocksAddress_,
+                uint256 artistRevenue_,
+                address payable artistAddress_,
+                uint256 additionalPayeePrimaryRevenue_,
+                address payable additionalPayeePrimaryAddress_
+            ) = genArtCoreContract.getPrimaryRevenueSplits(
+                    _projectId,
+                    _currentPriceInWei
+                );
+            // Art Blocks payment
+            if (artblocksRevenue_ > 0) {
+                (success_, ) = artblocksAddress_.call{value: artblocksRevenue_}(
+                    ""
+                );
+                require(success_, "Art Blocks payment failed");
+            }
+            // artist payment
+            if (artistRevenue_ > 0) {
+                (success_, ) = artistAddress_.call{value: artistRevenue_}("");
+                require(success_, "Artist payment failed");
+            }
+            // additional payee payment
+            if (additionalPayeePrimaryRevenue_ > 0) {
+                (success_, ) = additionalPayeePrimaryAddress_.call{
+                    value: additionalPayeePrimaryRevenue_
+                }("");
+                require(success_, "Additional Payee payment failed");
+            }
+        }
+    }
+
+    /**
+     * @notice Gets price of minting a token on project `_projectId` given
+     * the project's AuctionParameters and current block timestamp.
+     * Reverts if auction has not yet started or auction is unconfigured.
+     * @param _projectId Project ID to get price of token for.
+     * @return current price of token in Wei
+     */
+    function _getPrice(uint256 _projectId) private view returns (uint256) {
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        // move parameters to memory if used more than once
+        uint256 _timestampStart = uint256(_projectConfig.timestampStart);
+        uint256 _timestampEnd = uint256(_projectConfig.timestampEnd);
+        uint256 _startPrice = _projectConfig.startPrice;
+        uint256 _basePrice = _projectConfig.basePrice;
+
+        require(block.timestamp > _timestampStart, "Auction not yet started");
+        if (block.timestamp >= _timestampEnd) {
+            require(_timestampEnd > 0, "Only configured auctions");
+            return _basePrice;
+        }
+        uint256 elapsedTime;
+        uint256 duration;
+        uint256 startToEndDiff;
+        unchecked {
+            // already checked that block.timestamp > _timestampStart
+            elapsedTime = block.timestamp - _timestampStart;
+            // _timestampEnd > _timestampStart enforced during assignment
+            duration = _timestampEnd - _timestampStart;
+            // _startPrice > _basePrice enforced during assignment
+            startToEndDiff = _startPrice - _basePrice;
+        }
+        return _startPrice - ((elapsedTime * startToEndDiff) / duration);
     }
 
     /**
@@ -322,10 +535,10 @@ contract MinterSetPriceV4 is ReentrancyGuard, MinterBase, IFilteredMinterV2 {
      * token on project `_projectId`, and currency symbol and address to be
      * used as payment. Supersedes any core contract price information.
      * @param _projectId Project ID to get price information for.
-     * @return isConfigured true only if token price has been configured on
-     * this minter
+     * @return isConfigured true only if project's auction parameters have been
+     * configured on this minter
      * @return tokenPriceInWei current price of token on this minter - invalid
-     * if price has not yet been configured
+     * if auction has not yet been configured
      * @return currencySymbol currency symbol for purchases of project on this
      * minter. This minter always returns "ETH"
      * @return currencyAddress currency address for purchases of project on
@@ -344,8 +557,19 @@ contract MinterSetPriceV4 is ReentrancyGuard, MinterBase, IFilteredMinterV2 {
         )
     {
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
-        isConfigured = _projectConfig.priceIsConfigured;
-        tokenPriceInWei = _projectConfig.pricePerTokenInWei;
+
+        isConfigured = (_projectConfig.startPrice > 0);
+        if (block.timestamp <= _projectConfig.timestampStart) {
+            // Provide a reasonable value for `tokenPriceInWei` when it would
+            // otherwise revert, using the starting price before auction starts.
+            tokenPriceInWei = _projectConfig.startPrice;
+        } else if (_projectConfig.timestampEnd == 0) {
+            // In the case of unconfigured auction, return price of zero when
+            // it would otherwise revert
+            tokenPriceInWei = 0;
+        } else {
+            tokenPriceInWei = _getPrice(_projectId);
+        }
         currencySymbol = "ETH";
         currencyAddress = address(0);
     }

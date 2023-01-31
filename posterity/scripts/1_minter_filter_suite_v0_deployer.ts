@@ -2,11 +2,11 @@
 // Created By: Art Blocks Inc.
 
 import { ethers } from "hardhat";
-import { MinterFilterV0__factory } from "./contracts/factories/MinterFilterV0__factory";
-import { MinterSetPriceERC20V0__factory } from "./contracts/factories/MinterSetPriceERC20V0__factory";
-import { MinterSetPriceV0__factory } from "./contracts/factories/MinterSetPriceV0__factory";
-import { MinterDALinV0__factory } from "./contracts/factories/MinterDALinV0__factory";
-import { MinterDAExpV0__factory } from "./contracts/factories/MinterDAExpV0__factory";
+import { MinterFilterV0__factory } from "../../scripts/contracts/factories/MinterFilterV0__factory";
+import { MinterSetPriceERC20V0__factory } from "../../scripts/contracts/factories/MinterSetPriceERC20V0__factory";
+import { MinterSetPriceV0__factory } from "../../scripts/contracts/factories/MinterSetPriceV0__factory";
+import { MinterDALinV0__factory } from "../../scripts/contracts/factories/MinterDALinV0__factory";
+import { MinterDAExpV0__factory } from "../../scripts/contracts/factories/MinterDAExpV0__factory";
 
 const CORE_CONTRACT_ADDRESS = "0x87c6E93Fc0B149ec59AD595e2E187a4e1d7fDC25";
 

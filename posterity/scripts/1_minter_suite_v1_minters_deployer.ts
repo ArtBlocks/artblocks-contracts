@@ -2,11 +2,11 @@
 // Created By: Art Blocks Inc.
 
 import { ethers } from "hardhat";
-import { MinterFilterV0__factory } from "./contracts/factories/MinterFilterV0__factory";
-import { MinterSetPriceERC20V1__factory } from "./contracts/factories/MinterSetPriceERC20V1__factory";
-import { MinterSetPriceV1__factory } from "./contracts/factories/MinterSetPriceV1__factory";
-import { MinterDALinV1__factory } from "./contracts/factories/MinterDALinV1__factory";
-import { MinterDAExpV1__factory } from "./contracts/factories/MinterDAExpV1__factory";
+import { MinterFilterV0__factory } from "../../scripts/contracts/factories/MinterFilterV0__factory";
+import { MinterSetPriceERC20V1__factory } from "../../scripts/contracts/factories/MinterSetPriceERC20V1__factory";
+import { MinterSetPriceV1__factory } from "../../scripts/contracts/factories/MinterSetPriceV1__factory";
+import { MinterDALinV1__factory } from "../../scripts/contracts/factories/MinterDALinV1__factory";
+import { MinterDAExpV1__factory } from "../../scripts/contracts/factories/MinterDAExpV1__factory";
 
 // ROPSTEN (ARTIST-STAGING) ADDRESSSES
 const CORE_CONTRACT_ADDRESS = "0x1cd623a86751d4c4f20c96000fec763941f098a2";
