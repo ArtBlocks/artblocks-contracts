@@ -30,7 +30,26 @@ Deployment params:
 
 #### Full Minter Suite Deployment
 
-TODO
+**MinterDAExpV4:**
+https://etherscan.io/address/0x609564FDd916e45E4396BceD647Ac800c1621F4d#code
+
+**MinterDAExpSettlementV1:**
+https://etherscan.io/address/0xd38CB6D95BFb5Eb7C61F36938e7B3Ca08810e7F7#code
+
+**MinterDALinV4:**
+https://etherscan.io/address/0x40A07aD414EC4214d03bF76571FDF38D6b0DE598#code
+
+**MinterHolderV4:**
+https://etherscan.io/address/0x27F79CB37B08E4C2FF56DB0f69aE875d4f5A6311#code
+
+**MinterMerkleV5:**
+https://etherscan.io/address/0x4610dB225D7305e31690658D674E7D37eB244f7e#code
+
+**MinterSetPriceV4:**
+https://etherscan.io/address/0x090860b07ae1413B9A08339F54cb621B392bB73d#code
+
+**MinterSetPriceERC20V4:**
+https://etherscan.io/address/0x07619C21fBf6A9CB10ce0B3B34934ba3b995C9Fb#code
 
 
 ## Goerli (artist-staging targetted)
@@ -64,4 +83,23 @@ Deployment params:
 
 #### Full Minter Suite Deployment
 
-TODO
+**MinterDAExpV4:**
+https://goerli.etherscan.io/address/0x10BD2A01996711b0A66d8D5203a919463383701A#code
+
+**MinterDAExpSettlementV1:**
+https://goerli.etherscan.io/address/0x9e05816E151708Efc1C52243a18A0cC804b33819#code
+
+**MinterDALinV4:**
+https://goerli.etherscan.io/address/0xD00495689D5161C511882364E0C342e12Dcc5f08#code
+
+**MinterHolderV4:**
+https://goerli.etherscan.io/address/0xB64116A7D5D84fE9795DD022ea191217A2e32076#code
+
+**MinterMerkleV5:**
+https://goerli.etherscan.io/address/0x7a67130593A161124686EA55484D1A64d99eefc9#code
+
+**MinterSetPriceV4:**
+https://goerli.etherscan.io/address/0xcBA628BcF6f458f6F929d875B69FE5f0F3fB99b6#code
+
+**MinterSetPriceERC20V4:**
+https://goerli.etherscan.io/address/0xdADB127c1565156C3Ce004E11db7E1ba626267E7#code
