@@ -11,7 +11,7 @@ const hre = require("hardhat");
 //////////////////////////////////////////////////////////////////////////////
 
 // Replace with core contract address of already deployed core contract.
-const coreContractAddress = "0xa87a185E4B53d9FFca91545C9090dE1AF4A5Eadb";
+const coreContractAddress = "0xBCb1343e7ef0C25d6BFB78BA5B4DA9200946aaf8";
 
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG ENDS HERE
