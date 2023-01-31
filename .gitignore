@@ -48,3 +48,6 @@ scripts/contracts
 
 # Any local dev scripts
 scripts/.local/
+
+# any local constructor args
+constructor-args.js
