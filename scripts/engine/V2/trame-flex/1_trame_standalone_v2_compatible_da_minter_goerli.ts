@@ -2,7 +2,7 @@
 // Created By: Art Blocks Inc.
 
 import { ethers } from "hardhat";
-import { GenArt721MinterDAExpPBAB__factory } from "../../contracts/factories/GenArt721MinterDAExpPBAB__factory";
+import { GenArt721MinterDAExpPBAB__factory } from "../../../contracts/factories/GenArt721MinterDAExpPBAB__factory";
 
 const hre = require("hardhat");
 
@@ -11,7 +11,7 @@ const hre = require("hardhat");
 //////////////////////////////////////////////////////////////////////////////
 
 // Replace with core contract address of already deployed core contract.
-const coreContractAddress = "0xc8FA62D76fbbCD71482C603cae4a5ebfaD5c7C78";
+const coreContractAddress = "0xa87a185E4B53d9FFca91545C9090dE1AF4A5Eadb";
 
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG ENDS HERE
