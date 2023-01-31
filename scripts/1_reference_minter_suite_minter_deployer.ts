@@ -26,12 +26,13 @@ const DELEGATION_REGISTRY_ADDRESS =
   "0x00000000000076A84feF008CDAbe6409d2FE638B";
 
 // MAINNET ADDRESSES
-// Art Blocks (BLOCKS)
+// // Art Blocks (BLOCKS)
 // const CORE_CONTRACT_ADDRESS = "0x99a9B7c1116f9ceEB1652de04d5969CcE509B069";
-// MinterFilterV1
+// // MinterFilterV1
 // const FILTER_CONTRACT_ADDRESS = "0x092B8F64e713d66b38522978BCf4649db14b931E";
-// Note: deployed w/ same mainnet/testnet address
-// const DELEGATION_REGISTRY_ADDRESS = "0x00000000000076A84feF008CDAbe6409d2FE638B";
+// // Note: deployed w/ same mainnet/testnet address
+// const DELEGATION_REGISTRY_ADDRESS =
+//   "0x00000000000076A84feF008CDAbe6409d2FE638B";
 
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG ENDS HERE
