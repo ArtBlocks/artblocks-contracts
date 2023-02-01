@@ -3,7 +3,7 @@
 
 import "../../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
 import "../../interfaces/0.8.x/IMinterFilterV0.sol";
-import "../../interfaces/0.8.x/IFilteredMinterDAExpSettlementV0.sol";
+import "../../interfaces/0.8.x/IFilteredMinterDAExpSettlementV1.sol";
 import "./MinterBase_v0_1_1.sol";
 
 import "@openzeppelin-4.7/contracts/security/ReentrancyGuard.sol";
@@ -63,10 +63,10 @@ pragma solidity 0.8.17;
  * less than a minute should not meaningfully impact price given the minimum
  * allowable price decay rate that this minter intends to support.
  */
-contract MinterDAExpSettlementV1 is
+contract MinterDAExpSettlementV2 is
     ReentrancyGuard,
     MinterBase,
-    IFilteredMinterDAExpSettlementV0
+    IFilteredMinterDAExpSettlementV1
 {
     using SafeCast for uint256;
 
@@ -82,16 +82,22 @@ contract MinterDAExpSettlementV1 is
     IMinterFilterV0 private immutable minterFilter;
 
     /// minterType for this minter
-    string public constant minterType = "MinterDAExpSettlementV1";
+    string public constant minterType = "MinterDAExpSettlementV2";
 
     uint256 constant ONE_MILLION = 1_000_000;
 
     struct ProjectConfig {
-        // on this minter, hasMaxBeenInvoked is updated only during every
-        // purchase, and is only true if this minter minted the final token.
-        // this enables the minter to know when a sellout price is greater than
-        // the auction's base price.
+        // hasMaxBeenInvoked is a locally cached value on the minter, and may
+        // be out of sync with the core contract's value and return a false
+        // negative. This is acceptable, as it will only result in
+        // unnecessary gas costs after max invocations have been reached.
         bool maxHasBeenInvoked;
+        // maxInvocations is the maximum number of tokens that may be minted
+        // for this project. The value here is cached on the minter, and may
+        // be out of sync with the core contract's value. This is acceptable,
+        // as it will only result in unnecessary gas costs after max
+        // invocations have been reached.
+        uint24 maxInvocations;
         // set to true only after artist + admin revenues have been collected
         bool auctionRevenuesCollected;
         // number of tokens minted that have potential of future settlement.
@@ -202,18 +208,71 @@ contract MinterDAExpSettlementV1 is
     }
 
     /**
-     * @notice This function is not implemented on this minter, and exists only
-     * for interface conformance reasons. This minter checks if max invocations
-     * have been reached during every purchase to determine if a sellout has
-     * occurred. Therefore, the local caching of max invocations is not
-     * beneficial or necessary.
+     * @notice Syncs local maximum invocations of project `_projectId` based on
+     * the value currently defined in the core contract.
+     * @param _projectId Project ID to set the maximum invocations for.
+     * @dev this enables gas reduction after maxInvocations have been reached -
+     * core contracts shall still enforce a maxInvocation check during mint.
      */
-    function setProjectMaxInvocations(uint256 /*_projectId*/) external pure {
-        // not implemented because maxInvocations must be checked during every mint
-        // to know if final price should be set
-        revert(
-            "setProjectMaxInvocations not implemented - updated during every mint"
+    function setProjectMaxInvocations(
+        uint256 _projectId
+    ) external onlyArtist(_projectId) {
+        uint256 maxInvocations;
+        uint256 invocations;
+        (invocations, maxInvocations, , , , ) = genArtCoreContract_Base
+            .projectStateData(_projectId);
+
+        // update storage with results
+        projectConfig[_projectId].maxInvocations = uint24(maxInvocations);
+
+        // We need to ensure maxHasBeenInvoked is correctly set after manually syncing the
+        // local maxInvocations value with the core contract's maxInvocations value.
+        // This synced value of maxInvocations from the core contract will always be greater
+        // than or equal to the previous value of maxInvocations stored locally.
+        projectConfig[_projectId].maxHasBeenInvoked =
+            invocations == maxInvocations;
+
+        emit ProjectMaxInvocationsLimitUpdated(_projectId, maxInvocations);
+    }
+
+    /**
+     * @notice Manually sets the local maximum invocations of project `_projectId`
+     * with the provided `_maxInvocations`, checking that `_maxInvocations` is less
+     * than or equal to the value of project `_project_id`'s maximum invocations that is
+     * set on the core contract.
+     * @dev Note that a `_maxInvocations` of 0 can only be set if the current `invocations`
+     * value is also 0 and this would also set `maxHasBeenInvoked` to true, correctly short-circuiting
+     * this minter's purchase function, avoiding extra gas costs from the core contract's maxInvocations check.
+     * @param _projectId Project ID to set the maximum invocations for.
+     * @param _maxInvocations Maximum invocations to set for the project.
+     */
+    function manuallyLimitProjectMaxInvocations(
+        uint256 _projectId,
+        uint256 _maxInvocations
+    ) external onlyArtist(_projectId) {
+        // CHECKS
+        // ensure that the manually set maxInvocations is not greater than what is set on the core contract
+        uint256 maxInvocations;
+        uint256 invocations;
+        (invocations, maxInvocations, , , , ) = genArtCoreContract_Base
+            .projectStateData(_projectId);
+        require(
+            _maxInvocations <= maxInvocations,
+            "Cannot increase project max invocations above core contract set project max invocations"
         );
+        require(
+            _maxInvocations >= invocations,
+            "Cannot set project max invocations to less than current invocations"
+        );
+        // EFFECTS
+        // update storage with results
+        projectConfig[_projectId].maxInvocations = uint24(_maxInvocations);
+        // We need to ensure maxHasBeenInvoked is correctly set after manually setting the
+        // local maxInvocations value.
+        projectConfig[_projectId].maxHasBeenInvoked =
+            invocations == _maxInvocations;
+
+        emit ProjectMaxInvocationsLimitUpdated(_projectId, _maxInvocations);
     }
 
     /**
@@ -229,23 +288,10 @@ contract MinterDAExpSettlementV1 is
     /**
      * @notice projectId => has project reached its maximum number of
      * invocations while being minted with this minter?
-     * Note that this returns a local cache of the core contract's
-     * state, and may be out of sync with the core contract. This is
-     * intentional. A false negative will only result in a gas cost increase,
-     * since the core contract will still enforce max invocations during during
-     * minting. A false negative will also only occur if the max invocations
-     * was either reduced on the core contract to equal current invocations, or
-     * if the max invocations was reached by minting on a different minter.
-     * In both of these cases, we expect the net purchase price (after
-     * settlement) shall be the base price of the project's auction. This
-     * prevents an artist from benefiting by reducing max invocations on the
-     * core mid-auction, or by minting on a different minter.
-     * Note that if an artist wishes to reduce the max invocations on the core
-     * to something less than the current invocations, but more than max
-     * invocations (with the hope of increasing the sellout price), an admin
-     * function is provided to manually reduce the sellout price to a lower
-     * value, if desired, in the `adminEmergencyReduceSelloutPrice`
-     * function.
+     * Note that this returns a local cached value on the minter, and may be
+     * out of sync with the core core contract's state, in which it may return
+     * a false negative. It is only used for gas optimization purposes after
+     * a sellout has occurred.
      * @param _projectId projectId to be queried
      *
      */
@@ -442,15 +488,8 @@ contract MinterDAExpSettlementV1 is
      * price of an auction. This is only callable by the core admin, only
      * after the auction is complete, but before project revenues are
      * withdrawn.
-     * This is only intended to be used in the case where for some reason,
-     * whether malicious or accidental, the sellout price was too high.
-     * Examples of this include:
-     *  - The artist reducing a project's maxInvocations on the core contract
-     *    after an auction has started, but before it ends, eliminating the
-     *    ability of purchasers to fairly determine market price under the
-     *    original, expected auction parameters.
-     *  - Any other reason the admin deems to be a valid reason to reduce the
-     *    sellout price of an auction, prior to marking it as valid.
+     * This is only intended to be used in the case where for some reason, the
+     * sellout price was too high.
      * @param _projectId Project ID to reduce auction sellout price for.
      * @param _newSelloutPrice New sellout price to set for the auction. Must
      * be less than the current sellout price.
@@ -475,8 +514,7 @@ contract MinterDAExpSettlementV1 is
             _newSelloutPrice >= _projectConfig.basePrice,
             "May only reduce sellout price to base price or greater"
         );
-        // ensure latestPurchasePrice is non-zero if any purchases on minter
-        // @dev only possible to fail this if auction is in a reset state
+        // ensure _newSelloutPrice is non-zero if any purchases on minter
         require(_newSelloutPrice > 0, "Only sellout prices > 0");
         require(
             !_projectConfig.auctionRevenuesCollected,
@@ -525,21 +563,18 @@ contract MinterDAExpSettlementV1 is
         // reached max invocations. This prevents premature withdrawl
         // before final auction price is possible to know.
         if (_price != _projectConfig.basePrice) {
-            // prefer to use locally cached value of maxHasBeenInvoked, which
-            // is only updated when a purchase is made. This is to handle the
-            // case where an artist reduced max invocations to current
-            // invocations on the core contract mid-auction. In that case, the
-            // the following _projectConfig.maxHasBeenInvoked check will fail
-            // (only a local cache is used). This is a valid state, and in that
-            // somewhat suspicious case, the artist must wait until the auction
-            // reaches base price before withdrawing funds, at which point the
-            // latestPurchasePrice will be set to base price, maximizing
-            // purchaser excess settlement amounts, and minimizing artist/admin
-            // revenue.
-            require(
-                _projectConfig.maxHasBeenInvoked,
-                "Active auction not yet sold out"
-            );
+            // determine if reached max invocations based on core contract
+            // state, which is the only source of truth for this information.
+            (
+                uint256 invocations,
+                uint256 maxInvocations,
+                ,
+                ,
+                ,
+
+            ) = genArtCoreContract_Base.projectStateData(_projectId);
+            bool maxHasBeenInvoked = (invocations == maxInvocations);
+            require(maxHasBeenInvoked, "Active auction not yet sold out");
         } else {
             // update the latest purchase price to the base price, to ensure
             // the base price is used for all future settlement calculations
@@ -548,7 +583,7 @@ contract MinterDAExpSettlementV1 is
         // EFFECTS
         _projectConfig.auctionRevenuesCollected = true;
         // if the price is base price, the auction is valid and may be claimed
-        // calculate the artist and admin revenues (no check requuired)
+        // calculate the artist and admin revenues
         uint256 netRevenues = _projectConfig.numSettleableInvocations * _price;
         // INTERACTIONS
         splitRevenuesETH(_projectId, netRevenues, genArt721CoreAddress);
@@ -602,12 +637,10 @@ contract MinterDAExpSettlementV1 is
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
 
         // Note that `maxHasBeenInvoked` is only checked here to reduce gas
-        // consumption after a project has been fully minted.
-        // `_projectConfig.maxHasBeenInvoked` is locally cached during every
-        // purchase to reduce gas consumption and enable recording of sellout
-        // price, but if not in sync with the core contract's value,
-        // the core contract also enforces its own max invocation check during
-        // minting.
+        // consumption after a project has been fully minted. It is locally
+        // cached on the minter, and may return a false negative. This is
+        // acceptable, since the core contract also enforces its own max
+        // invocation check during minting.
         require(
             !_projectConfig.maxHasBeenInvoked,
             "Maximum number of invocations reached"
@@ -646,20 +679,12 @@ contract MinterDAExpSettlementV1 is
 
         tokenId = minterFilter.mint(_to, _projectId, msg.sender);
 
-        // Note that this requires that the core contract's maxInvocations
-        // be accurate to ensure that the minters maxHasBeenInvoked is
-        // accurate, so we get the value from the core contract directly.
-        uint256 maxInvocations;
-        (, maxInvocations, , , , ) = genArtCoreContract_Base.projectStateData(
-            _projectId
-        );
         // okay if this underflows because if statement will always eval false.
         // this is only for gas optimization and recording sellout price in
         // an event (core enforces maxInvocations).
         unchecked {
-            if (tokenId % ONE_MILLION == maxInvocations - 1) {
+            if (tokenId % ONE_MILLION == _projectConfig.maxInvocations - 1) {
                 _projectConfig.maxHasBeenInvoked = true;
-                emit SelloutPriceUpdated(_projectId, currentPriceInWei);
             }
         }
 
