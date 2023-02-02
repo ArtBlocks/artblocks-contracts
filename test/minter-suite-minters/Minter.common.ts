@@ -96,7 +96,10 @@ export const Minter_Common = async () => {
   describe("setProjectMaxInvocations", async function () {
     it("allows artist/deployer to call setProjectMaxInvocations", async function () {
       const minterType = await this.minter.minterType();
-      if (!minterType.includes("Settlement")) {
+      if (
+        !minterType.includes("SettlementV0") &&
+        !minterType.includes("SettlementV1")
+      ) {
         // minters above v2 do NOT use onlyCoreWhitelisted modifier for setProjectMaxInvocations
         const accountToTestWith =
           minterType.includes("V0") || minterType.includes("V1")
@@ -119,7 +122,10 @@ export const Minter_Common = async () => {
 
     it("updates local projectMaxInvocations after syncing to core", async function () {
       const minterType = await this.minter.minterType();
-      if (!minterType.includes("Settlement")) {
+      if (
+        !minterType.includes("SettlementV0") &&
+        !minterType.includes("SettlementV1")
+      ) {
         // minters above v2 do NOT use onlyCoreWhitelisted modifier for setProjectMaxInvocations
         const accountToTestWith =
           minterType.includes("V0") || minterType.includes("V1")
@@ -133,7 +139,7 @@ export const Minter_Common = async () => {
         await this.minter
           .connect(accountToTestWith)
           .setProjectMaxInvocations(this.projectZero);
-        // expect max invocations to be 1 on the minter
+        // expect max invocations to be 2 on the minter
         expect(
           await this.minter.projectMaxInvocations(this.projectZero)
         ).to.be.equal(2);

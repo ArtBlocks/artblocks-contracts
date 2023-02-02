@@ -24,7 +24,7 @@ import {
 } from "../../../util/common";
 import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../util/constants";
 import { MinterDAExpSettlement_Common } from "./MinterDAExpSettlement.common";
-import { MinterDASettlementV1_Common } from "../MinterDASettlementV1.common";
+import { MinterDASettlementV1V2_Common } from "../MinterDASettlementV1V2.common";
 
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
@@ -33,7 +33,7 @@ const coreContractsToTest = [
   "GenArt721CoreV3_Engine", // V3 core engine contract
 ];
 
-const TARGET_MINTER_NAME = "MinterDAExpSettlementV1";
+const TARGET_MINTER_NAME = "MinterDAExpSettlementV2";
 
 /**
  * These tests intended to ensure this Filtered Minter integrates properly with
@@ -120,8 +120,8 @@ for (const coreContractName of coreContractsToTest) {
       await MinterDAExpSettlement_Common();
     });
 
-    describe("common DA Settlement V1 tests", async function () {
-      await MinterDASettlementV1_Common();
+    describe("common DA Settlement V1V2 tests", async function () {
+      await MinterDASettlementV1V2_Common();
     });
 
     describe("setAuctionDetails", async function () {
@@ -148,14 +148,7 @@ for (const coreContractName of coreContractsToTest) {
     });
 
     describe("setProjectMaxInvocations", async function () {
-      it("reverts as not implemented", async function () {
-        await expectRevert(
-          this.minter
-            .connect(this.accounts.artist)
-            .setProjectMaxInvocations(this.projectZero),
-          "setProjectMaxInvocations not implemented - updated during every mint"
-        );
-      });
+      // TODO: this is now implemented
     });
 
     describe("calculate gas", async function () {
@@ -182,11 +175,11 @@ for (const coreContractName of coreContractsToTest) {
         // assuming a cost of 100 GWEI
         if (this.isEngine) {
           expect(txCost.toString()).to.equal(
-            ethers.utils.parseEther("0.015868")
+            ethers.utils.parseEther("0.0154798")
           );
         } else {
           expect(txCost.toString()).to.equal(
-            ethers.utils.parseEther("0.0158702")
+            ethers.utils.parseEther("0.0154798")
           );
         }
       });
