@@ -11,7 +11,7 @@ const hre = require("hardhat");
 //////////////////////////////////////////////////////////////////////////////
 
 // Replace with core contract address of already deployed core contract.
-const coreContractAddress = "0xa87a185E4B53d9FFca91545C9090dE1AF4A5Eadb";
+const coreContractAddress = "0x32D4BE5eE74376e08038d652d4dc26E62C67F436";
 
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG ENDS HERE
@@ -26,7 +26,7 @@ async function main() {
   // DEPLOYMENT BEGINS HERE
   //////////////////////////////////////////////////////////////////////////////
 
-  // Deploy Randomizer contract.
+  // Deploy Minter contract.
   const minterFactory = new GenArt721MinterDAExpPBAB__factory(deployer);
   const minter = await minterFactory.deploy(coreContractAddress);
 

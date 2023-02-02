@@ -2,7 +2,7 @@
 // Created By: Art Blocks Inc.
 
 import { ethers } from "hardhat";
-import { GenArt721CoreV2PBAB__factory } from "../../../contracts/factories/GenArt721CoreV2PBAB__factory";
+import { GenArt721CoreV2ENGINEFLEX__factory } from "../../../contracts/factories/GenArt721CoreV2ENGINEFLEX__factory";
 import { GenArt721MinterPBAB__factory } from "../../../contracts/factories/GenArt721MinterPBAB__factory";
 import { GenArt721MinterDAExpPBAB__factory } from "../../../contracts/factories/GenArt721MinterDAExpPBAB__factory";
 
@@ -22,14 +22,12 @@ enum MinterTypes {
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG BEGINS HERE
 //////////////////////////////////////////////////////////////////////////////
-const pbabTokenName = "CoinDesk Deployer";
-const pbabTokenTicker = "CDESK";
-const startingProjectId = 0;
-const pbabTransferAddress = "0x218162EA0AF740Ad3cCb50E7C15FBEe52CFDc6B3";
-// ab-wallet, **testnet ONLY**
-const rendererProviderAddress = "0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63";
-// goerli address
-const randomizerAddress = "0xec5dae4b11213290b2dbe5295093f75920bd2982";
+const pbabTokenName = "VerticalCrypto Gen Art";
+const pbabTokenTicker = "VCAG";
+const pbabTransferAddress = "0x65FEca334780160e3420B097590fd6D02dE663f0";
+const rendererProviderAddress = "0xA55B7B2eb2565280cacF4C5DD9cBd775bB8dDafb";
+// mainnet address
+const randomizerAddress = "0x088098f7438773182b703625c4128aff85fcffc4";
 const minterType = MinterTypes.FixedPrice;
 // The following is not required, but if not set, must be set later by platform
 // for Royalty Registry to work (will be ignored of set to "0x0...dEaD")
@@ -70,12 +68,11 @@ async function main() {
   //////////////////////////////////////////////////////////////////////////////
 
   // Deploy Core contract.
-  const genArt721CoreFactory = new GenArt721CoreV2PBAB__factory(deployer);
+  const genArt721CoreFactory = new GenArt721CoreV2ENGINEFLEX__factory(deployer);
   const genArt721Core = await genArt721CoreFactory.deploy(
     pbabTokenName,
     pbabTokenTicker,
-    randomizerAddress,
-    startingProjectId
+    randomizerAddress
   );
 
   await createPBABBucket(pbabTokenName, networkName);
@@ -212,7 +209,7 @@ async function main() {
   const standardVerify = "yarn hardhat verify";
   console.log(`Verify core contract deployment with:`);
   console.log(
-    `${standardVerify} --network ${networkName} ${genArt721Core.address} "${pbabTokenName}" "${pbabTokenTicker}" ${randomizerAddress} ${startingProjectId}`
+    `${standardVerify} --network ${networkName} ${genArt721Core.address} "${pbabTokenName}" "${pbabTokenTicker}" ${randomizerAddress}`
   );
   console.log(`Verify minter deployment with:`);
   console.log(
@@ -223,12 +220,7 @@ async function main() {
   // Perform automated verification
   await hre.run("verify:verify", {
     address: genArt721Core.address,
-    constructorArguments: [
-      pbabTokenName,
-      pbabTokenTicker,
-      randomizerAddress,
-      startingProjectId,
-    ],
+    constructorArguments: [pbabTokenName, pbabTokenTicker, randomizerAddress],
   });
   await hre.run("verify:verify", {
     address: genArt721Minter.address,
