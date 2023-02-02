@@ -434,6 +434,11 @@ contract MinterDAExpSettlementV2 is
             "Price decay half life must fall between min and max allowable values"
         );
         // EFFECTS
+        // safely update project config's maxHasBeenInvoked, while respecting
+        // any manually configured minter-level max invocations.
+        // This is done for convenience, and is a safe auto-configuration of
+        // the minter's maxHasBeenInvoked.
+        _syncProjectMaxInvocationsSafe(_projectId);
         _projectConfig.timestampStart = _auctionTimestampStart.toUint64();
         _projectConfig.priceDecayHalfLifeSeconds = _priceDecayHalfLifeSeconds
             .toUint64();
@@ -518,9 +523,9 @@ contract MinterDAExpSettlementV2 is
             !_projectConfig.auctionRevenuesCollected,
             "Only before revenues collected"
         );
-        // sync maxHasBeenInvoked with core contract, which is the source of
-        // truth
-        _syncProjectMaxInvocations(_projectId);
+        // safely update project config's maxHasBeenInvoked, while respecting
+        // any manually configured minter-level max invocations
+        _syncProjectMaxInvocationsSafe(_projectId);
         require(_projectConfig.maxHasBeenInvoked, "Auction must be complete");
         // @dev no need to check that auction max invocations has been reached,
         // because if it was, the sellout price will be zero, and the following
@@ -569,19 +574,25 @@ contract MinterDAExpSettlementV2 is
             !_projectConfig.auctionRevenuesCollected,
             "Revenues already collected"
         );
-        // sync maxHasBeenInvoked state on this minter with core contract
-        // (core contract is the source of truth)
-        _syncProjectMaxInvocations(_projectId);
+        // safely update project config's maxHasBeenInvoked, while respecting
+        // any manually configured minter-level max invocations
+        _syncProjectMaxInvocationsSafe(_projectId);
 
         // get the current net price of the auction - reverts if no auction
         // is configured.
+        // @dev we use _getPriceUnsafe here, since we just safely synced the
+        // project's max invocations and maxHasBeenInvoked, which guarantees
+        // an accurate price calculation from _getPriceUnsafe, while being
+        // more gas efficient than _getPriceSafe.
         // @dev _getPrice is guaranteed <= _projectConfig.latestPurchasePrice,
         // since this minter enforces monotonically decreasing purchase prices.
-        uint256 _price = _getPrice(_projectId);
+        uint256 _price = _getPriceUnsafe(_projectId);
         // if the price is not base price, require that the auction have
         // reached max invocations. This prevents premature withdrawl
         // before final auction price is possible to know.
         if (_price != _projectConfig.basePrice) {
+            // @dev we can trust local maxHasBeenInvoked, since we just synced
+            // it above with _syncProjectMaxInvocationsSafe
             require(
                 _projectConfig.maxHasBeenInvoked,
                 "Active auction not yet sold out"
@@ -657,8 +668,12 @@ contract MinterDAExpSettlementV2 is
             "Maximum number of invocations reached"
         );
 
-        // _getPrice reverts if auction is unconfigured or has not started
-        uint256 currentPriceInWei = _getPrice(_projectId);
+        // _getPriceUnsafe reverts if auction is unconfigured or has not started
+        // @dev _getPriceUnsafe is guaranteed to be accurate unless the core
+        // contract is limiting invocations. That is acceptable, because that
+        // case will revert this call later on in this function, when the core
+        // contract's max invocation check fails.
+        uint256 currentPriceInWei = _getPriceUnsafe(_projectId);
 
         // EFFECTS
         // update the purchaser's receipt and require sufficient net payment
@@ -896,24 +911,57 @@ contract MinterDAExpSettlementV2 is
     /**
      * @notice Gets price of minting a token on project `_projectId` given
      * the project's AuctionParameters and current block timestamp.
-     * Reverts if auction has not yet started or auction is unconfigured.
-     * Returns auction last purchase price if auction sold out before reaching
-     * base price.
+     * Reverts if auction has not yet started or auction is unconfigured, and
+     * auction has not sold out or revenues have not been withdrawn.
+     * Price is guaranteed to be accurate, regardless of the current state of
+     * the locally cached minter max invocations.
      * @param _projectId Project ID to get price of token for.
-     * @return current price of token in Wei
+     * @return tokenPriceInWei current price of token in Wei
      * @dev This method calculates price decay using a linear interpolation
      * of exponential decay based on the artist-provided half-life for price
      * decay, `_priceDecayHalfLifeSeconds`.
      */
-    function _getPrice(uint256 _projectId) private view returns (uint256) {
+    function _getPriceSafe(
+        uint256 _projectId
+    ) private view returns (uint256 tokenPriceInWei) {
+        // accurately check if project has sold out
+        if (_getProjectIsSoldOutSafe(_projectId)) {
+            // if sold out, return the latest purchased price
+            tokenPriceInWei = projectConfig[_projectId].latestPurchasePrice;
+        } else {
+            // if not sold out, return the current price
+            tokenPriceInWei = _getPriceUnsafe(_projectId);
+        }
+    }
+
+    /**
+     * @notice Gets price of minting a token on project `_projectId` given
+     * the project's AuctionParameters and current block timestamp.
+     * Reverts if auction has not yet started or auction is unconfigured, and
+     * auction has not sold out or revenues have not been withdrawn.
+     * Price is guaranteed to be accurate unless the core contract is the
+     * entity limiting the number of max invocations, and the minter's local
+     * max invocations is stale.
+     * @dev if local maxInvocations are stale and max invocations is currently
+     * being limited by only the core contract, this may return a price that
+     * is too low. When an accurate price is required regardless of the
+     * current state of the locally cached minter max invocations, use
+     * `_getPriceSafe`.
+     * @param _projectId Project ID to get price of token for.
+     * @return current price of token in Wei, accurate if minter max
+     * invocations are up to date
+     * @dev This method calculates price decay using a linear interpolation
+     * of exponential decay based on the artist-provided half-life for price
+     * decay, `_priceDecayHalfLifeSeconds`.
+     */
+    function _getPriceUnsafe(
+        uint256 _projectId
+    ) private view returns (uint256) {
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
-        // If auction sold out on this minter, return the latest purchase
-        // price (which is the sellout price). This is the price that is due
-        // after an auction is complete.
-        // If local cached maxHasBeenInvoked is stale relative to core contract
-        // state, also return the latest purchase price if the auction revenues
-        // have been collected (which means the auction price will never change
-        // again)
+        // return latest purchase price if:
+        // - minter is aware of a sold-out auction
+        // - auction revenues have been collected, at which point the
+        //   latest purchase price will never change again
         if (
             _projectConfig.maxHasBeenInvoked ||
             _projectConfig.auctionRevenuesCollected
@@ -1061,14 +1109,7 @@ contract MinterDAExpSettlementV2 is
             // it would otherwise revert
             tokenPriceInWei = 0;
         } else {
-            // check source of truth to determine if auction has sold out
-            if (_getProjectIsSoldOutFromCore(_projectId)) {
-                // if sold out, return the latest purchased price
-                tokenPriceInWei = _projectConfig.latestPurchasePrice;
-            } else {
-                // if not sold out, return the current price
-                tokenPriceInWei = _getPrice(_projectId);
-            }
+            tokenPriceInWei = _getPriceSafe(_projectId);
         }
         currencySymbol = "ETH";
         currencyAddress = address(0);
@@ -1078,6 +1119,8 @@ contract MinterDAExpSettlementV2 is
      * @notice Syncs local maximum invocations of project `_projectId` based on
      * the value currently defined in the core contract. Also syncs the
      * project config's `maxHasBeenInvoked` state.
+     * Note that this function will overwrite the local value of maxInvocations
+     * with the value from the core contract.
      * @param _projectId Project ID to set the maximum invocations for.
      * @dev this enables gas reduction after maxInvocations have been reached -
      * core contracts shall still enforce a maxInvocation check during mint.
@@ -1103,6 +1146,55 @@ contract MinterDAExpSettlementV2 is
         emit ProjectMaxInvocationsLimitUpdated(_projectId, maxInvocations);
     }
 
+    /**
+     * @notice Syncs local maximum invocations of project `_projectId` based on
+     * the value currently defined in the core contract, while respecting any
+     * minter-locally manually limited maxInvocations.
+     * The local maximum invocations are only changed if the minter meets one
+     * of the following conditions:
+     * - local maxInvocations was never configured, indicated by the
+     *   minter-local maxInvocations and maxHasBeenInvoked having initial
+     *   values of 0 and false, respectively.
+     * - local maxInvocations is greater than the core contract, which is an
+     *   illogical state because the core contract's maxInvocations can only
+     *   be increased, not decreased, on V3 core contracts.
+     * @param _projectId Project ID to set the maximum invocations for.
+     */
+    function _syncProjectMaxInvocationsSafe(uint256 _projectId) internal {
+        uint256 coreMaxInvocations;
+        uint256 coreInvocations;
+        (
+            coreInvocations,
+            coreMaxInvocations
+        ) = _getProjectCoreInvocationsAndMaxInvocations(_projectId);
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        // only update if local maxInvocations is greater than core maxInvocations
+        // or if local invocations has never been set
+        bool localInvocationsNotSet = _projectConfig.maxInvocations == 0 &&
+            _projectConfig.maxHasBeenInvoked == false;
+        if (
+            localInvocationsNotSet ||
+            _projectConfig.maxInvocations > coreMaxInvocations
+        ) {
+            // update storage with results, emit event after change
+            _projectConfig.maxInvocations = uint24(coreMaxInvocations);
+            _projectConfig.maxHasBeenInvoked =
+                coreMaxInvocations == coreInvocations;
+            emit ProjectMaxInvocationsLimitUpdated(
+                _projectId,
+                coreMaxInvocations
+            );
+        }
+    }
+
+    /**
+     * @notice Returns the current invocations and maximum invocations of
+     * project `_projectId` from the core contract.
+     * @param _projectId Project ID to get invocations and maximum invocations
+     * for.
+     * @return invocations current invocations of project.
+     * @return maxInvocations maximum invocations of project.
+     */
     function _getProjectCoreInvocationsAndMaxInvocations(
         uint256 _projectId
     ) internal view returns (uint256 invocations, uint256 maxInvocations) {
@@ -1110,15 +1202,31 @@ contract MinterDAExpSettlementV2 is
             .projectStateData(_projectId);
     }
 
-    function _getProjectIsSoldOutFromCore(
+    /**
+     * @notice Returns true if the project `_projectId` is sold out, false
+     * otherwise. This function returns an accurate value regardless of whether
+     * the project's maximum invocations value cached locally on the minter is
+     * up to date with the core contract's maximum invocations value.
+     * @param _projectId Project ID to check if sold out.
+     * @return isSoldOut true if the project is sold out, false otherwise.
+     */
+    function _getProjectIsSoldOutSafe(
         uint256 _projectId
     ) internal view returns (bool isSoldOut) {
-        uint256 invocations;
-        uint256 maxInvocations;
+        uint256 coreInvocations;
+        uint256 coreMaxInvocations;
         (
-            invocations,
-            maxInvocations
+            coreInvocations,
+            coreMaxInvocations
         ) = _getProjectCoreInvocationsAndMaxInvocations(_projectId);
-        isSoldOut = (invocations == maxInvocations);
+        uint256 minterMaxInvocations = projectConfig[_projectId].maxInvocations;
+        // get the minimum of the two maxInvocations values, which is the actual
+        // maxInvocations limit
+        uint256 actualMaxInvocations = coreMaxInvocations < minterMaxInvocations
+            ? coreMaxInvocations
+            : minterMaxInvocations;
+        // @dev must use `>=` here because other minters could have minted tokens
+        // after the minter's maxInvocations were reached
+        isSoldOut = (coreInvocations >= actualMaxInvocations);
     }
 }

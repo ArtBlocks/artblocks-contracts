@@ -148,7 +148,103 @@ for (const coreContractName of coreContractsToTest) {
     });
 
     describe("setProjectMaxInvocations", async function () {
-      // TODO: this is now implemented
+      it("allows artist to call setProjectMaxInvocations", async function () {
+        await this.minter
+          .connect(this.accounts.artist)
+          .setProjectMaxInvocations(this.projectZero);
+      });
+
+      it("does not allow deployer or user to call setProjectMaxInvocations", async function () {
+        await expectRevert(
+          this.minter
+            .connect(this.accounts.deployer)
+            .setProjectMaxInvocations(this.projectZero),
+          "Only Artist"
+        );
+        await expectRevert(
+          this.minter
+            .connect(this.accounts.user)
+            .setProjectMaxInvocations(this.projectZero),
+          "Only Artist"
+        );
+      });
+
+      it("resets maxHasBeenInvoked after it's been set to true locally and then max project invocations is synced from the core contract", async function () {
+        // reduce local maxInvocations to 2 on minter
+        await this.minter
+          .connect(this.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(this.projectZero, 1);
+        const projectConfig = await this.minter
+          .connect(this.accounts.artist)
+          .projectConfig(this.projectZero);
+        expect(projectConfig.maxInvocations).to.equal(1);
+
+        // mint a token
+        await ethers.provider.send("evm_mine", [
+          this.startTime + this.auctionStartTimeOffset,
+        ]);
+        await this.minter
+          .connect(this.accounts.user)
+          .purchase(this.projectZero, {
+            value: this.startingPrice,
+          });
+
+        // expect projectMaxHasBeenInvoked to be true
+        const hasMaxBeenInvoked = await this.minter.projectMaxHasBeenInvoked(
+          this.projectZero
+        );
+        expect(hasMaxBeenInvoked).to.be.true;
+
+        // sync max invocations from core to minter
+        await this.minter
+          .connect(this.accounts.artist)
+          .setProjectMaxInvocations(this.projectZero);
+
+        // expect projectMaxHasBeenInvoked to now be false
+        const hasMaxBeenInvoked2 = await this.minter.projectMaxHasBeenInvoked(
+          this.projectZero
+        );
+        expect(hasMaxBeenInvoked2).to.be.false;
+
+        // expect maxInvocations on the minter to be 15
+        const syncedMaxInvocations = await this.minter
+          .connect(this.accounts.artist)
+          .projectConfig(this.projectZero);
+        expect(syncedMaxInvocations.maxInvocations).to.equal(15);
+      });
+
+      it("safely syncs hasMaxBeenInvoked during withdraw revenues function, respecting the manually configured limit", async function () {
+        // reduce local maxInvocations to 2 on minter
+        await this.minter
+          .connect(this.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(this.projectZero, 1);
+        const projectConfig = await this.minter
+          .connect(this.accounts.artist)
+          .projectConfig(this.projectZero);
+        expect(projectConfig.maxInvocations).to.equal(1);
+
+        // mint a token
+        await ethers.provider.send("evm_mine", [
+          this.startTime + this.auctionStartTimeOffset,
+        ]);
+        await this.minter
+          .connect(this.accounts.user)
+          .purchase(this.projectZero, {
+            value: this.startingPrice,
+          });
+
+        // expect projectMaxHasBeenInvoked to be true
+        const hasMaxBeenInvoked = await this.minter.projectMaxHasBeenInvoked(
+          this.projectZero
+        );
+        expect(hasMaxBeenInvoked).to.be.true;
+
+        // artist can withdraw funds because minter safely syncs hasMaxBeenInvoked in withdrawal function.
+        // the safe sync will not increase the manually configured local maxInvocation limit on the minter.
+        await this.minter
+          .connect(this.accounts.artist)
+          .withdrawArtistAndAdminRevenues(this.projectZero);
+      });
     });
 
     describe("calculate gas", async function () {
