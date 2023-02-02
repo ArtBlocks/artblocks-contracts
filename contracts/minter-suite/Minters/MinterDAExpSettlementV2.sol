@@ -91,14 +91,13 @@ contract MinterDAExpSettlementV2 is
     struct ProjectConfig {
         // hasMaxBeenInvoked is a locally cached value on the minter, and may
         // be out of sync with the core contract's value and return a false
-        // negative. This is acceptable, as it will only result in
-        // unnecessary gas costs after max invocations have been reached.
+        // negative.This must be appropriately accounted for in this minter's
+        // logic.
         bool maxHasBeenInvoked;
         // maxInvocations is the maximum number of tokens that may be minted
         // for this project. The value here is cached on the minter, and may
-        // be out of sync with the core contract's value. This is acceptable,
-        // as it will only result in unnecessary gas costs after max
-        // invocations have been reached.
+        // be out of sync with the core contract's value. This must be
+        // appropriately accounted for in this minter's logic.
         uint24 maxInvocations;
         // set to true only after artist + admin revenues have been collected
         bool auctionRevenuesCollected;
