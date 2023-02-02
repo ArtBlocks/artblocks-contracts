@@ -211,7 +211,8 @@ contract MinterDAExpSettlementV2 is
     /**
      * @notice Syncs local maximum invocations of project `_projectId` based on
      * the value currently defined in the core contract. Also syncs the
-     * project config's `maxHasBeenInvoked` state.
+     * project config's `maxHasBeenInvoked` state. This will overwrite any
+     * minter-local maximum invocations value manually set by the artist.
      * @param _projectId Project ID to set the maximum invocations for.
      * @dev this enables gas reduction after maxInvocations have been reached -
      * core contracts shall still enforce a maxInvocation check during mint.
@@ -219,7 +220,7 @@ contract MinterDAExpSettlementV2 is
     function setProjectMaxInvocations(
         uint256 _projectId
     ) external onlyArtist(_projectId) {
-        _syncProjectMaxInvocations(_projectId);
+        _setProjectMaxInvocationsToCore(_projectId);
     }
 
     /**
@@ -277,8 +278,7 @@ contract MinterDAExpSettlementV2 is
      * invocations while being minted with this minter?
      * Note that this returns a local cached value on the minter, and may be
      * out of sync with the core core contract's state, in which it may return
-     * a false negative. It is only used for gas optimization purposes after
-     * a sellout has occurred.
+     * a false negative.
      * @param _projectId projectId to be queried
      *
      */
@@ -289,27 +289,32 @@ contract MinterDAExpSettlementV2 is
     }
 
     /**
-     * @notice projectId => project's maximum number of invocations.
-     * Optionally synced with core contract value, for gas optimization.
-     * Note that this returns a local cache of the core contract's
-     * state, and may be out of sync with the core contract. This is
-     * intentional, as it only enables gas optimization of mints after a
-     * project's maximum invocations has been reached.
-     * @dev A number greater than the core contract's project max invocations
-     * will only result in a gas cost increase, since the core contract will
-     * still enforce a maxInvocation check during minting. A number less than
-     * the core contract's project max invocations is only possible when the
-     * project's max invocations have not been synced on this minter, since the
-     * V3 core contract only allows maximum invocations to be reduced, not
-     * increased. When this happens, the minter will enable minting, allowing
-     * the core contract to enforce the max invocations check. Based on this
-     * rationale, we intentionally do not do input validation in this method as
-     * to whether or not the input `_projectId` is an existing project ID.
+     * @notice projectId => has project reached its maximum number of
+     * invocations?
+     * Note that this returns a local cached value on the minter, and may be
+     * out of sync with the core core contract's state, in which it may return
+     * a false negative.
+     * @param _projectId projectId to be queried
+     *
      */
-    function projectMaxInvocations(
+    function projectMaxHasBeenInvokedCached(
         uint256 _projectId
-    ) external view returns (uint256) {
-        return uint256(projectConfig[_projectId].maxInvocations);
+    ) external view returns (bool) {
+        return projectConfig[_projectId].maxHasBeenInvoked;
+    }
+
+    /**
+     * @notice projectId => has project reached its maximum number of
+     * invocations?
+     * Note that this checks the core contract's state, and will return an
+     * accurate value, regardless of the minter's local cached state.
+     * @dev this is a view method, and will not update the minter's local
+     * cached state.
+     */
+    function projectMaxHasBeenInvokedSafe(
+        uint256 _projectId
+    ) external view returns (bool) {
+        return _projectMaxHasBeenInvokedSafe(_projectId);
     }
 
     /**
@@ -924,7 +929,7 @@ contract MinterDAExpSettlementV2 is
         uint256 _projectId
     ) private view returns (uint256 tokenPriceInWei) {
         // accurately check if project has sold out
-        if (_getProjectIsSoldOutSafe(_projectId)) {
+        if (_projectMaxHasBeenInvokedSafe(_projectId)) {
             // if sold out, return the latest purchased price
             tokenPriceInWei = projectConfig[_projectId].latestPurchasePrice;
         } else {
@@ -1115,8 +1120,8 @@ contract MinterDAExpSettlementV2 is
     }
 
     /**
-     * @notice Syncs local maximum invocations of project `_projectId` based on
-     * the value currently defined in the core contract. Also syncs the
+     * @notice Sets local maximum invocations of project `_projectId` based on
+     * the value currently defined in the core contract. Also updates the
      * project config's `maxHasBeenInvoked` state.
      * Note that this function will overwrite the local value of maxInvocations
      * with the value from the core contract.
@@ -1124,7 +1129,7 @@ contract MinterDAExpSettlementV2 is
      * @dev this enables gas reduction after maxInvocations have been reached -
      * core contracts shall still enforce a maxInvocation check during mint.
      */
-    function _syncProjectMaxInvocations(uint256 _projectId) internal {
+    function _setProjectMaxInvocationsToCore(uint256 _projectId) internal {
         uint256 maxInvocations;
         uint256 invocations;
         (
@@ -1148,7 +1153,8 @@ contract MinterDAExpSettlementV2 is
     /**
      * @notice Syncs local maximum invocations of project `_projectId` based on
      * the value currently defined in the core contract, while respecting any
-     * minter-locally manually limited maxInvocations.
+     * minter-locally manually limited maxInvocations. Also updates the project
+     * config's `maxHasBeenInvoked` state.
      * The local maximum invocations are only changed if the minter meets one
      * of the following conditions:
      * - local maxInvocations was never configured, indicated by the
@@ -1167,10 +1173,12 @@ contract MinterDAExpSettlementV2 is
             coreMaxInvocations
         ) = _getProjectCoreInvocationsAndMaxInvocations(_projectId);
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
-        // only update if local maxInvocations is greater than core maxInvocations
-        // or if local invocations has never been set
-        bool localInvocationsNotSet = _projectConfig.maxInvocations == 0 &&
-            _projectConfig.maxHasBeenInvoked == false;
+        // only update if local maxInvocations is greater than core
+        // maxInvocations (which is an illogical state), or if local
+        // maxInvocations has never been configured (which means there is no
+        // concern about overwriting a manually configured value)
+        bool localInvocationsNotSet = (_projectConfig.maxInvocations == 0 &&
+            _projectConfig.maxHasBeenInvoked == false);
         if (
             localInvocationsNotSet ||
             _projectConfig.maxInvocations > coreMaxInvocations
@@ -1184,6 +1192,9 @@ contract MinterDAExpSettlementV2 is
                 coreMaxInvocations
             );
         }
+        // else do nothing; local maxInvocations is the same or less than core
+        // maxInvocations, and we don't want to overwrite a valid, manually
+        // configured value
     }
 
     /**
@@ -1207,11 +1218,13 @@ contract MinterDAExpSettlementV2 is
      * the project's maximum invocations value cached locally on the minter is
      * up to date with the core contract's maximum invocations value.
      * @param _projectId Project ID to check if sold out.
-     * @return isSoldOut true if the project is sold out, false otherwise.
+     * @return bool true if the project is sold out, false otherwise.
+     * @dev this is a view method, and will not update the minter's local
+     * cached state.
      */
-    function _getProjectIsSoldOutSafe(
+    function _projectMaxHasBeenInvokedSafe(
         uint256 _projectId
-    ) internal view returns (bool isSoldOut) {
+    ) internal view returns (bool) {
         uint256 coreInvocations;
         uint256 coreMaxInvocations;
         (
@@ -1226,6 +1239,6 @@ contract MinterDAExpSettlementV2 is
             : minterMaxInvocations;
         // @dev must use `>=` here because other minters could have minted tokens
         // after the minter's maxInvocations were reached
-        isSoldOut = (coreInvocations >= actualMaxInvocations);
+        return (coreInvocations >= actualMaxInvocations);
     }
 }
