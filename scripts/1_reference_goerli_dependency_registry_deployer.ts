@@ -36,10 +36,14 @@ async function main() {
     [ADMIN_ACL_CONTRACT]
   )) as DependencyRegistryV0;
   await dependencyRegistry.deployed();
-  
+
   const dependencyRegistryAddress = dependencyRegistry.address;
-  const implementationAddress = await upgrades.erc1967.getImplementationAddress(dependencyRegistryAddress);
-  console.log(`Dependency Registry V0 implementation deployed at ${implementationAddress}`)
+  const implementationAddress = await upgrades.erc1967.getImplementationAddress(
+    dependencyRegistryAddress
+  );
+  console.log(
+    `Dependency Registry V0 implementation deployed at ${implementationAddress}`
+  );
   console.log(
     `Dependency Registry V0 deployed at ${dependencyRegistryAddress}`
   );
@@ -57,7 +61,7 @@ async function main() {
       address: implementationAddress,
     });
   } catch (e) {
-    console.error('Failed to verify programatically', e);
+    console.error("Failed to verify programatically", e);
   }
 
   //////////////////////////////////////////////////////////////////////////////
