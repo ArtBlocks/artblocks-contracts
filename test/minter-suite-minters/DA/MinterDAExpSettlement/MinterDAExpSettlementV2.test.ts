@@ -174,10 +174,10 @@ for (const coreContractName of coreContractsToTest) {
         await this.minter
           .connect(this.accounts.artist)
           .manuallyLimitProjectMaxInvocations(this.projectZero, 1);
-        const projectConfig = await this.minter
+        const projectMaxInvocations = await this.minter
           .connect(this.accounts.artist)
-          .projectConfig(this.projectZero);
-        expect(projectConfig.maxInvocations).to.equal(1);
+          .projectMaxInvocations(this.projectZero);
+        expect(projectMaxInvocations).to.equal(1);
 
         // mint a token
         await ethers.provider.send("evm_mine", [
@@ -209,8 +209,8 @@ for (const coreContractName of coreContractsToTest) {
         // expect maxInvocations on the minter to be 15
         const syncedMaxInvocations = await this.minter
           .connect(this.accounts.artist)
-          .projectConfig(this.projectZero);
-        expect(syncedMaxInvocations.maxInvocations).to.equal(15);
+          .projectMaxInvocations(this.projectZero);
+        expect(syncedMaxInvocations).to.equal(15);
       });
 
       it("safely syncs hasMaxBeenInvoked during withdraw revenues function, respecting the manually configured limit", async function () {
@@ -218,10 +218,10 @@ for (const coreContractName of coreContractsToTest) {
         await this.minter
           .connect(this.accounts.artist)
           .manuallyLimitProjectMaxInvocations(this.projectZero, 1);
-        const projectConfig = await this.minter
+        const projectMaxInvocations = await this.minter
           .connect(this.accounts.artist)
-          .projectConfig(this.projectZero);
-        expect(projectConfig.maxInvocations).to.equal(1);
+          .projectMaxInvocations(this.projectZero);
+        expect(projectMaxInvocations).to.equal(1);
 
         // mint a token
         await ethers.provider.send("evm_mine", [
@@ -271,11 +271,11 @@ for (const coreContractName of coreContractsToTest) {
         // assuming a cost of 100 GWEI
         if (this.isEngine) {
           expect(txCost.toString()).to.equal(
-            ethers.utils.parseEther("0.015482")
+            ethers.utils.parseEther("0.015513")
           );
         } else {
           expect(txCost.toString()).to.equal(
-            ethers.utils.parseEther("0.015482")
+            ethers.utils.parseEther("0.015513")
           );
         }
       });
