@@ -51,6 +51,8 @@ pragma solidity 0.8.17;
  * - setAuctionDetails (note: this may only be called when there is no active
  *   auction, and must start at a price less than or equal to any previously
  *   made purchases)
+ * - setProjectMaxInvocations
+ * - manuallyLimitProjectMaxInvocations
  * ----------------------------------------------------------------------------
  * Additional admin and artist privileged roles may be described on other
  * contracts that this minter integrates with.
@@ -905,9 +907,13 @@ contract MinterDAExpSettlementV2 is
      */
     function _getPrice(uint256 _projectId) private view returns (uint256) {
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
-        // if auction sold out on this minter, return the latest purchase
+        // If auction sold out on this minter, return the latest purchase
         // price (which is the sellout price). This is the price that is due
         // after an auction is complete.
+        // If local cached maxHasBeenInvoked is stale relative to core contract
+        // state, also return the latest purchase price if the auction revenues
+        // have been collected (which means the auction price will never change
+        // again)
         if (
             _projectConfig.maxHasBeenInvoked ||
             _projectConfig.auctionRevenuesCollected
