@@ -274,13 +274,9 @@ contract MinterDAExpSettlementV2 is
     }
 
     /**
-     * @notice projectId => has project reached its maximum number of
-     * invocations while being minted with this minter?
-     * Note that this returns a local cached value on the minter, and may be
-     * out of sync with the core core contract's state, in which it may return
-     * a false negative.
+     * @notice alias for `projectMaxHasBeenInvokedCached`
+     * See warnings associated with that function.
      * @param _projectId projectId to be queried
-     *
      */
     function projectMaxHasBeenInvoked(
         uint256 _projectId
@@ -295,7 +291,6 @@ contract MinterDAExpSettlementV2 is
      * out of sync with the core core contract's state, in which it may return
      * a false negative.
      * @param _projectId projectId to be queried
-     *
      */
     function projectMaxHasBeenInvokedCached(
         uint256 _projectId
@@ -315,6 +310,18 @@ contract MinterDAExpSettlementV2 is
         uint256 _projectId
     ) external view returns (bool) {
         return _projectMaxHasBeenInvokedSafe(_projectId);
+    }
+
+    /**
+     * @notice projectId => project's maximum number of invocations.
+     * Note that this returns a local cached value, and may be manually
+     * limited to be different than the core contract's maxInvocations,
+     * or may be out of sync with the core contract's maxInvocations state.
+     */
+    function projectMaxInvocations(
+        uint256 _projectId
+    ) external view returns (uint256) {
+        return uint256(projectConfig[_projectId].maxInvocations);
     }
 
     /**
@@ -1232,6 +1239,16 @@ contract MinterDAExpSettlementV2 is
             coreMaxInvocations
         ) = _getProjectCoreInvocationsAndMaxInvocations(_projectId);
         uint256 minterMaxInvocations = projectConfig[_projectId].maxInvocations;
+        // if the minter's maxInvocations is 0, then it may have never been set,
+        // at which point we should use the core contract's maxInvocations value
+        // instead. We can determine if it was never set by checking if
+        // maxHasBeenInvoked is false as well.
+        if (
+            minterMaxInvocations == 0 &&
+            !projectConfig[_projectId].maxHasBeenInvoked
+        ) {
+            return (coreInvocations == coreMaxInvocations);
+        }
         // get the minimum of the two maxInvocations values, which is the actual
         // maxInvocations limit
         uint256 actualMaxInvocations = coreMaxInvocations < minterMaxInvocations

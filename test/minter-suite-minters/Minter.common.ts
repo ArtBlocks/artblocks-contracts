@@ -122,32 +122,23 @@ export const Minter_Common = async () => {
 
     it("updates local projectMaxInvocations after syncing to core", async function () {
       const minterType = await this.minter.minterType();
-      if (
-        !minterType.includes("SettlementV0") &&
-        !minterType.includes("SettlementV1")
-      ) {
-        // minters above v2 do NOT use onlyCoreWhitelisted modifier for setProjectMaxInvocations
-        const accountToTestWith =
-          minterType.includes("V0") || minterType.includes("V1")
-            ? this.accounts.deployer
-            : this.accounts.artist;
-        // update max invocations to 1 on the core
-        await this.genArt721Core
-          .connect(this.accounts.artist)
-          .updateProjectMaxInvocations(this.projectZero, 2);
-        // sync max invocations on minter
-        await this.minter
-          .connect(accountToTestWith)
-          .setProjectMaxInvocations(this.projectZero);
-        // expect max invocations to be 2 on the minter
-        expect(
-          await this.minter.projectMaxInvocations(this.projectZero)
-        ).to.be.equal(2);
-      } else {
-        console.info(
-          "skipping setProjectMaxInvocations test because not implemented on settlement minters"
-        );
-      }
+      // minters above v2 do NOT use onlyCoreWhitelisted modifier for setProjectMaxInvocations
+      const accountToTestWith =
+        minterType.includes("V0") || minterType.includes("V1")
+          ? this.accounts.deployer
+          : this.accounts.artist;
+      // update max invocations to 1 on the core
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectMaxInvocations(this.projectZero, 2);
+      // sync max invocations on minter
+      await this.minter
+        .connect(accountToTestWith)
+        .setProjectMaxInvocations(this.projectZero);
+      // expect max invocations to be 2 on the minter
+      expect(
+        await this.minter.projectMaxInvocations(this.projectZero)
+      ).to.be.equal(2);
     });
   });
 };
