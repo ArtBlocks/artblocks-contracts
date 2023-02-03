@@ -278,7 +278,7 @@ for (const coreContractName of coreContractsToTest) {
       });
     });
 
-    describe.only("Invocations reduction on core mid-auction", async function () {
+    describe("Invocations reduction on core mid-auction", async function () {
       it("does not prevent revenue withdrawals if artist reduces max invocations to current invocations on core contract mid-auction", async function () {
         // models the following situation:
         // - auction is not sold out
@@ -431,6 +431,252 @@ for (const coreContractName of coreContractsToTest) {
         expect(newBalanceUser).to.be.equal(
           originalBalanceUser.sub(projectConfig.latestPurchasePrice.mul(2))
         );
+      });
+    });
+
+    describe.only("manuallyLimitProjectMaxInvocations", async function () {
+      it("reverts when setting minter local max invocations to value greater than core contract max invocations", async function () {
+        await expectRevert(
+          this.minter
+            .connect(this.accounts.artist)
+            .manuallyLimitProjectMaxInvocations(
+              this.projectZero,
+              this.maxInvocations + 1
+            ),
+          "Cannot increase project max invocations above core contract set project max invocations"
+        );
+      });
+
+      it("reverts when setting minter local max invocations to value less than current invocations", async function () {
+        await purchaseTokensMidAuction.call(this, this.projectZero);
+        const projectStateData = await this.genArt721Core.projectStateData(
+          this.projectZero
+        );
+        await expectRevert(
+          this.minter
+            .connect(this.accounts.artist)
+            .manuallyLimitProjectMaxInvocations(
+              this.projectZero,
+              projectStateData.invocations - 1
+            ),
+          "Cannot set project max invocations to less than current invocations"
+        );
+      });
+
+      it("allows setting minter local max invocations equal to current invocations", async function () {
+        await purchaseTokensMidAuction.call(this, this.projectZero);
+        const projectStateData = await this.genArt721Core.projectStateData(
+          this.projectZero
+        );
+        // no revert
+        await this.minter
+          .connect(this.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(
+            this.projectZero,
+            projectStateData.invocations
+          );
+      });
+
+      it("updates state of projectConfig after manually limiting minter local max invocations to current invocations", async function () {
+        await purchaseTokensMidAuction.call(this, this.projectZero);
+        // limit invocations == current invocations
+        const projectStateData = await this.genArt721Core.projectStateData(
+          this.projectZero
+        );
+        await this.minter
+          .connect(this.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(
+            this.projectZero,
+            projectStateData.invocations
+          );
+        // projectConfig should reflect new max invocations
+        const projectConfig = await this.minter.projectConfig(this.projectZero);
+        expect(projectConfig.useLocalMaxInvocations).to.be.true;
+        expect(projectConfig.maxHasBeenInvokedLocal).to.be.true;
+        expect(projectConfig.maxInvocationsLocal).to.be.equal(
+          projectStateData.invocations
+        );
+      });
+
+      it("updates state of projectConfig after manually limiting minter local max invocations to current invocations + 1", async function () {
+        await purchaseTokensMidAuction.call(this, this.projectZero);
+        // limit invocations == current invocations
+        const projectStateData = await this.genArt721Core.projectStateData(
+          this.projectZero
+        );
+        await this.minter
+          .connect(this.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(
+            this.projectZero,
+            projectStateData.invocations.add(ethers.BigNumber.from("1"))
+          );
+        // projectConfig should reflect new max invocations
+        const projectConfig = await this.minter.projectConfig(this.projectZero);
+        expect(projectConfig.useLocalMaxInvocations).to.be.true;
+        expect(projectConfig.maxHasBeenInvokedLocal).to.be.false;
+        expect(projectConfig.maxInvocationsLocal).to.be.equal(
+          projectStateData.invocations.add(ethers.BigNumber.from("1"))
+        );
+        // purchase should be successful
+        await this.minter
+          .connect(this.accounts.user)
+          .purchase(this.projectZero, {
+            value: this.startingPrice,
+          });
+        // susequent purchase should revert
+        await expectRevert(
+          this.minter.connect(this.accounts.user).purchase(this.projectZero, {
+            value: this.startingPrice,
+          }),
+          "Maximum number of invocations reached"
+        );
+        // artist should be able to withdraw revenues
+        await this.minter
+          .connect(this.accounts.artist)
+          .withdrawArtistAndAdminRevenues(this.projectZero);
+      });
+
+      it("enforces local max invocations after manually limiting minter local max invocations", async function () {
+        await purchaseTokensMidAuction.call(this, this.projectZero);
+        // limit invocations == current invocations
+        const projectStateData = await this.genArt721Core.projectStateData(
+          this.projectZero
+        );
+        await this.minter
+          .connect(this.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(
+            this.projectZero,
+            projectStateData.invocations.add(ethers.BigNumber.from("1"))
+          );
+        // one more purchase should be successful
+        await this.minter
+          .connect(this.accounts.user)
+          .purchase(this.projectZero, {
+            value: this.startingPrice,
+          });
+        // susequent purchase should revert
+        await expectRevert(
+          this.minter.connect(this.accounts.user).purchase(this.projectZero, {
+            value: this.startingPrice,
+          }),
+          "Maximum number of invocations reached"
+        );
+      });
+
+      it("ignores local max invocations if re-syncs to core contract's max invocations", async function () {
+        await purchaseTokensMidAuction.call(this, this.projectZero);
+        // limit invocations == current invocations
+        const projectStateData = await this.genArt721Core.projectStateData(
+          this.projectZero
+        );
+        await this.minter
+          .connect(this.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(
+            this.projectZero,
+            projectStateData.invocations.add(ethers.BigNumber.from("1"))
+          );
+        // one more purchase should be successful
+        await this.minter
+          .connect(this.accounts.user)
+          .purchase(this.projectZero, {
+            value: this.startingPrice,
+          });
+        // susequent purchase should revert
+        await expectRevert(
+          this.minter.connect(this.accounts.user).purchase(this.projectZero, {
+            value: this.startingPrice,
+          }),
+          "Maximum number of invocations reached"
+        );
+        // re-sync to core contract's max invocations
+        await this.minter
+          .connect(this.accounts.artist)
+          .setProjectMaxInvocations(this.projectZero);
+        // purchase should be successful
+        await this.minter
+          .connect(this.accounts.user)
+          .purchase(this.projectZero, {
+            value: this.startingPrice,
+          });
+      });
+
+      it("freezes price after local max invocations reached and revenues withdrawn", async function () {
+        await purchaseTokensMidAuction.call(this, this.projectZero);
+        // limit invocations == current invocations
+        const projectStateData = await this.genArt721Core.projectStateData(
+          this.projectZero
+        );
+        await this.minter
+          .connect(this.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(
+            this.projectZero,
+            projectStateData.invocations
+          );
+        // artist withdraws revenues
+        await this.minter
+          .connect(this.accounts.artist)
+          .withdrawArtistAndAdminRevenues(this.projectZero);
+        // latest purchase price should be frozen
+        const projectConfig = await this.minter.projectConfig(this.projectZero);
+        const latestPurchasePrice = await projectConfig.latestPurchasePrice;
+        // artist sets max invocations back to core contract's max invocations
+        await this.minter
+          .connect(this.accounts.artist)
+          .setProjectMaxInvocations(this.projectZero);
+        // advance in time
+        await ethers.provider.send("evm_mine", [
+          this.startTime + this.auctionStartTimeOffset * 10,
+        ]);
+        // purchase should be successful
+        await this.minter
+          .connect(this.accounts.user)
+          .purchase(this.projectZero, {
+            value: latestPurchasePrice,
+          });
+        // latest purchase price should still be the same as the frozen price
+        const projectConfig2 = await this.minter.projectConfig(
+          this.projectZero
+        );
+        const latestPurchasePrice2 = await projectConfig2.latestPurchasePrice;
+        expect(latestPurchasePrice2).to.be.equal(latestPurchasePrice);
+      });
+
+      it("does NOT freeze price after local max invocations reached and revenues NOT withdrawn", async function () {
+        await purchaseTokensMidAuction.call(this, this.projectZero);
+        // limit invocations == current invocations
+        const projectStateData = await this.genArt721Core.projectStateData(
+          this.projectZero
+        );
+        await this.minter
+          .connect(this.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(
+            this.projectZero,
+            projectStateData.invocations
+          );
+        // artist does NOT withdraw revenues
+        // latest purchase price should be NOT frozen
+        const projectConfig = await this.minter.projectConfig(this.projectZero);
+        const latestPurchasePrice = await projectConfig.latestPurchasePrice;
+        // artist sets max invocations back to core contract's max invocations
+        await this.minter
+          .connect(this.accounts.artist)
+          .setProjectMaxInvocations(this.projectZero);
+        // advance in time
+        await ethers.provider.send("evm_mine", [
+          this.startTime + this.auctionStartTimeOffset * 10,
+        ]);
+        // purchase should be successful
+        await this.minter
+          .connect(this.accounts.user)
+          .purchase(this.projectZero, {
+            value: latestPurchasePrice,
+          });
+        // latest purchase price have continued to decrease since revenues were not withdrawn
+        const projectConfig2 = await this.minter.projectConfig(
+          this.projectZero
+        );
+        const latestPurchasePrice2 = await projectConfig2.latestPurchasePrice;
+        expect(latestPurchasePrice2).to.be.lt(latestPurchasePrice);
       });
     });
 
