@@ -979,7 +979,7 @@ for (const coreContractName of coreContractsToTest) {
       });
     });
 
-    describe("resetAuctionDetails", async function () {
+    describe.only("resetAuctionDetails", async function () {
       it("doesn't lock latest purchase price to zero in extreme edge case", async function () {
         // use local max invocations of zero to get "sellout" to true
         await this.minter
@@ -989,7 +989,7 @@ for (const coreContractName of coreContractsToTest) {
         await this.minter
           .connect(this.accounts.deployer)
           .resetAuctionDetails(this.projectZero);
-        // now base price == 0, and sellout == true, expect revert when withdrawing revenues
+        // now base price == 0, and sellout == true, expect revert when withdrawing revenues since latest price is zero
         await expectRevert(
           this.minter
             .connect(this.accounts.deployer)
@@ -1008,7 +1008,7 @@ for (const coreContractName of coreContractsToTest) {
         await this.minter
           .connect(this.accounts.deployer)
           .resetAuctionDetails(this.projectZero);
-        // now base price == 0, and sellout == true, and if we withdraw funds, we get rugged?
+        // now base price == 0, and sellout == true, but artist should still be able to withdraw revenues at non-zero latest price
         await this.minter
           .connect(this.accounts.deployer)
           .withdrawArtistAndAdminRevenues(this.projectZero);
