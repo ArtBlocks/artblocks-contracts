@@ -1294,18 +1294,29 @@ contract MinterDAExpSettlementV2 is
     function _projectMaxHasBeenInvokedSafe(
         uint256 _projectId
     ) internal view returns (bool) {
-        ProjectConfig storage _projectConfig = projectConfig[_projectId];
-        if (_projectConfig.useLocalMaxInvocations) {
-            // value is locally defined and up to date
-            return _projectConfig.maxHasBeenInvokedLocal;
-        }
-        // not using local max invocations, so get from core contract
+        // get max invocations from core contract
         uint256 coreInvocations;
         uint256 coreMaxInvocations;
         (
             coreInvocations,
             coreMaxInvocations
         ) = _getProjectCoreInvocationsAndMaxInvocations(_projectId);
-        return (coreInvocations == coreMaxInvocations);
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        if (_projectConfig.useLocalMaxInvocations) {
+            // value is locally defined, and could be out of date
+            // only possible illogical state is if local max invocations is
+            // greater than core contract's max invocations, in which case
+            // we should use the core contract's max invocations
+            if (_projectConfig.maxInvocationsLocal > coreMaxInvocations) {
+                // local max invocations is stale and illogical, use core
+                // contract's max invocations since it is the limiting factor
+                return (coreMaxInvocations == coreInvocations);
+            }
+            // local max invocations is logical, use local value since never
+            // cached against itself
+            return _projectConfig.maxHasBeenInvokedLocal;
+        }
+        // use guaranteed accurate value from core contract
+        return (coreMaxInvocations == coreInvocations);
     }
 }

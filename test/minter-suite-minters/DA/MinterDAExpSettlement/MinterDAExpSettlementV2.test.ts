@@ -787,7 +787,7 @@ for (const coreContractName of coreContractsToTest) {
         expect(priceInfo.tokenPriceInWei).to.be.gt(this.basePrice);
       });
 
-      it("returns correct price after sellout not known locally", async function () {
+      it("returns correct price after sellout not known locally, when not using local max invocations", async function () {
         // reduce max invocations to 2
         await this.genArt721Core
           .connect(this.accounts.artist)
@@ -822,6 +822,38 @@ for (const coreContractName of coreContractsToTest) {
           .getPriceInfo(this.projectZero);
         expect(priceInfo.tokenPriceInWei).to.be.equal(latestPurchasePrice);
         expect(priceInfo.tokenPriceInWei).to.be.gt(this.basePrice);
+      });
+
+      it("returns correct price after sellout not known locally, when using local max invocations", async function () {
+        // reduce max invocations to 2 on local minter
+        await this.minter
+          .connect(this.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(this.projectZero, 2);
+        // advance to auction start time
+        await ethers.provider.send("evm_mine", [
+          this.startTime + this.auctionStartTimeOffset,
+        ]);
+        // purchase one piece, not sellout
+        await this.minter
+          .connect(this.accounts.user)
+          .purchase_H4M(this.projectZero, {
+            value: this.startingPrice,
+          });
+        // update max invocations on core contract to 1, but minter should not know about it
+        await this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectMaxInvocations(this.projectZero, 1);
+        const projectConfig = await this.minter.projectConfig(this.projectZero);
+        const selloutPrice = projectConfig.latestPurchasePrice;
+        expect(projectConfig.maxHasBeenInvokedLocal).to.be.false; // minter does not know about sellout, so state is false
+        // advance in time to where price would have decreased if not sellout
+        await ethers.provider.send("evm_mine", [
+          this.startTime + this.auctionStartTimeOffset * 10,
+        ]);
+        // get price info should handle the cache discrepancy and return the correct price,
+        // which is the sellout price (latestPurchasePrice)
+        const priceInfo = await this.minter.getPriceInfo(this.projectZero);
+        expect(priceInfo.tokenPriceInWei).to.be.equal(selloutPrice);
       });
     });
 
