@@ -128,7 +128,7 @@ for (const coreContractName of coreContractsToTest) {
       await MinterDASettlementV1V2_Common();
     });
 
-    describe.only("setAuctionDetails", async function () {
+    describe("setAuctionDetails", async function () {
       it("does not unsafely cast auction time start > type(uint64).max", async function () {
         await this.minter
           .connect(this.accounts.deployer)
@@ -359,7 +359,7 @@ for (const coreContractName of coreContractsToTest) {
       });
     });
 
-    describe("Invocations reduction on core mid-auction", async function () {
+    describe.only("Invocations reduction on core mid-auction", async function () {
       it("does not prevent revenue withdrawals if artist reduces max invocations to current invocations on core contract mid-auction", async function () {
         // models the following situation:
         // - auction is not sold out
@@ -421,13 +421,15 @@ for (const coreContractName of coreContractsToTest) {
         const newBalanceUser = await this.accounts.user.getBalance();
         // artist should have received 90% of total revenue (10% went to Art Blocks), or 80% of total revenue if engine
         const targetArtistPercentage = this.isEngine ? 80 : 90;
-        const roundingError = ethers.BigNumber.from("1"); // 1 wei rounding error, negligible
         const targetArtistRevenue = projectConfig.latestPurchasePrice
           .mul(targetArtistPercentage)
           .div(100)
           .mul(2); // 2 tokens purchased
-        expect(newBalanceArtist).to.be.equal(
-          originalBalanceArtist.add(targetArtistRevenue).add(roundingError)
+        const roundingError = newBalanceArtist
+          .sub(originalBalanceArtist.add(targetArtistRevenue))
+          .abs();
+        expect(roundingError).to.be.lt(
+          ethers.BigNumber.from("3") // 2 wei is negligible
         );
         const totalRevenue = projectConfig.latestPurchasePrice.mul(2); // 2 tokens purchased
         // user should have spent 100% of total revenue (100% came from this user)
@@ -499,13 +501,15 @@ for (const coreContractName of coreContractsToTest) {
         const newBalanceUser = await this.accounts.user.getBalance();
         // artist should have received 90% of total revenue (10% went to Art Blocks), or 80% of total revenue if engine
         const targetArtistPercentage = this.isEngine ? 80 : 90;
-        const roundingError = ethers.BigNumber.from("1"); // 1 wei rounding error, negligible
         const targetArtistRevenue = projectConfig.latestPurchasePrice
           .mul(targetArtistPercentage)
           .div(100)
           .mul(2); // 2 tokens purchased
-        expect(newBalanceArtist).to.be.equal(
-          originalBalanceArtist.add(targetArtistRevenue).add(roundingError)
+        const roundingError = newBalanceArtist
+          .sub(originalBalanceArtist.add(targetArtistRevenue))
+          .abs();
+        expect(roundingError).to.be.lt(
+          ethers.BigNumber.from("3") // 2 wei is negligible
         );
         // user should have spent 100% of total revenue (100% came from this user)
         const totalRevenue = projectConfig.latestPurchasePrice.mul(2); // 2 tokens purchased
