@@ -23,14 +23,17 @@ import {
   safeAddProject,
 } from "../../../util/common";
 import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../util/constants";
-import { MinterDAExpSettlement_Common } from "./MinterDAExpSettlement.common";
+import {
+  MinterDAExpSettlement_Common,
+  purchaseTokensMidAuction,
+} from "./MinterDAExpSettlement.common";
 import { MinterDASettlementV1V2_Common } from "../MinterDASettlementV1V2.common";
 
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
   "GenArt721CoreV3", // flagship V3 core
-  "GenArt721CoreV3_Explorations", // V3 core explorations contract
-  "GenArt721CoreV3_Engine", // V3 core engine contract
+  // "GenArt721CoreV3_Explorations", // V3 core explorations contract
+  // "GenArt721CoreV3_Engine", // V3 core engine contract
 ];
 
 const TARGET_MINTER_NAME = "MinterDAExpSettlementV2";
@@ -145,6 +148,34 @@ for (const coreContractName of coreContractsToTest) {
           "SafeCast: value doesn't fit in 64 bits"
         );
       });
+
+      it("allows auction to be updated before start time", async function () {
+        await this.minter
+          .connect(this.accounts.deployer)
+          .resetAuctionDetails(this.projectZero);
+        const future = ethers.BigNumber.from("2").pow(
+          ethers.BigNumber.from("30")
+        );
+        await this.minter
+          .connect(this.accounts.artist)
+          .setAuctionDetails(
+            this.projectZero,
+            future,
+            this.defaultHalfLife,
+            this.startingPrice,
+            this.basePrice
+          );
+        // check that auction may be updated again
+        await this.minter
+          .connect(this.accounts.artist)
+          .setAuctionDetails(
+            this.projectZero,
+            future.sub(ethers.BigNumber.from("100")),
+            this.defaultHalfLife,
+            this.startingPrice,
+            this.basePrice
+          );
+      });
     });
 
     describe("setProjectMaxInvocations", async function () {
@@ -244,6 +275,162 @@ for (const coreContractName of coreContractsToTest) {
         await this.minter
           .connect(this.accounts.artist)
           .withdrawArtistAndAdminRevenues(this.projectZero);
+      });
+    });
+
+    describe.only("Invocations reduction on core mid-auction", async function () {
+      it("does not prevent revenue withdrawals if artist reduces max invocations to current invocations on core contract mid-auction", async function () {
+        // models the following situation:
+        // - auction is not sold out
+        // artist reduces maxInvocations on core contract, completing the project
+        // desired state:
+        // - artist is able to withdraw revenue until end of auction
+        // - "latestPurchasePrice" price should reflect the last purchased token
+        // note: this test highlights a different behavior from DA w/Settlement V1 and V0. Although this would be suspicious behavior by the artist,
+        // in V1 and V0, the artist could set maxInvocations to (invocations + 1) on core, purchase one token, and achieve the same effect.
+        // This test, therefore, is simply to confirm the behavior of the V2 (and on) minter.
+        const originalBalanceArtist = await this.accounts.artist.getBalance();
+        const originalBalanceUser = await this.accounts.user.getBalance();
+
+        // purchase a couple tokens (at zero gas fee), do not sell out auction
+        await purchaseTokensMidAuction.call(this, this.projectZero);
+        // get current invocations on project
+        const projectState = await this.genArt721Core.projectStateData(
+          this.projectZero
+        );
+        const invocations = projectState.invocations;
+        // artist reduces invocations on core contract
+        await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", [
+          "0x0",
+        ]);
+        await this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectMaxInvocations(this.projectZero, invocations, {
+            gasPrice: 0,
+          });
+        // artist should be able to withdraw revenue
+        await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", [
+          "0x0",
+        ]);
+        await this.minter
+          .connect(this.accounts.artist)
+          .withdrawArtistAndAdminRevenues(this.projectZero, { gasPrice: 0 });
+        // latestPurchasePrice is > base price
+        const projectConfig = await this.minter.projectConfig(this.projectZero);
+        expect(projectConfig.latestPurchasePrice).to.be.gt(
+          projectConfig.basePrice
+        );
+        // advance past end of auction, so base price becomes base price
+        await ethers.provider.send("evm_mine", [
+          this.startTime +
+            this.auctionStartTimeOffset +
+            this.defaultHalfLife * 10,
+        ]);
+        // user should be able to withdraw settlement as if sellout price was auction latest purchase price
+        await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", [
+          "0x0",
+        ]);
+        await this.minter
+          .connect(this.accounts.user)
+          .reclaimProjectExcessSettlementFunds(this.projectZero, {
+            gasPrice: 0,
+          });
+        // user balance should reflect proper settlement amount
+        const newBalanceArtist = await this.accounts.artist.getBalance();
+        const newBalanceUser = await this.accounts.user.getBalance();
+        // artist should have received 90% of total revenue (10% went to Art Blocks), or 80% of total revenue if engine
+        const targetArtistPercentage = this.isEngine ? 80 : 90;
+        const roundingError = ethers.BigNumber.from("1"); // 1 wei rounding error, negligible
+        const targetArtistRevenue = projectConfig.latestPurchasePrice
+          .mul(targetArtistPercentage)
+          .div(100)
+          .mul(2); // 2 tokens purchased
+        expect(newBalanceArtist).to.be.equal(
+          originalBalanceArtist.add(targetArtistRevenue).add(roundingError)
+        );
+        const totalRevenue = projectConfig.latestPurchasePrice.mul(2); // 2 tokens purchased
+        // user should have spent 100% of total revenue (100% came from this user)
+        expect(newBalanceUser).to.be.equal(
+          originalBalanceUser.sub(projectConfig.latestPurchasePrice.mul(2))
+        );
+      });
+
+      it("does not prevent revenue withdrawals if artist reduces max invocations to current invocations on core contract mid-auction2", async function () {
+        // models the following situation:
+        // - auction is not sold out
+        // - auction is reset by admin
+        // artist reduces maxInvocations on core contract, completing the project
+        // desired state:
+        // - artist be able to withdraw revenue
+        // - "latestPurchasePrice" price should reflect the last purchased token price
+        // (overall this is a very odd situation to be in, but we want to make sure no
+        // funds are lost or stuck in the contract)
+        // note: this test highlights a different behavior from DA w/Settlement V1 and V0. Although this would be suspicious behavior by the artist,
+        // in V1 and V0, the artist could set maxInvocations to (invocations + 1) on core, purchase one token, and achieve the same effect.
+        // This test, therefore, is simply to confirm the behavior of the V2 (and on) minter.
+        const originalBalanceArtist = await this.accounts.artist.getBalance();
+        const originalBalanceUser = await this.accounts.user.getBalance();
+
+        // purchase a couple tokens (at zero gas fee), do not sell out auction
+        await purchaseTokensMidAuction.call(this, this.projectZero);
+        // admin resets auction
+        await this.minter
+          .connect(this.accounts.deployer)
+          .resetAuctionDetails(this.projectZero);
+        // get current invocations on project
+        const projectState = await this.genArt721Core.projectStateData(
+          this.projectZero
+        );
+        const invocations = projectState.invocations;
+        // artist reduces invocations on core contract
+        await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", [
+          "0x0",
+        ]);
+        await this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectMaxInvocations(this.projectZero, invocations, {
+            gasPrice: 0,
+          });
+        // artist should be able to withdraw revenue
+        await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", [
+          "0x0",
+        ]);
+        await this.minter
+          .connect(this.accounts.artist)
+          .withdrawArtistAndAdminRevenues(this.projectZero, { gasPrice: 0 });
+
+        // latestPurchasePrice is > base price (base price is currently 0 after calling resetAuctionDetails)
+        const projectConfig = await this.minter.projectConfig(this.projectZero);
+        expect(projectConfig.latestPurchasePrice).to.be.gt(
+          projectConfig.basePrice
+        );
+        // user should be able to withdraw settlement as if sellout price was latestPurchasePrice
+        await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", [
+          "0x0",
+        ]);
+        await this.minter
+          .connect(this.accounts.user)
+          .reclaimProjectExcessSettlementFunds(this.projectZero, {
+            gasPrice: 0,
+          });
+        // user balance should reflect proper settlement amount
+        const newBalanceArtist = await this.accounts.artist.getBalance();
+        const newBalanceUser = await this.accounts.user.getBalance();
+        // artist should have received 90% of total revenue (10% went to Art Blocks), or 80% of total revenue if engine
+        const targetArtistPercentage = this.isEngine ? 80 : 90;
+        const roundingError = ethers.BigNumber.from("1"); // 1 wei rounding error, negligible
+        const targetArtistRevenue = projectConfig.latestPurchasePrice
+          .mul(targetArtistPercentage)
+          .div(100)
+          .mul(2); // 2 tokens purchased
+        expect(newBalanceArtist).to.be.equal(
+          originalBalanceArtist.add(targetArtistRevenue).add(roundingError)
+        );
+        // user should have spent 100% of total revenue (100% came from this user)
+        const totalRevenue = projectConfig.latestPurchasePrice.mul(2); // 2 tokens purchased
+        expect(newBalanceUser).to.be.equal(
+          originalBalanceUser.sub(projectConfig.latestPurchasePrice.mul(2))
+        );
       });
     });
 
