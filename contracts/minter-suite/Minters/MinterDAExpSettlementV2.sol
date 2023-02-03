@@ -295,14 +295,14 @@ contract MinterDAExpSettlementV2 is
         );
         // EFFECTS
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        // configure the project to use the local minter's maxInvocations value
+        _projectConfig.useLocalMaxInvocations = true;
         // update storage with results
         _projectConfig.maxInvocationsLocal = uint24(_maxInvocations);
         // We need to ensure maxHasBeenInvoked is correctly set after manually setting the
         // local maxInvocations value.
         _projectConfig.maxHasBeenInvokedLocal =
             coreInvocations == _maxInvocations;
-        // configure the project to use the local minter's maxInvocations value
-        _projectConfig.useLocalMaxInvocations = true;
 
         emit ProjectMaxInvocationsLimitUpdated(_projectId, _maxInvocations);
     }
