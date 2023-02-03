@@ -559,12 +559,11 @@ contract MinterDAExpSettlementV2 is
             !_projectConfig.auctionRevenuesCollected,
             "Only before revenues collected"
         );
-        // refresh cache of max invocations if using core values
-        bool useLocalMaxInvocations = _projectConfig.useLocalMaxInvocations;
-        if (!useLocalMaxInvocations) {
-            _syncProjectMaxInvocationsCoreCached(_projectId);
-        }
-        bool hasMaxBeenInvoked = useLocalMaxInvocations
+        // refresh max invocations with respect to current core contract state
+        refreshMaxInvocations(_projectId);
+
+        // require max invocations has been reached
+        bool hasMaxBeenInvoked = _projectConfig.useLocalMaxInvocations
             ? _projectConfig.maxHasBeenInvokedLocal
             : _projectConfig.maxHasBeenInvokedCoreCached;
         require(hasMaxBeenInvoked, "Auction must be complete");
@@ -615,18 +614,8 @@ contract MinterDAExpSettlementV2 is
             !_projectConfig.auctionRevenuesCollected,
             "Revenues already collected"
         );
-        // refresh cache of max invocations
-        bool useLocalMaxInvocations = _projectConfig.useLocalMaxInvocations;
-        if (useLocalMaxInvocations) {
-            // if using local max invocations, validate the local state
-            // (i.e. ensure local max invocations not greater than core max
-            // invocations)
-            _validateLocalProjectMaxInvocations(_projectId);
-        } else {
-            // re-sync the cached core max invocations to ensure it is up to
-            // date with the core contract max invocations
-            _syncProjectMaxInvocationsCoreCached(_projectId);
-        }
+        // refresh max invocations with respect to current core contract state
+        refreshMaxInvocations(_projectId);
 
         // get the current net price of the auction - reverts if no auction
         // is configured.
@@ -645,7 +634,7 @@ contract MinterDAExpSettlementV2 is
             // refreshed it above with _syncProjectMaxInvocationsCoreCached, if
             // needed.
             require(
-                useLocalMaxInvocations
+                _projectConfig.useLocalMaxInvocations
                     ? _projectConfig.maxHasBeenInvokedLocal
                     : _projectConfig.maxHasBeenInvokedCoreCached,
                 "Active auction not yet sold out"
@@ -1228,6 +1217,44 @@ contract MinterDAExpSettlementV2 is
     }
 
     /**
+     * @notice Returns the current invocations and maximum invocations of
+     * project `_projectId` from the core contract.
+     * @param _projectId Project ID to get invocations and maximum invocations
+     * for.
+     * @return invocations current invocations of project.
+     * @return maxInvocations maximum invocations of project.
+     */
+    function _getProjectCoreInvocationsAndMaxInvocations(
+        uint256 _projectId
+    ) internal view returns (uint256 invocations, uint256 maxInvocations) {
+        (invocations, maxInvocations, , , , ) = genArtCoreContract_Base
+            .projectStateData(_projectId);
+    }
+
+    /**
+     * @notice Refreshes the cached values of the core contract's maxInvocation
+     * state. If using local max invocations, ensures that local max
+     * invocations are not greater than core max invocations, by updating state
+     * if necessary.
+     * If using core max invocations, updates the project config's cached state
+     * values to match the core contract's state.
+     */
+    function refreshMaxInvocations(uint256 _projectId) internal {
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        bool useLocalMaxInvocations = _projectConfig.useLocalMaxInvocations;
+        if (useLocalMaxInvocations) {
+            // if using local max invocations, validate the local state
+            // (i.e. ensure local max invocations not greater than core max
+            // invocations)
+            _validateLocalProjectMaxInvocations(_projectId);
+        } else {
+            // re-sync the cached core max invocations to ensure it is up to
+            // date with the core contract max invocations
+            _syncProjectMaxInvocationsCoreCached(_projectId);
+        }
+    }
+
+    /**
      * @notice Checks and updates local project max invocations to determine if
      * if they are in an illogical state relative to the core contract's max
      * invocations.
@@ -1264,21 +1291,6 @@ contract MinterDAExpSettlementV2 is
                 coreMaxInvocations
             );
         }
-    }
-
-    /**
-     * @notice Returns the current invocations and maximum invocations of
-     * project `_projectId` from the core contract.
-     * @param _projectId Project ID to get invocations and maximum invocations
-     * for.
-     * @return invocations current invocations of project.
-     * @return maxInvocations maximum invocations of project.
-     */
-    function _getProjectCoreInvocationsAndMaxInvocations(
-        uint256 _projectId
-    ) internal view returns (uint256 invocations, uint256 maxInvocations) {
-        (invocations, maxInvocations, , , , ) = genArtCoreContract_Base
-            .projectStateData(_projectId);
     }
 
     /**
