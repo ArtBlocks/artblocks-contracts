@@ -155,6 +155,41 @@ export async function selloutMidAuction(projectId: number): Promise<void> {
 }
 
 /**
+ * helper function that:
+ *  - sets local max invocations on minter to 2
+ *  - sells out a project during an auction, before reaching base price
+ * results in a state where revenues have not been withdrawn, but project has a
+ * final price at which it sold out, due to local minter max invocations (not
+ * core contract max invocations)
+ * @dev intended to be called with `this` bound to a test context
+ * @dev reduces minter-local project max invocations to 2, so that the project will sell out
+ * with a two purchases (ensuring that calculations involving
+ * numSettleableInvocations are tested properly)
+ * @param projectId project ID to use for minting. assumes project exists and
+ * is configured with a minter that supports this test.
+ */
+export async function selloutMidAuctionLocalMaxInvocations(
+  projectId: number
+): Promise<void> {
+  // reduce max invocations to 2 on the minter (not core contract)
+  await this.minter
+    .connect(this.accounts.artist)
+    .manuallyLimitProjectMaxInvocations(projectId, 2);
+  // advance to auction start time
+  await ethers.provider.send("evm_mine", [
+    this.startTime + this.auctionStartTimeOffset,
+  ]);
+  // purchase two pieces to achieve sellout
+  for (let i = 0; i < 2; i++) {
+    await this.minter.connect(this.accounts.user).purchase_H4M(projectId, {
+      value: this.startingPrice,
+    });
+  }
+  // leave in a state where project sold out, but revenues have not been
+  // withdrawn
+}
+
+/**
  * These tests are intended to check common DAExp functionality.
  * @dev assumes common BeforeEach to populate accounts, constants, and setup
  */
@@ -2158,12 +2193,16 @@ export const MinterDAExpSettlement_Common = async () => {
   describe("getPriceInfo", async function () {
     it("returns sellout price after project sells out", async function () {
       await selloutMidAuction.call(this, this.projectZero);
-      // go forward in time to end of auction
-      await ethers.provider.send("evm_mine", [
-        this.startTime +
-          this.auctionStartTimeOffset +
-          10 * this.defaultHalfLife,
-      ]);
+      // price should still be latestTokenPrice price, > auction base price
+      const priceInfo = await this.minter.getPriceInfo(this.projectZero);
+      const projectConfig = await this.minter.projectConfig(this.projectZero);
+      const latestPurchasePrice = projectConfig.latestPurchasePrice;
+      expect(priceInfo.tokenPriceInWei).to.equal(latestPurchasePrice);
+      expect(priceInfo.tokenPriceInWei).to.be.gt(this.basePrice);
+    });
+
+    it("returns sellout price after project sells out due to local max invocation limit", async function () {
+      await selloutMidAuctionLocalMaxInvocations.call(this, this.projectZero);
       // price should still be latestTokenPrice price, > auction base price
       const priceInfo = await this.minter.getPriceInfo(this.projectZero);
       const projectConfig = await this.minter.projectConfig(this.projectZero);
