@@ -471,10 +471,6 @@ contract MinterDAExpSettlementV2 is
             "Price decay half life must fall between min and max allowable values"
         );
         // EFFECTS
-        // refresh cache of max invocations if using core value (convenience only)
-        if (!_projectConfig.useLocalMaxInvocations) {
-            _syncProjectMaxInvocationsCoreCached(_projectId);
-        }
         _projectConfig.timestampStart = _auctionTimestampStart.toUint64();
         _projectConfig.priceDecayHalfLifeSeconds = _priceDecayHalfLifeSeconds
             .toUint64();
@@ -488,6 +484,12 @@ contract MinterDAExpSettlementV2 is
             _startPrice,
             _basePrice
         );
+
+        // refresh max invocations, updating any local values that are
+        // illogical with respect to the current core contract state.
+        // @dev this refresh is for convenience only, to help remove a call by
+        // the artist.
+        _refreshMaxInvocations(_projectId);
     }
 
     /**
@@ -561,7 +563,7 @@ contract MinterDAExpSettlementV2 is
         );
         // refresh max invocations, updating any local values that are
         // illogical with respect to the current core contract state.
-        refreshMaxInvocations(_projectId);
+        _refreshMaxInvocations(_projectId);
 
         // require max invocations has been reached
         bool hasMaxBeenInvoked = _projectConfig.useLocalMaxInvocations
@@ -617,7 +619,7 @@ contract MinterDAExpSettlementV2 is
         );
         // refresh max invocations, updating any local values that are
         // illogical with respect to the current core contract state.
-        refreshMaxInvocations(_projectId);
+        _refreshMaxInvocations(_projectId);
 
         // get the current net price of the auction - reverts if no auction
         // is configured.
@@ -1245,7 +1247,7 @@ contract MinterDAExpSettlementV2 is
      * If using core max invocations, updates the project config's cached state
      * values to match the core contract's state.
      */
-    function refreshMaxInvocations(uint256 _projectId) internal {
+    function _refreshMaxInvocations(uint256 _projectId) internal {
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         bool useLocalMaxInvocations = _projectConfig.useLocalMaxInvocations;
         if (useLocalMaxInvocations) {
