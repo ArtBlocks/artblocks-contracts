@@ -44,7 +44,8 @@ export const Minter_Common = async () => {
         minterType == "MinterMerkleV5" ||
         minterType == "MinterHolderV2" ||
         minterType == "MinterHolderV3" ||
-        minterType == "MinterHolderV4"
+        minterType == "MinterHolderV4" ||
+        minterType == "MinterPolyptychV0"
       ) {
         minterConstructorArgs.push(this.delegationRegistry.address);
       }
