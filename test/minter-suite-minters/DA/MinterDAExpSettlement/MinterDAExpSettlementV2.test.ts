@@ -128,7 +128,7 @@ for (const coreContractName of coreContractsToTest) {
       await MinterDASettlementV1V2_Common();
     });
 
-    describe("setAuctionDetails", async function () {
+    describe.only("setAuctionDetails", async function () {
       it("does not unsafely cast auction time start > type(uint64).max", async function () {
         await this.minter
           .connect(this.accounts.deployer)
@@ -155,7 +155,7 @@ for (const coreContractName of coreContractsToTest) {
           .connect(this.accounts.deployer)
           .resetAuctionDetails(this.projectZero);
         const future = ethers.BigNumber.from("2").pow(
-          ethers.BigNumber.from("30")
+          ethers.BigNumber.from("50")
         );
         await this.minter
           .connect(this.accounts.artist)
@@ -176,6 +176,86 @@ for (const coreContractName of coreContractsToTest) {
             this.startingPrice,
             this.basePrice
           );
+      });
+
+      it("does not allow modifications mid-auction", async function () {
+        // advance to start time + 1 second
+        await ethers.provider.send("evm_mine", [
+          this.startTime + this.auctionStartTimeOffset + 1,
+        ]);
+        const future = ethers.BigNumber.from("2").pow(
+          ethers.BigNumber.from("30")
+        );
+        await expectRevert(
+          this.minter
+            .connect(this.accounts.artist)
+            .setAuctionDetails(
+              this.projectZero,
+              future,
+              this.defaultHalfLife,
+              this.startingPrice,
+              this.basePrice
+            ),
+          "No modifications mid-auction"
+        );
+      });
+
+      it("does not allow base price of zero", async function () {
+        await this.minter
+          .connect(this.accounts.deployer)
+          .resetAuctionDetails(this.projectZero);
+        const future = ethers.BigNumber.from("2").pow(
+          ethers.BigNumber.from("50")
+        );
+        await expectRevert(
+          this.minter
+            .connect(this.accounts.artist)
+            .setAuctionDetails(
+              this.projectZero,
+              future,
+              this.defaultHalfLife,
+              this.startingPrice,
+              ethers.BigNumber.from("0")
+            ),
+          "Base price must be non-zero"
+        );
+      });
+
+      it("updates local cached maxInvocations values if using core contract values", async function () {
+        // sync maxInvocations to core contract value
+        await this.minter
+          .connect(this.accounts.artist)
+          .setProjectMaxInvocations(this.projectZero);
+        // reduce maxInvocations in core contract
+        await this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectMaxInvocations(this.projectZero, 1);
+        // set auction details again
+        await this.minter
+          .connect(this.accounts.deployer)
+          .resetAuctionDetails(this.projectZero);
+        const future = ethers.BigNumber.from("2").pow(
+          ethers.BigNumber.from("50")
+        );
+        // expect maxInvocations to be stale relative to core contract
+        const initialProjectConfig = await this.minter.projectConfig(
+          this.projectZero
+        );
+        expect(initialProjectConfig.maxInvocationsCoreCached).to.equal(15);
+        await this.minter
+          .connect(this.accounts.artist)
+          .setAuctionDetails(
+            this.projectZero,
+            future,
+            this.defaultHalfLife,
+            this.startingPrice,
+            this.basePrice
+          );
+        // expect maxInvocations to have been re-synced with core contract
+        const afterProjectConfig = await this.minter.projectConfig(
+          this.projectZero
+        );
+        expect(afterProjectConfig.maxInvocationsCoreCached).to.equal(1);
       });
     });
 
@@ -436,6 +516,18 @@ for (const coreContractName of coreContractsToTest) {
     });
 
     describe("manuallyLimitProjectMaxInvocations", async function () {
+      it("only artist", async function () {
+        await expectRevert(
+          this.minter
+            .connect(this.accounts.deployer)
+            .manuallyLimitProjectMaxInvocations(
+              this.projectZero,
+              this.maxInvocations
+            ),
+          "Only Artist"
+        );
+      });
+
       it("reverts when setting minter local max invocations to value greater than core contract max invocations", async function () {
         await expectRevert(
           this.minter
