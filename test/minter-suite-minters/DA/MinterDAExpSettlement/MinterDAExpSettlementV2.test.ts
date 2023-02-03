@@ -359,7 +359,7 @@ for (const coreContractName of coreContractsToTest) {
       });
     });
 
-    describe.only("Invocations reduction on core mid-auction", async function () {
+    describe("Invocations reduction on core mid-auction", async function () {
       it("does not prevent revenue withdrawals if artist reduces max invocations to current invocations on core contract mid-auction", async function () {
         // models the following situation:
         // - auction is not sold out
@@ -950,6 +950,70 @@ for (const coreContractName of coreContractsToTest) {
         // which is the sellout price (latestPurchasePrice)
         const priceInfo = await this.minter.getPriceInfo(this.projectZero);
         expect(priceInfo.tokenPriceInWei).to.be.equal(selloutPrice);
+      });
+    });
+
+    describe("adminEmergencyReduceSelloutPrice", async function () {
+      it("requires auction to be complete", async function () {
+        await expectRevert(
+          this.minter
+            .connect(this.accounts.deployer)
+            .adminEmergencyReduceSelloutPrice(this.projectZero, 1),
+          "Auction must be complete"
+        );
+      });
+
+      it("requires new sellout price of greater than zero", async function () {
+        await selloutMidAuction.call(this, this.projectZero);
+        // reset auction details to get base price to zero
+        await this.minter
+          .connect(this.accounts.deployer)
+          .resetAuctionDetails(this.projectZero);
+        // do not allow sellout price to be zero
+        await expectRevert(
+          this.minter
+            .connect(this.accounts.deployer)
+            .adminEmergencyReduceSelloutPrice(this.projectZero, 0),
+          "Only sellout prices > 0"
+        );
+      });
+    });
+
+    describe("resetAuctionDetails", async function () {
+      it("doesn't lock latest purchase price to zero in extreme edge case", async function () {
+        // use local max invocations of zero to get "sellout" to true
+        await this.minter
+          .connect(this.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(this.projectZero, 0);
+        // reset auction details to get base price to zero
+        await this.minter
+          .connect(this.accounts.deployer)
+          .resetAuctionDetails(this.projectZero);
+        // now base price == 0, and sellout == true, expect revert when withdrawing revenues
+        await expectRevert(
+          this.minter
+            .connect(this.accounts.deployer)
+            .withdrawArtistAndAdminRevenues(this.projectZero),
+          "Only latestPurchasePrice > 0"
+        );
+      });
+
+      it("doesn't lock latest purchase price to zero in edge case after resetting auction details after partial auction completion", async function () {
+        await purchaseTokensMidAuction.call(this, this.projectZero);
+        // use local max invocations to get "sellout" to true
+        await this.minter
+          .connect(this.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(this.projectZero, 2);
+        // reset auction details to get base price to zero
+        await this.minter
+          .connect(this.accounts.deployer)
+          .resetAuctionDetails(this.projectZero);
+        // now base price == 0, and sellout == true, and if we withdraw funds, we get rugged?
+        await this.minter
+          .connect(this.accounts.deployer)
+          .withdrawArtistAndAdminRevenues(this.projectZero);
+        const projectConfig = await this.minter.projectConfig(this.projectZero);
+        expect(projectConfig.latestPurchasePrice).to.be.gt(0);
       });
     });
 

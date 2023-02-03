@@ -559,7 +559,8 @@ contract MinterDAExpSettlementV2 is
             !_projectConfig.auctionRevenuesCollected,
             "Only before revenues collected"
         );
-        // refresh max invocations with respect to current core contract state
+        // refresh max invocations, updating any local values that are
+        // illogical with respect to the current core contract state.
         refreshMaxInvocations(_projectId);
 
         // require max invocations has been reached
@@ -614,7 +615,8 @@ contract MinterDAExpSettlementV2 is
             !_projectConfig.auctionRevenuesCollected,
             "Revenues already collected"
         );
-        // refresh max invocations with respect to current core contract state
+        // refresh max invocations, updating any local values that are
+        // illogical with respect to the current core contract state.
         refreshMaxInvocations(_projectId);
 
         // get the current net price of the auction - reverts if no auction
@@ -640,9 +642,11 @@ contract MinterDAExpSettlementV2 is
                 "Active auction not yet sold out"
             );
         } else {
+            uint256 basePrice = _projectConfig.basePrice;
+            require(basePrice > 0, "Only latestPurchasePrice > 0");
             // update the latest purchase price to the base price, to ensure
             // the base price is used for all future settlement calculations
-            _projectConfig.latestPurchasePrice = _projectConfig.basePrice;
+            _projectConfig.latestPurchasePrice = basePrice;
         }
         // EFFECTS
         _projectConfig.auctionRevenuesCollected = true;
@@ -725,11 +729,13 @@ contract MinterDAExpSettlementV2 is
             );
         }
 
-        // _getPriceUnsafe reverts if auction is unconfigured or has not started
+        // _getPriceUnsafe reverts if auction has not yet started or auction is
+        // unconfigured, and auction has not sold out or revenues have not been
+        // withdrawn.
         // @dev _getPriceUnsafe is guaranteed to be accurate unless the core
-        // contract is limiting invocations and
-        // `_projectConfig.maxHasBeenInvokedCoreCached` is returning a false
-        // negative. That is acceptable, because that case will revert this
+        // contract is limiting invocations and we have stale local state
+        // returning a false negative that max invocations have been reached.
+        // This is acceptable, because that case will revert this
         // call later on in this function, when the core contract's max
         // invocation check fails.
         uint256 currentPriceInWei = _getPriceUnsafe(_projectId);
