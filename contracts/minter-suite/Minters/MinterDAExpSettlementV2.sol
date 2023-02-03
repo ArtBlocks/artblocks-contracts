@@ -279,16 +279,18 @@ contract MinterDAExpSettlementV2 is
     ) external onlyArtist(_projectId) {
         // CHECKS
         // ensure that the manually set maxInvocations is not greater than what is set on the core contract
-        uint256 maxInvocationsCore;
-        uint256 invocationsCore;
-        (invocationsCore, maxInvocationsCore, , , , ) = genArtCoreContract_Base
-            .projectStateData(_projectId);
+        uint256 coreInvocations;
+        uint256 coreMaxInvocations;
+        (
+            coreInvocations,
+            coreMaxInvocations
+        ) = _getProjectCoreInvocationsAndMaxInvocations(_projectId);
         require(
-            _maxInvocations <= maxInvocationsCore,
+            _maxInvocations <= coreMaxInvocations,
             "Cannot increase project max invocations above core contract set project max invocations"
         );
         require(
-            _maxInvocations >= invocationsCore,
+            _maxInvocations >= coreInvocations,
             "Cannot set project max invocations to less than current invocations"
         );
         // EFFECTS
@@ -298,7 +300,7 @@ contract MinterDAExpSettlementV2 is
         // We need to ensure maxHasBeenInvoked is correctly set after manually setting the
         // local maxInvocations value.
         _projectConfig.maxHasBeenInvokedLocal =
-            invocationsCore == _maxInvocations;
+            coreInvocations == _maxInvocations;
         // configure the project to use the local minter's maxInvocations value
         _projectConfig.useLocalMaxInvocations = true;
 
