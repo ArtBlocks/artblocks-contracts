@@ -26,14 +26,15 @@ import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../util/constants";
 import {
   MinterDAExpSettlement_Common,
   purchaseTokensMidAuction,
+  selloutMidAuction,
 } from "./MinterDAExpSettlement.common";
 import { MinterDASettlementV1V2_Common } from "../MinterDASettlementV1V2.common";
 
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
   "GenArt721CoreV3", // flagship V3 core
-  // "GenArt721CoreV3_Explorations", // V3 core explorations contract
-  // "GenArt721CoreV3_Engine", // V3 core engine contract
+  "GenArt721CoreV3_Explorations", // V3 core explorations contract
+  "GenArt721CoreV3_Engine", // V3 core engine contract
 ];
 
 const TARGET_MINTER_NAME = "MinterDAExpSettlementV2";
@@ -434,7 +435,7 @@ for (const coreContractName of coreContractsToTest) {
       });
     });
 
-    describe.only("manuallyLimitProjectMaxInvocations", async function () {
+    describe("manuallyLimitProjectMaxInvocations", async function () {
       it("reverts when setting minter local max invocations to value greater than core contract max invocations", async function () {
         await expectRevert(
           this.minter
@@ -677,6 +678,150 @@ for (const coreContractName of coreContractsToTest) {
         );
         const latestPurchasePrice2 = await projectConfig2.latestPurchasePrice;
         expect(latestPurchasePrice2).to.be.lt(latestPurchasePrice);
+      });
+
+      it("allows withdrawals even when sellout not known locally, and not using local max invocations", async function () {
+        // reduce max invocations to 2
+        await this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectMaxInvocations(this.projectZero, 2);
+        // make minter aware of core max invocations
+        await this.minter
+          .connect(this.accounts.artist)
+          .setProjectMaxInvocations(this.projectZero);
+        // advance to auction start time
+        await ethers.provider.send("evm_mine", [
+          this.startTime + this.auctionStartTimeOffset,
+        ]);
+        // purchase one piece, not sellout
+        await this.minter
+          .connect(this.accounts.user)
+          .purchase_H4M(this.projectZero, {
+            value: this.startingPrice,
+          });
+        // reduce max invocations to 1 on core contract
+        await this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectMaxInvocations(this.projectZero, 1);
+        // minter state is stale due to caching
+        let projectConfig = await this.minter.projectConfig(this.projectZero);
+        expect(projectConfig.maxHasBeenInvokedCoreCached).to.be.false; // incorrect state due to caching
+        expect(projectConfig.maxInvocationsCoreCached).to.be.equal(2); // incorrect state due to caching
+        expect(projectConfig.useLocalMaxInvocations).to.be.false;
+        // minter should allow withdrawls because it syncs with core contract maxInvocations
+        // during withdrawArtistAndAdminRevenues
+        await this.minter
+          .connect(this.accounts.artist)
+          .withdrawArtistAndAdminRevenues(this.projectZero);
+        // minter state should be updated to reflect sellout
+        projectConfig = await this.minter.projectConfig(this.projectZero);
+        expect(projectConfig.maxHasBeenInvokedCoreCached).to.be.true; // correct state after sync
+        expect(projectConfig.maxInvocationsCoreCached).to.be.equal(1); // correct state after sync
+        expect(projectConfig.useLocalMaxInvocations).to.be.false;
+      });
+
+      it("allows withdrawals even when sellout not known locally, and using local max invocations", async function () {
+        // manually limit max invocations to 2 on the minter
+        await this.minter
+          .connect(this.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(this.projectZero, 2);
+        // advance to auction start time
+        await ethers.provider.send("evm_mine", [
+          this.startTime + this.auctionStartTimeOffset,
+        ]);
+        // purchase one piece, not sellout
+        await this.minter
+          .connect(this.accounts.user)
+          .purchase_H4M(this.projectZero, {
+            value: this.startingPrice,
+          });
+        // reduce max invocations to 1 on core contract
+        await this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectMaxInvocations(this.projectZero, 1);
+        // minter state is stale due to caching
+        let projectConfig = await this.minter.projectConfig(this.projectZero);
+        expect(projectConfig.maxHasBeenInvokedLocal).to.be.false; // incorrect state due to caching
+        expect(projectConfig.maxInvocationsLocal).to.be.equal(2); // incorrect state due to caching
+        expect(projectConfig.useLocalMaxInvocations).to.be.true;
+        // minter should allow withdrawls because it syncs with core contract maxInvocations
+        // during withdrawArtistAndAdminRevenues (i.e. updates local max invocations from being in illogical state)
+        await this.minter
+          .connect(this.accounts.artist)
+          .withdrawArtistAndAdminRevenues(this.projectZero);
+        // minter state should be updated to reflect sellout
+        projectConfig = await this.minter.projectConfig(this.projectZero);
+        expect(projectConfig.maxHasBeenInvokedLocal).to.be.true; // correct state after sync
+        expect(projectConfig.maxInvocationsLocal).to.be.equal(1); // correct state after sync
+        expect(projectConfig.useLocalMaxInvocations).to.be.true;
+      });
+    });
+
+    describe("getPriceInfo", async function () {
+      it("returns price of zero for unconfigured auction", async function () {
+        // projectOne is not configured
+        const priceInfo = await this.minter.getPriceInfo(this.projectOne);
+        expect(priceInfo.isConfigured).to.be.false;
+        expect(priceInfo.tokenPriceInWei).to.be.equal(0);
+      });
+
+      it("returns correct price before configured auction", async function () {
+        const priceInfo = await this.minter.getPriceInfo(this.projectZero);
+        expect(priceInfo.isConfigured).to.be.true;
+        expect(priceInfo.tokenPriceInWei).to.be.equal(this.startingPrice);
+      });
+
+      it("returns correct price after sellout", async function () {
+        await selloutMidAuction.call(this, this.projectZero);
+        const projectConfig = await this.minter.projectConfig(this.projectZero);
+        const latestPurchasePrice = await projectConfig.latestPurchasePrice;
+        // advance in time to where price would have decreased if not sellout
+        await ethers.provider.send("evm_mine", [
+          this.startTime + this.auctionStartTimeOffset * 10,
+        ]);
+        // price should be the same as the sellout price
+        const priceInfo = await this.minter
+          .connect(this.accounts.artist)
+          .getPriceInfo(this.projectZero);
+        expect(priceInfo.tokenPriceInWei).to.be.equal(latestPurchasePrice);
+        expect(priceInfo.tokenPriceInWei).to.be.gt(this.basePrice);
+      });
+
+      it("returns correct price after sellout not known locally", async function () {
+        // reduce max invocations to 2
+        await this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectMaxInvocations(this.projectZero, 2);
+        // make minter aware of core max invocations
+        await this.minter
+          .connect(this.accounts.artist)
+          .setProjectMaxInvocations(this.projectZero);
+        // advance to auction start time
+        await ethers.provider.send("evm_mine", [
+          this.startTime + this.auctionStartTimeOffset,
+        ]);
+        // purchase one piece, not sellout
+        await this.minter
+          .connect(this.accounts.user)
+          .purchase_H4M(this.projectZero, {
+            value: this.startingPrice,
+          });
+        const projectConfig = await this.minter.projectConfig(this.projectZero);
+        const latestPurchasePrice = await projectConfig.latestPurchasePrice;
+        // reduce max invocations to 1 on core contract
+        await this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectMaxInvocations(this.projectZero, 1);
+        // advance in time to where price would have decreased if not sellout
+        await ethers.provider.send("evm_mine", [
+          this.startTime + this.auctionStartTimeOffset * 10,
+        ]);
+        // price should be the same as the sellout price
+        const priceInfo = await this.minter
+          .connect(this.accounts.artist)
+          .getPriceInfo(this.projectZero);
+        expect(priceInfo.tokenPriceInWei).to.be.equal(latestPurchasePrice);
+        expect(priceInfo.tokenPriceInWei).to.be.gt(this.basePrice);
       });
     });
 

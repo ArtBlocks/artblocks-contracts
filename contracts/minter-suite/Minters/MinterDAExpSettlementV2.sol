@@ -613,9 +613,16 @@ contract MinterDAExpSettlementV2 is
             !_projectConfig.auctionRevenuesCollected,
             "Revenues already collected"
         );
-        // refresh cache of max invocations if using core values
+        // refresh cache of max invocations
         bool useLocalMaxInvocations = _projectConfig.useLocalMaxInvocations;
-        if (!useLocalMaxInvocations) {
+        if (useLocalMaxInvocations) {
+            // if using local max invocations, validate the local state
+            // (i.e. ensure local max invocations not greater than core max
+            // invocations)
+            _validateLocalProjectMaxInvocations(_projectId);
+        } else {
+            // re-sync the cached core max invocations to ensure it is up to
+            // date with the core contract max invocations
             _syncProjectMaxInvocationsCoreCached(_projectId);
         }
 
@@ -1216,6 +1223,45 @@ contract MinterDAExpSettlementV2 is
             coreMaxInvocations == coreInvocations;
 
         emit ProjectMaxInvocationsLimitUpdated(_projectId, coreMaxInvocations);
+    }
+
+    /**
+     * @notice Checks and updates local project max invocations to determine if
+     * if they are in an illogical state relative to the core contract's max
+     * invocations.
+     * This only updates the project's local max invocations if the value is
+     * greater than the core contract's max invocations, which is an illogical
+     * state (since V3 core contracts cannot increase max invocations). In that
+     * case, the project's local max invocations are set to the core contract's
+     * max invocations.
+     * Also updates the project config's `maxHasBeenInvokedLocal` state if
+     * the project's local max invocations are updated.
+     * This does not affect the project's `useLocalMaxInvocations` state.
+     * @param _projectId Project ID to set the maximum invocations for.
+     */
+    function _validateLocalProjectMaxInvocations(uint256 _projectId) internal {
+        uint256 coreMaxInvocations;
+        uint256 coreInvocations;
+        (
+            coreInvocations,
+            coreMaxInvocations
+        ) = _getProjectCoreInvocationsAndMaxInvocations(_projectId);
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        // check if local max invocations is illogical relative to core
+        // contract's max invocations
+        if (_projectConfig.maxInvocationsLocal > coreMaxInvocations) {
+            // set local max invocations to core contract's max invocations
+            _projectConfig.maxInvocationsLocal = uint24(coreMaxInvocations);
+            // update the project's `maxHasBeenInvokedLocal` state
+            // @dev core values are equivalent to local values, use for gas
+            // efficiency
+            _projectConfig.maxHasBeenInvokedLocal = (coreMaxInvocations ==
+                coreInvocations);
+            emit ProjectMaxInvocationsLimitUpdated(
+                _projectId,
+                coreMaxInvocations
+            );
+        }
     }
 
     /**
