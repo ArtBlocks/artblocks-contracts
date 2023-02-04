@@ -460,9 +460,9 @@ for (const coreContractName of coreContractsToTest) {
           .connect(this.accounts.deployer)
           .updateProviderSalesAddresses(
             this.deadReceiver.address,
-            this.deadReceiver.address,
-            this.deadReceiver.address,
-            this.deadReceiver.address
+            this.accounts.additional2.address,
+            this.accounts.additional2.address,
+            this.accounts.additional2.address
           );
         // expect revert when trying to purchase
         await expectRevert(
@@ -476,7 +476,7 @@ for (const coreContractName of coreContractsToTest) {
                 value: this.pricePerTokenInWei,
               }
             ),
-          "Render provider payment failed"
+          "Render Provider payment failed"
         );
       });
 
@@ -486,9 +486,9 @@ for (const coreContractName of coreContractsToTest) {
           .connect(this.accounts.deployer)
           .updateProviderSalesAddresses(
             this.accounts.additional2.address,
+            this.accounts.additional2.address,
             this.deadReceiver.address,
-            this.deadReceiver.address,
-            this.deadReceiver.address
+            this.accounts.additional2.address
           );
         // expect revert when trying to purchase
         await expectRevert(
@@ -502,7 +502,7 @@ for (const coreContractName of coreContractsToTest) {
                 value: this.pricePerTokenInWei,
               }
             ),
-          "Platform provider payment failed"
+          "Platform Provider payment failed"
         );
       });
 
