@@ -979,7 +979,7 @@ for (const coreContractName of coreContractsToTest) {
       });
     });
 
-    describe.only("resetAuctionDetails", async function () {
+    describe("resetAuctionDetails", async function () {
       it("doesn't lock latest purchase price to zero in extreme edge case", async function () {
         // use local max invocations of zero to get "sellout" to true
         await this.minter
