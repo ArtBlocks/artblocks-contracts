@@ -6,9 +6,9 @@ import "../../interfaces/0.8.x/IMinterFilterV0.sol";
 import "../../interfaces/0.8.x/IFilteredMinterHolderV2.sol";
 import "../../interfaces/0.8.x/IRandomizerPolyptychV0.sol";
 import "../../interfaces/0.8.x/IDelegationRegistry.sol";
+import "./MinterBase_v0_1_1.sol";
 
 import "@openzeppelin-4.5/contracts/token/ERC721/IERC721.sol";
-import "@openzeppelin-4.5/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin-4.5/contracts/utils/structs/EnumerableSet.sol";
 
@@ -85,7 +85,11 @@ interface IGenArt721CoreContractV3WithRandomizer is
  * wallet-level delegation. Contract-level delegations must be configured for the core
  * token contract as returned by the owned token's core contract address.
  */
-contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
+contract MinterPolyptychV0 is
+    ReentrancyGuard,
+    MinterBase,
+    IFilteredMinterHolderV2
+{
     // add Enumerable Set methods
     using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -176,7 +180,7 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
         address _genArt721Address,
         address _minterFilter,
         address _delegationRegistryAddress
-    ) ReentrancyGuard() {
+    ) ReentrancyGuard() MinterBase(_genArt721Address) {
         genArt721CoreAddress = _genArt721Address;
         genArtCoreContract = IGenArt721CoreContractV3WithRandomizer(
             _genArt721Address
@@ -192,6 +196,8 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
             minterFilter.genArt721CoreAddress() == _genArt721Address,
             "Illegal contract pairing"
         );
+        // currently, this minter only supports Engine V3 core contracts
+        require(MinterBase.isEngine, "Only supports V3 Engine core");
     }
 
     /**
@@ -794,30 +800,35 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
         }
 
         // split funds
-        uint256 _pricePerTokenInWei = _projectConfig.pricePerTokenInWei;
-        address _currencyAddress = _projectConfig.currencyAddress;
-        if (_currencyAddress != address(0)) {
+        uint256 pricePerTokenInWei = _projectConfig.pricePerTokenInWei;
+        address currencyAddress = _projectConfig.currencyAddress;
+        if (currencyAddress != address(0)) {
             require(
                 msg.value == 0,
                 "this project accepts a different currency and cannot accept ETH"
             );
             require(
-                IERC20(_currencyAddress).allowance(msg.sender, address(this)) >=
-                    _pricePerTokenInWei,
+                IERC20(currencyAddress).allowance(msg.sender, address(this)) >=
+                    pricePerTokenInWei,
                 "Insufficient Funds Approved for TX"
             );
             require(
-                IERC20(_currencyAddress).balanceOf(msg.sender) >=
-                    _pricePerTokenInWei,
+                IERC20(currencyAddress).balanceOf(msg.sender) >=
+                    pricePerTokenInWei,
                 "Insufficient balance."
             );
-            _splitFundsERC20(_projectId, _pricePerTokenInWei, _currencyAddress);
+            splitFundsERC20(
+                _projectId,
+                pricePerTokenInWei,
+                currencyAddress,
+                genArt721CoreAddress
+            );
         } else {
             require(
-                msg.value >= _pricePerTokenInWei,
+                msg.value >= pricePerTokenInWei,
                 "Must send minimum value to mint!"
             );
-            _splitFundsETH(_projectId, _pricePerTokenInWei);
+            splitFundsETH(_projectId, pricePerTokenInWei, genArt721CoreAddress);
         }
 
         return tokenId;
@@ -935,132 +946,6 @@ contract MinterPolyptychV0 is ReentrancyGuard, IFilteredMinterHolderV2 {
             allowedProjectHolders[_projectId][_ownedNFTAddress][
                 ownedNFTProjectId
             ];
-    }
-
-    /**
-     * @dev splits ETH funds between sender (if refund), foundation,
-     * artist, and artist's additional payee for a token purchased on
-     * project `_projectId`.
-     * @dev possible DoS during splits is acknowledged, and mitigated by
-     * business practices, including end-to-end testing on mainnet, and
-     * admin-accepted artist payment addresses.
-     */
-    function _splitFundsETH(
-        uint256 _projectId,
-        uint256 _pricePerTokenInWei
-    ) internal {
-        if (msg.value > 0) {
-            bool success_;
-            // send refund to sender
-            uint256 refund = msg.value - _pricePerTokenInWei;
-            if (refund > 0) {
-                (success_, ) = msg.sender.call{value: refund}("");
-                require(success_, "Refund failed");
-            }
-            // split remaining funds between foundation, artist, and artist's
-            // additional payee
-            (
-                uint256 renderProviderRevenue_,
-                address payable renderProviderAddress_,
-                uint256 platformProviderRevenue_,
-                address payable platformProviderAddress_,
-                uint256 artistRevenue_,
-                address payable artistAddress_,
-                uint256 additionalPayeePrimaryRevenue_,
-                address payable additionalPayeePrimaryAddress_
-            ) = genArtCoreContract.getPrimaryRevenueSplits(
-                    _projectId,
-                    _pricePerTokenInWei
-                );
-            // Render provider (e.g. Art Blocks) payment
-            if (renderProviderRevenue_ > 0) {
-                (success_, ) = renderProviderAddress_.call{
-                    value: renderProviderRevenue_
-                }("");
-                require(success_, "Render provider payment failed");
-            }
-            // Platform provider (e.g. engine partner) payment
-            if (platformProviderRevenue_ > 0) {
-                (success_, ) = platformProviderAddress_.call{
-                    value: platformProviderRevenue_
-                }("");
-                require(success_, "Platform provider payment failed");
-            }
-            // artist payment
-            if (artistRevenue_ > 0) {
-                (success_, ) = artistAddress_.call{value: artistRevenue_}("");
-                require(success_, "Artist payment failed");
-            }
-            // additional payee payment
-            if (additionalPayeePrimaryRevenue_ > 0) {
-                (success_, ) = additionalPayeePrimaryAddress_.call{
-                    value: additionalPayeePrimaryRevenue_
-                }("");
-                require(success_, "Additional Payee payment failed");
-            }
-        }
-    }
-
-    /**
-     * @dev splits ERC-20 funds between foundation, artist, and artist's
-     * additional payee, for a token purchased on project `_projectId`.
-     * @dev possible DoS during splits is acknowledged, and mitigated by
-     * business practices, including end-to-end testing on mainnet, and
-     * admin-accepted artist payment addresses.
-     */
-    function _splitFundsERC20(
-        uint256 _projectId,
-        uint256 _pricePerTokenInWei,
-        address _currencyAddress
-    ) internal {
-        // split remaining funds between foundation, artist, and artist's
-        // additional payee
-        (
-            uint256 renderProviderRevenue_,
-            address payable renderProviderAddress_,
-            uint256 platformProviderRevenue_,
-            address payable platformProviderAddress_,
-            uint256 artistRevenue_,
-            address payable artistAddress_,
-            uint256 additionalPayeePrimaryRevenue_,
-            address payable additionalPayeePrimaryAddress_
-        ) = genArtCoreContract.getPrimaryRevenueSplits(
-                _projectId,
-                _pricePerTokenInWei
-            );
-        IERC20 _projectCurrency = IERC20(_currencyAddress);
-        // Render provider (e.g. Art Blocks) payment
-        if (renderProviderRevenue_ > 0) {
-            _projectCurrency.transferFrom(
-                msg.sender,
-                renderProviderAddress_,
-                renderProviderRevenue_
-            );
-        }
-        // Platform provider (e.g. engine partner) payment
-        if (platformProviderRevenue_ > 0) {
-            _projectCurrency.transferFrom(
-                msg.sender,
-                platformProviderAddress_,
-                platformProviderRevenue_
-            );
-        }
-        // artist payment
-        if (artistRevenue_ > 0) {
-            _projectCurrency.transferFrom(
-                msg.sender,
-                artistAddress_,
-                artistRevenue_
-            );
-        }
-        // additional payee payment
-        if (additionalPayeePrimaryRevenue_ > 0) {
-            _projectCurrency.transferFrom(
-                msg.sender,
-                additionalPayeePrimaryAddress_,
-                additionalPayeePrimaryRevenue_
-            );
-        }
     }
 
     function _requireCurrentPanelIsMintedOnce(
