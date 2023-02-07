@@ -54,13 +54,13 @@ interface IGenArt721CoreContractV3_Engine_Flex is
     function updateProjectExternalAssetDependency(
         uint256 _projectId,
         uint256 _index,
-        string calldata _cid,
+        string memory _cid,
         ExternalAssetDependencyType _dependencyType
     ) external;
 
     function addProjectExternalAssetDependency(
         uint256 _projectId,
-        string calldata _cid,
+        string memory _cid,
         ExternalAssetDependencyType _dependencyType
     ) external;
 

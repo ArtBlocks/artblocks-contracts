@@ -518,9 +518,10 @@ contract GenArt721CoreV3_Engine_Flex is
         projects[_projectId]
             .externalAssetDependencies[_index]
             .dependencyType = _dependencyType;
+        // if the incoming dependency type is onchain, we need to write the data to bytecode
         if (_dependencyType == ExternalAssetDependencyType.ONCHAIN) {
+            // purge bytecode if we are replacing an existing onchain asset
             if (oldDependencyType == ExternalAssetDependencyType.ONCHAIN) {
-                // purge bytecode if we are replacing an existing onchain asset
                 projects[_projectId]
                     .externalAssetDependencyBytecodeAddresses[_index]
                     .purgeBytecode();
@@ -533,7 +534,7 @@ contract GenArt721CoreV3_Engine_Flex is
             projects[_projectId].externalAssetDependencyBytecodeAddresses[
                     _index
                 ] = _cidOrData.writeToBytecode();
-            // we don't want to emit data here, so we emit the cid as an empty string
+            // we don't want to emit data, so we emit the cid as an empty string
             _cidOrData = "";
         } else {
             projects[_projectId]
@@ -634,6 +635,7 @@ contract GenArt721CoreV3_Engine_Flex is
         )
     {
         uint24 assetCount = projects[_projectId].externalAssetDependencyCount;
+        // if the incoming dependency type is onchain, we need to write the data to bytecode
         if (_dependencyType == ExternalAssetDependencyType.ONCHAIN) {
             projects[_projectId].externalAssetDependencyBytecodeAddresses[
                     assetCount
@@ -1372,7 +1374,7 @@ contract GenArt721CoreV3_Engine_Flex is
      * @notice Adds a script to project `_projectId`.
      * @param _projectId Project to be updated.
      * @param _script Script to be added. Required to be a non-empty string,
-     *                but no further validation is performed.
+     * but no further validation is performed.
      */
     function addProjectScript(uint256 _projectId, string memory _script)
         external
