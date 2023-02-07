@@ -5,6 +5,12 @@ pragma solidity ^0.8.0;
 
 interface IMinterFilterV0 {
     /**
+     * @notice Emitted when contract is deployed to notify indexing services
+     * of the new contract deployment.
+     */
+    event Deployed();
+
+    /**
      * @notice Approved minter `_minterAddress`.
      */
     event MinterApproved(address indexed _minterAddress, string _minterType);

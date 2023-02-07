@@ -106,6 +106,7 @@ contract MinterFilterV1 is IMinterFilterV0 {
     ) onlyNonZeroAddress(_genArt721Address) {
         genArt721CoreAddress = _genArt721Address;
         genArtCoreContract = IGenArt721CoreContractV3(_genArt721Address);
+        emit Deployed();
     }
 
     /**
