@@ -17,6 +17,14 @@ import "./libs/0.8.x/BytecodeStorage.sol";
 import "./libs/0.8.x/Bytes32Strings.sol";
 
 /**
+ * @notice GenArt721CoreV3_Engine_Flex_Error
+ * @notice Error codes for GenArt721CoreV3_Engine_Flex contract.
+ * @param errorCode Error code, as documented below
+ * 0: External Asset Dependency Error
+ */
+error GenArt721CoreV3_Engine_Flex_Error(uint256 errorCode);
+
+/**
  * @title Art Blocks Engine ERC-721 core contract, V3.
  * @author Art Blocks Inc.
  * @notice Privileged Roles and Ownership:
@@ -51,7 +59,7 @@ import "./libs/0.8.x/Bytes32Strings.sol";
  * - Change project script via addProjectScript, updateProjectScript,
  *   and removeProjectLastScript
  * - updateProjectScriptType
- * - updateProjectAspectRati0
+ * - updateProjectAspectRatio
  * ----------------------------------------------------------------------------
  * The following functions are restricted to only the Artist address:
  * - proposeArtistPaymentAddressesAndSplits (Note that this has to be accepted
@@ -106,12 +114,12 @@ contract GenArt721CoreV3_Engine_Flex is
     uint256 constant ONE_HUNDRED = 100;
     uint256 constant ONE_MILLION = 1_000_000;
     uint24 constant ONE_MILLION_UINT24 = 1_000_000;
-    uint256 constant FOUR_WEEKS_IN_SECONDS = 2_419_200;
+    uint256 FOUR_WEEKS_IN_SECONDS = 2_419_200;
     uint8 constant AT_CHARACTER_CODE = uint8(bytes1("@")); // 0x40
 
     // numeric constants
-    uint256 constant MAX_PROVIDER_SECONDARY_SALES_BPS = 10000; // 10_000 BPS = 100%
-    uint256 constant ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE = 95; // 95%
+    uint256 MAX_PROVIDER_SECONDARY_SALES_BPS = 10000; // 10_000 BPS = 100%
+    uint256 ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE = 95; // 95%
 
     // This contract emits generic events that contain fields that indicate
     // which parameter has been updated. This is sufficient for application
@@ -282,32 +290,28 @@ contract GenArt721CoreV3_Engine_Flex is
     string public defaultBaseURI;
 
     modifier onlyUnlockedProjectExternalAssetDependencies(uint256 _projectId) {
-        require(
-            !projects[_projectId].externalAssetDependenciesLocked,
-            "Project external asset dependencies are locked"
-        );
+        require(!projects[_projectId].externalAssetDependenciesLocked);
         _;
     }
 
     modifier onlyNonZeroAddress(address _address) {
-        require(_address != address(0), "Must input non-zero address");
+        require(_address != address(0));
         _;
     }
 
     modifier onlyNonEmptyString(string memory _string) {
-        require(bytes(_string).length != 0, "Must input non-empty string");
+        require(bytes(_string).length != 0);
         _;
     }
 
     modifier onlyValidTokenId(uint256 _tokenId) {
-        require(_exists(_tokenId), "Token ID does not exist");
+        require(_exists(_tokenId));
         _;
     }
 
     modifier onlyValidProjectId(uint256 _projectId) {
         require(
-            (_projectId >= startingProjectId) && (_projectId < _nextProjectId),
-            "Project ID does not exist"
+            (_projectId >= startingProjectId) && (_projectId < _nextProjectId)
         );
         _;
     }
@@ -315,31 +319,24 @@ contract GenArt721CoreV3_Engine_Flex is
     modifier onlyUnlocked(uint256 _projectId) {
         // Note: calling `_projectUnlocked` enforces that the `_projectId`
         //       passed in is valid.`
-        require(_projectUnlocked(_projectId), "Only if unlocked");
+        require(_projectUnlocked(_projectId));
         _;
     }
 
     modifier onlyAdminACL(bytes4 _selector) {
-        require(
-            adminACLAllowed(msg.sender, address(this), _selector),
-            "Only Admin ACL allowed"
-        );
+        require(adminACLAllowed(msg.sender, address(this), _selector));
         _;
     }
 
     modifier onlyArtist(uint256 _projectId) {
-        require(
-            msg.sender == projectIdToFinancials[_projectId].artistAddress,
-            "Only artist"
-        );
+        require(msg.sender == projectIdToFinancials[_projectId].artistAddress);
         _;
     }
 
     modifier onlyArtistOrAdminACL(uint256 _projectId, bytes4 _selector) {
         require(
             msg.sender == projectIdToFinancials[_projectId].artistAddress ||
-                adminACLAllowed(msg.sender, address(this), _selector),
-            "Only artist or Admin ACL allowed"
+                adminACLAllowed(msg.sender, address(this), _selector)
         );
         _;
     }
@@ -358,8 +355,7 @@ contract GenArt721CoreV3_Engine_Flex is
             adminACLAllowed(msg.sender, address(this), _selector) ||
                 (owner() == address(0) &&
                     msg.sender ==
-                    projectIdToFinancials[_projectId].artistAddress),
-            "Only Admin ACL allowed, or artist if owner has renounced"
+                    projectIdToFinancials[_projectId].artistAddress)
         );
         _;
     }
@@ -509,7 +505,7 @@ contract GenArt721CoreV3_Engine_Flex is
         )
     {
         uint24 assetCount = projects[_projectId].externalAssetDependencyCount;
-        require(_index < assetCount, "Asset index out of range");
+        require(_index < assetCount);
         ExternalAssetDependencyType oldDependencyType = projects[_projectId]
             .externalAssetDependencies[_index]
             .dependencyType;
@@ -567,7 +563,7 @@ contract GenArt721CoreV3_Engine_Flex is
         )
     {
         uint24 assetCount = projects[_projectId].externalAssetDependencyCount;
-        require(_index < assetCount, "Asset index out of range");
+        require(_index < assetCount);
 
         uint24 lastElementIndex = assetCount - 1;
 
@@ -674,7 +670,7 @@ contract GenArt721CoreV3_Engine_Flex is
         address _by
     ) external returns (uint256 _tokenId) {
         // CHECKS
-        require(msg.sender == minterContract, "Must mint from minter contract");
+        require(msg.sender == minterContract);
         Project storage project = projects[_projectId];
         // load invocations into memory
         uint24 invocationsBefore = project.invocations;
@@ -686,19 +682,14 @@ contract GenArt721CoreV3_Engine_Flex is
         }
         uint24 maxInvocations = project.maxInvocations;
 
-        require(
-            invocationsBefore < maxInvocations,
-            "Must not exceed max invocations"
-        );
+        require(invocationsBefore < maxInvocations);
         require(
             project.active ||
-                _by == projectIdToFinancials[_projectId].artistAddress,
-            "Project must exist and be active"
+                _by == projectIdToFinancials[_projectId].artistAddress
         );
         require(
             !project.paused ||
-                _by == projectIdToFinancials[_projectId].artistAddress,
-            "Purchases are paused."
+                _by == projectIdToFinancials[_projectId].artistAddress
         );
 
         // EFFECTS
@@ -752,15 +743,9 @@ contract GenArt721CoreV3_Engine_Flex is
         OwnerAndHashSeed storage ownerAndHashSeed = _ownersAndHashSeeds[
             _tokenId
         ];
-        require(
-            msg.sender == address(randomizerContract),
-            "Only randomizer may set"
-        );
-        require(
-            ownerAndHashSeed.hashSeed == bytes12(0),
-            "Token hash already set"
-        );
-        require(_hashSeed != bytes12(0), "No zero hash seed");
+        require(msg.sender == address(randomizerContract));
+        require(ownerAndHashSeed.hashSeed == bytes12(0));
+        require(_hashSeed != bytes12(0));
         ownerAndHashSeed.hashSeed = bytes12(_hashSeed);
     }
 
@@ -857,8 +842,7 @@ contract GenArt721CoreV3_Engine_Flex is
         // Validate that the sum of the proposed %s, does not exceed 100%.
         require(
             (renderProviderPrimarySalesPercentage_ +
-                platformProviderPrimarySalesPercentage_) <= ONE_HUNDRED,
-            "Max sum of ONE_HUNDRED %"
+                platformProviderPrimarySalesPercentage_) <= ONE_HUNDRED
         );
         // Casting to `uint8` here is safe due check above, which does not allow
         // overflow as of solidity version ^0.8.0.
@@ -892,8 +876,7 @@ contract GenArt721CoreV3_Engine_Flex is
         require(
             (_renderProviderSecondarySalesBPS +
                 _platformProviderSecondarySalesBPS) <=
-                MAX_PROVIDER_SECONDARY_SALES_BPS,
-            "Max sum of MAX_PROVIDER_SECONDARY_SALES_BPS BPS"
+                MAX_PROVIDER_SECONDARY_SALES_BPS
         );
         renderProviderSecondarySalesBPS = _renderProviderSecondarySalesBPS;
         platformProviderSecondarySalesBPS = _platformProviderSecondarySalesBPS;
@@ -994,18 +977,15 @@ contract GenArt721CoreV3_Engine_Flex is
         // checks
         require(
             _additionalPayeePrimarySalesPercentage <= ONE_HUNDRED &&
-                _additionalPayeeSecondarySalesPercentage <= ONE_HUNDRED,
-            "Max of 100%"
+                _additionalPayeeSecondarySalesPercentage <= ONE_HUNDRED
         );
         require(
             _additionalPayeePrimarySalesPercentage == 0 ||
-                _additionalPayeePrimarySales != address(0),
-            "Primary payee is zero address"
+                _additionalPayeePrimarySales != address(0)
         );
         require(
             _additionalPayeeSecondarySalesPercentage == 0 ||
-                _additionalPayeeSecondarySales != address(0),
-            "Secondary payee is zero address"
+                _additionalPayeeSecondarySales != address(0)
         );
         // effects
         // emit event for off-chain indexing
@@ -1125,8 +1105,7 @@ contract GenArt721CoreV3_Engine_Flex is
                         _additionalPayeeSecondarySales,
                         _additionalPayeeSecondarySalesPercentage
                     )
-                ),
-            "Must match artist proposal"
+                )
         );
         // effects
         ProjectFinance storage projectFinance = projectIdToFinancials[
@@ -1198,7 +1177,7 @@ contract GenArt721CoreV3_Engine_Flex is
         onlyNonEmptyString(_projectName)
         onlyNonZeroAddress(_artistAddress)
     {
-        require(!newProjectsForbidden, "New projects forbidden");
+        require(!newProjectsForbidden);
         uint256 projectId = _nextProjectId;
         projectIdToFinancials[projectId].artistAddress = _artistAddress;
         projects[projectId].name = _projectName;
@@ -1217,7 +1196,7 @@ contract GenArt721CoreV3_Engine_Flex is
         external
         onlyAdminACL(this.forbidNewProjects.selector)
     {
-        require(!newProjectsForbidden, "Already forbidden");
+        require(!newProjectsForbidden);
         _forbidNewProjects();
     }
 
@@ -1303,8 +1282,7 @@ contract GenArt721CoreV3_Engine_Flex is
                     msg.sender,
                     address(this),
                     this.updateProjectDescription.selector
-                ),
-            "Only artist when unlocked, owner when locked"
+                )
         );
         // effects
         projects[_projectId].description = _projectDescription;
@@ -1359,14 +1337,8 @@ contract GenArt721CoreV3_Engine_Flex is
         // CHECKS
         Project storage project = projects[_projectId];
         uint256 _invocations = project.invocations;
-        require(
-            (_maxInvocations < project.maxInvocations),
-            "maxInvocations may only be decreased"
-        );
-        require(
-            _maxInvocations >= _invocations,
-            "Only max invocations gte current invocations"
-        );
+        require((_maxInvocations < project.maxInvocations));
+        require(_maxInvocations >= _invocations);
         // EFFECTS
         project.maxInvocations = _maxInvocations;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_MAX_INVOCATIONS);
@@ -1418,7 +1390,7 @@ contract GenArt721CoreV3_Engine_Flex is
         onlyNonEmptyString(_script)
     {
         Project storage project = projects[_projectId];
-        require(_scriptId < project.scriptCount, "scriptId out of range");
+        require(_scriptId < project.scriptCount);
         // purge old contract bytecode contract from the blockchain state
         // note: Although this does reduce usage of Ethereum state, it does not
         // reduce the gas costs of removal transactions. We believe this is the
@@ -1447,7 +1419,7 @@ contract GenArt721CoreV3_Engine_Flex is
         onlyArtistOrAdminACL(_projectId, this.removeProjectLastScript.selector)
     {
         Project storage project = projects[_projectId];
-        require(project.scriptCount > 0, "there are no scripts to remove");
+        require(project.scriptCount > 0);
         // purge old contract bytecode contract from the blockchain state
         // note: Although this does reduce usage of Ethereum state, it does not
         // reduce the gas costs of removal transactions. We believe this is the
@@ -1488,8 +1460,7 @@ contract GenArt721CoreV3_Engine_Flex is
             _scriptTypeAndVersion.containsExactCharacterQty(
                 AT_CHARACTER_CODE,
                 uint8(1)
-            ),
-            "must contain exactly one @"
+            )
         );
         project.scriptTypeAndVersion = _scriptTypeAndVersion;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT_TYPE);
@@ -1499,7 +1470,7 @@ contract GenArt721CoreV3_Engine_Flex is
      * @notice Updates project's aspect ratio.
      * @param _projectId Project to be updated.
      * @param _aspectRatio Aspect ratio to be set. Intended to be string in the
-     * format of a decimal, e.g. "1" for square, "1.77777778" for 16:9, etc.,
+     * format of a decimal, e.g. "1" for square for 16:9, etc.,
      * allowing for a maximum of 10 digits and one (optional) decimal separator.
      */
     function updateProjectAspectRatio(
@@ -1514,7 +1485,7 @@ contract GenArt721CoreV3_Engine_Flex is
         // Perform more detailed input validation for aspect ratio.
         bytes memory aspectRatioBytes = bytes(_aspectRatio);
         uint256 bytesLength = aspectRatioBytes.length;
-        require(bytesLength <= 11, "Aspect ratio format too long");
+        require(bytesLength <= 11);
         bool hasSeenDecimalSeparator = false;
         bool hasSeenNumber = false;
         for (uint256 i; i < bytesLength; i++) {
@@ -1534,9 +1505,9 @@ contract GenArt721CoreV3_Engine_Flex is
                     continue;
                 }
             }
-            revert("Improperly formatted aspect ratio");
+            revert();
         }
-        require(hasSeenNumber, "Aspect ratio has no numbers");
+        require(hasSeenNumber);
 
         projects[_projectId].aspectRatio = _aspectRatio;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_ASPECT_RATIO);
@@ -1929,10 +1900,7 @@ contract GenArt721CoreV3_Engine_Flex is
     function getHistoricalRandomizerAt(
         uint256 _index
     ) external view returns (address) {
-        require(
-            _index < _historicalRandomizerAddresses.length,
-            "Index out of bounds"
-        );
+        require(_index < _historicalRandomizerAddresses.length);
         return _historicalRandomizerAddresses[_index];
     }
 
