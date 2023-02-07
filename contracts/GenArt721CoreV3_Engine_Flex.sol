@@ -501,7 +501,9 @@ contract GenArt721CoreV3_Engine_Flex is
         if (_dependencyType == ExternalAssetDependencyType.ONCHAIN) {
             // purge bytecode if we are replacing an existing onchain asset
             if (oldDependencyType == ExternalAssetDependencyType.ONCHAIN) {
-                // do not purge bytecode due to deprecated self-destruct
+                projects[_projectId]
+                    .externalAssetDependencyBytecodeAddresses[_index]
+                    .purgeBytecode();
             } else {
                 // we only need to set the cid to an empty string if we are replacing an offchain asset
                 // an onchain asset will already have an empty cid
@@ -553,7 +555,10 @@ contract GenArt721CoreV3_Engine_Flex is
                 .externalAssetDependencies[_index]
                 .dependencyType == ExternalAssetDependencyType.ONCHAIN
         ) {
-            // do not purge bytecode due to deprecated self-destruct
+            //purging bytecode of deleted asset
+            projects[_projectId]
+                .externalAssetDependencyBytecodeAddresses[_index]
+                .purgeBytecode();
             delete projects[_projectId]
                 .externalAssetDependencyBytecodeAddresses[_index];
         }
@@ -858,7 +863,7 @@ contract GenArt721CoreV3_Engine_Flex is
             (_renderProviderSecondarySalesBPS +
                 _platformProviderSecondarySalesBPS) <=
                 MAX_PROVIDER_SECONDARY_SALES_BPS,
-            "Max sum of MAX_PROVIDER_SECONDARY_SALES_BPS BPS"
+            "Over max sum of BPS"
         );
         renderProviderSecondarySalesBPS = _renderProviderSecondarySalesBPS;
         platformProviderSecondarySalesBPS = _platformProviderSecondarySalesBPS;
@@ -1214,7 +1219,7 @@ contract GenArt721CoreV3_Engine_Flex is
         onlyArtist(_projectId);
         require(
             _secondMarketRoyalty <= ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE,
-            "Max of ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE percent"
+            "Over max percent"
         );
         projectIdToFinancials[_projectId]
             .secondaryMarketRoyaltyPercentage = uint8(_secondMarketRoyalty);
@@ -1300,12 +1305,9 @@ contract GenArt721CoreV3_Engine_Flex is
         uint256 _invocations = project.invocations;
         require(
             (_maxInvocations < project.maxInvocations),
-            "maxInvocations may only be decreased"
+            "Only maxInvocations decrease"
         );
-        require(
-            _maxInvocations >= _invocations,
-            "Only max invocations gte current invocations"
-        );
+        require(_maxInvocations >= _invocations, "Only gte invocations");
         // EFFECTS
         project.maxInvocations = _maxInvocations;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_MAX_INVOCATIONS);
@@ -1354,7 +1356,16 @@ contract GenArt721CoreV3_Engine_Flex is
         onlyArtistOrAdminACL(_projectId, this.updateProjectScript.selector);
         Project storage project = projects[_projectId];
         require(_scriptId < project.scriptCount, "scriptId out of range");
-        // do not purge bytecode due to deprecated self-destruct
+        // purge old contract bytecode contract from the blockchain state
+        // note: Although this does reduce usage of Ethereum state, it does not
+        // reduce the gas costs of removal transactions. We believe this is the
+        // best behavior at the time of writing, and do not expect this to
+        // result in any breaking changes in the future. All current proposals
+        // to change the self-destruct opcode are backwards compatible, but may
+        // result in not removing the bytecode from the blockchain state. This
+        // implementation is compatible with that architecture, as it does not
+        // rely on the bytecode being removed from the blockchain state.
+        project.scriptBytecodeAddresses[_scriptId].purgeBytecode();
         // store script in contract bytecode, replacing reference address from
         // the contract that no longer exists with the newly created one
         project.scriptBytecodeAddresses[_scriptId] = _script.writeToBytecode();
@@ -1369,8 +1380,19 @@ contract GenArt721CoreV3_Engine_Flex is
         onlyUnlocked(_projectId);
         onlyArtistOrAdminACL(_projectId, this.removeProjectLastScript.selector);
         Project storage project = projects[_projectId];
-        require(project.scriptCount > 0, "there are no scripts to remove");
-        // do not purge bytecode due to deprecated self-destruct
+        require(project.scriptCount > 0, "No scripts to remove");
+        // purge old contract bytecode contract from the blockchain state
+        // note: Although this does reduce usage of Ethereum state, it does not
+        // reduce the gas costs of removal transactions. We believe this is the
+        // best behavior at the time of writing, and do not expect this to
+        // result in any breaking changes in the future. All current proposals
+        // to change the self-destruct opcode are backwards compatible, but may
+        // result in not removing the bytecode from the blockchain state. This
+        // implementation is compatible with that architecture, as it does not
+        // rely on the bytecode being removed from the blockchain state.
+        project
+            .scriptBytecodeAddresses[project.scriptCount - 1]
+            .purgeBytecode();
         // delete reference to contract address that no longer exists
         delete project.scriptBytecodeAddresses[project.scriptCount - 1];
         unchecked {
@@ -2255,7 +2277,7 @@ contract GenArt721CoreV3_Engine_Flex is
             buffer[i] = _HEX_SYMBOLS[value & 0xf];
             value >>= 4;
         }
-        require(value == 0, "Strings: hex length insufficient");
+        require(value == 0, "hex length insufficient");
         return string(buffer);
     }
 
