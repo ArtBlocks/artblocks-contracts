@@ -100,15 +100,15 @@ contract GenArt721CoreV3_Engine_Flex is
     using BytecodeStorage for string;
     using BytecodeStorage for address;
     using Bytes32Strings for bytes32;
-    uint256 ONE_HUNDRED = 100;
+    uint256 constant ONE_HUNDRED = 100;
     uint256 constant ONE_MILLION = 1_000_000;
-    uint24 ONE_MILLION_UINT24 = 1_000_000;
-    uint256 FOUR_WEEKS_IN_SECONDS = 2_419_200;
-    uint8 AT_CHARACTER_CODE = uint8(bytes1("@")); // 0x40
+    uint24 constant ONE_MILLION_UINT24 = 1_000_000;
+    uint256 constant FOUR_WEEKS_IN_SECONDS = 2_419_200;
+    uint8 constant AT_CHARACTER_CODE = uint8(bytes1("@")); // 0x40
 
     // numeric constants
-    uint256 MAX_PROVIDER_SECONDARY_SALES_BPS = 10000; // 10_000 BPS = 100%
-    uint256 ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE = 95; // 95%
+    uint256 constant MAX_PROVIDER_SECONDARY_SALES_BPS = 10000; // 10_000 BPS = 100%
+    uint256 constant ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE = 95; // 95%
 
     // This contract emits generic events that contain fields that indicate
     // which parameter has been updated. This is sufficient for application
@@ -120,35 +120,36 @@ contract GenArt721CoreV3_Engine_Flex is
     //
     // The following fields are used to indicate which contract-level parameter
     // has been updated in the `PlatformUpdated` event:
-    bytes32 FIELD_NEXT_PROJECT_ID = "nextProjectId";
-    bytes32 FIELD_NEW_PROJECTS_FORBIDDEN = "newProjectsForbidden";
-    bytes32 FIELD_DEFAULT_BASE_URI = "defaultBaseURI";
-    bytes32 FIELD_RANDOMIZER_ADDRESS = "randomizerAddress";
-    bytes32 FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS =
+    bytes32 constant FIELD_NEXT_PROJECT_ID = "nextProjectId";
+    bytes32 constant FIELD_NEW_PROJECTS_FORBIDDEN = "newProjectsForbidden";
+    bytes32 constant FIELD_DEFAULT_BASE_URI = "defaultBaseURI";
+    bytes32 constant FIELD_RANDOMIZER_ADDRESS = "randomizerAddress";
+    bytes32 constant FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS =
         "dependencyRegistryAddress";
-    bytes32 FIELD_PROVIDER_SALES_ADDRESSES = "providerSalesAddresses";
-    bytes32 FIELD_PROVIDER_PRIMARY_SALES_PERCENTAGES =
+    bytes32 constant FIELD_PROVIDER_SALES_ADDRESSES = "providerSalesAddresses";
+    bytes32 constant FIELD_PROVIDER_PRIMARY_SALES_PERCENTAGES =
         "providerPrimaryPercentages";
-    bytes32 FIELD_PROVIDER_SECONDARY_SALES_BPS = "providerSecondaryBPS";
+    bytes32 constant FIELD_PROVIDER_SECONDARY_SALES_BPS =
+        "providerSecondaryBPS";
     // The following fields are used to indicate which project-level parameter
     // has been updated in the `ProjectUpdated` event:
-    bytes32 FIELD_PROJECT_COMPLETED = "completed";
-    bytes32 FIELD_PROJECT_ACTIVE = "active";
-    bytes32 FIELD_PROJECT_ARTIST_ADDRESS = "artistAddress";
-    bytes32 FIELD_PROJECT_PAUSED = "paused";
-    bytes32 FIELD_PROJECT_CREATED = "created";
-    bytes32 FIELD_PROJECT_NAME = "name";
-    bytes32 FIELD_PROJECT_ARTIST_NAME = "artistName";
-    bytes32 FIELD_PROJECT_SECONDARY_MARKET_ROYALTY_PERCENTAGE =
+    bytes32 constant FIELD_PROJECT_COMPLETED = "completed";
+    bytes32 constant FIELD_PROJECT_ACTIVE = "active";
+    bytes32 constant FIELD_PROJECT_ARTIST_ADDRESS = "artistAddress";
+    bytes32 constant FIELD_PROJECT_PAUSED = "paused";
+    bytes32 constant FIELD_PROJECT_CREATED = "created";
+    bytes32 constant FIELD_PROJECT_NAME = "name";
+    bytes32 constant FIELD_PROJECT_ARTIST_NAME = "artistName";
+    bytes32 constant FIELD_PROJECT_SECONDARY_MARKET_ROYALTY_PERCENTAGE =
         "royaltyPercentage";
-    bytes32 FIELD_PROJECT_DESCRIPTION = "description";
-    bytes32 FIELD_PROJECT_WEBSITE = "website";
-    bytes32 FIELD_PROJECT_LICENSE = "license";
-    bytes32 FIELD_PROJECT_MAX_INVOCATIONS = "maxInvocations";
-    bytes32 FIELD_PROJECT_SCRIPT = "script";
-    bytes32 FIELD_PROJECT_SCRIPT_TYPE = "scriptType";
-    bytes32 FIELD_PROJECT_ASPECT_RATIO = "aspectRatio";
-    bytes32 FIELD_PROJECT_BASE_URI = "baseURI";
+    bytes32 constant FIELD_PROJECT_DESCRIPTION = "description";
+    bytes32 constant FIELD_PROJECT_WEBSITE = "website";
+    bytes32 constant FIELD_PROJECT_LICENSE = "license";
+    bytes32 constant FIELD_PROJECT_MAX_INVOCATIONS = "maxInvocations";
+    bytes32 constant FIELD_PROJECT_SCRIPT = "script";
+    bytes32 constant FIELD_PROJECT_SCRIPT_TYPE = "scriptType";
+    bytes32 constant FIELD_PROJECT_ASPECT_RATIO = "aspectRatio";
+    bytes32 constant FIELD_PROJECT_BASE_URI = "baseURI";
 
     /// Dependency registry managed by Art Blocks
     address public artblocksDependencyRegistryAddress;
@@ -262,15 +263,15 @@ contract GenArt721CoreV3_Engine_Flex is
     bool public immutable autoApproveArtistSplitProposals;
 
     /// version & type of this core contract
-    bytes32 CORE_VERSION = "v3.1.1";
+    bytes32 constant CORE_VERSION = "v3.1.1";
 
-    function coreVersion() external view returns (string memory) {
+    function coreVersion() external pure returns (string memory) {
         return CORE_VERSION.toString();
     }
 
-    bytes32 CORE_TYPE = "GenArt721CoreV3_Engine_Flex";
+    bytes32 constant CORE_TYPE = "GenArt721CoreV3_Engine_Flex";
 
-    function coreType() external view returns (string memory) {
+    function coreType() external pure returns (string memory) {
         return CORE_TYPE.toString();
     }
 
@@ -499,12 +500,7 @@ contract GenArt721CoreV3_Engine_Flex is
             .dependencyType = _dependencyType;
         // if the incoming dependency type is onchain, we need to write the data to bytecode
         if (_dependencyType == ExternalAssetDependencyType.ONCHAIN) {
-            // purge bytecode if we are replacing an existing onchain asset
-            if (oldDependencyType == ExternalAssetDependencyType.ONCHAIN) {
-                projects[_projectId]
-                    .externalAssetDependencyBytecodeAddresses[_index]
-                    .purgeBytecode();
-            } else {
+            if (oldDependencyType != ExternalAssetDependencyType.ONCHAIN) {
                 // we only need to set the cid to an empty string if we are replacing an offchain asset
                 // an onchain asset will already have an empty cid
                 projects[_projectId].externalAssetDependencies[_index].cid = "";
@@ -555,10 +551,6 @@ contract GenArt721CoreV3_Engine_Flex is
                 .externalAssetDependencies[_index]
                 .dependencyType == ExternalAssetDependencyType.ONCHAIN
         ) {
-            //purging bytecode of deleted asset
-            projects[_projectId]
-                .externalAssetDependencyBytecodeAddresses[_index]
-                .purgeBytecode();
             delete projects[_projectId]
                 .externalAssetDependencyBytecodeAddresses[_index];
         }
@@ -1356,16 +1348,7 @@ contract GenArt721CoreV3_Engine_Flex is
         onlyArtistOrAdminACL(_projectId, this.updateProjectScript.selector);
         Project storage project = projects[_projectId];
         require(_scriptId < project.scriptCount, "scriptId out of range");
-        // purge old contract bytecode contract from the blockchain state
-        // note: Although this does reduce usage of Ethereum state, it does not
-        // reduce the gas costs of removal transactions. We believe this is the
-        // best behavior at the time of writing, and do not expect this to
-        // result in any breaking changes in the future. All current proposals
-        // to change the self-destruct opcode are backwards compatible, but may
-        // result in not removing the bytecode from the blockchain state. This
-        // implementation is compatible with that architecture, as it does not
-        // rely on the bytecode being removed from the blockchain state.
-        project.scriptBytecodeAddresses[_scriptId].purgeBytecode();
+
         // store script in contract bytecode, replacing reference address from
         // the contract that no longer exists with the newly created one
         project.scriptBytecodeAddresses[_scriptId] = _script.writeToBytecode();
@@ -1381,18 +1364,7 @@ contract GenArt721CoreV3_Engine_Flex is
         onlyArtistOrAdminACL(_projectId, this.removeProjectLastScript.selector);
         Project storage project = projects[_projectId];
         require(project.scriptCount > 0, "No scripts to remove");
-        // purge old contract bytecode contract from the blockchain state
-        // note: Although this does reduce usage of Ethereum state, it does not
-        // reduce the gas costs of removal transactions. We believe this is the
-        // best behavior at the time of writing, and do not expect this to
-        // result in any breaking changes in the future. All current proposals
-        // to change the self-destruct opcode are backwards compatible, but may
-        // result in not removing the bytecode from the blockchain state. This
-        // implementation is compatible with that architecture, as it does not
-        // rely on the bytecode being removed from the blockchain state.
-        project
-            .scriptBytecodeAddresses[project.scriptCount - 1]
-            .purgeBytecode();
+
         // delete reference to contract address that no longer exists
         delete project.scriptBytecodeAddresses[project.scriptCount - 1];
         unchecked {

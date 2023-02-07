@@ -76,8 +76,7 @@ interface IGenArt721CoreContractV3_Engine_Flex is
     ) external view returns (ExternalAssetDependency memory);
 
     // getter function of public mapping length
-    function projectExternalAssetDependencyCount(uint256 _projectId)
-        external
-        view
-        returns (uint256);
+    function projectExternalAssetDependencyCount(
+        uint256 _projectId
+    ) external view returns (uint256);
 }
