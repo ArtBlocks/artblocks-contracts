@@ -11,6 +11,8 @@ import { Logger } from "@ethersproject/logger";
 Logger.setLogLevel(Logger.levels.ERROR);
 import prompt from "prompt";
 
+import { syncContractBucketAndType } from "../../util/graphql-utils";
+
 import {
   DELEGATION_REGISTRY_ADDRESSES,
   KNOWN_ENGINE_REGISTRIES,
@@ -530,6 +532,16 @@ ${deployedMinterNames
     //////////////////////////////////////////////////////////////////////////////
     // DEPLOYMENTS.md ENDS HERE
     //////////////////////////////////////////////////////////////////////////////
+
+    //////////////////////////////////////////////////////////////////////////////
+    // DEPLOYMENT CONFIG FILE BEGINS HERE
+    //////////////////////////////////////////////////////////////////////////////
+
+    // await syncContractBucketAndType(
+    //   genArt721Core.address,
+    //   bucketName,
+    //   Contract_Type_Names_Enum.GenArt721CoreV3Engine
+    // );
   }
 }
 
