@@ -273,46 +273,46 @@ contract GenArt721CoreV3_Engine is
     /// default base URI to initialize all new project projectBaseURI values to
     string public defaultBaseURI;
 
-    function onlyNonZeroAddress(address _address) internal pure {
+    function _onlyNonZeroAddress(address _address) internal pure {
         require(_address != address(0), "Must input non-zero address");
     }
 
-    function onlyNonEmptyString(string memory _string) internal pure {
+    function _onlyNonEmptyString(string memory _string) internal pure {
         require(bytes(_string).length != 0, "Must input non-empty string");
     }
 
-    function onlyValidTokenId(uint256 _tokenId) internal view {
+    function _onlyValidTokenId(uint256 _tokenId) internal view {
         require(_exists(_tokenId), "Token ID does not exist");
     }
 
-    function onlyValidProjectId(uint256 _projectId) internal view {
+    function _onlyValidProjectId(uint256 _projectId) internal view {
         require(
             (_projectId >= startingProjectId) && (_projectId < _nextProjectId),
             "Project ID does not exist"
         );
     }
 
-    function onlyUnlocked(uint256 _projectId) internal view {
+    function _onlyUnlocked(uint256 _projectId) internal view {
         // Note: calling `_projectUnlocked` enforces that the `_projectId`
         //       passed in is valid.`
         require(_projectUnlocked(_projectId), "Only if unlocked");
     }
 
-    function onlyAdminACL(bytes4 _selector) internal {
+    function _onlyAdminACL(bytes4 _selector) internal {
         require(
             adminACLAllowed(msg.sender, address(this), _selector),
             "Only Admin ACL allowed"
         );
     }
 
-    function onlyArtist(uint256 _projectId) internal view {
+    function _onlyArtist(uint256 _projectId) internal view {
         require(
             msg.sender == projectIdToFinancials[_projectId].artistAddress,
             "Only artist"
         );
     }
 
-    function onlyArtistOrAdminACL(
+    function _onlyArtistOrAdminACL(
         uint256 _projectId,
         bytes4 _selector
     ) internal {
@@ -329,7 +329,7 @@ contract GenArt721CoreV3_Engine is
      * contract to continue to function if the owner decides to renounce
      * ownership.
      */
-    function onlyAdminACLOrRenouncedArtist(
+    function _onlyAdminACLOrRenouncedArtist(
         uint256 _projectId,
         bytes4 _selector
     ) internal {
@@ -368,10 +368,10 @@ contract GenArt721CoreV3_Engine is
         bool _autoApproveArtistSplitProposals,
         address _engineRegistryContract
     ) ERC721_PackedHashSeed(_tokenName, _tokenSymbol) {
-        onlyNonZeroAddress(_renderProviderAddress);
-        onlyNonZeroAddress(_platformProviderAddress);
-        onlyNonZeroAddress(_randomizerContract);
-        onlyNonZeroAddress(_adminACLContract);
+        _onlyNonZeroAddress(_renderProviderAddress);
+        _onlyNonZeroAddress(_platformProviderAddress);
+        _onlyNonZeroAddress(_randomizerContract);
+        _onlyNonZeroAddress(_adminACLContract);
         // setup immutable `autoApproveArtistSplitProposals` config
         autoApproveArtistSplitProposals = _autoApproveArtistSplitProposals;
         // record contracts starting project ID
@@ -494,7 +494,7 @@ contract GenArt721CoreV3_Engine is
      * minimize gas when minting.
      */
     function setTokenHash_8PT(uint256 _tokenId, bytes32 _hashSeed) external {
-        onlyValidTokenId(_tokenId);
+        _onlyValidTokenId(_tokenId);
 
         OwnerAndHashSeed storage ownerAndHashSeed = _ownersAndHashSeeds[
             _tokenId
@@ -546,8 +546,8 @@ contract GenArt721CoreV3_Engine is
     function updateArtblocksDependencyRegistryAddress(
         address _artblocksDependencyRegistryAddress
     ) external {
-        onlyAdminACL(this.updateArtblocksDependencyRegistryAddress.selector);
-        onlyNonZeroAddress(_artblocksDependencyRegistryAddress);
+        _onlyAdminACL(this.updateArtblocksDependencyRegistryAddress.selector);
+        _onlyNonZeroAddress(_artblocksDependencyRegistryAddress);
         artblocksDependencyRegistryAddress = _artblocksDependencyRegistryAddress;
         emit PlatformUpdated(FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS);
     }
@@ -570,11 +570,11 @@ contract GenArt721CoreV3_Engine is
         address payable _platformProviderPrimarySalesAddress,
         address payable _platformProviderSecondarySalesAddress
     ) external {
-        onlyAdminACL(this.updateProviderSalesAddresses.selector);
-        onlyNonZeroAddress(_renderProviderPrimarySalesAddress);
-        onlyNonZeroAddress(_renderProviderSecondarySalesAddress);
-        onlyNonZeroAddress(_platformProviderPrimarySalesAddress);
-        onlyNonZeroAddress(_platformProviderSecondarySalesAddress);
+        _onlyAdminACL(this.updateProviderSalesAddresses.selector);
+        _onlyNonZeroAddress(_renderProviderPrimarySalesAddress);
+        _onlyNonZeroAddress(_renderProviderSecondarySalesAddress);
+        _onlyNonZeroAddress(_platformProviderPrimarySalesAddress);
+        _onlyNonZeroAddress(_platformProviderSecondarySalesAddress);
         _updateProviderSalesAddresses(
             _renderProviderPrimarySalesAddress,
             _renderProviderSecondarySalesAddress,
@@ -594,7 +594,7 @@ contract GenArt721CoreV3_Engine is
         uint256 renderProviderPrimarySalesPercentage_,
         uint256 platformProviderPrimarySalesPercentage_
     ) external {
-        onlyAdminACL(this.updateProviderPrimarySalesPercentages.selector);
+        _onlyAdminACL(this.updateProviderPrimarySalesPercentages.selector);
 
         // Validate that the sum of the proposed %s, does not exceed 100%.
         require(
@@ -630,7 +630,7 @@ contract GenArt721CoreV3_Engine is
         uint256 _renderProviderSecondarySalesBPS,
         uint256 _platformProviderSecondarySalesBPS
     ) external {
-        onlyAdminACL(this.updateProviderSecondarySalesBPS.selector);
+        _onlyAdminACL(this.updateProviderSecondarySalesBPS.selector);
         // Validate that the sum of the proposed provider BPS, does not exceed 10_000 BPS.
         require(
             (_renderProviderSecondarySalesBPS +
@@ -648,8 +648,8 @@ contract GenArt721CoreV3_Engine is
      * @param _address Address of new minter.
      */
     function updateMinterContract(address _address) external {
-        onlyAdminACL(this.updateMinterContract.selector);
-        onlyNonZeroAddress(_address);
+        _onlyAdminACL(this.updateMinterContract.selector);
+        _onlyNonZeroAddress(_address);
         minterContract = _address;
         emit MinterUpdated(_address);
     }
@@ -659,8 +659,8 @@ contract GenArt721CoreV3_Engine is
      * @param _randomizerAddress Address of new randomizer.
      */
     function updateRandomizerAddress(address _randomizerAddress) external {
-        onlyAdminACL(this.updateRandomizerAddress.selector);
-        onlyNonZeroAddress(_randomizerAddress);
+        _onlyAdminACL(this.updateRandomizerAddress.selector);
+        _onlyNonZeroAddress(_randomizerAddress);
         _updateRandomizerAddress(_randomizerAddress);
     }
 
@@ -669,8 +669,8 @@ contract GenArt721CoreV3_Engine is
      * @param _projectId Project ID to be toggled.
      */
     function toggleProjectIsActive(uint256 _projectId) external {
-        onlyAdminACL(this.toggleProjectIsActive.selector);
-        onlyValidProjectId(_projectId);
+        _onlyAdminACL(this.toggleProjectIsActive.selector);
+        _onlyValidProjectId(_projectId);
         projects[_projectId].active = !projects[_projectId].active;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_ACTIVE);
     }
@@ -714,9 +714,9 @@ contract GenArt721CoreV3_Engine is
         address payable _additionalPayeeSecondarySales,
         uint256 _additionalPayeeSecondarySalesPercentage
     ) external {
-        onlyValidProjectId(_projectId);
-        onlyArtist(_projectId);
-        onlyNonZeroAddress(_artistAddress);
+        _onlyValidProjectId(_projectId);
+        _onlyArtist(_projectId);
+        _onlyNonZeroAddress(_artistAddress);
         ProjectFinance storage projectFinance = projectIdToFinancials[
             _projectId
         ];
@@ -835,12 +835,12 @@ contract GenArt721CoreV3_Engine is
         address payable _additionalPayeeSecondarySales,
         uint256 _additionalPayeeSecondarySalesPercentage
     ) external {
-        onlyValidProjectId(_projectId);
-        onlyAdminACLOrRenouncedArtist(
+        _onlyValidProjectId(_projectId);
+        _onlyAdminACLOrRenouncedArtist(
             _projectId,
             this.adminAcceptArtistAddressesAndSplits.selector
         );
-        onlyNonZeroAddress(_artistAddress);
+        _onlyNonZeroAddress(_artistAddress);
         // checks
         require(
             proposedArtistAddressesAndSplitsHash[_projectId] ==
@@ -887,12 +887,12 @@ contract GenArt721CoreV3_Engine is
         uint256 _projectId,
         address payable _artistAddress
     ) external {
-        onlyValidProjectId(_projectId);
-        onlyAdminACLOrRenouncedArtist(
+        _onlyValidProjectId(_projectId);
+        _onlyAdminACLOrRenouncedArtist(
             _projectId,
             this.updateProjectArtistAddress.selector
         );
-        onlyNonZeroAddress(_artistAddress);
+        _onlyNonZeroAddress(_artistAddress);
         projectIdToFinancials[_projectId].artistAddress = _artistAddress;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_ARTIST_ADDRESS);
     }
@@ -902,7 +902,7 @@ contract GenArt721CoreV3_Engine is
      * @param _projectId Project ID to be toggled.
      */
     function toggleProjectIsPaused(uint256 _projectId) external {
-        onlyArtist(_projectId);
+        _onlyArtist(_projectId);
         projects[_projectId].paused = !projects[_projectId].paused;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_PAUSED);
     }
@@ -917,9 +917,9 @@ contract GenArt721CoreV3_Engine is
         string memory _projectName,
         address payable _artistAddress
     ) external {
-        onlyAdminACL(this.addProject.selector);
-        onlyNonEmptyString(_projectName);
-        onlyNonZeroAddress(_artistAddress);
+        _onlyAdminACL(this.addProject.selector);
+        _onlyNonEmptyString(_projectName);
+        _onlyNonZeroAddress(_artistAddress);
         require(!newProjectsForbidden, "New projects forbidden");
         uint256 projectId = _nextProjectId;
         projectIdToFinancials[projectId].artistAddress = _artistAddress;
@@ -936,7 +936,7 @@ contract GenArt721CoreV3_Engine is
      * @notice Forever forbids new projects from being added to this contract.
      */
     function forbidNewProjects() external {
-        onlyAdminACL(this.forbidNewProjects.selector);
+        _onlyAdminACL(this.forbidNewProjects.selector);
         require(!newProjectsForbidden, "Already forbidden");
         _forbidNewProjects();
     }
@@ -950,9 +950,9 @@ contract GenArt721CoreV3_Engine is
         uint256 _projectId,
         string memory _projectName
     ) external {
-        onlyUnlocked(_projectId);
-        onlyArtistOrAdminACL(_projectId, this.updateProjectName.selector);
-        onlyNonEmptyString(_projectName);
+        _onlyUnlocked(_projectId);
+        _onlyArtistOrAdminACL(_projectId, this.updateProjectName.selector);
+        _onlyNonEmptyString(_projectName);
         projects[_projectId].name = _projectName;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_NAME);
     }
@@ -967,9 +967,12 @@ contract GenArt721CoreV3_Engine is
         uint256 _projectId,
         string memory _projectArtistName
     ) external {
-        onlyUnlocked(_projectId);
-        onlyArtistOrAdminACL(_projectId, this.updateProjectArtistName.selector);
-        onlyNonEmptyString(_projectArtistName);
+        _onlyUnlocked(_projectId);
+        _onlyArtistOrAdminACL(
+            _projectId,
+            this.updateProjectArtistName.selector
+        );
+        _onlyNonEmptyString(_projectArtistName);
         projects[_projectId].artist = _projectArtistName;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_ARTIST_NAME);
     }
@@ -989,7 +992,7 @@ contract GenArt721CoreV3_Engine is
         uint256 _projectId,
         uint256 _secondMarketRoyalty
     ) external {
-        onlyArtist(_projectId);
+        _onlyArtist(_projectId);
         require(
             _secondMarketRoyalty <= ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE,
             "Over max precent"
@@ -1038,7 +1041,7 @@ contract GenArt721CoreV3_Engine is
         uint256 _projectId,
         string memory _projectWebsite
     ) external {
-        onlyArtist(_projectId);
+        _onlyArtist(_projectId);
         projects[_projectId].website = _projectWebsite;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_WEBSITE);
     }
@@ -1052,9 +1055,9 @@ contract GenArt721CoreV3_Engine is
         uint256 _projectId,
         string memory _projectLicense
     ) external {
-        onlyUnlocked(_projectId);
-        onlyArtistOrAdminACL(_projectId, this.updateProjectLicense.selector);
-        onlyNonEmptyString(_projectLicense);
+        _onlyUnlocked(_projectId);
+        _onlyArtistOrAdminACL(_projectId, this.updateProjectLicense.selector);
+        _onlyNonEmptyString(_projectLicense);
         projects[_projectId].license = _projectLicense;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_LICENSE);
     }
@@ -1072,7 +1075,7 @@ contract GenArt721CoreV3_Engine is
         uint256 _projectId,
         uint24 _maxInvocations
     ) external {
-        onlyArtist(_projectId);
+        _onlyArtist(_projectId);
         // CHECKS
         Project storage project = projects[_projectId];
         uint256 _invocations = project.invocations;
@@ -1101,9 +1104,9 @@ contract GenArt721CoreV3_Engine is
         uint256 _projectId,
         string memory _script
     ) external {
-        onlyUnlocked(_projectId);
-        onlyArtistOrAdminACL(_projectId, this.addProjectScript.selector);
-        onlyNonEmptyString(_script);
+        _onlyUnlocked(_projectId);
+        _onlyArtistOrAdminACL(_projectId, this.addProjectScript.selector);
+        _onlyNonEmptyString(_script);
         Project storage project = projects[_projectId];
         // store script in contract bytecode
         project.scriptBytecodeAddresses[project.scriptCount] = _script
@@ -1124,9 +1127,9 @@ contract GenArt721CoreV3_Engine is
         uint256 _scriptId,
         string memory _script
     ) external {
-        onlyUnlocked(_projectId);
-        onlyArtistOrAdminACL(_projectId, this.updateProjectScript.selector);
-        onlyNonEmptyString(_script);
+        _onlyUnlocked(_projectId);
+        _onlyArtistOrAdminACL(_projectId, this.updateProjectScript.selector);
+        _onlyNonEmptyString(_script);
         Project storage project = projects[_projectId];
         require(_scriptId < project.scriptCount, "scriptId out of range");
 
@@ -1141,8 +1144,11 @@ contract GenArt721CoreV3_Engine is
      * @param _projectId Project to be updated.
      */
     function removeProjectLastScript(uint256 _projectId) external {
-        onlyUnlocked(_projectId);
-        onlyArtistOrAdminACL(_projectId, this.removeProjectLastScript.selector);
+        _onlyUnlocked(_projectId);
+        _onlyArtistOrAdminACL(
+            _projectId,
+            this.removeProjectLastScript.selector
+        );
         Project storage project = projects[_projectId];
         require(project.scriptCount > 0, "No scripts to remove");
 
@@ -1164,8 +1170,11 @@ contract GenArt721CoreV3_Engine is
         uint256 _projectId,
         bytes32 _scriptTypeAndVersion
     ) external {
-        onlyUnlocked(_projectId);
-        onlyArtistOrAdminACL(_projectId, this.updateProjectScriptType.selector);
+        _onlyUnlocked(_projectId);
+        _onlyArtistOrAdminACL(
+            _projectId,
+            this.updateProjectScriptType.selector
+        );
         Project storage project = projects[_projectId];
         // require exactly one @ symbol in _scriptTypeAndVersion
         require(
@@ -1190,12 +1199,12 @@ contract GenArt721CoreV3_Engine is
         uint256 _projectId,
         string memory _aspectRatio
     ) external {
-        onlyUnlocked(_projectId);
-        onlyArtistOrAdminACL(
+        _onlyUnlocked(_projectId);
+        _onlyArtistOrAdminACL(
             _projectId,
             this.updateProjectAspectRatio.selector
         );
-        onlyNonEmptyString(_aspectRatio);
+        _onlyNonEmptyString(_aspectRatio);
         // Perform more detailed input validation for aspect ratio.
         bytes memory aspectRatioBytes = bytes(_aspectRatio);
         uint256 bytesLength = aspectRatioBytes.length;
@@ -1239,8 +1248,8 @@ contract GenArt721CoreV3_Engine is
         uint256 _projectId,
         string memory _newBaseURI
     ) external {
-        onlyArtist(_projectId);
-        onlyNonEmptyString(_newBaseURI);
+        _onlyArtist(_projectId);
+        _onlyNonEmptyString(_newBaseURI);
         projects[_projectId].projectBaseURI = _newBaseURI;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_BASE_URI);
     }
@@ -1252,8 +1261,8 @@ contract GenArt721CoreV3_Engine is
      * @param _defaultBaseURI New default base URI.
      */
     function updateDefaultBaseURI(string memory _defaultBaseURI) external {
-        onlyAdminACL(this.updateDefaultBaseURI.selector);
-        onlyNonEmptyString(_defaultBaseURI);
+        _onlyAdminACL(this.updateDefaultBaseURI.selector);
+        _onlyNonEmptyString(_defaultBaseURI);
         _updateDefaultBaseURI(_defaultBaseURI);
     }
 
@@ -1638,7 +1647,7 @@ contract GenArt721CoreV3_Engine is
         view
         returns (address payable[] memory recipients, uint256[] memory bps)
     {
-        onlyValidTokenId(_tokenId);
+        _onlyValidTokenId(_tokenId);
         // initialize arrays with maximum potential length
         recipients = new address payable[](4);
         bps = new uint256[](4);
@@ -1851,7 +1860,7 @@ contract GenArt721CoreV3_Engine is
     function tokenURI(
         uint256 _tokenId
     ) public view override returns (string memory) {
-        onlyValidTokenId(_tokenId);
+        _onlyValidTokenId(_tokenId);
         string memory _projectBaseURI = projects[tokenIdToProjectId(_tokenId)]
             .projectBaseURI;
         return string.concat(_projectBaseURI, _tokenId.toString());
@@ -1976,7 +1985,7 @@ contract GenArt721CoreV3_Engine is
      * @dev This also enforces that the `_projectId` passed in is valid.
      */
     function _projectUnlocked(uint256 _projectId) internal view returns (bool) {
-        onlyValidProjectId(_projectId);
+        _onlyValidProjectId(_projectId);
 
         uint256 projectCompletedTimestamp = projects[_projectId]
             .completedTimestamp;
