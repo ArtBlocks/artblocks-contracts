@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import { ethers, upgrades } from "hardhat";
+import hre, { ethers, upgrades } from "hardhat";
 import { DependencyRegistryV0 } from "./contracts";
 import { DependencyRegistryV0__factory } from "./contracts/factories/DependencyRegistryV0__factory";
 
@@ -13,7 +13,7 @@ import { DependencyRegistryV0__factory } from "./contracts/factories/DependencyR
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG BEGINS HERE
 //////////////////////////////////////////////////////////////////////////////
-const ADMIN_ACL_CONTRACT = "0x94Cc7981227D9e644e153766C386eF47556C3147"; // Art Blocks contract-management multi-sig
+const ADMIN_ACL_CONTRACT = "0x0D277C3d488CdABD86DB37E743765835e273101E"; // Art Blocks contract-management multi-sig
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG ENDS HERE
 //////////////////////////////////////////////////////////////////////////////
@@ -36,7 +36,14 @@ async function main() {
     [ADMIN_ACL_CONTRACT]
   )) as DependencyRegistryV0;
   await dependencyRegistry.deployed();
+
   const dependencyRegistryAddress = dependencyRegistry.address;
+  const implementationAddress = await upgrades.erc1967.getImplementationAddress(
+    dependencyRegistryAddress
+  );
+  console.log(
+    `Dependency Registry V0 implementation deployed at ${implementationAddress}`
+  );
   console.log(
     `Dependency Registry V0 deployed at ${dependencyRegistryAddress}`
   );
@@ -49,12 +56,13 @@ async function main() {
   // SETUP BEGINS HERE
   //////////////////////////////////////////////////////////////////////////////
 
-  // Output instructions for manual Etherscan verification.
-  const standardVerify = "yarn hardhat verify";
-  console.log(`Verify dependency registry contract deployment with:`);
-  console.log(
-    `${standardVerify} --network ${networkName} ${dependencyRegistry.address}`
-  );
+  try {
+    await hre.run("verify:verify", {
+      address: implementationAddress,
+    });
+  } catch (e) {
+    console.error("Failed to verify programatically", e);
+  }
 
   //////////////////////////////////////////////////////////////////////////////
   // SETUP ENDS HERE
