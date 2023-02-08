@@ -6,6 +6,8 @@ import "../../interfaces/0.8.x/IFilteredMinterV0.sol";
 import "../../interfaces/0.8.x/IAdminACLV0.sol";
 import "../../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
 
+import "../../libs/0.8.x/Bytes32Strings.sol";
+
 import "@openzeppelin-4.5/contracts/utils/structs/EnumerableMap.sol";
 
 pragma solidity 0.8.17;
@@ -39,6 +41,21 @@ pragma solidity 0.8.17;
 contract MinterFilterV1 is IMinterFilterV0 {
     // add Enumerable Map methods
     using EnumerableMap for EnumerableMap.UintToAddressMap;
+    // add Bytes32Strings methods
+    using Bytes32Strings for bytes32;
+
+    /// version & type of this core contract
+    bytes32 constant MINTER_FILTER_VERSION = "v1.0.1";
+
+    function minterFilterVersion() external pure returns (string memory) {
+        return MINTER_FILTER_VERSION.toString();
+    }
+
+    bytes32 constant MINTER_FILTER_TYPE = "MinterFilterV1";
+
+    function minterFilterType() external pure returns (string memory) {
+        return MINTER_FILTER_TYPE.toString();
+    }
 
     /// Core contract address this minter interacts with
     address public immutable genArt721CoreAddress;
@@ -106,6 +123,7 @@ contract MinterFilterV1 is IMinterFilterV0 {
     ) onlyNonZeroAddress(_genArt721Address) {
         genArt721CoreAddress = _genArt721Address;
         genArtCoreContract = IGenArt721CoreContractV3(_genArt721Address);
+        emit Deployed();
     }
 
     /**
