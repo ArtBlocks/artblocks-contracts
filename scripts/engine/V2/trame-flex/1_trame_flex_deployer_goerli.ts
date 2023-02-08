@@ -2,35 +2,63 @@
 // Created By: Art Blocks Inc.
 
 import { ethers } from "hardhat";
-// delay to avoid issues with reorgs and tx failures
-import { delay } from "../../util/utils";
-const EXTRA_DELAY_BETWEEN_TX = 10000; // ms
+import { GenArt721CoreV2ENGINEFLEX__factory } from "../../../contracts/factories/GenArt721CoreV2ENGINEFLEX__factory";
+import { GenArt721MinterPBAB__factory } from "../../../contracts/factories/GenArt721MinterPBAB__factory";
+import { GenArt721MinterDAExpPBAB__factory } from "../../../contracts/factories/GenArt721MinterDAExpPBAB__factory";
 
-import { createPBABBucket } from "../../util/aws_s3";
+import royaltyRegistryABI from "../../../../contracts/libs/abi/RoyaltyRegistry.json";
+import { GenArt721RoyaltyOverridePBAB__factory } from "../../../contracts/factories/GenArt721RoyaltyOverridePBAB__factory";
 
-/**
- * This script was created to deploy partner contracts to the goerli
- * testnet. It is intended to document the deployment process and provide a
- * reference for the steps required to deploy contracts to a new network.
- */
+import { createPBABBucket } from "../../../util/aws_s3";
+
+const hre = require("hardhat");
+
+const DEAD = "0x000000000000000000000000000000000000dEaD";
+enum MinterTypes {
+  FixedPrice,
+  DutchAuction,
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG BEGINS HERE
 //////////////////////////////////////////////////////////////////////////////
-// FLEX contract file
-import { GenArt721CoreV2TRAMExCPGFlex__factory } from "../../contracts/factories/GenArt721CoreV2TRAMExCPGFlex__factory";
-import { GenArt721MinterTRAMExCPGFlex__factory } from "../../contracts/factories/GenArt721MinterTRAMExCPGFlex__factory";
-
-// Details pulled from https://github.com/ArtBlocks/artblocks/issues/384 (private repo)
-const tokenName = "TRAMExCPG";
-const tokenTicker = "TRAMECPG";
-const transferAddress = "0x4C7D8c95a0ABE647E36a8570136cAe0BaA5288af";
-// expected deployer wallet (testnet only)
-const artblocksAddress = "0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63";
-// Shared **goerli** randomizer instance.
+const pbabTokenName = "TRAMExCPG";
+const pbabTokenTicker = "TRAMECPG";
+const pbabTransferAddress = "0x6f345e958b800Fec6655115F0C163aC8D456351A";
+// ab-wallet, **testnet ONLY**
+const rendererProviderAddress = "0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63";
+// goerli address
 const randomizerAddress = "0xec5dae4b11213290b2dbe5295093f75920bd2982";
+const minterType = MinterTypes.FixedPrice;
+// The following is not required, but if not set, must be set later by platform
+// for Royalty Registry to work (will be ignored of set to "0x0...dEaD")
+const platformRoyaltyPaymentAddress = DEAD;
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG ENDS HERE
 //////////////////////////////////////////////////////////////////////////////
+
+function getRoyaltyRegistryAddress(networkName: string): string {
+  // ref: https://royaltyregistry.xyz/lookup)
+  if (networkName == "ropsten") {
+    return "0x9cac159ec266E76ed7377b801f3b5d2cC7bcf40d";
+  }
+  if (networkName == "rinkeby") {
+    return "0xc9198CbbB57708CF31e0caBCe963c98e60d333c3";
+  }
+  // return address on ETH mainnet
+  return "0xaD2184FB5DBcfC05d8f056542fB25b04fa32A95D";
+}
+
+function getRoyaltyOverrideAddress_PBAB(networkName: string): string {
+  if (networkName == "ropsten") {
+    return "0xEC5DaE4b11213290B2dBe5295093f75920bD2982";
+  }
+  if (networkName == "rinkeby") {
+    return "0xCe9E591314046011d141Bf77AFf7706c1CA1fC67";
+  }
+  // return address on ETH mainnet
+  return "0x000000000000000000000000000000000000dEaD";
+}
 
 async function main() {
   const [deployer] = await ethers.getSigners();
@@ -40,28 +68,31 @@ async function main() {
   // DEPLOYMENT BEGINS HERE
   //////////////////////////////////////////////////////////////////////////////
 
-  // Setup S3 bucket.
-  await createPBABBucket(tokenName, networkName);
-
-  // Randomizer contract
-  console.log(`Using shared randomizer at ${randomizerAddress}`);
-
-  // deploy FLEX core contract
-  const coreFactory = new GenArt721CoreV2TRAMExCPGFlex__factory(deployer);
-  const genArt721CoreFlex = await coreFactory.deploy(
-    tokenName,
-    tokenTicker,
+  // Deploy Core contract.
+  const genArt721CoreFactory = new GenArt721CoreV2ENGINEFLEX__factory(deployer);
+  const genArt721Core = await genArt721CoreFactory.deploy(
+    pbabTokenName,
+    pbabTokenTicker,
     randomizerAddress
   );
-  await genArt721CoreFlex.deployed();
-  console.log(`GenArt721CoreV2 FLEX deployed at ${genArt721CoreFlex.address}`);
+
+  await createPBABBucket(pbabTokenName, networkName);
+
+  await genArt721Core.deployed();
+  console.log(`GenArt721Core deployed at ${genArt721Core.address}`);
 
   // Deploy Minter contract.
-  const genArt721MinterFactory = new GenArt721MinterTRAMExCPGFlex__factory(
-    deployer
-  );
+  let genArt721MinterFactory;
+  if (minterType === MinterTypes.FixedPrice) {
+    genArt721MinterFactory = new GenArt721MinterPBAB__factory(deployer);
+  } else if (minterType === MinterTypes.DutchAuction) {
+    genArt721MinterFactory = new GenArt721MinterDAExpPBAB__factory(deployer);
+  } else {
+    console.log(`MinterType to deploy not specified!`);
+    return;
+  }
   const genArt721Minter = await genArt721MinterFactory.deploy(
-    genArt721CoreFlex.address
+    genArt721Core.address
   );
 
   await genArt721Minter.deployed();
@@ -74,79 +105,131 @@ async function main() {
   //////////////////////////////////////////////////////////////////////////////
   // SETUP BEGINS HERE
   //////////////////////////////////////////////////////////////////////////////
-  let tx = null;
+
   // Allowlist the Minter on the Core contract.
-  tx = await genArt721CoreFlex
+  await genArt721Core
     .connect(deployer)
     .addMintWhitelisted(genArt721Minter.address);
-  await tx.wait();
   console.log(`Allowlisted the Minter on the Core contract.`);
-  delay(EXTRA_DELAY_BETWEEN_TX);
 
-  // Update the Art Blocks Address.
-  tx = await genArt721CoreFlex
+  // Update the Renderer provider.
+  await genArt721Core
     .connect(deployer)
-    .updateRenderProviderAddress(artblocksAddress);
-  await tx.wait();
-  console.log(`Updated the artblocks address to: ${artblocksAddress}.`);
+    .updateRenderProviderAddress(rendererProviderAddress);
+  console.log(`Updated the renderer provider to: ${rendererProviderAddress}.`);
 
   // Set Minter owner.
-  tx = await genArt721Minter.connect(deployer).setOwnerAddress(transferAddress);
-  console.log(`Set the Minter owner to: ${transferAddress}.`);
-  await tx.wait();
-
-  delay(EXTRA_DELAY_BETWEEN_TX);
+  await genArt721Minter.connect(deployer).setOwnerAddress(pbabTransferAddress);
+  console.log(`Set the Minter owner to: ${pbabTransferAddress}.`);
 
   // Allowlist AB staff (testnet only)
-  if (
-    network.name == "ropsten" ||
-    network.name == "rinkeby" ||
-    network.name == "goerli"
-  ) {
-    console.log(`Detected testnet - Adding AB staff to the whitelist.`);
-    const devAddresses = [
-      "0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63", // purplehat
-      "0x3c3cAb03C83E48e2E773ef5FC86F52aD2B15a5b0", // dogbot
-      "0x0B7917b62BC98967e06e80EFBa9aBcAcCF3d4928", // ben_thank_you
-    ];
-    for (let i = 0; i < devAddresses.length; i++) {
-      tx = await genArt721CoreFlex
-        .connect(deployer)
-        .addWhitelisted(devAddresses[i]);
-      await tx.wait();
-
-      console.log(`Allowlisted ${devAddresses[i]} on the Core contract.`);
-      delay(EXTRA_DELAY_BETWEEN_TX);
-    }
+  if (network.name == "ropsten" || network.name == "rinkeby") {
+    // purplehat
+    await genArt721Core
+      .connect(deployer)
+      .addWhitelisted("0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63");
+    // dogbot
+    await genArt721Core
+      .connect(deployer)
+      .addWhitelisted("0x3c3cAb03C83E48e2E773ef5FC86F52aD2B15a5b0");
+    // ben_thank_you
+    await genArt721Core
+      .connect(deployer)
+      .addWhitelisted("0x0B7917b62BC98967e06e80EFBa9aBcAcCF3d4928");
+    console.log(`Performing ${network.name} deployment, allowlisted AB staff.`);
   }
 
-  // Allowlist new owner.
-  tx = await genArt721CoreFlex
-    .connect(deployer)
-    .addWhitelisted(transferAddress);
-  await tx.wait();
-
-  console.log(`Allowlisted Core contract access for: ${transferAddress}.`);
-  delay(EXTRA_DELAY_BETWEEN_TX);
-
-  // Transfer Core contract to new owner.
-  tx = await genArt721CoreFlex.connect(deployer).updateAdmin(transferAddress);
-  await tx.wait();
-  console.log(`Transferred Core contract admin to: ${transferAddress}.`);
-
-  // Output instructions for manual Etherscan verification.
-  const standardVerify = "yarn hardhat verify";
-  console.log(`Verify core contract deployment with:`);
-  console.log(
-    `${standardVerify} --network ${networkName} ${genArt721CoreFlex.address} "${tokenName}" "${tokenTicker}" ${randomizerAddress}`
+  // TODO - un-comment this block once mainnet PBAB royalty override contract is deployed
+  /*
+  // set override on Royalty Registry
+  const royaltyOverrideAddress_PBAB = getRoyaltyOverrideAddress_PBAB(
+    network.name
   );
-  console.log(`Verify Minter deployment with:`);
-  console.log(
-    `${standardVerify} --network ${networkName} ${genArt721Minter.address} ${genArt721CoreFlex.address}`
+  const RoyaltyRegistryAddress = getRoyaltyRegistryAddress(network.name);
+  const RoyaltyRegistryContract = await ethers.getContractAt(
+    royaltyRegistryABI,
+    RoyaltyRegistryAddress
   );
+  await RoyaltyRegistryContract.connect(deployer).setRoyaltyLookupAddress(
+    genArt721Core.address, // token address
+    royaltyOverrideAddress_PBAB // royalty override address
+  );
+  console.log(
+    `Royalty Registry override for new GenArt721Core set to: ` +
+      `${royaltyOverrideAddress_PBAB}`
+  );
+
+  // set platform royalty payment address if defined, else display reminder
+  if (platformRoyaltyPaymentAddress == DEAD) {
+    // warn - platform royalty payment address not configured at this time
+    console.warn(
+      `REMINDER: PBAB platform admin must call updatePlatformRoyaltyAddressForContract ` +
+        `on ${royaltyOverrideAddress_PBAB} for Royalty Registry to work!`
+    );
+  } else {
+    // configure platform royalty payment address so Royalty Registry works
+    const RoyaltyOverrideFactory_PBAB =
+      new GenArt721RoyaltyOverridePBAB__factory();
+    const RoyaltyOverride_PBAB = RoyaltyOverrideFactory_PBAB.attach(
+      royaltyOverrideAddress_PBAB
+    );
+    await RoyaltyOverride_PBAB.connect(
+      deployer
+    ).updatePlatformRoyaltyAddressForContract(
+      genArt721Core.address, // token address
+      platformRoyaltyPaymentAddress // platform royalty payment address
+    );
+    console.log(
+      `Platform Royalty Payment Address for newly deployed GenArt721Core ` +
+        `set to: ${platformRoyaltyPaymentAddress} \n    (on the PBAB royalty ` +
+        `override contract at ${royaltyOverrideAddress_PBAB})`
+    );
+  }
+  */
+
+  // Allowlist new PBAB owner.
+  await genArt721Core.connect(deployer).addWhitelisted(pbabTransferAddress);
+  console.log(`Allowlisted Core contract access for: ${pbabTransferAddress}.`);
+
+  // Transfer Core contract to new PBAB owner.
+  await genArt721Core.connect(deployer).updateAdmin(pbabTransferAddress);
+  console.log(`Transferred Core contract admin to: ${pbabTransferAddress}.`);
 
   //////////////////////////////////////////////////////////////////////////////
   // SETUP ENDS HERE
+  //////////////////////////////////////////////////////////////////////////////
+
+  //////////////////////////////////////////////////////////////////////////////
+  // VERIFICATION BEGINS HERE
+  //////////////////////////////////////////////////////////////////////////////
+
+  // Output instructions for manual Etherscan verification.
+  console.log(
+    `If automated verification below fails, verify deployment with the following:`
+  );
+  const standardVerify = "yarn hardhat verify";
+  console.log(`Verify core contract deployment with:`);
+  console.log(
+    `${standardVerify} --network ${networkName} ${genArt721Core.address} "${pbabTokenName}" "${pbabTokenTicker}" ${randomizerAddress}`
+  );
+  console.log(`Verify minter deployment with:`);
+  console.log(
+    `${standardVerify} --network ${networkName} ${genArt721Minter.address} ${genArt721Core.address}`
+  );
+  console.log(`BEING AUTOMATED VERIFICATION`);
+
+  // Perform automated verification
+  await hre.run("verify:verify", {
+    address: genArt721Core.address,
+    constructorArguments: [pbabTokenName, pbabTokenTicker, randomizerAddress],
+  });
+  await hre.run("verify:verify", {
+    address: genArt721Minter.address,
+    constructorArguments: [genArt721Core.address],
+  });
+
+  //////////////////////////////////////////////////////////////////////////////
+  // VERIFICATION ENDS HERE
   //////////////////////////////////////////////////////////////////////////////
 }
 
