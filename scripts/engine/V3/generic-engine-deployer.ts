@@ -5,6 +5,7 @@ import { ethers } from "hardhat";
 import { Contract } from "ethers";
 import path from "path";
 import fs from "fs";
+var util = require("util");
 // hide nuisance logs about event overloading
 import { Logger } from "@ethersproject/logger";
 Logger.setLogLevel(Logger.levels.ERROR);
@@ -21,6 +22,7 @@ import { createPBABBucket } from "../../util/aws_s3";
 import { delay } from "../../util/utils";
 const EXTRA_DELAY_BETWEEN_TX = 1000; // ms
 const MANUAL_GAS_LIMIT = 500000; // gas
+var log_stdout = process.stdout;
 
 // These are the core contracts that may be deployed by this script.
 const SUPPORTED_CORE_CONTRACTS = ["GenArt721CoreV3_Engine"];
@@ -33,16 +35,6 @@ const SUPPORTED_CORE_CONTRACTS = ["GenArt721CoreV3_Engine"];
  * IMPORTANT: This deploys a basic randomizer, which may be changed after
  * deployment by the configured superAdmin.
  */
-//////////////////////////////////////////////////////////////////////////////
-// CONFIG BEGINS HERE
-//////////////////////////////////////////////////////////////////////////////
-
-// this file has no config in the script, but does prompt user for input config
-// file, which is dynamically imported
-
-//////////////////////////////////////////////////////////////////////////////
-// CONFIG ENDS HERE
-//////////////////////////////////////////////////////////////////////////////
 async function main() {
   prompt.start();
   const deplomentConfigFile = (
@@ -60,6 +52,22 @@ async function main() {
       Please ensure the file exists (e.g. deployments/engine/V3/partners/dev-example/deployment-config.dev.ts)`
     );
   }
+  // record all deployment logs to a file, monkey-patching stdout
+  const pathToMyLogFile = path.join(
+    __dirname,
+    inputFileDirectory,
+    "all-deployment.logs"
+  );
+  var myLogFileStream = fs.createWriteStream(pathToMyLogFile, { flags: "a+" });
+  var log_stdout = process.stdout;
+  console.log = function (d) {
+    myLogFileStream.write(util.format(d) + "\n");
+    log_stdout.write(util.format(d) + "\n");
+  };
+  // record relevant deployment information in logs
+  console.log(`----------------------------------------`);
+  console.log(`[INFO] Datetime of deployment: ${new Date().toISOString()}`);
+  console.log(`[INFO] Deployment configuration file: ${deplomentConfigFile}`);
 
   const [deployer] = await ethers.getSigners();
   // Perform the following deploy steps for each to-be-deployed contract
@@ -78,6 +86,7 @@ async function main() {
         `[ERROR] This script is intended to be run on network ${deployDetails.network} only, but is being run on ${networkName}`
       );
     }
+    console.log(`[INFO] Deploying to network: ${networkName}`);
     // verify deployer wallet is the same as the one used to deploy the engine registry
     const targetDeployerAddress =
       KNOWN_ENGINE_REGISTRIES[networkName][deployDetails.engineRegistryAddress];
@@ -484,11 +493,13 @@ Date: ${new Date().toISOString()}
 
 **Minters:**
 
-${deployedMinterNames.map((minterName, i) => {
-  return `**${minterName}:** https://etherscan.io/address/${deployedMinterAddresses[i]}#code
+${deployedMinterNames
+  .map((minterName, i) => {
+    return `**${minterName}:** https://etherscan.io/address/${deployedMinterAddresses[i]}#code
 
-  `;
-})}
+`;
+  })
+  .join("")}
 
 **Metadata**
 
