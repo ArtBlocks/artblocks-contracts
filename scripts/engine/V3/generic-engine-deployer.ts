@@ -526,6 +526,10 @@ ${deployedMinterNames
 
     fs.writeFileSync(outputLogFile, outputMd, { flag: "as+" });
     console.log(`[INFO] Deployment details written to ${outputLogFile}`);
+
+    //////////////////////////////////////////////////////////////////////////////
+    // DEPLOYMENTS.md ENDS HERE
+    //////////////////////////////////////////////////////////////////////////////
   }
 }
 
