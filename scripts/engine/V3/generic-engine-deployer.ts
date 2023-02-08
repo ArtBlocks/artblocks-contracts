@@ -56,7 +56,7 @@ async function main() {
   const pathToMyLogFile = path.join(
     __dirname,
     inputFileDirectory,
-    "all-deployment.logs"
+    "DEPLOYMENT_LOGS.log"
   );
   var myLogFileStream = fs.createWriteStream(pathToMyLogFile, { flags: "a+" });
   var log_stdout = process.stdout;
