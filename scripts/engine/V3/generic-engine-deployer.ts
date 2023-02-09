@@ -19,7 +19,7 @@ import { tryVerify } from "../../util/verification";
 // image bucket creation
 import { createPBABBucket } from "../../util/aws_s3";
 // delay to avoid issues with reorgs and tx failures
-import { delay } from "../../util/utils";
+import { delay, getAppPath } from "../../util/utils";
 const EXTRA_DELAY_BETWEEN_TX = 1000; // ms
 const MANUAL_GAS_LIMIT = 500000; // gas
 var log_stdout = process.stdout;
@@ -36,28 +36,31 @@ const SUPPORTED_CORE_CONTRACTS = ["GenArt721CoreV3_Engine"];
  * deployment by the configured superAdmin.
  */
 async function main() {
+  // get repo's root directory absolute path
+  const appPath = await getAppPath();
+  console.log(appPath);
+  console.log(
+    `[INFO] example deployment config file is:\n\ndeployments/engine/V3/partners/dev-example/deployment-config.dev.ts\n`
+  );
   prompt.start();
-  const deplomentConfigFile = (
+  const deploymentConfigFile = (
     await prompt.get<{ from: string }>(["deployment config file"])
   )["deployment config file"];
   // dynamically import input deployment configuration details
+  const fullDeploymentConfigPath = path.join(appPath, deploymentConfigFile);
   let deployDetailsArray;
-  const fullImportPath = path.join("../../../", deplomentConfigFile);
+  const fullImportPath = path.join(fullDeploymentConfigPath);
   const inputFileDirectory = path.dirname(fullImportPath);
   try {
     ({ deployDetailsArray } = await import(fullImportPath));
   } catch (error) {
     throw new Error(
-      `[ERROR] Unable to import deployment configuration file: ${deplomentConfigFile}
+      `[ERROR] Unable to import deployment configuration file at: ${fullDeploymentConfigPath}
       Please ensure the file exists (e.g. deployments/engine/V3/partners/dev-example/deployment-config.dev.ts)`
     );
   }
   // record all deployment logs to a file, monkey-patching stdout
-  const pathToMyLogFile = path.join(
-    __dirname,
-    inputFileDirectory,
-    "DEPLOYMENT_LOGS.log"
-  );
+  const pathToMyLogFile = path.join(inputFileDirectory, "DEPLOYMENT_LOGS.log");
   var myLogFileStream = fs.createWriteStream(pathToMyLogFile, { flags: "a+" });
   var log_stdout = process.stdout;
   console.log = function (d) {
@@ -67,7 +70,9 @@ async function main() {
   // record relevant deployment information in logs
   console.log(`----------------------------------------`);
   console.log(`[INFO] Datetime of deployment: ${new Date().toISOString()}`);
-  console.log(`[INFO] Deployment configuration file: ${deplomentConfigFile}`);
+  console.log(
+    `[INFO] Deployment configuration file: ${fullDeploymentConfigPath}`
+  );
 
   const [deployer] = await ethers.getSigners();
   // Perform the following deploy steps for each to-be-deployed contract
@@ -459,11 +464,7 @@ async function main() {
     // DEPLOYMENTS.md BEGINS HERE
     //////////////////////////////////////////////////////////////////////////////
 
-    const outputLogFile = path.join(
-      __dirname,
-      inputFileDirectory,
-      "DEPLOYMENTS.md"
-    );
+    const outputSummaryFile = path.join(inputFileDirectory, "DEPLOYMENTS.md");
     const outputMd = `
 # Deployment
 
@@ -473,7 +474,7 @@ Date: ${new Date().toISOString()}
 
 ## **Environment:** ${deployDetails.environment}
 
-**Deployment Input File:** \`${deplomentConfigFile}\`
+**Deployment Input File:** \`${deploymentConfigFile}\`
 
 **${deployDetails.genArt721CoreContractName}:** https://etherscan.io/address/${
       genArt721Core.address
@@ -524,8 +525,8 @@ ${deployedMinterNames
 
 `;
 
-    fs.writeFileSync(outputLogFile, outputMd, { flag: "as+" });
-    console.log(`[INFO] Deployment details written to ${outputLogFile}`);
+    fs.writeFileSync(outputSummaryFile, outputMd, { flag: "as+" });
+    console.log(`[INFO] Deployment details written to ${outputSummaryFile}`);
 
     //////////////////////////////////////////////////////////////////////////////
     // DEPLOYMENTS.md ENDS HERE
