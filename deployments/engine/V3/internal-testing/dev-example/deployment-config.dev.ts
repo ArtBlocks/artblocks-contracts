@@ -14,11 +14,11 @@ export const deployDetailsArray = [
     // See the `KNOWN_ENGINE_REGISTRIES` object in `/scripts/engine/V3/constants.ts` for the correct registry address for
     // the intended network and the corresponding deployer wallet addresses
     // @dev if you neeed a new engine registry, use the `/scripts/engine/V3/engine-registry-deployer.ts` script
-    engineRegistryAddress: "0x263113c07CB69eE047E6572E135E8C3C6302feFE",
+    engineRegistryAddress: "0x2A39132E8d594d2c840D6656327fB26d900C05bA",
     randomizerContractName: "BasicRandomizerV2",
     genArt721CoreContractName: "GenArt721CoreV3_Engine",
-    tokenName: "Engine Partner",
-    tokenTicker: "PRTNR",
+    tokenName: "Engine Partner C",
+    tokenTicker: "PRTNR_C",
     startingProjectId: 0,
     autoApproveArtistSplitProposals: true,
     renderProviderAddress: "deployer", // use either "0x..." or special "deployer" which sets the render provider to the deployer
