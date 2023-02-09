@@ -73,5 +73,23 @@ runForEach.forEach((params) => {
     describe("common tests", async function () {
       await MinterFilterEvents_Common();
     });
+
+    describe("Deployed", async function () {
+      it("should emit Deployed during deployment", async function () {
+        const minterFilterFactory = await ethers.getContractFactory(
+          "MinterFilterV1"
+        );
+
+        const tx = await minterFilterFactory
+          .connect(this.accounts.deployer)
+          .deploy(this.genArt721Core.address);
+        const receipt = await tx.deployTransaction.wait();
+        const deployed = receipt.logs[0];
+        // expect "Deployed" event as log 0
+        await expect(deployed.topics[0]).to.be.equal(
+          ethers.utils.keccak256(ethers.utils.toUtf8Bytes("Deployed()"))
+        );
+      });
+    });
   });
 });
