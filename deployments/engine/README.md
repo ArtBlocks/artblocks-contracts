@@ -10,8 +10,10 @@ For V2_PBAB core contracts:
 For V3_Engine core contracts:
 
 - All relevant deployment input files and logs should be included in the `./V3/<engine-partner>/` directory
-  - the `input.json` file should contain the input parameters used to deploy the contract.
+  - the `deployment-config.<environment>.ts` file should contain the input parameters used to deploy the contract.
+    - see starting template for this file in `./deployment-config.template.ts`
   - the `DEPLOYMENTS.md` file should contain the deployment logs, as recorded by whatever deployment script was used.
-- Note that deployment scripts are NOT unique to each Engine partner for V3 contracts, and the `input.json` is sufficient to fully reproduce the deployment.
+  - the `DEPLOYMENT_LOGS.log` file should contain the raw deployment logs, as recorded by whatever deployment script was used.
+- Note that deployment scripts are NOT unique to each Engine partner for V3 contracts, and the `deployment-config.<environment>.ts` is intended to be sufficient to fully reproduce the deployment.
 
 All mainnet deployments that occurred after 10 Jan, 2023 should have a corresponding tag+release in the GitHub repository. This is to ensure that Art Blocks provides a well-documented contract deployment history and that the code deployed to mainnet can easily be verified by anyone.

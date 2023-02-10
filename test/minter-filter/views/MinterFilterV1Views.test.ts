@@ -71,5 +71,22 @@ runForEach.forEach((params) => {
         );
       });
     });
+
+    describe("minterFilterVersion", async function () {
+      it("returns expected value", async function () {
+        // addProject
+        const minterFilterVersion =
+          await this.minterFilter.minterFilterVersion();
+        expect(minterFilterVersion).to.equal("v1.0.1");
+      });
+    });
+
+    describe("minterFilterType", async function () {
+      it("returns expected value", async function () {
+        // addProject
+        const minterFilterType = await this.minterFilter.minterFilterType();
+        expect(minterFilterType).to.equal("MinterFilterV1");
+      });
+    });
   });
 });
