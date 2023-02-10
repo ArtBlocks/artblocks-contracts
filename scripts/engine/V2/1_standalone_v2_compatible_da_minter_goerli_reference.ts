@@ -2,7 +2,7 @@
 // Created By: Art Blocks Inc.
 
 import { ethers } from "hardhat";
-import { GenArt721MinterDAExpPBAB__factory } from "../contracts/factories/GenArt721MinterDAExpPBAB__factory";
+import { GenArt721MinterDAExpPBAB__factory } from "../../contracts/factories/GenArt721MinterDAExpPBAB__factory";
 
 const hre = require("hardhat");
 
