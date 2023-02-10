@@ -2,14 +2,14 @@
 // Created By: Art Blocks Inc.
 
 import { ethers } from "hardhat";
-import { GenArt721CoreV2ENGINEFLEX__factory } from "../contracts/factories/GenArt721CoreV2ENGINEFLEX__factory";
-import { GenArt721MinterPBAB__factory } from "../contracts/factories/GenArt721MinterPBAB__factory";
-import { GenArt721MinterDAExpPBAB__factory } from "../contracts/factories/GenArt721MinterDAExpPBAB__factory";
+import { GenArt721CoreV2ENGINEFLEX__factory } from "../../../contracts/factories/GenArt721CoreV2ENGINEFLEX__factory";
+import { GenArt721MinterPBAB__factory } from "../../../contracts/factories/GenArt721MinterPBAB__factory";
+import { GenArt721MinterDAExpPBAB__factory } from "../../../contracts/factories/GenArt721MinterDAExpPBAB__factory";
 
-import royaltyRegistryABI from "../../contracts/libs/abi/RoyaltyRegistry.json";
-import { GenArt721RoyaltyOverridePBAB__factory } from "../contracts/factories/GenArt721RoyaltyOverridePBAB__factory";
+import royaltyRegistryABI from "../../../../contracts/libs/abi/RoyaltyRegistry.json";
+import { GenArt721RoyaltyOverridePBAB__factory } from "../../../contracts/factories/GenArt721RoyaltyOverridePBAB__factory";
 
-import { createPBABBucket } from "../util/aws_s3";
+import { createPBABBucket } from "../../../util/aws_s3";
 
 const hre = require("hardhat");
 
@@ -23,12 +23,13 @@ enum MinterTypes {
 // CONFIG BEGINS HERE
 // TODO: Update and verify the below configuration items before deploying!
 //////////////////////////////////////////////////////////////////////////////
-const pbabTokenName = "TODO :: Placeholder";
-const pbabTokenTicker = "TODO";
-const pbabTransferAddress = "0x000000000000000000000000000000000000dEaD";
-const rendererProviderAddress = "0x000000000000000000000000000000000000dEaD";
-const randomizerAddress = "0x000000000000000000000000000000000000dEaD";
-const minterType = null; // TODO (set to MinterTypes.FixedPrice or MinterTypes.DutchAuction)
+const pbabTokenName = "Flex Test (Doodle Labs)";
+const pbabTokenTicker = "FLEX";
+const pbabTransferAddress = "0x81F1Ef32B362E135d41f9C4c5b2B14ad8450418E";
+// expected deployer wallet (testnet only)
+const rendererProviderAddress = "0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63";
+const randomizerAddress = "0xec5dae4b11213290b2dbe5295093f75920bd2982";
+const minterType = MinterTypes.FixedPrice;
 // The following is not required, but if not set, must be set later by platform
 // for Royalty Registry to work (will be ignored of set to "0x0...dEaD")
 const platformRoyaltyPaymentAddress = DEAD;
