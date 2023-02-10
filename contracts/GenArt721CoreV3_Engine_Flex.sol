@@ -461,6 +461,30 @@ contract GenArt721CoreV3_Engine_Flex is
     }
 
     /**
+     * @notice Returns on-chain external asset dependency data for project `_projectId` at index `_index`.
+     */
+    function projectOnChainExternalAssetDependencyByIndex(
+        uint256 _projectId,
+        uint256 _index
+    ) public view returns (string memory) {
+        return
+            projects[_projectId]
+                .externalAssetDependencyBytecodeAddresses[_index]
+                .readFromBytecode();
+    }
+
+    /*
+     * @notice Returns address with bytecode containing external asset dependency data for
+     * project `_projectId` at script index `_index`.
+     */
+    function projectExternalAssetDependencyBytecodeAddressByIndex(
+        uint256 _projectId,
+        uint256 _index
+    ) external view returns (address) {
+        return projects[_projectId].scriptBytecodeAddresses[_index];
+    }
+
+    /**
      * @notice Returns external asset dependency count for project `_projectId` at index `_index`.
      */
     function projectExternalAssetDependencyCount(
