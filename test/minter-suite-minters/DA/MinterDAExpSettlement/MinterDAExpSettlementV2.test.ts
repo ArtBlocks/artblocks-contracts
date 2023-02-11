@@ -225,7 +225,10 @@ for (const coreContractName of coreContractsToTest) {
         // sync maxInvocations to core contract value
         await this.minter
           .connect(this.accounts.artist)
-          .setProjectMaxInvocations(this.projectZero);
+          .manuallyLimitProjectMaxInvocations(
+            this.projectZero,
+            this.maxInvocations
+          );
         // reduce maxInvocations in core contract
         await this.genArt721Core
           .connect(this.accounts.artist)
@@ -241,7 +244,7 @@ for (const coreContractName of coreContractsToTest) {
         const initialProjectConfig = await this.minter.projectConfig(
           this.projectZero
         );
-        expect(initialProjectConfig.maxInvocationsCoreCached).to.equal(15);
+        expect(initialProjectConfig.maxInvocations).to.equal(15);
         await this.minter
           .connect(this.accounts.artist)
           .setAuctionDetails(
@@ -255,15 +258,18 @@ for (const coreContractName of coreContractsToTest) {
         const afterProjectConfig = await this.minter.projectConfig(
           this.projectZero
         );
-        expect(afterProjectConfig.maxInvocationsCoreCached).to.equal(1);
+        expect(afterProjectConfig.maxInvocations).to.equal(1);
       });
     });
 
     describe("setProjectMaxInvocations", async function () {
-      it("allows artist to call setProjectMaxInvocations", async function () {
-        await this.minter
-          .connect(this.accounts.artist)
-          .setProjectMaxInvocations(this.projectZero);
+      it("reverts when artist calls setProjectMaxInvocations", async function () {
+        await expectRevert(
+          this.minter
+            .connect(this.accounts.artist)
+            .setProjectMaxInvocations(this.projectZero),
+          "Not implemented"
+        );
       });
 
       it("does not allow deployer or user to call setProjectMaxInvocations", async function () {
@@ -280,7 +286,9 @@ for (const coreContractName of coreContractsToTest) {
           "Only Artist"
         );
       });
+    });
 
+    describe("manuallyLimitProjectMaxInvocations (1 of 2)", async function () {
       it("resets maxHasBeenInvoked after it's been set to true locally and then max project invocations is synced from the core contract", async function () {
         // reduce local maxInvocations to 2 on minter
         await this.minter
@@ -310,7 +318,10 @@ for (const coreContractName of coreContractsToTest) {
         // sync max invocations from core to minter
         await this.minter
           .connect(this.accounts.artist)
-          .setProjectMaxInvocations(this.projectZero);
+          .manuallyLimitProjectMaxInvocations(
+            this.projectZero,
+            this.maxInvocations
+          );
 
         // expect projectMaxHasBeenInvoked to now be false
         const hasMaxBeenInvoked2 = await this.minter.projectMaxHasBeenInvoked(
@@ -519,7 +530,7 @@ for (const coreContractName of coreContractsToTest) {
       });
     });
 
-    describe("manuallyLimitProjectMaxInvocations", async function () {
+    describe("manuallyLimitProjectMaxInvocations (2 of 2)", async function () {
       it("only artist", async function () {
         await expectRevert(
           this.minter
@@ -588,9 +599,8 @@ for (const coreContractName of coreContractsToTest) {
           );
         // projectConfig should reflect new max invocations
         const projectConfig = await this.minter.projectConfig(this.projectZero);
-        expect(projectConfig.useLocalMaxInvocations).to.be.true;
-        expect(projectConfig.maxHasBeenInvokedLocal).to.be.true;
-        expect(projectConfig.maxInvocationsLocal).to.be.equal(
+        expect(projectConfig.maxHasBeenInvoked).to.be.true;
+        expect(projectConfig.maxInvocations).to.be.equal(
           projectStateData.invocations
         );
       });
@@ -609,9 +619,8 @@ for (const coreContractName of coreContractsToTest) {
           );
         // projectConfig should reflect new max invocations
         const projectConfig = await this.minter.projectConfig(this.projectZero);
-        expect(projectConfig.useLocalMaxInvocations).to.be.true;
-        expect(projectConfig.maxHasBeenInvokedLocal).to.be.false;
-        expect(projectConfig.maxInvocationsLocal).to.be.equal(
+        expect(projectConfig.maxHasBeenInvoked).to.be.false;
+        expect(projectConfig.maxInvocations).to.be.equal(
           projectStateData.invocations.add(ethers.BigNumber.from("1"))
         );
         // purchase should be successful
@@ -688,7 +697,10 @@ for (const coreContractName of coreContractsToTest) {
         // re-sync to core contract's max invocations
         await this.minter
           .connect(this.accounts.artist)
-          .setProjectMaxInvocations(this.projectZero);
+          .manuallyLimitProjectMaxInvocations(
+            this.projectZero,
+            this.maxInvocations
+          );
         // purchase should be successful
         await this.minter
           .connect(this.accounts.user)
@@ -719,7 +731,10 @@ for (const coreContractName of coreContractsToTest) {
         // artist sets max invocations back to core contract's max invocations
         await this.minter
           .connect(this.accounts.artist)
-          .setProjectMaxInvocations(this.projectZero);
+          .manuallyLimitProjectMaxInvocations(
+            this.projectZero,
+            this.maxInvocations
+          );
         // advance in time
         await ethers.provider.send("evm_mine", [
           this.startTime + this.auctionStartTimeOffset * 10,
@@ -757,7 +772,10 @@ for (const coreContractName of coreContractsToTest) {
         // artist sets max invocations back to core contract's max invocations
         await this.minter
           .connect(this.accounts.artist)
-          .setProjectMaxInvocations(this.projectZero);
+          .manuallyLimitProjectMaxInvocations(
+            this.projectZero,
+            this.maxInvocations
+          );
         // advance in time
         await ethers.provider.send("evm_mine", [
           this.startTime + this.auctionStartTimeOffset * 10,
@@ -774,46 +792,6 @@ for (const coreContractName of coreContractsToTest) {
         );
         const latestPurchasePrice2 = await projectConfig2.latestPurchasePrice;
         expect(latestPurchasePrice2).to.be.lt(latestPurchasePrice);
-      });
-
-      it("allows withdrawals even when sellout not known locally, and not using local max invocations", async function () {
-        // reduce max invocations to 2
-        await this.genArt721Core
-          .connect(this.accounts.artist)
-          .updateProjectMaxInvocations(this.projectZero, 2);
-        // make minter aware of core max invocations
-        await this.minter
-          .connect(this.accounts.artist)
-          .setProjectMaxInvocations(this.projectZero);
-        // advance to auction start time
-        await ethers.provider.send("evm_mine", [
-          this.startTime + this.auctionStartTimeOffset,
-        ]);
-        // purchase one piece, not sellout
-        await this.minter
-          .connect(this.accounts.user)
-          .purchase_H4M(this.projectZero, {
-            value: this.startingPrice,
-          });
-        // reduce max invocations to 1 on core contract
-        await this.genArt721Core
-          .connect(this.accounts.artist)
-          .updateProjectMaxInvocations(this.projectZero, 1);
-        // minter state is stale due to caching
-        let projectConfig = await this.minter.projectConfig(this.projectZero);
-        expect(projectConfig.maxHasBeenInvokedCoreCached).to.be.false; // incorrect state due to caching
-        expect(projectConfig.maxInvocationsCoreCached).to.be.equal(2); // incorrect state due to caching
-        expect(projectConfig.useLocalMaxInvocations).to.be.false;
-        // minter should allow withdrawls because it syncs with core contract maxInvocations
-        // during withdrawArtistAndAdminRevenues
-        await this.minter
-          .connect(this.accounts.artist)
-          .withdrawArtistAndAdminRevenues(this.projectZero);
-        // minter state should be updated to reflect sellout
-        projectConfig = await this.minter.projectConfig(this.projectZero);
-        expect(projectConfig.maxHasBeenInvokedCoreCached).to.be.true; // correct state after sync
-        expect(projectConfig.maxInvocationsCoreCached).to.be.equal(1); // correct state after sync
-        expect(projectConfig.useLocalMaxInvocations).to.be.false;
       });
 
       it("allows withdrawals even when sellout not known locally, and using local max invocations", async function () {
@@ -837,9 +815,8 @@ for (const coreContractName of coreContractsToTest) {
           .updateProjectMaxInvocations(this.projectZero, 1);
         // minter state is stale due to caching
         let projectConfig = await this.minter.projectConfig(this.projectZero);
-        expect(projectConfig.maxHasBeenInvokedLocal).to.be.false; // incorrect state due to caching
-        expect(projectConfig.maxInvocationsLocal).to.be.equal(2); // incorrect state due to caching
-        expect(projectConfig.useLocalMaxInvocations).to.be.true;
+        expect(projectConfig.maxHasBeenInvoked).to.be.false; // incorrect state due to caching
+        expect(projectConfig.maxInvocations).to.be.equal(2); // incorrect state due to caching
         // minter should allow withdrawls because it syncs with core contract maxInvocations
         // during withdrawArtistAndAdminRevenues (i.e. updates local max invocations from being in illogical state)
         await this.minter
@@ -847,9 +824,8 @@ for (const coreContractName of coreContractsToTest) {
           .withdrawArtistAndAdminRevenues(this.projectZero);
         // minter state should be updated to reflect sellout
         projectConfig = await this.minter.projectConfig(this.projectZero);
-        expect(projectConfig.maxHasBeenInvokedLocal).to.be.true; // correct state after sync
-        expect(projectConfig.maxInvocationsLocal).to.be.equal(1); // correct state after sync
-        expect(projectConfig.useLocalMaxInvocations).to.be.true;
+        expect(projectConfig.maxHasBeenInvoked).to.be.true; // correct state after sync
+        expect(projectConfig.maxInvocations).to.be.equal(1); // correct state after sync
       });
     });
 
@@ -888,10 +864,6 @@ for (const coreContractName of coreContractsToTest) {
         await this.genArt721Core
           .connect(this.accounts.artist)
           .updateProjectMaxInvocations(this.projectZero, 2);
-        // make minter aware of core max invocations
-        await this.minter
-          .connect(this.accounts.artist)
-          .setProjectMaxInvocations(this.projectZero);
         // advance to auction start time
         await ethers.provider.send("evm_mine", [
           this.startTime + this.auctionStartTimeOffset,
@@ -941,7 +913,7 @@ for (const coreContractName of coreContractsToTest) {
           .updateProjectMaxInvocations(this.projectZero, 1);
         const projectConfig = await this.minter.projectConfig(this.projectZero);
         const selloutPrice = projectConfig.latestPurchasePrice;
-        expect(projectConfig.maxHasBeenInvokedLocal).to.be.false; // minter does not know about sellout, so state is false
+        expect(projectConfig.maxHasBeenInvoked).to.be.false; // minter does not know about sellout, so state is false
         // advance in time to where price would have decreased if not sellout
         await ethers.provider.send("evm_mine", [
           this.startTime + this.auctionStartTimeOffset * 10,
@@ -1041,11 +1013,11 @@ for (const coreContractName of coreContractsToTest) {
         // assuming a cost of 100 GWEI
         if (this.isEngine) {
           expect(txCost.toString()).to.equal(
-            ethers.utils.parseEther("0.015513")
+            ethers.utils.parseEther("0.0154825")
           );
         } else {
           expect(txCost.toString()).to.equal(
-            ethers.utils.parseEther("0.015513")
+            ethers.utils.parseEther("0.0154825")
           );
         }
       });

@@ -584,7 +584,7 @@ export const MinterDAExpSettlement_Common = async () => {
       // sync max invocations on minter
       await this.minter
         .connect(this.accounts.artist)
-        .setProjectMaxInvocations(this.projectZero);
+        .manuallyLimitProjectMaxInvocations(this.projectZero, 1);
       // max invocations automatically syncs during purchase on this minter
       // mint a token
       await ethers.provider.send("evm_mine", [
@@ -629,7 +629,7 @@ export const MinterDAExpSettlement_Common = async () => {
       // sync max invocations on minter
       await this.minter
         .connect(this.accounts.artist)
-        .setProjectMaxInvocations(this.projectZero);
+        .manuallyLimitProjectMaxInvocations(this.projectZero, 1);
       // max invocations automatically syncs during purchase on this minter
       // mint a token
       await ethers.provider.send("evm_mine", [

@@ -97,10 +97,7 @@ export const Minter_Common = async () => {
   describe("setProjectMaxInvocations", async function () {
     it("allows artist/deployer to call setProjectMaxInvocations", async function () {
       const minterType = await this.minter.minterType();
-      if (
-        !minterType.includes("SettlementV0") &&
-        !minterType.includes("SettlementV1")
-      ) {
+      if (!minterType.startsWith("MinterDAExpSettlementV")) {
         // minters above v2 do NOT use onlyCoreWhitelisted modifier for setProjectMaxInvocations
         const accountToTestWith =
           minterType.includes("V0") || minterType.includes("V1")
@@ -111,18 +108,34 @@ export const Minter_Common = async () => {
           .connect(accountToTestWith)
           .setProjectMaxInvocations(this.projectZero);
       } else {
+        // default revert message for DAExpSettlementV2+
+        let revertMessage = "Not implemented";
         // minters that settle on-chain should not support this function
+        if (
+          minterType === "MinterDAExpSettlementV0" ||
+          minterType === "MinterDAExpSettlementV1"
+        ) {
+          revertMessage =
+            "setProjectMaxInvocations not implemented - updated during every mint";
+        }
+
         await expectRevert(
           this.minter
             .connect(this.accounts.artist)
             .setProjectMaxInvocations(this.projectZero),
-          "setProjectMaxInvocations not implemented - updated during every mint"
+          revertMessage
         );
       }
     });
 
     it("updates local projectMaxInvocations after syncing to core", async function () {
       const minterType = await this.minter.minterType();
+      if (minterType.startsWith("MinterDAExpSettlementV")) {
+        console.log(
+          "setProjectMaxInvocations not supported for DAExpSettlement minters"
+        );
+        return;
+      }
       // minters above v2 do NOT use onlyCoreWhitelisted modifier for setProjectMaxInvocations
       const accountToTestWith =
         minterType.includes("V0") || minterType.includes("V1")
