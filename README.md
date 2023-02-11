@@ -44,19 +44,13 @@ Create a `.env` file by duplicating `.env.example` and populating all variables.
 
 `yarn format`
 
-## Contributing
+## Contributing & Design Guidelines
 
 We welcome contributions from the community!
 
-Please read through our [Design Guidelines](#design-guidelines), [Solidity Gotchas](./solidity-gotchas.md), and [Testing Philosophy](./test/README.md) sections before contributing.
+Please read through our [Style Guidelines](./GUIDELINES.md), [Solidity Gotchas](./solidity-gotchas.md), and [Testing Philosophy](./test/README.md) sections before contributing.
 
-In addition to meeting our design guidelines, all code must pass all tests and be formatted with prettier before being merged into the main branch. To run the tests, run `yarn test`. To format the code, run `yarn format`.
-
-## Design Guidelines
-
-While not all existing code may strictly adhere to these guidelines, we are working to improve the codebase over time.
-
-We aim to follow the [OpenZeppelin Design Guidelines](https://github.com/OpenZeppelin/openzeppelin-contracts/blob/master/GUIDELINES.md) when contributing new code. Importantly, this includes following the recommendations documented in the [Solidity style guide](https://docs.soliditylang.org/en/latest/style-guide.html).
+In addition to meeting our style guidelines, all code must pass all tests and be formatted with prettier before being merged into the main branch. To run the tests, run `yarn test`. To format the code, run `yarn format`.
 
 # Documentation
 
