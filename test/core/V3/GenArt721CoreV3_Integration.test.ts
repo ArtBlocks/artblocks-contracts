@@ -79,7 +79,7 @@ for (const coreContractName of coreContractsToTest) {
     });
 
     describe("{artblocks,provider}PrimarySalesAddress", function () {
-      if (coreContractName === "GenArt721CoreV3_Engine") {
+      if (coreContractName.includes("GenArt721CoreV3_Engine")) {
         it("returns expected renderProviderPrimarySalesAddress", async function () {
           expect(
             await this.genArt721Core.renderProviderPrimarySalesAddress()
@@ -100,7 +100,7 @@ for (const coreContractName of coreContractsToTest) {
     });
 
     describe("artblocksAddress", function () {
-      if (coreContractName === "GenArt721CoreV3_Engine") {
+      if (coreContractName.includes("GenArt721CoreV3_Engine")) {
         it("always passes, non-relevant", async function () {
           // This test is non-relevant for Engine variant V3 contracts.
           expect(true);
@@ -115,7 +115,7 @@ for (const coreContractName of coreContractsToTest) {
     });
 
     describe("{artblocks,provider}SecondarySalesAddress", function () {
-      if (coreContractName === "GenArt721CoreV3_Engine") {
+      if (coreContractName.includes("GenArt721CoreV3_Engine")) {
         it("returns expected renderProviderSecondarySalesAddress", async function () {
           expect(
             await this.genArt721Core.renderProviderSecondarySalesAddress()
@@ -136,7 +136,7 @@ for (const coreContractName of coreContractsToTest) {
     });
 
     describe("{artblocks,provider}Percentage", function () {
-      if (coreContractName === "GenArt721CoreV3_Engine") {
+      if (coreContractName.includes("GenArt721CoreV3_Engine")) {
         it("returns expected renderProviderPrimarySalesPercentage", async function () {
           expect(
             await this.genArt721Core.renderProviderPrimarySalesPercentage()
@@ -274,8 +274,8 @@ for (const coreContractName of coreContractsToTest) {
           targetCoreVersion = "v3.0.0";
         } else if (coreContractName === "GenArt721CoreV3_Explorations") {
           targetCoreVersion = "v3.0.1";
-        } else if (coreContractName === "GenArt721CoreV3_Engine") {
-          targetCoreVersion = "v3.1.1";
+        } else if (coreContractName.includes("GenArt721CoreV3_Engine")) {
+          targetCoreVersion = "v3.1.2";
         } else {
           throw new Error("Unexpected core contract name");
         }
@@ -295,6 +295,8 @@ for (const coreContractName of coreContractsToTest) {
           // coreType is same for GenArt721CoreV3 & GenArt721CoreV3_Explorations,
           // as they have same interface expectations
           expect(coreType).to.be.equal("GenArt721CoreV3_Engine");
+        } else if (coreContractName === "GenArt721CoreV3_Engine_Flex") {
+          expect(coreType).to.be.equal("GenArt721CoreV3_Engine_Flex");
         } else {
           // coreType is same for GenArt721CoreV3 & GenArt721CoreV3_Explorations
           expect(coreType).to.be.equal("GenArt721CoreV3");
@@ -348,7 +350,7 @@ for (const coreContractName of coreContractsToTest) {
       it("returns >0 when initialized to >0 nextProjectId", async function () {
         const nextProjectId = 365;
         let differentGenArt721Core;
-        if (coreContractName === "GenArt721CoreV3_Engine") {
+        if (coreContractName.includes("GenArt721CoreV3_Engine")) {
           const engineRegistryFactory = await ethers.getContractFactory(
             "EngineRegistryV0"
           );
@@ -396,7 +398,7 @@ for (const coreContractName of coreContractsToTest) {
       it("returns >0 when initialized to >0 nextProjectId", async function () {
         const nextProjectId = 365;
         let differentGenArt721Core;
-        if (coreContractName === "GenArt721CoreV3_Engine") {
+        if (coreContractName.includes("GenArt721CoreV3_Engine")) {
           const engineRegistryFactory = await ethers.getContractFactory(
             "EngineRegistryV0"
           );

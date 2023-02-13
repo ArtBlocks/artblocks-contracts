@@ -118,7 +118,7 @@ for (const coreContractName of coreContractsToTest) {
     });
 
     describe("requests appropriate selectors from AdminACL", function () {
-      if (coreContractName === "GenArt721CoreV3_Engine") {
+      if (coreContractName.includes("GenArt721CoreV3_Engine")) {
         it("updateProviderSalesAddresses", async function () {
           await validateAdminACLRequest.call(
             this,
@@ -298,7 +298,7 @@ for (const coreContractName of coreContractsToTest) {
     });
 
     describe("rejects non-admin calling admin-ACL protected functions", function () {
-      if (coreContractName === "GenArt721CoreV3_Engine") {
+      if (coreContractName.includes("GenArt721CoreV3_Engine")) {
         it("updateProviderSalesAddresses", async function () {
           await expectRevertFromAdminACLRequest.call(
             this,

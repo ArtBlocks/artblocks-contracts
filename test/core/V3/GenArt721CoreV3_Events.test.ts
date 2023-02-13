@@ -99,7 +99,7 @@ for (const coreContractName of coreContractsToTest) {
         // it is OK that this construction addresses aren't particularly valid
         // addresses for the purposes of this test
         let tx;
-        if (coreContractName === "GenArt721CoreV3_Engine") {
+        if (coreContractName.includes("GenArt721CoreV3_Engine")) {
           const engineRegistryFactory = await ethers.getContractFactory(
             "EngineRegistryV0"
           );
@@ -172,7 +172,7 @@ for (const coreContractName of coreContractsToTest) {
       });
 
       it("emits {artblocksSecondary,provider}SalesAddress", async function () {
-        if (coreContractName === "GenArt721CoreV3_Engine") {
+        if (coreContractName.includes("GenArt721CoreV3_Engine")) {
           // emits expected event arg(s)
           await expect(
             this.genArt721Core
@@ -241,7 +241,7 @@ for (const coreContractName of coreContractsToTest) {
             .withArgs(
               ethers.utils.formatBytes32String("curationRegistryAddress")
             );
-        } else if (coreContractName === "GenArt721CoreV3_Engine") {
+        } else if (coreContractName.includes("GenArt721CoreV3_Engine")) {
           // Do nothing.
           // This core contract variant doesn't support this interface component.
         } else {
@@ -265,7 +265,7 @@ for (const coreContractName of coreContractsToTest) {
       });
 
       it("emits '{artblocks,provider}PrimaryPercentage'", async function () {
-        if (coreContractName === "GenArt721CoreV3_Engine") {
+        if (coreContractName.includes("GenArt721CoreV3_Engine")) {
           // emits expected event arg(s)
           await expect(
             this.genArt721Core
@@ -291,7 +291,7 @@ for (const coreContractName of coreContractsToTest) {
       });
 
       it("emits '{artblocks,provider}SecondaryBPS'", async function () {
-        if (coreContractName === "GenArt721CoreV3_Engine") {
+        if (coreContractName.includes("GenArt721CoreV3_Engine")) {
           // emits expected event arg(s)
           await expect(
             this.genArt721Core

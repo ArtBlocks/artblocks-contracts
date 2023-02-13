@@ -88,14 +88,14 @@ for (const coreContractName of coreContractsToTest) {
           this.maxABPrimarySalesPercentage = 25; // 25% maximum percentage on V3 core
         } else if (coreContractName === "GenArt721CoreV3_Explorations") {
           this.maxABPrimarySalesPercentage = 100; // 100% maximum percentage on V3 core explorations
-        } else if (coreContractName === "GenArt721CoreV3_Engine") {
+        } else if (coreContractName.includes("GenArt721CoreV3_Engine")) {
           this.maxProviderPrimarySalesPercentage = 100; // 100% maxmimum percentage on V3 core engine
         } else {
           throw new Error("Invalid core contract name");
         }
       });
 
-      if (coreContractName === "GenArt721CoreV3_Engine") {
+      if (coreContractName.includes("GenArt721CoreV3_Engine")) {
         it("does not allow a value > ONE_HUNDRED", async function () {
           await expectRevert(
             this.genArt721Core
@@ -169,7 +169,7 @@ for (const coreContractName of coreContractsToTest) {
     });
 
     describe("update{Artblocks,Provider}SecondarySalesBPS", function () {
-      if (coreContractName === "GenArt721CoreV3_Engine") {
+      if (coreContractName.includes("GenArt721CoreV3_Engine")) {
         it("does not allow a value > 100%", async function () {
           await expectRevert(
             this.genArt721Core
@@ -178,7 +178,7 @@ for (const coreContractName of coreContractsToTest) {
                 10001, // _renderProviderSecondarySalesBPS
                 0 // _platformProviderSecondarySalesBPS
               ),
-            "Max sum of MAX_PROVIDER_SECONDARY_SALES_BPS BPS"
+            "Over max sum of BPS"
           );
           await expectRevert(
             this.genArt721Core
@@ -187,7 +187,7 @@ for (const coreContractName of coreContractsToTest) {
                 0, // _renderProviderSecondarySalesBPS
                 10001 // _platformProviderSecondarySalesBPS
               ),
-            "Max sum of MAX_PROVIDER_SECONDARY_SALES_BPS BPS"
+            "Over max sum of BPS"
           );
         });
 
