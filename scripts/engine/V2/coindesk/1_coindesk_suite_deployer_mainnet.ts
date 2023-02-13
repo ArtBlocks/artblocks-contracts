@@ -2,14 +2,14 @@
 // Created By: Art Blocks Inc.
 
 import { ethers } from "hardhat";
-import { GenArt721CoreV2PBAB__factory } from "../../contracts/factories/GenArt721CoreV2PBAB__factory";
-import { GenArt721MinterPBAB__factory } from "../../contracts/factories/GenArt721MinterPBAB__factory";
-import { GenArt721MinterDAExpPBAB__factory } from "../../contracts/factories/GenArt721MinterDAExpPBAB__factory";
+import { GenArt721CoreV2PBAB__factory } from "../../../contracts/factories/GenArt721CoreV2PBAB__factory";
+import { GenArt721MinterPBAB__factory } from "../../../contracts/factories/GenArt721MinterPBAB__factory";
+import { GenArt721MinterDAExpPBAB__factory } from "../../../contracts/factories/GenArt721MinterDAExpPBAB__factory";
 
-import royaltyRegistryABI from "../../../contracts/libs/abi/RoyaltyRegistry.json";
-import { GenArt721RoyaltyOverridePBAB__factory } from "../../contracts/factories/GenArt721RoyaltyOverridePBAB__factory";
+import royaltyRegistryABI from "../../../../contracts/libs/abi/RoyaltyRegistry.json";
+import { GenArt721RoyaltyOverridePBAB__factory } from "../../../contracts/factories/GenArt721RoyaltyOverridePBAB__factory";
 
-import { createPBABBucket } from "../../util/aws_s3";
+import { createPBABBucket } from "../../../util/aws_s3";
 
 const hre = require("hardhat");
 
@@ -21,15 +21,16 @@ enum MinterTypes {
 
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG BEGINS HERE
-// TODO: Update and verify the below configuration items before deploying!
 //////////////////////////////////////////////////////////////////////////////
-const pbabTokenName = "TODO :: Placeholder";
-const pbabTokenTicker = "TODO";
-const startingProjectId = 0; // TODO
-const pbabTransferAddress = "0x000000000000000000000000000000000000dEaD";
-const rendererProviderAddress = "0x000000000000000000000000000000000000dEaD";
-const randomizerAddress = "0x000000000000000000000000000000000000dEaD";
-const minterType = null; // TODO (set to MinterTypes.FixedPrice or MinterTypes.DutchAuction)
+const pbabTokenName = "CoinDesk";
+const pbabTokenTicker = "CDESK";
+const startingProjectId = 0;
+const pbabTransferAddress = "0x218162EA0AF740Ad3cCb50E7C15FBEe52CFDc6B3";
+// ab-wallet
+const rendererProviderAddress = "0x7E793504F80B2dfeA77CcA91aB1672aA686a86cC";
+// mainnet address
+const randomizerAddress = "0x088098f7438773182b703625c4128aff85fcffc4";
+const minterType = MinterTypes.FixedPrice;
 // The following is not required, but if not set, must be set later by platform
 // for Royalty Registry to work (will be ignored of set to "0x0...dEaD")
 const platformRoyaltyPaymentAddress = DEAD;

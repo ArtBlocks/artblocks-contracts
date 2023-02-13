@@ -2,7 +2,10 @@
 
 ## Mainnet
 
-TODO
+**GenArt721CoreV2:** https://etherscan.io/address/0x68C01Cb4733a82A58D5e7bB31BdDBFF26A3A35d5#code
+**GenArt721Minter:** https://etherscan.io/address/0xcd2036592Cf1291833C5Dd236fDC4Ce655c66b3A#code
+
+`0x0F441cFaD93287109F5eF834bF52F4aaaa8d8ffa` set as minter owner, whitelisted on core contract, and admin of core contract.
 
 ## Goerli
 

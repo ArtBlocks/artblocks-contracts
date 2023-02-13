@@ -8,6 +8,13 @@
 **GenArt721CoreV2:** https://etherscan.io/address/0x28f2d3805652fb5d359486dffb7d08320d403240#code
 **GenArt721Minter:** https://etherscan.io/address/0x7497909537ce00fdda93c12d5083d8647c593c67#code
 
+### "MARILYN" Upload
+
+**GenArt721CoreV2:** https://etherscan.io/address/0xFF124D975c7792E706552b18ec9DA24781751CAb#code
+**GenArt721Minter:** https://etherscan.io/address/0xfB8fEc1DC1A54B7F9edB46Ab979998C9Bc175454#code
+
+`0xcd3b333FC22a128C43cFBcF1Eaf343673299ac57` set as minter owner, whitelisted on core contract, and admin of core contract.
+
 ### Additional Details
 
 **Admin Transferee Address**: `0xCD5950ec6CB98Ad62acdBa4b1680563ba3367bF0`
