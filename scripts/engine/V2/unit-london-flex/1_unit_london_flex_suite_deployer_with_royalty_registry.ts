@@ -22,14 +22,14 @@ enum MinterTypes {
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG BEGINS HERE
 //////////////////////////////////////////////////////////////////////////////
-const pbabTokenName = "Flex Test (Doodle Labs)";
-const pbabTokenTicker = "FLEX";
-const pbabTransferAddress = "0x81F1Ef32B362E135d41f9C4c5b2B14ad8450418E";
+const pbabTokenName = "Unit London";
+const pbabTokenTicker = "UNIT";
+const pbabTransferAddress = "0xb5B7fb32C42c2c1c49285D54A35aa70793404b1F";
 // expected deployer wallet (testnet only)
 const rendererProviderAddress = "0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63";
 // shared instance (goerli)
 const randomizerAddress = "0xec5dae4b11213290b2dbe5295093f75920bd2982";
-const minterType = MinterTypes.FixedPrice;
+const minterType = MinterTypes.DutchAuction;
 // The following is not required, but if not set, must be set later by platform
 // for Royalty Registry to work (will be ignored of set to "0x0...dEaD")
 const platformRoyaltyPaymentAddress = DEAD;
