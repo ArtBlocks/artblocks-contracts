@@ -25,7 +25,7 @@
 [`0x7497909537ce00fdda93c12d5083d8647c593c67`](https://etherscan.io/address/0x7497909537ce00fdda93c12d5083d8647c593c67#code) is the original GenArt721Minter that we provided, but Doodle Labs has since removed it due to a desired different max invocation logic (see [PR #36](https://github.com/ArtBlocks/artblocks-contracts/pull/36) for added context).
 
 This was removed at ref tx: [`0xed39aa299451e44b123cb4cbffc746f53f011c77cd2e334f086ac0e2d580ec11`](https://etherscan.io/tx/0xed39aa299451e44b123cb4cbffc746f53f011c77cd2e334f086ac0e2d580ec11) and Doodle Labs is now using a MODIFIED minter: https://etherscan.io/address/0x4f598212d55415D83A7024Ddb48d9FcA1AFe4edf#code.
-gi
+
 Additionally due to complexity of `.transfer()` out of gas errors caused by the changes in EIP-2930, the "renderer payment address" for Art Blocks was updated to be hardware wallet `0x66c5bfa1c8C8352eACb1E8dD22E3575f804f51df` for the second mint onward. The original multi-sig wallet only has 0.1 MOOK in it.
 
 
