@@ -602,7 +602,7 @@ export const MinterMerkle_Common = async () => {
       );
     });
 
-    it("does nothing if setProjectMaxInvocations is not called (fails correctly)", async function () {
+    it("auto-configures if setProjectMaxInvocations is not called (fails correctly)", async function () {
       await this.minter
         .connect(this.accounts.artist)
         .setProjectInvocationsPerAddress(this.projectZero, 0);
@@ -618,7 +618,7 @@ export const MinterMerkle_Common = async () => {
           );
       }
 
-      // expect revert after project hits max invocations
+      // since auto-configured, we should see the minter's revert message
       await expectRevert(
         this.minter
           .connect(this.accounts.user)
@@ -629,7 +629,7 @@ export const MinterMerkle_Common = async () => {
               value: this.pricePerTokenInWei,
             }
           ),
-        "Must not exceed max invocations"
+        "Maximum invocations reached"
       );
     });
 
@@ -696,96 +696,6 @@ export const MinterMerkle_Common = async () => {
       // Check that with setProjectMaxInvocations it's not too much moer expensive
       expect(gasCostMaxInvocations < (gasCostNoMaxInvocations * 110) / 100).to
         .be.true;
-    });
-
-    it("fails more cheaply if setProjectMaxInvocations is set", async function () {
-      const minterType = await this.minter.minterType();
-      const accountToTestWith =
-        minterType.includes("V0") || minterType.includes("V1")
-          ? this.accounts.deployer
-          : this.accounts.artist;
-
-      await this.minter
-        .connect(this.accounts.artist)
-        .setProjectInvocationsPerAddress(this.projectZero, 0);
-      // Try without setProjectMaxInvocations, store gas cost
-      for (let i = 0; i < 15; i++) {
-        await this.minter
-          .connect(this.accounts.user)
-          ["purchase(uint256,bytes32[])"](
-            this.projectZero,
-            this.userMerkleProofZero,
-            {
-              value: this.pricePerTokenInWei,
-            }
-          );
-      }
-      const userBalanceNoMaxSet = await this.accounts.user.getBalance();
-      await expectRevert(
-        this.minter
-          .connect(this.accounts.user)
-          ["purchase(uint256,bytes32[])"](
-            this.projectZero,
-            this.userMerkleProofZero,
-            {
-              value: this.pricePerTokenInWei,
-            }
-          ),
-        "Must not exceed max invocations"
-      );
-      const userDeltaNoMaxSet = userBalanceNoMaxSet.sub(
-        BigNumber.from(await this.accounts.user.getBalance())
-      );
-
-      // Try with setProjectMaxInvocations, store gas cost
-      await this.minter
-        .connect(accountToTestWith)
-        .setProjectMaxInvocations(this.projectOne);
-      await this.minter
-        .connect(this.accounts.artist)
-        .setProjectInvocationsPerAddress(this.projectOne, 0);
-      for (let i = 0; i < 15; i++) {
-        await this.minter
-          .connect(this.accounts.user)
-          ["purchase(uint256,bytes32[])"](
-            this.projectOne,
-            this.userMerkleProofOne,
-            {
-              value: this.pricePerTokenInWei,
-            }
-          );
-      }
-      const userBalanceMaxSet = BigNumber.from(
-        await this.accounts.user.getBalance()
-      );
-      await expectRevert(
-        this.minter
-          .connect(this.accounts.user)
-          ["purchase(uint256,bytes32[])"](
-            this.projectOne,
-            this.userMerkleProofOne,
-            {
-              value: this.pricePerTokenInWei,
-            }
-          ),
-        "Maximum number of invocations reached"
-      );
-      const userDeltaMaxSet = userBalanceMaxSet.sub(
-        BigNumber.from(await this.accounts.user.getBalance())
-      );
-
-      console.log(
-        "Gas cost with setProjectMaxInvocations: ",
-        ethers.utils.formatUnits(userDeltaMaxSet, "ether").toString(),
-        "ETH"
-      );
-      console.log(
-        "Gas cost without setProjectMaxInvocations: ",
-        ethers.utils.formatUnits(userDeltaNoMaxSet, "ether").toString(),
-        "ETH"
-      );
-
-      expect(userDeltaMaxSet.lt(userDeltaNoMaxSet)).to.be.true;
     });
   });
 
