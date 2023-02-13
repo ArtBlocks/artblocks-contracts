@@ -1098,7 +1098,7 @@ contract GenArt721CoreV3_Engine is
      * @notice Adds a script to project `_projectId`.
      * @param _projectId Project to be updated.
      * @param _script Script to be added. Required to be a non-empty string,
-     *                but no further validation is performed.
+     * but no further validation is performed.
      */
     function addProjectScript(
         uint256 _projectId,
