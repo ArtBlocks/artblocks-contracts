@@ -67,6 +67,9 @@ contract MinterDAExpV4 is ReentrancyGuard, MinterBase, IFilteredMinterDAExpV1 {
     /// minterType for this minter
     string public constant minterType = "MinterDAExpV4";
 
+    /// minter version for this minter
+    string public constant minterVersion = "v4.1.0";
+
     uint256 constant ONE_MILLION = 1_000_000;
 
     struct ProjectConfig {
@@ -147,7 +150,7 @@ contract MinterDAExpV4 is ReentrancyGuard, MinterBase, IFilteredMinterDAExpV1 {
      */
     function setProjectMaxInvocations(
         uint256 _projectId
-    ) external onlyArtist(_projectId) {
+    ) public onlyArtist(_projectId) {
         uint256 maxInvocations;
         uint256 invocations;
         (invocations, maxInvocations, , , , ) = genArtCoreContract_Base
@@ -372,6 +375,16 @@ contract MinterDAExpV4 is ReentrancyGuard, MinterBase, IFilteredMinterDAExpV1 {
             _startPrice,
             _basePrice
         );
+
+        // sync local max invocations if not initially populated
+        // @dev if local max invocations and maxHasBeenInvoked are both
+        // initial values, we know they have not been populated.
+        if (
+            _projectConfig.maxInvocations == 0 &&
+            _projectConfig.maxHasBeenInvoked == false
+        ) {
+            setProjectMaxInvocations(_projectId);
+        }
     }
 
     /**
@@ -460,10 +473,25 @@ contract MinterDAExpV4 is ReentrancyGuard, MinterBase, IFilteredMinterDAExpV1 {
         // EFFECTS
         tokenId = minterFilter.mint(_to, _projectId, msg.sender);
 
-        // okay if this underflows because if statement will always eval false.
-        // this is only for gas optimization (core enforces maxInvocations).
+        // invocation is token number plus one, and will never overflow due to
+        // limit of 1e6 invocations per project. block scope for gas efficiency
+        // (i.e. avoid an unnecessary var initialization to 0).
         unchecked {
-            if (tokenId % ONE_MILLION == _projectConfig.maxInvocations - 1) {
+            uint256 tokenInvocation = (tokenId % ONE_MILLION) + 1;
+            uint256 localMaxInvocations = _projectConfig.maxInvocations;
+            // handle the case where the token invocation == minter local max
+            // invocations occurred on a different minter, and we have a stale
+            // local maxHasBeenInvoked value returning a false negative.
+            // @dev this is a CHECK after EFFECTS, so security was considered
+            // in detail here.
+            require(
+                tokenInvocation <= localMaxInvocations,
+                "Maximum invocations reached"
+            );
+            // in typical case, update the local maxHasBeenInvoked value
+            // to true if the token invocation == minter local max invocations
+            // (enables gas efficient reverts after sellout)
+            if (tokenInvocation == localMaxInvocations) {
                 _projectConfig.maxHasBeenInvoked = true;
             }
         }
