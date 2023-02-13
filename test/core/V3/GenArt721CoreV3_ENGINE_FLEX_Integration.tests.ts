@@ -22,7 +22,7 @@ import { FOUR_WEEKS } from "../../util/constants";
 
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
-  "GenArt721CoreV3_Engine_Flex", // V3 core Engine contract
+  "GenArt721CoreV3_Engine_Flex", // V3 core Engine Flex contract
 ];
 
 /**
@@ -102,6 +102,8 @@ for (const coreContractName of coreContractsToTest) {
           "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo"
         );
         expect(externalAssetDependency[1]).to.equal(0);
+        expect(externalAssetDependency[2]).to.equal(constants.ZERO_ADDRESS);
+        expect(externalAssetDependency[3]).to.equal("");
       });
 
       it("can add an external asset dependency (on-chain)", async function () {
@@ -114,11 +116,14 @@ for (const coreContractName of coreContractsToTest) {
         )
           .to.emit(this.genArt721Core, "ExternalAssetDependencyUpdated")
           .withArgs(0, 0, "", 2, 1);
-        const externalAssetDependencyData = await this.genArt721Core
+        const externalAssetDependency = await this.genArt721Core
           .connect(this.accounts.artist)
-          .projectOnChainExternalAssetDependencyByIndex(0, 0);
+          .projectExternalAssetDependencyByIndex(0, 0);
 
-        expect(externalAssetDependencyData).to.equal(dataString);
+        expect(externalAssetDependency[0]).to.equal("");
+        expect(externalAssetDependency[1]).to.equal(2);
+        expect(externalAssetDependency[2]).to.not.equal(constants.ZERO_ADDRESS);
+        expect(externalAssetDependency[3]).to.equal(dataString);
       });
 
       it("can remove an external asset dependency (off-chain)", async function () {
@@ -173,9 +178,9 @@ for (const coreContractName of coreContractsToTest) {
       });
 
       it("can remove an external asset dependency (on-chain)", async function () {
-        // add assets for project 0 at index 0, 1, 2
         const dataString = "here is some data";
-
+        const dataString2 = "here is some data2";
+        // add assets for project 0 at index 0, 1, 2
         await this.genArt721Core
           .connect(this.accounts.artist)
           .addProjectExternalAssetDependency(
@@ -188,11 +193,13 @@ for (const coreContractName of coreContractsToTest) {
           .addProjectExternalAssetDependency(this.projectZero, dataString, 1);
         await this.genArt721Core
           .connect(this.accounts.artist)
-          .addProjectExternalAssetDependency(
-            this.projectZero,
-            "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo3",
-            0
-          );
+          .addProjectExternalAssetDependency(this.projectZero, dataString2, 2);
+
+        const externalAssetDependencyAtIndex2BeforeDeletion =
+          await this.genArt721Core
+            .connect(this.accounts.artist)
+            .projectExternalAssetDependencyByIndex(0, 2);
+
         // remove external asset at index 1
         await this.genArt721Core
           .connect(this.accounts.artist)
@@ -204,16 +211,20 @@ for (const coreContractName of coreContractsToTest) {
           .projectExternalAssetDependencyByIndex(0, 2);
         expect(externalAssetDependency[0]).to.equal("");
         expect(externalAssetDependency[1]).to.equal(0);
+        expect(externalAssetDependency[2]).to.equal(constants.ZERO_ADDRESS);
+        expect(externalAssetDependency[3]).to.equal("");
 
         // project external asset info at index 1 should be set be set to the same values as index 2, prior to removal
         // this test also validates the deepy copy of the shifted external asset dependency
         const externalAssetDependencyAtIndex1 = await this.genArt721Core
           .connect(this.accounts.artist)
           .projectExternalAssetDependencyByIndex(0, 1);
-        expect(externalAssetDependencyAtIndex1[0]).to.equal(
-          "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo3"
+        expect(externalAssetDependencyAtIndex1[0]).to.equal("");
+        expect(externalAssetDependencyAtIndex1[1]).to.equal(2);
+        expect(externalAssetDependencyAtIndex1[2]).to.equal(
+          externalAssetDependencyAtIndex2BeforeDeletion[2]
         );
-        expect(externalAssetDependencyAtIndex1[1]).to.equal(0);
+        expect(externalAssetDependencyAtIndex1[3]).to.equal(dataString2);
 
         const externalAssetDependencyCount = await this.genArt721Core
           .connect(this.accounts.artist)
@@ -255,6 +266,64 @@ for (const coreContractName of coreContractsToTest) {
           "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo2"
         );
         expect(externalAssetDependency2[1]).to.equal(1);
+      });
+
+      it("can update an external asset dependency (on-chain)", async function () {
+        // validating that an off-chain asset dependency can be updated to an on-chain asset dependency
+        const dataString = "here is some data";
+        // add assets for project 0 at index 0
+        await this.genArt721Core
+          .connect(this.accounts.artist)
+          .addProjectExternalAssetDependency(
+            this.projectZero,
+            "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo",
+            0
+          );
+        // get asset info at index 0 for project 0
+        const externalAssetDependency = await this.genArt721Core
+          .connect(this.accounts.artist)
+          .projectExternalAssetDependencyByIndex(0, 0);
+        expect(externalAssetDependency[0]).to.equal(
+          "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo"
+        );
+        expect(externalAssetDependency[1]).to.equal(0);
+
+        // update asset info at index 0 for project 0
+        await this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectExternalAssetDependency(0, 0, dataString, 2);
+
+        const externalAssetDependency2 = await this.genArt721Core
+          .connect(this.accounts.artist)
+          .projectExternalAssetDependencyByIndex(0, 0);
+        expect(externalAssetDependency2[0]).to.equal("");
+        expect(externalAssetDependency2[1]).to.equal(2);
+        expect(externalAssetDependency2[2]).to.not.equal(
+          constants.ZERO_ADDRESS
+        );
+        expect(externalAssetDependency2[3]).to.equal(dataString);
+
+        // validate updating an on-chain asset with another on-chain asset
+        const externalAssetDependency2ByteCodeAddress =
+          externalAssetDependency2[2];
+        const dataString2 = "here is some more data2";
+        // update asset info at index 0 for project 0
+        await this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectExternalAssetDependency(0, 0, dataString2, 2);
+
+        const externalAssetDependency3 = await this.genArt721Core
+          .connect(this.accounts.artist)
+          .projectExternalAssetDependencyByIndex(0, 0);
+        expect(externalAssetDependency3[0]).to.equal("");
+        expect(externalAssetDependency3[1]).to.equal(2);
+        expect(externalAssetDependency3[2]).to.not.equal(
+          constants.ZERO_ADDRESS
+        );
+        expect(externalAssetDependency3[2]).to.not.equal(
+          externalAssetDependency2ByteCodeAddress
+        );
+        expect(externalAssetDependency3[3]).to.equal(dataString2);
       });
 
       it("can lock a projects external asset dependencies", async function () {

@@ -40,9 +40,18 @@ interface IGenArt721CoreContractV3_Engine_Flex is
         ARWEAVE,
         ONCHAIN
     }
+
     struct ExternalAssetDependency {
         string cid;
         ExternalAssetDependencyType dependencyType;
+        address bytecodeAddress;
+    }
+
+    struct ExternalAssetDependencyWithData {
+        string cid;
+        ExternalAssetDependencyType dependencyType;
+        address bytecodeAddress;
+        string data;
     }
 
     function updateIPFSGateway(string calldata _gateway) external;
@@ -54,13 +63,13 @@ interface IGenArt721CoreContractV3_Engine_Flex is
     function updateProjectExternalAssetDependency(
         uint256 _projectId,
         uint256 _index,
-        string memory _cid,
+        string memory _cidOrData,
         ExternalAssetDependencyType _dependencyType
     ) external;
 
     function addProjectExternalAssetDependency(
         uint256 _projectId,
-        string memory _cid,
+        string memory _cidOrData,
         ExternalAssetDependencyType _dependencyType
     ) external;
 
@@ -73,7 +82,7 @@ interface IGenArt721CoreContractV3_Engine_Flex is
     function projectExternalAssetDependencyByIndex(
         uint256 _projectId,
         uint256 _index
-    ) external view returns (ExternalAssetDependency memory);
+    ) external view returns (ExternalAssetDependencyWithData memory);
 
     // getter function of public mapping length
     function projectExternalAssetDependencyCount(

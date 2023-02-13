@@ -185,8 +185,6 @@ contract GenArt721CoreV3_Engine_Flex is
         bool externalAssetDependenciesLocked;
         uint24 externalAssetDependencyCount;
         mapping(uint256 => ExternalAssetDependency) externalAssetDependencies;
-        // mapping from external asset dependency index to address storing flex data in bytecode
-        mapping(uint256 => address) externalAssetDependencyBytecodeAddresses;
     }
 
     mapping(uint256 => Project) projects;
@@ -452,36 +450,30 @@ contract GenArt721CoreV3_Engine_Flex is
 
     /**
      * @notice Returns external asset dependency for project `_projectId` at index `_index`.
+     * If the dependencyType is ONCHAIN, the `data` field will contain the extrated bytecode data and `cid`
+     * will be an empty string. Conversly, for any other dependencyType, the `data` field will be an empty string
+     * and the `bytecodeAddress` will point to the zero address.
      */
     function projectExternalAssetDependencyByIndex(
         uint256 _projectId,
         uint256 _index
-    ) public view returns (ExternalAssetDependency memory) {
-        return projects[_projectId].externalAssetDependencies[_index];
-    }
+    ) public view returns (ExternalAssetDependencyWithData memory) {
+        ExternalAssetDependencyType _dependencyType = projects[_projectId]
+            .externalAssetDependencies[_index]
+            .dependencyType;
+        address _bytecodeAddress = projects[_projectId]
+            .externalAssetDependencies[_index]
+            .bytecodeAddress;
 
-    /**
-     * @notice Returns on-chain external asset dependency data for project `_projectId` at index `_index`.
-     */
-    function projectOnChainExternalAssetDependencyByIndex(
-        uint256 _projectId,
-        uint256 _index
-    ) public view returns (string memory) {
         return
-            projects[_projectId]
-                .externalAssetDependencyBytecodeAddresses[_index]
-                .readFromBytecode();
-    }
-
-    /*
-     * @notice Returns address with bytecode containing external asset dependency data for
-     * project `_projectId` at script index `_index`.
-     */
-    function projectExternalAssetDependencyBytecodeAddressByIndex(
-        uint256 _projectId,
-        uint256 _index
-    ) external view returns (address) {
-        return projects[_projectId].scriptBytecodeAddresses[_index];
+            ExternalAssetDependencyWithData({
+                dependencyType: _dependencyType,
+                cid: projects[_projectId].externalAssetDependencies[_index].cid,
+                bytecodeAddress: _bytecodeAddress,
+                data: (_dependencyType == ExternalAssetDependencyType.ONCHAIN)
+                    ? _bytecodeAddress.readFromBytecode()
+                    : ""
+            });
     }
 
     /**
@@ -530,9 +522,9 @@ contract GenArt721CoreV3_Engine_Flex is
                 projects[_projectId].externalAssetDependencies[_index].cid = "";
             }
 
-            projects[_projectId].externalAssetDependencyBytecodeAddresses[
-                _index
-            ] = _cidOrData.writeToBytecode();
+            projects[_projectId]
+                .externalAssetDependencies[_index]
+                .bytecodeAddress = _cidOrData.writeToBytecode();
             // we don't want to emit data, so we emit the cid as an empty string
             _cidOrData = "";
         } else {
@@ -570,15 +562,6 @@ contract GenArt721CoreV3_Engine_Flex is
 
         uint24 lastElementIndex = assetCount - 1;
 
-        if (
-            projects[_projectId]
-                .externalAssetDependencies[_index]
-                .dependencyType == ExternalAssetDependencyType.ONCHAIN
-        ) {
-            delete projects[_projectId]
-                .externalAssetDependencyBytecodeAddresses[_index];
-        }
-
         // copy last element to index of element to be removed
         projects[_projectId].externalAssetDependencies[_index] = projects[
             _projectId
@@ -590,14 +573,12 @@ contract GenArt721CoreV3_Engine_Flex is
                 .dependencyType == ExternalAssetDependencyType.ONCHAIN
         ) {
             // copy last element bytecode address to index of element to be removed
-            projects[_projectId].externalAssetDependencyBytecodeAddresses[
-                _index
-            ] = projects[_projectId].externalAssetDependencyBytecodeAddresses[
-                lastElementIndex
-            ];
-            // delete last element bytecode address
-            delete projects[_projectId]
-                .externalAssetDependencyBytecodeAddresses[lastElementIndex];
+            // if we are dealing with an onchain external asset dependency
+            projects[_projectId]
+                .externalAssetDependencies[_index]
+                .bytecodeAddress = projects[_projectId]
+                .externalAssetDependencies[lastElementIndex]
+                .bytecodeAddress;
         }
 
         delete projects[_projectId].externalAssetDependencies[lastElementIndex];
@@ -627,16 +608,16 @@ contract GenArt721CoreV3_Engine_Flex is
             this.updateProjectExternalAssetDependency.selector
         );
         uint24 assetCount = projects[_projectId].externalAssetDependencyCount;
+        address _bytecodeAddress = address(0);
         // if the incoming dependency type is onchain, we need to write the data to bytecode
         if (_dependencyType == ExternalAssetDependencyType.ONCHAIN) {
-            projects[_projectId].externalAssetDependencyBytecodeAddresses[
-                assetCount
-            ] = _cidOrData.writeToBytecode();
+            _bytecodeAddress = _cidOrData.writeToBytecode();
             _cidOrData = "";
         }
         ExternalAssetDependency memory asset = ExternalAssetDependency({
             cid: _cidOrData,
-            dependencyType: _dependencyType
+            dependencyType: _dependencyType,
+            bytecodeAddress: _bytecodeAddress
         });
         projects[_projectId].externalAssetDependencies[assetCount] = asset;
         projects[_projectId].externalAssetDependencyCount = assetCount + 1;
