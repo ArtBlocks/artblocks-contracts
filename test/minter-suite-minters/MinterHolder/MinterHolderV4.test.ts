@@ -692,7 +692,7 @@ for (const coreContractName of coreContractsToTest) {
       });
     });
 
-    describe.only("purchase", async function () {
+    describe("purchase", async function () {
       it("does not allow purchases even if local max invocations value is returning a false negative", async function () {
         // set local max invocations to 2 (since one token already minted)
         await this.minter

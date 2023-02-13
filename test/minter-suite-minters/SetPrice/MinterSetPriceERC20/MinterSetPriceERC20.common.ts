@@ -277,7 +277,7 @@ export const MinterSetPriceERC20_Common = async () => {
         this.minter.connect(this.accounts.user).purchase(this.projectZero, {
           value: this.pricePerTokenInWei,
         }),
-        "Maximum invocations reached"
+        "Maximum number of invocations reached"
       );
     });
 

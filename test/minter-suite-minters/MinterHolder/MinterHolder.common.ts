@@ -748,7 +748,7 @@ export const MinterHolder_Common = async () => {
         );
     });
 
-    it("does nothing if setProjectMaxInvocations is not called (fails correctly)", async function () {
+    it("auto-configures if setProjectMaxInvocations is not called (fails correctly)", async function () {
       // allow holders of project zero to mint on project one
       await this.minter
         .connect(this.accounts.artist)
@@ -770,7 +770,7 @@ export const MinterHolder_Common = async () => {
           );
       }
 
-      // expect revert after project hits max invocations
+      // since auto-configured, we should see the minter's revert message
       await expectRevert(
         this.minter
           .connect(this.accounts.artist)
@@ -782,7 +782,7 @@ export const MinterHolder_Common = async () => {
               value: this.pricePerTokenInWei,
             }
           ),
-        "Must not exceed max invocations"
+        "Maximum number of invocations reached"
       );
     });
 

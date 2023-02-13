@@ -629,7 +629,7 @@ export const MinterMerkle_Common = async () => {
               value: this.pricePerTokenInWei,
             }
           ),
-        "Maximum invocations reached"
+        "Maximum number of invocations reached"
       );
     });
 
