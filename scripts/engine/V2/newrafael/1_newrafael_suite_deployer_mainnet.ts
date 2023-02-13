@@ -23,13 +23,13 @@ enum MinterTypes {
 // CONFIG BEGINS HERE
 //////////////////////////////////////////////////////////////////////////////
 const pbabTokenName = "newrafael.work";
-const pbabTokenTicker = "RAFAEL";
+const pbabTokenTicker = "NEWRAFAEL";
 const startingProjectId = 0;
 const pbabTransferAddress = "0x0F441cFaD93287109F5eF834bF52F4aaaa8d8ffa";
-// ab-wallet, **testnet ONLY**
-const rendererProviderAddress = "0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63";
-// goerli address
-const randomizerAddress = "0xec5dae4b11213290b2dbe5295093f75920bd2982";
+// ab-wallet
+const rendererProviderAddress = "0x55140312954F43C724B2064914f12c9a8bF27Ea9";
+// mainnet address
+const randomizerAddress = "0x088098f7438773182b703625c4128aff85fcffc4";
 const minterType = MinterTypes.FixedPrice;
 // The following is not required, but if not set, must be set later by platform
 // for Royalty Registry to work (will be ignored of set to "0x0...dEaD")
