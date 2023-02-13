@@ -31,6 +31,7 @@ const coreContractsToTest = [
   "GenArt721CoreV3", // flagship V3 core
   "GenArt721CoreV3_Explorations", // V3 core explorations contract
   "GenArt721CoreV3_Engine", // V3 core engine contract
+  "GenArt721CoreV3_Engine_Flex", // V3 core Engine Flex contract
 ];
 
 const TARGET_MINTER_NAME = "MinterDALinV4";
@@ -320,9 +321,15 @@ for (const coreContractName of coreContractsToTest) {
         );
         // assuming a cost of 100 GWEI
         if (this.isEngine) {
-          expect(txCost.toString()).to.equal(
-            ethers.utils.parseEther("0.0150955")
-          );
+          if (coreContractName.includes("Flex")) {
+            expect(txCost.toString()).to.equal(
+              ethers.utils.parseEther("0.0150954")
+            );
+          } else {
+            expect(txCost.toString()).to.equal(
+              ethers.utils.parseEther("0.0150976")
+            );
+          }
         } else {
           expect(txCost.toString()).to.equal(
             ethers.utils.parseEther("0.0138617")
