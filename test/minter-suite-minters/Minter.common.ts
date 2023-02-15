@@ -97,7 +97,7 @@ export const Minter_Common = async () => {
   describe("setProjectMaxInvocations", async function () {
     it("allows artist/deployer to call setProjectMaxInvocations", async function () {
       const minterType = await this.minter.minterType();
-      if (!minterType.includes("Settlement")) {
+      if (!minterType.startsWith("MinterDAExpSettlementV")) {
         // minters above v2 do NOT use onlyCoreWhitelisted modifier for setProjectMaxInvocations
         const accountToTestWith =
           minterType.includes("V0") || minterType.includes("V1")
@@ -108,41 +108,51 @@ export const Minter_Common = async () => {
           .connect(accountToTestWith)
           .setProjectMaxInvocations(this.projectZero);
       } else {
+        // default revert message for DAExpSettlementV2+
+        let revertMessage = "Not implemented";
         // minters that settle on-chain should not support this function
+        if (
+          minterType === "MinterDAExpSettlementV0" ||
+          minterType === "MinterDAExpSettlementV1"
+        ) {
+          revertMessage =
+            "setProjectMaxInvocations not implemented - updated during every mint";
+        }
+
         await expectRevert(
           this.minter
             .connect(this.accounts.artist)
             .setProjectMaxInvocations(this.projectZero),
-          "setProjectMaxInvocations not implemented - updated during every mint"
+          revertMessage
         );
       }
     });
 
     it("updates local projectMaxInvocations after syncing to core", async function () {
       const minterType = await this.minter.minterType();
-      if (!minterType.includes("Settlement")) {
-        // minters above v2 do NOT use onlyCoreWhitelisted modifier for setProjectMaxInvocations
-        const accountToTestWith =
-          minterType.includes("V0") || minterType.includes("V1")
-            ? this.accounts.deployer
-            : this.accounts.artist;
-        // update max invocations to 1 on the core
-        await this.genArt721Core
-          .connect(this.accounts.artist)
-          .updateProjectMaxInvocations(this.projectZero, 2);
-        // sync max invocations on minter
-        await this.minter
-          .connect(accountToTestWith)
-          .setProjectMaxInvocations(this.projectZero);
-        // expect max invocations to be 1 on the minter
-        expect(
-          await this.minter.projectMaxInvocations(this.projectZero)
-        ).to.be.equal(2);
-      } else {
-        console.info(
-          "skipping setProjectMaxInvocations test because not implemented on settlement minters"
+      if (minterType.startsWith("MinterDAExpSettlementV")) {
+        console.log(
+          "setProjectMaxInvocations not supported for DAExpSettlement minters"
         );
+        return;
       }
+      // minters above v2 do NOT use onlyCoreWhitelisted modifier for setProjectMaxInvocations
+      const accountToTestWith =
+        minterType.includes("V0") || minterType.includes("V1")
+          ? this.accounts.deployer
+          : this.accounts.artist;
+      // update max invocations to 1 on the core
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectMaxInvocations(this.projectZero, 2);
+      // sync max invocations on minter
+      await this.minter
+        .connect(accountToTestWith)
+        .setProjectMaxInvocations(this.projectZero);
+      // expect max invocations to be 2 on the minter
+      expect(
+        await this.minter.projectMaxInvocations(this.projectZero)
+      ).to.be.equal(2);
     });
   });
 };

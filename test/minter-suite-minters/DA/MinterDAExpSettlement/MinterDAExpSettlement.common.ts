@@ -155,6 +155,41 @@ export async function selloutMidAuction(projectId: number): Promise<void> {
 }
 
 /**
+ * helper function that:
+ *  - sets local max invocations on minter to 2
+ *  - sells out a project during an auction, before reaching base price
+ * results in a state where revenues have not been withdrawn, but project has a
+ * final price at which it sold out, due to local minter max invocations (not
+ * core contract max invocations)
+ * @dev intended to be called with `this` bound to a test context
+ * @dev reduces minter-local project max invocations to 2, so that the project will sell out
+ * with a two purchases (ensuring that calculations involving
+ * numSettleableInvocations are tested properly)
+ * @param projectId project ID to use for minting. assumes project exists and
+ * is configured with a minter that supports this test.
+ */
+export async function selloutMidAuctionLocalMaxInvocations(
+  projectId: number
+): Promise<void> {
+  // reduce max invocations to 2 on the minter (not core contract)
+  await this.minter
+    .connect(this.accounts.artist)
+    .manuallyLimitProjectMaxInvocations(projectId, 2);
+  // advance to auction start time
+  await ethers.provider.send("evm_mine", [
+    this.startTime + this.auctionStartTimeOffset,
+  ]);
+  // purchase two pieces to achieve sellout
+  for (let i = 0; i < 2; i++) {
+    await this.minter.connect(this.accounts.user).purchase_H4M(projectId, {
+      value: this.startingPrice,
+    });
+  }
+  // leave in a state where project sold out, but revenues have not been
+  // withdrawn
+}
+
+/**
  * These tests are intended to check common DAExp functionality.
  * @dev assumes common BeforeEach to populate accounts, constants, and setup
  */
@@ -546,6 +581,10 @@ export const MinterDAExpSettlement_Common = async () => {
       await this.genArt721Core
         .connect(this.accounts.artist)
         .updateProjectMaxInvocations(this.projectZero, 1);
+      // sync max invocations on minter
+      await this.minter
+        .connect(this.accounts.artist)
+        .manuallyLimitProjectMaxInvocations(this.projectZero, 1);
       // max invocations automatically syncs during purchase on this minter
       // mint a token
       await ethers.provider.send("evm_mine", [
@@ -561,11 +600,36 @@ export const MinterDAExpSettlement_Common = async () => {
       expect(hasMaxBeenInvoked).to.be.true;
     });
 
-    it("blocks minting after a project max has been invoked", async function () {
+    it("returns false if value never cached on the minter", async function () {
       // reduce maxInvocations to 2 on core
       await this.genArt721Core
         .connect(this.accounts.artist)
         .updateProjectMaxInvocations(this.projectZero, 1);
+      // do NOT sync max invocations on minter
+      // max invocations automatically syncs during purchase on this minter
+      // mint a token
+      await ethers.provider.send("evm_mine", [
+        this.startTime + this.auctionStartTimeOffset,
+      ]);
+      await this.minter.connect(this.accounts.user).purchase(this.projectZero, {
+        value: this.startingPrice,
+      });
+      // expect projectMaxHasBeenInvoked to be false, because it was never cached
+      const hasMaxBeenInvoked = await this.minter.projectMaxHasBeenInvoked(
+        this.projectZero
+      );
+      expect(hasMaxBeenInvoked).to.be.false;
+    });
+
+    it("blocks minting after a project max has been invoked, when caching maxInvocations on the minter", async function () {
+      // reduce maxInvocations to 2 on core
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectMaxInvocations(this.projectZero, 1);
+      // sync max invocations on minter
+      await this.minter
+        .connect(this.accounts.artist)
+        .manuallyLimitProjectMaxInvocations(this.projectZero, 1);
       // max invocations automatically syncs during purchase on this minter
       // mint a token
       await ethers.provider.send("evm_mine", [
@@ -585,6 +649,35 @@ export const MinterDAExpSettlement_Common = async () => {
           value: this.startingPrice,
         }),
         "Maximum number of invocations reached"
+      );
+    });
+
+    it("blocks minting after a project max has been invoked, when NOT caching maxInvocations on the minter", async function () {
+      // reduce maxInvocations to 2 on core
+      await this.genArt721Core
+        .connect(this.accounts.artist)
+        .updateProjectMaxInvocations(this.projectZero, 1);
+      // do NOT sync max invocations on minter
+      // max invocations automatically syncs during purchase on this minter
+      // mint a token
+      await ethers.provider.send("evm_mine", [
+        this.startTime + this.auctionStartTimeOffset,
+      ]);
+      await this.minter.connect(this.accounts.user).purchase(this.projectZero, {
+        value: this.startingPrice,
+      });
+      // expect projectMaxHasBeenInvoked to be false
+      const hasMaxBeenInvoked = await this.minter.projectMaxHasBeenInvoked(
+        this.projectZero
+      );
+      expect(hasMaxBeenInvoked).to.be.false;
+      // expect revert when trying to mint another token
+      // note: this is a different revert message than when caching maxInvocations on the minter, because core is enforcing the maxInvocations
+      await expectRevert(
+        this.minter.connect(this.accounts.user).purchase(this.projectZero, {
+          value: this.startingPrice,
+        }),
+        "Must not exceed max invocations"
       );
     });
   });
@@ -2100,12 +2193,16 @@ export const MinterDAExpSettlement_Common = async () => {
   describe("getPriceInfo", async function () {
     it("returns sellout price after project sells out", async function () {
       await selloutMidAuction.call(this, this.projectZero);
-      // go forward in time to end of auction
-      await ethers.provider.send("evm_mine", [
-        this.startTime +
-          this.auctionStartTimeOffset +
-          10 * this.defaultHalfLife,
-      ]);
+      // price should still be latestTokenPrice price, > auction base price
+      const priceInfo = await this.minter.getPriceInfo(this.projectZero);
+      const projectConfig = await this.minter.projectConfig(this.projectZero);
+      const latestPurchasePrice = projectConfig.latestPurchasePrice;
+      expect(priceInfo.tokenPriceInWei).to.equal(latestPurchasePrice);
+      expect(priceInfo.tokenPriceInWei).to.be.gt(this.basePrice);
+    });
+
+    it("returns sellout price after project sells out due to local max invocation limit", async function () {
+      await selloutMidAuctionLocalMaxInvocations.call(this, this.projectZero);
       // price should still be latestTokenPrice price, > auction base price
       const priceInfo = await this.minter.getPriceInfo(this.projectZero);
       const projectConfig = await this.minter.projectConfig(this.projectZero);
@@ -2173,189 +2270,6 @@ export const MinterDAExpSettlement_Common = async () => {
           latestPurchasePrice,
           this.basePrice
         );
-    });
-  });
-
-  describe("Invocations reduction on core mid-auction", async function () {
-    it("prevents revenue withdrawals until reaching base price if artist reduces max invocations to current invocations on core contract mid-auction", async function () {
-      // models the following situation:
-      // - auction is not sold out
-      // artist reduces maxInvocations on core contract, completing the project
-      // desired state:
-      // - artist should not be able to withdraw revenue until end of auction
-      // - "latestPurchasePrice" price should be update to be the auction base price,
-      //    once revenue is withdrawn
-      const originalBalanceArtist = await this.accounts.artist.getBalance();
-      const originalBalanceUser = await this.accounts.user.getBalance();
-
-      // purchase a couple tokens (at zero gas fee), do not sell out auction
-      await purchaseTokensMidAuction.call(this, this.projectZero);
-      // get current invocations on project
-      const projectState = await this.genArt721Core.projectStateData(
-        this.projectZero
-      );
-      const invocations = projectState.invocations;
-      // artist reduces invocations on core contract
-      await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
-      await this.genArt721Core
-        .connect(this.accounts.artist)
-        .updateProjectMaxInvocations(this.projectZero, invocations, {
-          gasPrice: 0,
-        });
-      // artist should NOT be able to withdraw revenue
-      await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
-      await expectRevert(
-        this.minter
-          .connect(this.accounts.artist)
-          .withdrawArtistAndAdminRevenues(this.projectZero, { gasPrice: 0 }),
-        "Active auction not yet sold out"
-      );
-      // latestPurchasePrice is > base price
-      const projectConfig = await this.minter.projectConfig(this.projectZero);
-      expect(projectConfig.latestPurchasePrice).to.be.gt(
-        projectConfig.basePrice
-      );
-      // advance past end of auction, so base price becomes base price
-      await ethers.provider.send("evm_mine", [
-        this.startTime +
-          this.auctionStartTimeOffset +
-          this.defaultHalfLife * 10,
-      ]);
-      // artist should be able to withdraw revenue, and net proceedes should be as if sellout price was auction base price
-      await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
-      await this.minter
-        .connect(this.accounts.artist)
-        .withdrawArtistAndAdminRevenues(this.projectZero, { gasPrice: 0 });
-      // user should be able to withdraw settlement as if sellout price was auction base price
-      await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
-      await this.minter
-        .connect(this.accounts.user)
-        .reclaimProjectExcessSettlementFunds(this.projectZero, {
-          gasPrice: 0,
-        });
-      // user balance should reflect proper settlement amount
-      const newBalanceArtist = await this.accounts.artist.getBalance();
-      const newBalanceUser = await this.accounts.user.getBalance();
-      // artist should have received 90% of total revenue (10% went to Art Blocks), or 80% of total revenue if engine
-      const targetArtistPercentage = this.isEngine ? 80 : 90;
-      const targetArtistRevenue = this.basePrice
-        .mul(targetArtistPercentage)
-        .div(100)
-        .mul(2); // 2 tokens purchased
-      expect(newBalanceArtist).to.be.equal(
-        originalBalanceArtist.add(targetArtistRevenue)
-      );
-      const totalRevenue = this.basePrice.mul(2); // 2 tokens purchased
-      // user should have spent 100% of total revenue (100% came from this user)
-      expect(newBalanceUser).to.be.equal(
-        originalBalanceUser.sub(this.basePrice.mul(2))
-      );
-    });
-
-    it("prevents revenue withdrawals until reaching base price if artist reduces max invocations to current invocations on core contract mid-auction2", async function () {
-      // models the following situation:
-      // - auction is not sold out
-      // - auction is reset by admin
-      // artist reduces maxInvocations on core contract, completing the project
-      // desired state:
-      // - artist should not be able to withdraw revenue until a new auction is
-      //   configured, and the new auction reaches base price
-      // - "latestPurchasePrice" price should be update to be the auction base price,
-      //    once revenue is withdrawn
-      // (overall this is a very odd situation to be in, but we want to make sure no
-      // funds are lost or stuck in the contract)
-      const originalBalanceArtist = await this.accounts.artist.getBalance();
-      const originalBalanceUser = await this.accounts.user.getBalance();
-
-      // purchase a couple tokens (at zero gas fee), do not sell out auction
-      await purchaseTokensMidAuction.call(this, this.projectZero);
-      // admin resets auction
-      await this.minter
-        .connect(this.accounts.deployer)
-        .resetAuctionDetails(this.projectZero);
-      // get current invocations on project
-      const projectState = await this.genArt721Core.projectStateData(
-        this.projectZero
-      );
-      const invocations = projectState.invocations;
-      // artist reduces invocations on core contract
-      await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
-      await this.genArt721Core
-        .connect(this.accounts.artist)
-        .updateProjectMaxInvocations(this.projectZero, invocations, {
-          gasPrice: 0,
-        });
-      // artist should NOT be able to withdraw revenue
-      await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
-      await expectRevert(
-        this.minter
-          .connect(this.accounts.artist)
-          .withdrawArtistAndAdminRevenues(this.projectZero, { gasPrice: 0 }),
-        "Only configured auctions"
-      );
-      // latestPurchasePrice is > base price
-      const projectConfig = await this.minter.projectConfig(this.projectZero);
-      expect(projectConfig.latestPurchasePrice).to.be.gt(
-        projectConfig.basePrice
-      );
-      // artist configures new auction
-      await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
-      const newStartTime =
-        this.startTime + this.auctionStartTimeOffset * 2 + 2 * ONE_MINUTE;
-      await this.minter
-        .connect(this.accounts.artist)
-        .setAuctionDetails(
-          this.projectZero,
-          newStartTime,
-          this.defaultHalfLife,
-          projectConfig.latestPurchasePrice,
-          this.basePrice,
-          { gasPrice: 0 }
-        );
-      // advance past start of auction
-      await ethers.provider.send("evm_mine", [newStartTime + ONE_MINUTE]);
-      // artist should NOT be able to withdraw revenue
-      await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
-      await expectRevert(
-        this.minter
-          .connect(this.accounts.artist)
-          .withdrawArtistAndAdminRevenues(this.projectZero, { gasPrice: 0 }),
-        "Active auction not yet sold out"
-      );
-
-      // advance past end of auction, so base price becomes base price
-      await ethers.provider.send("evm_mine", [
-        newStartTime + this.defaultHalfLife * 10,
-      ]);
-      // artist should be able to withdraw revenue, and net proceedes should be as if sellout price was auction base price
-      await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
-      await this.minter
-        .connect(this.accounts.artist)
-        .withdrawArtistAndAdminRevenues(this.projectZero, { gasPrice: 0 });
-      // user should be able to withdraw settlement as if sellout price was auction base price
-      await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", ["0x0"]);
-      await this.minter
-        .connect(this.accounts.user)
-        .reclaimProjectExcessSettlementFunds(this.projectZero, {
-          gasPrice: 0,
-        });
-      // user balance should reflect proper settlement amount
-      const newBalanceArtist = await this.accounts.artist.getBalance();
-      const newBalanceUser = await this.accounts.user.getBalance();
-      // artist should have received 90% of total revenue (10% went to Art Blocks), or 80% of total revenue if engine
-      const targetArtistPercentage = this.isEngine ? 80 : 90;
-      const targetArtistRevenue = this.basePrice
-        .mul(targetArtistPercentage)
-        .div(100)
-        .mul(2); // 2 tokens purchased
-      expect(newBalanceArtist).to.be.equal(
-        originalBalanceArtist.add(targetArtistRevenue)
-      );
-      // user should have spent 100% of total revenue (100% came from this user)
-      const totalRevenue = this.basePrice.mul(2); // 2 tokens purchased
-      expect(newBalanceUser).to.be.equal(
-        originalBalanceUser.sub(this.basePrice.mul(2))
-      );
     });
   });
 };
