@@ -27,6 +27,7 @@ const coreContractsToTest = [
 ];
 
 const TARGET_MINTER_NAME = "MinterSetPriceERC20V4";
+const TARGET_MINTER_VERSION = "v4.1.0";
 
 /**
  * These tests intended to ensure this Filtered Minter integrates properly with
@@ -555,6 +556,54 @@ for (const coreContractName of coreContractsToTest) {
       });
     });
 
+    describe("purchase", async function () {
+      it("does not allow purchases even if local max invocations value is returning a false negative", async function () {
+        // set local max invocations to 1
+        await this.minter
+          .connect(this.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(this.projectZero, 1);
+        // switch to different minter
+        const setPriceFactory = await ethers.getContractFactory(
+          "MinterSetPriceV4"
+        );
+        const setPriceMinter = await setPriceFactory.deploy(
+          this.genArt721Core.address,
+          this.minterFilter.address
+        );
+        await this.minterFilter.addApprovedMinter(setPriceMinter.address);
+        await this.minterFilter
+          .connect(this.accounts.artist)
+          .setMinterForProject(0, setPriceMinter.address);
+        // purchase a token on the new minter
+        await setPriceMinter
+          .connect(this.accounts.artist)
+          .updatePricePerTokenInWei(
+            this.projectZero,
+            ethers.utils.parseEther("0")
+          );
+        await setPriceMinter
+          .connect(this.accounts.artist)
+          .purchase(this.projectZero);
+        // switch back to original minter
+        await this.minterFilter
+          .connect(this.accounts.artist)
+          .setMinterForProject(0, this.minter.address);
+        await expectRevert(
+          this.minter.connect(this.accounts.user).purchase(this.projectZero, {
+            value: this.pricePerTokenInWei,
+          }),
+          "Maximum invocations reached"
+        );
+      });
+    });
+
+    describe("minterVersion", async function () {
+      it("correctly reports minterVersion", async function () {
+        const minterVersion = await this.minter.minterVersion();
+        expect(minterVersion).to.equal(TARGET_MINTER_VERSION);
+      });
+    });
+
     describe("calculates gas", async function () {
       it("mints and calculates gas values [ @skip-on-coverage ]", async function () {
         const tx = await this.minter
@@ -576,11 +625,11 @@ for (const coreContractName of coreContractsToTest) {
         // assuming a cost of 100 GWEI
         if (this.isEngine) {
           expect(txCost.toString()).to.equal(
-            ethers.utils.parseEther("0.0141578")
+            ethers.utils.parseEther("0.0141627")
           );
         } else {
           expect(txCost.toString()).to.equal(
-            ethers.utils.parseEther("0.012924")
+            ethers.utils.parseEther("0.0129289")
           );
         }
       });

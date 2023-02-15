@@ -748,7 +748,7 @@ export const MinterHolder_Common = async () => {
         );
     });
 
-    it("does nothing if setProjectMaxInvocations is not called (fails correctly)", async function () {
+    it("auto-configures if setProjectMaxInvocations is not called (fails correctly)", async function () {
       // allow holders of project zero to mint on project one
       await this.minter
         .connect(this.accounts.artist)
@@ -770,7 +770,7 @@ export const MinterHolder_Common = async () => {
           );
       }
 
-      // expect revert after project hits max invocations
+      // since auto-configured, we should see the minter's revert message
       await expectRevert(
         this.minter
           .connect(this.accounts.artist)
@@ -782,7 +782,7 @@ export const MinterHolder_Common = async () => {
               value: this.pricePerTokenInWei,
             }
           ),
-        "Must not exceed max invocations"
+        "Maximum number of invocations reached"
       );
     });
 
@@ -851,95 +851,6 @@ export const MinterHolder_Common = async () => {
       // Check that with setProjectMaxInvocations it's not too much moer expensive
       expect(gasCostMaxInvocations < (gasCostNoMaxInvocations * 110) / 100).to
         .be.true;
-    });
-
-    it("fails more cheaply if setProjectMaxInvocations is set", async function () {
-      // Try without setProjectMaxInvocations, store gas cost
-      for (let i = 0; i < this.maxInvocations - 1; i++) {
-        await this.minter
-          .connect(this.accounts.artist)
-          ["purchase(uint256,address,uint256)"](
-            this.projectZero,
-            this.genArt721Core.address,
-            this.projectZeroTokenZero.toNumber(),
-            {
-              value: this.pricePerTokenInWei,
-            }
-          );
-      }
-      const artistBalanceNoMaxSet = await this.accounts.artist.getBalance();
-      await expectRevert(
-        this.minter
-          .connect(this.accounts.artist)
-          ["purchase(uint256,address,uint256)"](
-            this.projectZero,
-            this.genArt721Core.address,
-            this.projectZeroTokenZero.toNumber(),
-            {
-              value: this.pricePerTokenInWei,
-            }
-          ),
-        "Must not exceed max invocations"
-      );
-      const artistDeltaNoMaxSet = artistBalanceNoMaxSet.sub(
-        BigNumber.from(await this.accounts.artist.getBalance())
-      );
-
-      // Try with setProjectMaxInvocations, store gas cost
-      await this.minter
-        .connect(this.accounts.artist)
-        .allowHoldersOfProjects(
-          this.projectOne,
-          [this.genArt721Core.address],
-          [this.projectZero]
-        );
-      await this.minter
-        .connect(this.accounts.deployer)
-        .setProjectMaxInvocations(this.projectOne);
-      for (let i = 0; i < this.maxInvocations; i++) {
-        await this.minter
-          .connect(this.accounts.artist)
-          ["purchase(uint256,address,uint256)"](
-            this.projectOne,
-            this.genArt721Core.address,
-            this.projectZeroTokenZero.toNumber(),
-            {
-              value: this.pricePerTokenInWei,
-            }
-          );
-      }
-      const artistBalanceMaxSet = BigNumber.from(
-        await this.accounts.artist.getBalance()
-      );
-      await expectRevert(
-        this.minter
-          .connect(this.accounts.artist)
-          ["purchase(uint256,address,uint256)"](
-            this.projectOne,
-            this.genArt721Core.address,
-            this.projectZeroTokenZero.toNumber(),
-            {
-              value: this.pricePerTokenInWei,
-            }
-          ),
-        "Maximum number of invocations reached"
-      );
-      const artistDeltaMaxSet = artistBalanceMaxSet.sub(
-        BigNumber.from(await this.accounts.artist.getBalance())
-      );
-
-      console.log(
-        "Gas cost with setProjectMaxInvocations: ",
-        ethers.utils.formatUnits(artistDeltaMaxSet, "ether").toString(),
-        "ETH"
-      );
-      console.log(
-        "Gas cost without setProjectMaxInvocations: ",
-        ethers.utils.formatUnits(artistDeltaNoMaxSet, "ether").toString(),
-        "ETH"
-      );
-
-      expect(artistDeltaMaxSet.lt(artistDeltaNoMaxSet)).to.be.true;
     });
   });
 
