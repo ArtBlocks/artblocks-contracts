@@ -289,7 +289,16 @@ for (const coreContractName of coreContractsToTest) {
     });
 
     describe("manuallyLimitProjectMaxInvocations (1 of 2)", async function () {
-      it("resets maxHasBeenInvoked after it's been set to true locally and then max project invocations is synced from the core contract", async function () {
+      it("only allows input _maxInvocations to be gt 0", async function () {
+        await expectRevert(
+          this.minter
+            .connect(this.accounts.artist)
+            .manuallyLimitProjectMaxInvocations(this.projectZero, 0),
+          "Only max invocations gt 0"
+        );
+      });
+
+      it("reverts when attempting to reset maxHasBeenInvoked after it's been set to true locally", async function () {
         // reduce local maxInvocations to 2 on minter
         await this.minter
           .connect(this.accounts.artist)
@@ -316,24 +325,15 @@ for (const coreContractName of coreContractsToTest) {
         expect(hasMaxBeenInvoked).to.be.true;
 
         // sync max invocations from core to minter
-        await this.minter
-          .connect(this.accounts.artist)
-          .manuallyLimitProjectMaxInvocations(
-            this.projectZero,
-            this.maxInvocations
-          );
-
-        // expect projectMaxHasBeenInvoked to now be false
-        const hasMaxBeenInvoked2 = await this.minter.projectMaxHasBeenInvoked(
-          this.projectZero
+        await expectRevert(
+          this.minter
+            .connect(this.accounts.artist)
+            .manuallyLimitProjectMaxInvocations(
+              this.projectZero,
+              this.maxInvocations
+            ),
+          "Max invocations already reached"
         );
-        expect(hasMaxBeenInvoked2).to.be.false;
-
-        // expect maxInvocations on the minter to be 15
-        const syncedMaxInvocations = await this.minter
-          .connect(this.accounts.artist)
-          .projectMaxInvocations(this.projectZero);
-        expect(syncedMaxInvocations).to.equal(15);
       });
 
       it("safely syncs hasMaxBeenInvoked during withdraw revenues function, respecting the manually configured limit", async function () {
@@ -669,7 +669,7 @@ for (const coreContractName of coreContractsToTest) {
         );
       });
 
-      it("ignores local max invocations if re-syncs to core contract's max invocations", async function () {
+      it("prevents increasing max invocations after max invocations reached when minting", async function () {
         await purchaseTokensMidAuction.call(this, this.projectZero);
         // limit invocations == current invocations
         const projectStateData = await this.genArt721Core.projectStateData(
@@ -694,22 +694,19 @@ for (const coreContractName of coreContractsToTest) {
           }),
           "Maximum number of invocations reached"
         );
-        // re-sync to core contract's max invocations
-        await this.minter
-          .connect(this.accounts.artist)
-          .manuallyLimitProjectMaxInvocations(
-            this.projectZero,
-            this.maxInvocations
-          );
-        // purchase should be successful
-        await this.minter
-          .connect(this.accounts.user)
-          .purchase(this.projectZero, {
-            value: this.startingPrice,
-          });
+        // cannot update max invocations after already reached
+        await expectRevert(
+          this.minter
+            .connect(this.accounts.artist)
+            .manuallyLimitProjectMaxInvocations(
+              this.projectZero,
+              this.maxInvocations
+            ),
+          "Max invocations already reached"
+        );
       });
 
-      it("freezes price after local max invocations reached and revenues withdrawn", async function () {
+      it("does NOT allow changing of max invocations after already reached", async function () {
         await purchaseTokensMidAuction.call(this, this.projectZero);
         // limit invocations == current invocations
         const projectStateData = await this.genArt721Core.projectStateData(
@@ -721,77 +718,16 @@ for (const coreContractName of coreContractsToTest) {
             this.projectZero,
             projectStateData.invocations
           );
-        // artist withdraws revenues
-        await this.minter
-          .connect(this.accounts.artist)
-          .withdrawArtistAndAdminRevenues(this.projectZero);
-        // latest purchase price should be frozen
-        const projectConfig = await this.minter.projectConfig(this.projectZero);
-        const latestPurchasePrice = await projectConfig.latestPurchasePrice;
-        // artist sets max invocations back to core contract's max invocations
-        await this.minter
-          .connect(this.accounts.artist)
-          .manuallyLimitProjectMaxInvocations(
-            this.projectZero,
-            this.maxInvocations
-          );
-        // advance in time
-        await ethers.provider.send("evm_mine", [
-          this.startTime + this.auctionStartTimeOffset * 10,
-        ]);
-        // purchase should be successful
-        await this.minter
-          .connect(this.accounts.user)
-          .purchase(this.projectZero, {
-            value: latestPurchasePrice,
-          });
-        // latest purchase price should still be the same as the frozen price
-        const projectConfig2 = await this.minter.projectConfig(
-          this.projectZero
+        // artist gets revert when setting max invocations back to core contract's max invocations
+        await expectRevert(
+          this.minter
+            .connect(this.accounts.artist)
+            .manuallyLimitProjectMaxInvocations(
+              this.projectZero,
+              this.maxInvocations
+            ),
+          "Max invocations already reached"
         );
-        const latestPurchasePrice2 = await projectConfig2.latestPurchasePrice;
-        expect(latestPurchasePrice2).to.be.equal(latestPurchasePrice);
-      });
-
-      it("does NOT freeze price after local max invocations reached and revenues NOT withdrawn", async function () {
-        await purchaseTokensMidAuction.call(this, this.projectZero);
-        // limit invocations == current invocations
-        const projectStateData = await this.genArt721Core.projectStateData(
-          this.projectZero
-        );
-        await this.minter
-          .connect(this.accounts.artist)
-          .manuallyLimitProjectMaxInvocations(
-            this.projectZero,
-            projectStateData.invocations
-          );
-        // artist does NOT withdraw revenues
-        // latest purchase price should be NOT frozen
-        const projectConfig = await this.minter.projectConfig(this.projectZero);
-        const latestPurchasePrice = await projectConfig.latestPurchasePrice;
-        // artist sets max invocations back to core contract's max invocations
-        await this.minter
-          .connect(this.accounts.artist)
-          .manuallyLimitProjectMaxInvocations(
-            this.projectZero,
-            this.maxInvocations
-          );
-        // advance in time
-        await ethers.provider.send("evm_mine", [
-          this.startTime + this.auctionStartTimeOffset * 10,
-        ]);
-        // purchase should be successful
-        await this.minter
-          .connect(this.accounts.user)
-          .purchase(this.projectZero, {
-            value: latestPurchasePrice,
-          });
-        // latest purchase price have continued to decrease since revenues were not withdrawn
-        const projectConfig2 = await this.minter.projectConfig(
-          this.projectZero
-        );
-        const latestPurchasePrice2 = await projectConfig2.latestPurchasePrice;
-        expect(latestPurchasePrice2).to.be.lt(latestPurchasePrice);
       });
 
       it("allows withdrawals even when sellout not known locally, and using local max invocations", async function () {
@@ -952,24 +888,6 @@ for (const coreContractName of coreContractsToTest) {
     });
 
     describe("resetAuctionDetails", async function () {
-      it("doesn't lock latest purchase price to zero in extreme edge case", async function () {
-        // use local max invocations of zero to get "sellout" to true
-        await this.minter
-          .connect(this.accounts.artist)
-          .manuallyLimitProjectMaxInvocations(this.projectZero, 0);
-        // reset auction details to get base price to zero
-        await this.minter
-          .connect(this.accounts.deployer)
-          .resetAuctionDetails(this.projectZero);
-        // now base price == 0, and sellout == true, expect revert when withdrawing revenues since latest price is zero
-        await expectRevert(
-          this.minter
-            .connect(this.accounts.deployer)
-            .withdrawArtistAndAdminRevenues(this.projectZero),
-          "Only latestPurchasePrice > 0"
-        );
-      });
-
       it("doesn't lock latest purchase price to zero in edge case after resetting auction details after partial auction completion", async function () {
         await purchaseTokensMidAuction.call(this, this.projectZero);
         // use local max invocations to get "sellout" to true

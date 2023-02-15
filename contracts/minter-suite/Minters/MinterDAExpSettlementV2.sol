@@ -242,6 +242,23 @@ contract MinterDAExpSettlementV2 is
         uint256 _maxInvocations
     ) external onlyArtist(_projectId) {
         // CHECKS
+        // require that new maxInvocations is greater than 0 to prevent
+        // accidental premature closure of a project when artist is
+        // configuring, forever preventing any purchases on this minter
+        require(_maxInvocations > 0, "Only max invocations gt 0");
+        // do not allow changing maxInvocations if maxHasBeenInvoked is true
+        // @dev this is a guardrail to prevent accidental re-opening of a
+        // completed project that is waiting for revenues to be withdrawn
+        // @dev intentionally do not refresh maxHasBeenInvoked here via
+        // `_refreshMaxInvocations` because in the edge case of a stale
+        // hasMaxBeenInvoked, it is too difficult to determine what the artist
+        // may or may not want to do
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        require(
+            !_projectConfig.maxHasBeenInvoked,
+            "Max invocations already reached"
+        );
+
         // ensure that the manually set maxInvocations is not greater than what is set on the core contract
         uint256 coreInvocations;
         uint256 coreMaxInvocations;
@@ -258,7 +275,6 @@ contract MinterDAExpSettlementV2 is
             "Cannot set project max invocations to less than current invocations"
         );
         // EFFECTS
-        ProjectConfig storage _projectConfig = projectConfig[_projectId];
         // update storage with results
         _projectConfig.maxInvocations = uint24(_maxInvocations);
         // We need to ensure maxHasBeenInvoked is correctly set after manually setting the
