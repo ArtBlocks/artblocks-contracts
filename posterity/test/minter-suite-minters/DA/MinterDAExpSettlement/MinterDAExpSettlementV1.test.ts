@@ -24,7 +24,7 @@ import {
 } from "../../../util/common";
 import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../util/constants";
 import { MinterDAExpSettlement_Common } from "./MinterDAExpSettlement.common";
-import { MinterDASettlementV1_Common } from "../MinterDASettlementV1.common";
+import { MinterDASettlementV1V2_Common } from "../MinterDASettlementV1V2.common";
 
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
@@ -120,8 +120,8 @@ for (const coreContractName of coreContractsToTest) {
       await MinterDAExpSettlement_Common();
     });
 
-    describe("common DA Settlement V1 tests", async function () {
-      await MinterDASettlementV1_Common();
+    describe("common DA Settlement V1V2 tests", async function () {
+      await MinterDASettlementV1V2_Common();
     });
 
     describe("setAuctionDetails", async function () {
