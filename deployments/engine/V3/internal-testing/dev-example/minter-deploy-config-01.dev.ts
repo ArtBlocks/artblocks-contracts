@@ -10,8 +10,5 @@ export const minterDeployDetailsArray = [
     minterName: "MinterDAExpSettlementV2",
     genArt721V3CoreAddress: "0x5702797Ff45FCb0a70eB6AE1E4563299dCFa9Dd6",
     minterFilterAddress: "0x72AE7160A580893Fb1049D17Fbd736Ad39Ea7FbD",
-    // the minter deploy args are must refer to keys in the `minterDeployDetailsArray` object,
-    // and will be populated to be the corresponding values
-    minterDeployArgs: ["genArt721V3CoreAddress", "minterFilterAddress"],
   },
 ];

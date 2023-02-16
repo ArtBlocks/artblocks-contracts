@@ -14,6 +14,7 @@ import prompt from "prompt";
 
 // delay to avoid issues with reorgs and tx failures
 import { delay, getAppPath } from "../util/utils";
+import { DELEGATION_REGISTRY_ADDRESSES } from "../util/constants";
 const EXTRA_DELAY_BETWEEN_TX = 5000; // ms
 
 /**
@@ -95,7 +96,16 @@ async function main() {
     //////////////////////////////////////////////////////////////////////////////
 
     const minterName = deployDetails.minterName;
-    const minterDeployArgs = [];
+    const minterFactory = await ethers.getContractFactory(minterName);
+    // build deploy args
+    const minterDeployArgs = [
+      deployDetails.genArt721V3CoreAddress,
+      deployDetails.minterFilterAddress,
+    ];
+    if (minterFactory.interface.deploy.inputs.length > 2) {
+      // our minters sometimes have a third parameter that is delegation registry
+      minterDeployArgs.push(DELEGATION_REGISTRY_ADDRESSES[networkName]);
+    }
     // fill in each value for the keys in minterDeployArgs
     for (let j = 0; j < deployDetails.minterDeployArgs.length; j++) {
       minterDeployArgs.push(deployDetails[deployDetails.minterDeployArgs[j]]);
@@ -103,7 +113,6 @@ async function main() {
     console.log(
       `[INFO] Deploying ${minterName} with deploy args [${minterDeployArgs}]...`
     );
-    const minterFactory = await ethers.getContractFactory(minterName);
     const minter = await minterFactory.deploy(...minterDeployArgs);
     await minter.deployed();
     const minterAddress = minter.address;
