@@ -102,7 +102,8 @@ The following table shows which Minters and MinterFilters are compatible with wh
 | V0                       | -              | (legacy minter)                                                                                                                                     | -                                                                           |
 | V1, V1_PRTNR             | MinterFilterV0 | MinterSetPriceV1<br>MinterSetPriceERC20V1<br>MinterDAExpV1<br>MinterDALinV1<br>MinterMerkleV0<br>MinterHolderV0                                     | MinterSetPriceV0<br>MinterSetPriceERC20V0<br>MinterDAExpV0<br>MinterDALinV0 |
 | V2 (PBAB)                | -              | (various PBAB minters)                                                                                                                              | -                                                                           |
-| V3, V3_Explorations      | MinterFilterV1 | MinterSetPriceV2<br>MinterSetPriceERC20V2<br>MinterDAExpV2<br>MinterDALinV2<br>MinterMerkleV2<br>MinterMerkleV3<br>MinterHolderV1<br>MinterHolderV2 | -                                                                           |
+| V3_Engine                | MinterFilterV1 | MinterPolyptychV0                                                                                                                              | -                                                                           |
+| V3, V3_Explorations, V3_Engine |      | MinterFilterV1 | MinterSetPriceV4<br>MinterSetPriceERC20V4<br>MinterMerkleV5<br>MinterHolderV4<br>MinterDALinV4<br>MinterDAExpV4<br>MinterDAExpSettlementV2 | -                                                                           |
 
 ### Active Minting Contract(s)
 
