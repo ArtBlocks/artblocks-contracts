@@ -26,7 +26,7 @@ const coreContractsToTest = [
 ];
 
 /**
- * General Integration tests for V3 core.
+ * Flex functionality integration tests for V3 core Engine Flex.
  */
 for (const coreContractName of coreContractsToTest) {
   describe(`${coreContractName} Integration`, async function () {

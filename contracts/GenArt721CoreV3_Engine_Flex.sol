@@ -16,7 +16,7 @@ import "./libs/0.8.x/BytecodeStorage.sol";
 import "./libs/0.8.x/Bytes32Strings.sol";
 
 /**
- * @title Art Blocks Engine ERC-721 core contract, V3.
+ * @title Art Blocks Engine Flex ERC-721 core contract, V3.
  * @author Art Blocks Inc.
  * @notice Privileged Roles and Ownership:
  * This contract is designed to be managed, with progressively limited powers
@@ -41,6 +41,8 @@ import "./libs/0.8.x/Bytes32Strings.sol";
  * - addProject
  * - forbidNewProjects (forever forbidding new projects)
  * - updateDefaultBaseURI (used to initialize new project base URIs)
+ * - updateIPFSGateway
+ * - updateArweaveGateway
  * ----------------------------------------------------------------------------
  * The following functions are restricted to either the the Artist address or
  * the Admin ACL contract, only when the project is not locked:
@@ -78,6 +80,13 @@ import "./libs/0.8.x/Bytes32Strings.sol";
  * The following function is restricted to the artist when a project is
  * unlocked, and only callable by Admin ACL contract when a project is locked:
  * - updateProjectDescription
+ * ----------------------------------------------------------------------------
+ * The following functions for managing external asset dependencies are restricted
+ * to projects with external asset dependencies that are unlocked:
+ * - lockProjectExternalAssetDependencies 
+ * - updateProjectExternalAssetDependency
+ * - removeProjectExternalAssetDependency
+ * - addProjectExternalAssetDependency
  * ----------------------------------------------------------------------------
  * The following function is restricted to owner calling directly:
  * - transferOwnership
@@ -449,43 +458,6 @@ contract GenArt721CoreV3_Engine_Flex is
     }
 
     /**
-     * @notice Returns external asset dependency for project `_projectId` at index `_index`.
-     * If the dependencyType is ONCHAIN, the `data` field will contain the extrated bytecode data and `cid`
-     * will be an empty string. Conversly, for any other dependencyType, the `data` field will be an empty string
-     * and the `bytecodeAddress` will point to the zero address.
-     */
-    function projectExternalAssetDependencyByIndex(
-        uint256 _projectId,
-        uint256 _index
-    ) public view returns (ExternalAssetDependencyWithData memory) {
-        ExternalAssetDependencyType _dependencyType = projects[_projectId]
-            .externalAssetDependencies[_index]
-            .dependencyType;
-        address _bytecodeAddress = projects[_projectId]
-            .externalAssetDependencies[_index]
-            .bytecodeAddress;
-
-        return
-            ExternalAssetDependencyWithData({
-                dependencyType: _dependencyType,
-                cid: projects[_projectId].externalAssetDependencies[_index].cid,
-                bytecodeAddress: _bytecodeAddress,
-                data: (_dependencyType == ExternalAssetDependencyType.ONCHAIN)
-                    ? _bytecodeAddress.readFromBytecode()
-                    : ""
-            });
-    }
-
-    /**
-     * @notice Returns external asset dependency count for project `_projectId` at index `_index`.
-     */
-    function projectExternalAssetDependencyCount(
-        uint256 _projectId
-    ) public view returns (uint256) {
-        return uint256(projects[_projectId].externalAssetDependencyCount);
-    }
-
-    /**
      * @notice Updates external asset dependency for project `_projectId`.
      * @param _projectId Project to be updated.
      * @param _index Asset index.
@@ -508,15 +480,17 @@ contract GenArt721CoreV3_Engine_Flex is
         );
         uint24 assetCount = projects[_projectId].externalAssetDependencyCount;
         require(_index < assetCount, "Asset index out of range");
-        ExternalAssetDependencyType oldDependencyType = projects[_projectId]
-            .externalAssetDependencies[_index]
-            .dependencyType;
+        ExternalAssetDependency storage _oldDependency = projects[_projectId]
+            .externalAssetDependencies[_index];
         projects[_projectId]
             .externalAssetDependencies[_index]
             .dependencyType = _dependencyType;
         // if the incoming dependency type is onchain, we need to write the data to bytecode
         if (_dependencyType == ExternalAssetDependencyType.ONCHAIN) {
-            if (oldDependencyType != ExternalAssetDependencyType.ONCHAIN) {
+            if (
+                _oldDependency.dependencyType !=
+                ExternalAssetDependencyType.ONCHAIN
+            ) {
                 // we only need to set the cid to an empty string if we are replacing an offchain asset
                 // an onchain asset will already have an empty cid
                 projects[_projectId].externalAssetDependencies[_index].cid = "";
@@ -567,20 +541,6 @@ contract GenArt721CoreV3_Engine_Flex is
             _projectId
         ].externalAssetDependencies[lastElementIndex];
 
-        if (
-            projects[_projectId]
-                .externalAssetDependencies[lastElementIndex]
-                .dependencyType == ExternalAssetDependencyType.ONCHAIN
-        ) {
-            // copy last element bytecode address to index of element to be removed
-            // if we are dealing with an onchain external asset dependency
-            projects[_projectId]
-                .externalAssetDependencies[_index]
-                .bytecodeAddress = projects[_projectId]
-                .externalAssetDependencies[lastElementIndex]
-                .bytecodeAddress;
-        }
-
         delete projects[_projectId].externalAssetDependencies[lastElementIndex];
 
         projects[_projectId].externalAssetDependencyCount = lastElementIndex;
@@ -612,6 +572,7 @@ contract GenArt721CoreV3_Engine_Flex is
         // if the incoming dependency type is onchain, we need to write the data to bytecode
         if (_dependencyType == ExternalAssetDependencyType.ONCHAIN) {
             _bytecodeAddress = _cidOrData.writeToBytecode();
+            // we don't want to emit data, so we emit the cid as an empty string
             _cidOrData = "";
         }
         ExternalAssetDependency memory asset = ExternalAssetDependency({
@@ -2010,6 +1971,41 @@ contract GenArt721CoreV3_Engine_Flex is
             additionalPayeePrimaryAddress_ = projectFinance
                 .additionalPayeePrimarySales;
         }
+    }
+
+    /**
+     * @notice Returns external asset dependency for project `_projectId` at index `_index`.
+     * If the dependencyType is ONCHAIN, the `data` field will contain the extrated bytecode data and `cid`
+     * will be an empty string. Conversly, for any other dependencyType, the `data` field will be an empty string
+     * and the `bytecodeAddress` will point to the zero address.
+     */
+    function projectExternalAssetDependencyByIndex(
+        uint256 _projectId,
+        uint256 _index
+    ) external view returns (ExternalAssetDependencyWithData memory) {
+        ExternalAssetDependency storage _dependency = projects[_projectId]
+            .externalAssetDependencies[_index];
+        address _bytecodeAddress = _dependency.bytecodeAddress;
+
+        return
+            ExternalAssetDependencyWithData({
+                dependencyType: _dependency.dependencyType,
+                cid: _dependency.cid,
+                bytecodeAddress: _bytecodeAddress,
+                data: (_dependency.dependencyType ==
+                    ExternalAssetDependencyType.ONCHAIN)
+                    ? _bytecodeAddress.readFromBytecode()
+                    : ""
+            });
+    }
+
+    /**
+     * @notice Returns external asset dependency count for project `_projectId` at index `_index`.
+     */
+    function projectExternalAssetDependencyCount(
+        uint256 _projectId
+    ) external view returns (uint256) {
+        return uint256(projects[_projectId].externalAssetDependencyCount);
     }
 
     /**

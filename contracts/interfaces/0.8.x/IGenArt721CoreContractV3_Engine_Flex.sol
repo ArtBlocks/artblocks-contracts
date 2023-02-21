@@ -9,12 +9,6 @@ import "./IGenArt721CoreContractV3_Engine.sol";
 interface IGenArt721CoreContractV3_Engine_Flex is
     IGenArt721CoreContractV3_Engine
 {
-    // preferredIPFSGateway is a url string
-    function preferredIPFSGateway() external view returns (string memory);
-
-    // preferredArweaveGateway is a url string
-    function preferredArweaveGateway() external view returns (string memory);
-
     event ExternalAssetDependencyUpdated(
         uint256 indexed _projectId,
         uint256 indexed _index,
@@ -53,6 +47,12 @@ interface IGenArt721CoreContractV3_Engine_Flex is
         address bytecodeAddress;
         string data;
     }
+
+    // preferredIPFSGateway is a url string
+    function preferredIPFSGateway() external view returns (string memory);
+
+    // preferredArweaveGateway is a url string
+    function preferredArweaveGateway() external view returns (string memory);
 
     function updateIPFSGateway(string calldata _gateway) external;
 
