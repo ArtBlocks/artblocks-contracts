@@ -11,7 +11,10 @@ import { Logger } from "@ethersproject/logger";
 Logger.setLogLevel(Logger.levels.ERROR);
 import prompt from "prompt";
 
-import { syncContractMetadataAfterDeploy } from "../../util/graphql-utils";
+import {
+  syncContractMetadataAfterDeploy,
+  syncProjectMetadataAfterDeploy,
+} from "../../util/graphql-utils";
 
 import {
   DELEGATION_REGISTRY_ADDRESSES,
@@ -302,7 +305,7 @@ async function main() {
       // Create a project 0, and a token 0, on that empty project.
       await genArt721Core.connect(deployer).addProject(
         tokenName, // Use `tokenName` as placeholder for project 0 name
-        deployer.address // Use `deployer.address` as placeholder for project 0 owner
+        deployer.address // Use `deployer.address` as placeholder for project 0 artist
       );
       console.log(
         `[INFO] Added ${tokenName} project ${startingProjectId} placeholder on ${tokenName} contract, artist is ${deployer.address}.`
@@ -535,6 +538,16 @@ ${deployedMinterNames
       deployDetails.defaultVerticalName // contracts_metadata.default_vertical_name (optional)
     );
 
+    if (deployDetails.addInitialProject) {
+      // also update the initial project's vertical name,
+      // since likely missed default vertical name during initial sync
+      await syncProjectMetadataAfterDeploy(
+        genArt721Core.address, // core contract address
+        deployDetails.startingProjectId, // project Id
+        deployer.address, // project artist address
+        deployDetails.defaultVerticalName // project vertical name
+      );
+    }
     //////////////////////////////////////////////////////////////////////////////
     // HASURA METADATA UPSERT ENDS HERE
     //////////////////////////////////////////////////////////////////////////////

@@ -1,0 +1,29 @@
+fragment insertProjectsMetaResponseFragment on projects_metadata {
+  id
+  contract_address
+  artist_address
+  project_id
+  vertical_name
+}
+
+mutation InsertProjectsMetadata(
+  $projectsMetadata: [projects_metadata_insert_input!]!
+) {
+  insert_projects_metadata(
+    objects: $projectsMetadata
+    on_conflict: {
+      constraint: projects_meta_pkey
+      update_columns: [
+        id
+        contract_address
+        artist_address
+        project_id
+        vertical_name
+      ]
+    }
+  ) {
+    returning {
+      ...insertProjectsMetaResponseFragment
+    }
+  }
+}
