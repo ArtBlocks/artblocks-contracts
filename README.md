@@ -85,8 +85,8 @@ Core contracts use the versioning schema below:
 | :------------------: | :------: | :-----------: | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 |      AB Core V0      |    V0    |      0-2      | `0x059EDD72Cd353dF5106D2B9cC5ab83a52287aC3a`                                                                                                                                                        |
 |      AB Core V1      |    V1    |     3-373     | `0xa7d8d9ef8D8Ce8992Df33D8b8CF4Aebabd5bD270`                                                                                                                                                        |
-|      PBAB Cores      | V2_PBAB  |   All PBAB    | Various - see PBAB+Collabs directory [DEPLOYMENTS.md files](https://github.com/search?q=repo%3AArtBlocks%2Fartblocks-contracts+extension%3Amd+filename%3ADEPLOYMENTS&type=Code&ref=advsearch&l=&l=) |
-|     PRTNR Cores      | V2_PRTNR |   All PRTNR   | Various - see PBAB+Collabs directory [DEPLOYMENTS.md files](https://github.com/search?q=repo%3AArtBlocks%2Fartblocks-contracts+extension%3Amd+filename%3ADEPLOYMENTS&type=Code&ref=advsearch&l=&l=) |
+|    PBAB Cores (V2)   | V2_PBAB  |   All PBAB    | Various - see PBAB+Collabs directory [DEPLOYMENTS.md files](https://github.com/search?q=repo%3AArtBlocks%2Fartblocks-contracts+extension%3Amd+filename%3ADEPLOYMENTS&type=Code&ref=advsearch&l=&l=) |
+|    PRTNR Cores (V2)  | V2_PRTNR |   All PRTNR   | Various - see PBAB+Collabs directory [DEPLOYMENTS.md files](https://github.com/search?q=repo%3AArtBlocks%2Fartblocks-contracts+extension%3Amd+filename%3ADEPLOYMENTS&type=Code&ref=advsearch&l=&l=) |
 | AB Core V3 (current) |    V3    |     374+      | `0x99a9B7c1116f9ceEB1652de04d5969CcE509B069`                                                                                                                                                        |
 
 > AB Core V3 [changelog here](./contracts/V3_CHANGELOG.md), and [performance metrics here](./contracts/V3_Performance.md).
@@ -102,7 +102,8 @@ The following table shows which Minters and MinterFilters are compatible with wh
 | V0                       | -              | (legacy minter)                                                                                                                                     | -                                                                           |
 | V1, V1_PRTNR             | MinterFilterV0 | MinterSetPriceV1<br>MinterSetPriceERC20V1<br>MinterDAExpV1<br>MinterDALinV1<br>MinterMerkleV0<br>MinterHolderV0                                     | MinterSetPriceV0<br>MinterSetPriceERC20V0<br>MinterDAExpV0<br>MinterDALinV0 |
 | V2 (PBAB)                | -              | (various PBAB minters)                                                                                                                              | -                                                                           |
-| V3, V3_Explorations      | MinterFilterV1 | MinterSetPriceV2<br>MinterSetPriceERC20V2<br>MinterDAExpV2<br>MinterDALinV2<br>MinterMerkleV2<br>MinterMerkleV3<br>MinterHolderV1<br>MinterHolderV2 | -                                                                           |
+| V3, V3_Explorations, V3_Engine | MinterFilterV1 | MinterSetPriceV4<br>MinterSetPriceERC20V4<br>MinterMerkleV5<br>MinterHolderV4<br>MinterDALinV4<br>MinterDAExpV4<br>MinterDAExpSettlementV2 | _V(n-1) variants of recommended minters | -                                                                           |
+| V3_Engine                | MinterFilterV1 | MinterPolyptychV0                                                                                                                              | -                                                                           |
 
 ### Active Minting Contract(s)
 

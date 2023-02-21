@@ -25,12 +25,15 @@ const coreContractsToTest = [
   "GenArt721CoreV3_Engine_Flex", // V3 core Engine Flex contract
 ];
 
+const TARGET_MINTER_NAME = "MinterPolyptychV0";
+const TARGET_MINTER_VERSION = "v0.1.0";
+
 /**
  * These tests intended to ensure Filtered Minter integrates properly with V3
  * core contract.
  */
 for (const coreContractName of coreContractsToTest) {
-  describe(`PolyptychMinterV0_${coreContractName}`, async function () {
+  describe(`${TARGET_MINTER_NAME}_${coreContractName}`, async function () {
     beforeEach(async function () {
       // standard accounts and constants
       this.accounts = await getAccounts();
@@ -69,7 +72,7 @@ for (const coreContractName of coreContractsToTest) {
         "DelegationRegistry",
         []
       );
-      this.targetMinterName = "MinterPolyptychV0";
+      this.targetMinterName = TARGET_MINTER_NAME;
       this.minter = await deployAndGet.call(this, this.targetMinterName, [
         this.genArt721Core.address,
         this.minterFilter.address,
@@ -806,6 +809,67 @@ for (const coreContractName of coreContractsToTest) {
             ),
           "Invalid delegate-vault pairing"
         );
+      });
+    });
+
+    describe("purchase", async function () {
+      it("does not allow purchases even if local max invocations value is returning a false negative", async function () {
+        // set local max invocations to 2
+        await this.minter
+          .connect(this.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(this.projectZero, 2);
+        // switch to different minter
+        const setPriceFactory = await ethers.getContractFactory(
+          "MinterSetPriceV4"
+        );
+        const setPriceMinter = await setPriceFactory.deploy(
+          this.genArt721Core.address,
+          this.minterFilter.address
+        );
+        await this.minterFilter.addApprovedMinter(setPriceMinter.address);
+        await this.minterFilter
+          .connect(this.accounts.artist)
+          .setMinterForProject(0, setPriceMinter.address);
+        await this.randomizer
+          .connect(this.accounts.artist)
+          .toggleProjectIsPolyptych(0);
+        // purchase a token on the new minter
+        await setPriceMinter
+          .connect(this.accounts.artist)
+          .updatePricePerTokenInWei(
+            this.projectZero,
+            ethers.utils.parseEther("0")
+          );
+        await setPriceMinter
+          .connect(this.accounts.artist)
+          .purchase(this.projectZero);
+        // switch back to original minter
+        await this.minterFilter
+          .connect(this.accounts.artist)
+          .setMinterForProject(0, this.minter.address);
+        await this.randomizer
+          .connect(this.accounts.artist)
+          .toggleProjectIsPolyptych(0);
+        await expectRevert(
+          this.minter
+            .connect(this.accounts.artist)
+            .purchase_nnf(
+              this.projectZero,
+              this.genArt721Core.address,
+              this.projectZeroTokenZero.toNumber(),
+              {
+                value: this.pricePerTokenInWei,
+              }
+            ),
+          "Maximum invocations reached"
+        );
+      });
+    });
+
+    describe("minterVersion", async function () {
+      it("correctly reports minterVersion", async function () {
+        const minterVersion = await this.minter.minterVersion();
+        expect(minterVersion).to.equal(TARGET_MINTER_VERSION);
       });
     });
 

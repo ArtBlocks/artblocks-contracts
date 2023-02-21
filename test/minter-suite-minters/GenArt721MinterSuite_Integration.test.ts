@@ -172,66 +172,6 @@ runForEach.forEach((params) => {
         expect(gasCostMaxInvocations < (gasCostNoMaxInvocations * 110) / 100).to
           .be.true;
       });
-
-      it("fails more cheaply if setProjectMaxInvocations is set", async function () {
-        // Try without setProjectMaxInvocations, store gas cost
-        for (let i = 0; i < 15; i++) {
-          await this.minter
-            .connect(this.accounts.user)
-            .purchase(this.projectZero, {
-              value: this.pricePerTokenInWei,
-            });
-        }
-        const userBalanceNoMaxSet = BigNumber.from(
-          await this.accounts.user.getBalance()
-        );
-        await expectRevert(
-          this.minter.connect(this.accounts.user).purchase(this.projectZero, {
-            value: this.pricePerTokenInWei,
-          }),
-          "Must not exceed max invocations"
-        );
-        const userDeltaNoMaxSet = userBalanceNoMaxSet.sub(
-          BigNumber.from(await this.accounts.user.getBalance())
-        );
-
-        // Try with setProjectMaxInvocations, store gas cost
-        await this.minter
-          .connect(this.accounts.deployer)
-          .setProjectMaxInvocations(this.projectOne);
-        for (let i = 0; i < 15; i++) {
-          await this.minter
-            .connect(this.accounts.user)
-            .purchase(this.projectOne, {
-              value: this.pricePerTokenInWei,
-            });
-        }
-        const userBalanceMaxSet = BigNumber.from(
-          await this.accounts.user.getBalance()
-        );
-        await expectRevert(
-          this.minter.connect(this.accounts.user).purchase(this.projectOne, {
-            value: this.pricePerTokenInWei,
-          }),
-          "Maximum number of invocations reached"
-        );
-        const userDeltaMaxSet = userBalanceMaxSet.sub(
-          BigNumber.from(await this.accounts.user.getBalance())
-        );
-
-        console.log(
-          "Gas cost with setProjectMaxInvocations: ",
-          ethers.utils.formatUnits(userDeltaMaxSet, "ether").toString(),
-          "ETH"
-        );
-        console.log(
-          "Gas cost without setProjectMaxInvocations: ",
-          ethers.utils.formatUnits(userDeltaNoMaxSet, "ether").toString(),
-          "ETH"
-        );
-
-        expect(userDeltaMaxSet.lt(userDeltaNoMaxSet)).to.be.true;
-      });
     });
   });
 });

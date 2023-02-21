@@ -19,7 +19,7 @@ export async function tryVerify(
       `[INFO] ${contractName} contract verified on Etherscan at ${contractAddress}}`
     );
   } catch (error) {
-    console.warn(
+    console.log(
       `[WARN] Etherscan verification of ${contractName} failed: ${error}`
     );
     console.log(`[ACTION] Verify ${contractName} contract deployment with:`);
