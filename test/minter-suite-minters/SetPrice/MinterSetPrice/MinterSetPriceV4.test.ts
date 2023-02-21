@@ -363,7 +363,6 @@ for (const coreContractName of coreContractsToTest) {
         );
         // assuming a cost of 100 GWEI
         if (this.isEngine) {
-<<<<<<< HEAD
           if (coreContractName.includes("Flex")) {
             expect(txCost.toString()).to.equal(
               ethers.utils.parseEther("0.0141361")
@@ -373,11 +372,6 @@ for (const coreContractName of coreContractsToTest) {
               ethers.utils.parseEther("0.0141383")
             );
           }
-=======
-          expect(txCost.toString()).to.equal(
-            ethers.utils.parseEther("0.0141411")
-          );
->>>>>>> main
         } else {
           expect(txCost.toString()).to.equal(
             ethers.utils.parseEther("0.0129073")
