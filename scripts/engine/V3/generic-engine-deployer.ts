@@ -364,15 +364,6 @@ async function main() {
       console.log(`[INFO] Skipping adding placeholder initial token.`);
     }
 
-    // Note reminders about config addresses that have been left as the deployer for now.
-    console.log(
-      `[INFO] provider primary and secondary sales payment addresses remain as deployer addresses: ${deployer.address}.`
-    );
-    console.log(
-      `[INFO] AdminACL's superAdmin address likely remains as deployer address (unless using shared AdminACL, in which case existing AdminACL's superAdmin is unchanged): ${deployer.address}.`
-    );
-    console.log(`[ACTION] Don't forget to update these later as needed!`);
-
     //////////////////////////////////////////////////////////////////////////////
     // SETUP ENDS HERE
     //////////////////////////////////////////////////////////////////////////////
@@ -456,18 +447,6 @@ async function main() {
     // create image bucket
     const { bucketName } = await createPBABBucket(tokenName, networkName);
     console.log(`[INFO] Created image bucket ${bucketName}`);
-    console.log(
-      `[ACTION] Hasura: Set image bucket for this core contract ${genArt721Core.address} to ${bucketName}`
-    );
-    // reminder to set core contract type in db
-    const coreType = await genArt721Core.coreType();
-    console.log(
-      `[ACTION] Hasura: Set core contract type for ${genArt721Core.address} to ${coreType}`
-    );
-    // reminder to add to subgraph config if desire to index minter filter
-    console.log(
-      `[ACTION] Subgraph: Add Minter Filter and Minter contracts to subgraph config if desire to index minter suite.`
-    );
 
     //////////////////////////////////////////////////////////////////////////////
     // VERIFICATION ENDS HERE
@@ -558,6 +537,39 @@ ${deployedMinterNames
 
     //////////////////////////////////////////////////////////////////////////////
     // HASURA METADATA UPSERT ENDS HERE
+    //////////////////////////////////////////////////////////////////////////////
+
+    //////////////////////////////////////////////////////////////////////////////
+    // FOLLOW-ON ACTIONS BEGINS HERE
+    //////////////////////////////////////////////////////////////////////////////
+
+    // Reminder to update provider payment addresses that are left as the deployer for now.
+    console.log(
+      `[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: ${deployer.address}. Update later as needed.`
+    );
+
+    // Reminder to update adminACL superAdmin if needed
+    let adminACL: Contract;
+    let adminACLContractName = "AdminACLV1"; // default
+    if (deployDetails.existingAdminACL) {
+      adminACLContractName = deployDetails.adminACLContractName;
+    }
+    const adminACLFactory = await ethers.getContractFactory(
+      adminACLContractName
+    );
+    adminACL = adminACLFactory.attach(adminACLAddress);
+    const adminACLSuperAdmin = await adminACL.superAdmin();
+    console.log(
+      `[ACTION] AdminACL's superAdmin address is ${adminACLSuperAdmin}, don't forget to update if requred.`
+    );
+
+    // reminder to add to subgraph config if desire to index minter filter
+    console.log(
+      `[ACTION] Subgraph: Add Minter Filter and Minter contracts to subgraph config if desire to index minter suite.`
+    );
+
+    //////////////////////////////////////////////////////////////////////////////
+    // FOLLOW-ON ACTIONS ENDS HERE
     //////////////////////////////////////////////////////////////////////////////
   }
 }
