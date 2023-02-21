@@ -41,5 +41,8 @@ export const deployDetailsArray = [
     // set to true if you want to add an initial token to the initial project
     // (this will only work if you have set addInitialProject to true, and requires a MinterSetPriceV[4-9])
     addInitialToken: true,
+    // optionally define this to set default vertical name for the contract after deployment
+    // common values include `fullyonchain`, `flex`, or partnerships like `artblocksxpace`
+    defaultVerticalName: "artblocksxbrightmoments",
   },
 ];

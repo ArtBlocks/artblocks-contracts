@@ -1,6 +1,7 @@
 import { Client } from "urql/core";
+import fetch from "node-fetch";
 
-export const getEndpointAndAdminSecret = (): {
+const getEndpointAndAdminSecret = (): {
   graphqlAPIEndpoint: string;
   hasuraAdminSecret: string;
 } => {

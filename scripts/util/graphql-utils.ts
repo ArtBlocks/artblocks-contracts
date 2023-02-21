@@ -1,41 +1,31 @@
 import {
-  ContractMetadataUpdateInfoFragment,
   InsertContractsMetadataDocument,
   InsertContractsMetadataMutation,
   InsertContractsMetadataMutationVariables,
   Contracts_Metadata_Insert_Input,
-  Contract_Type_Names_Enum,
 } from "../../generated/graphql";
 import { Client } from "urql/core";
 import { getClient } from "./graphql-client-utils";
 
-export const syncContractBucketAndType = async (
+export const syncContractMetadataAfterDeploy = async (
   contractAddress: string,
+  contractName: string,
   bucketName: string,
-  contractType: Contract_Type_Names_Enum,
+  defaultVerticalName?: string,
   client?: Client
 ): Promise<InsertContractsMetadataMutation> => {
   if (client === undefined) {
     client = getClient();
   }
-  const contract_metadatas: ContractMetadataUpdateInfoFragment[] = [
-    {
-      address: contractAddress.toLowerCase(),
-      bucket_name: bucketName,
-      contract_type: contractType,
-    },
-  ];
-  console.log(`Upserting ${contract_metadatas.length} contracts`);
-
-  const contractsMetadataInsertInput = contract_metadatas.map(
-    (contract_metadata) => {
-      return generateContractsMetadataInputFromContractsMetadata(
-        contract_metadata
-      );
-    }
-  );
-
+  console.log(`Upserting 1 contract...`);
+  const contractsMetadataInsertInput: Contracts_Metadata_Insert_Input = {
+    address: contractAddress,
+    name: contractName,
+    bucket_name: bucketName,
+    default_vertical_name: defaultVerticalName || "unassigned",
+  };
   console.log("Contracts metadata upsert input", contractsMetadataInsertInput);
+  // upsert contract metadata
   const insertContractsMetadataRes = await client
     .mutation<
       InsertContractsMetadataMutation,
@@ -52,19 +42,7 @@ export const syncContractBucketAndType = async (
     );
     throw insertContractsMetadataRes.error;
   } else {
-    console.log(`Successfully upserted ${contract_metadatas.length} contracts`);
+    console.log(`Successfully upserted 1 contract`);
     return insertContractsMetadataRes.data;
   }
-};
-
-const generateContractsMetadataInputFromContractsMetadata = (
-  contract_metadata: ContractMetadataUpdateInfoFragment
-): Contracts_Metadata_Insert_Input => {
-  const contractsMetadataInsertInput: Contracts_Metadata_Insert_Input = {
-    address: contract_metadata.address,
-    bucket_name: contract_metadata.bucket_name,
-    contract_type: contract_metadata.contract_type,
-  };
-
-  return contractsMetadataInsertInput;
 };

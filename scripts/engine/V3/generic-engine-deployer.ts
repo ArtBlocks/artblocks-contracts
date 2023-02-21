@@ -11,7 +11,7 @@ import { Logger } from "@ethersproject/logger";
 Logger.setLogLevel(Logger.levels.ERROR);
 import prompt from "prompt";
 
-import { syncContractBucketAndType } from "../../util/graphql-utils";
+import { syncContractMetadataAfterDeploy } from "../../util/graphql-utils";
 
 import {
   DELEGATION_REGISTRY_ADDRESSES,
@@ -94,6 +94,18 @@ async function main() {
       );
     }
     console.log(`[INFO] Deploying to network: ${networkName}`);
+
+    // verify intended environment
+    if (process.env.NODE_ENV === deployDetails.environment) {
+      console.log(
+        `[INFO] Deploying to environment: ${deployDetails.environment}`
+      );
+    } else {
+      throw new Error(
+        `[ERROR] The deployment config indicates environment ${deployDetails.environment}, but script is being run in environment ${process.env.NODE_ENV}`
+      );
+    }
+
     // verify deployer wallet is the same as the one used to deploy the engine registry
     const targetDeployerAddress =
       KNOWN_ENGINE_REGISTRIES[networkName][deployDetails.engineRegistryAddress];
@@ -442,8 +454,7 @@ async function main() {
     }
 
     // create image bucket
-    const payload = await createPBABBucket(tokenName, networkName);
-    const bucketName = payload["url"];
+    const { bucketName } = await createPBABBucket(tokenName, networkName);
     console.log(`[INFO] Created image bucket ${bucketName}`);
     console.log(
       `[ACTION] Hasura: Set image bucket for this core contract ${genArt721Core.address} to ${bucketName}`
@@ -535,14 +546,19 @@ ${deployedMinterNames
     //////////////////////////////////////////////////////////////////////////////
 
     //////////////////////////////////////////////////////////////////////////////
-    // DEPLOYMENT CONFIG FILE BEGINS HERE
+    // HASURA METADATA UPSERT BEGINS HERE
     //////////////////////////////////////////////////////////////////////////////
 
-    // await syncContractBucketAndType(
-    //   genArt721Core.address,
-    //   bucketName,
-    //   Contract_Type_Names_Enum.GenArt721CoreV3Engine
-    // );
+    await syncContractMetadataAfterDeploy(
+      genArt721Core.address, // contracts_metadata.address
+      deployDetails.tokenName, // contracts_metadata.name
+      bucketName, // contracts_metadata.bucket_name
+      deployDetails.defaultVerticalName // contracts_metadata.default_vertical_name (optional)
+    );
+
+    //////////////////////////////////////////////////////////////////////////////
+    // HASURA METADATA UPSERT ENDS HERE
+    //////////////////////////////////////////////////////////////////////////////
   }
 }
 
