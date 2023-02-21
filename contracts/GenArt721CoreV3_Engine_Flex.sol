@@ -482,15 +482,14 @@ contract GenArt721CoreV3_Engine_Flex is
         require(_index < assetCount, "Asset index out of range");
         ExternalAssetDependency storage _oldDependency = projects[_projectId]
             .externalAssetDependencies[_index];
+        ExternalAssetDependencyType _oldDependencyType = _oldDependency
+            .dependencyType;
         projects[_projectId]
             .externalAssetDependencies[_index]
             .dependencyType = _dependencyType;
         // if the incoming dependency type is onchain, we need to write the data to bytecode
         if (_dependencyType == ExternalAssetDependencyType.ONCHAIN) {
-            if (
-                _oldDependency.dependencyType !=
-                ExternalAssetDependencyType.ONCHAIN
-            ) {
+            if (_oldDependencyType != ExternalAssetDependencyType.ONCHAIN) {
                 // we only need to set the cid to an empty string if we are replacing an offchain asset
                 // an onchain asset will already have an empty cid
                 projects[_projectId].externalAssetDependencies[_index].cid = "";

@@ -158,6 +158,7 @@ describe("GenArt721CoreV2_PBAB_FLEX_Integration", async function () {
       const externalAssetDependency = await this.genArt721Core
         .connect(this.accounts.artist)
         .projectExternalAssetDependencyByIndex(0, 0);
+      console.log(externalAssetDependency);
       expect(externalAssetDependency[0]).to.equal(
         "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo"
       );

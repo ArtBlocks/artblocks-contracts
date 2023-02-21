@@ -270,22 +270,17 @@ for (const coreContractName of coreContractsToTest) {
 
       it("can update an external asset dependency (on-chain)", async function () {
         // validating that an off-chain asset dependency can be updated to an on-chain asset dependency
+        const exampleCID = "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo";
         const dataString = "here is some data";
         // add assets for project 0 at index 0
         await this.genArt721Core
           .connect(this.accounts.artist)
-          .addProjectExternalAssetDependency(
-            this.projectZero,
-            "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo",
-            0
-          );
+          .addProjectExternalAssetDependency(this.projectZero, exampleCID, 0);
         // get asset info at index 0 for project 0
         const externalAssetDependency = await this.genArt721Core
           .connect(this.accounts.artist)
           .projectExternalAssetDependencyByIndex(0, 0);
-        expect(externalAssetDependency[0]).to.equal(
-          "QmbCdEwHebtpLZSRLGnELbJmmVVJQJPfMEVo1vq2QBEoEo"
-        );
+        expect(externalAssetDependency[0]).to.equal(exampleCID);
         expect(externalAssetDependency[1]).to.equal(0);
 
         // update asset info at index 0 for project 0
@@ -324,6 +319,17 @@ for (const coreContractName of coreContractsToTest) {
           externalAssetDependency2ByteCodeAddress
         );
         expect(externalAssetDependency3[3]).to.equal(dataString2);
+
+        // update asset info at index 0 for project 0
+        await this.genArt721Core
+          .connect(this.accounts.artist)
+          .updateProjectExternalAssetDependency(0, 0, exampleCID, 0);
+        // get asset info at index 0 for project 0
+        const externalAssetDependency4 = await this.genArt721Core
+          .connect(this.accounts.artist)
+          .projectExternalAssetDependencyByIndex(0, 0);
+        expect(externalAssetDependency4[0]).to.equal(exampleCID);
+        expect(externalAssetDependency4[1]).to.equal(0);
       });
 
       it("can lock a projects external asset dependencies", async function () {

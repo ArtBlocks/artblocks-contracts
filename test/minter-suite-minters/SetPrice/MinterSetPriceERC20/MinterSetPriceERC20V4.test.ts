@@ -627,11 +627,11 @@ for (const coreContractName of coreContractsToTest) {
         if (this.isEngine) {
           if (coreContractName.includes("Flex")) {
             expect(txCost.toString()).to.equal(
-              ethers.utils.parseEther("0.0141577")
+              ethers.utils.parseEther("0.0141626")
             );
           } else {
             expect(txCost.toString()).to.equal(
-              ethers.utils.parseEther("0.0141599")
+              ethers.utils.parseEther("0.0141648")
             );
           }
         } else {
