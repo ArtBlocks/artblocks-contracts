@@ -2,14 +2,14 @@
 // Created By: Art Blocks Inc.
 
 import { ethers } from "hardhat";
-import { GenArt721CoreV2PBAB__factory } from "../../contracts/factories/GenArt721CoreV2PBAB__factory";
-import { GenArt721MinterPBAB__factory } from "../../contracts/factories/GenArt721MinterPBAB__factory";
-import { GenArt721MinterDAExpPBAB__factory } from "../../contracts/factories/GenArt721MinterDAExpPBAB__factory";
+import { GenArt721CoreV2ENGINEFLEX__factory } from "../../../contracts/factories/GenArt721CoreV2ENGINEFLEX__factory";
+import { GenArt721MinterPBAB__factory } from "../../../contracts/factories/GenArt721MinterPBAB__factory";
+import { GenArt721MinterDAExpPBAB__factory } from "../../../contracts/factories/GenArt721MinterDAExpPBAB__factory";
 
-import royaltyRegistryABI from "../../../contracts/libs/abi/RoyaltyRegistry.json";
-import { GenArt721RoyaltyOverridePBAB__factory } from "../../contracts/factories/GenArt721RoyaltyOverridePBAB__factory";
+import royaltyRegistryABI from "../../../../contracts/libs/abi/RoyaltyRegistry.json";
+import { GenArt721RoyaltyOverridePBAB__factory } from "../../../contracts/factories/GenArt721RoyaltyOverridePBAB__factory";
 
-import { createPBABBucket } from "../../util/aws_s3";
+import { createPBABBucket } from "../../../util/aws_s3";
 
 const hre = require("hardhat");
 
@@ -21,15 +21,15 @@ enum MinterTypes {
 
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG BEGINS HERE
-// TODO: Update and verify the below configuration items before deploying!
 //////////////////////////////////////////////////////////////////////////////
-const pbabTokenName = "TODO :: Placeholder";
-const pbabTokenTicker = "TODO";
-const startingProjectId = 0; // TODO
-const pbabTransferAddress = "0x000000000000000000000000000000000000dEaD";
-const rendererProviderAddress = "0x000000000000000000000000000000000000dEaD";
-const randomizerAddress = "0x000000000000000000000000000000000000dEaD";
-const minterType = null; // TODO (set to MinterTypes.FixedPrice or MinterTypes.DutchAuction)
+const pbabTokenName = "TRAME x CPG";
+const pbabTokenTicker = "TXC";
+const pbabTransferAddress = "0x4C7D8c95a0ABE647E36a8570136cAe0BaA5288af";
+// ab-wallet
+const rendererProviderAddress = "0x536b3aBCc334bb84cb494Fc4A39e6ebb3D396d67";
+// mainnet address
+const randomizerAddress = "0x088098f7438773182b703625c4128aff85fcffc4";
+const minterType = MinterTypes.DutchAuction;
 // The following is not required, but if not set, must be set later by platform
 // for Royalty Registry to work (will be ignored of set to "0x0...dEaD")
 const platformRoyaltyPaymentAddress = DEAD;
@@ -69,12 +69,11 @@ async function main() {
   //////////////////////////////////////////////////////////////////////////////
 
   // Deploy Core contract.
-  const genArt721CoreFactory = new GenArt721CoreV2PBAB__factory(deployer);
+  const genArt721CoreFactory = new GenArt721CoreV2ENGINEFLEX__factory(deployer);
   const genArt721Core = await genArt721CoreFactory.deploy(
     pbabTokenName,
     pbabTokenTicker,
-    randomizerAddress,
-    startingProjectId
+    randomizerAddress
   );
 
   await createPBABBucket(pbabTokenName, networkName);
@@ -211,7 +210,7 @@ async function main() {
   const standardVerify = "yarn hardhat verify";
   console.log(`Verify core contract deployment with:`);
   console.log(
-    `${standardVerify} --network ${networkName} ${genArt721Core.address} "${pbabTokenName}" "${pbabTokenTicker}" ${randomizerAddress} ${startingProjectId}`
+    `${standardVerify} --network ${networkName} ${genArt721Core.address} "${pbabTokenName}" "${pbabTokenTicker}" ${randomizerAddress}`
   );
   console.log(`Verify minter deployment with:`);
   console.log(
@@ -222,12 +221,7 @@ async function main() {
   // Perform automated verification
   await hre.run("verify:verify", {
     address: genArt721Core.address,
-    constructorArguments: [
-      pbabTokenName,
-      pbabTokenTicker,
-      randomizerAddress,
-      startingProjectId,
-    ],
+    constructorArguments: [pbabTokenName, pbabTokenTicker, randomizerAddress],
   });
   await hre.run("verify:verify", {
     address: genArt721Minter.address,

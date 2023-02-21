@@ -28,6 +28,7 @@ const coreContractsToTest = [
 ];
 
 const TARGET_MINTER_NAME = "MinterMerkleV5";
+const TARGET_MINTER_VERSION = "v5.1.0";
 
 /**
  * These tests intended to ensure Filtered Minter integrates properly with V3
@@ -811,6 +812,59 @@ for (const coreContractName of coreContractsToTest) {
             ),
           "Invalid delegate-vault pairing"
         );
+      });
+    });
+
+    describe("purchase", async function () {
+      it("does not allow purchases even if local max invocations value is returning a false negative", async function () {
+        // set local max invocations to 1
+        await this.minter
+          .connect(this.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(this.projectOne, 1);
+        // switch to different minter
+        const setPriceFactory = await ethers.getContractFactory(
+          "MinterSetPriceV4"
+        );
+        const setPriceMinter = await setPriceFactory.deploy(
+          this.genArt721Core.address,
+          this.minterFilter.address
+        );
+        await this.minterFilter.addApprovedMinter(setPriceMinter.address);
+        await this.minterFilter
+          .connect(this.accounts.artist)
+          .setMinterForProject(1, setPriceMinter.address);
+        // purchase a token on the new minter
+        await setPriceMinter
+          .connect(this.accounts.artist)
+          .updatePricePerTokenInWei(
+            this.projectOne,
+            ethers.utils.parseEther("0")
+          );
+        await setPriceMinter
+          .connect(this.accounts.artist)
+          .purchase(this.projectOne);
+        // switch back to original minter
+        await this.minterFilter
+          .connect(this.accounts.artist)
+          .setMinterForProject(1, this.minter.address);
+        const userMerkleProofOne = this.merkleTreeOne.getHexProof(
+          hashAddress(this.accounts.user.address)
+        );
+        await expectRevert(
+          this.minter
+            .connect(this.accounts.user)
+            .purchase_gD5(this.projectOne, userMerkleProofOne, {
+              value: this.pricePerTokenInWei,
+            }),
+          "Maximum invocations reached"
+        );
+      });
+    });
+
+    describe("minterVersion", async function () {
+      it("correctly reports minterVersion", async function () {
+        const minterVersion = await this.minter.minterVersion();
+        expect(minterVersion).to.equal(TARGET_MINTER_VERSION);
       });
     });
 

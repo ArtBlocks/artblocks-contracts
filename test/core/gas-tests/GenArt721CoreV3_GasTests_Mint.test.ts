@@ -75,7 +75,7 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
 
     this.minterDAExpSettlement = await deployAndGet.call(
       this,
-      "MinterDAExpSettlementV0",
+      "MinterDAExpSettlementV2",
       [this.genArt721Core.address, this.minterFilter.address]
     );
 

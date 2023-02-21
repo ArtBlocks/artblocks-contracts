@@ -262,7 +262,7 @@ export const MinterSetPriceERC20_Common = async () => {
       );
     });
 
-    it("does nothing if setProjectMaxInvocations is not called (fails correctly)", async function () {
+    it("auto-configures if setProjectMaxInvocations is not called (fails correctly)", async function () {
       for (let i = 0; i < 15; i++) {
         await this.minter
           .connect(this.accounts.user)
@@ -272,11 +272,12 @@ export const MinterSetPriceERC20_Common = async () => {
       }
 
       const userBalance = await this.accounts.user.getBalance();
+      // since auto-configured, we should see the minter's revert message
       await expectRevert(
         this.minter.connect(this.accounts.user).purchase(this.projectZero, {
           value: this.pricePerTokenInWei,
         }),
-        "Must not exceed max invocations"
+        "Maximum number of invocations reached"
       );
     });
 
@@ -331,75 +332,9 @@ export const MinterSetPriceERC20_Common = async () => {
         gasCostNoMaxInvocations.toString(),
         "ETH"
       );
-      // Check that with setProjectMaxInvocations it's not too much moer expensive
-      // TODO - determine why prtnr is increased so much - probably because token zero is usually much cheaper storage
+      // Check that with setProjectMaxInvocations it's not too much more expensive
       expect(gasCostMaxInvocations < (gasCostNoMaxInvocations * 150) / 100).to
         .be.true;
-    });
-
-    it("fails more cheaply if setProjectMaxInvocations is set", async function () {
-      const minterType = await this.minter.minterType();
-      const accountToTestWith =
-        minterType.includes("V0") || minterType.includes("V1")
-          ? this.accounts.deployer
-          : this.accounts.artist;
-      // Try without setProjectMaxInvocations, store gas cost
-      for (let i = 0; i < 15; i++) {
-        await this.minter
-          .connect(this.accounts.user)
-          .purchase(this.projectZero, {
-            value: this.pricePerTokenInWei,
-          });
-      }
-      const userBalanceNoMaxSet = BigNumber.from(
-        await this.accounts.user.getBalance()
-      );
-      await expectRevert(
-        this.minter.connect(this.accounts.user).purchase(this.projectZero, {
-          value: this.pricePerTokenInWei,
-        }),
-        "Must not exceed max invocations"
-      );
-      const userDeltaNoMaxSet = userBalanceNoMaxSet.sub(
-        BigNumber.from(await this.accounts.user.getBalance())
-      );
-
-      // Try with setProjectMaxInvocations, store gas cost
-      await this.minter
-        .connect(accountToTestWith)
-        .setProjectMaxInvocations(this.projectOne);
-      for (let i = 0; i < 15; i++) {
-        await this.minter
-          .connect(this.accounts.user)
-          .purchase(this.projectOne, {
-            value: this.pricePerTokenInWei,
-          });
-      }
-      const userBalanceMaxSet = BigNumber.from(
-        await this.accounts.user.getBalance()
-      );
-      await expectRevert(
-        this.minter.connect(this.accounts.user).purchase(this.projectOne, {
-          value: this.pricePerTokenInWei,
-        }),
-        "Maximum number of invocations reached"
-      );
-      const userDeltaMaxSet = userBalanceMaxSet.sub(
-        BigNumber.from(await this.accounts.user.getBalance())
-      );
-
-      console.log(
-        "Gas cost with setProjectMaxInvocations: ",
-        ethers.utils.formatUnits(userDeltaMaxSet, "ether").toString(),
-        "ETH"
-      );
-      console.log(
-        "Gas cost without setProjectMaxInvocations: ",
-        ethers.utils.formatUnits(userDeltaNoMaxSet, "ether").toString(),
-        "ETH"
-      );
-
-      expect(userDeltaMaxSet.lt(userDeltaNoMaxSet)).to.be.true;
     });
   });
 

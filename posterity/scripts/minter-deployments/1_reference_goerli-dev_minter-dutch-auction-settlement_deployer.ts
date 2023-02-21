@@ -14,6 +14,8 @@ const EXTRA_DELAY_BETWEEN_TX = 5000; // ms
  * Goerli testnet, for the Art Blocks dev environment.
  * It is intended to document the deployment process and provide a reference
  * for the steps required to deploy the MinterDAExpSettlementV0 contract.
+ * Currently, the deployer is still responsible for saving relevant deployment
+ * logs and/or summaries in the `/deployments/*` directory.
  */
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG BEGINS HERE

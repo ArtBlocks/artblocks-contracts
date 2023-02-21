@@ -18,7 +18,7 @@ import { completeAuctionWithoutSellingOut } from "./MinterDAExpSettlement/Minter
  * @dev assumes common BeforeEach to populate accounts, constants, and setup
  * @dev does not call specific type of DA Settlement common tests.
  */
-export const MinterDASettlementV1_Common = async () => {
+export const MinterDASettlementV1V2_Common = async () => {
   describe("purchase_H4M", async function () {
     it("allows `purchase_H4M` by default", async function () {
       await ethers.provider.send("evm_mine", [
