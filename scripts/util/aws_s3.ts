@@ -58,9 +58,10 @@ const createPBABBucket = async (
   let payload = {};
   payload["response"] = {};
   payload["url"] = "";
+  let bucketName = "";
 
   if (supportedNetworks.includes(networkName) || isTest === true) {
-    const bucketName = getPBABBucketName(pbabTokenName, networkName);
+    bucketName = getPBABBucketName(pbabTokenName, networkName);
     const bucketURL = getBucketURL(bucketName);
     const bucketResponse = await createBucket(bucketName, client);
     await updateBucketCors(bucketName, client);
@@ -71,8 +72,8 @@ const createPBABBucket = async (
   } else {
     throw new Error("Unsupported network");
   }
-
-  return payload;
+  // return payload and bucket name
+  return { payload, bucketName };
 };
 
 export { createPBABBucket, createBucket, updateBucketCors };
