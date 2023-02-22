@@ -76,7 +76,7 @@ export const syncProjectMetadataAfterDeploy = async (
     vertical_name: verticalName || "unassigned",
   };
   console.log(
-    `Projects metadata upsert input\n${JSON.stringify(
+    `Projects metadata upsert input:\n${JSON.stringify(
       projectsMetadataInsertInput,
       null,
       2
