@@ -22,6 +22,7 @@ Logger.setLogLevel(Logger.levels.ERROR);
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
   "GenArt721CoreV3_Engine", // V3 core engine contract
+  "GenArt721CoreV3_Engine_Flex", // V3 core Engine Flex contract
 ];
 
 const TARGET_MINTER_NAME = "MinterPolyptychV0";

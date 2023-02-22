@@ -31,6 +31,7 @@ const coreContractsToTest = [
   "GenArt721CoreV3", // flagship V3 core
   "GenArt721CoreV3_Explorations", // V3 core explorations contract
   "GenArt721CoreV3_Engine", // V3 core Engine contract
+  "GenArt721CoreV3_Engine_Flex", // V3 core Engine Flex contract
 ];
 
 /**
@@ -123,12 +124,16 @@ for (const coreContractName of coreContractsToTest) {
       });
 
       it("only allows maxInvocations to be reduced", async function () {
+        let revertString = "maxInvocations may only be decreased";
+        if (coreContractName.includes("GenArt721CoreV3_Engine")) {
+          revertString = "Only maxInvocations decrease";
+        }
         // invocations must be reduced
         await expectRevert(
           this.genArt721Core
             .connect(this.accounts.artist)
             .updateProjectMaxInvocations(this.projectZero, this.maxInvocations),
-          "maxInvocations may only be decreased"
+          revertString
         );
         // artist can reduce
         await this.genArt721Core
@@ -140,6 +145,10 @@ for (const coreContractName of coreContractsToTest) {
       });
 
       it("only allows maxInvocations to be gte current invocations", async function () {
+        let revertString = "Only max invocations gte current invocations";
+        if (coreContractName.includes("GenArt721CoreV3_Engine")) {
+          revertString = "Only gte invocations";
+        }
         // mint a token on project zero
         await this.minter
           .connect(this.accounts.artist)
@@ -149,7 +158,7 @@ for (const coreContractName of coreContractsToTest) {
           this.genArt721Core
             .connect(this.accounts.artist)
             .updateProjectMaxInvocations(this.projectZero, 0),
-          "Only max invocations gte current invocations"
+          revertString
         );
         // artist can set to greater than current invocations
         await this.genArt721Core
@@ -1000,6 +1009,11 @@ for (const coreContractName of coreContractsToTest) {
       });
 
       it("artist cannot update > 95%", async function () {
+        let revertString =
+          "Max of ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE percent";
+        if (coreContractName.includes("GenArt721CoreV3_Engine")) {
+          revertString = "Over max percent";
+        }
         await expectRevert(
           this.genArt721Core
             .connect(this.accounts.artist)
@@ -1007,7 +1021,7 @@ for (const coreContractName of coreContractsToTest) {
               this.projectZero,
               96
             ),
-          "Max of ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE percent"
+          revertString
         );
       });
     });
@@ -1045,90 +1059,6 @@ for (const coreContractName of coreContractsToTest) {
           0
         );
         expect(script).to.equal(SQUIGGLE_SCRIPT);
-      });
-
-      it("uploads chromie squiggle script, and then purges it", async function () {
-        await this.genArt721Core
-          .connect(this.accounts.artist)
-          .addProjectScript(this.projectZero, SQUIGGLE_SCRIPT);
-        const script = await this.genArt721Core.projectScriptByIndex(
-          this.projectZero,
-          0
-        );
-        expect(script).to.equal(SQUIGGLE_SCRIPT);
-
-        const scriptAddress =
-          await this.genArt721Core.projectScriptBytecodeAddressByIndex(
-            this.projectZero,
-            0
-          );
-
-        const scriptByteCode = await ethers.provider.getCode(scriptAddress);
-        expect(scriptByteCode).to.not.equal("0x");
-
-        await this.genArt721Core
-          .connect(this.accounts.artist)
-          .removeProjectLastScript(this.projectZero);
-        const emptyScript = await this.genArt721Core.projectScriptByIndex(
-          this.projectZero,
-          0
-        );
-        expect(emptyScript).to.equal("");
-
-        const removedScriptByteCode = await ethers.provider.getCode(
-          scriptAddress
-        );
-        expect(removedScriptByteCode).to.equal("0x");
-      });
-
-      it("uploads chromie squiggle script and attempts to purge from non-allowed address", async function () {
-        await this.genArt721Core
-          .connect(this.accounts.artist)
-          .addProjectScript(this.projectZero, SQUIGGLE_SCRIPT);
-        const script = await this.genArt721Core.projectScriptByIndex(
-          this.projectZero,
-          0
-        );
-        expect(script).to.equal(SQUIGGLE_SCRIPT);
-
-        const scriptAddress =
-          await this.genArt721Core.projectScriptBytecodeAddressByIndex(
-            this.projectZero,
-            0
-          );
-
-        const scriptByteCode = await ethers.provider.getCode(scriptAddress);
-        expect(scriptByteCode).to.not.equal("0x");
-
-        // Any random user should **not** be able to purge bytecode storage.
-        await expectRevert.unspecified(
-          this.accounts.user.call({
-            to: scriptAddress,
-          })
-        );
-        // Nor should even the core contract deployer be able to do so directly.
-        await expectRevert.unspecified(
-          this.accounts.deployer.call({
-            to: scriptAddress,
-          })
-        );
-        // And this is still the case when correct `0xFF` bytes are sent along.
-        await expectRevert.unspecified(
-          this.accounts.user.call({
-            to: scriptAddress,
-            data: "0xFF",
-          })
-        );
-        await expectRevert.unspecified(
-          this.accounts.deployer.call({
-            to: scriptAddress,
-            data: "0xFF",
-          })
-        );
-
-        const sameScriptByteCode = await ethers.provider.getCode(scriptAddress);
-        expect(sameScriptByteCode).to.equal(scriptByteCode);
-        expect(sameScriptByteCode).to.not.equal("0x");
       });
 
       it("uploads and recalls different script", async function () {
@@ -1295,7 +1225,7 @@ for (const coreContractName of coreContractsToTest) {
         );
       });
 
-      it("bytecode contracts deployed and purged as expected in updates", async function () {
+      it("bytecode contracts deployed as expected in updates", async function () {
         const originalScriptAddress =
           await this.genArt721Core.projectScriptBytecodeAddressByIndex(
             this.projectZero,
@@ -1311,11 +1241,6 @@ for (const coreContractName of coreContractsToTest) {
           .connect(this.accounts.artist)
           .updateProjectScript(this.projectZero, 0, "// script 0.1");
 
-        const oldAddressByteCode = await ethers.provider.getCode(
-          originalScriptAddress
-        );
-        expect(oldAddressByteCode).to.equal("0x");
-
         const newScriptAddress =
           await this.genArt721Core.projectScriptBytecodeAddressByIndex(
             this.projectZero,
@@ -1326,7 +1251,6 @@ for (const coreContractName of coreContractsToTest) {
         );
         expect(newScriptByteCode).to.not.equal("0x");
         expect(newScriptByteCode).to.not.equal(scriptByteCode);
-        expect(newScriptByteCode).to.not.equal(oldAddressByteCode);
       });
     });
 
@@ -1366,6 +1290,10 @@ for (const coreContractName of coreContractsToTest) {
       });
 
       it("artist cannot update non-existing script index", async function () {
+        let revertString = "there are no scripts to remove";
+        if (coreContractName.includes("GenArt721CoreV3_Engine")) {
+          revertString = "No scripts to remove";
+        }
         // remove existing script
         await this.genArt721Core
           .connect(this.accounts.artist)
@@ -1375,7 +1303,7 @@ for (const coreContractName of coreContractsToTest) {
           this.genArt721Core
             .connect(this.accounts.artist)
             .removeProjectLastScript(this.projectZero),
-          "there are no scripts to remove"
+          revertString
         );
       });
     });

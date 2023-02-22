@@ -162,6 +162,7 @@ export async function deployCoreWithMinterFilter(
       .updateMinterContract(minterFilter.address);
   } else if (
     coreContractName.endsWith("V3_Engine") ||
+    coreContractName.endsWith("V3_Engine_Flex") ||
     coreContractName === "GenArt721CoreV3_Engine_IncorrectCoreType"
   ) {
     randomizer = await deployAndGet.call(this, _randomizerName, []);
