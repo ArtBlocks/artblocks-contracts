@@ -1,0 +1,22 @@
+fragment insertContractsMetaResponseFragment on contracts_metadata {
+  address
+  name
+  bucket_name
+  default_vertical_name
+}
+
+mutation InsertContractsMetadata(
+  $contractsMetadata: [contracts_metadata_insert_input!]!
+) {
+  insert_contracts_metadata(
+    objects: $contractsMetadata
+    on_conflict: {
+      constraint: contracts_metadata_pkey
+      update_columns: [address, name, bucket_name, default_vertical_name]
+    }
+  ) {
+    returning {
+      ...insertContractsMetaResponseFragment
+    }
+  }
+}

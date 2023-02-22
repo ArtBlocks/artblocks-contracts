@@ -1,116 +1,68 @@
 ----------------------------------------
-[INFO] Datetime of deployment: 2023-02-08T04:23:19.331Z
-[INFO] Deployment configuration file: deployments/engine/V3/partners/dev-example/deployment-config.dev.ts
+[INFO] Datetime of deployment: 2023-02-22T00:03:34.136Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/deployments/engine/V3/partners/dev-example/deployment-config.dev.ts
 [INFO] Deploying to network: goerli
-[INFO] New Admin ACL AdminACLV1 deployed at address: 0xF6f4a188072b53eF70a4AF2197d46EbbF865Cd4c
-[INFO] Randomizer BasicRandomizerV2 deployed at 0x12Da8e6aF487C8d27cCE8DB03920Dc2a4C06B9d6
-[INFO] Core GenArt721CoreV3_Engine deployed at 0x08dADD71F8e0F4e4c1DbDE182728179890663436
-[INFO] Minter Filter MinterFilterV1 deployed at 0xc3374250ECD41e6632B373e6e050cc500f4B35cD
-[INFO] MinterSetPriceV4 deployed at 0x1aDe69BD45d5Fa0288e45ca14280388c71D6Cc3D
-[INFO] MinterSetPriceERC20V4 deployed at 0x3c5041A7fE693dcDb6040Cf918F0913cf5977488
-[INFO] MinterDAExpV4 deployed at 0x2B3a328FAfd7Ba7C4ECFA2B254Ab6e849108eF7e
-[INFO] MinterDAExpSettlementV1 deployed at 0x2941Dd5c87E3Fd6172F3276f66e66c3e3D34861e
-[INFO] MinterDALinV4 deployed at 0x67CE959E68980500cB02796562996eB5838523d7
-[INFO] MinterHolderV4 deployed at 0xe1b80395dc424F1917c9C17DD279c2bb21537A03
-[INFO] MinterMerkleV5 deployed at 0x3700d51383Ea36b9E351e64907508288c10c8355
+[INFO] Deploying to environment: dev
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x0882de23BeC1b99D9AcEe8B04eA9Bae69b8664d3
+[INFO] Randomizer BasicRandomizerV2 deployed at 0xC2bC346b2350C320D4B5FbC7E802Bf3c52CA6230
+[INFO] Core GenArt721CoreV3_Engine deployed at 0x5b224b92b8673B5762C4212EC9f7B86918657Ee6
+[INFO] Minter Filter MinterFilterV1 deployed at 0x2ce218A94a8ffBe78a2C67FE9b302D66d3C42e6e
+[INFO] MinterSetPriceV4 deployed at 0xde1486A8aF6170707C98dd87F8Ff35BE80db7F7b
 [INFO] Assigned randomizer to core and renounced ownership of randomizer
-[INFO] Updated the Minter Filter on the Core contract to 0xc3374250ECD41e6632B373e6e050cc500f4B35cD.
-[INFO] Allowlisted minter MinterSetPriceV4 at 0x1aDe69BD45d5Fa0288e45ca14280388c71D6Cc3D on minter filter.
-[INFO] Allowlisted minter MinterSetPriceERC20V4 at 0x3c5041A7fE693dcDb6040Cf918F0913cf5977488 on minter filter.
-[INFO] Allowlisted minter MinterDAExpV4 at 0x2B3a328FAfd7Ba7C4ECFA2B254Ab6e849108eF7e on minter filter.
-[INFO] Allowlisted minter MinterDAExpSettlementV1 at 0x2941Dd5c87E3Fd6172F3276f66e66c3e3D34861e on minter filter.
-[INFO] Allowlisted minter MinterDALinV4 at 0x67CE959E68980500cB02796562996eB5838523d7 on minter filter.
-[INFO] Allowlisted minter MinterHolderV4 at 0xe1b80395dc424F1917c9C17DD279c2bb21537A03 on minter filter.
-[INFO] Allowlisted minter MinterMerkleV5 at 0x3700d51383Ea36b9E351e64907508288c10c8355 on minter filter.
+[INFO] Updated the Minter Filter on the Core contract to 0x2ce218A94a8ffBe78a2C67FE9b302D66d3C42e6e.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0xde1486A8aF6170707C98dd87F8Ff35BE80db7F7b on minter filter.
 [INFO] Added Engine Partner project 0 placeholder on Engine Partner contract, artist is 0x2246475beddf9333b6a6D9217194576E7617Afd1.
-[INFO] Configured set price minter (0x1aDe69BD45d5Fa0288e45ca14280388c71D6Cc3D) for project 0.
+[INFO] Configured set price minter (0xde1486A8aF6170707C98dd87F8Ff35BE80db7F7b) for project 0.
 [INFO] Configured minter price project 0.
 [INFO] Minted token 0 for project 0.
-[INFO] provider primary and secondary sales payment addresses remain as deployer addresses: 0x2246475beddf9333b6a6D9217194576E7617Afd1.
-[INFO] AdminACL's superAdmin address likely remains as deployer address (unless using shared AdminACL, in which case existing AdminACL's superAdmin is unchanged): 0x2246475beddf9333b6a6D9217194576E7617Afd1.
-[ACTION] Don't forget to update these later as needed!
 [INFO] Verifying core contract contract deployment...
 Nothing to compile
 Successfully submitted source code for contract
-contracts/GenArt721CoreV3_Engine.sol:GenArt721CoreV3_Engine at 0x08dADD71F8e0F4e4c1DbDE182728179890663436
+contracts/GenArt721CoreV3_Engine.sol:GenArt721CoreV3_Engine at 0x5b224b92b8673B5762C4212EC9f7B86918657Ee6
 for verification on the block explorer. Waiting for verification result...
 
 Successfully verified contract GenArt721CoreV3_Engine on Etherscan.
-https://goerli.etherscan.io/address/0x08dADD71F8e0F4e4c1DbDE182728179890663436#code
-[INFO] Core contract verified on Etherscan at 0x08dADD71F8e0F4e4c1DbDE182728179890663436}
+https://goerli.etherscan.io/address/0x5b224b92b8673B5762C4212EC9f7B86918657Ee6#code
+[INFO] Core contract verified on Etherscan at 0x5b224b92b8673B5762C4212EC9f7B86918657Ee6}
 [INFO] Verifying MinterFilter contract deployment...
-Compiled 184 Solidity files successfully
+Compiled 186 Solidity files successfully
 Successfully submitted source code for contract
-contracts/minter-suite/MinterFilter/MinterFilterV1.sol:MinterFilterV1 at 0xc3374250ECD41e6632B373e6e050cc500f4B35cD
+contracts/minter-suite/MinterFilter/MinterFilterV1.sol:MinterFilterV1 at 0x2ce218A94a8ffBe78a2C67FE9b302D66d3C42e6e
 for verification on the block explorer. Waiting for verification result...
 
 Successfully verified contract MinterFilterV1 on Etherscan.
-https://goerli.etherscan.io/address/0xc3374250ECD41e6632B373e6e050cc500f4B35cD#code
-[INFO] MinterFilter contract verified on Etherscan at 0xc3374250ECD41e6632B373e6e050cc500f4B35cD}
+https://goerli.etherscan.io/address/0x2ce218A94a8ffBe78a2C67FE9b302D66d3C42e6e#code
+[INFO] MinterFilter contract verified on Etherscan at 0x2ce218A94a8ffBe78a2C67FE9b302D66d3C42e6e}
 [INFO] Verifying MinterSetPriceV4 contract deployment...
-Compiled 184 Solidity files successfully
+Compiled 186 Solidity files successfully
 Successfully submitted source code for contract
-contracts/minter-suite/Minters/MinterSetPriceV4.sol:MinterSetPriceV4 at 0x1aDe69BD45d5Fa0288e45ca14280388c71D6Cc3D
+contracts/minter-suite/Minters/MinterSetPriceV4.sol:MinterSetPriceV4 at 0xde1486A8aF6170707C98dd87F8Ff35BE80db7F7b
 for verification on the block explorer. Waiting for verification result...
 
 Successfully verified contract MinterSetPriceV4 on Etherscan.
-https://goerli.etherscan.io/address/0x1aDe69BD45d5Fa0288e45ca14280388c71D6Cc3D#code
-[INFO] MinterSetPriceV4 contract verified on Etherscan at 0x1aDe69BD45d5Fa0288e45ca14280388c71D6Cc3D}
-[INFO] Verifying MinterSetPriceERC20V4 contract deployment...
-Compiled 184 Solidity files successfully
-Successfully submitted source code for contract
-contracts/minter-suite/Minters/MinterSetPriceERC20V4.sol:MinterSetPriceERC20V4 at 0x3c5041A7fE693dcDb6040Cf918F0913cf5977488
-for verification on the block explorer. Waiting for verification result...
-
-Successfully verified contract MinterSetPriceERC20V4 on Etherscan.
-https://goerli.etherscan.io/address/0x3c5041A7fE693dcDb6040Cf918F0913cf5977488#code
-[INFO] MinterSetPriceERC20V4 contract verified on Etherscan at 0x3c5041A7fE693dcDb6040Cf918F0913cf5977488}
-[INFO] Verifying MinterDAExpV4 contract deployment...
-Compiled 184 Solidity files successfully
-Successfully submitted source code for contract
-contracts/minter-suite/Minters/MinterDAExpV4.sol:MinterDAExpV4 at 0x2B3a328FAfd7Ba7C4ECFA2B254Ab6e849108eF7e
-for verification on the block explorer. Waiting for verification result...
-
-Successfully verified contract MinterDAExpV4 on Etherscan.
-https://goerli.etherscan.io/address/0x2B3a328FAfd7Ba7C4ECFA2B254Ab6e849108eF7e#code
-[INFO] MinterDAExpV4 contract verified on Etherscan at 0x2B3a328FAfd7Ba7C4ECFA2B254Ab6e849108eF7e}
-[INFO] Verifying MinterDAExpSettlementV1 contract deployment...
-Compiled 184 Solidity files successfully
-Successfully submitted source code for contract
-contracts/minter-suite/Minters/MinterDAExpSettlementV1.sol:MinterDAExpSettlementV1 at 0x2941Dd5c87E3Fd6172F3276f66e66c3e3D34861e
-for verification on the block explorer. Waiting for verification result...
-
-Successfully verified contract MinterDAExpSettlementV1 on Etherscan.
-https://goerli.etherscan.io/address/0x2941Dd5c87E3Fd6172F3276f66e66c3e3D34861e#code
-[INFO] MinterDAExpSettlementV1 contract verified on Etherscan at 0x2941Dd5c87E3Fd6172F3276f66e66c3e3D34861e}
-[INFO] Verifying MinterDALinV4 contract deployment...
-Compiled 184 Solidity files successfully
-Successfully submitted source code for contract
-contracts/minter-suite/Minters/MinterDALinV4.sol:MinterDALinV4 at 0x67CE959E68980500cB02796562996eB5838523d7
-for verification on the block explorer. Waiting for verification result...
-
-Successfully verified contract MinterDALinV4 on Etherscan.
-https://goerli.etherscan.io/address/0x67CE959E68980500cB02796562996eB5838523d7#code
-[INFO] MinterDALinV4 contract verified on Etherscan at 0x67CE959E68980500cB02796562996eB5838523d7}
-[INFO] Verifying MinterHolderV4 contract deployment...
-Compiled 184 Solidity files successfully
-Successfully submitted source code for contract
-contracts/minter-suite/Minters/MinterHolderV4.sol:MinterHolderV4 at 0xe1b80395dc424F1917c9C17DD279c2bb21537A03
-for verification on the block explorer. Waiting for verification result...
-
-Successfully verified contract MinterHolderV4 on Etherscan.
-https://goerli.etherscan.io/address/0xe1b80395dc424F1917c9C17DD279c2bb21537A03#code
-[INFO] MinterHolderV4 contract verified on Etherscan at 0xe1b80395dc424F1917c9C17DD279c2bb21537A03}
-[INFO] Verifying MinterMerkleV5 contract deployment...
-Compiled 184 Solidity files successfully
-Successfully submitted source code for contract
-contracts/minter-suite/Minters/MinterMerkleV5.sol:MinterMerkleV5 at 0x3700d51383Ea36b9E351e64907508288c10c8355
-for verification on the block explorer. Waiting for verification result...
-
-Successfully verified contract MinterMerkleV5 on Etherscan.
-https://goerli.etherscan.io/address/0x3700d51383Ea36b9E351e64907508288c10c8355#code
-[INFO] MinterMerkleV5 contract verified on Etherscan at 0x3700d51383Ea36b9E351e64907508288c10c8355}
+https://goerli.etherscan.io/address/0xde1486A8aF6170707C98dd87F8Ff35BE80db7F7b#code
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0xde1486A8aF6170707C98dd87F8Ff35BE80db7F7b}
 Created s3 bucket for https://engine-partner-goerli.s3.amazonaws.com
-[INFO] Created image bucket https://engine-partner-goerli.s3.amazonaws.com
-[ACTION] Hasura: Set image bucket for this core contract 0x08dADD71F8e0F4e4c1DbDE182728179890663436 to https://engine-partner-goerli.s3.amazonaws.com
-[ACTION] Hasura: Set core contract type for 0x08dADD71F8e0F4e4c1DbDE182728179890663436 to GenArt721CoreV3_Engine
+[INFO] Created image bucket engine-partner-goerli
+[INFO] Deployment details written to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/deployments/engine/V3/partners/dev-example/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x5b224b92b8673b5762c4212ec9f7b86918657ee6",
+  "name": "Engine Partner",
+  "bucket_name": "engine-partner-goerli",
+  "default_vertical_name": "fullyonchain"
+}
+Successfully upserted 1 contract
+Upserting 1 project...
+Projects metadata upsert input
+{
+  "id": "0x5b224b92b8673b5762c4212ec9f7b86918657ee6-0",
+  "contract_address": "0x5b224b92b8673b5762c4212ec9f7b86918657ee6",
+  "project_id": "0",
+  "artist_address": "0x2246475beddf9333b6a6d9217194576e7617afd1",
+  "vertical_name": "fullyonchain"
+}
+Successfully upserted 1 project
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0x2246475beddf9333b6a6D9217194576E7617Afd1. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x2246475beddf9333b6a6D9217194576E7617Afd1, don't forget to update if requred.
