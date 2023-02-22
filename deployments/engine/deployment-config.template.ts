@@ -44,8 +44,8 @@ export const deployDetailsArray = [
     // optionally define this to set default vertical name for the contract after deployment.
     // if not defined, the default vertical name will be "unassigned".
     // common values include `fullyonchain`, `flex`, or partnerships like `artblocksxpace`.
-    // note that if initial project is added, the vertical name of that specific project
-    // might be set as "unassigned", and may need to be updated manually.
+    // also note that if you desire to create a new veritcal, you will need to add the vertical name to the
+    // `project_verticals` table in the database before running this deploy script.
     defaultVerticalName: "fullyonchain",
   },
 ];
