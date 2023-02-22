@@ -29,12 +29,6 @@ export const deployDetailsArray = [
       // include any of the most recent minter contracts the engine partner wishes to use
       // @dev ensure the minter contracts here are the latest versions
       "MinterSetPriceV4",
-      "MinterSetPriceERC20V4",
-      "MinterDAExpV4",
-      "MinterDAExpSettlementV1",
-      "MinterDALinV4",
-      "MinterHolderV4",
-      "MinterMerkleV5",
     ],
     // set to true if you want to add an initial project to the core contract
     addInitialProject: true,

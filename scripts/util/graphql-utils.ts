@@ -23,12 +23,18 @@ export const syncContractMetadataAfterDeploy = async (
   }
   console.log(`Upserting 1 contract...`);
   const contractsMetadataInsertInput: Contracts_Metadata_Insert_Input = {
-    address: contractAddress,
+    address: contractAddress.toLowerCase(),
     name: contractName,
     bucket_name: bucketName,
     default_vertical_name: defaultVerticalName || "unassigned",
   };
-  console.log("Contracts metadata upsert input", contractsMetadataInsertInput);
+  console.log(
+    `Contracts metadata upsert input:\n${JSON.stringify(
+      contractsMetadataInsertInput,
+      null,
+      2
+    )}`
+  );
   // upsert contract metadata
   const insertContractsMetadataRes = await client
     .mutation<
@@ -40,9 +46,8 @@ export const syncContractMetadataAfterDeploy = async (
     .toPromise();
 
   if (insertContractsMetadataRes.error || !insertContractsMetadataRes.data) {
-    console.error(
-      `Error upserting contracts`,
-      insertContractsMetadataRes.error
+    console.log(
+      `Error upserting contracts: ${insertContractsMetadataRes.error}`
     );
     throw insertContractsMetadataRes.error;
   } else {
@@ -66,10 +71,17 @@ export const syncProjectMetadataAfterDeploy = async (
   const projectsMetadataInsertInput: Projects_Metadata_Insert_Input = {
     id: `${contractAddress.toLowerCase()}-${projectId}`,
     contract_address: contractAddress.toLowerCase(),
+    project_id: projectId.toString(),
     artist_address: artistAddress.toLowerCase(),
     vertical_name: verticalName || "unassigned",
   };
-  console.log("Projects metadata upsert input", projectsMetadataInsertInput);
+  console.log(
+    `Projects metadata upsert input\n${JSON.stringify(
+      projectsMetadataInsertInput,
+      null,
+      2
+    )}`
+  );
   // upsert project metadata
   const insertProjectsMetadataRes = await client
     .mutation<
@@ -81,7 +93,7 @@ export const syncProjectMetadataAfterDeploy = async (
     .toPromise();
 
   if (insertProjectsMetadataRes.error || !insertProjectsMetadataRes.data) {
-    console.error(`Error upserting projects`, insertProjectsMetadataRes.error);
+    console.log(`Error upserting project: ${insertProjectsMetadataRes.error}`);
     throw insertProjectsMetadataRes.error;
   } else {
     console.log(`Successfully upserted 1 project`);
