@@ -28,6 +28,7 @@ export type ArtistFinanceProposal = {
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
   "GenArt721CoreV3_Engine", // V3 core engine contract
+  "GenArt721CoreV3_Engine_Flex", // V3 core Engine Flex contract
 ];
 
 // helper function to update artist financial data
@@ -108,7 +109,7 @@ for (const coreContractName of coreContractsToTest) {
 
     describe("coreVersion", function () {
       it("returns expected value", async function () {
-        let targetCoreVersion = "v3.1.1";
+        let targetCoreVersion = "v3.1.2";
         const coreVersion = await this.genArt721Core
           .connect(this.accounts.deployer)
           .coreVersion();
@@ -121,7 +122,7 @@ for (const coreContractName of coreContractsToTest) {
         const coreType = await this.genArt721Core
           .connect(this.accounts.deployer)
           .coreType();
-        expect(coreType).to.be.equal("GenArt721CoreV3_Engine");
+        expect(coreType).to.be.equal(coreContractName);
       });
     });
 

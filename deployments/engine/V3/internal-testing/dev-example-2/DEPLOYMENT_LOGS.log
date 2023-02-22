@@ -1,0 +1,79 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-02-22T00:43:59.281Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/deployments/engine/V3/internal-testing/dev-example-2/deployment-config.dev.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: dev
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x6A07bec83A1241194609bf06b22Bf0b090A1cdf6
+[INFO] Randomizer BasicRandomizerV2 deployed at 0x22EBCA61361ee17eCcfC54E60eA224F88e2D85dC
+[INFO] Core GenArt721CoreV3_Engine deployed at 0x97B46d394924ca8196F3Cfb75434Ae3d66229dFC
+[INFO] Minter Filter MinterFilterV1 deployed at 0xb666a50c127B6Ea2e8f523bE2dFb22648D5AB8FF
+[INFO] MinterSetPriceV4 deployed at 0xC9438D8021E0d1da6E94419F80bf7538A887eA70
+[INFO] MinterDAExpSettlementV1 deployed at 0xd00F2D2ad7F7Fdc644Ce8A5ee622921c6E0ae779
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0xb666a50c127B6Ea2e8f523bE2dFb22648D5AB8FF.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0xC9438D8021E0d1da6E94419F80bf7538A887eA70 on minter filter.
+[INFO] Allowlisted minter MinterDAExpSettlementV1 at 0xd00F2D2ad7F7Fdc644Ce8A5ee622921c6E0ae779 on minter filter.
+[INFO] Added Test Engine Partner Autodeploy project 0 placeholder on Test Engine Partner Autodeploy contract, artist is 0x2246475beddf9333b6a6D9217194576E7617Afd1.
+[INFO] Configured set price minter (0xC9438D8021E0d1da6E94419F80bf7538A887eA70) for project 0.
+[INFO] Configured minter price project 0.
+[INFO] Minted token 0 for project 0.
+[INFO] Verifying core contract contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/GenArt721CoreV3_Engine.sol:GenArt721CoreV3_Engine at 0x97B46d394924ca8196F3Cfb75434Ae3d66229dFC
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract GenArt721CoreV3_Engine on Etherscan.
+https://goerli.etherscan.io/address/0x97B46d394924ca8196F3Cfb75434Ae3d66229dFC#code
+[INFO] Core contract verified on Etherscan at 0x97B46d394924ca8196F3Cfb75434Ae3d66229dFC}
+[INFO] Verifying MinterFilter contract deployment...
+Compiled 186 Solidity files successfully
+Successfully submitted source code for contract
+contracts/minter-suite/MinterFilter/MinterFilterV1.sol:MinterFilterV1 at 0xb666a50c127B6Ea2e8f523bE2dFb22648D5AB8FF
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterFilterV1 on Etherscan.
+https://goerli.etherscan.io/address/0xb666a50c127B6Ea2e8f523bE2dFb22648D5AB8FF#code
+[INFO] MinterFilter contract verified on Etherscan at 0xb666a50c127B6Ea2e8f523bE2dFb22648D5AB8FF}
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+Compiled 186 Solidity files successfully
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterSetPriceV4.sol:MinterSetPriceV4 at 0xC9438D8021E0d1da6E94419F80bf7538A887eA70
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterSetPriceV4 on Etherscan.
+https://goerli.etherscan.io/address/0xC9438D8021E0d1da6E94419F80bf7538A887eA70#code
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0xC9438D8021E0d1da6E94419F80bf7538A887eA70}
+[INFO] Verifying MinterDAExpSettlementV1 contract deployment...
+Compiled 186 Solidity files successfully
+Successfully submitted source code for contract
+contracts/archive/minter-suite/Minters/MinterDAExpSettlement/MinterDAExpSettlementV1.sol:MinterDAExpSettlementV1 at 0xd00F2D2ad7F7Fdc644Ce8A5ee622921c6E0ae779
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterDAExpSettlementV1 on Etherscan.
+https://goerli.etherscan.io/address/0xd00F2D2ad7F7Fdc644Ce8A5ee622921c6E0ae779#code
+[INFO] MinterDAExpSettlementV1 contract verified on Etherscan at 0xd00F2D2ad7F7Fdc644Ce8A5ee622921c6E0ae779}
+Created s3 bucket for https://test-engine-partner-autodeploy-goerli.s3.amazonaws.com
+[INFO] Created image bucket test-engine-partner-autodeploy-goerli
+[INFO] Deployment details written to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/deployments/engine/V3/internal-testing/dev-example-2/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x97b46d394924ca8196f3cfb75434ae3d66229dfc",
+  "name": "Test Engine Partner Autodeploy",
+  "bucket_name": "test-engine-partner-autodeploy-goerli",
+  "default_vertical_name": "fullyonchain"
+}
+Successfully upserted 1 contract
+Upserting 1 project...
+Projects metadata upsert input
+{
+  "id": "0x97b46d394924ca8196f3cfb75434ae3d66229dfc-0",
+  "contract_address": "0x97b46d394924ca8196f3cfb75434ae3d66229dfc",
+  "project_id": "0",
+  "artist_address": "0x2246475beddf9333b6a6d9217194576e7617afd1",
+  "vertical_name": "fullyonchain"
+}
+Successfully upserted 1 project
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0x2246475beddf9333b6a6D9217194576E7617Afd1. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x2246475beddf9333b6a6D9217194576E7617Afd1, don't forget to update if requred.
