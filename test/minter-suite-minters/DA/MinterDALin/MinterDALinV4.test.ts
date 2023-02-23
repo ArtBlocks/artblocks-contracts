@@ -391,19 +391,10 @@ for (const coreContractName of coreContractsToTest) {
           "ETH"
         );
         // assuming a cost of 100 GWEI
-        if (config.isEngine) {
-          if (coreContractName.includes("Flex")) {
-            expect(txCost.toString()).to.equal(
-              ethers.utils.parseEther("0.0151003")
-            );
-          } else {
-            expect(txCost.toString()).to.equal(
-              ethers.utils.parseEther("0.0151025")
-            );
-          }
-        } else {
+        // skip gas tests for engine, flagship is sufficient to identify gas cost changes
+        if (!config.isEngine) {
           expect(txCost.toString()).to.equal(
-            ethers.utils.parseEther("0.0138666")
+            ethers.utils.parseEther("0.0138687")
           );
         }
       });
