@@ -1,8 +1,10 @@
 import { expectRevert } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 
 import {
+  T_Config,
   getAccounts,
   assignDefaultConstants,
   deployAndGet,
@@ -35,153 +37,162 @@ const TARGET_MINTER_VERSION = "v4.1.0";
  */
 for (const coreContractName of coreContractsToTest) {
   describe(`${TARGET_MINTER_NAME}_${coreContractName}`, async function () {
-    beforeEach(async function () {
-      // standard accounts and constants
-      this.accounts = await getAccounts();
-      await assignDefaultConstants.call(this);
-      this.higherPricePerTokenInWei = this.pricePerTokenInWei.add(
+    async function _beforeEach() {
+      let config: T_Config = {
+        accounts: await getAccounts(),
+      };
+      config = await assignDefaultConstants(config);
+      config.higherPricePerTokenInWei = config.pricePerTokenInWei.add(
         ethers.utils.parseEther("0.1")
       );
       // deploy and configure minter filter and minter
       ({
-        genArt721Core: this.genArt721Core,
-        minterFilter: this.minterFilter,
-        randomizer: this.randomizer,
-      } = await deployCoreWithMinterFilter.call(
-        this,
+        genArt721Core: config.genArt721Core,
+        minterFilter: config.minterFilter,
+        randomizer: config.randomizer,
+      } = await deployCoreWithMinterFilter(
+        config,
         coreContractName,
         "MinterFilterV1"
       ));
 
-      this.delegationRegistry = await deployAndGet.call(
-        this,
+      config.delegationRegistry = await deployAndGet(
+        config,
         "DelegationRegistry",
         []
       );
-      this.targetMinterName = TARGET_MINTER_NAME;
-      this.minter = await deployAndGet.call(this, this.targetMinterName, [
-        this.genArt721Core.address,
-        this.minterFilter.address,
-        this.delegationRegistry.address,
+      config.targetMinterName = TARGET_MINTER_NAME;
+      config.minter = await deployAndGet(config, config.targetMinterName, [
+        config.genArt721Core.address,
+        config.minterFilter.address,
+        config.delegationRegistry.address,
       ]);
-      this.isEngine = await this.minter.isEngine();
+      config.isEngine = await config.minter.isEngine();
 
       await safeAddProject(
-        this.genArt721Core,
-        this.accounts.deployer,
-        this.accounts.artist.address
+        config.genArt721Core,
+        config.accounts.deployer,
+        config.accounts.artist.address
       );
       await safeAddProject(
-        this.genArt721Core,
-        this.accounts.deployer,
-        this.accounts.artist.address
+        config.genArt721Core,
+        config.accounts.deployer,
+        config.accounts.artist.address
       );
       await safeAddProject(
-        this.genArt721Core,
-        this.accounts.deployer,
-        this.accounts.artist.address
+        config.genArt721Core,
+        config.accounts.deployer,
+        config.accounts.artist.address
       );
 
-      await this.genArt721Core
-        .connect(this.accounts.deployer)
-        .toggleProjectIsActive(this.projectZero);
-      await this.genArt721Core
-        .connect(this.accounts.deployer)
-        .toggleProjectIsActive(this.projectOne);
-      await this.genArt721Core
-        .connect(this.accounts.deployer)
-        .toggleProjectIsActive(this.projectTwo);
+      await config.genArt721Core
+        .connect(config.accounts.deployer)
+        .toggleProjectIsActive(config.projectZero);
+      await config.genArt721Core
+        .connect(config.accounts.deployer)
+        .toggleProjectIsActive(config.projectOne);
+      await config.genArt721Core
+        .connect(config.accounts.deployer)
+        .toggleProjectIsActive(config.projectTwo);
 
-      await this.genArt721Core
-        .connect(this.accounts.artist)
-        .updateProjectMaxInvocations(this.projectZero, this.maxInvocations);
-      await this.genArt721Core
-        .connect(this.accounts.artist)
-        .updateProjectMaxInvocations(this.projectOne, this.maxInvocations);
-      await this.genArt721Core
-        .connect(this.accounts.artist)
-        .updateProjectMaxInvocations(this.projectTwo, this.maxInvocations);
+      await config.genArt721Core
+        .connect(config.accounts.artist)
+        .updateProjectMaxInvocations(config.projectZero, config.maxInvocations);
+      await config.genArt721Core
+        .connect(config.accounts.artist)
+        .updateProjectMaxInvocations(config.projectOne, config.maxInvocations);
+      await config.genArt721Core
+        .connect(config.accounts.artist)
+        .updateProjectMaxInvocations(config.projectTwo, config.maxInvocations);
 
-      await this.genArt721Core
-        .connect(this.accounts.artist)
-        .toggleProjectIsPaused(this.projectZero);
-      await this.genArt721Core
-        .connect(this.accounts.artist)
-        .toggleProjectIsPaused(this.projectOne);
-      await this.genArt721Core
-        .connect(this.accounts.artist)
-        .toggleProjectIsPaused(this.projectTwo);
+      await config.genArt721Core
+        .connect(config.accounts.artist)
+        .toggleProjectIsPaused(config.projectZero);
+      await config.genArt721Core
+        .connect(config.accounts.artist)
+        .toggleProjectIsPaused(config.projectOne);
+      await config.genArt721Core
+        .connect(config.accounts.artist)
+        .toggleProjectIsPaused(config.projectTwo);
 
-      await this.minterFilter
-        .connect(this.accounts.deployer)
-        .addApprovedMinter(this.minter.address);
-      await this.minterFilter
-        .connect(this.accounts.deployer)
-        .setMinterForProject(this.projectZero, this.minter.address);
-      await this.minterFilter
-        .connect(this.accounts.deployer)
-        .setMinterForProject(this.projectOne, this.minter.address);
-      await this.minterFilter
-        .connect(this.accounts.deployer)
-        .setMinterForProject(this.projectTwo, this.minter.address);
+      await config.minterFilter
+        .connect(config.accounts.deployer)
+        .addApprovedMinter(config.minter.address);
+      await config.minterFilter
+        .connect(config.accounts.deployer)
+        .setMinterForProject(config.projectZero, config.minter.address);
+      await config.minterFilter
+        .connect(config.accounts.deployer)
+        .setMinterForProject(config.projectOne, config.minter.address);
+      await config.minterFilter
+        .connect(config.accounts.deployer)
+        .setMinterForProject(config.projectTwo, config.minter.address);
 
       // set token price for projects zero and one on minter
-      await this.minter
-        .connect(this.accounts.artist)
-        .updatePricePerTokenInWei(this.projectZero, this.pricePerTokenInWei);
-      await this.minter
-        .connect(this.accounts.artist)
-        .updatePricePerTokenInWei(this.projectOne, this.pricePerTokenInWei);
+      await config.minter
+        .connect(config.accounts.artist)
+        .updatePricePerTokenInWei(
+          config.projectZero,
+          config.pricePerTokenInWei
+        );
+      await config.minter
+        .connect(config.accounts.artist)
+        .updatePricePerTokenInWei(config.projectOne, config.pricePerTokenInWei);
 
-      // artist mints a token on this.projectZero to use as proof of ownership
+      // artist mints a token on config.projectZero to use as proof of ownership
       const minterFactorySetPrice = await ethers.getContractFactory(
         "MinterSetPriceV2"
       );
-      this.minterSetPrice = await minterFactorySetPrice.deploy(
-        this.genArt721Core.address,
-        this.minterFilter.address
+      config.minterSetPrice = await minterFactorySetPrice.deploy(
+        config.genArt721Core.address,
+        config.minterFilter.address
       );
-      await this.minterFilter
-        .connect(this.accounts.deployer)
-        .addApprovedMinter(this.minterSetPrice.address);
-      await this.minterFilter
-        .connect(this.accounts.deployer)
-        .setMinterForProject(this.projectZero, this.minterSetPrice.address);
-      await this.minterSetPrice
-        .connect(this.accounts.artist)
-        .updatePricePerTokenInWei(this.projectZero, this.pricePerTokenInWei);
-      await this.minterSetPrice
-        .connect(this.accounts.artist)
-        .purchase(this.projectZero, { value: this.pricePerTokenInWei });
-      // switch this.projectZero back to MinterHolderV0
-      await this.minterFilter
-        .connect(this.accounts.deployer)
-        .setMinterForProject(this.projectZero, this.minter.address);
-      await this.minter
-        .connect(this.accounts.deployer)
-        .registerNFTAddress(this.genArt721Core.address);
-      await this.minter
-        .connect(this.accounts.artist)
-        .allowHoldersOfProjects(
-          this.projectZero,
-          [this.genArt721Core.address],
-          [this.projectZero]
+      await config.minterFilter
+        .connect(config.accounts.deployer)
+        .addApprovedMinter(config.minterSetPrice.address);
+      await config.minterFilter
+        .connect(config.accounts.deployer)
+        .setMinterForProject(config.projectZero, config.minterSetPrice.address);
+      await config.minterSetPrice
+        .connect(config.accounts.artist)
+        .updatePricePerTokenInWei(
+          config.projectZero,
+          config.pricePerTokenInWei
         );
-    });
+      await config.minterSetPrice
+        .connect(config.accounts.artist)
+        .purchase(config.projectZero, { value: config.pricePerTokenInWei });
+      // switch config.projectZero back to MinterHolderV0
+      await config.minterFilter
+        .connect(config.accounts.deployer)
+        .setMinterForProject(config.projectZero, config.minter.address);
+      await config.minter
+        .connect(config.accounts.deployer)
+        .registerNFTAddress(config.genArt721Core.address);
+      await config.minter
+        .connect(config.accounts.artist)
+        .allowHoldersOfProjects(
+          config.projectZero,
+          [config.genArt721Core.address],
+          [config.projectZero]
+        );
+      return config;
+    }
 
     describe("common MinterHolder tests", async () => {
-      await MinterHolder_Common();
+      await MinterHolder_Common(_beforeEach);
     });
 
     describe("constructor", async function () {
       it("emits an event indicating dependency registry in constructor", async function () {
+        const config = await loadFixture(_beforeEach);
         const contractFactory = await ethers.getContractFactory(
-          this.targetMinterName
+          config.targetMinterName
         );
         const tx = await contractFactory.deploy(
-          this.genArt721Core.address,
-          this.minterFilter.address,
-          this.delegationRegistry.address
+          config.genArt721Core.address,
+          config.minterFilter.address,
+          config.delegationRegistry.address
         );
         const receipt = await tx.deployTransaction.wait();
         // target event "DelegationRegistryUpdated" is the log at index 0
@@ -196,144 +207,149 @@ for (const coreContractName of coreContractsToTest) {
         // zero-pad address to 32 bytes when checking against event data
         const abiCoder = new AbiCoder();
         expect(targetLog.data).to.be.equal(
-          abiCoder.encode(["address"], [this.delegationRegistry.address])
+          abiCoder.encode(["address"], [config.delegationRegistry.address])
         );
       });
     });
 
     describe("setProjectMaxInvocations", async function () {
       it("allows artist to call setProjectMaxInvocations", async function () {
-        await this.minter
-          .connect(this.accounts.artist)
-          .setProjectMaxInvocations(this.projectZero);
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
+          .setProjectMaxInvocations(config.projectZero);
       });
 
       it("resets maxHasBeenInvoked after it's been set to true locally and then max project invocations is synced from the core contract", async function () {
+        const config = await loadFixture(_beforeEach);
         // reduce local maxInvocations to 2 on minter
-        await this.minter
-          .connect(this.accounts.artist)
-          .manuallyLimitProjectMaxInvocations(this.projectZero, 2);
-        const localMaxInvocations = await this.minter
-          .connect(this.accounts.artist)
-          .projectConfig(this.projectZero);
+        await config.minter
+          .connect(config.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(config.projectZero, 2);
+        const localMaxInvocations = await config.minter
+          .connect(config.accounts.artist)
+          .projectConfig(config.projectZero);
         expect(localMaxInvocations.maxInvocations).to.equal(2);
 
         // mint a token
-        await this.minter
-          .connect(this.accounts.artist)
+        await config.minter
+          .connect(config.accounts.artist)
           ["purchase(uint256,address,uint256)"](
-            this.projectZero,
-            this.genArt721Core.address,
-            this.projectZeroTokenZero.toNumber(),
+            config.projectZero,
+            config.genArt721Core.address,
+            config.projectZeroTokenZero.toNumber(),
             {
-              value: this.pricePerTokenInWei,
+              value: config.pricePerTokenInWei,
             }
           );
 
         // expect projectMaxHasBeenInvoked to be true
-        const hasMaxBeenInvoked = await this.minter.projectMaxHasBeenInvoked(
-          this.projectZero
+        const hasMaxBeenInvoked = await config.minter.projectMaxHasBeenInvoked(
+          config.projectZero
         );
         expect(hasMaxBeenInvoked).to.be.true;
 
         // sync max invocations from core to minter
-        await this.minter
-          .connect(this.accounts.artist)
-          .setProjectMaxInvocations(this.projectZero);
+        await config.minter
+          .connect(config.accounts.artist)
+          .setProjectMaxInvocations(config.projectZero);
 
         // expect projectMaxHasBeenInvoked to now be false
-        const hasMaxBeenInvoked2 = await this.minter.projectMaxHasBeenInvoked(
-          this.projectZero
+        const hasMaxBeenInvoked2 = await config.minter.projectMaxHasBeenInvoked(
+          config.projectZero
         );
         expect(hasMaxBeenInvoked2).to.be.false;
 
         // expect maxInvocations on the minter to be 15
-        const syncedMaxInvocations = await this.minter
-          .connect(this.accounts.artist)
-          .projectConfig(this.projectZero);
+        const syncedMaxInvocations = await config.minter
+          .connect(config.accounts.artist)
+          .projectConfig(config.projectZero);
         expect(syncedMaxInvocations.maxInvocations).to.equal(15);
       });
     });
 
     describe("manuallyLimitProjectMaxInvocations", async function () {
       it("allows artist to call manuallyLimitProjectMaxInvocations", async function () {
-        await this.minter
-          .connect(this.accounts.artist)
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
           .manuallyLimitProjectMaxInvocations(
-            this.projectZero,
-            this.maxInvocations - 1
+            config.projectZero,
+            config.maxInvocations - 1
           );
       });
       it("does not support manually setting project max invocations to be greater than the project max invocations set on the core contract", async function () {
+        const config = await loadFixture(_beforeEach);
         await expectRevert(
-          this.minter
-            .connect(this.accounts.artist)
+          config.minter
+            .connect(config.accounts.artist)
             .manuallyLimitProjectMaxInvocations(
-              this.projectZero,
-              this.maxInvocations + 1
+              config.projectZero,
+              config.maxInvocations + 1
             ),
           "Cannot increase project max invocations above core contract set project max invocations"
         );
       });
       it("appropriately sets maxHasBeenInvoked after calling manuallyLimitProjectMaxInvocations", async function () {
+        const config = await loadFixture(_beforeEach);
         // reduce local maxInvocations to 2 on minter
-        await this.minter
-          .connect(this.accounts.artist)
-          .manuallyLimitProjectMaxInvocations(this.projectZero, 2);
-        const localMaxInvocations = await this.minter
-          .connect(this.accounts.artist)
-          .projectConfig(this.projectZero);
+        await config.minter
+          .connect(config.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(config.projectZero, 2);
+        const localMaxInvocations = await config.minter
+          .connect(config.accounts.artist)
+          .projectConfig(config.projectZero);
         expect(localMaxInvocations.maxInvocations).to.equal(2);
 
         // mint a token
-        await this.minter
-          .connect(this.accounts.artist)
+        await config.minter
+          .connect(config.accounts.artist)
           ["purchase(uint256,address,uint256)"](
-            this.projectZero,
-            this.genArt721Core.address,
-            this.projectZeroTokenZero.toNumber(),
+            config.projectZero,
+            config.genArt721Core.address,
+            config.projectZeroTokenZero.toNumber(),
             {
-              value: this.pricePerTokenInWei,
+              value: config.pricePerTokenInWei,
             }
           );
 
         // expect projectMaxHasBeenInvoked to be true
-        const hasMaxBeenInvoked = await this.minter.projectMaxHasBeenInvoked(
-          this.projectZero
+        const hasMaxBeenInvoked = await config.minter.projectMaxHasBeenInvoked(
+          config.projectZero
         );
         expect(hasMaxBeenInvoked).to.be.true;
 
         // increase invocations on the minter
-        await this.minter
-          .connect(this.accounts.artist)
-          .manuallyLimitProjectMaxInvocations(this.projectZero, 3);
+        await config.minter
+          .connect(config.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(config.projectZero, 3);
 
         // expect maxInvocations on the minter to be 3
-        const localMaxInvocations2 = await this.minter
-          .connect(this.accounts.artist)
-          .projectConfig(this.projectZero);
+        const localMaxInvocations2 = await config.minter
+          .connect(config.accounts.artist)
+          .projectConfig(config.projectZero);
         expect(localMaxInvocations2.maxInvocations).to.equal(3);
 
         // expect projectMaxHasBeenInvoked to now be false
-        const hasMaxBeenInvoked2 = await this.minter.projectMaxHasBeenInvoked(
-          this.projectZero
+        const hasMaxBeenInvoked2 = await config.minter.projectMaxHasBeenInvoked(
+          config.projectZero
         );
         expect(hasMaxBeenInvoked2).to.be.false;
 
         // reduce invocations on the minter
-        await this.minter
-          .connect(this.accounts.artist)
-          .manuallyLimitProjectMaxInvocations(this.projectZero, 2);
+        await config.minter
+          .connect(config.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(config.projectZero, 2);
 
         // expect maxInvocations on the minter to be 1
-        const localMaxInvocations3 = await this.minter
-          .connect(this.accounts.artist)
-          .projectConfig(this.projectZero);
+        const localMaxInvocations3 = await config.minter
+          .connect(config.accounts.artist)
+          .projectConfig(config.projectZero);
         expect(localMaxInvocations3.maxInvocations).to.equal(2);
 
         // expect projectMaxHasBeenInvoked to now be true
-        const hasMaxBeenInvoked3 = await this.minter.projectMaxHasBeenInvoked(
-          this.projectZero
+        const hasMaxBeenInvoked3 = await config.minter.projectMaxHasBeenInvoked(
+          config.projectZero
         );
         expect(hasMaxBeenInvoked3).to.be.true;
       });
@@ -341,14 +357,15 @@ for (const coreContractName of coreContractsToTest) {
 
     describe("purchase_nnf", async function () {
       it("allows `purchase_nnf` by default", async function () {
-        await this.minter
-          .connect(this.accounts.artist)
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
           .purchase_nnf(
-            this.projectZero,
-            this.genArt721Core.address,
-            this.projectZeroTokenZero.toNumber(),
+            config.projectZero,
+            config.genArt721Core.address,
+            config.projectZeroTokenZero.toNumber(),
             {
-              value: this.pricePerTokenInWei,
+              value: config.pricePerTokenInWei,
             }
           );
       });
@@ -356,40 +373,45 @@ for (const coreContractName of coreContractsToTest) {
 
     describe("payment splitting", async function () {
       beforeEach(async function () {
-        this.deadReceiver = await deployAndGet.call(
-          this,
+        const config = await loadFixture(_beforeEach);
+        config.deadReceiver = await deployAndGet(
+          config,
           "DeadReceiverMock",
           []
         );
+        // pass config to tests in this describe block
+        this.config = config;
       });
 
       it("requires successful payment to render provider", async function () {
+        // get config from beforeEach
+        const config = this.config;
         // update render provider address to a contract that reverts on receive
         // call appropriate core function to update render provider address
-        if (this.isEngine) {
-          await this.genArt721Core
-            .connect(this.accounts.deployer)
+        if (config.isEngine) {
+          await config.genArt721Core
+            .connect(config.accounts.deployer)
             .updateProviderSalesAddresses(
-              this.deadReceiver.address,
-              this.accounts.additional.address,
-              this.accounts.artist2.address,
-              this.accounts.additional2.address
+              config.deadReceiver.address,
+              config.accounts.additional.address,
+              config.accounts.artist2.address,
+              config.accounts.additional2.address
             );
         } else {
-          await this.genArt721Core
-            .connect(this.accounts.deployer)
-            .updateArtblocksPrimarySalesAddress(this.deadReceiver.address);
+          await config.genArt721Core
+            .connect(config.accounts.deployer)
+            .updateArtblocksPrimarySalesAddress(config.deadReceiver.address);
         }
         // expect revert when trying to purchase
         await expectRevert(
-          this.minter
-            .connect(this.accounts.artist)
+          config.minter
+            .connect(config.accounts.artist)
             .purchase_nnf(
-              this.projectZero,
-              this.genArt721Core.address,
-              this.projectZeroTokenZero.toNumber(),
+              config.projectZero,
+              config.genArt721Core.address,
+              config.projectZeroTokenZero.toNumber(),
               {
-                value: this.pricePerTokenInWei,
+                value: config.pricePerTokenInWei,
               }
             ),
           "Render Provider payment failed"
@@ -397,27 +419,29 @@ for (const coreContractName of coreContractsToTest) {
       });
 
       it("requires successful payment to platform provider", async function () {
+        // get config from beforeEach
+        const config = this.config;
         // update platform provider address to a contract that reverts on receive
         // call appropriate core function to update render provider address
-        if (this.isEngine) {
-          await this.genArt721Core
-            .connect(this.accounts.deployer)
+        if (config.isEngine) {
+          await config.genArt721Core
+            .connect(config.accounts.deployer)
             .updateProviderSalesAddresses(
-              this.accounts.artist.address,
-              this.accounts.additional.address,
-              this.deadReceiver.address,
-              this.accounts.additional2.address
+              config.accounts.artist.address,
+              config.accounts.additional.address,
+              config.deadReceiver.address,
+              config.accounts.additional2.address
             );
           // expect revert when trying to purchase
           await expectRevert(
-            this.minter
-              .connect(this.accounts.artist)
+            config.minter
+              .connect(config.accounts.artist)
               .purchase_nnf(
-                this.projectZero,
-                this.genArt721Core.address,
-                this.projectZeroTokenZero.toNumber(),
+                config.projectZero,
+                config.genArt721Core.address,
+                config.projectZeroTokenZero.toNumber(),
                 {
-                  value: this.pricePerTokenInWei,
+                  value: config.pricePerTokenInWei,
                 }
               ),
             "Platform Provider payment failed"
@@ -428,23 +452,25 @@ for (const coreContractName of coreContractsToTest) {
       });
 
       it("requires successful payment to artist", async function () {
+        // get config from beforeEach
+        const config = this.config;
         // update artist address to a contract that reverts on receive
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
           .updateProjectArtistAddress(
-            this.projectZero,
-            this.deadReceiver.address
+            config.projectZero,
+            config.deadReceiver.address
           );
         // expect revert when trying to purchase
         await expectRevert(
-          this.minter
-            .connect(this.accounts.artist)
+          config.minter
+            .connect(config.accounts.artist)
             .purchase_nnf(
-              this.projectZero,
-              this.genArt721Core.address,
-              this.projectZeroTokenZero.toNumber(),
+              config.projectZero,
+              config.genArt721Core.address,
+              config.projectZeroTokenZero.toNumber(),
               {
-                value: this.pricePerTokenInWei,
+                value: config.pricePerTokenInWei,
               }
             ),
           "Artist payment failed"
@@ -452,35 +478,37 @@ for (const coreContractName of coreContractsToTest) {
       });
 
       it("requires successful payment to artist additional payee", async function () {
+        // get config from beforeEach
+        const config = this.config;
         // update artist additional payee to a contract that reverts on receive
         const proposedAddressesAndSplits = [
-          this.projectZero,
-          this.accounts.artist.address,
-          this.deadReceiver.address,
+          config.projectZero,
+          config.accounts.artist.address,
+          config.deadReceiver.address,
           // @dev 50% to additional, 50% to artist, to ensure additional is paid
           50,
-          this.accounts.additional2.address,
-          // @dev split for secondary sales doesn't matter for this test
+          config.accounts.additional2.address,
+          // @dev split for secondary sales doesn't matter for config test
           50,
         ];
-        await this.genArt721Core
-          .connect(this.accounts.artist)
+        await config.genArt721Core
+          .connect(config.accounts.artist)
           .proposeArtistPaymentAddressesAndSplits(
             ...proposedAddressesAndSplits
           );
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
           .adminAcceptArtistAddressesAndSplits(...proposedAddressesAndSplits);
         // expect revert when trying to purchase
         await expectRevert(
-          this.minter
-            .connect(this.accounts.artist)
+          config.minter
+            .connect(config.accounts.artist)
             .purchase_nnf(
-              this.projectZero,
-              this.genArt721Core.address,
-              this.projectZeroTokenZero.toNumber(),
+              config.projectZero,
+              config.genArt721Core.address,
+              config.projectZeroTokenZero.toNumber(),
               {
-                value: this.pricePerTokenInWei,
+                value: config.pricePerTokenInWei,
               }
             ),
           "Additional Payee payment failed"
@@ -488,45 +516,47 @@ for (const coreContractName of coreContractsToTest) {
       });
 
       it("handles zero platform and artist payment values", async function () {
+        // get config from beforeEach
+        const config = this.config;
         // update platform to zero percent
         // route to appropriate core function
-        if (this.isEngine) {
-          await this.genArt721Core
-            .connect(this.accounts.deployer)
+        if (config.isEngine) {
+          await config.genArt721Core
+            .connect(config.accounts.deployer)
             .updateProviderPrimarySalesPercentages(0, 0);
         } else {
-          await this.genArt721Core
-            .connect(this.accounts.deployer)
+          await config.genArt721Core
+            .connect(config.accounts.deployer)
             .updateArtblocksPrimarySalesPercentage(0);
         }
         // update artist primary split to zero
         const proposedAddressesAndSplits = [
-          this.projectZero,
-          this.accounts.artist.address,
-          this.accounts.additional.address,
+          config.projectZero,
+          config.accounts.artist.address,
+          config.accounts.additional.address,
           // @dev 100% to additional, 0% to artist, to induce zero artist payment value
           100,
-          this.accounts.additional2.address,
-          // @dev split for secondary sales doesn't matter for this test
+          config.accounts.additional2.address,
+          // @dev split for secondary sales doesn't matter for config test
           50,
         ];
-        await this.genArt721Core
-          .connect(this.accounts.artist)
+        await config.genArt721Core
+          .connect(config.accounts.artist)
           .proposeArtistPaymentAddressesAndSplits(
             ...proposedAddressesAndSplits
           );
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
           .adminAcceptArtistAddressesAndSplits(...proposedAddressesAndSplits);
         // expect successful purchase
-        await this.minter
-          .connect(this.accounts.artist)
+        await config.minter
+          .connect(config.accounts.artist)
           .purchase_nnf(
-            this.projectZero,
-            this.genArt721Core.address,
-            this.projectZeroTokenZero.toNumber(),
+            config.projectZero,
+            config.genArt721Core.address,
+            config.projectZeroTokenZero.toNumber(),
             {
-              value: this.pricePerTokenInWei,
+              value: config.pricePerTokenInWei,
             }
           );
       });
@@ -534,10 +564,11 @@ for (const coreContractName of coreContractsToTest) {
 
     describe("onlyCoreAdminACL", async function () {
       it("restricts registerNFTAddress to only core admin ACL allowed", async function () {
+        const config = await loadFixture(_beforeEach);
         await expectRevert(
-          this.minter
-            .connect(this.accounts.user)
-            .registerNFTAddress(this.genArt721Core.address),
+          config.minter
+            .connect(config.accounts.user)
+            .registerNFTAddress(config.genArt721Core.address),
           "Only Core AdminACL allowed"
         );
       });
@@ -545,119 +576,130 @@ for (const coreContractName of coreContractsToTest) {
 
     describe("additional payee payments", async function () {
       it("handles additional payee payments", async function () {
+        const config = await loadFixture(_beforeEach);
         const valuesToUpdateTo = [
-          this.projectZero,
-          this.accounts.artist.address,
-          this.accounts.additional.address,
+          config.projectZero,
+          config.accounts.artist.address,
+          config.accounts.additional.address,
           50,
-          this.accounts.additional2.address,
+          config.accounts.additional2.address,
           51,
         ];
-        await this.genArt721Core
-          .connect(this.accounts.artist)
+        await config.genArt721Core
+          .connect(config.accounts.artist)
           .proposeArtistPaymentAddressesAndSplits(...valuesToUpdateTo);
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
           .adminAcceptArtistAddressesAndSplits(...valuesToUpdateTo);
 
-        await this.minter
-          .connect(this.accounts.artist)
+        await config.minter
+          .connect(config.accounts.artist)
           ["purchase(uint256,address,uint256)"](
-            this.projectZero,
-            this.genArt721Core.address,
-            this.projectZeroTokenZero.toNumber(),
+            config.projectZero,
+            config.genArt721Core.address,
+            config.projectZeroTokenZero.toNumber(),
             {
-              value: this.pricePerTokenInWei,
+              value: config.pricePerTokenInWei,
             }
           );
       });
     });
 
     describe("Works for different valid delegation levels", async function () {
+      const config = await loadFixture(_beforeEach);
       ["delegateForAll", "delegateForContract", "delegateForToken"].forEach(
         (delegationType) => {
           describe(`purchaseTo_dlc with a VALID vault delegate after ${delegationType}`, async function () {
             beforeEach(async function () {
+              const config = await loadFixture(_beforeEach);
               // artist account holds mint #0 for delegating
-              this.artistVault = this.accounts.artist;
+              config.artistVault = config.accounts.artist;
 
-              this.userVault = this.accounts.additional2;
+              config.userVault = config.accounts.additional2;
 
               // delegate the vault to the user
               let delegationArgs;
               if (delegationType === "delegateForAll") {
-                delegationArgs = [this.accounts.user.address, true];
+                delegationArgs = [config.accounts.user.address, true];
               } else if (delegationType === "delegateForContract") {
                 delegationArgs = [
-                  this.accounts.user.address,
-                  this.genArt721Core.address,
+                  config.accounts.user.address,
+                  config.genArt721Core.address,
                   true,
                 ];
               } else if (delegationType === "delegateForToken") {
                 delegationArgs = [
-                  this.accounts.user.address, // delegate
-                  this.genArt721Core.address, // contract address
-                  this.projectZeroTokenZero.toNumber(), // tokenID
+                  config.accounts.user.address, // delegate
+                  config.genArt721Core.address, // contract address
+                  config.projectZeroTokenZero.toNumber(), // tokenID
                   true,
                 ];
               }
-              await this.delegationRegistry
-                .connect(this.userVault)
+              await config.delegationRegistry
+                .connect(config.userVault)
                 [delegationType](...delegationArgs);
+              // pass config to tests in this describe block
+              this.config = config;
             });
 
             it("does allow purchases", async function () {
+              // get config from beforeEach
+              const config = this.config;
               // delegate the vault to the user
-              await this.delegationRegistry
-                .connect(this.artistVault)
+              await config.delegationRegistry
+                .connect(config.artistVault)
                 .delegateForToken(
-                  this.accounts.user.address, // delegate
-                  this.genArt721Core.address, // contract address
-                  this.projectZeroTokenZero.toNumber(), // tokenID
+                  config.accounts.user.address, // delegate
+                  config.genArt721Core.address, // contract address
+                  config.projectZeroTokenZero.toNumber(), // tokenID
                   true
                 );
 
               // expect no revert
-              await this.minter
-                .connect(this.accounts.user)
+              await config.minter
+                .connect(config.accounts.user)
                 ["purchaseTo(address,uint256,address,uint256,address)"](
-                  this.userVault.address,
-                  this.projectZero,
-                  this.genArt721Core.address,
-                  this.projectZeroTokenZero.toNumber(),
-                  this.artistVault.address, //  the allowlisted vault address
+                  config.userVault.address,
+                  config.projectZero,
+                  config.genArt721Core.address,
+                  config.projectZeroTokenZero.toNumber(),
+                  config.artistVault.address, //  the allowlisted vault address
                   {
-                    value: this.pricePerTokenInWei,
+                    value: config.pricePerTokenInWei,
                   }
                 );
             });
 
             it("allows purchases to vault if msg.sender is allowlisted and no vault is provided", async function () {
-              await this.minter
-                .connect(this.accounts.artist)
+              // get config from beforeEach
+              const config = this.config;
+              await config.minter
+                .connect(config.accounts.artist)
                 ["purchaseTo(address,uint256,address,uint256)"](
-                  this.accounts.additional.address,
-                  this.projectZero,
-                  this.genArt721Core.address,
-                  this.projectZeroTokenZero.toNumber(),
+                  config.accounts.additional.address,
+                  config.projectZero,
+                  config.genArt721Core.address,
+                  config.projectZeroTokenZero.toNumber(),
                   {
-                    value: this.pricePerTokenInWei,
+                    value: config.pricePerTokenInWei,
                   }
                 );
             });
 
             it("does not allow purchases with an incorrect token", async function () {
+              // get config from beforeEach
+              const config = this.config;
               await expectRevert(
-                this.minter
-                  .connect(this.accounts.user)
+                config.minter
+                  .connect(config.accounts.user)
                   ["purchaseTo(address,uint256,address,uint256,address)"](
-                    this.userVault.address,
-                    this.projectOne,
-                    this.genArt721Core.address,
-                    this.projectZeroTokenOne.toNumber(),
-                    this.userVault.address, //  the vault address has NOT been delegated
+                    config.userVault.address,
+                    config.projectOne,
+                    config.genArt721Core.address,
+                    config.projectZeroTokenOne.toNumber(),
+                    config.userVault.address, //  the vault address has NOT been delegated
                     {
-                      value: this.pricePerTokenInWei,
+                      value: config.pricePerTokenInWei,
                     }
                   ),
                 "Only allowlisted NFTs"
@@ -670,22 +712,27 @@ for (const coreContractName of coreContractsToTest) {
 
     describe("purchaseTo_dlc with an INVALID vault delegate", async function () {
       beforeEach(async function () {
-        this.userVault = this.accounts.additional2;
+        const config = await loadFixture(_beforeEach);
+        config.userVault = config.accounts.additional2;
         // intentionally do not add any delegations
+        // pass config to tests in this describe block
+        this.config = config;
       });
 
       it("does NOT allow purchases", async function () {
+        // get config from beforeEach
+        const config = this.config;
         await expectRevert(
-          this.minter
-            .connect(this.accounts.user)
+          config.minter
+            .connect(config.accounts.user)
             ["purchaseTo(address,uint256,address,uint256,address)"](
-              this.userVault.address,
-              this.projectZero,
-              this.genArt721Core.address,
-              this.projectZeroTokenZero.toNumber(),
-              this.userVault.address, //  the address has NOT been delegated
+              config.userVault.address,
+              config.projectZero,
+              config.genArt721Core.address,
+              config.projectZeroTokenZero.toNumber(),
+              config.userVault.address, //  the address has NOT been delegated
               {
-                value: this.pricePerTokenInWei,
+                value: config.pricePerTokenInWei,
               }
             ),
           "Invalid delegate-vault pairing"
@@ -695,45 +742,46 @@ for (const coreContractName of coreContractsToTest) {
 
     describe("purchase", async function () {
       it("does not allow purchases even if local max invocations value is returning a false negative", async function () {
+        const config = await loadFixture(_beforeEach);
         // set local max invocations to 2 (since one token already minted)
-        await this.minter
-          .connect(this.accounts.artist)
-          .manuallyLimitProjectMaxInvocations(this.projectZero, 2);
+        await config.minter
+          .connect(config.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(config.projectZero, 2);
         // switch to different minter
         const setPriceFactory = await ethers.getContractFactory(
           "MinterSetPriceV4"
         );
         const setPriceMinter = await setPriceFactory.deploy(
-          this.genArt721Core.address,
-          this.minterFilter.address
+          config.genArt721Core.address,
+          config.minterFilter.address
         );
-        await this.minterFilter.addApprovedMinter(setPriceMinter.address);
-        await this.minterFilter
-          .connect(this.accounts.artist)
+        await config.minterFilter.addApprovedMinter(setPriceMinter.address);
+        await config.minterFilter
+          .connect(config.accounts.artist)
           .setMinterForProject(0, setPriceMinter.address);
         // purchase a token on the new minter
         await setPriceMinter
-          .connect(this.accounts.artist)
+          .connect(config.accounts.artist)
           .updatePricePerTokenInWei(
-            this.projectZero,
+            config.projectZero,
             ethers.utils.parseEther("0")
           );
         await setPriceMinter
-          .connect(this.accounts.artist)
-          .purchase(this.projectZero);
+          .connect(config.accounts.artist)
+          .purchase(config.projectZero);
         // switch back to original minter
-        await this.minterFilter
-          .connect(this.accounts.artist)
-          .setMinterForProject(0, this.minter.address);
+        await config.minterFilter
+          .connect(config.accounts.artist)
+          .setMinterForProject(0, config.minter.address);
         await expectRevert(
-          this.minter
-            .connect(this.accounts.artist)
+          config.minter
+            .connect(config.accounts.artist)
             .purchase_nnf(
-              this.projectZero,
-              this.genArt721Core.address,
-              this.projectZeroTokenZero.toNumber(),
+              config.projectZero,
+              config.genArt721Core.address,
+              config.projectZeroTokenZero.toNumber(),
               {
-                value: this.pricePerTokenInWei,
+                value: config.pricePerTokenInWei,
               }
             ),
           "Maximum invocations reached"
@@ -743,21 +791,23 @@ for (const coreContractName of coreContractsToTest) {
 
     describe("minterVersion", async function () {
       it("correctly reports minterVersion", async function () {
-        const minterVersion = await this.minter.minterVersion();
+        const config = await loadFixture(_beforeEach);
+        const minterVersion = await config.minter.minterVersion();
         expect(minterVersion).to.equal(TARGET_MINTER_VERSION);
       });
     });
 
     describe("calculates gas", async function () {
       it("mints and calculates gas values [ @skip-on-coverage ]", async function () {
-        const tx = await this.minter
-          .connect(this.accounts.artist)
+        const config = await loadFixture(_beforeEach);
+        const tx = await config.minter
+          .connect(config.accounts.artist)
           ["purchase(uint256,address,uint256)"](
-            this.projectZero,
-            this.genArt721Core.address,
-            this.projectZeroTokenZero.toNumber(),
+            config.projectZero,
+            config.genArt721Core.address,
+            config.projectZeroTokenZero.toNumber(),
             {
-              value: this.pricePerTokenInWei,
+              value: config.pricePerTokenInWei,
             }
           );
 
@@ -769,7 +819,7 @@ for (const coreContractName of coreContractsToTest) {
           ethers.utils.formatUnits(txCost.toString(), "ether").toString(),
           "ETH"
         );
-        if (this.isEngine) {
+        if (config.isEngine) {
           expect(compareBN(txCost, ethers.utils.parseEther("0.0128176"), 1)).to
             .be.true;
         } else {
@@ -781,8 +831,9 @@ for (const coreContractName of coreContractsToTest) {
 
     describe("isEngine", async function () {
       it("correctly reports isEngine", async function () {
-        const coreType = await this.genArt721Core.coreType();
-        expect(coreType === "GenArt721CoreV3").to.be.equal(!this.isEngine);
+        const config = await loadFixture(_beforeEach);
+        const coreType = await config.genArt721Core.coreType();
+        expect(coreType === "GenArt721CoreV3").to.be.equal(!config.isEngine);
       });
     });
   });
@@ -790,25 +841,28 @@ for (const coreContractName of coreContractsToTest) {
 
 // single-iteration tests with mock core contract(s)
 describe(`${TARGET_MINTER_NAME} tests using mock core contract(s)`, async function () {
-  beforeEach(async function () {
-    // standard accounts and constants
-    this.accounts = await getAccounts();
-    await assignDefaultConstants.call(this);
-  });
+  async function _beforeEach() {
+    let config: T_Config = {
+      accounts: await getAccounts(),
+    };
+    config = await assignDefaultConstants(config);
+    return config;
+  }
 
   describe("constructor", async function () {
     it("requires correct quantity of return values from `getPrimaryRevenueSplits`", async function () {
+      const config = await loadFixture(_beforeEach);
       // deploy and configure core contract that returns incorrect quanty of return values for coreType response
       const coreContractName = "GenArt721CoreV3_Engine_IncorrectCoreType";
       const { genArt721Core, minterFilter, randomizer } =
-        await deployCoreWithMinterFilter.call(
-          this,
+        await deployCoreWithMinterFilter(
+          config,
           coreContractName,
           "MinterFilterV1"
         );
 
-      const delegationRegistry = await deployAndGet.call(
-        this,
+      const delegationRegistry = await deployAndGet(
+        config,
         "DelegationRegistry",
         []
       );
