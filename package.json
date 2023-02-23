@@ -47,6 +47,7 @@
     "@graphql-codegen/typescript-document-nodes": "^3.0.0",
     "@graphql-codegen/typescript-operations": "^3.0.0",
     "@graphql-codegen/typescript-urql": "^3.7.3",
+    "@nomicfoundation/hardhat-network-helpers": "^1.0.8",
     "@nomiclabs/hardhat-ethers": "^2.2.1",
     "@nomiclabs/hardhat-etherscan": "^3.1.4",
     "@nomiclabs/hardhat-solhint": "^2.0.0",

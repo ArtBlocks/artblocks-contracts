@@ -9,8 +9,10 @@ import {
 } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 
 import {
+  T_Config,
   getAccounts,
   assignDefaultConstants,
   deployAndGet,
@@ -20,25 +22,32 @@ import {
 } from "../../util/common";
 import { FOUR_WEEKS } from "../../util/constants";
 
-async function validateAdminACLRequest(functionName: string, args: any[]) {
-  const targetSelector = this.coreInterface.getSighash(functionName);
+async function validateAdminACLRequest(
+  config: T_Config,
+  functionName: string,
+  args: any[]
+) {
+  const targetSelector = config.coreInterface.getSighash(functionName);
   // emits event when being minted out
   await expect(
-    this.genArt721Core.connect(this.accounts.deployer)[functionName](...args)
+    config.genArt721Core
+      .connect(config.accounts.deployer)
+      [functionName](...args)
   )
-    .to.emit(this.adminACL, "ACLCheck")
-    .withArgs(this.accounts.deployer.address, targetSelector);
+    .to.emit(config.adminACL, "ACLCheck")
+    .withArgs(config.accounts.deployer.address, targetSelector);
 }
 
 async function expectRevertFromAdminACLRequest(
+  config: T_Config,
   functionName: string,
   signer_: SignerWithAddress,
   args: any[]
 ) {
-  const targetSelector = this.coreInterface.getSighash(functionName);
+  const targetSelector = config.coreInterface.getSighash(functionName);
   // emits event when being minted out
   await expectRevert(
-    this.genArt721Core.connect(signer_)[functionName](...args),
+    config.genArt721Core.connect(signer_)[functionName](...args),
     "Only Admin ACL allowed"
   );
 }
@@ -60,121 +69,130 @@ const coreContractsToTest = [
  */
 for (const coreContractName of coreContractsToTest) {
   describe(`${coreContractName} AdminACL Requests`, async function () {
-    beforeEach(async function () {
-      // standard accounts and constants
-      this.accounts = await getAccounts();
-      await assignDefaultConstants.call(this);
+    async function _beforeEach() {
+      let config: T_Config = {
+        accounts: await getAccounts(),
+      };
+      config = await assignDefaultConstants(config);
 
       // get core contract interface for signature hash retrieval
       const artblocksFactory = await ethers.getContractFactory(
         coreContractName
       );
-      this.coreInterface = artblocksFactory.interface;
+      config.coreInterface = artblocksFactory.interface;
 
       // deploy and configure minter filter and minter
       ({
-        genArt721Core: this.genArt721Core,
-        minterFilter: this.minterFilter,
-        randomizer: this.randomizer,
-        adminACL: this.adminACL,
-      } = await deployCoreWithMinterFilter.call(
-        this,
+        genArt721Core: config.genArt721Core,
+        minterFilter: config.minterFilter,
+        randomizer: config.randomizer,
+        adminACL: config.adminACL,
+      } = await deployCoreWithMinterFilter(
+        config,
         coreContractName,
         "MinterFilterV1",
         true
       ));
 
-      this.minter = await deployAndGet.call(this, "MinterSetPriceV2", [
-        this.genArt721Core.address,
-        this.minterFilter.address,
+      config.minter = await deployAndGet(config, "MinterSetPriceV2", [
+        config.genArt721Core.address,
+        config.minterFilter.address,
       ]);
 
       // add project zero
-      await this.genArt721Core
-        .connect(this.accounts.deployer)
-        .addProject("name", this.accounts.artist.address);
-      await this.genArt721Core
-        .connect(this.accounts.deployer)
-        .toggleProjectIsActive(this.projectZero);
-      await this.genArt721Core
-        .connect(this.accounts.artist)
-        .updateProjectMaxInvocations(this.projectZero, this.maxInvocations);
+      await config.genArt721Core
+        .connect(config.accounts.deployer)
+        .addProject("name", config.accounts.artist.address);
+      await config.genArt721Core
+        .connect(config.accounts.deployer)
+        .toggleProjectIsActive(config.projectZero);
+      await config.genArt721Core
+        .connect(config.accounts.artist)
+        .updateProjectMaxInvocations(config.projectZero, config.maxInvocations);
 
       // add project one without setting it to active or setting max invocations
-      await this.genArt721Core
-        .connect(this.accounts.deployer)
-        .addProject("name", this.accounts.artist2.address);
+      await config.genArt721Core
+        .connect(config.accounts.deployer)
+        .addProject("name", config.accounts.artist2.address);
 
       // configure minter for project zero
-      await this.minterFilter
-        .connect(this.accounts.deployer)
-        .addApprovedMinter(this.minter.address);
-      await this.minterFilter
-        .connect(this.accounts.deployer)
-        .setMinterForProject(this.projectZero, this.minter.address);
-      await this.minter
-        .connect(this.accounts.artist)
-        .updatePricePerTokenInWei(this.projectZero, 0);
-    });
+      await config.minterFilter
+        .connect(config.accounts.deployer)
+        .addApprovedMinter(config.minter.address);
+      await config.minterFilter
+        .connect(config.accounts.deployer)
+        .setMinterForProject(config.projectZero, config.minter.address);
+      await config.minter
+        .connect(config.accounts.artist)
+        .updatePricePerTokenInWei(config.projectZero, 0);
+      return config;
+    }
 
     describe("requests appropriate selectors from AdminACL", function () {
       if (coreContractName.includes("GenArt721CoreV3_Engine")) {
         it("updateProviderSalesAddresses", async function () {
-          await validateAdminACLRequest.call(
-            this,
+          const config = await loadFixture(_beforeEach);
+          await validateAdminACLRequest(
+            config,
             "updateProviderSalesAddresses",
             [
-              this.accounts.user.address,
-              this.accounts.user.address,
-              this.accounts.user.address,
-              this.accounts.user.address,
+              config.accounts.user.address,
+              config.accounts.user.address,
+              config.accounts.user.address,
+              config.accounts.user.address,
             ]
           );
         });
 
         it("updateProviderPrimarySalesPercentages", async function () {
-          await validateAdminACLRequest.call(
-            this,
+          const config = await loadFixture(_beforeEach);
+          await validateAdminACLRequest(
+            config,
             "updateProviderPrimarySalesPercentages",
             [11, 22]
           );
         });
 
         it("updateProviderSecondarySalesBPS", async function () {
-          await validateAdminACLRequest.call(
-            this,
+          const config = await loadFixture(_beforeEach);
+          await validateAdminACLRequest(
+            config,
             "updateProviderSecondarySalesBPS",
             [240, 420]
           );
         });
       } else {
         it("updateArtblocksPrimarySalesAddress", async function () {
-          await validateAdminACLRequest.call(
-            this,
+          const config = await loadFixture(_beforeEach);
+          await validateAdminACLRequest(
+            config,
             "updateArtblocksPrimarySalesAddress",
-            [this.accounts.user.address]
+            [config.accounts.user.address]
           );
         });
 
         it("updateArtblocksSecondarySalesAddress", async function () {
-          await validateAdminACLRequest.call(
-            this,
+          const config = await loadFixture(_beforeEach);
+          await validateAdminACLRequest(
+            config,
             "updateArtblocksSecondarySalesAddress",
-            [this.accounts.user.address]
+            [config.accounts.user.address]
           );
         });
 
         it("updateArtblocksPrimarySalesPercentage", async function () {
-          await validateAdminACLRequest.call(
-            this,
+          const config = await loadFixture(_beforeEach);
+          await validateAdminACLRequest(
+            config,
             "updateArtblocksPrimarySalesPercentage",
             [11]
           );
         });
 
         it("updateArtblocksSecondarySalesBPS", async function () {
-          await validateAdminACLRequest.call(
-            this,
+          const config = await loadFixture(_beforeEach);
+          await validateAdminACLRequest(
+            config,
             "updateArtblocksSecondarySalesBPS",
             [240]
           );
@@ -182,116 +200,135 @@ for (const coreContractName of coreContractsToTest) {
       }
 
       it("updateMinterContract", async function () {
-        await validateAdminACLRequest.call(this, "updateMinterContract", [
-          this.accounts.user.address,
+        const config = await loadFixture(_beforeEach);
+        await validateAdminACLRequest(config, "updateMinterContract", [
+          config.accounts.user.address,
         ]);
       });
 
       it("updateRandomizerAddress", async function () {
-        await validateAdminACLRequest.call(this, "updateRandomizerAddress", [
-          this.accounts.user.address,
+        const config = await loadFixture(_beforeEach);
+        await validateAdminACLRequest(config, "updateRandomizerAddress", [
+          config.accounts.user.address,
         ]);
       });
 
       it("toggleProjectIsActive", async function () {
-        await validateAdminACLRequest.call(this, "toggleProjectIsActive", [
-          this.projectZero,
+        const config = await loadFixture(_beforeEach);
+        await validateAdminACLRequest(config, "toggleProjectIsActive", [
+          config.projectZero,
         ]);
       });
 
       it("updateProjectArtistAddress", async function () {
-        await validateAdminACLRequest.call(this, "updateProjectArtistAddress", [
-          this.projectZero,
-          this.accounts.artist2.address,
+        const config = await loadFixture(_beforeEach);
+        await validateAdminACLRequest(config, "updateProjectArtistAddress", [
+          config.projectZero,
+          config.accounts.artist2.address,
         ]);
       });
 
       it("addProject", async function () {
-        await validateAdminACLRequest.call(this, "addProject", [
+        const config = await loadFixture(_beforeEach);
+        await validateAdminACLRequest(config, "addProject", [
           "Project Name",
-          this.accounts.artist2.address,
+          config.accounts.artist2.address,
         ]);
       });
 
       it("updateProjectName", async function () {
-        await validateAdminACLRequest.call(this, "updateProjectName", [
-          this.projectZero,
+        const config = await loadFixture(_beforeEach);
+        await validateAdminACLRequest(config, "updateProjectName", [
+          config.projectZero,
           "New Project Name",
         ]);
       });
 
       it("updateProjectArtistName", async function () {
-        await validateAdminACLRequest.call(this, "updateProjectArtistName", [
-          this.projectZero,
+        const config = await loadFixture(_beforeEach);
+        await validateAdminACLRequest(config, "updateProjectArtistName", [
+          config.projectZero,
           "New Artist Name",
         ]);
       });
 
       it("updateProjectLicense", async function () {
-        await validateAdminACLRequest.call(this, "updateProjectLicense", [
-          this.projectZero,
+        const config = await loadFixture(_beforeEach);
+        await validateAdminACLRequest(config, "updateProjectLicense", [
+          config.projectZero,
           "New Project License",
         ]);
       });
 
       it("addProjectScript", async function () {
-        await validateAdminACLRequest.call(this, "addProjectScript", [
-          this.projectZero,
+        const config = await loadFixture(_beforeEach);
+        await validateAdminACLRequest(config, "addProjectScript", [
+          config.projectZero,
           "console.log('hello world')",
         ]);
       });
 
       describe("update/remove project scripts", async function () {
         beforeEach(async function () {
+          const config = await loadFixture(_beforeEach);
           // add a project to be modified
-          await this.genArt721Core
-            .connect(this.accounts.deployer)
-            .addProjectScript(this.projectZero, "console.log('hello world')");
+          await config.genArt721Core
+            .connect(config.accounts.deployer)
+            .addProjectScript(config.projectZero, "console.log('hello world')");
+          // pass config to tests in this describe block
+          this.config = config;
         });
 
         it("updateProjectScript", async function () {
+          // get config from beforeEach
+          const config = this.config;
           // update the script
-          await validateAdminACLRequest.call(this, "updateProjectScript", [
-            this.projectZero,
+          await validateAdminACLRequest(config, "updateProjectScript", [
+            config.projectZero,
             0,
             "console.log('hello big world')",
           ]);
         });
 
         it("removeProjectLastScript", async function () {
+          // get config from beforeEach
+          const config = this.config;
           // update the script
-          await validateAdminACLRequest.call(this, "removeProjectLastScript", [
-            this.projectZero,
+          await validateAdminACLRequest(config, "removeProjectLastScript", [
+            config.projectZero,
           ]);
         });
       });
 
       it("updateProjectScriptType", async function () {
-        await validateAdminACLRequest.call(this, "updateProjectScriptType", [
-          this.projectZero,
+        const config = await loadFixture(_beforeEach);
+        await validateAdminACLRequest(config, "updateProjectScriptType", [
+          config.projectZero,
           ethers.utils.formatBytes32String("p5js@v1.2.3"),
         ]);
       });
 
       it("updateProjectAspectRatio", async function () {
-        await validateAdminACLRequest.call(this, "updateProjectAspectRatio", [
-          this.projectZero,
+        const config = await loadFixture(_beforeEach);
+        await validateAdminACLRequest(config, "updateProjectAspectRatio", [
+          config.projectZero,
           "1.7777778",
         ]);
       });
 
       it("updateProjectDescription", async function () {
+        const config = await loadFixture(_beforeEach);
         // admin may only call when in a locked state
-        await mintProjectUntilRemaining.call(
-          this,
-          this.projectZero,
-          this.accounts.artist,
+        await mintProjectUntilRemaining(
+          config,
+          config.projectZero,
+          config.accounts.artist,
           0
         );
         await advanceEVMByTime(FOUR_WEEKS + 1);
         // ensure admin requests expected selector
-        await validateAdminACLRequest.call(this, "updateProjectDescription", [
-          this.projectZero,
+        await validateAdminACLRequest(config, "updateProjectDescription", [
+          config.projectZero,
           "post-locked admin description",
         ]);
       });
@@ -300,34 +337,37 @@ for (const coreContractName of coreContractsToTest) {
     describe("rejects non-admin calling admin-ACL protected functions", function () {
       if (coreContractName.includes("GenArt721CoreV3_Engine")) {
         it("updateProviderSalesAddresses", async function () {
-          await expectRevertFromAdminACLRequest.call(
-            this,
+          const config = await loadFixture(_beforeEach);
+          await expectRevertFromAdminACLRequest(
+            config,
             "updateProviderSalesAddresses",
-            this.accounts.user,
+            config.accounts.user,
             [
-              this.accounts.user.address,
-              this.accounts.user.address,
-              this.accounts.user.address,
-              this.accounts.user.address,
+              config.accounts.user.address,
+              config.accounts.user.address,
+              config.accounts.user.address,
+              config.accounts.user.address,
             ]
           );
         });
       } else {
         it("updateArtblocksPrimarySalesAddress", async function () {
-          await expectRevertFromAdminACLRequest.call(
-            this,
+          const config = await loadFixture(_beforeEach);
+          await expectRevertFromAdminACLRequest(
+            config,
             "updateArtblocksPrimarySalesAddress",
-            this.accounts.user,
-            [this.accounts.user.address]
+            config.accounts.user,
+            [config.accounts.user.address]
           );
         });
 
         it("updateArtblocksSecondarySalesAddress", async function () {
-          await expectRevertFromAdminACLRequest.call(
-            this,
+          const config = await loadFixture(_beforeEach);
+          await expectRevertFromAdminACLRequest(
+            config,
             "updateArtblocksSecondarySalesAddress",
-            this.accounts.user,
-            [this.accounts.user.address]
+            config.accounts.user,
+            [config.accounts.user.address]
           );
         });
       }
