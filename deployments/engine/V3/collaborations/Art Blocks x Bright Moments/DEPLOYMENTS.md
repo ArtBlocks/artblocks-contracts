@@ -103,3 +103,24 @@ https://goerli.etherscan.io/address/0xcBA628BcF6f458f6F929d875B69FE5f0F3fB99b6#c
 
 **MinterSetPriceERC20V4:**
 https://goerli.etherscan.io/address/0xdADB127c1565156C3Ce004E11db7E1ba626267E7#code
+
+# Minter Deployment
+
+Date: 2023-02-22T23:00:34.949Z
+
+## **Network:** mainnet
+
+## **Environment:** mainnet
+
+**Deployment Input File:** `deployments/engine/V3/collaborations/Art Blocks x Bright Moments/polyptych-minter-deploy-config.mainnet.ts`
+
+**MinterPolyptychV0:** https://etherscan.io/address/0x407A746DAd6a18ec6c4Bb4028Bb54c74366ccCe3#code
+
+**Associated core contract:** 0x145789247973C5D612bF121e9E4Eef84b63Eb707
+
+**Associated minter filter:** 0x6E522449C1642E7cB0B12a2889CcBf79b51C69f8
+
+**Deployment Args:** 0x145789247973C5D612bF121e9E4Eef84b63Eb707,0x6E522449C1642E7cB0B12a2889CcBf79b51C69f8,0x00000000000076A84feF008CDAbe6409d2FE638B
+
+---
+
