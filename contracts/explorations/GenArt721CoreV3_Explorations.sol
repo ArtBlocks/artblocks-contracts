@@ -237,7 +237,7 @@ contract GenArt721CoreV3_Explorations is
     /// version & type of this core contract
     /// coreVersion is updated from Flagship V3 core due to minor changes
     /// implemented in the Explorations version of the contract.
-    string public constant coreVersion = "v3.0.1";
+    string public constant coreVersion = "v3.0.3";
     /// coreType remains consistent with flagship V3 core because external &
     /// public functions used for indexing are unchanged.
     string public constant coreType = "GenArt721CoreV3";
@@ -270,7 +270,7 @@ contract GenArt721CoreV3_Explorations is
         require(_projectUnlocked(_projectId), "Only if unlocked");
     }
 
-    function onlyAdminACL(bytes4 _selector) internal {
+    function _onlyAdminACL(bytes4 _selector) internal {
         require(
             adminACLAllowed(msg.sender, address(this), _selector),
             "Only Admin ACL allowed"
@@ -498,7 +498,7 @@ contract GenArt721CoreV3_Explorations is
     function updateArtblocksCurationRegistryAddress(
         address _artblocksCurationRegistryAddress
     ) external {
-        onlyAdminACL(this.updateArtblocksCurationRegistryAddress.selector);
+        _onlyAdminACL(this.updateArtblocksCurationRegistryAddress.selector);
         _onlyNonZeroAddress(_artblocksCurationRegistryAddress);
         revert("Action not supported");
     }
@@ -511,7 +511,7 @@ contract GenArt721CoreV3_Explorations is
     function updateArtblocksDependencyRegistryAddress(
         address _artblocksDependencyRegistryAddress
     ) external {
-        onlyAdminACL(this.updateArtblocksDependencyRegistryAddress.selector);
+        _onlyAdminACL(this.updateArtblocksDependencyRegistryAddress.selector);
         _onlyNonZeroAddress(_artblocksDependencyRegistryAddress);
         artblocksDependencyRegistryAddress = _artblocksDependencyRegistryAddress;
         emit PlatformUpdated(FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS);
@@ -526,7 +526,7 @@ contract GenArt721CoreV3_Explorations is
     function updateArtblocksPrimarySalesAddress(
         address payable _artblocksPrimarySalesAddress
     ) external {
-        onlyAdminACL(this.updateArtblocksPrimarySalesAddress.selector);
+        _onlyAdminACL(this.updateArtblocksPrimarySalesAddress.selector);
         _onlyNonZeroAddress(_artblocksPrimarySalesAddress);
         _updateArtblocksPrimarySalesAddress(_artblocksPrimarySalesAddress);
     }
@@ -540,7 +540,7 @@ contract GenArt721CoreV3_Explorations is
     function updateArtblocksSecondarySalesAddress(
         address payable _artblocksSecondarySalesAddress
     ) external {
-        onlyAdminACL(this.updateArtblocksSecondarySalesAddress.selector);
+        _onlyAdminACL(this.updateArtblocksSecondarySalesAddress.selector);
         _onlyNonZeroAddress(_artblocksSecondarySalesAddress);
         _updateArtblocksSecondarySalesAddress(_artblocksSecondarySalesAddress);
     }
@@ -554,7 +554,7 @@ contract GenArt721CoreV3_Explorations is
     function updateArtblocksPrimarySalesPercentage(
         uint256 artblocksPrimarySalesPercentage_
     ) external {
-        onlyAdminACL(this.updateArtblocksPrimarySalesPercentage.selector);
+        _onlyAdminACL(this.updateArtblocksPrimarySalesPercentage.selector);
         require(
             artblocksPrimarySalesPercentage_ <=
                 ART_BLOCKS_MAX_PRIMARY_SALES_PERCENTAGE,
@@ -580,7 +580,7 @@ contract GenArt721CoreV3_Explorations is
     function updateArtblocksSecondarySalesBPS(
         uint256 _artblocksSecondarySalesBPS
     ) external {
-        onlyAdminACL(this.updateArtblocksSecondarySalesBPS.selector);
+        _onlyAdminACL(this.updateArtblocksSecondarySalesBPS.selector);
         require(
             _artblocksSecondarySalesBPS <= ART_BLOCKS_MAX_SECONDARY_SALES_BPS,
             "Max of ART_BLOCKS_MAX_SECONDARY_SALES_BPS BPS"
@@ -594,7 +594,7 @@ contract GenArt721CoreV3_Explorations is
      * @param _address Address of new minter.
      */
     function updateMinterContract(address _address) external {
-        onlyAdminACL(this.updateMinterContract.selector);
+        _onlyAdminACL(this.updateMinterContract.selector);
         _onlyNonZeroAddress(_address);
         minterContract = _address;
         emit MinterUpdated(_address);
@@ -605,7 +605,7 @@ contract GenArt721CoreV3_Explorations is
      * @param _randomizerAddress Address of new randomizer.
      */
     function updateRandomizerAddress(address _randomizerAddress) external {
-        onlyAdminACL(this.updateRandomizerAddress.selector);
+        _onlyAdminACL(this.updateRandomizerAddress.selector);
         _onlyNonZeroAddress(_randomizerAddress);
         _updateRandomizerAddress(_randomizerAddress);
     }
@@ -615,7 +615,7 @@ contract GenArt721CoreV3_Explorations is
      * @param _projectId Project ID to be toggled.
      */
     function toggleProjectIsActive(uint256 _projectId) external {
-        onlyAdminACL(this.toggleProjectIsActive.selector);
+        _onlyAdminACL(this.toggleProjectIsActive.selector);
         _onlyValidProjectId(_projectId);
         projects[_projectId].active = !projects[_projectId].active;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_ACTIVE);
@@ -858,7 +858,7 @@ contract GenArt721CoreV3_Explorations is
         string memory _projectName,
         address payable _artistAddress
     ) external {
-        onlyAdminACL(this.addProject.selector);
+        _onlyAdminACL(this.addProject.selector);
         _onlyNonEmptyString(_projectName);
         _onlyNonZeroAddress(_artistAddress);
         require(!newProjectsForbidden, "New projects forbidden");
@@ -877,7 +877,7 @@ contract GenArt721CoreV3_Explorations is
      * @notice Forever forbids new projects from being added to this contract.
      */
     function forbidNewProjects() external {
-        onlyAdminACL(this.forbidNewProjects.selector);
+        _onlyAdminACL(this.forbidNewProjects.selector);
         require(!newProjectsForbidden, "Already forbidden");
         _forbidNewProjects();
     }
@@ -1041,7 +1041,8 @@ contract GenArt721CoreV3_Explorations is
     /**
      * @notice Adds a script to project `_projectId`.
      * @param _projectId Project to be updated.
-     * @param _script Script to be added.
+     * @param _script Script to be added. Required to be a non-empty string,
+     * but no further validation is performed.
      */
     function addProjectScript(
         uint256 _projectId,
@@ -1062,7 +1063,8 @@ contract GenArt721CoreV3_Explorations is
      * @notice Updates script for project `_projectId` at script ID `_scriptId`.
      * @param _projectId Project to be updated.
      * @param _scriptId Script ID to be updated.
-     * @param _script The updated script value.
+     * @param _script The updated script value. Required to be a non-empty
+     * string, but no further validation is performed.
      */
     function updateProjectScript(
         uint256 _projectId,
@@ -1075,6 +1077,14 @@ contract GenArt721CoreV3_Explorations is
         Project storage project = projects[_projectId];
         require(_scriptId < project.scriptCount, "scriptId out of range");
         // purge old contract bytecode contract from the blockchain state
+        // note: Although this does reduce usage of Ethereum state, it does not
+        // reduce the gas costs of removal transactions. We believe this is the
+        // best behavior at the time of writing, and do not expect this to
+        // result in any breaking changes in the future. All current proposals
+        // to change the self-destruct opcode are backwards compatible, but may
+        // result in not removing the bytecode from the blockchain state. This
+        // implementation is compatible with that architecture, as it does not
+        // rely on the bytecode being removed from the blockchain state.
         project.scriptBytecodeAddresses[_scriptId].purgeBytecode();
         // store script in contract bytecode, replacing reference address from
         // the contract that no longer exists with the newly created one
@@ -1095,6 +1105,14 @@ contract GenArt721CoreV3_Explorations is
         Project storage project = projects[_projectId];
         require(project.scriptCount > 0, "there are no scripts to remove");
         // purge old contract bytecode contract from the blockchain state
+        // note: Although this does reduce usage of Ethereum state, it does not
+        // reduce the gas costs of removal transactions. We believe this is the
+        // best behavior at the time of writing, and do not expect this to
+        // result in any breaking changes in the future. All current proposals
+        // to change the self-destruct opcode are backwards compatible, but may
+        // result in not removing the bytecode from the blockchain state. This
+        // implementation is compatible with that architecture, as it does not
+        // rely on the bytecode being removed from the blockchain state.
         project
             .scriptBytecodeAddresses[project.scriptCount - 1]
             .purgeBytecode();
@@ -1207,7 +1225,7 @@ contract GenArt721CoreV3_Explorations is
      * @param _defaultBaseURI New default base URI.
      */
     function updateDefaultBaseURI(string memory _defaultBaseURI) external {
-        onlyAdminACL(this.updateDefaultBaseURI.selector);
+        _onlyAdminACL(this.updateDefaultBaseURI.selector);
         _onlyNonEmptyString(_defaultBaseURI);
         _updateDefaultBaseURI(_defaultBaseURI);
     }
