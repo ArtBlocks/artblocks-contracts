@@ -1,7 +1,8 @@
 import { constants, expectRevert } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
-import { isCoreV3 } from "../../../util/common";
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+import { isCoreV3, T_Config } from "../../../util/common";
 
 import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../util/constants";
 
@@ -21,48 +22,54 @@ const DALinAuctionParamsAreZero = (auctionParams) => {
  * These tests are intended to check common DALin functionality.
  * @dev assumes common BeforeEach to populate accounts, constants, and setup
  */
-export const MinterDALin_Common = async () => {
+export const MinterDALin_Common = async (
+  _beforeEach: () => Promise<T_Config>
+) => {
   describe("common minter tests", async () => {
-    await Minter_Common();
+    await Minter_Common(_beforeEach);
   });
 
   describe("purchase", async function () {
     it("disallows purchase before auction begins", async function () {
-      await ethers.provider.send("evm_mine", [this.startTime + ONE_HOUR / 2]);
+      const config = await loadFixture(_beforeEach);
+      await ethers.provider.send("evm_mine", [config.startTime + ONE_HOUR / 2]);
       await expectRevert(
-        this.minter.connect(this.accounts.user).purchase(this.projectZero, {
-          value: this.startingPrice.toString(),
-        }),
+        config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, {
+            value: config.startingPrice.toString(),
+          }),
         "Auction not yet started"
       );
     });
 
     it("calculates the price correctly", async function () {
+      const config = await loadFixture(_beforeEach);
       await ethers.provider.send("evm_mine", [
-        this.startTime + this.auctionStartTimeOffset,
+        config.startTime + config.auctionStartTimeOffset,
       ]);
 
       const step = ONE_MINUTE * 8; // 480 seconds
       const numSteps = 15;
       for (let i = 1; i < numSteps; i++) {
-        let userBalance = await this.accounts.user.getBalance();
+        let userBalance = await config.accounts.user.getBalance();
         let a = ethers.BigNumber.from(i * step).mul(
-          this.startingPrice.sub(this.basePrice).toString()
+          config.startingPrice.sub(config.basePrice).toString()
         );
         let t = ethers.BigNumber.from(a.toString());
-        let price = this.startingPrice.sub(t.div(step * numSteps));
-        let contractPriceInfo = await this.minter
-          .connect(this.accounts.user)
-          .getPriceInfo(this.projectZero);
+        let price = config.startingPrice.sub(t.div(step * numSteps));
+        let contractPriceInfo = await config.minter
+          .connect(config.accounts.user)
+          .getPriceInfo(config.projectZero);
         await ethers.provider.send("evm_mine", [
-          this.startTime + this.auctionStartTimeOffset + i * step,
+          config.startTime + config.auctionStartTimeOffset + i * step,
         ]);
         await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", [
           "0x0",
         ]);
-        await this.minter
-          .connect(this.accounts.user)
-          .purchase(this.projectZero, {
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, {
             value: price.toString(),
             gasPrice: 0,
           });
@@ -71,13 +78,18 @@ export const MinterDALin_Common = async () => {
           "0x0",
         ]);
         await expectRevert(
-          this.minter.connect(this.accounts.user).purchase(this.projectZero, {
-            value: ((price.toBigInt() * BigInt(100)) / BigInt(101)).toString(),
-            gasPrice: 0,
-          }),
+          config.minter
+            .connect(config.accounts.user)
+            .purchase(config.projectZero, {
+              value: (
+                (price.toBigInt() * BigInt(100)) /
+                BigInt(101)
+              ).toString(),
+              gasPrice: 0,
+            }),
           "Must send minimum value to mint!"
         );
-        let userDelta = (await this.accounts.user.getBalance()).sub(
+        let userDelta = (await config.accounts.user.getBalance()).sub(
           userBalance
         );
         expect(userDelta.mul("-1").lte(contractPriceInfo.tokenPriceInWei)).to.be
@@ -86,172 +98,182 @@ export const MinterDALin_Common = async () => {
     });
 
     it("calculates the price before correctly", async function () {
-      await this.minter
-        .connect(this.accounts.deployer)
-        .resetAuctionDetails(this.projectZero);
-      await this.minter
-        .connect(this.accounts.artist)
+      const config = await loadFixture(_beforeEach);
+      await config.minter
+        .connect(config.accounts.deployer)
+        .resetAuctionDetails(config.projectZero);
+      await config.minter
+        .connect(config.accounts.artist)
         .setAuctionDetails(
-          this.projectZero,
-          this.startTime + ONE_HOUR,
-          this.startTime + 2 * ONE_HOUR,
-          this.startingPrice,
-          this.basePrice
+          config.projectZero,
+          config.startTime + ONE_HOUR,
+          config.startTime + 2 * ONE_HOUR,
+          config.startingPrice,
+          config.basePrice
         );
 
-      let contractPriceInfo = await this.minter
-        .connect(this.accounts.user)
-        .getPriceInfo(this.projectZero);
-      expect(contractPriceInfo.tokenPriceInWei).to.be.equal(this.startingPrice);
+      let contractPriceInfo = await config.minter
+        .connect(config.accounts.user)
+        .getPriceInfo(config.projectZero);
+      expect(contractPriceInfo.tokenPriceInWei).to.be.equal(
+        config.startingPrice
+      );
     });
 
     it("calculates the price after correctly ", async function () {
-      await this.minter
-        .connect(this.accounts.deployer)
-        .resetAuctionDetails(this.projectZero);
-      await this.minter
-        .connect(this.accounts.artist)
+      const config = await loadFixture(_beforeEach);
+      await config.minter
+        .connect(config.accounts.deployer)
+        .resetAuctionDetails(config.projectZero);
+      await config.minter
+        .connect(config.accounts.artist)
         .setAuctionDetails(
-          this.projectZero,
-          this.startTime + ONE_HOUR,
-          this.startTime + 2 * ONE_HOUR,
-          this.startingPrice,
-          this.basePrice
+          config.projectZero,
+          config.startTime + ONE_HOUR,
+          config.startTime + 2 * ONE_HOUR,
+          config.startingPrice,
+          config.basePrice
         );
 
       await ethers.provider.send("evm_mine", [
-        this.startTime + this.auctionStartTimeOffset + 2 * ONE_HOUR,
+        config.startTime + config.auctionStartTimeOffset + 2 * ONE_HOUR,
       ]);
 
-      let contractPriceInfo = await this.minter
-        .connect(this.accounts.user)
-        .getPriceInfo(this.projectZero);
-      expect(contractPriceInfo.tokenPriceInWei).to.be.equal(this.basePrice);
+      let contractPriceInfo = await config.minter
+        .connect(config.accounts.user)
+        .getPriceInfo(config.projectZero);
+      expect(contractPriceInfo.tokenPriceInWei).to.be.equal(config.basePrice);
     });
 
     it("allows `purchaseTo` with price of zero", async function () {
+      const config = await loadFixture(_beforeEach);
       // set auction parameters to prices of zero
-      await this.minter
-        .connect(this.accounts.deployer)
-        .resetAuctionDetails(this.projectZero);
-      await this.minter
-        .connect(this.accounts.deployer)
+      await config.minter
+        .connect(config.accounts.deployer)
+        .resetAuctionDetails(config.projectZero);
+      await config.minter
+        .connect(config.accounts.deployer)
         .setMinimumAuctionLengthSeconds(1);
-      await this.minter.connect(this.accounts.artist).setAuctionDetails(
-        this.projectZero,
-        this.startTime + this.auctionStartTimeOffset,
-        this.startTime + this.auctionStartTimeOffset + 1,
+      await config.minter.connect(config.accounts.artist).setAuctionDetails(
+        config.projectZero,
+        config.startTime + config.auctionStartTimeOffset,
+        config.startTime + config.auctionStartTimeOffset + 1,
         1, // starting price of 1 wei
         0 // base price of zero
       );
       // advance to end of auction, resulting in a price of zero
       await ethers.provider.send("evm_mine", [
-        this.startTime + this.auctionStartTimeOffset + 1,
+        config.startTime + config.auctionStartTimeOffset + 1,
       ]);
       // expect mint success with call value of zero
-      await this.minter
-        .connect(this.accounts.user)
-        .purchaseTo(this.accounts.additional.address, this.projectZero, {});
+      await config.minter
+        .connect(config.accounts.user)
+        .purchaseTo(config.accounts.additional.address, config.projectZero, {});
     });
   });
 
   describe("setAuctionDetails", async function () {
     it("cannot be modified mid-auction", async function () {
-      await ethers.provider.send("evm_mine", [this.startTime + ONE_HOUR]);
+      const config = await loadFixture(_beforeEach);
+      await ethers.provider.send("evm_mine", [config.startTime + ONE_HOUR]);
       await expectRevert(
-        this.minter
-          .connect(this.accounts.artist)
+        config.minter
+          .connect(config.accounts.artist)
           .setAuctionDetails(
-            this.projectZero,
-            this.startTime + ONE_MINUTE,
-            this.startTime + 2 * ONE_HOUR,
-            this.startingPrice,
-            this.basePrice
+            config.projectZero,
+            config.startTime + ONE_MINUTE,
+            config.startTime + 2 * ONE_HOUR,
+            config.startingPrice,
+            config.basePrice
           ),
         "No modifications mid-auction"
       );
     });
 
     it("allows artist to set auction details", async function () {
-      await this.minter
-        .connect(this.accounts.deployer)
-        .resetAuctionDetails(this.projectZero);
-      await this.minter
-        .connect(this.accounts.artist)
+      const config = await loadFixture(_beforeEach);
+      await config.minter
+        .connect(config.accounts.deployer)
+        .resetAuctionDetails(config.projectZero);
+      await config.minter
+        .connect(config.accounts.artist)
         .setAuctionDetails(
-          this.projectZero,
-          this.startTime + ONE_MINUTE,
-          this.startTime + 2 * ONE_HOUR,
-          this.startingPrice,
-          this.basePrice
+          config.projectZero,
+          config.startTime + ONE_MINUTE,
+          config.startTime + 2 * ONE_HOUR,
+          config.startingPrice,
+          config.basePrice
         );
     });
 
     it("disallows whitelisted and non-artist to set auction details", async function () {
-      await this.minter
-        .connect(this.accounts.deployer)
-        .resetAuctionDetails(this.projectZero);
+      const config = await loadFixture(_beforeEach);
+      await config.minter
+        .connect(config.accounts.deployer)
+        .resetAuctionDetails(config.projectZero);
       await expectRevert(
-        this.minter
-          .connect(this.accounts.additional)
+        config.minter
+          .connect(config.accounts.additional)
           .setAuctionDetails(
-            this.projectZero,
-            this.startTime + ONE_MINUTE,
-            this.startTime + 2 * ONE_HOUR,
-            this.startingPrice,
-            this.basePrice
+            config.projectZero,
+            config.startTime + ONE_MINUTE,
+            config.startTime + 2 * ONE_HOUR,
+            config.startingPrice,
+            config.basePrice
           ),
         "Only Artist"
       );
 
-      await this.minter
-        .connect(this.accounts.deployer)
-        .resetAuctionDetails(this.projectZero);
+      await config.minter
+        .connect(config.accounts.deployer)
+        .resetAuctionDetails(config.projectZero);
       await expectRevert(
-        this.minter
-          .connect(this.accounts.deployer)
+        config.minter
+          .connect(config.accounts.deployer)
           .setAuctionDetails(
-            this.projectZero,
-            this.startTime + ONE_MINUTE,
-            this.startTime + 2 * ONE_HOUR,
-            this.startingPrice,
-            this.basePrice
+            config.projectZero,
+            config.startTime + ONE_MINUTE,
+            config.startTime + 2 * ONE_HOUR,
+            config.startingPrice,
+            config.basePrice
           ),
         "Only Artist"
       );
     });
 
     it("disallows higher resting price than starting price", async function () {
-      await this.minter
-        .connect(this.accounts.deployer)
-        .resetAuctionDetails(this.projectZero);
+      const config = await loadFixture(_beforeEach);
+      await config.minter
+        .connect(config.accounts.deployer)
+        .resetAuctionDetails(config.projectZero);
       await expectRevert(
-        this.minter
-          .connect(this.accounts.artist)
+        config.minter
+          .connect(config.accounts.artist)
           .setAuctionDetails(
-            this.projectZero,
-            this.startTime + ONE_MINUTE,
-            this.startTime + 2 * ONE_HOUR,
-            this.basePrice,
-            this.startingPrice
+            config.projectZero,
+            config.startTime + ONE_MINUTE,
+            config.startTime + 2 * ONE_HOUR,
+            config.basePrice,
+            config.startingPrice
           ),
         "Auction start price must be greater than auction end price"
       );
     });
 
     it("disallows auctions that start in past", async function () {
-      await this.minter
-        .connect(this.accounts.deployer)
-        .resetAuctionDetails(this.projectZero);
+      const config = await loadFixture(_beforeEach);
+      await config.minter
+        .connect(config.accounts.deployer)
+        .resetAuctionDetails(config.projectZero);
       await expectRevert(
-        this.minter
-          .connect(this.accounts.artist)
+        config.minter
+          .connect(config.accounts.artist)
           .setAuctionDetails(
-            this.projectZero,
+            config.projectZero,
             0,
-            this.startTime + 2 * ONE_HOUR,
-            this.startingPrice,
-            this.basePrice
+            config.startTime + 2 * ONE_HOUR,
+            config.startingPrice,
+            config.basePrice
           ),
         "Only future auctions"
       );
@@ -260,104 +282,116 @@ export const MinterDALin_Common = async () => {
 
   describe("projectAuctionParameters", async function () {
     it("returns expected populated values", async function () {
-      const auctionParams = await this.minter.projectAuctionParameters(
-        this.projectZero
+      const config = await loadFixture(_beforeEach);
+      const auctionParams = await config.minter.projectAuctionParameters(
+        config.projectZero
       );
       expect(auctionParams.timestampStart).to.be.equal(
-        this.startTime + this.auctionStartTimeOffset
+        config.startTime + config.auctionStartTimeOffset
       );
       expect(auctionParams.timestampEnd).to.be.equal(
-        this.startTime + this.auctionStartTimeOffset + ONE_HOUR * 2
+        config.startTime + config.auctionStartTimeOffset + ONE_HOUR * 2
       );
-      expect(auctionParams.startPrice).to.be.equal(this.startingPrice);
-      expect(auctionParams.basePrice).to.be.equal(this.basePrice);
+      expect(auctionParams.startPrice).to.be.equal(config.startingPrice);
+      expect(auctionParams.basePrice).to.be.equal(config.basePrice);
     });
 
     it("returns expected initial values", async function () {
-      const auctionParams = await this.minter
-        .connect(this.accounts.deployer)
-        .projectAuctionParameters(this.projectOne);
+      const config = await loadFixture(_beforeEach);
+      const auctionParams = await config.minter
+        .connect(config.accounts.deployer)
+        .projectAuctionParameters(config.projectOne);
       expect(DALinAuctionParamsAreZero(auctionParams)).to.be.true;
     });
 
     it("returns expected values after resetting values", async function () {
-      await this.minter
-        .connect(this.accounts.deployer)
-        .resetAuctionDetails(this.projectZero);
-      const auctionParams = await this.minter
-        .connect(this.accounts.deployer)
-        .projectAuctionParameters(this.projectZero);
+      const config = await loadFixture(_beforeEach);
+      await config.minter
+        .connect(config.accounts.deployer)
+        .resetAuctionDetails(config.projectZero);
+      const auctionParams = await config.minter
+        .connect(config.accounts.deployer)
+        .projectAuctionParameters(config.projectZero);
       expect(DALinAuctionParamsAreZero(auctionParams)).to.be.true;
     });
   });
 
   describe("projectMaxHasBeenInvoked", async function () {
     it("returns expected value for project zero", async function () {
-      const hasMaxBeenInvoked = await this.minter.projectMaxHasBeenInvoked(
-        this.projectZero
+      const config = await loadFixture(_beforeEach);
+      const hasMaxBeenInvoked = await config.minter.projectMaxHasBeenInvoked(
+        config.projectZero
       );
       expect(hasMaxBeenInvoked).to.be.false;
     });
 
     it("returns true after a project is minted out", async function () {
-      const minterType = await this.minter.minterType();
+      const config = await loadFixture(_beforeEach);
+      const minterType = await config.minter.minterType();
       const accountToTestWith =
         minterType.includes("V0") || minterType.includes("V1")
-          ? this.accounts.deployer
-          : this.accounts.artist;
+          ? config.accounts.deployer
+          : config.accounts.artist;
       // reduce maxInvocations to 2 on core
-      await this.genArt721Core
-        .connect(this.accounts.artist)
-        .updateProjectMaxInvocations(this.projectZero, 1);
+      await config.genArt721Core
+        .connect(config.accounts.artist)
+        .updateProjectMaxInvocations(config.projectZero, 1);
       // sync max invocations on minter
-      await this.minter
+      await config.minter
         .connect(accountToTestWith)
-        .setProjectMaxInvocations(this.projectZero);
+        .setProjectMaxInvocations(config.projectZero);
       // mint a token
       await ethers.provider.send("evm_mine", [
-        this.startTime + this.auctionStartTimeOffset,
+        config.startTime + config.auctionStartTimeOffset,
       ]);
-      await this.minter.connect(this.accounts.user).purchase(this.projectZero, {
-        value: this.startingPrice,
-      });
+      await config.minter
+        .connect(config.accounts.user)
+        .purchase(config.projectZero, {
+          value: config.startingPrice,
+        });
       // expect projectMaxHasBeenInvoked to be true
-      const hasMaxBeenInvoked = await this.minter.projectMaxHasBeenInvoked(
-        this.projectZero
+      const hasMaxBeenInvoked = await config.minter.projectMaxHasBeenInvoked(
+        config.projectZero
       );
       expect(hasMaxBeenInvoked).to.be.true;
     });
 
     it("blocks minting after a project max has been invoked", async function () {
-      const minterType = await this.minter.minterType();
+      const config = await loadFixture(_beforeEach);
+      const minterType = await config.minter.minterType();
       const accountToTestWith =
         minterType.includes("V0") || minterType.includes("V1")
-          ? this.accounts.deployer
-          : this.accounts.artist;
+          ? config.accounts.deployer
+          : config.accounts.artist;
       // reduce maxInvocations to 2 on core
-      await this.genArt721Core
-        .connect(this.accounts.artist)
-        .updateProjectMaxInvocations(this.projectZero, 1);
+      await config.genArt721Core
+        .connect(config.accounts.artist)
+        .updateProjectMaxInvocations(config.projectZero, 1);
       // sync max invocations on minter
-      await this.minter
+      await config.minter
         .connect(accountToTestWith)
-        .setProjectMaxInvocations(this.projectZero);
+        .setProjectMaxInvocations(config.projectZero);
       // mint a token
       await ethers.provider.send("evm_mine", [
-        this.startTime + this.auctionStartTimeOffset,
+        config.startTime + config.auctionStartTimeOffset,
       ]);
-      await this.minter.connect(this.accounts.user).purchase(this.projectZero, {
-        value: this.startingPrice,
-      });
+      await config.minter
+        .connect(config.accounts.user)
+        .purchase(config.projectZero, {
+          value: config.startingPrice,
+        });
       // expect projectMaxHasBeenInvoked to be true
-      const hasMaxBeenInvoked = await this.minter.projectMaxHasBeenInvoked(
-        this.projectZero
+      const hasMaxBeenInvoked = await config.minter.projectMaxHasBeenInvoked(
+        config.projectZero
       );
       expect(hasMaxBeenInvoked).to.be.true;
       // expect revert when trying to mint another token
       await expectRevert(
-        this.minter.connect(this.accounts.user).purchase(this.projectZero, {
-          value: this.startingPrice,
-        }),
+        config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, {
+            value: config.startingPrice,
+          }),
         "Maximum number of invocations reached"
       );
     });
@@ -365,62 +399,72 @@ export const MinterDALin_Common = async () => {
 
   describe("resetAuctionDetails", async function () {
     it("allows whitelisted to reset auction details", async function () {
+      const config = await loadFixture(_beforeEach);
       await expect(
-        this.minter
-          .connect(this.accounts.deployer)
-          .resetAuctionDetails(this.projectZero)
+        config.minter
+          .connect(config.accounts.deployer)
+          .resetAuctionDetails(config.projectZero)
       )
-        .to.emit(this.minter, "ResetAuctionDetails")
-        .withArgs(this.projectZero);
+        .to.emit(config.minter, "ResetAuctionDetails")
+        .withArgs(config.projectZero);
     });
 
     it("disallows artist to reset auction details", async function () {
-      const expectedErrorMsg = (await isCoreV3(this.genArt721Core))
+      const config = await loadFixture(_beforeEach);
+      const expectedErrorMsg = (await isCoreV3(config.genArt721Core))
         ? "Only Core AdminACL allowed"
         : "Only Core whitelisted";
       await expectRevert(
-        this.minter
-          .connect(this.accounts.artist)
-          .resetAuctionDetails(this.projectZero),
+        config.minter
+          .connect(config.accounts.artist)
+          .resetAuctionDetails(config.projectZero),
         expectedErrorMsg
       );
     });
 
     it("disallows non-whitelisted non-artist to reset auction details", async function () {
-      const expectedErrorMsg = (await isCoreV3(this.genArt721Core))
+      const config = await loadFixture(_beforeEach);
+      const expectedErrorMsg = (await isCoreV3(config.genArt721Core))
         ? "Only Core AdminACL allowed"
         : "Only Core whitelisted";
       await expectRevert(
-        this.minter
-          .connect(this.accounts.additional)
-          .resetAuctionDetails(this.projectZero),
+        config.minter
+          .connect(config.accounts.additional)
+          .resetAuctionDetails(config.projectZero),
         expectedErrorMsg
       );
     });
 
     it("invalidates unpaused, ongoing auction (prevents price of zero)", async function () {
-      // prove this.projectZero is mintable
+      const config = await loadFixture(_beforeEach);
+      // prove config.projectZero is mintable
       await ethers.provider.send("evm_mine", [
-        this.startTime + this.auctionStartTimeOffset,
+        config.startTime + config.auctionStartTimeOffset,
       ]);
-      await this.minter.connect(this.accounts.user).purchase(this.projectZero, {
-        value: this.startingPrice,
-      });
-      // resetAuctionDetails for this.projectZero
-      await this.minter
-        .connect(this.accounts.deployer)
-        .resetAuctionDetails(this.projectZero);
-      // prove this.projectZero is no longer mintable
+      await config.minter
+        .connect(config.accounts.user)
+        .purchase(config.projectZero, {
+          value: config.startingPrice,
+        });
+      // resetAuctionDetails for config.projectZero
+      await config.minter
+        .connect(config.accounts.deployer)
+        .resetAuctionDetails(config.projectZero);
+      // prove config.projectZero is no longer mintable
       await expectRevert(
-        this.minter.connect(this.accounts.user).purchase(this.projectZero, {
-          value: this.startingPrice,
-        }),
+        config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, {
+            value: config.startingPrice,
+          }),
         "Only configured auctions"
       );
-      // prove this.projectZero is no longer mintable with zero value
+      // prove config.projectZero is no longer mintable with zero value
       // (always true given prior check, but paranoid so adding test)
       await expectRevert(
-        this.minter.connect(this.accounts.user).purchase(this.projectZero),
+        config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero),
         "Only configured auctions"
       );
     });
@@ -428,63 +472,67 @@ export const MinterDALin_Common = async () => {
 
   describe("enforce and broadcasts min auction length", async function () {
     it("enforces min/max auction length constraint", async function () {
-      await this.minter
-        .connect(this.accounts.deployer)
-        .resetAuctionDetails(this.projectZero);
+      const config = await loadFixture(_beforeEach);
+      await config.minter
+        .connect(config.accounts.deployer)
+        .resetAuctionDetails(config.projectZero);
       // expect revert when creating a new project with min/max reversed
       await expectRevert(
-        this.minter
-          .connect(this.accounts.artist)
+        config.minter
+          .connect(config.accounts.artist)
           .setAuctionDetails(
-            this.projectZero,
-            this.startTime + ONE_HOUR * 2,
-            this.startTime + ONE_HOUR,
-            this.startingPrice,
-            this.basePrice
+            config.projectZero,
+            config.startTime + ONE_HOUR * 2,
+            config.startTime + ONE_HOUR,
+            config.startingPrice,
+            config.basePrice
           ),
         "Auction end must be greater than auction start"
       );
     });
 
     it("enforces min auction length constraint", async function () {
-      await this.minter
-        .connect(this.accounts.deployer)
-        .resetAuctionDetails(this.projectZero);
+      const config = await loadFixture(_beforeEach);
+      await config.minter
+        .connect(config.accounts.deployer)
+        .resetAuctionDetails(config.projectZero);
       // expect revert when creating a new project with
       const invalidLengthSeconds = 60;
       await expectRevert(
-        this.minter
-          .connect(this.accounts.artist)
+        config.minter
+          .connect(config.accounts.artist)
           .setAuctionDetails(
-            this.projectZero,
-            this.startTime + ONE_HOUR,
-            this.startTime + ONE_HOUR + invalidLengthSeconds,
-            this.startingPrice,
-            this.basePrice
+            config.projectZero,
+            config.startTime + ONE_HOUR,
+            config.startTime + ONE_HOUR + invalidLengthSeconds,
+            config.startingPrice,
+            config.basePrice
           ),
         "Auction length must be at least minimumAuctionLengthSeconds"
       );
     });
 
     it("emits event when min auction length is updated", async function () {
+      const config = await loadFixture(_beforeEach);
       const newLengthSeconds = 3601;
       // emits event when minimum auction length is updated
       await expect(
-        this.minter
-          .connect(this.accounts.deployer)
+        config.minter
+          .connect(config.accounts.deployer)
           .setMinimumAuctionLengthSeconds(newLengthSeconds)
       )
-        .to.emit(this.minter, "MinimumAuctionLengthSecondsUpdated")
+        .to.emit(config.minter, "MinimumAuctionLengthSecondsUpdated")
         .withArgs(newLengthSeconds);
     });
 
     it("validate setMinimumAuctionLengthSeconds ACL", async function () {
-      const expectedErrorMsg = (await isCoreV3(this.genArt721Core))
+      const config = await loadFixture(_beforeEach);
+      const expectedErrorMsg = (await isCoreV3(config.genArt721Core))
         ? "Only Core AdminACL allowed"
         : "Only Core whitelisted";
       await expectRevert(
-        this.minter
-          .connect(this.accounts.additional)
+        config.minter
+          .connect(config.accounts.additional)
           .setMinimumAuctionLengthSeconds(600),
         expectedErrorMsg
       );
