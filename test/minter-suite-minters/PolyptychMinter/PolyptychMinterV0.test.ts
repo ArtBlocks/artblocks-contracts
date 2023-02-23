@@ -9,7 +9,7 @@ import {
   assignDefaultConstants,
   deployAndGet,
   deployCoreWithMinterFilter,
-  compareBN,
+  requireBigNumberIsClose,
   safeAddProject,
 } from "../../util/common";
 
@@ -947,8 +947,11 @@ for (const coreContractName of coreContractsToTest) {
           ethers.utils.formatUnits(txCost.toString(), "ether").toString(),
           "ETH"
         );
-        expect(compareBN(txCost, ethers.utils.parseEther("0.0187214"), 1)).to.be
-          .true;
+        requireBigNumberIsClose(
+          txCost,
+          ethers.utils.parseEther("0.0187214"),
+          1
+        );
       });
     });
   });

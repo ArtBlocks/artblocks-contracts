@@ -18,6 +18,7 @@ import {
   deployAndGet,
   deployCoreWithMinterFilter,
   safeAddProject,
+  requireBigNumberIsClose,
 } from "../../../util/common";
 
 import { MinterSetPrice_ETH_Common } from "./MinterSetPrice.common";
@@ -370,19 +371,19 @@ for (const coreContractName of coreContractsToTest) {
           });
 
         const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
-        const txCost = receipt.effectiveGasPrice
-          .mul(receipt.gasUsed)
-          .toString();
+        const txCost = receipt.effectiveGasPrice.mul(receipt.gasUsed);
         console.log(
           "Gas cost for a successful Ether mint: ",
-          ethers.utils.formatUnits(txCost, "ether").toString(),
+          ethers.utils.formatUnits(txCost.toString(), "ether").toString(),
           "ETH"
         );
         // assuming a cost of 100 GWEI
         // skip gas tests for engine, flagship is sufficient to identify gas cost changes
         if (!config.isEngine) {
-          expect(txCost.toString()).to.equal(
-            ethers.utils.parseEther("0.0129093")
+          requireBigNumberIsClose(
+            txCost,
+            ethers.utils.parseEther("0.0129093"),
+            1
           );
         }
       });

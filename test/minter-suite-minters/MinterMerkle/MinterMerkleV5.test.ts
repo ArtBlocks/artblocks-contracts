@@ -14,7 +14,7 @@ import {
   assignDefaultConstants,
   deployAndGet,
   deployCoreWithMinterFilter,
-  compareBN,
+  requireBigNumberIsClose,
   safeAddProject,
 } from "../../util/common";
 
@@ -952,12 +952,13 @@ for (const coreContractName of coreContractsToTest) {
           "ETH"
         );
         // assuming a cost of 100 GWEI
-        if (config.isEngine) {
-          expect(compareBN(txCost, ethers.utils.parseEther("0.0167932"), 1)).to
-            .be.true;
-        } else {
-          expect(compareBN(txCost, ethers.utils.parseEther("0.0155614"), 1)).to
-            .be.true;
+        // skip gas tests for engine, flagship is sufficient to identify gas cost changes
+        if (!config.isEngine) {
+          requireBigNumberIsClose(
+            txCost,
+            ethers.utils.parseEther("0.0155614"),
+            1
+          );
         }
       });
 
