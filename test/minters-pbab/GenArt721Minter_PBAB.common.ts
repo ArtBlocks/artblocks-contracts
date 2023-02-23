@@ -6,6 +6,8 @@ import {
   balance,
   ether,
 } from "@openzeppelin/test-helpers";
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+import { T_Config } from "../util/common";
 import { expect } from "chai";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
@@ -14,103 +16,117 @@ import { ethers } from "hardhat";
  * These tests ensure PBAB minters integrates properly with the PBAB core
  * contract. Some minters may need additional tests beyond these common tests.
  */
-export const GenArt721Minter_PBAB_Common = async () => {
+export const GenArt721Minter_PBAB_Common = async (
+  _beforeEach: () => Promise<T_Config>
+) => {
   describe("updateProjectPricePerTokenInWei", async function () {
     it("only allows artist to update price", async function () {
+      const config = await loadFixture(_beforeEach);
       const onlyArtistErrorMessage = "Only artist";
       // doesn't allow user
       await expectRevert(
-        this.genArt721Core
-          .connect(this.accounts.user)
+        config.genArt721Core
+          .connect(config.accounts.user)
           .updateProjectPricePerTokenInWei(
-            this.projectZero,
-            this.higherPricePerTokenInWei
+            config.projectZero,
+            config.higherPricePerTokenInWei
           ),
         onlyArtistErrorMessage
       );
       // doesn't allow deployer
       await expectRevert(
-        this.genArt721Core
-          .connect(this.accounts.deployer)
+        config.genArt721Core
+          .connect(config.accounts.deployer)
           .updateProjectPricePerTokenInWei(
-            this.projectZero,
-            this.higherPricePerTokenInWei
+            config.projectZero,
+            config.higherPricePerTokenInWei
           ),
         onlyArtistErrorMessage
       );
       // doesn't allow additional
       await expectRevert(
-        this.genArt721Core
-          .connect(this.accounts.additional)
+        config.genArt721Core
+          .connect(config.accounts.additional)
           .updateProjectPricePerTokenInWei(
-            this.projectZero,
-            this.higherPricePerTokenInWei
+            config.projectZero,
+            config.higherPricePerTokenInWei
           ),
         onlyArtistErrorMessage
       );
       // does allow artist
-      await this.genArt721Core
-        .connect(this.accounts.artist)
+      await config.genArt721Core
+        .connect(config.accounts.artist)
         .updateProjectPricePerTokenInWei(
-          this.projectZero,
-          this.higherPricePerTokenInWei
+          config.projectZero,
+          config.higherPricePerTokenInWei
         );
     });
 
     it("enforces price update", async function () {
+      const config = await loadFixture(_beforeEach);
       const needMoreValueErrorMessage = "Must send minimum value to mint!";
       // artist increases price
-      await this.genArt721Core
-        .connect(this.accounts.artist)
+      await config.genArt721Core
+        .connect(config.accounts.artist)
         .updateProjectPricePerTokenInWei(
-          this.projectZero,
-          this.higherPricePerTokenInWei
+          config.projectZero,
+          config.higherPricePerTokenInWei
         );
       // cannot purchase token at lower price
       await expectRevert(
-        this.minter.connect(this.accounts.user).purchase(this.projectZero, {
-          value: this.pricePerTokenInWei,
-        }),
+        config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, {
+            value: config.pricePerTokenInWei,
+          }),
         needMoreValueErrorMessage
       );
       // can purchase token at higher price
-      await this.minter.connect(this.accounts.user).purchase(this.projectZero, {
-        value: this.higherPricePerTokenInWei,
-      });
+      await config.minter
+        .connect(config.accounts.user)
+        .purchase(config.projectZero, {
+          value: config.higherPricePerTokenInWei,
+        });
     });
 
     it("enforces price update only on desired project", async function () {
+      const config = await loadFixture(_beforeEach);
       const needMoreValueErrorMessage = "Must send minimum value to mint!";
       // artist increases price of project zero
-      await this.genArt721Core
-        .connect(this.accounts.artist)
+      await config.genArt721Core
+        .connect(config.accounts.artist)
         .updateProjectPricePerTokenInWei(
-          this.projectZero,
-          this.higherPricePerTokenInWei
+          config.projectZero,
+          config.higherPricePerTokenInWei
         );
       // cannot purchase project zero token at lower price
       await expectRevert(
-        this.minter.connect(this.accounts.user).purchase(this.projectZero, {
-          value: this.pricePerTokenInWei,
-        }),
+        config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, {
+            value: config.pricePerTokenInWei,
+          }),
         needMoreValueErrorMessage
       );
       // can purchase project one token at lower price
-      await this.minter.connect(this.accounts.user).purchase(this.projectOne, {
-        value: this.pricePerTokenInWei,
-      });
+      await config.minter
+        .connect(config.accounts.user)
+        .purchase(config.projectOne, {
+          value: config.pricePerTokenInWei,
+        });
     });
   });
 
   describe("updateProjectCurrencyInfo", async function () {
     it("only allows artist to update currency info", async function () {
+      const config = await loadFixture(_beforeEach);
       const onlyArtistErrorMessage = "Only artist";
       // doesn't allow user
       await expectRevert(
-        this.genArt721Core
-          .connect(this.accounts.user)
+        config.genArt721Core
+          .connect(config.accounts.user)
           .updateProjectCurrencyInfo(
-            this.projectZero,
+            config.projectZero,
             "ETH",
             constants.ZERO_ADDRESS
           ),
@@ -118,10 +134,10 @@ export const GenArt721Minter_PBAB_Common = async () => {
       );
       // doesn't allow deployer
       await expectRevert(
-        this.genArt721Core
-          .connect(this.accounts.deployer)
+        config.genArt721Core
+          .connect(config.accounts.deployer)
           .updateProjectCurrencyInfo(
-            this.projectZero,
+            config.projectZero,
             "ETH",
             constants.ZERO_ADDRESS
           ),
@@ -129,112 +145,128 @@ export const GenArt721Minter_PBAB_Common = async () => {
       );
       // doesn't allow additional
       await expectRevert(
-        this.genArt721Core
-          .connect(this.accounts.additional)
+        config.genArt721Core
+          .connect(config.accounts.additional)
           .updateProjectCurrencyInfo(
-            this.projectZero,
+            config.projectZero,
             "ETH",
             constants.ZERO_ADDRESS
           ),
         onlyArtistErrorMessage
       );
       // does allow artist
-      await this.genArt721Core
-        .connect(this.accounts.artist)
+      await config.genArt721Core
+        .connect(config.accounts.artist)
         .updateProjectCurrencyInfo(
-          this.projectZero,
+          config.projectZero,
           "ETH",
           constants.ZERO_ADDRESS
         );
     });
 
     it("enforces currency info update and allows purchases", async function () {
+      const config = await loadFixture(_beforeEach);
       // artist changes to Mock ERC20 token
-      await this.genArt721Core
-        .connect(this.accounts.artist)
+      await config.genArt721Core
+        .connect(config.accounts.artist)
         .updateProjectCurrencyInfo(
-          this.projectZero,
+          config.projectZero,
           "MOCK",
-          this.ERC20Mock.address
+          config.ERC20Mock.address
         );
       // cannot purchase token with ETH
       await expectRevert(
-        this.minter.connect(this.accounts.user).purchase(this.projectZero, {
-          value: this.pricePerTokenInWei,
-        }),
+        config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, {
+            value: config.pricePerTokenInWei,
+          }),
         "this project accepts a different currency and cannot accept ETH"
       );
       // approve contract and able to mint with Mock token
-      await this.ERC20Mock.connect(this.accounts.user).approve(
-        this.minter.address,
+      await config.ERC20Mock.connect(config.accounts.user).approve(
+        config.minter.address,
         ethers.utils.parseEther("100")
       );
-      await this.minter.connect(this.accounts.user).purchase(this.projectZero);
+      await config.minter
+        .connect(config.accounts.user)
+        .purchase(config.projectZero);
       // cannot purchase token with ERC20 token when insufficient balance
-      await this.ERC20Mock.connect(this.accounts.user).transfer(
-        this.accounts.artist.address,
-        ethers.utils.parseEther("100").sub(this.pricePerTokenInWei)
+      await config.ERC20Mock.connect(config.accounts.user).transfer(
+        config.accounts.artist.address,
+        ethers.utils.parseEther("100").sub(config.pricePerTokenInWei)
       );
       await expectRevert(
-        this.minter.connect(this.accounts.user).purchase(this.projectZero),
+        config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero),
         "Insufficient balance"
       );
       // artist changes back to ETH
-      await this.genArt721Core
-        .connect(this.accounts.artist)
+      await config.genArt721Core
+        .connect(config.accounts.artist)
         .updateProjectCurrencyInfo(
-          this.projectZero,
+          config.projectZero,
           "ETH",
           constants.ZERO_ADDRESS
         );
       // able to mint with ETH
-      await this.minter.connect(this.accounts.user).purchase(this.projectZero, {
-        value: this.pricePerTokenInWei,
-      });
+      await config.minter
+        .connect(config.accounts.user)
+        .purchase(config.projectZero, {
+          value: config.pricePerTokenInWei,
+        });
     });
 
     it("enforces currency update only on desired project", async function () {
+      const config = await loadFixture(_beforeEach);
       const needMoreValueErrorMessage = "Must send minimum value to mint!";
       // artist changes currency info for project zero
-      await this.genArt721Core
-        .connect(this.accounts.artist)
+      await config.genArt721Core
+        .connect(config.accounts.artist)
         .updateProjectCurrencyInfo(
-          this.projectZero,
+          config.projectZero,
           "MOCK",
-          this.ERC20Mock.address
+          config.ERC20Mock.address
         );
       // can purchase project one token with ETH
-      await this.minter.connect(this.accounts.user).purchase(this.projectOne, {
-        value: this.pricePerTokenInWei,
-      });
+      await config.minter
+        .connect(config.accounts.user)
+        .purchase(config.projectOne, {
+          value: config.pricePerTokenInWei,
+        });
     });
   });
 
   describe("purchase", async function () {
     it("does nothing if setProjectMaxInvocations is not called (fails correctly)", async function () {
+      const config = await loadFixture(_beforeEach);
       for (let i = 0; i < 15; i++) {
-        await this.minter
-          .connect(this.accounts.user)
-          .purchase(this.projectZero, {
-            value: this.pricePerTokenInWei,
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, {
+            value: config.pricePerTokenInWei,
           });
       }
 
-      const userBalance = await this.accounts.user.getBalance();
+      const userBalance = await config.accounts.user.getBalance();
       await expectRevert(
-        this.minter.connect(this.accounts.user).purchase(this.projectZero, {
-          value: this.pricePerTokenInWei,
-        }),
+        config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, {
+            value: config.pricePerTokenInWei,
+          }),
         "Must not exceed max invocations"
       );
     });
 
     it("doesnt add too much gas if setProjectMaxInvocations is set", async function () {
+      const config = await loadFixture(_beforeEach);
       // Try without setProjectMaxInvocations, store gas cost
-      const tx = await this.minter
-        .connect(this.accounts.user)
-        .purchase(this.projectZero, {
-          value: this.pricePerTokenInWei,
+      const tx = await config.minter
+        .connect(config.accounts.user)
+        .purchase(config.projectZero, {
+          value: config.pricePerTokenInWei,
         });
 
       const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
@@ -246,14 +278,14 @@ export const GenArt721Minter_PBAB_Common = async () => {
       );
 
       // Try with setProjectMaxInvocations, store gas cost
-      await this.minter
-        .connect(this.accounts.deployer)
-        .setProjectMaxInvocations(this.projectOne);
+      await config.minter
+        .connect(config.accounts.deployer)
+        .setProjectMaxInvocations(config.projectOne);
 
-      const maxSetTx = await this.minter
-        .connect(this.accounts.user)
-        .purchase(this.projectOne, {
-          value: this.pricePerTokenInWei,
+      const maxSetTx = await config.minter
+        .connect(config.accounts.user)
+        .purchase(config.projectOne, {
+          value: config.pricePerTokenInWei,
         });
       const receipt2 = await ethers.provider.getTransactionReceipt(
         maxSetTx.hash
@@ -282,47 +314,52 @@ export const GenArt721Minter_PBAB_Common = async () => {
     });
 
     it("fails more cheaply if setProjectMaxInvocations is set", async function () {
+      const config = await loadFixture(_beforeEach);
       // Try without setProjectMaxInvocations, store gas cost
       for (let i = 0; i < 15; i++) {
-        await this.minter
-          .connect(this.accounts.user)
-          .purchase(this.projectZero, {
-            value: this.pricePerTokenInWei,
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, {
+            value: config.pricePerTokenInWei,
           });
       }
-      const userBalanceNoMaxSet = await this.accounts.user.getBalance();
+      const userBalanceNoMaxSet = await config.accounts.user.getBalance();
       await expectRevert(
-        this.minter.connect(this.accounts.user).purchase(this.projectZero, {
-          value: this.pricePerTokenInWei,
-        }),
+        config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, {
+            value: config.pricePerTokenInWei,
+          }),
         "Must not exceed max invocations"
       );
       const userDeltaNoMaxSet = userBalanceNoMaxSet.sub(
-        BigNumber.from(await this.accounts.user.getBalance())
+        BigNumber.from(await config.accounts.user.getBalance())
       );
 
       // Try with setProjectMaxInvocations, store gas cost
-      await this.minter
-        .connect(this.accounts.deployer)
-        .setProjectMaxInvocations(this.projectOne);
+      await config.minter
+        .connect(config.accounts.deployer)
+        .setProjectMaxInvocations(config.projectOne);
       for (let i = 0; i < 15; i++) {
-        await this.minter
-          .connect(this.accounts.user)
-          .purchase(this.projectOne, {
-            value: this.pricePerTokenInWei,
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectOne, {
+            value: config.pricePerTokenInWei,
           });
       }
       const userBalanceMaxSet = BigNumber.from(
-        await this.accounts.user.getBalance()
+        await config.accounts.user.getBalance()
       );
       await expectRevert(
-        this.minter.connect(this.accounts.user).purchase(this.projectOne, {
-          value: this.pricePerTokenInWei,
-        }),
+        config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectOne, {
+            value: config.pricePerTokenInWei,
+          }),
         "Maximum number of invocations reached"
       );
       const userDeltaMaxSet = userBalanceMaxSet.sub(
-        BigNumber.from(await this.accounts.user.getBalance())
+        BigNumber.from(await config.accounts.user.getBalance())
       );
 
       console.log(
@@ -342,53 +379,56 @@ export const GenArt721Minter_PBAB_Common = async () => {
 
   describe("purchaseTo", async function () {
     it("allows `purchaseTo` by default", async function () {
-      await this.minter
-        .connect(this.accounts.user)
-        .purchaseTo(this.accounts.additional.address, this.projectOne, {
-          value: this.pricePerTokenInWei,
+      const config = await loadFixture(_beforeEach);
+      await config.minter
+        .connect(config.accounts.user)
+        .purchaseTo(config.accounts.additional.address, config.projectOne, {
+          value: config.pricePerTokenInWei,
         });
     });
   });
 
   describe("setProjectMaxInvocations", async function () {
     it("handles getting tokenInfo invocation info with core", async function () {
+      const config = await loadFixture(_beforeEach);
       // minter should update storage with accurate projectMaxInvocations
-      await this.minter
-        .connect(this.accounts.deployer)
-        .setProjectMaxInvocations(this.projectOne);
-      let maxInvocations = await this.minter
-        .connect(this.accounts.deployer)
-        .projectMaxInvocations(this.projectOne);
-      expect(maxInvocations).to.be.equal(this.maxInvocations);
+      await config.minter
+        .connect(config.accounts.deployer)
+        .setProjectMaxInvocations(config.projectOne);
+      let maxInvocations = await config.minter
+        .connect(config.accounts.deployer)
+        .projectMaxInvocations(config.projectOne);
+      expect(maxInvocations).to.be.equal(config.maxInvocations);
       // ensure hasMaxBeenReached did not unexpectedly get set as true
-      let hasMaxBeenInvoked = await this.minter
-        .connect(this.accounts.deployer)
-        .projectMaxHasBeenInvoked(this.projectOne);
+      let hasMaxBeenInvoked = await config.minter
+        .connect(config.accounts.deployer)
+        .projectMaxHasBeenInvoked(config.projectOne);
       expect(hasMaxBeenInvoked).to.be.false;
     });
   });
 
   describe("reentrancy attack", async function () {
     it("does not allow reentrant purchaseTo", async function () {
+      const config = await loadFixture(_beforeEach);
       // attacker deploys reentrancy contract
       const reentrancyMockFactory = await ethers.getContractFactory(
         "ReentrancyMock"
       );
       const reentrancyMock = await reentrancyMockFactory
-        .connect(this.accounts.deployer)
+        .connect(config.accounts.deployer)
         .deploy();
       // attacker should see revert when performing reentrancy attack
       const totalTokensToMint = 2;
       let numTokensToMint = BigNumber.from(totalTokensToMint.toString());
-      let totalValue = this.higherPricePerTokenInWei.mul(numTokensToMint);
+      let totalValue = config.higherPricePerTokenInWei.mul(numTokensToMint);
       await expectRevert(
         reentrancyMock
-          .connect(this.accounts.deployer)
+          .connect(config.accounts.deployer)
           .attack(
             numTokensToMint,
-            this.minter.address,
-            this.projectOne,
-            this.higherPricePerTokenInWei,
+            config.minter.address,
+            config.projectOne,
+            config.higherPricePerTokenInWei,
             {
               value: totalValue,
             }
@@ -398,17 +438,17 @@ export const GenArt721Minter_PBAB_Common = async () => {
       );
       // attacker should be able to purchase ONE token at a time w/refunds
       numTokensToMint = BigNumber.from("1");
-      totalValue = this.higherPricePerTokenInWei.mul(numTokensToMint);
+      totalValue = config.higherPricePerTokenInWei.mul(numTokensToMint);
       for (let i = 0; i < totalTokensToMint; i++) {
         await reentrancyMock
-          .connect(this.accounts.deployer)
+          .connect(config.accounts.deployer)
           .attack(
             numTokensToMint,
-            this.minter.address,
-            this.projectOne,
-            this.higherPricePerTokenInWei,
+            config.minter.address,
+            config.projectOne,
+            config.higherPricePerTokenInWei,
             {
-              value: this.higherPricePerTokenInWei,
+              value: config.higherPricePerTokenInWei,
             }
           );
       }
