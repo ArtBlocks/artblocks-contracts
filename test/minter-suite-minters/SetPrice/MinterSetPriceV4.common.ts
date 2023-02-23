@@ -2,81 +2,98 @@ import { constants, expectRevert } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { BigNumber } from "ethers";
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 
 import EthersAdapter from "@gnosis.pm/safe-ethers-lib";
 import Safe from "@gnosis.pm/safe-core-sdk";
 import { SafeTransactionDataPartial } from "@gnosis.pm/safe-core-sdk-types";
 import { getGnosisSafe } from "../../util/GnosisSafeNetwork";
-import { isCoreV3, deployAndGet } from "../../util/common";
+import { isCoreV3, deployAndGet, T_Config } from "../../util/common";
 
 /**
  * These tests are intended to check common MinterSetPriceV4 functionality.
  * The tests are intended to be run on the any MinterSetPriceV4 contract (not other version contracts).
- * (this includes V2ERC20 contracts)
+ * (config includes V2ERC20 contracts)
  * @dev assumes common BeforeEach to populate accounts, constants, and setup
  */
-export const MinterSetPriceV4_Common = async () => {
+export const MinterSetPriceV4_Common = async (
+  _beforeEach: () => Promise<T_Config>
+) => {
   describe("purchase_H4M", async function () {
     it("allows `purchase_H4M` by default", async function () {
-      await this.minter
-        .connect(this.accounts.user)
-        .purchase_H4M(this.projectZero, {
-          value: this.pricePerTokenInWei,
+      const config = await loadFixture(_beforeEach);
+      await config.minter
+        .connect(config.accounts.user)
+        .purchase_H4M(config.projectZero, {
+          value: config.pricePerTokenInWei,
         });
     });
 
     describe("payment splitting", async function () {
       beforeEach(async function () {
-        this.deadReceiver = await deployAndGet.call(
-          this,
+        const config = await loadFixture(_beforeEach);
+        config.deadReceiver = await deployAndGet(
+          config,
           "DeadReceiverMock",
           []
         );
+        // pass config to tests in this describe block
+        this.config = config;
       });
 
       it("requires successful payment to render provider", async function () {
+        // get config from beforeEach
+        const config = this.config;
         // update render provider address to a contract that reverts on receive
         // call appropriate core function to update render provider address
-        if (this.isEngine) {
-          await this.genArt721Core
-            .connect(this.accounts.deployer)
+        if (config.isEngine) {
+          await config.genArt721Core
+            .connect(config.accounts.deployer)
             .updateProviderSalesAddresses(
-              this.deadReceiver.address,
-              this.accounts.additional.address,
-              this.accounts.artist2.address,
-              this.accounts.additional2.address
+              config.deadReceiver.address,
+              config.accounts.additional.address,
+              config.accounts.artist2.address,
+              config.accounts.additional2.address
             );
         } else {
-          await this.genArt721Core
-            .connect(this.accounts.deployer)
-            .updateArtblocksPrimarySalesAddress(this.deadReceiver.address);
+          await config.genArt721Core
+            .connect(config.accounts.deployer)
+            .updateArtblocksPrimarySalesAddress(config.deadReceiver.address);
         }
         // expect revert when trying to purchase
         await expectRevert(
-          this.minter.connect(this.accounts.user).purchase(this.projectZero, {
-            value: this.pricePerTokenInWei,
-          }),
+          config.minter
+            .connect(config.accounts.user)
+            .purchase(config.projectZero, {
+              value: config.pricePerTokenInWei,
+            }),
           "Render Provider payment failed"
         );
       });
       it("requires successful payment to platform provider", async function () {
+        // get config from beforeEach
+        const config = this.config;
         // update render provider address to a contract that reverts on receive
         // only relevant for engine core contracts
-        if (this.isEngine) {
-          await this.genArt721Core
-            .connect(this.accounts.deployer)
+        if (config.isEngine) {
+          await config.genArt721Core
+            .connect(config.accounts.deployer)
             .updateProviderSalesAddresses(
-              this.accounts.artist.address,
-              this.accounts.additional.address,
-              this.deadReceiver.address,
-              this.accounts.additional2.address
+              config.accounts.artist.address,
+              config.accounts.additional.address,
+              config.deadReceiver.address,
+              config.accounts.additional2.address
             );
           await expectRevert(
-            this.minter
-              .connect(this.accounts.user)
-              .purchaseTo(this.accounts.additional.address, this.projectZero, {
-                value: this.pricePerTokenInWei,
-              }),
+            config.minter
+              .connect(config.accounts.user)
+              .purchaseTo(
+                config.accounts.additional.address,
+                config.projectZero,
+                {
+                  value: config.pricePerTokenInWei,
+                }
+              ),
             "Platform Provider payment failed"
           );
         } else {
@@ -85,87 +102,97 @@ export const MinterSetPriceV4_Common = async () => {
       });
 
       it("requires successful payment to artist", async function () {
+        // get config from beforeEach
+        const config = this.config;
         // update artist address to a contract that reverts on receive
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
           .updateProjectArtistAddress(
-            this.projectZero,
-            this.deadReceiver.address
+            config.projectZero,
+            config.deadReceiver.address
           );
         // expect revert when trying to purchase
         await expectRevert(
-          this.minter.connect(this.accounts.user).purchase(this.projectZero, {
-            value: this.pricePerTokenInWei,
-          }),
+          config.minter
+            .connect(config.accounts.user)
+            .purchase(config.projectZero, {
+              value: config.pricePerTokenInWei,
+            }),
           "Artist payment failed"
         );
       });
 
       it("requires successful payment to artist additional payee", async function () {
+        // get config from beforeEach
+        const config = this.config;
         // update artist additional payee to a contract that reverts on receive
         const proposedAddressesAndSplits = [
-          this.projectZero,
-          this.accounts.artist.address,
-          this.deadReceiver.address,
+          config.projectZero,
+          config.accounts.artist.address,
+          config.deadReceiver.address,
           // @dev 50% to additional, 50% to artist, to ensure additional is paid
           50,
-          this.accounts.additional2.address,
-          // @dev split for secondary sales doesn't matter for this test
+          config.accounts.additional2.address,
+          // @dev split for secondary sales doesn't matter for config test
           50,
         ];
-        await this.genArt721Core
-          .connect(this.accounts.artist)
+        await config.genArt721Core
+          .connect(config.accounts.artist)
           .proposeArtistPaymentAddressesAndSplits(
             ...proposedAddressesAndSplits
           );
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
           .adminAcceptArtistAddressesAndSplits(...proposedAddressesAndSplits);
         // expect revert when trying to purchase
         await expectRevert(
-          this.minter.connect(this.accounts.user).purchase(this.projectZero, {
-            value: this.pricePerTokenInWei,
-          }),
+          config.minter
+            .connect(config.accounts.user)
+            .purchase(config.projectZero, {
+              value: config.pricePerTokenInWei,
+            }),
           "Additional Payee payment failed"
         );
       });
 
       it("handles zero platform and artist payment values", async function () {
+        // get config from beforeEach
+        const config = this.config;
         // update platform to zero percent
         // route to appropriate core function
-        if (this.isEngine) {
-          await this.genArt721Core
-            .connect(this.accounts.deployer)
+        if (config.isEngine) {
+          await config.genArt721Core
+            .connect(config.accounts.deployer)
             .updateProviderPrimarySalesPercentages(0, 0);
         } else {
-          await this.genArt721Core
-            .connect(this.accounts.deployer)
+          await config.genArt721Core
+            .connect(config.accounts.deployer)
             .updateArtblocksPrimarySalesPercentage(0);
         }
         // update artist primary split to zero
         const proposedAddressesAndSplits = [
-          this.projectZero,
-          this.accounts.artist.address,
-          this.accounts.additional.address,
+          config.projectZero,
+          config.accounts.artist.address,
+          config.accounts.additional.address,
           // @dev 100% to additional, 0% to artist, to induce zero artist payment
           100,
-          this.accounts.additional2.address,
-          // @dev split for secondary sales doesn't matter for this test
+          config.accounts.additional2.address,
+          // @dev split for secondary sales doesn't matter for config test
           50,
         ];
-        await this.genArt721Core
-          .connect(this.accounts.artist)
+        await config.genArt721Core
+          .connect(config.accounts.artist)
           .proposeArtistPaymentAddressesAndSplits(
             ...proposedAddressesAndSplits
           );
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
           .adminAcceptArtistAddressesAndSplits(...proposedAddressesAndSplits);
         // expect successful purchase
-        await this.minter
-          .connect(this.accounts.user)
-          .purchase(this.projectZero, {
-            value: this.pricePerTokenInWei,
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, {
+            value: config.pricePerTokenInWei,
           });
       });
     });
@@ -173,24 +200,27 @@ export const MinterSetPriceV4_Common = async () => {
 
   describe("additional payee payments", async function () {
     it("handles additional payee payments", async function () {
+      const config = await loadFixture(_beforeEach);
       const valuesToUpdateTo = [
-        this.projectZero,
-        this.accounts.artist2.address,
-        this.accounts.additional.address,
+        config.projectZero,
+        config.accounts.artist2.address,
+        config.accounts.additional.address,
         50,
-        this.accounts.additional2.address,
+        config.accounts.additional2.address,
         51,
       ];
-      await this.genArt721Core
-        .connect(this.accounts.artist)
+      await config.genArt721Core
+        .connect(config.accounts.artist)
         .proposeArtistPaymentAddressesAndSplits(...valuesToUpdateTo);
-      await this.genArt721Core
-        .connect(this.accounts.deployer)
+      await config.genArt721Core
+        .connect(config.accounts.deployer)
         .adminAcceptArtistAddressesAndSplits(...valuesToUpdateTo);
 
-      await this.minter.connect(this.accounts.user).purchase(this.projectZero, {
-        value: this.pricePerTokenInWei,
-      });
+      await config.minter
+        .connect(config.accounts.user)
+        .purchase(config.projectZero, {
+          value: config.pricePerTokenInWei,
+        });
     });
   });
 };
