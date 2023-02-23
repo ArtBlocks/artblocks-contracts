@@ -1,4 +1,5 @@
 import {
+  T_Config,
   getAccounts,
   assignDefaultConstants,
   deployAndGet,
@@ -6,6 +7,7 @@ import {
   safeAddProject,
 } from "../../util/common";
 import { expectRevert } from "@openzeppelin/test-helpers";
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { MinterFilterEnumeration_Common } from "./MinterFilterEnumeration.common";
 
 const runForEach = [
@@ -24,45 +26,51 @@ const runForEach = [
 ];
 runForEach.forEach((params) => {
   describe(`${params.minterFilter} Enumeration w/${params.core} core`, async function () {
-    beforeEach(async function () {
-      // standard accounts and constants
-      this.accounts = await getAccounts();
-      await assignDefaultConstants.call(this, params.coreFirstProjectNumber);
+    async function _beforeEach() {
+      let config: T_Config = {
+        accounts: await getAccounts(),
+      };
+      config = await assignDefaultConstants(config);
+
       // deploy and configure minter filter and minter
-      ({ genArt721Core: this.genArt721Core, minterFilter: this.minterFilter } =
-        await deployCoreWithMinterFilter.call(
-          this,
-          params.core,
-          params.minterFilter
-        ));
-      this.minter = await deployAndGet.call(this, params.minter, [
-        this.genArt721Core.address,
-        this.minterFilter.address,
+      ({
+        genArt721Core: config.genArt721Core,
+        minterFilter: config.minterFilter,
+      } = await deployCoreWithMinterFilter(
+        config,
+        params.core,
+        params.minterFilter
+      ));
+      config.minter = await deployAndGet(config, params.minter, [
+        config.genArt721Core.address,
+        config.minterFilter.address,
       ]);
 
       // Project setup
       await safeAddProject(
-        this.genArt721Core,
-        this.accounts.deployer,
-        this.accounts.artist.address
+        config.genArt721Core,
+        config.accounts.deployer,
+        config.accounts.artist.address
       );
-    });
+      return config;
+    }
 
     describe("common tests", async function () {
-      await MinterFilterEnumeration_Common();
+      await MinterFilterEnumeration_Common(_beforeEach);
     });
 
     describe("test specific to V1", async function () {
       it("doesn't allow removal of unapproved minters", async function () {
+        const config = await loadFixture(_beforeEach);
         if (params.minterFilter !== "MinterFilterV1") {
           console.log("skipping test for non-V1 minter filter");
           return;
         }
         // reverts when attempting to remove minter being used
         await expectRevert(
-          this.minterFilter
-            .connect(this.accounts.deployer)
-            .removeApprovedMinter(this.minter.address),
+          config.minterFilter
+            .connect(config.accounts.deployer)
+            .removeApprovedMinter(config.minter.address),
           "Only approved minters"
         );
       });

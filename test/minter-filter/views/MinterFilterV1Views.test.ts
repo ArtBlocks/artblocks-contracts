@@ -1,5 +1,7 @@
 import { BN, constants, expectRevert } from "@openzeppelin/test-helpers";
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import {
+  T_Config,
   getAccounts,
   assignDefaultConstants,
   deployAndGet,
@@ -26,46 +28,54 @@ const runForEach = [
 
 runForEach.forEach((params) => {
   describe(`${params.minterFilter} Views w/${params.core} core`, async function () {
-    beforeEach(async function () {
-      // standard accounts and constants
-      this.accounts = await getAccounts();
-      await assignDefaultConstants.call(this, params.coreFirstProjectNumber); // projectZero = 3 on V1 core
+    async function _beforeEach() {
+      let config: T_Config = {
+        accounts: await getAccounts(),
+      };
+      config = await assignDefaultConstants(
+        config,
+        params.coreFirstProjectNumber
+      ); // projectZero = 3 on V1 core
       // deploy and configure minter filter and minter
-      ({ genArt721Core: this.genArt721Core, minterFilter: this.minterFilter } =
-        await deployCoreWithMinterFilter.call(
-          this,
-          params.core,
-          params.minterFilter
-        ));
+      ({
+        genArt721Core: config.genArt721Core,
+        minterFilter: config.minterFilter,
+      } = await deployCoreWithMinterFilter(
+        config,
+        params.core,
+        params.minterFilter
+      ));
 
-      this.minter = await deployAndGet.call(this, params.minter, [
-        this.genArt721Core.address,
-        this.minterFilter.address,
+      config.minter = await deployAndGet(config, params.minter, [
+        config.genArt721Core.address,
+        config.minterFilter.address,
       ]);
 
       // Project setup
       await safeAddProject(
-        this.genArt721Core,
-        this.accounts.deployer,
-        this.accounts.artist.address
+        config.genArt721Core,
+        config.accounts.deployer,
+        config.accounts.artist.address
       );
       await safeAddProject(
-        this.genArt721Core,
-        this.accounts.deployer,
-        this.accounts.artist.address
+        config.genArt721Core,
+        config.accounts.deployer,
+        config.accounts.artist.address
       );
-    });
+      return config;
+    }
 
     describe("common tests", async function () {
-      await MinterFilterViews_Common();
+      await MinterFilterViews_Common(_beforeEach);
     });
 
     describe("V1+ specific input checks", async function () {
       it("reverts on improper address inputs", async function () {
+        const config = await loadFixture(_beforeEach);
         // addProject
         expectRevert(
-          this.minterFilter
-            .connect(this.accounts.deployer)
+          config.minterFilter
+            .connect(config.accounts.deployer)
             .addApprovedMinter(constants.ZERO_ADDRESS),
           "Must input non-zero address"
         );
@@ -74,17 +84,19 @@ runForEach.forEach((params) => {
 
     describe("minterFilterVersion", async function () {
       it("returns expected value", async function () {
+        const config = await loadFixture(_beforeEach);
         // addProject
         const minterFilterVersion =
-          await this.minterFilter.minterFilterVersion();
+          await config.minterFilter.minterFilterVersion();
         expect(minterFilterVersion).to.equal("v1.0.1");
       });
     });
 
     describe("minterFilterType", async function () {
       it("returns expected value", async function () {
+        const config = await loadFixture(_beforeEach);
         // addProject
-        const minterFilterType = await this.minterFilter.minterFilterType();
+        const minterFilterType = await config.minterFilter.minterFilterType();
         expect(minterFilterType).to.equal("MinterFilterV1");
       });
     });
