@@ -84,3 +84,7 @@ V3 performance metrics are available in [V3_Performance.md](V3_Performance.md)
   - This is to help ensure that the data stored on-chain is valid and is not accidentally invalid (e.g. an artist additional payee being set to the zero address, while also sending funds to the additional payee).
 - Improve natspec documentation, especially around privileged roles and functions
 - Achieve 100% test coverage of V3 core contract
+
+## The following changes were made in the Core V3 (3.0.2) contract:
+
+- Change modifiers to internal functions, preventing duplication of the logic throughout the bytecode
