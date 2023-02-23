@@ -30,7 +30,10 @@ const MANUAL_GAS_LIMIT = 500000; // gas
 var log_stdout = process.stdout;
 
 // These are the core contracts that may be deployed by this script.
-const SUPPORTED_CORE_CONTRACTS = ["GenArt721CoreV3_Engine"];
+const SUPPORTED_CORE_CONTRACTS = [
+  "GenArt721CoreV3_Engine",
+  "GenArt721CoreV3_Engine_Flex",
+];
 
 /**
  * This script was created to deploy the V3 core Engine contracts,
@@ -132,6 +135,25 @@ async function main() {
         `[ERROR] This script only supports deployment of the following core contracts: ${SUPPORTED_CORE_CONTRACTS.join(
           ", "
         )}`
+      );
+    }
+
+    // verify that default vertical is not fullyonchain if using the flex engine
+    if (
+      deployDetails.defaultVerticalName == "fullyonchain" &&
+      deployDetails.genArt721CoreContractName.includes("Flex")
+    ) {
+      throw new Error(
+        `[ERROR] The default vertical cannot be fullyonchain if using the flex engine`
+      );
+    }
+    // verify that the default vertical is not flex if not using a flex engine
+    if (
+      deployDetails.defaultVerticalName == "flex" &&
+      !deployDetails.genArt721CoreContractName.includes("Flex")
+    ) {
+      throw new Error(
+        `[ERROR] The default vertical cannot be flex if not using a flex engine`
       );
     }
     //////////////////////////////////////////////////////////////////////////////
