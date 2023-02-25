@@ -3,8 +3,9 @@
 
 pragma solidity 0.8.17;
 
-import "./interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
-import "./interfaces/0.8.x/IRandomizerPolyptychV0.sol";
+import "../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
+import "../interfaces/0.8.x/IRandomizerPolyptychV0.sol";
+import "./BasicRandomizerBase_v0_0_0.sol";
 
 import "@openzeppelin-4.7/contracts/access/Ownable.sol";
 
@@ -23,7 +24,11 @@ import "@openzeppelin-4.7/contracts/access/Ownable.sol";
  * Once the contract is configured, it will enable newly-minted tokens to use a copy of the hash
  * seed from a previously-minted token.
  */
-contract BasicPolyptychRandomizerV0 is IRandomizerPolyptychV0, Ownable {
+contract BasicPolyptychRandomizerV0 is
+    IRandomizerPolyptychV0,
+    BasicRandomizerBase,
+    Ownable
+{
     // The core contract that may interact with this randomizer contract.
     IGenArt721CoreContractV3_Base public genArt721Core;
 
@@ -100,23 +105,13 @@ contract BasicPolyptychRandomizerV0 is IRandomizerPolyptychV0, Ownable {
     // will set a bytes32 hash for tokenId `_tokenId` on the core contract.
     function assignTokenHash(uint256 _tokenId) external virtual {
         require(msg.sender == address(genArt721Core), "Only core may call");
-
+        bytes32 hash;
         if (projectIsPolyptych[_tokenId / ONE_MILLION]) {
-            bytes12 seededHash = polyptychHashSeeds[_tokenId];
-            require(seededHash != 0, "Only non-zero hash seed");
-            genArt721Core.setTokenHash_8PT(_tokenId, seededHash);
+            hash = polyptychHashSeeds[_tokenId];
         } else {
-            uint256 time = block.timestamp;
-            bytes32 hash = keccak256(
-                abi.encodePacked(
-                    _tokenId,
-                    block.number,
-                    blockhash(block.number - 1),
-                    time,
-                    (time % 200) + 1
-                )
-            );
-            genArt721Core.setTokenHash_8PT(_tokenId, hash);
+            hash = _getPseudorandom(_tokenId);
         }
+        require(hash != 0, "Only non-zero hash seed");
+        genArt721Core.setTokenHash_8PT(_tokenId, hash);
     }
 }

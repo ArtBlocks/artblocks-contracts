@@ -3,12 +3,13 @@
 
 pragma solidity 0.8.17;
 
-import "./interfaces/0.8.x/IRandomizerV2.sol";
-import "./interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
+import "../interfaces/0.8.x/IRandomizerV2.sol";
+import "../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
+import "./BasicRandomizerBase_v0_0_0.sol";
 
 import "@openzeppelin-4.7/contracts/access/Ownable.sol";
 
-contract BasicRandomizerV2 is IRandomizerV2, Ownable {
+contract BasicRandomizerV2 is IRandomizerV2, BasicRandomizerBase, Ownable {
     // The core contract that may interact with this randomizer contract.
     IGenArt721CoreContractV3_Base public genArt721Core;
 
@@ -21,16 +22,7 @@ contract BasicRandomizerV2 is IRandomizerV2, Ownable {
     // will set a bytes32 hash for tokenId `_tokenId` on the core contract.
     function assignTokenHash(uint256 _tokenId) external virtual {
         require(msg.sender == address(genArt721Core), "Only core may call");
-        uint256 time = block.timestamp;
-        bytes32 hash = keccak256(
-            abi.encodePacked(
-                _tokenId,
-                block.number,
-                blockhash(block.number - 1),
-                time,
-                (time % 200) + 1
-            )
-        );
+        bytes32 hash = _getPseudorandom(_tokenId);
         genArt721Core.setTokenHash_8PT(_tokenId, hash);
     }
 }
