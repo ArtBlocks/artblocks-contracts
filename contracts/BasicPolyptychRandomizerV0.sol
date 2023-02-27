@@ -46,26 +46,23 @@ contract BasicPolyptychRandomizerV0 is IRandomizerPolyptychV0, Ownable {
 
     // modifier to restrict access to only AdminACL allowed calls
     // @dev defers which ACL contract is used to the core contract
-    modifier onlyCoreAdminACL(bytes4 _selector) {
+    function _onlyCoreAdminACL(bytes4 _selector) internal {
         require(
             genArt721Core.adminACLAllowed(msg.sender, address(this), _selector),
             "Only Core AdminACL allowed"
         );
-        _;
     }
 
-    modifier onlyArtist(uint256 _projectId) {
+    function _onlyArtist(uint256 _projectId) internal view {
         require(
             msg.sender == genArt721Core.projectIdToArtistAddress(_projectId),
             "Only Artist"
         );
-        _;
     }
 
     // Allows the owner of the core contract to set the minter that is allowed to assign hash seeds
-    function setHashSeedSetterContract(
-        address _contractAddress
-    ) external onlyCoreAdminACL(this.setHashSeedSetterContract.selector) {
+    function setHashSeedSetterContract(address _contractAddress) external {
+        _onlyCoreAdminACL(this.setHashSeedSetterContract.selector);
         hashSeedSetterContract = _contractAddress;
         emit HashSeedSetterUpdated(_contractAddress);
     }
@@ -74,9 +71,8 @@ contract BasicPolyptychRandomizerV0 is IRandomizerPolyptychV0, Ownable {
      * @notice Allows the owner of the core contract to configure a project as a polyptych
      * @param _projectId - The ID of the project that has a polyptych panel (second, third, etc.)
      */
-    function toggleProjectIsPolyptych(
-        uint256 _projectId
-    ) external onlyArtist(_projectId) {
+    function toggleProjectIsPolyptych(uint256 _projectId) external {
+        _onlyArtist(_projectId);
         projectIsPolyptych[_projectId] = !projectIsPolyptych[_projectId];
         emit ProjectIsPolyptychUpdated(
             _projectId,

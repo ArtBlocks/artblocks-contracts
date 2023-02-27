@@ -61,13 +61,12 @@ contract MinterSetPriceV4 is ReentrancyGuard, MinterBase, IFilteredMinterV2 {
 
     mapping(uint256 => ProjectConfig) public projectConfig;
 
-    modifier onlyArtist(uint256 _projectId) {
+    function _onlyArtist(uint256 _projectId) internal view {
         require(
             msg.sender ==
                 genArtCoreContract_Base.projectIdToArtistAddress(_projectId),
             "Only Artist"
         );
-        _;
     }
 
     /**
@@ -104,9 +103,8 @@ contract MinterSetPriceV4 is ReentrancyGuard, MinterBase, IFilteredMinterV2 {
      * @dev this enables gas reduction after maxInvocations have been reached -
      * core contracts shall still enforce a maxInvocation check during mint.
      */
-    function setProjectMaxInvocations(
-        uint256 _projectId
-    ) public onlyArtist(_projectId) {
+    function setProjectMaxInvocations(uint256 _projectId) public {
+        _onlyArtist(_projectId);
         uint256 maxInvocations;
         uint256 invocations;
         (invocations, maxInvocations, , , , ) = genArtCoreContract_Base
@@ -138,7 +136,8 @@ contract MinterSetPriceV4 is ReentrancyGuard, MinterBase, IFilteredMinterV2 {
     function manuallyLimitProjectMaxInvocations(
         uint256 _projectId,
         uint256 _maxInvocations
-    ) external onlyArtist(_projectId) {
+    ) external {
+        _onlyArtist(_projectId);
         // CHECKS
         // ensure that the manually set maxInvocations is not greater than what is set on the core contract
         uint256 maxInvocations;
@@ -169,9 +168,8 @@ contract MinterSetPriceV4 is ReentrancyGuard, MinterBase, IFilteredMinterV2 {
      * @notice Warning: Disabling purchaseTo is not supported on this minter.
      * This method exists purely for interface-conformance purposes.
      */
-    function togglePurchaseToDisabled(
-        uint256 _projectId
-    ) external view onlyArtist(_projectId) {
+    function togglePurchaseToDisabled(uint256 _projectId) external view {
+        _onlyArtist(_projectId);
         revert("Action not supported");
     }
 
@@ -228,7 +226,8 @@ contract MinterSetPriceV4 is ReentrancyGuard, MinterBase, IFilteredMinterV2 {
     function updatePricePerTokenInWei(
         uint256 _projectId,
         uint256 _pricePerTokenInWei
-    ) external onlyArtist(_projectId) {
+    ) external {
+        _onlyArtist(_projectId);
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         _projectConfig.pricePerTokenInWei = _pricePerTokenInWei;
         _projectConfig.priceIsConfigured = true;

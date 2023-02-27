@@ -113,9 +113,9 @@ contract MinterHolderV4 is
     mapping(uint256 => mapping(address => mapping(uint256 => bool)))
         public allowedProjectHolders;
 
-    // modifier to restrict access to only AdminACL allowed calls
+    // function to restrict access to only AdminACL allowed calls
     // @dev defers which ACL contract is used to the core contract
-    modifier onlyCoreAdminACL(bytes4 _selector) {
+    function _onlyCoreAdminACL(bytes4 _selector) internal {
         require(
             genArtCoreContract_Base.adminACLAllowed(
                 msg.sender,
@@ -124,16 +124,14 @@ contract MinterHolderV4 is
             ),
             "Only Core AdminACL allowed"
         );
-        _;
     }
 
-    modifier onlyArtist(uint256 _projectId) {
+    function _onlyArtist(uint256 _projectId) internal view {
         require(
             msg.sender ==
                 genArtCoreContract_Base.projectIdToArtistAddress(_projectId),
             "Only Artist"
         );
-        _;
     }
 
     /**
@@ -177,9 +175,8 @@ contract MinterHolderV4 is
      * `projectId = tokenId / 1_000_000`
      * @param _NFTAddress NFT core address to be registered.
      */
-    function registerNFTAddress(
-        address _NFTAddress
-    ) external onlyCoreAdminACL(this.registerNFTAddress.selector) {
+    function registerNFTAddress(address _NFTAddress) external {
+        _onlyCoreAdminACL(this.registerNFTAddress.selector);
         _registeredNFTAddresses.add(_NFTAddress);
         emit RegisteredNFTAddress(_NFTAddress);
     }
@@ -190,9 +187,8 @@ contract MinterHolderV4 is
      * considered for adding to future allowlists.
      * @param _NFTAddress NFT core address to be unregistered.
      */
-    function unregisterNFTAddress(
-        address _NFTAddress
-    ) external onlyCoreAdminACL(this.unregisterNFTAddress.selector) {
+    function unregisterNFTAddress(address _NFTAddress) external {
+        _onlyCoreAdminACL(this.unregisterNFTAddress.selector);
         _registeredNFTAddresses.remove(_NFTAddress);
         emit UnregisteredNFTAddress(_NFTAddress);
     }
@@ -214,7 +210,8 @@ contract MinterHolderV4 is
         uint256 _projectId,
         address[] memory _ownedNFTAddresses,
         uint256[] memory _ownedNFTProjectIds
-    ) public onlyArtist(_projectId) {
+    ) public {
+        _onlyArtist(_projectId);
         // require same length arrays
         require(
             _ownedNFTAddresses.length == _ownedNFTProjectIds.length,
@@ -259,7 +256,8 @@ contract MinterHolderV4 is
         uint256 _projectId,
         address[] memory _ownedNFTAddresses,
         uint256[] memory _ownedNFTProjectIds
-    ) public onlyArtist(_projectId) {
+    ) public {
+        _onlyArtist(_projectId);
         // require same length arrays
         require(
             _ownedNFTAddresses.length == _ownedNFTProjectIds.length,
@@ -314,7 +312,8 @@ contract MinterHolderV4 is
         uint256[] memory _ownedNFTProjectIdsAdd,
         address[] memory _ownedNFTAddressesRemove,
         uint256[] memory _ownedNFTProjectIdsRemove
-    ) external onlyArtist(_projectId) {
+    ) external {
+        _onlyArtist(_projectId);
         allowHoldersOfProjects(
             _projectId,
             _ownedNFTAddressesAdd,
@@ -387,7 +386,8 @@ contract MinterHolderV4 is
     function manuallyLimitProjectMaxInvocations(
         uint256 _projectId,
         uint256 _maxInvocations
-    ) external onlyArtist(_projectId) {
+    ) external {
+        _onlyArtist(_projectId);
         // CHECKS
         // ensure that the manually set maxInvocations is not greater than what is set on the core contract
         uint256 maxInvocations;
@@ -418,9 +418,8 @@ contract MinterHolderV4 is
      * @notice Warning: Disabling purchaseTo is not supported on this minter.
      * This method exists purely for interface-conformance purposes.
      */
-    function togglePurchaseToDisabled(
-        uint256 _projectId
-    ) external view onlyArtist(_projectId) {
+    function togglePurchaseToDisabled(uint256 _projectId) external view {
+        _onlyArtist(_projectId);
         revert("Action not supported");
     }
 
@@ -477,7 +476,8 @@ contract MinterHolderV4 is
     function updatePricePerTokenInWei(
         uint256 _projectId,
         uint256 _pricePerTokenInWei
-    ) external onlyArtist(_projectId) {
+    ) external {
+        _onlyArtist(_projectId);
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         _projectConfig.pricePerTokenInWei = _pricePerTokenInWei;
         _projectConfig.priceIsConfigured = true;

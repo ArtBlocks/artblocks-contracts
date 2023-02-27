@@ -91,9 +91,9 @@ contract MinterDAExpV4 is ReentrancyGuard, MinterBase, IFilteredMinterDAExpV1 {
     /// more than this amount (may cut in half at no more than every N seconds).
     uint256 public maximumPriceDecayHalfLifeSeconds = 3600; // 60 minutes
 
-    // modifier to restrict access to only AdminACL allowed calls
+    // function to restrict access to only AdminACL allowed calls
     // @dev defers which ACL contract is used to the core contract
-    modifier onlyCoreAdminACL(bytes4 _selector) {
+    function _onlyCoreAdminACL(bytes4 _selector) internal {
         require(
             genArtCoreContract_Base.adminACLAllowed(
                 msg.sender,
@@ -102,16 +102,14 @@ contract MinterDAExpV4 is ReentrancyGuard, MinterBase, IFilteredMinterDAExpV1 {
             ),
             "Only Core AdminACL allowed"
         );
-        _;
     }
 
-    modifier onlyArtist(uint256 _projectId) {
+    function _onlyArtist(uint256 _projectId) internal view {
         require(
             (msg.sender ==
                 genArtCoreContract_Base.projectIdToArtistAddress(_projectId)),
             "Only Artist"
         );
-        _;
     }
 
     /**
@@ -148,9 +146,8 @@ contract MinterDAExpV4 is ReentrancyGuard, MinterBase, IFilteredMinterDAExpV1 {
      * @dev this enables gas reduction after maxInvocations have been reached -
      * core contracts shall still enforce a maxInvocation check during mint.
      */
-    function setProjectMaxInvocations(
-        uint256 _projectId
-    ) public onlyArtist(_projectId) {
+    function setProjectMaxInvocations(uint256 _projectId) public {
+        _onlyArtist(_projectId);
         uint256 maxInvocations;
         uint256 invocations;
         (invocations, maxInvocations, , , , ) = genArtCoreContract_Base
@@ -183,7 +180,8 @@ contract MinterDAExpV4 is ReentrancyGuard, MinterBase, IFilteredMinterDAExpV1 {
     function manuallyLimitProjectMaxInvocations(
         uint256 _projectId,
         uint256 _maxInvocations
-    ) external onlyArtist(_projectId) {
+    ) external {
+        _onlyArtist(_projectId);
         // CHECKS
         // ensure that the manually set maxInvocations is not greater than what is set on the core contract
         uint256 maxInvocations;
@@ -213,9 +211,8 @@ contract MinterDAExpV4 is ReentrancyGuard, MinterBase, IFilteredMinterDAExpV1 {
      * @notice Warning: Disabling purchaseTo is not supported on this minter.
      * This method exists purely for interface-conformance purposes.
      */
-    function togglePurchaseToDisabled(
-        uint256 _projectId
-    ) external view onlyArtist(_projectId) {
+    function togglePurchaseToDisabled(uint256 _projectId) external view {
+        _onlyArtist(_projectId);
         revert("Action not supported");
     }
 
@@ -298,12 +295,10 @@ contract MinterDAExpV4 is ReentrancyGuard, MinterBase, IFilteredMinterDAExpV1 {
     function setAllowablePriceDecayHalfLifeRangeSeconds(
         uint256 _minimumPriceDecayHalfLifeSeconds,
         uint256 _maximumPriceDecayHalfLifeSeconds
-    )
-        external
-        onlyCoreAdminACL(
+    ) external {
+        _onlyCoreAdminACL(
             this.setAllowablePriceDecayHalfLifeRangeSeconds.selector
-        )
-    {
+        );
         require(
             _maximumPriceDecayHalfLifeSeconds >
                 _minimumPriceDecayHalfLifeSeconds,
@@ -339,7 +334,8 @@ contract MinterDAExpV4 is ReentrancyGuard, MinterBase, IFilteredMinterDAExpV1 {
         uint256 _priceDecayHalfLifeSeconds,
         uint256 _startPrice,
         uint256 _basePrice
-    ) external onlyArtist(_projectId) {
+    ) external {
+        _onlyArtist(_projectId);
         // CHECKS
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         require(
@@ -393,9 +389,8 @@ contract MinterDAExpV4 is ReentrancyGuard, MinterBase, IFilteredMinterDAExpV1 {
      * operation, but rather only in case of the need to halt an auction.
      * @param _projectId Project ID to set auction details for.
      */
-    function resetAuctionDetails(
-        uint256 _projectId
-    ) external onlyCoreAdminACL(this.resetAuctionDetails.selector) {
+    function resetAuctionDetails(uint256 _projectId) external {
+        _onlyCoreAdminACL(this.resetAuctionDetails.selector);
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         // reset to initial values
         _projectConfig.timestampStart = 0;
