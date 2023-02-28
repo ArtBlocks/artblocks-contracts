@@ -524,12 +524,16 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
      * `_projectId`. Also returns currency symbol and address to be being used
      * as payment, which for this minter is ETH only.
      * @param _projectId Project ID to get price information for.
-     * @return isConfigured true only if project's auction is configured.
-     * If auction is not initialized, this call will revert. If auction has
-     * ended but not has not yet been settled, the winning bid value will be
-     * returned.
-     * @return tokenPriceInWei current minimum price of token on this minter - invalid
-     * if auction has not yet been configured
+     * @return isConfigured true only if project auctions are configured.
+     * @return tokenPriceInWei If auction is live, the current bid value in
+     * wei is returned. Note that new bids must be sufficiently greater than
+     * the current highest bid to be accepted (see
+     * `minterMinBidIncrementPercentage`).
+     * If next auction has not yet been initialized, this call will return the
+     * minimum starting bid value of the future auction.
+     * If auction has ended but not has not yet been settled, the winning bid
+     * value will be returned.
+     * if isConfigured is false, this value will be 0.
      * @return currencySymbol currency symbol for purchases of project on this
      * minter. This minter always returns "ETH"
      * @return currencyAddress currency address for purchases of project on
@@ -547,20 +551,20 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
             address currencyAddress
         )
     {
-        require(false, "TODO - implement this as desired...");
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
-
-        isConfigured = (_projectConfig.base > 0);
-        if (block.timestamp <= _projectConfig.timestampStart) {
-            // Provide a reasonable value for `tokenPriceInWei` when it would
-            // otherwise revert, using the starting price before auction starts.
-            tokenPriceInWei = _projectConfig.startPrice;
-        } else if (_projectConfig.startPrice == 0) {
-            // In the case of unconfigured auction, return price of zero when
-            // it would otherwise revert
-            tokenPriceInWei = 0;
-        } else {
-            tokenPriceInWei = _getPrice(_projectId);
+        Auction storage _auction = _projectConfig.activeAuction;
+        // base price of zero not allowed when configuring auctions, so use it
+        // as indicator of whether auctions are configured for the project
+        isConfigured = (_projectConfig.basePrice > 0);
+        // only return non-zero price if auction is configured
+        if (isConfigured) {
+            if (_auction.initialized) {
+                // return current bid if auction is initialized
+                tokenPriceInWei = _auction.currentBid;
+            } else {
+                // return base (starting) price if auction has not yet started
+                tokenPriceInWei = _projectConfig.basePrice;
+            }
         }
         currencySymbol = "ETH";
         currencyAddress = address(0);
