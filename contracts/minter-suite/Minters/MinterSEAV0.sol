@@ -5,7 +5,7 @@ import {IWETH} from "../../interfaces/0.8.x/IWETH.sol";
 
 import "../../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
 import "../../interfaces/0.8.x/IMinterFilterV0.sol";
-import "../../interfaces/0.8.x/IMinterSeaV0.sol";
+import "../../interfaces/0.8.x/IMinterSEAV0.sol";
 import "./MinterBase_v0_1_1.sol";
 
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
@@ -161,7 +161,8 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
      */
     constructor(
         address _genArt721Address,
-        address _minterFilter
+        address _minterFilter,
+        address _wethAddress
     ) ReentrancyGuard() MinterBase(_genArt721Address) {
         genArt721CoreAddress = _genArt721Address;
         genArtCoreContract_Base = IGenArt721CoreContractV3_Base(
@@ -173,6 +174,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
             minterFilter.genArt721CoreAddress() == _genArt721Address,
             "Illegal contract pairing"
         );
+        weth = IWETH(_wethAddress);
     }
 
     /**
@@ -302,7 +304,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
      */
     function projectActiveAuctionDetails(
         uint256 _projectId
-    ) external view returns (Auction auction) {
+    ) external view returns (Auction memory auction) {
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         auction = _projectConfig.activeAuction;
         // do not return uninitialized auctions (i.e. auctions that do not
@@ -332,8 +334,8 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
         );
         require(_minAuctionDurationSeconds > 0, "only min gt 0");
         // EFFECTS
-        minAuctionDurationSeconds = _minAuctionDurationSeconds;
-        maxAuctionDurationSeconds = _maxAuctionDurationSeconds;
+        minAuctionDurationSeconds = _minAuctionDurationSeconds.toUint32();
+        maxAuctionDurationSeconds = _maxAuctionDurationSeconds.toUint32();
         emit AuctionDurationSecondsRangeUpdated(
             _minAuctionDurationSeconds,
             _maxAuctionDurationSeconds
@@ -385,8 +387,8 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
 
         emit ConfiguredFutureAuctions(
             _projectId,
-            _timestampStart,
-            _auctionDurationSeconds,
+            _timestampStart.toUint64(),
+            _auctionDurationSeconds.toUint32(),
             _basePrice
         );
 
@@ -425,8 +427,8 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
      * @notice Inactive function - requires tokenId to bid.
      */
     function purchase(
-        uint256 _projectId
-    ) external payable returns (uint256 tokenId) {
+        uint256 /*_projectId*/
+    ) external payable returns (uint256 /*tokenId*/) {
         revert("Call purchase w/tokenId");
     }
 
@@ -434,9 +436,9 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
      * @notice Inactive function - requires tokenId to bid
      */
     function purchaseTo(
-        address _to,
-        uint256 _projectId
-    ) external payable returns (uint256 tokenId) {
+        address /*_to*/,
+        uint256 /*_projectId*/
+    ) external payable returns (uint256 /*tokenId*/) {
         revert("Call purchaseTo w/tokenId");
     }
 
@@ -482,9 +484,10 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
         require(_auction.endTime > block.timestamp, "Auction already ended");
 
         // require bid to be sufficiently greater than current highest bid
+        // @dev no overflow enforced automatically by solidity ^8.0.0
         require(
-            msg.value >
-                (_auction.highestBid *
+            msg.value >=
+                (_auction.currentBid *
                     (100 + minterMinBidIncrementPercentage)) /
                     100,
             "Bid is too low"
