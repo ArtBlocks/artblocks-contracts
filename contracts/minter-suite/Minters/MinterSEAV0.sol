@@ -334,7 +334,9 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
         require(_minterMinBidIncrementPercentage > 0, "only gt 0");
         // EFFECTS
         minterMinBidIncrementPercentage = _minterMinBidIncrementPercentage;
-        emit MinterTimeBufferUpdated(_minterMinBidIncrementPercentage);
+        emit MinterMinBidIncrementPercentageUpdated(
+            _minterMinBidIncrementPercentage
+        );
     }
 
     /**

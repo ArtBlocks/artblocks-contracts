@@ -38,11 +38,11 @@ interface IMinterSEAV0 is IFilteredMinterV2 {
 
     /// Admin-controlled minimum bid increment percentage updated
     event MinterMinBidIncrementPercentageUpdated(
-        uint8 minBidIncrementPercentage
+        uint8 minterMinBidIncrementPercentage
     );
 
     /// Admin-controlled time buffer updated
-    event MinterTimeBufferUpdated(uint32 timeBuffer);
+    event MinterTimeBufferUpdated(uint32 minterTimeBufferSeconds);
 
     /// Artist configured future auction details
     event ConfiguredFutureAuctions(
