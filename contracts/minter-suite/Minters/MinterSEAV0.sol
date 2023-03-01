@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
+pragma solidity 0.8.17;
+
 import {IWETH} from "../../interfaces/0.8.x/IWETH.sol";
 
 import "../../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
@@ -11,8 +13,6 @@ import "./MinterBase_v0_1_1.sol";
 import "@openzeppelin-4.7/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin-4.7/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
-
-pragma solidity 0.8.17;
 
 /**
  * @title Filtered Minter contract that allows tokens to be minted with ETH.
@@ -144,6 +144,10 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
     // minter, across all projects
     uint32 minterTimeBufferSeconds;
 
+    // modifier-like internal functions
+    // @dev we use internal functions instead of modifiers to reduce contract
+    // bytecode size
+    // ----------------------------------------
     // function to restrict access to only AdminACL allowed calls
     // @dev defers to the ACL contract used on the core contract
     function _onlyCoreAdminACL(bytes4 _selector) internal {
@@ -285,74 +289,6 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
     }
 
     /**
-     * @notice Warning: Disabling purchaseTo is not supported on this minter.
-     * This method exists purely for interface-conformance purposes.
-     */
-    function togglePurchaseToDisabled(uint256 _projectId) external view {
-        _onlyArtist(_projectId);
-        revert("Action not supported");
-    }
-
-    /**
-     * @notice projectId => has project reached its maximum number of
-     * invocations? Note that this returns a local cache of the core contract's
-     * state, and may be out of sync with the core contract. This is
-     * intentional, as it only enables gas optimization of mints after a
-     * project's maximum invocations has been reached. A false negative will
-     * only result in a gas cost increase, since the core contract will still
-     * enforce a maxInvocation check during minting. A false positive is not
-     * possible because the V3 core contract only allows maximum invocations
-     * to be reduced, not increased. Based on this rationale, we intentionally
-     * do not do input validation in this method as to whether or not the input
-     * `_projectId` is an existing project ID.
-     *
-     */
-    function projectMaxHasBeenInvoked(
-        uint256 _projectId
-    ) external view returns (bool) {
-        return projectConfig[_projectId].maxHasBeenInvoked;
-    }
-
-    /**
-     * @notice projectId => project's maximum number of invocations.
-     * Optionally synced with core contract value, for gas optimization.
-     * Note that this returns a local cache of the core contract's
-     * state, and may be out of sync with the core contract. This is
-     * intentional, as it only enables gas optimization of mints after a
-     * project's maximum invocations has been reached.
-     * @dev A number greater than the core contract's project max invocations
-     * will only result in a gas cost increase, since the core contract will
-     * still enforce a maxInvocation check during minting. A number less than
-     * the core contract's project max invocations is only possible when the
-     * project's max invocations have not been synced on this minter, since the
-     * V3 core contract only allows maximum invocations to be reduced, not
-     * increased. When this happens, the minter will enable minting, allowing
-     * the core contract to enforce the max invocations check. Based on this
-     * rationale, we intentionally do not do input validation in this method as
-     * to whether or not the input `_projectId` is an existing project ID.
-     */
-    function projectMaxInvocations(
-        uint256 _projectId
-    ) external view returns (uint256) {
-        return uint256(projectConfig[_projectId].maxInvocations);
-    }
-
-    /**
-     * @notice projectId => active auction details.
-     * @dev reverts if no auction exists for the project.
-     */
-    function projectActiveAuctionDetails(
-        uint256 _projectId
-    ) external view returns (Auction memory auction) {
-        ProjectConfig storage _projectConfig = projectConfig[_projectId];
-        auction = _projectConfig.activeAuction;
-        // do not return uninitialized auctions (i.e. auctions that do not
-        // exist, and therefore are simply the default struct)
-        require(auction.initialized, "No auction exists for this project");
-        return auction;
-    }
-
-    /**
      * @notice Sets the minimum and maximum values that are settable for
      * `durationSeconds` for all project configurations.
      * Note that the auction duration is the initial duration of the auction,
@@ -418,7 +354,15 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
         emit MinterTimeBufferUpdated(_minterTimeBufferSeconds);
     }
 
-    ////// Auction Functions
+    /**
+     * @notice Warning: Disabling purchaseTo is not supported on this minter.
+     * This method exists purely for interface-conformance purposes.
+     */
+    function togglePurchaseToDisabled(uint256 _projectId) external view {
+        _onlyArtist(_projectId);
+        revert("Action not supported");
+    }
+
     /**
      * @notice Sets auction details for project `_projectId`.
      * @param _projectId Project ID to set future auction details for.
@@ -606,6 +550,157 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
     }
 
     /**
+     * @notice Enters a bid for token `_tokenId` from project `_projectId`.
+     * In order to successfully place the bid, the token must be in the
+     * auction stage and the bid must be sufficiently greater than the current
+     * highest bid. If the bid is unsuccessful, the transaction will revert.
+     * If the bid is successful, but outbid by another bid before the auction
+     * ends, the funds will be noncustodially returned to the bidder's address,
+     * `msg.sender`. A fallback method of sending funds back to the bidder if
+     * the address is not accepting ETH is sending funds via WETH (preventing
+     * denial of service attacks).
+     * @param _projectId Project ID to mint a token on.
+     * @param _tokenId Token ID being bidded on
+     */
+    function createBid(uint256 _projectId, uint256 _tokenId) external payable {
+        createBid_4cM(_projectId, _tokenId);
+    }
+
+    /**
+     * @notice gas-optimized version of createBid(uint256,uint256).
+     */
+    function createBid_4cM(
+        uint256 _projectId,
+        uint256 _tokenId
+    ) public payable nonReentrant {
+        // CHECKS
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        Auction storage _auction = _projectConfig.activeAuction;
+
+        // ensure current auction is initialized (and not the default struct)
+        require(_auction.initialized, "Auction not started for project");
+
+        // ensure bids for a specific token ID are only applied to the auction
+        // for that token ID.
+        require(
+            _auction.tokenId == _tokenId,
+            "Token ID does not match auction"
+        );
+
+        // ensure auction is not already ended
+        require(_auction.endTime > block.timestamp, "Auction already ended");
+
+        // require bid to be sufficiently greater than current highest bid
+        // @dev no overflow enforced automatically by solidity ^8.0.0
+        require(
+            msg.value >=
+                (_auction.currentBid *
+                    (100 + minterMinBidIncrementPercentage)) /
+                    100,
+            "Bid is too low"
+        );
+
+        // EFFECTS
+        // record previous highest bid details for refunding
+        uint256 previousBid = _auction.currentBid;
+        address payable previousBidder = _auction.bidder;
+
+        // update auction state
+        _auction.currentBid = msg.value;
+        _auction.bidder = payable(msg.sender);
+        uint256 minEndTime = block.timestamp + minterTimeBufferSeconds;
+        if (_auction.endTime < minEndTime) {
+            _auction.endTime = minEndTime.toUint64();
+        }
+
+        // INTERACTIONS
+        // refund previous highest bidder
+        _safeTransferETHWithFallback(previousBidder, previousBid);
+
+        emit AuctionBid(_tokenId, msg.sender, msg.value);
+    }
+
+    /**
+     * @notice Inactive function - see `createBid` or
+     * `settleAndInitializeAuction`
+     */
+    function purchase(
+        uint256 /*_projectId*/
+    ) external payable returns (uint256 /*tokenId*/) {
+        revert("Inactive function");
+    }
+
+    /**
+     * @notice Inactive function - see `createBid` or
+     * `settleAndInitializeAuction`
+     */
+    function purchaseTo(
+        address /*_to*/,
+        uint256 /*_projectId*/
+    ) external payable returns (uint256 /*tokenId*/) {
+        revert("Inactive function");
+    }
+
+    /**
+     * @notice projectId => has project reached its maximum number of
+     * invocations? Note that this returns a local cache of the core contract's
+     * state, and may be out of sync with the core contract. This is
+     * intentional, as it only enables gas optimization of mints after a
+     * project's maximum invocations has been reached. A false negative will
+     * only result in a gas cost increase, since the core contract will still
+     * enforce a maxInvocation check during minting. A false positive is not
+     * possible because the V3 core contract only allows maximum invocations
+     * to be reduced, not increased. Based on this rationale, we intentionally
+     * do not do input validation in this method as to whether or not the input
+     * `_projectId` is an existing project ID.
+     *
+     */
+    function projectMaxHasBeenInvoked(
+        uint256 _projectId
+    ) external view returns (bool) {
+        return projectConfig[_projectId].maxHasBeenInvoked;
+    }
+
+    /**
+     * @notice projectId => project's maximum number of invocations.
+     * Optionally synced with core contract value, for gas optimization.
+     * Note that this returns a local cache of the core contract's
+     * state, and may be out of sync with the core contract. This is
+     * intentional, as it only enables gas optimization of mints after a
+     * project's maximum invocations has been reached.
+     * @dev A number greater than the core contract's project max invocations
+     * will only result in a gas cost increase, since the core contract will
+     * still enforce a maxInvocation check during minting. A number less than
+     * the core contract's project max invocations is only possible when the
+     * project's max invocations have not been synced on this minter, since the
+     * V3 core contract only allows maximum invocations to be reduced, not
+     * increased. When this happens, the minter will enable minting, allowing
+     * the core contract to enforce the max invocations check. Based on this
+     * rationale, we intentionally do not do input validation in this method as
+     * to whether or not the input `_projectId` is an existing project ID.
+     */
+    function projectMaxInvocations(
+        uint256 _projectId
+    ) external view returns (uint256) {
+        return uint256(projectConfig[_projectId].maxInvocations);
+    }
+
+    /**
+     * @notice projectId => active auction details.
+     * @dev reverts if no auction exists for the project.
+     */
+    function projectActiveAuctionDetails(
+        uint256 _projectId
+    ) external view returns (Auction memory auction) {
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        auction = _projectConfig.activeAuction;
+        // do not return uninitialized auctions (i.e. auctions that do not
+        // exist, and therefore are simply the default struct)
+        require(auction.initialized, "No auction exists for this project");
+        return auction;
+    }
+
+    /**
      * @dev internal function to initialize an auction.
      * Internal function is used to keep the auction initialization code
      * nonReentrant
@@ -703,98 +798,6 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
         require(actualTokenId == _targetTokenId, "Incorrect target token ID");
 
         emit AuctionInitialized(_targetTokenId, msg.sender, msg.value, endTime);
-    }
-
-    /**
-     * @notice Inactive function - see `createBid` or
-     * `settleAndInitializeAuction`
-     */
-    function purchase(
-        uint256 /*_projectId*/
-    ) external payable returns (uint256 /*tokenId*/) {
-        revert("Inactive function");
-    }
-
-    /**
-     * @notice Inactive function - see `createBid` or
-     * `settleAndInitializeAuction`
-     */
-    function purchaseTo(
-        address /*_to*/,
-        uint256 /*_projectId*/
-    ) external payable returns (uint256 /*tokenId*/) {
-        revert("Inactive function");
-    }
-
-    /**
-     * @notice Enters a bid for token `_tokenId` from project `_projectId`.
-     * In order to successfully place the bid, the token must be in the
-     * auction stage and the bid must be sufficiently greater than the current
-     * highest bid. If the bid is unsuccessful, the transaction will revert.
-     * If the bid is successful, but outbid by another bid before the auction
-     * ends, the funds will be noncustodially returned to the bidder's address,
-     * `msg.sender`. A fallback method of sending funds back to the bidder if
-     * the address is not accepting ETH is sending funds via WETH (preventing
-     * denial of service attacks).
-     * @param _projectId Project ID to mint a token on.
-     * @param _tokenId Token ID being bidded on
-     */
-    function createBid(uint256 _projectId, uint256 _tokenId) external payable {
-        createBid_4cM(_projectId, _tokenId);
-    }
-
-    /**
-     * @notice gas-optimized version of createBid(uint256,uint256).
-     */
-    function createBid_4cM(
-        uint256 _projectId,
-        uint256 _tokenId
-    ) public payable nonReentrant {
-        // CHECKS
-        ProjectConfig storage _projectConfig = projectConfig[_projectId];
-        Auction storage _auction = _projectConfig.activeAuction;
-
-        // ensure current auction is initialized (and not the default struct)
-        require(_auction.initialized, "Auction not started for project");
-
-        // ensure bids for a specific token ID are only applied to the auction
-        // for that token ID.
-        require(
-            _auction.tokenId == _tokenId,
-            "Token ID does not match auction"
-        );
-
-        // ensure auction is not already ended
-        require(_auction.endTime > block.timestamp, "Auction already ended");
-
-        // require bid to be sufficiently greater than current highest bid
-        // @dev no overflow enforced automatically by solidity ^8.0.0
-        require(
-            msg.value >=
-                (_auction.currentBid *
-                    (100 + minterMinBidIncrementPercentage)) /
-                    100,
-            "Bid is too low"
-        );
-
-        // EFFECTS
-        // record previous highest bid details for refunding
-        uint256 previousBid = _auction.currentBid;
-        address payable previousBidder = _auction.bidder;
-
-        // update auction state
-        _auction.currentBid = msg.value;
-        _auction.bidder = payable(msg.sender);
-        uint256 minEndTime = block.timestamp + minterTimeBufferSeconds;
-        if (_auction.endTime < minEndTime) {
-            _auction.endTime = minEndTime.toUint64();
-        }
-
-        // INTERACTIONS
-        // refund previous highest bidder
-        _safeTransferETHWithFallback(previousBidder, previousBid);
-
-        emit AuctionBid(_tokenId, msg.sender, msg.value);
     }
 
     /**
