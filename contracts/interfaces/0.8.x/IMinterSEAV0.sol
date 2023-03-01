@@ -36,6 +36,14 @@ interface IMinterSEAV0 is IFilteredMinterV2 {
         uint256 maxAuctionDurationSeconds
     );
 
+    /// Admin-controlled minimum bid increment percentage updated
+    event MinterMinBidIncrementPercentageUpdated(
+        uint8 minBidIncrementPercentage
+    );
+
+    /// Admin-controlled time buffer updated
+    event MinterTimeBufferUpdated(uint32 timeBuffer);
+
     /// Artist configured future auction details
     event ConfiguredFutureAuctions(
         uint256 _projectId,
@@ -46,6 +54,28 @@ interface IMinterSEAV0 is IFilteredMinterV2 {
 
     /// Future auction details for project `_projectId` reset
     event ResetAuctionDetails(uint256 _projectId);
+
+    /// New token auction created, token created and sent to minter
+    event AuctionInitialized(
+        uint256 indexed tokenId,
+        address bidder,
+        uint256 bidAmount,
+        uint64 endTime
+    );
+
+    /// Successful bid placed on token auction
+    event AuctionBid(
+        uint256 indexed tokenId,
+        address bidder,
+        uint256 bidAmount
+    );
+
+    /// Token auction was settled (token distributed to winner)
+    event AuctionSettled(
+        uint256 indexed tokenId,
+        address winner,
+        uint256 price
+    );
 
     // event AuctionCreated(uint256 indexed nounId, uint256 startTime, uint256 endTime);
 

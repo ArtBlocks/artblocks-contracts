@@ -343,6 +343,43 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
         );
     }
 
+    /**
+     * @notice Sets the minter-wide minimum bid increment percentage. New bids
+     * must be this percent higher than the current top bid to be successful.
+     * This value should be configured by admin such that appropriate price
+     * discovery is able to be reached, but gas fees associated with bidding
+     * wars do not dominate the economics of an auction.
+     * @dev the input value is considered to be a percentage, so that a value
+     * of 5 represents 5%.
+     */
+    function updateMinterMinBidIncrementPercentage(
+        uint8 _minterMinBidIncrementPercentage
+    ) external {
+        _onlyCoreAdminACL(this.updateMinterMinBidIncrementPercentage.selector);
+        // CHECKS
+        require(_minterMinBidIncrementPercentage > 0, "only gt 0");
+        // EFFECTS
+        minterMinBidIncrementPercentage = _minterMinBidIncrementPercentage;
+        emit MinterTimeBufferUpdated(_minterMinBidIncrementPercentage);
+    }
+
+    /**
+     * @notice Sets the minter-wide time buffer in seconds. The time buffer is
+     * the minimum amount of time that must pass between the final bid and the
+     * the end of an auction. Auctions are extended if a new bid is placed
+     * within this time buffer of the auction end time.
+     */
+    function updateMinterTimeBufferSeconds(
+        uint32 _minterTimeBufferSeconds
+    ) external {
+        _onlyCoreAdminACL(this.updateMinterTimeBufferSeconds.selector);
+        // CHECKS
+        require(_minterTimeBufferSeconds > 0, "only gt 0");
+        // EFFECTS
+        minterTimeBufferSeconds = _minterTimeBufferSeconds;
+        emit MinterTimeBufferUpdated(_minterTimeBufferSeconds);
+    }
+
     ////// Auction Functions
     /**
      * @notice Sets auction details for project `_projectId`.
@@ -488,6 +525,8 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
             _auction.bidder,
             _tokenId
         );
+
+        emit AuctionSettled(_tokenId, _auction.bidder, _auction.currentBid);
     }
 
     /**
@@ -594,11 +633,12 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
         }
 
         // create new auction, overwriting previous auction if it exists
+        uint64 endTime = (block.timestamp +
+            _projectConfig.auctionDurationSeconds).toUint64();
         _projectConfig.activeAuction = Auction({
             tokenId: _targetTokenId,
             currentBid: msg.value,
-            endTime: (block.timestamp + _projectConfig.auctionDurationSeconds)
-                .toUint64(),
+            endTime: endTime,
             bidder: payable(msg.sender),
             settled: false,
             initialized: true
@@ -617,6 +657,8 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
         // security (eliminating trust requirement) is achieved by making this
         //  function nonReentrant
         require(actualTokenId == _targetTokenId, "Incorrect target token ID");
+
+        emit AuctionInitialized(_targetTokenId, msg.sender, msg.value, endTime);
     }
 
     /**
@@ -654,7 +696,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
      * @param _tokenId Token ID being bidded on
      */
     function createBid(uint256 _projectId, uint256 _tokenId) external payable {
-        return createBid_4cM(_projectId, _tokenId);
+        createBid_4cM(_projectId, _tokenId);
     }
 
     /**
@@ -699,14 +741,16 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
         // update auction state
         _auction.currentBid = msg.value;
         _auction.bidder = payable(msg.sender);
-        if (_auction.endTime < block.timestamp + minterTimeBufferSeconds) {
-            _auction.endTime = (block.timestamp + minterTimeBufferSeconds)
-                .toUint64();
+        uint256 minEndTime = block.timestamp + minterTimeBufferSeconds;
+        if (_auction.endTime < minEndTime) {
+            _auction.endTime = minEndTime.toUint64();
         }
 
         // INTERACTIONS
         // refund previous highest bidder
         _safeTransferETHWithFallback(previousBidder, previousBid);
+
+        emit AuctionBid(_tokenId, msg.sender, msg.value);
     }
 
     /**
