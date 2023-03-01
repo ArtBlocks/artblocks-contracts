@@ -8,8 +8,9 @@ import "../../interfaces/0.8.x/IMinterFilterV0.sol";
 import "../../interfaces/0.8.x/IMinterSEAV0.sol";
 import "./MinterBase_v0_1_1.sol";
 
-import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin-4.5/contracts/utils/math/SafeCast.sol";
+import "@openzeppelin-4.7/contracts/token/ERC721/IERC721.sol";
+import "@openzeppelin-4.7/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
 
 pragma solidity 0.8.17;
 
@@ -421,6 +422,174 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
         _projectConfig.basePrice = 0;
 
         emit ResetAuctionDetails(_projectId);
+    }
+
+    /**
+     * @notice Settles any complete auction for token `_settleTokenId` (if
+     * applicable), then initializes an auction for token `_initializeTokenId`
+     * with bid amount and bidder address equal to `msg.value` and
+     * `msg.sender`, respectively.
+     * This function requires a target token ID that is the next token ID for
+     * the project, and will revert if `_targetTokenId` is not the next token.
+     * Note that the use of `_targetTokenId` is to prevent the possibility of
+     * transactions that are stuck in the pending pool for long periods of time
+     * from unintentionally initializing auctions for future tokens.
+     * Note that calls to `settleAuction` and `initializeAuction` are possible
+     * to be called in separate transactions, but this function is provided for
+     * convenience and calls both of those functions in a single transaction.
+     * @param _settleTokenId Token ID to settle auction for.
+     * @param _initializeTokenId Token ID to initialize auction for.
+     */
+    function settleAndInitializeAuction(
+        uint256 _settleTokenId,
+        uint256 _initializeTokenId
+    ) external payable {
+        // settle completed auction, if applicable
+        // @dev in case of frontrun, settleAuction returns early and avoids
+        // reverting
+        settleAuction(_settleTokenId);
+        // initialize the auction for the next token
+        initializeAuction(_initializeTokenId);
+    }
+
+    /**
+     * @notice Settles a completed auction for `_tokenId`, if one exists.
+     * This function does not modify state, but does not revert, if there is no
+     * active auction for token ID `_tokenId`, or if the auction has already
+     * been settled.
+     * This function reverts if the auction for `_tokenId` exists but has not
+     * yet ended.
+     * @param _tokenId Token ID to settle auction for.
+     */
+    function settleAuction(uint256 _tokenId) public nonReentrant {
+        uint256 _projectId = _tokenId / ONE_MILLION;
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        Auction storage _auction = _projectConfig.activeAuction;
+        // CHECKS
+        if (_auction.tokenId != _tokenId) {
+            // no active auction for this token
+            return;
+        }
+        if (_auction.settled) {
+            // auction already settled
+            return;
+        }
+        require(block.timestamp > _auction.endTime, "Auction not yet ended");
+        // EFFECTS
+        _auction.settled = true;
+        // INTERACTIONS
+        // send token to the winning bidder
+        IERC721(address(genArtCoreContract_Base)).transferFrom(
+            address(this),
+            _auction.bidder,
+            _tokenId
+        );
+    }
+
+    /**
+     * @notice Initializes a new auction for token `_targetTokenId`, and places
+     * an initial bid with bid amount and bidder address equal to `msg.value`
+     * and `msg.sender`, respectively.
+     * This function requires that the project for `_targetTokenId` does not
+     * have any active, un-settled auction (since this minter only allows one
+     * active auction at a time per project).
+     * This function requires a target token ID that is the next token ID for
+     * the project, and will revert if `_targetTokenId` is not the next token.
+     * Note that the use of `_targetTokenId` is to prevent the possibility of
+     * transactions that are stuck in the pending pool for long periods of time
+     * from unintentionally initializing auctions for future tokens.
+     * @param _targetTokenId Token ID to initialize auction for.
+     */
+    function initializeAuction(
+        uint256 _targetTokenId
+    ) public payable nonReentrant {
+        uint256 _projectId = _targetTokenId / ONE_MILLION;
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        Auction storage _auction = _projectConfig.activeAuction;
+        // CHECKS
+        // gas efficiently prevent expensive calls after the minter max has
+        // been invoked
+        // @dev this could return a false negative in edge cases, and is not
+        // relied upon for security, but rather as a gas optimization
+        require(
+            _projectConfig.maxHasBeenInvoked == false,
+            "Project max has been invoked"
+        );
+        // ensure project auctions are configured
+        // @dev base price of zero indicates auctions are not configured
+        // because only base price of gt zero is allowed when configuring
+        require(_projectConfig.basePrice > 0, "Project not configured");
+        // only initialize new auctions if they meet the start time
+        // requirement
+        require(
+            block.timestamp >= _projectConfig.timestampStart,
+            "Only after project start time"
+        );
+        // require any previous auction to be settled before allowing a new
+        // one to be initialized
+        if (_auction.initialized) {
+            // there is already an auction on this project, so ensure it has
+            // been settled before allowing a new one to be initialized
+            require(_auction.settled, "Prior auction not yet settled");
+        }
+        // require sufficient payment to place initial bid
+        require(
+            msg.value >= _projectConfig.basePrice,
+            "Insufficient initial bid"
+        );
+
+        // EFFECTS
+        // @dev the new auction is optimistically assumed to be for
+        // `_targetTokenId`, and will be reverted in the INTERACTIONS section
+        // if this is not the case
+
+        // invocation is token number plus one, and will never overflow due to
+        // limit of 1e6 invocations per project. block scope for gas efficiency
+        // (i.e. avoid an unnecessary var initialization to 0).
+        unchecked {
+            uint256 tokenInvocation = (_targetTokenId % ONE_MILLION) + 1;
+            uint256 localMaxInvocations = _projectConfig.maxInvocations;
+            // handle the case where the token invocation == minter local max
+            // invocations occurred on a different minter, and we have a stale
+            // local maxHasBeenInvoked value returning a false negative.
+            // @dev this is a CHECK after EFFECTS, so security was considered
+            // in detail here.
+            require(
+                tokenInvocation <= localMaxInvocations,
+                "Maximum invocations reached"
+            );
+            // in typical case, update the local maxHasBeenInvoked value
+            // to true if the token invocation == minter local max invocations
+            // (enables gas efficient reverts after sellout)
+            if (tokenInvocation == localMaxInvocations) {
+                _projectConfig.maxHasBeenInvoked = true;
+            }
+        }
+
+        // create new auction, overwriting previous auction if it exists
+        _projectConfig.activeAuction = Auction({
+            tokenId: _targetTokenId,
+            currentBid: msg.value,
+            endTime: (block.timestamp + _projectConfig.auctionDurationSeconds)
+                .toUint64(),
+            bidder: payable(msg.sender),
+            settled: false,
+            initialized: true
+        });
+
+        // INTERACTIONS
+        // mint new token to this minter contract
+        // @dev this is an interaction with a trusted contract
+        uint256 actualTokenId = minterFilter.mint(
+            address(this),
+            _projectId,
+            address(this)
+        );
+        // verify the actual token to be the target token ID
+        // @dev this is a check after a (trusted) interaction, so redundant
+        // security (eliminating trust requirement) is achieved by making this
+        //  function nonReentrant
+        require(actualTokenId == _targetTokenId, "Incorrect target token ID");
     }
 
     /**
