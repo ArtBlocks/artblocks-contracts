@@ -2,12 +2,13 @@ import { constants, expectRevert } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { BigNumber } from "ethers";
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 
 import EthersAdapter from "@gnosis.pm/safe-ethers-lib";
 import Safe from "@gnosis.pm/safe-core-sdk";
 import { SafeTransactionDataPartial } from "@gnosis.pm/safe-core-sdk-types";
 import { getGnosisSafe } from "../../util/GnosisSafeNetwork";
-import { isCoreV3 } from "../../util/common";
+import { isCoreV3, T_Config } from "../../util/common";
 
 /**
  * These tests are intended to check common DA V1/V2/V3 functionality.
@@ -15,42 +16,47 @@ import { isCoreV3 } from "../../util/common";
  * @dev assumes common BeforeEach to populate accounts, constants, and setup
  * @dev does not call specific type of DA common tests (e.g MinterDALin_Common)
  */
-export const MinterDAV1V2V3_Common = async () => {
+export const MinterDAV1V2V3_Common = async (
+  _beforeEach: () => Promise<T_Config>
+) => {
   describe("purchaseTo", async function () {
     it("allows `purchaseTo` by default", async function () {
+      const config = await loadFixture(_beforeEach);
       await ethers.provider.send("evm_mine", [
-        this.startTime + this.auctionStartTimeOffset,
+        config.startTime + config.auctionStartTimeOffset,
       ]);
-      await this.minter
-        .connect(this.accounts.user)
-        .purchaseTo(this.accounts.additional.address, this.projectZero, {
-          value: this.startingPrice,
+      await config.minter
+        .connect(config.accounts.user)
+        .purchaseTo(config.accounts.additional.address, config.projectZero, {
+          value: config.startingPrice,
         });
     });
 
     it("does not support toggling of `purchaseToDisabled`", async function () {
+      const config = await loadFixture(_beforeEach);
       await expectRevert(
-        this.minter
-          .connect(this.accounts.artist)
-          .togglePurchaseToDisabled(this.projectZero),
+        config.minter
+          .connect(config.accounts.artist)
+          .togglePurchaseToDisabled(config.projectZero),
         "Action not supported"
       );
       // still allows `purchaseTo`.
       await ethers.provider.send("evm_mine", [
-        this.startTime + this.auctionStartTimeOffset,
+        config.startTime + config.auctionStartTimeOffset,
       ]);
-      await this.minter
-        .connect(this.accounts.user)
-        .purchaseTo(this.accounts.artist.address, this.projectZero, {
-          value: this.startingPrice,
+      await config.minter
+        .connect(config.accounts.user)
+        .purchaseTo(config.accounts.artist.address, config.projectZero, {
+          value: config.startingPrice,
         });
     });
 
     it("doesn't support `purchaseTo` toggling", async function () {
+      const config = await loadFixture(_beforeEach);
       await expectRevert(
-        this.minter
-          .connect(this.accounts.artist)
-          .togglePurchaseToDisabled(this.projectZero),
+        config.minter
+          .connect(config.accounts.artist)
+          .togglePurchaseToDisabled(config.projectZero),
         "Action not supported"
       );
     });
@@ -58,29 +64,30 @@ export const MinterDAV1V2V3_Common = async () => {
 
   describe("reentrancy attack", async function () {
     it("does not allow reentrant purchaseTo", async function () {
+      const config = await loadFixture(_beforeEach);
       // advance to time when auction is active
       await ethers.provider.send("evm_mine", [
-        this.startTime + this.auctionStartTimeOffset,
+        config.startTime + config.auctionStartTimeOffset,
       ]);
       // attacker deploys reentrancy contract
       const reentrancyMockFactory = await ethers.getContractFactory(
         "ReentrancyMock"
       );
       const reentrancyMock = await reentrancyMockFactory
-        .connect(this.accounts.deployer)
+        .connect(config.accounts.deployer)
         .deploy();
       // attacker should see revert when performing reentrancy attack
       const totalTokensToMint = 2;
       let numTokensToMint = BigNumber.from(totalTokensToMint.toString());
-      let totalValue = this.higherPricePerTokenInWei.mul(numTokensToMint);
+      let totalValue = config.higherPricePerTokenInWei.mul(numTokensToMint);
       await expectRevert(
         reentrancyMock
-          .connect(this.accounts.deployer)
+          .connect(config.accounts.deployer)
           .attack(
             numTokensToMint,
-            this.minter.address,
-            this.projectZero,
-            this.higherPricePerTokenInWei,
+            config.minter.address,
+            config.projectZero,
+            config.higherPricePerTokenInWei,
             {
               value: totalValue,
             }
@@ -90,17 +97,17 @@ export const MinterDAV1V2V3_Common = async () => {
       );
       // attacker should be able to purchase ONE token at a time w/refunds
       numTokensToMint = BigNumber.from("1");
-      totalValue = this.higherPricePerTokenInWei.mul(numTokensToMint);
+      totalValue = config.higherPricePerTokenInWei.mul(numTokensToMint);
       for (let i = 0; i < totalTokensToMint; i++) {
         await reentrancyMock
-          .connect(this.accounts.deployer)
+          .connect(config.accounts.deployer)
           .attack(
             numTokensToMint,
-            this.minter.address,
-            this.projectZero,
-            this.higherPricePerTokenInWei,
+            config.minter.address,
+            config.projectZero,
+            config.higherPricePerTokenInWei,
             {
-              value: this.higherPricePerTokenInWei,
+              value: config.higherPricePerTokenInWei,
             }
           );
       }
@@ -109,27 +116,28 @@ export const MinterDAV1V2V3_Common = async () => {
 
   describe("gnosis safe", async function () {
     it("allows gnosis safe to purchase in ETH", async function () {
+      const config = await loadFixture(_beforeEach);
       // advance to time when auction is active
       await ethers.provider.send("evm_mine", [
-        this.startTime + this.auctionStartTimeOffset,
+        config.startTime + config.auctionStartTimeOffset,
       ]);
 
       // deploy new Gnosis Safe
       const safeSdk: Safe = await getGnosisSafe(
-        this.accounts.artist,
-        this.accounts.additional,
-        this.accounts.user
+        config.accounts.artist,
+        config.accounts.additional,
+        config.accounts.user
       );
       const safeAddress = safeSdk.getAddress();
 
       // create a transaction
-      const unsignedTx = await this.minter.populateTransaction.purchase(
-        this.projectZero
+      const unsignedTx = await config.minter.populateTransaction.purchase(
+        config.projectZero
       );
       const transaction: SafeTransactionDataPartial = {
-        to: this.minter.address,
+        to: config.minter.address,
         data: unsignedTx.data,
-        value: this.higherPricePerTokenInWei.toHexString(),
+        value: config.higherPricePerTokenInWei.toHexString(),
       };
       const safeTransaction = await safeSdk.createTransaction(transaction);
 
@@ -139,7 +147,7 @@ export const MinterDAV1V2V3_Common = async () => {
       // additional signs
       const ethAdapterOwner2 = new EthersAdapter({
         ethers,
-        signer: this.accounts.additional,
+        signer: config.accounts.additional,
       });
       const safeSdk2 = await safeSdk.connect({
         ethAdapter: ethAdapterOwner2,
@@ -150,22 +158,22 @@ export const MinterDAV1V2V3_Common = async () => {
       await approveTxResponse.transactionResponse?.wait();
 
       // fund the safe and execute transaction
-      await this.accounts.artist.sendTransaction({
+      await config.accounts.artist.sendTransaction({
         to: safeAddress,
-        value: this.higherPricePerTokenInWei,
+        value: config.higherPricePerTokenInWei,
       });
-      const viewFunctionWithInvocations = (await isCoreV3(this.genArt721Core))
-        ? this.genArt721Core.projectStateData
-        : this.genArt721Core.projectTokenInfo;
+      const viewFunctionWithInvocations = (await isCoreV3(config.genArt721Core))
+        ? config.genArt721Core.projectStateData
+        : config.genArt721Core.projectTokenInfo;
       const projectStateDataBefore = await viewFunctionWithInvocations(
-        this.projectZero
+        config.projectZero
       );
       const executeTxResponse = await safeSdk2.executeTransaction(
         safeTransaction
       );
       await executeTxResponse.transactionResponse?.wait();
       const projectStateDataAfter = await viewFunctionWithInvocations(
-        this.projectZero
+        config.projectZero
       );
       expect(projectStateDataAfter.invocations).to.be.equal(
         projectStateDataBefore.invocations.add(1)

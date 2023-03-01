@@ -1,13 +1,6 @@
-import {
-  BN,
-  constants,
-  expectEvent,
-  expectRevert,
-  balance,
-  ether,
-} from "@openzeppelin/test-helpers";
-import { expect } from "chai";
+import { BN, constants } from "@openzeppelin/test-helpers";
 import { ethers } from "hardhat";
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 const { MerkleTree } = require("merkletreejs");
 import { hashAddress } from "../../minter-suite-minters/MinterMerkle/MinterMerkle.common";
 const keccak256 = require("keccak256");
@@ -16,6 +9,7 @@ const numInitialMints = 500;
 const numMintsToAverage = 15;
 
 import {
+  T_Config,
   getAccounts,
   assignDefaultConstants,
   deployAndGet,
@@ -37,116 +31,122 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
   // increase test timeout from 20s to 40s due to minting numMintsToAverage tokens in beforeEach
   this.timeout(40000);
 
-  beforeEach(async function () {
-    // standard accounts and constants
-    this.accounts = await getAccounts();
-    await assignDefaultConstants.call(this);
+  async function _beforeEach() {
+    let config: T_Config = {
+      accounts: await getAccounts(),
+    };
+    config = await assignDefaultConstants(config);
+
     // use a higher max invocations to avoid artifically low gas costs
-    this.higherMaxInvocationsForGasTests = 1000;
+    config.higherMaxInvocationsForGasTests = 1000;
     // make price artifically low to enable more mints to simulate real-world common use cases
-    this.pricePerTokenInWei = ethers.utils.parseEther("0.1");
+    config.pricePerTokenInWei = ethers.utils.parseEther("0.1");
 
     // deploy and configure minter filter and minter
     ({
-      genArt721Core: this.genArt721Core,
-      minterFilter: this.minterFilter,
-      randomizer: this.randomizer,
-    } = await deployCoreWithMinterFilter.call(
-      this,
+      genArt721Core: config.genArt721Core,
+      minterFilter: config.minterFilter,
+      randomizer: config.randomizer,
+    } = await deployCoreWithMinterFilter(
+      config,
       "GenArt721CoreV3",
       "MinterFilterV1"
     ));
 
-    this.minter = await deployAndGet.call(this, "MinterSetPriceV2", [
-      this.genArt721Core.address,
-      this.minterFilter.address,
+    config.minter = await deployAndGet(config, "MinterSetPriceV2", [
+      config.genArt721Core.address,
+      config.minterFilter.address,
     ]);
 
-    this.minterSetPriceERC20 = await deployAndGet.call(
-      this,
+    config.minterSetPriceERC20 = await deployAndGet(
+      config,
       "MinterSetPriceERC20V2",
-      [this.genArt721Core.address, this.minterFilter.address]
+      [config.genArt721Core.address, config.minterFilter.address]
     );
 
-    this.minterDAExp = await deployAndGet.call(this, "MinterDAExpV2", [
-      this.genArt721Core.address,
-      this.minterFilter.address,
+    config.minterDAExp = await deployAndGet(config, "MinterDAExpV2", [
+      config.genArt721Core.address,
+      config.minterFilter.address,
     ]);
 
-    this.minterDAExpSettlement = await deployAndGet.call(
-      this,
+    config.minterDAExpSettlement = await deployAndGet(
+      config,
       "MinterDAExpSettlementV2",
-      [this.genArt721Core.address, this.minterFilter.address]
+      [config.genArt721Core.address, config.minterFilter.address]
     );
 
-    this.minterDALin = await deployAndGet.call(this, "MinterDALinV2", [
-      this.genArt721Core.address,
-      this.minterFilter.address,
+    config.minterDALin = await deployAndGet(config, "MinterDALinV2", [
+      config.genArt721Core.address,
+      config.minterFilter.address,
     ]);
 
-    this.minterMerkle = await deployAndGet.call(this, "MinterMerkleV3", [
-      this.genArt721Core.address,
-      this.minterFilter.address,
+    config.minterMerkle = await deployAndGet(config, "MinterMerkleV3", [
+      config.genArt721Core.address,
+      config.minterFilter.address,
       constants.ZERO_ADDRESS, // dummy delegation registry address since not used in these tests
     ]);
 
-    this.minterHolder = await deployAndGet.call(this, "MinterHolderV2", [
-      this.genArt721Core.address,
-      this.minterFilter.address,
+    config.minterHolder = await deployAndGet(config, "MinterHolderV2", [
+      config.genArt721Core.address,
+      config.minterFilter.address,
       constants.ZERO_ADDRESS, // dummy delegation registry address since not used in these tests
     ]);
 
     // add four projects, test on project three to directly compare to V1 core, which starts at projectId = 3
     for (let i = 0; i < 4; i++) {
       await safeAddProject(
-        this.genArt721Core,
-        this.accounts.deployer,
-        this.accounts.artist.address
+        config.genArt721Core,
+        config.accounts.deployer,
+        config.accounts.artist.address
       );
     }
 
     // configure project three (to compare directly to V1 core)
-    await this.genArt721Core
-      .connect(this.accounts.deployer)
-      .toggleProjectIsActive(this.projectThree);
-    await this.genArt721Core
-      .connect(this.accounts.artist)
-      .toggleProjectIsPaused(this.projectThree);
-    await this.genArt721Core
-      .connect(this.accounts.artist)
+    await config.genArt721Core
+      .connect(config.accounts.deployer)
+      .toggleProjectIsActive(config.projectThree);
+    await config.genArt721Core
+      .connect(config.accounts.artist)
+      .toggleProjectIsPaused(config.projectThree);
+    await config.genArt721Core
+      .connect(config.accounts.artist)
       .updateProjectMaxInvocations(
-        this.projectThree,
-        this.higherMaxInvocationsForGasTests
+        config.projectThree,
+        config.higherMaxInvocationsForGasTests
       );
     // configure minter for project three
-    await this.minterFilter
-      .connect(this.accounts.deployer)
-      .addApprovedMinter(this.minter.address);
-    await this.minterFilter
-      .connect(this.accounts.deployer)
-      .addApprovedMinter(this.minterDAExp.address);
-    await this.minterFilter
-      .connect(this.accounts.deployer)
-      .setMinterForProject(this.projectThree, this.minter.address);
-    await this.minter
-      .connect(this.accounts.artist)
-      .updatePricePerTokenInWei(this.projectThree, this.pricePerTokenInWei);
+    await config.minterFilter
+      .connect(config.accounts.deployer)
+      .addApprovedMinter(config.minter.address);
+    await config.minterFilter
+      .connect(config.accounts.deployer)
+      .addApprovedMinter(config.minterDAExp.address);
+    await config.minterFilter
+      .connect(config.accounts.deployer)
+      .setMinterForProject(config.projectThree, config.minter.address);
+    await config.minter
+      .connect(config.accounts.artist)
+      .updatePricePerTokenInWei(config.projectThree, config.pricePerTokenInWei);
     // mint numMintsToAverage tokens on project one to simulate a typical real-world use case
     for (let i = 0; i < numMintsToAverage; i++) {
-      await this.minter
-        .connect(this.accounts.user)
-        .purchase(this.projectThree, { value: this.pricePerTokenInWei });
+      await config.minter
+        .connect(config.accounts.user)
+        .purchase(config.projectThree, { value: config.pricePerTokenInWei });
     }
-  });
+    return config;
+  }
 
   describe("mint gas optimization", function () {
     it("test gas cost of mint on MinterSetPrice [ @skip-on-coverage ]", async function () {
+      const config = await loadFixture(_beforeEach);
       // report gas over an average of numMintsToAverage purchases
       const receipts = [];
       for (let index = 0; index < numMintsToAverage; index++) {
-        const tx = await this.minter
-          .connect(this.accounts.user)
-          .purchase_H4M(this.projectThree, { value: this.pricePerTokenInWei });
+        const tx = await config.minter
+          .connect(config.accounts.user)
+          .purchase_H4M(config.projectThree, {
+            value: config.pricePerTokenInWei,
+          });
         receipts.push(await ethers.provider.getTransactionReceipt(tx.hash));
       }
       const gasUseds = receipts.map((receipt) => receipt.gasUsed);
@@ -168,26 +168,32 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
     });
 
     it("test gas cost of mint on MinterSetPriceERC20 [ @skip-on-coverage ]", async function () {
+      const config = await loadFixture(_beforeEach);
       // set project three minter to minterSetPriceERC20, and configure
-      await this.minterFilter
-        .connect(this.accounts.deployer)
-        .addApprovedMinter(this.minterSetPriceERC20.address);
-      await this.minterFilter
-        .connect(this.accounts.deployer)
+      await config.minterFilter
+        .connect(config.accounts.deployer)
+        .addApprovedMinter(config.minterSetPriceERC20.address);
+      await config.minterFilter
+        .connect(config.accounts.deployer)
         .setMinterForProject(
-          this.projectThree,
-          this.minterSetPriceERC20.address
+          config.projectThree,
+          config.minterSetPriceERC20.address
         );
-      await this.minterSetPriceERC20
-        .connect(this.accounts.artist)
-        .updatePricePerTokenInWei(this.projectThree, this.pricePerTokenInWei);
+      await config.minterSetPriceERC20
+        .connect(config.accounts.artist)
+        .updatePricePerTokenInWei(
+          config.projectThree,
+          config.pricePerTokenInWei
+        );
 
       // report gas over an average of numMintsToAverage purchases
       const receipts = [];
       for (let index = 0; index < numMintsToAverage; index++) {
-        const tx = await this.minterSetPriceERC20
-          .connect(this.accounts.user)
-          .purchase_H4M(this.projectThree, { value: this.pricePerTokenInWei });
+        const tx = await config.minterSetPriceERC20
+          .connect(config.accounts.user)
+          .purchase_H4M(config.projectThree, {
+            value: config.pricePerTokenInWei,
+          });
         receipts.push(await ethers.provider.getTransactionReceipt(tx.hash));
       }
       const gasUseds = receipts.map((receipt) => receipt.gasUsed);
@@ -209,44 +215,45 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
     });
 
     it("test gas cost of mint on MinterDAExp [ @skip-on-coverage ]", async function () {
-      this.startingPrice = ethers.utils.parseEther("10");
-      this.basePrice = ethers.utils.parseEther("0.05");
-      this.defaultHalfLife = ONE_HOUR / 2;
-      this.auctionStartTimeOffset = ONE_HOUR;
-      if (!this.startTime) {
+      const config = await loadFixture(_beforeEach);
+      config.startingPrice = ethers.utils.parseEther("10");
+      config.basePrice = ethers.utils.parseEther("0.05");
+      config.defaultHalfLife = ONE_HOUR / 2;
+      config.auctionStartTimeOffset = ONE_HOUR;
+      if (!config.startTime) {
         const blockNumber = await ethers.provider.getBlockNumber();
         const block = await ethers.provider.getBlock(blockNumber);
-        this.startTime = block.timestamp;
+        config.startTime = block.timestamp;
       }
-      this.startTime = this.startTime + ONE_DAY;
+      config.startTime = config.startTime + ONE_DAY;
 
-      await ethers.provider.send("evm_mine", [this.startTime - ONE_MINUTE]);
+      await ethers.provider.send("evm_mine", [config.startTime - ONE_MINUTE]);
       // set project three minter to minterDAExp, and configure
-      await this.minterFilter
-        .connect(this.accounts.deployer)
-        .addApprovedMinter(this.minterDAExp.address);
-      await this.minterFilter
-        .connect(this.accounts.deployer)
-        .setMinterForProject(this.projectThree, this.minterDAExp.address);
-      await this.minterDAExp
-        .connect(this.accounts.artist)
+      await config.minterFilter
+        .connect(config.accounts.deployer)
+        .addApprovedMinter(config.minterDAExp.address);
+      await config.minterFilter
+        .connect(config.accounts.deployer)
+        .setMinterForProject(config.projectThree, config.minterDAExp.address);
+      await config.minterDAExp
+        .connect(config.accounts.artist)
         .setAuctionDetails(
-          this.projectThree,
-          this.startTime + this.auctionStartTimeOffset,
-          this.defaultHalfLife,
-          this.startingPrice,
-          this.basePrice
+          config.projectThree,
+          config.startTime + config.auctionStartTimeOffset,
+          config.defaultHalfLife,
+          config.startingPrice,
+          config.basePrice
         );
       await ethers.provider.send("evm_mine", [
-        this.startTime + this.auctionStartTimeOffset,
+        config.startTime + config.auctionStartTimeOffset,
       ]);
 
       // report gas over an average of numMintsToAverage purchases
       const receipts = [];
       for (let index = 0; index < numMintsToAverage; index++) {
-        const tx = await this.minterDAExp
-          .connect(this.accounts.user)
-          .purchase_H4M(this.projectThree, { value: this.startingPrice });
+        const tx = await config.minterDAExp
+          .connect(config.accounts.user)
+          .purchase_H4M(config.projectThree, { value: config.startingPrice });
         receipts.push(await ethers.provider.getTransactionReceipt(tx.hash));
       }
       const gasUseds = receipts.map((receipt) => receipt.gasUsed);
@@ -268,47 +275,48 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
     });
 
     it("test gas cost of mint on MinterDAExpSettlement [ @skip-on-coverage ]", async function () {
-      this.startingPrice = ethers.utils.parseEther("10");
-      this.basePrice = ethers.utils.parseEther("0.05");
-      this.defaultHalfLife = ONE_HOUR / 2;
-      this.auctionStartTimeOffset = ONE_HOUR;
-      if (!this.startTime) {
+      const config = await loadFixture(_beforeEach);
+      config.startingPrice = ethers.utils.parseEther("10");
+      config.basePrice = ethers.utils.parseEther("0.05");
+      config.defaultHalfLife = ONE_HOUR / 2;
+      config.auctionStartTimeOffset = ONE_HOUR;
+      if (!config.startTime) {
         const blockNumber = await ethers.provider.getBlockNumber();
         const block = await ethers.provider.getBlock(blockNumber);
-        this.startTime = block.timestamp;
+        config.startTime = block.timestamp;
       }
-      this.startTime = this.startTime + ONE_DAY;
+      config.startTime = config.startTime + ONE_DAY;
 
-      await ethers.provider.send("evm_mine", [this.startTime - ONE_MINUTE]);
+      await ethers.provider.send("evm_mine", [config.startTime - ONE_MINUTE]);
       // set project three minter to minterDAExpSettlement, and configure
-      await this.minterFilter
-        .connect(this.accounts.deployer)
-        .addApprovedMinter(this.minterDAExpSettlement.address);
-      await this.minterFilter
-        .connect(this.accounts.deployer)
+      await config.minterFilter
+        .connect(config.accounts.deployer)
+        .addApprovedMinter(config.minterDAExpSettlement.address);
+      await config.minterFilter
+        .connect(config.accounts.deployer)
         .setMinterForProject(
-          this.projectThree,
-          this.minterDAExpSettlement.address
+          config.projectThree,
+          config.minterDAExpSettlement.address
         );
-      await this.minterDAExpSettlement
-        .connect(this.accounts.artist)
+      await config.minterDAExpSettlement
+        .connect(config.accounts.artist)
         .setAuctionDetails(
-          this.projectThree,
-          this.startTime + this.auctionStartTimeOffset,
-          this.defaultHalfLife,
-          this.startingPrice,
-          this.basePrice
+          config.projectThree,
+          config.startTime + config.auctionStartTimeOffset,
+          config.defaultHalfLife,
+          config.startingPrice,
+          config.basePrice
         );
       await ethers.provider.send("evm_mine", [
-        this.startTime + this.auctionStartTimeOffset,
+        config.startTime + config.auctionStartTimeOffset,
       ]);
 
       // report gas over an average of numMintsToAverage purchases
       const receipts = [];
       for (let index = 0; index < numMintsToAverage; index++) {
-        const tx = await this.minterDAExpSettlement
-          .connect(this.accounts.user)
-          .purchase_H4M(this.projectThree, { value: this.startingPrice });
+        const tx = await config.minterDAExpSettlement
+          .connect(config.accounts.user)
+          .purchase_H4M(config.projectThree, { value: config.startingPrice });
         receipts.push(await ethers.provider.getTransactionReceipt(tx.hash));
       }
       const gasUseds = receipts.map((receipt) => receipt.gasUsed);
@@ -330,44 +338,45 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
     });
 
     it("test gas cost of mint on MinterDALin [ @skip-on-coverage ]", async function () {
-      this.basePrice = ethers.utils.parseEther("0.05");
-      this.startingPrice = ethers.utils.parseEther("0.25");
-      this.auctionStartTimeOffset = ONE_HOUR;
-      if (!this.startTime) {
+      const config = await loadFixture(_beforeEach);
+      config.basePrice = ethers.utils.parseEther("0.05");
+      config.startingPrice = ethers.utils.parseEther("0.25");
+      config.auctionStartTimeOffset = ONE_HOUR;
+      if (!config.startTime) {
         const blockNumber = await ethers.provider.getBlockNumber();
         const block = await ethers.provider.getBlock(blockNumber);
-        this.startTime = block.timestamp;
+        config.startTime = block.timestamp;
       }
-      this.startTime = this.startTime + ONE_DAY;
+      config.startTime = config.startTime + ONE_DAY;
 
-      await ethers.provider.send("evm_mine", [this.startTime - ONE_MINUTE]);
+      await ethers.provider.send("evm_mine", [config.startTime - ONE_MINUTE]);
       // set project three minter to minterDALin, and configure
-      await this.minterFilter
-        .connect(this.accounts.deployer)
-        .addApprovedMinter(this.minterDALin.address);
-      await this.minterFilter
-        .connect(this.accounts.deployer)
-        .setMinterForProject(this.projectThree, this.minterDALin.address);
+      await config.minterFilter
+        .connect(config.accounts.deployer)
+        .addApprovedMinter(config.minterDALin.address);
+      await config.minterFilter
+        .connect(config.accounts.deployer)
+        .setMinterForProject(config.projectThree, config.minterDALin.address);
 
-      await this.minterDALin
-        .connect(this.accounts.artist)
+      await config.minterDALin
+        .connect(config.accounts.artist)
         .setAuctionDetails(
-          this.projectThree,
-          this.startTime + this.auctionStartTimeOffset,
-          this.startTime + this.auctionStartTimeOffset + ONE_HOUR * 2,
-          this.startingPrice,
-          this.basePrice
+          config.projectThree,
+          config.startTime + config.auctionStartTimeOffset,
+          config.startTime + config.auctionStartTimeOffset + ONE_HOUR * 2,
+          config.startingPrice,
+          config.basePrice
         );
       await ethers.provider.send("evm_mine", [
-        this.startTime + this.auctionStartTimeOffset,
+        config.startTime + config.auctionStartTimeOffset,
       ]);
 
       // report gas over an average of numMintsToAverage purchases
       const receipts = [];
       for (let index = 0; index < numMintsToAverage; index++) {
-        const tx = await this.minterDALin
-          .connect(this.accounts.user)
-          .purchase_H4M(this.projectThree, { value: this.startingPrice });
+        const tx = await config.minterDALin
+          .connect(config.accounts.user)
+          .purchase_H4M(config.projectThree, { value: config.startingPrice });
         receipts.push(await ethers.provider.getTransactionReceipt(tx.hash));
       }
       const gasUseds = receipts.map((receipt) => receipt.gasUsed);
@@ -389,20 +398,24 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
     });
 
     it("test gas cost of mint on MinterMerkle [ @skip-on-coverage ]", async function () {
+      const config = await loadFixture(_beforeEach);
       // set project three minter to MinterMerkle, and configure
-      await this.minterFilter
-        .connect(this.accounts.deployer)
-        .addApprovedMinter(this.minterMerkle.address);
-      await this.minterFilter
-        .connect(this.accounts.deployer)
-        .setMinterForProject(this.projectThree, this.minterMerkle.address);
+      await config.minterFilter
+        .connect(config.accounts.deployer)
+        .addApprovedMinter(config.minterMerkle.address);
+      await config.minterFilter
+        .connect(config.accounts.deployer)
+        .setMinterForProject(config.projectThree, config.minterMerkle.address);
       // set price for project three on minter
-      await this.minterMerkle
-        .connect(this.accounts.artist)
-        .updatePricePerTokenInWei(this.projectThree, this.pricePerTokenInWei);
+      await config.minterMerkle
+        .connect(config.accounts.artist)
+        .updatePricePerTokenInWei(
+          config.projectThree,
+          config.pricePerTokenInWei
+        );
 
       // build new Merkle tree from 1k addresses, including user's address
-      const _allowlist = [this.accounts.user.address];
+      const _allowlist = [config.accounts.user.address];
       const crypto = require("crypto");
       for (let i = 1; i < 1000; i++) {
         const _pk = crypto.randomBytes(32).toString("hex");
@@ -417,28 +430,28 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
         }
       );
       // update Merkle root
-      await this.minterMerkle
-        .connect(this.accounts.artist)
-        .updateMerkleRoot(this.projectThree, _merkleTree.getRoot());
+      await config.minterMerkle
+        .connect(config.accounts.artist)
+        .updateMerkleRoot(config.projectThree, _merkleTree.getRoot());
       // allow unlimited mints to enable taking an average
-      await this.minterMerkle
-        .connect(this.accounts.artist)
-        .setProjectInvocationsPerAddress(this.projectThree, 0);
-      await this.minterMerkle
-        .connect(this.accounts.artist)
-        .updateMerkleRoot(this.projectThree, _merkleTree.getRoot());
+      await config.minterMerkle
+        .connect(config.accounts.artist)
+        .setProjectInvocationsPerAddress(config.projectThree, 0);
+      await config.minterMerkle
+        .connect(config.accounts.artist)
+        .updateMerkleRoot(config.projectThree, _merkleTree.getRoot());
       // user mint with new Merkle proof
       const userMerkleProof = _merkleTree.getHexProof(
-        hashAddress(this.accounts.user.address)
+        hashAddress(config.accounts.user.address)
       );
 
       // report gas over an average of numMintsToAverage purchases
       const receipts = [];
       for (let index = 0; index < numMintsToAverage; index++) {
-        const tx = await this.minterMerkle
-          .connect(this.accounts.user)
-          .purchase_gD5(this.projectThree, userMerkleProof, {
-            value: this.pricePerTokenInWei,
+        const tx = await config.minterMerkle
+          .connect(config.accounts.user)
+          .purchase_gD5(config.projectThree, userMerkleProof, {
+            value: config.pricePerTokenInWei,
           });
         receipts.push(await ethers.provider.getTransactionReceipt(tx.hash));
       }
@@ -461,66 +474,70 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
     });
 
     it("test gas cost of mint on MinterHolder [ @skip-on-coverage ]", async function () {
+      const config = await loadFixture(_beforeEach);
       // set project three minter to MinterHolder, and configure
-      await this.minterFilter
-        .connect(this.accounts.deployer)
-        .addApprovedMinter(this.minterHolder.address);
-      await this.minterFilter
-        .connect(this.accounts.deployer)
-        .setMinterForProject(this.projectThree, this.minterHolder.address);
+      await config.minterFilter
+        .connect(config.accounts.deployer)
+        .addApprovedMinter(config.minterHolder.address);
+      await config.minterFilter
+        .connect(config.accounts.deployer)
+        .setMinterForProject(config.projectThree, config.minterHolder.address);
       // set price for project three on minter
-      await this.minterHolder
-        .connect(this.accounts.artist)
-        .updatePricePerTokenInWei(this.projectThree, this.pricePerTokenInWei);
+      await config.minterHolder
+        .connect(config.accounts.artist)
+        .updatePricePerTokenInWei(
+          config.projectThree,
+          config.pricePerTokenInWei
+        );
 
       // configure minter
-      await this.minterHolder
-        .connect(this.accounts.deployer)
-        .registerNFTAddress(this.genArt721Core.address);
-      await this.minterHolder
-        .connect(this.accounts.artist)
+      await config.minterHolder
+        .connect(config.accounts.deployer)
+        .registerNFTAddress(config.genArt721Core.address);
+      await config.minterHolder
+        .connect(config.accounts.artist)
         .allowHoldersOfProjects(
-          this.projectThree,
-          [this.genArt721Core.address],
-          [this.projectOne]
+          config.projectThree,
+          [config.genArt721Core.address],
+          [config.projectOne]
         );
 
       // configure project three (to compare directly to V1 core)
-      await this.genArt721Core
-        .connect(this.accounts.deployer)
-        .toggleProjectIsActive(this.projectOne);
-      await this.genArt721Core
-        .connect(this.accounts.artist)
-        .toggleProjectIsPaused(this.projectOne);
-      await this.genArt721Core
-        .connect(this.accounts.artist)
-        .updateProjectMaxInvocations(this.projectOne, this.maxInvocations);
-      await this.minterFilter
-        .connect(this.accounts.deployer)
-        .setMinterForProject(this.projectOne, this.minter.address);
-      await this.minter
-        .connect(this.accounts.artist)
-        .updatePricePerTokenInWei(this.projectOne, this.pricePerTokenInWei);
+      await config.genArt721Core
+        .connect(config.accounts.deployer)
+        .toggleProjectIsActive(config.projectOne);
+      await config.genArt721Core
+        .connect(config.accounts.artist)
+        .toggleProjectIsPaused(config.projectOne);
+      await config.genArt721Core
+        .connect(config.accounts.artist)
+        .updateProjectMaxInvocations(config.projectOne, config.maxInvocations);
+      await config.minterFilter
+        .connect(config.accounts.deployer)
+        .setMinterForProject(config.projectOne, config.minter.address);
+      await config.minter
+        .connect(config.accounts.artist)
+        .updatePricePerTokenInWei(config.projectOne, config.pricePerTokenInWei);
 
       // user mints a couple tokens on projectOne to use as a pass
       for (let i = 0; i < 2; i++) {
-        await this.minter
-          .connect(this.accounts.user)
-          .purchase(this.projectOne, { value: this.pricePerTokenInWei });
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectOne, { value: config.pricePerTokenInWei });
       }
 
       // report gas over an average of numMintsToAverage purchases
       const receipts = [];
       for (let index = 0; index < numMintsToAverage; index++) {
         // mint on MinterHolder
-        const tx = await this.minterHolder
-          .connect(this.accounts.user)
+        const tx = await config.minterHolder
+          .connect(config.accounts.user)
           .purchase_nnf(
-            this.projectThree,
-            this.genArt721Core.address,
-            this.projectOneTokenOne.toNumber(),
+            config.projectThree,
+            config.genArt721Core.address,
+            config.projectOneTokenOne.toNumber(),
             {
-              value: this.pricePerTokenInWei,
+              value: config.pricePerTokenInWei,
             }
           );
         receipts.push(await ethers.provider.getTransactionReceipt(tx.hash));

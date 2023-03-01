@@ -1,4 +1,6 @@
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import {
+  T_Config,
   getAccounts,
   assignDefaultConstants,
   deployAndGet,
@@ -25,37 +27,41 @@ const runForEach = [
 
 runForEach.forEach((params) => {
   describe(`${params.minterFilter} Permissions w/${params.core} core`, async function () {
-    beforeEach(async function () {
-      // standard accounts and constants
-      this.accounts = await getAccounts();
-      await assignDefaultConstants.call(this, params.coreFirstProjectNumber);
+    async function _beforeEach() {
+      let config: T_Config = {
+        accounts: await getAccounts(),
+      };
+      config = await assignDefaultConstants(config);
       // deploy and configure minter filter and minter
-      ({ genArt721Core: this.genArt721Core, minterFilter: this.minterFilter } =
-        await deployCoreWithMinterFilter.call(
-          this,
-          params.core,
-          params.minterFilter
-        ));
+      ({
+        genArt721Core: config.genArt721Core,
+        minterFilter: config.minterFilter,
+      } = await deployCoreWithMinterFilter(
+        config,
+        params.core,
+        params.minterFilter
+      ));
 
-      this.minter = await deployAndGet.call(this, params.minter, [
-        this.genArt721Core.address,
-        this.minterFilter.address,
+      config.minter = await deployAndGet(config, params.minter, [
+        config.genArt721Core.address,
+        config.minterFilter.address,
       ]);
 
       // Project setup
       await safeAddProject(
-        this.genArt721Core,
-        this.accounts.deployer,
-        this.accounts.artist.address
+        config.genArt721Core,
+        config.accounts.deployer,
+        config.accounts.artist.address
       );
 
-      await this.genArt721Core
-        .connect(this.accounts.artist)
-        .updateProjectMaxInvocations(this.projectZero, this.maxInvocations);
-    });
+      await config.genArt721Core
+        .connect(config.accounts.artist)
+        .updateProjectMaxInvocations(config.projectZero, config.maxInvocations);
+      return config;
+    }
 
     describe("common tests", async function () {
-      await MinterFilterPermissions_Common();
+      await MinterFilterPermissions_Common(_beforeEach);
     });
   });
 });

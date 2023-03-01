@@ -9,8 +9,10 @@ import {
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 
 import {
+  T_Config,
   getAccounts,
   assignDefaultConstants,
   deployAndGet,
@@ -24,84 +26,89 @@ import { FOUR_WEEKS } from "../../util/constants";
  * General Integration tests for Basic Randomizer V2 with V3 core.
  */
 describe("BasicRandomizerV2 w/V3 core", async function () {
-  beforeEach(async function () {
-    // standard accounts and constants
-    this.accounts = await getAccounts();
-    await assignDefaultConstants.call(this);
+  async function _beforeEach() {
+    let config: T_Config = {
+      accounts: await getAccounts(),
+    };
+    config = await assignDefaultConstants(config);
 
     // deploy and configure minter filter and minter
     ({
-      genArt721Core: this.genArt721Core,
-      minterFilter: this.minterFilter,
-      randomizer: this.randomizer,
-      adminACL: this.adminACL,
-    } = await deployCoreWithMinterFilter.call(
-      this,
+      genArt721Core: config.genArt721Core,
+      minterFilter: config.minterFilter,
+      randomizer: config.randomizer,
+      adminACL: config.adminACL,
+    } = await deployCoreWithMinterFilter(
+      config,
       "GenArt721CoreV3",
       "MinterFilterV1"
     ));
 
-    this.minter = await deployAndGet.call(this, "MinterSetPriceV2", [
-      this.genArt721Core.address,
-      this.minterFilter.address,
+    config.minter = await deployAndGet(config, "MinterSetPriceV2", [
+      config.genArt721Core.address,
+      config.minterFilter.address,
     ]);
 
     // add project
-    await this.genArt721Core
-      .connect(this.accounts.deployer)
-      .addProject("name", this.accounts.artist.address);
-    await this.genArt721Core
-      .connect(this.accounts.deployer)
-      .toggleProjectIsActive(this.projectZero);
-    await this.genArt721Core
-      .connect(this.accounts.artist)
-      .updateProjectMaxInvocations(this.projectZero, this.maxInvocations);
+    await config.genArt721Core
+      .connect(config.accounts.deployer)
+      .addProject("name", config.accounts.artist.address);
+    await config.genArt721Core
+      .connect(config.accounts.deployer)
+      .toggleProjectIsActive(config.projectZero);
+    await config.genArt721Core
+      .connect(config.accounts.artist)
+      .updateProjectMaxInvocations(config.projectZero, config.maxInvocations);
 
     // configure minter for project zero
-    await this.minterFilter
-      .connect(this.accounts.deployer)
-      .addApprovedMinter(this.minter.address);
-    await this.minterFilter
-      .connect(this.accounts.deployer)
-      .setMinterForProject(this.projectZero, this.minter.address);
-    await this.minter
-      .connect(this.accounts.artist)
-      .updatePricePerTokenInWei(this.projectZero, 0);
-  });
+    await config.minterFilter
+      .connect(config.accounts.deployer)
+      .addApprovedMinter(config.minter.address);
+    await config.minterFilter
+      .connect(config.accounts.deployer)
+      .setMinterForProject(config.projectZero, config.minter.address);
+    await config.minter
+      .connect(config.accounts.artist)
+      .updatePricePerTokenInWei(config.projectZero, 0);
+    return config;
+  }
 
   describe("assignCoreAndRenounce", function () {
     it("does not allow non-owner to call", async function () {
+      const config = await loadFixture(_beforeEach);
       // deploy new randomizer
-      const randomizer = await deployAndGet.call(this, "BasicRandomizerV2", []);
+      const randomizer = await deployAndGet(config, "BasicRandomizerV2", []);
       // expect failure when non-owner calls renounce and assign core
       await expectRevert(
         randomizer
-          .connect(this.accounts.user)
-          .assignCoreAndRenounce(this.genArt721Core.address),
+          .connect(config.accounts.user)
+          .assignCoreAndRenounce(config.genArt721Core.address),
         "Ownable: caller is not the owner"
       );
     });
 
     it("allows owner to call", async function () {
+      const config = await loadFixture(_beforeEach);
       // deploy new randomizer
-      const randomizer = await deployAndGet.call(this, "BasicRandomizerV2", []);
+      const randomizer = await deployAndGet(config, "BasicRandomizerV2", []);
       // expect success when owner calls renounce and assign core
       await randomizer
-        .connect(this.accounts.deployer)
-        .assignCoreAndRenounce(this.genArt721Core.address);
+        .connect(config.accounts.deployer)
+        .assignCoreAndRenounce(config.genArt721Core.address);
     });
 
     it("does not allow owner to call twice", async function () {
+      const config = await loadFixture(_beforeEach);
       // deploy new randomizer
-      const randomizer = await deployAndGet.call(this, "BasicRandomizerV2", []);
+      const randomizer = await deployAndGet(config, "BasicRandomizerV2", []);
       // expect failure when owner calls renounce and assign core twice
       await randomizer
-        .connect(this.accounts.deployer)
-        .assignCoreAndRenounce(this.genArt721Core.address);
+        .connect(config.accounts.deployer)
+        .assignCoreAndRenounce(config.genArt721Core.address);
       await expectRevert(
         randomizer
-          .connect(this.accounts.deployer)
-          .assignCoreAndRenounce(this.genArt721Core.address),
+          .connect(config.accounts.deployer)
+          .assignCoreAndRenounce(config.genArt721Core.address),
         "Ownable: caller is not the owner"
       );
     });
@@ -109,48 +116,51 @@ describe("BasicRandomizerV2 w/V3 core", async function () {
 
   describe("assignTokenHash", function () {
     it("does not allow address that is not the assigned core to assign hash", async function () {
+      const config = await loadFixture(_beforeEach);
       // expect revert when non-core calls assignTokenHash
       await expectRevert(
-        this.randomizer
-          .connect(this.accounts.deployer)
-          .assignTokenHash(this.projectZeroTokenZero.toNumber()),
+        config.randomizer
+          .connect(config.accounts.deployer)
+          .assignTokenHash(config.projectZeroTokenZero.toNumber()),
         "Only core may call"
       );
       // expect token hash of unminted token to be unassigned (0x0)
       expect(
-        await this.genArt721Core.tokenIdToHash(
-          this.projectZeroTokenZero.toNumber()
+        await config.genArt721Core.tokenIdToHash(
+          config.projectZeroTokenZero.toNumber()
         )
       ).to.be.equal(ethers.constants.HashZero);
     });
 
     it("does allow address that is the assigned core to assign hash", async function () {
+      const config = await loadFixture(_beforeEach);
       // expect successful mint
-      await this.minter
-        .connect(this.accounts.artist)
-        .purchase(this.projectZero);
+      await config.minter
+        .connect(config.accounts.artist)
+        .purchase(config.projectZero);
       // expect token hash to be assigned
       expect(
-        await this.genArt721Core.tokenIdToHash(
-          this.projectZeroTokenZero.toNumber()
+        await config.genArt721Core.tokenIdToHash(
+          config.projectZeroTokenZero.toNumber()
         )
       ).to.not.be.equal(ethers.constants.HashZero);
     });
 
     it("multiple tokens minted have different hashes", async function () {
+      const config = await loadFixture(_beforeEach);
       // expect 2 successful mints
-      await this.minter
-        .connect(this.accounts.artist)
-        .purchase(this.projectZero);
-      await this.minter
-        .connect(this.accounts.artist)
-        .purchase(this.projectZero);
+      await config.minter
+        .connect(config.accounts.artist)
+        .purchase(config.projectZero);
+      await config.minter
+        .connect(config.accounts.artist)
+        .purchase(config.projectZero);
       // expect token hash to be assigned
-      const projectZeroTokenZeroHash = await this.genArt721Core.tokenIdToHash(
-        this.projectZeroTokenZero.toNumber()
+      const projectZeroTokenZeroHash = await config.genArt721Core.tokenIdToHash(
+        config.projectZeroTokenZero.toNumber()
       );
-      const projectZeroTokenOneHash = await this.genArt721Core.tokenIdToHash(
-        this.projectZeroTokenOne.toNumber()
+      const projectZeroTokenOneHash = await config.genArt721Core.tokenIdToHash(
+        config.projectZeroTokenOne.toNumber()
       );
       expect(projectZeroTokenZeroHash).to.not.be.equal(projectZeroTokenOneHash);
       console.info(`projectZeroTokenZeroHash: ${projectZeroTokenZeroHash}`);
@@ -160,15 +170,19 @@ describe("BasicRandomizerV2 w/V3 core", async function () {
 
   describe("owner", function () {
     it("returns null owner after being configured and renounced", async function () {
-      expect(await this.randomizer.owner()).to.be.equal(constants.ZERO_ADDRESS);
+      const config = await loadFixture(_beforeEach);
+      expect(await config.randomizer.owner()).to.be.equal(
+        constants.ZERO_ADDRESS
+      );
     });
 
     it("returns deployer prior to being configured and renounced", async function () {
+      const config = await loadFixture(_beforeEach);
       // deploy new randomizer
-      const randomizer = await deployAndGet.call(this, "BasicRandomizerV2", []);
+      const randomizer = await deployAndGet(config, "BasicRandomizerV2", []);
       // expect owner to be deployer prior to being configured and renounced
       expect(await randomizer.owner()).to.be.equal(
-        this.accounts.deployer.address
+        config.accounts.deployer.address
       );
     });
   });
