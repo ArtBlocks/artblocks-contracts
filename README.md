@@ -61,16 +61,24 @@ Documentation for contracts may also be generated via `yarn docgen`. Most Art Bl
 # Deployments
 
 ## Deploying New Contracts
-
-Deployment script templates are located in the `./scripts` directory. To run a deployment script `deploy.ts`:
-
 > IMPORTANT - many scripts rely on typechain-generated factories, so ensure you have run `yarn generate:typechain` before running any deployment scripts.
 
+We have two types of deployment scripts: Generic and Specific.
+
+Generic deployment scripts are located in the `./scripts` directory. These scripts are used to deploy contracts that are not specific to a particular deployment. Generic deployment scripts are used to deploy contracts that are used by multiple partners or core contracts, such as the `Art Blocks Engine` contracts, or minters. Generic scripts take an input json file, located in the `/deployents/` directory, and execute the deployment as defined in the input file. In general, there are scripts prepared to run generic deployments for all networks and environments. For example, the following can be used to deploy the `Art Blocks Engine` contracts to the `goerli` test network (note that an input configuration is also required for all generic deployments.):
+
+```bash
+yarn deploy:dev:v3-engine
 ```
+
+Specific deployments are used less frequently, and are located in the `/scripts` directory as well. These scripts are used to deploy contracts that are specific to a particular deployment. They are not easily reusable, and are generally only used once. An example to run a specific deployment is:
+
+```bash
 yarn hardhat run --network <your-network> scripts/deploy.ts
 ```
 
 where `<your network>` is any network configured in `hardhat.config.js`.
+
 For additional deployment details, see hardhat docs: [https://hardhat.org/guides/deploying.html](https://hardhat.org/guides/deploying.html)
 
 ## Deployed Contract Details
@@ -102,8 +110,8 @@ The following table shows which Minters and MinterFilters are compatible with wh
 | V0                       | -              | (legacy minter)                                                                                                                                     | -                                                                           |
 | V1, V1_PRTNR             | MinterFilterV0 | MinterSetPriceV1<br>MinterSetPriceERC20V1<br>MinterDAExpV1<br>MinterDALinV1<br>MinterMerkleV0<br>MinterHolderV0                                     | MinterSetPriceV0<br>MinterSetPriceERC20V0<br>MinterDAExpV0<br>MinterDALinV0 |
 | V2 (PBAB)                | -              | (various PBAB minters)                                                                                                                              | -                                                                           |
-| V3, V3_Explorations, V3_Engine | MinterFilterV1 | MinterSetPriceV4<br>MinterSetPriceERC20V4<br>MinterMerkleV5<br>MinterHolderV4<br>MinterDALinV4<br>MinterDAExpV4<br>MinterDAExpSettlementV2 | _V(n-1) variants of recommended minters | -                                                                           |
-| V3_Engine                | MinterFilterV1 | MinterPolyptychV0                                                                                                                              | -                                                                           |
+| V3, V3_Explorations, V3_Engine, V3_Engine_Flex | MinterFilterV1 | MinterSetPriceV4<br>MinterSetPriceERC20V4<br>MinterMerkleV5<br>MinterHolderV4<br>MinterDALinV4<br>MinterDAExpV4<br>MinterDAExpSettlementV2 | _V(n-1) variants of recommended minters | -                                                                           |
+| V3_Engine, V3_Engine_Flex                | MinterFilterV1 | MinterPolyptychV0                                                                                                                              | -                                                                           |
 
 ### Active Minting Contract(s)
 
