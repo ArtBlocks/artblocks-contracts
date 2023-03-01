@@ -44,12 +44,18 @@ pragma solidity 0.8.17;
  * ----------------------------------------------------------------------------
  * The following functions are restricted to the core contract's Admin ACL
  * contract:
- * - TODO
+ * - updateAllowableAuctionDurationSeconds
+ * - updateMinterMinBidIncrementPercentage
+ * - updateMinterTimeBufferSeconds
  * ----------------------------------------------------------------------------
  * The following functions are restricted to a project's artist:
- * - TODO
  * - setProjectMaxInvocations
  * - manuallyLimitProjectMaxInvocations
+ * - configureFutureAuctions
+ * ----------------------------------------------------------------------------
+ * The following functions are restricted to a project's artist or the core
+ * contract's Admin ACL contract:
+ * - resetAuctionDetails
  * ----------------------------------------------------------------------------
  * Additional admin and artist privileged roles may be described on other
  * contracts that this minter integrates with.
@@ -105,6 +111,8 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
         // duration of each new auction, before any extensions due to late bids
         uint32 auctionDurationSeconds;
         // reserve price, i.e. minimum starting bid price, in wei
+        // @dev for configured auctions, this will be gt 0, so it may be used
+        // to determine if an auction is configured
         uint256 basePrice;
         // active auction for project
         Auction activeAuction;
@@ -112,26 +120,32 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
 
     mapping(uint256 => ProjectConfig) public projectConfig;
 
+    // minter-wide, admin-configurable parameters
+    // ----------------------------------------
+    // minimum inital auction length, in seconds; configurable by admin
+    // max uint32 ~= 4.3e9 sec ~= 136 years
+    // @dev enforced only when artist configures a project
+    // @dev default to 10 minutes
+    uint32 minAuctionDurationSeconds = 600;
+    // maximum inital auction length, in seconds; configurable by admin
+    // @dev enforced only when artist configures a project
+    // @dev default to 1 month (1/12 of a year)
+    uint32 maxAuctionDurationSeconds = 2_629_746;
     // the minimum percent increase for new bids above the current bid
+    // configureable by admin
     // max uint8 ~= 255, > 100 percent
     // @dev used when determining the increment percentage for any new bid on
-    // the minter, across all projects.
+    // the minter, across all projects
     uint8 minterMinBidIncrementPercentage;
     // minimum time remaining in auction after a new bid is placed
+    // configureable by admin
     // max uint32 ~= 4.3e9 sec ~= 136 years
     // @dev used when determining the buffer time for any new bid on the
-    // minter, across all projects.
+    // minter, across all projects
     uint32 minterTimeBufferSeconds;
-    // minimum inital auction length, in seconds
-    // max uint32 ~= 4.3e9 sec ~= 136 years
-    // @dev enforced only when artist configures a project
-    uint32 minAuctionDurationSeconds;
-    // maximum inital auction length, in seconds
-    // @dev enforced only when artist configures a project
-    uint32 maxAuctionDurationSeconds;
 
     // function to restrict access to only AdminACL allowed calls
-    // @dev defers which ACL contract is used to the core contract
+    // @dev defers to the ACL contract used on the core contract
     function _onlyCoreAdminACL(bytes4 _selector) internal {
         require(
             genArtCoreContract_Base.adminACLAllowed(
@@ -143,11 +157,33 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
         );
     }
 
+    // function to restrict access to only the artist of a project
     function _onlyArtist(uint256 _projectId) internal view {
         require(
             (msg.sender ==
                 genArtCoreContract_Base.projectIdToArtistAddress(_projectId)),
             "Only Artist"
+        );
+    }
+
+    // function to restrict access to only the artist of a project or
+    // AdminACL allowed calls
+    // @dev defers to the ACL contract used on the core contract
+    function _onlyCoreAdminACLOrArtist(
+        uint256 _projectId,
+        bytes4 _selector
+    ) internal {
+        require(
+            (msg.sender ==
+                genArtCoreContract_Base.projectIdToArtistAddress(_projectId)) ||
+                (
+                    genArtCoreContract_Base.adminACLAllowed(
+                        msg.sender,
+                        address(this),
+                        _selector
+                    )
+                ),
+            "Only Artist or Admin ACL"
         );
     }
 
@@ -159,6 +195,8 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
      * which this contract will be a minter.
      * @param _minterFilter Minter filter for which
      * this will a filtered minter.
+     * @param _wethAddress The WETH contract address to use for fallback
+     * payment method when ETH transfers are failing during bidding process
      */
     constructor(
         address _genArt721Address,
@@ -195,7 +233,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
         // update storage with results
         projectConfig[_projectId].maxInvocations = uint24(maxInvocations);
 
-        // We need to ensure maxHasBeenInvoked is correctly set after manually syncing the
+        // must ensure maxHasBeenInvoked is correctly set after manually syncing the
         // local maxInvocations value with the core contract's maxInvocations value.
         // This synced value of maxInvocations from the core contract will always be greater
         // than or equal to the previous value of maxInvocations stored locally.
@@ -323,11 +361,11 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
      * @param _minAuctionDurationSeconds Minimum auction duration in seconds.
      * @param _maxAuctionDurationSeconds Maximum auction duration in seconds.
      */
-    function setAllowableAuctionDurationSeconds(
+    function updateAllowableAuctionDurationSeconds(
         uint256 _minAuctionDurationSeconds,
         uint256 _maxAuctionDurationSeconds
     ) external {
-        _onlyCoreAdminACL(this.setAllowableAuctionDurationSeconds.selector);
+        _onlyCoreAdminACL(this.updateAllowableAuctionDurationSeconds.selector);
         // CHECKS
         require(
             _maxAuctionDurationSeconds > _minAuctionDurationSeconds,
@@ -446,12 +484,15 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
      * zero-ing out all details having to do with future auction parameters.
      * This is not intended to be used in normal operation, but rather only in
      * case of the need to halt the creation of any future auctions.
-     * Does not affect any minter-level project max invocation details.
+     * Does not affect any project max invocation details.
      * @param _projectId Project ID to reset future auction configuration
      * details for.
      */
     function resetAuctionDetails(uint256 _projectId) external {
-        _onlyCoreAdminACL(this.resetAuctionDetails.selector);
+        _onlyCoreAdminACLOrArtist(
+            _projectId,
+            this.resetAuctionDetails.selector
+        );
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         // reset to initial values
         _projectConfig.timestampStart = 0;
@@ -516,6 +557,9 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
             return;
         }
         require(block.timestamp > _auction.endTime, "Auction not yet ended");
+        // @dev this check is not strictly necessary, but is included for
+        // clear error messaging
+        require(_auction.initialized, "Auction not initialized");
         // EFFECTS
         _auction.settled = true;
         // INTERACTIONS
@@ -589,7 +633,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
         // requirement
         require(
             block.timestamp >= _projectConfig.timestampStart,
-            "Only after project start time"
+            "Only gte project start time"
         );
         // require any previous auction to be settled before allowing a new
         // one to be initialized

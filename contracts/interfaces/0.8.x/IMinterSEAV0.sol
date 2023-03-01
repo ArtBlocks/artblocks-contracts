@@ -12,7 +12,7 @@ pragma solidity ^0.8.0;
  * @author Art Blocks Inc.
  */
 interface IMinterSEAV0 is IFilteredMinterV2 {
-    /// Struct that defines a single English auction
+    /// Struct that defines a single token English auction
     struct Auction {
         // token number of NFT being auctioned
         uint256 tokenId;
@@ -76,18 +76,4 @@ interface IMinterSEAV0 is IFilteredMinterV2 {
         address winner,
         uint256 price
     );
-
-    // event AuctionCreated(uint256 indexed nounId, uint256 startTime, uint256 endTime);
-
-    // event AuctionBid(uint256 indexed nounId, address sender, uint256 value, bool extended);
-
-    // event AuctionExtended(uint256 indexed nounId, uint256 endTime);
-
-    // event AuctionSettled(uint256 indexed nounId, address winner, uint256 amount);
-
-    // event AuctionTimeBufferUpdated(uint256 timeBuffer);
-
-    // event AuctionReservePriceUpdated(uint256 reservePrice);
-
-    // event AuctionMinBidIncrementPercentageUpdated(uint256 minBidIncrementPercentage);
 }
