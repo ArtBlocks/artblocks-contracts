@@ -32,8 +32,8 @@ interface IMinterSEAV0 is IFilteredMinterV2 {
 
     /// Admin-controlled range of allowed auction durations updated
     event AuctionDurationSecondsRangeUpdated(
-        uint256 minAuctionDurationSeconds,
-        uint256 maxAuctionDurationSeconds
+        uint32 minAuctionDurationSeconds,
+        uint32 maxAuctionDurationSeconds
     );
 
     /// Admin-controlled minimum bid increment percentage updated
@@ -89,11 +89,11 @@ interface IMinterSEAV0 is IFilteredMinterV2 {
     function settleAndInitializeAuction(
         uint256 _settleTokenId,
         uint256 _initializeTokenId
-    ) external;
+    ) external payable;
 
     function settleAuction(uint256 _tokenId) external;
 
-    function initializeAuction(uint256 _targetTokenId) external;
+    function initializeAuction(uint256 _targetTokenId) external payable;
 
     function createBid(uint256 _tokenId) external payable;
 

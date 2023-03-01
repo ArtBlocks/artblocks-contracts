@@ -312,8 +312,8 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
         minAuctionDurationSeconds = _minAuctionDurationSeconds.toUint32();
         maxAuctionDurationSeconds = _maxAuctionDurationSeconds.toUint32();
         emit AuctionDurationSecondsRangeUpdated(
-            _minAuctionDurationSeconds,
-            _maxAuctionDurationSeconds
+            _minAuctionDurationSeconds.toUint32(),
+            _minAuctionDurationSeconds.toUint32()
         );
     }
 
