@@ -388,7 +388,6 @@ for (const coreContractName of coreContractsToTest) {
           "ETH"
         );
         // assuming a cost of 100 GWEI
-
         // skip gas tests for engine, flagship is sufficient to identify gas cost changes
         if (!config.isEngine) {
           requireBigNumberIsClose(
