@@ -454,11 +454,15 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
 
     /**
      * @notice Settles a completed auction for `_tokenId`, if one exists.
-     * This function does not modify state, but does not revert, if there is no
-     * active auction for token ID `_tokenId`, or if the auction has already
-     * been settled.
+     * If there is no active auction for token ID `_tokenId`, or if the auction
+     * has already been settled, this function does not revert, but also does
+     * not modify state (since there is no more required action).
      * This function reverts if the auction for `_tokenId` exists but has not
      * yet ended.
+     * Edge case: if `_tokenId` is nonsense (i.e. not a valid token ID), this
+     * function will not revert, but also will not modify state. This is to
+     * prevent nuisance reverting in the case of a user being front-run when
+     * calling `settleAndInitializeAuction`.
      * @param _tokenId Token ID to settle auction for.
      */
     function settleAuction(uint256 _tokenId) public nonReentrant {
@@ -490,20 +494,43 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
      * @notice Initializes a new auction for token `_targetTokenId`, and places
      * an initial bid with bid amount and bidder address equal to `msg.value`
      * and `msg.sender`, respectively.
-     * This function requires that the project for `_targetTokenId` does not
-     * have any active, un-settled auction (since this minter only allows one
-     * active auction at a time per project).
-     * This function requires a target token ID that is the next token ID for
-     * the project, and will revert if `_targetTokenId` is not the next token.
+     * If auction for `_targetTokenId` is already active when this transaction
+     * is mined, a bid will be attempted.
+     * This minter only allows one active auction at a time per project, so
+     * this function will revert if there is already an active or unsettled
+     * auction for another token in the same project.
+     * If new auction is initialized, this function requires a target token ID
+     * that is the next token ID for the project, and will revert if
+     * `_targetTokenId` is not the next token.
      * Note that the use of `_targetTokenId` is to prevent the possibility of
      * transactions that are stuck in the pending pool for long periods of time
      * from unintentionally initializing auctions for future tokens.
      * @param _targetTokenId Token ID to initialize auction for.
      */
-    function initializeAuction(
-        uint256 _targetTokenId
-    ) public payable nonReentrant {
+    function initializeAuction(uint256 _targetTokenId) public payable {
         uint256 _projectId = _targetTokenId / ONE_MILLION;
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        Auction storage _auction = _projectConfig.activeAuction;
+        // edge case: initializeAuction has been front-run by another user,
+        // so the auction has already been initialized. In this case, attempt
+        // to place a bid on the token since auction already exists.
+        if (_auction.tokenId == _targetTokenId && _auction.initialized) {
+            createBid_4cM(_projectId, _targetTokenId);
+            return;
+        }
+        // otherwise continue with the initialization of the auction
+        _initializeAuction(_projectId, _targetTokenId);
+    }
+
+    /**
+     * @dev internal function to initialize an auction.
+     * Internal function is used to keep the auction initialization code
+     * nonReentrant
+     */
+    function _initializeAuction(
+        uint256 _projectId,
+        uint256 _targetTokenId
+    ) internal nonReentrant {
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         Auction storage _auction = _projectConfig.activeAuction;
         // CHECKS
@@ -593,22 +620,24 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
     }
 
     /**
-     * @notice Inactive function - requires tokenId to bid.
+     * @notice Inactive function - see `createBid` or
+     * `settleAndInitializeAuction`
      */
     function purchase(
         uint256 /*_projectId*/
     ) external payable returns (uint256 /*tokenId*/) {
-        revert("Call purchase w/tokenId");
+        revert("Inactive function");
     }
 
     /**
-     * @notice Inactive function - requires tokenId to bid
+     * @notice Inactive function - see `createBid` or
+     * `settleAndInitializeAuction`
      */
     function purchaseTo(
         address /*_to*/,
         uint256 /*_projectId*/
     ) external payable returns (uint256 /*tokenId*/) {
-        revert("Call purchaseTo w/tokenId");
+        revert("Inactive function");
     }
 
     /**
