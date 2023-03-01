@@ -184,6 +184,9 @@ Date: ${new Date().toISOString()}
     console.log(
       `[INFO] Completed minter deployment! ${minterName} deployed to ${minterAddress}, and allowlisted on the minter filter at ${deployDetails.minterFilterAddress}`
     );
+    console.log(
+      `[ACTION] If this minter is to be indexed in a subgraph, ensure it is added to the subgraph's config.`
+    );
   }
 }
 
