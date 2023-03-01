@@ -76,4 +76,53 @@ interface IMinterSEAV0 is IFilteredMinterV2 {
         address winner,
         uint256 price
     );
+
+    function configureFutureAuctions(
+        uint256 _projectId,
+        uint256 _timestampStart,
+        uint256 _auctionDurationSeconds,
+        uint256 _basePrice
+    ) external;
+
+    function resetAuctionDetails(uint256 _projectId) external;
+
+    function settleAndInitializeAuction(
+        uint256 _settleTokenId,
+        uint256 _initializeTokenId
+    ) external;
+
+    function settleAuction(uint256 _tokenId) external;
+
+    function initializeAuction(uint256 _targetTokenId) external;
+
+    function createBid(uint256 _tokenId) external payable;
+
+    function createBid_4cM(uint256 _tokenId) external payable;
+
+    function minterConfigurationDetails()
+        external
+        view
+        returns (
+            uint32 minAuctionDurationSeconds_,
+            uint32 maxAuctionDurationSeconds_,
+            uint8 minterMinBidIncrementPercentage_,
+            uint32 minterTimeBufferSeconds_
+        );
+
+    function projectConfigurationDetails(
+        uint256 _projectId
+    )
+        external
+        view
+        returns (
+            uint24 maxInvocations,
+            uint64 timestampStart,
+            uint32 auctionDurationSeconds,
+            uint256 basePrice,
+            Auction memory auction
+        );
+
+    function projectActiveAuctionDetails(
+        uint256 _projectId
+    ) external view returns (Auction memory);
 }

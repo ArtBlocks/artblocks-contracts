@@ -542,7 +542,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
         // so the auction has already been initialized. In this case, attempt
         // to place a bid on the token since auction already exists.
         if (_auction.tokenId == _targetTokenId && _auction.initialized) {
-            createBid_4cM(_projectId, _targetTokenId);
+            createBid_4cM(_targetTokenId);
             return;
         }
         // otherwise continue with the initialization of the auction
@@ -550,7 +550,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
     }
 
     /**
-     * @notice Enters a bid for token `_tokenId` from project `_projectId`.
+     * @notice Enters a bid for token `_tokenId`.
      * In order to successfully place the bid, the token must be in the
      * auction stage and the bid must be sufficiently greater than the current
      * highest bid. If the bid is unsuccessful, the transaction will revert.
@@ -559,20 +559,17 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
      * `msg.sender`. A fallback method of sending funds back to the bidder if
      * the address is not accepting ETH is sending funds via WETH (preventing
      * denial of service attacks).
-     * @param _projectId Project ID to mint a token on.
      * @param _tokenId Token ID being bidded on
      */
-    function createBid(uint256 _projectId, uint256 _tokenId) external payable {
-        createBid_4cM(_projectId, _tokenId);
+    function createBid(uint256 _tokenId) external payable {
+        createBid_4cM(_tokenId);
     }
 
     /**
      * @notice gas-optimized version of createBid(uint256,uint256).
      */
-    function createBid_4cM(
-        uint256 _projectId,
-        uint256 _tokenId
-    ) public payable nonReentrant {
+    function createBid_4cM(uint256 _tokenId) public payable nonReentrant {
+        uint256 _projectId = _tokenId / ONE_MILLION;
         // CHECKS
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         Auction storage _auction = _projectConfig.activeAuction;
@@ -642,6 +639,30 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
     }
 
     /**
+     * @notice View function to return the current minter-level configuration
+     * details.
+     * @return minAuctionDurationSeconds_ Minimum auction duration in seconds
+     * @return maxAuctionDurationSeconds_ Maximum auction duration in seconds
+     * @return minterMinBidIncrementPercentage_ Minimum bid increment percentage
+     * @return minterTimeBufferSeconds_ Buffer time in seconds
+     */
+    function minterConfigurationDetails()
+        external
+        view
+        returns (
+            uint32 minAuctionDurationSeconds_,
+            uint32 maxAuctionDurationSeconds_,
+            uint8 minterMinBidIncrementPercentage_,
+            uint32 minterTimeBufferSeconds_
+        )
+    {
+        minAuctionDurationSeconds_ = minAuctionDurationSeconds;
+        maxAuctionDurationSeconds_ = maxAuctionDurationSeconds;
+        minterMinBidIncrementPercentage_ = minterMinBidIncrementPercentage;
+        minterTimeBufferSeconds_ = minterTimeBufferSeconds;
+    }
+
+    /**
      * @notice projectId => has project reached its maximum number of
      * invocations? Note that this returns a local cache of the core contract's
      * state, and may be out of sync with the core contract. This is
@@ -683,6 +704,43 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
         uint256 _projectId
     ) external view returns (uint256) {
         return uint256(projectConfig[_projectId].maxInvocations);
+    }
+
+    /**
+     * @notice projectId => project configuration details.
+     * Note that in the case of no auction being initialized for the project,
+     * the returned `auction` will be the default struct.
+     * @param _projectId The project ID
+     * @return maxInvocations The project's maximum number of invocations
+     * allowed on this minter
+     * @return timestampStart The project's start timestamp, after which new
+     * auctions may be created (one at a time)
+     * @return auctionDurationSeconds The project's default auction duration,
+     * before any extensions due to buffer time
+     * @return basePrice The project's minimum starting bid price
+     * @return auction The project's active auction details. Will be the
+     * default struct (w/ `auction.initialized = false`) if no auction has been
+     * initialized for the project.
+     */
+    function projectConfigurationDetails(
+        uint256 _projectId
+    )
+        external
+        view
+        returns (
+            uint24 maxInvocations,
+            uint64 timestampStart,
+            uint32 auctionDurationSeconds,
+            uint256 basePrice,
+            Auction memory auction
+        )
+    {
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        maxInvocations = _projectConfig.maxInvocations;
+        timestampStart = _projectConfig.timestampStart;
+        auctionDurationSeconds = _projectConfig.auctionDurationSeconds;
+        basePrice = _projectConfig.basePrice;
+        auction = _projectConfig.activeAuction;
     }
 
     /**
