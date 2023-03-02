@@ -512,11 +512,15 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
         // send token to the winning bidder
         IERC721(address(genArtCoreContract_Base)).transferFrom(
             address(this),
-            _auction.bidder,
+            _auction.currentBidder,
             _tokenId
         );
 
-        emit AuctionSettled(_tokenId, _auction.bidder, _auction.currentBid);
+        emit AuctionSettled(
+            _tokenId,
+            _auction.currentBidder,
+            _auction.currentBid
+        );
     }
 
     /**
@@ -602,11 +606,11 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
         // EFFECTS
         // record previous highest bid details for refunding
         uint256 previousBid = _auction.currentBid;
-        address payable previousBidder = _auction.bidder;
+        address payable previousBidder = _auction.currentBidder;
 
         // update auction state
         _auction.currentBid = msg.value;
-        _auction.bidder = payable(msg.sender);
+        _auction.currentBidder = payable(msg.sender);
         uint256 minEndTime = block.timestamp + minterTimeBufferSeconds;
         if (_auction.endTime < minEndTime) {
             _auction.endTime = minEndTime.toUint64();
@@ -837,8 +841,8 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
         _projectConfig.activeAuction = Auction({
             tokenId: _targetTokenId,
             currentBid: msg.value,
+            currentBidder: payable(msg.sender),
             endTime: endTime,
-            bidder: payable(msg.sender),
             settled: false,
             initialized: true
         });

@@ -18,15 +18,15 @@ interface IMinterSEAV0 is IFilteredMinterV2 {
         uint256 tokenId;
         // The current highest bid amount (in wei)
         uint256 currentBid;
+        // The address of the current highest bidder
+        address payable currentBidder;
         // The time that the auction is scheduled to end
         // max uint64 ~= 1.8e19 sec ~= 570 billion years
         uint64 endTime;
-        // The address of the current highest bid
-        address payable bidder;
         // Whether or not the auction has been settled
         bool settled;
-        // Whether or not the auction has been initialized (used to confirm
-        // that auction is not a default struct)
+        // Whether or not the auction has been initialized (used to determine
+        // if auction is the default struct)
         bool initialized;
     }
 
@@ -46,19 +46,19 @@ interface IMinterSEAV0 is IFilteredMinterV2 {
 
     /// Artist configured future auction details
     event ConfiguredFutureAuctions(
-        uint256 _projectId,
+        uint256 indexed _projectId,
         uint64 _timestampStart,
         uint32 _auctionDurationSeconds,
         uint256 _basePrice
     );
 
     /// Future auction details for project `_projectId` reset
-    event ResetAuctionDetails(uint256 _projectId);
+    event ResetAuctionDetails(uint256 indexed _projectId);
 
     /// New token auction created, token created and sent to minter
     event AuctionInitialized(
         uint256 indexed tokenId,
-        address bidder,
+        address indexed bidder,
         uint256 bidAmount,
         uint64 endTime
     );
@@ -66,14 +66,14 @@ interface IMinterSEAV0 is IFilteredMinterV2 {
     /// Successful bid placed on token auction
     event AuctionBid(
         uint256 indexed tokenId,
-        address bidder,
+        address indexed bidder,
         uint256 bidAmount
     );
 
     /// Token auction was settled (token distributed to winner)
     event AuctionSettled(
         uint256 indexed tokenId,
-        address winner,
+        address indexed winner,
         uint256 price
     );
 
