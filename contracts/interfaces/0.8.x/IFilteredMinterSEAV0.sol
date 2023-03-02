@@ -11,7 +11,7 @@ pragma solidity ^0.8.0;
  * a Serial English Auction Minter.
  * @author Art Blocks Inc.
  */
-interface IMinterSEAV0 is IFilteredMinterV2 {
+interface IFilteredMinterSEAV0 is IFilteredMinterV2 {
     /// Struct that defines a single token English auction
     struct Auction {
         // token number of NFT being auctioned

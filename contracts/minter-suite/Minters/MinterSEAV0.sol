@@ -7,7 +7,7 @@ import {IWETH} from "../../interfaces/0.8.x/IWETH.sol";
 
 import "../../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
 import "../../interfaces/0.8.x/IMinterFilterV0.sol";
-import "../../interfaces/0.8.x/IMinterSEAV0.sol";
+import "../../interfaces/0.8.x/IFilteredMinterSEAV0.sol";
 import "./MinterBase_v0_1_1.sol";
 
 import "@openzeppelin-4.7/contracts/token/ERC721/IERC721.sol";
@@ -68,7 +68,7 @@ import "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
  * meaningfully impact price given the minimum allowable price decay rate that
  * this minter intends to support.
  */
-contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
+contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
     using SafeCast for uint256;
 
     /// Core contract address this minter interacts with
