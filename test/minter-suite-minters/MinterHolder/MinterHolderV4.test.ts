@@ -821,11 +821,7 @@ for (const coreContractName of coreContractsToTest) {
         );
         // skip gas tests for engine, flagship is sufficient to identify gas cost changes
         if (!config.isEngine) {
-          requireBigNumberIsClose(
-            txCost,
-            ethers.utils.parseEther("0.0115824"),
-            1
-          );
+          requireBigNumberIsClose(txCost, ethers.utils.parseEther("0.0115824"));
         }
       });
     });
