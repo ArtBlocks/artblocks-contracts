@@ -46,14 +46,14 @@ interface IMinterSEAV0 is IFilteredMinterV2 {
 
     /// Artist configured future auction details
     event ConfiguredFutureAuctions(
-        uint256 indexed _projectId,
-        uint64 _timestampStart,
-        uint32 _auctionDurationSeconds,
-        uint256 _basePrice
+        uint256 indexed projectId,
+        uint64 timestampStart,
+        uint32 auctionDurationSeconds,
+        uint256 basePrice
     );
 
-    /// Future auction details for project `_projectId` reset
-    event ResetAuctionDetails(uint256 indexed _projectId);
+    /// Future auction details for project `projectId` reset
+    event ResetAuctionDetails(uint256 indexed projectId);
 
     /// New token auction created, token created and sent to minter
     event AuctionInitialized(
