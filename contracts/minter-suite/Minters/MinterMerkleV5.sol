@@ -115,13 +115,12 @@ contract MinterMerkleV5 is
     mapping(uint256 => mapping(address => uint256))
         public projectUserMintInvocations;
 
-    modifier onlyArtist(uint256 _projectId) {
+    function _onlyArtist(uint256 _projectId) internal view {
         require(
             msg.sender ==
                 genArtCoreContract_Base.projectIdToArtistAddress(_projectId),
             "Only Artist"
         );
-        _;
     }
 
     /**
@@ -169,10 +168,8 @@ contract MinterMerkleV5 is
      * @param _root root of Merkle tree defining addresses allowed to mint
      * on project `_projectId`.
      */
-    function updateMerkleRoot(
-        uint256 _projectId,
-        bytes32 _root
-    ) external onlyArtist(_projectId) {
+    function updateMerkleRoot(uint256 _projectId, bytes32 _root) external {
+        _onlyArtist(_projectId);
         require(_root != bytes32(0), "Root must be provided");
         projectMerkleRoot[_projectId] = _root;
         emit ConfigValueSet(_projectId, CONFIG_MERKLE_ROOT, _root);
@@ -224,7 +221,8 @@ contract MinterMerkleV5 is
     function setProjectInvocationsPerAddress(
         uint256 _projectId,
         uint24 _maxInvocationsPerAddress
-    ) external onlyArtist(_projectId) {
+    ) external {
+        _onlyArtist(_projectId);
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         // use override value instead of the contract's default
         // @dev this never changes from true to false; default value is only
@@ -253,9 +251,8 @@ contract MinterMerkleV5 is
      * @dev this enables gas reduction after maxInvocations have been reached -
      * core contracts shall still enforce a maxInvocation check during mint.
      */
-    function setProjectMaxInvocations(
-        uint256 _projectId
-    ) public onlyArtist(_projectId) {
+    function setProjectMaxInvocations(uint256 _projectId) public {
+        _onlyArtist(_projectId);
         uint256 maxInvocations;
         uint256 invocations;
         (invocations, maxInvocations, , , , ) = genArtCoreContract_Base
@@ -287,7 +284,8 @@ contract MinterMerkleV5 is
     function manuallyLimitProjectMaxInvocations(
         uint256 _projectId,
         uint256 _maxInvocations
-    ) external onlyArtist(_projectId) {
+    ) external {
+        _onlyArtist(_projectId);
         // CHECKS
         // ensure that the manually set maxInvocations is not greater than what is set on the core contract
         uint256 maxInvocations;
@@ -318,9 +316,8 @@ contract MinterMerkleV5 is
      * @notice Warning: Disabling purchaseTo is not supported on this minter.
      * This method exists purely for interface-conformance purposes.
      */
-    function togglePurchaseToDisabled(
-        uint256 _projectId
-    ) external view onlyArtist(_projectId) {
+    function togglePurchaseToDisabled(uint256 _projectId) external view {
+        _onlyArtist(_projectId);
         revert("Action not supported");
     }
 
@@ -377,7 +374,8 @@ contract MinterMerkleV5 is
     function updatePricePerTokenInWei(
         uint256 _projectId,
         uint256 _pricePerTokenInWei
-    ) external onlyArtist(_projectId) {
+    ) external {
+        _onlyArtist(_projectId);
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         _projectConfig.pricePerTokenInWei = _pricePerTokenInWei;
         _projectConfig.priceIsConfigured = true;

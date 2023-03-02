@@ -146,9 +146,9 @@ contract MinterPolyptychV0 is
     mapping(uint256 => mapping(address => mapping(uint256 => bool)))
         public allowedProjectHolders;
 
-    // modifier to restrict access to only AdminACL allowed calls
+    // function to restrict access to only AdminACL allowed calls
     // @dev defers which ACL contract is used to the core contract
-    modifier onlyCoreAdminACL(bytes4 _selector) {
+    function _onlyCoreAdminACL(bytes4 _selector) internal {
         require(
             genArtCoreContract.adminACLAllowed(
                 msg.sender,
@@ -157,16 +157,14 @@ contract MinterPolyptychV0 is
             ),
             "Only Core AdminACL allowed"
         );
-        _;
     }
 
-    modifier onlyArtist(uint256 _projectId) {
+    function _onlyArtist(uint256 _projectId) internal view {
         require(
             msg.sender ==
                 genArtCoreContract.projectIdToArtistAddress(_projectId),
             "Only Artist"
         );
-        _;
     }
 
     /**
@@ -229,9 +227,8 @@ contract MinterPolyptychV0 is
      * `projectId = tokenId / 1_000_000`
      * @param _NFTAddress NFT core address to be registered.
      */
-    function registerNFTAddress(
-        address _NFTAddress
-    ) external onlyCoreAdminACL(this.registerNFTAddress.selector) {
+    function registerNFTAddress(address _NFTAddress) external {
+        _onlyCoreAdminACL(this.registerNFTAddress.selector);
         // check that core contract implements the `tokenIdToHashSeed` function
         IGenArt721CoreContractV3WithRandomizer(_NFTAddress).tokenIdToHashSeed(
             0
@@ -246,9 +243,8 @@ contract MinterPolyptychV0 is
      * considered for adding to future allowlists.
      * @param _NFTAddress NFT core address to be unregistered.
      */
-    function unregisterNFTAddress(
-        address _NFTAddress
-    ) external onlyCoreAdminACL(this.unregisterNFTAddress.selector) {
+    function unregisterNFTAddress(address _NFTAddress) external {
+        _onlyCoreAdminACL(this.unregisterNFTAddress.selector);
         _registeredNFTAddresses.remove(_NFTAddress);
         emit UnregisteredNFTAddress(_NFTAddress);
     }
@@ -287,7 +283,8 @@ contract MinterPolyptychV0 is
         uint256[] memory _ownedNFTProjectIdsAdd,
         address[] memory _ownedNFTAddressesRemove,
         uint256[] memory _ownedNFTProjectIdsRemove
-    ) external onlyArtist(_projectId) {
+    ) external {
+        _onlyArtist(_projectId);
         allowHoldersOfProjects(
             _projectId,
             _ownedNFTAddressesAdd,
@@ -339,7 +336,8 @@ contract MinterPolyptychV0 is
     function manuallyLimitProjectMaxInvocations(
         uint256 _projectId,
         uint256 _maxInvocations
-    ) external onlyArtist(_projectId) {
+    ) external {
+        _onlyArtist(_projectId);
         // CHECKS
         // ensure that the manually set maxInvocations is not greater than what is set on the core contract
         uint256 maxInvocations;
@@ -376,7 +374,8 @@ contract MinterPolyptychV0 is
     function updatePricePerTokenInWei(
         uint256 _projectId,
         uint256 _pricePerTokenInWei
-    ) external onlyArtist(_projectId) {
+    ) external {
+        _onlyArtist(_projectId);
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         _projectConfig.pricePerTokenInWei = _pricePerTokenInWei;
         _projectConfig.priceIsConfigured = true;
@@ -404,7 +403,8 @@ contract MinterPolyptychV0 is
         uint256 _projectId,
         string memory _currencySymbol,
         address _currencyAddress
-    ) external onlyArtist(_projectId) {
+    ) external {
+        _onlyArtist(_projectId);
         // require null address if symbol is "ETH"
         require(
             (keccak256(abi.encodePacked(_currencySymbol)) ==
@@ -531,9 +531,8 @@ contract MinterPolyptychV0 is
      * @notice Warning: Disabling purchaseTo is not supported on this minter.
      * This method exists purely for interface-conformance purposes.
      */
-    function togglePurchaseToDisabled(
-        uint256 _projectId
-    ) external view onlyArtist(_projectId) {
+    function togglePurchaseToDisabled(uint256 _projectId) external view {
+        _onlyArtist(_projectId);
         revert("Action not supported");
     }
 
@@ -880,7 +879,8 @@ contract MinterPolyptychV0 is
         uint256 _projectId,
         address[] memory _ownedNFTAddresses,
         uint256[] memory _ownedNFTProjectIds
-    ) public onlyArtist(_projectId) {
+    ) public {
+        _onlyArtist(_projectId);
         // require same length arrays
         require(
             _ownedNFTAddresses.length == _ownedNFTProjectIds.length,
@@ -925,7 +925,8 @@ contract MinterPolyptychV0 is
         uint256 _projectId,
         address[] memory _ownedNFTAddresses,
         uint256[] memory _ownedNFTProjectIds
-    ) public onlyArtist(_projectId) {
+    ) public {
+        _onlyArtist(_projectId);
         // require same length arrays
         require(
             _ownedNFTAddresses.length == _ownedNFTProjectIds.length,
@@ -950,9 +951,8 @@ contract MinterPolyptychV0 is
      * @notice Allows the artist to increment the minter to the next polyptych panel
      * @param _projectId Project ID to increment to its next polyptych panel
      */
-    function incrementPolyptychProjectPanelId(
-        uint256 _projectId
-    ) public onlyArtist(_projectId) {
+    function incrementPolyptychProjectPanelId(uint256 _projectId) public {
+        _onlyArtist(_projectId);
         projectConfig[_projectId].polyptychPanelId++;
     }
 

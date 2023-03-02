@@ -144,8 +144,11 @@ contract MinterDAExpSettlementV2 is
     /// user address => project ID => receipt
     mapping(address => mapping(uint256 => Receipt)) receipts;
 
-    // modifier to restrict access to only AdminACL or the artist
-    modifier onlyCoreAdminACLOrArtist(uint256 _projectId, bytes4 _selector) {
+    // function to restrict access to only AdminACL or the artist
+    function _onlyCoreAdminACLOrArtist(
+        uint256 _projectId,
+        bytes4 _selector
+    ) internal {
         require(
             (msg.sender ==
                 genArtCoreContract_Base.projectIdToArtistAddress(_projectId)) ||
@@ -158,12 +161,11 @@ contract MinterDAExpSettlementV2 is
                 ),
             "Only Artist or Admin ACL"
         );
-        _;
     }
 
-    // modifier to restrict access to only AdminACL allowed calls
+    // function to restrict access to only AdminACL allowed calls
     // @dev defers which ACL contract is used to the core contract
-    modifier onlyCoreAdminACL(bytes4 _selector) {
+    function _onlyCoreAdminACL(bytes4 _selector) internal {
         require(
             genArtCoreContract_Base.adminACLAllowed(
                 msg.sender,
@@ -172,16 +174,14 @@ contract MinterDAExpSettlementV2 is
             ),
             "Only Core AdminACL allowed"
         );
-        _;
     }
 
-    modifier onlyArtist(uint256 _projectId) {
+    function _onlyArtist(uint256 _projectId) internal view {
         require(
             (msg.sender ==
                 genArtCoreContract_Base.projectIdToArtistAddress(_projectId)),
             "Only Artist"
         );
-        _;
     }
 
     /**
@@ -220,9 +220,8 @@ contract MinterDAExpSettlementV2 is
      * @param _projectId Project ID to set the maximum invocations for.
      * @dev This function is included for interface conformance purposes only.
      */
-    function setProjectMaxInvocations(
-        uint256 _projectId
-    ) external view onlyArtist(_projectId) {
+    function setProjectMaxInvocations(uint256 _projectId) external view {
+        _onlyArtist(_projectId);
         revert("Not implemented");
     }
 
@@ -240,7 +239,8 @@ contract MinterDAExpSettlementV2 is
     function manuallyLimitProjectMaxInvocations(
         uint256 _projectId,
         uint256 _maxInvocations
-    ) external onlyArtist(_projectId) {
+    ) external {
+        _onlyArtist(_projectId);
         // CHECKS
         // require that new maxInvocations is greater than 0 to prevent
         // accidental premature closure of a project when artist is
@@ -288,9 +288,8 @@ contract MinterDAExpSettlementV2 is
      * @notice Warning: Disabling purchaseTo is not supported on this minter.
      * This method exists purely for interface-conformance purposes.
      */
-    function togglePurchaseToDisabled(
-        uint256 _projectId
-    ) external view onlyArtist(_projectId) {
+    function togglePurchaseToDisabled(uint256 _projectId) external view {
+        _onlyArtist(_projectId);
         revert("Action not supported");
     }
 
@@ -355,12 +354,10 @@ contract MinterDAExpSettlementV2 is
     function setAllowablePriceDecayHalfLifeRangeSeconds(
         uint256 _minimumPriceDecayHalfLifeSeconds,
         uint256 _maximumPriceDecayHalfLifeSeconds
-    )
-        external
-        onlyCoreAdminACL(
+    ) external {
+        _onlyCoreAdminACL(
             this.setAllowablePriceDecayHalfLifeRangeSeconds.selector
-        )
-    {
+        );
         require(
             _maximumPriceDecayHalfLifeSeconds >
                 _minimumPriceDecayHalfLifeSeconds,
@@ -410,7 +407,8 @@ contract MinterDAExpSettlementV2 is
         uint256 _priceDecayHalfLifeSeconds,
         uint256 _startPrice,
         uint256 _basePrice
-    ) external onlyArtist(_projectId) {
+    ) external {
+        _onlyArtist(_projectId);
         // CHECKS
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         require(
@@ -485,9 +483,8 @@ contract MinterDAExpSettlementV2 is
      * surpass (payments - excess_settlement_funds) for a given project.
      * @param _projectId Project ID to set auction details for.
      */
-    function resetAuctionDetails(
-        uint256 _projectId
-    ) external onlyCoreAdminACL(this.resetAuctionDetails.selector) {
+    function resetAuctionDetails(uint256 _projectId) external {
+        _onlyCoreAdminACL(this.resetAuctionDetails.selector);
         // CHECKS
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         require(_projectConfig.startPrice != 0, "Auction must be configured");
@@ -527,10 +524,8 @@ contract MinterDAExpSettlementV2 is
     function adminEmergencyReduceSelloutPrice(
         uint256 _projectId,
         uint256 _newSelloutPrice
-    )
-        external
-        onlyCoreAdminACL(this.adminEmergencyReduceSelloutPrice.selector)
-    {
+    ) external {
+        _onlyCoreAdminACL(this.adminEmergencyReduceSelloutPrice.selector);
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         require(
             !_projectConfig.auctionRevenuesCollected,
@@ -576,14 +571,11 @@ contract MinterDAExpSettlementV2 is
      */
     function withdrawArtistAndAdminRevenues(
         uint256 _projectId
-    )
-        external
-        nonReentrant
-        onlyCoreAdminACLOrArtist(
+    ) external nonReentrant {
+        _onlyCoreAdminACLOrArtist(
             _projectId,
             this.withdrawArtistAndAdminRevenues.selector
-        )
-    {
+        );
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         // CHECKS
         // require revenues to not have already been collected
