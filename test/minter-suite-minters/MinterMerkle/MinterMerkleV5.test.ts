@@ -954,11 +954,7 @@ for (const coreContractName of coreContractsToTest) {
         // assuming a cost of 100 GWEI
         // skip gas tests for engine, flagship is sufficient to identify gas cost changes
         if (!config.isEngine) {
-          requireBigNumberIsClose(
-            txCost,
-            ethers.utils.parseEther("0.0155614"),
-            1
-          );
+          requireBigNumberIsClose(txCost, ethers.utils.parseEther("0.0155614"));
         }
       });
 
@@ -1004,11 +1000,7 @@ for (const coreContractName of coreContractsToTest) {
         // assuming a cost of 100 GWEI
         // skip gas tests for engine, flagship is sufficient to identify gas cost changes
         if (!config.isEngine) {
-          requireBigNumberIsClose(
-            txCost,
-            ethers.utils.parseEther("0.0165514"),
-            1
-          );
+          requireBigNumberIsClose(txCost, ethers.utils.parseEther("0.0165514"));
         }
       });
     });
