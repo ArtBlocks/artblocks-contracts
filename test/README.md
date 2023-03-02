@@ -49,6 +49,8 @@ A few key details to note about our testing implementation:
 
 - Tests are intended to be wholly deterministic, and should not rely on any external resources.
 - Tests should be able to be run in any order, and should not rely on any state from previous tests.
+- Tests should utilize [Hardhat fixtures](https://hardhat.org/tutorial/testing-contracts#reusing-common-test-setups-with-fixtures) to efficiently setup tests.
+  - We typically use a fixture named `_beforeEach` to setup tests in a given file, similar to how `beforeEach` is used in Mocha, but with all the speed benefits of Hardhat fixtures. Additionally, we typically return a single `config` object from the `_beforeEach` fixture.
 - We do not currently fork mainnet or testnets to run tests. This is due to the relatively simple nature of integration with external contracts at this time.
   - If our integrations with external contracts become more complex in the future, we may consider forking mainnet or testnets to run tests. Alternatively, we may consider using git submodules to pull in external contracts, and run tests against those contracts.
 - To improve readability, tests are written in TypeScript. Additionally, we define a few augmentations in `../augmentations.d.ts` to improve readability and type safety. For example, we use a set of named accounts (`type TestAccountsArtBlocks`) to improve readability by naming hardhat's accounts a set of commonly used roles.
