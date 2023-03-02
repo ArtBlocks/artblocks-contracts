@@ -290,14 +290,21 @@ export async function advanceEVMByTime(_timeSeconds: number) {
 }
 
 // utility funciton to compare Big Numbers, expecting them to be within x%, +/-
-export function compareBN(
+export function requireBigNumberIsClose(
   actual: BigNumber,
   expected: BigNumber,
   tolerancePercent: number = 1
-): boolean {
+) {
   const diff = actual.sub(expected);
   const percentDiff = diff.mul(BigNumber.from("100")).div(expected);
-  return percentDiff.abs().lte(BigNumber.from(tolerancePercent.toString()));
+  const passes = percentDiff
+    .abs()
+    .lte(BigNumber.from(tolerancePercent.toString()));
+  if (!passes) {
+    throw new Error(
+      `BN's out of tolerance ${tolerancePercent} percent. Expected ${expected.toString()} but got ${actual.toString()}`
+    );
+  }
 }
 
 // utility function to return if core is V3
