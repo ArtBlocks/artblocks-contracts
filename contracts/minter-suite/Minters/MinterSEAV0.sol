@@ -510,11 +510,13 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IMinterSEAV0 {
         _auction.settled = true;
         // INTERACTIONS
         // send token to the winning bidder
-        IERC721(address(genArtCoreContract_Base)).transferFrom(
+        IERC721(genArt721CoreAddress).transferFrom(
             address(this),
             _auction.currentBidder,
             _tokenId
         );
+        // distribute revenues from auction
+        splitRevenuesETH(_projectId, _auction.currentBid, genArt721CoreAddress);
 
         emit AuctionSettled(
             _tokenId,
