@@ -3,7 +3,7 @@
 
 pragma solidity 0.8.17;
 
-import "../randomizer/BasicRandomizerV2.sol";
+import "../randomizer/RandomizerV2.sol";
 
 /// @title RandomizerV2_NoAssignMock
 /// @notice WARNING - This is a mock contract. Do not use it in production.
