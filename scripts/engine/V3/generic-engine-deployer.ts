@@ -12,6 +12,11 @@ Logger.setLogLevel(Logger.levels.ERROR);
 import prompt from "prompt";
 
 import {
+  syncContractMetadataAfterDeploy,
+  syncProjectMetadataAfterDeploy,
+} from "../../util/graphql-utils";
+
+import {
   DELEGATION_REGISTRY_ADDRESSES,
   KNOWN_ENGINE_REGISTRIES,
 } from "../../util/constants";
@@ -25,7 +30,10 @@ const MANUAL_GAS_LIMIT = 500000; // gas
 var log_stdout = process.stdout;
 
 // These are the core contracts that may be deployed by this script.
-const SUPPORTED_CORE_CONTRACTS = ["GenArt721CoreV3_Engine"];
+const SUPPORTED_CORE_CONTRACTS = [
+  "GenArt721CoreV3_Engine",
+  "GenArt721CoreV3_Engine_Flex",
+];
 
 /**
  * This script was created to deploy the V3 core Engine contracts,
@@ -92,6 +100,18 @@ async function main() {
       );
     }
     console.log(`[INFO] Deploying to network: ${networkName}`);
+
+    // verify intended environment
+    if (process.env.NODE_ENV === deployDetails.environment) {
+      console.log(
+        `[INFO] Deploying to environment: ${deployDetails.environment}`
+      );
+    } else {
+      throw new Error(
+        `[ERROR] The deployment config indicates environment ${deployDetails.environment}, but script is being run in environment ${process.env.NODE_ENV}`
+      );
+    }
+
     // verify deployer wallet is the same as the one used to deploy the engine registry
     const targetDeployerAddress =
       KNOWN_ENGINE_REGISTRIES[networkName][deployDetails.engineRegistryAddress];
@@ -115,6 +135,25 @@ async function main() {
         `[ERROR] This script only supports deployment of the following core contracts: ${SUPPORTED_CORE_CONTRACTS.join(
           ", "
         )}`
+      );
+    }
+
+    // verify that default vertical is not fullyonchain if using the flex engine
+    if (
+      deployDetails.defaultVerticalName == "fullyonchain" &&
+      deployDetails.genArt721CoreContractName.includes("Flex")
+    ) {
+      throw new Error(
+        `[ERROR] The default vertical cannot be fullyonchain if using the flex engine`
+      );
+    }
+    // verify that the default vertical is not flex if not using a flex engine
+    if (
+      deployDetails.defaultVerticalName == "flex" &&
+      !deployDetails.genArt721CoreContractName.includes("Flex")
+    ) {
+      throw new Error(
+        `[ERROR] The default vertical cannot be flex if not using a flex engine`
       );
     }
     //////////////////////////////////////////////////////////////////////////////
@@ -288,7 +327,7 @@ async function main() {
       // Create a project 0, and a token 0, on that empty project.
       await genArt721Core.connect(deployer).addProject(
         tokenName, // Use `tokenName` as placeholder for project 0 name
-        deployer.address // Use `deployer.address` as placeholder for project 0 owner
+        deployer.address // Use `deployer.address` as placeholder for project 0 artist
       );
       console.log(
         `[INFO] Added ${tokenName} project ${startingProjectId} placeholder on ${tokenName} contract, artist is ${deployer.address}.`
@@ -349,15 +388,6 @@ async function main() {
     } else {
       console.log(`[INFO] Skipping adding placeholder initial token.`);
     }
-
-    // Note reminders about config addresses that have been left as the deployer for now.
-    console.log(
-      `[INFO] provider primary and secondary sales payment addresses remain as deployer addresses: ${deployer.address}.`
-    );
-    console.log(
-      `[INFO] AdminACL's superAdmin address likely remains as deployer address (unless using shared AdminACL, in which case existing AdminACL's superAdmin is unchanged): ${deployer.address}.`
-    );
-    console.log(`[ACTION] Don't forget to update these later as needed!`);
 
     //////////////////////////////////////////////////////////////////////////////
     // SETUP ENDS HERE
@@ -440,21 +470,8 @@ async function main() {
     }
 
     // create image bucket
-    const payload = await createPBABBucket(tokenName, networkName);
-    const bucketName = payload["url"];
+    const { bucketName } = await createPBABBucket(tokenName, networkName);
     console.log(`[INFO] Created image bucket ${bucketName}`);
-    console.log(
-      `[ACTION] Hasura: Set image bucket for this core contract ${genArt721Core.address} to ${bucketName}`
-    );
-    // reminder to set core contract type in db
-    const coreType = await genArt721Core.coreType();
-    console.log(
-      `[ACTION] Hasura: Set core contract type for ${genArt721Core.address} to ${coreType}`
-    );
-    // reminder to add to subgraph config if desire to index minter filter
-    console.log(
-      `[ACTION] Subgraph: Add Minter Filter and Minter contracts to subgraph config if desire to index minter suite.`
-    );
 
     //////////////////////////////////////////////////////////////////////////////
     // VERIFICATION ENDS HERE
@@ -530,6 +547,64 @@ ${deployedMinterNames
 
     //////////////////////////////////////////////////////////////////////////////
     // DEPLOYMENTS.md ENDS HERE
+    //////////////////////////////////////////////////////////////////////////////
+
+    //////////////////////////////////////////////////////////////////////////////
+    // HASURA METADATA UPSERT BEGINS HERE
+    //////////////////////////////////////////////////////////////////////////////
+
+    await syncContractMetadataAfterDeploy(
+      genArt721Core.address, // contracts_metadata.address
+      deployDetails.tokenName, // contracts_metadata.name
+      bucketName, // contracts_metadata.bucket_name
+      deployDetails.defaultVerticalName // contracts_metadata.default_vertical_name (optional)
+    );
+
+    if (deployDetails.addInitialProject) {
+      // also update the initial project's vertical name,
+      // since likely missed default vertical name during initial sync
+      await syncProjectMetadataAfterDeploy(
+        genArt721Core.address, // core contract address
+        deployDetails.startingProjectId, // project Id
+        deployer.address, // project artist address
+        deployDetails.defaultVerticalName // project vertical name
+      );
+    }
+    //////////////////////////////////////////////////////////////////////////////
+    // HASURA METADATA UPSERT ENDS HERE
+    //////////////////////////////////////////////////////////////////////////////
+
+    //////////////////////////////////////////////////////////////////////////////
+    // FOLLOW-ON ACTIONS BEGINS HERE
+    //////////////////////////////////////////////////////////////////////////////
+
+    // Reminder to update provider payment addresses that are left as the deployer for now.
+    console.log(
+      `[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: ${deployer.address}. Update later as needed.`
+    );
+
+    // Reminder to update adminACL superAdmin if needed
+    let adminACL: Contract;
+    let adminACLContractName = "AdminACLV1"; // default
+    if (deployDetails.existingAdminACL) {
+      adminACLContractName = deployDetails.adminACLContractName;
+    }
+    const adminACLFactory = await ethers.getContractFactory(
+      adminACLContractName
+    );
+    adminACL = adminACLFactory.attach(adminACLAddress);
+    const adminACLSuperAdmin = await adminACL.superAdmin();
+    console.log(
+      `[ACTION] AdminACL's superAdmin address is ${adminACLSuperAdmin}, don't forget to update if requred.`
+    );
+
+    // reminder to add to subgraph config if desire to index minter filter
+    console.log(
+      `[ACTION] Subgraph: Add Minter Filter and Minter contracts to subgraph config if desire to index minter suite.`
+    );
+
+    //////////////////////////////////////////////////////////////////////////////
+    // FOLLOW-ON ACTIONS ENDS HERE
     //////////////////////////////////////////////////////////////////////////////
   }
 }

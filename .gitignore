@@ -51,3 +51,6 @@ scripts/.local/
 
 # any local constructor args
 constructor-args.js
+
+# generated files
+generated/

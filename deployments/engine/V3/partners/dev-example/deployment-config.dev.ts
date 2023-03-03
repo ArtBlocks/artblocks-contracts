@@ -29,17 +29,17 @@ export const deployDetailsArray = [
       // include any of the most recent minter contracts the engine partner wishes to use
       // @dev ensure the minter contracts here are the latest versions
       "MinterSetPriceV4",
-      "MinterSetPriceERC20V4",
-      "MinterDAExpV4",
-      "MinterDAExpSettlementV1",
-      "MinterDALinV4",
-      "MinterHolderV4",
-      "MinterMerkleV5",
     ],
     // set to true if you want to add an initial project to the core contract
     addInitialProject: true,
     // set to true if you want to add an initial token to the initial project
     // (this will only work if you have set addInitialProject to true, and requires a MinterSetPriceV[4-9])
     addInitialToken: true,
+    // optionally define this to set default vertical name for the contract after deployment.
+    // if not defined, the default vertical name will be "unassigned".
+    // common values include `fullyonchain`, `flex`, or partnerships like `artblocksxpace`.
+    // also note that if you desire to create a new veritcal, you will need to add the vertical name to the
+    // `project_verticals` table in the database before running this deploy script.
+    defaultVerticalName: "fullyonchain",
   },
 ];

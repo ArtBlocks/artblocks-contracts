@@ -1,6 +1,7 @@
 import { expectRevert, constants } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import {
   AdminACLV0,
   AdminACLV0__factory,
@@ -10,6 +11,7 @@ import {
 } from "../../scripts/contracts";
 
 import {
+  T_Config,
   getAccounts,
   assignDefaultConstants,
   deployAndGet,
@@ -43,71 +45,74 @@ describe(`DependencyRegistryV0`, async function () {
   const preferredRepository = "https://github.com/processing/p5.js";
   const referenceWebsite = "https://p5js.org/";
 
-  beforeEach(async function (this: DependencyRegistryV0TestContext) {
-    // standard accounts and constants
-    this.accounts = await getAccounts();
-    await assignDefaultConstants.call(this);
+  async function _beforeEach() {
+    let config: T_Config = {
+      accounts: await getAccounts(),
+    };
+    config = await assignDefaultConstants(config);
 
     // deploy and configure minter filter and minter
     ({
-      genArt721Core: this.genArt721Core,
-      minterFilter: this.minterFilter,
-      randomizer: this.randomizer,
-      adminACL: this.adminACL,
-    } = await deployCoreWithMinterFilter.call(
-      this,
+      genArt721Core: config.genArt721Core,
+      minterFilter: config.minterFilter,
+      randomizer: config.randomizer,
+      adminACL: config.adminACL,
+    } = await deployCoreWithMinterFilter(
+      config,
       "GenArt721CoreV3",
       "MinterFilterV1"
     ));
 
-    this.minter = await deployAndGet.call(this, "MinterSetPriceV2", [
-      this.genArt721Core.address,
-      this.minterFilter.address,
+    config.minter = await deployAndGet(config, "MinterSetPriceV2", [
+      config.genArt721Core.address,
+      config.minterFilter.address,
     ]);
 
-    this.dependencyRegistry = await deployAndGet.call(
-      this,
+    config.dependencyRegistry = await deployAndGet(
+      config,
       "DependencyRegistryV0"
     );
-    await this.dependencyRegistry
-      .connect(this.accounts.deployer)
-      .initialize(this.adminACL.address);
+    await config.dependencyRegistry
+      .connect(config.accounts.deployer)
+      .initialize(config.adminACL.address);
 
     // add project zero
-    await this.genArt721Core
-      .connect(this.accounts.deployer)
-      .addProject("name", this.accounts.artist.address);
-    await this.genArt721Core
-      .connect(this.accounts.deployer)
-      .toggleProjectIsActive(this.projectZero);
-    await this.genArt721Core
-      .connect(this.accounts.artist)
-      .updateProjectMaxInvocations(this.projectZero, this.maxInvocations);
+    await config.genArt721Core
+      .connect(config.accounts.deployer)
+      .addProject("name", config.accounts.artist.address);
+    await config.genArt721Core
+      .connect(config.accounts.deployer)
+      .toggleProjectIsActive(config.projectZero);
+    await config.genArt721Core
+      .connect(config.accounts.artist)
+      .updateProjectMaxInvocations(config.projectZero, config.maxInvocations);
 
     // add project one without setting it to active or setting max invocations
-    await this.genArt721Core
-      .connect(this.accounts.deployer)
-      .addProject("name", this.accounts.artist2.address);
+    await config.genArt721Core
+      .connect(config.accounts.deployer)
+      .addProject("name", config.accounts.artist2.address);
 
     // configure minter for project zero
-    await this.minterFilter
-      .connect(this.accounts.deployer)
-      .addApprovedMinter(this.minter.address);
-    await this.minterFilter
-      .connect(this.accounts.deployer)
-      .setMinterForProject(this.projectZero, this.minter.address);
-    await this.minter
-      .connect(this.accounts.artist)
-      .updatePricePerTokenInWei(this.projectZero, 0);
-  });
+    await config.minterFilter
+      .connect(config.accounts.deployer)
+      .addApprovedMinter(config.minter.address);
+    await config.minterFilter
+      .connect(config.accounts.deployer)
+      .setMinterForProject(config.projectZero, config.minter.address);
+    await config.minter
+      .connect(config.accounts.artist)
+      .updatePricePerTokenInWei(config.projectZero, 0);
+    return config;
+  }
 
   describe("registered dependencies", function () {
     describe("addDependency", function () {
-      it("does not allow non-admins to add a dependency", async function (this: DependencyRegistryV0TestContext) {
+      it("does not allow non-admins to add a dependency", async function () {
+        const config = await loadFixture(_beforeEach);
         // deployer cannot update
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.artist)
+          config.dependencyRegistry
+            .connect(config.accounts.artist)
             .addDependency(
               ethers.utils.formatBytes32String("p5js@1.0.0"),
               preferredCDN,
@@ -118,11 +123,12 @@ describe(`DependencyRegistryV0`, async function () {
         );
       });
 
-      it("does not allow a dependency to be added without exactly one @ symbol", async function (this: DependencyRegistryV0TestContext) {
+      it("does not allow a dependency to be added without exactly one @ symbol", async function () {
+        const config = await loadFixture(_beforeEach);
         // deployer cannot update
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
             .addDependency(
               ethers.utils.formatBytes32String("p5js"),
               preferredCDN,
@@ -132,8 +138,8 @@ describe(`DependencyRegistryV0`, async function () {
           "must contain exactly one @"
         );
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
             .addDependency(
               ethers.utils.formatBytes32String("p5@js@1.0.0"),
               preferredCDN,
@@ -144,11 +150,12 @@ describe(`DependencyRegistryV0`, async function () {
         );
       });
 
-      it("allows admin to add a dependency", async function (this: DependencyRegistryV0TestContext) {
+      it("allows admin to add a dependency", async function () {
+        const config = await loadFixture(_beforeEach);
         // admin can update
         await expect(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
             .addDependency(
               dependencyTypeBytes,
               preferredCDN,
@@ -156,7 +163,7 @@ describe(`DependencyRegistryV0`, async function () {
               referenceWebsite
             )
         )
-          .to.emit(this.dependencyRegistry, "DependencyAdded")
+          .to.emit(config.dependencyRegistry, "DependencyAdded")
           .withArgs(
             dependencyTypeBytes,
             preferredCDN,
@@ -165,19 +172,19 @@ describe(`DependencyRegistryV0`, async function () {
           );
 
         const registeredDependencyCount =
-          await this.dependencyRegistry.getDependencyTypeCount();
+          await config.dependencyRegistry.getDependencyTypeCount();
         expect(registeredDependencyCount).to.eq(1);
 
         const storedDepType =
-          await this.dependencyRegistry.getDependencyTypeAtIndex(0);
+          await config.dependencyRegistry.getDependencyTypeAtIndex(0);
         expect(storedDepType).to.eq(dependencyType);
 
         const dependencyTypes =
-          await this.dependencyRegistry.getDependencyTypes();
+          await config.dependencyRegistry.getDependencyTypes();
         expect(dependencyTypes).to.deep.eq([dependencyType]);
 
         const dependencyDetails =
-          await this.dependencyRegistry.getDependencyDetails(
+          await config.dependencyRegistry.getDependencyDetails(
             dependencyTypeBytes
           );
         expect(dependencyDetails).to.deep.eq([
@@ -194,9 +201,10 @@ describe(`DependencyRegistryV0`, async function () {
     });
 
     describe("removeDependency", function () {
-      it("does not allow non-admins to remove a dependency", async function (this: DependencyRegistryV0TestContext) {
-        await this.dependencyRegistry
-          .connect(this.accounts.deployer)
+      it("does not allow non-admins to remove a dependency", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
           .addDependency(
             dependencyTypeBytes,
             preferredCDN,
@@ -205,29 +213,31 @@ describe(`DependencyRegistryV0`, async function () {
           );
 
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.user)
+          config.dependencyRegistry
+            .connect(config.accounts.user)
             .removeDependency(dependencyTypeBytes),
           ONLY_ADMIN_ACL_ERROR
         );
       });
 
-      it("does not allow removal of a dependency that does not exist", async function (this: DependencyRegistryV0TestContext) {
+      it("does not allow removal of a dependency that does not exist", async function () {
+        const config = await loadFixture(_beforeEach);
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
             .removeDependency(ethers.utils.formatBytes32String(dependencyType)),
           ONLY_EXISTING_DEPENDENCY_TYPE_ERROR
         );
       });
 
-      it("does not allow removal of a dependency with additional CDNs, repositories, or scripts", async function (this: DependencyRegistryV0TestContext) {
+      it("does not allow removal of a dependency with additional CDNs, repositories, or scripts", async function () {
+        const config = await loadFixture(_beforeEach);
         const noAssociatedDataError =
           "Cannot remove dependency with additional CDNs, repositories, or scripts";
 
         // Add dependency
-        await this.dependencyRegistry
-          .connect(this.accounts.deployer)
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
           .addDependency(
             dependencyTypeBytes,
             preferredCDN,
@@ -236,67 +246,68 @@ describe(`DependencyRegistryV0`, async function () {
           );
 
         // Cannot remove with additional CDNs
-        await this.dependencyRegistry.addDependencyAdditionalCDN(
+        await config.dependencyRegistry.addDependencyAdditionalCDN(
           dependencyTypeBytes,
           "https://additionalCDN.com"
         );
 
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
             .removeDependency(dependencyTypeBytes),
           noAssociatedDataError
         );
 
         // Remove additional CDNs
-        await this.dependencyRegistry.removeDependencyAdditionalCDNAtIndex(
+        await config.dependencyRegistry.removeDependencyAdditionalCDNAtIndex(
           dependencyTypeBytes,
           0
         );
 
         // Cannot remove with additional repositories
-        await this.dependencyRegistry.addDependencyAdditionalRepository(
+        await config.dependencyRegistry.addDependencyAdditionalRepository(
           dependencyTypeBytes,
           "https://additionalRepository.com"
         );
 
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
             .removeDependency(dependencyTypeBytes),
           noAssociatedDataError
         );
 
         // Remove additional repositories
-        await this.dependencyRegistry.removeDependencyAdditionalRepositoryAtIndex(
+        await config.dependencyRegistry.removeDependencyAdditionalRepositoryAtIndex(
           dependencyTypeBytes,
           0
         );
 
         // Cannot remove with scripts
-        await this.dependencyRegistry.addDependencyScript(
+        await config.dependencyRegistry.addDependencyScript(
           dependencyTypeBytes,
           "on-chain script"
         );
 
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
             .removeDependency(dependencyTypeBytes),
           noAssociatedDataError
         );
 
         // Remove scripts
-        await this.dependencyRegistry.removeDependencyLastScript(
+        await config.dependencyRegistry.removeDependencyLastScript(
           dependencyTypeBytes
         );
 
-        await this.dependencyRegistry.removeDependency(dependencyTypeBytes);
+        await config.dependencyRegistry.removeDependency(dependencyTypeBytes);
       });
 
-      it("allows admin to remove a dependency", async function (this: DependencyRegistryV0TestContext) {
-        await this.dependencyRegistry
-          .connect(this.accounts.deployer)
+      it("allows admin to remove a dependency", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
           .addDependency(
             dependencyTypeBytes,
             preferredCDN,
@@ -305,36 +316,42 @@ describe(`DependencyRegistryV0`, async function () {
           );
 
         await expect(
-          this.dependencyRegistry.removeDependency(dependencyTypeBytes)
+          config.dependencyRegistry.removeDependency(dependencyTypeBytes)
         )
-          .to.emit(this.dependencyRegistry, "DependencyRemoved")
+          .to.emit(config.dependencyRegistry, "DependencyRemoved")
           .withArgs(dependencyTypeBytes);
 
         const registeredDependencyCount =
-          await this.dependencyRegistry.getDependencyTypeCount();
+          await config.dependencyRegistry.getDependencyTypeCount();
         expect(registeredDependencyCount).to.eq(0);
 
         const dependencyTypes =
-          await this.dependencyRegistry.getDependencyTypes();
+          await config.dependencyRegistry.getDependencyTypes();
         expect(dependencyTypes).to.deep.eq([]);
       });
     });
     describe("update", function () {
-      beforeEach(async function (this: DependencyRegistryV0TestContext) {
-        await this.dependencyRegistry
-          .connect(this.accounts.deployer)
+      beforeEach(async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
           .addDependency(
             dependencyTypeBytes,
             preferredCDN,
             preferredRepository,
             referenceWebsite
           );
+        // pass config to tests in this describe block
+        this.config = config;
       });
+
       describe("updateDependencyPreferredCDN", function () {
-        it("does not allow non-admins to update preferred cdn", async function (this: DependencyRegistryV0TestContext) {
+        it("does not allow non-admins to update preferred cdn", async function () {
+          // get config from beforeEach
+          const config = this.config;
           await expectRevert(
-            this.dependencyRegistry
-              .connect(this.accounts.user)
+            config.dependencyRegistry
+              .connect(config.accounts.user)
               .updateDependencyPreferredCDN(
                 dependencyTypeBytes,
                 "https://cdn.com"
@@ -342,10 +359,12 @@ describe(`DependencyRegistryV0`, async function () {
             ONLY_ADMIN_ACL_ERROR
           );
         });
-        it("does not allow updating preferred cdn for a dependency that does not exist", async function (this: DependencyRegistryV0TestContext) {
+        it("does not allow updating preferred cdn for a dependency that does not exist", async function () {
+          // get config from beforeEach
+          const config = this.config;
           await expectRevert(
-            this.dependencyRegistry
-              .connect(this.accounts.deployer)
+            config.dependencyRegistry
+              .connect(config.accounts.deployer)
               .updateDependencyPreferredCDN(
                 ethers.utils.formatBytes32String("nonExistentDependencyType"),
                 "https://cdn.com"
@@ -353,24 +372,26 @@ describe(`DependencyRegistryV0`, async function () {
             ONLY_EXISTING_DEPENDENCY_TYPE_ERROR
           );
         });
-        it("allows admin to update preferred cdn", async function (this: DependencyRegistryV0TestContext) {
-          await this.dependencyRegistry
-            .connect(this.accounts.deployer)
+        it("allows admin to update preferred cdn", async function () {
+          // get config from beforeEach
+          const config = this.config;
+          await config.dependencyRegistry
+            .connect(config.accounts.deployer)
             .addDependencyAdditionalCDN(dependencyTypeBytes, "https://cdn.com");
 
           await expect(
-            this.dependencyRegistry
-              .connect(this.accounts.deployer)
+            config.dependencyRegistry
+              .connect(config.accounts.deployer)
               .updateDependencyPreferredCDN(
                 dependencyTypeBytes,
                 "https://cdn2.com"
               )
           )
-            .to.emit(this.dependencyRegistry, "DependencyPreferredCDNUpdated")
+            .to.emit(config.dependencyRegistry, "DependencyPreferredCDNUpdated")
             .withArgs(dependencyTypeBytes, "https://cdn2.com");
 
           const dependencyDetails =
-            await this.dependencyRegistry.getDependencyDetails(
+            await config.dependencyRegistry.getDependencyDetails(
               dependencyTypeBytes
             );
 
@@ -378,10 +399,12 @@ describe(`DependencyRegistryV0`, async function () {
         });
       });
       describe("updateDependencyPreferredRepository", function () {
-        it("does not allow non-admins to update preferred repository", async function (this: DependencyRegistryV0TestContext) {
+        it("does not allow non-admins to update preferred repository", async function () {
+          // get config from beforeEach
+          const config = this.config;
           await expectRevert(
-            this.dependencyRegistry
-              .connect(this.accounts.user)
+            config.dependencyRegistry
+              .connect(config.accounts.user)
               .updateDependencyPreferredRepository(
                 dependencyTypeBytes,
                 "https://github.com"
@@ -389,10 +412,12 @@ describe(`DependencyRegistryV0`, async function () {
             ONLY_ADMIN_ACL_ERROR
           );
         });
-        it("does not allow updating preferred repository for a dependency that does not exist", async function (this: DependencyRegistryV0TestContext) {
+        it("does not allow updating preferred repository for a dependency that does not exist", async function () {
+          // get config from beforeEach
+          const config = this.config;
           await expectRevert(
-            this.dependencyRegistry
-              .connect(this.accounts.deployer)
+            config.dependencyRegistry
+              .connect(config.accounts.deployer)
               .updateDependencyPreferredRepository(
                 ethers.utils.formatBytes32String("nonExistentDependencyType"),
                 "https://github.com"
@@ -400,23 +425,25 @@ describe(`DependencyRegistryV0`, async function () {
             ONLY_EXISTING_DEPENDENCY_TYPE_ERROR
           );
         });
-        it("allows admin to update preferred repository", async function (this: DependencyRegistryV0TestContext) {
+        it("allows admin to update preferred repository", async function () {
+          // get config from beforeEach
+          const config = this.config;
           await expect(
-            this.dependencyRegistry
-              .connect(this.accounts.deployer)
+            config.dependencyRegistry
+              .connect(config.accounts.deployer)
               .updateDependencyPreferredRepository(
                 dependencyTypeBytes,
                 "https://github.com"
               )
           )
             .to.emit(
-              this.dependencyRegistry,
+              config.dependencyRegistry,
               "DependencyPreferredRepositoryUpdated"
             )
             .withArgs(dependencyTypeBytes, "https://github.com");
 
           const dependencyDetails =
-            await this.dependencyRegistry.getDependencyDetails(
+            await config.dependencyRegistry.getDependencyDetails(
               dependencyTypeBytes
             );
 
@@ -426,10 +453,12 @@ describe(`DependencyRegistryV0`, async function () {
         });
       });
       describe("updateDependencyReferenceWebsite", function () {
-        it("does not allow non-admins to update reference website", async function (this: DependencyRegistryV0TestContext) {
+        it("does not allow non-admins to update reference website", async function () {
+          // get config from beforeEach
+          const config = this.config;
           await expectRevert(
-            this.dependencyRegistry
-              .connect(this.accounts.user)
+            config.dependencyRegistry
+              .connect(config.accounts.user)
               .updateDependencyReferenceWebsite(
                 dependencyTypeBytes,
                 "https://reference.com"
@@ -437,10 +466,12 @@ describe(`DependencyRegistryV0`, async function () {
             ONLY_ADMIN_ACL_ERROR
           );
         });
-        it("does not allow updating reference website for a dependency that does not exist", async function (this: DependencyRegistryV0TestContext) {
+        it("does not allow updating reference website for a dependency that does not exist", async function () {
+          // get config from beforeEach
+          const config = this.config;
           await expectRevert(
-            this.dependencyRegistry
-              .connect(this.accounts.deployer)
+            config.dependencyRegistry
+              .connect(config.accounts.deployer)
               .updateDependencyReferenceWebsite(
                 ethers.utils.formatBytes32String("nonExistentDependencyType"),
                 "https://reference.com"
@@ -448,23 +479,25 @@ describe(`DependencyRegistryV0`, async function () {
             ONLY_EXISTING_DEPENDENCY_TYPE_ERROR
           );
         });
-        it("allows admin to update reference website", async function (this: DependencyRegistryV0TestContext) {
+        it("allows admin to update reference website", async function () {
+          // get config from beforeEach
+          const config = this.config;
           await expect(
-            this.dependencyRegistry
-              .connect(this.accounts.deployer)
+            config.dependencyRegistry
+              .connect(config.accounts.deployer)
               .updateDependencyReferenceWebsite(
                 dependencyTypeBytes,
                 "https://reference.com"
               )
           )
             .to.emit(
-              this.dependencyRegistry,
+              config.dependencyRegistry,
               "DependencyReferenceWebsiteUpdated"
             )
             .withArgs(dependencyTypeBytes, "https://reference.com");
 
           const dependencyDetails =
-            await this.dependencyRegistry.getDependencyDetails(
+            await config.dependencyRegistry.getDependencyDetails(
               dependencyTypeBytes
             );
 
@@ -476,30 +509,38 @@ describe(`DependencyRegistryV0`, async function () {
     });
   });
   describe("dependency scripts", function () {
-    beforeEach(async function (this: DependencyRegistryV0TestContext) {
-      await this.dependencyRegistry
-        .connect(this.accounts.deployer)
+    beforeEach(async function () {
+      const config = await loadFixture(_beforeEach);
+      await config.dependencyRegistry
+        .connect(config.accounts.deployer)
         .addDependency(
           dependencyTypeBytes,
           preferredCDN,
           preferredRepository,
           referenceWebsite
         );
+      // pass config to tests in this describe block
+      this.config = config;
     });
+
     describe("addDependencyScript", function () {
-      it("does not allow non-admins to add a script", async function (this: DependencyRegistryV0TestContext) {
+      it("does not allow non-admins to add a script", async function () {
+        // get config from beforeEach
+        const config = this.config;
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.user)
+          config.dependencyRegistry
+            .connect(config.accounts.user)
             .addDependencyScript(dependencyTypeBytes, "on-chain script"),
           ONLY_ADMIN_ACL_ERROR
         );
       });
 
-      it("does not allow adding a script to a dependency that does not exist", async function (this: DependencyRegistryV0TestContext) {
+      it("does not allow adding a script to a dependency that does not exist", async function () {
+        // get config from beforeEach
+        const config = this.config;
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
             .addDependencyScript(
               ethers.utils.formatBytes32String("nonExistentDependencyType"),
               "on-chain script"
@@ -508,41 +549,45 @@ describe(`DependencyRegistryV0`, async function () {
         );
       });
 
-      it("does not allow adding an empty string as a script", async function (this: DependencyRegistryV0TestContext) {
+      it("does not allow adding an empty string as a script", async function () {
+        // get config from beforeEach
+        const config = this.config;
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
             .addDependencyScript(dependencyTypeBytes, ""),
           ONLY_NON_EMPTY_STRING_ERROR
         );
       });
 
-      it("allows admin to add a script", async function (this: DependencyRegistryV0TestContext) {
+      it("allows admin to add a script", async function () {
+        // get config from beforeEach
+        const config = this.config;
         const script = "on-chain script";
         await expect(
-          this.dependencyRegistry.addDependencyScript(
+          config.dependencyRegistry.addDependencyScript(
             dependencyTypeBytes,
             script
           )
         )
-          .to.emit(this.dependencyRegistry, "DependencyScriptUpdated")
+          .to.emit(config.dependencyRegistry, "DependencyScriptUpdated")
           .withArgs(dependencyTypeBytes);
 
         const dependencyDetails =
-          await this.dependencyRegistry.getDependencyDetails(
+          await config.dependencyRegistry.getDependencyDetails(
             dependencyTypeBytes
           );
 
         expect(dependencyDetails.scriptCount).to.eq(1);
 
         const scriptCount =
-          await this.dependencyRegistry.getDependencyScriptCount(
+          await config.dependencyRegistry.getDependencyScriptCount(
             dependencyTypeBytes
           );
         expect(scriptCount).to.eq(1);
 
         const storedScript =
-          await this.dependencyRegistry.getDependencyScriptAtIndex(
+          await config.dependencyRegistry.getDependencyScriptAtIndex(
             dependencyTypeBytes,
             0
           );
@@ -551,19 +596,23 @@ describe(`DependencyRegistryV0`, async function () {
     });
 
     describe("removeDependencyLastScript", function () {
-      it("does not allow non-admins to remove a script", async function (this: DependencyRegistryV0TestContext) {
+      it("does not allow non-admins to remove a script", async function () {
+        // get config from beforeEach
+        const config = this.config;
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.user)
+          config.dependencyRegistry
+            .connect(config.accounts.user)
             .removeDependencyLastScript(dependencyTypeBytes),
           ONLY_ADMIN_ACL_ERROR
         );
       });
 
-      it("does not allow removing a script from a dependency that does not exist", async function (this: DependencyRegistryV0TestContext) {
+      it("does not allow removing a script from a dependency that does not exist", async function () {
+        // get config from beforeEach
+        const config = this.config;
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
             .removeDependency(
               ethers.utils.formatBytes32String("nonExistentDependencyType")
             ),
@@ -571,45 +620,49 @@ describe(`DependencyRegistryV0`, async function () {
         );
       });
 
-      it("does not allow removing the last script if non-existent", async function (this: DependencyRegistryV0TestContext) {
+      it("does not allow removing the last script if non-existent", async function () {
+        // get config from beforeEach
+        const config = this.config;
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
             .removeDependencyLastScript(dependencyTypeBytes),
           "there are no scripts to remove"
         );
       });
 
-      it("allows admin to remove last script", async function (this: DependencyRegistryV0TestContext) {
+      it("allows admin to remove last script", async function () {
+        // get config from beforeEach
+        const config = this.config;
         const script = "on-chain script";
 
-        await this.dependencyRegistry
-          .connect(this.accounts.deployer)
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
           .addDependencyScript(dependencyTypeBytes, script);
 
         await expect(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
             .removeDependencyLastScript(dependencyTypeBytes)
         )
-          .to.emit(this.dependencyRegistry, "DependencyScriptUpdated")
+          .to.emit(config.dependencyRegistry, "DependencyScriptUpdated")
           .withArgs(dependencyTypeBytes);
 
         const dependencyDetails =
-          await this.dependencyRegistry.getDependencyDetails(
+          await config.dependencyRegistry.getDependencyDetails(
             dependencyTypeBytes
           );
 
         expect(dependencyDetails.scriptCount).to.eq(0);
 
         const scriptCount =
-          await this.dependencyRegistry.getDependencyScriptCount(
+          await config.dependencyRegistry.getDependencyScriptCount(
             dependencyTypeBytes
           );
         expect(scriptCount).to.eq(0);
 
         const storedScript =
-          await this.dependencyRegistry.getDependencyScriptAtIndex(
+          await config.dependencyRegistry.getDependencyScriptAtIndex(
             dependencyTypeBytes,
             0
           );
@@ -618,19 +671,23 @@ describe(`DependencyRegistryV0`, async function () {
     });
 
     describe("updateDependencyScript", function () {
-      it("does not allow non-admins to update a script", async function (this: DependencyRegistryV0TestContext) {
+      it("does not allow non-admins to update a script", async function () {
+        // get config from beforeEach
+        const config = this.config;
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.user)
+          config.dependencyRegistry
+            .connect(config.accounts.user)
             .updateDependencyScript(dependencyTypeBytes, 0, "on-chain script"),
           ONLY_ADMIN_ACL_ERROR
         );
       });
 
-      it("does not allow updating a script for a dependency that does not exist", async function (this: DependencyRegistryV0TestContext) {
+      it("does not allow updating a script for a dependency that does not exist", async function () {
+        // get config from beforeEach
+        const config = this.config;
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
             .updateDependencyScript(
               ethers.utils.formatBytes32String("nonExistentDependencyType"),
               0,
@@ -640,62 +697,68 @@ describe(`DependencyRegistryV0`, async function () {
         );
       });
 
-      it("does not allow updating a script that does not exist", async function (this: DependencyRegistryV0TestContext) {
+      it("does not allow updating a script that does not exist", async function () {
+        // get config from beforeEach
+        const config = this.config;
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
             .updateDependencyScript(dependencyTypeBytes, 0, "on-chain script"),
           "scriptId out of range"
         );
       });
 
-      it("does not allow updating an empty string as a script", async function (this: DependencyRegistryV0TestContext) {
+      it("does not allow updating an empty string as a script", async function () {
+        // get config from beforeEach
+        const config = this.config;
         const script = "on-chain script";
 
-        await this.dependencyRegistry
-          .connect(this.accounts.deployer)
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
           .addDependencyScript(dependencyTypeBytes, script);
 
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
             .updateDependencyScript(dependencyTypeBytes, 0, ""),
           ONLY_NON_EMPTY_STRING_ERROR
         );
       });
 
-      it("allows admin to update a script", async function (this: DependencyRegistryV0TestContext) {
+      it("allows admin to update a script", async function () {
+        // get config from beforeEach
+        const config = this.config;
         const script = "on-chain script";
 
-        await this.dependencyRegistry
-          .connect(this.accounts.deployer)
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
           .addDependencyScript(dependencyTypeBytes, script);
 
         const updatedScript = "updated on-chain script";
 
         await expect(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
             .updateDependencyScript(dependencyTypeBytes, 0, updatedScript)
         )
-          .to.emit(this.dependencyRegistry, "DependencyScriptUpdated")
+          .to.emit(config.dependencyRegistry, "DependencyScriptUpdated")
           .withArgs(dependencyTypeBytes);
 
         const dependencyDetails =
-          await this.dependencyRegistry.getDependencyDetails(
+          await config.dependencyRegistry.getDependencyDetails(
             dependencyTypeBytes
           );
 
         expect(dependencyDetails.scriptCount).to.eq(1);
 
         const scriptCount =
-          await this.dependencyRegistry.getDependencyScriptCount(
+          await config.dependencyRegistry.getDependencyScriptCount(
             dependencyTypeBytes
           );
         expect(scriptCount).to.eq(1);
 
         const storedScript =
-          await this.dependencyRegistry.getDependencyScriptAtIndex(
+          await config.dependencyRegistry.getDependencyScriptAtIndex(
             dependencyTypeBytes,
             0
           );
@@ -703,15 +766,17 @@ describe(`DependencyRegistryV0`, async function () {
       });
     });
     describe("views", function () {
-      it("getDependencyDetails", async function (this: DependencyRegistryV0TestContext) {
+      it("getDependencyDetails", async function () {
+        // get config from beforeEach
+        const config = this.config;
         const script = "on-chain script";
 
-        await this.dependencyRegistry
-          .connect(this.accounts.deployer)
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
           .addDependencyScript(dependencyTypeBytes, script);
 
         const dependencyDetails =
-          await this.dependencyRegistry.getDependencyDetails(
+          await config.dependencyRegistry.getDependencyDetails(
             dependencyTypeBytes
           );
 
@@ -719,30 +784,34 @@ describe(`DependencyRegistryV0`, async function () {
         expect(dependencyDetails.availableOnChain).to.eq(true);
       });
 
-      it("getDependencyScriptAtIndex", async function (this: DependencyRegistryV0TestContext) {
+      it("getDependencyScriptAtIndex", async function () {
+        // get config from beforeEach
+        const config = this.config;
         const script = "on-chain script";
 
-        await this.dependencyRegistry
-          .connect(this.accounts.deployer)
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
           .addDependencyScript(dependencyTypeBytes, script);
 
         const storedScript =
-          await this.dependencyRegistry.getDependencyScriptAtIndex(
+          await config.dependencyRegistry.getDependencyScriptAtIndex(
             dependencyTypeBytes,
             0
           );
         expect(storedScript).to.eq(script);
       });
 
-      it("getDependencyScriptBytecodeAddressAtIndex", async function (this: DependencyRegistryV0TestContext) {
+      it("getDependencyScriptBytecodeAddressAtIndex", async function () {
+        // get config from beforeEach
+        const config = this.config;
         const script = "on-chain script";
 
-        await this.dependencyRegistry
-          .connect(this.accounts.deployer)
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
           .addDependencyScript(dependencyTypeBytes, script);
 
         const storedScriptByteCodeAddress =
-          await this.dependencyRegistry.getDependencyScriptBytecodeAddressAtIndex(
+          await config.dependencyRegistry.getDependencyScriptBytecodeAddressAtIndex(
             dependencyTypeBytes,
             0
           );
@@ -757,31 +826,38 @@ describe(`DependencyRegistryV0`, async function () {
     });
   });
   describe("dependency additional cdns", function () {
-    beforeEach(async function (this: DependencyRegistryV0TestContext) {
-      await this.dependencyRegistry
-        .connect(this.accounts.deployer)
+    beforeEach(async function () {
+      const config = await loadFixture(_beforeEach);
+      await config.dependencyRegistry
+        .connect(config.accounts.deployer)
         .addDependency(
           dependencyTypeBytes,
           preferredCDN,
           preferredRepository,
           referenceWebsite
         );
+      // pass config to tests in this describe block
+      this.config = config;
     });
 
     describe("addDependencyAdditionalCDN", function () {
-      it("does not allow non-admins to add a cdn", async function (this: DependencyRegistryV0TestContext) {
+      it("does not allow non-admins to add a cdn", async function () {
+        // get config from beforeEach
+        const config = this.config;
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.user)
+          config.dependencyRegistry
+            .connect(config.accounts.user)
             .addDependencyAdditionalCDN(dependencyTypeBytes, "https://cdn.com"),
           ONLY_ADMIN_ACL_ERROR
         );
       });
 
-      it("does not allow adding a cdn for a dependency that does not exist", async function (this: DependencyRegistryV0TestContext) {
+      it("does not allow adding a cdn for a dependency that does not exist", async function () {
+        // get config from beforeEach
+        const config = this.config;
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
             .addDependencyAdditionalCDN(
               ethers.utils.formatBytes32String("nonExistentDependencyType"),
               "https://cdn.com"
@@ -790,33 +866,37 @@ describe(`DependencyRegistryV0`, async function () {
         );
       });
 
-      it("does not allow adding an empty string as a cdn", async function (this: DependencyRegistryV0TestContext) {
+      it("does not allow adding an empty string as a cdn", async function () {
+        // get config from beforeEach
+        const config = this.config;
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
             .addDependencyAdditionalCDN(dependencyTypeBytes, ""),
           ONLY_NON_EMPTY_STRING_ERROR
         );
       });
 
-      it("allows admin to add a cdn", async function (this: DependencyRegistryV0TestContext) {
+      it("allows admin to add a cdn", async function () {
+        // get config from beforeEach
+        const config = this.config;
         await expect(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
             .addDependencyAdditionalCDN(dependencyTypeBytes, "https://cdn.com")
         )
-          .to.emit(this.dependencyRegistry, "DependencyAdditionalCDNUpdated")
+          .to.emit(config.dependencyRegistry, "DependencyAdditionalCDNUpdated")
           .withArgs(dependencyTypeBytes, "https://cdn.com", 0);
 
         const dependencyDetails =
-          await this.dependencyRegistry.getDependencyDetails(
+          await config.dependencyRegistry.getDependencyDetails(
             dependencyTypeBytes
           );
 
         expect(dependencyDetails.additionalCDNCount).to.eq(1);
 
         const storedCDN =
-          await this.dependencyRegistry.getDependencyAdditionalCDNAtIndex(
+          await config.dependencyRegistry.getDependencyAdditionalCDNAtIndex(
             dependencyTypeBytes,
             0
           );
@@ -824,19 +904,23 @@ describe(`DependencyRegistryV0`, async function () {
       });
     });
     describe("removeDependencyAdditionalCDNAtIndex", function () {
-      it("does not allow non-admins to remove a cdn", async function (this: DependencyRegistryV0TestContext) {
+      it("does not allow non-admins to remove a cdn", async function () {
+        // get config from beforeEach
+        const config = this.config;
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.user)
+          config.dependencyRegistry
+            .connect(config.accounts.user)
             .removeDependencyAdditionalCDNAtIndex(dependencyTypeBytes, 0),
           ONLY_ADMIN_ACL_ERROR
         );
       });
 
-      it("does not allow removing a cdn for a dependency that does not exist", async function (this: DependencyRegistryV0TestContext) {
+      it("does not allow removing a cdn for a dependency that does not exist", async function () {
+        // get config from beforeEach
+        const config = this.config;
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
             .removeDependencyAdditionalCDNAtIndex(
               ethers.utils.formatBytes32String("nonExistentDependencyType"),
               0
@@ -845,30 +929,34 @@ describe(`DependencyRegistryV0`, async function () {
         );
       });
 
-      it("does not allow removing a cdn with out of range index", async function (this: DependencyRegistryV0TestContext) {
+      it("does not allow removing a cdn with out of range index", async function () {
+        // get config from beforeEach
+        const config = this.config;
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
             .removeDependencyAdditionalCDNAtIndex(dependencyTypeBytes, 0),
           "Asset index out of range"
         );
       });
 
-      it("allows admin to remove a cdn", async function (this: DependencyRegistryV0TestContext) {
-        await this.dependencyRegistry
-          .connect(this.accounts.deployer)
+      it("allows admin to remove a cdn", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
           .addDependencyAdditionalCDN(dependencyTypeBytes, "https://cdn.com");
 
         await expect(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
             .removeDependencyAdditionalCDNAtIndex(dependencyTypeBytes, 0)
         )
-          .to.emit(this.dependencyRegistry, "DependencyAdditionalCDNRemoved")
+          .to.emit(config.dependencyRegistry, "DependencyAdditionalCDNRemoved")
           .withArgs(dependencyTypeBytes, 0);
 
         const dependencyDetails =
-          await this.dependencyRegistry.getDependencyDetails(
+          await config.dependencyRegistry.getDependencyDetails(
             dependencyTypeBytes
           );
 
@@ -877,10 +965,12 @@ describe(`DependencyRegistryV0`, async function () {
     });
 
     describe("updateDependencyAdditionalCDNAtIndex", function () {
-      it("does not allow non-admins to update a cdn", async function (this: DependencyRegistryV0TestContext) {
+      it("does not allow non-admins to update a cdn", async function () {
+        // get config from beforeEach
+        const config = this.config;
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.user)
+          config.dependencyRegistry
+            .connect(config.accounts.user)
             .updateDependencyAdditionalCDNAtIndex(
               dependencyTypeBytes,
               0,
@@ -889,10 +979,12 @@ describe(`DependencyRegistryV0`, async function () {
           ONLY_ADMIN_ACL_ERROR
         );
       });
-      it("does not allow updating a cdn for a dependency that does not exist", async function (this: DependencyRegistryV0TestContext) {
+      it("does not allow updating a cdn for a dependency that does not exist", async function () {
+        // get config from beforeEach
+        const config = this.config;
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
             .updateDependencyAdditionalCDNAtIndex(
               ethers.utils.formatBytes32String("nonExistentDependencyType"),
               0,
@@ -901,10 +993,12 @@ describe(`DependencyRegistryV0`, async function () {
           ONLY_EXISTING_DEPENDENCY_TYPE_ERROR
         );
       });
-      it("does not allow updating a cdn with out of range index", async function (this: DependencyRegistryV0TestContext) {
+      it("does not allow updating a cdn with out of range index", async function () {
+        // get config from beforeEach
+        const config = this.config;
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
             .updateDependencyAdditionalCDNAtIndex(
               dependencyTypeBytes,
               0,
@@ -913,40 +1007,44 @@ describe(`DependencyRegistryV0`, async function () {
           "Asset index out of range"
         );
       });
-      it("does not allow updating a cdn with empty string", async function (this: DependencyRegistryV0TestContext) {
+      it("does not allow updating a cdn with empty string", async function () {
+        // get config from beforeEach
+        const config = this.config;
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
             .updateDependencyAdditionalCDNAtIndex(dependencyTypeBytes, 0, ""),
           ONLY_NON_EMPTY_STRING_ERROR
         );
       });
-      it("allows admin to update a cdn", async function (this: DependencyRegistryV0TestContext) {
-        await this.dependencyRegistry
-          .connect(this.accounts.deployer)
+      it("allows admin to update a cdn", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
           .addDependencyAdditionalCDN(dependencyTypeBytes, "https://cdn.com");
 
         await expect(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
             .updateDependencyAdditionalCDNAtIndex(
               dependencyTypeBytes,
               0,
               "https://cdn2.com"
             )
         )
-          .to.emit(this.dependencyRegistry, "DependencyAdditionalCDNUpdated")
+          .to.emit(config.dependencyRegistry, "DependencyAdditionalCDNUpdated")
           .withArgs(dependencyTypeBytes, "https://cdn2.com", 0);
 
         const dependencyDetails =
-          await this.dependencyRegistry.getDependencyDetails(
+          await config.dependencyRegistry.getDependencyDetails(
             dependencyTypeBytes
           );
 
         expect(dependencyDetails.additionalCDNCount).to.eq(1);
 
         const storedCDN =
-          await this.dependencyRegistry.getDependencyAdditionalCDNAtIndex(
+          await config.dependencyRegistry.getDependencyAdditionalCDNAtIndex(
             dependencyTypeBytes,
             0
           );
@@ -954,26 +1052,30 @@ describe(`DependencyRegistryV0`, async function () {
       });
     });
     describe("views", function () {
-      it("getdependencyDetails", async function (this: DependencyRegistryV0TestContext) {
-        await this.dependencyRegistry
-          .connect(this.accounts.deployer)
+      it("getdependencyDetails", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
           .addDependencyAdditionalCDN(dependencyTypeBytes, "https://cdn.com");
 
         const dependencyDetails =
-          await this.dependencyRegistry.getDependencyDetails(
+          await config.dependencyRegistry.getDependencyDetails(
             dependencyTypeBytes
           );
 
         expect(dependencyDetails.additionalCDNCount).to.eq(1);
       });
 
-      it("getDependencyAdditionalCDNAtIndex", async function (this: DependencyRegistryV0TestContext) {
-        await this.dependencyRegistry
-          .connect(this.accounts.deployer)
+      it("getDependencyAdditionalCDNAtIndex", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
           .addDependencyAdditionalCDN(dependencyTypeBytes, "https://cdn.com");
 
         const storedCDN =
-          await this.dependencyRegistry.getDependencyAdditionalCDNAtIndex(
+          await config.dependencyRegistry.getDependencyAdditionalCDNAtIndex(
             dependencyTypeBytes,
             0
           );
@@ -982,22 +1084,27 @@ describe(`DependencyRegistryV0`, async function () {
     });
   });
   describe("dependency additional repositories", function () {
-    beforeEach(async function (this: DependencyRegistryV0TestContext) {
-      await this.dependencyRegistry
-        .connect(this.accounts.deployer)
+    beforeEach(async function () {
+      const config = await loadFixture(_beforeEach);
+      await config.dependencyRegistry
+        .connect(config.accounts.deployer)
         .addDependency(
           dependencyTypeBytes,
           preferredCDN,
           preferredRepository,
           referenceWebsite
         );
+      // pass config to tests in this describe block
+      this.config = config;
     });
 
     describe("addDependencyAdditionalRepository", function () {
-      it("does not allow non-admins to add additional repository", async function (this: DependencyRegistryV0TestContext) {
+      it("does not allow non-admins to add additional repository", async function () {
+        // get config from beforeEach
+        const config = this.config;
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.user)
+          config.dependencyRegistry
+            .connect(config.accounts.user)
             .addDependencyAdditionalRepository(
               dependencyTypeBytes,
               "https://github.com"
@@ -1005,10 +1112,12 @@ describe(`DependencyRegistryV0`, async function () {
           ONLY_ADMIN_ACL_ERROR
         );
       });
-      it("does not allow adding additional repository for a dependency that does not exist", async function (this: DependencyRegistryV0TestContext) {
+      it("does not allow adding additional repository for a dependency that does not exist", async function () {
+        // get config from beforeEach
+        const config = this.config;
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
             .addDependencyAdditionalRepository(
               ethers.utils.formatBytes32String("nonExistentDependencyType"),
               "https://github.com"
@@ -1016,38 +1125,42 @@ describe(`DependencyRegistryV0`, async function () {
           ONLY_EXISTING_DEPENDENCY_TYPE_ERROR
         );
       });
-      it("does not allow adding empty string as additional repository", async function (this: DependencyRegistryV0TestContext) {
+      it("does not allow adding empty string as additional repository", async function () {
+        // get config from beforeEach
+        const config = this.config;
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
             .addDependencyAdditionalRepository(dependencyTypeBytes, ""),
           ONLY_NON_EMPTY_STRING_ERROR
         );
       });
-      it("allows admin to add additional repository", async function (this: DependencyRegistryV0TestContext) {
+      it("allows admin to add additional repository", async function () {
+        // get config from beforeEach
+        const config = this.config;
         await expect(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
             .addDependencyAdditionalRepository(
               dependencyTypeBytes,
               "https://github.com"
             )
         )
           .to.emit(
-            this.dependencyRegistry,
+            config.dependencyRegistry,
             "DependencyAdditionalRepositoryUpdated"
           )
           .withArgs(dependencyTypeBytes, "https://github.com", 0);
 
         const dependencyDetails =
-          await this.dependencyRegistry.getDependencyDetails(
+          await config.dependencyRegistry.getDependencyDetails(
             dependencyTypeBytes
           );
 
         expect(dependencyDetails.additionalRepositoryCount).to.eq(1);
 
         const storedRepository =
-          await this.dependencyRegistry.getDependencyAdditionalRepositoryAtIndex(
+          await config.dependencyRegistry.getDependencyAdditionalRepositoryAtIndex(
             dependencyTypeBytes,
             0
           );
@@ -1055,10 +1168,12 @@ describe(`DependencyRegistryV0`, async function () {
       });
     });
     describe("removeDependencyAdditionalRepositoryAtIndex", function () {
-      it("does not allow non-admins to remove additional repository", async function (this: DependencyRegistryV0TestContext) {
+      it("does not allow non-admins to remove additional repository", async function () {
+        // get config from beforeEach
+        const config = this.config;
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.user)
+          config.dependencyRegistry
+            .connect(config.accounts.user)
             .removeDependencyAdditionalRepositoryAtIndex(
               dependencyTypeBytes,
               0
@@ -1066,10 +1181,12 @@ describe(`DependencyRegistryV0`, async function () {
           ONLY_ADMIN_ACL_ERROR
         );
       });
-      it("does not allow removing additional repository for a dependency that does not exist", async function (this: DependencyRegistryV0TestContext) {
+      it("does not allow removing additional repository for a dependency that does not exist", async function () {
+        // get config from beforeEach
+        const config = this.config;
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
             .removeDependencyAdditionalRepositoryAtIndex(
               ethers.utils.formatBytes32String("nonExistentDependencyType"),
               0
@@ -1077,10 +1194,12 @@ describe(`DependencyRegistryV0`, async function () {
           ONLY_EXISTING_DEPENDENCY_TYPE_ERROR
         );
       });
-      it("does not allow removing additional repository at index that does not exist", async function (this: DependencyRegistryV0TestContext) {
+      it("does not allow removing additional repository at index that does not exist", async function () {
+        // get config from beforeEach
+        const config = this.config;
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
             .removeDependencyAdditionalRepositoryAtIndex(
               dependencyTypeBytes,
               1
@@ -1088,34 +1207,36 @@ describe(`DependencyRegistryV0`, async function () {
           "Asset index out of range"
         );
       });
-      it("allows admin to remove additional repository", async function (this: DependencyRegistryV0TestContext) {
-        await this.dependencyRegistry
-          .connect(this.accounts.deployer)
+      it("allows admin to remove additional repository", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
           .addDependencyAdditionalRepository(
             dependencyTypeBytes,
             "https://github.com"
           );
 
         await expect(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
             .removeDependencyAdditionalRepositoryAtIndex(dependencyTypeBytes, 0)
         )
           .to.emit(
-            this.dependencyRegistry,
+            config.dependencyRegistry,
             "DependencyAdditionalRepositoryRemoved"
           )
           .withArgs(dependencyTypeBytes, 0);
 
         const dependencyDetails =
-          await this.dependencyRegistry.getDependencyDetails(
+          await config.dependencyRegistry.getDependencyDetails(
             dependencyTypeBytes
           );
 
         expect(dependencyDetails.additionalRepositoryCount).to.eq(0);
 
         const storedRepository =
-          await this.dependencyRegistry.getDependencyAdditionalRepositoryAtIndex(
+          await config.dependencyRegistry.getDependencyAdditionalRepositoryAtIndex(
             dependencyTypeBytes,
             0
           );
@@ -1123,10 +1244,12 @@ describe(`DependencyRegistryV0`, async function () {
       });
     });
     describe("updateDependencyAdditionalRepositoryAtIndex", function () {
-      it("does not allow non-admins to update additional repository", async function (this: DependencyRegistryV0TestContext) {
+      it("does not allow non-admins to update additional repository", async function () {
+        // get config from beforeEach
+        const config = this.config;
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.user)
+          config.dependencyRegistry
+            .connect(config.accounts.user)
             .updateDependencyAdditionalRepositoryAtIndex(
               dependencyTypeBytes,
               0,
@@ -1135,10 +1258,12 @@ describe(`DependencyRegistryV0`, async function () {
           ONLY_ADMIN_ACL_ERROR
         );
       });
-      it("does not allow updating additional repository for a dependency that does not exist", async function (this: DependencyRegistryV0TestContext) {
+      it("does not allow updating additional repository for a dependency that does not exist", async function () {
+        // get config from beforeEach
+        const config = this.config;
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
             .updateDependencyAdditionalRepositoryAtIndex(
               ethers.utils.formatBytes32String("nonExistentDependencyType"),
               0,
@@ -1147,10 +1272,12 @@ describe(`DependencyRegistryV0`, async function () {
           ONLY_EXISTING_DEPENDENCY_TYPE_ERROR
         );
       });
-      it("does not allow updating additional repository at index that does not exist", async function (this: DependencyRegistryV0TestContext) {
+      it("does not allow updating additional repository at index that does not exist", async function () {
+        // get config from beforeEach
+        const config = this.config;
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
             .updateDependencyAdditionalRepositoryAtIndex(
               dependencyTypeBytes,
               1,
@@ -1159,10 +1286,12 @@ describe(`DependencyRegistryV0`, async function () {
           "Asset index out of range"
         );
       });
-      it("does not allow updating additional repository to empty string", async function (this: DependencyRegistryV0TestContext) {
+      it("does not allow updating additional repository to empty string", async function () {
+        // get config from beforeEach
+        const config = this.config;
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
             .updateDependencyAdditionalRepositoryAtIndex(
               dependencyTypeBytes,
               0,
@@ -1171,17 +1300,19 @@ describe(`DependencyRegistryV0`, async function () {
           ONLY_NON_EMPTY_STRING_ERROR
         );
       });
-      it("allows admin to update additional repository", async function (this: DependencyRegistryV0TestContext) {
-        await this.dependencyRegistry
-          .connect(this.accounts.deployer)
+      it("allows admin to update additional repository", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
           .addDependencyAdditionalRepository(
             dependencyTypeBytes,
             "https://github.com"
           );
 
         await expect(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
             .updateDependencyAdditionalRepositoryAtIndex(
               dependencyTypeBytes,
               0,
@@ -1189,13 +1320,13 @@ describe(`DependencyRegistryV0`, async function () {
             )
         )
           .to.emit(
-            this.dependencyRegistry,
+            config.dependencyRegistry,
             "DependencyAdditionalRepositoryUpdated"
           )
           .withArgs(dependencyTypeBytes, "https://bitbucket.com", 0);
 
         const storedRepository =
-          await this.dependencyRegistry.getDependencyAdditionalRepositoryAtIndex(
+          await config.dependencyRegistry.getDependencyAdditionalRepositoryAtIndex(
             dependencyTypeBytes,
             0
           );
@@ -1204,31 +1335,35 @@ describe(`DependencyRegistryV0`, async function () {
     });
 
     describe("views", function () {
-      it("getdependencyDetails", async function (this: DependencyRegistryV0TestContext) {
-        await this.dependencyRegistry
-          .connect(this.accounts.deployer)
+      it("getdependencyDetails", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
           .addDependencyAdditionalRepository(
             dependencyTypeBytes,
             "https://github.com"
           );
 
         const dependencyDetails =
-          await this.dependencyRegistry.getDependencyDetails(
+          await config.dependencyRegistry.getDependencyDetails(
             dependencyTypeBytes
           );
 
         expect(dependencyDetails.additionalRepositoryCount).to.eq(1);
       });
-      it("getDependencyAdditionalRepositoryAtIndex", async function (this: DependencyRegistryV0TestContext) {
-        await this.dependencyRegistry
-          .connect(this.accounts.deployer)
+      it("getDependencyAdditionalRepositoryAtIndex", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
           .addDependencyAdditionalRepository(
             dependencyTypeBytes,
             "https://github.com"
           );
 
         const storedRepository =
-          await this.dependencyRegistry.getDependencyAdditionalRepositoryAtIndex(
+          await config.dependencyRegistry.getDependencyAdditionalRepositoryAtIndex(
             dependencyTypeBytes,
             0
           );
@@ -1237,259 +1372,306 @@ describe(`DependencyRegistryV0`, async function () {
     });
   });
   describe("project dependency override", function () {
-    beforeEach(async function (this: DependencyRegistryV0TestContext) {
-      await this.dependencyRegistry
-        .connect(this.accounts.deployer)
+    beforeEach(async function () {
+      const config = await loadFixture(_beforeEach);
+      await config.dependencyRegistry
+        .connect(config.accounts.deployer)
         .addDependency(
           dependencyTypeBytes,
           preferredCDN,
           preferredRepository,
           referenceWebsite
         );
+      // pass config to tests in this describe block
+      this.config = config;
     });
     describe("addSupportedCoreContract", function () {
-      it("does not allow non-admins to add supported core contract", async function (this: DependencyRegistryV0TestContext) {
+      it("does not allow non-admins to add supported core contract", async function () {
+        // get config from beforeEach
+        const config = this.config;
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.user)
-            .addSupportedCoreContract(this.genArt721Core.address),
+          config.dependencyRegistry
+            .connect(config.accounts.user)
+            .addSupportedCoreContract(config.genArt721Core.address),
           ONLY_ADMIN_ACL_ERROR
         );
       });
-      it("does not allow adding supported core contract that already exists", async function (this: DependencyRegistryV0TestContext) {
-        await this.dependencyRegistry
-          .connect(this.accounts.deployer)
-          .addSupportedCoreContract(this.genArt721Core.address);
+      it("does not allow adding supported core contract that already exists", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .addSupportedCoreContract(config.genArt721Core.address);
 
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
-            .addSupportedCoreContract(this.genArt721Core.address),
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .addSupportedCoreContract(config.genArt721Core.address),
           "Contract already supported"
         );
       });
-      it("does not allow the zero addresss", function (this: DependencyRegistryV0TestContext) {
-        expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
+      it("does not allow the zero addresss", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
             .addSupportedCoreContract(ethers.constants.AddressZero),
           "Must input non-zero address"
         );
       });
-      it("allows admin to add supported core contract", async function (this: DependencyRegistryV0TestContext) {
+
+      it("allows admin to add supported core contract", async function () {
+        // get config from beforeEach
+        const config = this.config;
         await expect(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
-            .addSupportedCoreContract(this.genArt721Core.address)
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .addSupportedCoreContract(config.genArt721Core.address)
         )
-          .to.emit(this.dependencyRegistry, "SupportedCoreContractAdded")
-          .withArgs(this.genArt721Core.address);
+          .to.emit(config.dependencyRegistry, "SupportedCoreContractAdded")
+          .withArgs(config.genArt721Core.address);
 
         const supportedCoreContractCount =
-          await this.dependencyRegistry.getSupportedCoreContractCount();
+          await config.dependencyRegistry.getSupportedCoreContractCount();
         expect(supportedCoreContractCount).to.eq(1);
 
         const storedCoreContract =
-          await this.dependencyRegistry.getSupportedCoreContractAtIndex(0);
-        expect(storedCoreContract).to.eq(this.genArt721Core.address);
+          await config.dependencyRegistry.getSupportedCoreContractAtIndex(0);
+        expect(storedCoreContract).to.eq(config.genArt721Core.address);
 
         const supportedCoreContracts =
-          await this.dependencyRegistry.getSupportedCoreContracts();
-        expect(supportedCoreContracts).to.deep.eq([this.genArt721Core.address]);
+          await config.dependencyRegistry.getSupportedCoreContracts();
+        expect(supportedCoreContracts).to.deep.eq([
+          config.genArt721Core.address,
+        ]);
       });
     });
     describe("removeSupportedCoreContract", function () {
-      it("does not allow non-admins to remove supported core contract", async function (this: DependencyRegistryV0TestContext) {
+      it("does not allow non-admins to remove supported core contract", async function () {
+        // get config from beforeEach
+        const config = this.config;
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.user)
-            .removeSupportedCoreContract(this.genArt721Core.address),
+          config.dependencyRegistry
+            .connect(config.accounts.user)
+            .removeSupportedCoreContract(config.genArt721Core.address),
           ONLY_ADMIN_ACL_ERROR
         );
       });
-      it("does not allow removing supported core contract that does not exist", async function (this: DependencyRegistryV0TestContext) {
+      it("does not allow removing supported core contract that does not exist", async function () {
+        // get config from beforeEach
+        const config = this.config;
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
-            .removeSupportedCoreContract(this.genArt721Core.address),
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .removeSupportedCoreContract(config.genArt721Core.address),
           "Core contract not supported"
         );
       });
-      it("allows admin to remove supported core contract", async function (this: DependencyRegistryV0TestContext) {
-        await this.dependencyRegistry
-          .connect(this.accounts.deployer)
-          .addSupportedCoreContract(this.genArt721Core.address);
+      it("allows admin to remove supported core contract", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .addSupportedCoreContract(config.genArt721Core.address);
 
         await expect(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
-            .removeSupportedCoreContract(this.genArt721Core.address)
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .removeSupportedCoreContract(config.genArt721Core.address)
         )
-          .to.emit(this.dependencyRegistry, "SupportedCoreContractRemoved")
-          .withArgs(this.genArt721Core.address);
+          .to.emit(config.dependencyRegistry, "SupportedCoreContractRemoved")
+          .withArgs(config.genArt721Core.address);
 
         const supportedCoreContractCount =
-          await this.dependencyRegistry.getSupportedCoreContractCount();
+          await config.dependencyRegistry.getSupportedCoreContractCount();
         expect(supportedCoreContractCount).to.eq(0);
 
         await expectRevert(
-          this.dependencyRegistry.getSupportedCoreContractAtIndex(0),
+          config.dependencyRegistry.getSupportedCoreContractAtIndex(0),
           "Index out of bounds"
         );
 
         const supportedCoreContracts =
-          await this.dependencyRegistry.getSupportedCoreContracts();
+          await config.dependencyRegistry.getSupportedCoreContracts();
         expect(supportedCoreContracts).to.deep.eq([]);
       });
     });
     describe("addProjectDependencyTypeOverride", function () {
-      it("does not allow non-admins to add project dependency override", async function (this: DependencyRegistryV0TestContext) {
+      it("does not allow non-admins to add project dependency override", async function () {
+        // get config from beforeEach
+        const config = this.config;
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.user)
+          config.dependencyRegistry
+            .connect(config.accounts.user)
             .addProjectDependencyTypeOverride(
-              this.genArt721Core.address,
+              config.genArt721Core.address,
               0,
               dependencyTypeBytes
             ),
           ONLY_ADMIN_ACL_ERROR
         );
       });
-      it("does not allow adding override that is not a registered dependency", async function (this: DependencyRegistryV0TestContext) {
+      it("does not allow adding override that is not a registered dependency", async function () {
+        // get config from beforeEach
+        const config = this.config;
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
             .addProjectDependencyTypeOverride(
-              this.genArt721Core.address,
+              config.genArt721Core.address,
               0,
               ethers.utils.formatBytes32String("not@registered")
             ),
           "Dependency type does not exist"
         );
       });
-      it("does not allow adding override for a project that is not on a supported core contract", async function (this: DependencyRegistryV0TestContext) {
+      it("does not allow adding override for a project that is not on a supported core contract", async function () {
+        // get config from beforeEach
+        const config = this.config;
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
             .addProjectDependencyTypeOverride(
-              this.genArt721Core.address,
+              config.genArt721Core.address,
               0,
               dependencyTypeBytes
             ),
           "Core contract not supported"
         );
       });
-      it("allows admin to add project dependency override", async function (this: DependencyRegistryV0TestContext) {
-        await this.dependencyRegistry
-          .connect(this.accounts.deployer)
-          .addSupportedCoreContract(this.genArt721Core.address);
+      it("allows admin to add project dependency override", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .addSupportedCoreContract(config.genArt721Core.address);
 
         await expect(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
             .addProjectDependencyTypeOverride(
-              this.genArt721Core.address,
+              config.genArt721Core.address,
               0,
               dependencyTypeBytes
             )
         )
           .to.emit(
-            this.dependencyRegistry,
+            config.dependencyRegistry,
             "ProjectDependencyTypeOverrideAdded"
           )
-          .withArgs(this.genArt721Core.address, 0, dependencyTypeBytes);
+          .withArgs(config.genArt721Core.address, 0, dependencyTypeBytes);
 
         const storedDependencyType =
-          await this.dependencyRegistry.getDependencyTypeForProject(
-            this.genArt721Core.address,
+          await config.dependencyRegistry.getDependencyTypeForProject(
+            config.genArt721Core.address,
             0
           );
         expect(storedDependencyType).to.eq(dependencyType);
       });
     });
     describe("removeProjectDependencyTypeOverride", function () {
-      it("does not allow non-admins to remove project dependency override", async function (this: DependencyRegistryV0TestContext) {
+      it("does not allow non-admins to remove project dependency override", async function () {
+        // get config from beforeEach
+        const config = this.config;
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.user)
-            .removeProjectDependencyTypeOverride(this.genArt721Core.address, 0),
+          config.dependencyRegistry
+            .connect(config.accounts.user)
+            .removeProjectDependencyTypeOverride(
+              config.genArt721Core.address,
+              0
+            ),
           ONLY_ADMIN_ACL_ERROR
         );
       });
-      it("reverts if override does not exist", async function (this: DependencyRegistryV0TestContext) {
+      it("reverts if override does not exist", async function () {
+        // get config from beforeEach
+        const config = this.config;
         await expectRevert(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
-            .removeProjectDependencyTypeOverride(this.genArt721Core.address, 0),
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .removeProjectDependencyTypeOverride(
+              config.genArt721Core.address,
+              0
+            ),
           "No override set for project"
         );
       });
-      it("allows admin to remove project dependency override", async function (this: DependencyRegistryV0TestContext) {
-        await this.dependencyRegistry
-          .connect(this.accounts.deployer)
-          .addSupportedCoreContract(this.genArt721Core.address);
+      it("allows admin to remove project dependency override", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .addSupportedCoreContract(config.genArt721Core.address);
 
-        await this.dependencyRegistry
-          .connect(this.accounts.deployer)
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
           .addProjectDependencyTypeOverride(
-            this.genArt721Core.address,
+            config.genArt721Core.address,
             0,
             dependencyTypeBytes
           );
 
         await expect(
-          this.dependencyRegistry
-            .connect(this.accounts.deployer)
-            .removeProjectDependencyTypeOverride(this.genArt721Core.address, 0)
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .removeProjectDependencyTypeOverride(
+              config.genArt721Core.address,
+              0
+            )
         )
           .to.emit(
-            this.dependencyRegistry,
+            config.dependencyRegistry,
             "ProjectDependencyTypeOverrideRemoved"
           )
-          .withArgs(this.genArt721Core.address, 0);
+          .withArgs(config.genArt721Core.address, 0);
 
         const storedDependencyType =
-          await this.dependencyRegistry.getDependencyTypeForProject(
-            this.genArt721Core.address,
+          await config.dependencyRegistry.getDependencyTypeForProject(
+            config.genArt721Core.address,
             0
           );
         expect(storedDependencyType).to.eq("");
       });
     });
     describe("getDependencyTypeForProject", function () {
-      it("reverts if core contract is not supported", async function (this: DependencyRegistryV0TestContext) {
+      it("reverts if core contract is not supported", async function () {
+        // get config from beforeEach
+        const config = this.config;
         await expectRevert(
-          this.dependencyRegistry.getDependencyTypeForProject(
-            this.genArt721Core.address,
+          config.dependencyRegistry.getDependencyTypeForProject(
+            config.genArt721Core.address,
             0
           ),
           "Core contract not supported"
         );
       });
 
-      it("reverts if no override and contract does not support projectScriptDetails", async function (this: DependencyRegistryV0TestContext) {
+      it("reverts if no override and contract does not support projectScriptDetails", async function () {
+        // get config from beforeEach
+        const config = this.config;
         const {
           genArt721Core: genArt721CoreV1,
         }: { genArt721Core: GenArt721CoreV1 } =
-          await deployCoreWithMinterFilter.call(
-            this,
+          await deployCoreWithMinterFilter(
+            config,
             "GenArt721CoreV1",
             "MinterFilterV0"
           );
 
         await genArt721CoreV1.addProject(
           "v1 project",
-          this.accounts.artist.address,
+          config.accounts.artist.address,
           ethers.utils.parseEther("0.1"),
           true
         );
 
-        await this.dependencyRegistry
-          .connect(this.accounts.deployer)
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
           .addSupportedCoreContract(genArt721CoreV1.address);
 
         await expectRevert(
-          this.dependencyRegistry.getDependencyTypeForProject(
+          config.dependencyRegistry.getDependencyTypeForProject(
             genArt721CoreV1.address,
             0
           ),
@@ -1497,53 +1679,57 @@ describe(`DependencyRegistryV0`, async function () {
         );
       });
 
-      it("returns the overridden value if present", async function (this: DependencyRegistryV0TestContext) {
-        await this.dependencyRegistry
-          .connect(this.accounts.deployer)
-          .addSupportedCoreContract(this.genArt721Core.address);
+      it("returns the overridden value if present", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .addSupportedCoreContract(config.genArt721Core.address);
 
         const coreDepType = "core@0";
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
           .updateProjectScriptType(
             0,
             ethers.utils.formatBytes32String(coreDepType)
           );
 
         const override = dependencyType;
-        await this.dependencyRegistry
-          .connect(this.accounts.deployer)
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
           .addProjectDependencyTypeOverride(
-            this.genArt721Core.address,
+            config.genArt721Core.address,
             0,
             ethers.utils.formatBytes32String(override)
           );
 
         const regDepType =
-          await this.dependencyRegistry.getDependencyTypeForProject(
-            this.genArt721Core.address,
+          await config.dependencyRegistry.getDependencyTypeForProject(
+            config.genArt721Core.address,
             0
           );
 
         expect(regDepType).to.eq(override);
       });
 
-      it("returns the dependency type from the core contract if no override is set", async function (this: DependencyRegistryV0TestContext) {
-        await this.dependencyRegistry
-          .connect(this.accounts.deployer)
-          .addSupportedCoreContract(this.genArt721Core.address);
+      it("returns the dependency type from the core contract if no override is set", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .addSupportedCoreContract(config.genArt721Core.address);
 
         const coreDepType = "core@0";
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
           .updateProjectScriptType(
             0,
             ethers.utils.formatBytes32String(coreDepType)
           );
 
         const regDepType =
-          await this.dependencyRegistry.getDependencyTypeForProject(
-            this.genArt721Core.address,
+          await config.dependencyRegistry.getDependencyTypeForProject(
+            config.genArt721Core.address,
             0
           );
 
@@ -1552,38 +1738,40 @@ describe(`DependencyRegistryV0`, async function () {
     });
   });
   describe("adminACLContract", function () {
-    it("returns expected adminACLContract address", async function (this: DependencyRegistryV0TestContext) {
-      expect(await this.genArt721Core.adminACLContract()).to.be.equal(
-        this.adminACL.address
+    it("returns expected adminACLContract address", async function () {
+      const config = await loadFixture(_beforeEach);
+      expect(await config.genArt721Core.adminACLContract()).to.be.equal(
+        config.adminACL.address
       );
     });
 
-    it("behaves as expected when transferring ownership", async function (this: DependencyRegistryV0TestContext) {
+    it("behaves as expected when transferring ownership", async function () {
+      const config = await loadFixture(_beforeEach);
       // deploy new ACL with user as superAdmin
-      const userAdminACLFactory = new AdminACLV0__factory(this.accounts.user);
+      const userAdminACLFactory = new AdminACLV0__factory(config.accounts.user);
       const userAdminACL = await userAdminACLFactory.deploy();
 
       // update owner of core to new userAdminACL, expect OwnershipTransferred event
       await expect(
-        this.adminACL
-          .connect(this.accounts.deployer)
+        config.adminACL
+          .connect(config.accounts.deployer)
           .transferOwnershipOn(
-            this.dependencyRegistry.address,
+            config.dependencyRegistry.address,
             userAdminACL.address
           )
       )
-        .to.emit(this.dependencyRegistry, "OwnershipTransferred")
-        .withArgs(this.adminACL.address, userAdminACL.address);
+        .to.emit(config.dependencyRegistry, "OwnershipTransferred")
+        .withArgs(config.adminACL.address, userAdminACL.address);
       // ensure owner + public adminACLContract has been updated
-      expect(await this.dependencyRegistry.owner()).to.be.equal(
+      expect(await config.dependencyRegistry.owner()).to.be.equal(
         userAdminACL.address
       );
-      expect(await this.dependencyRegistry.adminACLContract()).to.be.equal(
+      expect(await config.dependencyRegistry.adminACLContract()).to.be.equal(
         userAdminACL.address
       );
       // ensure new userAdminACL may update project
-      await this.dependencyRegistry
-        .connect(this.accounts.user)
+      await config.dependencyRegistry
+        .connect(config.accounts.user)
         .addDependency(
           ethers.utils.formatBytes32String("three@0.0.24"),
           "preferredCDN",
@@ -1592,28 +1780,29 @@ describe(`DependencyRegistryV0`, async function () {
         );
     });
 
-    it("behaves as expected when renouncing ownership", async function (this: DependencyRegistryV0TestContext) {
+    it("behaves as expected when renouncing ownership", async function () {
+      const config = await loadFixture(_beforeEach);
       // update owner of core to null address, expect OwnershipTransferred event
       await expect(
-        await this.adminACL
-          .connect(this.accounts.deployer)
-          .renounceOwnershipOn(this.dependencyRegistry.address)
+        await config.adminACL
+          .connect(config.accounts.deployer)
+          .renounceOwnershipOn(config.dependencyRegistry.address)
       )
-        .to.emit(this.dependencyRegistry, "OwnershipTransferred")
-        .withArgs(this.adminACL.address, constants.ZERO_ADDRESS);
+        .to.emit(config.dependencyRegistry, "OwnershipTransferred")
+        .withArgs(config.adminACL.address, constants.ZERO_ADDRESS);
 
       // ensure owner + public adminACLContract has been updated
-      expect(await this.dependencyRegistry.owner()).to.be.equal(
+      expect(await config.dependencyRegistry.owner()).to.be.equal(
         constants.ZERO_ADDRESS
       );
-      expect(await this.dependencyRegistry.adminACLContract()).to.be.equal(
+      expect(await config.dependencyRegistry.adminACLContract()).to.be.equal(
         constants.ZERO_ADDRESS
       );
       // ensure prior adminACL may not perform an admin function
       await expectRevert(
         // ensure new userAdminACL may update project
-        this.dependencyRegistry
-          .connect(this.accounts.user)
+        config.dependencyRegistry
+          .connect(config.accounts.user)
           .addDependency(
             ethers.utils.formatBytes32String("three@0.0.24"),
             "preferredCDN",

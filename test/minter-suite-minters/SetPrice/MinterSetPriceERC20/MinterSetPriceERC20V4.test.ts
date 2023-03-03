@@ -1,12 +1,15 @@
 import { expect } from "chai";
 import { ethers } from "hardhat";
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expectRevert } from "@openzeppelin/test-helpers";
 import {
+  T_Config,
   getAccounts,
   assignDefaultConstants,
   deployAndGet,
   deployCoreWithMinterFilter,
   safeAddProject,
+  requireBigNumberIsClose,
 } from "../../../util/common";
 
 import { MinterSetPriceERC20_Common } from "./MinterSetPriceERC20.common";
@@ -24,139 +27,146 @@ const coreContractsToTest = [
   "GenArt721CoreV3", // flagship V3 core
   "GenArt721CoreV3_Explorations", // V3 core explorations contract
   "GenArt721CoreV3_Engine", // V3 core engine contract
+  "GenArt721CoreV3_Engine_Flex", // V3 core Engine Flex contract
 ];
 
 const TARGET_MINTER_NAME = "MinterSetPriceERC20V4";
 const TARGET_MINTER_VERSION = "v4.1.0";
 
 /**
- * These tests intended to ensure this Filtered Minter integrates properly with
+ * These tests intended to ensure config Filtered Minter integrates properly with
  * V3 core contracts, both flagship and engine.
  */
 for (const coreContractName of coreContractsToTest) {
   describe(`${TARGET_MINTER_NAME}_${coreContractName}`, async function () {
-    beforeEach(async function () {
-      // standard accounts and constants
-      this.accounts = await getAccounts();
-      await assignDefaultConstants.call(this);
-      this.higherPricePerTokenInWei = this.pricePerTokenInWei.add(
+    async function _beforeEach() {
+      let config: T_Config = {
+        accounts: await getAccounts(),
+      };
+      config = await assignDefaultConstants(config);
+      config.higherPricePerTokenInWei = config.pricePerTokenInWei.add(
         ethers.utils.parseEther("0.1")
       );
 
       // deploy and configure minter filter and minter
       ({
-        genArt721Core: this.genArt721Core,
-        minterFilter: this.minterFilter,
-        randomizer: this.randomizer,
-      } = await deployCoreWithMinterFilter.call(
-        this,
+        genArt721Core: config.genArt721Core,
+        minterFilter: config.minterFilter,
+        randomizer: config.randomizer,
+      } = await deployCoreWithMinterFilter(
+        config,
         coreContractName,
         "MinterFilterV1"
       ));
 
-      this.targetMinterName = TARGET_MINTER_NAME;
+      config.targetMinterName = TARGET_MINTER_NAME;
       const minterFactory = await ethers.getContractFactory(
-        this.targetMinterName
+        config.targetMinterName
       );
-      this.minter = await minterFactory.deploy(
-        this.genArt721Core.address,
-        this.minterFilter.address
+      config.minter = await minterFactory.deploy(
+        config.genArt721Core.address,
+        config.minterFilter.address
       );
-      this.isEngine = await this.minter.isEngine();
+      config.isEngine = await config.minter.isEngine();
 
       await safeAddProject(
-        this.genArt721Core,
-        this.accounts.deployer,
-        this.accounts.artist.address
+        config.genArt721Core,
+        config.accounts.deployer,
+        config.accounts.artist.address
       );
       await safeAddProject(
-        this.genArt721Core,
-        this.accounts.deployer,
-        this.accounts.artist.address
+        config.genArt721Core,
+        config.accounts.deployer,
+        config.accounts.artist.address
       );
       await safeAddProject(
-        this.genArt721Core,
-        this.accounts.deployer,
-        this.accounts.artist.address
+        config.genArt721Core,
+        config.accounts.deployer,
+        config.accounts.artist.address
       );
 
-      await this.genArt721Core
-        .connect(this.accounts.deployer)
-        .toggleProjectIsActive(this.projectZero);
-      await this.genArt721Core
-        .connect(this.accounts.deployer)
-        .toggleProjectIsActive(this.projectOne);
-      await this.genArt721Core
-        .connect(this.accounts.deployer)
-        .toggleProjectIsActive(this.projectTwo);
+      await config.genArt721Core
+        .connect(config.accounts.deployer)
+        .toggleProjectIsActive(config.projectZero);
+      await config.genArt721Core
+        .connect(config.accounts.deployer)
+        .toggleProjectIsActive(config.projectOne);
+      await config.genArt721Core
+        .connect(config.accounts.deployer)
+        .toggleProjectIsActive(config.projectTwo);
 
-      await this.genArt721Core
-        .connect(this.accounts.artist)
-        .updateProjectMaxInvocations(this.projectZero, this.maxInvocations);
-      await this.genArt721Core
-        .connect(this.accounts.artist)
-        .updateProjectMaxInvocations(this.projectOne, this.maxInvocations);
-      await this.genArt721Core
-        .connect(this.accounts.artist)
-        .updateProjectMaxInvocations(this.projectTwo, this.maxInvocations);
+      await config.genArt721Core
+        .connect(config.accounts.artist)
+        .updateProjectMaxInvocations(config.projectZero, config.maxInvocations);
+      await config.genArt721Core
+        .connect(config.accounts.artist)
+        .updateProjectMaxInvocations(config.projectOne, config.maxInvocations);
+      await config.genArt721Core
+        .connect(config.accounts.artist)
+        .updateProjectMaxInvocations(config.projectTwo, config.maxInvocations);
 
-      await this.genArt721Core
-        .connect(this.accounts.artist)
-        .toggleProjectIsPaused(this.projectZero);
-      await this.genArt721Core
-        .connect(this.accounts.artist)
-        .toggleProjectIsPaused(this.projectOne);
-      await this.genArt721Core
-        .connect(this.accounts.artist)
-        .toggleProjectIsPaused(this.projectTwo);
+      await config.genArt721Core
+        .connect(config.accounts.artist)
+        .toggleProjectIsPaused(config.projectZero);
+      await config.genArt721Core
+        .connect(config.accounts.artist)
+        .toggleProjectIsPaused(config.projectOne);
+      await config.genArt721Core
+        .connect(config.accounts.artist)
+        .toggleProjectIsPaused(config.projectTwo);
 
-      await this.minterFilter
-        .connect(this.accounts.deployer)
-        .addApprovedMinter(this.minter.address);
-      await this.minterFilter
-        .connect(this.accounts.deployer)
-        .setMinterForProject(this.projectZero, this.minter.address);
-      await this.minterFilter
-        .connect(this.accounts.deployer)
-        .setMinterForProject(this.projectOne, this.minter.address);
-      await this.minterFilter
-        .connect(this.accounts.deployer)
-        .setMinterForProject(this.projectTwo, this.minter.address);
+      await config.minterFilter
+        .connect(config.accounts.deployer)
+        .addApprovedMinter(config.minter.address);
+      await config.minterFilter
+        .connect(config.accounts.deployer)
+        .setMinterForProject(config.projectZero, config.minter.address);
+      await config.minterFilter
+        .connect(config.accounts.deployer)
+        .setMinterForProject(config.projectOne, config.minter.address);
+      await config.minterFilter
+        .connect(config.accounts.deployer)
+        .setMinterForProject(config.projectTwo, config.minter.address);
 
       // set token price for projects zero and one on minter
-      await this.minter
-        .connect(this.accounts.artist)
-        .updatePricePerTokenInWei(this.projectZero, this.pricePerTokenInWei);
-      await this.minter
-        .connect(this.accounts.artist)
-        .updatePricePerTokenInWei(this.projectOne, this.pricePerTokenInWei);
+      await config.minter
+        .connect(config.accounts.artist)
+        .updatePricePerTokenInWei(
+          config.projectZero,
+          config.pricePerTokenInWei
+        );
+      await config.minter
+        .connect(config.accounts.artist)
+        .updatePricePerTokenInWei(config.projectOne, config.pricePerTokenInWei);
 
       // mock ERC20 token
       const ERC20Factory = await ethers.getContractFactory("ERC20Mock");
-      this.ERC20Mock = await ERC20Factory.connect(this.accounts.user).deploy(
-        ethers.utils.parseEther("100")
-      );
-    });
+      config.ERC20Mock = await ERC20Factory.connect(
+        config.accounts.user
+      ).deploy(ethers.utils.parseEther("100"));
+      return config;
+    }
 
     describe("common MinterSetPrice (ETH) tests", async () => {
-      await MinterSetPriceERC20_Common();
+      await MinterSetPriceERC20_Common(_beforeEach);
     });
 
     describe("common MinterSetPrice V1V2V3 tests", async function () {
-      await MinterSetPriceV1V2V3V4_Common();
+      await MinterSetPriceV1V2V3V4_Common(_beforeEach);
     });
 
     describe("common MinterSetPrice V4 tests", async function () {
-      await MinterSetPriceV4_Common();
+      await MinterSetPriceV4_Common(_beforeEach);
     });
 
     describe("updatePricePerTokenInWei", async function () {
       it("does not allow price update to be zero", async function () {
+        const config = await loadFixture(_beforeEach);
         // does allow artist
         await expectRevert(
-          this.minter
-            .connect(this.accounts.artist)
-            .updatePricePerTokenInWei(this.projectZero, 0),
+          config.minter
+            .connect(config.accounts.artist)
+            .updatePricePerTokenInWei(config.projectZero, 0),
           "Price may not be 0"
         );
       });
@@ -164,144 +174,149 @@ for (const coreContractName of coreContractsToTest) {
 
     describe("purchase", async function () {
       it("requires sufficient ERC20 token approval", async function () {
+        const config = await loadFixture(_beforeEach);
         // artist changes to Mock ERC20 token
-        await this.minter
-          .connect(this.accounts.artist)
+        await config.minter
+          .connect(config.accounts.artist)
           .updateProjectCurrencyInfo(
-            this.projectZero,
+            config.projectZero,
             "MOCK",
-            this.ERC20Mock.address
+            config.ERC20Mock.address
           );
         // approve contract and able to mint with Mock token, but insufficient qty approved
-        await this.ERC20Mock.connect(this.accounts.user).approve(
-          this.minter.address,
-          this.pricePerTokenInWei.sub(1)
+        await config.ERC20Mock.connect(config.accounts.user).approve(
+          config.minter.address,
+          config.pricePerTokenInWei.sub(1)
         );
         await expectRevert(
-          this.minter.connect(this.accounts.user).purchase(this.projectZero),
+          config.minter
+            .connect(config.accounts.user)
+            .purchase(config.projectZero),
           "insufficient funds for intrinsic transaction cost"
         );
       });
 
       it("handles ERC20 splits when platform and artist have zero revenues", async function () {
+        const config = await loadFixture(_beforeEach);
         // artist changes to Mock ERC20 token
-        await this.minter
-          .connect(this.accounts.artist)
+        await config.minter
+          .connect(config.accounts.artist)
           .updateProjectCurrencyInfo(
-            this.projectZero,
+            config.projectZero,
             "MOCK",
-            this.ERC20Mock.address
+            config.ERC20Mock.address
           );
         // approve contract and able to mint with Mock token
-        await this.ERC20Mock.connect(this.accounts.user).approve(
-          this.minter.address,
-          this.pricePerTokenInWei
+        await config.ERC20Mock.connect(config.accounts.user).approve(
+          config.minter.address,
+          config.pricePerTokenInWei
         );
         // update platform to zero percent
-        if (this.isEngine) {
-          await this.genArt721Core
-            .connect(this.accounts.deployer)
+        if (config.isEngine) {
+          await config.genArt721Core
+            .connect(config.accounts.deployer)
             .updateProviderPrimarySalesPercentages(0, 0);
         } else {
-          await this.genArt721Core
-            .connect(this.accounts.deployer)
+          await config.genArt721Core
+            .connect(config.accounts.deployer)
             .updateArtblocksPrimarySalesPercentage(0);
         }
         // update artist primary split to zero
         const proposedAddressesAndSplits = [
-          this.projectZero,
-          this.accounts.artist.address,
-          this.accounts.additional.address,
+          config.projectZero,
+          config.accounts.artist.address,
+          config.accounts.additional.address,
           // @dev 100% to additional, 0% to artist, to induce zero artist payment value
           100,
-          this.accounts.additional2.address,
-          // @dev split for secondary sales doesn't matter for this test
+          config.accounts.additional2.address,
+          // @dev split for secondary sales doesn't matter for config test
           50,
         ];
-        await this.genArt721Core
-          .connect(this.accounts.artist)
+        await config.genArt721Core
+          .connect(config.accounts.artist)
           .proposeArtistPaymentAddressesAndSplits(
             ...proposedAddressesAndSplits
           );
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
           .adminAcceptArtistAddressesAndSplits(...proposedAddressesAndSplits);
         // expect successful purchase of token
-        await this.minter
-          .connect(this.accounts.user)
-          .purchase(this.projectZero);
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero);
       });
 
       it("Engine: handles ERC20 splits when every party receives revenues", async function () {
-        if (!this.isEngine) {
+        const config = await loadFixture(_beforeEach);
+        if (!config.isEngine) {
           console.log("skipping Engine-specific test");
           return;
         }
         // artist changes to Mock ERC20 token
-        await this.minter
-          .connect(this.accounts.artist)
+        await config.minter
+          .connect(config.accounts.artist)
           .updateProjectCurrencyInfo(
-            this.projectZero,
+            config.projectZero,
             "MOCK",
-            this.ERC20Mock.address
+            config.ERC20Mock.address
           );
         // approve contract and able to mint with Mock token
-        await this.ERC20Mock.connect(this.accounts.user).approve(
-          this.minter.address,
-          this.pricePerTokenInWei
+        await config.ERC20Mock.connect(config.accounts.user).approve(
+          config.minter.address,
+          config.pricePerTokenInWei
         );
         // update 10 and 11 percent to render provider and engine platform provider, respectively
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
           .updateProviderPrimarySalesPercentages(10, 11);
         // update artist primary split to zero
         const proposedAddressesAndSplits = [
-          this.projectZero,
-          this.accounts.artist.address,
-          this.accounts.additional2.address,
+          config.projectZero,
+          config.accounts.artist.address,
+          config.accounts.additional2.address,
           // @dev 49% to additional, 51% to artist, to induce payment to all parties
           49,
-          this.accounts.additional2.address,
-          // @dev split for secondary sales doesn't matter for this test
+          config.accounts.additional2.address,
+          // @dev split for secondary sales doesn't matter for config test
           50,
         ];
-        await this.genArt721Core
-          .connect(this.accounts.artist)
+        await config.genArt721Core
+          .connect(config.accounts.artist)
           .proposeArtistPaymentAddressesAndSplits(
             ...proposedAddressesAndSplits
           );
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
           .adminAcceptArtistAddressesAndSplits(...proposedAddressesAndSplits);
-        const artistOriginalBalance = await this.ERC20Mock.balanceOf(
-          this.accounts.artist.address
+        const artistOriginalBalance = await config.ERC20Mock.balanceOf(
+          config.accounts.artist.address
         );
-        const additional2OriginalBalance = await this.ERC20Mock.balanceOf(
-          this.accounts.additional2.address
+        const additional2OriginalBalance = await config.ERC20Mock.balanceOf(
+          config.accounts.additional2.address
         );
-        const deployerOriginalBalance = await this.ERC20Mock.balanceOf(
-          this.accounts.deployer.address
+        const deployerOriginalBalance = await config.ERC20Mock.balanceOf(
+          config.accounts.deployer.address
         );
         // additional is platform provider on engine tests
-        const additionalOriginalBalance = await this.ERC20Mock.balanceOf(
-          this.accounts.additional.address
+        const additionalOriginalBalance = await config.ERC20Mock.balanceOf(
+          config.accounts.additional.address
         );
         // expect successful purchase of token
-        await this.minter
-          .connect(this.accounts.user)
-          .purchase(this.projectZero);
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero);
         // confirm balances
-        const artistNewBalance = await this.ERC20Mock.balanceOf(
-          this.accounts.artist.address
+        const artistNewBalance = await config.ERC20Mock.balanceOf(
+          config.accounts.artist.address
         );
-        const additional2NewBalance = await this.ERC20Mock.balanceOf(
-          this.accounts.additional2.address
+        const additional2NewBalance = await config.ERC20Mock.balanceOf(
+          config.accounts.additional2.address
         );
-        const deployerNewBalance = await this.ERC20Mock.balanceOf(
-          this.accounts.deployer.address
+        const deployerNewBalance = await config.ERC20Mock.balanceOf(
+          config.accounts.deployer.address
         );
-        const additionalNewBalance = await this.ERC20Mock.balanceOf(
-          this.accounts.additional.address
+        const additionalNewBalance = await config.ERC20Mock.balanceOf(
+          config.accounts.additional.address
         );
         // calculate balance changes
         const artistBalanceChange = artistNewBalance.sub(artistOriginalBalance);
@@ -315,13 +330,13 @@ for (const coreContractName of coreContractsToTest) {
           additionalOriginalBalance
         );
         // calculate target balance changes
-        const targetRenderProviderRevenue = this.pricePerTokenInWei
+        const targetRenderProviderRevenue = config.pricePerTokenInWei
           .mul(10)
           .div(100);
-        const targetPlatformProviderRevenue = this.pricePerTokenInWei
+        const targetPlatformProviderRevenue = config.pricePerTokenInWei
           .mul(11)
           .div(100);
-        const remainingfunds = this.pricePerTokenInWei
+        const remainingfunds = config.pricePerTokenInWei
           .sub(targetRenderProviderRevenue)
           .sub(targetPlatformProviderRevenue);
         const targetAdditional2Revenue = remainingfunds.mul(49).div(100);
@@ -336,72 +351,73 @@ for (const coreContractName of coreContractsToTest) {
       });
 
       it("Flagship: handles ERC20 splits when every party receives revenues", async function () {
-        if (this.isEngine) {
+        const config = await loadFixture(_beforeEach);
+        if (config.isEngine) {
           console.log("skipping Flagship-specific test");
           return;
         }
         // artist changes to Mock ERC20 token
-        await this.minter
-          .connect(this.accounts.artist)
+        await config.minter
+          .connect(config.accounts.artist)
           .updateProjectCurrencyInfo(
-            this.projectZero,
+            config.projectZero,
             "MOCK",
-            this.ERC20Mock.address
+            config.ERC20Mock.address
           );
         // approve contract and able to mint with Mock token
-        await this.ERC20Mock.connect(this.accounts.user).approve(
-          this.minter.address,
-          this.pricePerTokenInWei
+        await config.ERC20Mock.connect(config.accounts.user).approve(
+          config.minter.address,
+          config.pricePerTokenInWei
         );
         // update 10 percent to render provider
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
           .updateArtblocksPrimarySalesPercentage(10);
         // update artist primary split to zero
         const proposedAddressesAndSplits = [
-          this.projectZero,
-          this.accounts.artist.address,
-          this.accounts.additional2.address,
+          config.projectZero,
+          config.accounts.artist.address,
+          config.accounts.additional2.address,
           // @dev 49% to additional, 51% to artist, to induce payment to all parties
           49,
-          this.accounts.additional2.address,
-          // @dev split for secondary sales doesn't matter for this test
+          config.accounts.additional2.address,
+          // @dev split for secondary sales doesn't matter for config test
           50,
         ];
-        await this.genArt721Core
-          .connect(this.accounts.artist)
+        await config.genArt721Core
+          .connect(config.accounts.artist)
           .proposeArtistPaymentAddressesAndSplits(
             ...proposedAddressesAndSplits
           );
-        await this.genArt721Core
-          .connect(this.accounts.deployer)
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
           .adminAcceptArtistAddressesAndSplits(...proposedAddressesAndSplits);
-        const artistOriginalBalance = await this.ERC20Mock.balanceOf(
-          this.accounts.artist.address
+        const artistOriginalBalance = await config.ERC20Mock.balanceOf(
+          config.accounts.artist.address
         );
-        const additional2OriginalBalance = await this.ERC20Mock.balanceOf(
-          this.accounts.additional2.address
+        const additional2OriginalBalance = await config.ERC20Mock.balanceOf(
+          config.accounts.additional2.address
         );
-        const deployerOriginalBalance = await this.ERC20Mock.balanceOf(
-          this.accounts.deployer.address
+        const deployerOriginalBalance = await config.ERC20Mock.balanceOf(
+          config.accounts.deployer.address
         );
         // additional is platform provider on engine tests
-        const additionalOriginalBalance = await this.ERC20Mock.balanceOf(
-          this.accounts.additional.address
+        const additionalOriginalBalance = await config.ERC20Mock.balanceOf(
+          config.accounts.additional.address
         );
         // expect successful purchase of token
-        await this.minter
-          .connect(this.accounts.user)
-          .purchase(this.projectZero);
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero);
         // confirm balances
-        const artistNewBalance = await this.ERC20Mock.balanceOf(
-          this.accounts.artist.address
+        const artistNewBalance = await config.ERC20Mock.balanceOf(
+          config.accounts.artist.address
         );
-        const additional2NewBalance = await this.ERC20Mock.balanceOf(
-          this.accounts.additional2.address
+        const additional2NewBalance = await config.ERC20Mock.balanceOf(
+          config.accounts.additional2.address
         );
-        const deployerNewBalance = await this.ERC20Mock.balanceOf(
-          this.accounts.deployer.address
+        const deployerNewBalance = await config.ERC20Mock.balanceOf(
+          config.accounts.deployer.address
         );
         // calculate balance changes
         const artistBalanceChange = artistNewBalance.sub(artistOriginalBalance);
@@ -412,10 +428,10 @@ for (const coreContractName of coreContractsToTest) {
           deployerOriginalBalance
         );
         // calculate target balance changes
-        const targetRenderProviderRevenue = this.pricePerTokenInWei
+        const targetRenderProviderRevenue = config.pricePerTokenInWei
           .mul(10)
           .div(100);
-        const remainingfunds = this.pricePerTokenInWei.sub(
+        const remainingfunds = config.pricePerTokenInWei.sub(
           targetRenderProviderRevenue
         );
         const targetAdditional2Revenue = remainingfunds.mul(49).div(100);
@@ -431,126 +447,131 @@ for (const coreContractName of coreContractsToTest) {
 
     describe("setProjectMaxInvocations", async function () {
       it("allows artist to call setProjectMaxInvocations", async function () {
-        await this.minter
-          .connect(this.accounts.artist)
-          .setProjectMaxInvocations(this.projectZero);
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
+          .setProjectMaxInvocations(config.projectZero);
       });
 
       it("resets maxHasBeenInvoked after it's been set to true locally and then max project invocations is synced from the core contract", async function () {
+        const config = await loadFixture(_beforeEach);
         // reduce local maxInvocations to 2 on minter
-        await this.minter
-          .connect(this.accounts.artist)
-          .manuallyLimitProjectMaxInvocations(this.projectZero, 1);
-        const localMaxInvocations = await this.minter
-          .connect(this.accounts.artist)
-          .projectConfig(this.projectZero);
+        await config.minter
+          .connect(config.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(config.projectZero, 1);
+        const localMaxInvocations = await config.minter
+          .connect(config.accounts.artist)
+          .projectConfig(config.projectZero);
         expect(localMaxInvocations.maxInvocations).to.equal(1);
 
         // mint a token
-        await this.minter
-          .connect(this.accounts.user)
-          .purchase(this.projectZero, {
-            value: this.pricePerTokenInWei,
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, {
+            value: config.pricePerTokenInWei,
           });
 
         // expect projectMaxHasBeenInvoked to be true
-        const hasMaxBeenInvoked = await this.minter.projectMaxHasBeenInvoked(
-          this.projectZero
+        const hasMaxBeenInvoked = await config.minter.projectMaxHasBeenInvoked(
+          config.projectZero
         );
         expect(hasMaxBeenInvoked).to.be.true;
 
         // sync max invocations from core to minter
-        await this.minter
-          .connect(this.accounts.artist)
-          .setProjectMaxInvocations(this.projectZero);
+        await config.minter
+          .connect(config.accounts.artist)
+          .setProjectMaxInvocations(config.projectZero);
 
         // expect projectMaxHasBeenInvoked to now be false
-        const hasMaxBeenInvoked2 = await this.minter.projectMaxHasBeenInvoked(
-          this.projectZero
+        const hasMaxBeenInvoked2 = await config.minter.projectMaxHasBeenInvoked(
+          config.projectZero
         );
         expect(hasMaxBeenInvoked2).to.be.false;
 
         // expect maxInvocations on the minter to be 15
-        const syncedMaxInvocations = await this.minter
-          .connect(this.accounts.artist)
-          .projectConfig(this.projectZero);
+        const syncedMaxInvocations = await config.minter
+          .connect(config.accounts.artist)
+          .projectConfig(config.projectZero);
         expect(syncedMaxInvocations.maxInvocations).to.equal(15);
       });
     });
 
     describe("manuallyLimitProjectMaxInvocations", async function () {
       it("allows artist to call manuallyLimitProjectMaxInvocations", async function () {
-        await this.minter
-          .connect(this.accounts.artist)
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
           .manuallyLimitProjectMaxInvocations(
-            this.projectZero,
-            this.maxInvocations - 1
+            config.projectZero,
+            config.maxInvocations - 1
           );
       });
       it("does not support manually setting project max invocations to be greater than the project max invocations set on the core contract", async function () {
+        const config = await loadFixture(_beforeEach);
         await expectRevert(
-          this.minter
-            .connect(this.accounts.artist)
+          config.minter
+            .connect(config.accounts.artist)
             .manuallyLimitProjectMaxInvocations(
-              this.projectZero,
-              this.maxInvocations + 1
+              config.projectZero,
+              config.maxInvocations + 1
             ),
           "Cannot increase project max invocations above core contract set project max invocations"
         );
       });
       it("appropriately sets maxHasBeenInvoked after calling manuallyLimitProjectMaxInvocations", async function () {
+        const config = await loadFixture(_beforeEach);
         // reduce local maxInvocations to 2 on minter
-        await this.minter
-          .connect(this.accounts.artist)
-          .manuallyLimitProjectMaxInvocations(this.projectZero, 1);
-        const localMaxInvocations = await this.minter
-          .connect(this.accounts.artist)
-          .projectConfig(this.projectZero);
+        await config.minter
+          .connect(config.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(config.projectZero, 1);
+        const localMaxInvocations = await config.minter
+          .connect(config.accounts.artist)
+          .projectConfig(config.projectZero);
         expect(localMaxInvocations.maxInvocations).to.equal(1);
 
-        await this.minter
-          .connect(this.accounts.user)
-          .purchase(this.projectZero, {
-            value: this.pricePerTokenInWei,
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, {
+            value: config.pricePerTokenInWei,
           });
 
         // expect projectMaxHasBeenInvoked to be true
-        const hasMaxBeenInvoked = await this.minter.projectMaxHasBeenInvoked(
-          this.projectZero
+        const hasMaxBeenInvoked = await config.minter.projectMaxHasBeenInvoked(
+          config.projectZero
         );
         expect(hasMaxBeenInvoked).to.be.true;
 
         // increase invocations on the minter
-        await this.minter
-          .connect(this.accounts.artist)
-          .manuallyLimitProjectMaxInvocations(this.projectZero, 3);
+        await config.minter
+          .connect(config.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(config.projectZero, 3);
 
         // expect maxInvocations on the minter to be 3
-        const localMaxInvocations2 = await this.minter
-          .connect(this.accounts.artist)
-          .projectConfig(this.projectZero);
+        const localMaxInvocations2 = await config.minter
+          .connect(config.accounts.artist)
+          .projectConfig(config.projectZero);
         expect(localMaxInvocations2.maxInvocations).to.equal(3);
 
         // expect projectMaxHasBeenInvoked to now be false
-        const hasMaxBeenInvoked2 = await this.minter.projectMaxHasBeenInvoked(
-          this.projectZero
+        const hasMaxBeenInvoked2 = await config.minter.projectMaxHasBeenInvoked(
+          config.projectZero
         );
         expect(hasMaxBeenInvoked2).to.be.false;
 
         // reduce invocations on the minter
-        await this.minter
-          .connect(this.accounts.artist)
-          .manuallyLimitProjectMaxInvocations(this.projectZero, 1);
+        await config.minter
+          .connect(config.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(config.projectZero, 1);
 
         // expect maxInvocations on the minter to be 1
-        const localMaxInvocations3 = await this.minter
-          .connect(this.accounts.artist)
-          .projectConfig(this.projectZero);
+        const localMaxInvocations3 = await config.minter
+          .connect(config.accounts.artist)
+          .projectConfig(config.projectZero);
         expect(localMaxInvocations3.maxInvocations).to.equal(1);
 
         // expect projectMaxHasBeenInvoked to now be true
-        const hasMaxBeenInvoked3 = await this.minter.projectMaxHasBeenInvoked(
-          this.projectZero
+        const hasMaxBeenInvoked3 = await config.minter.projectMaxHasBeenInvoked(
+          config.projectZero
         );
         expect(hasMaxBeenInvoked3).to.be.true;
       });
@@ -558,40 +579,43 @@ for (const coreContractName of coreContractsToTest) {
 
     describe("purchase", async function () {
       it("does not allow purchases even if local max invocations value is returning a false negative", async function () {
+        const config = await loadFixture(_beforeEach);
         // set local max invocations to 1
-        await this.minter
-          .connect(this.accounts.artist)
-          .manuallyLimitProjectMaxInvocations(this.projectZero, 1);
+        await config.minter
+          .connect(config.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(config.projectZero, 1);
         // switch to different minter
         const setPriceFactory = await ethers.getContractFactory(
           "MinterSetPriceV4"
         );
         const setPriceMinter = await setPriceFactory.deploy(
-          this.genArt721Core.address,
-          this.minterFilter.address
+          config.genArt721Core.address,
+          config.minterFilter.address
         );
-        await this.minterFilter.addApprovedMinter(setPriceMinter.address);
-        await this.minterFilter
-          .connect(this.accounts.artist)
+        await config.minterFilter.addApprovedMinter(setPriceMinter.address);
+        await config.minterFilter
+          .connect(config.accounts.artist)
           .setMinterForProject(0, setPriceMinter.address);
         // purchase a token on the new minter
         await setPriceMinter
-          .connect(this.accounts.artist)
+          .connect(config.accounts.artist)
           .updatePricePerTokenInWei(
-            this.projectZero,
+            config.projectZero,
             ethers.utils.parseEther("0")
           );
         await setPriceMinter
-          .connect(this.accounts.artist)
-          .purchase(this.projectZero);
+          .connect(config.accounts.artist)
+          .purchase(config.projectZero);
         // switch back to original minter
-        await this.minterFilter
-          .connect(this.accounts.artist)
-          .setMinterForProject(0, this.minter.address);
+        await config.minterFilter
+          .connect(config.accounts.artist)
+          .setMinterForProject(0, config.minter.address);
         await expectRevert(
-          this.minter.connect(this.accounts.user).purchase(this.projectZero, {
-            value: this.pricePerTokenInWei,
-          }),
+          config.minter
+            .connect(config.accounts.user)
+            .purchase(config.projectZero, {
+              value: config.pricePerTokenInWei,
+            }),
           "Maximum invocations reached"
         );
       });
@@ -599,38 +623,32 @@ for (const coreContractName of coreContractsToTest) {
 
     describe("minterVersion", async function () {
       it("correctly reports minterVersion", async function () {
-        const minterVersion = await this.minter.minterVersion();
+        const config = await loadFixture(_beforeEach);
+        const minterVersion = await config.minter.minterVersion();
         expect(minterVersion).to.equal(TARGET_MINTER_VERSION);
       });
     });
 
     describe("calculates gas", async function () {
       it("mints and calculates gas values [ @skip-on-coverage ]", async function () {
-        const tx = await this.minter
-          .connect(this.accounts.user)
-          .purchase(this.projectOne, {
-            value: this.pricePerTokenInWei,
+        const config = await loadFixture(_beforeEach);
+        const tx = await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectOne, {
+            value: config.pricePerTokenInWei,
           });
 
         const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
-        const txCost = receipt.effectiveGasPrice
-          .mul(receipt.gasUsed)
-          .toString();
-
+        const txCost = receipt.effectiveGasPrice.mul(receipt.gasUsed);
         console.log(
           "Gas cost for a successful ERC20 mint: ",
-          ethers.utils.formatUnits(txCost, "ether").toString(),
+          ethers.utils.formatUnits(txCost.toString(), "ether").toString(),
           "ETH"
         );
         // assuming a cost of 100 GWEI
-        if (this.isEngine) {
-          expect(txCost.toString()).to.equal(
-            ethers.utils.parseEther("0.0141627")
-          );
-        } else {
-          expect(txCost.toString()).to.equal(
-            ethers.utils.parseEther("0.0129289")
-          );
+        // skip gas tests for engine, flagship is sufficient to identify gas cost changes
+        if (!config.isEngine) {
+          requireBigNumberIsClose(txCost, ethers.utils.parseEther("0.0129309"));
         }
       });
     });
@@ -639,8 +657,9 @@ for (const coreContractName of coreContractsToTest) {
 
     describe("isEngine", async function () {
       it("correctly reports isEngine", async function () {
-        const coreType = await this.genArt721Core.coreType();
-        expect(coreType === "GenArt721CoreV3").to.be.equal(!this.isEngine);
+        const config = await loadFixture(_beforeEach);
+        const coreType = await config.genArt721Core.coreType();
+        expect(coreType === "GenArt721CoreV3").to.be.equal(!config.isEngine);
       });
     });
   });
@@ -648,19 +667,22 @@ for (const coreContractName of coreContractsToTest) {
 
 // single-iteration tests with mock core contract(s)
 describe(`${TARGET_MINTER_NAME} tests using mock core contract(s)`, async function () {
-  beforeEach(async function () {
-    // standard accounts and constants
-    this.accounts = await getAccounts();
-    await assignDefaultConstants.call(this);
-  });
+  async function _beforeEach() {
+    let config: T_Config = {
+      accounts: await getAccounts(),
+    };
+    config = await assignDefaultConstants(config);
+    return config;
+  }
 
   describe("constructor", async function () {
     it("requires correct quantity of return values from `getPrimaryRevenueSplits`", async function () {
+      const config = await loadFixture(_beforeEach);
       // deploy and configure core contract that returns incorrect quanty of return values for coreType response
       const coreContractName = "GenArt721CoreV3_Engine_IncorrectCoreType";
       const { genArt721Core, minterFilter, randomizer } =
-        await deployCoreWithMinterFilter.call(
-          this,
+        await deployCoreWithMinterFilter(
+          config,
           coreContractName,
           "MinterFilterV1"
         );

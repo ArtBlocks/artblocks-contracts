@@ -106,10 +106,6 @@ async function main() {
       // our minters sometimes have a third parameter that is delegation registry
       minterDeployArgs.push(DELEGATION_REGISTRY_ADDRESSES[networkName]);
     }
-    // fill in each value for the keys in minterDeployArgs
-    for (let j = 0; j < deployDetails.minterDeployArgs.length; j++) {
-      minterDeployArgs.push(deployDetails[deployDetails.minterDeployArgs[j]]);
-    }
     console.log(
       `[INFO] Deploying ${minterName} with deploy args [${minterDeployArgs}]...`
     );
@@ -187,6 +183,9 @@ Date: ${new Date().toISOString()}
 
     console.log(
       `[INFO] Completed minter deployment! ${minterName} deployed to ${minterAddress}, and allowlisted on the minter filter at ${deployDetails.minterFilterAddress}`
+    );
+    console.log(
+      `[ACTION] If this minter is to be indexed in a subgraph, ensure it is added to the subgraph's config.`
     );
   }
 }

@@ -65,17 +65,18 @@ describe("Create S3 Bucket for PBAB", () => {
   it("creates s3 bucket with pbab naming conventions", async () => {
     const pbabTokenName = "Foobar PBAB Bucket";
     const isTest = true;
-    const result = await createPBABBucket(
+    const { payload, bucketName } = await createPBABBucket(
       pbabTokenName,
       networkName,
       s3ClientMock as any,
       isTest
     );
     assert(
-      result?.["response"]["Location"] ===
+      payload?.["response"]["Location"] ===
         expectedCreatePBABBucketResponse["response"]["Location"]
     );
-    assert(result?.["url"] === expectedCreatePBABBucketResponse["url"]);
+    assert(payload?.["url"] === expectedCreatePBABBucketResponse["url"]);
+    assert(bucketName === `foobar-pbab-bucket-${networkName}`);
   });
 });
 

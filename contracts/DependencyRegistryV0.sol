@@ -65,38 +65,37 @@ contract DependencyRegistryV0 is
     EnumerableSet.AddressSet private _supportedCoreContracts;
     mapping(address => mapping(uint256 => bytes32)) projectDependencyTypeOverrides;
 
-    modifier onlyNonZeroAddress(address _address) {
+    function _onlyNonZeroAddress(address _address) internal pure {
         require(_address != address(0), "Must input non-zero address");
-        _;
     }
 
-    modifier onlyNonEmptyString(string memory _string) {
+    function _onlyNonEmptyString(string memory _string) internal pure {
         require(bytes(_string).length != 0, "Must input non-empty string");
-        _;
     }
 
-    modifier onlyAdminACL(bytes4 _selector) {
+    function _onlyAdminACL(bytes4 _selector) internal {
         require(
             adminACLAllowed(msg.sender, address(this), _selector),
             "Only Admin ACL allowed"
         );
-        _;
     }
 
-    modifier onlySupportedCoreContract(address _coreContractAddress) {
+    function _onlySupportedCoreContract(
+        address _coreContractAddress
+    ) internal view {
         require(
             _supportedCoreContracts.contains(_coreContractAddress),
             "Core contract not supported"
         );
-        _;
     }
 
-    modifier onlyExistingDependencyType(bytes32 _dependencyType) {
+    function _onlyExistingDependencyType(
+        bytes32 _dependencyType
+    ) internal view {
         require(
             _dependencyTypes.contains(_dependencyType),
             "Dependency type does not exist"
         );
-        _;
     }
 
     /**
@@ -121,7 +120,8 @@ contract DependencyRegistryV0 is
         string memory _preferredCDN,
         string memory _preferredRepository,
         string memory _referenceWebsite
-    ) external onlyAdminACL(this.addDependency.selector) {
+    ) external {
+        _onlyAdminACL(this.addDependency.selector);
         require(
             !_dependencyTypes.contains(_dependencyType),
             "Dependency type already exists"
@@ -152,13 +152,9 @@ contract DependencyRegistryV0 is
      * @notice Removes a dependency.
      * @param _dependencyType Name of dependency type (i.e. "type@version")
      */
-    function removeDependency(
-        bytes32 _dependencyType
-    )
-        external
-        onlyAdminACL(this.removeDependency.selector)
-        onlyExistingDependencyType(_dependencyType)
-    {
+    function removeDependency(bytes32 _dependencyType) external {
+        _onlyAdminACL(this.removeDependency.selector);
+        _onlyExistingDependencyType(_dependencyType);
         Dependency storage dependency = dependencyDetails[_dependencyType];
         require(
             dependency.additionalCDNCount == 0 &&
@@ -182,12 +178,10 @@ contract DependencyRegistryV0 is
     function addDependencyScript(
         bytes32 _dependencyType,
         string memory _script
-    )
-        external
-        onlyAdminACL(this.addDependencyScript.selector)
-        onlyNonEmptyString(_script)
-        onlyExistingDependencyType(_dependencyType)
-    {
+    ) external {
+        _onlyAdminACL(this.addDependencyScript.selector);
+        _onlyNonEmptyString(_script);
+        _onlyExistingDependencyType(_dependencyType);
         Dependency storage dependency = dependencyDetails[_dependencyType];
         // store script in contract bytecode
         dependency.scriptBytecodeAddresses[dependency.scriptCount] = _script
@@ -208,12 +202,10 @@ contract DependencyRegistryV0 is
         bytes32 _dependencyType,
         uint256 _scriptId,
         string memory _script
-    )
-        external
-        onlyAdminACL(this.updateDependencyScript.selector)
-        onlyNonEmptyString(_script)
-        onlyExistingDependencyType(_dependencyType)
-    {
+    ) external {
+        _onlyAdminACL(this.updateDependencyScript.selector);
+        _onlyNonEmptyString(_script);
+        _onlyExistingDependencyType(_dependencyType);
         Dependency storage dependencyType = dependencyDetails[_dependencyType];
         require(
             _scriptId < dependencyType.scriptCount,
@@ -241,13 +233,9 @@ contract DependencyRegistryV0 is
      * @notice Removes last script from dependency `_dependencyType`.
      * @param _dependencyType dependency to be updated.
      */
-    function removeDependencyLastScript(
-        bytes32 _dependencyType
-    )
-        external
-        onlyAdminACL(this.removeDependencyLastScript.selector)
-        onlyExistingDependencyType(_dependencyType)
-    {
+    function removeDependencyLastScript(bytes32 _dependencyType) external {
+        _onlyAdminACL(this.removeDependencyLastScript.selector);
+        _onlyExistingDependencyType(_dependencyType);
         Dependency storage dependency = dependencyDetails[_dependencyType];
         require(dependency.scriptCount > 0, "there are no scripts to remove");
         // purge old contract bytecode contract from the blockchain state
@@ -279,11 +267,9 @@ contract DependencyRegistryV0 is
     function updateDependencyPreferredCDN(
         bytes32 _dependencyType,
         string memory _preferredCDN
-    )
-        external
-        onlyAdminACL(this.updateDependencyPreferredCDN.selector)
-        onlyExistingDependencyType(_dependencyType)
-    {
+    ) external {
+        _onlyAdminACL(this.updateDependencyPreferredCDN.selector);
+        _onlyExistingDependencyType(_dependencyType);
         dependencyDetails[_dependencyType].preferredCDN = _preferredCDN;
 
         emit DependencyPreferredCDNUpdated(_dependencyType, _preferredCDN);
@@ -297,11 +283,9 @@ contract DependencyRegistryV0 is
     function updateDependencyPreferredRepository(
         bytes32 _dependencyType,
         string memory _preferredRepository
-    )
-        external
-        onlyAdminACL(this.updateDependencyPreferredRepository.selector)
-        onlyExistingDependencyType(_dependencyType)
-    {
+    ) external {
+        _onlyAdminACL(this.updateDependencyPreferredRepository.selector);
+        _onlyExistingDependencyType(_dependencyType);
         dependencyDetails[_dependencyType]
             .preferredRepository = _preferredRepository;
 
@@ -319,11 +303,9 @@ contract DependencyRegistryV0 is
     function updateDependencyReferenceWebsite(
         bytes32 _dependencyType,
         string memory _referenceWebsite
-    )
-        external
-        onlyAdminACL(this.updateDependencyReferenceWebsite.selector)
-        onlyExistingDependencyType(_dependencyType)
-    {
+    ) external {
+        _onlyAdminACL(this.updateDependencyReferenceWebsite.selector);
+        _onlyExistingDependencyType(_dependencyType);
         dependencyDetails[_dependencyType].referenceWebsite = _referenceWebsite;
 
         emit DependencyReferenceWebsiteUpdated(
@@ -341,12 +323,10 @@ contract DependencyRegistryV0 is
     function addDependencyAdditionalCDN(
         bytes32 _dependencyType,
         string memory _additionalCDN
-    )
-        external
-        onlyAdminACL(this.addDependencyAdditionalCDN.selector)
-        onlyNonEmptyString(_additionalCDN)
-        onlyExistingDependencyType(_dependencyType)
-    {
+    ) external {
+        _onlyAdminACL(this.addDependencyAdditionalCDN.selector);
+        _onlyNonEmptyString(_additionalCDN);
+        _onlyExistingDependencyType(_dependencyType);
         Dependency storage dependency = dependencyDetails[_dependencyType];
 
         uint256 additionalCDNCount = uint256(dependency.additionalCDNCount);
@@ -370,11 +350,9 @@ contract DependencyRegistryV0 is
     function removeDependencyAdditionalCDNAtIndex(
         bytes32 _dependencyType,
         uint256 _index
-    )
-        external
-        onlyAdminACL(this.removeDependencyAdditionalCDNAtIndex.selector)
-        onlyExistingDependencyType(_dependencyType)
-    {
+    ) external {
+        _onlyAdminACL(this.removeDependencyAdditionalCDNAtIndex.selector);
+        _onlyExistingDependencyType(_dependencyType);
         Dependency storage dependency = dependencyDetails[_dependencyType];
 
         uint256 additionalCDNCount = dependency.additionalCDNCount;
@@ -402,12 +380,10 @@ contract DependencyRegistryV0 is
         bytes32 _dependencyType,
         uint256 _index,
         string memory _additionalCDN
-    )
-        external
-        onlyAdminACL(this.updateDependencyAdditionalCDNAtIndex.selector)
-        onlyNonEmptyString(_additionalCDN)
-        onlyExistingDependencyType(_dependencyType)
-    {
+    ) external {
+        _onlyAdminACL(this.updateDependencyAdditionalCDNAtIndex.selector);
+        _onlyNonEmptyString(_additionalCDN);
+        _onlyExistingDependencyType(_dependencyType);
         Dependency storage dependency = dependencyDetails[_dependencyType];
         uint24 additionalCDNCount = dependency.additionalCDNCount;
         require(_index < additionalCDNCount, "Asset index out of range");
@@ -430,12 +406,10 @@ contract DependencyRegistryV0 is
     function addDependencyAdditionalRepository(
         bytes32 _dependencyType,
         string memory _additionalRepository
-    )
-        external
-        onlyAdminACL(this.addDependencyAdditionalRepository.selector)
-        onlyNonEmptyString(_additionalRepository)
-        onlyExistingDependencyType(_dependencyType)
-    {
+    ) external {
+        _onlyAdminACL(this.addDependencyAdditionalRepository.selector);
+        _onlyNonEmptyString(_additionalRepository);
+        _onlyExistingDependencyType(_dependencyType);
         Dependency storage dependency = dependencyDetails[_dependencyType];
         uint256 additionalRepositoryCount = uint256(
             dependency.additionalRepositoryCount
@@ -464,11 +438,11 @@ contract DependencyRegistryV0 is
     function removeDependencyAdditionalRepositoryAtIndex(
         bytes32 _dependencyType,
         uint256 _index
-    )
-        external
-        onlyAdminACL(this.removeDependencyAdditionalRepositoryAtIndex.selector)
-        onlyExistingDependencyType(_dependencyType)
-    {
+    ) external {
+        _onlyAdminACL(
+            this.removeDependencyAdditionalRepositoryAtIndex.selector
+        );
+        _onlyExistingDependencyType(_dependencyType);
         Dependency storage dependency = dependencyDetails[_dependencyType];
         uint256 additionalRepositoryCount = uint256(
             dependency.additionalRepositoryCount
@@ -497,12 +471,12 @@ contract DependencyRegistryV0 is
         bytes32 _dependencyType,
         uint256 _index,
         string memory _additionalRepository
-    )
-        external
-        onlyAdminACL(this.updateDependencyAdditionalRepositoryAtIndex.selector)
-        onlyNonEmptyString(_additionalRepository)
-        onlyExistingDependencyType(_dependencyType)
-    {
+    ) external {
+        _onlyAdminACL(
+            this.updateDependencyAdditionalRepositoryAtIndex.selector
+        );
+        _onlyNonEmptyString(_additionalRepository);
+        _onlyExistingDependencyType(_dependencyType);
         Dependency storage dependency = dependencyDetails[_dependencyType];
         uint24 additionalRepositoryCount = dependency.additionalRepositoryCount;
         require(_index < additionalRepositoryCount, "Asset index out of range");
@@ -520,13 +494,9 @@ contract DependencyRegistryV0 is
      * @notice Adds a new core contract to the list of supported core contracts.
      * @param _contractAddress Address of the core contract to be added.
      */
-    function addSupportedCoreContract(
-        address _contractAddress
-    )
-        external
-        onlyAdminACL(this.addSupportedCoreContract.selector)
-        onlyNonZeroAddress(_contractAddress)
-    {
+    function addSupportedCoreContract(address _contractAddress) external {
+        _onlyAdminACL(this.addSupportedCoreContract.selector);
+        _onlyNonZeroAddress(_contractAddress);
         require(
             !_supportedCoreContracts.contains(_contractAddress),
             "Contract already supported"
@@ -541,13 +511,9 @@ contract DependencyRegistryV0 is
      * @notice Removes a core contract from the list of supported core contracts.
      * @param _contractAddress Address of the core contract to be removed.
      */
-    function removeSupportedCoreContract(
-        address _contractAddress
-    )
-        external
-        onlyAdminACL(this.removeSupportedCoreContract.selector)
-        onlySupportedCoreContract(_contractAddress)
-    {
+    function removeSupportedCoreContract(address _contractAddress) external {
+        _onlyAdminACL(this.removeSupportedCoreContract.selector);
+        _onlySupportedCoreContract(_contractAddress);
         _supportedCoreContracts.remove(_contractAddress);
 
         emit SupportedCoreContractRemoved(_contractAddress);
@@ -566,12 +532,10 @@ contract DependencyRegistryV0 is
         address _contractAddress,
         uint256 _projectId,
         bytes32 _dependencyType
-    )
-        external
-        onlyAdminACL(this.addProjectDependencyTypeOverride.selector)
-        onlyExistingDependencyType(_dependencyType)
-        onlySupportedCoreContract(_contractAddress)
-    {
+    ) external {
+        _onlyAdminACL(this.addProjectDependencyTypeOverride.selector);
+        _onlyExistingDependencyType(_dependencyType);
+        _onlySupportedCoreContract(_contractAddress);
         projectDependencyTypeOverrides[_contractAddress][
             _projectId
         ] = _dependencyType;
@@ -592,7 +556,8 @@ contract DependencyRegistryV0 is
     function removeProjectDependencyTypeOverride(
         address _contractAddress,
         uint256 _projectId
-    ) external onlyAdminACL(this.removeProjectDependencyTypeOverride.selector) {
+    ) external {
+        _onlyAdminACL(this.removeProjectDependencyTypeOverride.selector);
         require(
             projectDependencyTypeOverrides[_contractAddress][_projectId] !=
                 bytes32(""),
@@ -808,12 +773,8 @@ contract DependencyRegistryV0 is
     function getDependencyTypeForProject(
         address _contractAddress,
         uint256 _projectId
-    )
-        external
-        view
-        onlySupportedCoreContract(_contractAddress)
-        returns (string memory)
-    {
+    ) external view returns (string memory) {
+        _onlySupportedCoreContract(_contractAddress);
         bytes32 dependencyType = projectDependencyTypeOverrides[
             _contractAddress
         ][_projectId];

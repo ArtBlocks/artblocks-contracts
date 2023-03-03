@@ -9,8 +9,10 @@ import {
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { BigNumber } from "ethers";
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 
 import {
+  T_Config,
   getAccounts,
   assignDefaultConstants,
   deployAndGet,
@@ -29,104 +31,116 @@ const runForEach = [
 
 runForEach.forEach((params) => {
   describe(`Minter Suite Integration - Core: ${params.core}`, async function () {
-    beforeEach(async function () {
-      // standard accounts and constants
-      this.accounts = await getAccounts();
-      await assignDefaultConstants.call(this, params.coreFirstProjectNumber); // this.this.projectZero = 3 on V1 core
-      this.higherPricePerTokenInWei = this.pricePerTokenInWei.add(
+    async function _beforeEach() {
+      let config: T_Config = {
+        accounts: await getAccounts(),
+      };
+      config = await assignDefaultConstants(
+        config,
+        params.coreFirstProjectNumber
+      ); // config.config.projectZero = 3 on V1 core);
+      config.higherPricePerTokenInWei = config.pricePerTokenInWei.add(
         ethers.utils.parseEther("0.1")
       );
       // deploy and configure minter filter and minter
       ({
-        genArt721Core: this.genArt721Core,
-        minterFilter: this.minterFilter,
-        randomizer: this.randomizer,
-      } = await deployCoreWithMinterFilter.call(
-        this,
+        genArt721Core: config.genArt721Core,
+        minterFilter: config.minterFilter,
+        randomizer: config.randomizer,
+      } = await deployCoreWithMinterFilter(
+        config,
         params.core,
         params.minterFilter
       ));
 
-      this.minter = await deployAndGet.call(this, params.minter, [
-        this.genArt721Core.address,
-        this.minterFilter.address,
+      config.minter = await deployAndGet(config, params.minter, [
+        config.genArt721Core.address,
+        config.minterFilter.address,
       ]);
 
-      await this.minterFilter
-        .connect(this.accounts.deployer)
-        .addApprovedMinter(this.minter.address);
-      // add projects this.projectZero and this.projectOne
+      await config.minterFilter
+        .connect(config.accounts.deployer)
+        .addApprovedMinter(config.minter.address);
+      // add projects config.projectZero and config.projectOne
       await safeAddProject(
-        this.genArt721Core,
-        this.accounts.deployer,
-        this.accounts.artist.address
+        config.genArt721Core,
+        config.accounts.deployer,
+        config.accounts.artist.address
       );
       await safeAddProject(
-        this.genArt721Core,
-        this.accounts.deployer,
-        this.accounts.artist.address
+        config.genArt721Core,
+        config.accounts.deployer,
+        config.accounts.artist.address
       );
 
-      await this.genArt721Core
-        .connect(this.accounts.deployer)
-        .toggleProjectIsActive(this.projectZero);
-      await this.genArt721Core
-        .connect(this.accounts.deployer)
-        .toggleProjectIsActive(this.projectOne);
+      await config.genArt721Core
+        .connect(config.accounts.deployer)
+        .toggleProjectIsActive(config.projectZero);
+      await config.genArt721Core
+        .connect(config.accounts.deployer)
+        .toggleProjectIsActive(config.projectOne);
 
-      await this.genArt721Core
-        .connect(this.accounts.artist)
-        .updateProjectMaxInvocations(this.projectZero, 15);
-      await this.genArt721Core
-        .connect(this.accounts.artist)
-        .updateProjectMaxInvocations(this.projectOne, 15);
+      await config.genArt721Core
+        .connect(config.accounts.artist)
+        .updateProjectMaxInvocations(config.projectZero, 15);
+      await config.genArt721Core
+        .connect(config.accounts.artist)
+        .updateProjectMaxInvocations(config.projectOne, 15);
 
-      this.genArt721Core
-        .connect(this.accounts.artist)
-        .toggleProjectIsPaused(this.projectZero);
-      this.genArt721Core
-        .connect(this.accounts.artist)
-        .toggleProjectIsPaused(this.projectOne);
+      config.genArt721Core
+        .connect(config.accounts.artist)
+        .toggleProjectIsPaused(config.projectZero);
+      config.genArt721Core
+        .connect(config.accounts.artist)
+        .toggleProjectIsPaused(config.projectOne);
 
       // set project minters and prices
-      await this.minter
-        .connect(this.accounts.artist)
-        .updatePricePerTokenInWei(this.projectZero, this.pricePerTokenInWei);
-      await this.minter
-        .connect(this.accounts.artist)
-        .updatePricePerTokenInWei(this.projectOne, this.pricePerTokenInWei);
-      await this.minterFilter
-        .connect(this.accounts.artist)
-        .setMinterForProject(this.projectZero, this.minter.address);
-      await this.minterFilter
-        .connect(this.accounts.artist)
-        .setMinterForProject(this.projectOne, this.minter.address);
-    });
+      await config.minter
+        .connect(config.accounts.artist)
+        .updatePricePerTokenInWei(
+          config.projectZero,
+          config.pricePerTokenInWei
+        );
+      await config.minter
+        .connect(config.accounts.artist)
+        .updatePricePerTokenInWei(config.projectOne, config.pricePerTokenInWei);
+      await config.minterFilter
+        .connect(config.accounts.artist)
+        .setMinterForProject(config.projectZero, config.minter.address);
+      await config.minterFilter
+        .connect(config.accounts.artist)
+        .setMinterForProject(config.projectOne, config.minter.address);
+      return config;
+    }
 
     describe("purchase", async function () {
       it("does nothing if setProjectMaxInvocations is not called (fails correctly)", async function () {
+        const config = await loadFixture(_beforeEach);
         for (let i = 0; i < 15; i++) {
-          await this.minter
-            .connect(this.accounts.user)
-            .purchase(this.projectZero, {
-              value: this.pricePerTokenInWei,
+          await config.minter
+            .connect(config.accounts.user)
+            .purchase(config.projectZero, {
+              value: config.pricePerTokenInWei,
             });
         }
 
-        const userBalance = await this.accounts.user.getBalance();
+        const userBalance = await config.accounts.user.getBalance();
         await expectRevert(
-          this.minter.connect(this.accounts.user).purchase(this.projectZero, {
-            value: this.pricePerTokenInWei,
-          }),
+          config.minter
+            .connect(config.accounts.user)
+            .purchase(config.projectZero, {
+              value: config.pricePerTokenInWei,
+            }),
           "Must not exceed max invocations"
         );
       });
 
       it("doesnt add too much gas if setProjectMaxInvocations is set", async function () {
-        const tx = await this.minter
-          .connect(this.accounts.user)
-          .purchase(this.projectZero, {
-            value: this.pricePerTokenInWei,
+        const config = await loadFixture(_beforeEach);
+        const tx = await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, {
+            value: config.pricePerTokenInWei,
           });
 
         const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
@@ -138,14 +152,14 @@ runForEach.forEach((params) => {
         );
 
         // Try with setProjectMaxInvocations, store gas cost
-        await this.minter
-          .connect(this.accounts.deployer)
-          .setProjectMaxInvocations(this.projectOne);
+        await config.minter
+          .connect(config.accounts.deployer)
+          .setProjectMaxInvocations(config.projectOne);
 
-        const maxSetTx = await this.minter
-          .connect(this.accounts.user)
-          .purchase(this.projectOne, {
-            value: this.pricePerTokenInWei,
+        const maxSetTx = await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectOne, {
+            value: config.pricePerTokenInWei,
           });
         const receipt2 = await ethers.provider.getTransactionReceipt(
           maxSetTx.hash

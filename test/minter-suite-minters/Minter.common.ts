@@ -2,40 +2,50 @@ import { getContractFactory } from "@nomiclabs/hardhat-ethers/types";
 import { constants, expectRevert } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+import { T_Config } from "../util/common";
 
 /**
  * These tests are intended to check common Minter functionality
  * for minters in our minter suite.
  * @dev assumes common BeforeEach to populate accounts, constants, and setup
  */
-export const Minter_Common = async () => {
+export const Minter_Common = async (_beforeEach: () => Promise<T_Config>) => {
   describe("constructor", async function () {
     it("returns correct minter type", async function () {
-      const returnedMinterType = await this.minter.minterType();
-      expect(returnedMinterType).to.equal(this.targetMinterName);
+      const config = await loadFixture(_beforeEach);
+      const returnedMinterType = await config.minter.minterType();
+      expect(returnedMinterType).to.equal(config.targetMinterName);
     });
 
     it("reverts when given incorrect minter filter and core addresses", async function () {
+      const config = await loadFixture(_beforeEach);
       const artblocksFactory = await ethers.getContractFactory(
         "GenArt721CoreV3"
       );
-      const adminACL = await this.genArt721Core.owner();
+      const adminACL = await config.genArt721Core.owner();
       const token2 = await artblocksFactory
-        .connect(this.accounts.deployer)
-        .deploy(this.name, this.symbol, this.randomizer.address, adminACL, 0);
+        .connect(config.accounts.deployer)
+        .deploy(
+          config.name,
+          config.symbol,
+          config.randomizer.address,
+          adminACL,
+          0
+        );
 
       const minterFilterFactory = await ethers.getContractFactory(
         "MinterFilterV1"
       );
       const minterFilter = await minterFilterFactory.deploy(token2.address);
-      const minterType = await this.minter.minterType();
+      const minterType = await config.minter.minterType();
       const minterFactory = await ethers.getContractFactory(
         // minterType is a function that returns the minter contract name
         minterType
       );
       // fails when combine new minterFilter with the old token in constructor
       const minterConstructorArgs = [
-        this.genArt721Core.address,
+        config.genArt721Core.address,
         minterFilter.address,
       ];
       if (
@@ -47,7 +57,7 @@ export const Minter_Common = async () => {
         minterType == "MinterHolderV4" ||
         minterType == "MinterPolyptychV0"
       ) {
-        minterConstructorArgs.push(this.delegationRegistry.address);
+        minterConstructorArgs.push(config.delegationRegistry.address);
       }
       await expectRevert(
         minterFactory.deploy(...minterConstructorArgs),
@@ -60,57 +70,62 @@ export const Minter_Common = async () => {
     const unconfiguredProjectNumber = 99;
 
     it("reports expected price per token", async function () {
+      const config = await loadFixture(_beforeEach);
       // returns zero for unconfigured project price
-      const currencyInfo = await this.minter
-        .connect(this.accounts.artist)
+      const currencyInfo = await config.minter
+        .connect(config.accounts.artist)
         .getPriceInfo(unconfiguredProjectNumber);
       expect(currencyInfo.tokenPriceInWei).to.be.equal(0);
     });
 
     it("reports expected isConfigured", async function () {
-      let currencyInfo = await this.minter
-        .connect(this.accounts.artist)
-        .getPriceInfo(this.projectZero);
+      const config = await loadFixture(_beforeEach);
+      let currencyInfo = await config.minter
+        .connect(config.accounts.artist)
+        .getPriceInfo(config.projectZero);
       expect(currencyInfo.isConfigured).to.be.equal(true);
       // false for unconfigured project
-      currencyInfo = await this.minter
-        .connect(this.accounts.artist)
+      currencyInfo = await config.minter
+        .connect(config.accounts.artist)
         .getPriceInfo(unconfiguredProjectNumber);
       expect(currencyInfo.isConfigured).to.be.equal(false);
     });
 
     it("reports currency as ETH", async function () {
-      const priceInfo = await this.minter
-        .connect(this.accounts.artist)
-        .getPriceInfo(this.projectZero);
+      const config = await loadFixture(_beforeEach);
+      const priceInfo = await config.minter
+        .connect(config.accounts.artist)
+        .getPriceInfo(config.projectZero);
       expect(priceInfo.currencySymbol).to.be.equal("ETH");
     });
 
     it("reports currency address as null address", async function () {
-      const priceInfo = await this.minter
-        .connect(this.accounts.artist)
-        .getPriceInfo(this.projectZero);
+      const config = await loadFixture(_beforeEach);
+      const priceInfo = await config.minter
+        .connect(config.accounts.artist)
+        .getPriceInfo(config.projectZero);
       expect(priceInfo.currencyAddress).to.be.equal(constants.ZERO_ADDRESS);
     });
   });
 
   describe("setProjectMaxInvocations", async function () {
     it("allows artist/deployer to call setProjectMaxInvocations", async function () {
-      const minterType = await this.minter.minterType();
+      const config = await loadFixture(_beforeEach);
+      const minterType = await config.minter.minterType();
       if (!minterType.startsWith("MinterDAExpSettlementV")) {
         // minters above v2 do NOT use onlyCoreWhitelisted modifier for setProjectMaxInvocations
         const accountToTestWith =
           minterType.includes("V0") || minterType.includes("V1")
-            ? this.accounts.deployer
-            : this.accounts.artist;
-        // minters that don't settle on-chain should support this function
-        await this.minter
+            ? config.accounts.deployer
+            : config.accounts.artist;
+        // minters that don't settle on-chain should support config function
+        await config.minter
           .connect(accountToTestWith)
-          .setProjectMaxInvocations(this.projectZero);
+          .setProjectMaxInvocations(config.projectZero);
       } else {
         // default revert message for DAExpSettlementV2+
         let revertMessage = "Not implemented";
-        // minters that settle on-chain should not support this function
+        // minters that settle on-chain should not support config function
         if (
           minterType === "MinterDAExpSettlementV0" ||
           minterType === "MinterDAExpSettlementV1"
@@ -120,16 +135,17 @@ export const Minter_Common = async () => {
         }
 
         await expectRevert(
-          this.minter
-            .connect(this.accounts.artist)
-            .setProjectMaxInvocations(this.projectZero),
+          config.minter
+            .connect(config.accounts.artist)
+            .setProjectMaxInvocations(config.projectZero),
           revertMessage
         );
       }
     });
 
     it("updates local projectMaxInvocations after syncing to core", async function () {
-      const minterType = await this.minter.minterType();
+      const config = await loadFixture(_beforeEach);
+      const minterType = await config.minter.minterType();
       if (minterType.startsWith("MinterDAExpSettlementV")) {
         console.log(
           "setProjectMaxInvocations not supported for DAExpSettlement minters"
@@ -139,19 +155,19 @@ export const Minter_Common = async () => {
       // minters above v2 do NOT use onlyCoreWhitelisted modifier for setProjectMaxInvocations
       const accountToTestWith =
         minterType.includes("V0") || minterType.includes("V1")
-          ? this.accounts.deployer
-          : this.accounts.artist;
+          ? config.accounts.deployer
+          : config.accounts.artist;
       // update max invocations to 1 on the core
-      await this.genArt721Core
-        .connect(this.accounts.artist)
-        .updateProjectMaxInvocations(this.projectZero, 2);
+      await config.genArt721Core
+        .connect(config.accounts.artist)
+        .updateProjectMaxInvocations(config.projectZero, 2);
       // sync max invocations on minter
-      await this.minter
+      await config.minter
         .connect(accountToTestWith)
-        .setProjectMaxInvocations(this.projectZero);
+        .setProjectMaxInvocations(config.projectZero);
       // expect max invocations to be 2 on the minter
       expect(
-        await this.minter.projectMaxInvocations(this.projectZero)
+        await config.minter.projectMaxInvocations(config.projectZero)
       ).to.be.equal(2);
     });
   });

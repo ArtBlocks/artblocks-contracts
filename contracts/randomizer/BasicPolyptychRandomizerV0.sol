@@ -3,8 +3,9 @@
 
 pragma solidity 0.8.17;
 
-import "./interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
-import "./interfaces/0.8.x/IRandomizerPolyptychV0.sol";
+import "../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
+import "../interfaces/0.8.x/IRandomizerPolyptychV0.sol";
+import "./BasicRandomizerBase_v0_0_0.sol";
 
 import "@openzeppelin-4.7/contracts/access/Ownable.sol";
 
@@ -23,7 +24,11 @@ import "@openzeppelin-4.7/contracts/access/Ownable.sol";
  * Once the contract is configured, it will enable newly-minted tokens to use a copy of the hash
  * seed from a previously-minted token.
  */
-contract BasicPolyptychRandomizerV0 is IRandomizerPolyptychV0, Ownable {
+contract BasicPolyptychRandomizerV0 is
+    IRandomizerPolyptychV0,
+    BasicRandomizerBase,
+    Ownable
+{
     // The core contract that may interact with this randomizer contract.
     IGenArt721CoreContractV3_Base public genArt721Core;
 
@@ -46,26 +51,23 @@ contract BasicPolyptychRandomizerV0 is IRandomizerPolyptychV0, Ownable {
 
     // modifier to restrict access to only AdminACL allowed calls
     // @dev defers which ACL contract is used to the core contract
-    modifier onlyCoreAdminACL(bytes4 _selector) {
+    function _onlyCoreAdminACL(bytes4 _selector) internal {
         require(
             genArt721Core.adminACLAllowed(msg.sender, address(this), _selector),
             "Only Core AdminACL allowed"
         );
-        _;
     }
 
-    modifier onlyArtist(uint256 _projectId) {
+    function _onlyArtist(uint256 _projectId) internal view {
         require(
             msg.sender == genArt721Core.projectIdToArtistAddress(_projectId),
             "Only Artist"
         );
-        _;
     }
 
     // Allows the owner of the core contract to set the minter that is allowed to assign hash seeds
-    function setHashSeedSetterContract(
-        address _contractAddress
-    ) external onlyCoreAdminACL(this.setHashSeedSetterContract.selector) {
+    function setHashSeedSetterContract(address _contractAddress) external {
+        _onlyCoreAdminACL(this.setHashSeedSetterContract.selector);
         hashSeedSetterContract = _contractAddress;
         emit HashSeedSetterUpdated(_contractAddress);
     }
@@ -74,9 +76,8 @@ contract BasicPolyptychRandomizerV0 is IRandomizerPolyptychV0, Ownable {
      * @notice Allows the owner of the core contract to configure a project as a polyptych
      * @param _projectId - The ID of the project that has a polyptych panel (second, third, etc.)
      */
-    function toggleProjectIsPolyptych(
-        uint256 _projectId
-    ) external onlyArtist(_projectId) {
+    function toggleProjectIsPolyptych(uint256 _projectId) external {
+        _onlyArtist(_projectId);
         projectIsPolyptych[_projectId] = !projectIsPolyptych[_projectId];
         emit ProjectIsPolyptychUpdated(
             _projectId,
@@ -104,23 +105,13 @@ contract BasicPolyptychRandomizerV0 is IRandomizerPolyptychV0, Ownable {
     // will set a bytes32 hash for tokenId `_tokenId` on the core contract.
     function assignTokenHash(uint256 _tokenId) external virtual {
         require(msg.sender == address(genArt721Core), "Only core may call");
-
+        bytes32 hash;
         if (projectIsPolyptych[_tokenId / ONE_MILLION]) {
-            bytes12 seededHash = polyptychHashSeeds[_tokenId];
-            require(seededHash != 0, "Only non-zero hash seed");
-            genArt721Core.setTokenHash_8PT(_tokenId, seededHash);
+            hash = polyptychHashSeeds[_tokenId];
         } else {
-            uint256 time = block.timestamp;
-            bytes32 hash = keccak256(
-                abi.encodePacked(
-                    _tokenId,
-                    block.number,
-                    blockhash(block.number - 1),
-                    time,
-                    (time % 200) + 1
-                )
-            );
-            genArt721Core.setTokenHash_8PT(_tokenId, hash);
+            hash = _getPseudorandom(_tokenId);
         }
+        require(hash != 0, "Only non-zero hash seed");
+        genArt721Core.setTokenHash_8PT(_tokenId, hash);
     }
 }

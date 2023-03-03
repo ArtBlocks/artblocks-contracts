@@ -8,8 +8,10 @@ import {
 } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 
 import {
+  T_Config,
   getAccounts,
   assignDefaultConstants,
   deployAndGet,
@@ -35,60 +37,63 @@ describe("GenArt721CoreV3 Gas Tests - Script Upload", async function () {
   // increase test timeout from 20s to 40s due to minting numMintsToAverage tokens in beforeEach
   this.timeout(40000);
 
-  beforeEach(async function () {
-    // standard accounts and constants
-    this.accounts = await getAccounts();
-    await assignDefaultConstants.call(this);
+  async function _beforeEach() {
+    let config: T_Config = {
+      accounts: await getAccounts(),
+    };
+    config = await assignDefaultConstants(config);
     // use a higher max invocations to avoid artifically low gas costs
-    this.higherMaxInvocationsForGasTests = 1000;
+    config.higherMaxInvocationsForGasTests = 1000;
     // make price artifically low to enable more mints to simulate real-world common use cases
-    this.pricePerTokenInWei = ethers.utils.parseEther("0.1");
+    config.pricePerTokenInWei = ethers.utils.parseEther("0.1");
 
     // deploy and configure minter filter and minter
     ({
-      genArt721Core: this.genArt721Core,
-      minterFilter: this.minterFilter,
-      randomizer: this.randomizer,
-    } = await deployCoreWithMinterFilter.call(
-      this,
+      genArt721Core: config.genArt721Core,
+      minterFilter: config.minterFilter,
+      randomizer: config.randomizer,
+    } = await deployCoreWithMinterFilter(
+      config,
       "GenArt721CoreV3",
       "MinterFilterV1"
     ));
 
-    this.minter = await deployAndGet.call(this, "MinterSetPriceV2", [
-      this.genArt721Core.address,
-      this.minterFilter.address,
+    config.minter = await deployAndGet(config, "MinterSetPriceV2", [
+      config.genArt721Core.address,
+      config.minterFilter.address,
     ]);
 
     // add four projects, test on project three to directly compare to V1 core, which starts at projectId = 3
     for (let i = 0; i < 4; i++) {
       await safeAddProject(
-        this.genArt721Core,
-        this.accounts.deployer,
-        this.accounts.artist.address
+        config.genArt721Core,
+        config.accounts.deployer,
+        config.accounts.artist.address
       );
     }
 
     // configure project three (to compare directly to V1 core)
-    await this.genArt721Core
-      .connect(this.accounts.deployer)
-      .toggleProjectIsActive(this.projectThree);
-    await this.genArt721Core
-      .connect(this.accounts.artist)
-      .toggleProjectIsPaused(this.projectThree);
-    await this.genArt721Core
-      .connect(this.accounts.artist)
+    await config.genArt721Core
+      .connect(config.accounts.deployer)
+      .toggleProjectIsActive(config.projectThree);
+    await config.genArt721Core
+      .connect(config.accounts.artist)
+      .toggleProjectIsPaused(config.projectThree);
+    await config.genArt721Core
+      .connect(config.accounts.artist)
       .updateProjectMaxInvocations(
-        this.projectThree,
-        this.higherMaxInvocationsForGasTests
+        config.projectThree,
+        config.higherMaxInvocationsForGasTests
       );
-  });
+    return config;
+  }
 
   describe("script upload gas optimization", function () {
     it("test gas cost of uploading Chromie Squiggle script [ @skip-on-coverage ]", async function () {
-      const tx = await this.genArt721Core
-        .connect(this.accounts.artist)
-        .addProjectScript(this.projectThree, SQUIGGLE_SCRIPT);
+      const config = await loadFixture(_beforeEach);
+      const tx = await config.genArt721Core
+        .connect(config.accounts.artist)
+        .addProjectScript(config.projectThree, SQUIGGLE_SCRIPT);
       const receipt = await tx.wait();
       const gasUsed = receipt.gasUsed.toNumber();
       console.log("gas used for script upload: ", gasUsed);
@@ -104,8 +109,8 @@ describe("GenArt721CoreV3 Gas Tests - Script Upload", async function () {
         `=USD at 100gwei, $2k USD/ETH: \$${gasCostAt100gweiAt2kUSDPerETH}`
       );
       // ensure value was updated
-      const script0 = await this.genArt721Core.projectScriptByIndex(
-        this.projectThree,
+      const script0 = await config.genArt721Core.projectScriptByIndex(
+        config.projectThree,
         0
       );
       // console.info(script0);
@@ -113,9 +118,10 @@ describe("GenArt721CoreV3 Gas Tests - Script Upload", async function () {
     });
 
     it("test gas cost of uploading Skulptuur script [ @skip-on-coverage ]", async function () {
-      const tx = await this.genArt721Core
-        .connect(this.accounts.artist)
-        .addProjectScript(this.projectThree, SKULPTUUR_SCRIPT_APPROX);
+      const config = await loadFixture(_beforeEach);
+      const tx = await config.genArt721Core
+        .connect(config.accounts.artist)
+        .addProjectScript(config.projectThree, SKULPTUUR_SCRIPT_APPROX);
       const receipt = await tx.wait();
       const gasUsed = receipt.gasUsed.toNumber();
       console.log("gas used for script upload: ", gasUsed);
@@ -131,8 +137,8 @@ describe("GenArt721CoreV3 Gas Tests - Script Upload", async function () {
         `=USD at 100gwei, $2k USD/ETH: \$${gasCostAt100gweiAt2kUSDPerETH}`
       );
       // ensure value was updated
-      const script0 = await this.genArt721Core.projectScriptByIndex(
-        this.projectThree,
+      const script0 = await config.genArt721Core.projectScriptByIndex(
+        config.projectThree,
         0
       );
       // console.info(script0);
@@ -140,9 +146,10 @@ describe("GenArt721CoreV3 Gas Tests - Script Upload", async function () {
     });
 
     it("test gas cost of uploading 23.95 KB script [ @skip-on-coverage ]", async function () {
-      const tx = await this.genArt721Core
-        .connect(this.accounts.artist)
-        .addProjectScript(this.projectThree, CONTRACT_SIZE_LIMIT_SCRIPT, {
+      const config = await loadFixture(_beforeEach);
+      const tx = await config.genArt721Core
+        .connect(config.accounts.artist)
+        .addProjectScript(config.projectThree, CONTRACT_SIZE_LIMIT_SCRIPT, {
           gasLimit: 30000000, // hard-code gas limit because ethers sometimes estimates too high
         });
       const receipt = await tx.wait();
@@ -160,8 +167,8 @@ describe("GenArt721CoreV3 Gas Tests - Script Upload", async function () {
         `=USD at 100gwei, $2k USD/ETH: \$${gasCostAt100gweiAt2kUSDPerETH}`
       );
       // ensure value was updated
-      const script0 = await this.genArt721Core.projectScriptByIndex(
-        this.projectThree,
+      const script0 = await config.genArt721Core.projectScriptByIndex(
+        config.projectThree,
         0
       );
       // console.info(script0);

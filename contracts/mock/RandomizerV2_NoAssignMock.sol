@@ -3,7 +3,7 @@
 
 pragma solidity 0.8.17;
 
-import "../BasicRandomizerV2.sol";
+import "../randomizer/BasicRandomizerV2.sol";
 
 /// @title RandomizerV2_NoAssignMock
 /// @notice WARNING - This is a mock contract. Do not use it in production.
@@ -20,16 +20,7 @@ contract RandomizerV2_NoAssignMock is BasicRandomizerV2 {
     // on the core contract. Used for test purposes only.
     // @dev WARNING - THIS IS NOT SECURE AND SHOULD NOT BE USED IN PRODUCTION.
     function actuallyAssignTokenHash(uint256 _tokenId) external {
-        uint256 time = block.timestamp;
-        bytes32 hash = keccak256(
-            abi.encodePacked(
-                _tokenId,
-                block.number,
-                blockhash(block.number - 1),
-                time,
-                (time % 200) + 1
-            )
-        );
+        bytes32 hash = _getPseudorandom(_tokenId);
         genArt721Core.setTokenHash_8PT(_tokenId, hash);
     }
 

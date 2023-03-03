@@ -76,13 +76,12 @@ contract MinterSetPriceERC20V4 is
     // /// projectId => currency address - supersedes any defined core value
     // mapping(uint256 => address) private projectIdToCurrencyAddress;
 
-    modifier onlyArtist(uint256 _projectId) {
+    function _onlyArtist(uint256 _projectId) internal view {
         require(
             msg.sender ==
                 genArtCoreContract_Base.projectIdToArtistAddress(_projectId),
             "Only Artist"
         );
-        _;
     }
 
     /**
@@ -151,9 +150,8 @@ contract MinterSetPriceERC20V4 is
      * @dev this enables gas reduction after maxInvocations have been reached -
      * core contracts shall still enforce a maxInvocation check during mint.
      */
-    function setProjectMaxInvocations(
-        uint256 _projectId
-    ) public onlyArtist(_projectId) {
+    function setProjectMaxInvocations(uint256 _projectId) public {
+        _onlyArtist(_projectId);
         uint256 maxInvocations;
         uint256 invocations;
         (invocations, maxInvocations, , , , ) = genArtCoreContract_Base
@@ -185,7 +183,8 @@ contract MinterSetPriceERC20V4 is
     function manuallyLimitProjectMaxInvocations(
         uint256 _projectId,
         uint256 _maxInvocations
-    ) external onlyArtist(_projectId) {
+    ) external {
+        _onlyArtist(_projectId);
         // CHECKS
         // ensure that the manually set maxInvocations is not greater than what is set on the core contract
         uint256 maxInvocations;
@@ -216,9 +215,8 @@ contract MinterSetPriceERC20V4 is
      * @notice Warning: Disabling purchaseTo is not supported on this minter.
      * This method exists purely for interface-conformance purposes.
      */
-    function togglePurchaseToDisabled(
-        uint256 _projectId
-    ) external view onlyArtist(_projectId) {
+    function togglePurchaseToDisabled(uint256 _projectId) external view {
+        _onlyArtist(_projectId);
         revert("Action not supported");
     }
 
@@ -273,7 +271,8 @@ contract MinterSetPriceERC20V4 is
     function updatePricePerTokenInWei(
         uint256 _projectId,
         uint256 _pricePerTokenInWei
-    ) external onlyArtist(_projectId) {
+    ) external {
+        _onlyArtist(_projectId);
         require(_pricePerTokenInWei > 0, "Price may not be 0");
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         _projectConfig.pricePerTokenInWei = _pricePerTokenInWei;
@@ -302,7 +301,8 @@ contract MinterSetPriceERC20V4 is
         uint256 _projectId,
         string memory _currencySymbol,
         address _currencyAddress
-    ) external onlyArtist(_projectId) {
+    ) external {
+        _onlyArtist(_projectId);
         // require null address if symbol is "ETH"
         require(
             (keccak256(abi.encodePacked(_currencySymbol)) ==
