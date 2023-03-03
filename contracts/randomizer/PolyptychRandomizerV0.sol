@@ -26,7 +26,7 @@ import "@openzeppelin-4.7/contracts/access/Ownable.sol";
  */
 contract BasicPolyptychRandomizerV0 is
     IRandomizerPolyptychV0,
-    BasicRandomizerBase,
+    RandomizerBase,
     Ownable
 {
     // The core contract that may interact with this randomizer contract.
