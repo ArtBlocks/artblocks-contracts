@@ -1,0 +1,79 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-03-03T18:09:03.005Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/deployments/engine/V3/internal-testing/dev-example-wins-demo/deployment-config.dev.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: dev
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x4210a9477d0B0e4FfB20Ec04c649DA9982803Ac2
+[INFO] Randomizer BasicRandomizerV2 deployed at 0x4520095627EC42d1c8Fe7A61E5Cf61F4FEb271F8
+[INFO] Core GenArt721CoreV3_Engine deployed at 0x4A185f9A8ee3d247fD564407658602228a8de265
+[INFO] Minter Filter MinterFilterV1 deployed at 0x19254c1226Dbb83EC08Ab07Ba0B5c3994792D9D8
+[INFO] MinterSetPriceV4 deployed at 0x2cf1978Cf9C66Ac98a9cb0259b9F4Ca51aF149f1
+[INFO] MinterDAExpSettlementV1 deployed at 0xf1A6EF1FA55AbF58fC801109D622A0b68E142bF0
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0x19254c1226Dbb83EC08Ab07Ba0B5c3994792D9D8.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0x2cf1978Cf9C66Ac98a9cb0259b9F4Ca51aF149f1 on minter filter.
+[INFO] Allowlisted minter MinterDAExpSettlementV1 at 0xf1A6EF1FA55AbF58fC801109D622A0b68E142bF0 on minter filter.
+[INFO] Added Weekly Wins Demo project 0 placeholder on Weekly Wins Demo contract, artist is 0x2246475beddf9333b6a6D9217194576E7617Afd1.
+[INFO] Configured set price minter (0x2cf1978Cf9C66Ac98a9cb0259b9F4Ca51aF149f1) for project 0.
+[INFO] Configured minter price project 0.
+[INFO] Minted token 0 for project 0.
+[INFO] Verifying core contract contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/GenArt721CoreV3_Engine.sol:GenArt721CoreV3_Engine at 0x4A185f9A8ee3d247fD564407658602228a8de265
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract GenArt721CoreV3_Engine on Etherscan.
+https://goerli.etherscan.io/address/0x4A185f9A8ee3d247fD564407658602228a8de265#code
+[INFO] Core contract verified on Etherscan at 0x4A185f9A8ee3d247fD564407658602228a8de265}
+[INFO] Verifying MinterFilter contract deployment...
+Compiled 189 Solidity files successfully
+Successfully submitted source code for contract
+contracts/minter-suite/MinterFilter/MinterFilterV1.sol:MinterFilterV1 at 0x19254c1226Dbb83EC08Ab07Ba0B5c3994792D9D8
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterFilterV1 on Etherscan.
+https://goerli.etherscan.io/address/0x19254c1226Dbb83EC08Ab07Ba0B5c3994792D9D8#code
+[INFO] MinterFilter contract verified on Etherscan at 0x19254c1226Dbb83EC08Ab07Ba0B5c3994792D9D8}
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+Compiled 189 Solidity files successfully
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterSetPriceV4.sol:MinterSetPriceV4 at 0x2cf1978Cf9C66Ac98a9cb0259b9F4Ca51aF149f1
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterSetPriceV4 on Etherscan.
+https://goerli.etherscan.io/address/0x2cf1978Cf9C66Ac98a9cb0259b9F4Ca51aF149f1#code
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0x2cf1978Cf9C66Ac98a9cb0259b9F4Ca51aF149f1}
+[INFO] Verifying MinterDAExpSettlementV1 contract deployment...
+Compiled 189 Solidity files successfully
+Successfully submitted source code for contract
+contracts/archive/minter-suite/Minters/MinterDAExpSettlement/MinterDAExpSettlementV1.sol:MinterDAExpSettlementV1 at 0xf1A6EF1FA55AbF58fC801109D622A0b68E142bF0
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterDAExpSettlementV1 on Etherscan.
+https://goerli.etherscan.io/address/0xf1A6EF1FA55AbF58fC801109D622A0b68E142bF0#code
+[INFO] MinterDAExpSettlementV1 contract verified on Etherscan at 0xf1A6EF1FA55AbF58fC801109D622A0b68E142bF0}
+Created s3 bucket for https://weekly-wins-demo-goerli.s3.amazonaws.com
+[INFO] Created image bucket weekly-wins-demo-goerli
+[INFO] Deployment details written to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/deployments/engine/V3/internal-testing/dev-example-wins-demo/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x4a185f9a8ee3d247fd564407658602228a8de265",
+  "name": "Weekly Wins Demo",
+  "bucket_name": "weekly-wins-demo-goerli",
+  "default_vertical_name": "fullyonchain"
+}
+Successfully upserted 1 contract
+Upserting 1 project...
+Projects metadata upsert input:
+{
+  "id": "0x4a185f9a8ee3d247fd564407658602228a8de265-0",
+  "contract_address": "0x4a185f9a8ee3d247fd564407658602228a8de265",
+  "project_id": "0",
+  "artist_address": "0x2246475beddf9333b6a6d9217194576e7617afd1",
+  "vertical_name": "fullyonchain"
+}
+Successfully upserted 1 project
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0x2246475beddf9333b6a6D9217194576E7617Afd1. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x2246475beddf9333b6a6D9217194576E7617Afd1, don't forget to update if requred.
