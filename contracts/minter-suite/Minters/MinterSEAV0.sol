@@ -307,7 +307,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
             _maxAuctionDurationSeconds > _minAuctionDurationSeconds,
             "Only max gt min"
         );
-        require(_minAuctionDurationSeconds > 0, "only min gt 0");
+        require(_minAuctionDurationSeconds > 0, "Only min gt 0");
         // EFFECTS
         minAuctionDurationSeconds = _minAuctionDurationSeconds.toUint32();
         maxAuctionDurationSeconds = _maxAuctionDurationSeconds.toUint32();
@@ -331,7 +331,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
     ) external {
         _onlyCoreAdminACL(this.updateMinterMinBidIncrementPercentage.selector);
         // CHECKS
-        require(_minterMinBidIncrementPercentage > 0, "only gt 0");
+        require(_minterMinBidIncrementPercentage > 0, "Only gt 0");
         // EFFECTS
         minterMinBidIncrementPercentage = _minterMinBidIncrementPercentage;
         emit MinterMinBidIncrementPercentageUpdated(
@@ -350,7 +350,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
     ) external {
         _onlyCoreAdminACL(this.updateMinterTimeBufferSeconds.selector);
         // CHECKS
-        require(_minterTimeBufferSeconds > 0, "only gt 0");
+        require(_minterTimeBufferSeconds > 0, "Only gt 0");
         // EFFECTS
         minterTimeBufferSeconds = _minterTimeBufferSeconds;
         emit MinterTimeBufferUpdated(_minterTimeBufferSeconds);
