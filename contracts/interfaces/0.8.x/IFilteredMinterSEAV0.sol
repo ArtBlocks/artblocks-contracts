@@ -125,4 +125,8 @@ interface IFilteredMinterSEAV0 is IFilteredMinterV2 {
     function projectActiveAuctionDetails(
         uint256 _projectId
     ) external view returns (Auction memory);
+
+    function getNextExpectedTokenId(
+        uint256 _projectId
+    ) external view returns (uint256 nextExpectedTokenId);
 }
