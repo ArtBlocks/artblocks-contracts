@@ -196,6 +196,19 @@ for (const coreContractName of coreContractsToTest) {
           );
         });
 
+        it("reverts if setting to less than current invocations", async function () {
+          const config = await loadFixture(_beforeEach);
+          // invoke one invocation on project zero
+          await initializeProjectZeroTokenZeroAuction(config);
+          // should revert when limiting to less than current invocations of one
+          expectRevert(
+            config.minter
+              .connect(config.accounts.artist)
+              .manuallyLimitProjectMaxInvocations(config.projectZero, 0),
+            "Cannot set project max invocations to less than current invocations"
+          );
+        });
+
         it("does not support manually setting project max invocations to be greater than the project max invocations set on the core contract", async function () {
           const config = await loadFixture(_beforeEach);
           await expectRevert(
@@ -259,6 +272,102 @@ for (const coreContractName of coreContractsToTest) {
           const hasMaxBeenInvoked3 =
             await config.minter.projectMaxHasBeenInvoked(config.projectZero);
           expect(hasMaxBeenInvoked3).to.be.true;
+        });
+      });
+
+      describe("configureFutureAuctions", async function () {
+        it("allows timestamp of zero", async function () {
+          const config = await loadFixture(_beforeEach);
+          await config.minter
+            .connect(config.accounts.artist)
+            .configureFutureAuctions(
+              config.projectZero,
+              0,
+              config.defaultAuctionLengthSeconds,
+              config.basePrice
+            );
+        });
+
+        it("allows future timestamp", async function () {
+          const config = await loadFixture(_beforeEach);
+          await config.minter
+            .connect(config.accounts.artist)
+            .configureFutureAuctions(
+              config.projectZero,
+              config.startTime + 100,
+              config.defaultAuctionLengthSeconds,
+              config.basePrice
+            );
+        });
+
+        it("does not allow past timestamp", async function () {
+          const config = await loadFixture(_beforeEach);
+          await expectRevert(
+            config.minter
+              .connect(config.accounts.artist)
+              .configureFutureAuctions(
+                config.projectZero,
+                1, // gt 0 but not a future timestamp
+                config.defaultAuctionLengthSeconds,
+                config.basePrice
+              ),
+            "Only future start times or 0"
+          );
+        });
+
+        it("does allow auction duration inside of minter-allowed range", async function () {
+          const config = await loadFixture(_beforeEach);
+          await config.minter
+            .connect(config.accounts.artist)
+            .configureFutureAuctions(
+              config.projectZero,
+              config.startTime,
+              config.defaultAuctionLengthSeconds + 1,
+              config.basePrice
+            );
+        });
+
+        it("does not allow auction duration outside of minter-allowed range", async function () {
+          const config = await loadFixture(_beforeEach);
+          // less than min
+          await expectRevert(
+            config.minter
+              .connect(config.accounts.artist)
+              .configureFutureAuctions(
+                config.projectZero,
+                config.startTime,
+                1,
+                config.basePrice
+              ),
+            "Auction duration out of range"
+          );
+          await expectRevert(
+            config.minter
+              .connect(config.accounts.artist)
+              .configureFutureAuctions(
+                config.projectZero,
+                config.startTime,
+                1_000_000_000_000,
+                config.basePrice
+              ),
+            "Auction duration out of range"
+          );
+        });
+
+        it("does not allow auction base price of zero", async function () {
+          const config = await loadFixture(_beforeEach);
+          // less than min
+          await expectRevert(
+            config.minter
+              .connect(config.accounts.artist)
+              .configureFutureAuctions(
+                config.projectZero,
+                config.startTime,
+                config.defaultAuctionLengthSeconds,
+                0
+              ),
+            "Only base price gt 0"
+          );
         });
       });
     });
@@ -453,6 +562,18 @@ for (const coreContractName of coreContractsToTest) {
           expect(projectConfig.auction.tokenId).to.equal(targetToken);
           expect(projectConfig.auction.initialized).to.be.true;
         });
+      });
+    });
+
+    describe("togglePurchaseToDisabled", async function () {
+      it("reverts when calling (Action not supported)", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .togglePurchaseToDisabled(config.projectZero),
+          "Action not supported"
+        );
       });
     });
   });
