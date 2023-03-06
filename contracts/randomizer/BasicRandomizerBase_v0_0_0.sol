@@ -3,7 +3,7 @@
 
 pragma solidity 0.8.17;
 
-abstract contract BasicRandomizerBase {
+abstract contract RandomizerBase {
     // base class that returns
     function _getPseudorandom(
         uint256 _tokenId
