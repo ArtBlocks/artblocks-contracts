@@ -762,7 +762,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         auction = _projectConfig.activeAuction;
         // do not return uninitialized auctions (i.e. auctions that do not
         // exist, and therefore are simply the default struct)
-        require(auction.initialized, "No auction exists for this project");
+        require(auction.initialized, "No auction exists on project");
         return auction;
     }
 

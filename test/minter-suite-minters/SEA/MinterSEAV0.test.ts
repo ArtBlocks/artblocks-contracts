@@ -1454,6 +1454,26 @@ for (const coreContractName of coreContractsToTest) {
           );
         });
       });
+
+      describe("projectActiveAuctionDetails", function () {
+        it("reverts if no auction ever initialized on project", async function () {
+          const config = await loadFixture(_beforeEach);
+          await expectRevert(
+            config.minter.projectActiveAuctionDetails(config.projectZero),
+            "No auction exists on project"
+          );
+        });
+
+        it("returns expected values when an auction exists", async function () {
+          const config = await loadFixture(_beforeEach);
+          await initializeProjectZeroTokenZeroAuction(config);
+          const auctionDetails =
+            await config.minter.projectActiveAuctionDetails(config.projectZero);
+          expect(auctionDetails.tokenId).to.equal(
+            config.projectZeroTokenZero.toString()
+          );
+        });
+      });
     });
   });
 }
