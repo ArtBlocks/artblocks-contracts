@@ -1368,6 +1368,92 @@ for (const coreContractName of coreContractsToTest) {
           expect(returnedExpectedTokenId).to.equal(targetExpectedTokenId);
         });
       });
+
+      describe("getPriceInfo", function () {
+        it("returns currency symbol and address as ETH and 0x0, respecively", async function () {
+          const config = await loadFixture(_beforeEach);
+          const returnedPriceInfo = await config.minter.getPriceInfo(
+            config.projectZero
+          );
+          expect(returnedPriceInfo.currencySymbol).to.equal("ETH");
+          expect(returnedPriceInfo.currencyAddress).to.equal(
+            constants.ZERO_ADDRESS
+          );
+        });
+
+        it("returns as unconfigured if project is reset and no auction ever initialized", async function () {
+          const config = await loadFixture(_beforeEach);
+          // reset project
+          await config.minter
+            .connect(config.accounts.artist)
+            .resetAuctionDetails(config.projectZero);
+          // unconfigured price info should be returned
+          const returnedPriceInfo = await config.minter.getPriceInfo(
+            config.projectZero
+          );
+          expect(returnedPriceInfo.isConfigured).to.equal(false);
+          expect(returnedPriceInfo.tokenPriceInWei).to.equal(0);
+        });
+
+        it("returns with auction base price if project is configured, but token auction never initialized", async function () {
+          const config = await loadFixture(_beforeEach);
+          // configured price info should be returned
+          const returnedPriceInfo = await config.minter.getPriceInfo(
+            config.projectZero
+          );
+          expect(returnedPriceInfo.isConfigured).to.equal(true);
+          expect(returnedPriceInfo.tokenPriceInWei).to.equal(
+            config.basePrice.toString()
+          );
+        });
+
+        it("returns with auction base price if project is configured, and current token auction has reached end time", async function () {
+          const config = await loadFixture(_beforeEach);
+          await initializeProjectZeroTokenZeroAuctionAndAdvanceToEnd(config);
+          // configured price info should be returned
+          const returnedPriceInfo = await config.minter.getPriceInfo(
+            config.projectZero
+          );
+          expect(returnedPriceInfo.isConfigured).to.equal(true);
+          expect(returnedPriceInfo.tokenPriceInWei).to.equal(
+            config.basePrice.toString()
+          );
+        });
+
+        it("returns with current bid price + minimum bid increment if project is configured, and has active token auction", async function () {
+          const config = await loadFixture(_beforeEach);
+          await initializeProjectZeroTokenZeroAuction(config);
+          // next bid should be at least 5% above current bid
+          const minimumSubsequentBid = config.basePrice.mul(105).div(100);
+          // configured price info should be returned
+          const returnedPriceInfo = await config.minter.getPriceInfo(
+            config.projectZero
+          );
+          expect(returnedPriceInfo.isConfigured).to.equal(true);
+          expect(returnedPriceInfo.tokenPriceInWei).to.equal(
+            minimumSubsequentBid.toString()
+          );
+        });
+
+        it("returns with current bid price + minimum bid increment if project is NOT configured, and has active token auction", async function () {
+          const config = await loadFixture(_beforeEach);
+          await initializeProjectZeroTokenZeroAuction(config);
+          // reset project
+          await config.minter
+            .connect(config.accounts.artist)
+            .resetAuctionDetails(config.projectZero);
+          // next bid should be at least 5% above current bid
+          const minimumSubsequentBid = config.basePrice.mul(105).div(100);
+          // configured price info should be returned
+          const returnedPriceInfo = await config.minter.getPriceInfo(
+            config.projectZero
+          );
+          expect(returnedPriceInfo.isConfigured).to.equal(true);
+          expect(returnedPriceInfo.tokenPriceInWei).to.equal(
+            minimumSubsequentBid.toString()
+          );
+        });
+      });
     });
   });
 }
