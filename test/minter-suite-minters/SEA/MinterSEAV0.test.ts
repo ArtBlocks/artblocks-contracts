@@ -44,8 +44,9 @@ const TARGET_MINTER_NAME = "MinterSEAV0";
 // helper function to initialize a token auction on project zero
 // @dev "user" account is the one who initializes the auction
 async function initializeProjectZeroTokenZeroAuction(config: T_Config) {
-  // advance time to auction start time
-  await ethers.provider.send("evm_mine", [config.startTime]);
+  // advance time to auction start time - 1 second
+  // @dev this makes next block timestamp equal to auction start time
+  await ethers.provider.send("evm_mine", [config.startTime - 1]);
   // someone initializes the auction
   const targetToken = BigNumber.from(config.projectZeroTokenZero.toString());
   await config.minter
@@ -53,6 +54,29 @@ async function initializeProjectZeroTokenZeroAuction(config: T_Config) {
     .initializeAuction(targetToken, {
       value: config.basePrice,
     });
+}
+
+// helper function to initialize a token auction on project zero, and then
+// advance time to the end of the auction, but do not settle the auction
+async function initializeProjectZeroTokenZeroAuctionAndAdvanceToEnd(
+  config: T_Config
+) {
+  await initializeProjectZeroTokenZeroAuction(config);
+  // advance time to end of auction
+  await ethers.provider.send("evm_mine", [
+    config.startTime + config.defaultAuctionLengthSeconds,
+  ]);
+}
+
+// helper function to initialize a token auction on project zero, advances to end
+// of auction, then settles the auction
+async function initializeProjectZeroTokenZeroAuctionAndSettle(
+  config: T_Config
+) {
+  await initializeProjectZeroTokenZeroAuctionAndAdvanceToEnd(config);
+  // settle the auction
+  const targetToken = BigNumber.from(config.projectZeroTokenZero.toString());
+  await config.minter.connect(config.accounts.user).settleAuction(targetToken);
 }
 
 /**
@@ -687,6 +711,252 @@ for (const coreContractName of coreContractsToTest) {
         // no `AuctionSettled` event emitted (by requiring zero log length)
         expect(receipt.logs.length).to.equal(0);
       });
+    });
+
+    describe("initializeAuction", async function () {
+      it("attempts to create bid if token auction is already initialized", async function () {
+        const config = await loadFixture(_beforeEach);
+        await initializeProjectZeroTokenZeroAuction(config);
+        // attempt to initialize token zero's auction again, which should be smart and create a bid
+        const targetToken = BigNumber.from(
+          config.projectZeroTokenZero.toString()
+        );
+        const nextBidValue = config.basePrice.mul(110).div(100);
+        await expect(
+          config.minter
+            .connect(config.accounts.user2)
+            .initializeAuction(targetToken, { value: nextBidValue })
+        )
+          .to.emit(config.minter, "AuctionBid")
+          .withArgs(targetToken, config.accounts.user2.address, nextBidValue);
+      });
+
+      describe("CHECKS", async function () {
+        it("reverts when attempting to initialize auction after project has reached max invocations", async function () {
+          const config = await loadFixture(_beforeEach);
+          // limit project zero to 0 invocations
+          await config.minter
+            .connect(config.accounts.artist)
+            .manuallyLimitProjectMaxInvocations(config.projectZero, 0);
+          // attempt to initialize token zero's auction, which should revert
+          const targetToken = BigNumber.from(
+            config.projectZeroTokenZero.toString()
+          );
+          await expectRevert(
+            config.minter
+              .connect(config.accounts.artist)
+              .initializeAuction(targetToken, { value: config.basePrice }),
+            "Project max has been invoked"
+          );
+        });
+
+        it("reverts when project is not configured", async function () {
+          const config = await loadFixture(_beforeEach);
+          // reset project zero's configuration
+          await config.minter
+            .connect(config.accounts.artist)
+            .resetAuctionDetails(config.projectZero);
+          // attempt to initialize token zero's auction, which should revert
+          const targetToken = BigNumber.from(
+            config.projectZeroTokenZero.toString()
+          );
+          await expectRevert(
+            config.minter
+              .connect(config.accounts.artist)
+              .initializeAuction(targetToken, { value: config.basePrice }),
+            "Project not configured"
+          );
+        });
+
+        it("reverts when start time is in the future", async function () {
+          const config = await loadFixture(_beforeEach);
+          // attempt to initialize token zero's auction, which should revert
+          const targetToken = BigNumber.from(
+            config.projectZeroTokenZero.toString()
+          );
+          // auction start time is in the future at end of _beforeEach fixture
+          await expectRevert(
+            config.minter
+              .connect(config.accounts.artist)
+              .initializeAuction(targetToken, { value: config.basePrice }),
+            "Only gte project start time"
+          );
+        });
+
+        it("reverts if prior to existing auction being settled", async function () {
+          const config = await loadFixture(_beforeEach);
+          // initialize an auction for token zero
+          await initializeProjectZeroTokenZeroAuctionAndAdvanceToEnd(config);
+          // attempt to initialize token one's auction, which should revert
+          const targetToken = BigNumber.from(
+            config.projectZeroTokenOne.toString()
+          );
+          await expectRevert(
+            config.minter
+              .connect(config.accounts.user)
+              .initializeAuction(targetToken, { value: config.basePrice }),
+            "Prior auction not yet settled"
+          );
+        });
+
+        it("does not revert if previous auction is settled", async function () {
+          const config = await loadFixture(_beforeEach);
+          // initialize an auction for token zero
+          await initializeProjectZeroTokenZeroAuctionAndSettle(config);
+          // initializing of token one's auction should be successful
+          const targetToken = BigNumber.from(
+            config.projectZeroTokenOne.toString()
+          );
+          await config.minter
+            .connect(config.accounts.user)
+            .initializeAuction(targetToken, { value: config.basePrice });
+        });
+
+        it("reverts if minimum bid value is not sent", async function () {
+          const config = await loadFixture(_beforeEach);
+          // advance time to auction start time
+          await ethers.provider.send("evm_mine", [config.startTime]);
+          // initialize the auction with a msg.value less than minimum bid
+          const targetToken = BigNumber.from(
+            config.projectZeroTokenZero.toString()
+          );
+          await expectRevert(
+            config.minter
+              .connect(config.accounts.user)
+              .initializeAuction(targetToken, {
+                value: config.basePrice.sub(1),
+              }),
+            "Insufficient initial bid"
+          );
+        });
+
+        it("reverts if incorrect target token ID", async function () {
+          const config = await loadFixture(_beforeEach);
+          // advance time to auction start time
+          await ethers.provider.send("evm_mine", [config.startTime]);
+          // initialize the auction with target token ID of 1, which should
+          // revert because token zero is the next token to be minted
+          const bidValue = config.basePrice.add(1);
+          const targetToken = BigNumber.from(
+            config.projectZeroTokenOne.toString() // <--- incorrect target token ID
+          );
+          await expectRevert(
+            config.minter
+              .connect(config.accounts.user)
+              .initializeAuction(targetToken, {
+                value: bidValue,
+              }),
+            "Incorrect target token ID"
+          );
+        });
+
+        // handles edge case where different minter goes past minter max invocations
+        // and then the original minter attempts to initialize an auction
+        it("reverts when minter max invocations is exceeded on a different minter", async function () {
+          const config = await loadFixture(_beforeEach);
+          // limit minter to 1 invocation
+          await config.minter
+            .connect(config.accounts.artist)
+            .manuallyLimitProjectMaxInvocations(config.projectZero, 1);
+          // switch to a different minter
+          const minter2 = await deployAndGet(config, "MinterSetPriceV4", [
+            config.genArt721Core.address,
+            config.minterFilter.address,
+          ]);
+          await config.minterFilter
+            .connect(config.accounts.deployer)
+            .addApprovedMinter(minter2.address);
+          await config.minterFilter
+            .connect(config.accounts.artist)
+            .setMinterForProject(config.projectZero, minter2.address);
+          // mint a token with minter2
+          await minter2
+            .connect(config.accounts.artist)
+            .updatePricePerTokenInWei(config.projectZero, 0);
+          await minter2
+            .connect(config.accounts.artist)
+            .purchase(config.projectZero);
+          // switch back to SEA minter
+          await config.minterFilter
+            .connect(config.accounts.artist)
+            .setMinterForProject(config.projectZero, config.minter.address);
+          // advance time to auction start time
+          await ethers.provider.send("evm_mine", [config.startTime]);
+          // initialize the auction with a msg.value 1 wei greater than minimum bid
+          const targetToken = BigNumber.from(
+            config.projectZeroTokenOne.toString()
+          );
+          await expectRevert(
+            config.minter
+              .connect(config.accounts.user)
+              .initializeAuction(targetToken, {
+                value: config.basePrice,
+              }),
+            "Maximum invocations reached"
+          );
+        });
+      });
+
+      describe("EFFECTS", function () {
+        it("updates auction state correctly when initializing a new auction", async function () {
+          const config = await loadFixture(_beforeEach);
+          // advance time to auction start time
+          // @dev we advance time to start time - 1 so that we can initialize the auction in a block
+          // with timestamp equal to startTime
+          await ethers.provider.send("evm_mine", [config.startTime - 1]);
+          // initialize the auction with a msg.value 1 wei greater than minimum bid
+          const bidValue = config.basePrice.add(1);
+          const targetToken = BigNumber.from(
+            config.projectZeroTokenZero.toString()
+          );
+          await config.minter
+            .connect(config.accounts.user)
+            .initializeAuction(targetToken, {
+              value: bidValue,
+            });
+          // validate auction state
+          const auction = await config.minter.projectActiveAuctionDetails(
+            config.projectZero
+          );
+          expect(auction.tokenId).to.equal(targetToken);
+          expect(auction.currentBid).to.equal(bidValue);
+          expect(auction.currentBidder).to.equal(config.accounts.user.address);
+          expect(auction.endTime).to.equal(
+            config.startTime + config.defaultAuctionLengthSeconds
+          );
+          expect(auction.settled).to.equal(false);
+          expect(auction.initialized).to.equal(true);
+        });
+
+        it("emits event when auction is initialized", async function () {
+          const config = await loadFixture(_beforeEach);
+          // advance time to auction start time - 1
+          // @dev so next block has timestamp equal to startTime
+          await ethers.provider.send("evm_mine", [config.startTime - 1]);
+          // expect event when auction is initialized
+          const targetToken = BigNumber.from(
+            config.projectZeroTokenZero.toString() // <--- incorrect target token ID
+          );
+          await expect(
+            config.minter
+              .connect(config.accounts.user)
+              .initializeAuction(targetToken, {
+                value: config.basePrice,
+              })
+          )
+            .to.emit(config.minter, "AuctionInitialized")
+            .withArgs(
+              targetToken,
+              config.accounts.user.address,
+              config.basePrice,
+              config.startTime + config.defaultAuctionLengthSeconds
+            );
+        });
+      });
+    });
+
+    describe("createBid", function () {
+      it("TODO", async function () {});
     });
   });
 }
