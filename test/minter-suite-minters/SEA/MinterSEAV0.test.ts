@@ -1475,5 +1475,46 @@ for (const coreContractName of coreContractsToTest) {
         });
       });
     });
+
+    describe("reentrancy", function () {
+      describe("createBid_4cM", function () {
+        it("is nonReentrant", async function () {
+          const config = await loadFixture(_beforeEach);
+          const autoBidder = await deployAndGet(
+            config,
+            "ReentrancySEAAutoBidderMock",
+            []
+          );
+          // initialize auction via the auto bidder
+          await ethers.provider.send("evm_mine", [config.startTime - 1]);
+          const targetTokenId = BigNumber.from(
+            config.projectZeroTokenZero.toString()
+          );
+          const initialBidValue = config.basePrice;
+          await autoBidder.attack(
+            targetTokenId,
+            config.minter.address,
+            initialBidValue,
+            { value: config.basePrice.mul(5) }
+          );
+          // when outbid, check that auto bidder does not attain reentrancy or DoS attack
+          const bid2Value = config.basePrice.mul(110).div(100);
+          await config.minter
+            .connect(config.accounts.user)
+            .createBid(targetTokenId, { value: bid2Value });
+          // verify that user is the leading bidder, not the auto bidder
+          const auctionDetails =
+            await config.minter.projectActiveAuctionDetails(config.projectZero);
+          expect(auctionDetails.currentBidder).to.equal(
+            config.accounts.user.address
+          );
+          // verify that the auto bidder received their bid back in weth
+          const autoBidderWethBalance = await config.weth.balanceOf(
+            autoBidder.address
+          );
+          expect(autoBidderWethBalance).to.equal(initialBidValue);
+        });
+      });
+    });
   });
 }

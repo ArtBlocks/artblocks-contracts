@@ -575,6 +575,9 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
 
     /**
      * @notice gas-optimized version of createBid(uint256,uint256).
+     * @dev nonReentrant modifier is used to prevent reentrancy attacks, e.g.
+     * an an auto-bidder that would be able to atomically outbid a user's
+     * new bid via a reentrant call to createBid.
      */
     function createBid_4cM(uint256 _tokenId) public payable nonReentrant {
         uint256 _projectId = _tokenId / ONE_MILLION;
