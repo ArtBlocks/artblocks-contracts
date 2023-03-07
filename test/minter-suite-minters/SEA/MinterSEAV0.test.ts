@@ -42,14 +42,17 @@ const TARGET_MINTER_NAME = "MinterSEAV0";
 // helper functions
 
 // helper function to initialize a token auction on project zero
+// @dev "user" account is the one who initializes the auction
 async function initializeProjectZeroTokenZeroAuction(config: T_Config) {
   // advance time to auction start time
   await ethers.provider.send("evm_mine", [config.startTime]);
   // someone initializes the auction
   const targetToken = BigNumber.from(config.projectZeroTokenZero.toString());
-  await config.minter.initializeAuction(targetToken, {
-    value: config.basePrice,
-  });
+  await config.minter
+    .connect(config.accounts.user)
+    .initializeAuction(targetToken, {
+      value: config.basePrice,
+    });
 }
 
 /**
@@ -574,6 +577,115 @@ for (const coreContractName of coreContractsToTest) {
             .togglePurchaseToDisabled(config.projectZero),
           "Action not supported"
         );
+      });
+    });
+
+    describe("settleAuction", async function () {
+      it("reverts when auction not initialized", async function () {
+        const config = await loadFixture(_beforeEach);
+        const targetToken = BigNumber.from(
+          config.projectZeroTokenZero.toString()
+        );
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .settleAuction(targetToken),
+          "Auction not initialized"
+        );
+      });
+
+      it("reverts when auction not ended", async function () {
+        const config = await loadFixture(_beforeEach);
+        // initialize an auction
+        await initializeProjectZeroTokenZeroAuction(config);
+        const targetToken = BigNumber.from(
+          config.projectZeroTokenZero.toString()
+        );
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .settleAuction(targetToken),
+          "Auction not yet ended"
+        );
+      });
+
+      it("returns early when attempting to settle token without an auction", async function () {
+        const config = await loadFixture(_beforeEach);
+        // initialize an auction for token zero
+        await initializeProjectZeroTokenZeroAuction(config);
+        // attempt to settle token one (which has no auction)
+        const targetToken = BigNumber.from(
+          config.projectZeroTokenOne.toString()
+        );
+        const tx = await config.minter
+          .connect(config.accounts.user)
+          .settleAuction(targetToken);
+        const receipt = await tx.wait();
+        // no `AuctionSettled` event emitted (by requiring zero log length)
+        expect(receipt.logs.length).to.equal(0);
+      });
+
+      it("settles a completed token auction, splits revenue, and emits event", async function () {
+        const config = await loadFixture(_beforeEach);
+        // initialize an auction for token zero
+        await initializeProjectZeroTokenZeroAuction(config);
+        // settle token zero's auction
+        // advance past end of auction
+        await ethers.provider.send("evm_mine", [
+          config.startTime + config.defaultAuctionLengthSeconds + 1,
+        ]);
+        const targetToken = BigNumber.from(
+          config.projectZeroTokenZero.toString()
+        );
+        // record balances before settle tx
+        const artistBalanceBefore = await config.accounts.artist.getBalance();
+        const deployerBalanceBefore =
+          await config.accounts.deployer.getBalance();
+
+        // settle token zero's auction
+        await expect(
+          config.minter.connect(config.accounts.user).settleAuction(targetToken)
+        )
+          .to.emit(config.minter, "AuctionSettled")
+          .withArgs(
+            targetToken,
+            config.accounts.user.address,
+            config.basePrice
+          );
+        // validate balances after settle tx
+        const artistBalanceAfter = await config.accounts.artist.getBalance();
+        const deployerBalanceAfter =
+          await config.accounts.deployer.getBalance();
+        expect(artistBalanceAfter).to.equal(
+          artistBalanceBefore.add(config.basePrice.mul(90).div(100))
+        );
+        expect(deployerBalanceAfter).to.equal(
+          deployerBalanceBefore.add(config.basePrice.mul(10).div(100))
+        );
+      });
+
+      it("returns early when attempting to settle an already-settled auction", async function () {
+        const config = await loadFixture(_beforeEach);
+        // initialize an auction for token zero
+        await initializeProjectZeroTokenZeroAuction(config);
+        // settle token zero's auction
+        // advance past end of auction
+        await ethers.provider.send("evm_mine", [
+          config.startTime + config.defaultAuctionLengthSeconds + 1,
+        ]);
+        const targetToken = BigNumber.from(
+          config.projectZeroTokenZero.toString()
+        );
+        await config.minter
+          .connect(config.accounts.user)
+          .settleAuction(targetToken);
+        // attempt to settle token zero's auction again, which should return early
+        const tx = await config.minter
+          .connect(config.accounts.user)
+          .settleAuction(targetToken);
+        const receipt = await tx.wait();
+        // no `AuctionSettled` event emitted (by requiring zero log length)
+        expect(receipt.logs.length).to.equal(0);
       });
     });
   });
