@@ -928,20 +928,25 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
     }
 
     /**
-     * @notice Gets if price of current bid if auction is configured on project
-     * `_projectId`. Also returns currency symbol and address to be being used
-     * as payment, which for this minter is ETH only.
+     * @notice If project is configured, gets price info to become the leading
+     * bidder on a token auction.
+     * If artist has not called `configureFutureAuctions` and there is no
+     * active token auction accepting bids, `isConfigured` will be false, and a
+     * dummy price of zero is assigned to `tokenPriceInWei`.
+     * If there is an active auction accepting bids, `isConfigured` will be
+     * true, and `tokenPriceInWei` will be the sum of the current bid value and
+     * the minimum bid increment due to the minter's
+     * `minterMinBidIncrementPercentage`.
+     * If there is an auction that has ended (no longer accepting bids), but
+     * the project is configured, `isConfigured` will be true, and
+     * `tokenPriceInWei` will be the minimum initial bid price for the next
+     * token auction.
+     * Also returns currency symbol and address to be being used as payment,
+     * which for this minter is ETH only.
      * @param _projectId Project ID to get price information for.
      * @return isConfigured true only if project auctions are configured.
-     * @return tokenPriceInWei If auction is live, the current bid value in
-     * wei is returned. Note that new bids must be sufficiently greater than
-     * the current highest bid to be accepted (see
-     * `minterMinBidIncrementPercentage`).
-     * If next auction has not yet been initialized, this call will return the
-     * minimum starting bid value of the future auction.
-     * If auction has ended but not has not yet been settled, the winning bid
-     * value will be returned.
-     * if isConfigured is false, this value will be 0.
+     * @return tokenPriceInWei price in wei to become the leading bidder on a
+     * token auction.
      * @return currencySymbol currency symbol for purchases of project on this
      * minter. This minter always returns "ETH"
      * @return currencyAddress currency address for purchases of project on
@@ -963,17 +968,27 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         Auction storage _auction = _projectConfig.activeAuction;
         // base price of zero not allowed when configuring auctions, so use it
         // as indicator of whether auctions are configured for the project
-        isConfigured = (_projectConfig.basePrice > 0);
+        bool projectIsConfigured = (_projectConfig.basePrice > 0);
+        bool auctionIsAcceptingBids = (_auction.initialized &&
+            block.timestamp < _auction.endTime);
+        isConfigured = projectIsConfigured || auctionIsAcceptingBids;
         // only return non-zero price if auction is configured
         if (isConfigured) {
-            if (_auction.initialized) {
-                // return current bid if auction is initialized
-                tokenPriceInWei = _auction.currentBid;
+            if (auctionIsAcceptingBids) {
+                // return current bid plus minimum bid increment
+                // @dev overflow automatically checked in Solidity ^0.8.0
+                tokenPriceInWei =
+                    (_auction.currentBid *
+                        (100 + minterMinBidIncrementPercentage)) /
+                    100;
             } else {
-                // return base (starting) price if auction has not yet started
+                // return base (starting) price if if current auction is not
+                // accepting bids (i.e. the minimum initial bid price for the
+                // next token auction)
                 tokenPriceInWei = _projectConfig.basePrice;
             }
         }
+        // else leave tokenPriceInWei as default value of zero
         currencySymbol = "ETH";
         currencyAddress = address(0);
     }
