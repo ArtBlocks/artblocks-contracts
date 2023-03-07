@@ -60,7 +60,7 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
 
     config.minterSetPriceERC20 = await deployAndGet(
       config,
-      "MinterSetPriceERC20V2",
+      "MinterSetPriceERC20V4",
       [config.genArt721Core.address, config.minterFilter.address]
     );
 
@@ -139,6 +139,13 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
   describe("mint gas optimization", function () {
     it("test gas cost of mint on MinterSetPrice [ @skip-on-coverage ]", async function () {
       const config = await loadFixture(_beforeEach);
+      // manually set minter max invocations such that max invocations is reached
+      await config.minter
+        .connect(config.accounts.artist)
+        .manuallyLimitProjectMaxInvocations(
+          config.projectThree,
+          numMintsToAverage * 2
+        );
       // report gas over an average of numMintsToAverage purchases
       const receipts = [];
       for (let index = 0; index < numMintsToAverage; index++) {
@@ -186,6 +193,13 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
         .updatePricePerTokenInWei(
           config.projectThree,
           config.pricePerTokenInWei
+        );
+      // manually set minter max invocations such that max invocations is reached
+      await config.minterSetPriceERC20
+        .connect(config.accounts.artist)
+        .manuallyLimitProjectMaxInvocations(
+          config.projectThree,
+          numMintsToAverage * 2
         );
 
       // report gas over an average of numMintsToAverage purchases
@@ -247,6 +261,13 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
           config.defaultHalfLife,
           config.startingPrice,
           config.basePrice
+        );
+      // manually set minter max invocations such that max invocations is reached
+      await config.minterDAExp
+        .connect(config.accounts.artist)
+        .manuallyLimitProjectMaxInvocations(
+          config.projectThree,
+          numMintsToAverage * 2
         );
       await ethers.provider.send("evm_mine", [
         config.startTime + config.auctionStartTimeOffset,
@@ -316,6 +337,13 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
       await ethers.provider.send("evm_mine", [
         config.startTime + config.auctionStartTimeOffset,
       ]);
+      // manually set minter max invocations such that max invocations is reached
+      await config.minterDAExpSettlement
+        .connect(config.accounts.artist)
+        .manuallyLimitProjectMaxInvocations(
+          config.projectThree,
+          numMintsToAverage * 2
+        );
 
       // report gas over an average of numMintsToAverage purchases
       const receipts = [];
@@ -378,6 +406,13 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
       await ethers.provider.send("evm_mine", [
         config.startTime + config.auctionStartTimeOffset,
       ]);
+      // manually set minter max invocations such that max invocations is reached
+      await config.minterDALin
+        .connect(config.accounts.artist)
+        .manuallyLimitProjectMaxInvocations(
+          config.projectThree,
+          numMintsToAverage * 2
+        );
 
       // report gas over an average of numMintsToAverage purchases
       const receipts = [];
@@ -454,6 +489,13 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
       const userMerkleProof = _merkleTree.getHexProof(
         hashAddress(config.accounts.user.address)
       );
+      // manually set minter max invocations such that max invocations is reached
+      await config.minterMerkle
+        .connect(config.accounts.artist)
+        .manuallyLimitProjectMaxInvocations(
+          config.projectThree,
+          numMintsToAverage * 2
+        );
 
       // report gas over an average of numMintsToAverage purchases
       const receipts = [];
@@ -537,6 +579,13 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
           .connect(config.accounts.user)
           .purchase(config.projectOne, { value: config.pricePerTokenInWei });
       }
+      // manually set minter max invocations such that max invocations is reached
+      await config.minterHolder
+        .connect(config.accounts.artist)
+        .manuallyLimitProjectMaxInvocations(
+          config.projectThree,
+          numMintsToAverage * 2
+        );
 
       // report gas over an average of numMintsToAverage purchases
       const receipts = [];
