@@ -136,13 +136,13 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
     // max uint8 ~= 255, > 100 percent
     // @dev used when determining the increment percentage for any new bid on
     // the minter, across all projects
-    uint8 minterMinBidIncrementPercentage;
+    uint8 minterMinBidIncrementPercentage = 5;
     // minimum time remaining in auction after a new bid is placed
     // configureable by admin
     // max uint32 ~= 4.3e9 sec ~= 136 years
     // @dev used when determining the buffer time for any new bid on the
     // minter, across all projects
-    uint32 minterTimeBufferSeconds;
+    uint32 minterTimeBufferSeconds = 120;
 
     // modifier-like internal functions
     // @dev we use internal functions instead of modifiers to reduce contract
@@ -583,7 +583,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         Auction storage _auction = _projectConfig.activeAuction;
 
         // ensure current auction is initialized (and not the default struct)
-        require(_auction.initialized, "Auction not started for project");
+        require(_auction.initialized, "Auction not yet initialized");
 
         // ensure bids for a specific token ID are only applied to the auction
         // for that token ID.

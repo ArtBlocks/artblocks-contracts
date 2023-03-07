@@ -140,7 +140,7 @@ for (const coreContractName of coreContractsToTest) {
         .connect(config.accounts.deployer)
         .setMinterForProject(config.projectZero, config.minter.address);
 
-      // configure project 1
+      // configure project zero
       const blockNumber = await ethers.provider.getBlockNumber();
       const block = await ethers.provider.getBlock(blockNumber);
       config.startTime = block.timestamp + ONE_MINUTE;
@@ -951,6 +951,225 @@ for (const coreContractName of coreContractsToTest) {
               config.basePrice,
               config.startTime + config.defaultAuctionLengthSeconds
             );
+        });
+      });
+    });
+
+    describe("createBid", function () {
+      describe("CHECKS", function () {
+        it("reverts if auction is not initialized", async function () {
+          const config = await loadFixture(_beforeEach);
+          // advance time to auction start time
+          await ethers.provider.send("evm_mine", [config.startTime]);
+          await expectRevert(
+            config.minter.connect(config.accounts.user).createBid(0, {
+              value: config.basePrice,
+            }),
+            "Auction not yet initialized"
+          );
+        });
+
+        it("reverts if different token is active", async function () {
+          const config = await loadFixture(_beforeEach);
+          // create an auction for token zero
+          await initializeProjectZeroTokenZeroAuction(config);
+          // expect bid on different token to revert
+          const targetToken = BigNumber.from(
+            config.projectZeroTokenOne.toString()
+          );
+          await expectRevert(
+            config.minter.connect(config.accounts.user).createBid(targetToken, {
+              value: config.basePrice.mul(11).div(10),
+            }),
+            "Token ID does not match auction"
+          );
+        });
+
+        it("reverts if auction has ended", async function () {
+          const config = await loadFixture(_beforeEach);
+          // create an auction for token zero
+          await initializeProjectZeroTokenZeroAuctionAndAdvanceToEnd(config);
+          // expect bid on ended auction to revert
+          const targetToken = BigNumber.from(
+            config.projectZeroTokenZero.toString()
+          );
+          await expectRevert(
+            config.minter.connect(config.accounts.user).createBid(targetToken, {
+              value: config.basePrice.mul(11).div(10),
+            }),
+            "Auction already ended"
+          );
+        });
+
+        it("reverts if bid is not sufficiently greater than current bid", async function () {
+          const config = await loadFixture(_beforeEach);
+          // create an auction for token zero
+          await initializeProjectZeroTokenZeroAuction(config);
+          // expect bid that is not sufficiently greater than current bid to revert
+          const targetToken = BigNumber.from(
+            config.projectZeroTokenZero.toString()
+          );
+          await expectRevert(
+            config.minter.connect(config.accounts.user).createBid(targetToken, {
+              value: config.basePrice.mul(105).div(100).sub(1),
+            }),
+            "Bid is too low"
+          );
+          // expect bid that meets minimum bid requirement to succeed
+          // @dev default is 5% increase on contract
+          await config.minter
+            .connect(config.accounts.user)
+            .createBid(targetToken, {
+              value: config.basePrice.mul(105).div(100),
+            });
+        });
+      });
+
+      describe("EFFECTS", function () {
+        it("updates auction state correctly when creating a new bid that does not extend auction", async function () {
+          const config = await loadFixture(_beforeEach);
+          // initialize an auction for token zero
+          await initializeProjectZeroTokenZeroAuction(config);
+          // create a bid that does not extend auction
+          const targetToken = BigNumber.from(
+            config.projectZeroTokenZero.toString()
+          );
+          const newBidValue = config.basePrice.mul(11).div(10);
+          const bidder = config.accounts.user2;
+          await config.minter.connect(bidder).createBid(targetToken, {
+            value: newBidValue,
+          });
+          // validate auction state
+          const auction = await config.minter.projectActiveAuctionDetails(
+            config.projectZero
+          );
+          expect(auction.tokenId).to.equal(targetToken);
+          expect(auction.currentBid).to.equal(newBidValue);
+          expect(auction.currentBidder).to.equal(bidder.address);
+          expect(auction.endTime).to.equal(
+            config.startTime + config.defaultAuctionLengthSeconds
+          );
+          expect(auction.settled).to.equal(false);
+          expect(auction.initialized).to.equal(true);
+        });
+
+        it("updates auction state correctly when creating a new bid that does extend auction", async function () {
+          const config = await loadFixture(_beforeEach);
+          // initialize an auction for token zero
+          await initializeProjectZeroTokenZeroAuction(config);
+
+          // validate initial auction state
+          const auctionInitial =
+            await config.minter.projectActiveAuctionDetails(config.projectZero);
+          expect(auctionInitial.endTime).to.equal(
+            config.startTime + config.defaultAuctionLengthSeconds
+          );
+
+          // admin configure buffer time
+          const bufferTime = 42;
+          await config.minter
+            .connect(config.accounts.deployer)
+            .updateMinterTimeBufferSeconds(bufferTime);
+
+          // create a bid that does extend auction
+          const newBidTime =
+            config.startTime + config.defaultAuctionLengthSeconds - 5; // <--- 5 seconds before auction end
+          // @dev advance to 1 second before new bid time so bid is placed in block with new bid time
+          await ethers.provider.send("evm_mine", [newBidTime - 1]);
+          const targetToken = BigNumber.from(
+            config.projectZeroTokenZero.toString()
+          );
+          const newBidValue = config.basePrice.mul(11).div(10);
+          const bidder = config.accounts.user2;
+          await config.minter.connect(bidder).createBid(targetToken, {
+            value: newBidValue,
+          });
+          // validate new auction state
+          const auction = await config.minter.projectActiveAuctionDetails(
+            config.projectZero
+          );
+          expect(auction.tokenId).to.equal(targetToken);
+          expect(auction.currentBid).to.equal(newBidValue);
+          expect(auction.currentBidder).to.equal(bidder.address);
+          expect(auction.endTime).to.equal(newBidTime + bufferTime);
+          expect(auction.settled).to.equal(false);
+          expect(auction.initialized).to.equal(true);
+        });
+
+        it("emits a BidCreated event", async function () {
+          const config = await loadFixture(_beforeEach);
+          // initialize an auction for token zero
+          await initializeProjectZeroTokenZeroAuction(config);
+          // expect new bid to emit a BidCreated event
+          const targetToken = BigNumber.from(
+            config.projectZeroTokenZero.toString()
+          );
+          const newBidValue = config.basePrice.mul(11).div(10);
+          const bidder = config.accounts.user2;
+          await expect(
+            config.minter.connect(bidder).createBid(targetToken, {
+              value: newBidValue,
+            })
+          )
+            .to.emit(config.minter, "AuctionBid")
+            .withArgs(targetToken, bidder.address, newBidValue);
+        });
+
+        it("returns bid funds to previous bidder when outbid", async function () {
+          const config = await loadFixture(_beforeEach);
+          // initialize an auction for token zero
+          await initializeProjectZeroTokenZeroAuction(config);
+          // record initial bidder balance
+          const initialBidderBalance = await config.accounts.user.getBalance();
+          // create a bid that should return funds to previous bidder
+          const targetToken = BigNumber.from(
+            config.projectZeroTokenZero.toString()
+          );
+          const newBidValue = config.basePrice.mul(11).div(10);
+          await config.minter
+            .connect(config.accounts.user2)
+            .createBid(targetToken, {
+              value: newBidValue,
+            });
+          // verify that revious bidder was returned funds
+          const newInitialBidderBalance =
+            await config.accounts.user.getBalance();
+          expect(newInitialBidderBalance).to.equal(
+            initialBidderBalance.add(config.basePrice)
+          );
+        });
+
+        it("returns bid funds to previous bidder via WETH fallback when outbid to a dead receiver", async function () {
+          const config = await loadFixture(_beforeEach);
+          const deadReceiverBidder = await deployAndGet(
+            config,
+            "DeadReceiverBidderMock",
+            []
+          );
+          // initialize an auction for token zero
+          await initializeProjectZeroTokenZeroAuction(config);
+          // place bid with dead receiver mock
+          const targetToken = BigNumber.from(
+            config.projectZeroTokenZero.toString()
+          );
+          const bid2Value = config.basePrice.mul(11).div(10);
+          await deadReceiverBidder
+            .connect(config.accounts.user2)
+            .createBidOnAuction(config.minter.address, targetToken, {
+              value: bid2Value,
+            });
+          // verify that the dead receiver mock received the funds in WETH as fallback
+          // when they are outbid
+          const Bid3Value = bid2Value.mul(11).div(10);
+          await config.minter
+            .connect(config.accounts.user)
+            .createBid(targetToken, {
+              value: Bid3Value,
+            });
+          const deadReceiverWETHBalance = await config.weth.balanceOf(
+            deadReceiverBidder.address
+          );
+          expect(deadReceiverWETHBalance).to.equal(bid2Value);
         });
       });
     });
