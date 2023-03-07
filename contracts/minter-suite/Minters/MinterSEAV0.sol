@@ -767,23 +767,36 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
     }
 
     /**
-     * @notice projectId => next expected token ID to be auctioned.
-     * This is a convenience function that returns the next expected token ID
-     * to be auctioned, based on the project's current number of invocations on
-     * the core contract. This is intended to be useful for frontends or
-     * scripts that want to call `initializeAuction` or
-     * `settleAndInitializeAuction`, which requires the target token ID to be
-     * passed in as an argument.
+     * @notice Convenience function that returns either the current token ID
+     * being auctioned, or the next expected token ID to be auction if no
+     * auction is currently initialized or if the current auction has concluded
+     * (block.timestamp > auction.endTime).
+     * This is intended to be useful for frontends or scripts that intend to
+     * call `initializeAuction` or `settleAndInitializeAuction`, which requires
+     * the target token ID to be passed in as an argument.
      * Note that this is not a guarantee that the next token ID to be auctioned
      * due to edge cases where other minters are being used, but those are not
      * expected to be encountered in practice.
      * The function reverts if an invalid project ID is queried, or if the
-     * project has reached its maximum invocations.
+     * project has reached its maximum invocations and there is no active
+     * auction.
+     * @param _projectId The project ID
+     * @return The current token ID being auctioned, or the next expected token
+     * ID to be auctioned if no auction is currently initialized or if the
+     * current auction has concluded (block.timestamp > auction.endTime).
      */
-    function getNextExpectedTokenId(
+    function getTokenToBidOrInitialize(
         uint256 _projectId
-    ) external view returns (uint256 nextExpectedTokenId) {
-        // get current number of project invocations on the core contract
+    ) external view returns (uint256) {
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        Auction storage _auction = _projectConfig.activeAuction;
+        // if project has an active token auction that is not settled, return
+        // that token ID
+        if (_auction.initialized && (_auction.endTime > block.timestamp)) {
+            return _auction.tokenId;
+        }
+        // otherwise, return the next expected token ID based on core contract
+        // invocation count
         (
             uint256 invocations,
             uint256 maxInvocations,
@@ -795,13 +808,12 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         // revert if next invocation would exceed max invocations
         require(
             invocations < maxInvocations,
-            "Project has reached its maximum invocations"
+            "Project reached max invocations"
         );
         // the next expected token ID is sum of (project ID * ONE_MILLION) and
         // the current number of invocations since the first token ID is 0
         // @dev overflow automatically checked in Solidity ^0.8.0
-        nextExpectedTokenId = (_projectId * ONE_MILLION) + invocations;
-        return nextExpectedTokenId;
+        return (_projectId * ONE_MILLION) + invocations;
     }
 
     /**

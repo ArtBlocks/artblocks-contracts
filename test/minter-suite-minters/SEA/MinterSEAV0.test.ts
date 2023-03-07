@@ -1310,5 +1310,64 @@ for (const coreContractName of coreContractsToTest) {
         );
       });
     });
+
+    describe("view functions", function () {
+      describe("getTokenToBidOrInitialize", function () {
+        it("reverts when project has already reached max invocations on core contract, and no active auction", async function () {
+          const config = await loadFixture(_beforeEach);
+          // set project max invocations to 1 on core contract
+          await config.genArt721Core
+            .connect(config.accounts.artist)
+            .updateProjectMaxInvocations(config.projectZero, 1);
+          // initialize auction, which mints token zero
+          await initializeProjectZeroTokenZeroAuctionAndAdvanceToEnd(config);
+          // view function to get next token ID should revert, since project has reached max invocations
+          await expectRevert(
+            config.minter.getTokenToBidOrInitialize(config.projectZero),
+            "Project reached max invocations"
+          );
+        });
+
+        it("returns current token auction when project has already reached max invocations on core contract, but there is an active auction", async function () {
+          const config = await loadFixture(_beforeEach);
+          // set project max invocations to 1 on core contract
+          await config.genArt721Core
+            .connect(config.accounts.artist)
+            .updateProjectMaxInvocations(config.projectZero, 1);
+          // initialize auction, which mints token zero
+          await initializeProjectZeroTokenZeroAuction(config);
+          // view function to get next token ID should revert, since project has reached max invocations
+          const targetExpectedTokenId = BigNumber.from(
+            config.projectZeroTokenZero.toString()
+          );
+          const returnedTokenId = await config.minter.getTokenToBidOrInitialize(
+            config.projectZero
+          );
+          expect(returnedTokenId).to.equal(targetExpectedTokenId);
+        });
+
+        it("returns the next expected token ID when no auction ever initialized on project", async function () {
+          const config = await loadFixture(_beforeEach);
+          const targetExpectedTokenId = BigNumber.from(
+            config.projectZeroTokenZero.toString()
+          );
+          const returnedExpectedTokenId =
+            await config.minter.getTokenToBidOrInitialize(config.projectZero);
+          expect(returnedExpectedTokenId).to.equal(targetExpectedTokenId);
+        });
+
+        it("returns the next expected token ID when active auction has reached end time", async function () {
+          const config = await loadFixture(_beforeEach);
+          // initialize auction, which mints token zero
+          await initializeProjectZeroTokenZeroAuctionAndAdvanceToEnd(config);
+          const targetExpectedTokenId = BigNumber.from(
+            config.projectZeroTokenOne.toString()
+          );
+          const returnedExpectedTokenId =
+            await config.minter.getTokenToBidOrInitialize(config.projectZero);
+          expect(returnedExpectedTokenId).to.equal(targetExpectedTokenId);
+        });
+      });
+    });
   });
 }
