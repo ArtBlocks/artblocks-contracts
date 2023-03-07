@@ -53,7 +53,7 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
       "MinterFilterV1"
     ));
 
-    config.minter = await deployAndGet(config, "MinterSetPriceV2", [
+    config.minter = await deployAndGet(config, "MinterSetPriceV4", [
       config.genArt721Core.address,
       config.minterFilter.address,
     ]);
@@ -64,7 +64,7 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
       [config.genArt721Core.address, config.minterFilter.address]
     );
 
-    config.minterDAExp = await deployAndGet(config, "MinterDAExpV2", [
+    config.minterDAExp = await deployAndGet(config, "MinterDAExpV4", [
       config.genArt721Core.address,
       config.minterFilter.address,
     ]);
@@ -75,18 +75,18 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
       [config.genArt721Core.address, config.minterFilter.address]
     );
 
-    config.minterDALin = await deployAndGet(config, "MinterDALinV2", [
+    config.minterDALin = await deployAndGet(config, "MinterDALinV4", [
       config.genArt721Core.address,
       config.minterFilter.address,
     ]);
 
-    config.minterMerkle = await deployAndGet(config, "MinterMerkleV3", [
+    config.minterMerkle = await deployAndGet(config, "MinterMerkleV5", [
       config.genArt721Core.address,
       config.minterFilter.address,
       constants.ZERO_ADDRESS, // dummy delegation registry address since not used in these tests
     ]);
 
-    config.minterHolder = await deployAndGet(config, "MinterHolderV2", [
+    config.minterHolder = await deployAndGet(config, "MinterHolderV4", [
       config.genArt721Core.address,
       config.minterFilter.address,
       constants.ZERO_ADDRESS, // dummy delegation registry address since not used in these tests
@@ -150,6 +150,8 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
         receipts.push(await ethers.provider.getTransactionReceipt(tx.hash));
       }
       const gasUseds = receipts.map((receipt) => receipt.gasUsed);
+      const maxGasUsed = Math.max(...gasUseds);
+      console.log(`max gas used for all tested mints: ${maxGasUsed}`);
       const avgGasUsed = gasUseds
         .reduce((a, b) => a.add(b))
         .div(gasUseds.length);
@@ -197,6 +199,8 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
         receipts.push(await ethers.provider.getTransactionReceipt(tx.hash));
       }
       const gasUseds = receipts.map((receipt) => receipt.gasUsed);
+      const maxGasUsed = Math.max(...gasUseds);
+      console.log(`max gas used for all tested mints: ${maxGasUsed}`);
       const avgGasUsed = gasUseds
         .reduce((a, b) => a.add(b))
         .div(gasUseds.length);
@@ -257,6 +261,8 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
         receipts.push(await ethers.provider.getTransactionReceipt(tx.hash));
       }
       const gasUseds = receipts.map((receipt) => receipt.gasUsed);
+      const maxGasUsed = Math.max(...gasUseds);
+      console.log(`max gas used for all tested mints: ${maxGasUsed}`);
       const avgGasUsed = gasUseds
         .reduce((a, b) => a.add(b))
         .div(gasUseds.length);
@@ -320,6 +326,8 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
         receipts.push(await ethers.provider.getTransactionReceipt(tx.hash));
       }
       const gasUseds = receipts.map((receipt) => receipt.gasUsed);
+      const maxGasUsed = Math.max(...gasUseds);
+      console.log(`max gas used for all tested mints: ${maxGasUsed}`);
       const avgGasUsed = gasUseds
         .reduce((a, b) => a.add(b))
         .div(gasUseds.length);
@@ -380,6 +388,8 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
         receipts.push(await ethers.provider.getTransactionReceipt(tx.hash));
       }
       const gasUseds = receipts.map((receipt) => receipt.gasUsed);
+      const maxGasUsed = Math.max(...gasUseds);
+      console.log(`max gas used for all tested mints: ${maxGasUsed}`);
       const avgGasUsed = gasUseds
         .reduce((a, b) => a.add(b))
         .div(gasUseds.length);
@@ -456,6 +466,8 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
         receipts.push(await ethers.provider.getTransactionReceipt(tx.hash));
       }
       const gasUseds = receipts.map((receipt) => receipt.gasUsed);
+      const maxGasUsed = Math.max(...gasUseds);
+      console.log(`max gas used for all tested mints: ${maxGasUsed}`);
       const avgGasUsed = gasUseds
         .reduce((a, b) => a.add(b))
         .div(gasUseds.length);
@@ -543,6 +555,8 @@ describe("GenArt721CoreV3 Gas Tests", async function () {
         receipts.push(await ethers.provider.getTransactionReceipt(tx.hash));
       }
       const gasUseds = receipts.map((receipt) => receipt.gasUsed);
+      const maxGasUsed = Math.max(...gasUseds);
+      console.log(`max gas used for all tested mints: ${maxGasUsed}`);
       const avgGasUsed = gasUseds
         .reduce((a, b) => a.add(b))
         .div(gasUseds.length);
