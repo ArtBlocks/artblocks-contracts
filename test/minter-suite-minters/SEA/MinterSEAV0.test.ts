@@ -1096,11 +1096,11 @@ for (const coreContractName of coreContractsToTest) {
           expect(auction.initialized).to.equal(true);
         });
 
-        it("emits a BidCreated event", async function () {
+        it("emits a AuctionBid event", async function () {
           const config = await loadFixture(_beforeEach);
           // initialize an auction for token zero
           await initializeProjectZeroTokenZeroAuction(config);
-          // expect new bid to emit a BidCreated event
+          // expect new bid to emit a AuctionBid event
           const targetToken = BigNumber.from(
             config.projectZeroTokenZero.toString()
           );
@@ -1171,6 +1171,121 @@ for (const coreContractName of coreContractsToTest) {
           );
           expect(deadReceiverWETHBalance).to.equal(bid2Value);
         });
+      });
+    });
+
+    describe("settleAndInitializeAuction", function () {
+      it("settles and initializes an auction", async function () {
+        const config = await loadFixture(_beforeEach);
+        // initialize and advance to end of auction for token zero
+        await initializeProjectZeroTokenZeroAuctionAndAdvanceToEnd(config);
+        // verify that the auction has not been settled
+        const auction = await config.minter.projectActiveAuctionDetails(
+          config.projectZero
+        );
+        expect(auction.settled).to.equal(false);
+        // settle and initialize a new auction
+        const settleTokenId = BigNumber.from(
+          config.projectZeroTokenZero.toString()
+        );
+        const initializeTokenId = BigNumber.from(
+          config.projectZeroTokenOne.toString()
+        );
+        await expect(
+          config.minter
+            .connect(config.accounts.user2)
+            .settleAndInitializeAuction(settleTokenId, initializeTokenId, {
+              value: config.basePrice,
+            })
+        )
+          .to.emit(config.minter, "AuctionSettled")
+          .withArgs(
+            settleTokenId,
+            config.accounts.user.address,
+            config.basePrice
+          );
+        // verify that a new auction has been initialized for token ID 1
+        const newAuction = await config.minter.projectActiveAuctionDetails(
+          config.projectZero
+        );
+        expect(newAuction.tokenId).to.equal(initializeTokenId);
+        expect(newAuction.currentBid).to.equal(config.basePrice);
+        expect(newAuction.currentBidder).to.equal(
+          config.accounts.user2.address
+        );
+        expect(newAuction.settled).to.equal(false);
+        expect(newAuction.initialized).to.equal(true);
+      });
+
+      it("initializes new auction when frontrun by another settlement", async function () {
+        const config = await loadFixture(_beforeEach);
+
+        // initialize and advance to end of auction for token zero
+        await initializeProjectZeroTokenZeroAuctionAndAdvanceToEnd(config);
+        // a different user settles the auction
+        const settleTokenId = BigNumber.from(
+          config.projectZeroTokenZero.toString()
+        );
+        await config.minter.settleAuction(settleTokenId);
+        // settle and initialize a new auction still initializes a new auction
+        const initializeTokenId = BigNumber.from(
+          config.projectZeroTokenOne.toString()
+        );
+        // advance to new time
+        const newTargetTime =
+          config.startTime + config.defaultAuctionLengthSeconds + 100;
+        await ethers.provider.send("evm_mine", [newTargetTime - 1]);
+        await expect(
+          config.minter
+            .connect(config.accounts.user2)
+            .settleAndInitializeAuction(settleTokenId, initializeTokenId, {
+              value: config.basePrice,
+            })
+        )
+          .to.emit(config.minter, "AuctionInitialized")
+          .withArgs(
+            initializeTokenId,
+            config.accounts.user2.address,
+            config.basePrice,
+            newTargetTime + config.defaultAuctionLengthSeconds
+          );
+      });
+
+      it("attempts to place new bid when frontrun by another settlement and auction initialization", async function () {
+        const config = await loadFixture(_beforeEach);
+
+        // initialize and advance to end of auction for token zero
+        await initializeProjectZeroTokenZeroAuctionAndAdvanceToEnd(config);
+        // a different user settles the auction
+        const settleTokenId = BigNumber.from(
+          config.projectZeroTokenZero.toString()
+        );
+        await config.minter.settleAuction(settleTokenId);
+        // a different user initializes a new auction
+        const initializeTokenId = BigNumber.from(
+          config.projectZeroTokenOne.toString()
+        );
+        await config.minter
+          .connect(config.accounts.additional)
+          .initializeAuction(initializeTokenId, {
+            value: config.basePrice,
+          });
+        // settle and initialize a new auction still attempts to place a new bid on the new auction
+        // advance to new time
+        const newValidBidValue = config.basePrice.mul(11).div(10);
+        await expect(
+          config.minter
+            .connect(config.accounts.user2)
+            .settleAndInitializeAuction(settleTokenId, initializeTokenId, {
+              value: newValidBidValue,
+            })
+        )
+          .to.emit(config.minter, "AuctionBid")
+          .withArgs(
+            initializeTokenId,
+            config.accounts.user2.address,
+            newValidBidValue
+          );
       });
     });
 
