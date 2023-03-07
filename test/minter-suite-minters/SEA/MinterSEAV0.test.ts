@@ -955,8 +955,26 @@ for (const coreContractName of coreContractsToTest) {
       });
     });
 
-    describe("createBid", function () {
-      it("TODO", async function () {});
+    describe("purchase", function () {
+      it("is an inactive function", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.minter.connect(config.accounts.user).purchase(0),
+          "Inactive function"
+        );
+      });
+    });
+
+    describe("purchaseTo", function () {
+      it("is an inactive function", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .purchaseTo(config.accounts.user.address, 0),
+          "Inactive function"
+        );
+      });
     });
   });
 }
