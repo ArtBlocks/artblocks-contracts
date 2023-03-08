@@ -454,7 +454,9 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
      * `_bidTokenId` with bid amount and bidder address equal to
      * `msg.value` and `msg.sender`, respectively.
      * Intended to gracefully handle the case where a user is front-run by
-     * one or more transactions to settle and/or initialize a new auction.
+     * one or more transactions to settle and/or initialize a new auction,
+     * potentially still placing a bid on the auction for the token ID if the
+     * bid value is sufficiently higher than the current highest bid.
      * This function requires a target token ID that is the next token ID for
      * the project, and will revert if `_targetTokenId` is not the next token.
      * Note that the use of `_targetTokenId` is to prevent the possibility of
