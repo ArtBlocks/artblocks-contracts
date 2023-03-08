@@ -88,7 +88,7 @@ interface IFilteredMinterSEAV0 is IFilteredMinterV2 {
 
     function settleAndCreateBid(
         uint256 _settleTokenId,
-        uint256 _initializeTokenId
+        uint256 _bidTokenId
     ) external payable;
 
     function settleAuction(uint256 _tokenId) external;

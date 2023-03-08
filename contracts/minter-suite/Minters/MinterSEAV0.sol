@@ -451,7 +451,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
     /**
      * @notice Settles any complete auction for token `_settleTokenId` (if
      * applicable), then attempts to create a bid for token
-     * `_initializeTokenId` with bid amount and bidder address equal to
+     * `_bidTokenId` with bid amount and bidder address equal to
      * `msg.value` and `msg.sender`, respectively.
      * Intended to gracefully handle the case where a user is front-run by
      * one or more transactions to settle and/or initialize a new auction.
