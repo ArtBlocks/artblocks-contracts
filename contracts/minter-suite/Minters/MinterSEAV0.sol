@@ -450,30 +450,32 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
 
     /**
      * @notice Settles any complete auction for token `_settleTokenId` (if
-     * applicable), then initializes an auction for token `_initializeTokenId`
-     * with bid amount and bidder address equal to `msg.value` and
-     * `msg.sender`, respectively.
+     * applicable), then attempts to create a bid for token
+     * `_initializeTokenId` with bid amount and bidder address equal to
+     * `msg.value` and `msg.sender`, respectively.
+     * Intended to gracefully handle the case where a user is front-run by
+     * one or more transactions to settle and/or initialize a new auction.
      * This function requires a target token ID that is the next token ID for
      * the project, and will revert if `_targetTokenId` is not the next token.
      * Note that the use of `_targetTokenId` is to prevent the possibility of
      * transactions that are stuck in the pending pool for long periods of time
-     * from unintentionally initializing auctions for future tokens.
-     * Note that calls to `settleAuction` and `initializeAuction` are possible
+     * from unintentionally bidding on auctions for future tokens.
+     * Note that calls to `settleAuction` and `createBid` are possible
      * to be called in separate transactions, but this function is provided for
      * convenience and calls both of those functions in a single transaction.
      * @param _settleTokenId Token ID to settle auction for.
-     * @param _initializeTokenId Token ID to initialize auction for.
+     * @param _bidTokenId Token ID to initialize auction for.
      */
-    function settleAndInitializeAuction(
+    function settleAndCreateBid(
         uint256 _settleTokenId,
-        uint256 _initializeTokenId
+        uint256 _bidTokenId
     ) external payable {
         // settle completed auction, if applicable
         // @dev in case of frontrun, settleAuction returns early and avoids
         // reverting
         settleAuction(_settleTokenId);
         // initialize the auction for the next token
-        initializeAuction(_initializeTokenId);
+        createBid_4cM(_bidTokenId);
     }
 
     /**
@@ -486,7 +488,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
      * Edge case: if `_tokenId` is nonsense (i.e. not a valid token ID), this
      * function will not revert, but also will not modify state. This is to
      * prevent nuisance reverting in the case of a user being front-run when
-     * calling `settleAndInitializeAuction`.
+     * calling `settleAndCreateBid`.
      * @param _tokenId Token ID to settle auction for.
      */
     function settleAuction(uint256 _tokenId) public nonReentrant {
@@ -526,47 +528,26 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
     }
 
     /**
-     * @notice Initializes a new auction for token `_targetTokenId`, and places
-     * an initial bid with bid amount and bidder address equal to `msg.value`
-     * and `msg.sender`, respectively.
-     * If auction for `_targetTokenId` is already active when this transaction
-     * is mined, a bid will be attempted.
-     * This minter only allows one active auction at a time per project, so
-     * this function will revert if there is already an active or unsettled
-     * auction for another token in the same project.
-     * If new auction is initialized, this function requires a target token ID
-     * that is the next token ID for the project, and will revert if
-     * `_targetTokenId` is not the next token.
-     * Note that the use of `_targetTokenId` is to prevent the possibility of
-     * transactions that are stuck in the pending pool for long periods of time
-     * from unintentionally initializing auctions for future tokens.
-     * @param _targetTokenId Token ID to initialize auction for.
-     */
-    function initializeAuction(uint256 _targetTokenId) public payable {
-        uint256 _projectId = _targetTokenId / ONE_MILLION;
-        ProjectConfig storage _projectConfig = projectConfig[_projectId];
-        Auction storage _auction = _projectConfig.activeAuction;
-        // edge case: initializeAuction has been front-run by another user,
-        // so the auction has already been initialized. In this case, attempt
-        // to place a bid on the token since auction already exists.
-        if (_auction.tokenId == _targetTokenId && _auction.initialized) {
-            createBid_4cM(_targetTokenId);
-            return;
-        }
-        // otherwise continue with the initialization of the auction
-        _initializeAuction(_projectId, _targetTokenId);
-    }
-
-    /**
      * @notice Enters a bid for token `_tokenId`.
+     * If an auction for token `_tokenId` does not exist, an auction will be
+     * initialized as long as any existing auction for the project has been
+     * settled.
      * In order to successfully place the bid, the token must be in the
-     * auction stage and the bid must be sufficiently greater than the current
-     * highest bid. If the bid is unsuccessful, the transaction will revert.
+     * bid must be:
+     * - greater than or equal to a project's minimum bid price if a new
+     *   auction is initialized
+     * - sufficiently greater than the current highest bid, according to the
+     *   minter's bid increment percentage `minterMinBidIncrementPercentage`,
+     *   if an auction for the token already exists
+     * If the bid is unsuccessful, the transaction will revert.
      * If the bid is successful, but outbid by another bid before the auction
      * ends, the funds will be noncustodially returned to the bidder's address,
-     * `msg.sender`. A fallback method of sending funds back to the bidder if
-     * the address is not accepting ETH is sending funds via WETH (preventing
+     * `msg.sender`. A fallback method of sending funds back to the bidder via
+     * WETH is used if the bidder address is not accepting ETH (preventing
      * denial of service attacks).
+     * Note that the use of `_tokenId` is to prevent the possibility of
+     * transactions that are stuck in the pending pool for long periods of time
+     * from unintentionally bidding on auctions for future tokens.
      * @param _tokenId Token ID being bidded on
      */
     function createBid(uint256 _tokenId) external payable {
@@ -585,8 +566,15 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         Auction storage _auction = _projectConfig.activeAuction;
 
-        // ensure current auction is initialized (and not the default struct)
-        require(_auction.initialized, "Auction not yet initialized");
+        // if no auction exists, or current auction is already settled, attempt
+        // to initialize a new auction for the input token ID and immediately
+        // return
+        if ((!_auction.initialized) || _auction.settled) {
+            _initializeAuction(_projectId, _tokenId);
+            return;
+        }
+        // @dev this branch is guaranteed to have an initialized auction that
+        // not settled, so no need to check for initialized or not settled
 
         // ensure bids for a specific token ID are only applied to the auction
         // for that token ID.
@@ -630,7 +618,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
 
     /**
      * @notice Inactive function - see `createBid` or
-     * `settleAndInitializeAuction`
+     * `settleAndCreateBid`
      */
     function purchase(
         uint256 /*_projectId*/
@@ -640,7 +628,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
 
     /**
      * @notice Inactive function - see `createBid` or
-     * `settleAndInitializeAuction`
+     * `settleAndCreateBid`
      */
     function purchaseTo(
         address /*_to*/,
@@ -775,7 +763,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
      * auction is currently initialized or if the current auction has concluded
      * (block.timestamp > auction.endTime).
      * This is intended to be useful for frontends or scripts that intend to
-     * call `initializeAuction` or `settleAndInitializeAuction`, which requires
+     * call `createBid` or `settleAndCreateBid`, which requires
      * the target token ID to be passed in as an argument.
      * Note that this is not a guarantee that the next token ID to be auctioned
      * due to edge cases where other minters are being used, but those are not
@@ -788,9 +776,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
      * ID to be auctioned if no auction is currently initialized or if the
      * current auction has concluded (block.timestamp > auction.endTime).
      */
-    function getTokenToBidOrInitialize(
-        uint256 _projectId
-    ) external view returns (uint256) {
+    function getTokenToBid(uint256 _projectId) external view returns (uint256) {
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         Auction storage _auction = _projectConfig.activeAuction;
         // if project has an active token auction that is not settled, return
@@ -820,14 +806,14 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
     }
 
     /**
-     * @dev internal function to initialize an auction.
-     * Internal function is used to keep the auction initialization code
-     * nonReentrant
+     * @dev Internal function to initialize an auction.
+     * This should be executed in a nonReentrant context to provide redundant
+     * protection against reentrancy.
      */
     function _initializeAuction(
         uint256 _projectId,
         uint256 _targetTokenId
-    ) internal nonReentrant {
+    ) internal {
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         Auction storage _auction = _projectConfig.activeAuction;
         // CHECKS
@@ -849,14 +835,15 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
             block.timestamp >= _projectConfig.timestampStart,
             "Only gte project start time"
         );
-        // require any previous auction to be settled before allowing a new
-        // one to be initialized
-        if (_auction.initialized) {
-            // there is already an auction on this project, so ensure it has
-            // been settled before allowing a new one to be initialized
-            require(_auction.settled, "Prior auction not yet settled");
-        }
-        // require sufficient payment to place initial bid
+        // the following require statement is redundant based on how this
+        // internal function is called, but it is included for protection
+        // against future changes that could easily introduce a bug if this
+        // check is not present
+        require(
+            (!_auction.initialized) || _auction.settled,
+            "Existing auction not settled"
+        );
+
         require(
             msg.value >= _projectConfig.basePrice,
             "Insufficient initial bid"

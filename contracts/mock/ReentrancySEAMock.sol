@@ -20,7 +20,7 @@ contract ReentrancySEAAutoBidderMock {
         uint256 _initialBidValue
     ) external payable {
         targetTokenId = _targetTokenId;
-        IFilteredMinterSEAV0(_minterContractAddress).initializeAuction{
+        IFilteredMinterSEAV0(_minterContractAddress).createBid{
             value: _initialBidValue
         }(_targetTokenId);
     }

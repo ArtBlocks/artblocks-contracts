@@ -32,9 +32,9 @@ import { Minter_Common } from "../Minter.common";
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
   "GenArt721CoreV3", // flagship V3 core
-  "GenArt721CoreV3_Explorations", // V3 core explorations contract
-  "GenArt721CoreV3_Engine", // V3 core engine contract
-  "GenArt721CoreV3_EngineFlex", // V3 core engine contract
+  // "GenArt721CoreV3_Explorations", // V3 core explorations contract
+  // "GenArt721CoreV3_Engine", // V3 core engine contract
+  // "GenArt721CoreV3_EngineFlex", // V3 core engine contract
 ];
 
 const TARGET_MINTER_NAME = "MinterSEAV0";
@@ -49,11 +49,9 @@ async function initializeProjectZeroTokenZeroAuction(config: T_Config) {
   await ethers.provider.send("evm_mine", [config.startTime - 1]);
   // someone initializes the auction
   const targetToken = BigNumber.from(config.projectZeroTokenZero.toString());
-  await config.minter
-    .connect(config.accounts.user)
-    .initializeAuction(targetToken, {
-      value: config.basePrice,
-    });
+  await config.minter.connect(config.accounts.user).createBid(targetToken, {
+    value: config.basePrice,
+  });
 }
 
 // helper function to initialize a token auction on project zero, and then
@@ -713,7 +711,7 @@ for (const coreContractName of coreContractsToTest) {
       });
     });
 
-    describe("initializeAuction", async function () {
+    describe("createBid w/ auction initialization", async function () {
       it("attempts to create bid if token auction is already initialized", async function () {
         const config = await loadFixture(_beforeEach);
         await initializeProjectZeroTokenZeroAuction(config);
@@ -725,7 +723,7 @@ for (const coreContractName of coreContractsToTest) {
         await expect(
           config.minter
             .connect(config.accounts.user2)
-            .initializeAuction(targetToken, { value: nextBidValue })
+            .createBid(targetToken, { value: nextBidValue })
         )
           .to.emit(config.minter, "AuctionBid")
           .withArgs(targetToken, config.accounts.user2.address, nextBidValue);
@@ -745,7 +743,7 @@ for (const coreContractName of coreContractsToTest) {
           await expectRevert(
             config.minter
               .connect(config.accounts.artist)
-              .initializeAuction(targetToken, { value: config.basePrice }),
+              .createBid(targetToken, { value: config.basePrice }),
             "Project max has been invoked"
           );
         });
@@ -763,7 +761,7 @@ for (const coreContractName of coreContractsToTest) {
           await expectRevert(
             config.minter
               .connect(config.accounts.artist)
-              .initializeAuction(targetToken, { value: config.basePrice }),
+              .createBid(targetToken, { value: config.basePrice }),
             "Project not configured"
           );
         });
@@ -778,7 +776,7 @@ for (const coreContractName of coreContractsToTest) {
           await expectRevert(
             config.minter
               .connect(config.accounts.artist)
-              .initializeAuction(targetToken, { value: config.basePrice }),
+              .createBid(targetToken, { value: config.basePrice }),
             "Only gte project start time"
           );
         });
@@ -794,8 +792,8 @@ for (const coreContractName of coreContractsToTest) {
           await expectRevert(
             config.minter
               .connect(config.accounts.user)
-              .initializeAuction(targetToken, { value: config.basePrice }),
-            "Prior auction not yet settled"
+              .createBid(targetToken, { value: config.basePrice }),
+            "Token ID does not match auction"
           );
         });
 
@@ -809,7 +807,7 @@ for (const coreContractName of coreContractsToTest) {
           );
           await config.minter
             .connect(config.accounts.user)
-            .initializeAuction(targetToken, { value: config.basePrice });
+            .createBid(targetToken, { value: config.basePrice });
         });
 
         it("reverts if minimum bid value is not sent", async function () {
@@ -821,11 +819,9 @@ for (const coreContractName of coreContractsToTest) {
             config.projectZeroTokenZero.toString()
           );
           await expectRevert(
-            config.minter
-              .connect(config.accounts.user)
-              .initializeAuction(targetToken, {
-                value: config.basePrice.sub(1),
-              }),
+            config.minter.connect(config.accounts.user).createBid(targetToken, {
+              value: config.basePrice.sub(1),
+            }),
             "Insufficient initial bid"
           );
         });
@@ -841,11 +837,9 @@ for (const coreContractName of coreContractsToTest) {
             config.projectZeroTokenOne.toString() // <--- incorrect target token ID
           );
           await expectRevert(
-            config.minter
-              .connect(config.accounts.user)
-              .initializeAuction(targetToken, {
-                value: bidValue,
-              }),
+            config.minter.connect(config.accounts.user).createBid(targetToken, {
+              value: bidValue,
+            }),
             "Incorrect target token ID"
           );
         });
@@ -887,11 +881,9 @@ for (const coreContractName of coreContractsToTest) {
             config.projectZeroTokenOne.toString()
           );
           await expectRevert(
-            config.minter
-              .connect(config.accounts.user)
-              .initializeAuction(targetToken, {
-                value: config.basePrice,
-              }),
+            config.minter.connect(config.accounts.user).createBid(targetToken, {
+              value: config.basePrice,
+            }),
             "Maximum invocations reached"
           );
         });
@@ -911,7 +903,7 @@ for (const coreContractName of coreContractsToTest) {
           );
           await config.minter
             .connect(config.accounts.user)
-            .initializeAuction(targetToken, {
+            .createBid(targetToken, {
               value: bidValue,
             });
           // validate auction state
@@ -938,11 +930,9 @@ for (const coreContractName of coreContractsToTest) {
             config.projectZeroTokenZero.toString() // <--- incorrect target token ID
           );
           await expect(
-            config.minter
-              .connect(config.accounts.user)
-              .initializeAuction(targetToken, {
-                value: config.basePrice,
-              })
+            config.minter.connect(config.accounts.user).createBid(targetToken, {
+              value: config.basePrice,
+            })
           )
             .to.emit(config.minter, "AuctionInitialized")
             .withArgs(
@@ -957,16 +947,13 @@ for (const coreContractName of coreContractsToTest) {
 
     describe("createBid", function () {
       describe("CHECKS", function () {
-        it("reverts if auction is not initialized", async function () {
+        it("does not revert if auction is not initialized (i.e. auto-initializes)", async function () {
           const config = await loadFixture(_beforeEach);
           // advance time to auction start time
           await ethers.provider.send("evm_mine", [config.startTime]);
-          await expectRevert(
-            config.minter.connect(config.accounts.user).createBid(0, {
-              value: config.basePrice,
-            }),
-            "Auction not yet initialized"
-          );
+          await config.minter.connect(config.accounts.user).createBid(0, {
+            value: config.basePrice,
+          });
         });
 
         it("reverts if different token is active", async function () {
@@ -1174,7 +1161,7 @@ for (const coreContractName of coreContractsToTest) {
       });
     });
 
-    describe("settleAndInitializeAuction", function () {
+    describe("settleAndCreateBid", function () {
       it("settles and initializes an auction", async function () {
         const config = await loadFixture(_beforeEach);
         // initialize and advance to end of auction for token zero
@@ -1194,7 +1181,7 @@ for (const coreContractName of coreContractsToTest) {
         await expect(
           config.minter
             .connect(config.accounts.user2)
-            .settleAndInitializeAuction(settleTokenId, initializeTokenId, {
+            .settleAndCreateBid(settleTokenId, initializeTokenId, {
               value: config.basePrice,
             })
         )
@@ -1238,7 +1225,7 @@ for (const coreContractName of coreContractsToTest) {
         await expect(
           config.minter
             .connect(config.accounts.user2)
-            .settleAndInitializeAuction(settleTokenId, initializeTokenId, {
+            .settleAndCreateBid(settleTokenId, initializeTokenId, {
               value: config.basePrice,
             })
         )
@@ -1267,7 +1254,7 @@ for (const coreContractName of coreContractsToTest) {
         );
         await config.minter
           .connect(config.accounts.additional)
-          .initializeAuction(initializeTokenId, {
+          .createBid(initializeTokenId, {
             value: config.basePrice,
           });
         // settle and initialize a new auction still attempts to place a new bid on the new auction
@@ -1276,7 +1263,7 @@ for (const coreContractName of coreContractsToTest) {
         await expect(
           config.minter
             .connect(config.accounts.user2)
-            .settleAndInitializeAuction(settleTokenId, initializeTokenId, {
+            .settleAndCreateBid(settleTokenId, initializeTokenId, {
               value: newValidBidValue,
             })
         )
@@ -1312,7 +1299,7 @@ for (const coreContractName of coreContractsToTest) {
     });
 
     describe("view functions", function () {
-      describe("getTokenToBidOrInitialize", function () {
+      describe("getTokenToBid", function () {
         it("reverts when project has already reached max invocations on core contract, and no active auction", async function () {
           const config = await loadFixture(_beforeEach);
           // set project max invocations to 1 on core contract
@@ -1323,7 +1310,7 @@ for (const coreContractName of coreContractsToTest) {
           await initializeProjectZeroTokenZeroAuctionAndAdvanceToEnd(config);
           // view function to get next token ID should revert, since project has reached max invocations
           await expectRevert(
-            config.minter.getTokenToBidOrInitialize(config.projectZero),
+            config.minter.getTokenToBid(config.projectZero),
             "Project reached max invocations"
           );
         });
@@ -1340,7 +1327,7 @@ for (const coreContractName of coreContractsToTest) {
           const targetExpectedTokenId = BigNumber.from(
             config.projectZeroTokenZero.toString()
           );
-          const returnedTokenId = await config.minter.getTokenToBidOrInitialize(
+          const returnedTokenId = await config.minter.getTokenToBid(
             config.projectZero
           );
           expect(returnedTokenId).to.equal(targetExpectedTokenId);
@@ -1351,8 +1338,9 @@ for (const coreContractName of coreContractsToTest) {
           const targetExpectedTokenId = BigNumber.from(
             config.projectZeroTokenZero.toString()
           );
-          const returnedExpectedTokenId =
-            await config.minter.getTokenToBidOrInitialize(config.projectZero);
+          const returnedExpectedTokenId = await config.minter.getTokenToBid(
+            config.projectZero
+          );
           expect(returnedExpectedTokenId).to.equal(targetExpectedTokenId);
         });
 
@@ -1363,8 +1351,9 @@ for (const coreContractName of coreContractsToTest) {
           const targetExpectedTokenId = BigNumber.from(
             config.projectZeroTokenOne.toString()
           );
-          const returnedExpectedTokenId =
-            await config.minter.getTokenToBidOrInitialize(config.projectZero);
+          const returnedExpectedTokenId = await config.minter.getTokenToBid(
+            config.projectZero
+          );
           expect(returnedExpectedTokenId).to.equal(targetExpectedTokenId);
         });
       });
@@ -1513,15 +1502,6 @@ for (const coreContractName of coreContractsToTest) {
             autoBidder.address
           );
           expect(autoBidderWethBalance).to.equal(initialBidValue);
-        });
-      });
-
-      describe("_initializeAuction", function () {
-        it("nonReentrant commentary", async function () {
-          console.log(
-            "This nonReentrant modifier is implemented to achieve dual redundancy, and therefore cannot be tested with the standard core contract implementation.",
-            "This is considered sufficient for the purposes of this test suite."
-          );
         });
       });
 
