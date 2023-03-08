@@ -1515,6 +1515,25 @@ for (const coreContractName of coreContractsToTest) {
           expect(autoBidderWethBalance).to.equal(initialBidValue);
         });
       });
+
+      describe("_initializeAuction", function () {
+        it("nonReentrant commentary", async function () {
+          console.log(
+            "This nonReentrant modifier is implemented to achieve dual redundancy, and therefore cannot be tested with the standard core contract implementation.",
+            "This is considered sufficient for the purposes of this test suite."
+          );
+        });
+      });
+
+      describe("settleAuction", function () {
+        it("nonReentrant commentary", async function () {
+          console.log(
+            "This nonReentrant modifier is implemented to achieve dual redundancy, and therefore is not tested with mock attacking contracts.",
+            "Primary protection of the function is achieved by following a check-effects-interactions pattern.",
+            "This is considered sufficient for the purposes of this test suite."
+          );
+        });
+      });
     });
   });
 }
