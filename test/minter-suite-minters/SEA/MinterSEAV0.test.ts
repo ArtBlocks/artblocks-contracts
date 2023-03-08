@@ -34,7 +34,7 @@ const coreContractsToTest = [
   "GenArt721CoreV3", // flagship V3 core
   "GenArt721CoreV3_Explorations", // V3 core explorations contract
   "GenArt721CoreV3_Engine", // V3 core engine contract
-  "GenArt721CoreV3_EngineFlex", // V3 core engine contract
+  "GenArt721CoreV3_Engine_Flex", // V3 core engine contract
 ];
 
 const TARGET_MINTER_NAME = "MinterSEAV0";
@@ -678,9 +678,11 @@ for (const coreContractName of coreContractsToTest) {
         const artistBalanceAfter = await config.accounts.artist.getBalance();
         const deployerBalanceAfter =
           await config.accounts.deployer.getBalance();
-        expect(artistBalanceAfter).to.equal(
-          artistBalanceBefore.add(config.basePrice.mul(90).div(100))
-        );
+        // artist receives 90% of base price for non-engine, 80% for engine
+        const expectedArtistBalance = config.isEngine
+          ? artistBalanceBefore.add(config.basePrice.mul(80).div(100))
+          : artistBalanceBefore.add(config.basePrice.mul(90).div(100));
+        expect(artistBalanceAfter).to.equal(expectedArtistBalance);
         expect(deployerBalanceAfter).to.equal(
           deployerBalanceBefore.add(config.basePrice.mul(10).div(100))
         );
