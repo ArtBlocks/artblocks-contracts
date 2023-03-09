@@ -1281,7 +1281,17 @@ contract GenArt721CoreV3_Engine is
      * @return bytes32 Token hash.
      * @dev token hash is the keccak256 hash of the stored hash seed
      */
-    function tokenIdToHash(uint256 _tokenId) external view returns (bytes32) {
+    function tokenIdToHash(
+        uint256 _tokenId
+    )
+        external
+        view
+        override(
+            IGenArt721CoreContractV3_Engine,
+            IDependencyRegistryCompatibleV0
+        )
+        returns (bytes32)
+    {
         bytes12 _hashSeed = _ownersAndHashSeeds[_tokenId].hashSeed;
         if (_hashSeed == 0) {
             return 0;

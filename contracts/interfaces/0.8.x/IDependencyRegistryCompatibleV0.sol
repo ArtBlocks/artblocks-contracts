@@ -28,4 +28,11 @@ interface IDependencyRegistryCompatibleV0 {
             string memory aspectRatio,
             uint256 scriptCount
         );
+
+    function projectScriptBytecodeAddressByIndex(
+        uint256 _projectId,
+        uint256 _index
+    ) external view returns (address);
+
+    function tokenIdToHash(uint256 _tokenId) external view returns (bytes32);
 }
