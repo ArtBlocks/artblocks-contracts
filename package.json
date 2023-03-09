@@ -59,7 +59,7 @@
     "@remix-project/remixd": "^0.5.6",
     "@typechain/ethers-v5": "^6.0.5",
     "@types/jest": "^27.0.3",
-    "@types/mocha": "^9.1.1",
+    "@types/mocha": "^10.0.1",
     "@types/prompt": "^1.1.5",
     "@typescript-eslint/eslint-plugin": "^5.48.0",
     "@typescript-eslint/parser": "^5.48.0",
