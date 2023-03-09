@@ -9,7 +9,7 @@ import "./BasicRandomizerBase_v0_0_0.sol";
 
 import "@openzeppelin-4.7/contracts/access/Ownable.sol";
 
-contract BasicRandomizerV2 is IRandomizerV2, BasicRandomizerBase, Ownable {
+contract BasicRandomizerV2 is IRandomizerV2, RandomizerBase, Ownable {
     // The core contract that may interact with this randomizer contract.
     IGenArt721CoreContractV3_Base public genArt721Core;
 
