@@ -86,14 +86,12 @@ interface IFilteredMinterSEAV0 is IFilteredMinterV2 {
 
     function resetAuctionDetails(uint256 _projectId) external;
 
-    function settleAndInitializeAuction(
+    function settleAndCreateBid(
         uint256 _settleTokenId,
-        uint256 _initializeTokenId
+        uint256 _bidTokenId
     ) external payable;
 
     function settleAuction(uint256 _tokenId) external;
-
-    function initializeAuction(uint256 _targetTokenId) external payable;
 
     function createBid(uint256 _tokenId) external payable;
 
@@ -126,7 +124,5 @@ interface IFilteredMinterSEAV0 is IFilteredMinterV2 {
         uint256 _projectId
     ) external view returns (Auction memory);
 
-    function getTokenToBidOrInitialize(
-        uint256 _projectId
-    ) external view returns (uint256);
+    function getTokenToBid(uint256 _projectId) external view returns (uint256);
 }
