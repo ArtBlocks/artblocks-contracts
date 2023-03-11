@@ -1,5 +1,5 @@
 // Forked from https://github.com/intartnft/scripty.sol/blob/28cc612d7dc3a709f35c534c981bfc6bbfce4209/contracts/scripty/utils/AddressChunks.sol
-// with adjustment to data offset for compatibility with Art Blocks ByteCodeStorage.sol
+// with adjustment to data offset for compatibility with Art Blocks BytecodeStorage.sol
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
