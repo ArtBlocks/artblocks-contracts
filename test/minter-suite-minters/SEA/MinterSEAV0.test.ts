@@ -1517,5 +1517,49 @@ for (const coreContractName of coreContractsToTest) {
         });
       });
     });
+
+    describe("denial of service / extreme gas usage attack", function () {
+      it("limits gas consumption when refunding bids with ETH", async function () {
+        const config = await loadFixture(_beforeEach);
+        // deploy gas limit bidder
+        const gasLimitBidder = await deployAndGet(
+          config,
+          "GasLimitReceiverBidderMock",
+          []
+        );
+
+        // initialize auction via the gas limit receiver mock
+        await ethers.provider.send("evm_mine", [config.startTime - 1]);
+        const targetTokenId = BigNumber.from(
+          config.projectZeroTokenZero.toString()
+        );
+        const initialBidValue = config.basePrice;
+        await gasLimitBidder.createBidOnAuction(
+          config.minter.address,
+          targetTokenId,
+          { value: initialBidValue }
+        );
+        // when outbid, check that gas limit receiver does not use more than 200k gas
+        const bid2Value = config.basePrice.mul(110).div(100);
+        const tx = await config.minter
+          .connect(config.accounts.user)
+          .createBid(targetTokenId, { value: bid2Value });
+        const receipt = await tx.wait();
+        expect(receipt.gasUsed).to.be.lte(200000);
+        // verify state after bid 2 is as expected
+        // verify that user is the leading bidder, not the auto bidder
+        const auctionDetails = await config.minter.projectActiveAuctionDetails(
+          config.projectZero
+        );
+        expect(auctionDetails.currentBidder).to.equal(
+          config.accounts.user.address
+        );
+        // verify that the auto bidder received their bid back in weth
+        const bidderWethBalance = await config.weth.balanceOf(
+          gasLimitBidder.address
+        );
+        expect(bidderWethBalance).to.equal(initialBidValue);
+      });
+    });
   });
 }

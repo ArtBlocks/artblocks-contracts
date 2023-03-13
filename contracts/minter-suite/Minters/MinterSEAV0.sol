@@ -912,7 +912,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
      * @notice Transfer ETH. If the ETH transfer fails, wrap the ETH and send it as WETH.
      */
     function _safeTransferETHWithFallback(address to, uint256 amount) internal {
-        (bool success, ) = to.call{value: amount}("");
+        (bool success, ) = to.call{value: amount, gas: 30_000}("");
         if (!success) {
             weth.deposit{value: amount}();
             weth.transfer(to, amount);

@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.17;
 
-import {DeadReceiverMock} from "./DeadReceiverMock.sol";
+import {GasLimitReceiverMock} from "./GasLimitReceiverMock.sol";
 
 /**
  * @notice This reverts when receiving Ether.
@@ -10,7 +10,7 @@ import {DeadReceiverMock} from "./DeadReceiverMock.sol";
  * of a serial English auction minter.
  * @dev Mock contract for testing purposes.
  */
-contract DeadReceiverBidderMock is DeadReceiverMock {
+contract GasLimitReceiverBidderMock is GasLimitReceiverMock {
     function createBidOnAuction(
         address minter,
         uint256 tokenId
@@ -18,6 +18,6 @@ contract DeadReceiverBidderMock is DeadReceiverMock {
         (bool success, ) = minter.call{value: msg.value}(
             abi.encodeWithSignature("createBid(uint256)", tokenId)
         );
-        require(success, "DeadReceiverBidderMock: call failed");
+        require(success, "GasLimitReceiverBidderMock: call failed");
     }
 }
