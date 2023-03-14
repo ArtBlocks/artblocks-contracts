@@ -3413,7 +3413,7 @@
     lodash "~4.17.0"
     tslib "~2.4.0"
 
-"@graphql-codegen/plugin-helpers@^4.0.0", "@graphql-codegen/plugin-helpers@^4.1.0":
+"@graphql-codegen/plugin-helpers@^4.1.0":
   version "4.1.0"
   resolved "https://registry.yarnpkg.com/@graphql-codegen/plugin-helpers/-/plugin-helpers-4.1.0.tgz#4b193c12d6bb458f1f2af48c200bc86617884f60"
   integrity sha512-xvSHJb9OGb5CODIls0AI1rCenLz+FuiaNPCsfHMCNsLDjOZK2u0jAQ9zUBdc/Wb+21YXZujBCc0Vm1QX+Zz0nw==
@@ -3435,14 +3435,14 @@
     tslib "~2.5.0"
 
 "@graphql-codegen/typescript-document-nodes@^3.0.0":
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/@graphql-codegen/typescript-document-nodes/-/typescript-document-nodes-3.0.0.tgz#b5c2dc079cf9cbbf6a9b96eda0a7e042883e0c2a"
-  integrity sha512-IxBqVcFw+8wRqbs4Jd/WkoCT0PnFst1Qq0JsDEGFoqNnc5Bjs+BS5g3OYvSJTP04QUi6G8iTKr91FgEUubfI7Q==
+  version "3.0.2"
+  resolved "https://registry.yarnpkg.com/@graphql-codegen/typescript-document-nodes/-/typescript-document-nodes-3.0.2.tgz#5788177c31ddd3ba25925097165f55261f63ce5f"
+  integrity sha512-zNVPkHjlM1zQvLUwu2OpU3CrzYGPfUuySG7IyE1BDyVWLSKIK0k7IdINUfK4ZqeMBP1Hrhnsc/izfZI6ksIMjA==
   dependencies:
-    "@graphql-codegen/plugin-helpers" "^4.0.0"
-    "@graphql-codegen/visitor-plugin-common" "3.0.0"
+    "@graphql-codegen/plugin-helpers" "^4.1.0"
+    "@graphql-codegen/visitor-plugin-common" "3.0.2"
     auto-bind "~4.0.0"
-    tslib "~2.4.0"
+    tslib "~2.5.0"
 
 "@graphql-codegen/typescript-operations@^3.0.0":
   version "3.0.2"
@@ -3487,22 +3487,6 @@
     "@graphql-tools/utils" "^8.8.0"
     auto-bind "~4.0.0"
     change-case-all "1.0.14"
-    dependency-graph "^0.11.0"
-    graphql-tag "^2.11.0"
-    parse-filepath "^1.0.2"
-    tslib "~2.4.0"
-
-"@graphql-codegen/visitor-plugin-common@3.0.0":
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/@graphql-codegen/visitor-plugin-common/-/visitor-plugin-common-3.0.0.tgz#527185eb3b1b06739702084bc6263713e167a166"
-  integrity sha512-ZoNlCmmkGClB137SpJT9og/nkihLN7Z4Ynl9Ir3OlbDuI20dbpyXsclpr9QGLcxEcfQeVfhGw9CooW7wZJJ8LA==
-  dependencies:
-    "@graphql-codegen/plugin-helpers" "^4.0.0"
-    "@graphql-tools/optimize" "^1.3.0"
-    "@graphql-tools/relay-operation-optimizer" "^6.5.0"
-    "@graphql-tools/utils" "^9.0.0"
-    auto-bind "~4.0.0"
-    change-case-all "1.0.15"
     dependency-graph "^0.11.0"
     graphql-tag "^2.11.0"
     parse-filepath "^1.0.2"
