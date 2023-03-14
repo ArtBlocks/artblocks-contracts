@@ -4,9 +4,9 @@
 
 The Art Blocks Minter Suite is a collection of smart contracts that enable Artists and Engine partners (using V3 core contracts) to distribute tokens from their projects to collectors.
 
-A diagram of the the Minter Suite [V1, current version] is shown below:
+A diagram of the the Minter Suite is shown below:
 
-![minter-suite-diagram](./images/minter-suite-diagram.png)
+![minter-suite-diagram](./images/minter-suite-v1.png)
 
 ## MinterFilter Suite Compatibility Chart
 

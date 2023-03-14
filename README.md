@@ -119,7 +119,7 @@ For deployed core contracts, see the deployment details in the `/deployments/eng
 
 ## Minter Suite
 
-For details on the Flagship and Engine Minter Suite, see [MINTER_SUITE.md](./MINTER_SUITE.md).
+For details on the Flagship and Engine Minter Suite, see the [minter suite documenation](./MINTER_SUITE.md).
 
 ## Shared Randomizers
 
