@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Art Blocks Minter Suite is a collection of smart contracts that enable Artists and Engine partners (using V3 core contracts) to distribute tokens from their projects to collectors.
+The Art Blocks Minter Suite is a collection of smart contracts that enable Artists (using V3 core contracts) to distribute tokens from their projects to collectors.
 
 A diagram of the the Minter Suite is shown below:
 
@@ -12,13 +12,12 @@ A diagram of the the Minter Suite is shown below:
 
 The following table shows which Minters and MinterFilters are compatible with different Art Blocks and Art Blocks Engine Core contracts.
 
-| Core Contract Version(s)                       | Minter Filter  | Recommended Minters                                                                                                                        | Deprecated Minters                                                          |
-| ---------------------------------------------- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------- | --- |
-| V0                                             | -              | (legacy minter)                                                                                                                            | -                                                                           |
-| V1, V1_PRTNR                                   | MinterFilterV0 | MinterSetPriceV1<br>MinterSetPriceERC20V1<br>MinterDAExpV1<br>MinterDALinV1<br>MinterMerkleV0<br>MinterHolderV0                            | MinterSetPriceV0<br>MinterSetPriceERC20V0<br>MinterDAExpV0<br>MinterDALinV0 |
-| V2 (PBAB)                                      | -              | (various PBAB minters)                                                                                                                     | -                                                                           |
-| V3, V3_Explorations, V3_Engine, V3_Engine_Flex | MinterFilterV1 | MinterSetPriceV4<br>MinterSetPriceERC20V4<br>MinterMerkleV5<br>MinterHolderV4<br>MinterDALinV4<br>MinterDAExpV4<br>MinterDAExpSettlementV2 | \_V(n-1) variants of recommended minters                                    | -   |
-| V3_Engine, V3_Engine_Flex                      | MinterFilterV1 | MinterPolyptychV0                                                                                                                          | -                                                                           |
+| Core Contract Version                          | Minter Filter  | Recommended Minters                                                                                                                        |
+| :--------------------------------------------- | :------------- | :----------------------------------------------------------------------------------------------------------------------------------------- |
+| V1, V1_PRTNR                                   | MinterFilterV0 | MinterSetPriceV1<br>MinterSetPriceERC20V1<br>MinterDAExpV1<br>MinterDALinV1<br>MinterMerkleV0<br>MinterHolderV0                            |
+| V2 (PBAB)                                      | -              | (various PBAB minters)                                                                                                                     |
+| V3, V3_Explorations, V3_Engine, V3_Engine_Flex | MinterFilterV1 | MinterSetPriceV4<br>MinterSetPriceERC20V4<br>MinterMerkleV5<br>MinterHolderV4<br>MinterDALinV4<br>MinterDAExpV4<br>MinterDAExpSettlementV2 |
+| V3_Engine, V3_Engine_Flex                      | MinterFilterV1 | MinterPolyptychV0                                                                                                                          |
 
 ## Flagship
 
