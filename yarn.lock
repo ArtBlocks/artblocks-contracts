@@ -4186,12 +4186,9 @@
     fs-extra "^7.0.1"
 
 "@nomiclabs/hardhat-waffle@^2.0.3":
-  version "2.0.3"
-  resolved "https://registry.yarnpkg.com/@nomiclabs/hardhat-waffle/-/hardhat-waffle-2.0.3.tgz#9c538a09c5ed89f68f5fd2dc3f78f16ed1d6e0b1"
-  integrity sha512-049PHSnI1CZq6+XTbrMbMv5NaL7cednTfPenx02k3cEh8wBMLa6ys++dBETJa6JjfwgA9nBhhHQ173LJv6k2Pg==
-  dependencies:
-    "@types/sinon-chai" "^3.2.3"
-    "@types/web3" "1.0.19"
+  version "2.0.5"
+  resolved "https://registry.yarnpkg.com/@nomiclabs/hardhat-waffle/-/hardhat-waffle-2.0.5.tgz#97c217f1db795395c04404291937edb528f3f218"
+  integrity sha512-U1RH9OQ1mWYQfb+moX5aTgGjpVVlOcpiFI47wwnaGG4kLhcTy90cNiapoqZenxcRAITVbr0/+QSduINL5EsUIQ==
 
 "@nomiclabs/hardhat-web3@^2.0.0":
   version "2.0.0"
@@ -4796,17 +4793,17 @@
   dependencies:
     bignumber.js "*"
 
-"@types/bn.js@*", "@types/bn.js@^5.1.0":
-  version "5.1.1"
-  resolved "https://registry.yarnpkg.com/@types/bn.js/-/bn.js-5.1.1.tgz#b51e1b55920a4ca26e9285ff79936bbdec910682"
-  integrity sha512-qNrYbZqMx0uJAfKnKclPh+dTwK33KfLHYqtyODwd5HnXOjnkhc4qgn3BrK6RWyGZm5+sIFE7Q7Vz6QQtJB7w7g==
-  dependencies:
-    "@types/node" "*"
-
 "@types/bn.js@^4.11.3", "@types/bn.js@^4.11.5":
   version "4.11.6"
   resolved "https://registry.yarnpkg.com/@types/bn.js/-/bn.js-4.11.6.tgz#c306c70d9358aaea33cd4eda092a742b9505967c"
   integrity sha512-pqr857jrp2kPuO9uRjZ3PwnJTjoQy+fcdxvBTvHm6dkmEL9q+hDD/2j/0ELOBPtPnS8LjCX0gI9nbl8lVkadpg==
+  dependencies:
+    "@types/node" "*"
+
+"@types/bn.js@^5.1.0":
+  version "5.1.1"
+  resolved "https://registry.yarnpkg.com/@types/bn.js/-/bn.js-5.1.1.tgz#b51e1b55920a4ca26e9285ff79936bbdec910682"
+  integrity sha512-qNrYbZqMx0uJAfKnKclPh+dTwK33KfLHYqtyODwd5HnXOjnkhc4qgn3BrK6RWyGZm5+sIFE7Q7Vz6QQtJB7w7g==
   dependencies:
     "@types/node" "*"
 
@@ -4820,7 +4817,7 @@
     "@types/node" "*"
     "@types/responselike" "*"
 
-"@types/chai@*", "@types/chai@^4.2.0":
+"@types/chai@^4.2.0":
   version "4.2.22"
   resolved "https://registry.yarnpkg.com/@types/chai/-/chai-4.2.22.tgz#47020d7e4cf19194d43b5202f35f75bd2ad35ce7"
   integrity sha512-tFfcE+DSTzWAgifkjik9AySNqIyNoYwmR+uecPwwD/XRNfvOjmC/FjCxpiUGDkDVDphPfCUecSQVFw+lN3M3kQ==
@@ -5050,15 +5047,7 @@
   resolved "https://registry.yarnpkg.com/@types/semver/-/semver-7.3.13.tgz#da4bfd73f49bd541d28920ab0e2bf0ee80f71c91"
   integrity sha512-21cFJr9z3g5dW8B0CVI9g2O9beqaThGQ6ZFBqHfwhzLDKUxaqTIy3vnfah/UPkfOiF2pLq+tGz+W8RyCskuslw==
 
-"@types/sinon-chai@^3.2.3":
-  version "3.2.5"
-  resolved "https://registry.yarnpkg.com/@types/sinon-chai/-/sinon-chai-3.2.5.tgz#df21ae57b10757da0b26f512145c065f2ad45c48"
-  integrity sha512-bKQqIpew7mmIGNRlxW6Zli/QVyc3zikpGzCa797B/tRnD9OtHvZ/ts8sYXV+Ilj9u3QRaUEM8xrjgd1gwm1BpQ==
-  dependencies:
-    "@types/chai" "*"
-    "@types/sinon" "*"
-
-"@types/sinon@*", "@types/sinon@^10.0.10":
+"@types/sinon@^10.0.10":
   version "10.0.13"
   resolved "https://registry.yarnpkg.com/@types/sinon/-/sinon-10.0.13.tgz#60a7a87a70d9372d0b7b38cc03e825f46981fb83"
   integrity sha512-UVjDqJblVNQYvVNUsj0PuYYw0ELRmgt1Nt5Vk0pT5f16ROGfcKJY8o1HVuMOJOpD727RrGB9EGvoaTQE5tgxZQ==
@@ -5074,19 +5063,6 @@
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/@types/stack-utils/-/stack-utils-2.0.1.tgz#20f18294f797f2209b5f65c8e3b5c8e8261d127c"
   integrity sha512-Hl219/BT5fLAaz6NDkSuhzasy49dwQS/DSdu4MdggFB8zcXv7vflBI3xp7FEmkmdDkBUI2bPUNeMttp2knYdxw==
-
-"@types/underscore@*":
-  version "1.11.3"
-  resolved "https://registry.yarnpkg.com/@types/underscore/-/underscore-1.11.3.tgz#d6734f3741ce41b2630018c6b61c6745f6188c07"
-  integrity sha512-Fl1TX1dapfXyDqFg2ic9M+vlXRktcPJrc4PR7sRc7sdVrjavg/JHlbUXBt8qWWqhJrmSqg3RNAkAPRiOYw6Ahw==
-
-"@types/web3@1.0.19":
-  version "1.0.19"
-  resolved "https://registry.yarnpkg.com/@types/web3/-/web3-1.0.19.tgz#46b85d91d398ded9ab7c85a5dd57cb33ac558924"
-  integrity sha512-fhZ9DyvDYDwHZUp5/STa9XW2re0E8GxoioYJ4pEUZ13YHpApSagixj7IAdoYH5uAK+UalGq6Ml8LYzmgRA/q+A==
-  dependencies:
-    "@types/bn.js" "*"
-    "@types/underscore" "*"
 
 "@types/ws@^8.0.0":
   version "8.5.4"
