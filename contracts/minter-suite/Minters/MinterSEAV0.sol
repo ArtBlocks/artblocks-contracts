@@ -298,8 +298,8 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
      * @param _maxAuctionDurationSeconds Maximum auction duration in seconds.
      */
     function updateAllowableAuctionDurationSeconds(
-        uint256 _minAuctionDurationSeconds,
-        uint256 _maxAuctionDurationSeconds
+        uint32 _minAuctionDurationSeconds,
+        uint32 _maxAuctionDurationSeconds
     ) external {
         _onlyCoreAdminACL(this.updateAllowableAuctionDurationSeconds.selector);
         // CHECKS
@@ -309,11 +309,11 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         );
         require(_minAuctionDurationSeconds > 0, "Only min gt 0");
         // EFFECTS
-        minAuctionDurationSeconds = _minAuctionDurationSeconds.toUint32();
-        maxAuctionDurationSeconds = _maxAuctionDurationSeconds.toUint32();
+        minAuctionDurationSeconds = _minAuctionDurationSeconds;
+        maxAuctionDurationSeconds = _maxAuctionDurationSeconds;
         emit AuctionDurationSecondsRangeUpdated(
-            _minAuctionDurationSeconds.toUint32(),
-            _minAuctionDurationSeconds.toUint32()
+            _minAuctionDurationSeconds,
+            _minAuctionDurationSeconds
         );
     }
 
