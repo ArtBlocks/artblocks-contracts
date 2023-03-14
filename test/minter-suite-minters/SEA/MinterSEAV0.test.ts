@@ -1313,7 +1313,22 @@ for (const coreContractName of coreContractsToTest) {
           // view function to get next token ID should revert, since project has reached max invocations
           await expectRevert(
             config.minter.getTokenToBid(config.projectZero),
-            "Project reached max invocations"
+            "Core: Reached max invocations"
+          );
+        });
+
+        it("reverts when project has already reached max invocations on minter, and no active auction", async function () {
+          const config = await loadFixture(_beforeEach);
+          // set project max invocations to 1 on minter
+          await config.minter
+            .connect(config.accounts.artist)
+            .manuallyLimitProjectMaxInvocations(config.projectZero, 1);
+          // initialize auction, which mints token zero
+          await initializeProjectZeroTokenZeroAuctionAndAdvanceToEnd(config);
+          // view function to get next token ID should revert, since project has reached max invocations
+          await expectRevert(
+            config.minter.getTokenToBid(config.projectZero),
+            "Minter: Reached max invocations"
           );
         });
 

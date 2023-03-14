@@ -796,10 +796,12 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
             ,
 
         ) = genArtCoreContract_Base.projectStateData(_projectId);
-        // revert if next invocation would exceed max invocations
+        // revert if next invocation would exceed core contract max invocations
+        require(invocations < maxInvocations, "Core: Reached max invocations");
+        // revert if next invocation would exceed minter max invocations
         require(
-            invocations < maxInvocations,
-            "Project reached max invocations"
+            invocations < _projectConfig.maxInvocations,
+            "Minter: Reached max invocations"
         );
         // the next expected token ID is sum of (project ID * ONE_MILLION) and
         // the current number of invocations since the first token ID is 0
