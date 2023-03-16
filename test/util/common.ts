@@ -5,6 +5,20 @@ import { BN } from "@openzeppelin/test-helpers";
 import { ethers } from "hardhat";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { Contract, BigNumber } from "ethers";
+import {
+  GenArt721CoreV2PBAB,
+  GenArt721MinterPBAB,
+} from "../../scripts/contracts";
+
+export type WithRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] };
+
+export type RemoveIndex<T> = {
+  [P in keyof T as string extends P
+    ? never
+    : number extends P
+    ? never
+    : P]: T[P];
+};
 
 export type TestAccountsArtBlocks = {
   deployer: SignerWithAddress;
@@ -17,11 +31,16 @@ export type TestAccountsArtBlocks = {
   user2: SignerWithAddress;
 };
 
-export type CoreWithMinterSuite = {
-  randomizer: Contract;
-  genArt721Core: Contract;
-  minterFilter: Contract;
-  adminACL: Contract;
+export type CoreWithMinterSuite<
+  CoreContractType = Contract,
+  MinterFilterType = Contract,
+  AdminACLType = Contract,
+  RandomizerType = Contract
+> = {
+  randomizer: RandomizerType;
+  genArt721Core: CoreContractType;
+  minterFilter: MinterFilterType;
+  adminACL: AdminACLType;
   engineRegistry?: Contract;
 };
 
@@ -116,60 +135,75 @@ export async function assignDefaultConstants(
 }
 
 // utility function to simplify code when deploying any contract from factory
-export async function deployAndGet(
+export async function deployAndGet<ContractType = Contract>(
   config: T_Config,
   coreContractName: string,
   deployArgs?: any[]
-): Promise<Contract> {
+): Promise<ContractType> {
   const contractFactory = await ethers.getContractFactory(coreContractName);
-  return await contractFactory
+  return (await contractFactory
     .connect(config.accounts.deployer)
-    .deploy(...deployArgs);
+    .deploy(...deployArgs)) as ContractType;
 }
 
 // utility function to deploy basic randomizer, core, and MinterFilter
 // works for core versions V0, V1, V2_PRTNR, V3
-export async function deployCoreWithMinterFilter(
+export async function deployCoreWithMinterFilter<
+  CoreContractType = Contract,
+  MinterFilterType = Contract,
+  AdminACLType = Contract,
+  RandomizerType = Contract
+>(
   config: T_Config,
   coreContractName: string,
   minterFilterName: string,
   useAdminACLWithEvents: boolean = false,
   _adminACLContractName?: string,
   _randomizerName: string = "BasicRandomizerV2"
-): Promise<CoreWithMinterSuite> {
+): Promise<
+  CoreWithMinterSuite<
+    CoreContractType,
+    MinterFilterType,
+    AdminACLType,
+    RandomizerType
+  >
+> {
   if (coreContractName.endsWith("V2_PBAB")) {
     throw new Error("V2_PBAB not supported");
   }
+
+  if (coreContractName === "GenArt721") {
+    throw new Error("GenArt721 not supported");
+  }
+
   let randomizer, genArt721Core, minterFilter, adminACL, engineRegistry;
   randomizer = await deployAndGet(config, "BasicRandomizer", []);
   if (
-    coreContractName.endsWith("V0") ||
     coreContractName.endsWith("V1") ||
     coreContractName.endsWith("V2_PRTNR") ||
     coreContractName.endsWith("V2_ENGINE_FLEX")
   ) {
     if (
-      coreContractName.endsWith("V0") ||
       coreContractName.endsWith("V1") ||
       coreContractName.endsWith("V2_ENGINE_FLEX")
     ) {
-      genArt721Core = await deployAndGet(config, coreContractName, [
+      genArt721Core = (await deployAndGet(config, coreContractName, [
         config.name,
         config.symbol,
         randomizer.address,
-      ]);
+      ])) as CoreContractType;
     } else {
       // V2_PRTNR need additional arg for starting project ID
-      genArt721Core = await deployAndGet(config, coreContractName, [
+      genArt721Core = (await deployAndGet(config, coreContractName, [
         config.name,
         config.symbol,
         randomizer.address,
         0,
-      ]);
+      ])) as CoreContractType;
     }
-    minterFilter = await deployAndGet(config, minterFilterName, [
+    minterFilter = (await deployAndGet(config, minterFilterName, [
       genArt721Core.address,
-    ]);
+    ])) as MinterFilterType;
     // allowlist minterFilter on the core contract
     await genArt721Core
       .connect(config.accounts.deployer)
@@ -320,22 +354,24 @@ export async function isCoreV3(core: Contract): Promise<boolean> {
 }
 
 type T_PBAB = {
-  pbabToken: Contract;
-  pbabMinter: Contract;
+  pbabToken: GenArt721CoreV2PBAB;
+  pbabMinter: GenArt721MinterPBAB;
 };
 
 export async function deployAndGetPBAB(config: T_Config): Promise<T_PBAB> {
   const randomizer = await deployAndGet(config, "BasicRandomizer", []);
 
   const PBABFactory = await ethers.getContractFactory("GenArt721CoreV2_PBAB");
-  const pbabToken = await PBABFactory.connect(config.accounts.deployer).deploy(
+  const pbabToken = (await PBABFactory.connect(config.accounts.deployer).deploy(
     config.name,
     config.symbol,
     randomizer.address,
     0
-  );
+  )) as GenArt721CoreV2PBAB;
   const minterFactory = await ethers.getContractFactory("GenArt721Minter_PBAB");
-  const pbabMinter = await minterFactory.deploy(pbabToken.address);
+  const pbabMinter = (await minterFactory.deploy(
+    pbabToken.address
+  )) as GenArt721MinterPBAB;
   await pbabToken
     .connect(config.accounts.deployer)
     .addProject(
