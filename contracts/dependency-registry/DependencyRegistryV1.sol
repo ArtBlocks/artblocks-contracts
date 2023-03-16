@@ -20,8 +20,6 @@ import {AddressChunks} from "./AddressChunks.sol";
 import {IScriptyBuilder, WrappedScriptRequest} from "scripty.sol/contracts/scripty/IScriptyBuilder.sol";
 import {IContractScript} from "scripty.sol/contracts/scripty/IContractScript.sol";
 
-import "hardhat/console.sol";
-
 import "../libs/0.8.x/BytecodeStorage.sol";
 import "../libs/0.8.x/Bytes32Strings.sol";
 
@@ -937,7 +935,7 @@ contract DependencyRegistryV1 is
     function getTokenHtml(
         address _contractAddress,
         uint256 _tokenId
-    ) external view returns (string memory) {
+    ) internal view returns (string memory) {
         _onlySupportedCoreContract(_contractAddress);
 
         uint256 projectId = _tokenId / ONE_MILLION;
@@ -1030,6 +1028,18 @@ contract DependencyRegistryV1 is
             base64EncodedHTMLDataURIString := base64EncodedHTMLDataURI
         }
         return base64EncodedHTMLDataURIString;
+    }
+
+        function getTokenHtml(
+        address _contractAddress,
+        uint256 _tokenId
+    ) external view returns (string memory) {
+    }
+
+    fuction getTokenHtmlBase64EncodedDataUri( address _contractAddress,
+        uint256 _tokenId
+    ) external view returns (string memory) {
+
     }
 
     /**
