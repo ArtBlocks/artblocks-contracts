@@ -53,6 +53,7 @@ import "@openzeppelin-4.7/contracts/utils/math/Math.sol";
  * - setProjectMaxInvocations
  * - manuallyLimitProjectMaxInvocations
  * - configureFutureAuctions
+ * - tryPopulateNextToken
  * ----------------------------------------------------------------------------
  * The following functions are restricted to a project's artist or the core
  * contract's Admin ACL contract:
@@ -63,11 +64,11 @@ import "@openzeppelin-4.7/contracts/utils/math/Math.sol";
  *
  * @dev Note that while this minter makes use of `block.timestamp` and it is
  * technically possible that this value is manipulated by block producers, such
- * manipulation will not have material impact on the price values of this minter
- * given the business practices for how pricing is congfigured for this minter
- * and that variations on the order of less than a minute should not
- * meaningfully impact price given the minimum allowable price decay rate that
- * this minter intends to support.
+ * manipulation will not have material impact on the ability for collectors to
+ * place a bid before auction end time. This is due to the admin-configured
+ * `minterTimeBufferSeconds` parameter, which will used to ensure that
+ * collectors have sufficient time to place a bid after the final bid and
+ * before the auction end time.
  */
 contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
     using SafeCast for uint256;
