@@ -32,9 +32,9 @@ import { Minter_Common } from "../Minter.common";
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
   "GenArt721CoreV3", // flagship V3 core
-  // "GenArt721CoreV3_Explorations", // V3 core explorations contract
-  // "GenArt721CoreV3_Engine", // V3 core engine contract
-  // "GenArt721CoreV3_Engine_Flex", // V3 core engine contract
+  "GenArt721CoreV3_Explorations", // V3 core explorations contract
+  "GenArt721CoreV3_Engine", // V3 core engine contract
+  "GenArt721CoreV3_Engine_Flex", // V3 core engine contract
 ];
 
 const TARGET_MINTER_NAME = "MinterSEAV0";
