@@ -156,7 +156,12 @@ describe("DependencyRegistryV1", async function () {
 
       // Dependency setup
       const depType = ethers.utils.formatBytes32String("p5js@1.0.0");
-      await config.dependencyRegistry.addDependency(depType, "", "", "");
+      await config.dependencyRegistry.addDependency(
+        depType,
+        preferredCDN,
+        "",
+        ""
+      );
       const compressedDep = zlib
         .gzipSync(
           new Uint8Array(
@@ -165,86 +170,80 @@ describe("DependencyRegistryV1", async function () {
         )
         .toString("base64");
 
-      await config.dependencyRegistry.addDependencyScript(
-        depType,
-        compressedDep.slice(0, Math.floor(compressedDep.length / 2))
-      );
+      // await config.dependencyRegistry.addDependencyScript(
+      //   depType,
+      //   compressedDep.slice(0, Math.floor(compressedDep.length / 2))
+      // );
 
-      await config.dependencyRegistry.addDependencyScript(
-        depType,
-        compressedDep.slice(Math.floor(compressedDep.length / 2))
-      );
+      // await config.dependencyRegistry.addDependencyScript(
+      //   depType,
+      //   compressedDep.slice(Math.floor(compressedDep.length / 2))
+      // );
 
       // V3 project setup
-      // const v3ProjectId = await config.genArt721Core.nextProjectId();
+      const v3ProjectId = await config.genArt721Core.nextProjectId();
 
-      // await config.genArt721Core.addProject(
-      //   "name",
-      //   config.accounts.artist.address
-      // );
+      await config.genArt721Core.addProject(
+        "name",
+        config.accounts.artist.address
+      );
 
-      // await config.minterFilter.setMinterForProject(
-      //   v3ProjectId,
-      //   config.minter.address
-      // );
+      await config.minterFilter.setMinterForProject(
+        v3ProjectId,
+        config.minter.address
+      );
 
-      // await config.minter
-      //   .connect(config.accounts.artist)
-      //   .updatePricePerTokenInWei(v3ProjectId, 0);
+      await config.minter
+        .connect(config.accounts.artist)
+        .updatePricePerTokenInWei(v3ProjectId, 0);
 
-      // await config.genArt721Core
-      //   .connect(config.accounts.deployer)
-      //   .updateProjectScriptType(v3ProjectId, depType);
+      await config.genArt721Core
+        .connect(config.accounts.deployer)
+        .updateProjectScriptType(v3ProjectId, depType);
 
-      // await config.genArt721Core
-      //   .connect(config.accounts.artist)
-      //   .addProjectScript(
-      //     v3ProjectId,
-      //     "console.log(tokenData); console.log(blah); console.log(bleh);"
-      //   );
+      await config.genArt721Core
+        .connect(config.accounts.artist)
+        .addProjectScript(
+          v3ProjectId,
+          "console.log(tokenData); console.log(blah); console.log(bleh);"
+        );
 
-      // await config.minter.connect(config.accounts.artist).purchase(0);
-      // const tokenHtml = await config.dependencyRegistry.getTokenHtml(
-      //   config.genArt721Core.address,
-      //   0
-      // );
+      await config.minter.connect(config.accounts.artist).purchase(0);
+      const tokenHtml = await config.dependencyRegistry.getTokenHtml(
+        config.genArt721Core.address,
+        0
+      );
 
-      // // V2 project setup
-      // const v2ProjectId = await config.genArt721CoreV2.nextProjectId();
-      // await config.genArt721CoreV2.addProject(
-      //   "name",
-      //   config.accounts.artist.address,
-      //   0
-      // );
-      // await config.dependencyRegistry.addProjectDependencyTypeOverride(
-      //   config.genArt721CoreV2.address,
-      //   v2ProjectId,
-      //   depType
-      // );
-      // console.log("helloooo");
-      // console.log(
-      //   await config.dependencyRegistry.getDependencyTypeForProject(
-      //     config.genArt721CoreV2.address,
-      //     v2ProjectId
-      //   )
-      // );
-      // await config.genArt721CoreV2.addProjectScript(
-      //   v2ProjectId,
-      //   "console.log(tokenData);"
-      // );
-      // await config.genArt721CoreV2.addProjectScript(
-      //   v2ProjectId,
-      //   "console.log(blah); console.log(bleh);"
-      // );
+      // V2 project setup
+      const v2ProjectId = await config.genArt721CoreV2.nextProjectId();
+      await config.genArt721CoreV2.addProject(
+        "name",
+        config.accounts.artist.address,
+        0
+      );
+      await config.dependencyRegistry.addProjectDependencyTypeOverride(
+        config.genArt721CoreV2.address,
+        v2ProjectId,
+        depType
+      );
 
-      // await config.genArt721CoreV2Minter
-      //   .connect(config.accounts.artist)
-      //   .purchase(v2ProjectId);
+      await config.genArt721CoreV2.addProjectScript(
+        v2ProjectId,
+        "console.log(tokenData);"
+      );
+      await config.genArt721CoreV2.addProjectScript(
+        v2ProjectId,
+        "console.log(blah); console.log(bleh);"
+      );
 
-      // const tokenHtmlV2 = await config.dependencyRegistry.getTokenHtml(
-      //   config.genArt721CoreV2.address,
-      //   Number(v2ProjectId) * 1000000
-      // );
+      await config.genArt721CoreV2Minter
+        .connect(config.accounts.artist)
+        .purchase(v2ProjectId);
+
+      const tokenHtmlV2 = await config.dependencyRegistry.getTokenHtml(
+        config.genArt721CoreV2.address,
+        Number(v2ProjectId) * 1000000
+      );
 
       // V1 project setup
       const v1ProjectId = await config.genArt721CoreV1.nextProjectId();
@@ -279,17 +278,11 @@ describe("DependencyRegistryV1", async function () {
         .connect(config.accounts.artist)
         .purchase(v1ProjectId);
 
-      console.log(
-        await config.dependencyRegistry.getProjectScript(
-          config.genArt721CoreV1.address,
-          v1ProjectId
-        )
-      );
-
       const tokenHtmlV1 = await config.dependencyRegistry.getTokenHtml(
         config.genArt721CoreV1.address,
         Number(v1ProjectId) * 1000000
       );
+
       console.log(tokenHtmlV1);
     });
   });

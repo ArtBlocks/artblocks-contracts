@@ -994,11 +994,23 @@ contract DependencyRegistryV1 is
             '"}'
         );
 
-        bytes memory dependencyScript = this.getDependencyScript(
-            dependencyType
-        );
-        requests[2].scriptContent = dependencyScript;
-        requests[2].wrapType = 2; // <script type="text/javascript+gzip" src="data:text/javascript;base64,[script]"></script>
+        Dependency storage dependency = dependencyDetails[dependencyType];
+        if (dependency.scriptCount == 0) {
+            requests[2].wrapPrefix = abi.encodePacked(
+                '<script type="text/javascript" src="',
+                dependency.preferredCDN,
+                '">'
+            );
+            requests[2].scriptContent = "// Noop"; // ScriptyBuilder requires scriptContent for this to work
+            requests[2].wrapSuffix = "</script>";
+            requests[2].wrapType = 4; // [wrapPrefix][scriptContent][wrapSuffix]
+        } else {
+            bytes memory dependencyScript = this.getDependencyScript(
+                dependencyType
+            );
+            requests[2].scriptContent = dependencyScript;
+            requests[2].wrapType = 2; // <script type="text/javascript+gzip" src="data:text/javascript;base64,[script]"></script>
+        }
 
         bytes memory gunzipScript = IContractScript(ethFsAddress).getScript(
             "gunzipScripts-0.0.1.js",
@@ -1038,11 +1050,7 @@ contract DependencyRegistryV1 is
             scriptyBuilderAddress
         ).getEncodedHTMLWrapped(requests, bufferSize);
 
-        string memory base64EncodedHTMLDataURIString;
-        assembly {
-            base64EncodedHTMLDataURIString := base64EncodedHTMLDataURI
-        }
-        return base64EncodedHTMLDataURIString;
+        return string(base64EncodedHTMLDataURI);
     }
 
     function getTokenHtml(
@@ -1056,11 +1064,7 @@ contract DependencyRegistryV1 is
         bytes memory html = IScriptyBuilder(scriptyBuilderAddress)
             .getHTMLWrapped(requests, bufferSize);
 
-        string memory htmlString;
-        assembly {
-            htmlString := html
-        }
-        return htmlString;
+        return string(html);
     }
 
     /**
