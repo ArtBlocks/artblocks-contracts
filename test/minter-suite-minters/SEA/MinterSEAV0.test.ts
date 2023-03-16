@@ -590,6 +590,42 @@ for (const coreContractName of coreContractsToTest) {
       });
     });
 
+    describe("tryPopulateNextToken", async function () {
+      it("reverts when project is not configured", async function () {
+        const config = await loadFixture(_beforeEach);
+        // un-configure project zero
+        await config.minter
+          .connect(config.accounts.artist)
+          .resetAuctionDetails(config.projectZero);
+        // expect revert when trying to populate next token on project zero
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .tryPopulateNextToken(config.projectZero),
+          "Project not configured"
+        );
+      });
+
+      it("does not revert when project is configured, and next token is already populated", async function () {
+        const config = await loadFixture(_beforeEach);
+        // verify next token number is populated
+        const projectConfig = await config.minter.projectConfigurationDetails(
+          config.projectZero
+        );
+        expect(projectConfig.nextTokenNumberIsPopulated).to.be.true;
+        // expect no revert when trying to populate next token on project zero,
+        // when one is already populated
+        await config.minter
+          .connect(config.accounts.artist)
+          .tryPopulateNextToken(config.projectZero);
+      });
+
+      // @dev do not think it is possible to test calling tryPopulateNextToken when a next token is not populated,
+      // when max invocations is reached (as the minter attempts to auto-populate next token when max invocations
+      // is changed). Therefore there is no test for that case, but the function remains in the contract in case
+      // of an unforseen bug or emergency situation.
+    });
+
     describe("togglePurchaseToDisabled", async function () {
       it("reverts when calling (Action not supported)", async function () {
         const config = await loadFixture(_beforeEach);
@@ -1028,6 +1064,28 @@ for (const coreContractName of coreContractsToTest) {
               value: config.basePrice.mul(105).div(100),
             });
         });
+
+        it("reverts if need to initialize auction, but no next token number is available", async function () {
+          const config = await loadFixture(_beforeEach);
+          // artist limits number of tokens to 1
+          await config.minter
+            .connect(config.accounts.artist)
+            .manuallyLimitProjectMaxInvocations(config.projectZero, 1);
+          // advance time to auction start time
+          await initializeProjectZeroTokenZeroAuctionAndSettle(config);
+          // expect bid on token two to revert
+          const targetTokenOne = BigNumber.from(
+            config.projectZeroTokenOne.toString()
+          );
+          await expectRevert(
+            config.minter
+              .connect(config.accounts.user)
+              .createBid(targetTokenOne, {
+                value: config.basePrice.mul(11).div(10),
+              }),
+            "Max invocations reached"
+          );
+        });
       });
 
       describe("EFFECTS", function () {
@@ -1180,6 +1238,27 @@ for (const coreContractName of coreContractsToTest) {
     });
 
     describe("settleAuctionAndCreateBid", function () {
+      it("requires settle token and bid token be in same project", async function () {
+        const config = await loadFixture(_beforeEach);
+        // initialize and advance to end of auction for token zero
+        await initializeProjectZeroTokenZeroAuctionAndAdvanceToEnd(config);
+        // expect revert when calling settleAuctionAndCreateBid with tokens from different projects
+        const settleTokenId = BigNumber.from(
+          config.projectZeroTokenZero.toString()
+        );
+        const initializeTokenId = BigNumber.from(
+          config.projectOneTokenZero.toString()
+        );
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user2)
+            .settleAuctionAndCreateBid(settleTokenId, initializeTokenId, {
+              value: config.basePrice,
+            }),
+          "Only tokens in same project"
+        );
+      });
+
       it("settles and initializes an auction", async function () {
         const config = await loadFixture(_beforeEach);
         // initialize and advance to end of auction for token zero
@@ -1414,6 +1493,45 @@ for (const coreContractName of coreContractsToTest) {
         });
       });
 
+      describe("getNextTokenId", function () {
+        it("reverts when next token is not populated", async function () {
+          const config = await loadFixture(_beforeEach);
+          // set project max invocations to 1
+          await config.minter
+            .connect(config.accounts.artist)
+            .manuallyLimitProjectMaxInvocations(config.projectZero, 1);
+          // initialize auction, which mints token zero
+          await initializeProjectZeroTokenZeroAuction(config);
+          // view function to get next token ID should revert, since project has reached max invocations
+          // and next token is not populated
+          await expectRevert(
+            config.minter.getNextTokenId(config.projectZero),
+            "Next token not populated"
+          );
+        });
+
+        it("reverts when a project is not initialized", async function () {
+          const config = await loadFixture(_beforeEach);
+          await expectRevert(
+            config.minter.getNextTokenId(config.projectOne),
+            "Next token not populated"
+          );
+        });
+
+        it("returns the next token ID when next token is populated", async function () {
+          const config = await loadFixture(_beforeEach);
+          // initialize auction, which mints token zero and populates next token
+          await initializeProjectZeroTokenZeroAuction(config);
+          const targetNextTokenId = BigNumber.from(
+            config.projectZeroTokenOne.toString()
+          );
+          const returnedNextTokenId = await config.minter.getNextTokenId(
+            config.projectZero
+          );
+          expect(returnedNextTokenId).to.equal(targetNextTokenId);
+        });
+      });
+
       describe("getPriceInfo", function () {
         it("returns currency symbol and address as ETH and 0x0, respecively", async function () {
           const config = await loadFixture(_beforeEach);
@@ -1522,7 +1640,7 @@ for (const coreContractName of coreContractsToTest) {
     });
 
     describe("reentrancy", function () {
-      describe("createBid_4cM", function () {
+      describe("createBid_l34", function () {
         it("is nonReentrant", async function () {
           const config = await loadFixture(_beforeEach);
           const autoBidder = await deployAndGet(

@@ -928,6 +928,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         // internal function is called, but it is included for protection
         // against future changes that could easily introduce a bug if this
         // check is not present
+        // @dev no cover else branch of next line because unreachable
         require(
             (!_auction.initialized) || _auction.settled,
             "Existing auction not settled"
@@ -940,6 +941,8 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         // require next token number is populated, giving intuitive error
         // message if project has reached its max invocations
         if (!_projectConfig.nextTokenNumberIsPopulated) {
+            // @dev no cover else branch of next line because considered
+            // unreachable
             if (_projectConfig.maxHasBeenInvoked) {
                 revert("Max invocations reached");
             } else {
@@ -947,6 +950,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
                 // because users should only mint a new new token if they
                 // are able to know what it is a prori
                 // @dev this is an unexpected case, but is included for safety
+                // @dev no cover next line because considered unreachable
                 revert(
                     "No next token, Artist may need to call `tryPopulateNextToken`"
                 );
