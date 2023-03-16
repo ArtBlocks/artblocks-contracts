@@ -49,7 +49,6 @@ contract DependencyRegistryV1 is
     using SafeCast for uint24;
 
     uint8 constant AT_CHARACTER_CODE = uint8(bytes1("@")); // 0x40
-    uint256 constant GUNZIP_BYTECODE_LENGTH = 6084;
     uint256 constant ONE_MILLION = 1_000_000;
 
     /// admin ACL contract
@@ -932,10 +931,14 @@ contract DependencyRegistryV1 is
         }
     }
 
-    function getTokenHtml(
+    function getTokenHtmlScriptRequests(
         address _contractAddress,
         uint256 _tokenId
-    ) internal view returns (string memory) {
+    )
+        internal
+        view
+        returns (WrappedScriptRequest[] memory, uint256 bufferSize)
+    {
         _onlySupportedCoreContract(_contractAddress);
 
         uint256 projectId = _tokenId / ONE_MILLION;
@@ -1020,8 +1023,20 @@ contract DependencyRegistryV1 is
             requests[4].scriptContent.length +
             500;
 
-        bytes memory base64EncodedHTMLDataURI = scriptyBuilder
-            .getEncodedHTMLWrapped(requests, bufferSize);
+        return (requests, bufferSize);
+    }
+
+    function getTokenHtmlBase64EncodedDataUri(
+        address _contractAddress,
+        uint256 _tokenId
+    ) external view returns (string memory) {
+        (
+            WrappedScriptRequest[] memory requests,
+            uint256 bufferSize
+        ) = getTokenHtmlScriptRequests(_contractAddress, _tokenId);
+        bytes memory base64EncodedHTMLDataURI = IScriptyBuilder(
+            scriptyBuilderAddress
+        ).getEncodedHTMLWrapped(requests, bufferSize);
 
         string memory base64EncodedHTMLDataURIString;
         assembly {
@@ -1030,16 +1045,22 @@ contract DependencyRegistryV1 is
         return base64EncodedHTMLDataURIString;
     }
 
-        function getTokenHtml(
+    function getTokenHtml(
         address _contractAddress,
         uint256 _tokenId
     ) external view returns (string memory) {
-    }
+        (
+            WrappedScriptRequest[] memory requests,
+            uint256 bufferSize
+        ) = getTokenHtmlScriptRequests(_contractAddress, _tokenId);
+        bytes memory html = IScriptyBuilder(scriptyBuilderAddress)
+            .getHTMLWrapped(requests, bufferSize);
 
-    fuction getTokenHtmlBase64EncodedDataUri( address _contractAddress,
-        uint256 _tokenId
-    ) external view returns (string memory) {
-
+        string memory htmlString;
+        assembly {
+            htmlString := html
+        }
+        return htmlString;
     }
 
     /**
