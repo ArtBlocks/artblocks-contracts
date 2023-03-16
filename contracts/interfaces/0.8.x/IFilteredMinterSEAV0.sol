@@ -77,6 +77,9 @@ interface IFilteredMinterSEAV0 is IFilteredMinterV2 {
         uint256 price
     );
 
+    // Next token ID for project `projectId` updated
+    event ProjectNextTokenUpdated(uint256 indexed projectId, uint256 tokenId);
+
     function configureFutureAuctions(
         uint256 _projectId,
         uint256 _timestampStart,
@@ -86,7 +89,11 @@ interface IFilteredMinterSEAV0 is IFilteredMinterV2 {
 
     function resetAuctionDetails(uint256 _projectId) external;
 
-    function settleAndCreateBid(
+    // artist-only function that populates the next token ID to be auctioned
+    // for project `projectId`
+    function tryPopulateNextToken(uint256 _projectId) external;
+
+    function settleAuctionAndCreateBid(
         uint256 _settleTokenId,
         uint256 _bidTokenId
     ) external payable;
@@ -95,7 +102,7 @@ interface IFilteredMinterSEAV0 is IFilteredMinterV2 {
 
     function createBid(uint256 _tokenId) external payable;
 
-    function createBid_4cM(uint256 _tokenId) external payable;
+    function createBid_l34(uint256 _tokenId) external payable;
 
     function minterConfigurationDetails()
         external
@@ -117,6 +124,8 @@ interface IFilteredMinterSEAV0 is IFilteredMinterV2 {
             uint64 timestampStart,
             uint32 auctionDurationSeconds,
             uint256 basePrice,
+            bool nextTokenNumberIsPopulated,
+            uint24 nextTokenNumber,
             Auction memory auction
         );
 

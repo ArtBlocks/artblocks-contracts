@@ -13,6 +13,7 @@ import "./MinterBase_v0_1_1.sol";
 import "@openzeppelin-4.7/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin-4.7/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
+import "@openzeppelin-4.7/contracts/utils/math/Math.sol";
 
 /**
  * @title Filtered Minter contract that allows tokens to be minted with ETH.
@@ -110,6 +111,15 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         uint64 timestampStart;
         // duration of each new auction, before any extensions due to late bids
         uint32 auctionDurationSeconds;
+        // next token number to be auctioned, owned by minter
+        // @dev store token number to enable storage packing, as token ID can
+        // be derived from this value in combination with project ID
+        // max uint24 ~= 1.6e7, > max possible project invocations of 1e6
+        uint24 nextTokenNumber;
+        // bool to indicate if next token number has been populated, or is
+        // still default value of 0
+        // @dev required to handle edge case where next token number is 0
+        bool nextTokenNumberIsPopulated;
         // reserve price, i.e. minimum starting bid price, in wei
         // @dev for configured auctions, this will be gt 0, so it may be used
         // to determine if an auction is configured
@@ -245,6 +255,10 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
             invocations == maxInvocations;
 
         emit ProjectMaxInvocationsLimitUpdated(_projectId, maxInvocations);
+
+        // for convenience, try to mint and assign a token to the project's
+        // next slot
+        _tryMintTokenToNextSlot(_projectId);
     }
 
     /**
@@ -280,12 +294,16 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         // EFFECTS
         // update storage with results
         projectConfig[_projectId].maxInvocations = uint24(_maxInvocations);
-        // We need to ensure maxHasBeenInvoked is correctly set after manually setting the
-        // local maxInvocations value.
+        // We need to ensure maxHasBeenInvoked is correctly set after manually
+        // setting the local maxInvocations value.
         projectConfig[_projectId].maxHasBeenInvoked =
             invocations == _maxInvocations;
 
         emit ProjectMaxInvocationsLimitUpdated(_projectId, _maxInvocations);
+
+        // for convenience, try to mint and assign a token to the project's
+        // next slot
+        _tryMintTokenToNextSlot(_projectId);
     }
 
     /**
@@ -367,6 +385,8 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
 
     /**
      * @notice Sets auction details for project `_projectId`.
+     * If project does not have a "next token" assigned, this function attempts
+     * to mint a token and assign it to the project's next token slot.
      * @param _projectId Project ID to set future auction details for.
      * @param _timestampStart Timestamp after which new auctions may be
      * started. Note that this is not the timestamp of the auction start, but
@@ -422,6 +442,11 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
             _projectConfig.maxHasBeenInvoked == false
         ) {
             setProjectMaxInvocations(_projectId);
+            // @dev setProjectMaxInvocations function calls
+            // _tryMintTokenToNextSlot, so we do not call it here.
+        } else {
+            // for convenience, try to mint to next token slot
+            _tryMintTokenToNextSlot(_projectId);
         }
     }
 
@@ -431,6 +456,9 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
      * This is not intended to be used in normal operation, but rather only in
      * case of the need to halt the creation of any future auctions.
      * Does not affect any project max invocation details.
+     * Does not affect any project next token details (i.e. if a next token is
+     * assigned, it will remain assigned and held by the minter until auction
+     * details are reconfigured).
      * @param _projectId Project ID to reset future auction configuration
      * details for.
      */
@@ -444,8 +472,41 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         _projectConfig.timestampStart = 0;
         _projectConfig.auctionDurationSeconds = 0;
         _projectConfig.basePrice = 0;
+        // @dev do not affect next token or max invocations
 
         emit ResetAuctionDetails(_projectId);
+    }
+
+    /**
+     * @notice Emergency, Artist-only function that attempts to mint a new
+     * token and set it as the the next token to be auctioned for project
+     * `_projectId`.
+     * Note: This function is only included for emergency, unforseen use cases,
+     * and should not be used in normal operation. It is here only for
+     * redundant protection against an unforseen edge case where the minter
+     * does not have a populated "next token", but there are still invocations
+     * remaining on the project.
+     * This function reverts if the project is not configured on this minter.
+     * This function returns early and does not modify state when:
+     *   - the minter already has a populated "next token" for the project
+     *   - the project has reached its maximum invocations on the core contract
+     *     or minter
+     * @dev This function is gated to only the project's artist to prevent
+     * early minting of tokens by other users.
+     * @param _projectId The project ID
+     */
+    function tryPopulateNextToken(uint256 _projectId) public nonReentrant {
+        _onlyArtist(_projectId);
+        // CHECKS
+        // revert if project is not configured on this minter
+        require(
+            projectConfig[_projectId].basePrice > 0,
+            "Project not configured"
+        );
+        // INTERACTIONS
+        // attempt to mint new token to this minter contract, only if max
+        // invocations has not been reached
+        _tryMintTokenToNextSlot(_projectId);
     }
 
     /**
@@ -457,40 +518,42 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
      * one or more transactions to settle and/or initialize a new auction,
      * potentially still placing a bid on the auction for the token ID if the
      * bid value is sufficiently higher than the current highest bid.
-     * This function requires a target token ID that is the next token ID for
-     * the project, and will revert if `_targetTokenId` is not the next token.
      * Note that the use of `_targetTokenId` is to prevent the possibility of
      * transactions that are stuck in the pending pool for long periods of time
      * from unintentionally bidding on auctions for future tokens.
      * Note that calls to `settleAuction` and `createBid` are possible
      * to be called in separate transactions, but this function is provided for
-     * convenience and calls both of those functions in a single transaction.
+     * convenience and executes both of those functions in a single
+     * transaction, while handling front-running as gracefully as possible.
      * @param _settleTokenId Token ID to settle auction for.
-     * @param _bidTokenId Token ID to initialize auction for.
+     * @dev this function is not non-reentrant, but the underlying calls are
+     * to non-reentrant functions.
      */
-    function settleAndCreateBid(
+    function settleAuctionAndCreateBid(
         uint256 _settleTokenId,
         uint256 _bidTokenId
     ) external payable {
+        // ensure tokens are in the same project
+        require(
+            _settleTokenId / ONE_MILLION == _bidTokenId / ONE_MILLION,
+            "Only tokens in same project"
+        );
         // settle completed auction, if applicable
-        // @dev in case of frontrun, settleAuction returns early and avoids
-        // reverting
         settleAuction(_settleTokenId);
-        // initialize the auction for the next token
-        createBid_4cM(_bidTokenId);
+        // attempt to bid on next token
+        createBid_l34(_bidTokenId);
     }
 
     /**
-     * @notice Settles a completed auction for `_tokenId`, if one exists.
-     * If there is no active auction for token ID `_tokenId`, or if the auction
-     * has already been settled, this function does not revert, but also does
-     * not modify state (since there is no more required action).
-     * This function reverts if the auction for `_tokenId` exists but has not
-     * yet ended.
-     * Edge case: if `_tokenId` is nonsense (i.e. not a valid token ID), this
-     * function will not revert, but also will not modify state. This is to
-     * prevent nuisance reverting in the case of a user being front-run when
-     * calling `settleAndCreateBid`.
+     * @notice Settles a completed auction for `_tokenId`, if it exists and is
+     * not yet settled.
+     * Returns early (does not modify state) if there is no initialized auction
+     * for the project associated with `_tokenId`, or if the auction for
+     * `_tokenId` has already been settled.
+     * This function reverts if there is an auction for a different token ID on
+     * the project associated with `_tokenId`.
+     * This function also reverts if the auction for `_tokenId` exists, but has
+     * not yet ended.
      * @param _tokenId Token ID to settle auction for.
      */
     function settleAuction(uint256 _tokenId) public nonReentrant {
@@ -498,18 +561,12 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         Auction storage _auction = _projectConfig.activeAuction;
         // CHECKS
-        if (_auction.tokenId != _tokenId) {
-            // no active auction for this token
+        if (!_auction.initialized || _auction.settled) {
+            // auction not initialized or already settled, so return early
             return;
         }
-        if (_auction.settled) {
-            // auction already settled
-            return;
-        }
+        require(_auction.tokenId != _tokenId, "Auction for different token");
         require(block.timestamp > _auction.endTime, "Auction not yet ended");
-        // @dev this check is not strictly necessary, but is included for
-        // clear error messaging
-        require(_auction.initialized, "Auction not initialized");
         // EFFECTS
         _auction.settled = true;
         // INTERACTIONS
@@ -534,8 +591,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
      * If an auction for token `_tokenId` does not exist, an auction will be
      * initialized as long as any existing auction for the project has been
      * settled.
-     * In order to successfully place the bid, the token must be in the
-     * bid must be:
+     * In order to successfully place the bid, the token bid must be:
      * - greater than or equal to a project's minimum bid price if a new
      *   auction is initialized
      * - sufficiently greater than the current highest bid, according to the
@@ -546,23 +602,23 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
      * ends, the funds will be noncustodially returned to the bidder's address,
      * `msg.sender`. A fallback method of sending funds back to the bidder via
      * WETH is used if the bidder address is not accepting ETH (preventing
-     * denial of service attacks).
+     * denial of service attacks) within a 30_000 gas limit.
      * Note that the use of `_tokenId` is to prevent the possibility of
      * transactions that are stuck in the pending pool for long periods of time
      * from unintentionally bidding on auctions for future tokens.
      * @param _tokenId Token ID being bidded on
      */
     function createBid(uint256 _tokenId) external payable {
-        createBid_4cM(_tokenId);
+        createBid_l34(_tokenId);
     }
 
     /**
-     * @notice gas-optimized version of createBid(uint256,uint256).
+     * @notice gas-optimized version of createBid(uint256).
      * @dev nonReentrant modifier is used to prevent reentrancy attacks, e.g.
      * an an auto-bidder that would be able to atomically outbid a user's
      * new bid via a reentrant call to createBid.
      */
-    function createBid_4cM(uint256 _tokenId) public payable nonReentrant {
+    function createBid_l34(uint256 _tokenId) public payable nonReentrant {
         uint256 _projectId = _tokenId / ONE_MILLION;
         // CHECKS
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
@@ -572,7 +628,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         // to initialize a new auction for the input token ID and immediately
         // return
         if ((!_auction.initialized) || _auction.settled) {
-            _initializeAuction(_projectId, _tokenId);
+            _initializeAuctionWithBid(_projectId, _tokenId);
             return;
         }
         // @dev this branch is guaranteed to have an initialized auction that
@@ -620,7 +676,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
 
     /**
      * @notice Inactive function - see `createBid` or
-     * `settleAndCreateBid`
+     * `settleAuctionAndCreateBid`
      */
     function purchase(
         uint256 /*_projectId*/
@@ -630,7 +686,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
 
     /**
      * @notice Inactive function - see `createBid` or
-     * `settleAndCreateBid`
+     * `settleAuctionAndCreateBid`
      */
     function purchaseTo(
         address /*_to*/,
@@ -719,6 +775,10 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
      * @return auctionDurationSeconds The project's default auction duration,
      * before any extensions due to buffer time
      * @return basePrice The project's minimum starting bid price
+     * @return nextTokenNumberIsPopulated Whether or not the project's next
+     * token number has been populated
+     * @return nextTokenNumber The project's next token number to be auctioned,
+     * dummy value of 0 if `nextTokenNumberIsPopulated` is false
      * @return auction The project's active auction details. Will be the
      * default struct (w/ `auction.initialized = false`) if no auction has been
      * initialized for the project.
@@ -733,6 +793,8 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
             uint64 timestampStart,
             uint32 auctionDurationSeconds,
             uint256 basePrice,
+            bool nextTokenNumberIsPopulated,
+            uint24 nextTokenNumber,
             Auction memory auction
         )
     {
@@ -741,6 +803,10 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         timestampStart = _projectConfig.timestampStart;
         auctionDurationSeconds = _projectConfig.auctionDurationSeconds;
         basePrice = _projectConfig.basePrice;
+        nextTokenNumberIsPopulated = _projectConfig.nextTokenNumberIsPopulated;
+        nextTokenNumber = _projectConfig.nextTokenNumberIsPopulated
+            ? _projectConfig.nextTokenNumber
+            : 0;
         auction = _projectConfig.activeAuction;
     }
 
@@ -765,18 +831,13 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
      * auction is currently initialized or if the current auction has concluded
      * (block.timestamp > auction.endTime).
      * This is intended to be useful for frontends or scripts that intend to
-     * call `createBid` or `settleAndCreateBid`, which requires
-     * the target token ID to be passed in as an argument.
-     * Note that this is not a guarantee that the next token ID to be auctioned
-     * due to edge cases where other minters are being used, but those are not
-     * expected to be encountered in practice.
-     * The function reverts if an invalid project ID is queried, or if the
-     * project has reached its maximum invocations and there is no active
-     * auction.
-     * @param _projectId The project ID
-     * @return The current token ID being auctioned, or the next expected token
-     * ID to be auctioned if no auction is currently initialized or if the
-     * current auction has concluded (block.timestamp > auction.endTime).
+     * call `createBid` or `settleAuctionAndCreateBid`, which requires a
+     * target bid token ID to be passed in as an argument.
+     * The function reverts if a project does not have an active auction and
+     * the next expected token ID has not been populated.
+     * @param _projectId The project ID being queried
+     * @return The current token ID being auctioned, or the next token ID to be
+     * auctioned if a new auction is ready to be created.
      */
     function getTokenToBid(uint256 _projectId) external view returns (uint256) {
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
@@ -786,49 +847,63 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         if (_auction.initialized && (_auction.endTime > block.timestamp)) {
             return _auction.tokenId;
         }
-        // otherwise, return the next expected token ID based on core contract
-        // invocation count
-        (
-            uint256 invocations,
-            uint256 maxInvocations,
-            ,
-            ,
-            ,
-
-        ) = genArtCoreContract_Base.projectStateData(_projectId);
-        // revert if next invocation would exceed core contract max invocations
-        require(invocations < maxInvocations, "Core: Reached max invocations");
-        // revert if next invocation would exceed minter max invocations
-        require(
-            invocations < _projectConfig.maxInvocations,
-            "Minter: Reached max invocations"
-        );
-        // the next expected token ID is sum of (project ID * ONE_MILLION) and
-        // the current number of invocations since the first token ID is 0
+        // otherwise, return the next expected token ID to be auctioned
+        if (!_projectConfig.nextTokenNumberIsPopulated) {
+            revert("Next token number not populated");
+        }
         // @dev overflow automatically checked in Solidity ^0.8.0
-        return (_projectId * ONE_MILLION) + invocations;
+        uint256 nextTokenId = (_projectId * ONE_MILLION) +
+            _projectConfig.nextTokenNumber;
+        return nextTokenId;
     }
 
     /**
-     * @dev Internal function to initialize an auction.
-     * This should be executed in a nonReentrant context to provide redundant
+     * @notice View function that returns the next token ID to be auctioned
+     * by this minter for project `_projectId`.
+     * Reverts if the next token ID has not been populated for the project.
+     * @param _projectId The project ID being queried
+     * @return nextTokenId The next token ID to be auctioned by this minter
+     */
+    function getNextTokenId(
+        uint256 _projectId
+    ) external view returns (uint256 nextTokenId) {
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        if (!_projectConfig.nextTokenNumberIsPopulated) {
+            revert("Next token not populated");
+        }
+        // @dev overflow automatically checked in Solidity ^0.8.0
+        nextTokenId =
+            (_projectId * ONE_MILLION) +
+            _projectConfig.nextTokenNumber;
+        return nextTokenId;
+    }
+
+    /**
+     * @dev Internal function to initialize an auction for the next token ID
+     * on project `_projectId` with a bid of `msg.value` from `msg.sender`.
+     * This function reverts in any of the following cases:
+     *   - project is not configured on this minter
+     *   - project is configured but has not yet reached its start time
+     *   - project has a current active auction that is not settled
+     *   - insufficient bid amount (msg.value < basePrice)
+     *   - no next token has been minted for the project (artist may need to
+     *     call `tryPopulateNextToken`)
+     *   - `_targetTokenId` does not match the next token ID for the project
+     * This function attempts to mint a new token and assign it to the
+     * project's next token slot. However, if the project has reached its
+     * maximum invocations on either the core contract or minter, this function
+     * will not mint a new token, and the next token slot for the project will
+     * remain empty.
+     * @dev This should be executed in a nonReentrant context to provide redundant
      * protection against reentrancy.
      */
-    function _initializeAuction(
+    function _initializeAuctionWithBid(
         uint256 _projectId,
         uint256 _targetTokenId
     ) internal {
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         Auction storage _auction = _projectConfig.activeAuction;
         // CHECKS
-        // gas efficiently prevent expensive calls after the minter max has
-        // been invoked
-        // @dev this could return a false negative in edge cases, and is not
-        // relied upon for security, but rather as a gas optimization
-        require(
-            _projectConfig.maxHasBeenInvoked == false,
-            "Project max has been invoked"
-        );
         // ensure project auctions are configured
         // @dev base price of zero indicates auctions are not configured
         // because only base price of gt zero is allowed when configuring
@@ -847,40 +922,33 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
             (!_auction.initialized) || _auction.settled,
             "Existing auction not settled"
         );
-
+        // require valid bid value
         require(
             msg.value >= _projectConfig.basePrice,
             "Insufficient initial bid"
         );
-
-        // EFFECTS
-        // @dev the new auction is optimistically assumed to be for
-        // `_targetTokenId`, and will be reverted in the INTERACTIONS section
-        // if this is not the case
-
-        // invocation is token number plus one, and will never overflow due to
-        // limit of 1e6 invocations per project. block scope for gas efficiency
-        // (i.e. avoid an unnecessary var initialization to 0).
-        unchecked {
-            uint256 tokenInvocation = (_targetTokenId % ONE_MILLION) + 1;
-            uint256 localMaxInvocations = _projectConfig.maxInvocations;
-            // handle the case where the token invocation == minter local max
-            // invocations occurred on a different minter, and we have a stale
-            // local maxHasBeenInvoked value returning a false negative.
-            // @dev this is a CHECK after EFFECTS, so security was considered
-            // in detail here.
-            require(
-                tokenInvocation <= localMaxInvocations,
-                "Maximum invocations reached"
-            );
-            // in typical case, update the local maxHasBeenInvoked value
-            // to true if the token invocation == minter local max invocations
-            // (enables gas efficient reverts after sellout)
-            if (tokenInvocation == localMaxInvocations) {
-                _projectConfig.maxHasBeenInvoked = true;
+        // require next token number is populated, giving intuitive error
+        // message if project has reached its max invocations
+        if (!_projectConfig.nextTokenNumberIsPopulated) {
+            if (_projectConfig.maxHasBeenInvoked) {
+                revert("Max invocations reached");
+            } else {
+                // @dev revert instead of attempting to mint a new next token,
+                // because users should only mint a new new token if they
+                // are able to know what it is a prori
+                // @dev this is an unexpected case, but is included for safety
+                revert(
+                    "No next token, Artist may need to call `tryPopulateNextToken`"
+                );
             }
         }
+        // require next token number is the target token ID
+        require(
+            _projectConfig.nextTokenNumber == _targetTokenId % ONE_MILLION,
+            "Incorrect target token ID"
+        );
 
+        // EFFECTS
         // create new auction, overwriting previous auction if it exists
         uint64 endTime = (block.timestamp +
             _projectConfig.auctionDurationSeconds).toUint64();
@@ -892,22 +960,80 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
             settled: false,
             initialized: true
         });
+        // mark next token number as not populated
+        // @dev intentionally not setting nextTokenNumber to zero to avoid
+        // unnecessary gas costs
+        _projectConfig.nextTokenNumberIsPopulated = false;
+
+        // @dev we intentionally emit event here due to potential of early
+        // return in INTERACTIONS section
+        emit AuctionInitialized(_targetTokenId, msg.sender, msg.value, endTime);
 
         // INTERACTIONS
-        // mint new token to this minter contract
+        // attempt to mint new token to this minter contract, only if max
+        // invocations has not been reached
+        _tryMintTokenToNextSlot(_projectId);
+    }
+
+    /**
+     * @notice Internal function that attempts to mint a new token to the next
+     * token slot for the project `_projectId`.
+     * This function returns early and does not modify state if
+     *   - the project has reached its maximum invocations on either the core
+     *     contract or minter
+     *   - the project config's `nextTokenNumberIsPopulated` is already true
+     * @param _projectId The ID of the project to mint a new token for.
+     */
+    function _tryMintTokenToNextSlot(uint256 _projectId) internal {
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        if (_projectConfig.nextTokenNumberIsPopulated) {
+            return;
+        }
+        // INTERACTIONS
+        // attempt to mint new token to this minter contract, only if max
+        // invocations has not been reached
+        // we require up-to-date invocation data to properly handle last token
+        (
+            uint256 coreInvocations,
+            uint256 coreMaxInvocations,
+            ,
+            ,
+            ,
+
+        ) = genArtCoreContract_Base.projectStateData(_projectId);
+        uint256 localMaxInvocations = _projectConfig.maxInvocations;
+        uint256 minMaxInvocations = Math.min(
+            coreMaxInvocations,
+            localMaxInvocations
+        );
+        if (coreInvocations >= minMaxInvocations) {
+            // we have reached the max invocations, so we do not mint a new
+            // token as the "next token", and leave the next token number as
+            // not populated
+            return;
+        }
+        // @dev this is an effect after a trusted contract interaction
+        _projectConfig.nextTokenNumberIsPopulated = true;
+        // mint a new token to this project's "next token" slot
         // @dev this is an interaction with a trusted contract
-        uint256 actualTokenId = minterFilter.mint(
+        uint256 nextTokenId = minterFilter.mint(
             address(this),
             _projectId,
             address(this)
         );
-        // verify the actual token to be the target token ID
-        // @dev this is a check after a (trusted) interaction, so redundant
-        // security (eliminating trust requirement) is achieved by making this
-        //  function nonReentrant
-        require(actualTokenId == _targetTokenId, "Incorrect target token ID");
-
-        emit AuctionInitialized(_targetTokenId, msg.sender, msg.value, endTime);
+        // update state to reflect new token number
+        // @dev state changes after trusted contract interaction
+        // @dev unchecked is safe because mod 1e6 is guaranteed to be less than
+        // max uint24
+        unchecked {
+            _projectConfig.nextTokenNumber = uint24(nextTokenId % ONE_MILLION);
+        }
+        // update local maxHasBeenInvoked value if necessary
+        uint256 tokenInvocation = (nextTokenId % ONE_MILLION) + 1;
+        if (tokenInvocation == localMaxInvocations) {
+            _projectConfig.maxHasBeenInvoked = true;
+        }
+        emit ProjectNextTokenUpdated(_projectId, nextTokenId);
     }
 
     /**
@@ -922,8 +1048,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
     }
 
     /**
-     * @notice If project is configured, gets price info to become the leading
-     * bidder on a token auction.
+     * @notice Gets price info to become the leading bidder on a token auction.
      * If artist has not called `configureFutureAuctions` and there is no
      * active token auction accepting bids, `isConfigured` will be false, and a
      * dummy price of zero is assigned to `tokenPriceInWei`.
