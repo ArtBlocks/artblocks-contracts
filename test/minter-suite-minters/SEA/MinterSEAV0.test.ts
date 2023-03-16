@@ -1395,6 +1395,56 @@ for (const coreContractName of coreContractsToTest) {
       });
     });
 
+    describe("handles next token well when project reaches max invocations", function () {
+      it("auto-populates next token number when project max invocations are manually increased", async function () {
+        const config = await loadFixture(_beforeEach);
+        // set project max invocations to 1
+        await config.minter
+          .connect(config.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(config.projectZero, 1);
+        // initialize and advance to end of auction for token zero
+        await initializeProjectZeroTokenZeroAuctionAndAdvanceToEnd(config);
+        // confirm that next token number is not populated
+        const initialProjectConfig = await config.minter.projectConfig(
+          config.projectZero
+        );
+        expect(initialProjectConfig.nextTokenNumberIsPopulated).to.equal(false);
+        // artist increases max invocations
+        await config.minter
+          .connect(config.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(config.projectZero, 2);
+        // confirm that next token number is populated
+        const updatedProjectConfig = await config.minter.projectConfig(
+          config.projectZero
+        );
+        expect(updatedProjectConfig.nextTokenNumberIsPopulated).to.equal(true);
+      });
+
+      it("auto-populates next token number when project max invocations are synced to core contract value", async function () {
+        const config = await loadFixture(_beforeEach);
+        // set project max invocations to 1
+        await config.minter
+          .connect(config.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(config.projectZero, 1);
+        // initialize and advance to end of auction for token zero
+        await initializeProjectZeroTokenZeroAuctionAndAdvanceToEnd(config);
+        // confirm that next token number is not populated
+        const initialProjectConfig = await config.minter.projectConfig(
+          config.projectZero
+        );
+        expect(initialProjectConfig.nextTokenNumberIsPopulated).to.equal(false);
+        // artist increases max invocations to equal core contract value
+        await config.minter
+          .connect(config.accounts.artist)
+          .setProjectMaxInvocations(config.projectZero);
+        // confirm that next token number is populated
+        const updatedProjectConfig = await config.minter.projectConfig(
+          config.projectZero
+        );
+        expect(updatedProjectConfig.nextTokenNumberIsPopulated).to.equal(true);
+      });
+    });
+
     describe("purchase", function () {
       it("is an inactive function", async function () {
         const config = await loadFixture(_beforeEach);
