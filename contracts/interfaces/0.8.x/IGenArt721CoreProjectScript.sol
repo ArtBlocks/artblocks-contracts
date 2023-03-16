@@ -6,6 +6,10 @@ interface IGenArt721CoreProjectScript {
         uint256 _index
     ) external view returns (string memory);
 
+    // @dev all the return specified here is common across
+    // all pre-v3 core contracts. They all return additional
+    // data as well that varies between contracts but is not
+    // used by the dependency registry.
     function projectScriptInfo(
         uint256 _projectId
     ) external view returns (string memory scriptJSON, uint256 scriptCount);

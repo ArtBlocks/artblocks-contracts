@@ -170,15 +170,15 @@ describe("DependencyRegistryV1", async function () {
         )
         .toString("base64");
 
-      // await config.dependencyRegistry.addDependencyScript(
-      //   depType,
-      //   compressedDep.slice(0, Math.floor(compressedDep.length / 2))
-      // );
+      await config.dependencyRegistry.addDependencyScript(
+        depType,
+        compressedDep.slice(0, Math.floor(compressedDep.length / 2))
+      );
 
-      // await config.dependencyRegistry.addDependencyScript(
-      //   depType,
-      //   compressedDep.slice(Math.floor(compressedDep.length / 2))
-      // );
+      await config.dependencyRegistry.addDependencyScript(
+        depType,
+        compressedDep.slice(Math.floor(compressedDep.length / 2))
+      );
 
       // V3 project setup
       const v3ProjectId = await config.genArt721Core.nextProjectId();
