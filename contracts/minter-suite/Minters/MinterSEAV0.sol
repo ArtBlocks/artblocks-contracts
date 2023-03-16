@@ -548,13 +548,13 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
     /**
      * @notice Settles a completed auction for `_tokenId`, if it exists and is
      * not yet settled.
-     * Returns early (does not modify state) if there is no initialized auction
-     * for the project associated with `_tokenId`, or if the auction for
-     * `_tokenId` has already been settled.
-     * This function reverts if there is an auction for a different token ID on
-     * the project associated with `_tokenId`.
-     * This function also reverts if the auction for `_tokenId` exists, but has
-     * not yet ended.
+     * Returns early (does not modify state) if
+     *   - there is no initialized auction for the project
+     *   - there is an auction that has already been settled for the project
+     *   - there is an auction for a different token ID on the project
+     *     (likely due to a front-run)
+     * This function reverts if the auction for `_tokenId` exists, but has not
+     * yet ended.
      * @param _tokenId Token ID to settle auction for.
      */
     function settleAuction(uint256 _tokenId) public nonReentrant {
@@ -562,11 +562,15 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         Auction storage _auction = _projectConfig.activeAuction;
         // CHECKS
-        if (!_auction.initialized || _auction.settled) {
-            // auction not initialized or already settled, so return early
+        if (
+            (!_auction.initialized) ||
+            _auction.settled ||
+            (_auction.tokenId != _tokenId)
+        ) {
+            // auction not initialized, already settled, or is for a different
+            // token ID, so return early
             return;
         }
-        require(_auction.tokenId != _tokenId, "Auction for different token");
         require(block.timestamp > _auction.endTime, "Auction not yet ended");
         // EFFECTS
         _auction.settled = true;

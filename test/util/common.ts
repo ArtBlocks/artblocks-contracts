@@ -40,6 +40,7 @@ export type T_Config = {
   // token IDs
   projectZeroTokenZero?: BigNumber;
   projectZeroTokenOne?: BigNumber;
+  projectZeroTokenTwo?: BigNumber;
   projectOneTokenZero?: BigNumber;
   projectOneTokenOne?: BigNumber;
   projectTwoTokenZero?: BigNumber;
@@ -112,6 +113,7 @@ export async function assignDefaultConstants(
     new BN("1000000")
   );
   config.projectZeroTokenOne = config.projectZeroTokenZero.add(new BN("1"));
+  config.projectZeroTokenTwo = config.projectZeroTokenOne.add(new BN("1"));
   config.projectOneTokenZero = new BN(config.projectOne).mul(new BN("1000000"));
   config.projectOneTokenOne = config.projectOneTokenZero.add(new BN("1"));
   config.projectTwoTokenZero = new BN(config.projectTwo).mul(new BN("1000000"));
