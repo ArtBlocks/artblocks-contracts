@@ -607,6 +607,11 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
      * Note that the use of `_tokenId` is to prevent the possibility of
      * transactions that are stuck in the pending pool for long periods of time
      * from unintentionally bidding on auctions for future tokens.
+     * If a new auction is initialized during this call, the project's next
+     * token will be attempted to be minted to this minter contract, preparing
+     * it for the next auction. If the project's next token cannot be minted
+     * due to e.g. reaching the maximum invocations on the core contract or
+     * minter, the project's next token will not be minted.
      * @param _tokenId Token ID being bidded on
      */
     function createBid(uint256 _tokenId) external payable {
