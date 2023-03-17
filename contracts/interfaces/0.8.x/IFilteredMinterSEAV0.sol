@@ -80,6 +80,10 @@ interface IFilteredMinterSEAV0 is IFilteredMinterV2 {
     // Next token ID for project `projectId` updated
     event ProjectNextTokenUpdated(uint256 indexed projectId, uint256 tokenId);
 
+    // Next token ID for project `projectId` was ejected from the minter
+    // and is no longer populated
+    event ProjectNextTokenEjected(uint256 indexed projectId);
+
     function configureFutureAuctions(
         uint256 _projectId,
         uint256 _timestampStart,

@@ -515,6 +515,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
             _to,
             nextTokenId
         );
+        emit ProjectNextTokenEjected(_projectId);
     }
 
     /**

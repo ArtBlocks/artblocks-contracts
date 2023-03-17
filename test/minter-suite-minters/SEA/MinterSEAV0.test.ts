@@ -623,6 +623,25 @@ for (const coreContractName of coreContractsToTest) {
           expect(tokenOwner).to.equal(config.accounts.user.address);
         });
 
+        it("emits `ProjectNextTokenEjected` event", async function () {
+          const config = await loadFixture(_beforeEach);
+          // artist resets auction details
+          await config.minter
+            .connect(config.accounts.artist)
+            .resetAuctionDetails(config.projectZero);
+          // admin ejects next token to user end event is emitted
+          await expect(
+            config.minter
+              .connect(config.accounts.deployer)
+              .ejectNextTokenTo(
+                config.projectZero,
+                config.accounts.user.address
+              )
+          )
+            .to.emit(config.minter, "ProjectNextTokenEjected")
+            .withArgs(config.projectZero);
+        });
+
         it("updates state: sets next token is populated to false", async function () {
           const config = await loadFixture(_beforeEach);
           // artist resets auction details
