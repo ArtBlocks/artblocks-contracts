@@ -562,13 +562,12 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         Auction storage _auction = _projectConfig.activeAuction;
         // CHECKS
-        if (
-            (!_auction.initialized) ||
-            _auction.settled ||
-            (_auction.tokenId != _tokenId)
-        ) {
-            // auction not initialized, already settled, or is for a different
-            // token ID, so return early
+        // @dev this check is not strictly necessary, but is included for
+        // clear error messaging
+        require(_auction.initialized, "Auction not initialized");
+        if (_auction.settled || (_auction.tokenId != _tokenId)) {
+            // auction already settled or is for a different token ID, so
+            // return early and do not modify state
             return;
         }
         require(block.timestamp > _auction.endTime, "Auction not yet ended");

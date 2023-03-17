@@ -639,14 +639,17 @@ for (const coreContractName of coreContractsToTest) {
     });
 
     describe("settleAuction", async function () {
-      it("does not revert or change state when auction not initialized", async function () {
+      it("reverts when no auction initialized on project (for clear error messaging)", async function () {
         const config = await loadFixture(_beforeEach);
         const targetToken = BigNumber.from(
           config.projectZeroTokenZero.toString()
         );
-        await config.minter
-          .connect(config.accounts.user)
-          .settleAuction(targetToken);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .settleAuction(targetToken),
+          "Auction not initialized"
+        );
         // verify no state change
         const projectconfig = await config.minter.projectConfigurationDetails(
           config.projectZero
