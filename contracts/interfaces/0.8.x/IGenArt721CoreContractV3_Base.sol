@@ -100,6 +100,14 @@ interface IGenArt721CoreContractV3_Base is IManifold {
         uint256 _projectId
     ) external view returns (uint256);
 
+    function projectIdToSecondaryMarketRoyaltyPercentage(
+        uint256 _projectId
+    ) external view returns (uint256);
+
+    function projectURIInfo(
+        uint256 _projectId
+    ) external view returns (string memory projectBaseURI);
+
     // @dev new function in V3
     function projectStateData(
         uint256 _projectId
@@ -114,6 +122,35 @@ interface IGenArt721CoreContractV3_Base is IManifold {
             uint256 completedTimestamp,
             bool locked
         );
+
+    function projectDetails(
+        uint256 _projectId
+    )
+        external
+        view
+        returns (
+            string memory projectName,
+            string memory artist,
+            string memory description,
+            string memory website,
+            string memory license
+        );
+
+    function projectScriptDetails(
+        uint256 _projectId
+    )
+        external
+        view
+        returns (
+            string memory scriptTypeAndVersion,
+            string memory aspectRatio,
+            uint256 scriptCount
+        );
+
+    function projectScriptByIndex(
+        uint256 _projectId,
+        uint256 _index
+    ) external view returns (string memory);
 
     function tokenIdToHash(uint256 _tokenId) external view returns (bytes32);
 
