@@ -252,13 +252,13 @@ for (const coreContractName of coreContractsToTest) {
           // reduce local maxInvocations to 2 on minter
           await config.minter
             .connect(config.accounts.artist)
-            .manuallyLimitProjectMaxInvocations(config.projectZero, 1);
+            .manuallyLimitProjectMaxInvocations(config.projectZero, 2);
           const localMaxInvocations = await config.minter
             .connect(config.accounts.artist)
             .projectConfig(config.projectZero);
-          expect(localMaxInvocations.maxInvocations).to.equal(1);
+          expect(localMaxInvocations.maxInvocations).to.equal(2);
 
-          // mint a token on project zero (by initializing a new token auction)
+          // mint token 2 as next token on project zero (by initializing a new token auction)
           await initializeProjectZeroTokenZeroAuction(config);
 
           // expect projectMaxHasBeenInvoked to be true
@@ -285,13 +285,13 @@ for (const coreContractName of coreContractsToTest) {
           // reduce invocations on the minter
           await config.minter
             .connect(config.accounts.artist)
-            .manuallyLimitProjectMaxInvocations(config.projectZero, 1);
+            .manuallyLimitProjectMaxInvocations(config.projectZero, 2);
 
-          // expect maxInvocations on the minter to be 1
+          // expect maxInvocations on the minter to be 2
           const localMaxInvocations3 = await config.minter
             .connect(config.accounts.artist)
             .projectConfig(config.projectZero);
-          expect(localMaxInvocations3.maxInvocations).to.equal(1);
+          expect(localMaxInvocations3.maxInvocations).to.equal(2);
 
           // expect projectMaxHasBeenInvoked to now be true
           const hasMaxBeenInvoked3 =
@@ -590,6 +590,42 @@ for (const coreContractName of coreContractsToTest) {
       });
     });
 
+    describe("tryPopulateNextToken", async function () {
+      it("reverts when project is not configured", async function () {
+        const config = await loadFixture(_beforeEach);
+        // un-configure project zero
+        await config.minter
+          .connect(config.accounts.artist)
+          .resetAuctionDetails(config.projectZero);
+        // expect revert when trying to populate next token on project zero
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .tryPopulateNextToken(config.projectZero),
+          "Project not configured"
+        );
+      });
+
+      it("does not revert when project is configured, and next token is already populated", async function () {
+        const config = await loadFixture(_beforeEach);
+        // verify next token number is populated
+        const projectConfig = await config.minter.projectConfigurationDetails(
+          config.projectZero
+        );
+        expect(projectConfig.nextTokenNumberIsPopulated).to.be.true;
+        // expect no revert when trying to populate next token on project zero,
+        // when one is already populated
+        await config.minter
+          .connect(config.accounts.artist)
+          .tryPopulateNextToken(config.projectZero);
+      });
+
+      // @dev do not think it is possible to test calling tryPopulateNextToken when a next token is not populated,
+      // when max invocations is reached (as the minter attempts to auto-populate next token when max invocations
+      // is changed). Therefore there is no test for that case, but the function remains in the contract in case
+      // of an unforseen bug or emergency situation.
+    });
+
     describe("togglePurchaseToDisabled", async function () {
       it("reverts when calling (Action not supported)", async function () {
         const config = await loadFixture(_beforeEach);
@@ -603,7 +639,7 @@ for (const coreContractName of coreContractsToTest) {
     });
 
     describe("settleAuction", async function () {
-      it("reverts when auction not initialized", async function () {
+      it("reverts when no auction initialized on project (for clear error messaging)", async function () {
         const config = await loadFixture(_beforeEach);
         const targetToken = BigNumber.from(
           config.projectZeroTokenZero.toString()
@@ -614,6 +650,11 @@ for (const coreContractName of coreContractsToTest) {
             .settleAuction(targetToken),
           "Auction not initialized"
         );
+        // verify no state change
+        const projectconfig = await config.minter.projectConfigurationDetails(
+          config.projectZero
+        );
+        expect(projectconfig.auction.initialized).to.be.false;
       });
 
       it("reverts when auction not ended", async function () {
@@ -623,6 +664,10 @@ for (const coreContractName of coreContractsToTest) {
         const targetToken = BigNumber.from(
           config.projectZeroTokenZero.toString()
         );
+        const projectConfig = await config.minter.projectConfigurationDetails(
+          config.projectZero
+        );
+        expect(projectConfig.auction.tokenId).to.be.equal(targetToken);
         await expectRevert(
           config.minter
             .connect(config.accounts.user)
@@ -734,20 +779,26 @@ for (const coreContractName of coreContractsToTest) {
       describe("CHECKS", async function () {
         it("reverts when attempting to initialize auction after project has reached max invocations", async function () {
           const config = await loadFixture(_beforeEach);
-          // limit project zero to 0 invocations
+          // limit project zero to 1 invocations (0 remaining)
           await config.minter
             .connect(config.accounts.artist)
-            .manuallyLimitProjectMaxInvocations(config.projectZero, 0);
-          // attempt to initialize token zero's auction, which should revert
+            .manuallyLimitProjectMaxInvocations(config.projectZero, 1);
+          // attempt to initialize token zero's auction, which not revert, but also not mint a new token
+          // to the project's next token slot
           const targetToken = BigNumber.from(
             config.projectZeroTokenZero.toString()
           );
-          await expectRevert(
-            config.minter
-              .connect(config.accounts.artist)
-              .createBid(targetToken, { value: config.basePrice }),
-            "Project max has been invoked"
+          // advance to auction start time
+          await ethers.provider.send("evm_mine", [config.startTime]);
+          await config.minter
+            .connect(config.accounts.artist)
+            .createBid(targetToken, { value: config.basePrice });
+          // confirm that the project's next token slot is not populated
+          const projectConfig = await config.minter.projectConfigurationDetails(
+            config.projectZero
           );
+          expect(projectConfig.nextTokenNumberIsPopulated).to.be.false;
+          expect(projectConfig.nextTokenNumber).to.equal(0);
         });
 
         it("reverts when project is not configured", async function () {
@@ -850,10 +901,10 @@ for (const coreContractName of coreContractsToTest) {
         // and then the original minter attempts to initialize an auction
         it("reverts when minter max invocations is exceeded on a different minter", async function () {
           const config = await loadFixture(_beforeEach);
-          // limit minter to 1 invocation
+          // limit minter to 2 invocations (1 remaining)
           await config.minter
             .connect(config.accounts.artist)
-            .manuallyLimitProjectMaxInvocations(config.projectZero, 1);
+            .manuallyLimitProjectMaxInvocations(config.projectZero, 2);
           // switch to a different minter
           const minter2 = await deployAndGet(config, "MinterSetPriceV4", [
             config.genArt721Core.address,
@@ -878,16 +929,20 @@ for (const coreContractName of coreContractsToTest) {
             .setMinterForProject(config.projectZero, config.minter.address);
           // advance time to auction start time
           await ethers.provider.send("evm_mine", [config.startTime]);
-          // initialize the auction with a msg.value 1 wei greater than minimum bid
+          // initialize the auction
           const targetToken = BigNumber.from(
-            config.projectZeroTokenOne.toString()
+            config.projectZeroTokenZero.toString()
           );
-          await expectRevert(
-            config.minter.connect(config.accounts.user).createBid(targetToken, {
+          await config.minter
+            .connect(config.accounts.user)
+            .createBid(targetToken, {
               value: config.basePrice,
-            }),
-            "Maximum invocations reached"
+            });
+          // confirm that new token was not minted to next token number
+          const projectConfig = await config.minter.projectConfigurationDetails(
+            config.projectZero
           );
+          expect(projectConfig.nextTokenNumberIsPopulated).to.be.false;
         });
       });
 
@@ -1011,6 +1066,28 @@ for (const coreContractName of coreContractsToTest) {
             .createBid(targetToken, {
               value: config.basePrice.mul(105).div(100),
             });
+        });
+
+        it("reverts if need to initialize auction, but no next token number is available", async function () {
+          const config = await loadFixture(_beforeEach);
+          // artist limits number of tokens to 1
+          await config.minter
+            .connect(config.accounts.artist)
+            .manuallyLimitProjectMaxInvocations(config.projectZero, 1);
+          // advance time to auction start time
+          await initializeProjectZeroTokenZeroAuctionAndSettle(config);
+          // expect bid on token two to revert
+          const targetTokenOne = BigNumber.from(
+            config.projectZeroTokenOne.toString()
+          );
+          await expectRevert(
+            config.minter
+              .connect(config.accounts.user)
+              .createBid(targetTokenOne, {
+                value: config.basePrice.mul(11).div(10),
+              }),
+            "Max invocations reached"
+          );
         });
       });
 
@@ -1163,7 +1240,28 @@ for (const coreContractName of coreContractsToTest) {
       });
     });
 
-    describe("settleAndCreateBid", function () {
+    describe("settleAuctionAndCreateBid", function () {
+      it("requires settle token and bid token be in same project", async function () {
+        const config = await loadFixture(_beforeEach);
+        // initialize and advance to end of auction for token zero
+        await initializeProjectZeroTokenZeroAuctionAndAdvanceToEnd(config);
+        // expect revert when calling settleAuctionAndCreateBid with tokens from different projects
+        const settleTokenId = BigNumber.from(
+          config.projectZeroTokenZero.toString()
+        );
+        const initializeTokenId = BigNumber.from(
+          config.projectOneTokenZero.toString()
+        );
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user2)
+            .settleAuctionAndCreateBid(settleTokenId, initializeTokenId, {
+              value: config.basePrice,
+            }),
+          "Only tokens in same project"
+        );
+      });
+
       it("settles and initializes an auction", async function () {
         const config = await loadFixture(_beforeEach);
         // initialize and advance to end of auction for token zero
@@ -1183,7 +1281,7 @@ for (const coreContractName of coreContractsToTest) {
         await expect(
           config.minter
             .connect(config.accounts.user2)
-            .settleAndCreateBid(settleTokenId, initializeTokenId, {
+            .settleAuctionAndCreateBid(settleTokenId, initializeTokenId, {
               value: config.basePrice,
             })
         )
@@ -1204,6 +1302,17 @@ for (const coreContractName of coreContractsToTest) {
         );
         expect(newAuction.settled).to.equal(false);
         expect(newAuction.initialized).to.equal(true);
+        // minted next token and populated in project config
+        const projectConfig = await config.minter.projectConfig(
+          config.projectZero
+        );
+        expect(projectConfig.nextTokenNumberIsPopulated).to.equal(true);
+        const targetNextTokenId = BigNumber.from(
+          config.projectZeroTokenTwo.toString()
+        );
+        expect(
+          projectConfig.nextTokenNumber + config.projectZero * 1_000_000
+        ).to.equal(targetNextTokenId);
       });
 
       it("initializes new auction when frontrun by another settlement", async function () {
@@ -1227,7 +1336,7 @@ for (const coreContractName of coreContractsToTest) {
         await expect(
           config.minter
             .connect(config.accounts.user2)
-            .settleAndCreateBid(settleTokenId, initializeTokenId, {
+            .settleAuctionAndCreateBid(settleTokenId, initializeTokenId, {
               value: config.basePrice,
             })
         )
@@ -1238,6 +1347,17 @@ for (const coreContractName of coreContractsToTest) {
             config.basePrice,
             newTargetTime + config.defaultAuctionLengthSeconds
           );
+        // minted next token and populated in project config
+        const projectConfig = await config.minter.projectConfig(
+          config.projectZero
+        );
+        expect(projectConfig.nextTokenNumberIsPopulated).to.equal(true);
+        const targetNextTokenId = BigNumber.from(
+          config.projectZeroTokenTwo.toString()
+        );
+        expect(
+          projectConfig.nextTokenNumber + config.projectZero * 1_000_000
+        ).to.equal(targetNextTokenId);
       });
 
       it("attempts to place new bid when frontrun by another settlement and auction initialization", async function () {
@@ -1265,7 +1385,7 @@ for (const coreContractName of coreContractsToTest) {
         await expect(
           config.minter
             .connect(config.accounts.user2)
-            .settleAndCreateBid(settleTokenId, initializeTokenId, {
+            .settleAuctionAndCreateBid(settleTokenId, initializeTokenId, {
               value: newValidBidValue,
             })
         )
@@ -1275,6 +1395,56 @@ for (const coreContractName of coreContractsToTest) {
             config.accounts.user2.address,
             newValidBidValue
           );
+      });
+    });
+
+    describe("handles next token well when project reaches max invocations", function () {
+      it("auto-populates next token number when project max invocations are manually increased", async function () {
+        const config = await loadFixture(_beforeEach);
+        // set project max invocations to 1
+        await config.minter
+          .connect(config.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(config.projectZero, 1);
+        // initialize and advance to end of auction for token zero
+        await initializeProjectZeroTokenZeroAuctionAndAdvanceToEnd(config);
+        // confirm that next token number is not populated
+        const initialProjectConfig = await config.minter.projectConfig(
+          config.projectZero
+        );
+        expect(initialProjectConfig.nextTokenNumberIsPopulated).to.equal(false);
+        // artist increases max invocations
+        await config.minter
+          .connect(config.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(config.projectZero, 2);
+        // confirm that next token number is populated
+        const updatedProjectConfig = await config.minter.projectConfig(
+          config.projectZero
+        );
+        expect(updatedProjectConfig.nextTokenNumberIsPopulated).to.equal(true);
+      });
+
+      it("auto-populates next token number when project max invocations are synced to core contract value", async function () {
+        const config = await loadFixture(_beforeEach);
+        // set project max invocations to 1
+        await config.minter
+          .connect(config.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(config.projectZero, 1);
+        // initialize and advance to end of auction for token zero
+        await initializeProjectZeroTokenZeroAuctionAndAdvanceToEnd(config);
+        // confirm that next token number is not populated
+        const initialProjectConfig = await config.minter.projectConfig(
+          config.projectZero
+        );
+        expect(initialProjectConfig.nextTokenNumberIsPopulated).to.equal(false);
+        // artist increases max invocations to equal core contract value
+        await config.minter
+          .connect(config.accounts.artist)
+          .setProjectMaxInvocations(config.projectZero);
+        // confirm that next token number is populated
+        const updatedProjectConfig = await config.minter.projectConfig(
+          config.projectZero
+        );
+        expect(updatedProjectConfig.nextTokenNumberIsPopulated).to.equal(true);
       });
     });
 
@@ -1310,10 +1480,11 @@ for (const coreContractName of coreContractsToTest) {
             .updateProjectMaxInvocations(config.projectZero, 1);
           // initialize auction, which mints token zero
           await initializeProjectZeroTokenZeroAuctionAndAdvanceToEnd(config);
-          // view function to get next token ID should revert, since project has reached max invocations
+          // view function to get next token ID should revert, since there is no next token, and current auction has
+          // reached end time
           await expectRevert(
             config.minter.getTokenToBid(config.projectZero),
-            "Core: Reached max invocations"
+            "Next token number not populated"
           );
         });
 
@@ -1325,10 +1496,10 @@ for (const coreContractName of coreContractsToTest) {
             .manuallyLimitProjectMaxInvocations(config.projectZero, 1);
           // initialize auction, which mints token zero
           await initializeProjectZeroTokenZeroAuctionAndAdvanceToEnd(config);
-          // view function to get next token ID should revert, since project has reached max invocations
+          // view function to get next token ID should revert, since project has reached max invocations on minter
           await expectRevert(
             config.minter.getTokenToBid(config.projectZero),
-            "Minter: Reached max invocations"
+            "Next token number not populated"
           );
         });
 
@@ -1372,6 +1543,45 @@ for (const coreContractName of coreContractsToTest) {
             config.projectZero
           );
           expect(returnedExpectedTokenId).to.equal(targetExpectedTokenId);
+        });
+      });
+
+      describe("getNextTokenId", function () {
+        it("reverts when next token is not populated", async function () {
+          const config = await loadFixture(_beforeEach);
+          // set project max invocations to 1
+          await config.minter
+            .connect(config.accounts.artist)
+            .manuallyLimitProjectMaxInvocations(config.projectZero, 1);
+          // initialize auction, which mints token zero
+          await initializeProjectZeroTokenZeroAuction(config);
+          // view function to get next token ID should revert, since project has reached max invocations
+          // and next token is not populated
+          await expectRevert(
+            config.minter.getNextTokenId(config.projectZero),
+            "Next token not populated"
+          );
+        });
+
+        it("reverts when a project is not initialized", async function () {
+          const config = await loadFixture(_beforeEach);
+          await expectRevert(
+            config.minter.getNextTokenId(config.projectOne),
+            "Next token not populated"
+          );
+        });
+
+        it("returns the next token ID when next token is populated", async function () {
+          const config = await loadFixture(_beforeEach);
+          // initialize auction, which mints token zero and populates next token
+          await initializeProjectZeroTokenZeroAuction(config);
+          const targetNextTokenId = BigNumber.from(
+            config.projectZeroTokenOne.toString()
+          );
+          const returnedNextTokenId = await config.minter.getNextTokenId(
+            config.projectZero
+          );
+          expect(returnedNextTokenId).to.equal(targetNextTokenId);
         });
       });
 
@@ -1483,7 +1693,7 @@ for (const coreContractName of coreContractsToTest) {
     });
 
     describe("reentrancy", function () {
-      describe("createBid_4cM", function () {
+      describe("createBid_l34", function () {
         it("is nonReentrant", async function () {
           const config = await loadFixture(_beforeEach);
           const autoBidder = await deployAndGet(
