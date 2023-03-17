@@ -10,6 +10,7 @@ import {
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+import { BigNumber } from "ethers";
 
 import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../util/constants";
 
@@ -197,6 +198,9 @@ describe("GenArt721CoreV2_EngineDAMinter_Integration", async function () {
       const partnerBalance = await config.accounts.deployer2.getBalance();
 
       // pricePerTokenInWei setup above to be 1 ETH
+      const targetToken = BigNumber.from(
+        config.projectZeroTokenZero.toString()
+      );
       await expect(
         config.minter
           .connect(config.accounts.user)
@@ -208,7 +212,7 @@ describe("GenArt721CoreV2_EngineDAMinter_Integration", async function () {
         .withArgs(
           constants.ZERO_ADDRESS,
           config.accounts.user.address,
-          config.projectZeroTokenZero
+          targetToken
         );
 
       config.projectZeroInfo = await config.genArt721Core.projectTokenInfo(
@@ -257,6 +261,9 @@ describe("GenArt721CoreV2_EngineDAMinter_Integration", async function () {
       const partnerBalance = await config.accounts.deployer2.getBalance();
 
       // pricePerTokenInWei setup above to be 1 ETH
+      const targetToken = BigNumber.from(
+        config.projectZeroTokenZero.toString()
+      );
       await expect(
         config.minter
           .connect(config.accounts.user)
@@ -268,7 +275,7 @@ describe("GenArt721CoreV2_EngineDAMinter_Integration", async function () {
         .withArgs(
           constants.ZERO_ADDRESS,
           config.accounts.user.address,
-          config.projectZeroTokenZero
+          targetToken
         );
 
       config.projectZeroInfo = await config.genArt721Core.projectTokenInfo(
@@ -320,6 +327,9 @@ describe("GenArt721CoreV2_EngineDAMinter_Integration", async function () {
       const partnerBalance = await config.accounts.deployer2.getBalance();
 
       // pricePerTokenInWei setup above to be 1 ETH
+      const targetToken = BigNumber.from(
+        config.projectZeroTokenZero.toString()
+      );
       await expect(
         config.minter
           .connect(config.accounts.user)
@@ -331,7 +341,7 @@ describe("GenArt721CoreV2_EngineDAMinter_Integration", async function () {
         .withArgs(
           constants.ZERO_ADDRESS,
           config.accounts.user.address,
-          config.projectZeroTokenZero
+          targetToken
         );
 
       const projectZeroInfo = await config.genArt721Core.projectTokenInfo(
