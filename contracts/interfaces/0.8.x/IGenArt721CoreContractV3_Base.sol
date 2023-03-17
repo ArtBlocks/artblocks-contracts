@@ -115,6 +115,8 @@ interface IGenArt721CoreContractV3_Base is IManifold {
             bool locked
         );
 
+    function tokenIdToHash(uint256 _tokenId) external view returns (bytes32);
+
     // function to set a token's hash (must be guarded)
     function setTokenHash_8PT(uint256 _tokenId, bytes32 _hash) external;
 
