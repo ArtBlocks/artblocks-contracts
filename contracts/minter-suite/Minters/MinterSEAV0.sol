@@ -48,6 +48,7 @@ import "@openzeppelin-4.7/contracts/utils/math/Math.sol";
  * - updateAllowableAuctionDurationSeconds
  * - updateMinterMinBidIncrementPercentage
  * - updateMinterTimeBufferSeconds
+ * - ejectNextTokenTo
  * ----------------------------------------------------------------------------
  * The following functions are restricted to a project's artist:
  * - setProjectMaxInvocations
@@ -476,6 +477,44 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         // @dev do not affect next token or max invocations
 
         emit ResetAuctionDetails(_projectId);
+    }
+
+    /**
+     * @notice Admin-only function that ejects a project's "next token" from
+     * the minter and sends it to the input `_to` address.
+     * This function is only intended for use in the edge case where the minter
+     * has a "next token" assigned to a project, but the project has been reset
+     * via `resetAuctionDetails`, and the artist does not want an auction to be
+     * started for the "next token". This function also protects against the
+     * unforseen case where the minter is in an unexpected state where it has a
+     * "next token" assigned to a project, but for some reason the project is
+     * unable to begin a new auction due to a bug.
+     */
+    function ejectNextTokenTo(uint256 _projectId, address _to) external {
+        _onlyCoreAdminACL(this.ejectNextTokenTo.selector);
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        // CHECKS
+        // only if project is not configured (i.e. artist called
+        // `resetAuctionDetails`)
+        // @dev we use `basePrice` as a gas-efficient indicator of whether
+        // auctions have been configured for a project.
+        require(_projectConfig.basePrice == 0, "Only unconfigured projects");
+        // only if minter has a next token assigned
+        require(
+            _projectConfig.nextTokenNumberIsPopulated == true,
+            "No next token"
+        );
+        // EFFECTS
+        _projectConfig.nextTokenNumberIsPopulated = false;
+        // INTERACTIONS
+        // @dev overflow automatically handled by Sol ^0.8.0
+        uint256 nextTokenId = (_projectId * ONE_MILLION) +
+            _projectConfig.nextTokenNumber;
+        IERC721(genArt721CoreAddress).transferFrom(
+            address(this),
+            _to,
+            nextTokenId
+        );
     }
 
     /**
