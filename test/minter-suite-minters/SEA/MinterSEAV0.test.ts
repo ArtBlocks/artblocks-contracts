@@ -525,6 +525,156 @@ for (const coreContractName of coreContractsToTest) {
     });
 
     describe("Artist/Admin configuring", async function () {
+      describe("ejectNextTokenTo", async function () {
+        it("does not allow artist to call", async function () {
+          const config = await loadFixture(_beforeEach);
+          await expectRevert(
+            config.minter
+              .connect(config.accounts.artist)
+              .ejectNextTokenTo(
+                config.projectZero,
+                config.accounts.user.address
+              ),
+            "Only Core AdminACL allowed"
+          );
+        });
+
+        it("allows admin to call", async function () {
+          const config = await loadFixture(_beforeEach);
+          // artist resets auction details
+          await config.minter
+            .connect(config.accounts.artist)
+            .resetAuctionDetails(config.projectZero);
+          // admin ejects next token to user
+          await config.minter
+            .connect(config.accounts.deployer)
+            .ejectNextTokenTo(config.projectZero, config.accounts.user.address);
+        });
+
+        it("allows admin to call", async function () {
+          const config = await loadFixture(_beforeEach);
+          // artist resets auction details
+          await config.minter
+            .connect(config.accounts.artist)
+            .resetAuctionDetails(config.projectZero);
+          // admin ejects next token to user
+          await config.minter
+            .connect(config.accounts.deployer)
+            .ejectNextTokenTo(config.projectZero, config.accounts.user.address);
+        });
+
+        it("does not allow when project is still configured", async function () {
+          const config = await loadFixture(_beforeEach);
+          await expectRevert(
+            config.minter
+              .connect(config.accounts.deployer)
+              .ejectNextTokenTo(
+                config.projectZero,
+                config.accounts.user.address
+              ),
+            "Only unconfigured projects"
+          );
+        });
+
+        it("does not allow when a next token is not populated", async function () {
+          const config = await loadFixture(_beforeEach);
+          // artist sets minter max invocations to 1
+          await config.minter
+            .connect(config.accounts.artist)
+            .manuallyLimitProjectMaxInvocations(config.projectZero, 1);
+          // token 1's auction is began
+          await initializeProjectZeroTokenZeroAuction(config);
+          // artist resets auction details
+          await config.minter
+            .connect(config.accounts.artist)
+            .resetAuctionDetails(config.projectZero);
+          // confirm no next token
+          const projectConfig = await config.minter.projectConfigurationDetails(
+            config.projectZero
+          );
+          expect(projectConfig.nextTokenNumberIsPopulated).to.be.false;
+          // expect failure when admin attempts to eject next token
+          await expectRevert(
+            config.minter
+              .connect(config.accounts.deployer)
+              .ejectNextTokenTo(
+                config.projectZero,
+                config.accounts.user.address
+              ),
+            "No next token"
+          );
+        });
+
+        it("ejects token to the `_to` address", async function () {
+          const config = await loadFixture(_beforeEach);
+          // artist resets auction details
+          await config.minter
+            .connect(config.accounts.artist)
+            .resetAuctionDetails(config.projectZero);
+          // admin ejects next token to user
+          await config.minter
+            .connect(config.accounts.deployer)
+            .ejectNextTokenTo(config.projectZero, config.accounts.user.address);
+          // confirm next token is owned by user
+          const targetToken = BigNumber.from(
+            config.projectZeroTokenZero.toString()
+          );
+          const tokenOwner = await config.genArt721Core.ownerOf(targetToken);
+          expect(tokenOwner).to.equal(config.accounts.user.address);
+        });
+
+        it("emits `ProjectNextTokenEjected` event", async function () {
+          const config = await loadFixture(_beforeEach);
+          // artist resets auction details
+          await config.minter
+            .connect(config.accounts.artist)
+            .resetAuctionDetails(config.projectZero);
+          // admin ejects next token to user end event is emitted
+          await expect(
+            config.minter
+              .connect(config.accounts.deployer)
+              .ejectNextTokenTo(
+                config.projectZero,
+                config.accounts.user.address
+              )
+          )
+            .to.emit(config.minter, "ProjectNextTokenEjected")
+            .withArgs(config.projectZero);
+        });
+
+        it("updates state: sets next token is populated to false", async function () {
+          const config = await loadFixture(_beforeEach);
+          // artist resets auction details
+          await config.minter
+            .connect(config.accounts.artist)
+            .resetAuctionDetails(config.projectZero);
+          // confirm next token is populated
+          let projectConfig = await config.minter.projectConfigurationDetails(
+            config.projectZero
+          );
+          expect(projectConfig.nextTokenNumberIsPopulated).to.be.true;
+          // admin ejects next token to user
+          await config.minter
+            .connect(config.accounts.deployer)
+            .ejectNextTokenTo(config.projectZero, config.accounts.user.address);
+          // confirm next token is no longer populated
+          projectConfig = await config.minter.projectConfigurationDetails(
+            config.projectZero
+          );
+          expect(projectConfig.nextTokenNumberIsPopulated).to.be.false;
+          // expect revert if admin attempts to eject next token again
+          await expectRevert(
+            config.minter
+              .connect(config.accounts.deployer)
+              .ejectNextTokenTo(
+                config.projectZero,
+                config.accounts.user.address
+              ),
+            "No next token"
+          );
+        });
+      });
+
       describe("resetAuctionDetails", async function () {
         it("allows admin to call", async function () {
           const config = await loadFixture(_beforeEach);
@@ -692,7 +842,7 @@ for (const coreContractName of coreContractsToTest) {
         expect(receipt.logs.length).to.equal(0);
       });
 
-      it("settles a completed token auction, splits revenue, and emits event", async function () {
+      it("settles a completed token auction, splits revenue, emits event, and distributes token", async function () {
         const config = await loadFixture(_beforeEach);
         // initialize an auction for token zero
         await initializeProjectZeroTokenZeroAuction(config);
@@ -731,6 +881,9 @@ for (const coreContractName of coreContractsToTest) {
         expect(deployerBalanceAfter).to.equal(
           deployerBalanceBefore.add(config.basePrice.mul(10).div(100))
         );
+        // verify token is owned by user
+        const tokenOwner = await config.genArt721Core.ownerOf(targetToken);
+        expect(tokenOwner).to.equal(config.accounts.user.address);
       });
 
       it("returns early when attempting to settle an already-settled auction", async function () {

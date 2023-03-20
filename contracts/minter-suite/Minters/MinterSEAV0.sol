@@ -35,6 +35,18 @@ import "@openzeppelin-4.7/contracts/utils/math/Math.sol";
  * ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ *
  * ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ *
  *********************************
+ * @notice Token Ownership:
+ * This minter contract may own up to two tokens at a time for a given project.
+ * The first possible token owned is the token that is currently being 
+ * auctioned. During the auction, the token is owned by the minter contract.
+ * Once the auction ends, the token is transferred to the winning bidder via a
+ * call to "settle" the auction.
+ * The second possible token owned is the token that will be auctioned next.
+ * This token is minted to and owned by the minter contract whenever possible
+ * (i.e. when the project's max invocations has not been reached) when an
+ * artist configures their project on this minter, or when a new auction is
+ * started. The purpose of this token is to allow users to have a preview of
+ * the next token that will be auctioned, even before the auction has started.
  * @notice Privileged Roles and Ownership:
  * This contract is designed to be managed, with limited powers.
  * Privileged roles and abilities are controlled by the core contract's Admin
@@ -48,6 +60,7 @@ import "@openzeppelin-4.7/contracts/utils/math/Math.sol";
  * - updateAllowableAuctionDurationSeconds
  * - updateMinterMinBidIncrementPercentage
  * - updateMinterTimeBufferSeconds
+ * - ejectNextTokenTo
  * ----------------------------------------------------------------------------
  * The following functions are restricted to a project's artist:
  * - setProjectMaxInvocations
@@ -476,6 +489,52 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         // @dev do not affect next token or max invocations
 
         emit ResetAuctionDetails(_projectId);
+    }
+
+    /**
+     * @notice Admin-only function that ejects a project's "next token" from
+     * the minter and sends it to the input `_to` address.
+     * This function is only intended for use in the edge case where the minter
+     * has a "next token" assigned to a project, but the project has been reset
+     * via `resetAuctionDetails`, and the artist does not want an auction to be
+     * started for the "next token". This function also protects against the
+     * unforseen case where the minter is in an unexpected state where it has a
+     * "next token" assigned to a project, but for some reason the project is
+     * unable to begin a new auction due to a bug.
+     * @dev only a single token may be actively assigned to a project's "next
+     * token" slot at any given time. This function will eject the token, and
+     * no further tokens will be assigned to the project's "next token" slot,
+     * unless the project is subsequently reconfigured via an artist call to
+     * `configureFutureAuctions`.
+     * @param _projectId Project ID to eject next token for.
+     * @param _to Address to send the ejected token to.
+     */
+    function ejectNextTokenTo(uint256 _projectId, address _to) external {
+        _onlyCoreAdminACL(this.ejectNextTokenTo.selector);
+        ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        // CHECKS
+        // only if project is not configured (i.e. artist called
+        // `resetAuctionDetails`)
+        // @dev we use `basePrice` as a gas-efficient indicator of whether
+        // auctions have been configured for a project.
+        require(_projectConfig.basePrice == 0, "Only unconfigured projects");
+        // only if minter has a next token assigned
+        require(
+            _projectConfig.nextTokenNumberIsPopulated == true,
+            "No next token"
+        );
+        // EFFECTS
+        _projectConfig.nextTokenNumberIsPopulated = false;
+        // INTERACTIONS
+        // @dev overflow automatically handled by Sol ^0.8.0
+        uint256 nextTokenId = (_projectId * ONE_MILLION) +
+            _projectConfig.nextTokenNumber;
+        IERC721(genArt721CoreAddress).transferFrom(
+            address(this),
+            _to,
+            nextTokenId
+        );
+        emit ProjectNextTokenEjected(_projectId);
     }
 
     /**
