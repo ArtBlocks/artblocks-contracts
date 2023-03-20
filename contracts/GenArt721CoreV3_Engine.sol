@@ -1539,6 +1539,7 @@ contract GenArt721CoreV3_Engine is
     )
         external
         view
+        override(IGenArt721CoreContractV3_Base, IDependencyRegistryCompatibleV0)
         returns (
             string memory scriptTypeAndVersion,
             string memory aspectRatio,
