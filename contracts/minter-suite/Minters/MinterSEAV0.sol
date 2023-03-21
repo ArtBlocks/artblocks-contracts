@@ -634,6 +634,8 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
             // return early and do not modify state
             return;
         }
+        // @dev important that the following check is after the early return
+        // block above to maintain desired behavior
         require(block.timestamp > _auction.endTime, "Auction not yet ended");
         // EFFECTS
         _auction.settled = true;
