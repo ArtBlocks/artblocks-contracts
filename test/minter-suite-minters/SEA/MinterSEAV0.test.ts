@@ -576,6 +576,55 @@ for (const coreContractName of coreContractsToTest) {
             .withArgs(301);
         });
       });
+
+      describe("updateRefundGasLimit", async function () {
+        it("allows admin to call", async function () {
+          const config = await loadFixture(_beforeEach);
+          await config.minter
+            .connect(config.accounts.deployer)
+            .updateRefundGasLimit(10_000);
+        });
+
+        it("does not allow non-admin to call", async function () {
+          const config = await loadFixture(_beforeEach);
+          await expectRevert(
+            config.minter
+              .connect(config.accounts.artist)
+              .updateRefundGasLimit(10_000),
+            "Only Core AdminACL allowed"
+          );
+        });
+
+        it("requires >= 5_000", async function () {
+          const config = await loadFixture(_beforeEach);
+          await expectRevert(
+            config.minter
+              .connect(config.accounts.deployer)
+              .updateRefundGasLimit(4_999),
+            "Only gte 5_000"
+          );
+        });
+
+        it("updates state with changes", async function () {
+          const config = await loadFixture(_beforeEach);
+          await config.minter
+            .connect(config.accounts.deployer)
+            .updateRefundGasLimit(10_000);
+          const minterConfig = await config.minter.minterConfigurationDetails();
+          expect(minterConfig.minterRefundGasLimit_).to.equal(10_000);
+        });
+
+        it("emits event", async function () {
+          const config = await loadFixture(_beforeEach);
+          await expect(
+            config.minter
+              .connect(config.accounts.deployer)
+              .updateRefundGasLimit(10_000)
+          )
+            .to.emit(config.minter, "MinterRefundGasLimitUpdated")
+            .withArgs(10_000);
+        });
+      });
     });
 
     describe("Artist/Admin configuring", async function () {

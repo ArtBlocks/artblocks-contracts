@@ -167,6 +167,10 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
     // @dev used when determining the buffer time for any new bid on the
     // minter, across all projects
     uint32 minterTimeBufferSeconds = 120;
+    // gas limit for refunding ETH to bidders
+    // configurable by admin, default to 30,000
+    // max uint16 = 65,535 to ensure bid refund gas limit remains reasonable
+    uint16 minterRefundGasLimit = 30_000;
 
     // modifier-like internal functions
     // @dev we use internal functions instead of modifiers to reduce contract
@@ -391,6 +395,27 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         // EFFECTS
         minterTimeBufferSeconds = _minterTimeBufferSeconds;
         emit MinterTimeBufferUpdated(_minterTimeBufferSeconds);
+    }
+
+    /**
+     * @notice Sets the gas limit during ETH refunds when a collector is
+     * outbid. This value should be set to a value that is high enough to
+     * ensure that refunds are successful for commonly used wallets, but low
+     * enough to avoid excessive abuse of refund gas allowance during a new
+     * bid.
+     * @dev max gas limit is 63,535, which is considered a future-safe upper
+     * bound.
+     * @param _minterRefundGasLimit Gas limit to set for refunds. Must be between
+     * 5,000 and max uint16 (63,535).
+     */
+    function updateRefundGasLimit(uint16 _minterRefundGasLimit) external {
+        _onlyCoreAdminACL(this.updateRefundGasLimit.selector);
+        // CHECKS
+        // @dev max gas limit implicitly checked by using uint16 input arg
+        require(_minterRefundGasLimit >= 5000, "Only gte 5_000");
+        // EFFECTS
+        minterRefundGasLimit = _minterRefundGasLimit;
+        emit MinterRefundGasLimitUpdated(_minterRefundGasLimit);
     }
 
     /**
@@ -672,7 +697,8 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
      * ends, the funds will be noncustodially returned to the bidder's address,
      * `msg.sender`. A fallback method of sending funds back to the bidder via
      * WETH is used if the bidder address is not accepting ETH (preventing
-     * denial of service attacks) within a 30_000 gas limit.
+     * denial of service attacks) within an admin-configured gas limit of
+     * `minterRefundGasLimit`.
      * Note that the use of `_tokenId` is to prevent the possibility of
      * transactions that are stuck in the pending pool for long periods of time
      * from unintentionally bidding on auctions for future tokens.
@@ -777,6 +803,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
      * @return maxAuctionDurationSeconds_ Maximum auction duration in seconds
      * @return minterMinBidIncrementPercentage_ Minimum bid increment percentage
      * @return minterTimeBufferSeconds_ Buffer time in seconds
+     * @return minterRefundGasLimit_ Gas limit for refunding ETH
      */
     function minterConfigurationDetails()
         external
@@ -785,13 +812,15 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
             uint32 minAuctionDurationSeconds_,
             uint32 maxAuctionDurationSeconds_,
             uint8 minterMinBidIncrementPercentage_,
-            uint32 minterTimeBufferSeconds_
+            uint32 minterTimeBufferSeconds_,
+            uint16 minterRefundGasLimit_
         )
     {
         minAuctionDurationSeconds_ = minAuctionDurationSeconds;
         maxAuctionDurationSeconds_ = maxAuctionDurationSeconds;
         minterMinBidIncrementPercentage_ = minterMinBidIncrementPercentage;
         minterTimeBufferSeconds_ = minterTimeBufferSeconds;
+        minterRefundGasLimit_ = minterRefundGasLimit;
     }
 
     /**
@@ -1113,7 +1142,9 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
      * @notice Transfer ETH. If the ETH transfer fails, wrap the ETH and send it as WETH.
      */
     function _safeTransferETHWithFallback(address to, uint256 amount) internal {
-        (bool success, ) = to.call{value: amount, gas: 30_000}("");
+        (bool success, ) = to.call{value: amount, gas: minterRefundGasLimit}(
+            ""
+        );
         if (!success) {
             weth.deposit{value: amount}();
             weth.transfer(to, amount);

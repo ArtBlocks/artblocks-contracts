@@ -44,6 +44,9 @@ interface IFilteredMinterSEAV0 is IFilteredMinterV2 {
     /// Admin-controlled time buffer updated
     event MinterTimeBufferUpdated(uint32 minterTimeBufferSeconds);
 
+    // Admin-controlled refund gas limit updated
+    event MinterRefundGasLimitUpdated(uint16 refundGasLimit);
+
     /// Artist configured future auction details
     event ConfiguredFutureAuctions(
         uint256 indexed projectId,
@@ -115,7 +118,8 @@ interface IFilteredMinterSEAV0 is IFilteredMinterV2 {
             uint32 minAuctionDurationSeconds_,
             uint32 maxAuctionDurationSeconds_,
             uint8 minterMinBidIncrementPercentage_,
-            uint32 minterTimeBufferSeconds_
+            uint32 minterTimeBufferSeconds_,
+            uint16 minterRefundGasLimit_
         );
 
     function projectConfigurationDetails(
