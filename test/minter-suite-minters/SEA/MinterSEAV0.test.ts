@@ -391,7 +391,7 @@ for (const coreContractName of coreContractsToTest) {
                 config.defaultAuctionLengthSeconds,
                 0
               ),
-            "Only base price gt 0"
+            "Only non-zero"
           );
         });
       });
@@ -432,7 +432,7 @@ for (const coreContractName of coreContractsToTest) {
             config.minter
               .connect(config.accounts.deployer)
               .updateAllowableAuctionDurationSeconds(0, 200),
-            "Only min gt 0"
+            "Only non-zero"
           );
         });
 
@@ -471,7 +471,7 @@ for (const coreContractName of coreContractsToTest) {
             config.minter
               .connect(config.accounts.deployer)
               .updateMinterMinBidIncrementPercentage(0),
-            "Only gt 0"
+            "Only non-zero"
           );
         });
 
@@ -509,7 +509,7 @@ for (const coreContractName of coreContractsToTest) {
             config.minter
               .connect(config.accounts.deployer)
               .updateMinterTimeBufferSeconds(0),
-            "Only gt 0"
+            "Only non-zero"
           );
         });
 

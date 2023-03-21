@@ -215,6 +215,11 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         );
     }
 
+    // function to require that a value is non-zero
+    function _onlyNonZero(uint256 _value) internal pure {
+        require(_value > 0, "Only non-zero");
+    }
+
     /**
      * @notice Initializes contract to be a Filtered Minter for
      * `_minterFilter`, integrated with Art Blocks core contract
@@ -335,11 +340,11 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
     ) external {
         _onlyCoreAdminACL(this.updateAllowableAuctionDurationSeconds.selector);
         // CHECKS
+        _onlyNonZero(_minAuctionDurationSeconds);
         require(
             _maxAuctionDurationSeconds > _minAuctionDurationSeconds,
             "Only max gt min"
         );
-        require(_minAuctionDurationSeconds > 0, "Only min gt 0");
         // EFFECTS
         minAuctionDurationSeconds = _minAuctionDurationSeconds;
         maxAuctionDurationSeconds = _maxAuctionDurationSeconds;
@@ -363,7 +368,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
     ) external {
         _onlyCoreAdminACL(this.updateMinterMinBidIncrementPercentage.selector);
         // CHECKS
-        require(_minterMinBidIncrementPercentage > 0, "Only gt 0");
+        _onlyNonZero(_minterMinBidIncrementPercentage);
         // EFFECTS
         minterMinBidIncrementPercentage = _minterMinBidIncrementPercentage;
         emit MinterMinBidIncrementPercentageUpdated(
@@ -382,7 +387,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
     ) external {
         _onlyCoreAdminACL(this.updateMinterTimeBufferSeconds.selector);
         // CHECKS
-        require(_minterTimeBufferSeconds > 0, "Only gt 0");
+        _onlyNonZero(_minterTimeBufferSeconds);
         // EFFECTS
         minterTimeBufferSeconds = _minterTimeBufferSeconds;
         emit MinterTimeBufferUpdated(_minterTimeBufferSeconds);
@@ -424,6 +429,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
     ) external {
         _onlyArtist(_projectId);
         // CHECKS
+        _onlyNonZero(_basePrice);
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         require(
             _timestampStart == 0 || block.timestamp < _timestampStart,
@@ -434,7 +440,6 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
                 (_auctionDurationSeconds <= maxAuctionDurationSeconds),
             "Auction duration out of range"
         );
-        require(_basePrice > 0, "Only base price gt 0");
         // EFFECTS
         _projectConfig.timestampStart = _timestampStart.toUint64();
         _projectConfig.auctionDurationSeconds = _auctionDurationSeconds
@@ -560,7 +565,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         // CHECKS
         // revert if project is not configured on this minter
         require(
-            projectConfig[_projectId].basePrice > 0,
+            _projectIsConfigured(projectConfig[_projectId]),
             "Project not configured"
         );
         // INTERACTIONS
@@ -975,7 +980,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         // ensure project auctions are configured
         // @dev base price of zero indicates auctions are not configured
         // because only base price of gt zero is allowed when configuring
-        require(_projectConfig.basePrice > 0, "Project not configured");
+        require(_projectIsConfigured(_projectConfig), "Project not configured");
         // only initialize new auctions if they meet the start time
         // requirement
         require(
@@ -1120,6 +1125,19 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
     }
 
     /**
+     * @notice Determines if a project is configured or not on this minter.
+     * Uses project config's `basePrice` to determine if project is configured,
+     * because `basePrice` is the only required field for a project to be
+     * non-zero when configured.
+     * @param _projectConfig The project config to check.
+     */
+    function _projectIsConfigured(
+        ProjectConfig storage _projectConfig
+    ) internal view returns (bool) {
+        return _projectConfig.basePrice > 0;
+    }
+
+    /**
      * @notice Gets price info to become the leading bidder on a token auction.
      * If artist has not called `configureFutureAuctions` and there is no
      * active token auction accepting bids, `isConfigured` will be false, and a
@@ -1159,7 +1177,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         Auction storage _auction = _projectConfig.activeAuction;
         // base price of zero not allowed when configuring auctions, so use it
         // as indicator of whether auctions are configured for the project
-        bool projectIsConfigured = (_projectConfig.basePrice > 0);
+        bool projectIsConfigured = _projectIsConfigured(_projectConfig);
         bool auctionIsAcceptingBids = (_auction.initialized &&
             block.timestamp < _auction.endTime);
         isConfigured = projectIsConfigured || auctionIsAcceptingBids;
