@@ -1727,7 +1727,7 @@ for (const coreContractName of coreContractsToTest) {
           // reached end time
           await expectRevert(
             config.minter.getTokenToBid(config.projectZero),
-            "Next token number not populated"
+            "Next token not populated"
           );
         });
 
@@ -1742,7 +1742,7 @@ for (const coreContractName of coreContractsToTest) {
           // view function to get next token ID should revert, since project has reached max invocations on minter
           await expectRevert(
             config.minter.getTokenToBid(config.projectZero),
-            "Next token number not populated"
+            "Next token not populated"
           );
         });
 

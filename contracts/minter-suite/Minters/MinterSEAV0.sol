@@ -923,13 +923,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
             return _auction.tokenId;
         }
         // otherwise, return the next expected token ID to be auctioned
-        if (!_projectConfig.nextTokenNumberIsPopulated) {
-            revert("Next token number not populated");
-        }
-        // @dev overflow automatically checked in Solidity ^0.8.0
-        uint256 nextTokenId = (_projectId * ONE_MILLION) +
-            _projectConfig.nextTokenNumber;
-        return nextTokenId;
+        return getNextTokenId(_projectId);
     }
 
     /**
@@ -941,7 +935,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
      */
     function getNextTokenId(
         uint256 _projectId
-    ) external view returns (uint256 nextTokenId) {
+    ) public view returns (uint256 nextTokenId) {
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         if (!_projectConfig.nextTokenNumberIsPopulated) {
             revert("Next token not populated");
