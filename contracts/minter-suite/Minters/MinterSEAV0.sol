@@ -102,7 +102,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
     string public constant minterType = "MinterSEAV0";
 
     /// minter version for this minter
-    string public constant minterVersion = "v0.0.0";
+    string public constant minterVersion = "v0.0.1";
 
     /// The public WETH contract address
     /// @dev WETH is used as fallback payment method when ETH transfers are
