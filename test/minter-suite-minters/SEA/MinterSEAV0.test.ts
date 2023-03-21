@@ -352,6 +352,27 @@ for (const coreContractName of coreContractsToTest) {
             );
         });
 
+        it("emits event", async function () {
+          const config = await loadFixture(_beforeEach);
+          await expect(
+            config.minter
+              .connect(config.accounts.artist)
+              .configureFutureAuctions(
+                config.projectZero,
+                config.startTime,
+                config.defaultAuctionLengthSeconds + 1,
+                config.basePrice
+              )
+          )
+            .to.emit(config.minter, "ConfiguredFutureAuctions")
+            .withArgs(
+              config.projectZero,
+              config.startTime,
+              config.defaultAuctionLengthSeconds + 1,
+              config.basePrice
+            );
+        });
+
         it("does not allow auction duration outside of minter-allowed range", async function () {
           const config = await loadFixture(_beforeEach);
           // less than min
@@ -445,6 +466,17 @@ for (const coreContractName of coreContractsToTest) {
           expect(minterConfig.minAuctionDurationSeconds_).to.equal(101);
           expect(minterConfig.maxAuctionDurationSeconds_).to.equal(201);
         });
+
+        it("emits event with updated values", async function () {
+          const config = await loadFixture(_beforeEach);
+          await expect(
+            config.minter
+              .connect(config.accounts.deployer)
+              .updateAllowableAuctionDurationSeconds(101, 201)
+          )
+            .to.emit(config.minter, "AuctionDurationSecondsRangeUpdated")
+            .withArgs(101, 201);
+        });
       });
 
       describe("updateMinterMinBidIncrementPercentage", async function () {
@@ -483,6 +515,17 @@ for (const coreContractName of coreContractsToTest) {
           const minterConfig = await config.minter.minterConfigurationDetails();
           expect(minterConfig.minterMinBidIncrementPercentage_).to.equal(6);
         });
+
+        it("emits event", async function () {
+          const config = await loadFixture(_beforeEach);
+          await expect(
+            config.minter
+              .connect(config.accounts.deployer)
+              .updateMinterMinBidIncrementPercentage(6)
+          )
+            .to.emit(config.minter, "MinterMinBidIncrementPercentageUpdated")
+            .withArgs(6);
+        });
       });
 
       describe("updateMinterTimeBufferSeconds", async function () {
@@ -520,6 +563,17 @@ for (const coreContractName of coreContractsToTest) {
             .updateMinterTimeBufferSeconds(301);
           const minterConfig = await config.minter.minterConfigurationDetails();
           expect(minterConfig.minterTimeBufferSeconds_).to.equal(301);
+        });
+
+        it("emits event", async function () {
+          const config = await loadFixture(_beforeEach);
+          await expect(
+            config.minter
+              .connect(config.accounts.deployer)
+              .updateMinterTimeBufferSeconds(301)
+          )
+            .to.emit(config.minter, "MinterTimeBufferUpdated")
+            .withArgs(301);
         });
       });
     });
@@ -737,6 +791,20 @@ for (const coreContractName of coreContractsToTest) {
           expect(projectConfig.auction.tokenId).to.equal(targetToken);
           expect(projectConfig.auction.initialized).to.be.true;
         });
+
+        it("emits event", async function () {
+          const config = await loadFixture(_beforeEach);
+          // initialize token auction for project zero to enter state with ongoing token auction
+          await initializeProjectZeroTokenZeroAuction(config);
+          // reset and check state
+          await expect(
+            config.minter
+              .connect(config.accounts.deployer)
+              .resetAuctionDetails(config.projectZero)
+          )
+            .to.emit(config.minter, "ResetAuctionDetails")
+            .withArgs(config.projectZero);
+        });
       });
     });
 
@@ -927,6 +995,28 @@ for (const coreContractName of coreContractsToTest) {
         )
           .to.emit(config.minter, "AuctionBid")
           .withArgs(targetToken, config.accounts.user2.address, nextBidValue);
+      });
+
+      it("emits `ProjectNextTokenUpdated` if new auction is initialized", async function () {
+        const config = await loadFixture(_beforeEach);
+        // advance time to auction start time
+        await ethers.provider.send("evm_mine", [config.startTime]);
+        // someone initializes the auction
+        const targetTokenAuction = BigNumber.from(
+          config.projectZeroTokenZero.toString()
+        );
+        const targetTokenNext = BigNumber.from(
+          config.projectZeroTokenOne.toString()
+        );
+        await expect(
+          config.minter
+            .connect(config.accounts.user)
+            .createBid(targetTokenAuction, {
+              value: config.basePrice,
+            })
+        )
+          .to.emit(config.minter, "ProjectNextTokenUpdated")
+          .withArgs(config.projectZero, targetTokenNext);
       });
 
       describe("CHECKS", async function () {
