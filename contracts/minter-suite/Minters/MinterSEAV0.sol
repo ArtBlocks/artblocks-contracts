@@ -958,11 +958,11 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
      *   - no next token has been minted for the project (artist may need to
      *     call `tryPopulateNextToken`)
      *   - `_targetTokenId` does not match the next token ID for the project
-     * This function attempts to mint a new token and assign it to the
-     * project's next token slot. However, if the project has reached its
-     * maximum invocations on either the core contract or minter, this function
-     * will not mint a new token, and the next token slot for the project will
-     * remain empty.
+     * After initializing a new auction, this function attempts to mint a new
+     * token and assign it to the project's next token slot, in preparation for
+     * a future token auction. However, if the project has reached its maximum
+     * invocations on either the core contract or minter, the next token slot
+     * for the project will remain empty.
      * @dev This should be executed in a nonReentrant context to provide redundant
      * protection against reentrancy.
      */
