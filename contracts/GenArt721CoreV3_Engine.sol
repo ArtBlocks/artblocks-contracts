@@ -8,11 +8,9 @@ import "./interfaces/0.8.x/IAdminACLV0.sol";
 import "./interfaces/0.8.x/IEngineRegistryV0.sol";
 import "./interfaces/0.8.x/IGenArt721CoreContractV3_Engine.sol";
 import "./interfaces/0.8.x/IDependencyRegistryCompatibleV0.sol";
-import "./interfaces/0.8.x/IManifold.sol";
 
 import "@openzeppelin-4.7/contracts/utils/Strings.sol";
 import "@openzeppelin-4.7/contracts/access/Ownable.sol";
-import "./libs/0.8.x/ERC721_PackedHashSeed.sol";
 import "./libs/0.8.x/BytecodeStorage.sol";
 import "./libs/0.8.x/Bytes32Strings.sol";
 
@@ -63,7 +61,7 @@ import "./libs/0.8.x/Bytes32Strings.sol";
  *   if the global config `autoApproveArtistSplitProposals` is set to `true`.)
  * - toggleProjectIsPaused (note the artist can still mint while paused)
  * - updateProjectSecondaryMarketRoyaltyPercentage (up to
-     ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE percent)
+ *      ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE percent)
  * - updateProjectWebsite
  * - updateProjectMaxInvocations (to a number greater than or equal to the
  *   current number of invocations, and less than current project maximum
@@ -91,11 +89,9 @@ import "./libs/0.8.x/Bytes32Strings.sol";
  * Additional admin and artist privileged roles may be described on minters,
  * registries, and other contracts that may interact with this core contract.
  */
-contract GenArt721CoreV3_Engine is
-    ERC721_PackedHashSeed,
+contract GenArt721CoreV3_Engine_PROOF is
     Ownable,
     IDependencyRegistryCompatibleV0,
-    IManifold,
     IGenArt721CoreContractV3_Engine
 {
     using BytecodeStorage for string;
@@ -103,6 +99,7 @@ contract GenArt721CoreV3_Engine is
     using Bytes32Strings for bytes32;
     using Strings for uint256;
     using Strings for address;
+
     uint256 constant ONE_HUNDRED = 100;
     uint256 constant ONE_MILLION = 1_000_000;
     uint24 constant ONE_MILLION_UINT24 = 1_000_000;
@@ -202,6 +199,7 @@ contract GenArt721CoreV3_Engine is
         uint8 additionalPayeePrimarySalesPercentage;
     }
     // Project financials mapping
+
     mapping(uint256 => ProjectFinance) projectIdToFinancials;
 
     /// hash of artist's proposed payment updates to be approved by admin
@@ -248,6 +246,10 @@ contract GenArt721CoreV3_Engine is
     /// default behavior is to allow new projects
     bool public newProjectsForbidden;
 
+    /// mapping of token ID to 12-byte hash seed.
+    /// @dev zero means that the hash seed has not been assigned yet.
+    mapping(uint256 => bytes12) internal _hashSeeds;
+
     /// configuration variable (determined at time of deployment)
     /// that determines whether or not admin approval^ should be required
     /// to accept artist address change proposals, or if these proposals
@@ -282,7 +284,7 @@ contract GenArt721CoreV3_Engine is
     }
 
     function _onlyValidTokenId(uint256 _tokenId) internal view {
-        require(_exists(_tokenId), "Token ID does not exist");
+        require(_hashSeeds[_tokenId] != bytes12(0), "Token ID does not exist");
     }
 
     function _onlyValidProjectId(uint256 _projectId) internal view {
@@ -367,7 +369,7 @@ contract GenArt721CoreV3_Engine is
         uint248 _startingProjectId,
         bool _autoApproveArtistSplitProposals,
         address _engineRegistryContract
-    ) ERC721_PackedHashSeed(_tokenName, _tokenSymbol) {
+    ) {
         _onlyNonZeroAddress(_renderProviderAddress);
         _onlyNonZeroAddress(_platformProviderAddress);
         _onlyNonZeroAddress(_randomizerContract);
@@ -467,7 +469,6 @@ contract GenArt721CoreV3_Engine is
         }
 
         // INTERACTIONS
-        _mint(_to, thisTokenId);
 
         // token hash is updated by the randomizer contract on V3
         randomizerContract.assignTokenHash(thisTokenId);
@@ -496,19 +497,13 @@ contract GenArt721CoreV3_Engine is
     function setTokenHash_8PT(uint256 _tokenId, bytes32 _hashSeed) external {
         _onlyValidTokenId(_tokenId);
 
-        OwnerAndHashSeed storage ownerAndHashSeed = _ownersAndHashSeeds[
-            _tokenId
-        ];
         require(
             msg.sender == address(randomizerContract),
             "Only randomizer may set"
         );
-        require(
-            ownerAndHashSeed.hashSeed == bytes12(0),
-            "Token hash already set"
-        );
+        require(_hashSeeds[_tokenId] == bytes12(0), "Token hash already set");
         require(_hashSeed != bytes12(0), "No zero hash seed");
-        ownerAndHashSeed.hashSeed = bytes12(_hashSeed);
+        _hashSeeds[_tokenId] = bytes12(_hashSeed);
     }
 
     /**
@@ -1282,7 +1277,7 @@ contract GenArt721CoreV3_Engine is
      * @dev token hash is the keccak256 hash of the stored hash seed
      */
     function tokenIdToHash(uint256 _tokenId) external view returns (bytes32) {
-        bytes12 _hashSeed = _ownersAndHashSeeds[_tokenId].hashSeed;
+        bytes12 _hashSeed = _hashSeeds[_tokenId];
         if (_hashSeed == 0) {
             return 0;
         }
@@ -1300,7 +1295,7 @@ contract GenArt721CoreV3_Engine is
     function tokenIdToHashSeed(
         uint256 _tokenId
     ) external view returns (bytes12) {
-        return _ownersAndHashSeeds[_tokenId].hashSeed;
+        return _hashSeeds[_tokenId];
     }
 
     /**
@@ -1857,24 +1852,11 @@ contract GenArt721CoreV3_Engine is
      * @dev token URIs are the concatenation of the project base URI and the
      * token ID.
      */
-    function tokenURI(
-        uint256 _tokenId
-    ) public view override returns (string memory) {
+    function tokenURI(uint256 _tokenId) public view returns (string memory) {
         _onlyValidTokenId(_tokenId);
         string memory _projectBaseURI = projects[tokenIdToProjectId(_tokenId)]
             .projectBaseURI;
         return string.concat(_projectBaseURI, _tokenId.toString());
-    }
-
-    /**
-     * @dev See {IERC165-supportsInterface}.
-     */
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view virtual override returns (bool) {
-        return
-            interfaceId == type(IManifold).interfaceId ||
-            super.supportsInterface(interfaceId);
     }
 
     /**
