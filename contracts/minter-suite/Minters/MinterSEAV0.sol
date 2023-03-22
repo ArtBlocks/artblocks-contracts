@@ -882,7 +882,9 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
      * @return nextTokenNumberIsPopulated Whether or not the project's next
      * token number has been populated
      * @return nextTokenNumber The project's next token number to be auctioned,
-     * dummy value of 0 if `nextTokenNumberIsPopulated` is false
+     * dummy value of 0 if `nextTokenNumberIsPopulated` is false. Note that 0
+     * is a valid token number, so `nextTokenNumberIsPopulated` should be used
+     * to distinguish between a valid token number of 0 and a dummy value of 0.
      * @return auction The project's active auction details. Will be the
      * default struct (w/ `auction.initialized = false`) if no auction has been
      * initialized for the project.
