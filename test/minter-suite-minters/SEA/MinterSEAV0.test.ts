@@ -1378,7 +1378,7 @@ for (const coreContractName of coreContractsToTest) {
               .createBid(targetTokenOne, {
                 value: config.basePrice.mul(11).div(10),
               }),
-            "Max invocations reached"
+            "No next token, check max invocations"
           );
         });
       });

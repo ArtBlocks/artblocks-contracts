@@ -1028,24 +1028,13 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
             msg.value >= _projectConfig.basePrice,
             "Insufficient initial bid"
         );
-        // require next token number is populated, giving intuitive error
-        // message if project has reached its max invocations
-        if (!_projectConfig.nextTokenNumberIsPopulated) {
-            // @dev no cover else branch of next line because considered
-            // unreachable
-            if (_projectConfig.maxHasBeenInvoked) {
-                revert("Max invocations reached");
-            } else {
-                // @dev revert instead of attempting to mint a new next token,
-                // because users should only mint a new new token if they
-                // are able to know what it is a prori
-                // @dev this is an unexpected case, but is included for safety
-                // @dev no cover next line because considered unreachable
-                revert(
-                    "No next token, Artist may need to call `tryPopulateNextToken`"
-                );
-            }
-        }
+        // require next token number is populated
+        // @dev this should only be encountered if the project has reached
+        // its maximum invocations on either the core contract or minter
+        require(
+            _projectConfig.nextTokenNumberIsPopulated,
+            "No next token, check max invocations"
+        );
         // require next token number is the target token ID
         require(
             _projectConfig.nextTokenNumber == _targetTokenId % ONE_MILLION,
