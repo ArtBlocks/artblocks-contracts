@@ -58,6 +58,8 @@ export const Minter_Common = async (_beforeEach: () => Promise<T_Config>) => {
         minterType == "MinterPolyptychV0"
       ) {
         minterConstructorArgs.push(config.delegationRegistry.address);
+      } else if (minterType.startsWith("MinterSEA")) {
+        minterConstructorArgs.push(config.weth.address);
       }
       await expectRevert(
         minterFactory.deploy(...minterConstructorArgs),
@@ -113,9 +115,10 @@ export const Minter_Common = async (_beforeEach: () => Promise<T_Config>) => {
       const config = await loadFixture(_beforeEach);
       const minterType = await config.minter.minterType();
       if (!minterType.startsWith("MinterDAExpSettlementV")) {
-        // minters above v2 do NOT use onlyCoreWhitelisted modifier for setProjectMaxInvocations
+        // non-MinterSEA minters above v2 do NOT use onlyCoreWhitelisted modifier for setProjectMaxInvocations
         const accountToTestWith =
-          minterType.includes("V0") || minterType.includes("V1")
+          !minterType.startsWith("MinterSEA") &&
+          (minterType.includes("V0") || minterType.includes("V1"))
             ? config.accounts.deployer
             : config.accounts.artist;
         // minters that don't settle on-chain should support config function
@@ -154,7 +157,8 @@ export const Minter_Common = async (_beforeEach: () => Promise<T_Config>) => {
       }
       // minters above v2 do NOT use onlyCoreWhitelisted modifier for setProjectMaxInvocations
       const accountToTestWith =
-        minterType.includes("V0") || minterType.includes("V1")
+        !minterType.startsWith("MinterSEA") &&
+        (minterType.includes("V0") || minterType.includes("V1"))
           ? config.accounts.deployer
           : config.accounts.artist;
       // update max invocations to 1 on the core
