@@ -1,0 +1,16 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-03-23T01:29:32.032Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/staging-example-flex/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0xAf08abB36Dcb69De935D3292f85347B5e18349A4
+[INFO] Randomizer BasicRandomizerV2 deployed at 0xeCBc7839b2bC78aC5f76d7cCFD02329e184e44A8
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x42F05a460587Ddd1AFFEf43BfF933e78d6b34424
+[INFO] Minter Filter MinterFilterV1 deployed at 0xA212fF59FeE69C5bB233ceC3873a2cb42546D30b
+[INFO] MinterSetPriceV4 deployed at 0x40e6F8c6Acf1Eefb1B15049b872F25DFC1127cb5
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0xA212fF59FeE69C5bB233ceC3873a2cb42546D30b.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0x40e6F8c6Acf1Eefb1B15049b872F25DFC1127cb5 on minter filter.
+[INFO] Added Engine Partner Flex project 0 placeholder on Engine Partner Flex contract, artist is 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63.
+[INFO] Configured set price minter (0x40e6F8c6Acf1Eefb1B15049b872F25DFC1127cb5) for project 0.
+[INFO] Configured minter price project 0.
