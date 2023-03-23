@@ -19,13 +19,13 @@ import {
 import {
   DELEGATION_REGISTRY_ADDRESSES,
   KNOWN_ENGINE_REGISTRIES,
+  EXTRA_DELAY_BETWEEN_TX,
 } from "../../util/constants";
 import { tryVerify } from "../../util/verification";
 // image bucket creation
 import { createPBABBucket } from "../../util/aws_s3";
 // delay to avoid issues with reorgs and tx failures
 import { delay, getAppPath } from "../../util/utils";
-const EXTRA_DELAY_BETWEEN_TX = 1000; // ms
 const MANUAL_GAS_LIMIT = 500000; // gas
 var log_stdout = process.stdout;
 
