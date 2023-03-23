@@ -1,0 +1,89 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-03-23T01:29:32.032Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/staging-example-flex/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0xAf08abB36Dcb69De935D3292f85347B5e18349A4
+[INFO] Randomizer BasicRandomizerV2 deployed at 0xeCBc7839b2bC78aC5f76d7cCFD02329e184e44A8
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x42F05a460587Ddd1AFFEf43BfF933e78d6b34424
+[INFO] Minter Filter MinterFilterV1 deployed at 0xA212fF59FeE69C5bB233ceC3873a2cb42546D30b
+[INFO] MinterSetPriceV4 deployed at 0x40e6F8c6Acf1Eefb1B15049b872F25DFC1127cb5
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0xA212fF59FeE69C5bB233ceC3873a2cb42546D30b.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0x40e6F8c6Acf1Eefb1B15049b872F25DFC1127cb5 on minter filter.
+[INFO] Added Engine Partner Flex project 0 placeholder on Engine Partner Flex contract, artist is 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63.
+[INFO] Configured set price minter (0x40e6F8c6Acf1Eefb1B15049b872F25DFC1127cb5) for project 0.
+[INFO] Configured minter price project 0.
+----------------------------------------
+[INFO] Datetime of deployment: 2023-03-23T16:53:28.652Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/deployments/engine/V3/partners/staging-example-flex/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+Created s3 bucket for https://engine-partner-flex-goerli.s3.amazonaws.com
+[INFO] Created image bucket engine-partner-flex-goerli
+[INFO] Deployment details written to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/deployments/engine/V3/partners/staging-example-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0xaf08abb36dcb69de935d3292f85347b5e18349a4",
+  "name": "Engine Partner Flex",
+  "bucket_name": "engine-partner-flex-goerli",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+Upserting 1 project...
+Projects metadata upsert input:
+{
+  "id": "0xaf08abb36dcb69de935d3292f85347b5e18349a4-0",
+  "contract_address": "0xaf08abb36dcb69de935d3292f85347b5e18349a4",
+  "project_id": "0",
+  "artist_address": "0x2246475beddf9333b6a6d9217194576e7617afd1",
+  "vertical_name": "flex"
+}
+Successfully upserted 1 project
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0x2246475beddf9333b6a6D9217194576E7617Afd1. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63, don't forget to update if requred.
+----------------------------------------
+[INFO] Datetime of deployment: 2023-03-23T17:02:11.704Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/deployments/engine/V3/partners/staging-example-flex/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+[INFO] Verifying core contract contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/GenArt721CoreV3_Engine_Flex.sol:GenArt721CoreV3_Engine_Flex at 0x42F05a460587Ddd1AFFEf43BfF933e78d6b34424
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract GenArt721CoreV3_Engine_Flex on Etherscan.
+https://goerli.etherscan.io/address/0x42F05a460587Ddd1AFFEf43BfF933e78d6b34424#code
+[INFO] Core contract verified on Etherscan at 0x42F05a460587Ddd1AFFEf43BfF933e78d6b34424}
+[INFO] Verifying MinterFilter contract deployment...
+Compiled 189 Solidity files successfully
+Successfully submitted source code for contract
+contracts/minter-suite/MinterFilter/MinterFilterV1.sol:MinterFilterV1 at 0xA212fF59FeE69C5bB233ceC3873a2cb42546D30b
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterFilterV1 on Etherscan.
+https://goerli.etherscan.io/address/0xA212fF59FeE69C5bB233ceC3873a2cb42546D30b#code
+[INFO] MinterFilter contract verified on Etherscan at 0xA212fF59FeE69C5bB233ceC3873a2cb42546D30b}
+[INFO] Verifying minterSetPriceV4 contract deployment...
+Compiled 189 Solidity files successfully
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterSetPriceV4.sol:MinterSetPriceV4 at 0x40e6F8c6Acf1Eefb1B15049b872F25DFC1127cb5
+for verification on the block explorer. Waiting for verification result...
+
+[WARN] Etherscan verification of minterSetPriceV4 failed: NomicLabsHardhatPluginError: The Etherscan API responded with a failure status.
+The verification may still succeed but should be checked manually.
+Reason: Fail - Unable to verify. Please check if the correct constructor argument was entered.
+
+----------------------------------------
+yarn hardhat verify --network goerli 0x40e6F8c6Acf1Eefb1B15049b872F25DFC1127cb5 0x42F05a460587Ddd1AFFEf43BfF933e78d6b34424 0xA212fF59FeE69C5bB233ceC3873a2cb42546D30b
+yarn run v1.22.19
+$ /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/.bin/hardhat verify --network goerli 0x40e6F8c6Acf1Eefb1B15049b872F25DFC1127cb5 0x42F05a460587Ddd1AFFEf43BfF933e78d6b34424 0xA212fF59FeE69C5bB233ceC3873a2cb42546D30b
+Nothing to compile
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterSetPriceV4.sol:MinterSetPriceV4 at 0x40e6F8c6Acf1Eefb1B15049b872F25DFC1127cb5
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterSetPriceV4 on Etherscan.
+https://goerli.etherscan.io/address/0x40e6F8c6Acf1Eefb1B15049b872F25DFC1127cb5#code

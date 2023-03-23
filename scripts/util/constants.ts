@@ -1,3 +1,7 @@
+// empirically have found adding 5 seconds between txs in scripts is enough to
+// avoid chain reorgs and tx failures
+export const EXTRA_DELAY_BETWEEN_TX = 5000; // ms
+
 // delegation registry addresses on supported networks
 export const DELEGATION_REGISTRY_ADDRESSES = {
   // note: same address for goerli and mainnet
@@ -26,4 +30,11 @@ export const KNOWN_ENGINE_REGISTRIES = {
     "0x652490c8BB6e7ec3Fd798537D2F348D7904BBbc2":
       "0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63",
   },
+};
+
+// WETH token addresses on supported networks
+// @dev thse are the commonly used WETH9 contracts
+export const WETH_ADDRESSES = {
+  goerli: "0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6",
+  mainnet: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2",
 };
