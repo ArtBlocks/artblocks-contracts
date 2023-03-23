@@ -412,7 +412,9 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         _onlyCoreAdminACL(this.updateRefundGasLimit.selector);
         // CHECKS
         // @dev max gas limit implicitly checked by using uint16 input arg
-        require(_minterRefundGasLimit >= 5000, "Only gte 5_000");
+        // @dev min gas limit is based on rounding up current cost to send ETH
+        // to a Gnosis Safe wallet, which accesses cold address and emits event
+        require(_minterRefundGasLimit >= 7_000, "Only gte 7_000");
         // EFFECTS
         minterRefundGasLimit = _minterRefundGasLimit;
         emit MinterRefundGasLimitUpdated(_minterRefundGasLimit);
