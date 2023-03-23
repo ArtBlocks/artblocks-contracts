@@ -10,7 +10,7 @@ Logger.setLogLevel(Logger.levels.ERROR);
 
 // delay to avoid issues with reorgs and tx failures
 import { delay } from "../../util/utils";
-const EXTRA_DELAY_BETWEEN_TX = 5000; // ms
+import { EXTRA_DELAY_BETWEEN_TX } from "../../util/constants";
 
 /**
  * This script was created to deploy polyptych randomizer as required for the MinterPolyptychV0 contract to the Ethereum

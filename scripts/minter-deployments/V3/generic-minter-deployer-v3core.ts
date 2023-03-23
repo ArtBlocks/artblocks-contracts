@@ -5,7 +5,7 @@ import { ethers } from "hardhat";
 import path from "path";
 import fs from "fs";
 var util = require("util");
-import { tryVerify } from "../util/verification";
+import { tryVerify } from "../../util/verification";
 
 // hide nuisance logs about event overloading
 import { Logger } from "@ethersproject/logger";
@@ -13,9 +13,11 @@ Logger.setLogLevel(Logger.levels.ERROR);
 import prompt from "prompt";
 
 // delay to avoid issues with reorgs and tx failures
-import { delay, getAppPath } from "../util/utils";
-import { DELEGATION_REGISTRY_ADDRESSES } from "../util/constants";
-const EXTRA_DELAY_BETWEEN_TX = 5000; // ms
+import { delay, getAppPath } from "../../util/utils";
+import {
+  DELEGATION_REGISTRY_ADDRESSES,
+  EXTRA_DELAY_BETWEEN_TX,
+} from "../../util/constants";
 
 /**
  * This script was created to deploy a generic minter contract to the Ethereum

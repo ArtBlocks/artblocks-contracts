@@ -1,3 +1,7 @@
+// empirically have found adding 5 seconds between txs in scripts is enough to
+// avoid chain reorgs and tx failures
+export const EXTRA_DELAY_BETWEEN_TX = 5000; // ms
+
 // delegation registry addresses on supported networks
 export const DELEGATION_REGISTRY_ADDRESSES = {
   // note: same address for goerli and mainnet
