@@ -75,3 +75,15 @@ for verification on the block explorer. Waiting for verification result...
 [WARN] Etherscan verification of minterSetPriceV4 failed: NomicLabsHardhatPluginError: The Etherscan API responded with a failure status.
 The verification may still succeed but should be checked manually.
 Reason: Fail - Unable to verify. Please check if the correct constructor argument was entered.
+
+----------------------------------------
+yarn hardhat verify --network goerli 0x40e6F8c6Acf1Eefb1B15049b872F25DFC1127cb5 0x42F05a460587Ddd1AFFEf43BfF933e78d6b34424 0xA212fF59FeE69C5bB233ceC3873a2cb42546D30b
+yarn run v1.22.19
+$ /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/.bin/hardhat verify --network goerli 0x40e6F8c6Acf1Eefb1B15049b872F25DFC1127cb5 0x42F05a460587Ddd1AFFEf43BfF933e78d6b34424 0xA212fF59FeE69C5bB233ceC3873a2cb42546D30b
+Nothing to compile
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterSetPriceV4.sol:MinterSetPriceV4 at 0x40e6F8c6Acf1Eefb1B15049b872F25DFC1127cb5
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterSetPriceV4 on Etherscan.
+https://goerli.etherscan.io/address/0x40e6F8c6Acf1Eefb1B15049b872F25DFC1127cb5#code
