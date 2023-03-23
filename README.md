@@ -134,63 +134,11 @@ For details on the Flagship and Engine Minter Suite, see the [minter suite docum
 
 In an effort to ensure source code verification is easily completed by anyone, After 10, January 2023, all mainnet deployments should also have a corresponding tag+release in this GitHub repository. For deployments prior to this date, PR history may be used to determine the commit hash used for a given deployment. Currently, all mainnet deployments of contracts developed in this repositiory are verified on Etherscan.
 
-# Royalty Registry
+# Royalties
 
-Art Blocks supports lookups of all mainnet flagship, partnership, and PBAB tokens on Manifold's [Royalty Registry](https://royaltyregistry.xyz/lookup). This enables on-chain royalty lookups for all Art Blocks NFTs, and allows for the creation of royalty streams for artists and other creators.
+Art Blocks supports on-chain royalty lookups for all Flagship and Engine tokens on Manifold's [Royalty Registry](https://royaltyregistry.xyz/lookup). This enables royalty revenue streams for artists and other creators.
 
-For core contracts V3+ (including Art Blocks Engine V3+), Art Blocks core contracts are designed to integrate directly with Manifold's [Royalty Registry](https://royaltyregistry.xyz/lookup). Aside from an artist and the platform defining royalty percentages/basis-points and addresses on the V3+ core contracts, no additional steps are required to register a token with the Royalty Registry.
-
-Prior to the V3 core contract, royalty registry override contracts are needed to properly integrate with the Royalty Registry. These contracts delegate all permissions to the core contracts. The following Royalty Registry override contracts are deployed at:
-
-- **mainnet (AB deployed):**
-
-  - AB Flagship + Partner (PRTNR) royalty override: https://etherscan.io/address/0x7b5369c24a47a72ecf932bf6974f506dde4d5eb1#code
-  - PBAB royalty override: https://etherscan.io/address/0x31e1cc72e6f9e27c2ecbb500d978de1691173f5f#code
-
-- **mainnet (RR deployed):**
-  - RoyaltyRegistry: https://etherscan.io/address/0xad2184fb5dbcfc05d8f056542fb25b04fa32a95d#code
-  - RoyaltyEngineV1: https://etherscan.io/address/0x0385603ab55642cb4dd5de3ae9e306809991804f#code
-
-### Configuring PBAB Royalty Override (REQUIRED)
-
-Upon deploying a PBAB contract, the following steps must be taken:
-
-> Tasks denoted by (scripted) are included in `scripts/1_reference_pbab_suite_deployer.ts`, and scripted for newly deployed PBAB projects as of 03/2022.
-
-- **(scripted), REQUIRED** Set the royalty lookup address on the royalty registry for the newly deployed contract
-  - Go to the [Royalty Registry](https://royaltyregistry.xyz/lookup) and call the following function on the Royalty Registry smart contract:
-    - `setRoyaltyLookupAddress(<new_PBAB_coreAddr>, <PBAB_royaltyOverrideContract>)`
-- **(scripted), REQUIRED** Set Platform royalty payment address for the new core contract in PBAB royalty override contract
-  > note: This step is optional in the PBAB deployer script in case platform royalty payment address is not known at time of deployment, but must be completed before royalty lookups will work
-  - `admin` of the PBAB core contract must call the following function on the PBAB royalty override contract:
-    - `updatePlatformRoyaltyAddressForContract(<new_PBAB_coreAddr>, <platformRoyaltyPaymentAddress>)`
-
-Additionally, the following settings may be configured/changed by a PBAB core contract's `admin` at any time:
-
-- **Change Royalty Percentages**
-  - `renderProvider` or `platform` Royalty [BPS](https://www.investopedia.com/terms/b/basispoint.asp) may be changed from default values of 2.5% to any value. This can be configured by a PBAB core contract's `admin` via the PBAB override contract's functions `updateRenderProviderBpsForContract` and `updatePlatformBpsForContract`.
-- **Change Platform Royalty Payment Address**
-  - The address to receive platform royalty payments may be updated by a PBAB core contract's admin via the PBAB override contract's function `updatePlatformRoyaltyAddressForContract`.
-- **Change Render Provider Royalty Payment Address**
-  - The address to receive render provider royalty payments is delegated to the token core contract, and defined as the public variable `renderProviderAddress`.
-
-### Configuring Art Blocks Flagship **OR** Partner (PRTNR) Royalty Override (REQUIRED)
-
-Upon deploying a new Art Blocks flagship core contract or Partner (PRTNR) core contract, the following steps must be taken (NOT scripted):
-
-- **REQUIRED** Set the royalty lookup address on the royalty registry for the newly deployed contract
-  - Go to the [Royalty Registry](https://royaltyregistry.xyz/lookup) to call the following function on the Royalty Registry smart contract:
-    - `setRoyaltyLookupAddress(<new_coreAddr>, <ArtBlocks_royaltyOverrideContract>)`
-- **REQUIRED** Set Art Blocks royalty payment address for the new core contract in the royalty override contract
-  - `admin` of core contract must call:
-    - `updateArtblocksRoyaltyAddressForContract(<new_coreAddr>, <ArtBlocksRoyaltyPaymentAddress>)`
-
-Additionally, the following settings may be configured/changed by a core contract's `admin` at any time:
-
-- **Change Art Blocks Royalty Percentage**
-  - Royalty [BPS](https://www.investopedia.com/terms/b/basispoint.asp) may be changed from default values of 2.5% to any value less than or equal to the default (cannot be increased above default). This can be configured by a core contract's `admin` via the override contract's function `updateArtblocksBpsForContract`.
-- **Change Art Blocks Royalty Payment Address**
-  - The address to receive Art Blocks royalty payments may be updated by a core contract's admin via the royalty override contract's function `updateArtblocksRoyaltyAddressForContract`.
+For information about on-chain royalties, please see the [royalties documentation](./ROYALTIES.md).
 
 # Source Code Archival
 
