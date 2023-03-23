@@ -595,13 +595,13 @@ for (const coreContractName of coreContractsToTest) {
           );
         });
 
-        it("requires >= 5_000", async function () {
+        it("requires >= 7_000", async function () {
           const config = await loadFixture(_beforeEach);
           await expectRevert(
             config.minter
               .connect(config.accounts.deployer)
-              .updateRefundGasLimit(4_999),
-            "Only gte 5_000"
+              .updateRefundGasLimit(6_999),
+            "Only gte 7_000"
           );
         });
 
