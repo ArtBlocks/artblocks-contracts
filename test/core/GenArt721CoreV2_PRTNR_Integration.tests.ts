@@ -19,6 +19,7 @@ import {
   deployCoreWithMinterFilter,
 } from "../util/common";
 import { GenArt721MinterV1V2PRTNR_Common } from "./GenArt721CoreV1V2PRTNR.common";
+import { BigNumber } from "ethers";
 
 /**
  * These tests are intended to check integration of the MinterFilter suite with
@@ -107,6 +108,9 @@ describe("GenArt721CoreV2_PRTNR_Integration", async function () {
         .toggleProjectIsPaused(config.projectZero);
 
       // pricePerTokenInWei setup above to be 1 ETH
+      const targetToken = BigNumber.from(
+        config.projectZeroTokenZero.toString()
+      );
       await expect(
         config.minter
           .connect(config.accounts.user)
@@ -118,7 +122,7 @@ describe("GenArt721CoreV2_PRTNR_Integration", async function () {
         .withArgs(
           constants.ZERO_ADDRESS,
           config.accounts.user.address,
-          config.projectZeroTokenZero
+          targetToken
         );
 
       config.projectZeroInfo = await config.genArt721Core.projectTokenInfo(
@@ -156,6 +160,9 @@ describe("GenArt721CoreV2_PRTNR_Integration", async function () {
         .toggleProjectIsPaused(config.projectZero);
 
       // pricePerTokenInWei setup above to be 1 ETH
+      const targetToken = BigNumber.from(
+        config.projectZeroTokenZero.toString()
+      );
       await expect(
         config.minter
           .connect(config.accounts.user)
@@ -167,7 +174,7 @@ describe("GenArt721CoreV2_PRTNR_Integration", async function () {
         .withArgs(
           constants.ZERO_ADDRESS,
           config.accounts.user.address,
-          config.projectZeroTokenZero
+          targetToken
         );
 
       config.projectZeroInfo = await config.genArt721Core.projectTokenInfo(
@@ -209,6 +216,9 @@ describe("GenArt721CoreV2_PRTNR_Integration", async function () {
         .toggleProjectIsPaused(config.projectZero);
 
       // pricePerTokenInWei setup above to be 1 ETH
+      const targetToken = BigNumber.from(
+        config.projectZeroTokenZero.toString()
+      );
       await expect(
         config.minter
           .connect(config.accounts.user)
@@ -220,7 +230,7 @@ describe("GenArt721CoreV2_PRTNR_Integration", async function () {
         .withArgs(
           constants.ZERO_ADDRESS,
           config.accounts.user.address,
-          config.projectZeroTokenZero
+          targetToken
         );
 
       const projectZeroInfo = await config.genArt721Core.projectTokenInfo(

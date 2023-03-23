@@ -528,7 +528,7 @@ contract GenArt721CoreV3_Engine_Flex is
         _onlyUnlockedProjectExternalAssetDependencies(_projectId);
         _onlyArtistOrAdminACL(
             _projectId,
-            this.updateProjectExternalAssetDependency.selector
+            this.removeProjectExternalAssetDependency.selector
         );
         uint24 assetCount = projects[_projectId].externalAssetDependencyCount;
         require(_index < assetCount, "Asset index out of range");
@@ -564,7 +564,7 @@ contract GenArt721CoreV3_Engine_Flex is
         _onlyUnlockedProjectExternalAssetDependencies(_projectId);
         _onlyArtistOrAdminACL(
             _projectId,
-            this.updateProjectExternalAssetDependency.selector
+            this.addProjectExternalAssetDependency.selector
         );
         uint24 assetCount = projects[_projectId].externalAssetDependencyCount;
         address _bytecodeAddress = address(0);
@@ -1725,6 +1725,7 @@ contract GenArt721CoreV3_Engine_Flex is
     )
         external
         view
+        override(IGenArt721CoreContractV3_Base, IDependencyRegistryCompatibleV0)
         returns (
             string memory scriptTypeAndVersion,
             string memory aspectRatio,
