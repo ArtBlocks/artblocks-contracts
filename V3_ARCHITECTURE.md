@@ -10,11 +10,13 @@ The V3 core contracts are the ERC-721 NFT contracts that house Art Blocks Flagsh
 
 The V3 core contract integrates with a few peripheral contracts to offer flexible, customizable, and extensible functionality. These contracts include:
 
-- Admin Access Control List (ACL) contract
-- Randomizer contract
-- Engine Registry contract
-- Minter Suite contracts
-- Royalty Registry contract (by Manifold)
+- [Admin Access Control List (ACL) contract](#admin-access-control-list-acl-contract)
+- [Randomizer contract](#randomizer-contract)
+- [Engine Registry contract](#engine-registry-contract)
+- [Minter Suite contracts](#minter-suite-contracts)
+- [Royalty Registry contract (by Manifold)](./ROYALTIES.md)
+
+Additionally, the [V3 Engine Flex contract](#flex-external-asset-dependencies) is designed to integrate with external assets, such as images, videos, audio, or other data, and may be stored on decentralized storage systems such as IPFS, Arweave, or on the Ethereum blockchain.
 
 ## Integrations
 
@@ -44,6 +46,12 @@ A diagram of the V3 core contract and Engine Registry contract integration is sh
 
 ![engine-registry-diagram](./images/engine-registry-v3-core-integration.png)
 
+### Minter Suite Contracts
+
+The Minter Suite is a collection of contracts that are used to mint Art Blocks Engine V3 tokens. The Minter Suite is designed to be highly flexible, and can be used to mint tokens in a variety of ways.
+
+For more information on the Minter Suite, please see the [Minter Suite documentation](./MINTER_SUITE.md).
+
 ### Flex External Asset Dependencies
 
 The V3 Engine Flex contract is designed to allow artists to use external assets in their Engine tokens. These external assets can be images, videos, audio, or other data, and may be stored on decentralized storage systems such as IPFS, Arweave, or on the Ethereum blockchain.
@@ -51,9 +59,3 @@ The V3 Engine Flex contract is designed to allow artists to use external assets 
 A diagram of the V3 Engine Flex contract and external asset dependencies is shown below:
 
 ![engine-flex-diagram](./images/external-asset-dependency-flex-v3.png)
-
-### Minter Suite
-
-The Minter Suite is a collection of contracts that are used to mint Art Blocks Engine V3 tokens. The Minter Suite is designed to be highly flexible, and can be used to mint tokens in a variety of ways.
-
-For more information on the Minter Suite, please see the [Minter Suite documentation](./MINTER_SUITE.md).
