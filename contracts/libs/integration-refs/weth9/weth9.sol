@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: LGPL-3.0-only
+
 // Copyright (C) 2015, 2016, 2017, 2019 Dapphub
 
 // This program is free software: you can redistribute it and/or modify
