@@ -55,9 +55,15 @@ In addition to meeting our style guidelines, all code must pass all tests and be
 
 # Documentation
 
-Documentation for contracts us deployed via GitHub pages at: https://artblocks.github.io/artblocks-contracts/
+## auto-generated contract docs (via NatSpec)
+
+Documentation for contracts is deployed via GitHub pages at: https://artblocks.github.io/artblocks-contracts/
 
 Documentation for contracts may also be generated via `yarn docgen`. Most Art Blocks contracts use [NatSpec](https://docs.soliditylang.org/en/v0.8.9/natspec-format.html#documentation-example) comments to automatically enrich generated documentation. Some contracts use [dynamic expressions](https://docs.soliditylang.org/en/v0.8.9/natspec-format.html#dynamic-expressions) to improve user experience.
+
+## Art Blocks V3 Contract Architecture
+
+For a high-level overview of the Art Blocks V3 contract architecture, see the [V3 Contract Architecture page](./V3_ARCHITECTURE.md).
 
 # Deployments
 
