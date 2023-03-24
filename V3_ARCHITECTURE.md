@@ -46,7 +46,7 @@ A diagram of the V3 core contract and Engine Registry contract integration is sh
 
 ![engine-registry-diagram](./images/engine-registry-v3-core-integration.png)
 
-### Minter Suite Contracts
+### Minter Suite contracts
 
 The Minter Suite is a collection of contracts that are used to mint Art Blocks Engine V3 tokens. The Minter Suite is designed to be highly flexible, and can be used to mint tokens in a variety of ways.
 
