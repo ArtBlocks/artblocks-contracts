@@ -482,6 +482,8 @@ async function main() {
     //////////////////////////////////////////////////////////////////////////////
 
     const outputSummaryFile = path.join(inputFileDirectory, "DEPLOYMENTS.md");
+    const etherscanSubdomain =
+      networkName === "mainnet" ? "" : `${networkName}.`;
     const outputMd = `
 # Deployment
 
@@ -493,19 +495,23 @@ Date: ${new Date().toISOString()}
 
 **Deployment Input File:** \`${deploymentConfigFile}\`
 
-**${deployDetails.genArt721CoreContractName}:** https://etherscan.io/address/${
+**${
+      deployDetails.genArt721CoreContractName
+    }:** https://${etherscanSubdomain}etherscan.io/address/${
       genArt721Core.address
     }#code
 
 **${
       deployDetails.adminACLContractName
-    }:** https://etherscan.io/address/${adminACLAddress}#code
+    }:** https://${etherscanSubdomain}etherscan.io/address/${adminACLAddress}#code
 
-**Engine Registry:** https://etherscan.io/address/${
+**Engine Registry:** https://${etherscanSubdomain}etherscan.io/address/${
       deployDetails.engineRegistryAddress
     }#code
 
-**${deployDetails.minterFilterContractName}:** https://etherscan.io/address/${
+**${
+      deployDetails.minterFilterContractName
+    }:** https://${etherscanSubdomain}etherscan.io/address/${
       minterFilter.address
     }#code
 
@@ -513,7 +519,7 @@ Date: ${new Date().toISOString()}
 
 ${deployedMinterNames
   .map((minterName, i) => {
-    return `**${minterName}:** https://etherscan.io/address/${deployedMinterAddresses[i]}#code
+    return `**${minterName}:** https://${etherscanSubdomain}etherscan.io/address/${deployedMinterAddresses[i]}#code
 
 `;
   })

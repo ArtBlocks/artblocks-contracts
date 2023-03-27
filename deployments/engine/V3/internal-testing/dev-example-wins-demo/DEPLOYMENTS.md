@@ -1,4 +1,3 @@
-
 # Deployment
 
 Date: 2023-03-03T18:15:32.253Z
@@ -9,21 +8,19 @@ Date: 2023-03-03T18:15:32.253Z
 
 **Deployment Input File:** `deployments/engine/V3/internal-testing/dev-example-wins-demo/deployment-config.dev.ts`
 
-**GenArt721CoreV3_Engine:** https://etherscan.io/address/0x4A185f9A8ee3d247fD564407658602228a8de265#code
+**GenArt721CoreV3_Engine:** https://goerli.etherscan.io/address/0x4A185f9A8ee3d247fD564407658602228a8de265#code
 
-**AdminACLV1:** https://etherscan.io/address/0x4210a9477d0B0e4FfB20Ec04c649DA9982803Ac2#code
+**AdminACLV1:** https://goerli.etherscan.io/address/0x4210a9477d0B0e4FfB20Ec04c649DA9982803Ac2#code
 
-**Engine Registry:** https://etherscan.io/address/0x2A39132E8d594d2c840D6656327fB26d900C05bA#code
+**Engine Registry:** https://goerli.etherscan.io/address/0x2A39132E8d594d2c840D6656327fB26d900C05bA#code
 
-**MinterFilterV1:** https://etherscan.io/address/0x19254c1226Dbb83EC08Ab07Ba0B5c3994792D9D8#code
+**MinterFilterV1:** https://goerli.etherscan.io/address/0x19254c1226Dbb83EC08Ab07Ba0B5c3994792D9D8#code
 
 **Minters:**
 
-**MinterSetPriceV4:** https://etherscan.io/address/0x2cf1978Cf9C66Ac98a9cb0259b9F4Ca51aF149f1#code
+**MinterSetPriceV4:** https://goerli.etherscan.io/address/0x2cf1978Cf9C66Ac98a9cb0259b9F4Ca51aF149f1#code
 
-**MinterDAExpSettlementV1:** https://etherscan.io/address/0xf1A6EF1FA55AbF58fC801109D622A0b68E142bF0#code
-
-
+**MinterDAExpSettlementV1:** https://goerli.etherscan.io/address/0xf1A6EF1FA55AbF58fC801109D622A0b68E142bF0#code
 
 **Metadata**
 
@@ -41,4 +38,3 @@ Date: 2023-03-03T18:15:32.253Z
 - **Image Bucket:** weekly-wins-demo-goerli
 
 ---
-

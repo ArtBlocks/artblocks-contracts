@@ -149,6 +149,8 @@ async function main() {
     //////////////////////////////////////////////////////////////////////////////
 
     const outputSummaryFile = path.join(inputFileDirectory, "DEPLOYMENTS.md");
+    const etherscanSubdomain =
+      networkName === "mainnet" ? "" : `${networkName}.`;
     const outputMd = `
 # Minter Deployment
 
@@ -162,7 +164,7 @@ Date: ${new Date().toISOString()}
 
 **${
       deployDetails.minterName
-    }:** https://etherscan.io/address/${minterAddress}#code
+    }:** https://${etherscanSubdomain}etherscan.io/address/${minterAddress}#code
 
 **Associated core contract:** ${deployDetails.genArt721V3CoreAddress}
 
