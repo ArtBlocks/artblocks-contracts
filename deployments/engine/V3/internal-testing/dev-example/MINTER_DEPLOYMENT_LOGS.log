@@ -15,3 +15,14 @@ Successfully verified contract MinterDAExpSettlementV2 on Etherscan.
 https://goerli.etherscan.io/address/0x1732eA26A4dbA4863527F7Eee4a9272607fE9db6#code
 [INFO] MinterDAExpSettlementV2 contract verified on Etherscan at 0x1732eA26A4dbA4863527F7Eee4a9272607fE9db6}
 [INFO] Minter deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/deployments/engine/V3/internal-testing/dev-example/DEPLOYMENTS.md
+----------------------------------------
+[INFO] Datetime of minter deployment: 2023-03-27T22:19:50.189Z
+[INFO] Minter deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/deployments/engine/V3/internal-testing/dev-example/minter-deploy-config-02.dev.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying MinterSEAV0 with deploy args [0x5702797Ff45FCb0a70eB6AE1E4563299dCFa9Dd6,0x72AE7160A580893Fb1049D17Fbd736Ad39Ea7FbD,0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6]...
+[INFO] MinterSEAV0 deployed at 0x39d97fbcCC17b1c7c09aBc6F0fdFC3403D5d9A2F
+[INFO] allowlisted the new minter on the minter filter at 0x72AE7160A580893Fb1049D17Fbd736Ad39Ea7FbD
+[INFO] Verifying MinterSEAV0 contract deployment...
+The contract 0x39d97fbcCC17b1c7c09aBc6F0fdFC3403D5d9A2F has already been verified
+[INFO] MinterSEAV0 contract verified on Etherscan at 0x39d97fbcCC17b1c7c09aBc6F0fdFC3403D5d9A2F}
+[INFO] Minter deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/deployments/engine/V3/internal-testing/dev-example/DEPLOYMENTS.md

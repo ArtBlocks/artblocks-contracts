@@ -16,6 +16,7 @@ import prompt from "prompt";
 import { delay, getAppPath } from "../../util/utils";
 import {
   DELEGATION_REGISTRY_ADDRESSES,
+  WETH_ADDRESSES,
   EXTRA_DELAY_BETWEEN_TX,
 } from "../../util/constants";
 
@@ -100,18 +101,25 @@ async function main() {
     const minterName = deployDetails.minterName;
     const minterFactory = await ethers.getContractFactory(minterName);
     // build deploy args
-    const minterDeployArgs = [
+    const minterConstructorArgs = [
       deployDetails.genArt721V3CoreAddress,
       deployDetails.minterFilterAddress,
     ];
-    if (minterFactory.interface.deploy.inputs.length > 2) {
-      // our minters sometimes have a third parameter that is delegation registry
-      minterDeployArgs.push(DELEGATION_REGISTRY_ADDRESSES[networkName]);
+
+    // add delegation registry address to constructor args if needed
+    if (
+      minterName.startsWith("MinterHolder") ||
+      minterName.startsWith("MinterMerkle") ||
+      minterName.startsWith("MinterPolyptych")
+    ) {
+      minterConstructorArgs.push(DELEGATION_REGISTRY_ADDRESSES[networkName]);
+    } else if (minterName.startsWith("MinterSEA")) {
+      minterConstructorArgs.push(WETH_ADDRESSES[networkName]);
     }
     console.log(
-      `[INFO] Deploying ${minterName} with deploy args [${minterDeployArgs}]...`
+      `[INFO] Deploying ${minterName} with deploy args [${minterConstructorArgs}]...`
     );
-    const minter = await minterFactory.deploy(...minterDeployArgs);
+    const minter = await minterFactory.deploy(...minterConstructorArgs);
     await minter.deployed();
     const minterAddress = minter.address;
     console.log(`[INFO] ${minterName} deployed at ${minterAddress}`);
@@ -137,7 +145,12 @@ async function main() {
     await delay(EXTRA_DELAY_BETWEEN_TX);
 
     // Attempt to verify source code on Etherscan
-    await tryVerify(minterName, minterAddress, minterDeployArgs, networkName);
+    await tryVerify(
+      minterName,
+      minterAddress,
+      minterConstructorArgs,
+      networkName
+    );
     await delay(EXTRA_DELAY_BETWEEN_TX);
 
     //////////////////////////////////////////////////////////////////////////////
@@ -170,7 +183,7 @@ Date: ${new Date().toISOString()}
 
 **Associated minter filter:** ${deployDetails.minterFilterAddress}
 
-**Deployment Args:** ${minterDeployArgs}
+**Deployment Args:** ${minterConstructorArgs}
 
 ---
 

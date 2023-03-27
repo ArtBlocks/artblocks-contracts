@@ -24,8 +24,8 @@
     "deploy:dev:v3-engine": "yarn codegen:dev && NODE_ENV=dev yarn hardhat run --network goerli scripts/engine/V3/generic-engine-deployer.ts",
     "deploy:staging:v3-engine": "yarn codegen:staging && NODE_ENV=staging yarn hardhat run --network goerli scripts/engine/V3/generic-engine-deployer.ts",
     "deploy:mainnet:v3-engine": "yarn codegen:mainnet && NODE_ENV=mainnet yarn hardhat run --network mainnet scripts/engine/V3/generic-engine-deployer.ts",
-    "deploy:goerli:minter": "yarn hardhat run --network goerli scripts/minter-deployments/generic-minter-deployer-v3core.ts",
-    "deploy:mainnet:minter": "yarn hardhat run --network mainnet scripts/minter-deployments/generic-minter-deployer-v3core.ts"
+    "deploy:goerli:minter": "yarn hardhat run --network goerli scripts/minter-deployments/V3/generic-minter-deployer-v3core.ts",
+    "deploy:mainnet:minter": "yarn hardhat run --network mainnet scripts/minter-deployments/V3/generic-minter-deployer-v3core.ts"
   },
   "husky": {
     "hooks": {
