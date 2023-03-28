@@ -1087,6 +1087,7 @@ contract GenArt721CoreV3_Engine_Flex_PROOF is
      * @param _projectId Project ID to be toggled.
      */
     function toggleProjectIsPaused(uint256 _projectId) external {
+        _onlyValidProjectId(_projectId);
         _onlyArtistOrAdminACL(_projectId, this.toggleProjectIsPaused.selector);
         projects[_projectId].paused = !projects[_projectId].paused;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_PAUSED);
@@ -1177,6 +1178,7 @@ contract GenArt721CoreV3_Engine_Flex_PROOF is
         uint256 _projectId,
         uint256 _secondMarketRoyalty
     ) external {
+        _onlyValidProjectId(_projectId);
         _onlyArtistOrAdminACL(
             _projectId,
             this.updateProjectSecondaryMarketRoyaltyPercentage.selector
@@ -1229,6 +1231,7 @@ contract GenArt721CoreV3_Engine_Flex_PROOF is
         uint256 _projectId,
         string memory _projectWebsite
     ) external {
+        _onlyValidProjectId(_projectId);
         _onlyArtistOrAdminACL(_projectId, this.updateProjectWebsite.selector);
         projects[_projectId].website = _projectWebsite;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_WEBSITE);
@@ -1263,6 +1266,7 @@ contract GenArt721CoreV3_Engine_Flex_PROOF is
         uint256 _projectId,
         uint24 _maxInvocations
     ) external {
+        _onlyValidProjectId(_projectId);
         _onlyArtistOrAdminACL(
             _projectId,
             this.updateProjectMaxInvocations.selector
@@ -1439,6 +1443,7 @@ contract GenArt721CoreV3_Engine_Flex_PROOF is
         uint256 _projectId,
         string memory _newBaseURI
     ) external {
+        _onlyValidProjectId(_projectId);
         _onlyArtistOrAdminACL(_projectId, this.updateProjectBaseURI.selector);
         _onlyNonEmptyString(_newBaseURI);
         projects[_projectId].projectBaseURI = _newBaseURI;
