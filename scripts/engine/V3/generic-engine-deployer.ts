@@ -393,6 +393,32 @@ async function main() {
       console.log(`[INFO] Skipping adding placeholder initial token.`);
     }
 
+    // transfer superAdmin role on adminACL
+    let adminACL: Contract;
+    // @dev - we only use functionality in AdminACLV0, so fine to cast as AdminACLV0 here
+    let adminACLContractName = "AdminACLV0";
+    if (deployDetails.existingAdminACL) {
+      adminACLContractName = deployDetails.adminACLContractName;
+    }
+    const adminACLFactory = await ethers.getContractFactory(
+      adminACLContractName
+    );
+    adminACL = adminACLFactory.attach(adminACLAddress);
+    if (deployDetails.doTransferSuperAdminRole) {
+      // transfer superAdmin role on adminACL, triggering indexing update on new core contract
+      await adminACL
+        .connect(deployer)
+        .changeSuperAdmin(deployDetails.newSuperAdminAddress, [
+          genArt721Core.address,
+        ]);
+      console.log(
+        `[INFO] Transferred superAdmin role on adminACL to ${deployDetails.newSuperAdminAddress}.`
+      );
+      await delay(EXTRA_DELAY_BETWEEN_TX);
+    } else {
+      console.log(`[INFO] Skipping transfer of superAdmin role on adminACL.`);
+    }
+
     //////////////////////////////////////////////////////////////////////////////
     // SETUP ENDS HERE
     //////////////////////////////////////////////////////////////////////////////
@@ -450,7 +476,8 @@ async function main() {
       );
     }
     // ADMIN ACL CONTRACT
-    if (deployDetails.existingAdminACL !== undefined) {
+    if (deployDetails.existingAdminACL == undefined) {
+      // only verify if we deployed a new adminACL contract
       await tryVerify("AdminACL", adminACLAddress, [], networkName);
     }
     // MINTER FILTER CONTRACT
@@ -594,15 +621,6 @@ ${deployedMinterNames
     );
 
     // Reminder to update adminACL superAdmin if needed
-    let adminACL: Contract;
-    let adminACLContractName = "AdminACLV1"; // default
-    if (deployDetails.existingAdminACL) {
-      adminACLContractName = deployDetails.adminACLContractName;
-    }
-    const adminACLFactory = await ethers.getContractFactory(
-      adminACLContractName
-    );
-    adminACL = adminACLFactory.attach(adminACLAddress);
     const adminACLSuperAdmin = await adminACL.superAdmin();
     console.log(
       `[ACTION] AdminACL's superAdmin address is ${adminACLSuperAdmin}, don't forget to update if requred.`
