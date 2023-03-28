@@ -15,7 +15,7 @@ export const deployDetailsArray = [
     // See the `KNOWN_ENGINE_REGISTRIES` object in `/scripts/engine/V3/constants.ts` for the correct registry address for
     // the intended network and the corresponding deployer wallet addresses
     // @dev if you neeed a new engine registry, use the `/scripts/engine/V3/engine-registry-deployer.ts` script
-    engineRegistryAddress: "0xEa698596b6009A622C3eD00dD5a8b5d1CAE4fC36",
+    engineRegistryAddress: "0x652490c8BB6e7ec3Fd798537D2F348D7904BBbc2",
     randomizerContractName: "BasicRandomizerV2",
     // @dev this is a forked version of the V3 Engine Flex contract
     genArt721CoreContractName: "GenArt721CoreV3_Engine_Flex_PROOF",
