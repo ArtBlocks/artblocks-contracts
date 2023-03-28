@@ -251,6 +251,16 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
             "Illegal contract pairing"
         );
         weth = IWETH(_wethAddress);
+        // emit events indicating default minter configuration values
+        emit AuctionDurationSecondsRangeUpdated(
+            minAuctionDurationSeconds,
+            maxAuctionDurationSeconds
+        );
+        emit MinterMinBidIncrementPercentageUpdated(
+            minterMinBidIncrementPercentage
+        );
+        emit MinterTimeBufferUpdated(minterTimeBufferSeconds);
+        emit MinterRefundGasLimitUpdated(minterRefundGasLimit);
     }
 
     /**
