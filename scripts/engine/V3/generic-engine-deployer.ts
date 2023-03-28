@@ -34,6 +34,7 @@ var log_stdout = process.stdout;
 const SUPPORTED_CORE_CONTRACTS = [
   "GenArt721CoreV3_Engine",
   "GenArt721CoreV3_Engine_Flex",
+  "GenArt721CoreV3_Engine_Flex_PROOF",
 ];
 
 /**
