@@ -1078,6 +1078,10 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
      *     contract or minter
      *   - the project config's `nextTokenNumberIsPopulated` is already true
      * @param _projectId The ID of the project to mint a new token for.
+     * @dev this calls mint with `msg.sender` as the sender, allowing artists
+     * to mint tokens to the next token slot for their project while a project
+     * is still paused. This happens when an artist is configuring their
+     * project's auction parameters or minter max invocations.
      */
     function _tryMintTokenToNextSlot(uint256 _projectId) internal {
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
@@ -1114,7 +1118,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         uint256 nextTokenId = minterFilter.mint(
             address(this),
             _projectId,
-            address(this)
+            msg.sender
         );
         // update state to reflect new token number
         // @dev state changes after trusted contract interaction
