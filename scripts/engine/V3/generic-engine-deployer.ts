@@ -404,7 +404,7 @@ async function main() {
       adminACLContractName
     );
     adminACL = adminACLFactory.attach(adminACLAddress);
-    if (deployDetails.doTransferSuperAdminRole) {
+    if (deployDetails.doTransferSuperAdmin) {
       // transfer superAdmin role on adminACL, triggering indexing update on new core contract
       await adminACL
         .connect(deployer)
