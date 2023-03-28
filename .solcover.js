@@ -11,7 +11,7 @@ module.exports = {
     "engine-registry/future/",
     "BasicRandomizer.sol",
     "BasicRandomizerV2.sol",
-    "engine/v3/forks/",
+    "engine/V3/forks/",
   ],
   mocha: {
     // coverage distorts gas tests, so disable it
