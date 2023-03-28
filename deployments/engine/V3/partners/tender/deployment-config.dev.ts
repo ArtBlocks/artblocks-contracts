@@ -1,6 +1,6 @@
 // This file is used to configure the deployment of the Engine Partner contracts
 // It is intended to be imported by the generic deployer in `/scripts/engine/V3/generic-v3-engine-deployer.ts`
-// @dev ticket: https://github.com/ArtBlocks/artblocks/issues/405
+// @dev ticket: https://github.com/ArtBlocks/artblocks/issues/523
 export const deployDetailsArray = [
   {
     network: "goerli",
