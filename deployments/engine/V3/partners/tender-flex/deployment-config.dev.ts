@@ -29,7 +29,8 @@ export const deployDetailsArray = [
     minters: [
       // include any of the most recent minter contracts the engine partner wishes to use
       // @dev ensure the minter contracts here are the latest versions
-      "MinterDAExpV4",
+      "MinterDAExpSettlementV2",
+      "MinterMerkleV5",
     ],
     // set to true if you want to add an initial project to the core contract
     addInitialProject: false,
@@ -46,6 +47,6 @@ export const deployDetailsArray = [
     // common values include `fullyonchain`, `flex`, or partnerships like `artblocksxpace`.
     // also note that if you desire to create a new veritcal, you will need to add the vertical name to the
     // `project_verticals` table in the database before running this deploy script.
-    defaultVerticalName: "fullyonchain",
+    defaultVerticalName: "flex",
   },
 ];
