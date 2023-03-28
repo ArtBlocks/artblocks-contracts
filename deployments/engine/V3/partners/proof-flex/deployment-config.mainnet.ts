@@ -22,7 +22,7 @@ export const deployDetailsArray = [
     tokenName: "PROOF Blocks",
     tokenTicker: "PRFBLCKS",
     startingProjectId: 0,
-    autoApproveArtistSplitProposals: true,
+    autoApproveArtistSplitProposals: false,
     renderProviderAddress: "TODO", // use either "0x..." or special "deployer" which sets the render provider to the deployer
     platformProviderAddress: "0x32220f07DBcd18149f619F28cD09FD911cc0372D", // use either "0x..." or special "deployer" which sets the render provider to the deployer
     // minter suite
