@@ -1,6 +1,6 @@
 // This file is used to configure the deployment of the Engine Partner contracts
 // It is intended to be imported by the generic deployer in `/scripts/engine/V3/generic-v3-engine-deployer.ts`
-// @dev ticket: https://github.com/ArtBlocks/artblocks/issues/529
+// @dev ticket: https://github.com/ArtBlocks/artblocks/issues/531
 export const deployDetailsArray = [
   {
     network: "goerli",
@@ -17,13 +17,13 @@ export const deployDetailsArray = [
     // @dev if you neeed a new engine registry, use the `/scripts/engine/V3/engine-registry-deployer.ts` script
     engineRegistryAddress: "0xEa698596b6009A622C3eD00dD5a8b5d1CAE4fC36",
     randomizerContractName: "BasicRandomizerV2",
-    genArt721CoreContractName: "GenArt721CoreV3_Engine_Flex",
-    tokenName: "Audio Galleries Generator",
-    tokenTicker: "AGG",
+    genArt721CoreContractName: "GenArt721CoreV3_Engine",
+    tokenName: "PlottablesV3",
+    tokenTicker: "PLOTSV3",
     startingProjectId: 0,
     autoApproveArtistSplitProposals: true,
     renderProviderAddress: "deployer", // use either "0x..." or special "deployer" which sets the render provider to the deployer
-    platformProviderAddress: "0x0396D20242A85F877f58018228E345E398E4a969", // use either "0x..." or special "deployer" which sets the render provider to the deployer
+    platformProviderAddress: "0xC9604821E25E162452157c932380984F7c1f6402", // use either "0x..." or special "deployer" which sets the render provider to the deployer
     // minter suite
     minterFilterContractName: "MinterFilterV1",
     minters: [
@@ -41,12 +41,12 @@ export const deployDetailsArray = [
     doTransferSuperAdmin: true,
     // set to the address you want to transfer the superAdmin role to
     // (this will only work if you have set doTransferSuperAdmin to true, can be undefined if you are not transferring)
-    newSuperAdminAddress: "0x0396D20242A85F877f58018228E345E398E4a969", // use either "0x..." or undefined if not transferring
+    newSuperAdminAddress: "0xC9604821E25E162452157c932380984F7c1f6402", // use either "0x..." or undefined if not transferring
     // optionally define this to set default vertical name for the contract after deployment.
     // if not defined, the default vertical name will be "unassigned".
     // common values include `fullyonchain`, `flex`, or partnerships like `artblocksxpace`.
     // also note that if you desire to create a new veritcal, you will need to add the vertical name to the
     // `project_verticals` table in the database before running this deploy script.
-    defaultVerticalName: "flex",
+    defaultVerticalName: "fullyonchain",
   },
 ];
