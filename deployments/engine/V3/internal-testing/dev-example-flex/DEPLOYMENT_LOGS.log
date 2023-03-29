@@ -1,0 +1,37 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-03-29T17:34:32.999Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/deployments/engine/V3/internal-testing/dev-example-flex/deployment-config.dev.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: dev
+[INFO] New Admin ACL AdminACLV0 deployed at address: 0xc4FD990F66Bc5eb47e770B3e6477A3f2326af3C1
+[INFO] Randomizer BasicRandomizerV2 deployed at 0x98b0a2dFAD5BAb88440D3ff8e7cBeb157cc71C38
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x2b397eb0bEF7665ac836bF132AFa83F654496871
+[INFO] Minter Filter MinterFilterV1 deployed at 0xe6b1E4DF5F006B4609AFaD160DEbcaD44AE95B18
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0xe6b1E4DF5F006B4609AFaD160DEbcaD44AE95B18.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Skipping transfer of superAdmin role on adminACL.
+[INFO] Verifying core contract contract deployment...
+The contract 0x2b397eb0bEF7665ac836bF132AFa83F654496871 has already been verified
+[INFO] Core contract verified on Etherscan at 0x2b397eb0bEF7665ac836bF132AFa83F654496871}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0xc4FD990F66Bc5eb47e770B3e6477A3f2326af3C1 has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0xc4FD990F66Bc5eb47e770B3e6477A3f2326af3C1}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0xe6b1E4DF5F006B4609AFaD160DEbcaD44AE95B18 has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0xe6b1E4DF5F006B4609AFaD160DEbcaD44AE95B18}
+Created s3 bucket for https://engine-partner-flex-goerli.s3.amazonaws.com
+[INFO] Created image bucket engine-partner-flex-goerli
+[INFO] Deployment details written to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/deployments/engine/V3/internal-testing/dev-example-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x2b397eb0bef7665ac836bf132afa83f654496871",
+  "name": "Engine Partner Flex",
+  "bucket_name": "engine-partner-flex-goerli",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0x2246475beddf9333b6a6D9217194576E7617Afd1. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x2246475beddf9333b6a6D9217194576E7617Afd1, don't forget to update if requred.

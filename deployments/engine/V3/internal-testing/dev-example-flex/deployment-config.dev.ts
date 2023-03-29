@@ -10,15 +10,15 @@ export const deployDetailsArray = [
     existingAdminACL: undefined,
     // the following can be undefined if you are using an existing admin ACL, otherwise define the Admin ACL contract name
     // if deploying a new AdminACL
-    adminACLContractName: "AdminACLV1",
+    adminACLContractName: "AdminACLV0",
     // See the `KNOWN_ENGINE_REGISTRIES` object in `/scripts/engine/V3/constants.ts` for the correct registry address for
     // the intended network and the corresponding deployer wallet addresses
     // @dev if you neeed a new engine registry, use the `/scripts/engine/V3/engine-registry-deployer.ts` script
-    engineRegistryAddress: "0x263113c07CB69eE047E6572E135E8C3C6302feFE",
+    engineRegistryAddress: "0x2A39132E8d594d2c840D6656327fB26d900C05bA",
     randomizerContractName: "BasicRandomizerV2",
-    genArt721CoreContractName: "GenArt721CoreV3_Engine",
-    tokenName: "Engine Partner",
-    tokenTicker: "PRTNR",
+    genArt721CoreContractName: "GenArt721CoreV3_Engine_Flex",
+    tokenName: "Engine Partner Flex",
+    tokenTicker: "DEV_EX_FLEX",
     startingProjectId: 0,
     autoApproveArtistSplitProposals: true,
     renderProviderAddress: "deployer", // use either "0x..." or special "deployer" which sets the render provider to the deployer
@@ -28,19 +28,12 @@ export const deployDetailsArray = [
     minters: [
       // include any of the most recent minter contracts the engine partner wishes to use
       // @dev ensure the minter contracts here are the latest versions
-      "MinterSetPriceV4",
-      "MinterSetPriceERC20V4",
-      "MinterDAExpV4",
-      "MinterDAExpSettlementV1",
-      "MinterDALinV4",
-      "MinterHolderV4",
-      "MinterMerkleV5",
     ],
     // set to true if you want to add an initial project to the core contract
-    addInitialProject: true,
+    addInitialProject: false,
     // set to true if you want to add an initial token to the initial project
     // (this will only work if you have set addInitialProject to true, and requires a MinterSetPriceV[4-9])
-    addInitialToken: true,
+    addInitialToken: false,
     // set to true if you want to transfer the superAdmin role to a different address
     doTransferSuperAdmin: false,
     // set to the address you want to transfer the superAdmin role to
@@ -51,6 +44,11 @@ export const deployDetailsArray = [
     // common values include `fullyonchain`, `flex`, or partnerships like `artblocksxpace`.
     // also note that if you desire to create a new veritcal, you will need to add the vertical name to the
     // `project_verticals` table in the database before running this deploy script.
-    defaultVerticalName: "fullyonchain",
+    // optionally define this to set default vertical name for the contract after deployment.
+    // if not defined, the default vertical name will be "unassigned".
+    // common values include `fullyonchain`, `flex`, or partnerships like `artblocksxpace`.
+    // also note that if you desire to create a new veritcal, you will need to add the vertical name to the
+    // `project_verticals` table in the database before running this deploy script.
+    defaultVerticalName: "flex",
   },
 ];
