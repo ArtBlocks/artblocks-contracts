@@ -5,7 +5,7 @@ import { ethers } from "hardhat";
 import path from "path";
 import fs from "fs";
 var util = require("util");
-import { tryVerify } from "../util/verification";
+import { tryVerify } from "../../util/verification";
 
 // hide nuisance logs about event overloading
 import { Logger } from "@ethersproject/logger";
@@ -13,9 +13,12 @@ Logger.setLogLevel(Logger.levels.ERROR);
 import prompt from "prompt";
 
 // delay to avoid issues with reorgs and tx failures
-import { delay, getAppPath } from "../util/utils";
-import { DELEGATION_REGISTRY_ADDRESSES } from "../util/constants";
-const EXTRA_DELAY_BETWEEN_TX = 5000; // ms
+import { delay, getAppPath } from "../../util/utils";
+import {
+  DELEGATION_REGISTRY_ADDRESSES,
+  WETH_ADDRESSES,
+  EXTRA_DELAY_BETWEEN_TX,
+} from "../../util/constants";
 
 /**
  * This script was created to deploy a generic minter contract to the Ethereum
@@ -98,18 +101,25 @@ async function main() {
     const minterName = deployDetails.minterName;
     const minterFactory = await ethers.getContractFactory(minterName);
     // build deploy args
-    const minterDeployArgs = [
+    const minterConstructorArgs = [
       deployDetails.genArt721V3CoreAddress,
       deployDetails.minterFilterAddress,
     ];
-    if (minterFactory.interface.deploy.inputs.length > 2) {
-      // our minters sometimes have a third parameter that is delegation registry
-      minterDeployArgs.push(DELEGATION_REGISTRY_ADDRESSES[networkName]);
+
+    // add delegation registry address to constructor args if needed
+    if (
+      minterName.startsWith("MinterHolder") ||
+      minterName.startsWith("MinterMerkle") ||
+      minterName.startsWith("MinterPolyptych")
+    ) {
+      minterConstructorArgs.push(DELEGATION_REGISTRY_ADDRESSES[networkName]);
+    } else if (minterName.startsWith("MinterSEA")) {
+      minterConstructorArgs.push(WETH_ADDRESSES[networkName]);
     }
     console.log(
-      `[INFO] Deploying ${minterName} with deploy args [${minterDeployArgs}]...`
+      `[INFO] Deploying ${minterName} with deploy args [${minterConstructorArgs}]...`
     );
-    const minter = await minterFactory.deploy(...minterDeployArgs);
+    const minter = await minterFactory.deploy(...minterConstructorArgs);
     await minter.deployed();
     const minterAddress = minter.address;
     console.log(`[INFO] ${minterName} deployed at ${minterAddress}`);
@@ -135,7 +145,12 @@ async function main() {
     await delay(EXTRA_DELAY_BETWEEN_TX);
 
     // Attempt to verify source code on Etherscan
-    await tryVerify(minterName, minterAddress, minterDeployArgs, networkName);
+    await tryVerify(
+      minterName,
+      minterAddress,
+      minterConstructorArgs,
+      networkName
+    );
     await delay(EXTRA_DELAY_BETWEEN_TX);
 
     //////////////////////////////////////////////////////////////////////////////
@@ -147,6 +162,8 @@ async function main() {
     //////////////////////////////////////////////////////////////////////////////
 
     const outputSummaryFile = path.join(inputFileDirectory, "DEPLOYMENTS.md");
+    const etherscanSubdomain =
+      networkName === "mainnet" ? "" : `${networkName}.`;
     const outputMd = `
 # Minter Deployment
 
@@ -160,13 +177,13 @@ Date: ${new Date().toISOString()}
 
 **${
       deployDetails.minterName
-    }:** https://etherscan.io/address/${minterAddress}#code
+    }:** https://${etherscanSubdomain}etherscan.io/address/${minterAddress}#code
 
 **Associated core contract:** ${deployDetails.genArt721V3CoreAddress}
 
 **Associated minter filter:** ${deployDetails.minterFilterAddress}
 
-**Deployment Args:** ${minterDeployArgs}
+**Deployment Args:** ${minterConstructorArgs}
 
 ---
 
