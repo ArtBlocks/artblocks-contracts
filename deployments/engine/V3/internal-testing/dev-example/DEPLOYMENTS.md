@@ -71,6 +71,8 @@ Date: 2023-02-16T00:13:46.593Z
 
 # Minter Deployment
 
+## Note: THIS MINTER HAS BEEN REMOVED FROM SUBGRAPH INDEXING DUE TO A BUGGED IMPLEMENTATION
+
 Date: 2023-03-27T22:20:22.266Z
 
 ## **Network:** goerli
@@ -88,3 +90,24 @@ Date: 2023-03-27T22:20:22.266Z
 **Deployment Args:** 0x5702797Ff45FCb0a70eB6AE1E4563299dCFa9Dd6,0x72AE7160A580893Fb1049D17Fbd736Ad39Ea7FbD,0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6
 
 ---
+
+# Minter Deployment
+
+Date: 2023-03-29T23:00:21.255Z
+
+## **Network:** goerli
+
+## **Environment:** dev
+
+**Deployment Input File:** `deployments/engine/V3/internal-testing/dev-example/minter-deploy-config-02.dev.ts`
+
+**MinterSEAV0:** https://goerli.etherscan.io/address/0x7cd69aa289BDb64AB8139F896a9FF7B8c8fB5a2B#code
+
+**Associated core contract:** 0x5702797Ff45FCb0a70eB6AE1E4563299dCFa9Dd6
+
+**Associated minter filter:** 0x72AE7160A580893Fb1049D17Fbd736Ad39Ea7FbD
+
+**Deployment Args:** 0x5702797Ff45FCb0a70eB6AE1E4563299dCFa9Dd6,0x72AE7160A580893Fb1049D17Fbd736Ad39Ea7FbD,0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6
+
+---
+
