@@ -1,0 +1,49 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-03-29T00:47:46.947Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/proof-flex/deployment-config.dev.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV0 deployed at address: 0x489A6680cf268E5F7da783F7666c7CfC346DBEa3
+[INFO] Randomizer BasicRandomizerV2 deployed at 0x2e9242B96351280C561a6f9db0e0127923e3f5E4
+[INFO] Core GenArt721CoreV3_Engine_Flex_PROOF deployed at 0x5f53E89f060F6B45333b0CA809E126795Bd978E9
+[INFO] Minter Filter MinterFilterV1 deployed at 0xD8B6dcA208B6F8D08eb429C1b027F6e5FAbFAC53
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0xD8B6dcA208B6F8D08eb429C1b027F6e5FAbFAC53.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0x32220f07DBcd18149f619F28cD09FD911cc0372D.
+[INFO] Verifying core contract contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/GenArt721CoreV3_Engine_Flex_PROOF.sol:GenArt721CoreV3_Engine_Flex_PROOF at 0x5f53E89f060F6B45333b0CA809E126795Bd978E9
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract GenArt721CoreV3_Engine_Flex_PROOF on Etherscan.
+https://goerli.etherscan.io/address/0x5f53E89f060F6B45333b0CA809E126795Bd978E9#code
+[INFO] Core contract verified on Etherscan at 0x5f53E89f060F6B45333b0CA809E126795Bd978E9}
+[INFO] Verifying AdminACL contract deployment...
+Compiled 199 Solidity files successfully
+Successfully submitted source code for contract
+contracts/AdminACLV0.sol:AdminACLV0 at 0x489A6680cf268E5F7da783F7666c7CfC346DBEa3
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract AdminACLV0 on Etherscan.
+https://goerli.etherscan.io/address/0x489A6680cf268E5F7da783F7666c7CfC346DBEa3#code
+[INFO] AdminACL contract verified on Etherscan at 0x489A6680cf268E5F7da783F7666c7CfC346DBEa3}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0xD8B6dcA208B6F8D08eb429C1b027F6e5FAbFAC53 has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0xD8B6dcA208B6F8D08eb429C1b027F6e5FAbFAC53}
+Created s3 bucket for https://proof-blocks-goerli.s3.amazonaws.com
+[INFO] Created image bucket proof-blocks-goerli
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/proof-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x5f53e89f060f6b45333b0ca809e126795bd978e9",
+  "name": "PROOF Blocks",
+  "bucket_name": "proof-blocks-goerli",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x32220f07DBcd18149f619F28cD09FD911cc0372D, don't forget to update if requred.
