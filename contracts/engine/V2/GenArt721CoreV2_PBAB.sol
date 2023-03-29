@@ -1,25 +1,22 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../interfaces/0.8.x/IRandomizer.sol";
-import "../interfaces/0.8.x/IGenArt721CoreV2_PBAB.sol";
+import "../../interfaces/0.8.x/IRandomizer.sol";
+import "../../interfaces/0.8.x/IGenArt721CoreV2_PBAB.sol";
+
 import "@openzeppelin-4.5/contracts/utils/Strings.sol";
+
 import "@openzeppelin-4.5/contracts/token/ERC721/ERC721.sol";
 
 pragma solidity 0.8.9;
 
 /**
- * @title Art Blocks Engine ERC-721 core contract with FLEX integration.
- * Allows for projects to specify external asset dependencies from either IPFS or ARWEAVE.
+ * @title Powered by Art Blocks ERC-721 core contract.
  * @author Art Blocks Inc.
  */
-contract GenArt721CoreV2_ENGINE_FLEX is ERC721, IGenArt721CoreV2_PBAB {
+contract GenArt721CoreV2_PBAB is ERC721, IGenArt721CoreV2_PBAB {
     /// randomizer contract
     IRandomizer public randomizerContract;
-
-    /// version & type of this core contract
-    string public constant coreVersion = "v2.0.0";
-    string public constant coreType = "GenArt721CoreV2_ENGINE_FLEX";
 
     struct Project {
         string name;
@@ -37,42 +34,7 @@ contract GenArt721CoreV2_ENGINE_FLEX is ERC721, IGenArt721CoreV2_PBAB {
         bool active;
         bool locked;
         bool paused;
-        bool externalAssetDependenciesLocked;
-        uint24 externalAssetDependencyCount;
-        mapping(uint256 => ExternalAssetDependency) externalAssetDependencies;
     }
-
-    event ExternalAssetDependencyUpdated(
-        uint256 indexed _projectId,
-        uint256 indexed _index,
-        string _cid,
-        ExternalAssetDependencyType _dependencyType,
-        uint24 _externalAssetDependencyCount
-    );
-
-    event ExternalAssetDependencyRemoved(
-        uint256 indexed _projectId,
-        uint256 indexed _index
-    );
-
-    event GatewayUpdated(
-        ExternalAssetDependencyType indexed _dependencyType,
-        string _gatewayAddress
-    );
-
-    event ProjectExternalAssetDependenciesLocked(uint256 indexed _projectId);
-
-    enum ExternalAssetDependencyType {
-        IPFS,
-        ARWEAVE
-    }
-    struct ExternalAssetDependency {
-        string cid;
-        ExternalAssetDependencyType dependencyType;
-    }
-
-    string public preferredIPFSGateway;
-    string public preferredArweaveGateway;
 
     uint256 constant ONE_MILLION = 1_000_000;
     mapping(uint256 => Project) projects;
@@ -103,18 +65,10 @@ contract GenArt721CoreV2_ENGINE_FLEX is ERC721, IGenArt721CoreV2_PBAB {
     mapping(address => bool) public isMintWhitelisted;
 
     /// next project ID to be created
-    uint256 public nextProjectId = 0;
+    uint256 public nextProjectId;
 
     modifier onlyValidTokenId(uint256 _tokenId) {
         require(_exists(_tokenId), "Token ID does not exist");
-        _;
-    }
-
-    modifier onlyUnlockedProjectExternalAssetDependencies(uint256 _projectId) {
-        require(
-            !projects[_projectId].externalAssetDependenciesLocked,
-            "Project external asset dependencies are locked"
-        );
         _;
     }
 
@@ -155,16 +109,22 @@ contract GenArt721CoreV2_ENGINE_FLEX is ERC721, IGenArt721CoreV2_PBAB {
      * @param _tokenName Name of token.
      * @param _tokenSymbol Token symbol.
      * @param _randomizerContract Randomizer contract.
+     * @param _startingProjectId The initial next project ID.
+     * @dev _startingProjectId should be set to a value much, much less than
+     * max(uint256) to avoid overflow when adding to it.
      */
     constructor(
         string memory _tokenName,
         string memory _tokenSymbol,
-        address _randomizerContract
+        address _randomizerContract,
+        uint256 _startingProjectId
     ) ERC721(_tokenName, _tokenSymbol) {
         admin = msg.sender;
         isWhitelisted[msg.sender] = true;
         renderProviderAddress = payable(msg.sender);
         randomizerContract = IRandomizer(_randomizerContract);
+        // initialize next project ID
+        nextProjectId = _startingProjectId;
     }
 
     /**
@@ -232,26 +192,6 @@ contract GenArt721CoreV2_ENGINE_FLEX is ERC721, IGenArt721CoreV2_PBAB {
         emit Mint(_to, tokenIdToBe, _projectId);
 
         return tokenIdToBe;
-    }
-
-    /**
-     * @notice Updates preferredIPFSGateway to `_gateway`.
-     */
-    function updateIPFSGateway(
-        string calldata _gateway
-    ) public onlyWhitelisted {
-        preferredIPFSGateway = _gateway;
-        emit GatewayUpdated(ExternalAssetDependencyType.IPFS, _gateway);
-    }
-
-    /**
-     * @notice Updates preferredArweaveGateway to `_gateway`.
-     */
-    function updateArweaveGateway(
-        string calldata _gateway
-    ) public onlyWhitelisted {
-        preferredArweaveGateway = _gateway;
-        emit GatewayUpdated(ExternalAssetDependencyType.ARWEAVE, _gateway);
     }
 
     /**
@@ -325,20 +265,6 @@ contract GenArt721CoreV2_ENGINE_FLEX is ERC721, IGenArt721CoreV2_PBAB {
         uint256 _projectId
     ) public onlyWhitelisted onlyUnlocked(_projectId) {
         projects[_projectId].locked = true;
-    }
-
-    /**
-     * @notice Locks external asset dependencies for project `_projectId`.
-     */
-    function lockProjectExternalAssetDependencies(
-        uint256 _projectId
-    )
-        external
-        onlyArtistOrWhitelisted(_projectId)
-        onlyUnlockedProjectExternalAssetDependencies(_projectId)
-    {
-        projects[_projectId].externalAssetDependenciesLocked = true;
-        emit ProjectExternalAssetDependenciesLocked(_projectId);
     }
 
     /**
@@ -552,104 +478,6 @@ contract GenArt721CoreV2_ENGINE_FLEX is ERC721, IGenArt721CoreV2_PBAB {
     }
 
     /**
-     * @notice Updates external asset dependency for project `_projectId`.
-     * @param _projectId Project to be updated.
-     * @param _index Asset index.
-     * @param _cid Asset cid (Content identifier).
-     * @param _dependencyType Asset dependency type.
-     *  0 - IPFS
-     *  1 - ARWEAVE
-     */
-    function updateProjectExternalAssetDependency(
-        uint256 _projectId,
-        uint256 _index,
-        string calldata _cid,
-        ExternalAssetDependencyType _dependencyType
-    )
-        external
-        onlyUnlockedProjectExternalAssetDependencies(_projectId)
-        onlyArtistOrWhitelisted(_projectId)
-    {
-        uint24 assetCount = projects[_projectId].externalAssetDependencyCount;
-        require(_index < assetCount, "Asset index out of range");
-        projects[_projectId].externalAssetDependencies[_index].cid = _cid;
-        projects[_projectId]
-            .externalAssetDependencies[_index]
-            .dependencyType = _dependencyType;
-        emit ExternalAssetDependencyUpdated(
-            _projectId,
-            _index,
-            _cid,
-            _dependencyType,
-            assetCount
-        );
-    }
-
-    /**
-     * @notice Removes external asset dependency for project `_projectId` at index `_index`.
-     * Removal is done by swapping the element to be removed with the last element in the array, then deleting this last element.
-     * Assets with indices higher than `_index` can have their indices adjusted as a result of this operation.
-     * @param _projectId Project to be updated.
-     * @param _index Asset index
-     */
-    function removeProjectExternalAssetDependency(
-        uint256 _projectId,
-        uint256 _index
-    )
-        external
-        onlyUnlockedProjectExternalAssetDependencies(_projectId)
-        onlyArtistOrWhitelisted(_projectId)
-    {
-        uint24 assetCount = projects[_projectId].externalAssetDependencyCount;
-        require(_index < assetCount, "Asset index out of range");
-
-        uint24 lastElementIndex = assetCount - 1;
-
-        projects[_projectId].externalAssetDependencies[_index] = projects[
-            _projectId
-        ].externalAssetDependencies[lastElementIndex];
-        delete projects[_projectId].externalAssetDependencies[lastElementIndex];
-
-        projects[_projectId].externalAssetDependencyCount = lastElementIndex;
-
-        emit ExternalAssetDependencyRemoved(_projectId, _index);
-    }
-
-    /**
-     * @notice Adds external asset dependency for project `_projectId`.
-     * @param _projectId Project to be updated.
-     * @param _cid Asset cid (Content identifier).
-     * @param _dependencyType Asset dependency type.
-     *  0 - IPFS
-     *  1 - ARWEAVE
-     */
-    function addProjectExternalAssetDependency(
-        uint256 _projectId,
-        string calldata _cid,
-        ExternalAssetDependencyType _dependencyType
-    )
-        external
-        onlyUnlockedProjectExternalAssetDependencies(_projectId)
-        onlyArtistOrWhitelisted(_projectId)
-    {
-        uint24 assetCount = projects[_projectId].externalAssetDependencyCount;
-        ExternalAssetDependency memory asset = ExternalAssetDependency({
-            cid: _cid,
-            dependencyType: _dependencyType
-        });
-        projects[_projectId].externalAssetDependencies[assetCount] = asset;
-        projects[_projectId].externalAssetDependencyCount = assetCount + 1;
-
-        emit ExternalAssetDependencyUpdated(
-            _projectId,
-            assetCount,
-            _cid,
-            _dependencyType,
-            assetCount + 1
-        );
-    }
-
-    /**
      * @notice Removes last script from project `_projectId`.
      */
     function removeProjectLastScript(
@@ -798,33 +626,13 @@ contract GenArt721CoreV2_ENGINE_FLEX is ERC721, IGenArt721CoreV2_PBAB {
     }
 
     /**
-     * @notice Returns script for project `_projectId` at script index `_index`
-
+     * @notice Returns script for project `_projectId` at script index `_index`.
      */
     function projectScriptByIndex(
         uint256 _projectId,
         uint256 _index
     ) public view returns (string memory) {
         return projects[_projectId].scripts[_index];
-    }
-
-    /**
-     * @notice Returns external asset dependency for project `_projectId` at index `_index`.
-     */
-    function projectExternalAssetDependencyByIndex(
-        uint256 _projectId,
-        uint256 _index
-    ) public view returns (ExternalAssetDependency memory) {
-        return projects[_projectId].externalAssetDependencies[_index];
-    }
-
-    /**
-     * @notice Returns external asset dependency count for project `_projectId` at index `_index`.
-     */
-    function projectExternalAssetDependencyCount(
-        uint256 _projectId
-    ) public view returns (uint256) {
-        return uint256(projects[_projectId].externalAssetDependencyCount);
     }
 
     /**
