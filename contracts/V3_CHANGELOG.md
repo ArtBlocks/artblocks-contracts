@@ -2,7 +2,7 @@
 
 _This document is intended to document and explain the Art Blocks Core V3 changes, relative to the Art Blocks Core V1 contract_
 
-V3 performance metrics are available in [V3_Performance.md](V3_Performance.md)
+V3 performance metrics are available in [V3_Performance.md](V3_PERFORMANCE.md)
 
 ## The following changes were made in the Core V3 contract:
 
