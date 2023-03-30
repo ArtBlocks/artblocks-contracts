@@ -10,6 +10,15 @@ updates:
     # Check the npm registry for updates every day (weekdays)
     schedule:
       interval: "daily"
+    # ignore updates to these packages
+    ignore:
+      - dependency-name: "@gnosis.pm/safe-*"
+        update-types:
+          [
+            "version-update:semver-patch",
+            "version-update:semver-minor",
+            "version-update:semver-major",
+          ]
     # Add proper reviewers to the PR
     reviewers:
       - "ArtBlocks/eng-approvers-contracts"
