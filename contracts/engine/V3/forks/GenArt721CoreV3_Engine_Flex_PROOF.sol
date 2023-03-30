@@ -3,21 +3,20 @@ pragma solidity 0.8.17;
 
 // Created By: Art Blocks Inc.
 
-import "./interfaces/0.8.x/IRandomizerV2.sol";
-import "./interfaces/0.8.x/IAdminACLV0.sol";
-import "./interfaces/0.8.x/IEngineRegistryV0.sol";
-import "./interfaces/0.8.x/IGenArt721CoreContractV3_Engine.sol";
-import "./interfaces/0.8.x/IDependencyRegistryCompatibleV0.sol";
-import "./interfaces/0.8.x/IManifold.sol";
+import "../../../interfaces/0.8.x/IRandomizerV2.sol";
+import "../../../interfaces/0.8.x/IAdminACLV0.sol";
+import "../../../interfaces/0.8.x/IEngineRegistryV0.sol";
+import "../../../interfaces/0.8.x/IGenArt721CoreContractV3_Engine_Flex.sol";
+import "../../../interfaces/0.8.x/IDependencyRegistryCompatibleV0.sol";
+import "../../../interfaces/0.8.x/IManifold.sol";
 
-import "@openzeppelin-4.7/contracts/utils/Strings.sol";
 import "@openzeppelin-4.7/contracts/access/Ownable.sol";
-import "./libs/0.8.x/ERC721_PackedHashSeed.sol";
-import "./libs/0.8.x/BytecodeStorage.sol";
-import "./libs/0.8.x/Bytes32Strings.sol";
+import "../../../libs/0.8.x/ERC721_PackedHashSeed.sol";
+import "../../../libs/0.8.x/BytecodeStorage.sol";
+import "../../../libs/0.8.x/Bytes32Strings.sol";
 
 /**
- * @title Art Blocks Engine ERC-721 core contract, V3.
+ * @title Art Blocks Engine Flex ERC-721 core contract, V3.
  * @author Art Blocks Inc.
  * @notice Privileged Roles and Ownership:
  * This contract is designed to be managed, with progressively limited powers
@@ -42,6 +41,8 @@ import "./libs/0.8.x/Bytes32Strings.sol";
  * - addProject
  * - forbidNewProjects (forever forbidding new projects)
  * - updateDefaultBaseURI (used to initialize new project base URIs)
+ * - updateIPFSGateway
+ * - updateArweaveGateway
  * ----------------------------------------------------------------------------
  * The following functions are restricted to either the the Artist address or
  * the Admin ACL contract, only when the project is not locked:
@@ -53,7 +54,8 @@ import "./libs/0.8.x/Bytes32Strings.sol";
  * - updateProjectScriptType
  * - updateProjectAspectRatio
  * ----------------------------------------------------------------------------
- * The following functions are restricted to only the Artist address:
+ * The following functions are restricted to only the Artist or Admin ACL
+ * contract of a valid project ID:
  * - proposeArtistPaymentAddressesAndSplits (Note that this has to be accepted
  *   by adminAcceptArtistAddressesAndSplits to take effect, which is restricted
  *   to the Admin ACL contract, or the artist if the core contract owner has
@@ -63,7 +65,7 @@ import "./libs/0.8.x/Bytes32Strings.sol";
  *   if the global config `autoApproveArtistSplitProposals` is set to `true`.)
  * - toggleProjectIsPaused (note the artist can still mint while paused)
  * - updateProjectSecondaryMarketRoyaltyPercentage (up to
-     ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE percent)
+ *   ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE percent)
  * - updateProjectWebsite
  * - updateProjectMaxInvocations (to a number greater than or equal to the
  *   current number of invocations, and less than current project maximum
@@ -80,6 +82,13 @@ import "./libs/0.8.x/Bytes32Strings.sol";
  * unlocked, and only callable by Admin ACL contract when a project is locked:
  * - updateProjectDescription
  * ----------------------------------------------------------------------------
+ * The following functions for managing external asset dependencies are restricted
+ * to projects with external asset dependencies that are unlocked:
+ * - lockProjectExternalAssetDependencies
+ * - updateProjectExternalAssetDependency
+ * - removeProjectExternalAssetDependency
+ * - addProjectExternalAssetDependency
+ * ----------------------------------------------------------------------------
  * The following function is restricted to owner calling directly:
  * - transferOwnership
  * - renounceOwnership
@@ -91,18 +100,17 @@ import "./libs/0.8.x/Bytes32Strings.sol";
  * Additional admin and artist privileged roles may be described on minters,
  * registries, and other contracts that may interact with this core contract.
  */
-contract GenArt721CoreV3_Engine is
+contract GenArt721CoreV3_Engine_Flex_PROOF is
     ERC721_PackedHashSeed,
     Ownable,
     IDependencyRegistryCompatibleV0,
     IManifold,
-    IGenArt721CoreContractV3_Engine
+    IGenArt721CoreContractV3_Engine_Flex
 {
     using BytecodeStorage for string;
     using BytecodeStorage for address;
     using Bytes32Strings for bytes32;
-    using Strings for uint256;
-    using Strings for address;
+
     uint256 constant ONE_HUNDRED = 100;
     uint256 constant ONE_MILLION = 1_000_000;
     uint24 constant ONE_MILLION_UINT24 = 1_000_000;
@@ -185,9 +193,15 @@ contract GenArt721CoreV3_Engine is
         string aspectRatio;
         // mapping from script index to address storing script in bytecode
         mapping(uint256 => address) scriptBytecodeAddresses;
+        bool externalAssetDependenciesLocked;
+        uint24 externalAssetDependencyCount;
+        mapping(uint256 => ExternalAssetDependency) externalAssetDependencies;
     }
 
     mapping(uint256 => Project) projects;
+
+    string public preferredIPFSGateway;
+    string public preferredArweaveGateway;
 
     /// packed struct containing project financial information
     struct ProjectFinance {
@@ -202,6 +216,7 @@ contract GenArt721CoreV3_Engine is
         uint8 additionalPayeePrimarySalesPercentage;
     }
     // Project financials mapping
+
     mapping(uint256 => ProjectFinance) projectIdToFinancials;
 
     /// hash of artist's proposed payment updates to be approved by admin
@@ -264,7 +279,7 @@ contract GenArt721CoreV3_Engine is
         return CORE_VERSION.toString();
     }
 
-    bytes32 constant CORE_TYPE = "GenArt721CoreV3_Engine";
+    bytes32 constant CORE_TYPE = "GenArt721CoreV3_Engine_Flex";
 
     function coreType() external pure returns (string memory) {
         return CORE_TYPE.toString();
@@ -272,6 +287,15 @@ contract GenArt721CoreV3_Engine is
 
     /// default base URI to initialize all new project projectBaseURI values to
     string public defaultBaseURI;
+
+    function _onlyUnlockedProjectExternalAssetDependencies(
+        uint256 _projectId
+    ) internal view {
+        require(
+            !projects[_projectId].externalAssetDependenciesLocked,
+            "External dependencies locked"
+        );
+    }
 
     function _onlyNonZeroAddress(address _address) internal pure {
         require(_address != address(0), "Must input non-zero address");
@@ -302,13 +326,6 @@ contract GenArt721CoreV3_Engine is
         require(
             adminACLAllowed(msg.sender, address(this), _selector),
             "Only Admin ACL allowed"
-        );
-    }
-
-    function _onlyArtist(uint256 _projectId) internal view {
-        require(
-            msg.sender == projectIdToFinancials[_projectId].artistAddress,
-            "Only artist"
         );
     }
 
@@ -390,7 +407,7 @@ contract GenArt721CoreV3_Engine is
         _updateDefaultBaseURI(
             string.concat(
                 "https://token.artblocks.io/",
-                address(this).toHexString(),
+                toHexString(address(this)),
                 "/"
             )
         );
@@ -402,6 +419,171 @@ contract GenArt721CoreV3_Engine is
             address(this),
             CORE_VERSION,
             CORE_TYPE
+        );
+    }
+
+    /**
+     * @notice Updates preferredIPFSGateway to `_gateway`.
+     */
+    function updateIPFSGateway(string calldata _gateway) public {
+        _onlyAdminACL(this.updateIPFSGateway.selector);
+        preferredIPFSGateway = _gateway;
+        emit GatewayUpdated(ExternalAssetDependencyType.IPFS, _gateway);
+    }
+
+    /**
+     * @notice Updates preferredArweaveGateway to `_gateway`.
+     */
+    function updateArweaveGateway(string calldata _gateway) public {
+        _onlyAdminACL(this.updateArweaveGateway.selector);
+        preferredArweaveGateway = _gateway;
+        emit GatewayUpdated(ExternalAssetDependencyType.ARWEAVE, _gateway);
+    }
+
+    /**
+     * @notice Locks external asset dependencies for project `_projectId`.
+     */
+    function lockProjectExternalAssetDependencies(uint256 _projectId) external {
+        _onlyUnlockedProjectExternalAssetDependencies(_projectId);
+        _onlyArtistOrAdminACL(
+            _projectId,
+            this.lockProjectExternalAssetDependencies.selector
+        );
+        projects[_projectId].externalAssetDependenciesLocked = true;
+        emit ProjectExternalAssetDependenciesLocked(_projectId);
+    }
+
+    /**
+     * @notice Updates external asset dependency for project `_projectId`.
+     * @param _projectId Project to be updated.
+     * @param _index Asset index.
+     * @param _cidOrData Asset cid (Content identifier) or data string to be translated into bytecode.
+     * @param _dependencyType Asset dependency type.
+     *  0 - IPFS
+     *  1 - ARWEAVE
+     *  2 - ONCHAIN
+     */
+    function updateProjectExternalAssetDependency(
+        uint256 _projectId,
+        uint256 _index,
+        string memory _cidOrData,
+        ExternalAssetDependencyType _dependencyType
+    ) external {
+        _onlyUnlockedProjectExternalAssetDependencies(_projectId);
+        _onlyArtistOrAdminACL(
+            _projectId,
+            this.updateProjectExternalAssetDependency.selector
+        );
+        uint24 assetCount = projects[_projectId].externalAssetDependencyCount;
+        require(_index < assetCount, "Asset index out of range");
+        ExternalAssetDependency storage _oldDependency = projects[_projectId]
+            .externalAssetDependencies[_index];
+        ExternalAssetDependencyType _oldDependencyType = _oldDependency
+            .dependencyType;
+        projects[_projectId]
+            .externalAssetDependencies[_index]
+            .dependencyType = _dependencyType;
+        // if the incoming dependency type is onchain, we need to write the data to bytecode
+        if (_dependencyType == ExternalAssetDependencyType.ONCHAIN) {
+            if (_oldDependencyType != ExternalAssetDependencyType.ONCHAIN) {
+                // we only need to set the cid to an empty string if we are replacing an offchain asset
+                // an onchain asset will already have an empty cid
+                projects[_projectId].externalAssetDependencies[_index].cid = "";
+            }
+
+            projects[_projectId]
+                .externalAssetDependencies[_index]
+                .bytecodeAddress = _cidOrData.writeToBytecode();
+            // we don't want to emit data, so we emit the cid as an empty string
+            _cidOrData = "";
+        } else {
+            projects[_projectId]
+                .externalAssetDependencies[_index]
+                .cid = _cidOrData;
+        }
+        emit ExternalAssetDependencyUpdated(
+            _projectId,
+            _index,
+            _cidOrData,
+            _dependencyType,
+            assetCount
+        );
+    }
+
+    /**
+     * @notice Removes external asset dependency for project `_projectId` at index `_index`.
+     * Removal is done by swapping the element to be removed with the last element in the array, then deleting this last element.
+     * Assets with indices higher than `_index` can have their indices adjusted as a result of this operation.
+     * @param _projectId Project to be updated.
+     * @param _index Asset index
+     */
+    function removeProjectExternalAssetDependency(
+        uint256 _projectId,
+        uint256 _index
+    ) external {
+        _onlyUnlockedProjectExternalAssetDependencies(_projectId);
+        _onlyArtistOrAdminACL(
+            _projectId,
+            this.removeProjectExternalAssetDependency.selector
+        );
+        uint24 assetCount = projects[_projectId].externalAssetDependencyCount;
+        require(_index < assetCount, "Asset index out of range");
+
+        uint24 lastElementIndex = assetCount - 1;
+
+        // copy last element to index of element to be removed
+        projects[_projectId].externalAssetDependencies[_index] = projects[
+            _projectId
+        ].externalAssetDependencies[lastElementIndex];
+
+        delete projects[_projectId].externalAssetDependencies[lastElementIndex];
+
+        projects[_projectId].externalAssetDependencyCount = lastElementIndex;
+
+        emit ExternalAssetDependencyRemoved(_projectId, _index);
+    }
+
+    /**
+     * @notice Adds external asset dependency for project `_projectId`.
+     * @param _projectId Project to be updated.
+     * @param _cidOrData Asset cid (Content identifier) or data string to be translated into bytecode.
+     * @param _dependencyType Asset dependency type.
+     *  0 - IPFS
+     *  1 - ARWEAVE
+     *  2 - ONCHAIN
+     */
+    function addProjectExternalAssetDependency(
+        uint256 _projectId,
+        string memory _cidOrData,
+        ExternalAssetDependencyType _dependencyType
+    ) external {
+        _onlyUnlockedProjectExternalAssetDependencies(_projectId);
+        _onlyArtistOrAdminACL(
+            _projectId,
+            this.addProjectExternalAssetDependency.selector
+        );
+        uint24 assetCount = projects[_projectId].externalAssetDependencyCount;
+        address _bytecodeAddress = address(0);
+        // if the incoming dependency type is onchain, we need to write the data to bytecode
+        if (_dependencyType == ExternalAssetDependencyType.ONCHAIN) {
+            _bytecodeAddress = _cidOrData.writeToBytecode();
+            // we don't want to emit data, so we emit the cid as an empty string
+            _cidOrData = "";
+        }
+        ExternalAssetDependency memory asset = ExternalAssetDependency({
+            cid: _cidOrData,
+            dependencyType: _dependencyType,
+            bytecodeAddress: _bytecodeAddress
+        });
+        projects[_projectId].externalAssetDependencies[assetCount] = asset;
+        projects[_projectId].externalAssetDependencyCount = assetCount + 1;
+
+        emit ExternalAssetDependencyUpdated(
+            _projectId,
+            assetCount,
+            _cidOrData,
+            _dependencyType,
+            assetCount + 1
         );
     }
 
@@ -715,7 +897,10 @@ contract GenArt721CoreV3_Engine is
         uint256 _additionalPayeeSecondarySalesPercentage
     ) external {
         _onlyValidProjectId(_projectId);
-        _onlyArtist(_projectId);
+        _onlyArtistOrAdminACL(
+            _projectId,
+            this.proposeArtistPaymentAddressesAndSplits.selector
+        );
         _onlyNonZeroAddress(_artistAddress);
         ProjectFinance storage projectFinance = projectIdToFinancials[
             _projectId
@@ -902,7 +1087,8 @@ contract GenArt721CoreV3_Engine is
      * @param _projectId Project ID to be toggled.
      */
     function toggleProjectIsPaused(uint256 _projectId) external {
-        _onlyArtist(_projectId);
+        _onlyValidProjectId(_projectId);
+        _onlyArtistOrAdminACL(_projectId, this.toggleProjectIsPaused.selector);
         projects[_projectId].paused = !projects[_projectId].paused;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_PAUSED);
     }
@@ -992,7 +1178,11 @@ contract GenArt721CoreV3_Engine is
         uint256 _projectId,
         uint256 _secondMarketRoyalty
     ) external {
-        _onlyArtist(_projectId);
+        _onlyValidProjectId(_projectId);
+        _onlyArtistOrAdminACL(
+            _projectId,
+            this.updateProjectSecondaryMarketRoyaltyPercentage.selector
+        );
         require(
             _secondMarketRoyalty <= ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE,
             "Over max percent"
@@ -1041,7 +1231,8 @@ contract GenArt721CoreV3_Engine is
         uint256 _projectId,
         string memory _projectWebsite
     ) external {
-        _onlyArtist(_projectId);
+        _onlyValidProjectId(_projectId);
+        _onlyArtistOrAdminACL(_projectId, this.updateProjectWebsite.selector);
         projects[_projectId].website = _projectWebsite;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_WEBSITE);
     }
@@ -1075,7 +1266,11 @@ contract GenArt721CoreV3_Engine is
         uint256 _projectId,
         uint24 _maxInvocations
     ) external {
-        _onlyArtist(_projectId);
+        _onlyValidProjectId(_projectId);
+        _onlyArtistOrAdminACL(
+            _projectId,
+            this.updateProjectMaxInvocations.selector
+        );
         // CHECKS
         Project storage project = projects[_projectId];
         uint256 _invocations = project.invocations;
@@ -1248,7 +1443,8 @@ contract GenArt721CoreV3_Engine is
         uint256 _projectId,
         string memory _newBaseURI
     ) external {
-        _onlyArtist(_projectId);
+        _onlyValidProjectId(_projectId);
+        _onlyArtistOrAdminACL(_projectId, this.updateProjectBaseURI.selector);
         _onlyNonEmptyString(_newBaseURI);
         projects[_projectId].projectBaseURI = _newBaseURI;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_BASE_URI);
@@ -1788,6 +1984,41 @@ contract GenArt721CoreV3_Engine is
     }
 
     /**
+     * @notice Returns external asset dependency for project `_projectId` at index `_index`.
+     * If the dependencyType is ONCHAIN, the `data` field will contain the extrated bytecode data and `cid`
+     * will be an empty string. Conversly, for any other dependencyType, the `data` field will be an empty string
+     * and the `bytecodeAddress` will point to the zero address.
+     */
+    function projectExternalAssetDependencyByIndex(
+        uint256 _projectId,
+        uint256 _index
+    ) external view returns (ExternalAssetDependencyWithData memory) {
+        ExternalAssetDependency storage _dependency = projects[_projectId]
+            .externalAssetDependencies[_index];
+        address _bytecodeAddress = _dependency.bytecodeAddress;
+
+        return
+            ExternalAssetDependencyWithData({
+                dependencyType: _dependency.dependencyType,
+                cid: _dependency.cid,
+                bytecodeAddress: _bytecodeAddress,
+                data: (_dependency.dependencyType ==
+                    ExternalAssetDependencyType.ONCHAIN)
+                    ? _bytecodeAddress.readFromBytecode()
+                    : ""
+            });
+    }
+
+    /**
+     * @notice Returns external asset dependency count for project `_projectId` at index `_index`.
+     */
+    function projectExternalAssetDependencyCount(
+        uint256 _projectId
+    ) external view returns (uint256) {
+        return uint256(projects[_projectId].externalAssetDependencyCount);
+    }
+
+    /**
      * @notice Backwards-compatible (pre-V3) getter returning contract admin
      * @return address Address of contract admin (same as owner)
      */
@@ -1864,7 +2095,7 @@ contract GenArt721CoreV3_Engine is
         _onlyValidTokenId(_tokenId);
         string memory _projectBaseURI = projects[tokenIdToProjectId(_tokenId)]
             .projectBaseURI;
-        return string.concat(_projectBaseURI, _tokenId.toString());
+        return string.concat(_projectBaseURI, toString(_tokenId));
     }
 
     /**
@@ -1987,7 +2218,6 @@ contract GenArt721CoreV3_Engine is
      */
     function _projectUnlocked(uint256 _projectId) internal view returns (bool) {
         _onlyValidProjectId(_projectId);
-
         uint256 projectCompletedTimestamp = projects[_projectId]
             .completedTimestamp;
         bool projectOpen = projectCompletedTimestamp == 0;
@@ -1995,5 +2225,60 @@ contract GenArt721CoreV3_Engine is
             projectOpen ||
             (block.timestamp - projectCompletedTimestamp <
                 FOUR_WEEKS_IN_SECONDS);
+    }
+
+    // strings library from OpenZeppelin, modified for no constants
+
+    bytes16 private _HEX_SYMBOLS = "0123456789abcdef";
+    uint8 private _ADDRESS_LENGTH = 20;
+
+    /**
+     * @dev Converts a `uint256` to its ASCII `string` decimal representation.
+     */
+    function toString(uint256 value) internal pure returns (string memory) {
+        // Inspired by OraclizeAPI's implementation - MIT licence
+        // https://github.com/oraclize/ethereum-api/blob/b42146b063c7d6ee1358846c198246239e9360e8/oraclizeAPI_0.4.25.sol
+
+        if (value == 0) {
+            return "0";
+        }
+        uint256 temp = value;
+        uint256 digits;
+        while (temp != 0) {
+            digits++;
+            temp /= 10;
+        }
+        bytes memory buffer = new bytes(digits);
+        while (value != 0) {
+            digits -= 1;
+            buffer[digits] = bytes1(uint8(48 + uint256(value % 10)));
+            value /= 10;
+        }
+        return string(buffer);
+    }
+
+    /**
+     * @dev Converts a `uint256` to its ASCII `string` hexadecimal representation with fixed length.
+     */
+    function toHexString(
+        uint256 value,
+        uint256 length
+    ) internal view returns (string memory) {
+        bytes memory buffer = new bytes(2 * length + 2);
+        buffer[0] = "0";
+        buffer[1] = "x";
+        for (uint256 i = 2 * length + 1; i > 1; --i) {
+            buffer[i] = _HEX_SYMBOLS[value & 0xf];
+            value >>= 4;
+        }
+        require(value == 0, "hex length insufficient");
+        return string(buffer);
+    }
+
+    /**
+     * @dev Converts an `address` with fixed length of 20 bytes to its not checksummed ASCII `string` hexadecimal representation.
+     */
+    function toHexString(address addr) internal view returns (string memory) {
+        return toHexString(uint256(uint160(addr)), _ADDRESS_LENGTH);
     }
 }
