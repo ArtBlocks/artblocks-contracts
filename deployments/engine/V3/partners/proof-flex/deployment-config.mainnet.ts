@@ -23,7 +23,7 @@ export const deployDetailsArray = [
     tokenTicker: "PRFBLCKS",
     startingProjectId: 0,
     autoApproveArtistSplitProposals: false,
-    renderProviderAddress: "TODO", // use either "0x..." or special "deployer" which sets the render provider to the deployer
+    renderProviderAddress: "0x89dAd82099e14B3C8335352E38052fb2a551F8E8", // use either "0x..." or special "deployer" which sets the render provider to the deployer
     platformProviderAddress: "0x32220f07DBcd18149f619F28cD09FD911cc0372D", // use either "0x..." or special "deployer" which sets the render provider to the deployer
     // minter suite
     minterFilterContractName: "MinterFilterV1",
