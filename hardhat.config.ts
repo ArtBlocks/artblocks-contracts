@@ -3,14 +3,14 @@ require("dotenv").config();
 import "@nomiclabs/hardhat-waffle";
 import "@nomiclabs/hardhat-truffle5";
 import "@nomiclabs/hardhat-solhint";
-// Currently disabled due to: https://github.com/NomicFoundation/hardhat/issues/2812
-// import "@nomiclabs/hardhat-vyper";
+import "@nomiclabs/hardhat-vyper";
 import "@nomiclabs/hardhat-etherscan";
 import "hardhat-gas-reporter";
 import "hardhat-contract-sizer";
 import "hardhat-docgen";
 import "@openzeppelin/hardhat-upgrades";
 import { solidityConfig } from "./hardhat.solidity-config";
+import { vyperConfig } from "./hardhat.vyper-config";
 
 const MAINNET_JSON_RPC_PROVIDER_URL = process.env.MAINNET_JSON_RPC_PROVIDER_URL;
 const GOERLI_JSON_RPC_PROVIDER_URL = process.env.GOERLI_JSON_RPC_PROVIDER_URL;
@@ -33,11 +33,7 @@ const PALM_TESTNET_JSON_RPC_PROVIDER_URL =
 
 module.exports = {
   // Currently disabled due to: https://github.com/NomicFoundation/hardhat/issues/2812
-  // vyper: {
-  //   compilers: [
-  //     { version: "0.3.3" }
-  //   ],
-  // },
+  vyper: vyperConfig,
   solidity: solidityConfig,
   networks: {
     hardhat: {

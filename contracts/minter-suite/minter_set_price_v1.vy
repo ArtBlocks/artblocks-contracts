@@ -1,4 +1,4 @@
-# @version ^0.3.3
+# @version ^0.3.7
 
 """
 @title Filtered Minter contract that allows tokens to be minted with ETH.
@@ -30,36 +30,19 @@ event PurchaseToDisabledUpdated:
     _purchaseToDisabled: bool
 
 # Core contract address this minter interacts with
-# Note: a separate explicit getter declaration is currently needed per https://github.com/vyperlang/vyper/issues/2903
-_genArt721CoreAddress: immutable(address)
-@external
-@view
-def genArt721CoreAddress() -> address:
-    """
-    @notice a separate explicit getter declaration is currently needed per https://github.com/vyperlang/vyper/issues/2903
-    """
-    return _genArt721CoreAddress
+genArt721CoreAddress: public(immutable(address))
 
 # This contract handles cores with interface IV1
 genArtCoreContract: immutable(IGenArt721CoreContractV1)
 
 # Minter filter address this minter interacts with
-_minterFilterAddress: immutable(address)
-@external
-@view
-def minterFilterAddress() -> address:
-    """
-    @notice a separate explicit getter declaration is currently needed per https://github.com/vyperlang/vyper/issues/2903
-    """
-    return _minterFilterAddress
+minterFilterAddress: public(immutable(address))
 
 # Minter filter this minter may interact with.
 minterFilter: immutable(IMinterFilterV0)
 
 # minterType for this minter
-# Note: a separate `public` and `constant` declaration is currently needed per https://github.com/vyperlang/vyper/issues/2903
-MINTER_TYPE: constant(String[32]) = "MinterSetPriceV1"
-minterType: public(String[32])
+minterType: public(constant(String[32])) = "MinterSetPriceV1"
 
 ONE_MILLION: constant(uint256) = 1000000
 
@@ -85,10 +68,10 @@ def __init__(_genArt721Address: address, _minterFilter: address):
     """
     self.minterType = MINTER_TYPE
 
-    _genArt721CoreAddress = _genArt721Address
+    genArt721CoreAddress = _genArt721Address
     genArtCoreContract = IGenArt721CoreContractV1(_genArt721Address)
 
-    _minterFilterAddress = _minterFilter
+    minterFilterAddress = _minterFilter
     minterFilter = IMinterFilterV0(_minterFilter)
 
     assert minterFilter.genArt721CoreAddress() == _genArt721Address, "Illegal contract pairing"
@@ -109,13 +92,13 @@ def setProjectMaxInvocations(_projectId: uint256):
     invocations: uint256 = 0
     maxInvocations: uint256 = 0
     # throwaway return values from `projectTokenInfo`
-    z: address = ZERO_ADDRESS
+    z: address = empty(address)
     y: uint256 = 0
     x: bool = False
-    w: address = ZERO_ADDRESS
+    w: address = empty(address)
     v: uint256 = 0
     u: String[8] = ""
-    t: address = ZERO_ADDRESS
+    t: address = empty(address)
 
     (z, y, invocations, maxInvocations, x, w, v, u, t) = genArtCoreContract.projectTokenInfo(_projectId)
     # update storage with results
@@ -153,8 +136,6 @@ def _splitFundsETH(_projectId: uint256):
     @dev splits ETH funds between sender (if refund), foundation,
     artist, and artist's additional payee for a token purchased on
     project `_projectId`.
-    @dev utilizes transfer() to send ETH, so access lists may need to be
-    populated when purchasing tokens.
     """
     # return early if nothing to split
     if (msg.value == 0):
@@ -164,14 +145,14 @@ def _splitFundsETH(_projectId: uint256):
     pricePerTokenInWei: uint256 = self.projectIdToPricePerTokenInWei[_projectId]
     refund: uint256 = msg.value - pricePerTokenInWei
     if (refund > 0):
-        send(msg.sender, refund)
+        raw_call(msg.sender, 0x00, value=refund)
 
     # pay out Art Blocks
     foundationAmount: uint256 = (
         pricePerTokenInWei * genArtCoreContract.artblocksPercentage()
     ) / 100
     if (foundationAmount > 0):
-        send(genArtCoreContract.artblocksAddress(), foundationAmount)
+        raw_call(genArtCoreContract.artblocksAddress(), 0x00, value=foundationAmount)
 
     # pay out artist additional payee
     projectFunds: uint256 = pricePerTokenInWei - foundationAmount
@@ -181,12 +162,12 @@ def _splitFundsETH(_projectId: uint256):
             projectFunds * genArtCoreContract.projectIdToAdditionalPayeePercentage(_projectId)
         ) / 100
         if (additionalPayeeAmount > 0):
-            send(genArtCoreContract.projectIdToAdditionalPayee(_projectId), additionalPayeeAmount)
+            raw_call(genArtCoreContract.projectIdToAdditionalPayee(_projectId), 0x00, value=additionalPayeeAmount)
 
     # pay out artist primary payee
     creatorFunds: uint256 = projectFunds - additionalPayeeAmount
     if (creatorFunds > 0):
-        send(genArtCoreContract.projectIdToArtistAddress(_projectId), creatorFunds)
+        raw_call(genArtCoreContract.projectIdToArtistAddress(_projectId), 0x00, value=creatorFunds)
 
 @internal
 @payable
@@ -267,5 +248,5 @@ def getPriceInfo(_projectId: uint256) -> (bool, uint256, String[8], address):
         self.projectIdToPriceIsConfigured[_projectId], # isConfigured
         self.projectIdToPricePerTokenInWei[_projectId], # tokenPriceInWei
         "ETH", # currencySymbol
-        ZERO_ADDRESS # currencyAddress
+        empty(address) # currencyAddress
     )
