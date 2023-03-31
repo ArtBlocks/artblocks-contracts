@@ -1,6 +1,6 @@
-// empirically have found adding 5 seconds between txs in scripts is enough to
+// empirically have found adding 10 seconds between txs in scripts is enough to
 // avoid chain reorgs and tx failures
-export const EXTRA_DELAY_BETWEEN_TX = 5000; // ms
+export const EXTRA_DELAY_BETWEEN_TX = 10000; // ms
 
 // delegation registry addresses on supported networks
 export const DELEGATION_REGISTRY_ADDRESSES = {

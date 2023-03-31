@@ -1,0 +1,42 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-03-29T03:26:48.720Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/vom-flex/deployment-config.dev.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV0 deployed at address: 0x679Aced371f6323941f9FC1aAf218c85e23A8eb4
+[INFO] Randomizer BasicRandomizerV2 deployed at 0xBe6DD712eCeFDe51DBB36008e6423FDFB2EcFC14
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0xca7D467921C65388D0A36EfAE728d4B147800Bf6
+[INFO] Minter Filter MinterFilterV1 deployed at 0xb433AbB4B5D9B56D9E7527da2237B82942ED6b77
+[INFO] MinterSetPriceV4 deployed at 0xD47c1AEeeb3e59B32b671F15a258E6Ce26D1327f
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0xb433AbB4B5D9B56D9E7527da2237B82942ED6b77.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0xD47c1AEeeb3e59B32b671F15a258E6Ce26D1327f on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0x724412085F80593A22E8E7B8Af136aC6B38AA5Bc.
+[INFO] Verifying core contract contract deployment...
+The contract 0xca7D467921C65388D0A36EfAE728d4B147800Bf6 has already been verified
+[INFO] Core contract verified on Etherscan at 0xca7D467921C65388D0A36EfAE728d4B147800Bf6}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0x679Aced371f6323941f9FC1aAf218c85e23A8eb4 has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0x679Aced371f6323941f9FC1aAf218c85e23A8eb4}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0xb433AbB4B5D9B56D9E7527da2237B82942ED6b77 has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0xb433AbB4B5D9B56D9E7527da2237B82942ED6b77}
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+The contract 0xD47c1AEeeb3e59B32b671F15a258E6Ce26D1327f has already been verified
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0xD47c1AEeeb3e59B32b671F15a258E6Ce26D1327f}
+Created s3 bucket for https://venus-over-manhattan-flexv3-goerli.s3.amazonaws.com
+[INFO] Created image bucket venus-over-manhattan-flexv3-goerli
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/vom-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0xca7d467921c65388d0a36efae728d4b147800bf6",
+  "name": "Venus Over Manhattan FlexV3",
+  "bucket_name": "venus-over-manhattan-flexv3-goerli",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63, don't forget to update if requred.

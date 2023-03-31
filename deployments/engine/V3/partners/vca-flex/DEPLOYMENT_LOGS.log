@@ -1,0 +1,47 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-03-29T03:09:49.767Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/vca-flex/deployment-config.dev.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV0 deployed at address: 0xe84F94FBdF755288F47B77887c4604e7817afB26
+[INFO] Randomizer BasicRandomizerV2 deployed at 0xdb11Fa351CBb5a4268882F16a6954906cCB8416e
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0xAf40b66072Fe00CAcF5A25Cd1b7F1688Cde20f2F
+[INFO] Minter Filter MinterFilterV1 deployed at 0x13a8Fca80084Bb968EDE9AA69E38b0cF59Ba603f
+[INFO] MinterSetPriceV4 deployed at 0xc78d2705379b5CeFf37FEAbf8E3F14021B8412e8
+[INFO] MinterDAExpSettlementV2 deployed at 0x9fA04a3B1b1F24Bc7236F2CD196BacB54B965cA0
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0x13a8Fca80084Bb968EDE9AA69E38b0cF59Ba603f.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0xc78d2705379b5CeFf37FEAbf8E3F14021B8412e8 on minter filter.
+[INFO] Allowlisted minter MinterDAExpSettlementV2 at 0x9fA04a3B1b1F24Bc7236F2CD196BacB54B965cA0 on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0x65FEca334780160e3420B097590fd6D02dE663f0.
+[INFO] Verifying core contract contract deployment...
+The contract 0xAf40b66072Fe00CAcF5A25Cd1b7F1688Cde20f2F has already been verified
+[INFO] Core contract verified on Etherscan at 0xAf40b66072Fe00CAcF5A25Cd1b7F1688Cde20f2F}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0xe84F94FBdF755288F47B77887c4604e7817afB26 has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0xe84F94FBdF755288F47B77887c4604e7817afB26}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0x13a8Fca80084Bb968EDE9AA69E38b0cF59Ba603f has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0x13a8Fca80084Bb968EDE9AA69E38b0cF59Ba603f}
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+The contract 0xc78d2705379b5CeFf37FEAbf8E3F14021B8412e8 has already been verified
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0xc78d2705379b5CeFf37FEAbf8E3F14021B8412e8}
+[INFO] Verifying MinterDAExpSettlementV2 contract deployment...
+The contract 0x9fA04a3B1b1F24Bc7236F2CD196BacB54B965cA0 has already been verified
+[INFO] MinterDAExpSettlementV2 contract verified on Etherscan at 0x9fA04a3B1b1F24Bc7236F2CD196BacB54B965cA0}
+Created s3 bucket for https://verticalcrypto-gen-art-v3-goerli.s3.amazonaws.com
+[INFO] Created image bucket verticalcrypto-gen-art-v3-goerli
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/vca-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0xaf40b66072fe00cacf5a25cd1b7f1688cde20f2f",
+  "name": "VerticalCrypto Gen Art V3",
+  "bucket_name": "verticalcrypto-gen-art-v3-goerli",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x65FEca334780160e3420B097590fd6D02dE663f0, don't forget to update if requred.
