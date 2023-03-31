@@ -1,0 +1,68 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-02-22T00:03:34.136Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/deployments/engine/V3/partners/dev-example/deployment-config.dev.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: dev
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x0882de23BeC1b99D9AcEe8B04eA9Bae69b8664d3
+[INFO] Randomizer BasicRandomizerV2 deployed at 0xC2bC346b2350C320D4B5FbC7E802Bf3c52CA6230
+[INFO] Core GenArt721CoreV3_Engine deployed at 0x5b224b92b8673B5762C4212EC9f7B86918657Ee6
+[INFO] Minter Filter MinterFilterV1 deployed at 0x2ce218A94a8ffBe78a2C67FE9b302D66d3C42e6e
+[INFO] MinterSetPriceV4 deployed at 0xde1486A8aF6170707C98dd87F8Ff35BE80db7F7b
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0x2ce218A94a8ffBe78a2C67FE9b302D66d3C42e6e.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0xde1486A8aF6170707C98dd87F8Ff35BE80db7F7b on minter filter.
+[INFO] Added Engine Partner project 0 placeholder on Engine Partner contract, artist is 0x2246475beddf9333b6a6D9217194576E7617Afd1.
+[INFO] Configured set price minter (0xde1486A8aF6170707C98dd87F8Ff35BE80db7F7b) for project 0.
+[INFO] Configured minter price project 0.
+[INFO] Minted token 0 for project 0.
+[INFO] Verifying core contract contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/GenArt721CoreV3_Engine.sol:GenArt721CoreV3_Engine at 0x5b224b92b8673B5762C4212EC9f7B86918657Ee6
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract GenArt721CoreV3_Engine on Etherscan.
+https://goerli.etherscan.io/address/0x5b224b92b8673B5762C4212EC9f7B86918657Ee6#code
+[INFO] Core contract verified on Etherscan at 0x5b224b92b8673B5762C4212EC9f7B86918657Ee6}
+[INFO] Verifying MinterFilter contract deployment...
+Compiled 186 Solidity files successfully
+Successfully submitted source code for contract
+contracts/minter-suite/MinterFilter/MinterFilterV1.sol:MinterFilterV1 at 0x2ce218A94a8ffBe78a2C67FE9b302D66d3C42e6e
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterFilterV1 on Etherscan.
+https://goerli.etherscan.io/address/0x2ce218A94a8ffBe78a2C67FE9b302D66d3C42e6e#code
+[INFO] MinterFilter contract verified on Etherscan at 0x2ce218A94a8ffBe78a2C67FE9b302D66d3C42e6e}
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+Compiled 186 Solidity files successfully
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterSetPriceV4.sol:MinterSetPriceV4 at 0xde1486A8aF6170707C98dd87F8Ff35BE80db7F7b
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterSetPriceV4 on Etherscan.
+https://goerli.etherscan.io/address/0xde1486A8aF6170707C98dd87F8Ff35BE80db7F7b#code
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0xde1486A8aF6170707C98dd87F8Ff35BE80db7F7b}
+Created s3 bucket for https://engine-partner-goerli.s3.amazonaws.com
+[INFO] Created image bucket engine-partner-goerli
+[INFO] Deployment details written to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/deployments/engine/V3/partners/dev-example/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x5b224b92b8673b5762c4212ec9f7b86918657ee6",
+  "name": "Engine Partner",
+  "bucket_name": "engine-partner-goerli",
+  "default_vertical_name": "fullyonchain"
+}
+Successfully upserted 1 contract
+Upserting 1 project...
+Projects metadata upsert input
+{
+  "id": "0x5b224b92b8673b5762c4212ec9f7b86918657ee6-0",
+  "contract_address": "0x5b224b92b8673b5762c4212ec9f7b86918657ee6",
+  "project_id": "0",
+  "artist_address": "0x2246475beddf9333b6a6d9217194576e7617afd1",
+  "vertical_name": "fullyonchain"
+}
+Successfully upserted 1 project
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0x2246475beddf9333b6a6D9217194576E7617Afd1. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x2246475beddf9333b6a6D9217194576E7617Afd1, don't forget to update if requred.

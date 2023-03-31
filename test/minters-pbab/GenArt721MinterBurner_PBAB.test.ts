@@ -1,5 +1,6 @@
 import { ethers } from "hardhat";
-import { getAccounts, assignDefaultConstants } from "../util/common";
+import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+import { getAccounts, assignDefaultConstants, T_Config } from "../util/common";
 import { BigNumber } from "ethers";
 import { expectRevert } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
@@ -10,221 +11,233 @@ import { GenArt721Minter_PBAB_Common } from "./GenArt721Minter_PBAB.common";
  * These tests intended to ensure Filtered Minter integrates properly with V1
  * core contract.
  */
-describe("GenArt721Minter_PBAB", async function () {
-  beforeEach(async function () {
-    // standard accounts and constants
-    this.accounts = await getAccounts();
-    await assignDefaultConstants.call(this);
-    this.higherPricePerTokenInWei = ethers.utils.parseEther("1.1");
+describe("GenArt721MinterBurner_PBAB", async function () {
+  async function _beforeEach() {
+    let config: T_Config = {
+      accounts: await getAccounts(),
+    };
+    config = await assignDefaultConstants(config);
+    config.higherPricePerTokenInWei = ethers.utils.parseEther("1.1");
     // deploy and configure contracts
     const randomizerFactory = await ethers.getContractFactory(
       "BasicRandomizer"
     );
-    this.randomizer = await randomizerFactory.deploy();
+    config.randomizer = await randomizerFactory.deploy();
 
     const PBABFactory = await ethers.getContractFactory("GenArt721CoreV2_PBAB");
-    this.genArt721Core = await PBABFactory.connect(
-      this.accounts.deployer
-    ).deploy(this.name, this.symbol, this.randomizer.address);
+    config.genArt721Core = await PBABFactory.connect(
+      config.accounts.deployer
+    ).deploy(config.name, config.symbol, config.randomizer.address, 0);
 
     const minterFactory = await ethers.getContractFactory(
       "GenArt721MinterBurner_PBAB"
     );
-    this.minter = await minterFactory.deploy(this.genArt721Core.address);
+    config.minter = await minterFactory.deploy(config.genArt721Core.address);
 
-    await this.genArt721Core
-      .connect(this.accounts.deployer)
+    await config.genArt721Core
+      .connect(config.accounts.deployer)
       .addProject(
         "project0",
-        this.accounts.artist.address,
-        this.pricePerTokenInWei
+        config.accounts.artist.address,
+        config.pricePerTokenInWei
       );
 
-    await this.genArt721Core
-      .connect(this.accounts.deployer)
+    await config.genArt721Core
+      .connect(config.accounts.deployer)
       .addProject(
         "project1",
-        this.accounts.artist.address,
-        this.pricePerTokenInWei
+        config.accounts.artist.address,
+        config.pricePerTokenInWei
       );
 
-    await this.genArt721Core
-      .connect(this.accounts.deployer)
+    await config.genArt721Core
+      .connect(config.accounts.deployer)
       .addProject(
         "project2",
-        this.accounts.artist.address,
-        this.pricePerTokenInWei
+        config.accounts.artist.address,
+        config.pricePerTokenInWei
       );
 
-    await this.genArt721Core
-      .connect(this.accounts.deployer)
-      .toggleProjectIsActive(this.projectZero);
-    await this.genArt721Core
-      .connect(this.accounts.deployer)
-      .toggleProjectIsActive(this.projectOne);
-    await this.genArt721Core
-      .connect(this.accounts.deployer)
-      .toggleProjectIsActive(this.projectTwo);
+    await config.genArt721Core
+      .connect(config.accounts.deployer)
+      .toggleProjectIsActive(config.projectZero);
+    await config.genArt721Core
+      .connect(config.accounts.deployer)
+      .toggleProjectIsActive(config.projectOne);
+    await config.genArt721Core
+      .connect(config.accounts.deployer)
+      .toggleProjectIsActive(config.projectTwo);
 
-    await this.genArt721Core
-      .connect(this.accounts.deployer)
-      .addMintWhitelisted(this.minter.address);
+    await config.genArt721Core
+      .connect(config.accounts.deployer)
+      .addMintWhitelisted(config.minter.address);
 
-    await this.genArt721Core
-      .connect(this.accounts.artist)
-      .updateProjectMaxInvocations(this.projectZero, this.maxInvocations);
-    await this.genArt721Core
-      .connect(this.accounts.artist)
-      .updateProjectMaxInvocations(this.projectOne, this.maxInvocations);
-    await this.genArt721Core
-      .connect(this.accounts.artist)
-      .updateProjectMaxInvocations(this.projectTwo, this.maxInvocations);
+    await config.genArt721Core
+      .connect(config.accounts.artist)
+      .updateProjectMaxInvocations(config.projectZero, config.maxInvocations);
+    await config.genArt721Core
+      .connect(config.accounts.artist)
+      .updateProjectMaxInvocations(config.projectOne, config.maxInvocations);
+    await config.genArt721Core
+      .connect(config.accounts.artist)
+      .updateProjectMaxInvocations(config.projectTwo, config.maxInvocations);
 
-    this.genArt721Core
-      .connect(this.accounts.artist)
-      .toggleProjectIsPaused(this.projectZero);
-    this.genArt721Core
-      .connect(this.accounts.artist)
-      .toggleProjectIsPaused(this.projectOne);
-    this.genArt721Core
-      .connect(this.accounts.artist)
-      .toggleProjectIsPaused(this.projectTwo);
+    await config.genArt721Core
+      .connect(config.accounts.artist)
+      .toggleProjectIsPaused(config.projectZero);
+    config.genArt721Core
+      .connect(config.accounts.artist)
+      .toggleProjectIsPaused(config.projectOne);
+    config.genArt721Core
+      .connect(config.accounts.artist)
+      .toggleProjectIsPaused(config.projectTwo);
 
     // set token price for projects zero and one on minter
-    await this.genArt721Core
-      .connect(this.accounts.artist)
+    await config.genArt721Core
+      .connect(config.accounts.artist)
       .updateProjectPricePerTokenInWei(
-        this.projectZero,
-        this.pricePerTokenInWei
+        config.projectZero,
+        config.pricePerTokenInWei
       );
-    await this.genArt721Core
-      .connect(this.accounts.artist)
+    await config.genArt721Core
+      .connect(config.accounts.artist)
       .updateProjectPricePerTokenInWei(
-        this.projectOne,
-        this.pricePerTokenInWei
+        config.projectOne,
+        config.pricePerTokenInWei
       );
 
     // mock ERC20 token
     const ERC20Factory = await ethers.getContractFactory("ERC20Mock");
-    this.ERC20Mock = await ERC20Factory.connect(this.accounts.user).deploy(
+    config.ERC20Mock = await ERC20Factory.connect(config.accounts.user).deploy(
       ethers.utils.parseEther("100")
     );
-  });
+    return config;
+  }
 
   // base tests
   describe("common tests", async function () {
-    GenArt721Minter_PBAB_Common();
+    await GenArt721Minter_PBAB_Common(_beforeEach);
   });
 
   describe("setBurnERC20DuringPurchase", async function () {
     it("only allows admin to update which ERC20 tokens are burned", async function () {
+      const config = await loadFixture(_beforeEach);
       const onlyAdminErrorMessage = "can only be set by admin";
       // doesn't allow artist
       await expectRevert(
-        this.minter
-          .connect(this.accounts.artist)
-          .setBurnERC20DuringPurchase(this.ERC20Mock.address, true),
+        config.minter
+          .connect(config.accounts.artist)
+          .setBurnERC20DuringPurchase(config.ERC20Mock.address, true),
         onlyAdminErrorMessage
       );
       // doesn't allow additional
       await expectRevert(
-        this.minter
-          .connect(this.accounts.additional)
-          .setBurnERC20DuringPurchase(this.ERC20Mock.address, true),
+        config.minter
+          .connect(config.accounts.additional)
+          .setBurnERC20DuringPurchase(config.ERC20Mock.address, true),
         onlyAdminErrorMessage
       );
       // does allow isWhitelisted deployer
-      await this.minter
-        .connect(this.accounts.deployer)
-        .setBurnERC20DuringPurchase(this.ERC20Mock.address, true);
+      await config.minter
+        .connect(config.accounts.deployer)
+        .setBurnERC20DuringPurchase(config.ERC20Mock.address, true);
     });
 
     it("does not burn tokens by default", async function () {
-      const balanceBefore: BigNumber = await this.ERC20Mock.balanceOf(
-        this.accounts.artist.address
+      const config = await loadFixture(_beforeEach);
+      const balanceBefore: BigNumber = await config.ERC20Mock.balanceOf(
+        config.accounts.artist.address
       );
       // artist changes to Mock ERC20 token
-      await this.genArt721Core
-        .connect(this.accounts.artist)
+      await config.genArt721Core
+        .connect(config.accounts.artist)
         .updateProjectCurrencyInfo(
-          this.projectZero,
+          config.projectZero,
           "MOCK",
-          this.ERC20Mock.address
+          config.ERC20Mock.address
         );
       // approve contract and able to mint with Mock token, purchase
-      await this.ERC20Mock.connect(this.accounts.user).approve(
-        this.minter.address,
+      await config.ERC20Mock.connect(config.accounts.user).approve(
+        config.minter.address,
         ethers.utils.parseEther("100")
       );
-      await this.minter.connect(this.accounts.user).purchase(this.projectZero);
+      await config.minter
+        .connect(config.accounts.user)
+        .purchase(config.projectZero);
       // artist balance of ERC20 token should be > than before
-      const balanceAfter: BigNumber = await this.ERC20Mock.balanceOf(
-        this.accounts.artist.address
+      const balanceAfter: BigNumber = await config.ERC20Mock.balanceOf(
+        config.accounts.artist.address
       );
       expect(balanceAfter.gt(balanceBefore)).to.be.true;
     });
 
     it("does burn tokens when configured to burn", async function () {
+      const config = await loadFixture(_beforeEach);
       // admin configures to burn tokens
-      await this.minter
-        .connect(this.accounts.deployer)
-        .setBurnERC20DuringPurchase(this.ERC20Mock.address, true);
+      await config.minter
+        .connect(config.accounts.deployer)
+        .setBurnERC20DuringPurchase(config.ERC20Mock.address, true);
 
-      const balanceBefore: BigNumber = await this.ERC20Mock.balanceOf(
-        this.accounts.artist.address
+      const balanceBefore: BigNumber = await config.ERC20Mock.balanceOf(
+        config.accounts.artist.address
       );
       // artist changes to Mock ERC20 token
-      await this.genArt721Core
-        .connect(this.accounts.artist)
+      await config.genArt721Core
+        .connect(config.accounts.artist)
         .updateProjectCurrencyInfo(
-          this.projectZero,
+          config.projectZero,
           "MOCK",
-          this.ERC20Mock.address
+          config.ERC20Mock.address
         );
       // approve contract and able to mint with Mock token, purchase
-      await this.ERC20Mock.connect(this.accounts.user).approve(
-        this.minter.address,
+      await config.ERC20Mock.connect(config.accounts.user).approve(
+        config.minter.address,
         ethers.utils.parseEther("100")
       );
-      await this.minter.connect(this.accounts.user).purchase(this.projectZero);
+      await config.minter
+        .connect(config.accounts.user)
+        .purchase(config.projectZero);
       // artist balance of ERC20 token should be same as before
-      const balanceAfter: BigNumber = await this.ERC20Mock.balanceOf(
-        this.accounts.artist.address
+      const balanceAfter: BigNumber = await config.ERC20Mock.balanceOf(
+        config.accounts.artist.address
       );
       expect(balanceAfter.eq(balanceBefore)).to.be.true;
     });
 
     it("does not burn tokens when un-set", async function () {
+      const config = await loadFixture(_beforeEach);
       // admin configures to burn tokens
-      await this.minter
-        .connect(this.accounts.deployer)
-        .setBurnERC20DuringPurchase(this.ERC20Mock.address, true);
+      await config.minter
+        .connect(config.accounts.deployer)
+        .setBurnERC20DuringPurchase(config.ERC20Mock.address, true);
 
       // admin configures to not burn tokens
-      await this.minter
-        .connect(this.accounts.deployer)
-        .setBurnERC20DuringPurchase(this.ERC20Mock.address, false);
+      await config.minter
+        .connect(config.accounts.deployer)
+        .setBurnERC20DuringPurchase(config.ERC20Mock.address, false);
 
-      const balanceBefore: BigNumber = await this.ERC20Mock.balanceOf(
-        this.accounts.artist.address
+      const balanceBefore: BigNumber = await config.ERC20Mock.balanceOf(
+        config.accounts.artist.address
       );
       // artist changes to Mock ERC20 token
-      await this.genArt721Core
-        .connect(this.accounts.artist)
+      await config.genArt721Core
+        .connect(config.accounts.artist)
         .updateProjectCurrencyInfo(
-          this.projectZero,
+          config.projectZero,
           "MOCK",
-          this.ERC20Mock.address
+          config.ERC20Mock.address
         );
       // approve contract and able to mint with Mock token, purchase
-      await this.ERC20Mock.connect(this.accounts.user).approve(
-        this.minter.address,
+      await config.ERC20Mock.connect(config.accounts.user).approve(
+        config.minter.address,
         ethers.utils.parseEther("100")
       );
-      await this.minter.connect(this.accounts.user).purchase(this.projectZero);
+      await config.minter
+        .connect(config.accounts.user)
+        .purchase(config.projectZero);
       // artist balance of ERC20 token should be > than before
-      const balanceAfter: BigNumber = await this.ERC20Mock.balanceOf(
-        this.accounts.artist.address
+      const balanceAfter: BigNumber = await config.ERC20Mock.balanceOf(
+        config.accounts.artist.address
       );
       expect(balanceAfter.gt(balanceBefore)).to.be.true;
     });

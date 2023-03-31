@@ -9,11 +9,10 @@
 pragma solidity ^0.5.0;
 
 library Strings {
-    function strConcat(string memory _a, string memory _b)
-        internal
-        pure
-        returns (string memory _concatenatedString)
-    {
+    function strConcat(
+        string memory _a,
+        string memory _b
+    ) internal pure returns (string memory _concatenatedString) {
         return strConcat(_a, _b, "", "", "");
     }
 
@@ -70,11 +69,9 @@ library Strings {
         return string(babcde);
     }
 
-    function uint2str(uint256 _i)
-        internal
-        pure
-        returns (string memory _uintAsString)
-    {
+    function uint2str(
+        uint256 _i
+    ) internal pure returns (string memory _uintAsString) {
         if (_i == 0) {
             return "0";
         }

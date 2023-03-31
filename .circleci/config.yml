@@ -5,9 +5,10 @@ orbs:
   aws-cli: circleci/aws-cli@3.0.0
 
 jobs:
-  lint-and-test:
+  lint:
     docker:
-      - image: 'cimg/base:stable'
+      - image: "cimg/base:stable"
+    resource_class: large
     steps:
       - checkout
       - node/install:
@@ -15,15 +16,126 @@ jobs:
           lts: true
       - node/install-packages:
           pkg-manager: yarn
-      - run: node --version
       - run:
           name: Lint
           command: yarn lint
+  test:
+    docker:
+      - image: "cimg/base:stable"
+    resource_class: large
+    parallelism: 8
+    steps:
+      - checkout
+      - node/install:
+          install-yarn: true
+          lts: true
+      - node/install-packages:
+          pkg-manager: yarn
       - run:
-          name: Run tests
-          command: yarn test
+          name: compile contracts
+          command: |
+            yarn compile
+      - run:
+          name: generate types
+          command: |
+            yarn generate:typechain
+      - run:
+          name: Hardhat Test
+          command: |
+            TEST_FILES="$(circleci tests glob "./test/**/*.ts" | circleci tests split)"
+            yarn test ${TEST_FILES}
+  coverage-parallel:
+    docker:
+      - image: "cimg/base:stable"
+    resource_class: large
+    parallelism: 8
+    steps:
+      - checkout
+      - node/install:
+          install-yarn: true
+          lts: true
+      - node/install-packages:
+          pkg-manager: yarn
+      - run:
+          name: compile contracts
+          command: |
+            yarn compile
+      - run:
+          name: generate types
+          command: |
+            yarn generate:typechain
+      - run:
+          name: coverage
+          command: |
+            TEST_FILES="{$(circleci tests glob "./test/**/*.ts" | circleci tests split | xargs | sed -e 's/ /,/g')}"
+            yarn coverage --testfiles "${TEST_FILES}"
+      - run:
+          name: save coverage
+          command: |
+            mkdir -p /tmp/coverage
+            cp coverage.json /tmp/coverage/cov_$CIRCLE_NODE_INDEX.json
+            chmod -R 777 /tmp/coverage/cov_$CIRCLE_NODE_INDEX.json
+      - persist_to_workspace:
+          root: /tmp/coverage
+          paths:
+            - cov_0.json
+            - cov_1.json
+            - cov_2.json
+            - cov_3.json
+            - cov_4.json
+            - cov_5.json
+            - cov_6.json
+            - cov_7.json
+
+  report-coverage:
+    docker:
+      - image: "cimg/base:stable"
+    steps:
+      - checkout
+      - node/install:
+          install-yarn: true
+          lts: true
+      - node/install-packages:
+          pkg-manager: yarn
+      - attach_workspace:
+          at: /tmp/coverage
+      - run:
+          name: combine coverage reports
+          command: |
+            cp -R /tmp/coverage/* .
+            npx istanbul-combine-updated -r lcov \
+              cov_0.json \
+              cov_1.json \
+              cov_2.json \
+              cov_3.json \
+              cov_4.json \
+              cov_5.json \
+              cov_6.json \
+              cov_7.json
+      - run:
+          name: upload coverage
+          command: |
+            cat coverage/lcov.info | node_modules/.bin/coveralls
+
+  lint-and-test:
+    docker:
+      - image: "cimg/base:stable"
+    resource_class: small
+    steps:
+      - run:
+          name: Success
+          command: echo "Success"
 
 workflows:
   run-ci:
     jobs:
-      - lint-and-test
+      - lint
+      - test
+      - coverage-parallel
+      - report-coverage:
+          requires:
+            - coverage-parallel
+      - lint-and-test:
+          requires:
+            - lint
+            - test

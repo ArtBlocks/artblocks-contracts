@@ -1,0 +1,47 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-03-29T01:24:51.903Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/audio-galleries-flex/deployment-config.dev.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV0 deployed at address: 0xA6A98495cf931cf325765d7ea1Adf0C44b205CbA
+[INFO] Randomizer BasicRandomizerV2 deployed at 0x74C95c613e1989ceFb09F16657D329a062B18ea6
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x0867aAEF5C1e4811c8598F8B8B844519881c59FA
+[INFO] Minter Filter MinterFilterV1 deployed at 0xf0585dF582A0ad119F1616FB82f3b449a98EeCd5
+[INFO] MinterSetPriceV4 deployed at 0x5fb9fC59B3fCF9Dd6430de6347568b5086Edc7Bb
+[INFO] MinterMerkleV5 deployed at 0xD0A385CfF92a27ffC8B3C3ef83fcbC63181A2d66
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0xf0585dF582A0ad119F1616FB82f3b449a98EeCd5.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0x5fb9fC59B3fCF9Dd6430de6347568b5086Edc7Bb on minter filter.
+[INFO] Allowlisted minter MinterMerkleV5 at 0xD0A385CfF92a27ffC8B3C3ef83fcbC63181A2d66 on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0x0396D20242A85F877f58018228E345E398E4a969.
+[INFO] Verifying core contract contract deployment...
+The contract 0x0867aAEF5C1e4811c8598F8B8B844519881c59FA has already been verified
+[INFO] Core contract verified on Etherscan at 0x0867aAEF5C1e4811c8598F8B8B844519881c59FA}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0xA6A98495cf931cf325765d7ea1Adf0C44b205CbA has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0xA6A98495cf931cf325765d7ea1Adf0C44b205CbA}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0xf0585dF582A0ad119F1616FB82f3b449a98EeCd5 has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0xf0585dF582A0ad119F1616FB82f3b449a98EeCd5}
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+The contract 0x5fb9fC59B3fCF9Dd6430de6347568b5086Edc7Bb has already been verified
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0x5fb9fC59B3fCF9Dd6430de6347568b5086Edc7Bb}
+[INFO] Verifying MinterMerkleV5 contract deployment...
+The contract 0xD0A385CfF92a27ffC8B3C3ef83fcbC63181A2d66 has already been verified
+[INFO] MinterMerkleV5 contract verified on Etherscan at 0xD0A385CfF92a27ffC8B3C3ef83fcbC63181A2d66}
+Created s3 bucket for https://audio-galleries-generator-goerli.s3.amazonaws.com
+[INFO] Created image bucket audio-galleries-generator-goerli
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/audio-galleries-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x0867aaef5c1e4811c8598f8b8b844519881c59fa",
+  "name": "Audio Galleries Generator",
+  "bucket_name": "audio-galleries-generator-goerli",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x0396D20242A85F877f58018228E345E398E4a969, don't forget to update if requred.

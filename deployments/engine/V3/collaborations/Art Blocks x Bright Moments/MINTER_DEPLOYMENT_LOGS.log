@@ -1,0 +1,16 @@
+[INFO] Datetime of minter deployment: 2023-02-22T22:59:18.026Z
+[INFO] Minter deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/collaborations/Art Blocks x Bright Moments/polyptych-minter-deploy-config.mainnet.ts
+[INFO] Deploying to network: mainnet
+[INFO] Deploying MinterPolyptychV0 with deploy args [0x145789247973C5D612bF121e9E4Eef84b63Eb707,0x6E522449C1642E7cB0B12a2889CcBf79b51C69f8,0x00000000000076A84feF008CDAbe6409d2FE638B]...
+[INFO] MinterPolyptychV0 deployed at 0x407A746DAd6a18ec6c4Bb4028Bb54c74366ccCe3
+[INFO] allowlisted the new minter on the minter filter at 0x6E522449C1642E7cB0B12a2889CcBf79b51C69f8
+[INFO] Verifying MinterPolyptychV0 contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterPolyptychV0.sol:MinterPolyptychV0 at 0x407A746DAd6a18ec6c4Bb4028Bb54c74366ccCe3
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterPolyptychV0 on Etherscan.
+https://etherscan.io/address/0x407A746DAd6a18ec6c4Bb4028Bb54c74366ccCe3#code
+[INFO] MinterPolyptychV0 contract verified on Etherscan at 0x407A746DAd6a18ec6c4Bb4028Bb54c74366ccCe3}
+[INFO] Minter deployment details written/appended to /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/collaborations/Art Blocks x Bright Moments/DEPLOYMENTS.md

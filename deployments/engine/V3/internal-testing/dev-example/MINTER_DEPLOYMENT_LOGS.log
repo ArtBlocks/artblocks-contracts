@@ -1,0 +1,52 @@
+----------------------------------------
+[INFO] Datetime of minter deployment: 2023-02-16T00:12:40.589Z
+[INFO] Minter deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/deployments/engine/V3/internal-testing/dev-example/minter-deploy-config-01.dev.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying MinterDAExpSettlementV2 with deploy args [0x5702797Ff45FCb0a70eB6AE1E4563299dCFa9Dd6,0x72AE7160A580893Fb1049D17Fbd736Ad39Ea7FbD]...
+[INFO] MinterDAExpSettlementV2 deployed at 0x1732eA26A4dbA4863527F7Eee4a9272607fE9db6
+[INFO] allowlisted the new minter on the minter filter at 0x72AE7160A580893Fb1049D17Fbd736Ad39Ea7FbD
+[INFO] Verifying MinterDAExpSettlementV2 contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterDAExpSettlementV2.sol:MinterDAExpSettlementV2 at 0x1732eA26A4dbA4863527F7Eee4a9272607fE9db6
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterDAExpSettlementV2 on Etherscan.
+https://goerli.etherscan.io/address/0x1732eA26A4dbA4863527F7Eee4a9272607fE9db6#code
+[INFO] MinterDAExpSettlementV2 contract verified on Etherscan at 0x1732eA26A4dbA4863527F7Eee4a9272607fE9db6}
+[INFO] Minter deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/deployments/engine/V3/internal-testing/dev-example/DEPLOYMENTS.md
+----------------------------------------
+[INFO] Datetime of minter deployment: 2023-03-27T22:19:50.189Z
+[INFO] Minter deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/deployments/engine/V3/internal-testing/dev-example/minter-deploy-config-02.dev.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying MinterSEAV0 with deploy args [0x5702797Ff45FCb0a70eB6AE1E4563299dCFa9Dd6,0x72AE7160A580893Fb1049D17Fbd736Ad39Ea7FbD,0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6]...
+[INFO] MinterSEAV0 deployed at 0x39d97fbcCC17b1c7c09aBc6F0fdFC3403D5d9A2F
+[INFO] allowlisted the new minter on the minter filter at 0x72AE7160A580893Fb1049D17Fbd736Ad39Ea7FbD
+[INFO] Verifying MinterSEAV0 contract deployment...
+The contract 0x39d97fbcCC17b1c7c09aBc6F0fdFC3403D5d9A2F has already been verified
+[INFO] MinterSEAV0 contract verified on Etherscan at 0x39d97fbcCC17b1c7c09aBc6F0fdFC3403D5d9A2F}
+[INFO] Minter deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/deployments/engine/V3/internal-testing/dev-example/DEPLOYMENTS.md
+----------------------------------------
+[INFO] Datetime of minter deployment: 2023-03-29T22:59:55.249Z
+[INFO] Minter deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/deployments/engine/V3/internal-testing/dev-example/minter-deploy-config-02.dev.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying MinterSEAV0 with deploy args [0x5702797Ff45FCb0a70eB6AE1E4563299dCFa9Dd6,0x72AE7160A580893Fb1049D17Fbd736Ad39Ea7FbD,0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6]...
+[INFO] MinterSEAV0 deployed at 0x7cd69aa289BDb64AB8139F896a9FF7B8c8fB5a2B
+[INFO] allowlisted the new minter on the minter filter at 0x72AE7160A580893Fb1049D17Fbd736Ad39Ea7FbD
+[INFO] Verifying MinterSEAV0 contract deployment...
+Nothing to compile
+[WARN] Etherscan verification of MinterSEAV0 failed: Error: ENOENT: no such file or directory, open '/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/artifacts/build-info/fe040f0e704884a8e4f090920df9d8f8.json'
+[ACTION] Verify MinterSEAV0 contract deployment with:
+yarn hardhat verify --network goerli 0x7cd69aa289BDb64AB8139F896a9FF7B8c8fB5a2B 0x5702797Ff45FCb0a70eB6AE1E4563299dCFa9Dd6 0x72AE7160A580893Fb1049D17Fbd736Ad39Ea7FbD 0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6
+[INFO] Minter deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/deployments/engine/V3/internal-testing/dev-example/DEPLOYMENTS.md
+----------------------------------------
+yarn hardhat verify --network goerli 0x7cd69aa289BDb64AB8139F896a9FF7B8c8fB5a2B 0x5702797Ff45FCb0a70eB6AE1E4563299dCFa9Dd6 0x72AE7160A580893Fb1049D17Fbd736Ad39Ea7FbD 0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6
+yarn run v1.22.19
+$ /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/.bin/hardhat verify --network goerli 0x7cd69aa289BDb64AB8139F896a9FF7B8c8fB5a2B 0x5702797Ff45FCb0a70eB6AE1E4563299dCFa9Dd6 0x72AE7160A580893Fb1049D17Fbd736Ad39Ea7FbD 0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6
+Nothing to compile
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterSEAV0.sol:MinterSEAV0 at 0x7cd69aa289BDb64AB8139F896a9FF7B8c8fB5a2B
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterSEAV0 on Etherscan.
+https://goerli.etherscan.io/address/0x7cd69aa289BDb64AB8139F896a9FF7B8c8fB5a2B#code
