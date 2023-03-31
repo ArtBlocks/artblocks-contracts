@@ -46,9 +46,6 @@ artifacts
 # Typechain generated files
 scripts/contracts
 
-# Python env files
-env/
-
 # Any local dev scripts
 scripts/.local/
 
