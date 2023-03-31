@@ -1,0 +1,40 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-03-29T03:31:45.585Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/xcopy-flex/deployment-config.dev.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV0 deployed at address: 0xd0DD52bFF90eA4425b5D849B7b7B9e9ACf776b82
+[INFO] Randomizer BasicRandomizerV2 deployed at 0xCE27044FF8910eA02d2d9955e548Bf37E20926A6
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x9B67F89a372c5A30bF0d2Db3dA5d6678fc2198a8
+[INFO] Minter Filter MinterFilterV1 deployed at 0xA7C61f38324758b4b217E5e554b5D11db19C83C8
+[INFO] MinterDAExpV4 deployed at 0x7B80A64e267796070Aa506d6514fE54b8F18379C
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0xA7C61f38324758b4b217E5e554b5D11db19C83C8.
+[INFO] Allowlisted minter MinterDAExpV4 at 0x7B80A64e267796070Aa506d6514fE54b8F18379C on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0xAAF803b757d97E2BD9392B54FFBb591B44428b4F.
+[INFO] Verifying core contract contract deployment...
+The contract 0x9B67F89a372c5A30bF0d2Db3dA5d6678fc2198a8 has already been verified
+[INFO] Core contract verified on Etherscan at 0x9B67F89a372c5A30bF0d2Db3dA5d6678fc2198a8}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0xd0DD52bFF90eA4425b5D849B7b7B9e9ACf776b82 has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0xd0DD52bFF90eA4425b5D849B7b7B9e9ACf776b82}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0xA7C61f38324758b4b217E5e554b5D11db19C83C8 has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0xA7C61f38324758b4b217E5e554b5D11db19C83C8}
+[INFO] Verifying MinterDAExpV4 contract deployment...
+The contract 0x7B80A64e267796070Aa506d6514fE54b8F18379C has already been verified
+[INFO] MinterDAExpV4 contract verified on Etherscan at 0x7B80A64e267796070Aa506d6514fE54b8F18379C}
+Created s3 bucket for https://xcore-goerli.s3.amazonaws.com
+[INFO] Created image bucket xcore-goerli
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/xcopy-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x9b67f89a372c5a30bf0d2db3da5d6678fc2198a8",
+  "name": "XCORE",
+  "bucket_name": "xcore-goerli",
+  "default_vertical_name": "flex"
+}
+Error upserting contracts: [GraphQL] Uniqueness violation. duplicate key value violates unique constraint "contracts_metadata_name_key"

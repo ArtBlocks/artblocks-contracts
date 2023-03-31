@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../interfaces/0.8.x/IGenArt721CoreV2_PBAB.sol";
-import "../interfaces/0.8.x/IBonusContract.sol";
+import "../../interfaces/0.8.x/IGenArt721CoreV2_PBAB.sol";
+import "../../interfaces/0.8.x/IBonusContract.sol";
 
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin-4.5/contracts/utils/Strings.sol";
@@ -12,10 +12,22 @@ pragma solidity 0.8.9;
 
 /**
  * @title Powered by Art Blocks minter contract that allows tokens to be
- * minted with ETH or any ERC-20 token.
+ * minted with ETH or any ERC-20 token. Has ability to burn configured ERC-20
+ * tokens during purchase events to avoid re-use of tokens.
  * @author Art Blocks Inc.
  */
-contract GenArt721Minter_PBAB is ReentrancyGuard {
+contract GenArt721MinterBurner_PBAB is ReentrancyGuard {
+    /**
+     * @notice ERC-20 tokens at address `_ERC20Address` will be burned during
+     * purchases if `_doBurnDuringPurchase` is true, otherwise they will be
+     * distributed to the artist, additional payee, platform, and render
+     * provider.
+     */
+    event BurnERC20DuringPurchaseSet(
+        address indexed _ERC20Address,
+        bool _doBurnDuringPurchase
+    );
+
     /// PBAB core contract this minter may interact with.
     IGenArt721CoreV2_PBAB public genArtCoreContract;
 
@@ -31,6 +43,12 @@ contract GenArt721Minter_PBAB is ReentrancyGuard {
     mapping(uint256 => uint256) public projectMintLimit;
     mapping(uint256 => bool) public projectMaxHasBeenInvoked;
     mapping(uint256 => uint256) public projectMaxInvocations;
+
+    /// ERC20 address => burn during purchase
+    mapping(address => bool) public burnERC20DuringPurchase;
+    // don't rely on optional ERC20 burn() to burn tokens, send here instead
+    address internal constant ERC20_BURN_ADDRESS =
+        0x000000000000000000000000000000000000dEaD;
 
     /**
      * @notice Initializes contract to be a Minter for PBAB core contract at
@@ -84,6 +102,27 @@ contract GenArt721Minter_PBAB is ReentrancyGuard {
             "can only be set by admin"
         );
         projectMintLimit[_projectId] = _limit;
+    }
+
+    /**
+     * @notice Configures the minter to either burn or distribute ERC-20 tokens
+     * during purchases. Default behavior is to not burn tokens.
+     * @param _ERC20Address Contract address of the ERC-20 token used to
+     * purchase.
+     * @param _doBurnDuringPurchase Burn the tokens during purchase if true,
+     * distribute to artist, additional payee, platform, and render provider
+     * if false.
+     */
+    function setBurnERC20DuringPurchase(
+        address _ERC20Address,
+        bool _doBurnDuringPurchase
+    ) public {
+        require(
+            genArtCoreContract.isWhitelisted(msg.sender),
+            "can only be set by admin"
+        );
+        burnERC20DuringPurchase[_ERC20Address] = _doBurnDuringPurchase;
+        emit BurnERC20DuringPurchaseSet(_ERC20Address, _doBurnDuringPurchase);
     }
 
     /**
@@ -362,22 +401,35 @@ contract GenArt721Minter_PBAB is ReentrancyGuard {
     function _splitFundsERC20(uint256 _projectId) internal {
         uint256 pricePerTokenInWei = genArtCoreContract
             .projectIdToPricePerTokenInWei(_projectId);
+        address _tokenAddress = genArtCoreContract.projectIdToCurrencyAddress(
+            _projectId
+        );
+        if (burnERC20DuringPurchase[_tokenAddress]) {
+            IERC20(_tokenAddress).transferFrom(
+                msg.sender,
+                ERC20_BURN_ADDRESS,
+                pricePerTokenInWei
+            );
+            return;
+        }
         uint256 renderProviderAmount = (pricePerTokenInWei *
             genArtCoreContract.renderProviderPercentage()) / 100;
         if (renderProviderAmount > 0) {
-            IERC20(genArtCoreContract.projectIdToCurrencyAddress(_projectId))
-                .transferFrom(
-                    msg.sender,
-                    genArtCoreContract.renderProviderAddress(),
-                    renderProviderAmount
-                );
+            IERC20(_tokenAddress).transferFrom(
+                msg.sender,
+                genArtCoreContract.renderProviderAddress(),
+                renderProviderAmount
+            );
         }
         uint256 remainingFunds = pricePerTokenInWei - renderProviderAmount;
 
         uint256 ownerFunds = (remainingFunds * ownerPercentage) / 100;
         if (ownerFunds > 0) {
-            IERC20(genArtCoreContract.projectIdToCurrencyAddress(_projectId))
-                .transferFrom(msg.sender, ownerAddress, ownerFunds);
+            IERC20(_tokenAddress).transferFrom(
+                msg.sender,
+                ownerAddress,
+                ownerFunds
+            );
         }
 
         uint256 projectFunds = pricePerTokenInWei -
@@ -396,25 +448,20 @@ contract GenArt721Minter_PBAB is ReentrancyGuard {
                     )) /
                 100;
             if (additionalPayeeAmount > 0) {
-                IERC20(
-                    genArtCoreContract.projectIdToCurrencyAddress(_projectId)
-                ).transferFrom(
-                        msg.sender,
-                        genArtCoreContract.projectIdToAdditionalPayee(
-                            _projectId
-                        ),
-                        additionalPayeeAmount
-                    );
+                IERC20(_tokenAddress).transferFrom(
+                    msg.sender,
+                    genArtCoreContract.projectIdToAdditionalPayee(_projectId),
+                    additionalPayeeAmount
+                );
             }
         }
         uint256 creatorFunds = projectFunds - additionalPayeeAmount;
         if (creatorFunds > 0) {
-            IERC20(genArtCoreContract.projectIdToCurrencyAddress(_projectId))
-                .transferFrom(
-                    msg.sender,
-                    genArtCoreContract.projectIdToArtistAddress(_projectId),
-                    creatorFunds
-                );
+            IERC20(_tokenAddress).transferFrom(
+                msg.sender,
+                genArtCoreContract.projectIdToArtistAddress(_projectId),
+                creatorFunds
+            );
         }
     }
 }

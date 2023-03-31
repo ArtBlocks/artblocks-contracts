@@ -1,0 +1,42 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-03-29T02:17:10.304Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/fab/deployment-config.dev.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV0 deployed at address: 0xF2994f39c281436790CaF443CeECe71b572a3BA6
+[INFO] Randomizer BasicRandomizerV2 deployed at 0x16bc1d3a5b5ED072ba1cA00e9d39A256Ee314E9C
+[INFO] Core GenArt721CoreV3_Engine deployed at 0x043Eeb8bFd416666b57dd2C5Be439e6fB23e9ce1
+[INFO] Minter Filter MinterFilterV1 deployed at 0x1A6b570499195139E38Cfa56044Dd748839beE1A
+[INFO] MinterSetPriceV4 deployed at 0x7cd616910828Ef88Bd6882CCb7992061D6aE2AF3
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0x1A6b570499195139E38Cfa56044Dd748839beE1A.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0x7cd616910828Ef88Bd6882CCb7992061D6aE2AF3 on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0xbeDF910B5cc587eE6633855080CAd1Ed08B8bF8e.
+[INFO] Verifying core contract contract deployment...
+The contract 0x043Eeb8bFd416666b57dd2C5Be439e6fB23e9ce1 has already been verified
+[INFO] Core contract verified on Etherscan at 0x043Eeb8bFd416666b57dd2C5Be439e6fB23e9ce1}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0xF2994f39c281436790CaF443CeECe71b572a3BA6 has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0xF2994f39c281436790CaF443CeECe71b572a3BA6}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0x1A6b570499195139E38Cfa56044Dd748839beE1A has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0x1A6b570499195139E38Cfa56044Dd748839beE1A}
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+The contract 0x7cd616910828Ef88Bd6882CCb7992061D6aE2AF3 has already been verified
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0x7cd616910828Ef88Bd6882CCb7992061D6aE2AF3}
+Created s3 bucket for https://fab-v3-goerli.s3.amazonaws.com
+[INFO] Created image bucket fab-v3-goerli
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/fab/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x043eeb8bfd416666b57dd2c5be439e6fb23e9ce1",
+  "name": "FAB V3",
+  "bucket_name": "fab-v3-goerli",
+  "default_vertical_name": "fullyonchain"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0xbeDF910B5cc587eE6633855080CAd1Ed08B8bF8e, don't forget to update if requred.

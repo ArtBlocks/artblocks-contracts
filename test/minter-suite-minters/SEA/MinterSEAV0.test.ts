@@ -209,6 +209,27 @@ for (const coreContractName of coreContractsToTest) {
           );
         });
 
+        it("allows artist to call when project is paused", async function () {
+          const config = await loadFixture(_beforeEach);
+          // use project one, because it has not yet been configured on the minter
+          await safeAddProject(
+            config.genArt721Core,
+            config.accounts.deployer,
+            config.accounts.artist2.address
+          );
+          // make project active, but not unpaused, and configure minter
+          await config.genArt721Core
+            .connect(config.accounts.deployer)
+            .toggleProjectIsActive(config.projectOne);
+          await config.minterFilter
+            .connect(config.accounts.deployer)
+            .setMinterForProject(config.projectOne, config.minter.address);
+          // manually limit minter max invocations, which tries to mint a token to next slot
+          await config.minter
+            .connect(config.accounts.artist2)
+            .manuallyLimitProjectMaxInvocations(config.projectOne, 50);
+        });
+
         it("reverts for unconfigured/non-existent project", async function () {
           const config = await loadFixture(_beforeEach);
           // trying to set config on unconfigured project (e.g. 99) should cause
