@@ -44,3 +44,47 @@ Date: 2023-03-29T02:45:29.928Z
 
 ---
 
+
+# Deployment
+
+Date: 2023-03-31T00:34:16.052Z
+
+## **Network:** mainnet
+
+## **Environment:** mainnet
+
+**Deployment Input File:** `deployments/engine/V3/partners/hodlers-projects/deployment-config.mainnet.ts`
+
+**GenArt721CoreV3_Engine_Flex:** https://etherscan.io/address/0xD00495689D5161C511882364E0C342e12Dcc5f08#code
+
+**AdminACLV0:** https://etherscan.io/address/0x10BD2A01996711b0A66d8D5203a919463383701A#code
+
+**Engine Registry:** https://etherscan.io/address/0x652490c8BB6e7ec3Fd798537D2F348D7904BBbc2#code
+
+**MinterFilterV1:** https://etherscan.io/address/0xB64116A7D5D84fE9795DD022ea191217A2e32076#code
+
+**Minters:**
+
+**MinterDAExpSettlementV2:** https://etherscan.io/address/0x7a67130593A161124686EA55484D1A64d99eefc9#code
+
+**MinterMerkleV5:** https://etherscan.io/address/0xcBA628BcF6f458f6F929d875B69FE5f0F3fB99b6#code
+
+
+
+**Metadata**
+
+- **Starting Project Id:** 1
+- **Token Name:** Hodlers Collector Pass
+- **Token Ticker:** HODLERS
+- **Auto Approve Artist Split Proposals:** false
+- **Render Provider Address, Primary Sales:** 0xbf4674ee0F5ab527eD187B32739b54B62aEB6247
+- **Platform Provider Address, Primary Sales:** 0x8cc0019C16bced6891a96d32FF36FeAB4A663a40
+
+**Other**
+
+- **Add initial project?:** false
+- **Add initial token?:** false
+- **Image Bucket:** hodlers-collector-pass-mainnet
+
+---
+
