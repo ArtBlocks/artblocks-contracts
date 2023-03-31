@@ -1,5 +1,0 @@
-asttokens==2.0.5
-pycryptodome==3.14.1
-semantic-version==2.8.5
-six==1.16.0
-vyper==0.3.3
