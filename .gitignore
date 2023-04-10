@@ -39,7 +39,7 @@ coverageEnv
 .env
 node_modules
 
-#Hardhat files
+# Hardhat files
 cache
 artifacts
 
