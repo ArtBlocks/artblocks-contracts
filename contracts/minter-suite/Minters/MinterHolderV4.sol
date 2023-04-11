@@ -5,7 +5,7 @@ import "../../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
 import "../../interfaces/0.8.x/IMinterFilterV0.sol";
 import "../../interfaces/0.8.x/IFilteredMinterHolderV2.sol";
 import "./MinterBase_v0_1_1.sol";
-import "../../interfaces/0.8.x/IDelegationRegistry.sol";
+import "../../interfaces/0.8.x/delegation-registry/IDelegationRegistry.sol";
 
 import "@openzeppelin-4.5/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";

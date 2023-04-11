@@ -4,7 +4,7 @@
 import "../../../../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
 import "../../../../interfaces/0.8.x/IMinterFilterV0.sol";
 import "../../../../interfaces/0.8.x/IFilteredMinterMerkleV0.sol";
-import "../../../../interfaces/0.8.x/IDelegationRegistry.sol";
+import "../../../../interfaces/0.8.x/delegation-registry/IDelegationRegistry.sol";
 
 import "@openzeppelin-4.7/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin-4.7/contracts/token/ERC20/IERC20.sol";

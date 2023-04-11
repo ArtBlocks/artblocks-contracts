@@ -4,7 +4,7 @@
 import "../../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
 import "../../interfaces/0.8.x/IMinterFilterV0.sol";
 import "../../interfaces/0.8.x/IFilteredMinterMerkleV2.sol";
-import "../../interfaces/0.8.x/IDelegationRegistry.sol";
+import "../../interfaces/0.8.x/delegation-registry/IDelegationRegistry.sol";
 import "./MinterBase_v0_1_1.sol";
 
 import "@openzeppelin-4.7/contracts/utils/cryptography/MerkleProof.sol";
