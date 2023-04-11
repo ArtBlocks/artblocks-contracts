@@ -4393,14 +4393,14 @@
     webcrypto-core "^1.7.4"
 
 "@remix-project/remixd@^0.6.12":
-  version "0.6.12"
-  resolved "https://registry.yarnpkg.com/@remix-project/remixd/-/remixd-0.6.12.tgz#c783a60633f4f2ebb4b6bbbfd8bc357af8c569a2"
-  integrity sha512-w5RgNUOF/KYOjL+qHxWZCpIgzDpwBMhtx73c64YfJWXixF4lrcfFQbVu2V1ofJGjLEb9srECeesNBUWyvDRmNg==
+  version "0.6.13"
+  resolved "https://registry.yarnpkg.com/@remix-project/remixd/-/remixd-0.6.13.tgz#fd4d7b4c10ec84cd767a82469c9823aa2381ff15"
+  integrity sha512-hx8AhsjEf5CJh1q44DAW/z/U29R00wj0cpq0026+rO16PuWuc0coXp+YYXxPCXlf3C73E8UuVmmjXpUy9xb7hw==
   dependencies:
-    "@remixproject/plugin" "^0.3.11"
-    "@remixproject/plugin-api" "^0.3.11"
-    "@remixproject/plugin-utils" "^0.3.11"
-    "@remixproject/plugin-ws" "^0.3.11"
+    "@remixproject/plugin" "0.3.33"
+    "@remixproject/plugin-api" "0.3.33"
+    "@remixproject/plugin-utils" "0.3.33"
+    "@remixproject/plugin-ws" "0.3.33"
     axios "1.1.2"
     chokidar "^2.1.8"
     commander "^9.4.1"
@@ -4410,36 +4410,36 @@
     semver "^6.3.0"
     ws "^7.3.0"
 
-"@remixproject/plugin-api@0.3.28", "@remixproject/plugin-api@^0.3.11":
-  version "0.3.28"
-  resolved "https://registry.yarnpkg.com/@remixproject/plugin-api/-/plugin-api-0.3.28.tgz#660f068681bc1780284768e4ce1b4f70ea4ba859"
-  integrity sha512-tOzVFR504037weEkNHQGZsk+Ebxcu/xnBsVCkJaQaBMb+H/i6YevKQmoR1aGcH+JfQxc8eS8LGC65MaV8zmcWg==
+"@remixproject/plugin-api@0.3.33":
+  version "0.3.33"
+  resolved "https://registry.yarnpkg.com/@remixproject/plugin-api/-/plugin-api-0.3.33.tgz#29699f980ea00bebf720961cc0e78887e03903ec"
+  integrity sha512-fBEbRr6/mgQdfNdRqYQL3yewsPfTxV41F509CngbD6YdY5YKBihJhfGFHbd2rKSyXOgBiHIbe0SsV3OXpFdWnw==
   dependencies:
-    "@remixproject/plugin-utils" "0.3.28"
+    "@remixproject/plugin-utils" "0.3.33"
 
-"@remixproject/plugin-utils@0.3.28", "@remixproject/plugin-utils@^0.3.11":
-  version "0.3.28"
-  resolved "https://registry.yarnpkg.com/@remixproject/plugin-utils/-/plugin-utils-0.3.28.tgz#eefd3b603f223cf6fba9b914ef3c9a62bd8435b6"
-  integrity sha512-5CayTgMqRiOguanTy6kpuRgCmjEFLUu2K4Rs7Zmt+GOzHucmwkDxYQO+3hFv0Jz/M/6yC5wkKYTx8vfPLLdEBQ==
+"@remixproject/plugin-utils@0.3.33":
+  version "0.3.33"
+  resolved "https://registry.yarnpkg.com/@remixproject/plugin-utils/-/plugin-utils-0.3.33.tgz#7b697403031598276baaf16bb82d6c62062053fc"
+  integrity sha512-cAo21ot4/G5BkN8ypDwg8MMCrEmLdXwMd3lQZUeB5enPC3KxmzQz71+OgEYl718Hwy+GtHaLq17FEXCHC5YV9w==
   dependencies:
     tslib "2.0.1"
 
-"@remixproject/plugin-ws@^0.3.11":
-  version "0.3.28"
-  resolved "https://registry.yarnpkg.com/@remixproject/plugin-ws/-/plugin-ws-0.3.28.tgz#4f6022b1c8ef6356299c545f6164bce48aac60fe"
-  integrity sha512-i3He9t4qvcBQxzshFx66D6drqLlySmV7Cb+NeYtMOYlWxQSJtUakp/Px1Tl3IDFQXDfpXxvDvYhn2w0AWPBOqw==
+"@remixproject/plugin-ws@0.3.33":
+  version "0.3.33"
+  resolved "https://registry.yarnpkg.com/@remixproject/plugin-ws/-/plugin-ws-0.3.33.tgz#98a003e83ffafb5a7a35ca4e8c59d849ecb017cf"
+  integrity sha512-Zkp8MK8jxnNm3uruu0dF8vqeh90JsLXttJP4LZF0HaStRRK4d2XG6CgE5mBiC2J4uTEwGP26H/vmqi+POBPTEg==
   dependencies:
-    "@remixproject/plugin" "0.3.28"
-    "@remixproject/plugin-api" "0.3.28"
-    "@remixproject/plugin-utils" "0.3.28"
+    "@remixproject/plugin" "0.3.33"
+    "@remixproject/plugin-api" "0.3.33"
+    "@remixproject/plugin-utils" "0.3.33"
 
-"@remixproject/plugin@0.3.28", "@remixproject/plugin@^0.3.11":
-  version "0.3.28"
-  resolved "https://registry.yarnpkg.com/@remixproject/plugin/-/plugin-0.3.28.tgz#3e40de6d0441e6b47ca17c904e57562cb285a4d3"
-  integrity sha512-sw+cow3GKAcEacXLvdJwtHHIphPty4KRMZ6tcQHdtx/iCKTMNdw2hribKPnvTO+6mXE+4oAKCrFqeTdVp/rd1w==
+"@remixproject/plugin@0.3.33":
+  version "0.3.33"
+  resolved "https://registry.yarnpkg.com/@remixproject/plugin/-/plugin-0.3.33.tgz#2939cdb6a1231743d7f00c10f5ea47eddd49b602"
+  integrity sha512-ia6LevsWYPkcRwOBl3umA2fPCgYt2TmB437Pafs9BE6fD9judEvlvEqXjBy9GLBsZzZWSiyYenOnW8HIiwqfMA==
   dependencies:
-    "@remixproject/plugin-api" "0.3.28"
-    "@remixproject/plugin-utils" "0.3.28"
+    "@remixproject/plugin-api" "0.3.33"
+    "@remixproject/plugin-utils" "0.3.33"
     events "3.2.0"
 
 "@repeaterjs/repeater@3.0.4", "@repeaterjs/repeater@^3.0.4":
