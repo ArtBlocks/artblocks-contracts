@@ -55,7 +55,7 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
     using EnumerableMap for EnumerableMap.UintToAddressMap;
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    /// Admin ACL contract
+    /// Admin ACL contract for this minter filter
     IAdminACLV0 public adminACLContract;
 
     /**
