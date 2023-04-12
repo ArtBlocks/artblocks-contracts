@@ -163,6 +163,21 @@ contract EngineRegistryV1 is Ownable, IEngineRegistryV1 {
     }
 
     /**
+     * @notice Gets an array of all registered contract addresses.
+     * Warning: Unbounded gas limit. This function is gas intensive and should
+     * only be used for off-chain analysis. Please use
+     * `getNumRegisteredContracts` and `getRegisteredContractAt` for bounded
+     * gas usage.
+     */
+    function getAllRegisteredContracts()
+        external
+        view
+        returns (address[] memory)
+    {
+        return registeredContracts.values();
+    }
+
+    /**
      * @notice Returns boolean representing if contract is registered on this
      * registry.
      * @param _contractAddress The address of the contract to check.

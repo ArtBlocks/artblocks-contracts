@@ -590,6 +590,65 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
     }
 
     /**
+     * @notice View that returns if a core contract is registered with the
+     * engine registry, allowing this minter filter to service it.
+     * @param _coreContract core contract address to be checked
+     * @return bool true if core contract is registered, else false
+     */
+    function isRegisteredCoreContract(
+        address _coreContract
+    ) external view override returns (bool) {
+        return engineRegistry.isRegisteredContract(_coreContract);
+    }
+
+    /**
+     * @notice Gets all projects on core contract `_coreContract` that are
+     * using minter `_minter`.
+     * Warning: Unbounded gas limit. This function is gas-intensive and should
+     * only be used for off-chain queries. Alternatively, the subgraph indexing
+     * layer may be used to query these values.
+     * @param _coreContract core contract to query
+     * @param _minter minter to query
+     */
+    function getProjectsOnContractUsingMinter(
+        address _coreContract,
+        address _minter
+    ) external view returns (uint256[] memory projectIds) {
+        // initialize arrays with maximum potential length
+        // @dev use num projects using minter across all contracts since it the
+        // maximum length of this array
+        uint256 maxNumProjects = numProjectsUsingMinter[_minter];
+        projectIds = new uint256[](maxNumProjects);
+        // iterate over all projects on contract, adding to array if using
+        // `_minter`
+        EnumerableMap.UintToAddressMap storage minterMap = minterForProject[
+            _coreContract
+        ];
+        uint256 numProjects = minterMap.length();
+        uint256 numProjectsOnContractUsingMinter;
+        for (uint256 i; i < numProjects; ) {
+            (uint256 projectId, address minter) = minterMap.at(i);
+            if (minter == _minter) {
+                projectIds[numProjectsOnContractUsingMinter++] = projectId;
+            }
+            unchecked {
+                ++i;
+            }
+        }
+        // trim array if necessary
+        if (maxNumProjects > numProjectsOnContractUsingMinter) {
+            assembly {
+                let decrease := sub(
+                    maxNumProjects,
+                    numProjectsOnContractUsingMinter
+                )
+                mstore(projectIds, sub(mload(projectIds), decrease))
+            }
+        }
+        return projectIds;
+    }
+
+    /**
      * @notice Convenience function that returns whether `_sender` is allowed
      * to call function with selector `_selector` on contract `_contract`, as
      * determined by this contract's current Admin ACL contract. Expected use
@@ -616,18 +675,6 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
         return
             owner() != address(0) &&
             adminACLContract.allowed(_sender, _contract, _selector);
-    }
-
-    /**
-     * @notice View that returns if a core contract is registered with the
-     * engine registry, allowing this minter filter to service it.
-     * @param _coreContract core contract address to be checked
-     * @return bool true if core contract is registered, else false
-     */
-    function isRegisteredCoreContract(
-        address _coreContract
-    ) public view override returns (bool) {
-        return engineRegistry.isRegisteredContract(_coreContract);
     }
 
     /**
