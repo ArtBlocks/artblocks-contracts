@@ -37,6 +37,9 @@ import "@openzeppelin-4.7/contracts/utils/structs/EnumerableSet.sol";
  * - unregisterContracts
  * - Ownable: transferOwnership
  * - Ownable: renounceOwnership
+ * ----------------------------------------------------------------------------
+ * Additional privileged roles may be described on minters, registries, and
+ * other contracts that may interact with this contract.
  */
 contract EngineRegistryV1 is Ownable, IEngineRegistryV1 {
     using EnumerableSet for EnumerableSet.AddressSet;

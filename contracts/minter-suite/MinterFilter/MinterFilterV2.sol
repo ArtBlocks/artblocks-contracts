@@ -46,6 +46,9 @@ import "@openzeppelin-4.7/contracts/utils/structs/EnumerableSet.sol";
  * Admin ACL contract, or to the artist address of the project:
  * - setMinterForProject
  * - removeMinterForProject
+ * ----------------------------------------------------------------------------
+ * Additional admin and artist privileged roles may be described on minters,
+ * registries, and other contracts that may interact with this contract.
  */
 contract MinterFilterV2 is Ownable, IMinterFilterV1 {
     // add Enumerable Map methods
