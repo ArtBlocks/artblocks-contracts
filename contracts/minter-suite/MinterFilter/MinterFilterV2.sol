@@ -8,6 +8,8 @@ import "../../interfaces/0.8.x/IFilteredMinterV0.sol";
 import "../../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
 import "../../interfaces/0.8.x/IEngineRegistryV1.sol";
 
+import "../../libs/0.8.x/Bytes32Strings.sol";
+
 import "@openzeppelin-4.7/contracts/access/Ownable.sol";
 import "@openzeppelin-4.7/contracts/utils/structs/EnumerableMap.sol";
 import "@openzeppelin-4.7/contracts/utils/structs/EnumerableSet.sol";
@@ -54,6 +56,21 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
     // add Enumerable Map methods
     using EnumerableMap for EnumerableMap.UintToAddressMap;
     using EnumerableSet for EnumerableSet.AddressSet;
+    // add Bytes32Strings methods
+    using Bytes32Strings for bytes32;
+
+    /// version & type of this core contract
+    bytes32 constant MINTER_FILTER_VERSION = "v2.0.0";
+
+    function minterFilterVersion() external pure returns (string memory) {
+        return MINTER_FILTER_VERSION.toString();
+    }
+
+    bytes32 constant MINTER_FILTER_TYPE = "MinterFilterV2";
+
+    function minterFilterType() external pure returns (string memory) {
+        return MINTER_FILTER_TYPE.toString();
+    }
 
     /// Admin ACL contract for this minter filter
     IAdminACLV0 public adminACLContract;
@@ -93,6 +110,10 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
      * minter addresses.
      */
     mapping(address => EnumerableMap.UintToAddressMap) private minterForProject;
+
+    function _onlyNonZeroAddress(address _address) internal pure {
+        require(_address != address(0), "Only non-zero address");
+    }
 
     /**
      * @notice Function to restrict access to only AdminACL allowed calls
@@ -189,10 +210,6 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
         );
     }
 
-    function _onlyNonZeroAddress(address _address) internal pure {
-        require(_address != address(0), "Only non-zero address");
-    }
-
     /**
      * @notice Initializes contract to be a Minter for `_genArt721Address`.
      * @param _adminACLContract Address of admin access control contract, to be
@@ -204,6 +221,7 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
         _transferOwnership(_adminACLContract);
         // set engine registry contract
         _updateEngineRegistry(_engineRegistry);
+        emit Deployed();
     }
 
     /// @dev override to prevent renouncing ownership
@@ -571,7 +589,7 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
      * is registered, since it must have been registered at the time the
      * project was assigned a minter
      */
-    function getProjectAndMinterInfoForContractAt(
+    function getProjectAndMinterInfoOnContractAt(
         address _coreContract,
         uint256 _index
     )
