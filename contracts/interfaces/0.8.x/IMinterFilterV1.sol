@@ -96,7 +96,8 @@ interface IMinterFilterV1 {
         address _coreContract
     ) external;
 
-    function mint(
+    // @dev function name is optimized for gas
+    function mint_joo(
         address _to,
         uint256 _projectId,
         address _coreContract,

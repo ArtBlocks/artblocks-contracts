@@ -476,8 +476,9 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
      * requires the core contract to have been previously registered. If core
      * contract was unregistered but the project still has an assigned minter,
      * minting will remain possible.
+     * @dev function name is optimized for gas.
      */
-    function mint(
+    function mint_joo(
         address _to,
         uint256 _projectId,
         address _coreContract,
