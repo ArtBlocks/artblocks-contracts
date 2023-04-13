@@ -68,12 +68,12 @@ jobs:
           name: coverage
           command: |
             TEST_FILES="{$(circleci tests glob "./test/**/*.ts" | circleci tests split | xargs | sed -e 's/ /,/g')}"
-            yarn coverage --testfiles "${TEST_FILES}"
+            yarn coverage --testfiles "${TEST_FILES}" && echo "Coverage generated"
       - run:
           name: save coverage
           command: |
             mkdir -p /tmp/coverage
-            cp ./coverage.json /tmp/coverage/cov_$CIRCLE_NODE_INDEX.json
+            cp coverage.json /tmp/coverage/cov_$CIRCLE_NODE_INDEX.json
             chmod -R 777 /tmp/coverage/cov_$CIRCLE_NODE_INDEX.json
       - persist_to_workspace:
           root: /tmp/coverage
