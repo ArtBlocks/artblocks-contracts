@@ -31,6 +31,10 @@ jobs:
           lts: true
       - node/install-packages:
           pkg-manager: yarn
+      - debug-list-files:
+          name: compile contracts
+          command: |
+            ls ./contracts
       - run:
           name: compile contracts
           command: |
