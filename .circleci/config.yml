@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-  node: circleci/node@4.7
+  node: circleci/node@5.1.0
   aws-cli: circleci/aws-cli@3.0.0
 
 jobs:
@@ -13,7 +13,7 @@ jobs:
       - checkout
       - node/install:
           install-yarn: true
-          lts: true
+          node-version: "18.15"
       - node/install-packages:
           pkg-manager: yarn
       - run:
@@ -28,13 +28,17 @@ jobs:
       - checkout
       - node/install:
           install-yarn: true
-          lts: true
+          node-version: "18.15"
       - node/install-packages:
           pkg-manager: yarn
       - run:
+          name: debug list files
+          command: |
+            ls ./contracts
+      - run:
           name: compile contracts
           command: |
-            yarn compile
+            npx hardhat compile
       - run:
           name: generate types
           command: |
@@ -53,12 +57,13 @@ jobs:
       - checkout
       - node/install:
           install-yarn: true
-          lts: true
+          node-version: "18.15"
       - node/install-packages:
           pkg-manager: yarn
       - run:
           name: compile contracts
           command: |
+            yarn compile
             yarn compile
       - run:
           name: generate types
@@ -94,7 +99,7 @@ jobs:
       - checkout
       - node/install:
           install-yarn: true
-          lts: true
+          node-version: "18.15"
       - node/install-packages:
           pkg-manager: yarn
       - attach_workspace:
