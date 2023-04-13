@@ -29,7 +29,7 @@ jobs:
           install-yarn: true
       - node/install-packages:
           pkg-manager: yarn
-      - debug:
+      - run:
           name: debug list files
           command: |
             ls ./contracts
