@@ -13,7 +13,6 @@ jobs:
       - checkout
       - node/install:
           install-yarn: true
-          lts: true
       - node/install-packages:
           pkg-manager: yarn
       - run:
@@ -28,7 +27,6 @@ jobs:
       - checkout
       - node/install:
           install-yarn: true
-          lts: true
       - node/install-packages:
           pkg-manager: yarn
       - debug:
@@ -57,7 +55,6 @@ jobs:
       - checkout
       - node/install:
           install-yarn: true
-          lts: true
       - node/install-packages:
           pkg-manager: yarn
       - run:
@@ -99,7 +96,6 @@ jobs:
       - checkout
       - node/install:
           install-yarn: true
-          lts: true
       - node/install-packages:
           pkg-manager: yarn
       - attach_workspace:
