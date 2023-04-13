@@ -73,7 +73,7 @@ jobs:
           name: save coverage
           command: |
             mkdir -p /tmp/coverage
-            cp coverage.json /tmp/coverage/cov_$CIRCLE_NODE_INDEX.json
+            cp coverage-final.json /tmp/coverage/cov_$CIRCLE_NODE_INDEX.json
             chmod -R 777 /tmp/coverage/cov_$CIRCLE_NODE_INDEX.json
       - persist_to_workspace:
           root: /tmp/coverage
