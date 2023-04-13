@@ -1,5 +1,5 @@
 // This file is used to configure the deployment of the Engine Partner contracts
-// It is intended to be imported by the generic deployer in `/scripts/engine/V3/generic-v3-engine-deployer.ts`
+// It is intended to be imported by the generic deployer by running `deploy:mainnet:v3-engine`, `deploy:staging:v3-engine` or `deploy:dev:v3-engine`.
 export const deployDetailsArray = [
   {
     network: "goerli",
