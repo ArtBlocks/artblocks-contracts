@@ -34,7 +34,7 @@ jobs:
       - run:
           name: compile contracts
           command: |
-            yarn compile
+            yarn clean
             yarn compile
       - run:
           name: generate types
