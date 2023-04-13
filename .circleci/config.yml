@@ -1,7 +1,7 @@
 version: 2.1
 
 orbs:
-  node: circleci/node@4.7
+  node: circleci/node@5.1
   aws-cli: circleci/aws-cli@3.0.0
 
 jobs:
@@ -31,8 +31,8 @@ jobs:
           lts: true
       - node/install-packages:
           pkg-manager: yarn
-      - debug-list-files:
-          name: compile contracts
+      - debug:
+          name: debug list files
           command: |
             ls ./contracts
       - run:
