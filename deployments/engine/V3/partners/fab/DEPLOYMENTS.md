@@ -21,6 +21,8 @@ Date: 2023-03-29T02:20:12.708Z
 
 **MinterSetPriceV4:** https://goerli.etherscan.io/address/0x7cd616910828Ef88Bd6882CCb7992061D6aE2AF3#code
 
+**MinterDAExpV4:** https://goerli.etherscan.io/address/0x568D0078D8AFf828d78637209a752f92526150Bf#code
+
 
 
 **Metadata**
