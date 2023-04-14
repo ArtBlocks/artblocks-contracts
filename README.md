@@ -63,7 +63,24 @@ Documentation for contracts may also be generated via `yarn docgen`. Most Art Bl
 
 ## Art Blocks V3 Contract Architecture
 
-For a high-level overview of the Art Blocks V3 contract architecture, see the [V3 Contract Architecture page](./V3_ARCHITECTURE.md).
+For a high-level overview of the Art Blocks V3 contract architecture, refer to the simplified entity relationship diagram below.
+
+```mermaid
+erDiagram
+    ADMIN_ACL ||--o{ CORE_V3_V3_FLEX : manages
+    ADMIN_ACL ||--o{ MINTERFILTER : manages
+    CORE_V3_V3_FLEX ||--|| MINTERFILTER : uses
+    MINTERFILTER ||--o{ MINTER_1 : uses
+    MINTERFILTER ||--o{ MINTER_2 : uses
+    MINTERFILTER ||--o{ MINTER_N : uses
+    MINTER_1 ||--|| I_FILTERED_MINTER : implements
+    MINTER_2 ||--|| I_FILTERED_MINTER : implements
+    MINTER_N ||--|| I_FILTERED_MINTER : implements
+    RANDOMIZER ||--|| CORE_V3_V3_FLEX : provides_random
+    ENGINE_REGISTRY ||--o{ CORE_V3_V3_FLEX : notifies
+```
+
+For a more detailed overview of this architecture, please see the [V3 Contract Architecture page](./V3_ARCHITECTURE.md).
 
 # Deployments
 
