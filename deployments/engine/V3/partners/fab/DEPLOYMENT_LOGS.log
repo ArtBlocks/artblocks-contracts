@@ -40,3 +40,74 @@ Contracts metadata upsert input:
 Successfully upserted 1 contract
 [ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
 [ACTION] AdminACL's superAdmin address is 0xbeDF910B5cc587eE6633855080CAd1Ed08B8bF8e, don't forget to update if requred.
+----------------------------------------
+[INFO] Datetime of deployment: 2023-04-14T17:34:31.511Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/fab/deployment-config.mainnet.ts
+[INFO] Deploying to network: mainnet
+[INFO] Deploying to environment: mainnet
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x996F402aF1a24bDAb2856AA703630E46AB30FcD7
+[INFO] Randomizer BasicRandomizerV2 deployed at 0x39C09c2C65121A89416d5cDDD227064C44211588
+[INFO] Core GenArt721CoreV3_Engine deployed at 0xC443588d22Fb0f8dAB928e52014CC23d2Df70743
+[INFO] Minter Filter MinterFilterV1 deployed at 0xC2f71150f845f830BC61E5B61427A79e9D4FBf6B
+[INFO] MinterSetPriceV4 deployed at 0xe0edf1D4AE5ecAEb82FEa9313BB592977b87Ee9e
+[INFO] MinterDAExpV4 deployed at 0xe4F5D08522fc6b8a84f242220181d15e1fd16526
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0xC2f71150f845f830BC61E5B61427A79e9D4FBf6B.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0xe0edf1D4AE5ecAEb82FEa9313BB592977b87Ee9e on minter filter.
+[INFO] Allowlisted minter MinterDAExpV4 at 0xe4F5D08522fc6b8a84f242220181d15e1fd16526 on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0x0F3Fe3d8607cDeC4FB76DE84F68713f6E0cd54Ac.
+[INFO] Verifying core contract contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/engine/V3/GenArt721CoreV3_Engine.sol:GenArt721CoreV3_Engine at 0xC443588d22Fb0f8dAB928e52014CC23d2Df70743
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract GenArt721CoreV3_Engine on Etherscan.
+https://etherscan.io/address/0xC443588d22Fb0f8dAB928e52014CC23d2Df70743#code
+[INFO] Core contract verified on Etherscan at 0xC443588d22Fb0f8dAB928e52014CC23d2Df70743}
+[INFO] Verifying AdminACL contract deployment...
+Compiled 199 Solidity files successfully
+Successfully submitted source code for contract
+contracts/AdminACLV1.sol:AdminACLV1 at 0x996F402aF1a24bDAb2856AA703630E46AB30FcD7
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract AdminACLV1 on Etherscan.
+https://etherscan.io/address/0x996F402aF1a24bDAb2856AA703630E46AB30FcD7#code
+[INFO] AdminACL contract verified on Etherscan at 0x996F402aF1a24bDAb2856AA703630E46AB30FcD7}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0xC2f71150f845f830BC61E5B61427A79e9D4FBf6B has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0xC2f71150f845f830BC61E5B61427A79e9D4FBf6B}
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+Compiled 199 Solidity files successfully
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterSetPriceV4.sol:MinterSetPriceV4 at 0xe0edf1D4AE5ecAEb82FEa9313BB592977b87Ee9e
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterSetPriceV4 on Etherscan.
+https://etherscan.io/address/0xe0edf1D4AE5ecAEb82FEa9313BB592977b87Ee9e#code
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0xe0edf1D4AE5ecAEb82FEa9313BB592977b87Ee9e}
+[INFO] Verifying MinterDAExpV4 contract deployment...
+Compiled 199 Solidity files successfully
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterDAExpV4.sol:MinterDAExpV4 at 0xe4F5D08522fc6b8a84f242220181d15e1fd16526
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterDAExpV4 on Etherscan.
+https://etherscan.io/address/0xe4F5D08522fc6b8a84f242220181d15e1fd16526#code
+[INFO] MinterDAExpV4 contract verified on Etherscan at 0xe4F5D08522fc6b8a84f242220181d15e1fd16526}
+Created s3 bucket for https://fab-dao-mainnet.s3.amazonaws.com
+[INFO] Created image bucket fab-dao-mainnet
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/fab/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0xc443588d22fb0f8dab928e52014cc23d2df70743",
+  "name": "FAB DAO",
+  "bucket_name": "fab-dao-mainnet",
+  "default_vertical_name": "fullyonchain"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x0F3Fe3d8607cDeC4FB76DE84F68713f6E0cd54Ac, don't forget to update if requred.

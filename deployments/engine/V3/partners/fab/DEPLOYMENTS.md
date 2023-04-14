@@ -40,3 +40,47 @@ Date: 2023-03-29T02:20:12.708Z
 
 ---
 
+
+# Deployment
+
+Date: 2023-04-14T17:43:12.609Z
+
+## **Network:** mainnet
+
+## **Environment:** mainnet
+
+**Deployment Input File:** `deployments/engine/V3/partners/fab/deployment-config.mainnet.ts`
+
+**GenArt721CoreV3_Engine:** https://etherscan.io/address/0xC443588d22Fb0f8dAB928e52014CC23d2Df70743#code
+
+**AdminACLV1:** https://etherscan.io/address/0x996F402aF1a24bDAb2856AA703630E46AB30FcD7#code
+
+**Engine Registry:** https://etherscan.io/address/0x652490c8BB6e7ec3Fd798537D2F348D7904BBbc2#code
+
+**MinterFilterV1:** https://etherscan.io/address/0xC2f71150f845f830BC61E5B61427A79e9D4FBf6B#code
+
+**Minters:**
+
+**MinterSetPriceV4:** https://etherscan.io/address/0xe0edf1D4AE5ecAEb82FEa9313BB592977b87Ee9e#code
+
+**MinterDAExpV4:** https://etherscan.io/address/0xe4F5D08522fc6b8a84f242220181d15e1fd16526#code
+
+
+
+**Metadata**
+
+- **Starting Project Id:** 0
+- **Token Name:** FAB DAO
+- **Token Ticker:** FAB
+- **Auto Approve Artist Split Proposals:** false
+- **Render Provider Address, Primary Sales:** 0x9B7A675f3ce4E1cf87a9f6b46a362C355FEaC82F
+- **Platform Provider Address, Primary Sales:** 0x0F3Fe3d8607cDeC4FB76DE84F68713f6E0cd54Ac
+
+**Other**
+
+- **Add initial project?:** false
+- **Add initial token?:** false
+- **Image Bucket:** fab-dao-mainnet
+
+---
+
