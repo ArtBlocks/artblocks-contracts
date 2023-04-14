@@ -51,26 +51,6 @@ for verification on the block explorer. Waiting for verification result...
 Successfully verified contract MinterSEAV0 on Etherscan.
 https://goerli.etherscan.io/address/0x7cd69aa289BDb64AB8139F896a9FF7B8c8fB5a2B#code
 ----------------------------------------
-[INFO] Datetime of minter deployment: 2023-04-14T17:37:24.642Z
-[INFO] Minter deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/deployments/engine/V3/internal-testing/dev-example/minter-deploy-config-03.dev.ts
-[INFO] Deploying to network: goerli
-[INFO] Deploying MinterSEAV0 with deploy args [0x5702797Ff45FCb0a70eB6AE1E4563299dCFa9Dd6,0x72AE7160A580893Fb1049D17Fbd736Ad39Ea7FbD,0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6]...
-----------------------------------------
-[INFO] Datetime of minter deployment: 2023-04-14T17:38:09.875Z
-[INFO] Minter deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/deployments/engine/V3/internal-testing/dev-example/minter-deploy-config-03.dev.ts
-[INFO] Deploying to network: goerli
-[INFO] Deploying MinterSEAV0 with deploy args [0x5702797Ff45FCb0a70eB6AE1E4563299dCFa9Dd6,0x72AE7160A580893Fb1049D17Fbd736Ad39Ea7FbD,0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6]...
-----------------------------------------
-[INFO] Datetime of minter deployment: 2023-04-14T17:38:36.200Z
-[INFO] Minter deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/deployments/engine/V3/internal-testing/dev-example/minter-deploy-config-03.dev.ts
-[INFO] Deploying to network: goerli
-[INFO] Deploying MinterSEAV0 with deploy args [0x5702797Ff45FCb0a70eB6AE1E4563299dCFa9Dd6,0x72AE7160A580893Fb1049D17Fbd736Ad39Ea7FbD,0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6]...
-----------------------------------------
-[INFO] Datetime of minter deployment: 2023-04-14T17:40:33.585Z
-[INFO] Minter deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/deployments/engine/V3/internal-testing/dev-example/minter-deploy-config-03.dev.ts
-[INFO] Deploying to network: goerli
-[INFO] Deploying MinterSEAV0 with deploy args [0x5702797Ff45FCb0a70eB6AE1E4563299dCFa9Dd6,0x72AE7160A580893Fb1049D17Fbd736Ad39Ea7FbD,0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6]...
-----------------------------------------
 [INFO] Datetime of minter deployment: 2023-04-14T17:42:38.156Z
 [INFO] Minter deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/deployments/engine/V3/internal-testing/dev-example/minter-deploy-config-03.dev.ts
 [INFO] Deploying to network: goerli
