@@ -3,12 +3,12 @@
 
 export const minterDeployDetailsArray = [
   {
-    network: "goerli",
+    network: "mainnet",
     // environment is only used for metadata purposes, and is not used in the deployment process
     // Please set to "dev", "staging", or "mainnet", as appropriate
-    environment: "dev",
-    minterName: "MinterPolyptychV0",
-    genArt721V3CoreAddress: "0x08dADD71F8e0F4e4c1DbDE182728179890663436",
-    minterFilterAddress: "0xc3374250ECD41e6632B373e6e050cc500f4B35cD",
+    environment: "mainnet",
+    minterName: "MinterSetPriceV4",
+    genArt721V3CoreAddress: "0xD00495689D5161C511882364E0C342e12Dcc5f08",
+    minterFilterAddress: "0xB64116A7D5D84fE9795DD022ea191217A2e32076",
   },
 ];
