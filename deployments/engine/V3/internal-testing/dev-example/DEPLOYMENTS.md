@@ -111,3 +111,24 @@ Date: 2023-03-29T23:00:21.255Z
 
 ---
 
+
+# Minter Deployment
+
+Date: 2023-04-14T17:44:04.123Z
+
+## **Network:** goerli
+
+## **Environment:** dev
+
+**Deployment Input File:** `deployments/engine/V3/internal-testing/dev-example/minter-deploy-config-03.dev.ts`
+
+**MinterSEAV0:** https://goerli.etherscan.io/address/0x087D238971e11CCbF04268B9A55912C7e5dD6464#code
+
+**Associated core contract:** 0x5702797Ff45FCb0a70eB6AE1E4563299dCFa9Dd6
+
+**Associated minter filter:** 0x72AE7160A580893Fb1049D17Fbd736Ad39Ea7FbD
+
+**Deployment Args:** 0x5702797Ff45FCb0a70eB6AE1E4563299dCFa9Dd6,0x72AE7160A580893Fb1049D17Fbd736Ad39Ea7FbD,0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6
+
+---
+

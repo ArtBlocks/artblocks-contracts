@@ -138,11 +138,23 @@ async function main() {
       "MinterFilterV1",
       deployDetails.minterFilterAddress
     );
-    await minterFilterContract.addApprovedMinter(minterAddress);
-    console.log(
-      `[INFO] allowlisted the new minter on the minter filter at ${deployDetails.minterFilterAddress}`
-    );
-    await delay(EXTRA_DELAY_BETWEEN_TX);
+    let successfulAllowlist = false;
+    try {
+      await minterFilterContract.addApprovedMinter(minterAddress);
+      console.log(
+        `[INFO] allowlisted the new minter on the minter filter at ${deployDetails.minterFilterAddress}`
+      );
+      successfulAllowlist = true;
+      await delay(EXTRA_DELAY_BETWEEN_TX);
+    } catch (error) {
+      console.log(error);
+      console.log(
+        `[ERROR] unable to allowlist the new minter on the minter filter at ${deployDetails.minterFilterAddress}`
+      );
+      console.log(
+        `[INFO] this may be because the minter filter has already been transferred to a partner's wallet`
+      );
+    }
 
     // Attempt to verify source code on Etherscan
     await tryVerify(
@@ -204,6 +216,13 @@ Date: ${new Date().toISOString()}
     console.log(
       `[ACTION] If this minter is to be indexed in a subgraph, ensure it is added to the subgraph's config.`
     );
+    if (!successfulAllowlist) {
+      console.log(
+        `[ACTION] The minter was not able to be allowlisted on the minter filter, ensure the minter filter is updated by appropriate admin.`
+      );
+    }
+    // await to ensure logs are all written to files before process ends
+    await delay(EXTRA_DELAY_BETWEEN_TX);
   }
 }
 

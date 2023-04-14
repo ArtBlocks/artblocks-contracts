@@ -1,4 +1,3 @@
-
 # Deployment
 
 Date: 2023-03-29T02:20:12.708Z
@@ -21,10 +20,6 @@ Date: 2023-03-29T02:20:12.708Z
 
 **MinterSetPriceV4:** https://goerli.etherscan.io/address/0x7cd616910828Ef88Bd6882CCb7992061D6aE2AF3#code
 
-**MinterDAExpV4:** https://goerli.etherscan.io/address/0x568D0078D8AFf828d78637209a752f92526150Bf#code
-
-
-
 **Metadata**
 
 - **Starting Project Id:** 0
@@ -42,6 +37,25 @@ Date: 2023-03-29T02:20:12.708Z
 
 ---
 
+# Minter Deployment
+
+Date: 2023-04-14
+
+## **Network:** goerli
+
+## **Environment:** staging
+
+**Deployment Input File:** `deployments/engine/V3/partners/fab/minter-deploy-config.dev.ts`
+
+**MinterDAExpV4:** https://goerli.etherscan.io/address/0x568D0078D8AFf828d78637209a752f92526150Bf#code
+
+**Associated core contract:** 0x043Eeb8bFd416666b57dd2C5Be439e6fB23e9ce1
+
+**Associated minter filter:** 0x1A6b570499195139E38Cfa56044Dd748839beE1A
+
+**Deployment Args:** 0x043Eeb8bFd416666b57dd2C5Be439e6fB23e9ce1,0x1A6b570499195139E38Cfa56044Dd748839beE1A
+
+---
 
 # Deployment
 
@@ -85,4 +99,3 @@ Date: 2023-04-14T17:43:12.609Z
 - **Image Bucket:** fab-dao-mainnet
 
 ---
-
