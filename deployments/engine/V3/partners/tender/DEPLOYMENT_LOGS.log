@@ -45,3 +45,56 @@ Contracts metadata upsert input:
 Successfully upserted 1 contract
 [ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
 [ACTION] AdminACL's superAdmin address is 0xFdc45dae01d1F9EF394b33c227BA9489795d148B, don't forget to update if requred.
+----------------------------------------
+[INFO] Datetime of deployment: 2023-04-14T17:53:18.654Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/tender/deployment-config.mainnet.ts
+[INFO] Deploying to network: mainnet
+[INFO] Deploying to environment: mainnet
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0xFB1325C8D5894DB74346acAA5D5f58D95E23E464
+[INFO] Randomizer BasicRandomizerV2 deployed at 0x968F3aed125C44FBaeD079107f3669AABbA7b96D
+[INFO] Core GenArt721CoreV3_Engine deployed at 0x6DdefE5DB20D79EC718A8960177bEB388f7EbB8d
+[INFO] Minter Filter MinterFilterV1 deployed at 0xf377a477704DD68907BC603A7403B09B7b97DC0E
+[INFO] MinterDAExpSettlementV1 deployed at 0x40Db8FD03961804F5FAA4aa19d696D8038559D36
+[INFO] MinterMerkleV5 deployed at 0x95A3eD253DD9693B1Cc4902f8c3F7daaDb2650bF
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0xf377a477704DD68907BC603A7403B09B7b97DC0E.
+[INFO] Allowlisted minter MinterDAExpSettlementV1 at 0x40Db8FD03961804F5FAA4aa19d696D8038559D36 on minter filter.
+[INFO] Allowlisted minter MinterMerkleV5 at 0x95A3eD253DD9693B1Cc4902f8c3F7daaDb2650bF on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0xFdc45dae01d1F9EF394b33c227BA9489795d148B.
+[INFO] Verifying core contract contract deployment...
+The contract 0x6DdefE5DB20D79EC718A8960177bEB388f7EbB8d has already been verified
+[INFO] Core contract verified on Etherscan at 0x6DdefE5DB20D79EC718A8960177bEB388f7EbB8d}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0xFB1325C8D5894DB74346acAA5D5f58D95E23E464 has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0xFB1325C8D5894DB74346acAA5D5f58D95E23E464}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0xf377a477704DD68907BC603A7403B09B7b97DC0E has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0xf377a477704DD68907BC603A7403B09B7b97DC0E}
+[INFO] Verifying MinterDAExpSettlementV1 contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/archive/minter-suite/Minters/MinterDAExpSettlement/MinterDAExpSettlementV1.sol:MinterDAExpSettlementV1 at 0x40Db8FD03961804F5FAA4aa19d696D8038559D36
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterDAExpSettlementV1 on Etherscan.
+https://etherscan.io/address/0x40Db8FD03961804F5FAA4aa19d696D8038559D36#code
+[INFO] MinterDAExpSettlementV1 contract verified on Etherscan at 0x40Db8FD03961804F5FAA4aa19d696D8038559D36}
+[INFO] Verifying MinterMerkleV5 contract deployment...
+The contract 0x95A3eD253DD9693B1Cc4902f8c3F7daaDb2650bF has already been verified
+[INFO] MinterMerkleV5 contract verified on Etherscan at 0x95A3eD253DD9693B1Cc4902f8c3F7daaDb2650bF}
+Created s3 bucket for https://tender-mainnet.s3.amazonaws.com
+[INFO] Created image bucket tender-mainnet
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/tender/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x6ddefe5db20d79ec718a8960177beb388f7ebb8d",
+  "name": "Tender",
+  "bucket_name": "tender-mainnet",
+  "default_vertical_name": "fullyonchain"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0xFdc45dae01d1F9EF394b33c227BA9489795d148B, don't forget to update if requred.
