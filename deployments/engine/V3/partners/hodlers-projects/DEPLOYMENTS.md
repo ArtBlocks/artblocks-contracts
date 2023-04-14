@@ -1,4 +1,3 @@
-
 # Deployment
 
 Date: 2023-03-29T02:45:29.928Z
@@ -25,8 +24,6 @@ Date: 2023-03-29T02:45:29.928Z
 
 **MinterHolderV2:** https://goerli.etherscan.io/address/0xc3EA837e7595d3839Ec26546C4B14b2CDE8B0E93#code
 
-
-
 **Metadata**
 
 - **Starting Project Id:** 1
@@ -43,7 +40,6 @@ Date: 2023-03-29T02:45:29.928Z
 - **Image Bucket:** hodlers-projects-goerli
 
 ---
-
 
 # Deployment
 
@@ -69,8 +65,6 @@ Date: 2023-03-31T00:34:16.052Z
 
 **MinterMerkleV5:** https://etherscan.io/address/0xcBA628BcF6f458f6F929d875B69FE5f0F3fB99b6#code
 
-
-
 **Metadata**
 
 - **Starting Project Id:** 1
@@ -88,3 +82,22 @@ Date: 2023-03-31T00:34:16.052Z
 
 ---
 
+# Minter Deployment
+
+Date: 2023-04-14
+
+## **Network:** mainnet
+
+## **Environment:** dev
+
+**Deployment Input File:** `deployments/engine/V3/partners/hodlers-projects/minter-deploy-config.mainnet.ts`
+
+**MinterSetPriceV4:** https://etherscan.io/address/0x0eB38A2666A74a8d4a8cb4E718B699E1651a4893#code
+
+**Associated core contract:** 0xD00495689D5161C511882364E0C342e12Dcc5f08
+
+**Associated minter filter:** 0xB64116A7D5D84fE9795DD022ea191217A2e32076
+
+**Deployment Args:** 0xD00495689D5161C511882364E0C342e12Dcc5f08,0xB64116A7D5D84fE9795DD022ea191217A2e32076
+
+---
