@@ -42,3 +42,47 @@ Date: 2023-03-29T03:07:11.879Z
 
 ---
 
+
+# Deployment
+
+Date: 2023-04-14T17:57:48.949Z
+
+## **Network:** mainnet
+
+## **Environment:** mainnet
+
+**Deployment Input File:** `deployments/engine/V3/partners/tender/deployment-config.mainnet.ts`
+
+**GenArt721CoreV3_Engine:** https://etherscan.io/address/0x6DdefE5DB20D79EC718A8960177bEB388f7EbB8d#code
+
+**AdminACLV1:** https://etherscan.io/address/0xFB1325C8D5894DB74346acAA5D5f58D95E23E464#code
+
+**Engine Registry:** https://etherscan.io/address/0x652490c8BB6e7ec3Fd798537D2F348D7904BBbc2#code
+
+**MinterFilterV1:** https://etherscan.io/address/0xf377a477704DD68907BC603A7403B09B7b97DC0E#code
+
+**Minters:**
+
+**MinterDAExpSettlementV1:** https://etherscan.io/address/0x40Db8FD03961804F5FAA4aa19d696D8038559D36#code
+
+**MinterMerkleV5:** https://etherscan.io/address/0x95A3eD253DD9693B1Cc4902f8c3F7daaDb2650bF#code
+
+
+
+**Metadata**
+
+- **Starting Project Id:** 0
+- **Token Name:** Tender
+- **Token Ticker:** TENDER
+- **Auto Approve Artist Split Proposals:** false
+- **Render Provider Address, Primary Sales:** 0xE7bEB4Af9Da9b567778278F863Ed475212589526
+- **Platform Provider Address, Primary Sales:** 0xFdc45dae01d1F9EF394b33c227BA9489795d148B
+
+**Other**
+
+- **Add initial project?:** false
+- **Add initial token?:** false
+- **Image Bucket:** tender-mainnet
+
+---
+

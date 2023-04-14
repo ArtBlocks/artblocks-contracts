@@ -45,3 +45,50 @@ Contracts metadata upsert input:
 Successfully upserted 1 contract
 [ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
 [ACTION] AdminACL's superAdmin address is 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63, don't forget to update if requred.
+----------------------------------------
+[INFO] Datetime of deployment: 2023-04-14T18:00:31.969Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/tender-flex/deployment-config.mainnet.ts
+[INFO] Deploying to network: mainnet
+[INFO] Deploying to environment: mainnet
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x3947F422386f82e44015991220E033Ad2d4b7be5
+[INFO] Randomizer BasicRandomizerV2 deployed at 0x4CaD2597A555D3DE82B9E8A59D6da8C1610B2e24
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x959d2F3cAF19d20BDBb4e0A4f21cA8A815EDDF65
+[INFO] Minter Filter MinterFilterV1 deployed at 0x3b90746ac1ccBFC5D6aC3a09d9930Dc3B224a0F9
+[INFO] MinterDAExpSettlementV1 deployed at 0xAf08abB36Dcb69De935D3292f85347B5e18349A4
+[INFO] MinterMerkleV5 deployed at 0xeCBc7839b2bC78aC5f76d7cCFD02329e184e44A8
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0x3b90746ac1ccBFC5D6aC3a09d9930Dc3B224a0F9.
+[INFO] Allowlisted minter MinterDAExpSettlementV1 at 0xAf08abB36Dcb69De935D3292f85347B5e18349A4 on minter filter.
+[INFO] Allowlisted minter MinterMerkleV5 at 0xeCBc7839b2bC78aC5f76d7cCFD02329e184e44A8 on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0xFdc45dae01d1F9EF394b33c227BA9489795d148B.
+[INFO] Verifying core contract contract deployment...
+The contract 0x959d2F3cAF19d20BDBb4e0A4f21cA8A815EDDF65 has already been verified
+[INFO] Core contract verified on Etherscan at 0x959d2F3cAF19d20BDBb4e0A4f21cA8A815EDDF65}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0x3947F422386f82e44015991220E033Ad2d4b7be5 has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0x3947F422386f82e44015991220E033Ad2d4b7be5}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0x3b90746ac1ccBFC5D6aC3a09d9930Dc3B224a0F9 has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0x3b90746ac1ccBFC5D6aC3a09d9930Dc3B224a0F9}
+[INFO] Verifying MinterDAExpSettlementV1 contract deployment...
+The contract 0xAf08abB36Dcb69De935D3292f85347B5e18349A4 has already been verified
+[INFO] MinterDAExpSettlementV1 contract verified on Etherscan at 0xAf08abB36Dcb69De935D3292f85347B5e18349A4}
+[INFO] Verifying MinterMerkleV5 contract deployment...
+The contract 0xeCBc7839b2bC78aC5f76d7cCFD02329e184e44A8 has already been verified
+[INFO] MinterMerkleV5 contract verified on Etherscan at 0xeCBc7839b2bC78aC5f76d7cCFD02329e184e44A8}
+Created s3 bucket for https://tender-flex-mainnet.s3.amazonaws.com
+[INFO] Created image bucket tender-flex-mainnet
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/tender-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x959d2f3caf19d20bdbb4e0a4f21ca8a815eddf65",
+  "name": "Tender Flex",
+  "bucket_name": "tender-flex-mainnet",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0xFdc45dae01d1F9EF394b33c227BA9489795d148B, don't forget to update if requred.
