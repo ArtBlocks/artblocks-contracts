@@ -31,6 +31,7 @@ export type ArtistFinanceProposal = {
 const coreContractsToTest = [
   "GenArt721CoreV3_Engine", // V3 core engine contract
   "GenArt721CoreV3_Engine_Flex", // V3 core Engine Flex contract
+  "GenArt721CoreV3_Engine_Flex_PROHIBITION", // V3 core Engine Flex fork for Prohibition
 ];
 
 // helper function to update artist financial data
@@ -71,6 +72,10 @@ for (const coreContractName of coreContractsToTest) {
       };
       config = await assignDefaultConstants(config);
 
+      const minterFilterName = coreContractName.endsWith("_PROHIBITION")
+        ? "MinterFilterV1_PROHIBITION"
+        : "MinterFilterV1";
+
       // deploy and configure minter filter and minter
       ({
         genArt721Core: config.genArt721Core,
@@ -80,7 +85,7 @@ for (const coreContractName of coreContractsToTest) {
       } = await deployCoreWithMinterFilter(
         config,
         coreContractName,
-        "MinterFilterV1"
+        minterFilterName
       ));
 
       config.minter = await deployAndGet(config, "MinterSetPriceV2", [
@@ -129,7 +134,11 @@ for (const coreContractName of coreContractsToTest) {
         const coreType = await config.genArt721Core
           .connect(config.accounts.deployer)
           .coreType();
-        expect(coreType).to.be.equal(coreContractName);
+        if (coreContractName === "GenArt721CoreV3_Engine_Flex_PROHIBITION") {
+          expect(`${coreType}_PROHIBITION`).to.be.equal(coreContractName);
+        } else {
+          expect(coreType).to.be.equal(coreContractName);
+        }
       });
     });
 

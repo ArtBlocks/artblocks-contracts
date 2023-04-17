@@ -8,7 +8,7 @@ import {
   DependencyRegistryV0,
   GenArt721CoreV1,
   GenArt721CoreV3,
-} from "../../scripts/contracts";
+} from "../../../scripts/contracts";
 
 import {
   T_Config,
