@@ -28,6 +28,7 @@ const coreContractsToTest = [
   "GenArt721CoreV3_Explorations", // V3 core explorations contract
   "GenArt721CoreV3_Engine", // V3 core Engine contract
   "GenArt721CoreV3_Engine_Flex", // V3 core Engine_Flex contract
+  "GenArt721CoreV3_Engine_Flex_PROHIBITION", // V3 core Engine Flex fork for Prohibition
 ];
 
 /**
@@ -41,6 +42,10 @@ for (const coreContractName of coreContractsToTest) {
       };
       config = await assignDefaultConstants(config);
 
+      const minterFilterName = coreContractName.endsWith("_PROHIBITION")
+        ? "MinterFilterV1_PROHIBITION"
+        : "MinterFilterV1";
+
       // deploy and configure minter filter and minter
       ({
         genArt721Core: config.genArt721Core,
@@ -50,7 +55,7 @@ for (const coreContractName of coreContractsToTest) {
       } = await deployCoreWithMinterFilter(
         config,
         coreContractName,
-        "MinterFilterV1"
+        minterFilterName
       ));
 
       config.minter = await deployAndGet(config, "MinterSetPriceV2", [
@@ -260,13 +265,83 @@ for (const coreContractName of coreContractsToTest) {
           constants.ZERO_ADDRESS
         );
         // ensure prior adminACL may not perform an admin function
-        await expectRevert(
-          config.genArt721Core
-            .connect(config.accounts.deployer)
-            .addProject("new project", config.accounts.artist2.address),
-          "Only Admin ACL allowed"
-        );
+        const addProjectCall = config.genArt721Core
+          .connect(config.accounts.deployer)
+          .addProject("new project", config.accounts.artist2.address);
+
+        if (coreContractName.endsWith("PROHIBITION")) {
+          await expectRevert(addProjectCall, "New projects forbidden");
+        } else {
+          await expectRevert(addProjectCall, "Only Admin ACL allowed");
+        }
       });
+
+      if (
+        coreContractName.includes("GenArt721CoreV3_Engine_Flex_PROHIBITION")
+      ) {
+        it("behaves as expected when toggling project activation with superAdmin", async function () {
+          const config = await loadFixture(_beforeEach);
+          await config.genArt721Core
+            .connect(config.accounts.deployer)
+            .toggleProjectIsActive(config.projectZero);
+        });
+
+        it("behaves as expected when toggling project activation with verified user", async function () {
+          const config = await loadFixture(_beforeEach);
+          await config.adminACL
+            .connect(config.accounts.deployer)
+            .toggleContractArtistApproval(
+              config.genArt721Core.address,
+              config.accounts.artist.address
+            );
+          await config.genArt721Core
+            .connect(config.accounts.artist)
+            .toggleProjectIsActive(config.projectZero);
+        });
+
+        it("behaves as expected when toggling project activation when user is approved for selector", async function () {
+          const config = await loadFixture(_beforeEach);
+          await config.adminACL
+            .connect(config.accounts.deployer)
+            .toggleContractSelectorApproval(
+              config.genArt721Core.address,
+              config.genArt721Core.interface.getSighash(
+                "toggleProjectIsActive"
+              ),
+              config.accounts.user.address
+            );
+          await config.genArt721Core
+            .connect(config.accounts.user)
+            .toggleProjectIsActive(config.projectZero);
+        });
+
+        it("reverts when toggling project activation from unverified account", async function () {
+          const config = await loadFixture(_beforeEach);
+          await expectRevert(
+            config.genArt721Core
+              .connect(config.accounts.user)
+              .toggleProjectIsActive(config.projectZero),
+            "Only Admin ACL allowed"
+          );
+        });
+
+        it("reverts when toggling project from verified user that is not artist", async function () {
+          const config = await loadFixture(_beforeEach);
+          await config.adminACL
+            .connect(config.accounts.deployer)
+            .toggleContractArtistApproval(
+              config.genArt721Core.address,
+              config.accounts.artist2.address
+            );
+
+          await expectRevert(
+            config.genArt721Core
+              .connect(config.accounts.artist2)
+              .toggleProjectIsActive(config.projectZero),
+            "Only Admin ACL allowed"
+          );
+        });
+      }
     });
 
     describe("reverts on project locked", async function () {
@@ -322,6 +397,10 @@ for (const coreContractName of coreContractsToTest) {
           // as they have same interface expectations
           expect(coreType).to.be.equal("GenArt721CoreV3_Engine");
         } else if (coreContractName === "GenArt721CoreV3_Engine_Flex") {
+          expect(coreType).to.be.equal("GenArt721CoreV3_Engine_Flex");
+        } else if (
+          coreContractName === "GenArt721CoreV3_Engine_Flex_PROHIBITION"
+        ) {
           expect(coreType).to.be.equal("GenArt721CoreV3_Engine_Flex");
         } else {
           // coreType is same for GenArt721CoreV3 & GenArt721CoreV3_Explorations

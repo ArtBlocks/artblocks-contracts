@@ -3,17 +3,18 @@ pragma solidity 0.8.17;
 
 // Created By: Art Blocks Inc.
 
-import "./IAdminACLV0_PROHIBITION.sol";
-import "../../interfaces/0.8.x/IRandomizerV2.sol";
-import "../../interfaces/0.8.x/IEngineRegistryV0.sol";
-import "../../interfaces/0.8.x/IGenArt721CoreContractV3_Engine_Flex.sol";
-import "../../interfaces/0.8.x/IDependencyRegistryCompatibleV0.sol";
-import "../../interfaces/0.8.x/IManifold.sol";
+import "./interfaces/IAdminACLV0_PROHIBITION.sol";
+import "./interfaces/IGenArt721CoreContractV3_Engine_Flex_PROHIBITION.sol";
+
+import "../../../../interfaces/0.8.x/IRandomizerV2.sol";
+import "../../../../interfaces/0.8.x/IEngineRegistryV0.sol";
+import "../../../../interfaces/0.8.x/IDependencyRegistryCompatibleV0.sol";
+import "../../../../interfaces/0.8.x/IManifold.sol";
 
 import "@openzeppelin-4.7/contracts/access/Ownable.sol";
-import "../../libs/0.8.x/ERC721_PackedHashSeed.sol";
-import "../../libs/0.8.x/BytecodeStorage.sol";
-import "../../libs/0.8.x/Bytes32Strings.sol";
+import "../../../../libs/0.8.x/ERC721_PackedHashSeed.sol";
+import "../../../../libs/0.8.x/BytecodeStorage.sol";
+import "../../../../libs/0.8.x/Bytes32Strings.sol";
 
 /**
  * @title Art Blocks Engine Flex ERC-721 core contract, V3.
@@ -46,6 +47,7 @@ import "../../libs/0.8.x/Bytes32Strings.sol";
  * ----------------------------------------------------------------------------
  * The following functions are restricted to either the the Artist address or
  * the Admin ACL contract, only when the project is not locked:
+ * - toggleProjectIsPaused (note the artist can still mint while paused)
  * - updateProjectName
  * - updateProjectArtistName
  * - updateProjectLicense
@@ -62,7 +64,6 @@ import "../../libs/0.8.x/Bytes32Strings.sol";
  *   accepted if the artist only proposes changed payee percentages without
  *   modifying any payee addresses, or is only removing payee addresses, or
  *   if the global config `autoApproveArtistSplitProposals` is set to `true`.)
- * - toggleProjectIsPaused (note the artist can still mint while paused)
  * - updateProjectSecondaryMarketRoyaltyPercentage (up to
      ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE percent)
  * - updateProjectWebsite
@@ -104,7 +105,7 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
     Ownable,
     IDependencyRegistryCompatibleV0,
     IManifold,
-    IGenArt721CoreContractV3_Engine_Flex
+    IGenArt721CoreContractV3_Engine_Flex_PROHIBITION
 {
     using BytecodeStorage for string;
     using BytecodeStorage for address;
@@ -319,9 +320,9 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
         require(_projectUnlocked(_projectId), "Only if unlocked");
     }
 
-    function _onlyAdminACL(bytes4 _selector) internal {
+    function _onlyAdminACL(bytes4 _selector, uint256 _projectId) internal {
         require(
-            adminACLAllowed(msg.sender, address(this), _selector),
+            adminACLAllowed(msg.sender, address(this), _selector, _projectId),
             "Only Admin ACL allowed"
         );
     }
@@ -339,7 +340,7 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
     ) internal {
         require(
             msg.sender == projectIdToFinancials[_projectId].artistAddress ||
-                adminACLAllowed(msg.sender, address(this), _selector),
+                adminACLAllowed(msg.sender, address(this), _selector, _projectId),
             "Only artist or Admin ACL allowed"
         );
     }
@@ -355,7 +356,7 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
         bytes4 _selector
     ) internal {
         require(
-            adminACLAllowed(msg.sender, address(this), _selector) ||
+            adminACLAllowed(msg.sender, address(this), _selector, _projectId) ||
                 (owner() == address(0) &&
                     msg.sender ==
                     projectIdToFinancials[_projectId].artistAddress),
@@ -430,7 +431,7 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
      * @notice Updates preferredIPFSGateway to `_gateway`.
      */
     function updateIPFSGateway(string calldata _gateway) public {
-        _onlyAdminACL(this.updateIPFSGateway.selector);
+        _onlyAdminACL(this.updateIPFSGateway.selector, type(uint256).max);
         preferredIPFSGateway = _gateway;
         emit GatewayUpdated(ExternalAssetDependencyType.IPFS, _gateway);
     }
@@ -439,7 +440,7 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
      * @notice Updates preferredArweaveGateway to `_gateway`.
      */
     function updateArweaveGateway(string calldata _gateway) public {
-        _onlyAdminACL(this.updateArweaveGateway.selector);
+        _onlyAdminACL(this.updateArweaveGateway.selector, type(uint256).max);
         preferredArweaveGateway = _gateway;
         emit GatewayUpdated(ExternalAssetDependencyType.ARWEAVE, _gateway);
     }
@@ -732,7 +733,7 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
     function updateArtblocksDependencyRegistryAddress(
         address _artblocksDependencyRegistryAddress
     ) external {
-        _onlyAdminACL(this.updateArtblocksDependencyRegistryAddress.selector);
+        _onlyAdminACL(this.updateArtblocksDependencyRegistryAddress.selector, type(uint256).max);
         _onlyNonZeroAddress(_artblocksDependencyRegistryAddress);
         artblocksDependencyRegistryAddress = _artblocksDependencyRegistryAddress;
         emit PlatformUpdated(FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS);
@@ -756,7 +757,7 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
         address payable _platformProviderPrimarySalesAddress,
         address payable _platformProviderSecondarySalesAddress
     ) external {
-        _onlyAdminACL(this.updateProviderSalesAddresses.selector);
+        _onlyAdminACL(this.updateProviderSalesAddresses.selector, type(uint256).max);
         _onlyNonZeroAddress(_renderProviderPrimarySalesAddress);
         _onlyNonZeroAddress(_renderProviderSecondarySalesAddress);
         _onlyNonZeroAddress(_platformProviderPrimarySalesAddress);
@@ -780,7 +781,7 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
         uint256 renderProviderPrimarySalesPercentage_,
         uint256 platformProviderPrimarySalesPercentage_
     ) external {
-        _onlyAdminACL(this.updateProviderPrimarySalesPercentages.selector);
+        _onlyAdminACL(this.updateProviderPrimarySalesPercentages.selector, type(uint256).max);
 
         // Validate that the sum of the proposed %s, does not exceed 100%.
         require(
@@ -816,7 +817,7 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
         uint256 _renderProviderSecondarySalesBPS,
         uint256 _platformProviderSecondarySalesBPS
     ) external {
-        _onlyAdminACL(this.updateProviderSecondarySalesBPS.selector);
+        _onlyAdminACL(this.updateProviderSecondarySalesBPS.selector, type(uint256).max);
         // Validate that the sum of the proposed provider BPS, does not exceed 10_000 BPS.
         require(
             (_renderProviderSecondarySalesBPS +
@@ -834,7 +835,7 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
      * @param _address Address of new minter.
      */
     function updateMinterContract(address _address) external {
-        _onlyAdminACL(this.updateMinterContract.selector);
+        _onlyAdminACL(this.updateMinterContract.selector, type(uint256).max);
         _onlyNonZeroAddress(_address);
         minterContract = _address;
         emit MinterUpdated(_address);
@@ -845,7 +846,7 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
      * @param _randomizerAddress Address of new randomizer.
      */
     function updateRandomizerAddress(address _randomizerAddress) external {
-        _onlyAdminACL(this.updateRandomizerAddress.selector);
+        _onlyAdminACL(this.updateRandomizerAddress.selector, type(uint256).max);
         _onlyNonZeroAddress(_randomizerAddress);
         _updateRandomizerAddress(_randomizerAddress);
     }
@@ -855,7 +856,7 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
      * @param _projectId Project ID to be toggled.
      */
     function toggleProjectIsActive(uint256 _projectId) external {
-        _onlyAdminACL(this.toggleProjectIsActive.selector);
+        _onlyAdminACL(this.toggleProjectIsActive.selector, _projectId);
         _onlyValidProjectId(_projectId);
         projects[_projectId].active = !projects[_projectId].active;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_ACTIVE);
@@ -1103,7 +1104,6 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
         string memory _projectName,
         address payable _artistAddress
     ) external {
-        _onlyAdminACL(this.addProject.selector);
         _onlyNonEmptyString(_projectName);
         _onlyNonZeroAddress(_artistAddress);
         require(!newProjectsForbidden, "New projects forbidden");
@@ -1122,7 +1122,7 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
      * @notice Forever forbids new projects from being added to this contract.
      */
     function forbidNewProjects() external {
-        _onlyAdminACL(this.forbidNewProjects.selector);
+        _onlyAdminACL(this.forbidNewProjects.selector, type(uint256).max);
         require(!newProjectsForbidden, "Already forbidden");
         _forbidNewProjects();
     }
@@ -1208,7 +1208,8 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
                 : adminACLAllowed(
                     msg.sender,
                     address(this),
-                    this.updateProjectDescription.selector
+                    this.updateProjectDescription.selector,
+                    _projectId
                 ),
             "Only artist when unlocked, owner when locked"
         );
@@ -1447,7 +1448,7 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
      * @param _defaultBaseURI New default base URI.
      */
     function updateDefaultBaseURI(string memory _defaultBaseURI) external {
-        _onlyAdminACL(this.updateDefaultBaseURI.selector);
+        _onlyAdminACL(this.updateDefaultBaseURI.selector, type(uint256).max);
         _onlyNonEmptyString(_defaultBaseURI);
         _updateDefaultBaseURI(_defaultBaseURI);
     }
@@ -1725,7 +1726,7 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
     )
         external
         view
-        override(IGenArt721CoreContractV3_Base, IDependencyRegistryCompatibleV0)
+        override(IGenArt721CoreContractV3_Base_PROHIBITION, IDependencyRegistryCompatibleV0)
         returns (
             string memory scriptTypeAndVersion,
             string memory aspectRatio,
@@ -2043,17 +2044,18 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
      * @dev assumes the Admin ACL contract is the owner of this contract, which
      * is expected to always be true.
      * @dev adminACLContract is expected to either be null address (if owner
-     * has renounced ownership), or conform to IAdminACLV0_PROHIBITION interface. Check for
+     * has renounced ownership), or conform to IAdminACLV0 interface. Check for
      * null address first to avoid revert when admin has renounced ownership.
      */
     function adminACLAllowed(
         address _sender,
         address _contract,
-        bytes4 _selector
+        bytes4 _selector,
+        uint256 _projectId
     ) public returns (bool) {
         return
             owner() != address(0) &&
-            adminACLContract.allowed(_sender, _contract, _selector);
+            adminACLContract.allowed(_sender, _contract, _selector, _projectId);
     }
 
     /**
@@ -2066,7 +2068,7 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
     function owner()
         public
         view
-        override(Ownable, IGenArt721CoreContractV3_Base)
+        override(Ownable, IGenArt721CoreContractV3_Base_PROHIBITION)
         returns (address)
     {
         return Ownable.owner();

@@ -34,6 +34,7 @@ const coreContractsToTest = [
   "GenArt721CoreV3_Explorations", // V3 core explorations contract
   "GenArt721CoreV3_Engine", // V3 core Engine contract
   "GenArt721CoreV3_Engine_Flex", // V3 core Engine Flex contract
+  "GenArt721CoreV3_Engine_Flex_PROHIBITION", // V3 core Engine Flex fork for Prohibition
 ];
 
 /**
