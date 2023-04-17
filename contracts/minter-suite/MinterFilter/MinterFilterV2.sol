@@ -449,38 +449,6 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
     }
 
     /**
-     * @notice Updates an array of aligned project IDs and core contract
-     * addresses to have no configured minter.
-     * Only callable as allowed by AdminACL of this contract.
-     * Reverts if any project does not already have a minter assigned.
-     * This is generally intended to be only be used in the case of an
-     * emergency, and should be used with caution, expecially in cases where
-     * the minter may own one or more tokens (e.g. SEA minter).
-     * @param _projectIds Array of project IDs to remove minters for.
-     * @dev caution with respect to single tx gas limits
-     * @dev this function intentionally does not check that the core contract
-     * is registered, since it must have been registered at the time the
-     * project was assigned a minter
-     */
-    function removeMintersForProjectsOnContracts(
-        uint256[] calldata _projectIds,
-        address[] calldata _coreContracts
-    ) external {
-        _onlyAdminACL(this.removeMintersForProjectsOnContracts.selector);
-        uint256 numProjects = _projectIds.length;
-        require(
-            numProjects == _coreContracts.length,
-            "Mismatched array lengths"
-        );
-        for (uint256 i; i < numProjects; ) {
-            _removeMinterForProject(_projectIds[i], _coreContracts[i]);
-            unchecked {
-                ++i;
-            }
-        }
-    }
-
-    /**
      * @notice Mint a token from project `_projectId` on contract
      * `_coreContract` to `_to`, originally purchased by `sender`.
      * @param _to The new token's owner.
