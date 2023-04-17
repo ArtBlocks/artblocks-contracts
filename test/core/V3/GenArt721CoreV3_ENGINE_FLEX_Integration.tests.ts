@@ -39,6 +39,10 @@ for (const coreContractName of coreContractsToTest) {
       };
       config = await assignDefaultConstants(config);
 
+      const minterFilterName = coreContractName.endsWith("_PROHIBITION")
+        ? "MinterFilterV1_PROHIBITION"
+        : "MinterFilterV1";
+
       // deploy and configure minter filter and minter
       ({
         genArt721Core: config.genArt721Core,
@@ -48,7 +52,7 @@ for (const coreContractName of coreContractsToTest) {
       } = await deployCoreWithMinterFilter(
         config,
         coreContractName,
-        "MinterFilterV1"
+        minterFilterName
       ));
 
       config.minter = await deployAndGet(config, "MinterSetPriceV2", [
