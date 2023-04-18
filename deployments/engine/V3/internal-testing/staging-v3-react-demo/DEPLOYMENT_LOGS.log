@@ -1,0 +1,57 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-04-14T21:20:45.300Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/internal-testing/staging-v3-react-demo/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x21Db31256a24487D3f8528fB6C1f4De2dF12E77f
+[INFO] Randomizer BasicRandomizerV2 deployed at 0x89979Dbd85ADB38226F32485Bdf8C559bFB5a568
+[INFO] Core GenArt721CoreV3_Engine deployed at 0x6200437235E9AB363e83A53666871d745BfE52F3
+[INFO] Minter Filter MinterFilterV1 deployed at 0x868A6FFA1020E78e73ea7573c443C1BECF934068
+[INFO] MinterDAExpV4 deployed at 0xF470012b134262C5Ec679F5b9Fc1107018DE7cd4
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0x868A6FFA1020E78e73ea7573c443C1BECF934068.
+[INFO] Allowlisted minter MinterDAExpV4 at 0xF470012b134262C5Ec679F5b9Fc1107018DE7cd4 on minter filter.
+[INFO] Added V3 Engine Demo project 0 placeholder on V3 Engine Demo contract, artist is 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63.
+[INFO] Skipping transfer of superAdmin role on adminACL.
+[INFO] Verifying core contract contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/engine/V3/GenArt721CoreV3_Engine.sol:GenArt721CoreV3_Engine at 0x6200437235E9AB363e83A53666871d745BfE52F3
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract GenArt721CoreV3_Engine on Etherscan.
+https://goerli.etherscan.io/address/0x6200437235E9AB363e83A53666871d745BfE52F3#code
+[INFO] Core contract verified on Etherscan at 0x6200437235E9AB363e83A53666871d745BfE52F3}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0x21Db31256a24487D3f8528fB6C1f4De2dF12E77f has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0x21Db31256a24487D3f8528fB6C1f4De2dF12E77f}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0x868A6FFA1020E78e73ea7573c443C1BECF934068 has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0x868A6FFA1020E78e73ea7573c443C1BECF934068}
+[INFO] Verifying MinterDAExpV4 contract deployment...
+The contract 0xF470012b134262C5Ec679F5b9Fc1107018DE7cd4 has already been verified
+[INFO] MinterDAExpV4 contract verified on Etherscan at 0xF470012b134262C5Ec679F5b9Fc1107018DE7cd4}
+Created s3 bucket for https://v3-engine-demo-goerli.s3.amazonaws.com
+[INFO] Created image bucket v3-engine-demo-goerli
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/internal-testing/staging-v3-react-demo/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x6200437235e9ab363e83a53666871d745bfe52f3",
+  "name": "V3 Engine Demo",
+  "bucket_name": "v3-engine-demo-goerli",
+  "default_vertical_name": "fullyonchain"
+}
+Successfully upserted 1 contract
+Upserting 1 project...
+Projects metadata upsert input:
+{
+  "id": "0x6200437235e9ab363e83a53666871d745bfe52f3-0",
+  "contract_address": "0x6200437235e9ab363e83a53666871d745bfe52f3",
+  "project_id": "0",
+  "artist_address": "0xb8559af91377e5bab052a4e9a5088cb65a9a4d63",
+  "vertical_name": "fullyonchain"
+}
+Successfully upserted 1 project
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63, don't forget to update if requred.
