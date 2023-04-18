@@ -260,11 +260,12 @@ for (const coreContractName of coreContractsToTest) {
           constants.ZERO_ADDRESS
         );
         // ensure prior adminACL may not perform an admin function
-        const addProjectCall = config.genArt721Core
-          .connect(config.accounts.deployer)
-          .addProject("new project", config.accounts.artist2.address);
-
-        await expectRevert(addProjectCall, "Only Admin ACL allowed");
+        await expectRevert(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .addProject("new project", config.accounts.artist2.address),
+          "Only Admin ACL allowed"
+        );
       });
     });
 
