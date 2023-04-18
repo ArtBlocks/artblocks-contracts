@@ -144,7 +144,7 @@ contract MockAdminACLV0Events_PROHIBITION is IAdminACLV0_PROHIBITION, ERC165 {
         address _contract,
         bytes4 _selector,
         address _caller
-    ) internal pure returns (bytes32) {
+    ) public pure returns (bytes32) {
         return keccak256(abi.encodePacked(_contract, _selector, _caller));
     }
 
@@ -154,7 +154,7 @@ contract MockAdminACLV0Events_PROHIBITION is IAdminACLV0_PROHIBITION, ERC165 {
     function hashArtistApprovalKey(
         address _contract,
         address _artist
-    ) internal pure returns (bytes32) {
+    ) public pure returns (bytes32) {
         return keccak256(abi.encodePacked(_contract, _artist));
     }
 

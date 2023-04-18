@@ -96,4 +96,28 @@ interface IAdminACLV0_PROHIBITION is IAdminACLV0 {
         bytes4 _selector,
         uint256 _projectId
     ) external returns (bool);
+
+    /**
+     * @notice Hash the contract address, selector, and caller address.
+     * @param _contract The contract address.
+     * @param _selector The function selector.
+     * @param _caller The caller address.
+     * @return hash The hash.
+     */
+    function hashSelectorApprovalKey(
+        address _contract,
+        bytes4 _selector,
+        address _caller
+    ) external pure returns (bytes32);
+
+    /**
+     * @notice Hash the contract address and artist address.
+     * @param _contract The contract address.
+     * @param _caller The artist address.
+     * @return hash The hash.
+     */
+    function hashArtistApprovalKey(
+        address _contract,
+        address _caller
+    ) external pure returns (bytes32);
 }

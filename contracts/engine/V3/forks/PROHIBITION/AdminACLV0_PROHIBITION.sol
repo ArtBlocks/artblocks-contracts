@@ -104,7 +104,7 @@ contract AdminACLV0_PROHIBITION is IAdminACLV0_PROHIBITION, ERC165 {
         address _contract,
         bytes4 _selector,
         address _caller
-    ) external view returns (bool) {
+    ) public view returns (bool) {
         return contractSelectorApprovals[hashSelectorApprovalKey(_contract, _selector, _caller)];
     }
 
@@ -150,7 +150,8 @@ contract AdminACLV0_PROHIBITION is IAdminACLV0_PROHIBITION, ERC165 {
     }
 
     /**
-     * @notice Toggles verification for artists to call functions relating to their projects on a contract
+     * @notice Toggles verification for artists to call functions relating to their projects
+     * on a contract
      * @param _contract The contract address.
      * @param _caller The caller address.
      * @dev this function is gated to only allwed addressed.
@@ -180,25 +181,27 @@ contract AdminACLV0_PROHIBITION is IAdminACLV0_PROHIBITION, ERC165 {
      * @param _contract The contract address.
      * @param _selector The function selector.
      * @return isApproved The approval status.
-     * @dev this function is public insteaad of internal so that the right to toggle approvals can also be delegated
+     * @dev this function is public insteaad of internal so that the right to toggle approvals
+     * can also be delegated
      */
     function allowed(
         address _sender,
         address _contract,
         bytes4 _selector
     ) public view returns (bool) {
-        return superAdmin == _sender || contractSelectorApprovals[hashSelectorApprovalKey(_contract, _selector, _sender)];
+        return superAdmin == _sender || getContractSelectorApproval(_contract, _selector, _sender);
     }
 
     /**
-     * @notice Checks if sender `_sender` is allowed to call function (or functions for projects) with 
-     * method `_selector` on `_contract`. Returns true if sender is superAdmin.
+     * @notice Checks if sender `_sender` is allowed to call function (or functions) for projects
+     * `projectId` with method `_selector` on `_contract`. Returns true if sender is superAdmin.
      * @param _sender The sender address.
      * @param _contract The contract address.
      * @param _selector The function selector.
      * @param _projectId The project ID.
      * @return isApproved The approval status.
-     * @dev this function is public insteaad of internal so that the right to toggle approvals can also be delegated
+     * @dev this function is public insteaad of internal so that the right to toggle approvals
+     * can also be delegated
      */
     function allowed(
         address _sender,
@@ -216,29 +219,29 @@ contract AdminACLV0_PROHIBITION is IAdminACLV0_PROHIBITION, ERC165 {
 
     /**
      * @notice Hash the contract address, selector, and caller address.
-        * @param _contract The contract address.
-        * @param _selector The function selector.
-        * @param _caller The caller address.
-        * @return hash The hash.
-        */
+     * @param _contract The contract address.
+     * @param _selector The function selector.
+     * @param _caller The caller address.
+     * @return hash The hash.
+     */
     function hashSelectorApprovalKey(
         address _contract,
         bytes4 _selector,
         address _caller
-    ) internal pure returns (bytes32) {
+    ) public pure returns (bytes32) {
         return keccak256(abi.encodePacked(_contract, _selector, _caller));
     }
 
     /**
      * @notice Hash the contract address and artist address.
-        * @param _contract The contract address.
-        * @param _caller The artist address.
-        * @return hash The hash.
-        */
+     * @param _contract The contract address.
+     * @param _caller The artist address.
+     * @return hash The hash.
+     */
     function hashArtistApprovalKey(
         address _contract,
         address _caller
-    ) internal pure returns (bytes32) {
+    ) public pure returns (bytes32) {
         return keccak256(abi.encodePacked(_contract, _caller));
     }
 
