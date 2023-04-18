@@ -81,7 +81,7 @@ interface IAdminACLV0_PROHIBITION is IAdminACLV0 {
     ) external;
 
     /**
-     * @notice Checks if sender `_sender` is allowed to call function (or functions for projects) with 
+     * @notice Checks if sender `_sender` is allowed to call function (or functions for projects) with
      * method `_selector` on `_contract`. Returns true if sender is superAdmin.
      * @param _sender The sender address.
      * @param _contract The contract address.

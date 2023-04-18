@@ -105,7 +105,10 @@ contract AdminACLV0_PROHIBITION is IAdminACLV0_PROHIBITION, ERC165 {
         bytes4 _selector,
         address _caller
     ) public view returns (bool) {
-        return contractSelectorApprovals[hashSelectorApprovalKey(_contract, _selector, _caller)];
+        return
+            contractSelectorApprovals[
+                hashSelectorApprovalKey(_contract, _selector, _caller)
+            ];
     }
 
     /**
@@ -118,8 +121,8 @@ contract AdminACLV0_PROHIBITION is IAdminACLV0_PROHIBITION, ERC165 {
         address _contract,
         address _caller
     ) public view returns (bool) {
-        return contractArtistApprovals[hashArtistApprovalKey(_contract, _caller)];
-
+        return
+            contractArtistApprovals[hashArtistApprovalKey(_contract, _caller)];
     }
 
     /**
@@ -135,12 +138,22 @@ contract AdminACLV0_PROHIBITION is IAdminACLV0_PROHIBITION, ERC165 {
         address _caller
     ) external {
         require(
-            allowed(msg.sender, address(this), this.toggleContractSelectorApproval.selector),
+            allowed(
+                msg.sender,
+                address(this),
+                this.toggleContractSelectorApproval.selector
+            ),
             "Only allowed caller"
         );
 
-        bytes32 approvalHash = hashSelectorApprovalKey(_contract, _selector, _caller);
-        contractSelectorApprovals[approvalHash] = !contractSelectorApprovals[approvalHash];
+        bytes32 approvalHash = hashSelectorApprovalKey(
+            _contract,
+            _selector,
+            _caller
+        );
+        contractSelectorApprovals[approvalHash] = !contractSelectorApprovals[
+            approvalHash
+        ];
         emit ContractSelectorApprovalUpdated(
             _contract,
             _selector,
@@ -161,12 +174,18 @@ contract AdminACLV0_PROHIBITION is IAdminACLV0_PROHIBITION, ERC165 {
         address _caller
     ) external {
         require(
-            allowed(msg.sender, address(this), this.toggleContractArtistApproval.selector),
+            allowed(
+                msg.sender,
+                address(this),
+                this.toggleContractArtistApproval.selector
+            ),
             "Only allowed caller"
         );
 
         bytes32 approvalHash = hashArtistApprovalKey(_contract, _caller);
-        contractArtistApprovals[approvalHash] = !contractArtistApprovals[approvalHash];
+        contractArtistApprovals[approvalHash] = !contractArtistApprovals[
+            approvalHash
+        ];
         emit ContractArtistApprovalUpdated(
             _contract,
             _caller,
@@ -189,7 +208,9 @@ contract AdminACLV0_PROHIBITION is IAdminACLV0_PROHIBITION, ERC165 {
         address _contract,
         bytes4 _selector
     ) public view returns (bool) {
-        return superAdmin == _sender || getContractSelectorApproval(_contract, _selector, _sender);
+        return
+            superAdmin == _sender ||
+            getContractSelectorApproval(_contract, _selector, _sender);
     }
 
     /**
@@ -209,13 +230,14 @@ contract AdminACLV0_PROHIBITION is IAdminACLV0_PROHIBITION, ERC165 {
         bytes4 _selector,
         uint256 _projectId
     ) external view returns (bool) {
-        IGenArt721CoreContractV3_Base coreV3 = IGenArt721CoreContractV3_Base(_contract);
-        return allowed(_sender, _contract, _selector) || (
-            getContractArtistApproval(_contract, _sender) &&
-            coreV3.projectIdToArtistAddress(_projectId) == _sender
+        IGenArt721CoreContractV3_Base coreV3 = IGenArt721CoreContractV3_Base(
+            _contract
         );
+        return
+            allowed(_sender, _contract, _selector) ||
+            (getContractArtistApproval(_contract, _sender) &&
+                coreV3.projectIdToArtistAddress(_projectId) == _sender);
     }
-
 
     /**
      * @notice Hash the contract address, selector, and caller address.
@@ -256,5 +278,4 @@ contract AdminACLV0_PROHIBITION is IAdminACLV0_PROHIBITION, ERC165 {
             interfaceId == type(IAdminACLV0).interfaceId ||
             super.supportsInterface(interfaceId);
     }
-
 }
