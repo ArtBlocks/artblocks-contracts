@@ -19,7 +19,7 @@ import "@openzeppelin-4.7/contracts/utils/introspection/ERC165.sol";
  * multi-sig or other secure access control mechanism.
  */
 contract AdminACLV0_PROHIBITION is IAdminACLV0_PROHIBITION, ERC165 {
-    string public AdminACLType = "AdminACLV0";
+    string public AdminACLType = "AdminACLV0_PROHIBITION";
 
     /// superAdmin is the only address that passes any and all ACL checks
     address public superAdmin;
