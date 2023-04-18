@@ -351,16 +351,7 @@ for (const coreContractName of coreContractsToTest) {
     describe("coreVersion", function () {
       it("returns expected value", async function () {
         const config = await loadFixture(_beforeEach);
-        let targetCoreVersion;
-        if (coreContractName === "GenArt721CoreV3") {
-          targetCoreVersion = "v3.0.2";
-        } else if (coreContractName === "GenArt721CoreV3_Explorations") {
-          targetCoreVersion = "v3.0.3";
-        } else if (coreContractName.includes("GenArt721CoreV3_Engine")) {
-          targetCoreVersion = "v3.1.2";
-        } else {
-          throw new Error("Unexpected core contract name");
-        }
+        const targetCoreVersion = "v3.1.3";
         const coreVersion = await config.genArt721Core
           .connect(config.accounts.deployer)
           .coreVersion();
