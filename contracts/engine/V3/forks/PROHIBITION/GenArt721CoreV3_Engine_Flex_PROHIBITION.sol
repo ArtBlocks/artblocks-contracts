@@ -130,36 +130,36 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
     //
     // The following fields are used to indicate which contract-level parameter
     // has been updated in the `PlatformUpdated` event:
-    bytes32 constant FIELD_NEXT_PROJECT_ID = "nextProjectId";
-    bytes32 constant FIELD_NEW_PROJECTS_FORBIDDEN = "newProjectsForbidden";
-    bytes32 constant FIELD_DEFAULT_BASE_URI = "defaultBaseURI";
-    bytes32 constant FIELD_RANDOMIZER_ADDRESS = "randomizerAddress";
-    bytes32 constant FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS =
+    bytes32 FIELD_NEXT_PROJECT_ID = "nextProjectId";
+    bytes32 FIELD_NEW_PROJECTS_FORBIDDEN = "newProjectsForbidden";
+    bytes32 FIELD_DEFAULT_BASE_URI = "defaultBaseURI";
+    bytes32 FIELD_RANDOMIZER_ADDRESS = "randomizerAddress";
+    bytes32 FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS =
         "dependencyRegistryAddress";
-    bytes32 constant FIELD_PROVIDER_SALES_ADDRESSES = "providerSalesAddresses";
-    bytes32 constant FIELD_PROVIDER_PRIMARY_SALES_PERCENTAGES =
+    bytes32 FIELD_PROVIDER_SALES_ADDRESSES = "providerSalesAddresses";
+    bytes32 FIELD_PROVIDER_PRIMARY_SALES_PERCENTAGES =
         "providerPrimaryPercentages";
-    bytes32 constant FIELD_PROVIDER_SECONDARY_SALES_BPS =
+    bytes32 FIELD_PROVIDER_SECONDARY_SALES_BPS =
         "providerSecondaryBPS";
     // The following fields are used to indicate which project-level parameter
     // has been updated in the `ProjectUpdated` event:
-    bytes32 constant FIELD_PROJECT_COMPLETED = "completed";
-    bytes32 constant FIELD_PROJECT_ACTIVE = "active";
-    bytes32 constant FIELD_PROJECT_ARTIST_ADDRESS = "artistAddress";
-    bytes32 constant FIELD_PROJECT_PAUSED = "paused";
-    bytes32 constant FIELD_PROJECT_CREATED = "created";
-    bytes32 constant FIELD_PROJECT_NAME = "name";
-    bytes32 constant FIELD_PROJECT_ARTIST_NAME = "artistName";
-    bytes32 constant FIELD_PROJECT_SECONDARY_MARKET_ROYALTY_PERCENTAGE =
+    bytes32 FIELD_PROJECT_COMPLETED = "completed";
+    bytes32 FIELD_PROJECT_ACTIVE = "active";
+    bytes32 FIELD_PROJECT_ARTIST_ADDRESS = "artistAddress";
+    bytes32 FIELD_PROJECT_PAUSED = "paused";
+    bytes32 FIELD_PROJECT_CREATED = "created";
+    bytes32 FIELD_PROJECT_NAME = "name";
+    bytes32 FIELD_PROJECT_ARTIST_NAME = "artistName";
+    bytes32 FIELD_PROJECT_SECONDARY_MARKET_ROYALTY_PERCENTAGE =
         "royaltyPercentage";
-    bytes32 constant FIELD_PROJECT_DESCRIPTION = "description";
-    bytes32 constant FIELD_PROJECT_WEBSITE = "website";
-    bytes32 constant FIELD_PROJECT_LICENSE = "license";
-    bytes32 constant FIELD_PROJECT_MAX_INVOCATIONS = "maxInvocations";
-    bytes32 constant FIELD_PROJECT_SCRIPT = "script";
-    bytes32 constant FIELD_PROJECT_SCRIPT_TYPE = "scriptType";
-    bytes32 constant FIELD_PROJECT_ASPECT_RATIO = "aspectRatio";
-    bytes32 constant FIELD_PROJECT_BASE_URI = "baseURI";
+    bytes32 FIELD_PROJECT_DESCRIPTION = "description";
+    bytes32 FIELD_PROJECT_WEBSITE = "website";
+    bytes32 FIELD_PROJECT_LICENSE = "license";
+    bytes32 FIELD_PROJECT_MAX_INVOCATIONS = "maxInvocations";
+    bytes32 FIELD_PROJECT_SCRIPT = "script";
+    bytes32 FIELD_PROJECT_SCRIPT_TYPE = "scriptType";
+    bytes32 FIELD_PROJECT_ASPECT_RATIO = "aspectRatio";
+    bytes32 FIELD_PROJECT_BASE_URI = "baseURI";
 
     /// Dependency registry managed by Art Blocks
     address public artblocksDependencyRegistryAddress;
@@ -2039,6 +2039,7 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
      * @param _contract Address of the contract being called by `_sender`.
      * @param _selector Function selector of the function being called by
      * `_sender`.
+     * @param _projectId Project ID of the project being acted on by `_sender`.
      * @return bool Whether `_sender` is allowed to call function with selector
      * `_selector` on contract `_contract`.
      * @dev assumes the Admin ACL contract is the owner of this contract, which
@@ -2056,6 +2057,40 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
         return
             owner() != address(0) &&
             adminACLContract.allowed(_sender, _contract, _selector, _projectId);
+    }
+
+    /**
+     * @notice Convenience function that returns whether `_sender` is allowed
+     * to call function with selector `_selector` on contract `_contract`, as
+     * determined by this contract's current Admin ACL contract. Expected use
+     * cases include minter contracts checking if caller is allowed to call
+     * admin-gated functions on minter contracts.
+     * @param _sender Address of the sender calling function with selector
+     * `_selector` on contract `_contract`.
+     * @param _contract Address of the contract being called by `_sender`.
+     * @param _selector Function selector of the function being called by
+     * `_sender`.
+     * @return bool Whether `_sender` is allowed to call function with selector
+     * `_selector` on contract `_contract`.
+     * @dev assumes the Admin ACL contract is the owner of this contract, which
+     * is expected to always be true.
+     * @dev adminACLContract is expected to either be null address (if owner
+     * has renounced ownership), or conform to IAdminACLV0 interface. Check for
+     * null address first to avoid revert when admin has renounced ownership.
+     */
+    function adminACLAllowed(
+        address _sender,
+        address _contract,
+        bytes4 _selector
+    ) public returns (bool) {
+        return
+            owner() != address(0) &&
+            adminACLContract.allowed(
+                _sender,
+                _contract,
+                _selector,
+                type(uint256).max
+            );
     }
 
     /**

@@ -129,4 +129,17 @@ interface IGenArt721CoreContractV3_Engine_Flex_PROHIBITION is
     function projectExternalAssetDependencyCount(
         uint256 _projectId
     ) external view returns (uint256);
+
+    /**
+     * Function determining if _sender is allowed to call function with
+     * selector _selector on contract `_contract`. Intended to be used with
+     * peripheral contracts such as minters, as well as internally by the
+     * core contract itself.
+     */
+    function adminACLAllowed(
+        address _sender,
+        address _contract,
+        bytes4 _selector,
+        uint256 _projectId
+    ) external returns (bool);
 }

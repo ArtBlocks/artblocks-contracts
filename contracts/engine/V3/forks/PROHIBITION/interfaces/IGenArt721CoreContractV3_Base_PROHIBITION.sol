@@ -74,8 +74,7 @@ interface IGenArt721CoreContractV3_Base_PROHIBITION is IManifold {
     function adminACLAllowed(
         address _sender,
         address _contract,
-        bytes4 _selector,
-        uint256 _projectId
+        bytes4 _selector
     ) external returns (bool);
 
     // getter function of public variable
