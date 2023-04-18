@@ -19,12 +19,12 @@ import {
   deployCoreWithMinterFilter,
   mintProjectUntilRemaining,
   advanceEVMByTime,
-} from "../../util/common";
-import { FOUR_WEEKS } from "../../util/constants";
+} from "../../../util/common";
+import { FOUR_WEEKS } from "../../../util/constants";
 
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
-  "GenArt721CoreV3_Engine_Flex", // V3 core Engine Flex contract
+  "GenArt721CoreV3_Engine_Flex_PROHIBITION", // V3 core Engine Flex contract
 ];
 
 /**

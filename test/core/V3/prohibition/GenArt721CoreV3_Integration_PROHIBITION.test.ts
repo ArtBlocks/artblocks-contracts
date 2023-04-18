@@ -19,15 +19,12 @@ import {
   deployCoreWithMinterFilter,
   mintProjectUntilRemaining,
   advanceEVMByTime,
-} from "../../util/common";
-import { FOUR_WEEKS } from "../../util/constants";
+} from "../../../util/common";
+import { FOUR_WEEKS } from "../../../util/constants";
 
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
-  "GenArt721CoreV3", // flagship V3 core
-  "GenArt721CoreV3_Explorations", // V3 core explorations contract
-  "GenArt721CoreV3_Engine", // V3 core Engine contract
-  "GenArt721CoreV3_Engine_Flex", // V3 core Engine_Flex contract
+  "GenArt721CoreV3_Engine_Flex_PROHIBITION", // V3 core Engine Flex fork for Prohibition
 ];
 
 /**
@@ -264,7 +261,68 @@ for (const coreContractName of coreContractsToTest) {
           .connect(config.accounts.deployer)
           .addProject("new project", config.accounts.artist2.address);
 
-        await expectRevert(addProjectCall, "Only Admin ACL allowed");
+        await expectRevert(addProjectCall, "New projects forbidden");
+      });
+
+      it("behaves as expected when toggling project activation with superAdmin", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .toggleProjectIsActive(config.projectZero);
+      });
+
+      it("behaves as expected when toggling project activation with verified user", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.adminACL
+          .connect(config.accounts.deployer)
+          .toggleContractArtistApproval(
+            config.genArt721Core.address,
+            config.accounts.artist.address
+          );
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .toggleProjectIsActive(config.projectZero);
+      });
+
+      it("behaves as expected when toggling project activation when user is approved for selector", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.adminACL
+          .connect(config.accounts.deployer)
+          .toggleContractSelectorApproval(
+            config.genArt721Core.address,
+            config.genArt721Core.interface.getSighash("toggleProjectIsActive"),
+            config.accounts.user.address
+          );
+        await config.genArt721Core
+          .connect(config.accounts.user)
+          .toggleProjectIsActive(config.projectZero);
+      });
+
+      it("reverts when toggling project activation from unverified account", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.genArt721Core
+            .connect(config.accounts.user)
+            .toggleProjectIsActive(config.projectZero),
+          "Only Admin ACL allowed"
+        );
+      });
+
+      it("reverts when toggling project from verified user that is not artist", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.adminACL
+          .connect(config.accounts.deployer)
+          .toggleContractArtistApproval(
+            config.genArt721Core.address,
+            config.accounts.artist2.address
+          );
+
+        await expectRevert(
+          config.genArt721Core
+            .connect(config.accounts.artist2)
+            .toggleProjectIsActive(config.projectZero),
+          "Only Admin ACL allowed"
+        );
       });
     });
 
@@ -321,6 +379,10 @@ for (const coreContractName of coreContractsToTest) {
           // as they have same interface expectations
           expect(coreType).to.be.equal("GenArt721CoreV3_Engine");
         } else if (coreContractName === "GenArt721CoreV3_Engine_Flex") {
+          expect(coreType).to.be.equal("GenArt721CoreV3_Engine_Flex");
+        } else if (
+          coreContractName === "GenArt721CoreV3_Engine_Flex_PROHIBITION"
+        ) {
           expect(coreType).to.be.equal("GenArt721CoreV3_Engine_Flex");
         } else {
           // coreType is same for GenArt721CoreV3 & GenArt721CoreV3_Explorations

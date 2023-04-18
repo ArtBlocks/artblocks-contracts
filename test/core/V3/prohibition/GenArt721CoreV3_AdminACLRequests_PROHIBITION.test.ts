@@ -19,8 +19,8 @@ import {
   mintProjectUntilRemaining,
   advanceEVMByTime,
   deployCoreWithMinterFilter,
-} from "../../util/common";
-import { FOUR_WEEKS } from "../../util/constants";
+} from "../../../util/common";
+import { FOUR_WEEKS } from "../../../util/constants";
 
 async function validateAdminACLRequest(
   config: T_Config,
@@ -54,10 +54,7 @@ async function expectRevertFromAdminACLRequest(
 
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
-  "GenArt721CoreV3", // flagship V3 core
-  "GenArt721CoreV3_Explorations", // V3 core explorations contract
-  "GenArt721CoreV3_Engine", // V3 core Engine contract,
-  "GenArt721CoreV3_Engine_Flex", // V3 core Engine Flex contract
+  "GenArt721CoreV3_Engine_Flex_PROHIBITION", // V3 core Engine Flex fork for Prohibition
 ];
 
 /**
@@ -224,14 +221,6 @@ for (const coreContractName of coreContractsToTest) {
         const config = await loadFixture(_beforeEach);
         await validateAdminACLRequest(config, "updateProjectArtistAddress", [
           config.projectZero,
-          config.accounts.artist2.address,
-        ]);
-      });
-
-      it("addProject", async function () {
-        const config = await loadFixture(_beforeEach);
-        await validateAdminACLRequest(config, "addProject", [
-          "Project Name",
           config.accounts.artist2.address,
         ]);
       });

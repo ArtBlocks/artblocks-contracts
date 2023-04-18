@@ -18,22 +18,19 @@ import {
   deployCoreWithMinterFilter,
   mintProjectUntilRemaining,
   advanceEVMByTime,
-} from "../../util/common";
-import { FOUR_WEEKS } from "../../util/constants";
+} from "../../../util/common";
+import { FOUR_WEEKS } from "../../../util/constants";
 import {
   SQUIGGLE_SCRIPT,
   SKULPTUUR_SCRIPT_APPROX,
   CONTRACT_SIZE_LIMIT_SCRIPT,
   GREATER_THAN_CONTRACT_SIZE_LIMIT_SCRIPT,
   MULTI_BYTE_UTF_EIGHT_SCRIPT,
-} from "../../util/example-scripts";
+} from "../../../util/example-scripts";
 
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
-  "GenArt721CoreV3", // flagship V3 core
-  "GenArt721CoreV3_Explorations", // V3 core explorations contract
-  "GenArt721CoreV3_Engine", // V3 core Engine contract
-  "GenArt721CoreV3_Engine_Flex", // V3 core Engine Flex contract
+  "GenArt721CoreV3_Engine_Flex_PROHIBITION", // V3 core Engine Flex fork for Prohibition
 ];
 
 /**
