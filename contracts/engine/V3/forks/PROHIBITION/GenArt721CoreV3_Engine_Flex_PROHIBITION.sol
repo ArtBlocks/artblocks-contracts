@@ -271,7 +271,7 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
     bool public immutable autoApproveArtistSplitProposals;
 
     /// version & type of this core contract
-    bytes32 constant CORE_VERSION = "v3.1.2";
+    bytes32 constant CORE_VERSION = "v3.1.3";
 
     function coreVersion() external pure returns (string memory) {
         return CORE_VERSION.toString();
