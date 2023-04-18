@@ -2,12 +2,12 @@
 
 pragma solidity 0.8.17;
 
-import "../interfaces/0.8.x/IEngineRegistryV1.sol";
+import "../interfaces/0.8.x/ICoreRegistryV1.sol";
 import "@openzeppelin-4.7/contracts/access/Ownable.sol";
 import "@openzeppelin-4.7/contracts/utils/structs/EnumerableSet.sol";
 
 /**
- * @title Engine Registry contract, V1.
+ * @title Art Blocks Core Contract Registry, V1.
  * @author Art Blocks Inc.
  * @notice Privileged Roles and Ownership:
  * This contract has a single owner, and is intended to be deployed with a
@@ -15,10 +15,25 @@ import "@openzeppelin-4.7/contracts/utils/structs/EnumerableSet.sol";
  * If in the future multiple deployer addresses are needed to interact with
  * this registry, a new registry version with more complex logic should be
  * implemented and deployed to replace this.
- * Note that this contract is intended to be able to act as a registry of
- * contracts that may be configure with a minter filter contract.
  *
- * This contract may register Flagship, and/or Engine core contracts.
+ * This contract builds on the EngineRegistryV0 contract, but encompases more
+ * than just Engine contracts. It is updated to be named CoreRegistry, and is
+ * V1 because it is the next iteration of the V0 Engine Registry.
+ *
+ * This contract is intended to be able to act as a registry of all core
+ * contracts that are allowed to interact with a specific MinterFilter V2.
+ * This includes:
+ * - Flagship contracts
+ * - Collaboration contracts
+ * - Engine contracts
+ * - Engine Flex contracts
+ *
+ * Note that not all contracts will be registered in this registry, as some
+ * contracts may not need to interact with a MinterFilterV2 contract. For
+ * example, the original Art Blocks V0 contract does not need to interact with
+ * a MinterFilterV2 contract, as it uses a different minting mechanism.
+ *
+ * A view funciton is provided to determine if a contract is registered.
  *
  * This contract is designed to be managed by an owner with privileged roles
  * and abilities.
@@ -41,11 +56,15 @@ import "@openzeppelin-4.7/contracts/utils/structs/EnumerableSet.sol";
  * Additional privileged roles may be described on minters, registries, and
  * other contracts that may interact with this contract.
  */
-contract EngineRegistryV1 is Ownable, IEngineRegistryV1 {
+contract CoreRegistryV0 is Ownable, ICoreRegistryV1 {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     /// private enumerable set of registered contracts
     EnumerableSet.AddressSet private registeredContracts;
+
+    /// private mapping of registered contract addresses to
+    EnumerableSet.AddressSet
+        private registeredMinterFilterV2CompatibleContracts;
 
     constructor() Ownable() {}
 

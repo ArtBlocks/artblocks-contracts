@@ -6,7 +6,7 @@ pragma solidity 0.8.17;
 import "../../interfaces/0.8.x/IMinterFilterV1.sol";
 import "../../interfaces/0.8.x/IFilteredMinterV0.sol";
 import "../../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
-import "../../interfaces/0.8.x/IEngineRegistryV1.sol";
+import "../../interfaces/0.8.x/ICoreRegistryV1.sol";
 
 import "../../libs/0.8.x/Bytes32Strings.sol";
 
@@ -80,7 +80,7 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
      * @dev the engine registry is assumed to also register flagship and
      * collaboration contracts.
      */
-    IEngineRegistryV1 public engineRegistry;
+    ICoreRegistryV1 public engineRegistry;
 
     /// minter address => qty projects across all core contracts currently
     /// using the minter
@@ -721,7 +721,7 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
      */
     function _updateEngineRegistry(address _engineRegistry) internal {
         _onlyNonZeroAddress(_engineRegistry);
-        engineRegistry = IEngineRegistryV1(_engineRegistry);
+        engineRegistry = ICoreRegistryV1(_engineRegistry);
         emit EngineRegistryUpdated(_engineRegistry);
     }
 }

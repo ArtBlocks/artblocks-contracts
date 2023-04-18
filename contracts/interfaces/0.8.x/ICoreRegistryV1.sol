@@ -4,7 +4,7 @@ pragma solidity ^0.8.17;
 
 import "./IEngineRegistryV0.sol";
 
-interface IEngineRegistryV1 is IEngineRegistryV0 {
+interface ICoreRegistryV1 is IEngineRegistryV0 {
     function registerContracts(
         address[] calldata _contractAddresses,
         bytes32[] calldata _coreVersions,

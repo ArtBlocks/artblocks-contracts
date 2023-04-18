@@ -3,7 +3,7 @@
 
 pragma solidity ^0.8.0;
 
-import "./IEngineRegistryV1.sol";
+import "./ICoreRegistryV1.sol";
 import "./IAdminACLV0.sol";
 
 /**
@@ -126,7 +126,7 @@ interface IMinterFilterV1 {
     ) external view returns (bool);
 
     /// Address of current engine registry contract
-    function engineRegistry() external view returns (IEngineRegistryV1);
+    function engineRegistry() external view returns (ICoreRegistryV1);
 
     /// The current admin ACL contract
     function adminACLContract() external view returns (IAdminACLV0);
