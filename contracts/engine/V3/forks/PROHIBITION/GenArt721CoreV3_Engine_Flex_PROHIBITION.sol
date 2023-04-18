@@ -47,7 +47,6 @@ import "../../../../libs/0.8.x/Bytes32Strings.sol";
  * ----------------------------------------------------------------------------
  * The following functions are restricted to either the the Artist address or
  * the Admin ACL contract, only when the project is not locked:
- * - toggleProjectIsPaused (note the artist can still mint while paused)
  * - updateProjectName
  * - updateProjectArtistName
  * - updateProjectLicense
@@ -56,7 +55,8 @@ import "../../../../libs/0.8.x/Bytes32Strings.sol";
  * - updateProjectScriptType
  * - updateProjectAspectRatio
  * ----------------------------------------------------------------------------
- * The following functions are restricted to only the Artist address:
+ * The following functions are restricted to only the Artist or Admin ACL
+ * contract of a valid project ID:
  * - proposeArtistPaymentAddressesAndSplits (Note that this has to be accepted
  *   by adminAcceptArtistAddressesAndSplits to take effect, which is restricted
  *   to the Admin ACL contract, or the artist if the core contract owner has
@@ -64,8 +64,9 @@ import "../../../../libs/0.8.x/Bytes32Strings.sol";
  *   accepted if the artist only proposes changed payee percentages without
  *   modifying any payee addresses, or is only removing payee addresses, or
  *   if the global config `autoApproveArtistSplitProposals` is set to `true`.)
+ * - toggleProjectIsPaused (note the artist can still mint while paused)
  * - updateProjectSecondaryMarketRoyaltyPercentage (up to
-     ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE percent)
+ *   ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE percent)
  * - updateProjectWebsite
  * - updateProjectMaxInvocations (to a number greater than or equal to the
  *   current number of invocations, and less than current project maximum
@@ -84,7 +85,7 @@ import "../../../../libs/0.8.x/Bytes32Strings.sol";
  * ----------------------------------------------------------------------------
  * The following functions for managing external asset dependencies are restricted
  * to projects with external asset dependencies that are unlocked:
- * - lockProjectExternalAssetDependencies 
+ * - lockProjectExternalAssetDependencies
  * - updateProjectExternalAssetDependency
  * - removeProjectExternalAssetDependency
  * - addProjectExternalAssetDependency
@@ -172,7 +173,7 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
     address[] private _historicalRandomizerAddresses;
 
     /// admin ACL contract
-    IAdminACLV0_PROHIBITION public adminACLContract;
+    IAdminACLV0 public adminACLContract;
 
     struct Project {
         uint24 invocations;
@@ -1726,7 +1727,7 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
     )
         external
         view
-        override(IGenArt721CoreContractV3_Base_PROHIBITION, IDependencyRegistryCompatibleV0)
+        override(IGenArt721CoreContractV3_Base, IDependencyRegistryCompatibleV0)
         returns (
             string memory scriptTypeAndVersion,
             string memory aspectRatio,
@@ -2056,7 +2057,12 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
     ) public returns (bool) {
         return
             owner() != address(0) &&
-            adminACLContract.allowed(_sender, _contract, _selector, _projectId);
+            IAdminACLV0_PROHIBITION(address(adminACLContract)).allowed(
+                _sender,
+                _contract,
+                _selector,
+                _projectId
+            );
     }
 
     /**
@@ -2085,7 +2091,7 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
     ) public returns (bool) {
         return
             owner() != address(0) &&
-            adminACLContract.allowed(
+            IAdminACLV0_PROHIBITION(address(adminACLContract)).allowed(
                 _sender,
                 _contract,
                 _selector,
@@ -2103,7 +2109,7 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
     function owner()
         public
         view
-        override(Ownable, IGenArt721CoreContractV3_Base_PROHIBITION)
+        override(Ownable, IGenArt721CoreContractV3_Base)
         returns (address)
     {
         return Ownable.owner();
@@ -2158,7 +2164,7 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
      */
     function _transferOwnership(address newOwner) internal override {
         Ownable._transferOwnership(newOwner);
-        adminACLContract = IAdminACLV0_PROHIBITION(newOwner);
+        adminACLContract = IAdminACLV0(newOwner);
     }
 
     /**
