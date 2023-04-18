@@ -6,6 +6,7 @@ pragma solidity 0.8.17;
 import "./interfaces/IAdminACLV0_PROHIBITION.sol";
 import "./interfaces/IGenArt721CoreContractV3_Engine_Flex_PROHIBITION.sol";
 
+import "../../../../interfaces/0.8.x/IAdminACLV0.sol";
 import "../../../../interfaces/0.8.x/IRandomizerV2.sol";
 import "../../../../interfaces/0.8.x/IEngineRegistryV0.sol";
 import "../../../../interfaces/0.8.x/IDependencyRegistryCompatibleV0.sol";
@@ -139,8 +140,7 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
     bytes32 FIELD_PROVIDER_SALES_ADDRESSES = "providerSalesAddresses";
     bytes32 FIELD_PROVIDER_PRIMARY_SALES_PERCENTAGES =
         "providerPrimaryPercentages";
-    bytes32 FIELD_PROVIDER_SECONDARY_SALES_BPS =
-        "providerSecondaryBPS";
+    bytes32 FIELD_PROVIDER_SECONDARY_SALES_BPS = "providerSecondaryBPS";
     // The following fields are used to indicate which project-level parameter
     // has been updated in the `ProjectUpdated` event:
     bytes32 FIELD_PROJECT_COMPLETED = "completed";
@@ -172,7 +172,7 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
     address[] private _historicalRandomizerAddresses;
 
     /// admin ACL contract
-    IAdminACLV0_PROHIBITION public adminACLContract;
+    IAdminACLV0 public adminACLContract;
 
     struct Project {
         uint24 invocations;
@@ -340,7 +340,12 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
     ) internal {
         require(
             msg.sender == projectIdToFinancials[_projectId].artistAddress ||
-                adminACLAllowed(msg.sender, address(this), _selector, _projectId),
+                adminACLAllowed(
+                    msg.sender,
+                    address(this),
+                    _selector,
+                    _projectId
+                ),
             "Only artist or Admin ACL allowed"
         );
     }
@@ -733,7 +738,10 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
     function updateArtblocksDependencyRegistryAddress(
         address _artblocksDependencyRegistryAddress
     ) external {
-        _onlyAdminACL(this.updateArtblocksDependencyRegistryAddress.selector, type(uint256).max);
+        _onlyAdminACL(
+            this.updateArtblocksDependencyRegistryAddress.selector,
+            type(uint256).max
+        );
         _onlyNonZeroAddress(_artblocksDependencyRegistryAddress);
         artblocksDependencyRegistryAddress = _artblocksDependencyRegistryAddress;
         emit PlatformUpdated(FIELD_ARTBLOCKS_DEPENDENCY_REGISTRY_ADDRESS);
@@ -757,7 +765,10 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
         address payable _platformProviderPrimarySalesAddress,
         address payable _platformProviderSecondarySalesAddress
     ) external {
-        _onlyAdminACL(this.updateProviderSalesAddresses.selector, type(uint256).max);
+        _onlyAdminACL(
+            this.updateProviderSalesAddresses.selector,
+            type(uint256).max
+        );
         _onlyNonZeroAddress(_renderProviderPrimarySalesAddress);
         _onlyNonZeroAddress(_renderProviderSecondarySalesAddress);
         _onlyNonZeroAddress(_platformProviderPrimarySalesAddress);
@@ -781,7 +792,10 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
         uint256 renderProviderPrimarySalesPercentage_,
         uint256 platformProviderPrimarySalesPercentage_
     ) external {
-        _onlyAdminACL(this.updateProviderPrimarySalesPercentages.selector, type(uint256).max);
+        _onlyAdminACL(
+            this.updateProviderPrimarySalesPercentages.selector,
+            type(uint256).max
+        );
 
         // Validate that the sum of the proposed %s, does not exceed 100%.
         require(
@@ -817,7 +831,10 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
         uint256 _renderProviderSecondarySalesBPS,
         uint256 _platformProviderSecondarySalesBPS
     ) external {
-        _onlyAdminACL(this.updateProviderSecondarySalesBPS.selector, type(uint256).max);
+        _onlyAdminACL(
+            this.updateProviderSecondarySalesBPS.selector,
+            type(uint256).max
+        );
         // Validate that the sum of the proposed provider BPS, does not exceed 10_000 BPS.
         require(
             (_renderProviderSecondarySalesBPS +
@@ -1726,7 +1743,7 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
     )
         external
         view
-        override(IGenArt721CoreContractV3_Base_PROHIBITION, IDependencyRegistryCompatibleV0)
+        override(IGenArt721CoreContractV3_Base, IDependencyRegistryCompatibleV0)
         returns (
             string memory scriptTypeAndVersion,
             string memory aspectRatio,
@@ -2056,7 +2073,12 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
     ) public returns (bool) {
         return
             owner() != address(0) &&
-            adminACLContract.allowed(_sender, _contract, _selector, _projectId);
+            IAdminACLV0_PROHIBITION(address(adminACLContract)).allowed(
+                _sender,
+                _contract,
+                _selector,
+                _projectId
+            );
     }
 
     /**
@@ -2085,7 +2107,7 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
     ) public returns (bool) {
         return
             owner() != address(0) &&
-            adminACLContract.allowed(
+            IAdminACLV0_PROHIBITION(address(adminACLContract)).allowed(
                 _sender,
                 _contract,
                 _selector,
@@ -2103,7 +2125,7 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
     function owner()
         public
         view
-        override(Ownable, IGenArt721CoreContractV3_Base_PROHIBITION)
+        override(Ownable, IGenArt721CoreContractV3_Base)
         returns (address)
     {
         return Ownable.owner();
@@ -2158,7 +2180,7 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
      */
     function _transferOwnership(address newOwner) internal override {
         Ownable._transferOwnership(newOwner);
-        adminACLContract = IAdminACLV0_PROHIBITION(newOwner);
+        adminACLContract = IAdminACLV0(newOwner);
     }
 
     /**
