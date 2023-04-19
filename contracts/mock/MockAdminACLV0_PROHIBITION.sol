@@ -46,7 +46,10 @@ contract MockAdminACLV0Events_PROHIBITION is IAdminACLV0_PROHIBITION, ERC165 {
         bytes4 _selector,
         address _caller
     ) external view returns (bool) {
-        return contractSelectorApprovals[hashSelectorApprovalKey(_contract, _selector, _caller)];
+        return
+            contractSelectorApprovals[
+                hashSelectorApprovalKey(_contract, _selector, _caller)
+            ];
     }
 
     /**
@@ -56,8 +59,8 @@ contract MockAdminACLV0Events_PROHIBITION is IAdminACLV0_PROHIBITION, ERC165 {
         address _contract,
         address _caller
     ) external view returns (bool) {
-        return contractArtistApprovals[hashArtistApprovalKey(_contract, _caller)];
-
+        return
+            contractArtistApprovals[hashArtistApprovalKey(_contract, _caller)];
     }
 
     /**
@@ -69,12 +72,22 @@ contract MockAdminACLV0Events_PROHIBITION is IAdminACLV0_PROHIBITION, ERC165 {
         address _caller
     ) external {
         require(
-            allowed(msg.sender, address(this), this.toggleContractSelectorApproval.selector),
+            allowed(
+                msg.sender,
+                address(this),
+                this.toggleContractSelectorApproval.selector
+            ),
             "Only superAdmin or allowed caller"
         );
 
-        bytes32 approvalHash = hashSelectorApprovalKey(_contract, _selector, _caller);
-        contractSelectorApprovals[approvalHash] = !contractSelectorApprovals[approvalHash];
+        bytes32 approvalHash = hashSelectorApprovalKey(
+            _contract,
+            _selector,
+            _caller
+        );
+        contractSelectorApprovals[approvalHash] = !contractSelectorApprovals[
+            approvalHash
+        ];
         emit ContractSelectorApprovalUpdated(
             _contract,
             _selector,
@@ -91,12 +104,18 @@ contract MockAdminACLV0Events_PROHIBITION is IAdminACLV0_PROHIBITION, ERC165 {
         address _artist
     ) external {
         require(
-            allowed(msg.sender, address(this), this.toggleContractArtistApproval.selector),
+            allowed(
+                msg.sender,
+                address(this),
+                this.toggleContractArtistApproval.selector
+            ),
             "Only allowed caller"
         );
 
         bytes32 approvalHash = hashArtistApprovalKey(_contract, _artist);
-        contractSelectorApprovals[approvalHash] = !contractSelectorApprovals[approvalHash];
+        contractSelectorApprovals[approvalHash] = !contractSelectorApprovals[
+            approvalHash
+        ];
         emit ContractArtistApprovalUpdated(
             _contract,
             _artist,
@@ -115,11 +134,15 @@ contract MockAdminACLV0Events_PROHIBITION is IAdminACLV0_PROHIBITION, ERC165 {
         bytes4 _selector
     ) public returns (bool) {
         emit ACLCheck(_sender, _selector);
-        return superAdmin == _sender || contractSelectorApprovals[hashSelectorApprovalKey(_contract, _selector, _sender)];
+        return
+            superAdmin == _sender ||
+            contractSelectorApprovals[
+                hashSelectorApprovalKey(_contract, _selector, _sender)
+            ];
     }
-    
+
     /**
-     * @dev Checks if sender `_sender` is allowed to call function (or functions for projects) with 
+     * @dev Checks if sender `_sender` is allowed to call function (or functions for projects) with
      * method `_selector` on `_contract`. Returns true if sender is superAdmin.
      * @dev this function is public insteaad of internal so that the right to toggle approvals can also be delegated
      */
@@ -130,11 +153,14 @@ contract MockAdminACLV0Events_PROHIBITION is IAdminACLV0_PROHIBITION, ERC165 {
         uint256 _projectId
     ) external returns (bool) {
         emit ACLCheck(_sender, _selector);
-        IGenArt721CoreContractV3_Base coreV3 = IGenArt721CoreContractV3_Base(_contract);
-        return allowed(_sender, _contract, _selector) || (
-            contractArtistApprovals[hashArtistApprovalKey(_contract, _sender)] &&
-            coreV3.projectIdToArtistAddress(_projectId) == _sender
+        IGenArt721CoreContractV3_Base coreV3 = IGenArt721CoreContractV3_Base(
+            _contract
         );
+        return
+            allowed(_sender, _contract, _selector) ||
+            (contractArtistApprovals[
+                hashArtistApprovalKey(_contract, _sender)
+            ] && coreV3.projectIdToArtistAddress(_projectId) == _sender);
     }
 
     /**
