@@ -1,0 +1,47 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-04-13T23:30:06.083Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/jeff-davis-flex/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x1f3fa62b1a5F869c70977176c5F4a6b98C4ca0B7
+[INFO] Randomizer BasicRandomizerV2 deployed at 0x56A09E206e07703493fD4aE37449E47683171Ac0
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0xEAC534Ba025Fe443055b5ef02Fe7e7801d01322E
+[INFO] Minter Filter MinterFilterV1 deployed at 0xD842ff05478fb398448d601C49e8eEE29F0CfBAc
+[INFO] MinterSetPriceV4 deployed at 0x9A840317AA67E789e483d852834BBF15e2A08E59
+[INFO] MinterDAExpV4 deployed at 0xc0a0777a090327F110F1e975A9fDCA6BAFc2d177
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0xD842ff05478fb398448d601C49e8eEE29F0CfBAc.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0x9A840317AA67E789e483d852834BBF15e2A08E59 on minter filter.
+[INFO] Allowlisted minter MinterDAExpV4 at 0xc0a0777a090327F110F1e975A9fDCA6BAFc2d177 on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0x7d42611012FDbE366Bf4A0481FC0E1aBf15E245A.
+[INFO] Verifying core contract contract deployment...
+The contract 0xEAC534Ba025Fe443055b5ef02Fe7e7801d01322E has already been verified
+[INFO] Core contract verified on Etherscan at 0xEAC534Ba025Fe443055b5ef02Fe7e7801d01322E}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0x1f3fa62b1a5F869c70977176c5F4a6b98C4ca0B7 has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0x1f3fa62b1a5F869c70977176c5F4a6b98C4ca0B7}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0xD842ff05478fb398448d601C49e8eEE29F0CfBAc has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0xD842ff05478fb398448d601C49e8eEE29F0CfBAc}
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+The contract 0x9A840317AA67E789e483d852834BBF15e2A08E59 has already been verified
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0x9A840317AA67E789e483d852834BBF15e2A08E59}
+[INFO] Verifying MinterDAExpV4 contract deployment...
+The contract 0xc0a0777a090327F110F1e975A9fDCA6BAFc2d177 has already been verified
+[INFO] MinterDAExpV4 contract verified on Etherscan at 0xc0a0777a090327F110F1e975A9fDCA6BAFc2d177}
+Created s3 bucket for https://jeff-davis-goerli.s3.amazonaws.com
+[INFO] Created image bucket jeff-davis-goerli
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/jeff-davis-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0xeac534ba025fe443055b5ef02fe7e7801d01322e",
+  "name": "Jeff Davis",
+  "bucket_name": "jeff-davis-goerli",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x7d42611012FDbE366Bf4A0481FC0E1aBf15E245A, don't forget to update if requred.

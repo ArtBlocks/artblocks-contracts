@@ -15,3 +15,82 @@ Successfully verified contract MinterDAExpSettlementV2 on Etherscan.
 https://goerli.etherscan.io/address/0x1732eA26A4dbA4863527F7Eee4a9272607fE9db6#code
 [INFO] MinterDAExpSettlementV2 contract verified on Etherscan at 0x1732eA26A4dbA4863527F7Eee4a9272607fE9db6}
 [INFO] Minter deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/deployments/engine/V3/internal-testing/dev-example/DEPLOYMENTS.md
+----------------------------------------
+[INFO] Datetime of minter deployment: 2023-03-27T22:19:50.189Z
+[INFO] Minter deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/deployments/engine/V3/internal-testing/dev-example/minter-deploy-config-02.dev.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying MinterSEAV0 with deploy args [0x5702797Ff45FCb0a70eB6AE1E4563299dCFa9Dd6,0x72AE7160A580893Fb1049D17Fbd736Ad39Ea7FbD,0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6]...
+[INFO] MinterSEAV0 deployed at 0x39d97fbcCC17b1c7c09aBc6F0fdFC3403D5d9A2F
+[INFO] allowlisted the new minter on the minter filter at 0x72AE7160A580893Fb1049D17Fbd736Ad39Ea7FbD
+[INFO] Verifying MinterSEAV0 contract deployment...
+The contract 0x39d97fbcCC17b1c7c09aBc6F0fdFC3403D5d9A2F has already been verified
+[INFO] MinterSEAV0 contract verified on Etherscan at 0x39d97fbcCC17b1c7c09aBc6F0fdFC3403D5d9A2F}
+[INFO] Minter deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/deployments/engine/V3/internal-testing/dev-example/DEPLOYMENTS.md
+----------------------------------------
+[INFO] Datetime of minter deployment: 2023-03-29T22:59:55.249Z
+[INFO] Minter deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/deployments/engine/V3/internal-testing/dev-example/minter-deploy-config-02.dev.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying MinterSEAV0 with deploy args [0x5702797Ff45FCb0a70eB6AE1E4563299dCFa9Dd6,0x72AE7160A580893Fb1049D17Fbd736Ad39Ea7FbD,0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6]...
+[INFO] MinterSEAV0 deployed at 0x7cd69aa289BDb64AB8139F896a9FF7B8c8fB5a2B
+[INFO] allowlisted the new minter on the minter filter at 0x72AE7160A580893Fb1049D17Fbd736Ad39Ea7FbD
+[INFO] Verifying MinterSEAV0 contract deployment...
+Nothing to compile
+[WARN] Etherscan verification of MinterSEAV0 failed: Error: ENOENT: no such file or directory, open '/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/artifacts/build-info/fe040f0e704884a8e4f090920df9d8f8.json'
+[ACTION] Verify MinterSEAV0 contract deployment with:
+yarn hardhat verify --network goerli 0x7cd69aa289BDb64AB8139F896a9FF7B8c8fB5a2B 0x5702797Ff45FCb0a70eB6AE1E4563299dCFa9Dd6 0x72AE7160A580893Fb1049D17Fbd736Ad39Ea7FbD 0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6
+[INFO] Minter deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/deployments/engine/V3/internal-testing/dev-example/DEPLOYMENTS.md
+----------------------------------------
+yarn hardhat verify --network goerli 0x7cd69aa289BDb64AB8139F896a9FF7B8c8fB5a2B 0x5702797Ff45FCb0a70eB6AE1E4563299dCFa9Dd6 0x72AE7160A580893Fb1049D17Fbd736Ad39Ea7FbD 0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6
+yarn run v1.22.19
+$ /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/.bin/hardhat verify --network goerli 0x7cd69aa289BDb64AB8139F896a9FF7B8c8fB5a2B 0x5702797Ff45FCb0a70eB6AE1E4563299dCFa9Dd6 0x72AE7160A580893Fb1049D17Fbd736Ad39Ea7FbD 0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6
+Nothing to compile
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterSEAV0.sol:MinterSEAV0 at 0x7cd69aa289BDb64AB8139F896a9FF7B8c8fB5a2B
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterSEAV0 on Etherscan.
+https://goerli.etherscan.io/address/0x7cd69aa289BDb64AB8139F896a9FF7B8c8fB5a2B#code
+----------------------------------------
+[INFO] Datetime of minter deployment: 2023-04-14T17:42:38.156Z
+[INFO] Minter deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/deployments/engine/V3/internal-testing/dev-example/minter-deploy-config-03.dev.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying MinterSEAV0 with deploy args [0x5702797Ff45FCb0a70eB6AE1E4563299dCFa9Dd6,0x72AE7160A580893Fb1049D17Fbd736Ad39Ea7FbD,0xB4FBF271143F4FBf7B91A5ded31805e42b2208d6]...
+[INFO] MinterSEAV0 deployed at 0x087D238971e11CCbF04268B9A55912C7e5dD6464
+Error: cannot estimate gas; transaction may fail or may require manual gas limit [ See: https://links.ethers.org/v5-errors-UNPREDICTABLE_GAS_LIMIT ] (reason="execution reverted: Only Core AdminACL allowed", method="estimateGas", transaction={"from":"0x215e83b62424cb4337573a66a759f813913826b3","to":"0x72AE7160A580893Fb1049D17Fbd736Ad39Ea7FbD","data":"0xbee4d106000000000000000000000000087d238971e11ccbf04268b9a55912c7e5dd6464","accessList":null}, error={"name":"ProviderError","_stack":"ProviderError: execution reverted: Only Core AdminACL allowed\n    at HttpProvider.request (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/hardhat/src/internal/core/providers/http.ts:88:21)\n    at processTicksAndRejections (node:internal/process/task_queues:96:5)\n    at EthersProviderWrapper.send (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@nomiclabs/hardhat-ethers/src/internal/ethers-provider-wrapper.ts:13:20)","code":3,"_isProviderError":true,"data":"0x08c379a00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000001a4f6e6c7920436f72652041646d696e41434c20616c6c6f776564000000000000"}, code=UNPREDICTABLE_GAS_LIMIT, version=providers/5.7.2)
+    at Logger.makeError (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@ethersproject/logger/src.ts/index.ts:269:28)
+    at Logger.throwError (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@ethersproject/logger/src.ts/index.ts:281:20)
+    at checkError (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@ethersproject/providers/src.ts/json-rpc-provider.ts:78:20)
+    at EthersProviderWrapper.<anonymous> (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@ethersproject/providers/src.ts/json-rpc-provider.ts:642:20)
+    at step (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@ethersproject/providers/lib/json-rpc-provider.js:48:23)
+    at Object.throw (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@ethersproject/providers/lib/json-rpc-provider.js:29:53)
+    at rejected (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@ethersproject/providers/lib/json-rpc-provider.js:21:65)
+    at processTicksAndRejections (node:internal/process/task_queues:96:5) {
+  reason: 'execution reverted: Only Core AdminACL allowed',
+  code: 'UNPREDICTABLE_GAS_LIMIT',
+  method: 'estimateGas',
+  transaction: {
+    from: '0x215e83b62424cb4337573a66a759f813913826b3',
+    to: '0x72AE7160A580893Fb1049D17Fbd736Ad39Ea7FbD',
+    data: '0xbee4d106000000000000000000000000087d238971e11ccbf04268b9a55912c7e5dd6464',
+    accessList: null
+  },
+  error: ProviderError: execution reverted: Only Core AdminACL allowed
+      at HttpProvider.request (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/hardhat/src/internal/core/providers/http.ts:88:21)
+      at processTicksAndRejections (node:internal/process/task_queues:96:5)
+      at EthersProviderWrapper.send (/Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/node_modules/@nomiclabs/hardhat-ethers/src/internal/ethers-provider-wrapper.ts:13:20)
+}
+[ERROR] unable to allowlist the new minter on the minter filter at 0x72AE7160A580893Fb1049D17Fbd736Ad39Ea7FbD
+[INFO] this may be because the minter filter has already been transferred to a partner's wallet
+[INFO] Verifying MinterSEAV0 contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterSEAV0.sol:MinterSEAV0 at 0x087D238971e11CCbF04268B9A55912C7e5dD6464
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterSEAV0 on Etherscan.
+https://goerli.etherscan.io/address/0x087D238971e11CCbF04268B9A55912C7e5dD6464#code
+[INFO] MinterSEAV0 contract verified on Etherscan at 0x087D238971e11CCbF04268B9A55912C7e5dD6464}
+[INFO] Minter deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/deployments/engine/V3/internal-testing/dev-example/DEPLOYMENTS.md
+[INFO] Completed minter deployment! MinterSEAV0 deployed to 0x087D238971e11CCbF04268B9A55912C7e5dD6464, and allowlisted on the minter filter at 0x72AE7160A580893Fb1049D17Fbd736Ad39Ea7FbD
+[ACTION] If this minter is to be indexed in a subgraph, ensure it is added to the subgraph's config.
+[ACTION] The minter was not able to be allowlisted on the minter filter, ensure the minter filter is updated by appropriate admin.

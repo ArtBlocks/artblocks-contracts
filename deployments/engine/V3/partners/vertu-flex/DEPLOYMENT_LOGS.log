@@ -1,0 +1,68 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-04-13T22:58:59.947Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/vertu-flex/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+----------------------------------------
+[INFO] Datetime of deployment: 2023-04-13T23:09:48.566Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/vertu-flex/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x3B5D9b31B8455FB0E0F02b7Ab6C2DF5f5c323853
+[INFO] Randomizer BasicRandomizerV2 deployed at 0xF2ae28E4F091d740d17993AD7F0dA7Ec08d30536
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x8FFFf035aC53F6da64bAa35b2173b385855576a6
+[INFO] Minter Filter MinterFilterV1 deployed at 0x3539F699591b67BAb81aFd7961010A029bA28585
+[INFO] MinterSetPriceV4 deployed at 0x941673E306a60d8a768f1CdbCB0b4fa172D88AEe
+[INFO] MinterDAExpSettlementV1 deployed at 0x67d392F0A8a9A3002ceA01b743B51673ee028a93
+[INFO] MinterMerkleV5 deployed at 0x40cF4005847589BB8952aE3185DCe03FdF0F2e2F
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0x3539F699591b67BAb81aFd7961010A029bA28585.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0x941673E306a60d8a768f1CdbCB0b4fa172D88AEe on minter filter.
+[INFO] Allowlisted minter MinterDAExpSettlementV1 at 0x67d392F0A8a9A3002ceA01b743B51673ee028a93 on minter filter.
+[INFO] Allowlisted minter MinterMerkleV5 at 0x40cF4005847589BB8952aE3185DCe03FdF0F2e2F on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0x57F1C8d52baFCbDDCAaa71BE11FEA6E48e11af11.
+[INFO] Verifying core contract contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/engine/V3/GenArt721CoreV3_Engine_Flex.sol:GenArt721CoreV3_Engine_Flex at 0x8FFFf035aC53F6da64bAa35b2173b385855576a6
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract GenArt721CoreV3_Engine_Flex on Etherscan.
+https://goerli.etherscan.io/address/0x8FFFf035aC53F6da64bAa35b2173b385855576a6#code
+[INFO] Core contract verified on Etherscan at 0x8FFFf035aC53F6da64bAa35b2173b385855576a6}
+[INFO] Verifying AdminACL contract deployment...
+Compiled 199 Solidity files successfully
+Successfully submitted source code for contract
+contracts/AdminACLV1.sol:AdminACLV1 at 0x3B5D9b31B8455FB0E0F02b7Ab6C2DF5f5c323853
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract AdminACLV1 on Etherscan.
+https://goerli.etherscan.io/address/0x3B5D9b31B8455FB0E0F02b7Ab6C2DF5f5c323853#code
+[INFO] AdminACL contract verified on Etherscan at 0x3B5D9b31B8455FB0E0F02b7Ab6C2DF5f5c323853}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0x3539F699591b67BAb81aFd7961010A029bA28585 has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0x3539F699591b67BAb81aFd7961010A029bA28585}
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+The contract 0x941673E306a60d8a768f1CdbCB0b4fa172D88AEe has already been verified
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0x941673E306a60d8a768f1CdbCB0b4fa172D88AEe}
+[INFO] Verifying MinterDAExpSettlementV1 contract deployment...
+The contract 0x67d392F0A8a9A3002ceA01b743B51673ee028a93 has already been verified
+[INFO] MinterDAExpSettlementV1 contract verified on Etherscan at 0x67d392F0A8a9A3002ceA01b743B51673ee028a93}
+[INFO] Verifying MinterMerkleV5 contract deployment...
+The contract 0x40cF4005847589BB8952aE3185DCe03FdF0F2e2F has already been verified
+[INFO] MinterMerkleV5 contract verified on Etherscan at 0x40cF4005847589BB8952aE3185DCe03FdF0F2e2F}
+Created s3 bucket for https://vertu-fine-art-goerli.s3.amazonaws.com
+[INFO] Created image bucket vertu-fine-art-goerli
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/vertu-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x8ffff035ac53f6da64baa35b2173b385855576a6",
+  "name": "Vertu Fine Art",
+  "bucket_name": "vertu-fine-art-goerli",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x57F1C8d52baFCbDDCAaa71BE11FEA6E48e11af11, don't forget to update if requred.

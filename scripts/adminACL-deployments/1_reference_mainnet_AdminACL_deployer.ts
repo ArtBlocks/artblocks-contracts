@@ -7,7 +7,7 @@ import { AdminACLV1__factory } from "../contracts/factories/AdminACLV1__factory"
 
 // delay to avoid issues with reorgs and tx failures
 import { delay } from "../util/utils";
-const EXTRA_DELAY_BETWEEN_TX = 5000; // ms
+import { EXTRA_DELAY_BETWEEN_TX } from "../util/constants";
 
 /**
  * This script was created to deploy the AdminACLV1 contract to the Ethereum

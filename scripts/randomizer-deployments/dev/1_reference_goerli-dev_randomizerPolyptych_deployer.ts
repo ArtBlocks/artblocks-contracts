@@ -10,7 +10,7 @@ Logger.setLogLevel(Logger.levels.ERROR);
 
 // delay to avoid issues with reorgs and tx failures
 import { delay } from "../../util/utils";
-const EXTRA_DELAY_BETWEEN_TX = 5000; // ms
+import { EXTRA_DELAY_BETWEEN_TX } from "../../util/constants";
 
 /**
  * This script was created to deploy polyptych randomizer as required for the MinterPolyptychV0 contract to the Ethereum
@@ -37,7 +37,7 @@ async function main() {
   const network = await ethers.provider.getNetwork();
   const networkName = network.name == "homestead" ? "mainnet" : network.name;
   if (networkName != "goerli") {
-    throw new Error("This script is intended to be run on mainnet only");
+    throw new Error("This script is intended to be run on goerli only");
   }
   //////////////////////////////////////////////////////////////////////////////
   // DEPLOYMENT BEGINS HERE
@@ -86,15 +86,6 @@ async function main() {
     `[INFO] Updated randomizer for core at ${genArt721V3CoreAddress} to the Polyptych Randomizer at at ${randomizerAddress}`
   );
   await delay(EXTRA_DELAY_BETWEEN_TX);
-
-  // verify contract on Etherscan if not on mainnet
-  if (networkName == "goerli") {
-    await tryVerify(randomizerName, randomizerAddress, [], networkName);
-  } else {
-    console.log(
-      `[INFO] Skipping Etherscan verification for ${randomizerName} on ${networkName}`
-    );
-  }
 
   //////////////////////////////////////////////////////////////////////////////
   // SETUP ENDS HERE

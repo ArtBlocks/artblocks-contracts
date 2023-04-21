@@ -1,5 +1,5 @@
 // This file is used to configure the deployment of the Engine Partner contracts
-// It is intended to be imported by the generic deployer in `/scripts/engine/V3/generic-v3-engine-deployer.ts`
+// It is intended to be imported by the generic deployer by running `deploy:mainnet:v3-engine`, `deploy:staging:v3-engine` or `deploy:dev:v3-engine`.
 export const deployDetailsArray = [
   {
     network: "goerli",
@@ -41,6 +41,11 @@ export const deployDetailsArray = [
     // set to true if you want to add an initial token to the initial project
     // (this will only work if you have set addInitialProject to true, and requires a MinterSetPriceV[4-9])
     addInitialToken: true,
+    // set to true if you want to transfer the superAdmin role to a different address
+    doTransferSuperAdmin: false,
+    // set to the address you want to transfer the superAdmin role to
+    // (this will only work if you have set doTransferSuperAdmin to true, can be undefined if you are not transferring)
+    newSuperAdminAddress: undefined, // use either "0x..." or undefined if not transferring
     // optionally define this to set default vertical name for the contract after deployment.
     // if not defined, the default vertical name will be "unassigned".
     // common values include `fullyonchain`, `flex`, or partnerships like `artblocksxpace`.

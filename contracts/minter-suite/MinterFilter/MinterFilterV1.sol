@@ -27,8 +27,8 @@ pragma solidity 0.8.17;
  * ----------------------------------------------------------------------------
  * The following functions are restricted to the core contract's Admin ACL
  * contract:
- * - addApprovedMinters
- * - removeApprovedMinters
+ * - addApprovedMinter
+ * - removeApprovedMinter
  * - removeMintersForProjects
  * ----------------------------------------------------------------------------
  * The following functions are restricted to the core contract's Admin ACL

@@ -19,6 +19,7 @@ export type RemoveIndex<T> = {
     ? never
     : P]: T[P];
 };
+import { ONE_MINUTE } from "./constants";
 
 export type TestAccountsArtBlocks = {
   deployer: SignerWithAddress;
@@ -58,6 +59,7 @@ export type T_Config = {
   // token IDs
   projectZeroTokenZero?: BigNumber;
   projectZeroTokenOne?: BigNumber;
+  projectZeroTokenTwo?: BigNumber;
   projectOneTokenZero?: BigNumber;
   projectOneTokenOne?: BigNumber;
   projectTwoTokenZero?: BigNumber;
@@ -74,12 +76,18 @@ export type T_Config = {
   startTime?: number;
   auctionStartTimeOffset?: number;
   targetMinterName?: string;
+  defaultAuctionLengthSeconds?: number;
   // contracts
   genArt721Core?: Contract;
   randomizer?: Contract;
   minterFilter?: Contract;
   minter?: Contract;
   adminACL?: Contract;
+  // minter test details
+  isEngine?: boolean;
+  delegationRegistry?: Contract;
+  // ref / mocks
+  weth?: Contract;
 };
 
 export async function getAccounts(): Promise<TestAccountsArtBlocks> {
@@ -113,6 +121,7 @@ export async function assignDefaultConstants(
   config.symbol = "NFT";
   config.pricePerTokenInWei = ethers.utils.parseEther("1");
   config.maxInvocations = 15;
+  config.defaultAuctionLengthSeconds = 60 * ONE_MINUTE;
   // project IDs
   config.projectZero = projectZero;
   config.projectOne = projectZero + 1;
@@ -123,6 +132,7 @@ export async function assignDefaultConstants(
     new BN("1000000")
   );
   config.projectZeroTokenOne = config.projectZeroTokenZero.add(new BN("1"));
+  config.projectZeroTokenTwo = config.projectZeroTokenOne.add(new BN("1"));
   config.projectOneTokenZero = new BN(config.projectOne).mul(new BN("1000000"));
   config.projectOneTokenOne = config.projectOneTokenZero.add(new BN("1"));
   config.projectTwoTokenZero = new BN(config.projectTwo).mul(new BN("1000000"));

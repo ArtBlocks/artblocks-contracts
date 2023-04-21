@@ -18,14 +18,15 @@ import {
 
 import {
   DELEGATION_REGISTRY_ADDRESSES,
+  WETH_ADDRESSES,
   KNOWN_ENGINE_REGISTRIES,
+  EXTRA_DELAY_BETWEEN_TX,
 } from "../../util/constants";
 import { tryVerify } from "../../util/verification";
 // image bucket creation
 import { createPBABBucket } from "../../util/aws_s3";
 // delay to avoid issues with reorgs and tx failures
 import { delay, getAppPath } from "../../util/utils";
-const EXTRA_DELAY_BETWEEN_TX = 1000; // ms
 const MANUAL_GAS_LIMIT = 500000; // gas
 var log_stdout = process.stdout;
 
@@ -33,6 +34,7 @@ var log_stdout = process.stdout;
 const SUPPORTED_CORE_CONTRACTS = [
   "GenArt721CoreV3_Engine",
   "GenArt721CoreV3_Engine_Flex",
+  "GenArt721CoreV3_Engine_Flex_PROOF",
 ];
 
 /**
@@ -277,6 +279,8 @@ async function main() {
         minterName.startsWith("MinterPolyptych")
       ) {
         minterConstructorArgs.push(DELEGATION_REGISTRY_ADDRESSES[networkName]);
+      } else if (minterName.startsWith("MinterSEA")) {
+        minterConstructorArgs.push(WETH_ADDRESSES[networkName]);
       }
       const minter = await minterFactory.deploy(...minterConstructorArgs);
       await minter.deployed();
@@ -389,6 +393,32 @@ async function main() {
       console.log(`[INFO] Skipping adding placeholder initial token.`);
     }
 
+    // transfer superAdmin role on adminACL
+    let adminACL: Contract;
+    // @dev - we only use functionality in AdminACLV0, so fine to cast as AdminACLV0 here
+    let adminACLContractName = "AdminACLV0";
+    if (deployDetails.existingAdminACL) {
+      adminACLContractName = deployDetails.adminACLContractName;
+    }
+    const adminACLFactory = await ethers.getContractFactory(
+      adminACLContractName
+    );
+    adminACL = adminACLFactory.attach(adminACLAddress);
+    if (deployDetails.doTransferSuperAdmin) {
+      // transfer superAdmin role on adminACL, triggering indexing update on new core contract
+      await adminACL
+        .connect(deployer)
+        .changeSuperAdmin(deployDetails.newSuperAdminAddress, [
+          genArt721Core.address,
+        ]);
+      console.log(
+        `[INFO] Transferred superAdmin role on adminACL to ${deployDetails.newSuperAdminAddress}.`
+      );
+      await delay(EXTRA_DELAY_BETWEEN_TX);
+    } else {
+      console.log(`[INFO] Skipping transfer of superAdmin role on adminACL.`);
+    }
+
     //////////////////////////////////////////////////////////////////////////////
     // SETUP ENDS HERE
     //////////////////////////////////////////////////////////////////////////////
@@ -446,7 +476,8 @@ async function main() {
       );
     }
     // ADMIN ACL CONTRACT
-    if (deployDetails.existingAdminACL !== undefined) {
+    if (deployDetails.existingAdminACL == undefined) {
+      // only verify if we deployed a new adminACL contract
       await tryVerify("AdminACL", adminACLAddress, [], networkName);
     }
     // MINTER FILTER CONTRACT
@@ -482,6 +513,8 @@ async function main() {
     //////////////////////////////////////////////////////////////////////////////
 
     const outputSummaryFile = path.join(inputFileDirectory, "DEPLOYMENTS.md");
+    const etherscanSubdomain =
+      networkName === "mainnet" ? "" : `${networkName}.`;
     const outputMd = `
 # Deployment
 
@@ -493,19 +526,23 @@ Date: ${new Date().toISOString()}
 
 **Deployment Input File:** \`${deploymentConfigFile}\`
 
-**${deployDetails.genArt721CoreContractName}:** https://etherscan.io/address/${
+**${
+      deployDetails.genArt721CoreContractName
+    }:** https://${etherscanSubdomain}etherscan.io/address/${
       genArt721Core.address
     }#code
 
 **${
       deployDetails.adminACLContractName
-    }:** https://etherscan.io/address/${adminACLAddress}#code
+    }:** https://${etherscanSubdomain}etherscan.io/address/${adminACLAddress}#code
 
-**Engine Registry:** https://etherscan.io/address/${
+**Engine Registry:** https://${etherscanSubdomain}etherscan.io/address/${
       deployDetails.engineRegistryAddress
     }#code
 
-**${deployDetails.minterFilterContractName}:** https://etherscan.io/address/${
+**${
+      deployDetails.minterFilterContractName
+    }:** https://${etherscanSubdomain}etherscan.io/address/${
       minterFilter.address
     }#code
 
@@ -513,7 +550,7 @@ Date: ${new Date().toISOString()}
 
 ${deployedMinterNames
   .map((minterName, i) => {
-    return `**${minterName}:** https://etherscan.io/address/${deployedMinterAddresses[i]}#code
+    return `**${minterName}:** https://${etherscanSubdomain}etherscan.io/address/${deployedMinterAddresses[i]}#code
 
 `;
   })
@@ -584,15 +621,6 @@ ${deployedMinterNames
     );
 
     // Reminder to update adminACL superAdmin if needed
-    let adminACL: Contract;
-    let adminACLContractName = "AdminACLV1"; // default
-    if (deployDetails.existingAdminACL) {
-      adminACLContractName = deployDetails.adminACLContractName;
-    }
-    const adminACLFactory = await ethers.getContractFactory(
-      adminACLContractName
-    );
-    adminACL = adminACLFactory.attach(adminACLAddress);
     const adminACLSuperAdmin = await adminACL.superAdmin();
     console.log(
       `[ACTION] AdminACL's superAdmin address is ${adminACLSuperAdmin}, don't forget to update if requred.`

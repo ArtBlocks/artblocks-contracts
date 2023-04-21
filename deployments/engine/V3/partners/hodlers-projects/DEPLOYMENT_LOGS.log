@@ -1,0 +1,129 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-03-29T02:21:15.433Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/hodlers-projects/deployment-config.dev.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV0 deployed at address: 0x582dE6f4c19De758D3A7242B9305f5a483Ad3579
+[INFO] Randomizer BasicRandomizerV2 deployed at 0x0283873C59ef310359a82a446508414F3b8D9C90
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x41cc069871054C1EfB4Aa40aF12f673eA2b6a1fC
+[INFO] Minter Filter MinterFilterV1 deployed at 0x533D79A2669A22BAfeCdf1696aD6E738E4A2e07b
+[INFO] MinterDAExpSettlementV2 deployed at 0x294fED5F1D3D30cfA6Fe86A937dC3141EEc8bC6d
+[INFO] MinterMerkleV5 deployed at 0x21A95e1E97478db730b9564089A8Ca1D9aCF5B79
+[INFO] MinterHolderV2 deployed at 0xc3EA837e7595d3839Ec26546C4B14b2CDE8B0E93
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0x533D79A2669A22BAfeCdf1696aD6E738E4A2e07b.
+[INFO] Allowlisted minter MinterDAExpSettlementV2 at 0x294fED5F1D3D30cfA6Fe86A937dC3141EEc8bC6d on minter filter.
+[INFO] Allowlisted minter MinterMerkleV5 at 0x21A95e1E97478db730b9564089A8Ca1D9aCF5B79 on minter filter.
+[INFO] Allowlisted minter MinterHolderV2 at 0xc3EA837e7595d3839Ec26546C4B14b2CDE8B0E93 on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0x8cc0019C16bced6891a96d32FF36FeAB4A663a40.
+[INFO] Verifying core contract contract deployment...
+The contract 0x41cc069871054C1EfB4Aa40aF12f673eA2b6a1fC has already been verified
+[INFO] Core contract verified on Etherscan at 0x41cc069871054C1EfB4Aa40aF12f673eA2b6a1fC}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0x582dE6f4c19De758D3A7242B9305f5a483Ad3579 has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0x582dE6f4c19De758D3A7242B9305f5a483Ad3579}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0x533D79A2669A22BAfeCdf1696aD6E738E4A2e07b has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0x533D79A2669A22BAfeCdf1696aD6E738E4A2e07b}
+[INFO] Verifying MinterDAExpSettlementV2 contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterDAExpSettlementV2.sol:MinterDAExpSettlementV2 at 0x294fED5F1D3D30cfA6Fe86A937dC3141EEc8bC6d
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterDAExpSettlementV2 on Etherscan.
+https://goerli.etherscan.io/address/0x294fED5F1D3D30cfA6Fe86A937dC3141EEc8bC6d#code
+[INFO] MinterDAExpSettlementV2 contract verified on Etherscan at 0x294fED5F1D3D30cfA6Fe86A937dC3141EEc8bC6d}
+[INFO] Verifying MinterMerkleV5 contract deployment...
+The contract 0x21A95e1E97478db730b9564089A8Ca1D9aCF5B79 has already been verified
+[INFO] MinterMerkleV5 contract verified on Etherscan at 0x21A95e1E97478db730b9564089A8Ca1D9aCF5B79}
+[INFO] Verifying MinterHolderV2 contract deployment...
+Compiled 199 Solidity files successfully
+Successfully submitted source code for contract
+contracts/archive/minter-suite/Minters/MinterHolder/MinterHolderV2.sol:MinterHolderV2 at 0xc3EA837e7595d3839Ec26546C4B14b2CDE8B0E93
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterHolderV2 on Etherscan.
+https://goerli.etherscan.io/address/0xc3EA837e7595d3839Ec26546C4B14b2CDE8B0E93#code
+[INFO] MinterHolderV2 contract verified on Etherscan at 0xc3EA837e7595d3839Ec26546C4B14b2CDE8B0E93}
+Created s3 bucket for https://hodlers-projects-goerli.s3.amazonaws.com
+[INFO] Created image bucket hodlers-projects-goerli
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/hodlers-projects/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x41cc069871054c1efb4aa40af12f673ea2b6a1fc",
+  "name": "HODLERS Projects",
+  "bucket_name": "hodlers-projects-goerli",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x8cc0019C16bced6891a96d32FF36FeAB4A663a40, don't forget to update if requred.
+----------------------------------------
+[INFO] Datetime of deployment: 2023-03-31T00:26:47.029Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/hodlers-projects/deployment-config.mainnet.ts
+[INFO] Deploying to network: mainnet
+[INFO] Deploying to environment: mainnet
+[INFO] New Admin ACL AdminACLV0 deployed at address: 0x10BD2A01996711b0A66d8D5203a919463383701A
+[INFO] Randomizer BasicRandomizerV2 deployed at 0x9e05816E151708Efc1C52243a18A0cC804b33819
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0xD00495689D5161C511882364E0C342e12Dcc5f08
+[INFO] Minter Filter MinterFilterV1 deployed at 0xB64116A7D5D84fE9795DD022ea191217A2e32076
+[INFO] MinterDAExpSettlementV2 deployed at 0x7a67130593A161124686EA55484D1A64d99eefc9
+[INFO] MinterMerkleV5 deployed at 0xcBA628BcF6f458f6F929d875B69FE5f0F3fB99b6
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0xB64116A7D5D84fE9795DD022ea191217A2e32076.
+[INFO] Allowlisted minter MinterDAExpSettlementV2 at 0x7a67130593A161124686EA55484D1A64d99eefc9 on minter filter.
+[INFO] Allowlisted minter MinterMerkleV5 at 0xcBA628BcF6f458f6F929d875B69FE5f0F3fB99b6 on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0x8cc0019C16bced6891a96d32FF36FeAB4A663a40.
+[INFO] Verifying core contract contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/engine/V3/GenArt721CoreV3_Engine_Flex.sol:GenArt721CoreV3_Engine_Flex at 0xD00495689D5161C511882364E0C342e12Dcc5f08
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract GenArt721CoreV3_Engine_Flex on Etherscan.
+https://etherscan.io/address/0xD00495689D5161C511882364E0C342e12Dcc5f08#code
+[INFO] Core contract verified on Etherscan at 0xD00495689D5161C511882364E0C342e12Dcc5f08}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0x10BD2A01996711b0A66d8D5203a919463383701A has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0x10BD2A01996711b0A66d8D5203a919463383701A}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0xB64116A7D5D84fE9795DD022ea191217A2e32076 has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0xB64116A7D5D84fE9795DD022ea191217A2e32076}
+[INFO] Verifying MinterDAExpSettlementV2 contract deployment...
+Compiled 199 Solidity files successfully
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterDAExpSettlementV2.sol:MinterDAExpSettlementV2 at 0x7a67130593A161124686EA55484D1A64d99eefc9
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterDAExpSettlementV2 on Etherscan.
+https://etherscan.io/address/0x7a67130593A161124686EA55484D1A64d99eefc9#code
+[INFO] MinterDAExpSettlementV2 contract verified on Etherscan at 0x7a67130593A161124686EA55484D1A64d99eefc9}
+[INFO] Verifying MinterMerkleV5 contract deployment...
+Compiled 199 Solidity files successfully
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterMerkleV5.sol:MinterMerkleV5 at 0xcBA628BcF6f458f6F929d875B69FE5f0F3fB99b6
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterMerkleV5 on Etherscan.
+https://etherscan.io/address/0xcBA628BcF6f458f6F929d875B69FE5f0F3fB99b6#code
+[INFO] MinterMerkleV5 contract verified on Etherscan at 0xcBA628BcF6f458f6F929d875B69FE5f0F3fB99b6}
+Created s3 bucket for https://hodlers-collector-pass-mainnet.s3.amazonaws.com
+[INFO] Created image bucket hodlers-collector-pass-mainnet
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/hodlers-projects/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0xd00495689d5161c511882364e0c342e12dcc5f08",
+  "name": "Hodlers Collector Pass",
+  "bucket_name": "hodlers-collector-pass-mainnet",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x8cc0019C16bced6891a96d32FF36FeAB4A663a40, don't forget to update if requred.

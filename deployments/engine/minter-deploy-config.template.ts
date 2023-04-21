@@ -1,5 +1,5 @@
 // This file is used to configure the deployment of minter contracts
-// It is intended to be imported by the generic minter deployer in `/scripts/minter-deployments/generic-minter-deployer-v3core.ts`
+// It is intended to be imported by the generic minter deployer by running `deploy:mainnet:minter`, `deploy:staging:minter` or `deploy:dev:minter`.
 
 export const minterDeployDetailsArray = [
   {
