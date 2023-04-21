@@ -3,8 +3,8 @@
 
 pragma solidity 0.8.17;
 
-import "../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
-import "../interfaces/0.8.x/IRandomizerPolyptychV0.sol";
+import "../../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
+import "../../interfaces/0.8.x/IRandomizerPolyptychV0.sol";
 import "./BasicRandomizerBase_v0_0_0.sol";
 
 import "@openzeppelin-4.7/contracts/access/Ownable.sol";
