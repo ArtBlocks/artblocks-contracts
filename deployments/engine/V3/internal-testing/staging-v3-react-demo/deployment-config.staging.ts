@@ -5,7 +5,7 @@ export const deployDetailsArray = [
     network: "goerli",
     // environment is only used for metadata purposes, and is not used in the deployment process
     // Please set to "dev", "staging", or "mainnet", as appropriate
-    environment: "dev",
+    environment: "staging",
     // if you want to use an existing admin ACL, set the address here (otherwise set as undefined to deploy a new one)
     existingAdminACL: undefined,
     // the following can be undefined if you are using an existing admin ACL, otherwise define the Admin ACL contract name
@@ -14,11 +14,11 @@ export const deployDetailsArray = [
     // See the `KNOWN_ENGINE_REGISTRIES` object in `/scripts/engine/V3/constants.ts` for the correct registry address for
     // the intended network and the corresponding deployer wallet addresses
     // @dev if you neeed a new engine registry, use the `/scripts/engine/V3/engine-registry-deployer.ts` script
-    engineRegistryAddress: "0x263113c07CB69eE047E6572E135E8C3C6302feFE",
+    engineRegistryAddress: "0xEa698596b6009A622C3eD00dD5a8b5d1CAE4fC36",
     randomizerContractName: "BasicRandomizerV2",
     genArt721CoreContractName: "GenArt721CoreV3_Engine",
-    tokenName: "Engine Partner",
-    tokenTicker: "PRTNR",
+    tokenName: "V3 Engine Demo",
+    tokenTicker: "DEMO",
     startingProjectId: 0,
     autoApproveArtistSplitProposals: true,
     renderProviderAddress: "deployer", // use either "0x..." or special "deployer" which sets the render provider to the deployer
@@ -28,13 +28,7 @@ export const deployDetailsArray = [
     minters: [
       // include any of the most recent minter contracts the engine partner wishes to use
       // @dev ensure the minter contracts here are the latest versions
-      "MinterSetPriceV4",
-      "MinterSetPriceERC20V4",
       "MinterDAExpV4",
-      "MinterDAExpSettlementV1",
-      "MinterDALinV4",
-      "MinterHolderV4",
-      "MinterMerkleV5",
     ],
     // set to true if you want to add an initial project to the core contract
     addInitialProject: true,

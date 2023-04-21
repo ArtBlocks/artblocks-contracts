@@ -1,11 +1,12 @@
 // This file is used to configure the deployment of the Engine Partner contracts
-// It is intended to be imported by the generic deployer by running `deploy:mainnet:v3-engine`, `deploy:staging:v3-engine` or `deploy:dev:v3-engine`.
+// It is intended to be imported by the generic deployer in `/scripts/engine/V3/generic-v3-engine-deployer.ts`
+// @dev ticket: https://github.com/ArtBlocks/artblocks/issues/550
 export const deployDetailsArray = [
   {
-    network: "goerli",
+    network: "mainnet",
     // environment is only used for metadata purposes, and is not used in the deployment process
     // Please set to "dev", "staging", or "mainnet", as appropriate
-    environment: "dev",
+    environment: "mainnet",
     // if you want to use an existing admin ACL, set the address here (otherwise set as undefined to deploy a new one)
     existingAdminACL: undefined,
     // the following can be undefined if you are using an existing admin ACL, otherwise define the Admin ACL contract name
@@ -14,38 +15,33 @@ export const deployDetailsArray = [
     // See the `KNOWN_ENGINE_REGISTRIES` object in `/scripts/engine/V3/constants.ts` for the correct registry address for
     // the intended network and the corresponding deployer wallet addresses
     // @dev if you neeed a new engine registry, use the `/scripts/engine/V3/engine-registry-deployer.ts` script
-    engineRegistryAddress: "0x263113c07CB69eE047E6572E135E8C3C6302feFE",
+    engineRegistryAddress: "0x652490c8BB6e7ec3Fd798537D2F348D7904BBbc2",
     randomizerContractName: "BasicRandomizerV2",
     genArt721CoreContractName: "GenArt721CoreV3_Engine",
-    tokenName: "Engine Partner",
-    tokenTicker: "PRTNR",
+    tokenName: "FAB DAO",
+    tokenTicker: "FAB",
     startingProjectId: 0,
-    autoApproveArtistSplitProposals: true,
-    renderProviderAddress: "deployer", // use either "0x..." or special "deployer" which sets the render provider to the deployer
-    platformProviderAddress: "deployer", // use either "0x..." or special "deployer" which sets the render provider to the deployer
+    autoApproveArtistSplitProposals: false,
+    renderProviderAddress: "0x9B7A675f3ce4E1cf87a9f6b46a362C355FEaC82F", // use either "0x..." or special "deployer" which sets the render provider to the deployer
+    platformProviderAddress: "0x0F3Fe3d8607cDeC4FB76DE84F68713f6E0cd54Ac", // use either "0x..." or special "deployer" which sets the render provider to the deployer
     // minter suite
     minterFilterContractName: "MinterFilterV1",
     minters: [
       // include any of the most recent minter contracts the engine partner wishes to use
       // @dev ensure the minter contracts here are the latest versions
       "MinterSetPriceV4",
-      "MinterSetPriceERC20V4",
       "MinterDAExpV4",
-      "MinterDAExpSettlementV1",
-      "MinterDALinV4",
-      "MinterHolderV4",
-      "MinterMerkleV5",
     ],
     // set to true if you want to add an initial project to the core contract
-    addInitialProject: true,
+    addInitialProject: false,
     // set to true if you want to add an initial token to the initial project
     // (this will only work if you have set addInitialProject to true, and requires a MinterSetPriceV[4-9])
-    addInitialToken: true,
+    addInitialToken: false,
     // set to true if you want to transfer the superAdmin role to a different address
-    doTransferSuperAdmin: false,
+    doTransferSuperAdmin: true,
     // set to the address you want to transfer the superAdmin role to
     // (this will only work if you have set doTransferSuperAdmin to true, can be undefined if you are not transferring)
-    newSuperAdminAddress: undefined, // use either "0x..." or undefined if not transferring
+    newSuperAdminAddress: "0x0F3Fe3d8607cDeC4FB76DE84F68713f6E0cd54Ac", // use either "0x..." or undefined if not transferring
     // optionally define this to set default vertical name for the contract after deployment.
     // if not defined, the default vertical name will be "unassigned".
     // common values include `fullyonchain`, `flex`, or partnerships like `artblocksxpace`.

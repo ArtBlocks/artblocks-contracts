@@ -1,0 +1,6 @@
+----------------------------------------
+[INFO] Datetime of minter deployment: 2023-04-14T00:13:36.495Z
+[INFO] Minter deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/hodlers-projects/minter-deploy-config.mainnet.ts
+[INFO] Deploying to network: mainnet
+[INFO] Deploying MinterSetPriceV4 with deploy args [0xD00495689D5161C511882364E0C342e12Dcc5f08,0xB64116A7D5D84fE9795DD022ea191217A2e32076]...
+[INFO] MinterSetPriceV4 deployed at 0x0eB38A2666A74a8d4a8cb4E718B699E1651a4893
