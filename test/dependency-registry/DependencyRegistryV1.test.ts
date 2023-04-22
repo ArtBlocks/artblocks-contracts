@@ -15,6 +15,7 @@ import {
   MinterSetPriceV2,
   GenArt721,
   MinterFilterV0,
+  GenArt721GeneratorV0,
 } from "../../scripts/contracts";
 import zlib from "zlib";
 
@@ -44,6 +45,7 @@ interface DependencyRegistryV1TestConfig extends T_Config {
   genArt721CoreV1MinterFilter?: MinterFilterV0;
   genArt721CoreV2?: GenArt721CoreV2PBAB;
   genArt721CoreV2Minter?: GenArt721MinterPBAB;
+  genArt721CoreGeneratorV0?: GenArt721GeneratorV0;
 }
 
 /**
@@ -147,6 +149,16 @@ describe("DependencyRegistryV1", async function () {
       .connect(config.accounts.deployer)
       .addSupportedCoreContract(config.genArt721CoreV0.address);
 
+    config.genArt721CoreGeneratorV0 = await deployAndGet<GenArt721GeneratorV0>(
+      config,
+      "GenArt721GeneratorV0",
+      [
+        config.dependencyRegistry.address,
+        scriptyBuilder.address,
+        mockFs.address,
+      ]
+    );
+
     return config;
   }
 
@@ -209,7 +221,7 @@ describe("DependencyRegistryV1", async function () {
         );
 
       await config.minter.connect(config.accounts.artist).purchase(0);
-      const tokenHtml = await config.dependencyRegistry.getTokenHtml(
+      const tokenHtml = await config.genArt721CoreGeneratorV0.getTokenHtml(
         config.genArt721Core.address,
         0
       );
@@ -240,7 +252,7 @@ describe("DependencyRegistryV1", async function () {
         .connect(config.accounts.artist)
         .purchase(v2ProjectId);
 
-      const tokenHtmlV2 = await config.dependencyRegistry.getTokenHtml(
+      const tokenHtmlV2 = await config.genArt721CoreGeneratorV0.getTokenHtml(
         config.genArt721CoreV2.address,
         Number(v2ProjectId) * 1000000
       );
@@ -278,7 +290,7 @@ describe("DependencyRegistryV1", async function () {
         .connect(config.accounts.artist)
         .purchase(v1ProjectId);
 
-      const tokenHtmlV1 = await config.dependencyRegistry.getTokenHtml(
+      const tokenHtmlV1 = await config.genArt721CoreGeneratorV0.getTokenHtml(
         config.genArt721CoreV1.address,
         Number(v1ProjectId) * 1000000
       );

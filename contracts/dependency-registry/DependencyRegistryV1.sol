@@ -6,19 +6,12 @@ pragma solidity 0.8.17;
 import "../interfaces/0.8.x/IAdminACLV0.sol";
 import "../interfaces/0.8.x/IDependencyRegistryCompatibleV0.sol";
 import "../interfaces/0.8.x/IDependencyRegistryV0.sol";
-import "../interfaces/0.8.x/IGenArt721CoreProjectScript.sol";
-import "../interfaces/0.8.x/IGenArt721CoreTokenHashProviderV0.sol";
-import "../interfaces/0.8.x/IGenArt721CoreTokenHashProviderV1.sol";
 
 import "@openzeppelin-4.7/contracts/utils/Strings.sol";
 import "@openzeppelin-4.7/contracts/utils/structs/EnumerableSet.sol";
 import "@openzeppelin-4.8/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin-4.8/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin-4.5/contracts/utils/math/SafeCast.sol";
-
-import {AddressChunks} from "./AddressChunks.sol";
-import {IScriptyBuilder, WrappedScriptRequest} from "scripty.sol/contracts/scripty/IScriptyBuilder.sol";
-import {IContractScript} from "scripty.sol/contracts/scripty/IContractScript.sol";
 
 import "../libs/0.8.x/BytecodeStorage.sol";
 import "../libs/0.8.x/Bytes32Strings.sol";
@@ -49,7 +42,6 @@ contract DependencyRegistryV1 is
     using SafeCast for uint24;
 
     uint8 constant AT_CHARACTER_CODE = uint8(bytes1("@")); // 0x40
-    uint256 constant ONE_MILLION = 1_000_000;
 
     /// admin ACL contract
     IAdminACLV0 public adminACLContract;
@@ -76,11 +68,11 @@ contract DependencyRegistryV1 is
     address public scriptyBuilderAddress;
     address public ethFsAddress;
 
-    function _onlyNonZeroAddress(address _address) internal view {
+    function _onlyNonZeroAddress(address _address) internal pure {
         require(_address != address(0), "Must input non-zero address");
     }
 
-    function _onlyNonEmptyString(string memory _string) internal view {
+    function _onlyNonEmptyString(string memory _string) internal pure {
         require(bytes(_string).length != 0, "Must input non-empty string");
     }
 
@@ -688,6 +680,17 @@ contract DependencyRegistryV1 is
     }
 
     /**
+     * @notice Returns whether the given contract address is a supported core contract.
+     * @param coreContractAddress Address of the core contract to be queried.
+     * @return True if the given contract address is a supported core contract.
+     */
+    function isSupportedCoreContract(
+        address coreContractAddress
+    ) external view returns (bool) {
+        return _supportedCoreContracts.contains(coreContractAddress);
+    }
+
+    /**
      * @notice Returns the count of supported core contracts
      * @return Number of supported core contracts.
      */
@@ -824,247 +827,13 @@ contract DependencyRegistryV1 is
         try
             IDependencyRegistryCompatibleV0(_contractAddress)
                 .projectScriptDetails(_projectId)
-        returns (
-            string memory scriptTypeAndVersion,
-            string memory,
-            uint256 scriptCount
-        ) {
+        returns (string memory scriptTypeAndVersion, string memory, uint256) {
             return scriptTypeAndVersion;
         } catch {
             revert(
                 "Contract does not implement projectScriptDetails and has no override set."
             );
         }
-    }
-
-    /**
-     * @notice Converts string to bytes32.
-     * https://ethereum.stackexchange.com/a/9152
-     * @param source string to be converted.
-     * @return result bytes32 representation of string.
-     */
-    function stringToBytes32(
-        string memory source
-    ) public pure returns (bytes32 result) {
-        bytes memory tempEmptyStringTest = bytes(source);
-        if (tempEmptyStringTest.length == 0) {
-            return 0x0;
-        }
-
-        assembly {
-            result := mload(add(source, 32))
-        }
-    }
-
-    function getDependencyScript(
-        bytes32 _dependencyType
-    ) external view returns (bytes memory) {
-        Dependency storage dependency = dependencyDetails[_dependencyType];
-        uint256 scriptCount = dependency.scriptCount;
-
-        if (scriptCount == 0) {
-            return "";
-        }
-
-        address[] memory scriptBytecodeAddresses = new address[](scriptCount);
-
-        for (uint256 i = 0; i < scriptCount; i++) {
-            scriptBytecodeAddresses[i] = dependency.scriptBytecodeAddresses[i];
-        }
-
-        return AddressChunks.mergeChunks(scriptBytecodeAddresses);
-    }
-
-    function getProjectScript(
-        address _contractAddress,
-        uint256 _projectId
-    ) external view returns (bytes memory) {
-        _onlySupportedCoreContract(_contractAddress);
-
-        try
-            IDependencyRegistryCompatibleV0(_contractAddress)
-                .projectScriptDetails(_projectId)
-        returns (
-            string memory scriptTypeAndVersion,
-            string memory,
-            uint256 scriptCount
-        ) {
-            if (scriptCount == 0) {
-                return "";
-            }
-
-            address[] memory scriptBytecodeAddresses = new address[](
-                scriptCount
-            );
-
-            for (uint256 i = 0; i < scriptCount; i++) {
-                scriptBytecodeAddresses[i] = IDependencyRegistryCompatibleV0(
-                    _contractAddress
-                ).projectScriptBytecodeAddressByIndex(_projectId, i);
-            }
-
-            return AddressChunks.mergeChunks(scriptBytecodeAddresses);
-        } catch {
-            // Noop try again for older contracts.
-        }
-
-        try
-            IGenArt721CoreProjectScript(_contractAddress).projectScriptInfo(
-                _projectId
-            )
-        returns (string memory scriptJSON, uint256 scriptCount) {
-            if (scriptCount == 0) {
-                return "";
-            }
-
-            string memory script;
-            for (uint256 i = 0; i < scriptCount; i++) {
-                string memory scriptChunk = IGenArt721CoreProjectScript(
-                    _contractAddress
-                ).projectScriptByIndex(_projectId, i);
-                script = string.concat(script, scriptChunk);
-            }
-
-            return abi.encodePacked(script);
-        } catch {
-            revert("Unable to retrieve project script info");
-        }
-    }
-
-    function getTokenHtmlScriptRequests(
-        address _contractAddress,
-        uint256 _tokenId
-    )
-        internal
-        view
-        returns (WrappedScriptRequest[] memory, uint256 bufferSize)
-    {
-        _onlySupportedCoreContract(_contractAddress);
-
-        uint256 projectId = _tokenId / ONE_MILLION;
-        // This will revert for older contracts that do not have an override set.
-        bytes32 dependencyType = stringToBytes32(
-            this.getDependencyTypeForProject(_contractAddress, projectId)
-        );
-
-        bytes32 tokenHash;
-        try
-            IDependencyRegistryCompatibleV0(_contractAddress).tokenIdToHash(
-                _tokenId
-            )
-        returns (bytes32 _tokenHash) {
-            tokenHash = _tokenHash;
-        } catch {
-            // Noop try again for older contracts.
-        }
-
-        if (tokenHash == bytes32(0)) {
-            try
-                IGenArt721CoreTokenHashProviderV1(_contractAddress)
-                    .tokenIdToHash(_tokenId)
-            returns (bytes32 tokenHash) {
-                tokenHash = tokenHash;
-            } catch {
-                // Noop try again for older contracts.
-            }
-        }
-
-        if (tokenHash == bytes32(0)) {
-            try
-                IGenArt721CoreTokenHashProviderV0(_contractAddress)
-                    .showTokenHashes(_tokenId)
-            returns (bytes32[] memory tokenHashes) {
-                tokenHash = tokenHashes[0];
-            } catch {
-                revert("Unable to retrieve token hash.");
-            }
-        }
-
-        WrappedScriptRequest[] memory requests = new WrappedScriptRequest[](5);
-
-        requests[0]
-            .scriptContent = 'let css="html{height:100%}body{min-height:100%;margin:0;padding:0}canvas{padding:0;margin:auto;display:block;position:absolute;top:0;bottom:0;left:0;right:0}",head=document.head,style=document.createElement("style");head.appendChild(style),style.type="text/css",style.appendChild(document.createTextNode(css));';
-
-        requests[1].scriptContent = abi.encodePacked(
-            'let tokenData = {"tokenId":"',
-            Strings.toString(_tokenId),
-            '"',
-            ',"hash":"',
-            Strings.toHexString(uint256(tokenHash)),
-            '"}'
-        );
-
-        Dependency storage dependency = dependencyDetails[dependencyType];
-        if (dependency.scriptCount == 0) {
-            requests[2].wrapPrefix = abi.encodePacked(
-                '<script type="text/javascript" src="',
-                dependency.preferredCDN,
-                '">'
-            );
-            requests[2].scriptContent = "// Noop"; // ScriptyBuilder requires scriptContent for this to work
-            requests[2].wrapSuffix = "</script>";
-            requests[2].wrapType = 4; // [wrapPrefix][scriptContent][wrapSuffix]
-        } else {
-            bytes memory dependencyScript = this.getDependencyScript(
-                dependencyType
-            );
-            requests[2].scriptContent = dependencyScript;
-            requests[2].wrapType = 2; // <script type="text/javascript+gzip" src="data:text/javascript;base64,[script]"></script>
-        }
-
-        bytes memory gunzipScript = IContractScript(ethFsAddress).getScript(
-            "gunzipScripts-0.0.1.js",
-            ""
-        );
-        requests[3].wrapType = 1; // <script src="data:text/javascript;base64,[script]"></script>
-        requests[3].scriptContent = gunzipScript;
-
-        bytes memory projectScript = this.getProjectScript(
-            _contractAddress,
-            projectId
-        );
-        requests[4].scriptContent = projectScript;
-        requests[4].wrapType = 0; // <script>[script]</script>
-
-        IScriptyBuilder scriptyBuilder = IScriptyBuilder(scriptyBuilderAddress);
-
-        uint256 bufferSize = requests[0].scriptContent.length +
-            requests[1].scriptContent.length +
-            requests[2].scriptContent.length +
-            requests[3].scriptContent.length +
-            requests[4].scriptContent.length +
-            500;
-
-        return (requests, bufferSize);
-    }
-
-    function getTokenHtmlBase64EncodedDataUri(
-        address _contractAddress,
-        uint256 _tokenId
-    ) external view returns (string memory) {
-        (
-            WrappedScriptRequest[] memory requests,
-            uint256 bufferSize
-        ) = getTokenHtmlScriptRequests(_contractAddress, _tokenId);
-        bytes memory base64EncodedHTMLDataURI = IScriptyBuilder(
-            scriptyBuilderAddress
-        ).getEncodedHTMLWrapped(requests, bufferSize);
-
-        return string(base64EncodedHTMLDataURI);
-    }
-
-    function getTokenHtml(
-        address _contractAddress,
-        uint256 _tokenId
-    ) external view returns (string memory) {
-        (
-            WrappedScriptRequest[] memory requests,
-            uint256 bufferSize
-        ) = getTokenHtmlScriptRequests(_contractAddress, _tokenId);
-        bytes memory html = IScriptyBuilder(scriptyBuilderAddress)
-            .getHTMLWrapped(requests, bufferSize);
-
-        return string(html);
     }
 
     /**

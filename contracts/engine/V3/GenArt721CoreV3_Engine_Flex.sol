@@ -1472,10 +1472,7 @@ contract GenArt721CoreV3_Engine_Flex is
     )
         external
         view
-        override(
-            IGenArt721CoreContractV3_Engine,
-            IDependencyRegistryCompatibleV0
-        )
+        override(IGenArt721CoreContractV3_Base, IDependencyRegistryCompatibleV0)
         returns (bytes32)
     {
         bytes12 _hashSeed = _ownersAndHashSeeds[_tokenId].hashSeed;
