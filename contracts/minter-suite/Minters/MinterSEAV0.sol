@@ -357,13 +357,14 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
      * wars do not dominate the economics of an auction.
      * @dev the input value is considered to be a percentage, so that a value
      * of 5 represents 5%.
+     * @param _minterMinBidIncrementPercentage Minimum bid increment percentage
      */
     function updateMinterMinBidIncrementPercentage(
         uint8 _minterMinBidIncrementPercentage
     ) external {
+        _onlyNonZero(_minterMinBidIncrementPercentage);
         _onlyCoreAdminACL(this.updateMinterMinBidIncrementPercentage.selector);
         // CHECKS
-        _onlyNonZero(_minterMinBidIncrementPercentage);
         // EFFECTS
         minterMinBidIncrementPercentage = _minterMinBidIncrementPercentage;
         emit MinterMinBidIncrementPercentageUpdated(
