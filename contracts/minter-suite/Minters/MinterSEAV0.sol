@@ -202,7 +202,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
 
     // function to require that a value is non-zero
     function _onlyNonZero(uint256 _value) internal pure {
-        require(_value > 0, "Only non-zero");
+        require(_value != 0, "Only non-zero");
     }
 
     /**
