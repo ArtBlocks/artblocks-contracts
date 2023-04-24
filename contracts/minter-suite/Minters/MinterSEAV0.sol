@@ -604,7 +604,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
      * one or more transactions to settle and/or initialize a new auction,
      * potentially still placing a bid on the auction for the token ID if the
      * bid value is sufficiently higher than the current highest bid.
-     * Note that the use of `_targetTokenId` is to prevent the possibility of
+     * Note that the use of `_bidTokenId` is to prevent the possibility of
      * transactions that are stuck in the pending pool for long periods of time
      * from unintentionally bidding on auctions for future tokens.
      * Note that calls to `settleAuction` and `createBid` are possible
@@ -612,6 +612,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
      * convenience and executes both of those functions in a single
      * transaction, while handling front-running as gracefully as possible.
      * @param _settleTokenId Token ID to settle auction for.
+     * @param _bidTokenId Token ID to bid on.
      * @dev this function is not non-reentrant, but the underlying calls are
      * to non-reentrant functions.
      */
