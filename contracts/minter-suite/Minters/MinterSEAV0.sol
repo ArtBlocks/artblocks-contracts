@@ -179,23 +179,12 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
     // function to restrict access to only AdminACL allowed calls
     // @dev defers to the ACL contract used on the core contract
     function _onlyCoreAdminACL(bytes4 _selector) internal {
-        require(
-            genArtCoreContract_Base.adminACLAllowed(
-                msg.sender,
-                address(this),
-                _selector
-            ),
-            "Only Core AdminACL allowed"
-        );
+        require(_adminACLAllowed(_selector), "Only Core AdminACL allowed");
     }
 
     // function to restrict access to only the artist of a project
     function _onlyArtist(uint256 _projectId) internal view {
-        require(
-            (msg.sender ==
-                genArtCoreContract_Base.projectIdToArtistAddress(_projectId)),
-            "Only Artist"
-        );
+        require(_senderIsArtist(_projectId), "Only Artist");
     }
 
     // function to restrict access to only the artist of a project or
@@ -206,15 +195,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         bytes4 _selector
     ) internal {
         require(
-            (msg.sender ==
-                genArtCoreContract_Base.projectIdToArtistAddress(_projectId)) ||
-                (
-                    genArtCoreContract_Base.adminACLAllowed(
-                        msg.sender,
-                        address(this),
-                        _selector
-                    )
-                ),
+            _senderIsArtist(_projectId) || _adminACLAllowed(_selector),
             "Only Artist or Admin ACL"
         );
     }
@@ -1169,6 +1150,23 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         ProjectConfig storage _projectConfig
     ) internal view returns (bool) {
         return _projectConfig.basePrice > 0;
+    }
+
+    function _senderIsArtist(
+        uint256 _projectId
+    ) private view returns (bool senderIsArtist) {
+        return
+            msg.sender ==
+            genArtCoreContract_Base.projectIdToArtistAddress(_projectId);
+    }
+
+    function _adminACLAllowed(bytes4 _selector) private returns (bool) {
+        return
+            genArtCoreContract_Base.adminACLAllowed(
+                msg.sender,
+                address(this),
+                _selector
+            );
     }
 
     /**
