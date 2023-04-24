@@ -333,9 +333,9 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         uint32 _minAuctionDurationSeconds,
         uint32 _maxAuctionDurationSeconds
     ) external {
+        _onlyNonZero(_minAuctionDurationSeconds);
         _onlyCoreAdminACL(this.updateAllowableAuctionDurationSeconds.selector);
         // CHECKS
-        _onlyNonZero(_minAuctionDurationSeconds);
         require(
             _maxAuctionDurationSeconds > _minAuctionDurationSeconds,
             "Only max gt min"
