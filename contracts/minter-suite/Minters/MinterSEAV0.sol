@@ -124,6 +124,8 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         // max uint64 ~= 1.8e19 sec ~= 570 billion years
         uint64 timestampStart;
         // duration of each new auction, before any extensions due to late bids
+        // @dev for configured auctions, this will be gt 0, so it may be used
+        // to determine if an auction is configured
         uint32 auctionDurationSeconds;
         // next token number to be auctioned, owned by minter
         // @dev store token number to enable storage packing, as token ID can
@@ -135,8 +137,6 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         // @dev required to handle edge case where next token number is 0
         bool nextTokenNumberIsPopulated;
         // reserve price, i.e. minimum starting bid price, in wei
-        // @dev for configured auctions, this will be gt 0, so it may be used
-        // to determine if an auction is configured
         uint256 basePrice;
         // active auction for project
         Auction activeAuction;
@@ -438,9 +438,8 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
      * the end of an auction.
      * @param _basePrice reserve price (minimum starting bid price), in wei.
      * Must be greater than 0, but may be as low as 1 wei.
-     * @dev `_basePrice` of zero not allowed so we can use zero as a gas-
-     * efficient indicator of whether auctions have been configured for a
-     * project.
+     * @dev `_basePrice` of zero not allowed to prevent accidental
+     * misconfiguration of auctions
      */
     function configureFutureAuctions(
         uint256 _projectId,
@@ -541,9 +540,10 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         // CHECKS
         // only if project is not configured (i.e. artist called
         // `resetAuctionDetails`)
-        // @dev we use `basePrice` as a gas-efficient indicator of whether
-        // auctions have been configured for a project.
-        require(_projectConfig.basePrice == 0, "Only unconfigured projects");
+        require(
+            !_projectIsConfigured(_projectConfig),
+            "Only unconfigured projects"
+        );
         // only if minter has a next token assigned
         require(
             _projectConfig.nextTokenNumberIsPopulated == true,
@@ -1144,15 +1144,15 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
 
     /**
      * @notice Determines if a project is configured or not on this minter.
-     * Uses project config's `basePrice` to determine if project is configured,
-     * because `basePrice` is the only required field for a project to be
+     * Uses project config's `auctionDurationSeconds` to determine if project
+     * is configured, because `auctionDurationSeconds` is required to be
      * non-zero when configured.
      * @param _projectConfig The project config to check.
      */
     function _projectIsConfigured(
         ProjectConfig storage _projectConfig
     ) internal view returns (bool) {
-        return _projectConfig.basePrice > 0;
+        return _projectConfig.auctionDurationSeconds != 0;
     }
 
     function _senderIsArtist(
