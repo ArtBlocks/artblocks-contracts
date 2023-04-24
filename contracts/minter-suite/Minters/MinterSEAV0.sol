@@ -377,13 +377,14 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
      * the minimum amount of time that must pass between the final bid and the
      * the end of an auction. Auctions are extended if a new bid is placed
      * within this time buffer of the auction end time.
+     * @param _minterTimeBufferSeconds Time buffer in seconds.
      */
     function updateMinterTimeBufferSeconds(
         uint32 _minterTimeBufferSeconds
     ) external {
+        _onlyNonZero(_minterTimeBufferSeconds);
         _onlyCoreAdminACL(this.updateMinterTimeBufferSeconds.selector);
         // CHECKS
-        _onlyNonZero(_minterTimeBufferSeconds);
         // EFFECTS
         minterTimeBufferSeconds = _minterTimeBufferSeconds;
         emit MinterTimeBufferUpdated(_minterTimeBufferSeconds);
