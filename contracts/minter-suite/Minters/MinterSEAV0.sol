@@ -417,8 +417,9 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
      * @notice Warning: Disabling purchaseTo is not supported on this minter.
      * This method exists purely for interface-conformance purposes.
      */
-    function togglePurchaseToDisabled(uint256 _projectId) external view {
-        _onlyArtist(_projectId);
+    function togglePurchaseToDisabled(uint256 /*_projectId*/) external pure {
+        // @dev access control to _onlyArtist is required if this method is
+        // ever re-implemented
         revert("Action not supported");
     }
 
