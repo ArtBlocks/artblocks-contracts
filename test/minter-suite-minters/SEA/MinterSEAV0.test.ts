@@ -837,7 +837,9 @@ for (const coreContractName of coreContractsToTest) {
           expect(projectConfig.auctionDurationSeconds).to.equal(0);
           expect(projectConfig.basePrice).to.equal(0);
           // confirm that no ongoing token auction for project zero
-          expect(projectConfig.auction.initialized).to.be.false;
+          expect(projectConfig.auction.currentBidder).to.equal(
+            constants.ZERO_ADDRESS
+          );
         });
 
         it("updates state with changes with an ongoing auction", async function () {
@@ -859,7 +861,9 @@ for (const coreContractName of coreContractsToTest) {
             config.projectZeroTokenZero.toString()
           );
           expect(projectConfig.auction.tokenId).to.equal(targetToken);
-          expect(projectConfig.auction.initialized).to.be.true;
+          expect(projectConfig.auction.currentBidder).to.equal(
+            config.accounts.user.address
+          );
         });
 
         it("emits event", async function () {
@@ -942,7 +946,9 @@ for (const coreContractName of coreContractsToTest) {
         const projectconfig = await config.minter.projectConfigurationDetails(
           config.projectZero
         );
-        expect(projectconfig.auction.initialized).to.be.false;
+        expect(projectconfig.auction.currentBidder).to.be.equal(
+          constants.ZERO_ADDRESS
+        );
       });
 
       it("reverts when auction not ended", async function () {
@@ -1287,7 +1293,6 @@ for (const coreContractName of coreContractsToTest) {
             config.startTime + config.defaultAuctionLengthSeconds
           );
           expect(auction.settled).to.equal(false);
-          expect(auction.initialized).to.equal(true);
         });
 
         it("emits event when auction is initialized", async function () {
@@ -1429,7 +1434,6 @@ for (const coreContractName of coreContractsToTest) {
             config.startTime + config.defaultAuctionLengthSeconds
           );
           expect(auction.settled).to.equal(false);
-          expect(auction.initialized).to.equal(true);
         });
 
         it("updates auction state correctly when creating a new bid that does extend auction", async function () {
@@ -1472,7 +1476,6 @@ for (const coreContractName of coreContractsToTest) {
           expect(auction.currentBidder).to.equal(bidder.address);
           expect(auction.endTime).to.equal(newBidTime + bufferTime);
           expect(auction.settled).to.equal(false);
-          expect(auction.initialized).to.equal(true);
         });
 
         it("emits a AuctionBid event", async function () {
@@ -1614,7 +1617,6 @@ for (const coreContractName of coreContractsToTest) {
           config.accounts.user2.address
         );
         expect(newAuction.settled).to.equal(false);
-        expect(newAuction.initialized).to.equal(true);
         // minted next token and populated in project config
         const projectConfig = await config.minter.projectConfig(
           config.projectZero
