@@ -721,6 +721,9 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         // CHECKS
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         Auction storage _auction = _projectConfig.activeAuction;
+        // load from storage to memory for gas efficiency
+        uint256 auctionEndTime = _auction.endTime;
+        uint256 previousBid = _auction.currentBid;
 
         // if no auction exists, or current auction is already settled, attempt
         // to initialize a new auction for the input token ID and immediately
@@ -740,28 +743,25 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         );
 
         // ensure auction is not already ended
-        require(_auction.endTime > block.timestamp, "Auction already ended");
+        require(auctionEndTime > block.timestamp, "Auction already ended");
 
         // require bid to be sufficiently greater than current highest bid
-        // @dev no overflow enforced automatically by solidity ^8.0.0
+        // @dev no overflow enforced automatically by solidity ^0.8.0
         require(
             msg.value >=
-                (_auction.currentBid *
-                    (100 + minterMinBidIncrementPercentage)) /
-                    100,
+                (previousBid * (100 + minterMinBidIncrementPercentage)) / 100,
             "Bid is too low"
         );
 
         // EFFECTS
-        // record previous highest bid details for refunding
-        uint256 previousBid = _auction.currentBid;
+        // record previous highest bider for refunding
         address payable previousBidder = _auction.currentBidder;
 
         // update auction state
         _auction.currentBid = msg.value;
         _auction.currentBidder = payable(msg.sender);
         uint256 minEndTime = block.timestamp + minterTimeBufferSeconds;
-        if (_auction.endTime < minEndTime) {
+        if (auctionEndTime < minEndTime) {
             _auction.endTime = minEndTime.toUint64();
         }
 
