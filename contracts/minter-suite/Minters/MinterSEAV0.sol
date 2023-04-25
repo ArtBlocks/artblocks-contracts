@@ -111,37 +111,6 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
 
     uint256 constant ONE_MILLION = 1_000_000;
 
-    // project-specific parameters
-    struct ProjectConfig {
-        bool maxHasBeenInvoked;
-        // max uint24 ~= 1.6e7, > max possible project invocations of 1e6
-        uint24 maxInvocations;
-        // time after which new auctions may be started
-        // note: new auctions must always be started with a new bid, at which
-        // point the auction will actually start
-        // @dev this is a project-level constraint, and individual auctions
-        // will each have their own start time defined in `activeAuction`
-        // max uint64 ~= 1.8e19 sec ~= 570 billion years
-        uint64 timestampStart;
-        // duration of each new auction, before any extensions due to late bids
-        // @dev for configured auctions, this will be gt 0, so it may be used
-        // to determine if an auction is configured
-        uint32 auctionDurationSeconds;
-        // next token number to be auctioned, owned by minter
-        // @dev store token number to enable storage packing, as token ID can
-        // be derived from this value in combination with project ID
-        // max uint24 ~= 1.6e7, > max possible project invocations of 1e6
-        uint24 nextTokenNumber;
-        // bool to indicate if next token number has been populated, or is
-        // still default value of 0
-        // @dev required to handle edge case where next token number is 0
-        bool nextTokenNumberIsPopulated;
-        // reserve price, i.e. minimum starting bid price, in wei
-        uint256 basePrice;
-        // active auction for project
-        Auction activeAuction;
-    }
-
     mapping(uint256 => ProjectConfig) public projectConfig;
 
     // minter-wide, admin-configurable parameters
@@ -869,48 +838,18 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
      * Note that in the case of no auction being initialized for the project,
      * the returned `auction` will be the default struct.
      * @param _projectId The project ID
-     * @return maxInvocations The project's maximum number of invocations
-     * allowed on this minter
-     * @return timestampStart The project's start timestamp, after which new
-     * auctions may be created (one at a time)
-     * @return auctionDurationSeconds The project's default auction duration,
-     * before any extensions due to buffer time
-     * @return basePrice The project's minimum starting bid price
-     * @return nextTokenNumberIsPopulated Whether or not the project's next
-     * token number has been populated
-     * @return nextTokenNumber The project's next token number to be auctioned,
-     * dummy value of 0 if `nextTokenNumberIsPopulated` is false. Note that 0
-     * is a valid token number, so `nextTokenNumberIsPopulated` should be used
-     * to distinguish between a valid token number of 0 and a dummy value of 0.
-     * @return auction The project's active auction details. Will be the
-     * default struct (w/ `auction.initialized = false`) if no auction has been
-     * initialized for the project.
+     * @return projectConfig_ The project configuration details
      */
     function projectConfigurationDetails(
         uint256 _projectId
-    )
-        external
-        view
-        returns (
-            uint24 maxInvocations,
-            uint64 timestampStart,
-            uint32 auctionDurationSeconds,
-            uint256 basePrice,
-            bool nextTokenNumberIsPopulated,
-            uint24 nextTokenNumber,
-            Auction memory auction
-        )
-    {
-        ProjectConfig storage _projectConfig = projectConfig[_projectId];
-        maxInvocations = _projectConfig.maxInvocations;
-        timestampStart = _projectConfig.timestampStart;
-        auctionDurationSeconds = _projectConfig.auctionDurationSeconds;
-        basePrice = _projectConfig.basePrice;
-        nextTokenNumberIsPopulated = _projectConfig.nextTokenNumberIsPopulated;
-        nextTokenNumber = _projectConfig.nextTokenNumberIsPopulated
-            ? _projectConfig.nextTokenNumber
+    ) external view returns (ProjectConfig memory projectConfig_) {
+        projectConfig_ = projectConfig[_projectId];
+        // clean up next token number to handle case where it is stale
+        projectConfig_.nextTokenNumber = projectConfig_
+            .nextTokenNumberIsPopulated
+            ? projectConfig_.nextTokenNumber
             : 0;
-        auction = _projectConfig.activeAuction;
+        projectConfig_.activeAuction = projectConfig[_projectId].activeAuction;
     }
 
     /**

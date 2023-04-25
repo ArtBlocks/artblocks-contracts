@@ -837,7 +837,7 @@ for (const coreContractName of coreContractsToTest) {
           expect(projectConfig.auctionDurationSeconds).to.equal(0);
           expect(projectConfig.basePrice).to.equal(0);
           // confirm that no ongoing token auction for project zero
-          expect(projectConfig.auction.currentBidder).to.equal(
+          expect(projectConfig.activeAuction.currentBidder).to.equal(
             constants.ZERO_ADDRESS
           );
         });
@@ -860,8 +860,8 @@ for (const coreContractName of coreContractsToTest) {
           const targetToken = BigNumber.from(
             config.projectZeroTokenZero.toString()
           );
-          expect(projectConfig.auction.tokenId).to.equal(targetToken);
-          expect(projectConfig.auction.currentBidder).to.equal(
+          expect(projectConfig.activeAuction.tokenId).to.equal(targetToken);
+          expect(projectConfig.activeAuction.currentBidder).to.equal(
             config.accounts.user.address
           );
         });
@@ -943,10 +943,10 @@ for (const coreContractName of coreContractsToTest) {
           "Auction not initialized"
         );
         // verify no state change
-        const projectconfig = await config.minter.projectConfigurationDetails(
+        const projectConfig = await config.minter.projectConfigurationDetails(
           config.projectZero
         );
-        expect(projectconfig.auction.currentBidder).to.be.equal(
+        expect(projectConfig.activeAuction.currentBidder).to.be.equal(
           constants.ZERO_ADDRESS
         );
       });
@@ -961,7 +961,7 @@ for (const coreContractName of coreContractsToTest) {
         const projectConfig = await config.minter.projectConfigurationDetails(
           config.projectZero
         );
-        expect(projectConfig.auction.tokenId).to.be.equal(targetToken);
+        expect(projectConfig.activeAuction.tokenId).to.be.equal(targetToken);
         await expectRevert(
           config.minter
             .connect(config.accounts.user)
