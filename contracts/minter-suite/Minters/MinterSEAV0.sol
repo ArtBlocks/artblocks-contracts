@@ -35,6 +35,17 @@ import "@openzeppelin-4.7/contracts/utils/math/Math.sol";
  * ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ *
  * ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ *
  *********************************
+ * @notice Bid Front-Running:
+ * Collectors can front-run bids to become the highest bidder by bidding any
+ * amount sufficiently higher than the current highest bid, considering the
+ * minter-level configured value of `minterMinBidIncrementPercentage`. For
+ * instance, if current bid is 1 ETH, and collector A sends a transaction with
+ * a bid of 2.50 ETH, collector B may send a transaction with a bid of 2.499
+ * ETH, that if successfully front-runs Collector A's transaction, is able to
+ * cause collector A's transaction to revert. This is a difficult problem to
+ * get around in a decentralized system with public bids, and we have chosen to
+ * keep the minter simple and transparent, and leave it up to collectors to
+ * understand the risks of front-running and bid accordingly.
  * @notice Token Ownership:
  * This minter contract may own up to two tokens at a time for a given project.
  * The first possible token owned is the token that is currently being 
