@@ -202,10 +202,10 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         );
         weth = IWETH(_wethAddress);
         // emit events indicating default minter configuration values
-        emit AuctionDurationSecondsRangeUpdated(
-            minAuctionDurationSeconds,
-            maxAuctionDurationSeconds
-        );
+        emit AuctionDurationSecondsRangeUpdated({
+            minAuctionDurationSeconds: minAuctionDurationSeconds,
+            maxAuctionDurationSeconds: maxAuctionDurationSeconds
+        });
         emit MinterMinBidIncrementPercentageUpdated(
             minterMinBidIncrementPercentage
         );
@@ -237,7 +237,10 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         projectConfig[_projectId].maxHasBeenInvoked =
             invocations == maxInvocations;
 
-        emit ProjectMaxInvocationsLimitUpdated(_projectId, maxInvocations);
+        emit ProjectMaxInvocationsLimitUpdated({
+            _projectId: _projectId,
+            _maxInvocations: maxInvocations
+        });
 
         // for convenience, try to mint and assign a token to the project's
         // next slot
@@ -282,7 +285,10 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         projectConfig[_projectId].maxHasBeenInvoked =
             invocations == _maxInvocations;
 
-        emit ProjectMaxInvocationsLimitUpdated(_projectId, _maxInvocations);
+        emit ProjectMaxInvocationsLimitUpdated({
+            _projectId: _projectId,
+            _maxInvocations: _maxInvocations
+        });
 
         // for convenience, try to mint and assign a token to the project's
         // next slot
@@ -312,10 +318,10 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         // EFFECTS
         minAuctionDurationSeconds = _minAuctionDurationSeconds;
         maxAuctionDurationSeconds = _maxAuctionDurationSeconds;
-        emit AuctionDurationSecondsRangeUpdated(
-            _minAuctionDurationSeconds,
-            _maxAuctionDurationSeconds
-        );
+        emit AuctionDurationSecondsRangeUpdated({
+            minAuctionDurationSeconds: _minAuctionDurationSeconds,
+            maxAuctionDurationSeconds: _maxAuctionDurationSeconds
+        });
     }
 
     /**
@@ -435,12 +441,12 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
             .toUint32();
         _projectConfig.basePrice = _basePrice;
 
-        emit ConfiguredFutureAuctions(
-            _projectId,
-            _timestampStart.toUint64(),
-            _auctionDurationSeconds.toUint32(),
-            _basePrice
-        );
+        emit ConfiguredFutureAuctions({
+            projectId: _projectId,
+            timestampStart: _timestampStart.toUint64(),
+            auctionDurationSeconds: _auctionDurationSeconds.toUint32(),
+            basePrice: _basePrice
+        });
 
         // sync local max invocations if not initially populated
         // @dev if local max invocations and maxHasBeenInvoked are both
@@ -524,11 +530,11 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         // @dev overflow automatically handled by Sol ^0.8.0
         uint256 nextTokenId = (_projectId * ONE_MILLION) +
             _projectConfig.nextTokenNumber;
-        IERC721(genArt721CoreAddress).transferFrom(
-            address(this),
-            _to,
-            nextTokenId
-        );
+        IERC721(genArt721CoreAddress).transferFrom({
+            from: address(this),
+            to: _to,
+            tokenId: nextTokenId
+        });
         emit ProjectNextTokenEjected(_projectId);
     }
 
@@ -636,15 +642,19 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         _auction.settled = true;
         // INTERACTIONS
         // send token to the winning bidder
-        IERC721(genArt721CoreAddress_).transferFrom(
-            address(this),
-            currentBidder,
-            _tokenId
-        );
+        IERC721(genArt721CoreAddress_).transferFrom({
+            from: address(this),
+            to: currentBidder,
+            tokenId: _tokenId
+        });
         // distribute revenues from auction
         splitRevenuesETH(_projectId, currentBid, genArt721CoreAddress_);
 
-        emit AuctionSettled(_tokenId, currentBidder, currentBid);
+        emit AuctionSettled({
+            tokenId: _tokenId,
+            winner: currentBidder,
+            price: currentBid
+        });
     }
 
     /**
@@ -738,7 +748,11 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         // refund previous highest bidder
         _safeTransferETHWithFallback(previousBidder, previousBid);
 
-        emit AuctionBid(_tokenId, msg.sender, msg.value);
+        emit AuctionBid({
+            tokenId: _tokenId,
+            bidder: msg.sender,
+            bidAmount: msg.value
+        });
     }
 
     /**
@@ -1003,7 +1017,12 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
 
         // @dev we intentionally emit event here due to potential of early
         // return in INTERACTIONS section
-        emit AuctionInitialized(_targetTokenId, msg.sender, msg.value, endTime);
+        emit AuctionInitialized({
+            tokenId: _targetTokenId,
+            bidder: msg.sender,
+            bidAmount: msg.value,
+            endTime: endTime
+        });
 
         // INTERACTIONS
         // attempt to mint new token to this minter contract, only if max
@@ -1073,7 +1092,10 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         if (tokenInvocation == localMaxInvocations) {
             _projectConfig.maxHasBeenInvoked = true;
         }
-        emit ProjectNextTokenUpdated(_projectId, nextTokenId);
+        emit ProjectNextTokenUpdated({
+            projectId: _projectId,
+            tokenId: nextTokenId
+        });
     }
 
     /**
@@ -1126,11 +1148,11 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
 
     function _adminACLAllowed(bytes4 _selector) private returns (bool) {
         return
-            genArtCoreContract_Base.adminACLAllowed(
-                msg.sender,
-                address(this),
-                _selector
-            );
+            genArtCoreContract_Base.adminACLAllowed({
+                _sender: msg.sender,
+                _contract: address(this),
+                _selector: _selector
+            });
     }
 
     /**
