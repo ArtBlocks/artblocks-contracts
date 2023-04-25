@@ -1122,6 +1122,9 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         // branches.
         /// @solidity memory-safe-assembly
         assembly {
+            // @dev intentionally do not check if this contract has sufficient
+            // balance, because that is not intended to be a valid state.
+
             // Transfer the ETH and check if it succeeded or not.
             if iszero(call(minterRefundGasLimit_, _to, _amount, 0, 0, 0, 0)) {
                 mstore(0x00, _to) // Store the address in scratch space.
