@@ -19,15 +19,14 @@ interface IFilteredMinterSEAV0 is IFilteredMinterV2 {
         // The current highest bid amount (in wei)
         uint256 currentBid;
         // The address of the current highest bidder
+        // @dev if this is not the zero address, then the auction is
+        // considered initialized
         address payable currentBidder;
         // The time that the auction is scheduled to end
         // max uint64 ~= 1.8e19 sec ~= 570 billion years
         uint64 endTime;
         // Whether or not the auction has been settled
         bool settled;
-        // Whether or not the auction has been initialized (used to determine
-        // if auction is the default struct)
-        bool initialized;
     }
 
     /// Admin-controlled range of allowed auction durations updated

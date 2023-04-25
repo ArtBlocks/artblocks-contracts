@@ -647,10 +647,14 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         uint256 _projectId = _tokenId / ONE_MILLION;
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         Auction storage _auction = _projectConfig.activeAuction;
+        // load from storage to memory for gas efficiency
+        address currentBidder = _auction.currentBidder;
+        uint256 currentBid = _auction.currentBid;
+        address genArt721CoreAddress_ = genArt721CoreAddress;
         // CHECKS
         // @dev this check is not strictly necessary, but is included for
         // clear error messaging
-        require(_auction.initialized, "Auction not initialized");
+        require(_auctionIsInitialized(_auction), "Auction not initialized");
         if (_auction.settled || (_auction.tokenId != _tokenId)) {
             // auction already settled or is for a different token ID, so
             // return early and do not modify state
@@ -658,24 +662,20 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         }
         // @dev important that the following check is after the early return
         // block above to maintain desired behavior
-        require(block.timestamp > _auction.endTime, "Auction not yet ended");
+        require(block.timestamp >= _auction.endTime, "Auction not yet ended");
         // EFFECTS
         _auction.settled = true;
         // INTERACTIONS
         // send token to the winning bidder
-        IERC721(genArt721CoreAddress).transferFrom(
+        IERC721(genArt721CoreAddress_).transferFrom(
             address(this),
-            _auction.currentBidder,
+            currentBidder,
             _tokenId
         );
         // distribute revenues from auction
-        splitRevenuesETH(_projectId, _auction.currentBid, genArt721CoreAddress);
+        splitRevenuesETH(_projectId, currentBid, genArt721CoreAddress_);
 
-        emit AuctionSettled(
-            _tokenId,
-            _auction.currentBidder,
-            _auction.currentBid
-        );
+        emit AuctionSettled(_tokenId, currentBidder, currentBid);
     }
 
     /**
@@ -725,7 +725,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         // if no auction exists, or current auction is already settled, attempt
         // to initialize a new auction for the input token ID and immediately
         // return
-        if ((!_auction.initialized) || _auction.settled) {
+        if ((!_auctionIsInitialized(_auction)) || _auction.settled) {
             _initializeAuctionWithBid(_projectId, _tokenId);
             return;
         }
@@ -921,10 +921,15 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         uint256 _projectId
     ) external view returns (Auction memory auction) {
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
-        auction = _projectConfig.activeAuction;
+        Auction storage _auction = _projectConfig.activeAuction;
         // do not return uninitialized auctions (i.e. auctions that do not
-        // exist, and therefore are simply the default struct)
-        require(auction.initialized, "No auction exists on project");
+        // exist, where currentBidder is still the default value)
+        require(
+            _auctionIsInitialized(_auction),
+            "No auction exists on project"
+        );
+        // load entire auction into memory
+        auction = _projectConfig.activeAuction;
         return auction;
     }
 
@@ -947,7 +952,10 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         Auction storage _auction = _projectConfig.activeAuction;
         // if project has an active token auction that is not settled, return
         // that token ID
-        if (_auction.initialized && (_auction.endTime > block.timestamp)) {
+        if (
+            _auctionIsInitialized(_auction) &&
+            (_auction.endTime > block.timestamp)
+        ) {
             return _auction.tokenId;
         }
         // otherwise, return the next expected token ID to be auctioned
@@ -1017,7 +1025,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         // check is not present
         // @dev no cover else branch of next line because unreachable
         require(
-            (!_auction.initialized) || _auction.settled,
+            (!_auctionIsInitialized(_auction)) || _auction.settled,
             "Existing auction not settled"
         );
         // require valid bid value
@@ -1047,8 +1055,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
             currentBid: msg.value,
             currentBidder: payable(msg.sender),
             endTime: endTime,
-            settled: false,
-            initialized: true
+            settled: false
         });
         // mark next token number as not populated
         // @dev intentionally not setting nextTokenNumber to zero to avoid
@@ -1156,6 +1163,20 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         return _projectConfig.auctionDurationSeconds != 0;
     }
 
+    /**
+     * @notice Determines if an auction is initialized.
+     * Uses auction's `currentBidder` address to determine if auction is
+     * initialized, because `currentBidder` is always non-zero after an auction
+     * has been initialized.
+     * @param _auction The auction to check.
+     */
+    function _auctionIsInitialized(
+        Auction storage _auction
+    ) internal view returns (bool isInitialized) {
+        // auction is initialized if currentBidder is non-zero
+        return _auction.currentBidder != address(0);
+    }
+
     function _senderIsArtist(
         uint256 _projectId
     ) private view returns (bool senderIsArtist) {
@@ -1214,7 +1235,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         // base price of zero not allowed when configuring auctions, so use it
         // as indicator of whether auctions are configured for the project
         bool projectIsConfigured = _projectIsConfigured(_projectConfig);
-        bool auctionIsAcceptingBids = (_auction.initialized &&
+        bool auctionIsAcceptingBids = (_auctionIsInitialized(_auction) &&
             block.timestamp < _auction.endTime);
         isConfigured = projectIsConfigured || auctionIsAcceptingBids;
         // only return non-zero price if auction is configured
