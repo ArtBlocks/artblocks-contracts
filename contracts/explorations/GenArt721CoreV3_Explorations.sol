@@ -237,7 +237,7 @@ contract GenArt721CoreV3_Explorations is
     /// version & type of this core contract
     /// coreVersion is updated from Flagship V3 core due to minor changes
     /// implemented in the Explorations version of the contract.
-    string public constant coreVersion = "v3.1.0";
+    string public constant coreVersion = "v3.1.1";
     /// coreType remains consistent with flagship V3 core because external &
     /// public functions used for indexing are unchanged.
     string public constant coreType = "GenArt721CoreV3";

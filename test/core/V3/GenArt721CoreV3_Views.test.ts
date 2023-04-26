@@ -118,6 +118,9 @@ for (const coreContractName of coreContractsToTest) {
       it("returns expected value", async function () {
         const config = await loadFixture(_beforeEach);
         let targetCoreVersion = "v3.1.0";
+        if (coreContractName === "GenArt721CoreV3_Explorations") {
+          targetCoreVersion = "v3.1.1";
+        }
         const coreVersion = await config.genArt721Core
           .connect(config.accounts.deployer)
           .coreVersion();
