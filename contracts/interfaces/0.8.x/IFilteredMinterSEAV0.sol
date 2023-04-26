@@ -12,6 +12,37 @@ pragma solidity ^0.8.0;
  * @author Art Blocks Inc.
  */
 interface IFilteredMinterSEAV0 is IFilteredMinterV2 {
+    // project-specific parameters
+    struct ProjectConfig {
+        bool maxHasBeenInvoked;
+        // max uint24 ~= 1.6e7, > max possible project invocations of 1e6
+        uint24 maxInvocations;
+        // time after which new auctions may be started
+        // note: new auctions must always be started with a new bid, at which
+        // point the auction will actually start
+        // @dev this is a project-level constraint, and individual auctions
+        // will each have their own start time defined in `activeAuction`
+        // max uint64 ~= 1.8e19 sec ~= 570 billion years
+        uint64 timestampStart;
+        // duration of each new auction, before any extensions due to late bids
+        // @dev for configured auctions, this will be gt 0, so it may be used
+        // to determine if an auction is configured
+        uint32 auctionDurationSeconds;
+        // next token number to be auctioned, owned by minter
+        // @dev store token number to enable storage packing, as token ID can
+        // be derived from this value in combination with project ID
+        // max uint24 ~= 1.6e7, > max possible project invocations of 1e6
+        uint24 nextTokenNumber;
+        // bool to indicate if next token number has been populated, or is
+        // still default value of 0
+        // @dev required to handle edge case where next token number is 0
+        bool nextTokenNumberIsPopulated;
+        // reserve price, i.e. minimum starting bid price, in wei
+        uint256 basePrice;
+        // active auction for project
+        Auction activeAuction;
+    }
+
     /// Struct that defines a single token English auction
     struct Auction {
         // token number of NFT being auctioned
@@ -19,15 +50,14 @@ interface IFilteredMinterSEAV0 is IFilteredMinterV2 {
         // The current highest bid amount (in wei)
         uint256 currentBid;
         // The address of the current highest bidder
+        // @dev if this is not the zero address, then the auction is
+        // considered initialized
         address payable currentBidder;
         // The time that the auction is scheduled to end
         // max uint64 ~= 1.8e19 sec ~= 570 billion years
         uint64 endTime;
         // Whether or not the auction has been settled
         bool settled;
-        // Whether or not the auction has been initialized (used to determine
-        // if auction is the default struct)
-        bool initialized;
     }
 
     /// Admin-controlled range of allowed auction durations updated
@@ -124,18 +154,7 @@ interface IFilteredMinterSEAV0 is IFilteredMinterV2 {
 
     function projectConfigurationDetails(
         uint256 _projectId
-    )
-        external
-        view
-        returns (
-            uint24 maxInvocations,
-            uint64 timestampStart,
-            uint32 auctionDurationSeconds,
-            uint256 basePrice,
-            bool nextTokenNumberIsPopulated,
-            uint24 nextTokenNumber,
-            Auction memory auction
-        );
+    ) external view returns (ProjectConfig memory projectConfiguration_);
 
     function projectActiveAuctionDetails(
         uint256 _projectId
