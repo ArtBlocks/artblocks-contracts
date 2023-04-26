@@ -6,6 +6,7 @@ pragma solidity 0.8.17;
 import "./interfaces/0.8.x/IRandomizerV2.sol";
 import "./interfaces/0.8.x/IAdminACLV0.sol";
 import "./interfaces/0.8.x/IGenArt721CoreContractV3.sol";
+import "./interfaces/0.8.x/IGenArt721CoreContractExposesHashSeed.sol";
 import "./interfaces/0.8.x/IManifold.sol";
 
 import "@openzeppelin-4.7/contracts/utils/Strings.sol";
@@ -89,7 +90,8 @@ import "./libs/0.8.x/Bytes32Strings.sol";
 contract GenArt721CoreV3 is
     ERC721_PackedHashSeed,
     Ownable,
-    IGenArt721CoreContractV3
+    IGenArt721CoreContractV3,
+    IGenArt721CoreContractExposesHashSeed
 {
     using BytecodeStorage for string;
     using BytecodeStorage for address;
