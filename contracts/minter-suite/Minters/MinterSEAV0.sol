@@ -1136,7 +1136,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
                 // https://eips.ethereum.org/EIPS/eip-4758
 
                 //---------------------------------------------------------------------------------------------------------------//
-                // Opcode  | Opcode + Arguments  | Description  | Stack View                                                     //
+                // Opcode  | Opcode + Arguments  | Description        | Stack View                                               //
                 //---------------------------------------------------------------------------------------------------------------//
                 // Contract creation code that uses `SELFDESTRUCT` to force send ETH to a specified address.                     //
                 // Creation code summary: 0x73<20-byte toAddress>0xff                                                            //
