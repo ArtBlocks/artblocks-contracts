@@ -101,15 +101,11 @@ for (const coreContractName of coreContractsToTest) {
         "MinterFilterV1"
       ));
 
-      // deploy and configure WETH token
-      config.weth = await deployAndGet(config, "WETH9_", []);
-
       // deploy and configure minter
       config.targetMinterName = TARGET_MINTER_NAME;
       config.minter = await deployAndGet(config, config.targetMinterName, [
         config.genArt721Core.address,
         config.minterFilter.address,
-        config.weth.address,
       ]);
       config.isEngine = await config.minter.isEngine();
 
@@ -1521,7 +1517,7 @@ for (const coreContractName of coreContractsToTest) {
           );
         });
 
-        it("returns bid funds to previous bidder via WETH fallback when outbid to a dead receiver", async function () {
+        it("force-returns bid funds to previous bidder via SENDALL fallback when outbid to a dead receiver", async function () {
           const config = await loadFixture(_beforeEach);
           const deadReceiverBidder = await deployAndGet(
             config,
@@ -1540,18 +1536,24 @@ for (const coreContractName of coreContractsToTest) {
             .createBidOnAuction(config.minter.address, targetToken, {
               value: bid2Value,
             });
-          // verify that the dead receiver mock received the funds in WETH as fallback
+          // verify that the dead receiver mock received the funds as ETH fallback
           // when they are outbid
+          const deadReceiverBalanceBefore = await ethers.provider.getBalance(
+            deadReceiverBidder.address
+          );
           const Bid3Value = bid2Value.mul(11).div(10);
           await config.minter
             .connect(config.accounts.user)
             .createBid(targetToken, {
               value: Bid3Value,
             });
-          const deadReceiverWETHBalance = await config.weth.balanceOf(
+          const deadReceiverBalanceAfter = await ethers.provider.getBalance(
             deadReceiverBidder.address
           );
-          expect(deadReceiverWETHBalance).to.equal(bid2Value);
+          // change in balance should be equal to bid2Value
+          expect(
+            deadReceiverBalanceAfter.sub(deadReceiverBalanceBefore)
+          ).to.equal(bid2Value);
         });
       });
     });
@@ -2028,6 +2030,8 @@ for (const coreContractName of coreContractsToTest) {
             initialBidValue,
             { value: config.basePrice.mul(5) }
           );
+          const autoBidderBalanceBeforeRefund =
+            await ethers.provider.getBalance(autoBidder.address);
           // when outbid, check that auto bidder does not attain reentrancy or DoS attack
           const bid2Value = config.basePrice.mul(110).div(100);
           await config.minter
@@ -2039,11 +2043,13 @@ for (const coreContractName of coreContractsToTest) {
           expect(auctionDetails.currentBidder).to.equal(
             config.accounts.user.address
           );
-          // verify that the auto bidder received their bid back in weth
-          const autoBidderWethBalance = await config.weth.balanceOf(
+          // verify that the auto bidder received their bid back in ETH
+          const autoBidderBalanceAfterRefund = await ethers.provider.getBalance(
             autoBidder.address
           );
-          expect(autoBidderWethBalance).to.equal(initialBidValue);
+          expect(
+            autoBidderBalanceAfterRefund.sub(autoBidderBalanceBeforeRefund)
+          ).to.equal(initialBidValue);
         });
       });
 
@@ -2079,6 +2085,8 @@ for (const coreContractName of coreContractsToTest) {
           targetTokenId,
           { value: initialBidValue }
         );
+        const gasLimitBidderBalanceBeforeRefund =
+          await ethers.provider.getBalance(gasLimitBidder.address);
         // when outbid, check that gas limit receiver does not use more than 200k gas
         const bid2Value = config.basePrice.mul(110).div(100);
         const tx = await config.minter
@@ -2094,11 +2102,14 @@ for (const coreContractName of coreContractsToTest) {
         expect(auctionDetails.currentBidder).to.equal(
           config.accounts.user.address
         );
-        // verify that the auto bidder received their bid back in weth
-        const bidderWethBalance = await config.weth.balanceOf(
-          gasLimitBidder.address
-        );
-        expect(bidderWethBalance).to.equal(initialBidValue);
+        // verify that the auto bidder received their bid back in ETH
+        const gasLimitBidderBalanceAfterRefund =
+          await ethers.provider.getBalance(gasLimitBidder.address);
+        expect(
+          gasLimitBidderBalanceAfterRefund.sub(
+            gasLimitBidderBalanceBeforeRefund
+          )
+        ).to.equal(initialBidValue);
       });
     });
   });

@@ -3,8 +3,6 @@
 
 pragma solidity 0.8.17;
 
-import {IWETH} from "../../interfaces/0.8.x/IWETH.sol";
-
 import "../../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
 import "../../interfaces/0.8.x/IMinterFilterV0.sol";
 import "../../interfaces/0.8.x/IFilteredMinterSEAV0.sol";
@@ -115,11 +113,6 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
     /// minter version for this minter
     string public constant minterVersion = "v0.0.1";
 
-    /// The public WETH contract address
-    /// @dev WETH is used as fallback payment method when ETH transfers are
-    /// failing during bidding process (e.g. receive function is not payable)
-    IWETH public immutable weth;
-
     uint256 constant ONE_MILLION = 1_000_000;
 
     mapping(uint256 => ProjectConfig) public projectConfig;
@@ -193,13 +186,11 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
      * which this contract will be a minter.
      * @param _minterFilter Minter filter for which
      * this will a filtered minter.
-     * @param _wethAddress The WETH contract address to use for fallback
      * payment method when ETH transfers are failing during bidding process
      */
     constructor(
         address _genArt721Address,
-        address _minterFilter,
-        address _wethAddress
+        address _minterFilter
     ) ReentrancyGuard() MinterBase(_genArt721Address) {
         genArt721CoreAddress = _genArt721Address;
         genArtCoreContract_Base = IGenArt721CoreContractV3_Base(
@@ -211,7 +202,6 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
             minterFilter.genArt721CoreAddress() == _genArt721Address,
             "Illegal contract pairing"
         );
-        weth = IWETH(_wethAddress);
         // emit events indicating default minter configuration values
         emit AuctionDurationSecondsRangeUpdated({
             minAuctionDurationSeconds: minAuctionDurationSeconds,
@@ -683,9 +673,13 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
      * If the bid is successful, but outbid by another bid before the auction
      * ends, the funds will be noncustodially returned to the bidder's address,
      * `msg.sender`. A fallback method of sending funds back to the bidder via
-     * WETH is used if the bidder address is not accepting ETH (preventing
-     * denial of service attacks) within an admin-configured gas limit of
-     * `minterRefundGasLimit`.
+     * SELFDESTRUCT (SENDALL) prevents denial of service attacks, even if the
+     * original bidder reverts or runs out of gas during receive or fallback.
+     * ------------------------------------------------------------------------
+     * WARNING: bidders must be prepared to handle the case where their bid is
+     * outbid and their funds are returned to the original `msg.sender` address
+     * via SELFDESTRUCT (SENDALL).
+     * ------------------------------------------------------------------------
      * Note that the use of `_tokenId` is to prevent the possibility of
      * transactions that are stuck in the pending pool for long periods of time
      * from unintentionally bidding on auctions for future tokens.
@@ -757,7 +751,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
 
         // INTERACTIONS
         // refund previous highest bidder
-        _safeTransferETHWithFallback(previousBidder, previousBid);
+        _forceSafeTransferETH(previousBidder, previousBid);
 
         emit AuctionBid({
             tokenId: _tokenId,
@@ -1110,15 +1104,62 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
     }
 
     /**
-     * @notice Transfer ETH. If the ETH transfer fails, wrap the ETH and send it as WETH.
+     * @notice Force sends `amount` (in wei) ETH to `to`, with a gas stipend
+     * equal to `minterRefundGasLimit`.
+     * If sending via the normal procedure fails, force sends the ETH by
+     * creating a temporary contract which uses `SELFDESTRUCT` to force send
+     * the ETH.
+     * Reverts if the current contract has insufficient balance.
+     * @param _to The address to send ETH to.
+     * @param _amount The amount of ETH to send.
+     * @dev This function is adapted from the `forceSafeTransferETH` function
+     * in the `https://github.com/Vectorized/solady` repository, with
+     * modifications to not check if the current contract has sufficient
+     * balance.
      */
-    function _safeTransferETHWithFallback(address to, uint256 amount) internal {
-        (bool success, ) = to.call{value: amount, gas: minterRefundGasLimit}(
-            ""
-        );
-        if (!success) {
-            weth.deposit{value: amount}();
-            weth.transfer(to, amount);
+    function _forceSafeTransferETH(address _to, uint256 _amount) internal {
+        // load state variable into memory for use in inline assembly
+        uint256 minterRefundGasLimit_ = minterRefundGasLimit;
+        // Manually inlined because the compiler doesn't inline functions with
+        // branches.
+        /// @solidity memory-safe-assembly
+        assembly {
+            // @dev intentionally do not check if this contract has sufficient
+            // balance, because that is not intended to be a valid state.
+
+            // Transfer the ETH and check if it succeeded or not.
+            if iszero(call(minterRefundGasLimit_, _to, _amount, 0, 0, 0, 0)) {
+                // if the transfer failed, we create a temporary contract with
+                // initialization code that uses `SELFDESTRUCT` to force send
+                // the ETH.
+                // note: Compatible with `SENDALL`:
+                // https://eips.ethereum.org/EIPS/eip-4758
+
+                //---------------------------------------------------------------------------------------------------------------//
+                // Opcode  | Opcode + Arguments  | Description        | Stack View                                               //
+                //---------------------------------------------------------------------------------------------------------------//
+                // Contract creation code that uses `SELFDESTRUCT` to force send ETH to a specified address.                     //
+                // Creation code summary: 0x73<20-byte toAddress>0xff                                                            //
+                //---------------------------------------------------------------------------------------------------------------//
+                // 0x73    |  0x73_toAddress     | PUSH20 toAddress   | toAddress                                                //
+                // 0xFF    |  0xFF               | SELFDESTRUCT       |                                                          //
+                //---------------------------------------------------------------------------------------------------------------//
+                // Store the address in scratch space, starting at 0x00, which begins the 20-byte address at 32-20=12 in memory
+                // @dev use scratch space because we have enough space for simple creation code (less than 0x40 bytes)
+                mstore(0x00, _to)
+                // store opcode PUSH20 immediately before the address, starting at 0x0b (11) in memory
+                mstore8(0x0b, 0x73)
+                // store opcode SELFDESTRUCT immediately after the address, starting at 0x20 (32) in memory
+                mstore8(0x20, 0xff)
+                // this will always succeed because the contract creation code is
+                // valid, and the address is valid because it is a 20-byte value
+                if iszero(create(_amount, 0x0b, 0x16)) {
+                    // @dev For better gas estimation.
+                    if iszero(gt(gas(), 1000000)) {
+                        revert(0, 0)
+                    }
+                }
+            }
         }
     }
 

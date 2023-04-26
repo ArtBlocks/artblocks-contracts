@@ -58,8 +58,6 @@ export const Minter_Common = async (_beforeEach: () => Promise<T_Config>) => {
         minterType == "MinterPolyptychV0"
       ) {
         minterConstructorArgs.push(config.delegationRegistry.address);
-      } else if (minterType.startsWith("MinterSEA")) {
-        minterConstructorArgs.push(config.weth.address);
       }
       await expectRevert(
         minterFactory.deploy(...minterConstructorArgs),
