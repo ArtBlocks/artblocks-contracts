@@ -4895,12 +4895,12 @@
     wonka "^6.3.0"
 
 "@urql/exchange-retry@^1.0.0":
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/@urql/exchange-retry/-/exchange-retry-1.1.0.tgz#3c14c784e13fdacdd544378a6c44b9fd7a266d3e"
-  integrity sha512-F6OPBikGDHsxmQh9HmKo4x1Yjaa31dvUeYdA3OzyjwD+DYXFlScHKWUjH1LazHIg6lxsH4K+GUg6kH0GaBa21g==
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/@urql/exchange-retry/-/exchange-retry-1.1.1.tgz#cf74546af6c583ee748dc464c7a55ef7aa207277"
+  integrity sha512-+YX8c4J/nW/V7MZeNAAKzV7S79CVspLJ3vmJQXCUjBGuL0NtQE7PlXtOGWXE+ogySE1pHslPc1PIbdd7uml7NQ==
   dependencies:
     "@urql/core" ">=4.0.0"
-    wonka "^6.3.0"
+    wonka "^6.3.2"
 
 "@vue/component-compiler-utils@^3.1.0":
   version "3.3.0"
