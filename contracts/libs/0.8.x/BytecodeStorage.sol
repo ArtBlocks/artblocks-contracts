@@ -27,7 +27,7 @@ library BytecodeStorage {
     //---------------------------------------------------------------------------------------------------------------//
     // 0              | N/A  | 0            |                                                                        //
     // 0              | 1    | 1            | single byte opcode for making the storage contract non-executable      //
-    // 0              | 1    | 33           | the 32 bytes for storing the deploying contract's (0-padded) address   //
+    // 1              | 32   | 33           | the 32 bytes for storing the deploying contract's (0-padded) address   //
     //---------------------------------------------------------------------------------------------------------------//
     // Define the offset for where the "logic bytes" end, and the "data bytes" begin. Note that this is a manually
     // calculated value, and must be updated if the above table is changed. It is expected that tests will fail
