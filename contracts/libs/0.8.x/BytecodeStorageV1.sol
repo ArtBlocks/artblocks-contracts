@@ -147,7 +147,7 @@ library BytecodeStorage {
 
     /**
      * @notice Get address for deployer for given contract bytecode
-     * @param _address address of deployed contract with bytecode containing concat(deployer-address, data)
+     * @param _address address of deployed contract with bytecode containing concat(invalid opcode,  deployer-address, data)
      * @return writerAddress address read from contract bytecode
      */
     function getWriterAddressForBytecode(
