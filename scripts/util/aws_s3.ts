@@ -4,7 +4,7 @@ const {
   CreateBucketCommand,
   PutBucketCorsCommand,
   DeletePublicAccessBlockCommand,
-  PutBucketACLCommand,
+  PutBucketAclCommand,
 } = require("@aws-sdk/client-s3");
 
 // Docs: https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-s3/index.html
@@ -41,7 +41,7 @@ const createBucket = async (bucketName: string, client: any) => {
     Bucket: bucketName,
     ACL: "public-read",
   };
-  const command3 = new PutBucketACLCommand(input3);
+  const command3 = new PutBucketAclCommand(input3);
   return await client.send(command3);
 };
 
