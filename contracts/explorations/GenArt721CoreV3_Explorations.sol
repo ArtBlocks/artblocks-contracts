@@ -6,6 +6,7 @@ pragma solidity 0.8.17;
 import "../interfaces/0.8.x/IRandomizerV2.sol";
 import "../interfaces/0.8.x/IAdminACLV0.sol";
 import "../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
+import "../interfaces/0.8.x/IGenArt721CoreContractExposesHashSeed.sol";
 import "../interfaces/0.8.x/IManifold.sol";
 
 import "@openzeppelin-4.7/contracts/utils/Strings.sol";
@@ -88,7 +89,8 @@ import "../libs/0.8.x/Bytes32Strings.sol";
 contract GenArt721CoreV3_Explorations is
     ERC721_PackedHashSeed,
     Ownable,
-    IGenArt721CoreContractV3
+    IGenArt721CoreContractV3,
+    IGenArt721CoreContractExposesHashSeed
 {
     using BytecodeStorage for string;
     using BytecodeStorage for address;
@@ -237,7 +239,7 @@ contract GenArt721CoreV3_Explorations is
     /// version & type of this core contract
     /// coreVersion is updated from Flagship V3 core due to minor changes
     /// implemented in the Explorations version of the contract.
-    string public constant coreVersion = "v3.0.3";
+    string public constant coreVersion = "v3.1.1";
     /// coreType remains consistent with flagship V3 core because external &
     /// public functions used for indexing are unchanged.
     string public constant coreType = "GenArt721CoreV3";
@@ -1251,6 +1253,20 @@ contract GenArt721CoreV3_Explorations is
             return 0;
         }
         return keccak256(abi.encode(_hashSeed));
+    }
+
+    /**
+     * @notice Returns token hash **seed** for token ID `_tokenId`. Returns
+     * null if hash seed has not been set. The hash seed id the bytes12 value
+     * which is hashed to produce the token hash.
+     * @param _tokenId Token ID to be queried.
+     * @return bytes12 Token hash seed.
+     * @dev token hash seed is keccak256 hashed to give the token hash
+     */
+    function tokenIdToHashSeed(
+        uint256 _tokenId
+    ) external view returns (bytes12) {
+        return _ownersAndHashSeeds[_tokenId].hashSeed;
     }
 
     /**

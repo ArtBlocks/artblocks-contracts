@@ -7,6 +7,7 @@ import "../../interfaces/0.8.x/IRandomizerV2.sol";
 import "../../interfaces/0.8.x/IAdminACLV0.sol";
 import "../../interfaces/0.8.x/IEngineRegistryV0.sol";
 import "../../interfaces/0.8.x/IGenArt721CoreContractV3_Engine.sol";
+import "../../interfaces/0.8.x/IGenArt721CoreContractExposesHashSeed.sol";
 import "../../interfaces/0.8.x/IDependencyRegistryCompatibleV0.sol";
 import "../../interfaces/0.8.x/IManifold.sol";
 
@@ -96,7 +97,8 @@ contract GenArt721CoreV3_Engine is
     Ownable,
     IDependencyRegistryCompatibleV0,
     IManifold,
-    IGenArt721CoreContractV3_Engine
+    IGenArt721CoreContractV3_Engine,
+    IGenArt721CoreContractExposesHashSeed
 {
     using BytecodeStorage for string;
     using BytecodeStorage for address;
