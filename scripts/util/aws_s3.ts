@@ -29,20 +29,20 @@ const createBucket = async (bucketName: string, client: any) => {
     ObjectOwnership: "ObjectWriter",
   };
   const command = new CreateBucketCommand(input);
-  return await client.send(command);
+  await client.send(command);
   // remove block public access
   const input2 = {
     Bucket: bucketName,
   };
   const command2 = new DeletePublicAccessBlockCommand(input2);
-  const response = await client.send(command);
+  await client.send(command2);
   // set bucket ACL to public-read
   const input3 = {
     Bucket: bucketName,
     ACL: "public-read",
   };
   const command3 = new PutBucketACLCommand(input3);
-  return await client.send(command);
+  return await client.send(command3);
 };
 
 const updateBucketCors = async (bucketName: string, client: any) => {
