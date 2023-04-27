@@ -67,7 +67,7 @@ library BytecodeStorage {
     /**
      * @notice Write a string to contract bytecode
      * @param _data string to be written to contract. No input validation is performed on this parameter.
-     * @return address_ address of deployed contract with bytecode containing concat(version, deployer-address, data)
+     * @return address_ address of deployed contract with bytecode containing concat(invalid opcode, version, deployer-address, data)
      */
     function writeToBytecode(
         string memory _data
@@ -133,7 +133,7 @@ library BytecodeStorage {
 
     /**
      * @notice Read a string from contract bytecode
-     * @param _address address of deployed contract with bytecode containing concat(version, deployer-address, data)
+     * @param _address address of deployed contract with bytecode containing concat(invalid opcode, version, deployer-address, data)
      * @return data string read from contract bytecode
      */
     function readFromBytecode(
@@ -176,7 +176,7 @@ library BytecodeStorage {
 
     /**
      * @notice Get address for deployer for given contract bytecode
-     * @param _address address of deployed contract with bytecode containing concat(version, deployer-address, data)
+     * @param _address address of deployed contract with bytecode containing concat(invalid opcode, version, deployer-address, data)
      * @return writerAddress address read from contract bytecode
      */
     function getWriterAddressForBytecode(
@@ -203,8 +203,8 @@ library BytecodeStorage {
             // copy the 32-byte address of the data contract writer to memory
             // note: this relies on the assumption noted at the top-level of
             //       this file that the storage layout for the deployed
-            //       contracts-as-storage contract looks like:
-            //       | version-string (unless v0) | deployer-address (padded) | data |
+            //       contracts-as-storage contract looks like::
+            //       | invalid opcode | version-string (unless v0) | deployer-address (padded) | data |
             extcodecopy(
                 _address,
                 writerAddress,
@@ -220,7 +220,7 @@ library BytecodeStorage {
 
     /**
      * @notice Get version for given contract bytecode
-     * @param _address address of deployed contract with bytecode containing concat(version, deployer-address, data)
+     * @param _address address of deployed contract with bytecode containing concat(invalid opcode, version, deployer-address, data)
      * @return version version read from contract bytecode
      */
     function getLibraryVersionForBytecode(
@@ -306,7 +306,7 @@ library BytecodeStorage {
             // note: this relies on the assumption noted at the top-level of
             //       this file that the storage layout for the deployed
             //       contracts-as-storage contract looks like:
-            //       | version-string (unless v0) | deployer-address (padded) | data |
+            //       | invalid opcode | version-string (unless v0) | deployer-address (padded) | data |
             extcodecopy(
                 _address,
                 versionString,

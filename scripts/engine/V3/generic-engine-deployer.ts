@@ -18,7 +18,6 @@ import {
 
 import {
   DELEGATION_REGISTRY_ADDRESSES,
-  WETH_ADDRESSES,
   KNOWN_ENGINE_REGISTRIES,
   EXTRA_DELAY_BETWEEN_TX,
 } from "../../util/constants";
@@ -279,8 +278,6 @@ async function main() {
         minterName.startsWith("MinterPolyptych")
       ) {
         minterConstructorArgs.push(DELEGATION_REGISTRY_ADDRESSES[networkName]);
-      } else if (minterName.startsWith("MinterSEA")) {
-        minterConstructorArgs.push(WETH_ADDRESSES[networkName]);
       }
       const minter = await minterFactory.deploy(...minterConstructorArgs);
       await minter.deployed();
