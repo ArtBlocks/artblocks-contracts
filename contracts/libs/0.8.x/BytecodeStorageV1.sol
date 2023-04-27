@@ -55,7 +55,7 @@ library BytecodeStorage {
     // Define set of known valid version strings that may be stored in the deployed storage contract bytecode
     bytes32 internal constant V0_VERSION_STRING = 0x00; // pre-dates versioning string (special case of 0 bytes)
     bytes32 internal constant V1_VERSION_STRING =
-        "BytecodeStorage_V1.0.0_________ "; // intentionally exactly 32 bytes (including null-terminator)
+        "BytecodeStorage_V1.0.0_________ "; // intentionally exactly 32 bytes (null-terminated string)
 
     // Provide a public getter for the version of this library.
     bytes32 public constant VERSION = V1_VERSION_STRING;
