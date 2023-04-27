@@ -14,7 +14,7 @@ import "../../interfaces/0.8.x/IManifold.sol";
 import "@openzeppelin-4.7/contracts/utils/Strings.sol";
 import "@openzeppelin-4.7/contracts/access/Ownable.sol";
 import "../../libs/0.8.x/ERC721_PackedHashSeed.sol";
-import "../../libs/0.8.x/BytecodeStorage.sol";
+import "../../libs/0.8.x/BytecodeStorageV1.sol";
 import "../../libs/0.8.x/Bytes32Strings.sol";
 
 /**

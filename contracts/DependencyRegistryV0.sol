@@ -13,7 +13,7 @@ import "@openzeppelin-4.8/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin-4.8/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin-4.5/contracts/utils/math/SafeCast.sol";
 
-import "./libs/0.8.x/BytecodeStorage.sol";
+import "./libs/0.8.x/BytecodeStorageV1.sol";
 import "./libs/0.8.x/Bytes32Strings.sol";
 
 /**
