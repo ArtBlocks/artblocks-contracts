@@ -296,9 +296,9 @@ for (const coreContractName of coreContractsToTest) {
         const config = await loadFixture(_beforeEach);
         let targetCoreVersion;
         if (coreContractName === "GenArt721CoreV3") {
-          targetCoreVersion = "v3.1.0";
+          targetCoreVersion = "v3.2.0";
         } else if (coreContractName === "GenArt721CoreV3_Explorations") {
-          targetCoreVersion = "v3.1.1";
+          targetCoreVersion = "v3.2.1";
         } else if (coreContractName.includes("GenArt721CoreV3_Engine")) {
           targetCoreVersion = "v3.1.2";
         } else {

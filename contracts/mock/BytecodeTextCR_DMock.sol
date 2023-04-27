@@ -89,9 +89,7 @@ contract BytecodeTextCR_DMock {
      *      the underlying BytecodeStorage lib to throw errors where applicable.
      */
     function deleteText(uint256 _textSlotId) external onlyDeployer {
-        // purge old contract bytecode contract from the blockchain state
-        storedTextBytecodeAddresses[_textSlotId].purgeBytecode();
-        // delete reference to contract address that no longer exists
+        // delete reference to old storage contract address
         delete storedTextBytecodeAddresses[_textSlotId];
     }
 
@@ -126,20 +124,6 @@ contract BytecodeTextCR_DMock {
         address _bytecodeAddress
     ) public view returns (address) {
         return _bytecodeAddress.getWriterAddressForBytecode();
-    }
-
-    /**
-     * @notice Allows additional delete introspection, to delete a chunk of text,
-     *                from chain-state that lives at a given deployed address.
-     * @param _bytecodeAddress address from which to delete text content.
-     * @dev Intentionally do not perform input validation, instead allowing
-     *      the underlying BytecodeStorage lib to throw errors where applicable.
-     */
-    function deleteTextAtAddress(
-        address _bytecodeAddress
-    ) external onlyDeployer {
-        // purge old contract bytecode contract from the blockchain state
-        _bytecodeAddress.purgeBytecode();
     }
 
     /**

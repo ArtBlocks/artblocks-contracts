@@ -1115,16 +1115,6 @@ contract GenArt721CoreV3_Engine_IncorrectCoreType is
     {
         Project storage project = projects[_projectId];
         require(_scriptId < project.scriptCount, "scriptId out of range");
-        // purge old contract bytecode contract from the blockchain state
-        // note: Although this does reduce usage of Ethereum state, it does not
-        // reduce the gas costs of removal transactions. We believe this is the
-        // best behavior at the time of writing, and do not expect this to
-        // result in any breaking changes in the future. All current proposals
-        // to change the self-destruct opcode are backwards compatible, but may
-        // result in not removing the bytecode from the blockchain state. This
-        // implementation is compatible with that architecture, as it does not
-        // rely on the bytecode being removed from the blockchain state.
-        project.scriptBytecodeAddresses[_scriptId].purgeBytecode();
         // store script in contract bytecode, replacing reference address from
         // the contract that no longer exists with the newly created one
         project.scriptBytecodeAddresses[_scriptId] = _script.writeToBytecode();
@@ -1144,18 +1134,6 @@ contract GenArt721CoreV3_Engine_IncorrectCoreType is
     {
         Project storage project = projects[_projectId];
         require(project.scriptCount > 0, "there are no scripts to remove");
-        // purge old contract bytecode contract from the blockchain state
-        // note: Although this does reduce usage of Ethereum state, it does not
-        // reduce the gas costs of removal transactions. We believe this is the
-        // best behavior at the time of writing, and do not expect this to
-        // result in any breaking changes in the future. All current proposals
-        // to change the self-destruct opcode are backwards compatible, but may
-        // result in not removing the bytecode from the blockchain state. This
-        // implementation is compatible with that architecture, as it does not
-        // rely on the bytecode being removed from the blockchain state.
-        project
-            .scriptBytecodeAddresses[project.scriptCount - 1]
-            .purgeBytecode();
         // delete reference to contract address that no longer exists
         delete project.scriptBytecodeAddresses[project.scriptCount - 1];
         unchecked {

@@ -1134,9 +1134,8 @@ contract GenArt721CoreV3_Engine is
         _onlyNonEmptyString(_script);
         Project storage project = projects[_projectId];
         require(_scriptId < project.scriptCount, "scriptId out of range");
-
         // store script in contract bytecode, replacing reference address from
-        // the contract that no longer exists with the newly created one
+        // the old storage contract with the newly created one
         project.scriptBytecodeAddresses[_scriptId] = _script.writeToBytecode();
         emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
     }
@@ -1153,8 +1152,7 @@ contract GenArt721CoreV3_Engine is
         );
         Project storage project = projects[_projectId];
         require(project.scriptCount > 0, "No scripts to remove");
-
-        // delete reference to contract address that no longer exists
+        // delete reference to old storage contract address
         delete project.scriptBytecodeAddresses[project.scriptCount - 1];
         unchecked {
             project.scriptCount = project.scriptCount - 1;
