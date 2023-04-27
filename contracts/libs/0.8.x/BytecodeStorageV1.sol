@@ -107,7 +107,7 @@ library BytecodeStorage {
 
     /**
      * @notice Read a string from contract bytecode
-     * @param _address address of deployed contract with bytecode containing concat(deployer-address, data)
+     * @param _address address of deployed contract with bytecode containing concat(invalid opcode, deployer-address, data)
      * @return data string read from contract bytecode
      */
     function readFromBytecode(
