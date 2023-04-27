@@ -55,7 +55,7 @@ library BytecodeStorage {
     // Define set of known valid version strings that may be stored in the deployed storage contract bytecode
     bytes32 internal constant V0_VERSION_STRING = 0x00; // pre-dates versioning string (special case of 0 bytes)
     bytes32 internal constant V1_VERSION_STRING =
-        "BytecodeStorage_V1_____________ "; // intentionally exactly 32 bytes (including null-terminator)
+        "BytecodeStorage_V1.0.0_________ "; // intentionally exactly 32 bytes (including null-terminator)
 
     // Provide a public getter for the version of this library.
     bytes32 public constant VERSION = V1_VERSION_STRING;
@@ -314,7 +314,7 @@ library BytecodeStorage {
                 0x20 // 32-byte version string
             )
             switch mload(versionString)
-            case "BytecodeStorage_V1_____________ " {
+            case "BytecodeStorage_V1.0.0_________ " {
                 // note: must check against literal strings, as Yul does not allow for
                 //       dynamic strings in switch statements.
                 version := V1_VERSION_STRING
