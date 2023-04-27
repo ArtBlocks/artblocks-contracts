@@ -99,7 +99,7 @@ contract BytecodeV1TextCR_DMock {
 
     /**
      * @notice Allows additional read introspection, to read a chunk of text,
-     *                from chain-state that lives at a given deployed address.
+     *         from chain-state that lives at a given deployed address.
      * @param _bytecodeAddress address from which to read text content.
      * @return string Content read from contract bytecode at the given address.
      * @dev Intentionally do not perform input validation, instead allowing
@@ -116,7 +116,7 @@ contract BytecodeV1TextCR_DMock {
      *         contract, based on a provided `_bytecodeAddress`.
      * @param _bytecodeAddress address for which to read the author address.
      * @return address of the author who wrote the data contained in the
-     *         given `_bytecodeAddress` contract.
+     *                 given `_bytecodeAddress` contract.
      * @dev Intentionally do not perform input validation, instead allowing
      *      the underlying BytecodeStorage lib to throw errors where applicable.
      */
@@ -124,6 +124,21 @@ contract BytecodeV1TextCR_DMock {
         address _bytecodeAddress
     ) public view returns (address) {
         return _bytecodeAddress.getWriterAddressForBytecode();
+    }
+
+    /**
+     * @notice Allows introspection of the version of a given contracts-as-storage
+     *         contract, based on a provided `_bytecodeAddress`.
+     * @param _bytecodeAddress address for which to read the version.
+     * @return bytes32 version of the version string contained in the given `_bytecodeAddress`
+     *                 contract.
+     * @dev Intentionally do not perform input validation, instead allowing
+     *      the underlying BytecodeStorage lib to throw errors where applicable.
+     */
+    function readLibraryVersionForTextAtAddress(
+        address _bytecodeAddress
+    ) public view returns (bytes32) {
+        return _bytecodeAddress.getLibraryVersionForBytecode();
     }
 
     /**

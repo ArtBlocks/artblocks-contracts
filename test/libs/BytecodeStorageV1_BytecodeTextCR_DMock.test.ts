@@ -27,7 +27,7 @@ import {
 } from "../util/example-scripts";
 
 /**
- * Tests for BytecodeStorage by way of testing the BytecodeV1TextCR_DMock.
+ * Tests for BytecodeStorageV1 by way of testing the BytecodeV1TextCR_DMock.
  * Note: it is not the intention of these tests to comprehensively test the mock
  *       itself, but rather to achieve full test coverage of the underlying
  *       library under test here, BytecodeStorage.

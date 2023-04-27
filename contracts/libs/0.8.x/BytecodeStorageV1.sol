@@ -3,13 +3,17 @@
 
 pragma solidity ^0.8.0;
 
-//---------------------------------------------------------------------------------------------------------------//
-// NOTE: This library version is still an active work-in-progress.
-//---------------------------------------------------------------------------------------------------------------//
-
 /**
  * @title Art Blocks Script Storage Library
  * @notice Utilize contract bytecode as persistant storage for large chunks of script string data.
+ *         This library is intended to have an external deployed copy that is released in the future,
+ *         and, as such, has been designed to support both updated V1 (versioned, with purging removed)
+ *         reads as well as backwards-compatible reads for the unversioned "V0" storage contracts
+ *         which were deployed by the original version of this libary.
+ *         For these pre-V1 storage contracts (which themselves did not have any explict versioning semantics)
+ *         backwards-compatible reads are optimistic, and only expected to work for contracts actually
+ *         deployed by the original version of this library – and may fail ungracefully if attempted to be
+ *         used to read from other contracts.
  *
  * @author Art Blocks Inc.
  * @author Modified from 0xSequence (https://github.com/0xsequence/sstore2/blob/master/contracts/SSTORE2.sol)
@@ -20,6 +24,9 @@ pragma solidity ^0.8.0;
  *      - uses the `string` data type for input/output on reads, rather than speaking in bytes directly
  *      - stores the "writer" address (library user) in the deployed contract bytes, which is useful for
  *        on-chain introspection and provenance purposes
+ *      - stores a very simple versioning string in the deployed contract bytes, which captures the version
+ *        of the library that was used to deploy the storage contract and useful for supporting future
+ *        compatibility management as this library evolves (e.g. in response to EOF v1 migration plans)
  *      Also, given that much of this library is written in assembly, this library makes use of a slightly
  *      different convention (when compared to the rest of the Art Blocks smart contract repo) around
  *      pre-defining return values in some cases in order to simplify need to directly memory manage these
@@ -31,13 +38,27 @@ library BytecodeStorage {
     //---------------------------------------------------------------------------------------------------------------//
     // 0              | N/A  | 0            |                                                                        //
     // 0              | 1    | 1            | single byte opcode for making the storage contract non-executable      //
-    // 1              | 32   | 33           | the 32 bytes for storing the deploying contract's (0-padded) address   //
+    // 1              | 32   | 33           | the 32 byte slot used for storing a basic versioning string            //
+    // 33             | 32   | 65           | the 32 bytes for storing the deploying contract's (0-padded) address   //
     //---------------------------------------------------------------------------------------------------------------//
-    // Define the offset for where the "logic bytes" end, and the "data bytes" begin. Note that this is a manually
+    // Define the offset for where the "meta bytes" end, and the "data bytes" begin. Note that this is a manually
     // calculated value, and must be updated if the above table is changed. It is expected that tests will fail
     // loudly if these values are not updated in-step with eachother.
-    uint256 internal constant DATA_OFFSET = 33;
-    uint256 internal constant ADDRESS_OFFSET = 1;
+    uint256 internal constant VERSION_OFFSET = 1;
+    uint256 internal constant ADDRESS_OFFSET = 33;
+    uint256 internal constant DATA_OFFSET = 65;
+
+    // Define the set of known *historic* offset values for where the "meta bytes" end, and the "data bytes" begin.
+    uint256 internal constant V0_ADDRESS_OFFSET = 72;
+    uint256 internal constant V0_DATA_OFFSET = 104;
+
+    // Define set of known valid version strings that may be stored in the deployed storage contract bytecode
+    bytes32 internal constant V0_VERSION_STRING = 0x00; // pre-dates versioning string (special case of 0 bytes)
+    bytes32 internal constant V1_VERSION_STRING =
+        "BytecodeStorage_V1_____________ "; // intentionally exactly 32 bytes (including null-terminator)
+
+    // Provide a public getter for the version of this library.
+    bytes32 public constant VERSION = V1_VERSION_STRING;
 
     /*//////////////////////////////////////////////////////////////
                            WRITE LOGIC
@@ -46,7 +67,7 @@ library BytecodeStorage {
     /**
      * @notice Write a string to contract bytecode
      * @param _data string to be written to contract. No input validation is performed on this parameter.
-     * @return address_ address of deployed contract with bytecode containing concat(deployer-address, data)
+     * @return address_ address of deployed contract with bytecode containing concat(version, deployer-address, data)
      */
     function writeToBytecode(
         string memory _data
@@ -81,7 +102,12 @@ library BytecodeStorage {
             // (1 byte)
             hex"FE",
             //---------------------------------------------------------------------------------------------------------------//
-            // c.) store the deploying-contract's address with 0-padding to fit a 20-byte address into a 32-byte slot
+            // c.) store the version string, which is already represented as a 32-byte value
+            //---------------------------------------------------------------------------------------------------------------//
+            // (32 bytes)
+            VERSION,
+            //---------------------------------------------------------------------------------------------------------------//
+            // d.) store the deploying-contract's address with 0-padding to fit a 20-byte address into a 32-byte slot
             //---------------------------------------------------------------------------------------------------------------//
             // (12 bytes)
             hex"00_00_00_00_00_00_00_00_00_00_00_00",
@@ -107,7 +133,7 @@ library BytecodeStorage {
 
     /**
      * @notice Read a string from contract bytecode
-     * @param _address address of deployed contract with bytecode containing concat(deployer-address, data)
+     * @param _address address of deployed contract with bytecode containing concat(version, deployer-address, data)
      * @return data string read from contract bytecode
      */
     function readFromBytecode(
@@ -115,19 +141,22 @@ library BytecodeStorage {
     ) internal view returns (string memory data) {
         // get the size of the bytecode
         uint256 bytecodeSize = _bytecodeSizeAt(_address);
-        // handle case where address contains code < DATA_OFFSET
+        // the dataOffset for the bytecode
+        uint256 dataOffset = _bytecodeDataOffsetAt(_address);
+        // handle case where address contains code < dataOffset
         // note: the first check here also captures the case where
         //       (bytecodeSize == 0) implicitly, but we add the second check of
         //       (bytecodeSize == 0) as a fall-through that will never execute
-        //       unless `DATA_OFFSET` is set to 0 at some point.
-        if ((bytecodeSize < DATA_OFFSET) || (bytecodeSize == 0)) {
+        //       unless `dataOffset` is set to 0 at some point.
+        if ((bytecodeSize < dataOffset) || (bytecodeSize == 0)) {
             revert("ContractAsStorage: Read Error");
         }
-        // handle case where address contains code >= DATA_OFFSET
-        // decrement by DATA_OFFSET to account for header info
+
+        // handle case where address contains code >= dataOffset
+        // decrement by dataOffset to account for header info
         uint256 size;
         unchecked {
-            size = bytecodeSize - DATA_OFFSET;
+            size = bytecodeSize - dataOffset;
         }
 
         assembly {
@@ -141,13 +170,13 @@ library BytecodeStorage {
             // store length of data in first 32 bytes
             mstore(data, size)
             // copy code to memory, excluding the deployer-address
-            extcodecopy(_address, add(data, 0x20), DATA_OFFSET, size)
+            extcodecopy(_address, add(data, 0x20), dataOffset, size)
         }
     }
 
     /**
      * @notice Get address for deployer for given contract bytecode
-     * @param _address address of deployed contract with bytecode containing concat(deployer-address, data)
+     * @param _address address of deployed contract with bytecode containing concat(version, deployer-address, data)
      * @return writerAddress address read from contract bytecode
      */
     function getWriterAddressForBytecode(
@@ -155,12 +184,14 @@ library BytecodeStorage {
     ) internal view returns (address) {
         // get the size of the data
         uint256 bytecodeSize = _bytecodeSizeAt(_address);
-        // handle case where address contains code < DATA_OFFSET
+        // the dataOffset for the bytecode
+        uint256 addressOffset = _bytecodeAddressOffsetAt(_address);
+        // handle case where address contains code < addressOffset
         // note: the first check here also captures the case where
         //       (bytecodeSize == 0) implicitly, but we add the second check of
         //       (bytecodeSize == 0) as a fall-through that will never execute
-        //       unless `DATA_OFFSET` is set to 0 at some point.
-        if ((bytecodeSize < DATA_OFFSET) || (bytecodeSize == 0)) {
+        //       unless `addressOffset` is set to 0 at some point.
+        if ((bytecodeSize < addressOffset) || (bytecodeSize == 0)) {
             revert("ContractAsStorage: Read Error");
         }
 
@@ -173,11 +204,11 @@ library BytecodeStorage {
             // note: this relies on the assumption noted at the top-level of
             //       this file that the storage layout for the deployed
             //       contracts-as-storage contract looks like:
-            //       | deployer-address (padded) | data |
+            //       | version-string (unless v0) | deployer-address (padded) | data |
             extcodecopy(
                 _address,
                 writerAddress,
-                ADDRESS_OFFSET,
+                addressOffset,
                 0x20 // full 32-bytes, as address is expected to be zero-padded
             )
             return(
@@ -187,20 +218,110 @@ library BytecodeStorage {
         }
     }
 
+    /**
+     * @notice Get version for given contract bytecode
+     * @param _address address of deployed contract with bytecode containing concat(version, deployer-address, data)
+     * @return version version read from contract bytecode
+     */
+    function getLibraryVersionForBytecode(
+        address _address
+    ) internal view returns (bytes32) {
+        return _bytecodeVersionAt(_address);
+    }
+
     /*//////////////////////////////////////////////////////////////
                           INTERNAL HELPER LOGIC
     //////////////////////////////////////////////////////////////*/
 
     /**
-        @notice Returns the size of the bytecode at address `_address`
-        @param _address address that may or may not contain bytecode
-        @return size size of the bytecode code at `_address`
-    */
+     * @notice Returns the size of the bytecode at address `_address`
+     * @param _address address that may or may not contain bytecode
+     * @return size size of the bytecode code at `_address`
+     */
     function _bytecodeSizeAt(
         address _address
     ) private view returns (uint256 size) {
         assembly {
             size := extcodesize(_address)
+        }
+    }
+
+    /**
+     * @notice Returns the offset of the data in the bytecode at address `_address`
+     * @param _address address that may or may not contain bytecode
+     * @return dataOffset offset of data in bytecode
+     */
+    function _bytecodeDataOffsetAt(
+        address _address
+    ) private view returns (uint256 dataOffset) {
+        bytes32 version = _bytecodeVersionAt(_address);
+        if (version == V0_VERSION_STRING) {
+            dataOffset = V0_DATA_OFFSET;
+        } else {
+            dataOffset = DATA_OFFSET;
+        }
+    }
+
+    /**
+     * @notice Returns the offset of the address in the bytecode at address `_address`
+     * @param _address address that may or may not contain bytecode
+     * @return addressOffset offset of address in bytecode
+     */
+    function _bytecodeAddressOffsetAt(
+        address _address
+    ) private view returns (uint256 addressOffset) {
+        bytes32 version = _bytecodeVersionAt(_address);
+        if (version == V0_VERSION_STRING) {
+            addressOffset = V0_ADDRESS_OFFSET;
+        } else {
+            addressOffset = ADDRESS_OFFSET;
+        }
+    }
+
+    /**
+     * @notice Get version string for given contract bytecode
+     * @param _address address of deployed contract with bytecode containing concat(version, deployer-address, data)
+     * @return version version string read from contract bytecode
+     */
+    function _bytecodeVersionAt(
+        address _address
+    ) private view returns (bytes32 version) {
+        // get the size of the data
+        uint256 bytecodeSize = _bytecodeSizeAt(_address);
+        // handle case where address contains code < VERSION_OFFSET
+        // note: the first check here also captures the case where
+        //       (bytecodeSize == 0) implicitly, but we add the second check of
+        //       (bytecodeSize == 0) as a fall-through that will never execute
+        //       unless `VERSION_OFFSET` is set to 0 at some point.
+        if ((bytecodeSize < VERSION_OFFSET) || (bytecodeSize == 0)) {
+            revert("ContractAsStorage: Read Error");
+        }
+
+        assembly {
+            // allocate free memory
+            let versionString := mload(0x40)
+            // shift free memory pointer by one slot
+            mstore(0x40, add(mload(0x40), 0x20))
+            // copy the 32-byte version string of the bytecode library to memory
+            // note: this relies on the assumption noted at the top-level of
+            //       this file that the storage layout for the deployed
+            //       contracts-as-storage contract looks like:
+            //       | version-string (unless v0) | deployer-address (padded) | data |
+            extcodecopy(
+                _address,
+                versionString,
+                VERSION_OFFSET,
+                0x20 // 32-byte version string
+            )
+            switch mload(versionString)
+            case "BytecodeStorage_V1_____________ " {
+                // note: must check against literal strings, as Yul does not allow for
+                //       dynamic strings in switch statements.
+                version := V1_VERSION_STRING
+            }
+            default {
+                version := V0_VERSION_STRING
+            }
         }
     }
 }
