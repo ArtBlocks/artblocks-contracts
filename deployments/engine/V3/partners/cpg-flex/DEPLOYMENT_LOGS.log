@@ -1,0 +1,47 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-04-28T01:08:31.653Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/cpg-flex/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x7E6F7Aa281133e394041b5fEA1f3Be7a00D7201F
+[INFO] Randomizer BasicRandomizerV2 deployed at 0x945eBC4fE196A51e3eDA4D0bF104348923BaCE16
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x7b03Ec8ee63740642ca76b5Fe169978f2077ca08
+[INFO] Minter Filter MinterFilterV1 deployed at 0xe04CF36aE874C952D7d092d900fF4B5E9C8b3d6C
+[INFO] MinterDAExpV4 deployed at 0x6caFC1B007F16f171B34eE45Fc61B378ad58F592
+[INFO] MinterDAExpSettlementV1 deployed at 0xD56069aCeE1C1F880A9E24C9b949faf167b95720
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0xe04CF36aE874C952D7d092d900fF4B5E9C8b3d6C.
+[INFO] Allowlisted minter MinterDAExpV4 at 0x6caFC1B007F16f171B34eE45Fc61B378ad58F592 on minter filter.
+[INFO] Allowlisted minter MinterDAExpSettlementV1 at 0xD56069aCeE1C1F880A9E24C9b949faf167b95720 on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0x3bEbC69B555c12F4155F4949e1cf89Ed93c47476.
+[INFO] Verifying core contract contract deployment...
+The contract 0x7b03Ec8ee63740642ca76b5Fe169978f2077ca08 has already been verified
+[INFO] Core contract verified on Etherscan at 0x7b03Ec8ee63740642ca76b5Fe169978f2077ca08}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0x7E6F7Aa281133e394041b5fEA1f3Be7a00D7201F has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0x7E6F7Aa281133e394041b5fEA1f3Be7a00D7201F}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0xe04CF36aE874C952D7d092d900fF4B5E9C8b3d6C has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0xe04CF36aE874C952D7d092d900fF4B5E9C8b3d6C}
+[INFO] Verifying MinterDAExpV4 contract deployment...
+The contract 0x6caFC1B007F16f171B34eE45Fc61B378ad58F592 has already been verified
+[INFO] MinterDAExpV4 contract verified on Etherscan at 0x6caFC1B007F16f171B34eE45Fc61B378ad58F592}
+[INFO] Verifying MinterDAExpSettlementV1 contract deployment...
+The contract 0xD56069aCeE1C1F880A9E24C9b949faf167b95720 has already been verified
+[INFO] MinterDAExpSettlementV1 contract verified on Etherscan at 0xD56069aCeE1C1F880A9E24C9b949faf167b95720}
+Created s3 bucket for https://cpgx-goerli.s3.amazonaws.com
+[INFO] Created image bucket cpgx-goerli
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/cpg-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x7b03ec8ee63740642ca76b5fe169978f2077ca08",
+  "name": "CPGX",
+  "bucket_name": "cpgx-goerli",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x3bEbC69B555c12F4155F4949e1cf89Ed93c47476, don't forget to update if requred.
