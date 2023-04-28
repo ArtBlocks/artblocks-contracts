@@ -26,3 +26,17 @@ The contract 0x77D4b54e91822E9799AB0900876D6B1cdA752706 has already been verifie
 [INFO] Verifying MinterSetPriceV4 contract deployment...
 The contract 0x3b8f62893FfD0aD191DdFD2E4e132F7933EA4EF1 has already been verified
 [INFO] MinterSetPriceV4 contract verified on Etherscan at 0x3b8f62893FfD0aD191DdFD2E4e132F7933EA4EF1}
+Created s3 bucket for https://axiom-space3-goerli.s3.amazonaws.com
+[INFO] Created image bucket axiom-space3-goerli
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/axiom/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0xd6c97e2ca3d2ece73eaee6ca7f66faf89f74c98a",
+  "name": "Axiom Space3",
+  "bucket_name": "axiom-space3-goerli",
+  "default_vertical_name": "fullyonchain"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63, don't forget to update if requred.
