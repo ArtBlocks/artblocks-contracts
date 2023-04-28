@@ -3,3 +3,11 @@
 [INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/axiom/deployment-config.staging.ts
 [INFO] Deploying to network: goerli
 [INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x959bc2976AbEaafD3e680bdBe39406CA548C10b0
+[INFO] Randomizer BasicRandomizerV2 deployed at 0x3b7954A19111bfd01B927c6C7D973E52AC609e53
+[INFO] Core GenArt721CoreV3_Engine deployed at 0xd6c97e2CA3d2ecE73Eaee6CA7F66faF89F74c98A
+[INFO] Minter Filter MinterFilterV1 deployed at 0x77D4b54e91822E9799AB0900876D6B1cdA752706
+[INFO] MinterSetPriceV4 deployed at 0x3b8f62893FfD0aD191DdFD2E4e132F7933EA4EF1
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0x77D4b54e91822E9799AB0900876D6B1cdA752706.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0x3b8f62893FfD0aD191DdFD2E4e132F7933EA4EF1 on minter filter.

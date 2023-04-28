@@ -22,3 +22,32 @@ Successfully submitted source code for contract
 contracts/engine/V3/GenArt721CoreV3_Engine.sol:GenArt721CoreV3_Engine at 0xF03511eC774289DA497CDb2070Df4c711580fF7A
 for verification on the block explorer. Waiting for verification result...
 
+Successfully verified contract GenArt721CoreV3_Engine on Etherscan.
+https://goerli.etherscan.io/address/0xF03511eC774289DA497CDb2070Df4c711580fF7A#code
+[INFO] Core contract verified on Etherscan at 0xF03511eC774289DA497CDb2070Df4c711580fF7A}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0xd7742cfEeb84F34F81E6C64b35744f3C37d83d75 has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0xd7742cfEeb84F34F81E6C64b35744f3C37d83d75}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0xA2399239A381B0B71CD3DF5f31288ea64A36D805 has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0xA2399239A381B0B71CD3DF5f31288ea64A36D805}
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+The contract 0xCe12d6eBacbdDE8927F240822CCbdc2108016d6F has already been verified
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0xCe12d6eBacbdDE8927F240822CCbdc2108016d6F}
+[INFO] Verifying MinterDAExpSettlementV1 contract deployment...
+The contract 0xAfEEaf186D1Df3E61daAe951Be3D57a492aCbd3e has already been verified
+[INFO] MinterDAExpSettlementV1 contract verified on Etherscan at 0xAfEEaf186D1Df3E61daAe951Be3D57a492aCbd3e}
+Created s3 bucket for https://concentric-art-goerli.s3.amazonaws.com
+[INFO] Created image bucket concentric-art-goerli
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/variadic-labs/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0xf03511ec774289da497cdb2070df4c711580ff7a",
+  "name": "Concentric Art",
+  "bucket_name": "concentric-art-goerli",
+  "default_vertical_name": "fullyonchain"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x61F1Ca3F65EA947B01bC66379bc4a7C5a07a8A3F, don't forget to update if requred.
