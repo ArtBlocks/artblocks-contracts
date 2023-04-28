@@ -11,3 +11,18 @@
 [INFO] Assigned randomizer to core and renounced ownership of randomizer
 [INFO] Updated the Minter Filter on the Core contract to 0x77D4b54e91822E9799AB0900876D6B1cdA752706.
 [INFO] Allowlisted minter MinterSetPriceV4 at 0x3b8f62893FfD0aD191DdFD2E4e132F7933EA4EF1 on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0xbF826ed6D0F74278b81056C45e21928a374051ba.
+[INFO] Verifying core contract contract deployment...
+The contract 0xd6c97e2CA3d2ecE73Eaee6CA7F66faF89F74c98A has already been verified
+[INFO] Core contract verified on Etherscan at 0xd6c97e2CA3d2ecE73Eaee6CA7F66faF89F74c98A}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0x959bc2976AbEaafD3e680bdBe39406CA548C10b0 has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0x959bc2976AbEaafD3e680bdBe39406CA548C10b0}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0x77D4b54e91822E9799AB0900876D6B1cdA752706 has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0x77D4b54e91822E9799AB0900876D6B1cdA752706}
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+The contract 0x3b8f62893FfD0aD191DdFD2E4e132F7933EA4EF1 has already been verified
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0x3b8f62893FfD0aD191DdFD2E4e132F7933EA4EF1}
