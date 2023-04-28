@@ -76,3 +76,12 @@ Successfully submitted source code for contract
 contracts/minter-suite/Minters/MinterSetPriceERC20V4.sol:MinterSetPriceERC20V4 at 0xE79B6D89cc2126d8f1bEb128C748b25cc6D21420
 for verification on the block explorer. Waiting for verification result...
 
+[WARN] Etherscan verification of MinterSetPriceERC20V4 failed: NomicLabsHardhatPluginError: The Etherscan API responded with a failure status.
+The verification may still succeed but should be checked manually.
+Reason: Other Exception - Please contact us for more information.
+[ACTION] Verify MinterSetPriceERC20V4 contract deployment with:
+yarn hardhat verify --network goerli 0xE79B6D89cc2126d8f1bEb128C748b25cc6D21420 0xCEd5350f5a2Ba24946F92C08260931CFf65dc954 0x0AB754254d7243315FFFDC363a6A0997aD9c3118
+[INFO] Minter deployment details written/appended to /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/plottables/DEPLOYMENTS.md
+[INFO] Completed minter deployment! MinterSetPriceERC20V4 deployed to 0xE79B6D89cc2126d8f1bEb128C748b25cc6D21420, and allowlisted on the minter filter at 0x0AB754254d7243315FFFDC363a6A0997aD9c3118
+[ACTION] If this minter is to be indexed in a subgraph, ensure it is added to the subgraph's config.
+[ACTION] The minter was not able to be allowlisted on the minter filter, ensure the minter filter is updated by appropriate admin.
