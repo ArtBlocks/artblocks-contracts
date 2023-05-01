@@ -8,8 +8,9 @@ pragma solidity ^0.8.0;
  * @notice Utilize contract bytecode as persistant storage for large chunks of script string data.
  *         This library is intended to have an external deployed copy that is released in the future,
  *         and, as such, has been designed to support both updated V1 (versioned, with purging removed)
- *         reads as well as backwards-compatible reads for the unversioned "V0" storage contracts
- *         which were deployed by the original version of this libary.
+ *         reads as well as backwards-compatible reads for both a) the unversioned "V0" storage contracts
+ *         which were deployed by the original version of this libary and b) contracts that were deployed
+ *         using one of the SSTORE2 implementations referenced below.
  *         For these pre-V1 storage contracts (which themselves did not have any explict versioning semantics)
  *         backwards-compatible reads are optimistic, and only expected to work for contracts actually
  *         deployed by the original version of this library – and may fail ungracefully if attempted to be
@@ -49,6 +50,7 @@ library BytecodeStorage {
     uint256 internal constant DATA_OFFSET = 65;
 
     // Define the set of known *historic* offset values for where the "meta bytes" end, and the "data bytes" begin.
+    uint256 internal constant SSTORE2_FALLBACK_DATA_OFFSET = 1;
     uint256 internal constant V0_ADDRESS_OFFSET = 72;
     uint256 internal constant V0_DATA_OFFSET = 104;
     uint256 internal constant V1_ADDRESS_OFFSET = ADDRESS_OFFSET;
@@ -153,6 +155,12 @@ library BytecodeStorage {
         uint256 bytecodeSize = _bytecodeSizeAt(_address);
         // the dataOffset for the bytecode
         uint256 dataOffset = _bytecodeDataOffsetAt(_address);
+        // validate that version is readable
+        // note: never expected to throw for reads, as we
+        //       fall back to SSTORE-2 reads optimistically
+        if (dataOffset == 0) {
+            revert("ContractAsStorage: Unsupported Version");
+        }
         // handle case where address contains code < dataOffset
         // note: the first check here also captures the case where
         //       (bytecodeSize == 0) implicitly, but we add the second check of
@@ -196,6 +204,10 @@ library BytecodeStorage {
         uint256 bytecodeSize = _bytecodeSizeAt(_address);
         // the dataOffset for the bytecode
         uint256 addressOffset = _bytecodeAddressOffsetAt(_address);
+        // validate that version is readable
+        if (addressOffset == 0) {
+            revert("ContractAsStorage: Unsupported Version");
+        }
         // handle case where address contains code < addressOffset
         // note: the first check here also captures the case where
         //       (bytecodeSize == 0) implicitly, but we add the second check of
@@ -270,7 +282,8 @@ library BytecodeStorage {
         } else if (version == V0_VERSION_STRING) {
             dataOffset = V0_DATA_OFFSET;
         } else {
-            dataOffset = 0;
+            // unknown version, fallback to attempting an SSTORE2-compatible read
+            dataOffset = SSTORE2_FALLBACK_DATA_OFFSET;
         }
     }
 
@@ -288,6 +301,7 @@ library BytecodeStorage {
         } else if (version == V0_VERSION_STRING) {
             addressOffset = V0_ADDRESS_OFFSET;
         } else {
+            // unknown version, support for deploying-address reads is not expected
             addressOffset = 0;
         }
     }
