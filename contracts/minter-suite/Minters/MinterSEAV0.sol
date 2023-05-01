@@ -887,6 +887,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         );
         // load entire auction into memory
         auction = _projectConfig.activeAuction;
+        return auction;
     }
 
     /**
