@@ -144,29 +144,25 @@ library BytecodeStorage {
     //////////////////////////////////////////////////////////////*/
 
     /**
-     * @notice Read a string from contract bytecode
-     * @param _address address of deployed contract with bytecode containing concat(invalid opcode, version, deployer-address, data)
+     * @notice Read a string from contract bytecode, with an explicitly provided offset
+     * @param _address address of deployed contract to read from
+     * @param _offset offset to read from in contract bytecode, explicitly provided (not calculated)
      * @return data string read from contract bytecode
+     * @dev This function performs no input validation on the provided contract,
+     *      other than that there is content to read (but not that its a "storage contract")
      */
-    function readFromBytecode(
-        address _address
+    function forceReadFromBytecode(
+        address _address,
+        uint256 _offset
     ) internal view returns (string memory data) {
         // get the size of the bytecode
         uint256 bytecodeSize = _bytecodeSizeAt(_address);
-        // the dataOffset for the bytecode
-        uint256 dataOffset = _bytecodeDataOffsetAt(_address);
-        // validate that version is readable
-        // note: never expected to throw for reads, as we
-        //       fall back to SSTORE-2 reads optimistically
-        if (dataOffset == 0) {
-            revert("ContractAsStorage: Unsupported Version");
-        }
         // handle case where address contains code < dataOffset
         // note: the first check here also captures the case where
         //       (bytecodeSize == 0) implicitly, but we add the second check of
         //       (bytecodeSize == 0) as a fall-through that will never execute
         //       unless `dataOffset` is set to 0 at some point.
-        if ((bytecodeSize < dataOffset) || (bytecodeSize == 0)) {
+        if ((bytecodeSize < _offset) || (bytecodeSize == 0)) {
             revert("ContractAsStorage: Read Error");
         }
 
@@ -174,7 +170,7 @@ library BytecodeStorage {
         // decrement by dataOffset to account for header info
         uint256 size;
         unchecked {
-            size = bytecodeSize - dataOffset;
+            size = bytecodeSize - _offset;
         }
 
         assembly {
@@ -188,8 +184,27 @@ library BytecodeStorage {
             // store length of data in first 32 bytes
             mstore(data, size)
             // copy code to memory, excluding the deployer-address
-            extcodecopy(_address, add(data, 0x20), dataOffset, size)
+            extcodecopy(_address, add(data, 0x20), _offset, size)
         }
+    }
+
+    /**
+     * @notice Read a string from contract bytecode
+     * @param _address address of deployed contract with bytecode containing concat(invalid opcode, version, deployer-address, data)
+     * @return data string read from contract bytecode
+     */
+    function readFromBytecode(
+        address _address
+    ) internal view returns (string memory data) {
+        // the dataOffset for the bytecode
+        uint256 dataOffset = _bytecodeDataOffsetAt(_address);
+        // validate that version is readable
+        // note: never expected to throw for reads, as we
+        //       fall back to SSTORE-2 reads optimistically
+        if (dataOffset == 0) {
+            revert("ContractAsStorage: Unsupported Version");
+        }
+        return forceReadFromBytecode(_address, dataOffset);
     }
 
     /**

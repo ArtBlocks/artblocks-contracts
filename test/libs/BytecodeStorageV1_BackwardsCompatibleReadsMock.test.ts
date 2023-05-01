@@ -42,22 +42,29 @@ describe("BytecodeStorageV1 Backwards Compatible Reads Tests", async function ()
     bytecodeV1TextCR_DMock: Contract,
     deployer: SignerWithAddress
   ) {
-    // Upload the target text via the V0 library.
+    // Upload the target text via the SSTORE2 library.
     const createTextTX = await sstore2Mock
       .connect(deployer)
       .createText(targetText);
 
-    // Retrieve the address of the written target text from the V0 library.
+    // Retrieve the address of the written target text from the SSTORE2 library.
     const textBytecodeAddress = getLatestTextDeploymentAddressSSTORE2(
       config,
       config.sstore2Mock
     );
 
-    // Validate that V1 read of V0 written text is same as original text.
+    // Validate that V1 read of SSTORE2 written text is same as original text.
     const text = await bytecodeV1TextCR_DMock.readTextAtAddress(
       textBytecodeAddress
     );
     expect(text).to.equal(targetText);
+    // Validate that read is the same when using manually provided read-offsets.
+    const textManualOffset =
+      await bytecodeV1TextCR_DMock.forceReadTextAtAddress(
+        textBytecodeAddress,
+        1 // for SSTORE2, expected data offset is `1`
+      );
+    expect(textManualOffset).to.equal(targetText);
   }
 
   // Helper that validates a write from the V0 library is readable
@@ -85,6 +92,13 @@ describe("BytecodeStorageV1 Backwards Compatible Reads Tests", async function ()
       textBytecodeAddress
     );
     expect(text).to.equal(targetText);
+    // Validate that read is the same when using manually provided read-offsets.
+    const textManualOffset =
+      await bytecodeV1TextCR_DMock.forceReadTextAtAddress(
+        textBytecodeAddress,
+        104 // for V0, expected data offset is `104`
+      );
+    expect(textManualOffset).to.equal(targetText);
   }
 
   // Helper that retrieves the address of the most recently deployed contract

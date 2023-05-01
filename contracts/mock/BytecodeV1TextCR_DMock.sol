@@ -112,6 +112,24 @@ contract BytecodeV1TextCR_DMock {
     }
 
     /**
+     * @notice Allows additional read introspection, to read a chunk of text,
+     *         from chain-state that lives at a given deployed address with an
+     *         explicitly provided `_offset`.
+     * @param _bytecodeAddress address from which to read text content.
+     * @param _offset Offset to read from in contract bytecode,
+     *                explicitly provided (not calculated)
+     * @return string Content read from contract bytecode at the given address.
+     * @dev Intentionally do not perform input validation, instead allowing
+     *      the underlying BytecodeStorage lib to throw errors where applicable.
+     */
+    function forceReadTextAtAddress(
+        address _bytecodeAddress,
+        uint256 _offset
+    ) public view returns (string memory) {
+        return _bytecodeAddress.forceReadFromBytecode(_offset);
+    }
+
+    /**
      * @notice Allows introspection of who deployed a given contracts-as-storage
      *         contract, based on a provided `_bytecodeAddress`.
      * @param _bytecodeAddress address for which to read the author address.
