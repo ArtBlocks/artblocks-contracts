@@ -5062,12 +5062,12 @@
     wonka "^6.3.0"
 
 "@urql/exchange-retry@^1.0.0":
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/@urql/exchange-retry/-/exchange-retry-1.1.0.tgz#3c14c784e13fdacdd544378a6c44b9fd7a266d3e"
-  integrity sha512-F6OPBikGDHsxmQh9HmKo4x1Yjaa31dvUeYdA3OzyjwD+DYXFlScHKWUjH1LazHIg6lxsH4K+GUg6kH0GaBa21g==
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/@urql/exchange-retry/-/exchange-retry-1.1.1.tgz#cf74546af6c583ee748dc464c7a55ef7aa207277"
+  integrity sha512-+YX8c4J/nW/V7MZeNAAKzV7S79CVspLJ3vmJQXCUjBGuL0NtQE7PlXtOGWXE+ogySE1pHslPc1PIbdd7uml7NQ==
   dependencies:
     "@urql/core" ">=4.0.0"
-    wonka "^6.3.0"
+    wonka "^6.3.2"
 
 "@vue/component-compiler-utils@^3.1.0":
   version "3.3.0"
@@ -14983,9 +14983,9 @@ urlpattern-polyfill@^6.0.2:
     braces "^3.0.2"
 
 urql@^4.0.0:
-  version "4.0.1"
-  resolved "https://registry.yarnpkg.com/urql/-/urql-4.0.1.tgz#4579fe5c9733505d5bb4fff3cb32fca92ac0209c"
-  integrity sha512-flXNjwxdvepDiOMtVQjst8q4beOxkT+4LTgFBmx0+t4WCOlLi5mxhH/QS/OADg3TsOwjeisVfYFn2F7vqIoPkQ==
+  version "4.0.2"
+  resolved "https://registry.yarnpkg.com/urql/-/urql-4.0.2.tgz#c67a64fe80a5a66f2916a24e31493e0c91ab2f56"
+  integrity sha512-jMb71UGtoAHI4A0TO15ZUSG8qvUxC5fBTXmUq/DyE3WWcnJkZbnMCBlcZIzMrXK4txAMIHE718jsaUujRkdlkg==
   dependencies:
     "@urql/core" "^4.0.0"
     wonka "^6.3.2"
