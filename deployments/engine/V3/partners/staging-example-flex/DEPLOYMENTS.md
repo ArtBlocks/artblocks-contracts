@@ -36,3 +36,24 @@ Date: 2023-03-23T16:54:55.913Z
 - **Image Bucket:** engine-partner-flex-goerli
 
 ---
+
+# Minter Deployment
+
+Date: 2023-04-28T00:11:43.158Z
+
+## **Network:** goerli
+
+## **Environment:** staging
+
+**Deployment Input File:** `deployments/engine/V3/partners/staging-example-flex/minter-deploy-config.staging.ts`
+
+**MinterSetPriceV4:** https://goerli.etherscan.io/address/0xEA503d02D36dd7C4DF205be3F1c18C266DdB3411#code
+
+**Associated core contract:** 0x6200437235E9AB363e83A53666871d745BfE52F3
+
+**Associated minter filter:** 0x868A6FFA1020E78e73ea7573c443C1BECF934068
+
+**Deployment Args:** 0x6200437235E9AB363e83A53666871d745BfE52F3,0x868A6FFA1020E78e73ea7573c443C1BECF934068
+
+---
+
