@@ -34,6 +34,7 @@ const SUPPORTED_CORE_CONTRACTS = [
   "GenArt721CoreV3_Engine",
   "GenArt721CoreV3_Engine_Flex",
   "GenArt721CoreV3_Engine_Flex_PROOF",
+  "GenArt721CoreV3_Engine_Flex_PROHIBITION",
 ];
 
 /**

@@ -101,3 +101,49 @@ Date: 2023-04-14
 **Deployment Args:** 0xD00495689D5161C511882364E0C342e12Dcc5f08,0xB64116A7D5D84fE9795DD022ea191217A2e32076
 
 ---
+
+# Deployment
+
+Date: 2023-04-28T17:48:37.867Z
+
+## **Network:** mainnet
+
+## **Environment:** mainnet
+
+**Deployment Input File:** `deployments/engine/V3/partners/hodlers-projects/deployment-config-projects.mainnet.ts`
+
+**GenArt721CoreV3_Engine_Flex:** https://etherscan.io/address/0x9F79e46A309f804Aa4B7B53a1F72c69137427794#code
+
+**AdminACLV0:** https://etherscan.io/address/0x1A4D843e091f67F3e6372dcD46847ab966333639#code
+
+**Engine Registry:** https://etherscan.io/address/0x652490c8BB6e7ec3Fd798537D2F348D7904BBbc2#code
+
+**MinterFilterV1:** https://etherscan.io/address/0x489A6680cf268E5F7da783F7666c7CfC346DBEa3#code
+
+**Minters:**
+
+**MinterDAExpSettlementV2:** https://etherscan.io/address/0x2e9242B96351280C561a6f9db0e0127923e3f5E4#code
+
+**MinterMerkleV5:** https://etherscan.io/address/0x5f53E89f060F6B45333b0CA809E126795Bd978E9#code
+
+**MinterSetPriceV4:** https://etherscan.io/address/0xD8B6dcA208B6F8D08eb429C1b027F6e5FAbFAC53#code
+
+
+
+**Metadata**
+
+- **Starting Project Id:** 1
+- **Token Name:** Hodlers Projects
+- **Token Ticker:** HODLERS
+- **Auto Approve Artist Split Proposals:** false
+- **Render Provider Address, Primary Sales:** 0xbf4674ee0F5ab527eD187B32739b54B62aEB6247
+- **Platform Provider Address, Primary Sales:** 0x8cc0019C16bced6891a96d32FF36FeAB4A663a40
+
+**Other**
+
+- **Add initial project?:** false
+- **Add initial token?:** false
+- **Image Bucket:** hodlers-projects-mainnet
+
+---
+
