@@ -51,14 +51,24 @@ library BytecodeStorage {
     // Define the set of known *historic* offset values for where the "meta bytes" end, and the "data bytes" begin.
     uint256 internal constant V0_ADDRESS_OFFSET = 72;
     uint256 internal constant V0_DATA_OFFSET = 104;
+    uint256 internal constant V1_ADDRESS_OFFSET = ADDRESS_OFFSET;
+    uint256 internal constant V1_DATA_OFFSET = DATA_OFFSET;
 
-    // Define set of known valid version strings that may be stored in the deployed storage contract bytecode
-    bytes32 internal constant V0_VERSION_STRING = 0x00; // pre-dates versioning string (special case of 0 bytes)
+    // Define the set of known valid version strings that may be stored in the deployed storage contract bytecode
+    // note: These are all intentionally exactly 32-bytes and are null-terminated
+    // Used for storage contracts that were deployed by an unknown source
+    bytes32 internal constant UNKNOWN_VERSION_STRING =
+        "UNKNOWN_VERSION_STRING_________ ";
+    // Pre-dates versioning string, so this doesn't actually exist in any deployed contracts,
+    // but is useful for backwards-compatible semantics with original version of this library
+    bytes32 internal constant V0_VERSION_STRING =
+        "BytecodeStorage_V0.0.0_________ ";
+    // The first versioned storage contract, deployed by an updated version of this library
     bytes32 internal constant V1_VERSION_STRING =
-        "BytecodeStorage_V1.0.0_________ "; // intentionally exactly 32 bytes (null-terminated string)
+        "BytecodeStorage_V1.0.0_________ ";
 
     // Provide a public getter for the version of this library.
-    bytes32 public constant VERSION = V1_VERSION_STRING;
+    bytes32 public constant CURRENT_VERSION = V1_VERSION_STRING;
 
     /*//////////////////////////////////////////////////////////////
                            WRITE LOGIC
@@ -105,7 +115,7 @@ library BytecodeStorage {
             // c.) store the version string, which is already represented as a 32-byte value
             //---------------------------------------------------------------------------------------------------------------//
             // (32 bytes)
-            VERSION,
+            CURRENT_VERSION,
             //---------------------------------------------------------------------------------------------------------------//
             // d.) store the deploying-contract's address with 0-padding to fit a 20-byte address into a 32-byte slot
             //---------------------------------------------------------------------------------------------------------------//
@@ -249,32 +259,36 @@ library BytecodeStorage {
     /**
      * @notice Returns the offset of the data in the bytecode at address `_address`
      * @param _address address that may or may not contain bytecode
-     * @return dataOffset offset of data in bytecode
+     * @return dataOffset offset of data in bytecode if a known version, otherwise 0
      */
     function _bytecodeDataOffsetAt(
         address _address
     ) private view returns (uint256 dataOffset) {
         bytes32 version = _bytecodeVersionAt(_address);
-        if (version == V0_VERSION_STRING) {
+        if (version == V1_VERSION_STRING) {
+            dataOffset = V1_DATA_OFFSET;
+        } else if (version == V0_VERSION_STRING) {
             dataOffset = V0_DATA_OFFSET;
         } else {
-            dataOffset = DATA_OFFSET;
+            dataOffset = 0;
         }
     }
 
     /**
      * @notice Returns the offset of the address in the bytecode at address `_address`
      * @param _address address that may or may not contain bytecode
-     * @return addressOffset offset of address in bytecode
+     * @return addressOffset offset of address in bytecode if a known version, otherwise 0
      */
     function _bytecodeAddressOffsetAt(
         address _address
     ) private view returns (uint256 addressOffset) {
         bytes32 version = _bytecodeVersionAt(_address);
-        if (version == V0_VERSION_STRING) {
+        if (version == V1_VERSION_STRING) {
+            addressOffset = V1_ADDRESS_OFFSET;
+        } else if (version == V0_VERSION_STRING) {
             addressOffset = V0_ADDRESS_OFFSET;
         } else {
-            addressOffset = ADDRESS_OFFSET;
+            addressOffset = 0;
         }
     }
 
@@ -313,14 +327,17 @@ library BytecodeStorage {
                 VERSION_OFFSET,
                 0x20 // 32-byte version string
             )
+            // note: must check against literal strings, as Yul does not allow for
+            //       dynamic strings in switch statements.
             switch mload(versionString)
+            case 0x2060486000396000513314601057fe5b60013614601957fe5b6000357fff0000 {
+                version := V0_VERSION_STRING // pre-dates actual versioning w/ version strings
+            }
             case "BytecodeStorage_V1.0.0_________ " {
-                // note: must check against literal strings, as Yul does not allow for
-                //       dynamic strings in switch statements.
                 version := V1_VERSION_STRING
             }
             default {
-                version := V0_VERSION_STRING
+                version := UNKNOWN_VERSION_STRING
             }
         }
     }

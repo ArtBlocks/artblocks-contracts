@@ -189,6 +189,23 @@ describe("BytecodeStorageV1 Backwards Compatible Reads Tests", async function ()
   });
 
   describe("validate getLibraryVersionForBytecode works across versions", function () {
+    it("read unknown contract from V1 library", async function () {
+      const config = await loadFixture(_beforeEach);
+
+      // read the mock contract itself (it _is_ an unknown storage contract)
+      // from the V1 library, to validate unknown-reads
+      const textLibraryVersionV1 =
+        await config.bytecodeV1TextCR_DMock.readLibraryVersionForTextAtAddress(
+          config.bytecodeV1TextCR_DMock.address
+        );
+      // hard-coded expected value
+      let textLibraryVersionV1UTF8 =
+        ethers.utils.toUtf8String(textLibraryVersionV1);
+      expect(textLibraryVersionV1UTF8).to.equal(
+        "UNKNOWN_VERSION_STRING_________ "
+      );
+    });
+
     it("read V0 version from V1 library", async function () {
       const config = await loadFixture(_beforeEach);
       await config.bytecodeV0TextCR_DMock
@@ -205,8 +222,11 @@ describe("BytecodeStorageV1 Backwards Compatible Reads Tests", async function ()
           textBytecodeAddress
         );
       // hard-coded expected value
-      let expectedBytes = ethers.utils.formatBytes32String("");
-      expect(textLibraryVersionV1).to.equal(expectedBytes);
+      let textLibraryVersionV1UTF8 =
+        ethers.utils.toUtf8String(textLibraryVersionV1);
+      expect(textLibraryVersionV1UTF8).to.equal(
+        "BytecodeStorage_V0.0.0_________ "
+      );
     });
 
     it("read V1 version from V1 library", async function () {
