@@ -423,9 +423,9 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         uint256 _auctionDurationSeconds,
         uint256 _basePrice
     ) external {
+        _onlyNonZero(_basePrice);
         _onlyArtist(_projectId);
         // CHECKS
-        _onlyNonZero(_basePrice);
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         require(
             _timestampStart == 0 || block.timestamp < _timestampStart,
@@ -868,7 +868,6 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
             .nextTokenNumberIsPopulated
             ? projectConfig_.nextTokenNumber
             : 0;
-        projectConfig_.activeAuction = projectConfig[_projectId].activeAuction;
     }
 
     /**
@@ -888,7 +887,6 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         );
         // load entire auction into memory
         auction = _projectConfig.activeAuction;
-        return auction;
     }
 
     /**
