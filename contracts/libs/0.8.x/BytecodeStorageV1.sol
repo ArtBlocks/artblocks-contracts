@@ -49,13 +49,19 @@ library BytecodeStorage {
     uint256 internal constant DATA_OFFSET = 65;
 
     // Define the set of known *historic* offset values for where the "meta bytes" end, and the "data bytes" begin.
+    // V0 deployed storage contracts take the general format of:
+    // concat(gated-cleanup-logic, deployer-address, data)
     uint256 internal constant V0_ADDRESS_OFFSET = 72;
     uint256 internal constant V0_DATA_OFFSET = 104;
+    // V1 deployed storage contracts take the general format of:
+    // concat(invalid opcode, version, deployer-address, data)
     uint256 internal constant V1_ADDRESS_OFFSET = ADDRESS_OFFSET;
     uint256 internal constant V1_DATA_OFFSET = DATA_OFFSET;
 
     // Define the set of known valid version strings that may be stored in the deployed storage contract bytecode
-    // note: These are all intentionally exactly 32-bytes and are null-terminated
+    // note: These are all intentionally exactly 32-bytes and are null-terminated. Null-termination is used due
+    //       to this being the standard expected formatting in common web3 tooling such as ethers.js. Please see
+    //       the following for additional context: https://docs.ethers.org/v5/api/utils/strings/#Bytes32String
     // Used for storage contracts that were deployed by an unknown source
     bytes32 internal constant UNKNOWN_VERSION_STRING =
         "UNKNOWN_VERSION_STRING_________ ";
@@ -77,7 +83,7 @@ library BytecodeStorage {
     /**
      * @notice Write a string to contract bytecode
      * @param _data string to be written to contract. No input validation is performed on this parameter.
-     * @return address_ address of deployed contract with bytecode containing concat(invalid opcode, version, deployer-address, data)
+     * @return address_ address of deployed contract with bytecode containing
      */
     function writeToBytecode(
         string memory _data
@@ -143,7 +149,7 @@ library BytecodeStorage {
 
     /**
      * @notice Read a string from contract bytecode
-     * @param _address address of deployed contract with bytecode containing concat(invalid opcode, version, deployer-address, data)
+     * @param _address address of deployed contract with bytecode stored in the V0 or V1 format
      * @return data string read from contract bytecode
      */
     function readFromBytecode(
@@ -186,7 +192,7 @@ library BytecodeStorage {
 
     /**
      * @notice Get address for deployer for given contract bytecode
-     * @param _address address of deployed contract with bytecode containing concat(invalid opcode, version, deployer-address, data)
+     * @param _address address of deployed contract with bytecode stored in the V0 or V1 format
      * @return writerAddress address read from contract bytecode
      */
     function getWriterAddressForBytecode(
@@ -230,7 +236,7 @@ library BytecodeStorage {
 
     /**
      * @notice Get version for given contract bytecode
-     * @param _address address of deployed contract with bytecode containing concat(invalid opcode, version, deployer-address, data)
+     * @param _address address of deployed contract with bytecode stored in the V0 or V1 format
      * @return version version read from contract bytecode
      */
     function getLibraryVersionForBytecode(
@@ -294,7 +300,7 @@ library BytecodeStorage {
 
     /**
      * @notice Get version string for given contract bytecode
-     * @param _address address of deployed contract with bytecode containing concat(version, deployer-address, data)
+     * @param _address address of deployed contract with bytecode stored in the V0 or V1 format
      * @return version version string read from contract bytecode
      */
     function _bytecodeVersionAt(
@@ -330,11 +336,15 @@ library BytecodeStorage {
             // note: must check against literal strings, as Yul does not allow for
             //       dynamic strings in switch statements.
             switch mload(versionString)
-            case 0x2060486000396000513314601057fe5b60013614601957fe5b6000357fff0000 {
-                version := V0_VERSION_STRING // pre-dates actual versioning w/ version strings
-            }
             case "BytecodeStorage_V1.0.0_________ " {
                 version := V1_VERSION_STRING
+            }
+            case 0x2060486000396000513314601057fe5b60013614601957fe5b6000357fff0000 {
+                // the v0 variant of this library pre-dates formal versioning w/ version strings,
+                // so we check the first 32 bytes of the execution bytecode itself which
+                // is static and known across all storage contracts deployed with the first version
+                // of this library.
+                version := V0_VERSION_STRING
             }
             default {
                 version := UNKNOWN_VERSION_STRING
