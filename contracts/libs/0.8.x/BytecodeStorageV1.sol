@@ -50,14 +50,23 @@ library BytecodeStorage {
     uint256 internal constant DATA_OFFSET = 65;
 
     // Define the set of known *historic* offset values for where the "meta bytes" end, and the "data bytes" begin.
+    // SSTORE2 deployed storage contracts take the general format of:
+    // concat(0x00, data)
+    // note: this is true for both variants of the SSTORE2 library
     uint256 internal constant SSTORE2_FALLBACK_DATA_OFFSET = 1;
+    // V0 deployed storage contracts take the general format of:
+    // concat(gated-cleanup-logic, deployer-address, data)
     uint256 internal constant V0_ADDRESS_OFFSET = 72;
     uint256 internal constant V0_DATA_OFFSET = 104;
+    // V1 deployed storage contracts take the general format of:
+    // concat(invalid opcode, version, deployer-address, data)
     uint256 internal constant V1_ADDRESS_OFFSET = ADDRESS_OFFSET;
     uint256 internal constant V1_DATA_OFFSET = DATA_OFFSET;
 
     // Define the set of known valid version strings that may be stored in the deployed storage contract bytecode
-    // note: These are all intentionally exactly 32-bytes and are null-terminated
+    // note: These are all intentionally exactly 32-bytes and are null-terminated. Null-termination is used due
+    //       to this being the standard expected formatting in common web3 tooling such as ethers.js. Please see
+    //       the following for additional context: https://docs.ethers.org/v5/api/utils/strings/#Bytes32String
     // Used for storage contracts that were deployed by an unknown source
     bytes32 internal constant UNKNOWN_VERSION_STRING =
         "UNKNOWN_VERSION_STRING_________ ";
@@ -79,7 +88,7 @@ library BytecodeStorage {
     /**
      * @notice Write a string to contract bytecode
      * @param _data string to be written to contract. No input validation is performed on this parameter.
-     * @return address_ address of deployed contract with bytecode containing concat(invalid opcode, version, deployer-address, data)
+     * @return address_ address of deployed contract with bytecode containing
      */
     function writeToBytecode(
         string memory _data
@@ -145,7 +154,7 @@ library BytecodeStorage {
 
     /**
      * @notice Read a string from contract bytecode, with an explicitly provided offset
-     * @param _address address of deployed contract to read from
+     * @param _address address of deployed contract with bytecode stored in the V0 or V1 format
      * @param _offset offset to read from in contract bytecode, explicitly provided (not calculated)
      * @return data string read from contract bytecode
      * @dev This function performs no input validation on the provided contract,
@@ -157,12 +166,8 @@ library BytecodeStorage {
     ) internal view returns (string memory data) {
         // get the size of the bytecode
         uint256 bytecodeSize = _bytecodeSizeAt(_address);
-        // handle case where address contains code < dataOffset
-        // note: the first check here also captures the case where
-        //       (bytecodeSize == 0) implicitly, but we add the second check of
-        //       (bytecodeSize == 0) as a fall-through that will never execute
-        //       unless `dataOffset` is set to 0 at some point.
-        if ((bytecodeSize < _offset) || (bytecodeSize == 0)) {
+        // handle case where address contains code < _offset
+        if (bytecodeSize < _offset) {
             revert("ContractAsStorage: Read Error");
         }
 
@@ -209,7 +214,7 @@ library BytecodeStorage {
 
     /**
      * @notice Get address for deployer for given contract bytecode
-     * @param _address address of deployed contract with bytecode containing concat(invalid opcode, version, deployer-address, data)
+     * @param _address address of deployed contract with bytecode stored in the V0 or V1 format
      * @return writerAddress address read from contract bytecode
      */
     function getWriterAddressForBytecode(
@@ -223,12 +228,8 @@ library BytecodeStorage {
         if (addressOffset == 0) {
             revert("ContractAsStorage: Unsupported Version");
         }
-        // handle case where address contains code < addressOffset
-        // note: the first check here also captures the case where
-        //       (bytecodeSize == 0) implicitly, but we add the second check of
-        //       (bytecodeSize == 0) as a fall-through that will never execute
-        //       unless `addressOffset` is set to 0 at some point.
-        if ((bytecodeSize < addressOffset) || (bytecodeSize == 0)) {
+        // handle case where address contains code < addressOffset + 32 (address takes a whole slot)
+        if (bytecodeSize < (addressOffset + 32)) {
             revert("ContractAsStorage: Read Error");
         }
 
@@ -257,7 +258,7 @@ library BytecodeStorage {
 
     /**
      * @notice Get version for given contract bytecode
-     * @param _address address of deployed contract with bytecode containing concat(invalid opcode, version, deployer-address, data)
+     * @param _address address of deployed contract with bytecode stored in the V0 or V1 format
      * @return version version read from contract bytecode
      */
     function getLibraryVersionForBytecode(
@@ -280,6 +281,9 @@ library BytecodeStorage {
     ) private view returns (uint256 size) {
         assembly {
             size := extcodesize(_address)
+        }
+        if (size == 0) {
+            revert("ContractAsStorage: Read Error");
         }
     }
 
@@ -323,7 +327,7 @@ library BytecodeStorage {
 
     /**
      * @notice Get version string for given contract bytecode
-     * @param _address address of deployed contract with bytecode containing concat(version, deployer-address, data)
+     * @param _address address of deployed contract with bytecode stored in the V0 or V1 format
      * @return version version string read from contract bytecode
      */
     function _bytecodeVersionAt(
@@ -331,12 +335,8 @@ library BytecodeStorage {
     ) private view returns (bytes32 version) {
         // get the size of the data
         uint256 bytecodeSize = _bytecodeSizeAt(_address);
-        // handle case where address contains code < VERSION_OFFSET
-        // note: the first check here also captures the case where
-        //       (bytecodeSize == 0) implicitly, but we add the second check of
-        //       (bytecodeSize == 0) as a fall-through that will never execute
-        //       unless `VERSION_OFFSET` is set to 0 at some point.
-        if ((bytecodeSize < VERSION_OFFSET) || (bytecodeSize == 0)) {
+        // handle case where address contains code < minimum expected version string size
+        if (bytecodeSize < (VERSION_OFFSET + 32)) {
             revert("ContractAsStorage: Read Error");
         }
 
@@ -359,11 +359,15 @@ library BytecodeStorage {
             // note: must check against literal strings, as Yul does not allow for
             //       dynamic strings in switch statements.
             switch mload(versionString)
-            case 0x2060486000396000513314601057fe5b60013614601957fe5b6000357fff0000 {
-                version := V0_VERSION_STRING // pre-dates actual versioning w/ version strings
-            }
             case "BytecodeStorage_V1.0.0_________ " {
                 version := V1_VERSION_STRING
+            }
+            case 0x2060486000396000513314601057fe5b60013614601957fe5b6000357fff0000 {
+                // the v0 variant of this library pre-dates formal versioning w/ version strings,
+                // so we check the first 32 bytes of the execution bytecode itself which
+                // is static and known across all storage contracts deployed with the first version
+                // of this library.
+                version := V0_VERSION_STRING
             }
             default {
                 version := UNKNOWN_VERSION_STRING
