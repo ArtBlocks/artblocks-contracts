@@ -1,4 +1,4 @@
-import { Client } from "urql/core";
+import { Client, cacheExchange, fetchExchange } from "urql/core";
 import fetch from "node-fetch";
 
 const getEndpointAndAdminSecret = (): {
@@ -36,6 +36,7 @@ export const getClient = (): Client => {
         "x-hasura-admin-secret": hasuraAdminSecret,
       },
     },
+    exchanges: [cacheExchange, fetchExchange],
   });
   return client;
 };
