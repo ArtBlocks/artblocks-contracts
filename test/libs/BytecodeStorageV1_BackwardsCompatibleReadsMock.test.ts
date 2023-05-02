@@ -54,7 +54,7 @@ describe("BytecodeStorageV1 Backwards Compatible Reads Tests", async function ()
     );
 
     // Validate that V1 read of SSTORE2 written text is same as original text.
-    const text = await bytecodeV1TextCR_DMock.readTextAtAddress(
+    const text = await bytecodeV1TextCR_DMock.readSSTORE2TextAtAddress(
       textBytecodeAddress
     );
     expect(text).to.equal(targetText);
@@ -309,13 +309,20 @@ describe("BytecodeStorageV1 Backwards Compatible Reads Tests", async function ()
   describe("validate getLibraryVersionForBytecode works across versions", function () {
     it("read unknown contract from V1 library", async function () {
       const config = await loadFixture(_beforeEach);
+      await config.sstore2Mock
+        .connect(config.accounts.deployer)
+        .createText("zip zipppity zoooop zop");
+      const textBytecodeAddress = getLatestTextDeploymentAddressSSTORE2(
+        config,
+        config.sstore2Mock
+      );
 
-      // read the mock contract itself (it _is_ an unknown storage contract)
-      // from the V1 library, to validate unknown-reads
+      // read SSTORE2 version from V1 library
       const textLibraryVersionV1 =
         await config.bytecodeV1TextCR_DMock.readLibraryVersionForTextAtAddress(
-          config.bytecodeV1TextCR_DMock.address
+          textBytecodeAddress
         );
+
       // hard-coded expected value
       let textLibraryVersionV1UTF8 =
         ethers.utils.toUtf8String(textLibraryVersionV1);

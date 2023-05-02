@@ -126,7 +126,22 @@ contract BytecodeV1TextCR_DMock {
         address _bytecodeAddress,
         uint256 _offset
     ) public view returns (string memory) {
-        return _bytecodeAddress.forceReadFromBytecode(_offset);
+        return string(_bytecodeAddress.readBytesFromBytecode(_offset));
+    }
+
+    /**
+     * @notice Allows additional read introspection, to read a chunk of text,
+     *         from chain-state that lives at a given deployed address that
+     *         was written with SSTORE2.
+     * @param _bytecodeAddress address from which to read text content.
+     * @return string Content read from contract bytecode at the given address.
+     * @dev Intentionally do not perform input validation, instead allowing
+     *      the underlying BytecodeStorage lib to throw errors where applicable.
+     */
+    function readSSTORE2TextAtAddress(
+        address _bytecodeAddress
+    ) public view returns (string memory) {
+        return string(_bytecodeAddress.readBytesFromSSTORE2Bytecode());
     }
 
     /**
