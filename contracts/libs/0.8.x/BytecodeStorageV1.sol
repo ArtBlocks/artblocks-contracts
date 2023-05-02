@@ -164,7 +164,7 @@ library BytecodeStorage {
         //       (bytecodeSize == 0) implicitly, but we add the second check of
         //       (bytecodeSize == 0) as a fall-through that will never execute
         //       unless `dataOffset` is set to 0 at some point.
-        if ((bytecodeSize < dataOffset) || (bytecodeSize == 0)) {
+        if (bytecodeSize < dataOffset) {
             revert("ContractAsStorage: Read Error");
         }
 
@@ -207,7 +207,7 @@ library BytecodeStorage {
         //       (bytecodeSize == 0) implicitly, but we add the second check of
         //       (bytecodeSize == 0) as a fall-through that will never execute
         //       unless `addressOffset` is set to 0 at some point.
-        if ((bytecodeSize < addressOffset) || (bytecodeSize == 0)) {
+        if (bytecodeSize < addressOffset) {
             revert("ContractAsStorage: Read Error");
         }
 
@@ -259,6 +259,9 @@ library BytecodeStorage {
     ) private view returns (uint256 size) {
         assembly {
             size := extcodesize(_address)
+        }
+        if (size == 0) {
+            revert("ContractAsStorage: Read Error");
         }
     }
 
@@ -313,7 +316,7 @@ library BytecodeStorage {
         //       (bytecodeSize == 0) implicitly, but we add the second check of
         //       (bytecodeSize == 0) as a fall-through that will never execute
         //       unless `VERSION_OFFSET` is set to 0 at some point.
-        if ((bytecodeSize < VERSION_OFFSET) || (bytecodeSize == 0)) {
+        if (bytecodeSize < VERSION_OFFSET) {
             revert("ContractAsStorage: Read Error");
         }
 
