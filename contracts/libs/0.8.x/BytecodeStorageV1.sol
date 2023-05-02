@@ -160,10 +160,6 @@ library BytecodeStorage {
         // the dataOffset for the bytecode
         uint256 dataOffset = _bytecodeDataOffsetAt(_address);
         // handle case where address contains code < dataOffset
-        // note: the first check here also captures the case where
-        //       (bytecodeSize == 0) implicitly, but we add the second check of
-        //       (bytecodeSize == 0) as a fall-through that will never execute
-        //       unless `dataOffset` is set to 0 at some point.
         if (bytecodeSize < dataOffset) {
             revert("ContractAsStorage: Read Error");
         }
@@ -202,12 +198,8 @@ library BytecodeStorage {
         uint256 bytecodeSize = _bytecodeSizeAt(_address);
         // the dataOffset for the bytecode
         uint256 addressOffset = _bytecodeAddressOffsetAt(_address);
-        // handle case where address contains code < addressOffset
-        // note: the first check here also captures the case where
-        //       (bytecodeSize == 0) implicitly, but we add the second check of
-        //       (bytecodeSize == 0) as a fall-through that will never execute
-        //       unless `addressOffset` is set to 0 at some point.
-        if (bytecodeSize < addressOffset) {
+        // handle case where address contains code < addressOffset + 32 (address takes a whole slot)
+        if (bytecodeSize < (addressOffset + 32)) {
             revert("ContractAsStorage: Read Error");
         }
 
@@ -311,12 +303,8 @@ library BytecodeStorage {
     ) private view returns (bytes32 version) {
         // get the size of the data
         uint256 bytecodeSize = _bytecodeSizeAt(_address);
-        // handle case where address contains code < VERSION_OFFSET
-        // note: the first check here also captures the case where
-        //       (bytecodeSize == 0) implicitly, but we add the second check of
-        //       (bytecodeSize == 0) as a fall-through that will never execute
-        //       unless `VERSION_OFFSET` is set to 0 at some point.
-        if (bytecodeSize < VERSION_OFFSET) {
+        // handle case where address contains code < minimum expected version string size
+        if (bytecodeSize < (VERSION_OFFSET + 32)) {
             revert("ContractAsStorage: Read Error");
         }
 
