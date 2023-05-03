@@ -13,6 +13,7 @@
     "docgen": "hardhat docgen",
     "generate:typechain": "typechain --target ethers-v5 --outDir ./scripts/contracts './artifacts/contracts/**/!(*.dbg)*.json'",
     "test": "hardhat test",
+    "size": "hardhat size-contracts",
     "test:parallel": "hardhat test --parallel",
     "coverage": "hardhat coverage",
     "format": "prettier --write 'contracts/**/*.sol' && prettier --write 'scripts/**/*.ts' && prettier --write 'test/**/*.ts'",
