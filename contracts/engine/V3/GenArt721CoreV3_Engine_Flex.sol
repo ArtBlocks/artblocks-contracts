@@ -109,9 +109,7 @@ contract GenArt721CoreV3_Engine_Flex is
     IGenArt721CoreContractExposesHashSeed
 {
     using BytecodeStorageWriterV1 for string;
-    using BytecodeStorageReaderV1 for string;
     using BytecodeStorageWriterV1 for address;
-    using BytecodeStorageReaderV1 for address;
     using Bytes32Strings for bytes32;
     uint256 constant ONE_HUNDRED = 100;
     uint256 constant ONE_MILLION = 1_000_000;
@@ -1765,7 +1763,7 @@ contract GenArt721CoreV3_Engine_Flex is
         if (_index >= project.scriptCount) {
             return "";
         }
-        return project.scriptBytecodeAddresses[_index].readFromBytecode();
+        return _readFromBytecode(project.scriptBytecodeAddresses[_index]);
     }
 
     /**
@@ -1996,7 +1994,7 @@ contract GenArt721CoreV3_Engine_Flex is
                 bytecodeAddress: _bytecodeAddress,
                 data: (_dependency.dependencyType ==
                     ExternalAssetDependencyType.ONCHAIN)
-                    ? _bytecodeAddress.readFromBytecode()
+                    ? _readFromBytecode(_bytecodeAddress)
                     : ""
             });
     }
@@ -2217,6 +2215,12 @@ contract GenArt721CoreV3_Engine_Flex is
             projectOpen ||
             (block.timestamp - projectCompletedTimestamp <
                 FOUR_WEEKS_IN_SECONDS);
+    }
+
+    function _readFromBytecode(
+        address _address
+    ) internal view returns (string memory) {
+        return BytecodeStorageReaderV1.readFromBytecode(_address);
     }
 
     // strings library from OpenZeppelin, modified for no constants
