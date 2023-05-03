@@ -5,13 +5,13 @@ pragma solidity ^0.8.0;
 
 /**
  * @title Art Blocks Script Storage Library
- * @notice Utilize contract bytecode as persistant storage for large chunks of script string data.
+ * @notice Utilize contract bytecode as persistent storage for large chunks of script string data.
  *         This library is intended to have an external deployed copy that is released in the future,
  *         and, as such, has been designed to support both updated V1 (versioned, with purging removed)
  *         reads as well as backwards-compatible reads for both a) the unversioned "V0" storage contracts
  *         which were deployed by the original version of this libary and b) contracts that were deployed
  *         using one of the SSTORE2 implementations referenced below.
- *         For these pre-V1 storage contracts (which themselves did not have any explict versioning semantics)
+ *         For these pre-V1 storage contracts (which themselves did not have any explicit versioning semantics)
  *         backwards-compatible reads are optimistic, and only expected to work for contracts actually
  *         deployed by the original version of this library – and may fail ungracefully if attempted to be
  *         used to read from other contracts.
