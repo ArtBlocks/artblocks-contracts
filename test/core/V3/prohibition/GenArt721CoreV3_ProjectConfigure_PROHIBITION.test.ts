@@ -18,6 +18,7 @@ import {
   deployCoreWithMinterFilter,
   mintProjectUntilRemaining,
   advanceEVMByTime,
+  deployWithStorageLibraryAndGet,
 } from "../../../util/common";
 import { FOUR_WEEKS } from "../../../util/constants";
 import {
@@ -1420,7 +1421,7 @@ for (const coreContractName of coreContractsToTest) {
           []
         );
         // set `autoApproveArtistSplitProposals` to true
-        config.genArt721Core = await deployAndGet(config, coreContractName, [
+        config.genArt721Core = await deployWithStorageLibraryAndGet(config, coreContractName, [
           config.name, // _tokenName
           config.symbol, // _tokenSymbol
           config.accounts.deployer.address, // _renderProviderAddress
