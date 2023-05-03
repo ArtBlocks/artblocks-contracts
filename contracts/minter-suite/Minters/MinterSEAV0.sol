@@ -3,8 +3,6 @@
 
 pragma solidity 0.8.17;
 
-import {IWETH} from "../../interfaces/0.8.x/IWETH.sol";
-
 import "../../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
 import "../../interfaces/0.8.x/IMinterFilterV0.sol";
 import "../../interfaces/0.8.x/IFilteredMinterSEAV0.sol";
@@ -35,6 +33,17 @@ import "@openzeppelin-4.7/contracts/utils/math/Math.sol";
  * ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ *
  * ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ *
  *********************************
+ * @notice Bid Front-Running:
+ * Collectors can front-run bids to become the highest bidder by bidding any
+ * amount sufficiently higher than the current highest bid, considering the
+ * minter-level configured value of `minterMinBidIncrementPercentage`. For
+ * instance, if current bid is 1 ETH, and collector A sends a transaction with
+ * a bid of 2.50 ETH, collector B may send a transaction with a bid of 2.499
+ * ETH, that if successfully front-runs Collector A's transaction, is able to
+ * cause collector A's transaction to revert. This is a difficult problem to
+ * get around in a decentralized system with public bids, and we have chosen to
+ * keep the minter simple and transparent, and leave it up to collectors to
+ * understand the risks of front-running and bid accordingly.
  * @notice Token Ownership:
  * This minter contract may own up to two tokens at a time for a given project.
  * The first possible token owned is the token that is currently being 
@@ -104,43 +113,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
     /// minter version for this minter
     string public constant minterVersion = "v0.0.1";
 
-    /// The public WETH contract address
-    /// @dev WETH is used as fallback payment method when ETH transfers are
-    /// failing during bidding process (e.g. receive function is not payable)
-    IWETH public immutable weth;
-
     uint256 constant ONE_MILLION = 1_000_000;
-
-    // project-specific parameters
-    struct ProjectConfig {
-        bool maxHasBeenInvoked;
-        // max uint24 ~= 1.6e7, > max possible project invocations of 1e6
-        uint24 maxInvocations;
-        // time after which new auctions may be started
-        // note: new auctions must always be started with a new bid, at which
-        // point the auction will actually start
-        // @dev this is a project-level constraint, and individual auctions
-        // will each have their own start time defined in `activeAuction`
-        // max uint64 ~= 1.8e19 sec ~= 570 billion years
-        uint64 timestampStart;
-        // duration of each new auction, before any extensions due to late bids
-        uint32 auctionDurationSeconds;
-        // next token number to be auctioned, owned by minter
-        // @dev store token number to enable storage packing, as token ID can
-        // be derived from this value in combination with project ID
-        // max uint24 ~= 1.6e7, > max possible project invocations of 1e6
-        uint24 nextTokenNumber;
-        // bool to indicate if next token number has been populated, or is
-        // still default value of 0
-        // @dev required to handle edge case where next token number is 0
-        bool nextTokenNumberIsPopulated;
-        // reserve price, i.e. minimum starting bid price, in wei
-        // @dev for configured auctions, this will be gt 0, so it may be used
-        // to determine if an auction is configured
-        uint256 basePrice;
-        // active auction for project
-        Auction activeAuction;
-    }
 
     mapping(uint256 => ProjectConfig) public projectConfig;
 
@@ -179,23 +152,12 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
     // function to restrict access to only AdminACL allowed calls
     // @dev defers to the ACL contract used on the core contract
     function _onlyCoreAdminACL(bytes4 _selector) internal {
-        require(
-            genArtCoreContract_Base.adminACLAllowed(
-                msg.sender,
-                address(this),
-                _selector
-            ),
-            "Only Core AdminACL allowed"
-        );
+        require(_adminACLAllowed(_selector), "Only Core AdminACL allowed");
     }
 
     // function to restrict access to only the artist of a project
     function _onlyArtist(uint256 _projectId) internal view {
-        require(
-            (msg.sender ==
-                genArtCoreContract_Base.projectIdToArtistAddress(_projectId)),
-            "Only Artist"
-        );
+        require(_senderIsArtist(_projectId), "Only Artist");
     }
 
     // function to restrict access to only the artist of a project or
@@ -206,22 +168,14 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         bytes4 _selector
     ) internal {
         require(
-            (msg.sender ==
-                genArtCoreContract_Base.projectIdToArtistAddress(_projectId)) ||
-                (
-                    genArtCoreContract_Base.adminACLAllowed(
-                        msg.sender,
-                        address(this),
-                        _selector
-                    )
-                ),
+            _senderIsArtist(_projectId) || _adminACLAllowed(_selector),
             "Only Artist or Admin ACL"
         );
     }
 
     // function to require that a value is non-zero
     function _onlyNonZero(uint256 _value) internal pure {
-        require(_value > 0, "Only non-zero");
+        require(_value != 0, "Only non-zero");
     }
 
     /**
@@ -232,13 +186,11 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
      * which this contract will be a minter.
      * @param _minterFilter Minter filter for which
      * this will a filtered minter.
-     * @param _wethAddress The WETH contract address to use for fallback
      * payment method when ETH transfers are failing during bidding process
      */
     constructor(
         address _genArt721Address,
-        address _minterFilter,
-        address _wethAddress
+        address _minterFilter
     ) ReentrancyGuard() MinterBase(_genArt721Address) {
         genArt721CoreAddress = _genArt721Address;
         genArtCoreContract_Base = IGenArt721CoreContractV3_Base(
@@ -250,12 +202,11 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
             minterFilter.genArt721CoreAddress() == _genArt721Address,
             "Illegal contract pairing"
         );
-        weth = IWETH(_wethAddress);
         // emit events indicating default minter configuration values
-        emit AuctionDurationSecondsRangeUpdated(
-            minAuctionDurationSeconds,
-            maxAuctionDurationSeconds
-        );
+        emit AuctionDurationSecondsRangeUpdated({
+            minAuctionDurationSeconds: minAuctionDurationSeconds,
+            maxAuctionDurationSeconds: maxAuctionDurationSeconds
+        });
         emit MinterMinBidIncrementPercentageUpdated(
             minterMinBidIncrementPercentage
         );
@@ -287,7 +238,10 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         projectConfig[_projectId].maxHasBeenInvoked =
             invocations == maxInvocations;
 
-        emit ProjectMaxInvocationsLimitUpdated(_projectId, maxInvocations);
+        emit ProjectMaxInvocationsLimitUpdated({
+            _projectId: _projectId,
+            _maxInvocations: maxInvocations
+        });
 
         // for convenience, try to mint and assign a token to the project's
         // next slot
@@ -332,7 +286,10 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         projectConfig[_projectId].maxHasBeenInvoked =
             invocations == _maxInvocations;
 
-        emit ProjectMaxInvocationsLimitUpdated(_projectId, _maxInvocations);
+        emit ProjectMaxInvocationsLimitUpdated({
+            _projectId: _projectId,
+            _maxInvocations: _maxInvocations
+        });
 
         // for convenience, try to mint and assign a token to the project's
         // next slot
@@ -352,9 +309,9 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         uint32 _minAuctionDurationSeconds,
         uint32 _maxAuctionDurationSeconds
     ) external {
+        _onlyNonZero(_minAuctionDurationSeconds);
         _onlyCoreAdminACL(this.updateAllowableAuctionDurationSeconds.selector);
         // CHECKS
-        _onlyNonZero(_minAuctionDurationSeconds);
         require(
             _maxAuctionDurationSeconds > _minAuctionDurationSeconds,
             "Only max gt min"
@@ -362,10 +319,10 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         // EFFECTS
         minAuctionDurationSeconds = _minAuctionDurationSeconds;
         maxAuctionDurationSeconds = _maxAuctionDurationSeconds;
-        emit AuctionDurationSecondsRangeUpdated(
-            _minAuctionDurationSeconds,
-            _maxAuctionDurationSeconds
-        );
+        emit AuctionDurationSecondsRangeUpdated({
+            minAuctionDurationSeconds: _minAuctionDurationSeconds,
+            maxAuctionDurationSeconds: _maxAuctionDurationSeconds
+        });
     }
 
     /**
@@ -376,13 +333,14 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
      * wars do not dominate the economics of an auction.
      * @dev the input value is considered to be a percentage, so that a value
      * of 5 represents 5%.
+     * @param _minterMinBidIncrementPercentage Minimum bid increment percentage
      */
     function updateMinterMinBidIncrementPercentage(
         uint8 _minterMinBidIncrementPercentage
     ) external {
+        _onlyNonZero(_minterMinBidIncrementPercentage);
         _onlyCoreAdminACL(this.updateMinterMinBidIncrementPercentage.selector);
         // CHECKS
-        _onlyNonZero(_minterMinBidIncrementPercentage);
         // EFFECTS
         minterMinBidIncrementPercentage = _minterMinBidIncrementPercentage;
         emit MinterMinBidIncrementPercentageUpdated(
@@ -395,13 +353,14 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
      * the minimum amount of time that must pass between the final bid and the
      * the end of an auction. Auctions are extended if a new bid is placed
      * within this time buffer of the auction end time.
+     * @param _minterTimeBufferSeconds Time buffer in seconds.
      */
     function updateMinterTimeBufferSeconds(
         uint32 _minterTimeBufferSeconds
     ) external {
+        _onlyNonZero(_minterTimeBufferSeconds);
         _onlyCoreAdminACL(this.updateMinterTimeBufferSeconds.selector);
         // CHECKS
-        _onlyNonZero(_minterTimeBufferSeconds);
         // EFFECTS
         minterTimeBufferSeconds = _minterTimeBufferSeconds;
         emit MinterTimeBufferUpdated(_minterTimeBufferSeconds);
@@ -434,8 +393,9 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
      * @notice Warning: Disabling purchaseTo is not supported on this minter.
      * This method exists purely for interface-conformance purposes.
      */
-    function togglePurchaseToDisabled(uint256 _projectId) external view {
-        _onlyArtist(_projectId);
+    function togglePurchaseToDisabled(uint256 /*_projectId*/) external pure {
+        // @dev access control to _onlyArtist is required if this method is
+        // ever re-implemented
         revert("Action not supported");
     }
 
@@ -454,9 +414,8 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
      * the end of an auction.
      * @param _basePrice reserve price (minimum starting bid price), in wei.
      * Must be greater than 0, but may be as low as 1 wei.
-     * @dev `_basePrice` of zero not allowed so we can use zero as a gas-
-     * efficient indicator of whether auctions have been configured for a
-     * project.
+     * @dev `_basePrice` of zero not allowed to prevent accidental
+     * misconfiguration of auctions
      */
     function configureFutureAuctions(
         uint256 _projectId,
@@ -464,9 +423,9 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         uint256 _auctionDurationSeconds,
         uint256 _basePrice
     ) external {
+        _onlyNonZero(_basePrice);
         _onlyArtist(_projectId);
         // CHECKS
-        _onlyNonZero(_basePrice);
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         require(
             _timestampStart == 0 || block.timestamp < _timestampStart,
@@ -483,12 +442,12 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
             .toUint32();
         _projectConfig.basePrice = _basePrice;
 
-        emit ConfiguredFutureAuctions(
-            _projectId,
-            _timestampStart.toUint64(),
-            _auctionDurationSeconds.toUint32(),
-            _basePrice
-        );
+        emit ConfiguredFutureAuctions({
+            projectId: _projectId,
+            timestampStart: _timestampStart.toUint64(),
+            auctionDurationSeconds: _auctionDurationSeconds.toUint32(),
+            basePrice: _basePrice
+        });
 
         // sync local max invocations if not initially populated
         // @dev if local max invocations and maxHasBeenInvoked are both
@@ -557,9 +516,10 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         // CHECKS
         // only if project is not configured (i.e. artist called
         // `resetAuctionDetails`)
-        // @dev we use `basePrice` as a gas-efficient indicator of whether
-        // auctions have been configured for a project.
-        require(_projectConfig.basePrice == 0, "Only unconfigured projects");
+        require(
+            !_projectIsConfigured(_projectConfig),
+            "Only unconfigured projects"
+        );
         // only if minter has a next token assigned
         require(
             _projectConfig.nextTokenNumberIsPopulated == true,
@@ -571,11 +531,11 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         // @dev overflow automatically handled by Sol ^0.8.0
         uint256 nextTokenId = (_projectId * ONE_MILLION) +
             _projectConfig.nextTokenNumber;
-        IERC721(genArt721CoreAddress).transferFrom(
-            address(this),
-            _to,
-            nextTokenId
-        );
+        IERC721(genArt721CoreAddress).transferFrom({
+            from: address(this),
+            to: _to,
+            tokenId: nextTokenId
+        });
         emit ProjectNextTokenEjected(_projectId);
     }
 
@@ -620,7 +580,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
      * one or more transactions to settle and/or initialize a new auction,
      * potentially still placing a bid on the auction for the token ID if the
      * bid value is sufficiently higher than the current highest bid.
-     * Note that the use of `_targetTokenId` is to prevent the possibility of
+     * Note that the use of `_bidTokenId` is to prevent the possibility of
      * transactions that are stuck in the pending pool for long periods of time
      * from unintentionally bidding on auctions for future tokens.
      * Note that calls to `settleAuction` and `createBid` are possible
@@ -628,6 +588,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
      * convenience and executes both of those functions in a single
      * transaction, while handling front-running as gracefully as possible.
      * @param _settleTokenId Token ID to settle auction for.
+     * @param _bidTokenId Token ID to bid on.
      * @dev this function is not non-reentrant, but the underlying calls are
      * to non-reentrant functions.
      */
@@ -662,10 +623,14 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         uint256 _projectId = _tokenId / ONE_MILLION;
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         Auction storage _auction = _projectConfig.activeAuction;
+        // load from storage to memory for gas efficiency
+        address currentBidder = _auction.currentBidder;
+        uint256 currentBid = _auction.currentBid;
+        address genArt721CoreAddress_ = genArt721CoreAddress;
         // CHECKS
         // @dev this check is not strictly necessary, but is included for
         // clear error messaging
-        require(_auction.initialized, "Auction not initialized");
+        require(_auctionIsInitialized(_auction), "Auction not initialized");
         if (_auction.settled || (_auction.tokenId != _tokenId)) {
             // auction already settled or is for a different token ID, so
             // return early and do not modify state
@@ -673,24 +638,24 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         }
         // @dev important that the following check is after the early return
         // block above to maintain desired behavior
-        require(block.timestamp > _auction.endTime, "Auction not yet ended");
+        require(block.timestamp >= _auction.endTime, "Auction not yet ended");
         // EFFECTS
         _auction.settled = true;
         // INTERACTIONS
         // send token to the winning bidder
-        IERC721(genArt721CoreAddress).transferFrom(
-            address(this),
-            _auction.currentBidder,
-            _tokenId
-        );
+        IERC721(genArt721CoreAddress_).transferFrom({
+            from: address(this),
+            to: currentBidder,
+            tokenId: _tokenId
+        });
         // distribute revenues from auction
-        splitRevenuesETH(_projectId, _auction.currentBid, genArt721CoreAddress);
+        splitRevenuesETH(_projectId, currentBid, genArt721CoreAddress_);
 
-        emit AuctionSettled(
-            _tokenId,
-            _auction.currentBidder,
-            _auction.currentBid
-        );
+        emit AuctionSettled({
+            tokenId: _tokenId,
+            winner: currentBidder,
+            price: currentBid
+        });
     }
 
     /**
@@ -708,9 +673,13 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
      * If the bid is successful, but outbid by another bid before the auction
      * ends, the funds will be noncustodially returned to the bidder's address,
      * `msg.sender`. A fallback method of sending funds back to the bidder via
-     * WETH is used if the bidder address is not accepting ETH (preventing
-     * denial of service attacks) within an admin-configured gas limit of
-     * `minterRefundGasLimit`.
+     * SELFDESTRUCT (SENDALL) prevents denial of service attacks, even if the
+     * original bidder reverts or runs out of gas during receive or fallback.
+     * ------------------------------------------------------------------------
+     * WARNING: bidders must be prepared to handle the case where their bid is
+     * outbid and their funds are returned to the original `msg.sender` address
+     * via SELFDESTRUCT (SENDALL).
+     * ------------------------------------------------------------------------
      * Note that the use of `_tokenId` is to prevent the possibility of
      * transactions that are stuck in the pending pool for long periods of time
      * from unintentionally bidding on auctions for future tokens.
@@ -736,11 +705,14 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         // CHECKS
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
         Auction storage _auction = _projectConfig.activeAuction;
+        // load from storage to memory for gas efficiency
+        uint256 auctionEndTime = _auction.endTime;
+        uint256 previousBid = _auction.currentBid;
 
         // if no auction exists, or current auction is already settled, attempt
         // to initialize a new auction for the input token ID and immediately
         // return
-        if ((!_auction.initialized) || _auction.settled) {
+        if ((!_auctionIsInitialized(_auction)) || _auction.settled) {
             _initializeAuctionWithBid(_projectId, _tokenId);
             return;
         }
@@ -755,36 +727,37 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         );
 
         // ensure auction is not already ended
-        require(_auction.endTime > block.timestamp, "Auction already ended");
+        require(auctionEndTime > block.timestamp, "Auction already ended");
 
         // require bid to be sufficiently greater than current highest bid
-        // @dev no overflow enforced automatically by solidity ^8.0.0
+        // @dev no overflow enforced automatically by solidity ^0.8.0
         require(
             msg.value >=
-                (_auction.currentBid *
-                    (100 + minterMinBidIncrementPercentage)) /
-                    100,
+                (previousBid * (100 + minterMinBidIncrementPercentage)) / 100,
             "Bid is too low"
         );
 
         // EFFECTS
-        // record previous highest bid details for refunding
-        uint256 previousBid = _auction.currentBid;
+        // record previous highest bider for refunding
         address payable previousBidder = _auction.currentBidder;
 
         // update auction state
         _auction.currentBid = msg.value;
         _auction.currentBidder = payable(msg.sender);
         uint256 minEndTime = block.timestamp + minterTimeBufferSeconds;
-        if (_auction.endTime < minEndTime) {
+        if (auctionEndTime < minEndTime) {
             _auction.endTime = minEndTime.toUint64();
         }
 
         // INTERACTIONS
         // refund previous highest bidder
-        _safeTransferETHWithFallback(previousBidder, previousBid);
+        _forceSafeTransferETH(previousBidder, previousBid);
 
-        emit AuctionBid(_tokenId, msg.sender, msg.value);
+        emit AuctionBid({
+            tokenId: _tokenId,
+            bidder: msg.sender,
+            bidAmount: msg.value
+        });
     }
 
     /**
@@ -884,48 +857,17 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
      * Note that in the case of no auction being initialized for the project,
      * the returned `auction` will be the default struct.
      * @param _projectId The project ID
-     * @return maxInvocations The project's maximum number of invocations
-     * allowed on this minter
-     * @return timestampStart The project's start timestamp, after which new
-     * auctions may be created (one at a time)
-     * @return auctionDurationSeconds The project's default auction duration,
-     * before any extensions due to buffer time
-     * @return basePrice The project's minimum starting bid price
-     * @return nextTokenNumberIsPopulated Whether or not the project's next
-     * token number has been populated
-     * @return nextTokenNumber The project's next token number to be auctioned,
-     * dummy value of 0 if `nextTokenNumberIsPopulated` is false. Note that 0
-     * is a valid token number, so `nextTokenNumberIsPopulated` should be used
-     * to distinguish between a valid token number of 0 and a dummy value of 0.
-     * @return auction The project's active auction details. Will be the
-     * default struct (w/ `auction.initialized = false`) if no auction has been
-     * initialized for the project.
+     * @return projectConfig_ The project configuration details
      */
     function projectConfigurationDetails(
         uint256 _projectId
-    )
-        external
-        view
-        returns (
-            uint24 maxInvocations,
-            uint64 timestampStart,
-            uint32 auctionDurationSeconds,
-            uint256 basePrice,
-            bool nextTokenNumberIsPopulated,
-            uint24 nextTokenNumber,
-            Auction memory auction
-        )
-    {
-        ProjectConfig storage _projectConfig = projectConfig[_projectId];
-        maxInvocations = _projectConfig.maxInvocations;
-        timestampStart = _projectConfig.timestampStart;
-        auctionDurationSeconds = _projectConfig.auctionDurationSeconds;
-        basePrice = _projectConfig.basePrice;
-        nextTokenNumberIsPopulated = _projectConfig.nextTokenNumberIsPopulated;
-        nextTokenNumber = _projectConfig.nextTokenNumberIsPopulated
-            ? _projectConfig.nextTokenNumber
+    ) external view returns (ProjectConfig memory projectConfig_) {
+        projectConfig_ = projectConfig[_projectId];
+        // clean up next token number to handle case where it is stale
+        projectConfig_.nextTokenNumber = projectConfig_
+            .nextTokenNumberIsPopulated
+            ? projectConfig_.nextTokenNumber
             : 0;
-        auction = _projectConfig.activeAuction;
     }
 
     /**
@@ -936,10 +878,15 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         uint256 _projectId
     ) external view returns (Auction memory auction) {
         ProjectConfig storage _projectConfig = projectConfig[_projectId];
-        auction = _projectConfig.activeAuction;
+        Auction storage _auction = _projectConfig.activeAuction;
         // do not return uninitialized auctions (i.e. auctions that do not
-        // exist, and therefore are simply the default struct)
-        require(auction.initialized, "No auction exists on project");
+        // exist, where currentBidder is still the default value)
+        require(
+            _auctionIsInitialized(_auction),
+            "No auction exists on project"
+        );
+        // load entire auction into memory
+        auction = _projectConfig.activeAuction;
         return auction;
     }
 
@@ -962,7 +909,10 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         Auction storage _auction = _projectConfig.activeAuction;
         // if project has an active token auction that is not settled, return
         // that token ID
-        if (_auction.initialized && (_auction.endTime > block.timestamp)) {
+        if (
+            _auctionIsInitialized(_auction) &&
+            (_auction.endTime > block.timestamp)
+        ) {
             return _auction.tokenId;
         }
         // otherwise, return the next expected token ID to be auctioned
@@ -1032,7 +982,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         // check is not present
         // @dev no cover else branch of next line because unreachable
         require(
-            (!_auction.initialized) || _auction.settled,
+            (!_auctionIsInitialized(_auction)) || _auction.settled,
             "Existing auction not settled"
         );
         // require valid bid value
@@ -1062,8 +1012,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
             currentBid: msg.value,
             currentBidder: payable(msg.sender),
             endTime: endTime,
-            settled: false,
-            initialized: true
+            settled: false
         });
         // mark next token number as not populated
         // @dev intentionally not setting nextTokenNumber to zero to avoid
@@ -1072,7 +1021,12 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
 
         // @dev we intentionally emit event here due to potential of early
         // return in INTERACTIONS section
-        emit AuctionInitialized(_targetTokenId, msg.sender, msg.value, endTime);
+        emit AuctionInitialized({
+            tokenId: _targetTokenId,
+            bidder: msg.sender,
+            bidAmount: msg.value,
+            endTime: endTime
+        });
 
         // INTERACTIONS
         // attempt to mint new token to this minter contract, only if max
@@ -1142,33 +1096,114 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         if (tokenInvocation == localMaxInvocations) {
             _projectConfig.maxHasBeenInvoked = true;
         }
-        emit ProjectNextTokenUpdated(_projectId, nextTokenId);
+        emit ProjectNextTokenUpdated({
+            projectId: _projectId,
+            tokenId: nextTokenId
+        });
     }
 
     /**
-     * @notice Transfer ETH. If the ETH transfer fails, wrap the ETH and send it as WETH.
+     * @notice Force sends `amount` (in wei) ETH to `to`, with a gas stipend
+     * equal to `minterRefundGasLimit`.
+     * If sending via the normal procedure fails, force sends the ETH by
+     * creating a temporary contract which uses `SELFDESTRUCT` to force send
+     * the ETH.
+     * Reverts if the current contract has insufficient balance.
+     * @param _to The address to send ETH to.
+     * @param _amount The amount of ETH to send.
+     * @dev This function is adapted from the `forceSafeTransferETH` function
+     * in the `https://github.com/Vectorized/solady` repository, with
+     * modifications to not check if the current contract has sufficient
+     * balance.
      */
-    function _safeTransferETHWithFallback(address to, uint256 amount) internal {
-        (bool success, ) = to.call{value: amount, gas: minterRefundGasLimit}(
-            ""
-        );
-        if (!success) {
-            weth.deposit{value: amount}();
-            weth.transfer(to, amount);
+    function _forceSafeTransferETH(address _to, uint256 _amount) internal {
+        // load state variable into memory for use in inline assembly
+        uint256 minterRefundGasLimit_ = minterRefundGasLimit;
+        // Manually inlined because the compiler doesn't inline functions with
+        // branches.
+        /// @solidity memory-safe-assembly
+        assembly {
+            // @dev intentionally do not check if this contract has sufficient
+            // balance, because that is not intended to be a valid state.
+
+            // Transfer the ETH and check if it succeeded or not.
+            if iszero(call(minterRefundGasLimit_, _to, _amount, 0, 0, 0, 0)) {
+                // if the transfer failed, we create a temporary contract with
+                // initialization code that uses `SELFDESTRUCT` to force send
+                // the ETH.
+                // note: Compatible with `SENDALL`:
+                // https://eips.ethereum.org/EIPS/eip-4758
+
+                //---------------------------------------------------------------------------------------------------------------//
+                // Opcode  | Opcode + Arguments  | Description        | Stack View                                               //
+                //---------------------------------------------------------------------------------------------------------------//
+                // Contract creation code that uses `SELFDESTRUCT` to force send ETH to a specified address.                     //
+                // Creation code summary: 0x73<20-byte toAddress>0xff                                                            //
+                //---------------------------------------------------------------------------------------------------------------//
+                // 0x73    |  0x73_toAddress     | PUSH20 toAddress   | toAddress                                                //
+                // 0xFF    |  0xFF               | SELFDESTRUCT       |                                                          //
+                //---------------------------------------------------------------------------------------------------------------//
+                // Store the address in scratch space, starting at 0x00, which begins the 20-byte address at 32-20=12 in memory
+                // @dev use scratch space because we have enough space for simple creation code (less than 0x40 bytes)
+                mstore(0x00, _to)
+                // store opcode PUSH20 immediately before the address, starting at 0x0b (11) in memory
+                mstore8(0x0b, 0x73)
+                // store opcode SELFDESTRUCT immediately after the address, starting at 0x20 (32) in memory
+                mstore8(0x20, 0xff)
+                // this will always succeed because the contract creation code is
+                // valid, and the address is valid because it is a 20-byte value
+                if iszero(create(_amount, 0x0b, 0x16)) {
+                    // @dev For better gas estimation.
+                    if iszero(gt(gas(), 1000000)) {
+                        revert(0, 0)
+                    }
+                }
+            }
         }
     }
 
     /**
      * @notice Determines if a project is configured or not on this minter.
-     * Uses project config's `basePrice` to determine if project is configured,
-     * because `basePrice` is the only required field for a project to be
+     * Uses project config's `auctionDurationSeconds` to determine if project
+     * is configured, because `auctionDurationSeconds` is required to be
      * non-zero when configured.
      * @param _projectConfig The project config to check.
      */
     function _projectIsConfigured(
         ProjectConfig storage _projectConfig
     ) internal view returns (bool) {
-        return _projectConfig.basePrice > 0;
+        return _projectConfig.auctionDurationSeconds != 0;
+    }
+
+    /**
+     * @notice Determines if an auction is initialized.
+     * Uses auction's `currentBidder` address to determine if auction is
+     * initialized, because `currentBidder` is always non-zero after an auction
+     * has been initialized.
+     * @param _auction The auction to check.
+     */
+    function _auctionIsInitialized(
+        Auction storage _auction
+    ) internal view returns (bool isInitialized) {
+        // auction is initialized if currentBidder is non-zero
+        return _auction.currentBidder != address(0);
+    }
+
+    function _senderIsArtist(
+        uint256 _projectId
+    ) private view returns (bool senderIsArtist) {
+        return
+            msg.sender ==
+            genArtCoreContract_Base.projectIdToArtistAddress(_projectId);
+    }
+
+    function _adminACLAllowed(bytes4 _selector) private returns (bool) {
+        return
+            genArtCoreContract_Base.adminACLAllowed({
+                _sender: msg.sender,
+                _contract: address(this),
+                _selector: _selector
+            });
     }
 
     /**
@@ -1212,7 +1247,7 @@ contract MinterSEAV0 is ReentrancyGuard, MinterBase, IFilteredMinterSEAV0 {
         // base price of zero not allowed when configuring auctions, so use it
         // as indicator of whether auctions are configured for the project
         bool projectIsConfigured = _projectIsConfigured(_projectConfig);
-        bool auctionIsAcceptingBids = (_auction.initialized &&
+        bool auctionIsAcceptingBids = (_auctionIsInitialized(_auction) &&
             block.timestamp < _auction.endTime);
         isConfigured = projectIsConfigured || auctionIsAcceptingBids;
         // only return non-zero price if auction is configured

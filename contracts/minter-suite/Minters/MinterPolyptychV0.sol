@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../../interfaces/0.8.x/IGenArt721CoreContractV3_Engine.sol";
+import "../../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
+import "../../interfaces/0.8.x/IGenArt721CoreContractExposesHashSeed.sol";
 import "../../interfaces/0.8.x/IMinterFilterV0.sol";
 import "../../interfaces/0.8.x/IFilteredMinterHolderV2.sol";
 import "../../interfaces/0.8.x/IRandomizerPolyptychV0.sol";
@@ -18,12 +19,13 @@ pragma solidity 0.8.17;
  * @title Core contract interface for accessing the randomizer from the minter
  * @notice This interface provides the minter with access to the randomizer, allowing the
  * token hash seed for a newly-minted token to be assigned by the minter if the artist
- * has enabled the project as a polyptych. Polytptych projects must use the V3 engine
- * core contract, polyptych minter, and polyptych randomizer - this interface allows the
+ * has enabled the project as a polyptych. Polytptych projects must use the V3 core
+ * contract, polyptych minter, and polyptych randomizer - this interface allows the
  * minter to access the randomizer.
  */
 interface IGenArt721CoreContractV3WithRandomizer is
-    IGenArt721CoreContractV3_Engine
+    IGenArt721CoreContractV3_Base,
+    IGenArt721CoreContractExposesHashSeed
 {
     /// current randomizer contract
     function randomizerContract() external returns (IRandomizerPolyptychV0);
@@ -40,9 +42,9 @@ interface IGenArt721CoreContractV3WithRandomizer is
  * using the `incrementPolyptychProjectPanelId` function. Panel IDs for a project may only
  * be incremented such that panels must be minted in the order of their panel ID. Tokens
  * of the same project and panel ID may be minted in any order.
- * This is designed to be used with IGenArt721CoreContractV3_Engine contracts with an
+ * This is designed to be used with IGenArt721CoreContractExposesHashSeed contracts with an
  * active IPolyptychRandomizerV0 randomizer available for this minter to use.
- * This minter requires both a properly configured engine core contract and polyptych
+ * This minter requires both a properly configured core contract and polyptych
  * randomizer in order to mint polyptych tokens.
  * @author Art Blocks Inc.
  * @notice Privileged Roles and Ownership:
@@ -214,8 +216,9 @@ contract MinterPolyptychV0 is
         address _ownedNFTAddress,
         uint256 _ownedNFTTokenId
     ) external view returns (bool panelMinted) {
-        bytes12 _tokenHash = IGenArt721CoreContractV3_Engine(_ownedNFTAddress)
-            .tokenIdToHashSeed(_ownedNFTTokenId);
+        bytes12 _tokenHash = IGenArt721CoreContractExposesHashSeed(
+            _ownedNFTAddress
+        ).tokenIdToHashSeed(_ownedNFTTokenId);
         require(_tokenHash != bytes32(0), "Invalid token hash seed");
         return polyptychPanelHashSeedIsMinted[_panelId][_tokenHash];
     }
@@ -230,9 +233,7 @@ contract MinterPolyptychV0 is
     function registerNFTAddress(address _NFTAddress) external {
         _onlyCoreAdminACL(this.registerNFTAddress.selector);
         // check that core contract implements the `tokenIdToHashSeed` function
-        IGenArt721CoreContractV3WithRandomizer(_NFTAddress).tokenIdToHashSeed(
-            0
-        );
+        IGenArt721CoreContractExposesHashSeed(_NFTAddress).tokenIdToHashSeed(0);
         _registeredNFTAddresses.add(_NFTAddress);
         emit RegisteredNFTAddress(_NFTAddress);
     }
@@ -754,7 +755,7 @@ contract MinterPolyptychV0 is
         // EFFECTS
 
         // we need to store the new token ID before it is minted so the randomizer can query it
-        IGenArt721CoreContractV3WithRandomizer _ownedNFTCoreContract = IGenArt721CoreContractV3WithRandomizer(
+        IGenArt721CoreContractExposesHashSeed _ownedNFTCoreContract = IGenArt721CoreContractExposesHashSeed(
                 _ownedNFTAddress
             );
         bytes12 _targetHashSeed = _ownedNFTCoreContract.tokenIdToHashSeed(

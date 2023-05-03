@@ -88,3 +88,7 @@ V3 performance metrics are available in [V3_Performance.md](V3_PERFORMANCE.md)
 ## The following changes were made in the Core V3 (3.0.2) contract:
 
 - Change modifiers to internal functions, preventing duplication of the logic throughout the bytecode
+
+## The following changes were made in the Core V3 (3.1.0) contract:
+
+- Expose a `tokenIdToHashSeed` method in addition to `tokenIdToHash` on the CoreContract.
