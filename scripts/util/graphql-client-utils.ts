@@ -12,6 +12,10 @@ const getEndpointAndAdminSecret = (): {
       graphqlAPIEndpoint = process.env.GRAPHQL_API_ENDPOINT_DEV;
       hasuraAdminSecret = process.env.HASURA_ADMIN_SECRET_DEV;
       break;
+    case "arbitrum-dev":
+      graphqlAPIEndpoint = process.env.GRAPHQL_API_ENDPOINT_ARBITRUM_DEV;
+      hasuraAdminSecret = process.env.HASURA_ADMIN_SECRET_ARBITRUM_DEV;
+      break;
     case "staging":
       graphqlAPIEndpoint = process.env.GRAPHQL_API_ENDPOINT_STAGING;
       hasuraAdminSecret = process.env.HASURA_ADMIN_SECRET_STAGING;
