@@ -154,12 +154,12 @@ export async function deployWithStorageLibraryAndGet(
     .deploy(/* no args for library ever */);
 
   // Deploy actual contract (with library linked)
-  const contractFactory = await ethers.getContractFactory(coreContractName, {
+  const coreContractFactory = await ethers.getContractFactory(coreContractName, {
     libraries: {
       BytecodeStorageReaderV1: library.address,
     },
   });
-  return await contractFactory
+  return await coreContractFactory
     .connect(config.accounts.deployer)
     .deploy(...deployArgs);
 }
