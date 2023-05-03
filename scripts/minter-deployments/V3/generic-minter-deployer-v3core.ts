@@ -113,8 +113,6 @@ async function main() {
       minterName.startsWith("MinterPolyptych")
     ) {
       minterConstructorArgs.push(DELEGATION_REGISTRY_ADDRESSES[networkName]);
-    } else if (minterName.startsWith("MinterSEA")) {
-      minterConstructorArgs.push(WETH_ADDRESSES[networkName]);
     }
     console.log(
       `[INFO] Deploying ${minterName} with deploy args [${minterConstructorArgs}]...`
