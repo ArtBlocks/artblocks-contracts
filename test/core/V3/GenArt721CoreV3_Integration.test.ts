@@ -440,7 +440,7 @@ for (const coreContractName of coreContractsToTest) {
           const engineRegistry = await engineRegistryFactory
             .connect(config.accounts.deployer)
             .deploy();
-          differentGenArt721Core = await deployAndGet(
+          differentGenArt721Core = await deployWithStorageLibraryAndGet(
             config,
             coreContractName,
             [
@@ -456,7 +456,7 @@ for (const coreContractName of coreContractsToTest) {
             ]
           );
         } else {
-          differentGenArt721Core = await deployAndGet(
+          differentGenArt721Core = await deployWithStorageLibraryAndGet(
             config,
             coreContractName,
             [
