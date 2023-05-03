@@ -56,37 +56,37 @@ library BytecodeStorageReaderV1 {
     // Define the offset for where the "meta bytes" end, and the "data bytes" begin. Note that this is a manually
     // calculated value, and must be updated if the above table is changed. It is expected that tests will fail
     // loudly if these values are not updated in-step with eachother.
-    uint256 internal constant VERSION_OFFSET = 1;
-    uint256 internal constant ADDRESS_OFFSET = 33;
-    uint256 internal constant DATA_OFFSET = 65;
+    uint256 private constant VERSION_OFFSET = 1;
+    uint256 private constant ADDRESS_OFFSET = 33;
+    uint256 private constant DATA_OFFSET = 65;
 
     // Define the set of known *historic* offset values for where the "meta bytes" end, and the "data bytes" begin.
     // SSTORE2 deployed storage contracts take the general format of:
     // concat(0x00, data)
     // note: this is true for both variants of the SSTORE2 library
-    uint256 internal constant SSTORE2_DATA_OFFSET = 1;
+    uint256 private constant SSTORE2_DATA_OFFSET = 1;
     // V0 deployed storage contracts take the general format of:
     // concat(gated-cleanup-logic, deployer-address, data)
-    uint256 internal constant V0_ADDRESS_OFFSET = 72;
-    uint256 internal constant V0_DATA_OFFSET = 104;
+    uint256 private constant V0_ADDRESS_OFFSET = 72;
+    uint256 private constant V0_DATA_OFFSET = 104;
     // V1 deployed storage contracts take the general format of:
     // concat(invalid opcode, version, deployer-address, data)
-    uint256 internal constant V1_ADDRESS_OFFSET = ADDRESS_OFFSET;
-    uint256 internal constant V1_DATA_OFFSET = DATA_OFFSET;
+    uint256 private constant V1_ADDRESS_OFFSET = ADDRESS_OFFSET;
+    uint256 private constant V1_DATA_OFFSET = DATA_OFFSET;
 
     // Define the set of known valid version strings that may be stored in the deployed storage contract bytecode
     // note: These are all intentionally exactly 32-bytes and are null-terminated. Null-termination is used due
     //       to this being the standard expected formatting in common web3 tooling such as ethers.js. Please see
     //       the following for additional context: https://docs.ethers.org/v5/api/utils/strings/#Bytes32String
     // Used for storage contracts that were deployed by an unknown source
-    bytes32 internal constant UNKNOWN_VERSION_STRING =
+    bytes32 private constant UNKNOWN_VERSION_STRING =
         "UNKNOWN_VERSION_STRING_________ ";
     // Pre-dates versioning string, so this doesn't actually exist in any deployed contracts,
     // but is useful for backwards-compatible semantics with original version of this library
-    bytes32 internal constant V0_VERSION_STRING =
+    bytes32 private constant V0_VERSION_STRING =
         "BytecodeStorage_V0.0.0_________ ";
     // The first versioned storage contract, deployed by an updated version of this library
-    bytes32 internal constant V1_VERSION_STRING =
+    bytes32 private constant V1_VERSION_STRING =
         "BytecodeStorage_V1.0.0_________ ";
 
     // Provide a public getter for the version of this library.
