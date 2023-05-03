@@ -33,8 +33,10 @@ contract DependencyRegistryV0 is
     OwnableUpgradeable,
     IDependencyRegistryV0
 {
-    using BytecodeStorage for string;
-    using BytecodeStorage for address;
+    using BytecodeStorageWriterV1 for string;
+    using BytecodeStorageReaderV1 for string;
+    using BytecodeStorageWriterV1 for address;
+    using BytecodeStorageReaderV1 for address;
     using Bytes32Strings for bytes32;
     using Strings for uint256;
     using EnumerableSet for EnumerableSet.Bytes32Set;

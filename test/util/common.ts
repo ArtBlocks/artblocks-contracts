@@ -137,6 +137,31 @@ export async function deployAndGet(
     .deploy(...deployArgs);
 }
 
+// utility function to simplify code when deploying any contract from factory
+// that requires the bytecode storage library
+export async function deployWithStorageLibraryAndGet(
+  config: T_Config,
+  coreContractName: string,
+  deployArgs?: any[]
+): Promise<Contract> {
+  // note that for testing purposes, we deploy a new version of the library,
+  // but in production we would use the same library deployment for all contracts
+  const libraryFactory = await ethers.getContractFactory(
+    "BytecodeStorageReaderV1"
+  );
+  const library = await libraryFactory
+    .connect(config.accounts.deployer)
+    .deploy(...deployArgs);
+  const contractFactory = await ethers.getContractFactory(coreContractName, {
+    libraries: {
+      BytecodeStorageReaderV1: library.address,
+    },
+  });
+  return await contractFactory
+    .connect(config.accounts.deployer)
+    .deploy(...deployArgs);
+}
+
 // utility function to deploy basic randomizer, core, and MinterFilter
 // works for core versions V0, V1, V2_PRTNR, V3
 export async function deployCoreWithMinterFilter(

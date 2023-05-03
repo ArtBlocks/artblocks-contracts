@@ -93,8 +93,10 @@ contract GenArt721CoreV3 is
     IGenArt721CoreContractV3,
     IGenArt721CoreContractExposesHashSeed
 {
-    using BytecodeStorage for string;
-    using BytecodeStorage for address;
+    using BytecodeStorageWriterV1 for string;
+    using BytecodeStorageReaderV1 for string;
+    using BytecodeStorageWriterV1 for address;
+    using BytecodeStorageReaderV1 for address;
     using Bytes32Strings for bytes32;
     using Strings for uint256;
     uint256 constant ONE_HUNDRED = 100;

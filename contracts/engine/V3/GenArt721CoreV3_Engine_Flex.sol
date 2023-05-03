@@ -108,8 +108,10 @@ contract GenArt721CoreV3_Engine_Flex is
     IGenArt721CoreContractV3_Engine_Flex,
     IGenArt721CoreContractExposesHashSeed
 {
-    using BytecodeStorage for string;
-    using BytecodeStorage for address;
+    using BytecodeStorageWriterV1 for string;
+    using BytecodeStorageReaderV1 for string;
+    using BytecodeStorageWriterV1 for address;
+    using BytecodeStorageReaderV1 for address;
     using Bytes32Strings for bytes32;
     uint256 constant ONE_HUNDRED = 100;
     uint256 constant ONE_MILLION = 1_000_000;

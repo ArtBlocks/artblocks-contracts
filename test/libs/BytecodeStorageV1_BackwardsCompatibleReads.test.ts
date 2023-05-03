@@ -23,6 +23,7 @@ import {
   T_Config,
   getAccounts,
   deployAndGet,
+  deployWithStorageLibraryAndGet,
   assignDefaultConstants,
 } from "../util/common";
 
@@ -162,7 +163,7 @@ describe("BytecodeStorageV1 Backwards Compatible Reads Tests", async function ()
     };
     config = await assignDefaultConstants(config);
     // deploy the V1 library mock
-    config.bytecodeV1TextCR_DMock = await deployAndGet(
+    config.bytecodeV1TextCR_DMock = await deployWithStorageLibraryAndGet(
       config,
       "BytecodeV1TextCR_DMock",
       [] // no deployment args
