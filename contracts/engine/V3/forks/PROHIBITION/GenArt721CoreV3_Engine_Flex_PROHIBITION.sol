@@ -54,9 +54,7 @@ import "../../../../libs/0.8.x/Bytes32Strings.sol";
  *   and removeProjectLastScript
  * - updateProjectScriptType
  * - updateProjectAspectRatio
- * ----------------------------------------------------------------------------
- * The following functions are restricted to only the Artist or Admin ACL
- * contract of a valid project ID:
+ 
  * - proposeArtistPaymentAddressesAndSplits (Note that this has to be accepted
  *   by adminAcceptArtistAddressesAndSplits to take effect, which is restricted
  *   to the Admin ACL contract, or the artist if the core contract owner has
@@ -64,7 +62,6 @@ import "../../../../libs/0.8.x/Bytes32Strings.sol";
  *   accepted if the artist only proposes changed payee percentages without
  *   modifying any payee addresses, or is only removing payee addresses, or
  *   if the global config `autoApproveArtistSplitProposals` is set to `true`.)
- * - toggleProjectIsPaused (note the artist can still mint while paused)
  * - updateProjectSecondaryMarketRoyaltyPercentage (up to
  *   ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE percent)
  * - updateProjectWebsite
@@ -73,14 +70,19 @@ import "../../../../libs/0.8.x/Bytes32Strings.sol";
  *   invocations)
  * - updateProjectBaseURI (controlling the base URI for tokens in the project)
  * ----------------------------------------------------------------------------
+ * The following functions are restricted to only the Artist or Admin ACL
+ * contract of a valid project ID:
+ * - toggleProjectIsPaused (note the artist can still mint while paused)
+ * ----------------------------------------------------------------------------
  * The following function is restricted to either the Admin ACL contract, or
  * the Artist address if the core contract owner has renounced ownership:
  * - adminAcceptArtistAddressesAndSplits
  * - updateProjectArtistAddress (owner ultimately controlling the project and
  *   its and-on revenue, unless owner has renounced ownership)
  * ----------------------------------------------------------------------------
- * The following function is restricted to the artist when a project is
- * unlocked, and only callable by Admin ACL contract when a project is locked:
+ * The following function is restricted to the artist or AdminACL contract when
+ * a project is unlocked, and only callable by Admin ACL contract when a project
+ * is locked:
  * - updateProjectDescription
  * ----------------------------------------------------------------------------
  * The following functions for managing external asset dependencies are restricted
@@ -919,7 +921,7 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
         uint256 _additionalPayeeSecondarySalesPercentage
     ) external {
         _onlyValidProjectId(_projectId);
-        _onlyArtist(_projectId);
+        _onlyArtistOrAdminACL(_projectId, this.proposeArtistPaymentAddressesAndSplits.selector);
         _onlyNonZeroAddress(_artistAddress);
         ProjectFinance storage projectFinance = projectIdToFinancials[
             _projectId
@@ -1195,7 +1197,7 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
         uint256 _projectId,
         uint256 _secondMarketRoyalty
     ) external {
-        _onlyArtist(_projectId);
+        _onlyArtistOrAdminACL(_projectId, this.updateProjectSecondaryMarketRoyaltyPercentage.selector);
         require(
             _secondMarketRoyalty <= ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE,
             "Over max percent"
@@ -1219,17 +1221,22 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
         string memory _projectDescription
     ) external {
         // checks
-        require(
-            _projectUnlocked(_projectId)
-                ? msg.sender == projectIdToFinancials[_projectId].artistAddress
-                : adminACLAllowed(
+        if (_projectUnlocked(_projectId)) {
+            _onlyArtistOrAdminACL(
+                _projectId,
+                this.updateProjectDescription.selector
+            );
+        } else {
+            require(
+                adminACLAllowed(
                     msg.sender,
                     address(this),
                     this.updateProjectDescription.selector,
                     _projectId
                 ),
-            "Only artist when unlocked, owner when locked"
-        );
+                "Only artist when unlocked, owner when locked"
+            );
+        }
         // effects
         projects[_projectId].description = _projectDescription;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_DESCRIPTION);
@@ -1245,7 +1252,7 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
         uint256 _projectId,
         string memory _projectWebsite
     ) external {
-        _onlyArtist(_projectId);
+        _onlyArtistOrAdminACL(_projectId, this.updateProjectWebsite.selector);
         projects[_projectId].website = _projectWebsite;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_WEBSITE);
     }
@@ -1279,7 +1286,7 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
         uint256 _projectId,
         uint24 _maxInvocations
     ) external {
-        _onlyArtist(_projectId);
+        _onlyArtistOrAdminACL(_projectId, this.updateProjectMaxInvocations.selector);
         // CHECKS
         Project storage project = projects[_projectId];
         uint256 _invocations = project.invocations;
@@ -1452,7 +1459,7 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
         uint256 _projectId,
         string memory _newBaseURI
     ) external {
-        _onlyArtist(_projectId);
+        _onlyArtistOrAdminACL(_projectId, this.updateProjectBaseURI.selector);
         _onlyNonEmptyString(_newBaseURI);
         projects[_projectId].projectBaseURI = _newBaseURI;
         emit ProjectUpdated(_projectId, FIELD_PROJECT_BASE_URI);
