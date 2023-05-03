@@ -6,6 +6,7 @@ import {
   balance,
   ether,
 } from "@openzeppelin/test-helpers";
+
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { Contract } from "ethers";
@@ -13,18 +14,29 @@ import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 
 import {
+  BytecodeV1TextCR_DMock,
+  BytecodeV0TextCR_DMock,
+  SSTORE2Mock,
+} from "../../scripts/contracts";
+
+import {
   T_Config,
   getAccounts,
   deployAndGet,
   assignDefaultConstants,
 } from "../util/common";
+
 import {
   SQUIGGLE_SCRIPT,
   SKULPTUUR_SCRIPT_APPROX,
-  CONTRACT_SIZE_LIMIT_SCRIPT,
-  GREATER_THAN_CONTRACT_SIZE_LIMIT_SCRIPT,
   MULTI_BYTE_UTF_EIGHT_SCRIPT,
 } from "../util/example-scripts";
+
+interface BytecodeStorageBackwardsCompatibleTestConfig extends T_Config {
+  bytecodeV1TextCR_DMock?: BytecodeV1TextCR_DMock;
+  bytecodeV0TextCR_DMock?: BytecodeV0TextCR_DMock;
+  sstore2Mock?: SSTORE2Mock;
+}
 
 /**
  * Tests for BytecodeStorageV1 by way of testing the BytecodeV1TextCR_DMock.
@@ -36,7 +48,7 @@ describe("BytecodeStorageV1 Backwards Compatible Reads Tests", async function ()
   // Helper that validates a write from the SSTORE2 library is readable
   // from the V1 library, for a given string.
   async function validateReadInterop_SSTORE2_V1(
-    config: T_Config,
+    config: BytecodeStorageBackwardsCompatibleTestConfig,
     targetText: string,
     sstore2Mock: Contract,
     bytecodeV1TextCR_DMock: Contract,
@@ -70,7 +82,7 @@ describe("BytecodeStorageV1 Backwards Compatible Reads Tests", async function ()
   // Helper that validates a write from the V0 library is readable
   // from the V1 library, for a given string.
   async function validateReadInterop_V0_V1(
-    config: T_Config,
+    config: BytecodeStorageBackwardsCompatibleTestConfig,
     targetText: string,
     bytecodeV0TextCR_DMock: Contract,
     bytecodeV1TextCR_DMock: Contract,
@@ -104,7 +116,7 @@ describe("BytecodeStorageV1 Backwards Compatible Reads Tests", async function ()
   // Helper that retrieves the address of the most recently deployed contract
   // containing bytecode for storage, from the SSTORE2 library.
   async function getLatestTextDeploymentAddressSSTORE2(
-    config: T_Config,
+    config: BytecodeStorageBackwardsCompatibleTestConfig,
     sstore2Mock: Contract
   ) {
     const nextTextSlotId = await sstore2Mock.nextTextSlotId();
@@ -119,7 +131,7 @@ describe("BytecodeStorageV1 Backwards Compatible Reads Tests", async function ()
   // Helper that retrieves the address of the most recently deployed contract
   // containing bytecode for storage, from the V0 ByteCode storage library.
   async function getLatestTextDeploymentAddressV0(
-    config: T_Config,
+    config: BytecodeStorageBackwardsCompatibleTestConfig,
     bytecodeV0TextCR_DMock: Contract
   ) {
     const nextTextSlotId = await bytecodeV0TextCR_DMock.nextTextSlotId();
@@ -133,7 +145,7 @@ describe("BytecodeStorageV1 Backwards Compatible Reads Tests", async function ()
   // Helper that retrieves the address of the most recently deployed contract
   // containing bytecode for storage, from the V0 ByteCode storage library.
   async function getLatestTextDeploymentAddressV1(
-    config: T_Config,
+    config: BytecodeStorageBackwardsCompatibleTestConfig,
     bytecodeV1TextCR_DMock: Contract
   ) {
     const nextTextSlotId = await bytecodeV1TextCR_DMock.nextTextSlotId();
@@ -145,7 +157,7 @@ describe("BytecodeStorageV1 Backwards Compatible Reads Tests", async function ()
   }
 
   async function _beforeEach() {
-    let config: T_Config = {
+    let config: BytecodeStorageBackwardsCompatibleTestConfig = {
       accounts: await getAccounts(),
     };
     config = await assignDefaultConstants(config);
