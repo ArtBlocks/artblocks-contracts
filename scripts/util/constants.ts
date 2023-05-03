@@ -32,6 +32,7 @@ export const KNOWN_ENGINE_REGISTRIES = {
   },
   "arbitrum-goerli": {
     // [INDEXED] arbitrum goerli dev | deployer: lindsay dev wallet
-    "0x429af8eE97750aaddE1e8df9e921e11406ff9ed2": "0x3b9038fa89783CBA1933c1689043b4dae2032d1c"
-  }
+    "0x429af8eE97750aaddE1e8df9e921e11406ff9ed2":
+      "0x3b9038fa89783CBA1933c1689043b4dae2032d1c",
+  },
 };
