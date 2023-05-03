@@ -5,7 +5,7 @@ export const deployDetailsArray = [
     network: "arbitrum-goerli",
     // environment is only used for metadata purposes, and is not used in the deployment process
     // Please set to "dev", "staging", or "mainnet", as appropriate
-    environment: "dev",
+    environment: "arbitrum-dev",
     // if you want to use an existing admin ACL, set the address here (otherwise set as undefined to deploy a new one)
     existingAdminACL: undefined,
     // the following can be undefined if you are using an existing admin ACL, otherwise define the Admin ACL contract name
