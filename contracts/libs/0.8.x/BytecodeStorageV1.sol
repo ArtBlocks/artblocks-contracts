@@ -88,7 +88,7 @@ library BytecodeStorage {
     /**
      * @notice Write a string to contract bytecode
      * @param _data string to be written to contract. No input validation is performed on this parameter.
-     * @return address_ address of deployed contract with bytecode containing
+     * @param address_ address of deployed contract with bytecode stored in the V0 or V1 format
      */
     function writeToBytecode(
         string memory _data
