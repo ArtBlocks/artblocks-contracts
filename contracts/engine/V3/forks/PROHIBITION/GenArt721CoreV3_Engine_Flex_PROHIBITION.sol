@@ -921,7 +921,10 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
         uint256 _additionalPayeeSecondarySalesPercentage
     ) external {
         _onlyValidProjectId(_projectId);
-        _onlyArtistOrAdminACL(_projectId, this.proposeArtistPaymentAddressesAndSplits.selector);
+        _onlyArtistOrAdminACL(
+            _projectId,
+            this.proposeArtistPaymentAddressesAndSplits.selector
+        );
         _onlyNonZeroAddress(_artistAddress);
         ProjectFinance storage projectFinance = projectIdToFinancials[
             _projectId
@@ -1197,7 +1200,10 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
         uint256 _projectId,
         uint256 _secondMarketRoyalty
     ) external {
-        _onlyArtistOrAdminACL(_projectId, this.updateProjectSecondaryMarketRoyaltyPercentage.selector);
+        _onlyArtistOrAdminACL(
+            _projectId,
+            this.updateProjectSecondaryMarketRoyaltyPercentage.selector
+        );
         require(
             _secondMarketRoyalty <= ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE,
             "Over max percent"
@@ -1286,7 +1292,10 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
         uint256 _projectId,
         uint24 _maxInvocations
     ) external {
-        _onlyArtistOrAdminACL(_projectId, this.updateProjectMaxInvocations.selector);
+        _onlyArtistOrAdminACL(
+            _projectId,
+            this.updateProjectMaxInvocations.selector
+        );
         // CHECKS
         Project storage project = projects[_projectId];
         uint256 _invocations = project.invocations;
