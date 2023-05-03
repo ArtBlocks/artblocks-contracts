@@ -6,7 +6,7 @@ export const solidityConfig = {
       settings: {
         optimizer: {
           enabled: true,
-          runs: 10,
+          runs: 25,
         },
       },
     },
