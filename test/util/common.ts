@@ -192,6 +192,12 @@ export async function deployCoreWithMinterFilter(
     let adminACLContractName = useAdminACLWithEvents
       ? "MockAdminACLV0Events"
       : "AdminACLV0";
+
+    // if core contract name ends with _PROHIBITION, use that for adminACL too
+    adminACLContractName = coreContractName.endsWith("_PROHIBITION")
+      ? `${adminACLContractName}_PROHIBITION`
+      : adminACLContractName;
+
     // if function input has adminACL contract name, use that instead
     adminACLContractName = _adminACLContractName
       ? _adminACLContractName
@@ -219,16 +225,24 @@ export async function deployCoreWithMinterFilter(
   } else if (
     coreContractName.endsWith("V3_Engine") ||
     coreContractName.endsWith("V3_Engine_Flex") ||
+    coreContractName.endsWith("V3_Engine_Flex_PROHIBITION") ||
     coreContractName === "GenArt721CoreV3_Engine_IncorrectCoreType"
   ) {
     randomizer = await deployAndGet(config, _randomizerName, []);
     let adminACLContractName = useAdminACLWithEvents
       ? "MockAdminACLV0Events"
       : "AdminACLV0";
+
+    // if core contract name ends with _PROHIBITION, use that for adminACL too
+    adminACLContractName = coreContractName.endsWith("_PROHIBITION")
+      ? `${adminACLContractName}_PROHIBITION`
+      : adminACLContractName;
+
     // if function input has adminACL contract name, use that instead
     adminACLContractName = _adminACLContractName
       ? _adminACLContractName
       : adminACLContractName;
+
     adminACL = await deployAndGet(config, adminACLContractName, []);
     engineRegistry = await deployAndGet(config, "EngineRegistryV0", []);
     // Note: in the common tests, set `autoApproveArtistSplitProposals` to false, which

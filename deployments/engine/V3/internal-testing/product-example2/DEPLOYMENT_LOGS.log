@@ -1,0 +1,50 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-04-27T04:10:25.329Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/deployments/engine/V3/internal-testing/product-example2/deployment-config.dev.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: dev
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0xf6beeF49BB7a2c397B0386b34650bD724330B978
+[INFO] Randomizer BasicRandomizerV2 deployed at 0x4c076462b6bb4A3480aDE2a1C906C3B83D4629e5
+[INFO] Core GenArt721CoreV3_Engine deployed at 0x1025a850546569ed79a9A939b0d0a3c131E53bF8
+[INFO] Minter Filter MinterFilterV1 deployed at 0x12d9713653929B85De0495653524068a34FCaD26
+[INFO] MinterSetPriceV4 deployed at 0xfEBDdd33e7427125649d9dcd0b668911d22D2a25
+[INFO] MinterDAExpSettlementV1 deployed at 0x97F9cB5dca3acA4B6267741BCa3d93D1310A5C42
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0x12d9713653929B85De0495653524068a34FCaD26.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0xfEBDdd33e7427125649d9dcd0b668911d22D2a25 on minter filter.
+[INFO] Allowlisted minter MinterDAExpSettlementV1 at 0x97F9cB5dca3acA4B6267741BCa3d93D1310A5C42 on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Skipping transfer of superAdmin role on adminACL.
+[INFO] Verifying core contract contract deployment...
+The contract 0x1025a850546569ed79a9A939b0d0a3c131E53bF8 has already been verified
+[INFO] Core contract verified on Etherscan at 0x1025a850546569ed79a9A939b0d0a3c131E53bF8}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0xf6beeF49BB7a2c397B0386b34650bD724330B978 has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0xf6beeF49BB7a2c397B0386b34650bD724330B978}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0x12d9713653929B85De0495653524068a34FCaD26 has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0x12d9713653929B85De0495653524068a34FCaD26}
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+The contract 0xfEBDdd33e7427125649d9dcd0b668911d22D2a25 has already been verified
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0xfEBDdd33e7427125649d9dcd0b668911d22D2a25}
+[INFO] Verifying MinterDAExpSettlementV1 contract deployment...
+The contract 0x97F9cB5dca3acA4B6267741BCa3d93D1310A5C42 has already been verified
+[INFO] MinterDAExpSettlementV1 contract verified on Etherscan at 0x97F9cB5dca3acA4B6267741BCa3d93D1310A5C42}
+----------------------------------------
+[INFO] Datetime of deployment: 2023-04-27T04:23:40.789Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/deployments/engine/V3/internal-testing/product-example2/deployment-config.dev.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: dev
+Created s3 bucket for https://productdevelopment2-goerli.s3.amazonaws.com
+[INFO] Created image bucket productdevelopment2-goerli
+[INFO] Deployment details written to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/deployments/engine/V3/internal-testing/product-example2/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x1025a850546569ed79a9a939b0d0a3c131e53bf8",
+  "name": "ProductDevelopment2",
+  "bucket_name": "productdevelopment2-goerli",
+  "default_vertical_name": "fullyonchain"
+}
+Successfully upserted 1 contract

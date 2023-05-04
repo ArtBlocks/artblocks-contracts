@@ -3,11 +3,13 @@ const {
   S3Client,
   CreateBucketCommand,
   PutBucketCorsCommand,
+  DeletePublicAccessBlockCommand,
+  PutBucketAclCommand,
 } = require("@aws-sdk/client-s3");
 
 // Docs: https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-s3/index.html
 
-const supportedNetworks = ["mainnet", "ropsten", "goerli"];
+const supportedNetworks = ["mainnet", "ropsten", "goerli", "arbitrum-goerli"];
 
 const awsCreds = {
   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
@@ -20,14 +22,29 @@ const s3Client = new S3Client({
 });
 
 const createBucket = async (bucketName: string, client: any) => {
+  // create bucket, default blocks public access
   const input = {
     Bucket: bucketName,
-    ACL: "public-read",
     ObjectLockEnabledForBucket: false,
     ObjectOwnership: "ObjectWriter",
   };
   const command = new CreateBucketCommand(input);
-  return await client.send(command);
+  const return_ = await client.send(command);
+  // remove block public access
+  const input2 = {
+    Bucket: bucketName,
+  };
+  const command2 = new DeletePublicAccessBlockCommand(input2);
+  await client.send(command2);
+  // set bucket ACL to public-read
+  const input3 = {
+    Bucket: bucketName,
+    ACL: "public-read",
+  };
+  const command3 = new PutBucketAclCommand(input3);
+  await client.send(command3);
+  // return create bucket response
+  return return_;
 };
 
 const updateBucketCors = async (bucketName: string, client: any) => {

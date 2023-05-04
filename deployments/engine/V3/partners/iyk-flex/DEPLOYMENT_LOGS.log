@@ -1,0 +1,42 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-04-28T00:53:24.939Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/iyk-flex/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0xdabA59fb57f0dE21f78067712636fA6B4EF3679D
+[INFO] Randomizer BasicRandomizerV2 deployed at 0x11515aE3f510D8BFEDD2B60B4A878F8a77a7b7ec
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0xa36CDb46AcCA0A9B921759a55186bfE86B30B902
+[INFO] Minter Filter MinterFilterV1 deployed at 0x69f04FDDF0c4c32642B22E68b867282d5074A98a
+[INFO] MinterSetPriceV4 deployed at 0x3A5F7Fc4C018CD402b8b115983a2319a53B44A7c
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0x69f04FDDF0c4c32642B22E68b867282d5074A98a.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0x3A5F7Fc4C018CD402b8b115983a2319a53B44A7c on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0x5FE770CF8Ad1DF5DDe2c1447A898B087c275F6c1.
+[INFO] Verifying core contract contract deployment...
+The contract 0xa36CDb46AcCA0A9B921759a55186bfE86B30B902 has already been verified
+[INFO] Core contract verified on Etherscan at 0xa36CDb46AcCA0A9B921759a55186bfE86B30B902}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0xdabA59fb57f0dE21f78067712636fA6B4EF3679D has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0xdabA59fb57f0dE21f78067712636fA6B4EF3679D}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0x69f04FDDF0c4c32642B22E68b867282d5074A98a has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0x69f04FDDF0c4c32642B22E68b867282d5074A98a}
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+The contract 0x3A5F7Fc4C018CD402b8b115983a2319a53B44A7c has already been verified
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0x3A5F7Fc4C018CD402b8b115983a2319a53B44A7c}
+Created s3 bucket for https://iyk-cards-goerli.s3.amazonaws.com
+[INFO] Created image bucket iyk-cards-goerli
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/iyk-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0xa36cdb46acca0a9b921759a55186bfe86b30b902",
+  "name": "IYK Cards",
+  "bucket_name": "iyk-cards-goerli",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x5FE770CF8Ad1DF5DDe2c1447A898B087c275F6c1, don't forget to update if requred.

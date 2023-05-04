@@ -1,4 +1,4 @@
-import { Client } from "urql/core";
+import { Client, cacheExchange, fetchExchange } from "urql/core";
 import fetch from "node-fetch";
 
 const getEndpointAndAdminSecret = (): {
@@ -11,6 +11,10 @@ const getEndpointAndAdminSecret = (): {
     case "dev":
       graphqlAPIEndpoint = process.env.GRAPHQL_API_ENDPOINT_DEV;
       hasuraAdminSecret = process.env.HASURA_ADMIN_SECRET_DEV;
+      break;
+    case "arbitrum-dev":
+      graphqlAPIEndpoint = process.env.GRAPHQL_API_ENDPOINT_ARBITRUM_DEV;
+      hasuraAdminSecret = process.env.HASURA_ADMIN_SECRET_ARBITRUM_DEV;
       break;
     case "staging":
       graphqlAPIEndpoint = process.env.GRAPHQL_API_ENDPOINT_STAGING;
@@ -36,6 +40,7 @@ export const getClient = (): Client => {
         "x-hasura-admin-secret": hasuraAdminSecret,
       },
     },
+    exchanges: [cacheExchange, fetchExchange],
   });
   return client;
 };

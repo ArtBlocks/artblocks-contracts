@@ -69,9 +69,4 @@ interface IGenArt721CoreContractV3_Engine is IGenArt721CoreContractV3_Base {
         external
         view
         returns (uint256);
-
-    // function to read the hash-seed for a given tokenId
-    function tokenIdToHashSeed(
-        uint256 _tokenId
-    ) external view returns (bytes12);
 }
