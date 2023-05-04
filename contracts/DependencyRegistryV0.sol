@@ -34,9 +34,7 @@ contract DependencyRegistryV0 is
     IDependencyRegistryV0
 {
     using BytecodeStorageWriterV1 for string;
-    using BytecodeStorageReaderV1 for string;
     using BytecodeStorageWriterV1 for address;
-    using BytecodeStorageReaderV1 for address;
     using Bytes32Strings for bytes32;
     using Strings for uint256;
     using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -737,7 +735,7 @@ contract DependencyRegistryV0 is
             return "";
         }
 
-        return dependency.scriptBytecodeAddresses[_index].readFromBytecode();
+        return _readFromBytecode(dependency.scriptBytecodeAddresses[_index]);
     }
 
     /**
@@ -830,5 +828,15 @@ contract DependencyRegistryV0 is
     function _transferOwnership(address newOwner) internal override {
         OwnableUpgradeable._transferOwnership(newOwner);
         adminACLContract = IAdminACLV0(newOwner);
+    }
+
+    /**
+     * Helper for calling `BytecodeStorageReaderV1` external library reader method,
+     * added for gas-optimization purposes.
+     */
+    function _readFromBytecode(
+        address _address
+    ) internal view returns (string memory) {
+        return BytecodeStorageReaderV1.readFromBytecode(_address);
     }
 }

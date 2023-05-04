@@ -94,9 +94,7 @@ contract GenArt721CoreV3 is
     IGenArt721CoreContractExposesHashSeed
 {
     using BytecodeStorageWriterV1 for string;
-    using BytecodeStorageReaderV1 for string;
     using BytecodeStorageWriterV1 for address;
-    using BytecodeStorageReaderV1 for address;
     using Bytes32Strings for bytes32;
     using Strings for uint256;
     uint256 constant ONE_HUNDRED = 100;
@@ -1495,7 +1493,7 @@ contract GenArt721CoreV3 is
         if (_index >= project.scriptCount) {
             return "";
         }
-        return project.scriptBytecodeAddresses[_index].readFromBytecode();
+        return _readFromBytecode(project.scriptBytecodeAddresses[_index]);
     }
 
     /**
@@ -1946,5 +1944,15 @@ contract GenArt721CoreV3 is
             projectOpen ||
             (block.timestamp - projectCompletedTimestamp <
                 FOUR_WEEKS_IN_SECONDS);
+    }
+
+    /**
+     * Helper for calling `BytecodeStorageReaderV1` external library reader method,
+     * added for gas-optimization purposes.
+     */
+    function _readFromBytecode(
+        address _address
+    ) internal view returns (string memory) {
+        return BytecodeStorageReaderV1.readFromBytecode(_address);
     }
 }

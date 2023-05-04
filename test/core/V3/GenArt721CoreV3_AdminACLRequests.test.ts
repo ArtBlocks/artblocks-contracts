@@ -87,7 +87,7 @@ for (const coreContractName of coreContractsToTest) {
         "MinterFilterV1",
         true
       ));
-      
+
       // get core contract interface for signature hash retrieval
       config.coreInterface = config.genArt721Core.interface;
       config.minter = await deployAndGet(config, "MinterSetPriceV2", [

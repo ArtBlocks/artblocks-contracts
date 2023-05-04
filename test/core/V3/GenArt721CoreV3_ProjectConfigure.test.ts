@@ -1424,17 +1424,21 @@ for (const coreContractName of coreContractsToTest) {
           []
         );
         // set `autoApproveArtistSplitProposals` to true
-        config.genArt721Core = await deployWithStorageLibraryAndGet(config, coreContractName, [
-          config.name, // _tokenName
-          config.symbol, // _tokenSymbol
-          config.accounts.deployer.address, // _renderProviderAddress
-          config.accounts.additional.address, // _platformProviderAddress
-          config.randomizer.address, // _randomizerContract
-          config.adminACL.address, // _adminACLContract
-          0, // _startingProjectId
-          true, // _autoApproveArtistSplitProposals
-          config.engineRegistry.address, // _engineRegistryContract
-        ]);
+        config.genArt721Core = await deployWithStorageLibraryAndGet(
+          config,
+          coreContractName,
+          [
+            config.name, // _tokenName
+            config.symbol, // _tokenSymbol
+            config.accounts.deployer.address, // _renderProviderAddress
+            config.accounts.additional.address, // _platformProviderAddress
+            config.randomizer.address, // _randomizerContract
+            config.adminACL.address, // _adminACLContract
+            0, // _startingProjectId
+            true, // _autoApproveArtistSplitProposals
+            config.engineRegistry.address, // _engineRegistryContract
+          ]
+        );
         // assign core contract for randomizer to use
         config.randomizer
           .connect(config.accounts.deployer)

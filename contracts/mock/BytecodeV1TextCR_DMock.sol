@@ -23,9 +23,7 @@ import "../libs/0.8.x/BytecodeStorageV1.sol";
  */
 contract BytecodeV1TextCR_DMock {
     using BytecodeStorageWriterV1 for string;
-    using BytecodeStorageReaderV1 for string;
     using BytecodeStorageWriterV1 for address;
-    using BytecodeStorageReaderV1 for address;
 
     // monotonically increasing slot counter and associated slot-storage mapping
     uint256 public nextTextSlotId = 0;
@@ -79,7 +77,10 @@ contract BytecodeV1TextCR_DMock {
      *      the underlying BytecodeStorage lib to throw errors where applicable.
      */
     function readText(uint256 _textSlotId) public view returns (string memory) {
-        return storedTextBytecodeAddresses[_textSlotId].readFromBytecode();
+        return
+            BytecodeStorageReaderV1.readFromBytecode(
+                storedTextBytecodeAddresses[_textSlotId]
+            );
     }
 
     /**
@@ -110,7 +111,7 @@ contract BytecodeV1TextCR_DMock {
     function readTextAtAddress(
         address _bytecodeAddress
     ) public view returns (string memory) {
-        return _bytecodeAddress.readFromBytecode();
+        return BytecodeStorageReaderV1.readFromBytecode(_bytecodeAddress);
     }
 
     /**
@@ -128,7 +129,13 @@ contract BytecodeV1TextCR_DMock {
         address _bytecodeAddress,
         uint256 _offset
     ) public view returns (string memory) {
-        return string(_bytecodeAddress.readBytesFromBytecode(_offset));
+        return
+            string(
+                BytecodeStorageReaderV1.readBytesFromBytecode(
+                    _bytecodeAddress,
+                    _offset
+                )
+            );
     }
 
     /**
@@ -143,7 +150,12 @@ contract BytecodeV1TextCR_DMock {
     function readSSTORE2TextAtAddress(
         address _bytecodeAddress
     ) public view returns (string memory) {
-        return string(_bytecodeAddress.readBytesFromSSTORE2Bytecode());
+        return
+            string(
+                BytecodeStorageReaderV1.readBytesFromSSTORE2Bytecode(
+                    _bytecodeAddress
+                )
+            );
     }
 
     /**
@@ -158,7 +170,10 @@ contract BytecodeV1TextCR_DMock {
     function readAuthorForTextAtAddress(
         address _bytecodeAddress
     ) public view returns (address) {
-        return _bytecodeAddress.getWriterAddressForBytecode();
+        return
+            BytecodeStorageReaderV1.getWriterAddressForBytecode(
+                _bytecodeAddress
+            );
     }
 
     /**
@@ -173,7 +188,10 @@ contract BytecodeV1TextCR_DMock {
     function readLibraryVersionForTextAtAddress(
         address _bytecodeAddress
     ) public view returns (bytes32) {
-        return _bytecodeAddress.getLibraryVersionForBytecode();
+        return
+            BytecodeStorageReaderV1.getLibraryVersionForBytecode(
+                _bytecodeAddress
+            );
     }
 
     /**

@@ -109,11 +109,14 @@ for (const coreContractName of coreContractsToTest) {
           .deploy(/* no args for library ever */);
 
         // Deploy actual contract (with library linked)
-        const coreContractFactory = await ethers.getContractFactory(coreContractName, {
-          libraries: {
-            BytecodeStorageReaderV1: library.address,
-          },
-        });
+        const coreContractFactory = await ethers.getContractFactory(
+          coreContractName,
+          {
+            libraries: {
+              BytecodeStorageReaderV1: library.address,
+            },
+          }
+        );
         // it is OK that config construction addresses aren't particularly valid
         // addresses for the purposes of config test
         let tx;
@@ -124,17 +127,19 @@ for (const coreContractName of coreContractsToTest) {
           const engineRegistry = await engineRegistryFactory
             .connect(config.accounts.deployer)
             .deploy();
-          tx = await coreContractFactory.connect(config.accounts.deployer).deploy(
-            "name",
-            "symbol",
-            config.accounts.additional.address,
-            config.accounts.additional.address,
-            config.accounts.additional.address,
-            config.accounts.additional.address,
-            365,
-            false,
-            engineRegistry.address // Note: important to use a real engine registry
-          );
+          tx = await coreContractFactory
+            .connect(config.accounts.deployer)
+            .deploy(
+              "name",
+              "symbol",
+              config.accounts.additional.address,
+              config.accounts.additional.address,
+              config.accounts.additional.address,
+              config.accounts.additional.address,
+              365,
+              false,
+              engineRegistry.address // Note: important to use a real engine registry
+            );
           const receipt = await tx.deployTransaction.wait();
           const registrationLog = receipt.logs[receipt.logs.length - 1];
           // expect "ContractRegistered" event as log 0

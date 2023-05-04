@@ -2217,6 +2217,10 @@ contract GenArt721CoreV3_Engine_Flex is
                 FOUR_WEEKS_IN_SECONDS);
     }
 
+    /**
+     * Helper for calling `BytecodeStorageReaderV1` external library reader method,
+     * added for gas-optimization purposes.
+     */
     function _readFromBytecode(
         address _address
     ) internal view returns (string memory) {
