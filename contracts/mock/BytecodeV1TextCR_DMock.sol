@@ -23,7 +23,6 @@ import "../libs/0.8.x/BytecodeStorageV1.sol";
  */
 contract BytecodeV1TextCR_DMock {
     using BytecodeStorageWriterV1 for string;
-    using BytecodeStorageWriterV1 for address;
 
     // monotonically increasing slot counter and associated slot-storage mapping
     uint256 public nextTextSlotId = 0;

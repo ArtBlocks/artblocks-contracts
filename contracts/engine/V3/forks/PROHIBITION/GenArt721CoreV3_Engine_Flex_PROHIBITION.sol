@@ -109,7 +109,6 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
     IGenArt721CoreContractV3_Engine_Flex_PROHIBITION
 {
     using BytecodeStorageWriterV1 for string;
-    using BytecodeStorageWriterV1 for address;
     using Bytes32Strings for bytes32;
     uint256 constant ONE_HUNDRED = 100;
     uint256 constant ONE_MILLION = 1_000_000;
