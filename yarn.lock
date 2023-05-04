@@ -4055,9 +4055,9 @@
     fs-extra "^8.1.0"
 
 "@openzeppelin/hardhat-upgrades@^1.22.0":
-  version "1.23.1"
-  resolved "https://registry.yarnpkg.com/@openzeppelin/hardhat-upgrades/-/hardhat-upgrades-1.23.1.tgz#45b47f7083493dae7339782aeeafd68606f76488"
-  integrity sha512-/bE480eKxbNBuvGsSsQglnwk3T52hC7lgmrOCSb4EKoF6njCeyebeBwQCr/5uZTRfIhHMkKr5s7lFFP8t2KzjQ==
+  version "1.24.0"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/hardhat-upgrades/-/hardhat-upgrades-1.24.0.tgz#b56f9858fcbb852d5db7caa9cc0367fa1239a64d"
+  integrity sha512-PmNf6y1eXSZ4k4f6Y42mcHeMfwY81MBiuh6vne+fOnWNZANCpjMV9b2Dy7SoS6IgFjq0umAtQYBsHWVWiaMSaw==
   dependencies:
     "@openzeppelin/upgrades-core" "^1.25.0"
     chalk "^4.1.0"
