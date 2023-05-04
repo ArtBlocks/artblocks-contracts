@@ -108,7 +108,7 @@ contract GenArt721CoreV3_Engine_Flex is
     IGenArt721CoreContractV3_Engine_Flex,
     IGenArt721CoreContractExposesHashSeed
 {
-    using BytecodeStorageWriterV1 for string;
+    using BytecodeStorageWriter for string;
     using Bytes32Strings for bytes32;
     uint256 constant ONE_HUNDRED = 100;
     uint256 constant ONE_MILLION = 1_000_000;
@@ -2217,13 +2217,13 @@ contract GenArt721CoreV3_Engine_Flex is
     }
 
     /**
-     * Helper for calling `BytecodeStorageReaderV1` external library reader method,
+     * Helper for calling `BytecodeStorageReader` external library reader method,
      * added for bytecode size reduction purposes.
      */
     function _readFromBytecode(
         address _address
     ) internal view returns (string memory) {
-        return BytecodeStorageReaderV1.readFromBytecode(_address);
+        return BytecodeStorageReader.readFromBytecode(_address);
     }
 
     // strings library from OpenZeppelin, modified for no constants

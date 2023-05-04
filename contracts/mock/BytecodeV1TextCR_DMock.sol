@@ -22,7 +22,7 @@ import "../libs/0.8.x/BytecodeStorageV1.sol";
  *         supported by the underlying library.
  */
 contract BytecodeV1TextCR_DMock {
-    using BytecodeStorageWriterV1 for string;
+    using BytecodeStorageWriter for string;
 
     // monotonically increasing slot counter and associated slot-storage mapping
     uint256 public nextTextSlotId = 0;
@@ -77,7 +77,7 @@ contract BytecodeV1TextCR_DMock {
      */
     function readText(uint256 _textSlotId) public view returns (string memory) {
         return
-            BytecodeStorageReaderV1.readFromBytecode(
+            BytecodeStorageReader.readFromBytecode(
                 storedTextBytecodeAddresses[_textSlotId]
             );
     }
@@ -110,7 +110,7 @@ contract BytecodeV1TextCR_DMock {
     function readTextAtAddress(
         address _bytecodeAddress
     ) public view returns (string memory) {
-        return BytecodeStorageReaderV1.readFromBytecode(_bytecodeAddress);
+        return BytecodeStorageReader.readFromBytecode(_bytecodeAddress);
     }
 
     /**
@@ -130,7 +130,7 @@ contract BytecodeV1TextCR_DMock {
     ) public view returns (string memory) {
         return
             string(
-                BytecodeStorageReaderV1.readBytesFromBytecode(
+                BytecodeStorageReader.readBytesFromBytecode(
                     _bytecodeAddress,
                     _offset
                 )
@@ -151,7 +151,7 @@ contract BytecodeV1TextCR_DMock {
     ) public view returns (string memory) {
         return
             string(
-                BytecodeStorageReaderV1.readBytesFromSSTORE2Bytecode(
+                BytecodeStorageReader.readBytesFromSSTORE2Bytecode(
                     _bytecodeAddress
                 )
             );
@@ -170,9 +170,7 @@ contract BytecodeV1TextCR_DMock {
         address _bytecodeAddress
     ) public view returns (address) {
         return
-            BytecodeStorageReaderV1.getWriterAddressForBytecode(
-                _bytecodeAddress
-            );
+            BytecodeStorageReader.getWriterAddressForBytecode(_bytecodeAddress);
     }
 
     /**
@@ -188,7 +186,7 @@ contract BytecodeV1TextCR_DMock {
         address _bytecodeAddress
     ) public view returns (bytes32) {
         return
-            BytecodeStorageReaderV1.getLibraryVersionForBytecode(
+            BytecodeStorageReader.getLibraryVersionForBytecode(
                 _bytecodeAddress
             );
     }

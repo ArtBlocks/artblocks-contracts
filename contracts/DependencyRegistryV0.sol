@@ -33,7 +33,7 @@ contract DependencyRegistryV0 is
     OwnableUpgradeable,
     IDependencyRegistryV0
 {
-    using BytecodeStorageWriterV1 for string;
+    using BytecodeStorageWriter for string;
     using Bytes32Strings for bytes32;
     using Strings for uint256;
     using EnumerableSet for EnumerableSet.Bytes32Set;
@@ -830,12 +830,12 @@ contract DependencyRegistryV0 is
     }
 
     /**
-     * Helper for calling `BytecodeStorageReaderV1` external library reader method,
+     * Helper for calling `BytecodeStorageReader` external library reader method,
      * added for bytecode size reduction purposes.
      */
     function _readFromBytecode(
         address _address
     ) internal view returns (string memory) {
-        return BytecodeStorageReaderV1.readFromBytecode(_address);
+        return BytecodeStorageReader.readFromBytecode(_address);
     }
 }

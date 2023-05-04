@@ -93,7 +93,7 @@ contract GenArt721CoreV3 is
     IGenArt721CoreContractV3,
     IGenArt721CoreContractExposesHashSeed
 {
-    using BytecodeStorageWriterV1 for string;
+    using BytecodeStorageWriter for string;
     using Bytes32Strings for bytes32;
     using Strings for uint256;
     uint256 constant ONE_HUNDRED = 100;
@@ -1946,12 +1946,12 @@ contract GenArt721CoreV3 is
     }
 
     /**
-     * Helper for calling `BytecodeStorageReaderV1` external library reader method,
+     * Helper for calling `BytecodeStorageReader` external library reader method,
      * added for bytecode size reduction purposes.
      */
     function _readFromBytecode(
         address _address
     ) internal view returns (string memory) {
-        return BytecodeStorageReaderV1.readFromBytecode(_address);
+        return BytecodeStorageReader.readFromBytecode(_address);
     }
 }

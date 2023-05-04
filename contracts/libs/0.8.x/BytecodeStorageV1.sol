@@ -44,7 +44,7 @@ pragma solidity ^0.8.0;
  * @notice The public library for reading from storage contracts. This library is intended to be deployed as a
  *         standalone contract, and provides all _read_ functionality.
  */
-library BytecodeStorageReaderV1 {
+library BytecodeStorageReader {
     // Define the set of known valid version strings that may be stored in the deployed storage contract bytecode
     // note: These are all intentionally exactly 32-bytes and are null-terminated. Null-termination is used due
     //       to this being the standard expected formatting in common web3 tooling such as ethers.js. Please see
@@ -329,7 +329,7 @@ library BytecodeStorageReaderV1 {
  * @notice The internal library for writing to storage contracts. This library is intended to be deployed
  *         within library client contracts that use this library to perform _write_ operations on storage.
  */
-library BytecodeStorageWriterV1 {
+library BytecodeStorageWriter {
     /*//////////////////////////////////////////////////////////////
                            WRITE LOGIC
     //////////////////////////////////////////////////////////////*/
@@ -375,7 +375,7 @@ library BytecodeStorageWriterV1 {
             // c.) store the version string, which is already represented as a 32-byte value
             //---------------------------------------------------------------------------------------------------------------//
             // (32 bytes)
-            BytecodeStorageReaderV1.CURRENT_VERSION,
+            BytecodeStorageReader.CURRENT_VERSION,
             //---------------------------------------------------------------------------------------------------------------//
             // d.) store the deploying-contract's address with 0-padding to fit a 20-byte address into a 32-byte slot
             //---------------------------------------------------------------------------------------------------------------//

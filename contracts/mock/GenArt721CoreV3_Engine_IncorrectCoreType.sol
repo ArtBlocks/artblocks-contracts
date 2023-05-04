@@ -30,7 +30,7 @@ contract GenArt721CoreV3_Engine_IncorrectCoreType is
     IManifold
     // INTERFACE CONFORMANCE INTENTIONALLY OMITTED TO ENABLE MOCKING BUGGED CONTRACT
 {
-    using BytecodeStorageWriterV1 for string;
+    using BytecodeStorageWriter for string;
     using Bytes32Strings for bytes32;
     using Strings for uint256;
     using Strings for address;
@@ -1955,12 +1955,12 @@ contract GenArt721CoreV3_Engine_IncorrectCoreType is
     }
 
     /**
-     * Helper for calling `BytecodeStorageReaderV1` external library reader method,
+     * Helper for calling `BytecodeStorageReader` external library reader method,
      * added for bytecode size reduction purposes.
      */
     function _readFromBytecode(
         address _address
     ) internal view returns (string memory) {
-        return BytecodeStorageReaderV1.readFromBytecode(_address);
+        return BytecodeStorageReader.readFromBytecode(_address);
     }
 }
