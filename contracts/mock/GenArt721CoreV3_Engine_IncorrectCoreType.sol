@@ -1956,7 +1956,7 @@ contract GenArt721CoreV3_Engine_IncorrectCoreType is
 
     /**
      * Helper for calling `BytecodeStorageReaderV1` external library reader method,
-     * added for gas-optimization purposes.
+     * added for bytecode size reduction purposes.
      */
     function _readFromBytecode(
         address _address
