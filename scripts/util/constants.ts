@@ -9,6 +9,13 @@ export const DELEGATION_REGISTRY_ADDRESSES = {
   mainnet: "0x00000000000076A84feF008CDAbe6409d2FE638B",
 };
 
+// BytecodeStorageReader library addresses on supported networks
+export const BYTECODE_STORAGE_READER_LIBRARY_ADDRESSES = {
+  // note: same address for goerli and mainnet
+  goerli: "0xB8B806A10d16cc80dB788552B54B3ECb4A2A3C3D",
+  mainnet: "0xf0585dF582A0ad119F1616FB82f3b449a98EeCd5",
+};
+
 // known V3 engine registry contracts, and their deployers
 // format is [network]: { [registry address]: [deployer address] }
 export const KNOWN_ENGINE_REGISTRIES = {

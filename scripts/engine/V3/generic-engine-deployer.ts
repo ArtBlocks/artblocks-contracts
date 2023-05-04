@@ -18,6 +18,7 @@ import {
 
 import {
   DELEGATION_REGISTRY_ADDRESSES,
+  BYTECODE_STORAGE_READER_LIBRARY_ADDRESSES,
   KNOWN_ENGINE_REGISTRIES,
   EXTRA_DELAY_BETWEEN_TX,
 } from "../../util/constants";
@@ -207,13 +208,19 @@ async function main() {
     await randomizer.deployed();
     const randomizerAddress = randomizer.address;
     console.log(
-      `[INFO] Randomizer ${deployDetails.randomizerContractName} deployed at ${randomizerAddress}`
+      `[INFO] Randomizer ${deployDetails.randomizerContractName} deployed at g${randomizerAddress}`
     );
     await delay(EXTRA_DELAY_BETWEEN_TX);
 
     // Deploy Core contract
+    // Ensure that BytecodeStorageReader library is linked in the process
+    const bytecodeStorageLibraryAddress = BYTECODE_STORAGE_READER_LIBRARY_ADDRESSES[networkName];
     const genArt721CoreFactory = await ethers.getContractFactory(
-      deployDetails.genArt721CoreContractName
+      deployDetails.genArt721CoreContractName, {
+        libraries: {
+          BytecodeStorageReader: bytecodeStorageLibraryAddress,
+        },
+      }
     );
     const tokenName = deployDetails.tokenName;
     const tokenTicker = deployDetails.tokenTicker;
