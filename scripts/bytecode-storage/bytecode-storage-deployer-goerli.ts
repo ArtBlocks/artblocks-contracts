@@ -34,13 +34,13 @@ async function main() {
   //////////////////////////////////////////////////////////////////////////////
 
   // Deploy library
-  const libraryFactory = await ethers.getContractFactory(
-    libraryContractName
-  );
+  const libraryFactory = await ethers.getContractFactory(libraryContractName);
   const library = await libraryFactory.deploy();
   await library.deployed();
   const libraryAddress = library.address;
-  console.log(`[INFO] ${intendedNetwork} ${libraryContractName} deployed at: ${libraryAddress}`);
+  console.log(
+    `[INFO] ${intendedNetwork} ${libraryContractName} deployed at: ${libraryAddress}`
+  );
 
   //////////////////////////////////////////////////////////////////////////////
   // DEPLOYMENT ENDS HERE

@@ -214,9 +214,11 @@ async function main() {
 
     // Deploy Core contract
     // Ensure that BytecodeStorageReader library is linked in the process
-    const bytecodeStorageLibraryAddress = BYTECODE_STORAGE_READER_LIBRARY_ADDRESSES[networkName];
+    const bytecodeStorageLibraryAddress =
+      BYTECODE_STORAGE_READER_LIBRARY_ADDRESSES[networkName];
     const genArt721CoreFactory = await ethers.getContractFactory(
-      deployDetails.genArt721CoreContractName, {
+      deployDetails.genArt721CoreContractName,
+      {
         libraries: {
           BytecodeStorageReader: bytecodeStorageLibraryAddress,
         },
