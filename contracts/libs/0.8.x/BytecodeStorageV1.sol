@@ -45,6 +45,23 @@ pragma solidity ^0.8.0;
  *         standalone contract, and provides all _read_ functionality.
  */
 library BytecodeStorageReaderV1 {
+    // Define the set of known valid version strings that may be stored in the deployed storage contract bytecode
+    // note: These are all intentionally exactly 32-bytes and are null-terminated. Null-termination is used due
+    //       to this being the standard expected formatting in common web3 tooling such as ethers.js. Please see
+    //       the following for additional context: https://docs.ethers.org/v5/api/utils/strings/#Bytes32String
+    // Used for storage contracts that were deployed by an unknown source
+    bytes32 public constant UNKNOWN_VERSION_STRING =
+        "UNKNOWN_VERSION_STRING_________ ";
+    // Pre-dates versioning string, so this doesn't actually exist in any deployed contracts,
+    // but is useful for backwards-compatible semantics with original version of this library
+    bytes32 public constant V0_VERSION_STRING =
+        "BytecodeStorage_V0.0.0_________ ";
+    // The first versioned storage contract, deployed by an updated version of this library
+    bytes32 public constant V1_VERSION_STRING =
+        "BytecodeStorage_V1.0.0_________ ";
+    // The current version of this library.
+    bytes32 public constant CURRENT_VERSION = V1_VERSION_STRING;
+
     //---------------------------------------------------------------------------------------------------------------//
     // Starting Index | Size | Ending Index | Description                                                            //
     //---------------------------------------------------------------------------------------------------------------//
@@ -73,24 +90,6 @@ library BytecodeStorageReaderV1 {
     // concat(invalid opcode, version, deployer-address, data)
     uint256 private constant V1_ADDRESS_OFFSET = ADDRESS_OFFSET;
     uint256 private constant V1_DATA_OFFSET = DATA_OFFSET;
-
-    // Define the set of known valid version strings that may be stored in the deployed storage contract bytecode
-    // note: These are all intentionally exactly 32-bytes and are null-terminated. Null-termination is used due
-    //       to this being the standard expected formatting in common web3 tooling such as ethers.js. Please see
-    //       the following for additional context: https://docs.ethers.org/v5/api/utils/strings/#Bytes32String
-    // Used for storage contracts that were deployed by an unknown source
-    bytes32 private constant UNKNOWN_VERSION_STRING =
-        "UNKNOWN_VERSION_STRING_________ ";
-    // Pre-dates versioning string, so this doesn't actually exist in any deployed contracts,
-    // but is useful for backwards-compatible semantics with original version of this library
-    bytes32 private constant V0_VERSION_STRING =
-        "BytecodeStorage_V0.0.0_________ ";
-    // The first versioned storage contract, deployed by an updated version of this library
-    bytes32 private constant V1_VERSION_STRING =
-        "BytecodeStorage_V1.0.0_________ ";
-
-    // Provide a public getter for the version of this library.
-    bytes32 public constant CURRENT_VERSION = V1_VERSION_STRING;
 
     /*//////////////////////////////////////////////////////////////
                                READ LOGIC
