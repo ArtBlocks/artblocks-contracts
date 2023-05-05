@@ -14,7 +14,15 @@ const MAINNET_JSON_RPC_PROVIDER_URL = process.env.MAINNET_JSON_RPC_PROVIDER_URL;
 const GOERLI_JSON_RPC_PROVIDER_URL = process.env.GOERLI_JSON_RPC_PROVIDER_URL;
 const MAINNET_PRIVATE_KEY = process.env.MAINNET_PRIVATE_KEY;
 const TESTNET_PRIVATE_KEY = process.env.TESTNET_PRIVATE_KEY;
+
+// Note - If deploying on Arbitrum, set this to ARBISCAN_API_KEY
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
+
+// L2 Configuration
+const ARBITRUM_MAINNET_JSON_RPC_PROVIDER_URL =
+  process.env.ARBITRUM_MAINNET_JSON_RPC_PROVIDER_URL;
+const ARBITRUM_GOERLI_JSON_RPC_PROVIDER_URL =
+  process.env.ARBITRUM_GOERLI_JSON_RPC_PROVIDER_URL;
 
 // Sidechain Configuration
 const PALM_MAINNET_JSON_RPC_PROVIDER_URL =
@@ -56,6 +64,18 @@ module.exports = {
     },
     palm_testnet: {
       url: PALM_TESTNET_JSON_RPC_PROVIDER_URL,
+      accounts: [`0x${TESTNET_PRIVATE_KEY}`],
+      gasPrice: "auto",
+      gasMultiplier: 1.5,
+    },
+    "arbitrum-mainnet": {
+      url: ARBITRUM_MAINNET_JSON_RPC_PROVIDER_URL,
+      accounts: [`0x${MAINNET_PRIVATE_KEY}`],
+      gasPrice: "auto",
+      gasMultiplier: 1.5,
+    },
+    "arbitrum-goerli": {
+      url: ARBITRUM_GOERLI_JSON_RPC_PROVIDER_URL,
       accounts: [`0x${TESTNET_PRIVATE_KEY}`],
       gasPrice: "auto",
       gasMultiplier: 1.5,
