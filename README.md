@@ -70,6 +70,7 @@ erDiagram
     ADMIN_ACL ||--o{ CORE_V3_V3_FLEX : manages
     ADMIN_ACL ||--o{ MINTERFILTER : manages
     CORE_V3_V3_FLEX ||--|| MINTERFILTER : uses
+    CORE_V3_V3_FLEX }o--|| BYTECODESTORAGEREADER : uses
     MINTERFILTER ||--o{ MINTER_1 : uses
     MINTERFILTER ||--o{ MINTER_2 : uses
     MINTERFILTER ||--o{ MINTER_N : uses
@@ -140,6 +141,15 @@ The following represents the current set of flagship core contracts deployed on 
 ## Art Blocks Engine Core Contracts
 
 For deployed core contracts, see the deployment details in the `/deployments/engine/[V2|V3]/<engine-partner>/` directories. For V2 core contracts, archived source code is available in the `/posterity/engine/` directory.
+
+## BytecodeStorageReader
+
+BytecodeStorageReader (currently on V1 version) is public library for reading from storage contracts. This library is intended to be deployed as a standalone contract, and provides all _read_ functionality by being used as an externally linked library within the Art Blocks ecosystem contracts that use contract storage for writes.
+
+Given that it is an externally linked library with a shared public deployment, the deployment addresses for these shared deployments are referenced in our shared deployments `constants.ts` util (in the `BYTECODE_STORAGE_READER_LIBRARY_ADDRESSES` constant) so that they may be linked at time of deployment and are also linked here below for shared reference:
+
+- V1 `BytecodeStorageReader` (goerli): https://goerli.etherscan.io/address/0xB8B806A10d16cc80dB788552B54B3ECb4A2A3C3D#code
+- V1 `BytecodeStorageReader` (mainnet): https://etherscan.io/address/0xf0585dF582A0ad119F1616FB82f3b449a98EeCd5#code
 
 ## Minter Suite
 

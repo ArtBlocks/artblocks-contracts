@@ -3,17 +3,17 @@ pragma solidity 0.8.17;
 
 // Created By: Art Blocks Inc.
 
-import "../libs/0.8.x/BytecodeStorage.sol";
+import "../libs/0.8.x/BytecodeStorageV1.sol";
 
 /**
  * @title Art Blocks BytecodeTextCR_DMock.
  * @author Art Blocks Inc.
- * @notice This contract serves as a mock client of the BytecodeStorage library
+ * @notice This contract serves as a mock client of the BytecodeStorageV1 library
  *         to allow for more granular testing of this library than is supported
  *         by the usage of the library directly by specific current Art Blocks
  *         client smart contracts, such as the `GenArt721CoreV3` contract. This
  *         mock exposes the CR_D (create, read, _not updates_, delete)
- *         operations that the underlying BytecodeStorage library allows clients
+ *         operations that the underlying BytecodeStorageV1 library allows clients
  *         to support.
  *         Note that because updates can only functionally be performed by
  *         combining a "delete" and "create" operation, given that deployed
@@ -21,9 +21,8 @@ import "../libs/0.8.x/BytecodeStorage.sol";
  *         not expose updates (the usual "U" in "CRUD") as they are not
  *         supported by the underlying library.
  */
-contract BytecodeTextCR_DMock {
-    using BytecodeStorage for string;
-    using BytecodeStorage for address;
+contract BytecodeV1TextCR_DMock {
+    using BytecodeStorageWriter for string;
 
     // monotonically increasing slot counter and associated slot-storage mapping
     uint256 public nextTextSlotId = 0;
@@ -77,7 +76,10 @@ contract BytecodeTextCR_DMock {
      *      the underlying BytecodeStorage lib to throw errors where applicable.
      */
     function readText(uint256 _textSlotId) public view returns (string memory) {
-        return storedTextBytecodeAddresses[_textSlotId].readFromBytecode();
+        return
+            BytecodeStorageReader.readFromBytecode(
+                storedTextBytecodeAddresses[_textSlotId]
+            );
     }
 
     /**
@@ -89,9 +91,7 @@ contract BytecodeTextCR_DMock {
      *      the underlying BytecodeStorage lib to throw errors where applicable.
      */
     function deleteText(uint256 _textSlotId) external onlyDeployer {
-        // purge old contract bytecode contract from the blockchain state
-        storedTextBytecodeAddresses[_textSlotId].purgeBytecode();
-        // delete reference to contract address that no longer exists
+        // delete reference to old storage contract address
         delete storedTextBytecodeAddresses[_textSlotId];
     }
 
@@ -101,7 +101,7 @@ contract BytecodeTextCR_DMock {
 
     /**
      * @notice Allows additional read introspection, to read a chunk of text,
-     *                from chain-state that lives at a given deployed address.
+     *         from chain-state that lives at a given deployed address.
      * @param _bytecodeAddress address from which to read text content.
      * @return string Content read from contract bytecode at the given address.
      * @dev Intentionally do not perform input validation, instead allowing
@@ -110,7 +110,51 @@ contract BytecodeTextCR_DMock {
     function readTextAtAddress(
         address _bytecodeAddress
     ) public view returns (string memory) {
-        return _bytecodeAddress.readFromBytecode();
+        return BytecodeStorageReader.readFromBytecode(_bytecodeAddress);
+    }
+
+    /**
+     * @notice Allows additional read introspection, to read a chunk of text,
+     *         from chain-state that lives at a given deployed address with an
+     *         explicitly provided `_offset`.
+     * @param _bytecodeAddress address from which to read text content.
+     * @param _offset Offset to read from in contract bytecode,
+     *                explicitly provided (not calculated)
+     * @return string Content read from contract bytecode at the given address.
+     * @dev Intentionally do not perform input validation, instead allowing
+     *      the underlying BytecodeStorage lib to throw errors where applicable.
+     */
+    function forceReadTextAtAddress(
+        address _bytecodeAddress,
+        uint256 _offset
+    ) public view returns (string memory) {
+        return
+            string(
+                BytecodeStorageReader.readBytesFromBytecode(
+                    _bytecodeAddress,
+                    _offset
+                )
+            );
+    }
+
+    /**
+     * @notice Allows additional read introspection, to read a chunk of text,
+     *         from chain-state that lives at a given deployed address that
+     *         was written with SSTORE2.
+     * @param _bytecodeAddress address from which to read text content.
+     * @return string Content read from contract bytecode at the given address.
+     * @dev Intentionally do not perform input validation, instead allowing
+     *      the underlying BytecodeStorage lib to throw errors where applicable.
+     */
+    function readSSTORE2TextAtAddress(
+        address _bytecodeAddress
+    ) public view returns (string memory) {
+        return
+            string(
+                BytecodeStorageReader.readBytesFromSSTORE2Bytecode(
+                    _bytecodeAddress
+                )
+            );
     }
 
     /**
@@ -118,28 +162,33 @@ contract BytecodeTextCR_DMock {
      *         contract, based on a provided `_bytecodeAddress`.
      * @param _bytecodeAddress address for which to read the author address.
      * @return address of the author who wrote the data contained in the
-     *         given `_bytecodeAddress` contract.
+     *                 given `_bytecodeAddress` contract.
      * @dev Intentionally do not perform input validation, instead allowing
      *      the underlying BytecodeStorage lib to throw errors where applicable.
      */
     function readAuthorForTextAtAddress(
         address _bytecodeAddress
     ) public view returns (address) {
-        return _bytecodeAddress.getWriterAddressForBytecode();
+        return
+            BytecodeStorageReader.getWriterAddressForBytecode(_bytecodeAddress);
     }
 
     /**
-     * @notice Allows additional delete introspection, to delete a chunk of text,
-     *                from chain-state that lives at a given deployed address.
-     * @param _bytecodeAddress address from which to delete text content.
+     * @notice Allows introspection of the version of a given contracts-as-storage
+     *         contract, based on a provided `_bytecodeAddress`.
+     * @param _bytecodeAddress address for which to read the version.
+     * @return bytes32 version of the version string contained in the given `_bytecodeAddress`
+     *                 contract.
      * @dev Intentionally do not perform input validation, instead allowing
      *      the underlying BytecodeStorage lib to throw errors where applicable.
      */
-    function deleteTextAtAddress(
+    function readLibraryVersionForTextAtAddress(
         address _bytecodeAddress
-    ) external onlyDeployer {
-        // purge old contract bytecode contract from the blockchain state
-        _bytecodeAddress.purgeBytecode();
+    ) public view returns (bytes32) {
+        return
+            BytecodeStorageReader.getLibraryVersionForBytecode(
+                _bytecodeAddress
+            );
     }
 
     /**
