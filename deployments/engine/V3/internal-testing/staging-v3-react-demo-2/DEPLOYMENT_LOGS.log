@@ -1,0 +1,66 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-05-04T19:33:15.886Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/internal-testing/staging-v3-react-demo-2/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0xeA28d75dd6e3108000E4d0E1411A58b872248024
+[INFO] Randomizer BasicRandomizerV2 deployed at g0x399fa387324E4588047BBe1598e3691AB94c7e5C
+[INFO] Core GenArt721CoreV3_Engine deployed at 0xFb2480C9c02F3222d1299330976DACEB98009800
+[INFO] Minter Filter MinterFilterV1 deployed at 0x682A5aB4d364a5CB5Ee372F6F5727C91431B8F10
+[INFO] MinterSetPriceV4 deployed at 0xE4aF88B3E9a3045537339Fc05fd5F211fBFD92Df
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0x682A5aB4d364a5CB5Ee372F6F5727C91431B8F10.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0xE4aF88B3E9a3045537339Fc05fd5F211fBFD92Df on minter filter.
+[INFO] Added V3 Engine Demo External Reader Lib project 0 placeholder on V3 Engine Demo External Reader Lib contract, artist is 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63.
+[INFO] Configured set price minter (0xE4aF88B3E9a3045537339Fc05fd5F211fBFD92Df) for project 0.
+[INFO] Configured minter price project 0.
+[INFO] Minted token 0 for project 0.
+[INFO] Skipping transfer of superAdmin role on adminACL.
+[INFO] Verifying core contract contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/engine/V3/GenArt721CoreV3_Engine.sol:GenArt721CoreV3_Engine at 0xFb2480C9c02F3222d1299330976DACEB98009800
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract GenArt721CoreV3_Engine on Etherscan.
+https://goerli.etherscan.io/address/0xFb2480C9c02F3222d1299330976DACEB98009800#code
+[INFO] Core contract verified on Etherscan at 0xFb2480C9c02F3222d1299330976DACEB98009800}
+[INFO] Verifying AdminACL contract deployment...
+Compiled 209 Solidity files successfully
+Successfully submitted source code for contract
+contracts/AdminACLV1.sol:AdminACLV1 at 0xeA28d75dd6e3108000E4d0E1411A58b872248024
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract AdminACLV1 on Etherscan.
+https://goerli.etherscan.io/address/0xeA28d75dd6e3108000E4d0E1411A58b872248024#code
+[INFO] AdminACL contract verified on Etherscan at 0xeA28d75dd6e3108000E4d0E1411A58b872248024}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0x682A5aB4d364a5CB5Ee372F6F5727C91431B8F10 has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0x682A5aB4d364a5CB5Ee372F6F5727C91431B8F10}
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+The contract 0xE4aF88B3E9a3045537339Fc05fd5F211fBFD92Df has already been verified
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0xE4aF88B3E9a3045537339Fc05fd5F211fBFD92Df}
+Created s3 bucket for https://v3-engine-demo-external-reader-lib-goerli.s3.amazonaws.com
+[INFO] Created image bucket v3-engine-demo-external-reader-lib-goerli
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/internal-testing/staging-v3-react-demo-2/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0xfb2480c9c02f3222d1299330976daceb98009800",
+  "name": "V3 Engine Demo External Reader Lib",
+  "bucket_name": "v3-engine-demo-external-reader-lib-goerli",
+  "default_vertical_name": "fullyonchain"
+}
+Successfully upserted 1 contract
+Upserting 1 project...
+Projects metadata upsert input:
+{
+  "id": "0xfb2480c9c02f3222d1299330976daceb98009800-0",
+  "contract_address": "0xfb2480c9c02f3222d1299330976daceb98009800",
+  "project_id": "0",
+  "artist_address": "0xb8559af91377e5bab052a4e9a5088cb65a9a4d63",
+  "vertical_name": "fullyonchain"
+}
+Successfully upserted 1 project
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63, don't forget to update if requred.

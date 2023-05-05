@@ -98,9 +98,24 @@ for (const coreContractName of coreContractsToTest) {
     describe("PlatformUpdated", function () {
       it("deployment events (nextProjectId, etc.)", async function () {
         const config = await loadFixture(_beforeEach);
-        // typical expect event helper doesn't work for deploy event
-        const contractFactory = await ethers.getContractFactory(
-          coreContractName
+
+        // Note that for testing purposes, we deploy a new version of the library,
+        // but in production we would use the same library deployment for all contracts
+        const libraryFactory = await ethers.getContractFactory(
+          "BytecodeStorageReader"
+        );
+        const library = await libraryFactory
+          .connect(config.accounts.deployer)
+          .deploy(/* no args for library ever */);
+
+        // Deploy actual contract (with library linked)
+        const coreContractFactory = await ethers.getContractFactory(
+          coreContractName,
+          {
+            libraries: {
+              BytecodeStorageReader: library.address,
+            },
+          }
         );
         // it is OK that config construction addresses aren't particularly valid
         // addresses for the purposes of config test
@@ -112,17 +127,19 @@ for (const coreContractName of coreContractsToTest) {
           const engineRegistry = await engineRegistryFactory
             .connect(config.accounts.deployer)
             .deploy();
-          tx = await contractFactory.connect(config.accounts.deployer).deploy(
-            "name",
-            "symbol",
-            config.accounts.additional.address,
-            config.accounts.additional.address,
-            config.accounts.additional.address,
-            config.accounts.additional.address,
-            365,
-            false,
-            engineRegistry.address // Note: important to use a real engine registry
-          );
+          tx = await coreContractFactory
+            .connect(config.accounts.deployer)
+            .deploy(
+              "name",
+              "symbol",
+              config.accounts.additional.address,
+              config.accounts.additional.address,
+              config.accounts.additional.address,
+              config.accounts.additional.address,
+              365,
+              false,
+              engineRegistry.address // Note: important to use a real engine registry
+            );
           const receipt = await tx.deployTransaction.wait();
           const registrationLog = receipt.logs[receipt.logs.length - 1];
           // expect "ContractRegistered" event as log 0
@@ -152,7 +169,7 @@ for (const coreContractName of coreContractsToTest) {
             ethers.utils.formatBytes32String("nextProjectId")
           );
         } else {
-          tx = await contractFactory
+          tx = await coreContractFactory
             .connect(config.accounts.deployer)
             .deploy(
               "name",
