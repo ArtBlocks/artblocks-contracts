@@ -33,7 +33,7 @@ import "@openzeppelin-4.7/contracts/utils/structs/EnumerableSet.sol";
  * example, the original Art Blocks V0 contract does not need to interact with
  * a MinterFilterV2 contract, as it uses a different minting mechanism.
  *
- * A view funciton is provided to determine if a contract is registered.
+ * A view function is provided to determine if a contract is registered.
  *
  * This contract is designed to be managed by an owner with privileged roles
  * and abilities.
