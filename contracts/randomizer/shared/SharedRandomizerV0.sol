@@ -238,7 +238,7 @@ contract SharedRandomizerV0 is ISharedRandomizerV0 {
         uint256 _tokenId
     ) internal view returns (bytes32) {
         return
-            IPseudorandomAtomic(msg.sender).getPseudorandomAtomic(
+            pseudorandomAtomicContract.getPseudorandomAtomic(
                 keccak256(abi.encodePacked(_coreContract, _tokenId))
             );
     }
