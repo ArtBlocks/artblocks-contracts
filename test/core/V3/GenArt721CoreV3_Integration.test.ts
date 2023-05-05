@@ -16,6 +16,7 @@ import {
   getAccounts,
   assignDefaultConstants,
   deployAndGet,
+  deployWithStorageLibraryAndGet,
   deployCoreWithMinterFilter,
   mintProjectUntilRemaining,
   advanceEVMByTime,
@@ -296,9 +297,9 @@ for (const coreContractName of coreContractsToTest) {
         const config = await loadFixture(_beforeEach);
         let targetCoreVersion;
         if (coreContractName === "GenArt721CoreV3") {
-          targetCoreVersion = "v3.1.0";
+          targetCoreVersion = "v3.2.0";
         } else if (coreContractName === "GenArt721CoreV3_Explorations") {
-          targetCoreVersion = "v3.1.1";
+          targetCoreVersion = "v3.2.1";
         } else if (coreContractName.includes("GenArt721CoreV3_Engine")) {
           targetCoreVersion = "v3.1.2";
         } else {
@@ -389,7 +390,7 @@ for (const coreContractName of coreContractsToTest) {
           const engineRegistry = await engineRegistryFactory
             .connect(config.accounts.deployer)
             .deploy();
-          differentGenArt721Core = await deployAndGet(
+          differentGenArt721Core = await deployWithStorageLibraryAndGet(
             config,
             coreContractName,
             [
@@ -405,7 +406,7 @@ for (const coreContractName of coreContractsToTest) {
             ]
           );
         } else {
-          differentGenArt721Core = await deployAndGet(
+          differentGenArt721Core = await deployWithStorageLibraryAndGet(
             config,
             coreContractName,
             [
@@ -439,7 +440,7 @@ for (const coreContractName of coreContractsToTest) {
           const engineRegistry = await engineRegistryFactory
             .connect(config.accounts.deployer)
             .deploy();
-          differentGenArt721Core = await deployAndGet(
+          differentGenArt721Core = await deployWithStorageLibraryAndGet(
             config,
             coreContractName,
             [
@@ -455,7 +456,7 @@ for (const coreContractName of coreContractsToTest) {
             ]
           );
         } else {
-          differentGenArt721Core = await deployAndGet(
+          differentGenArt721Core = await deployWithStorageLibraryAndGet(
             config,
             coreContractName,
             [

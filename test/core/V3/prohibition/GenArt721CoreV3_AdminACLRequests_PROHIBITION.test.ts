@@ -72,12 +72,6 @@ for (const coreContractName of coreContractsToTest) {
       };
       config = await assignDefaultConstants(config);
 
-      // get core contract interface for signature hash retrieval
-      const artblocksFactory = await ethers.getContractFactory(
-        coreContractName
-      );
-      config.coreInterface = artblocksFactory.interface;
-
       // deploy and configure minter filter and minter
       ({
         genArt721Core: config.genArt721Core,
@@ -90,6 +84,8 @@ for (const coreContractName of coreContractsToTest) {
         "MinterFilterV1",
         true
       ));
+      // get core contract interface for signature hash retrieval
+      config.coreInterface = config.genArt721Core.interface;
 
       config.minter = await deployAndGet(config, "MinterSetPriceV2", [
         config.genArt721Core.address,

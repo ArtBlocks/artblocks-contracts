@@ -137,6 +137,36 @@ export async function deployAndGet(
     .deploy(...deployArgs);
 }
 
+// utility function to simplify code when deploying any contract from factory
+// that requires the bytecode storage library
+export async function deployWithStorageLibraryAndGet(
+  config: T_Config,
+  coreContractName: string,
+  deployArgs?: any[]
+): Promise<Contract> {
+  // Note that for testing purposes, we deploy a new version of the library,
+  // but in production we would use the same library deployment for all contracts
+  const libraryFactory = await ethers.getContractFactory(
+    "BytecodeStorageReader"
+  );
+  const library = await libraryFactory
+    .connect(config.accounts.deployer)
+    .deploy(/* no args for library ever */);
+
+  // Deploy actual contract (with library linked)
+  const coreContractFactory = await ethers.getContractFactory(
+    coreContractName,
+    {
+      libraries: {
+        BytecodeStorageReader: library.address,
+      },
+    }
+  );
+  return await coreContractFactory
+    .connect(config.accounts.deployer)
+    .deploy(...deployArgs);
+}
+
 // utility function to deploy basic randomizer, core, and MinterFilter
 // works for core versions V0, V1, V2_PRTNR, V3
 export async function deployCoreWithMinterFilter(
@@ -203,13 +233,17 @@ export async function deployCoreWithMinterFilter(
       ? _adminACLContractName
       : adminACLContractName;
     adminACL = await deployAndGet(config, adminACLContractName, []);
-    genArt721Core = await deployAndGet(config, coreContractName, [
-      config.name,
-      config.symbol,
-      randomizer.address,
-      adminACL.address,
-      0, // _startingProjectId
-    ]);
+    genArt721Core = await deployWithStorageLibraryAndGet(
+      config,
+      coreContractName,
+      [
+        config.name,
+        config.symbol,
+        randomizer.address,
+        adminACL.address,
+        0, // _startingProjectId
+      ]
+    );
     // assign core contract for randomizer to use
     randomizer
       .connect(config.accounts.deployer)
@@ -247,17 +281,21 @@ export async function deployCoreWithMinterFilter(
     engineRegistry = await deployAndGet(config, "EngineRegistryV0", []);
     // Note: in the common tests, set `autoApproveArtistSplitProposals` to false, which
     //       mirrors the approval-flow behavior of the other (non-Engine) V3 contracts
-    genArt721Core = await deployAndGet(config, coreContractName, [
-      config.name, // _tokenName
-      config.symbol, // _tokenSymbol
-      config.accounts.deployer.address, // _renderProviderAddress
-      config.accounts.additional.address, // _platformProviderAddress
-      randomizer.address, // _randomizerContract
-      adminACL.address, // _adminACLContract
-      0, // _startingProjectId
-      false, // _autoApproveArtistSplitProposals
-      engineRegistry.address, // _engineRegistryContract
-    ]);
+    genArt721Core = await deployWithStorageLibraryAndGet(
+      config,
+      coreContractName,
+      [
+        config.name, // _tokenName
+        config.symbol, // _tokenSymbol
+        config.accounts.deployer.address, // _renderProviderAddress
+        config.accounts.additional.address, // _platformProviderAddress
+        randomizer.address, // _randomizerContract
+        adminACL.address, // _adminACLContract
+        0, // _startingProjectId
+        false, // _autoApproveArtistSplitProposals
+        engineRegistry.address, // _engineRegistryContract
+      ]
+    );
     // assign core contract for randomizer to use
     randomizer
       .connect(config.accounts.deployer)
