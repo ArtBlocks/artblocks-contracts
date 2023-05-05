@@ -11,7 +11,7 @@ export const DELEGATION_REGISTRY_ADDRESSES = {
 
 // BytecodeStorageReader library addresses on supported networks
 export const BYTECODE_STORAGE_READER_LIBRARY_ADDRESSES = {
-  // note: same address for goerli and mainnet
+  // note: _different_ address for goerli and mainnet
   goerli: "0xB8B806A10d16cc80dB788552B54B3ECb4A2A3C3D",
   mainnet: "0xf0585dF582A0ad119F1616FB82f3b449a98EeCd5",
 };

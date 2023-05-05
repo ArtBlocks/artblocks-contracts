@@ -159,6 +159,15 @@ async function main() {
         `[ERROR] The default vertical cannot be flex if not using a flex engine`
       );
     }
+
+    // verify that there is a valid bytecode storage reader library address for the network
+    const bytecodeStorageLibraryAddress =
+      BYTECODE_STORAGE_READER_LIBRARY_ADDRESSES[networkName];
+    if (!bytecodeStorageLibraryAddress) {
+      throw new Error(
+        `[ERROR] No bytecode storage reader library address configured for network ${networkName}`
+      );
+    }
     //////////////////////////////////////////////////////////////////////////////
     // INPUT VALIDATION ENDS HERE
     //////////////////////////////////////////////////////////////////////////////
@@ -208,14 +217,12 @@ async function main() {
     await randomizer.deployed();
     const randomizerAddress = randomizer.address;
     console.log(
-      `[INFO] Randomizer ${deployDetails.randomizerContractName} deployed at g${randomizerAddress}`
+      `[INFO] Randomizer ${deployDetails.randomizerContractName} deployed at ${randomizerAddress}`
     );
     await delay(EXTRA_DELAY_BETWEEN_TX);
 
     // Deploy Core contract
     // Ensure that BytecodeStorageReader library is linked in the process
-    const bytecodeStorageLibraryAddress =
-      BYTECODE_STORAGE_READER_LIBRARY_ADDRESSES[networkName];
     const genArt721CoreFactory = await ethers.getContractFactory(
       deployDetails.genArt721CoreContractName,
       {
@@ -575,6 +582,7 @@ ${deployedMinterNames
 - **Platform Provider Address, Primary Sales:** ${
       deployDetails.platformProviderAddress
     }
+- **BytecodeStorageReader Library:** ${bytecodeStorageLibraryAddress}
 
 **Other**
 
