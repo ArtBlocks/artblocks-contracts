@@ -22,8 +22,7 @@ import "../libs/0.8.x/BytecodeStorageV1.sol";
  *         supported by the underlying library.
  */
 contract BytecodeV1TextCR_DMock {
-    using BytecodeStorage for string;
-    using BytecodeStorage for address;
+    using BytecodeStorageWriter for string;
 
     // monotonically increasing slot counter and associated slot-storage mapping
     uint256 public nextTextSlotId = 0;
@@ -77,7 +76,10 @@ contract BytecodeV1TextCR_DMock {
      *      the underlying BytecodeStorage lib to throw errors where applicable.
      */
     function readText(uint256 _textSlotId) public view returns (string memory) {
-        return storedTextBytecodeAddresses[_textSlotId].readFromBytecode();
+        return
+            BytecodeStorageReader.readFromBytecode(
+                storedTextBytecodeAddresses[_textSlotId]
+            );
     }
 
     /**
@@ -99,7 +101,7 @@ contract BytecodeV1TextCR_DMock {
 
     /**
      * @notice Allows additional read introspection, to read a chunk of text,
-     *                from chain-state that lives at a given deployed address.
+     *         from chain-state that lives at a given deployed address.
      * @param _bytecodeAddress address from which to read text content.
      * @return string Content read from contract bytecode at the given address.
      * @dev Intentionally do not perform input validation, instead allowing
@@ -108,7 +110,51 @@ contract BytecodeV1TextCR_DMock {
     function readTextAtAddress(
         address _bytecodeAddress
     ) public view returns (string memory) {
-        return _bytecodeAddress.readFromBytecode();
+        return BytecodeStorageReader.readFromBytecode(_bytecodeAddress);
+    }
+
+    /**
+     * @notice Allows additional read introspection, to read a chunk of text,
+     *         from chain-state that lives at a given deployed address with an
+     *         explicitly provided `_offset`.
+     * @param _bytecodeAddress address from which to read text content.
+     * @param _offset Offset to read from in contract bytecode,
+     *                explicitly provided (not calculated)
+     * @return string Content read from contract bytecode at the given address.
+     * @dev Intentionally do not perform input validation, instead allowing
+     *      the underlying BytecodeStorage lib to throw errors where applicable.
+     */
+    function forceReadTextAtAddress(
+        address _bytecodeAddress,
+        uint256 _offset
+    ) public view returns (string memory) {
+        return
+            string(
+                BytecodeStorageReader.readBytesFromBytecode(
+                    _bytecodeAddress,
+                    _offset
+                )
+            );
+    }
+
+    /**
+     * @notice Allows additional read introspection, to read a chunk of text,
+     *         from chain-state that lives at a given deployed address that
+     *         was written with SSTORE2.
+     * @param _bytecodeAddress address from which to read text content.
+     * @return string Content read from contract bytecode at the given address.
+     * @dev Intentionally do not perform input validation, instead allowing
+     *      the underlying BytecodeStorage lib to throw errors where applicable.
+     */
+    function readSSTORE2TextAtAddress(
+        address _bytecodeAddress
+    ) public view returns (string memory) {
+        return
+            string(
+                BytecodeStorageReader.readBytesFromSSTORE2Bytecode(
+                    _bytecodeAddress
+                )
+            );
     }
 
     /**
@@ -116,14 +162,33 @@ contract BytecodeV1TextCR_DMock {
      *         contract, based on a provided `_bytecodeAddress`.
      * @param _bytecodeAddress address for which to read the author address.
      * @return address of the author who wrote the data contained in the
-     *         given `_bytecodeAddress` contract.
+     *                 given `_bytecodeAddress` contract.
      * @dev Intentionally do not perform input validation, instead allowing
      *      the underlying BytecodeStorage lib to throw errors where applicable.
      */
     function readAuthorForTextAtAddress(
         address _bytecodeAddress
     ) public view returns (address) {
-        return _bytecodeAddress.getWriterAddressForBytecode();
+        return
+            BytecodeStorageReader.getWriterAddressForBytecode(_bytecodeAddress);
+    }
+
+    /**
+     * @notice Allows introspection of the version of a given contracts-as-storage
+     *         contract, based on a provided `_bytecodeAddress`.
+     * @param _bytecodeAddress address for which to read the version.
+     * @return bytes32 version of the version string contained in the given `_bytecodeAddress`
+     *                 contract.
+     * @dev Intentionally do not perform input validation, instead allowing
+     *      the underlying BytecodeStorage lib to throw errors where applicable.
+     */
+    function readLibraryVersionForTextAtAddress(
+        address _bytecodeAddress
+    ) public view returns (bytes32) {
+        return
+            BytecodeStorageReader.getLibraryVersionForBytecode(
+                _bytecodeAddress
+            );
     }
 
     /**

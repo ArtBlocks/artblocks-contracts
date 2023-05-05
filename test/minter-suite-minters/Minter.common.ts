@@ -3,7 +3,7 @@ import { constants, expectRevert } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { T_Config } from "../util/common";
+import { T_Config, deployWithStorageLibraryAndGet } from "../util/common";
 
 /**
  * These tests are intended to check common Minter functionality
@@ -20,19 +20,12 @@ export const Minter_Common = async (_beforeEach: () => Promise<T_Config>) => {
 
     it("reverts when given incorrect minter filter and core addresses", async function () {
       const config = await loadFixture(_beforeEach);
-      const artblocksFactory = await ethers.getContractFactory(
-        "GenArt721CoreV3"
-      );
       const adminACL = await config.genArt721Core.owner();
-      const token2 = await artblocksFactory
-        .connect(config.accounts.deployer)
-        .deploy(
-          config.name,
-          config.symbol,
-          config.randomizer.address,
-          adminACL,
-          0
-        );
+      const token2 = await deployWithStorageLibraryAndGet(
+        config,
+        "GenArt721CoreV3",
+        [config.name, config.symbol, config.randomizer.address, adminACL, 0]
+      );
 
       const minterFilterFactory = await ethers.getContractFactory(
         "MinterFilterV1"

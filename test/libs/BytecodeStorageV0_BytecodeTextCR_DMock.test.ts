@@ -12,12 +12,15 @@ import { Contract } from "ethers";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 
+import { BytecodeV0TextCR_DMock } from "../../scripts/contracts";
+
 import {
   T_Config,
   getAccounts,
   deployAndGet,
   assignDefaultConstants,
 } from "../util/common";
+
 import {
   SQUIGGLE_SCRIPT,
   SKULPTUUR_SCRIPT_APPROX,
@@ -26,8 +29,12 @@ import {
   MULTI_BYTE_UTF_EIGHT_SCRIPT,
 } from "../util/example-scripts";
 
+interface BytecodeStorageV0TestConfig extends T_Config {
+  bytecodeV0TextCR_DMock?: BytecodeV0TextCR_DMock;
+}
+
 /**
- * Tests for BytecodeStorage by way of testing the BytecodeV0TextCR_DMock.
+ * Tests for BytecodeStorageV0 by way of testing the BytecodeV0TextCR_DMock.
  * Note: it is not the intention of these tests to comprehensively test the mock
  *       itself, but rather to achieve full test coverage of the underlying
  *       library under test here, BytecodeStorage.
@@ -36,7 +43,7 @@ describe("BytecodeStorageV0 + BytecodeV0TextCR_DMock Library Tests", async funct
   // Helper that validates a Create and subsequent Read operation, ensuring
   // that bytes-in == bytes-out for a given input string.
   async function validateCreateAndRead(
-    config: T_Config,
+    config: BytecodeStorageV0TestConfig,
     targetText: string,
     bytecodeV0TextCR_DMock: Contract,
     deployer: SignerWithAddress
@@ -52,7 +59,7 @@ describe("BytecodeStorageV0 + BytecodeV0TextCR_DMock Library Tests", async funct
   // Helper that retrieves the address of the most recently deployed contract
   // containing bytecode for storage.
   async function getLatestTextDeploymentAddress(
-    config: T_Config,
+    config: BytecodeStorageV0TestConfig,
     bytecodeV0TextCR_DMock: Contract
   ) {
     const nextTextSlotId = await bytecodeV0TextCR_DMock.nextTextSlotId();
@@ -64,7 +71,7 @@ describe("BytecodeStorageV0 + BytecodeV0TextCR_DMock Library Tests", async funct
   }
 
   async function _beforeEach() {
-    let config: T_Config = {
+    let config: BytecodeStorageV0TestConfig = {
       accounts: await getAccounts(),
     };
     config = await assignDefaultConstants(config);
