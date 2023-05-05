@@ -15,6 +15,7 @@ import {
   getAccounts,
   assignDefaultConstants,
   deployAndGet,
+  deployWithStorageLibraryAndGet,
   deployCoreWithMinterFilter,
 } from "../util/common";
 
@@ -68,7 +69,7 @@ describe(`DependencyRegistryV0`, async function () {
       config.minterFilter.address,
     ]);
 
-    config.dependencyRegistry = await deployAndGet(
+    config.dependencyRegistry = await deployWithStorageLibraryAndGet(
       config,
       "DependencyRegistryV0"
     );

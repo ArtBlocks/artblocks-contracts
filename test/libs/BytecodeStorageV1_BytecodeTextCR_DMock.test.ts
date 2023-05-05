@@ -12,12 +12,15 @@ import { Contract } from "ethers";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 
+import { BytecodeV1TextCR_DMock } from "../../scripts/contracts";
+
 import {
   T_Config,
   getAccounts,
-  deployAndGet,
+  deployWithStorageLibraryAndGet,
   assignDefaultConstants,
 } from "../util/common";
+
 import {
   SQUIGGLE_SCRIPT,
   SKULPTUUR_SCRIPT_APPROX,
@@ -25,6 +28,10 @@ import {
   GREATER_THAN_CONTRACT_SIZE_LIMIT_SCRIPT,
   MULTI_BYTE_UTF_EIGHT_SCRIPT,
 } from "../util/example-scripts";
+
+interface BytecodeStorageV1TestConfig extends T_Config {
+  bytecodeV1TextCR_DMock?: BytecodeV1TextCR_DMock;
+}
 
 /**
  * Tests for BytecodeStorageV1 by way of testing the BytecodeV1TextCR_DMock.
@@ -36,7 +43,7 @@ describe("BytecodeStorageV1 + BytecodeV1TextCR_DMock Library Tests", async funct
   // Helper that validates a Create and subsequent Read operation, ensuring
   // that bytes-in == bytes-out for a given input string.
   async function validateCreateAndRead(
-    config: T_Config,
+    config: BytecodeStorageV1TestConfig,
     targetText: string,
     bytecodeV1TextCR_DMock: Contract,
     deployer: SignerWithAddress
@@ -52,7 +59,7 @@ describe("BytecodeStorageV1 + BytecodeV1TextCR_DMock Library Tests", async funct
   // Helper that retrieves the address of the most recently deployed contract
   // containing bytecode for storage.
   async function getLatestTextDeploymentAddress(
-    config: T_Config,
+    config: BytecodeStorageV1TestConfig,
     bytecodeV1TextCR_DMock: Contract
   ) {
     const nextTextSlotId = await bytecodeV1TextCR_DMock.nextTextSlotId();
@@ -64,12 +71,12 @@ describe("BytecodeStorageV1 + BytecodeV1TextCR_DMock Library Tests", async funct
   }
 
   async function _beforeEach() {
-    let config: T_Config = {
+    let config: BytecodeStorageV1TestConfig = {
       accounts: await getAccounts(),
     };
     config = await assignDefaultConstants(config);
     // deploy the library mock
-    config.bytecodeV1TextCR_DMock = await deployAndGet(
+    config.bytecodeV1TextCR_DMock = await deployWithStorageLibraryAndGet(
       config,
       "BytecodeV1TextCR_DMock",
       [] // no deployment args
@@ -181,11 +188,12 @@ describe("BytecodeStorageV1 + BytecodeV1TextCR_DMock Library Tests", async funct
       );
 
       // deploy a second instance of the library mock
-      const additionalBytecodeV1TextCR_DMock = await deployAndGet(
-        config,
-        "BytecodeV1TextCR_DMock",
-        [] // no deployment args
-      );
+      const additionalBytecodeV1TextCR_DMock =
+        await deployWithStorageLibraryAndGet(
+          config,
+          "BytecodeV1TextCR_DMock",
+          [] // no deployment args
+        );
       const text = await additionalBytecodeV1TextCR_DMock.readTextAtAddress(
         textBytecodeAddress
       );
@@ -261,11 +269,12 @@ describe("BytecodeStorageV1 + BytecodeV1TextCR_DMock Library Tests", async funct
       );
 
       // deploy a second instance of the library mock
-      const additionalBytecodeV1TextCR_DMock = await deployAndGet(
-        config,
-        "BytecodeV1TextCR_DMock",
-        [] // no deployment args
-      );
+      const additionalBytecodeV1TextCR_DMock =
+        await deployWithStorageLibraryAndGet(
+          config,
+          "BytecodeV1TextCR_DMock",
+          [] // no deployment args
+        );
       const textAuthorAddress =
         await additionalBytecodeV1TextCR_DMock.readAuthorForTextAtAddress(
           textBytecodeAddress

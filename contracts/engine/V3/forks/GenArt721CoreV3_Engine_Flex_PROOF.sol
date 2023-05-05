@@ -107,8 +107,7 @@ contract GenArt721CoreV3_Engine_Flex_PROOF is
     IManifold,
     IGenArt721CoreContractV3_Engine_Flex
 {
-    using BytecodeStorage for string;
-    using BytecodeStorage for address;
+    using BytecodeStorageWriter for string;
     using Bytes32Strings for bytes32;
 
     uint256 constant ONE_HUNDRED = 100;
@@ -1773,7 +1772,7 @@ contract GenArt721CoreV3_Engine_Flex_PROOF is
         if (_index >= project.scriptCount) {
             return "";
         }
-        return project.scriptBytecodeAddresses[_index].readFromBytecode();
+        return _readFromBytecode(project.scriptBytecodeAddresses[_index]);
     }
 
     /**
@@ -2004,7 +2003,7 @@ contract GenArt721CoreV3_Engine_Flex_PROOF is
                 bytecodeAddress: _bytecodeAddress,
                 data: (_dependency.dependencyType ==
                     ExternalAssetDependencyType.ONCHAIN)
-                    ? _bytecodeAddress.readFromBytecode()
+                    ? _readFromBytecode(_bytecodeAddress)
                     : ""
             });
     }
@@ -2225,6 +2224,16 @@ contract GenArt721CoreV3_Engine_Flex_PROOF is
             projectOpen ||
             (block.timestamp - projectCompletedTimestamp <
                 FOUR_WEEKS_IN_SECONDS);
+    }
+
+    /**
+     * Helper for calling `BytecodeStorageReader` external library reader method,
+     * added for bytecode size reduction purposes.
+     */
+    function _readFromBytecode(
+        address _address
+    ) internal view returns (string memory) {
+        return BytecodeStorageReader.readFromBytecode(_address);
     }
 
     // strings library from OpenZeppelin, modified for no constants
