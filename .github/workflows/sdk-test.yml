@@ -22,7 +22,10 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
       - run: yarn --frozen-lockfile
+        working-directory: artblocks-sdk
       - name: Build
         run: yarn run build
+        working-directory: artblocks-sdk
       - name: Run Tests
         run: yarn run test
+        working-directory: artblocks-sdk
