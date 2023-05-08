@@ -18,12 +18,14 @@ interface IFilteredSharedMerkle {
         uint256 defaultMaxInvocationsPerAddress
     );
 
+    event DelegationRegistryUpdated(address delegationRegistry);
+
     // Triggers a purchase of a token from the desired project, to the
     // TX-sending address. Requires Merkle proof.
     function purchase(
         uint256 _projectId,
         uint256 _contractId,
-        bytes32[] memory _proof
+        bytes32[] calldata _proof
     ) external payable returns (uint256 tokenId);
 
     // Triggers a purchase of a token from the desired project, to the specified
@@ -32,16 +34,12 @@ interface IFilteredSharedMerkle {
         address _to,
         uint256 _projectId,
         uint256 _contractId,
-        bytes32[] memory _proof
+        bytes32[] calldata _proof
     ) external payable returns (uint256 tokenId);
 
-    function updateMerkleRoot(uint256 _projectId, bytes32 _root) external;
-
-    function hashAddress(address _address) external pure returns (bytes32);
-
-    function verifyAddress(
+    function updateMerkleRoot(
         uint256 _projectId,
-        bytes32[] calldata _proof,
-        address _address
-    ) external view returns (bool);
+        address _coreContract,
+        bytes32 _root
+    ) external;
 }

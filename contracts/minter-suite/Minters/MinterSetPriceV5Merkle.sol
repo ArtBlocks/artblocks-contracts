@@ -3,6 +3,10 @@
 
 import "../../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
 import "../../interfaces/0.8.x/IDelegationRegistry.sol";
+import "../../interfaces/0.8.x/IFilteredMinterV3.sol";
+import "../../interfaces/0.8.x/IMinterFilterV1.sol";
+import "../../interfaces/0.8.x/IFilteredSharedProjectMaxInvocationsLimit.sol";
+import "../../interfaces/0.8.x/IFilteredSharedMerkle.sol";
 
 import "../../libs/0.8.x/MerkleLib.sol";
 
@@ -31,7 +35,12 @@ import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
  * Additional admin and artist privileged roles may be described on other
  * contracts that this minter integrates with.
  */
-contract MinterSetPriceV5 is ReentrancyGuard, IFilteredMinterV2 {
+contract MinterSetPriceV5Merkle is
+    ReentrancyGuard,
+    IFilteredMinterV3,
+    IFilteredSharedMerkle,
+    IFilteredSharedProjectMaxInvocationsLimit
+{
     /// Delegation registry address
     address public immutable delegationRegistryAddress;
 
@@ -42,7 +51,7 @@ contract MinterSetPriceV5 is ReentrancyGuard, IFilteredMinterV2 {
     address public immutable minterFilterAddress;
 
     /// Minter filter this minter may interact with.
-    IMinterFilterV0 private immutable minterFilter;
+    IMinterFilterV1 private immutable minterFilter;
 
     /// minterType for this minter
     string public constant minterType = "MinterSetPriceV5";
@@ -50,11 +59,21 @@ contract MinterSetPriceV5 is ReentrancyGuard, IFilteredMinterV2 {
     /// minter version for this minter
     string public constant minterVersion = "v4.1.0";
 
+    bytes32 private constant CONFIG_MERKLE_ROOT = "merkleRoot";
+
     uint256 constant ONE_MILLION = 1_000_000;
+
+    uint256 public constant DEFAULT_MAX_INVOCATIONS_PER_ADDRESS = 1;
 
     struct ProjectConfig {
         bool maxHasBeenInvoked;
         bool priceIsConfigured;
+        // initial value is false, so by default, projects limit allowlisted
+        // addresses to a mint qty of `DEFAULT_MAX_INVOCATIONS_PER_ADDRESS`
+        bool useMaxInvocationsPerAddressOverride;
+        // a value of 0 means no limit
+        // (only used if `useMaxInvocationsPerAddressOverride` is true)
+        uint24 maxInvocationsPerAddressOverride;
         uint24 maxInvocations;
         uint256 pricePerTokenInWei;
     }
@@ -84,14 +103,25 @@ contract MinterSetPriceV5 is ReentrancyGuard, IFilteredMinterV2 {
      * @notice Initializes contract to be a Filtered Minter for
      * `_minterFilter`, integrated with Art Blocks core contract
      * at address `_genArt721Address`.
-     * @param _genArt721Address Art Blocks core contract address for
-     * which this contract will be a minter.
      * @param _minterFilter Minter filter for which this will be a
      * filtered minter.
      */
-    constructor(address _minterFilter) ReentrancyGuard() {
+    constructor(
+        address _minterFilter,
+        address _delegationRegistryAddress
+    ) ReentrancyGuard() {
         minterFilterAddress = _minterFilter;
-        minterFilter = IMinterFilterV0(_minterFilter);
+        minterFilter = IMinterFilterV1(_minterFilter);
+
+        delegationRegistryAddress = _delegationRegistryAddress;
+        emit DelegationRegistryUpdated(_delegationRegistryAddress);
+        delegationRegistryContract = IDelegationRegistry(
+            _delegationRegistryAddress
+        );
+        // broadcast default max invocations per address for this minter
+        emit DefaultMaxInvocationsPerAddress(
+            DEFAULT_MAX_INVOCATIONS_PER_ADDRESS
+        );
     }
 
     /**
@@ -102,13 +132,13 @@ contract MinterSetPriceV5 is ReentrancyGuard, IFilteredMinterV2 {
      * on project `_projectId`.
      */
     function updateMerkleRoot(
-        address _coreContract,
         uint256 _projectId,
+        address _coreContract,
         bytes32 _root
     ) external {
-        _onlyArtist(_projectId);
+        _onlyArtist(_projectId, _coreContract);
         require(_root != bytes32(0), "Root must be provided");
-        projectMerkleRoot[_projectId] = _root;
+        MerkleLib.updateMerkleRoot(projectMerkleRoot, _coreContract, _root);
         emit ConfigValueSet(_projectId, CONFIG_MERKLE_ROOT, _root);
     }
 
@@ -124,7 +154,7 @@ contract MinterSetPriceV5 is ReentrancyGuard, IFilteredMinterV2 {
         address _coreContract,
         uint256 _projectId
     ) public {
-        _onlyArtist(_coreContract, _projectId);
+        _onlyArtist(_projectId, _coreContract);
         uint256 maxInvocations;
         uint256 invocations;
         (invocations, maxInvocations, , , , ) = IGenArt721CoreContractV3_Base(
@@ -158,15 +188,17 @@ contract MinterSetPriceV5 is ReentrancyGuard, IFilteredMinterV2 {
      */
     function manuallyLimitProjectMaxInvocations(
         uint256 _projectId,
+        address _coreContract,
         uint256 _maxInvocations
     ) external {
-        _onlyArtist(_projectId);
+        _onlyArtist(_projectId, _coreContract);
         // CHECKS
         // ensure that the manually set maxInvocations is not greater than what is set on the core contract
         uint256 maxInvocations;
         uint256 invocations;
-        (invocations, maxInvocations, , , , ) = genArtCoreContract_Base
-            .projectStateData(_projectId);
+        (invocations, maxInvocations, , , , ) = IGenArt721CoreContractV3_Base(
+            _coreContract
+        ).projectStateData(_projectId);
         require(
             _maxInvocations <= maxInvocations,
             "Cannot increase project max invocations above core contract set project max invocations"
@@ -178,21 +210,30 @@ contract MinterSetPriceV5 is ReentrancyGuard, IFilteredMinterV2 {
 
         // EFFECTS
         // update storage with results
-        projectConfig[_projectId].maxInvocations = uint24(_maxInvocations);
+        projectConfig[_coreContract][_projectId].maxInvocations = uint24(
+            _maxInvocations
+        );
         // We need to ensure maxHasBeenInvoked is correctly set after manually setting the
         // local maxInvocations value.
-        projectConfig[_projectId].maxHasBeenInvoked =
+        projectConfig[_coreContract][_projectId].maxHasBeenInvoked =
             invocations == _maxInvocations;
 
-        emit ProjectMaxInvocationsLimitUpdated(_projectId, _maxInvocations);
+        emit ProjectMaxInvocationsLimitUpdated(
+            _projectId,
+            _coreContract,
+            _maxInvocations
+        );
     }
 
     /**
      * @notice Warning: Disabling purchaseTo is not supported on this minter.
      * This method exists purely for interface-conformance purposes.
      */
-    function togglePurchaseToDisabled(uint256 _projectId) external view {
-        _onlyArtist(_projectId);
+    function togglePurchaseToDisabled(
+        uint256 _projectId,
+        address _coreContract
+    ) external view {
+        _onlyArtist(_projectId, _coreContract);
         revert("Action not supported");
     }
 
@@ -210,9 +251,10 @@ contract MinterSetPriceV5 is ReentrancyGuard, IFilteredMinterV2 {
      * `_projectId` is an existing project ID.
      */
     function projectMaxHasBeenInvoked(
-        uint256 _projectId
+        uint256 _projectId,
+        address _coreContract
     ) external view returns (bool) {
-        return projectConfig[_projectId].maxHasBeenInvoked;
+        return projectConfig[_coreContract][_projectId].maxHasBeenInvoked;
     }
 
     /**
@@ -234,9 +276,10 @@ contract MinterSetPriceV5 is ReentrancyGuard, IFilteredMinterV2 {
      * to whether or not the input `_projectId` is an existing project ID.
      */
     function projectMaxInvocations(
-        uint256 _projectId
+        uint256 _projectId,
+        address _coreContract
     ) external view returns (uint256) {
-        return uint256(projectConfig[_projectId].maxInvocations);
+        return uint256(projectConfig[_coreContract][_projectId].maxInvocations);
     }
 
     /**
@@ -248,13 +291,20 @@ contract MinterSetPriceV5 is ReentrancyGuard, IFilteredMinterV2 {
      */
     function updatePricePerTokenInWei(
         uint256 _projectId,
+        address _coreContract,
         uint256 _pricePerTokenInWei
     ) external {
-        _onlyArtist(_projectId);
-        ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        _onlyArtist(_projectId, _coreContract);
+        ProjectConfig storage _projectConfig = projectConfig[_coreContract][
+            _projectId
+        ];
         _projectConfig.pricePerTokenInWei = _pricePerTokenInWei;
         _projectConfig.priceIsConfigured = true;
-        emit PricePerTokenInWeiUpdated(_projectId, _pricePerTokenInWei);
+        emit PricePerTokenInWeiUpdated(
+            _projectId,
+            _coreContract,
+            _pricePerTokenInWei
+        );
 
         // sync local max invocations if not initially populated
         // @dev if local max invocations and maxHasBeenInvoked are both
@@ -268,14 +318,35 @@ contract MinterSetPriceV5 is ReentrancyGuard, IFilteredMinterV2 {
     }
 
     /**
+     * @notice Inactive function - requires Merkle proof to purchase.
+     */
+    function purchase(uint256, address) external payable returns (uint256) {
+        revert("Must provide Merkle proof");
+    }
+
+    /**
+     * @notice Inactive function - requires Merkle proof to purchase.
+     */
+    function purchaseTo(
+        address,
+        uint256,
+        address
+    ) public payable returns (uint256) {
+        revert("Must provide Merkle proof");
+    }
+
+    /**
      * @notice Purchases a token from project `_projectId`.
      * @param _projectId Project ID to mint a token on.
+     * @param _coreContract Contract address of the core contract.
      * @return tokenId Token ID of minted token
      */
     function purchase(
-        uint256 _projectId
+        uint256 _projectId,
+        address _coreContract,
+        bytes32[] calldata _proof
     ) external payable returns (uint256 tokenId) {
-        tokenId = purchaseTo_do6(msg.sender, _projectId);
+        tokenId = purchaseTo_do6(msg.sender, _projectId, _coreContract);
         return tokenId;
     }
 
@@ -283,9 +354,17 @@ contract MinterSetPriceV5 is ReentrancyGuard, IFilteredMinterV2 {
      * @notice gas-optimized version of purchase(uint256).
      */
     function purchase_H4M(
-        uint256 _projectId
+        uint256 _projectId,
+        address _coreContract,
+        bytes32[] calldata _proof
     ) external payable returns (uint256 tokenId) {
-        tokenId = purchaseTo_do6(msg.sender, _projectId);
+        tokenId = purchaseTo_do6(
+            msg.sender,
+            _projectId,
+            _coreContract,
+            _proof,
+            address(0)
+        );
         return tokenId;
     }
 
@@ -294,13 +373,35 @@ contract MinterSetPriceV5 is ReentrancyGuard, IFilteredMinterV2 {
      * the token's owner to `_to`.
      * @param _to Address to be the new token's owner.
      * @param _projectId Project ID to mint a token on.
+     * @param _coreContract Contract address of the core contract.
      * @return tokenId Token ID of minted token
      */
     function purchaseTo(
         address _to,
-        uint256 _projectId
+        uint256 _projectId,
+        address _coreContract,
+        bytes32[] calldata _proof
     ) external payable returns (uint256 tokenId) {
-        return purchaseTo_do6(_to, _projectId);
+        return
+            purchaseTo_do6(_to, _projectId, _coreContract, _proof, address(0));
+    }
+
+    /**
+     * @notice Purchases a token from project `_projectId` and sets
+     * the token's owner to `_to`.
+     * @param _to Address to be the new token's owner.
+     * @param _projectId Project ID to mint a token on.
+     * @param _coreContract Contract address of the core contract.
+     * @return tokenId Token ID of minted token
+     */
+    function purchaseTo(
+        address _to,
+        uint256 _projectId,
+        address _coreContract,
+        bytes32[] calldata _proof,
+        address _vault
+    ) external payable returns (uint256 tokenId) {
+        return purchaseTo_do6(_to, _projectId, _coreContract, _proof, _vault);
     }
 
     /**
@@ -308,10 +409,15 @@ contract MinterSetPriceV5 is ReentrancyGuard, IFilteredMinterV2 {
      */
     function purchaseTo_do6(
         address _to,
-        uint256 _projectId
+        uint256 _projectId,
+        address _coreContract,
+        bytes32[] calldata _proof,
+        address _vault // acceptable to be `address(0)` if no vault
     ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
-        ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        ProjectConfig storage _projectConfig = projectConfig[_coreContract][
+            _projectId
+        ];
 
         // Note that `maxHasBeenInvoked` is only checked here to reduce gas
         // consumption after a project has been fully minted.
@@ -335,8 +441,65 @@ contract MinterSetPriceV5 is ReentrancyGuard, IFilteredMinterV2 {
             "Must send minimum value to mint!"
         );
 
+        // NOTE: delegate-vault handling **begins here**.
+
+        // handle that the vault may be either the `msg.sender` in the case
+        // that there is not a true vault, or may be `_vault` if one is
+        // provided explicitly (and it is valid).
+        address vault = msg.sender;
+        if (_vault != address(0)) {
+            // If a vault is provided, it must be valid, otherwise throw rather
+            // than optimistically-minting with original `msg.sender`.
+            // Note, we do not check `checkDelegateForAll` as well, as it is known
+            // to be implicitly checked by calling `checkDelegateForContract`.
+            bool isValidDelegee = delegationRegistryContract
+                .checkDelegateForContract(
+                    msg.sender, // delegate
+                    _vault, // vault
+                    _coreContract // contract
+                );
+            require(isValidDelegee, "Invalid delegate-vault pairing");
+            vault = _vault;
+        }
+
+        // require valid Merkle proof
+        require(
+            MerkleLib.verifyAddress(
+                projectMerkleRoot[_coreContract][_projectId],
+                _proof,
+                vault
+            ),
+            "Invalid Merkle proof"
+        );
+
+        // limit mints per address by project
+        uint256 _maxProjectInvocationsPerAddress = _projectConfig
+            .useMaxInvocationsPerAddressOverride
+            ? _projectConfig.maxInvocationsPerAddressOverride
+            : DEFAULT_MAX_INVOCATIONS_PER_ADDRESS;
+
+        // note that mint limits index off of the `vault` (when applicable)
+        require(
+            projectUserMintInvocations[_coreContract][_projectId][vault] <
+                _maxProjectInvocationsPerAddress ||
+                _maxProjectInvocationsPerAddress == 0,
+            "Maximum number of invocations per address reached"
+        );
+
         // EFFECTS
-        tokenId = minterFilter.mint(_to, _projectId, msg.sender);
+        // increment user's invocations for this project
+        unchecked {
+            // this will never overflow since user's invocations on a project
+            // are limited by the project's max invocations
+            projectUserMintInvocations[_coreContract][_projectId][vault]++;
+        }
+
+        tokenId = minterFilter.mint_joo(
+            _to,
+            _projectId,
+            _coreContract,
+            msg.sender
+        );
 
         // invocation is token number plus one, and will never overflow due to
         // limit of 1e6 invocations per project. block scope for gas efficiency
@@ -362,7 +525,7 @@ contract MinterSetPriceV5 is ReentrancyGuard, IFilteredMinterV2 {
         }
 
         // INTERACTIONS
-        splitFundsETH(_projectId, pricePerTokenInWei, genArt721CoreAddress);
+        splitFundsETH(_projectId, pricePerTokenInWei, _coreContract);
 
         return tokenId;
     }
@@ -372,6 +535,7 @@ contract MinterSetPriceV5 is ReentrancyGuard, IFilteredMinterV2 {
      * token on project `_projectId`, and currency symbol and address to be
      * used as payment. Supersedes any core contract price information.
      * @param _projectId Project ID to get price information for.
+     * @param _coreContract Contract address of the core contract.
      * @return isConfigured true only if token price has been configured on
      * this minter
      * @return tokenPriceInWei current price of token on this minter - invalid
@@ -382,7 +546,8 @@ contract MinterSetPriceV5 is ReentrancyGuard, IFilteredMinterV2 {
      * this minter. This minter always returns null address, reserved for ether
      */
     function getPriceInfo(
-        uint256 _projectId
+        uint256 _projectId,
+        address _coreContract
     )
         external
         view
@@ -393,7 +558,9 @@ contract MinterSetPriceV5 is ReentrancyGuard, IFilteredMinterV2 {
             address currencyAddress
         )
     {
-        ProjectConfig storage _projectConfig = projectConfig[_projectId];
+        ProjectConfig storage _projectConfig = projectConfig[_coreContract][
+            _projectId
+        ];
         isConfigured = _projectConfig.priceIsConfigured;
         tokenPriceInWei = _projectConfig.pricePerTokenInWei;
         currencySymbol = "ETH";
