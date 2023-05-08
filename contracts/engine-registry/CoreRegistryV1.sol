@@ -108,9 +108,10 @@ contract CoreRegistryV0 is Ownable, ICoreRegistryV1 {
      * Reverts if authorization fails, or if the contract is not already
      * registered.
      */
-    function unregisterContract(address _contractAddress) external onlyOwner {
+    function unregisterContract(address _contractAddress) external {
         // CHECKS
-        // onlyOwner modifier from Ownable.sol is used
+        // revert if not called by owner
+        Ownable._checkOwner();
         // EFFECTS
         _unregisterContract(_contractAddress);
     }
@@ -129,9 +130,10 @@ contract CoreRegistryV0 is Ownable, ICoreRegistryV1 {
         address[] calldata _contractAddresses,
         bytes32[] calldata _coreVersions,
         bytes32[] calldata _coreTypes
-    ) external onlyOwner {
+    ) external {
         // CHECKS
-        // onlyOwner modifier from Ownable.sol is used
+        // revert if not called by owner
+        Ownable._checkOwner();
         // validate same length arrays
         uint256 numContracts = _contractAddresses.length;
         require(
@@ -160,9 +162,10 @@ contract CoreRegistryV0 is Ownable, ICoreRegistryV1 {
      */
     function unregisterContracts(
         address[] calldata _contractAddresses
-    ) external onlyOwner {
+    ) external {
         // CHECKS
-        // onlyOwner modifier from Ownable.sol is used
+        // revert if not called by owner
+        Ownable._checkOwner();
         // EFFECTS
         uint256 numContracts = _contractAddresses.length;
         for (uint256 i = 0; i < numContracts; ) {
