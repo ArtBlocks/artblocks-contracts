@@ -1,0 +1,17 @@
+{
+  "source": {
+        "includePattern": ".+\\.(j|t)s(doc|x)?$",
+        "include": ["."],
+        "exclude": ["node_modules"]
+    },
+  "plugins": [
+    "jsdoc-plugin-typescript"
+  ],
+  "typescript": {
+    "moduleRoot": "src"
+  },
+  "opts": {
+        "destination": "./docs/",
+        "recurse": true
+    }
+}
