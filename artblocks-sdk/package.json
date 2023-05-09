@@ -22,7 +22,7 @@
     "build": "tsup src/index.ts --dts",
     "lint": "prettier --check src/**/*.ts && eslint src/**/*.ts",
     "fmt": "prettier --write src/**/*.ts && eslint src/**/*.ts --fix",
-    "test": "jest"
+    "test": "jest --collect-coverage"
   },
   "jest": {
     "coverageThreshold": {

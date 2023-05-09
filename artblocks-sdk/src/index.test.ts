@@ -3,6 +3,6 @@ import { describe, expect, test } from "@jest/globals";
 
 describe("ArtBlocksSDK", () => {
   test("is defined", () => {
-    expect(ArtBlocksSDK).toBeDefined();
+    expect(new ArtBlocksSDK()).toBeDefined();
   });
 });
