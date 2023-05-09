@@ -6,10 +6,12 @@ This SDK can assist in simplifying the process of configuring minters, integrati
 
 The Art Blocks SDK is a TypeScript library that can be used to simplify the process of integrating with the Art Blocks minter suite. It can be used to:
 
-- Update the selected minter for a project
 - Configure a project's current minter
-- Query available minters
--
+- Query available minters and update the selected minter for a project
+- Retrieve pricing information and metadata for a project
+- Initiate a purchase transaction to mint a new token
+- Check if a wallet is allowed to mint a token
+- Retrieve the allowlist (if configured) for a minter
 
 ### Add the SDK to your project
 
