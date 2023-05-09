@@ -30,7 +30,7 @@
     "lint": "prettier --check src/**/*.ts && eslint src/**/*.ts",
     "fmt": "prettier --write src/**/*.ts && eslint src/**/*.ts --fix",
     "test": "jest --collect-coverage",
-    "generate-docs": "jsdoc -c jsdoc.json"
+    "build:docs": "jsdoc -c jsdoc.json"
   },
   "lint-staged": {
     "*.{js,ts,tsx, jsx}": [
