@@ -22,7 +22,7 @@ import "@openzeppelin-4.7/contracts/utils/structs/EnumerableSet.sol";
  *
  * This contract is intended to be able to act as a registry of all core
  * contracts that are allowed to interact with a specific MinterFilter V2.
- * This includes:
+ * This includes, but is not limited to:
  * - Flagship contracts
  * - Collaboration contracts
  * - Engine contracts
@@ -33,21 +33,18 @@ import "@openzeppelin-4.7/contracts/utils/structs/EnumerableSet.sol";
  * example, the original Art Blocks V0 contract does not need to interact with
  * a MinterFilterV2 contract, as it uses a different minting mechanism.
  *
- * A view funciton is provided to determine if a contract is registered.
+ * A view function is provided to determine if a contract is registered.
  *
  * This contract is designed to be managed by an owner with privileged roles
  * and abilities.
  * ----------------------------------------------------------------------------
- * The following function is restricted to the contract owner sending, or the
- * contract being registered during a transaction originating from the
- * owner:
+ * The following function is restricted to the engine registry owner sending,
+ * or the core contract being registered during a transaction originating from
+ * the engine registry owner:
  * - registerContract
  * ----------------------------------------------------------------------------
- * The following function is restricted to the contract owner sending, or the
- * the contract being unregistered:
+ * The following functions are restricted to the engine registry owner sending:
  * - unregisterContract
- * ----------------------------------------------------------------------------
- * The following functions are restricted to the contract owner:
  * - registerContracts
  * - unregisterContracts
  * - Ownable: transferOwnership
@@ -66,6 +63,15 @@ contract CoreRegistryV0 is Ownable, ICoreRegistryV1 {
     EnumerableSet.AddressSet
         private registeredMinterFilterV2CompatibleContracts;
 
+    /**
+     * @notice Reverts if `tx.origin` is not the owner.
+     * @dev Warning that this check is only against tx.origin, which may be
+     * misleading when used for security.
+     */
+    function _onlyOwnerOrigin() internal view {
+        require(tx.origin == owner(), "Only tx origin of owner");
+    }
+
     constructor() Ownable() {}
 
     /**
@@ -81,13 +87,16 @@ contract CoreRegistryV0 is Ownable, ICoreRegistryV1 {
         bytes32 _coreType
     ) external {
         // CHECKS
-        // Validate against `tx.origin` rather than `msg.sender` as it is intended that this registration be
-        // performed in an automated fashion *at the time* of contract deployment for the `_contractAddress`.
-        require(tx.origin == owner(), "Only tx origin of owner");
-        // Prevent registration of a contract by an unrelated contract
+        // Validate against `tx.origin` rather than `msg.sender` as it is
+        // intended that this registration be performed in an automated
+        // fashion at the time of contract deployment of `_contractAddress`.
+        // @dev Security implications of using `tx.origin` are acknowledged
+        _onlyOwnerOrigin();
+        // only allow registration of a contract registering itself, or allow
+        // the owner to register any contract.
         require(
             msg.sender == _contractAddress || msg.sender == owner(),
-            "Only calls by owner or contract"
+            "Only owner or registrant"
         );
         // EFFECTS
         _registerContract(_contractAddress, _coreVersion, _coreType);
@@ -95,18 +104,14 @@ contract CoreRegistryV0 is Ownable, ICoreRegistryV1 {
 
     /**
      * @notice Unregister a contract and emit a `ContractUnregistered` event.
-     * Only callable by the owner or this contract or the contract being
-     * unregistered.
+     * Only callable by the owner of this registry contract.
      * Reverts if authorization fails, or if the contract is not already
      * registered.
      */
     function unregisterContract(address _contractAddress) external {
         // CHECKS
-        // Prevent unregistration of a contract by an unrelated contract
-        require(
-            msg.sender == _contractAddress || msg.sender == owner(),
-            "Only calls by owner or contract"
-        );
+        // revert if not called by owner
+        Ownable._checkOwner();
         // EFFECTS
         _unregisterContract(_contractAddress);
     }
@@ -125,13 +130,18 @@ contract CoreRegistryV0 is Ownable, ICoreRegistryV1 {
         address[] calldata _contractAddresses,
         bytes32[] calldata _coreVersions,
         bytes32[] calldata _coreTypes
-    ) external onlyOwner {
+    ) external {
+        // CHECKS
+        // revert if not called by owner
+        Ownable._checkOwner();
+        // validate same length arrays
         uint256 numContracts = _contractAddresses.length;
         require(
             numContracts == _coreVersions.length &&
                 numContracts == _coreTypes.length,
             "Mismatched array lengths"
         );
+        // EFFECTS
         for (uint256 i = 0; i < numContracts; ) {
             _registerContract(
                 _contractAddresses[i],
@@ -152,7 +162,11 @@ contract CoreRegistryV0 is Ownable, ICoreRegistryV1 {
      */
     function unregisterContracts(
         address[] calldata _contractAddresses
-    ) external onlyOwner {
+    ) external {
+        // CHECKS
+        // revert if not called by owner
+        Ownable._checkOwner();
+        // EFFECTS
         uint256 numContracts = _contractAddresses.length;
         for (uint256 i = 0; i < numContracts; ) {
             _unregisterContract(_contractAddresses[i]);
