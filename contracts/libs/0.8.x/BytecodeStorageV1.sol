@@ -103,9 +103,9 @@ library BytecodeStorageReader {
      */
     function readFromBytecode(
         address _address
-    ) public view returns (string memory data) {
+    ) external view returns (string memory data) {
         uint256 dataOffset = _bytecodeDataOffsetAt(_address);
-        return string(readBytesFromBytecode(_address, dataOffset));
+        return string(_readBytesFromBytecode(_address, dataOffset));
     }
 
     /**
@@ -117,8 +117,8 @@ library BytecodeStorageReader {
      */
     function readBytesFromSSTORE2Bytecode(
         address _address
-    ) public view returns (bytes memory data) {
-        return readBytesFromBytecode(_address, SSTORE2_DATA_OFFSET);
+    ) external view returns (bytes memory data) {
+        return _readBytesFromBytecode(_address, SSTORE2_DATA_OFFSET);
     }
 
     /**
@@ -132,34 +132,8 @@ library BytecodeStorageReader {
     function readBytesFromBytecode(
         address _address,
         uint256 _offset
-    ) public view returns (bytes memory data) {
-        // get the size of the bytecode
-        uint256 bytecodeSize = _bytecodeSizeAt(_address);
-        // handle case where address contains code < _offset
-        if (bytecodeSize < _offset) {
-            revert("ContractAsStorage: Read Error");
-        }
-
-        // handle case where address contains code >= dataOffset
-        // decrement by dataOffset to account for header info
-        uint256 size;
-        unchecked {
-            size = bytecodeSize - _offset;
-        }
-
-        assembly {
-            // allocate free memory
-            data := mload(0x40)
-            // update free memory pointer
-            // use and(x, not(0x1f) as cheaper equivalent to sub(x, mod(x, 0x20)).
-            // adding 0x1f to size + logic above ensures the free memory pointer
-            // remains word-aligned, following the Solidity convention.
-            mstore(0x40, add(data, and(add(add(size, 0x20), 0x1f), not(0x1f))))
-            // store length of data in first 32 bytes
-            mstore(data, size)
-            // copy code to memory, excluding the deployer-address
-            extcodecopy(_address, add(data, 0x20), _offset, size)
-        }
+    ) external view returns (bytes memory data) {
+        return _readBytesFromBytecode(_address, _offset);
     }
 
     /**
@@ -169,7 +143,7 @@ library BytecodeStorageReader {
      */
     function getWriterAddressForBytecode(
         address _address
-    ) public view returns (address) {
+    ) external view returns (address) {
         // get the size of the data
         uint256 bytecodeSize = _bytecodeSizeAt(_address);
         // the dataOffset for the bytecode
@@ -209,13 +183,46 @@ library BytecodeStorageReader {
      */
     function getLibraryVersionForBytecode(
         address _address
-    ) public view returns (bytes32) {
+    ) external view returns (bytes32) {
         return _bytecodeVersionAt(_address);
     }
 
     /*//////////////////////////////////////////////////////////////
                           INTERNAL HELPER LOGIC
     //////////////////////////////////////////////////////////////*/
+
+    function _readBytesFromBytecode(
+        address _address,
+        uint256 _offset
+    ) private view returns (bytes memory data) {
+        // get the size of the bytecode
+        uint256 bytecodeSize = _bytecodeSizeAt(_address);
+        // handle case where address contains code < _offset
+        if (bytecodeSize < _offset) {
+            revert("ContractAsStorage: Read Error");
+        }
+
+        // handle case where address contains code >= dataOffset
+        // decrement by dataOffset to account for header info
+        uint256 size;
+        unchecked {
+            size = bytecodeSize - _offset;
+        }
+
+        assembly {
+            // allocate free memory
+            data := mload(0x40)
+            // update free memory pointer
+            // use and(x, not(0x1f) as cheaper equivalent to sub(x, mod(x, 0x20)).
+            // adding 0x1f to size + logic above ensures the free memory pointer
+            // remains word-aligned, following the Solidity convention.
+            mstore(0x40, add(data, and(add(add(size, 0x20), 0x1f), not(0x1f))))
+            // store length of data in first 32 bytes
+            mstore(data, size)
+            // copy code to memory, excluding the deployer-address
+            extcodecopy(_address, add(data, 0x20), _offset, size)
+        }
+    }
 
     /**
      * @notice Returns the size of the bytecode at address `_address`
