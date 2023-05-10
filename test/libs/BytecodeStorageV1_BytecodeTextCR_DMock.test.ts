@@ -12,11 +12,15 @@ import { Contract } from "ethers";
 import type { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 
-import { BytecodeV1TextCR_DMock } from "../../scripts/contracts";
+import {
+  BytecodeV1TextCR_DMock,
+  BytecodeV1LibCallsMock,
+} from "../../scripts/contracts";
 
 import {
   T_Config,
   getAccounts,
+  deployAndGet,
   deployWithStorageLibraryAndGet,
   assignDefaultConstants,
 } from "../util/common";
@@ -31,29 +35,43 @@ import {
 
 interface BytecodeStorageV1TestConfig extends T_Config {
   bytecodeV1TextCR_DMock?: BytecodeV1TextCR_DMock;
+  bytecodeV1LibCallsMock?: BytecodeV1LibCallsMock;
 }
 
 /**
- * Tests for BytecodeStorageV1 by way of testing the BytecodeV1TextCR_DMock.
- * Note: it is not the intention of these tests to comprehensively test the mock
- *       itself, but rather to achieve full test coverage of the underlying
- *       library under test here, BytecodeStorage.
+ * Tests for BytecodeStorageV1 by way of testing the BytecodeV1TextCR_DMock and
+ * BytecodeV1LibCallsMock mocks.
+ * Note: it is not the intention of these tests to comprehensively test the mocks
+ *       themselves, but rather to achieve full test coverage of the underlying
+ *       library under test here, BytecodeStorage, and as such not all methods of
+ *       the underlying mocks are necessarily tested here.
  */
-describe("BytecodeStorageV1 + BytecodeV1TextCR_DMock Library Tests", async function () {
+describe("BytecodeStorageV1 + BytecodeV1TextCR_DMock/BytecodeV1LibCallsMock Library Tests", async function () {
   // Helper that validates a Create and subsequent Read operation, ensuring
   // that bytes-in == bytes-out for a given input string.
   async function validateCreateAndRead(
     config: BytecodeStorageV1TestConfig,
     targetText: string,
-    bytecodeV1TextCR_DMock: Contract,
     deployer: SignerWithAddress
   ) {
-    const createTextTX = await bytecodeV1TextCR_DMock
+    // First validate w/ BytecodeV1TextCR_DMock read
+    const createTextTX = await config.bytecodeV1TextCR_DMock
       .connect(deployer)
       .createText(targetText);
     const textSlotId = createTextTX.value.toNumber();
-    const text = await bytecodeV1TextCR_DMock.readText(textSlotId);
+    const text = await config.bytecodeV1TextCR_DMock.readText(textSlotId);
     expect(text).to.equal(targetText);
+
+    // Then also validate with BytecodeV1LibCallsMock read, reading the same
+    // initial creation text
+    const textBytecodeAddress =
+      await config.bytecodeV1TextCR_DMock.storedTextBytecodeAddresses(
+        textSlotId
+      );
+    const textFromLib = await config.bytecodeV1LibCallsMock.readFromBytecode(
+      textBytecodeAddress
+    );
+    expect(textFromLib).to.equal(targetText);
   }
 
   // Helper that retrieves the address of the most recently deployed contract
@@ -81,6 +99,20 @@ describe("BytecodeStorageV1 + BytecodeV1TextCR_DMock Library Tests", async funct
       "BytecodeV1TextCR_DMock",
       [] // no deployment args
     );
+    // note: to ease in testing readabililty, we deploy a new version of the library,
+    // but in production we would use the same library if we were using the approach of
+    // "CALL instead of DELEGATECALL by way of 'library wrapping'"
+    const libraryFactory = await ethers.getContractFactory(
+      "BytecodeStorageReader"
+    );
+    const library = await libraryFactory
+      .connect(config.accounts.deployer)
+      .deploy(/* no args for library ever */);
+    config.bytecodeV1LibCallsMock = await deployAndGet(
+      config,
+      "BytecodeV1LibCallsMock",
+      [library.address] // single constructor arg of the "interface conforming" library address
+    );
     return config;
   }
 
@@ -101,19 +133,13 @@ describe("BytecodeStorageV1 + BytecodeV1TextCR_DMock Library Tests", async funct
   describe("validate writeToBytecode + readFromBytecode write-and-recall", function () {
     it("uploads and recalls a single-byte script", async function () {
       const config = await loadFixture(_beforeEach);
-      await validateCreateAndRead(
-        config,
-        "0",
-        config.bytecodeV1TextCR_DMock,
-        config.accounts.deployer
-      );
+      await validateCreateAndRead(config, "0", config.accounts.deployer);
     });
     it("uploads and recalls an short script < 32 bytes", async function () {
       const config = await loadFixture(_beforeEach);
       await validateCreateAndRead(
         config,
         "console.log(hello world)",
-        config.bytecodeV1TextCR_DMock,
         config.accounts.deployer
       );
     });
@@ -122,7 +148,6 @@ describe("BytecodeStorageV1 + BytecodeV1TextCR_DMock Library Tests", async funct
       await validateCreateAndRead(
         config,
         SQUIGGLE_SCRIPT,
-        config.bytecodeV1TextCR_DMock,
         config.accounts.deployer
       );
     });
@@ -131,7 +156,6 @@ describe("BytecodeStorageV1 + BytecodeV1TextCR_DMock Library Tests", async funct
       await validateCreateAndRead(
         config,
         SKULPTUUR_SCRIPT_APPROX,
-        config.bytecodeV1TextCR_DMock,
         config.accounts.deployer
       );
     });
@@ -140,7 +164,6 @@ describe("BytecodeStorageV1 + BytecodeV1TextCR_DMock Library Tests", async funct
       await validateCreateAndRead(
         config,
         MULTI_BYTE_UTF_EIGHT_SCRIPT,
-        config.bytecodeV1TextCR_DMock,
         config.accounts.deployer
       );
     });
@@ -148,12 +171,7 @@ describe("BytecodeStorageV1 + BytecodeV1TextCR_DMock Library Tests", async funct
     it("readFromBytecode works in normal conditions", async function () {
       const config = await loadFixture(_beforeEach);
       const targetText = "0";
-      await validateCreateAndRead(
-        config,
-        targetText,
-        config.bytecodeV1TextCR_DMock,
-        config.accounts.deployer
-      );
+      await validateCreateAndRead(config, targetText, config.accounts.deployer);
       const textBytecodeAddress = getLatestTextDeploymentAddress(
         config,
         config.bytecodeV1TextCR_DMock
@@ -175,12 +193,7 @@ describe("BytecodeStorageV1 + BytecodeV1TextCR_DMock Library Tests", async funct
     it("readFromBytecode is interoperable", async function () {
       const config = await loadFixture(_beforeEach);
       const targetText = "hip hip hippity hop";
-      await validateCreateAndRead(
-        config,
-        targetText,
-        config.bytecodeV1TextCR_DMock,
-        config.accounts.deployer
-      );
+      await validateCreateAndRead(config, targetText, config.accounts.deployer);
 
       const textBytecodeAddress = getLatestTextDeploymentAddress(
         config,
@@ -239,13 +252,23 @@ describe("BytecodeStorageV1 + BytecodeV1TextCR_DMock Library Tests", async funct
         config,
         config.bytecodeV1TextCR_DMock
       );
+      const resolvedMockAddress = await config.bytecodeV1TextCR_DMock
+        .resolvedAddress;
+
+      // First validate w/ BytecodeV1TextCR_DMock read
       const textAuthorAddress =
         await config.bytecodeV1TextCR_DMock.readAuthorForTextAtAddress(
           textBytecodeAddress
         );
-      const resolvedMockAddress = await config.bytecodeV1TextCR_DMock
-        .resolvedAddress;
       expect(textAuthorAddress).to.equal(resolvedMockAddress);
+
+      // Then also validate with BytecodeV1LibCallsMock read, reading the same
+      // initial creation text
+      const textAuthorAddressFromLib =
+        await config.bytecodeV1LibCallsMock.getWriterAddressForBytecode(
+          textBytecodeAddress
+        );
+      expect(textAuthorAddressFromLib).to.equal(resolvedMockAddress);
     });
 
     it("getWriterAddressForBytecode fails to read from invalid address", async function () {
@@ -289,12 +312,7 @@ describe("BytecodeStorageV1 + BytecodeV1TextCR_DMock Library Tests", async funct
     it("writes text, and then deletes it", async function () {
       const config = await loadFixture(_beforeEach);
       const targetText = "silly willy billy dilly dilly";
-      await validateCreateAndRead(
-        config,
-        targetText,
-        config.bytecodeV1TextCR_DMock,
-        config.accounts.deployer
-      );
+      await validateCreateAndRead(config, targetText, config.accounts.deployer);
 
       const textBytecodeAddress = getLatestTextDeploymentAddress(
         config,
