@@ -2,11 +2,11 @@
 export const solidityConfig = {
   compilers: [
     {
-      version: "0.5.17",
+      version: "0.8.17",
       settings: {
         optimizer: {
           enabled: true,
-          runs: 100,
+          runs: 25,
         },
       },
     },
@@ -20,11 +20,11 @@ export const solidityConfig = {
       },
     },
     {
-      version: "0.8.17",
+      version: "0.5.17",
       settings: {
         optimizer: {
           enabled: true,
-          runs: 25,
+          runs: 100,
         },
       },
     },

@@ -18,6 +18,7 @@ import {
 
 import {
   DELEGATION_REGISTRY_ADDRESSES,
+  BYTECODE_STORAGE_READER_LIBRARY_ADDRESSES,
   KNOWN_ENGINE_REGISTRIES,
   EXTRA_DELAY_BETWEEN_TX,
 } from "../../util/constants";
@@ -158,6 +159,15 @@ async function main() {
         `[ERROR] The default vertical cannot be flex if not using a flex engine`
       );
     }
+
+    // verify that there is a valid bytecode storage reader library address for the network
+    const bytecodeStorageLibraryAddress =
+      BYTECODE_STORAGE_READER_LIBRARY_ADDRESSES[networkName];
+    if (!bytecodeStorageLibraryAddress) {
+      throw new Error(
+        `[ERROR] No bytecode storage reader library address configured for network ${networkName}`
+      );
+    }
     //////////////////////////////////////////////////////////////////////////////
     // INPUT VALIDATION ENDS HERE
     //////////////////////////////////////////////////////////////////////////////
@@ -212,8 +222,14 @@ async function main() {
     await delay(EXTRA_DELAY_BETWEEN_TX);
 
     // Deploy Core contract
+    // Ensure that BytecodeStorageReader library is linked in the process
     const genArt721CoreFactory = await ethers.getContractFactory(
-      deployDetails.genArt721CoreContractName
+      deployDetails.genArt721CoreContractName,
+      {
+        libraries: {
+          BytecodeStorageReader: bytecodeStorageLibraryAddress,
+        },
+      }
     );
     const tokenName = deployDetails.tokenName;
     const tokenTicker = deployDetails.tokenTicker;
@@ -566,6 +582,7 @@ ${deployedMinterNames
 - **Platform Provider Address, Primary Sales:** ${
       deployDetails.platformProviderAddress
     }
+- **BytecodeStorageReader Library:** ${bytecodeStorageLibraryAddress}
 
 **Other**
 
