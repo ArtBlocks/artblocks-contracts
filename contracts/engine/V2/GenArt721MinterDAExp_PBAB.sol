@@ -6,7 +6,7 @@ import "../../interfaces/0.8.x/IGenArt721CoreV2_PBAB.sol";
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin-4.5/contracts/utils/math/SafeCast.sol";
 
-pragma solidity 0.8.20;
+pragma solidity 0.8.19;
 
 /**
  * @title A minter contract that allows tokens to be minted with ETH.

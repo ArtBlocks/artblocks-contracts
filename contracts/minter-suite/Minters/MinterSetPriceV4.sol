@@ -8,7 +8,7 @@ import "./MinterBase_v0_1_1.sol";
 
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
 
-pragma solidity 0.8.20;
+pragma solidity 0.8.19;
 
 /**
  * @title Filtered Minter contract that allows tokens to be minted with ETH.

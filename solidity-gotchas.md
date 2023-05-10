@@ -16,7 +16,7 @@ In no particular order :)
 
 ## ABI.encodePacked
 
-When using `ABI.encodePacked` to concatenate multiple items, beware that if two sequential items are dynamic types, it is easy to craft collisions if the hash value by moving parts of one item into the other. See more details in [this section of the Solidity docs](https://docs.soliditylang.org/en/v0.8.17/abi-spec.html?highlight=abi.encodePacked#non-standard-packed-mode).
+When using `ABI.encodePacked` to concatenate multiple items, beware that if two sequential items are dynamic types, it is easy to craft collisions if the hash value by moving parts of one item into the other. See more details in [this section of the Solidity docs](https://docs.soliditylang.org/en/v0.8.19/abi-spec.html?highlight=abi.encodePacked#non-standard-packed-mode).
 
 ## Hard-Coded Addresses
 

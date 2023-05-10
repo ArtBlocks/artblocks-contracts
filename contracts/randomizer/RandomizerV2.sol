@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Creatd By: Art Blocks Inc.
 
-pragma solidity 0.8.20;
+pragma solidity 0.8.19;
 
 import "../interfaces/0.8.x/IRandomizerV2.sol";
 import "../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";

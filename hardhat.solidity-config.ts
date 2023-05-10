@@ -2,16 +2,7 @@
 export const solidityConfig = {
   compilers: [
     {
-      version: "0.8.20",
-      settings: {
-        optimizer: {
-          enabled: true,
-          runs: 25,
-        },
-      },
-    },
-    {
-      version: "0.8.17",
+      version: "0.8.19",
       settings: {
         optimizer: {
           enabled: true,
