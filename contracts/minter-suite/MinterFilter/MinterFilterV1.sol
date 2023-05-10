@@ -10,7 +10,7 @@ import "../../libs/0.8.x/Bytes32Strings.sol";
 
 import "@openzeppelin-4.5/contracts/utils/structs/EnumerableMap.sol";
 
-pragma solidity 0.8.17;
+pragma solidity 0.8.20;
 
 /**
  * @title Minter filter contract that allows filtered minters to be set

@@ -11,7 +11,7 @@ import "@openzeppelin-4.7/contracts/utils/cryptography/MerkleProof.sol";
 import "@openzeppelin-4.7/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin-4.7/contracts/security/ReentrancyGuard.sol";
 
-pragma solidity 0.8.17;
+pragma solidity 0.8.20;
 
 /**
  * @title Filtered Minter contract that allows tokens to be minted with ETH
