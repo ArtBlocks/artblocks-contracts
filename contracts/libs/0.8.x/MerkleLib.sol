@@ -6,75 +6,52 @@ import "@openzeppelin-4.7/contracts/utils/cryptography/MerkleProof.sol";
 pragma solidity ^0.8.0;
 
 /**
- * @title Art Blocks Minter Base Class
- * @notice A base class for Art Blocks minter contracts that provides common
- * functionality used across minter contracts.
- * This contract is not intended to be deployed directly, but rather to be
- * inherited by other minter contracts.
- * From a design perspective, this contract is intended to remain simple and
- * easy to understand. It is not intended to cause a complex inheritance tree,
- * and instead should keep minter contracts as readable as possible for
- * collectors and developers.
- * @dev Semantic versioning is used in the solidity file name, and is therefore
- * controlled by contracts importing the appropriate filename version.
+ * @title Art Blocks Merkle Library
+ * @notice [TO FILL OUT]
  * @author Art Blocks Inc.
  */
-// abstract contract MinterBase is IMinterBaseV0, MinterBase_v0_1_1 {
-
-//     /// Token holder allowlisting
-
-//     /// Set of core contracts allowed to be queried for token holders
-//     EnumerableSet.AddressSet private _registeredNFTAddresses;
-
-//     /**
-//      * contractProjectId => ownedNFTAddress => ownedNFTProjectIds => bool
-//      * projects whose holders are allowed to purchase a token on `projectId`
-//      */
-//     mapping(uint256 => mapping(address => mapping(uint256 => bool)))
-//         public allowedProjectHolders;
-
-//     /**
-//      * @notice Returns if token is an allowlisted NFT for project `_contractProjectId`.
-//      * @param _contractProjectId Project ID to be checked.
-//      * @param _ownedNFTAddress ERC-721 NFT token address to be checked.
-//      * @param _ownedNFTTokenId ERC-721 NFT token ID to be checked.
-//      * @return bool Token is allowlisted
-//      * @dev does not check if token has been used to purchase
-//      * @dev assumes project ID can be derived from tokenId / 1_000_000
-//      */
-//     function isAllowlistedNFT(
-//         uint256 _contractProjectId,
-//         address _ownedNFTAddress,
-//         uint256 _ownedNFTTokenId
-//     ) public view returns (bool) {
-//         uint256 ownedNFTProjectId = _ownedNFTTokenId / ONE_MILLION;
-//         return
-//             allowedProjectHolders[_contractProjectId][_ownedNFTAddress][
-//                 ownedNFTProjectId
-//             ];
-//     }
-// }
 
 library MerkleLib {
     using MerkleProof for bytes32[];
+    uint256 public constant DEFAULT_MAX_INVOCATIONS_PER_ADDRESS = 1;
+    bytes32 public constant CONFIG_MERKLE_ROOT = "merkleRoot";
+    bytes32 public constant CONFIG_USE_MAX_INVOCATIONS_PER_ADDRESS_OVERRIDE =
+        "useMaxMintsPerAddrOverride"; // shortened to fit in 32 bytes
+    bytes32 public constant CONFIG_MAX_INVOCATIONS_OVERRIDE =
+        "maxMintsPerAddrOverride"; // shortened to match format of previous key
+
+    struct ProjectConfig {
+        bool maxHasBeenInvoked;
+        bool priceIsConfigured;
+        // initial value is false, so by default, projects limit allowlisted
+        // addresses to a mint qty of `DEFAULT_MAX_INVOCATIONS_PER_ADDRESS`
+        bool useMaxInvocationsPerAddressOverride;
+        // a value of 0 means no limit
+        // (only used if `useMaxInvocationsPerAddressOverride` is true)
+        uint24 maxInvocationsPerAddressOverride;
+        uint24 maxInvocations;
+        uint256 pricePerTokenInWei;
+    }
 
     function updateMerkleRoot(
-        mapping(uint256 => bytes32) storage projectMerkleRoot,
-        uint256 _contractProjectId,
+        mapping(address => mapping(uint256 => bytes32))
+            storage projectMerkleRoot,
+        uint256 _projectId,
+        address _coreContract,
         bytes32 _root
     ) internal {
         require(_root != bytes32(0), "Root must be provided");
-        projectMerkleRoot[_contractProjectId] = _root;
+        projectMerkleRoot[_coreContract][_projectId] = _root;
     }
 
-    function hashAddress(address _address) public pure returns (bytes32) {
+    function hashAddress(address _address) internal pure returns (bytes32) {
         return keccak256(abi.encodePacked(_address));
     }
 
     function processProofForAddress(
         bytes32[] calldata _proof,
         address _address
-    ) external pure returns (bytes32) {
+    ) internal pure returns (bytes32) {
         return _proof.processProofCalldata(hashAddress(_address));
     }
 
@@ -82,7 +59,43 @@ library MerkleLib {
         bytes32 _proofRoot,
         bytes32[] calldata _proof,
         address _address
-    ) public pure returns (bool) {
+    ) internal pure returns (bool) {
         return _proof.verifyCalldata(_proofRoot, hashAddress(_address));
+    }
+
+    function projectMaxInvocationsPerAddress(
+        uint256 _projectId,
+        address _coreContract,
+        mapping(address => mapping(uint256 => ProjectConfig))
+            storage projectConfig
+    ) public view returns (uint256) {
+        ProjectConfig storage _projectConfig = projectConfig[_coreContract][
+            _projectId
+        ];
+        if (_projectConfig.useMaxInvocationsPerAddressOverride) {
+            return uint256(_projectConfig.maxInvocationsPerAddressOverride);
+        } else {
+            return DEFAULT_MAX_INVOCATIONS_PER_ADDRESS;
+        }
+    }
+
+    function setProjectInvocationsPerAddress(
+        uint256 _projectId,
+        address _coreContract,
+        uint24 _maxInvocationsPerAddress,
+        mapping(address => mapping(uint256 => ProjectConfig))
+            storage projectConfig
+    ) internal {
+        ProjectConfig storage _projectConfig = projectConfig[_coreContract][
+            _projectId
+        ];
+        // use override value instead of the contract's default
+        // @dev this never changes from true to false; default value is only
+        // used if artist has never configured project invocations per address
+        _projectConfig.useMaxInvocationsPerAddressOverride = true;
+        // update the override value
+
+        _projectConfig
+            .maxInvocationsPerAddressOverride = _maxInvocationsPerAddress;
     }
 }

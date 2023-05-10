@@ -15,7 +15,7 @@ interface IFilteredMinterV3 {
      */
     event ConfigKeyRemoved(
         uint256 indexed _projectId,
-        uint256 indexed _coreContract,
+        address indexed _coreContract,
         bytes32 _key
     );
 
@@ -26,7 +26,7 @@ interface IFilteredMinterV3 {
      */
     event ConfigValueSet(
         uint256 indexed _projectId,
-        uint256 indexed _coreContract,
+        address indexed _coreContract,
         bytes32 _key,
         bool _value
     );
@@ -38,7 +38,7 @@ interface IFilteredMinterV3 {
      */
     event ConfigValueSet(
         uint256 indexed _projectId,
-        uint256 indexed _coreContract,
+        address indexed _coreContract,
         bytes32 _key,
         uint256 _value
     );
@@ -49,7 +49,7 @@ interface IFilteredMinterV3 {
      */
     event ConfigValueAddedToSet(
         uint256 indexed _projectId,
-        uint256 indexed _coreContract,
+        address indexed _coreContract,
         bytes32 _key,
         uint256 _value
     );
@@ -60,7 +60,7 @@ interface IFilteredMinterV3 {
      */
     event ConfigValueRemovedFromSet(
         uint256 indexed _projectId,
-        uint256 indexed _coreContract,
+        address indexed _coreContract,
         bytes32 _key,
         uint256 _value
     );
@@ -72,7 +72,7 @@ interface IFilteredMinterV3 {
      */
     event ConfigValueSet(
         uint256 indexed _projectId,
-        uint256 indexed _coreContract,
+        address indexed _coreContract,
         bytes32 _key,
         address _value
     );
@@ -83,7 +83,7 @@ interface IFilteredMinterV3 {
      */
     event ConfigValueAddedToSet(
         uint256 indexed _projectId,
-        uint256 indexed _coreContract,
+        address indexed _coreContract,
         bytes32 _key,
         address _value
     );
@@ -94,7 +94,7 @@ interface IFilteredMinterV3 {
      */
     event ConfigValueRemovedFromSet(
         uint256 indexed _projectId,
-        uint256 indexed _coreContract,
+        address indexed _coreContract,
         bytes32 _key,
         address _value
     );
@@ -106,7 +106,7 @@ interface IFilteredMinterV3 {
      */
     event ConfigValueSet(
         uint256 indexed _projectId,
-        uint256 indexed _coreContract,
+        address indexed _coreContract,
         bytes32 _key,
         bytes32 _value
     );
@@ -117,7 +117,7 @@ interface IFilteredMinterV3 {
      */
     event ConfigValueAddedToSet(
         uint256 indexed _projectId,
-        uint256 indexed _coreContract,
+        address indexed _coreContract,
         bytes32 _key,
         bytes32 _value
     );
@@ -128,7 +128,7 @@ interface IFilteredMinterV3 {
      */
     event ConfigValueRemovedFromSet(
         uint256 indexed _projectId,
-        uint256 indexed _coreContract,
+        address indexed _coreContract,
         bytes32 _key,
         bytes32 _value
     );
@@ -203,15 +203,6 @@ interface IFilteredMinterV3 {
     function setProjectMaxInvocations(
         uint256 _projectId,
         address _coreContract
-    ) external;
-
-    // Sets the local max invocations for a given project, checking that the provided max invocations is
-    // less than or equal to the global max invocations for the project set on the core contract.
-    // This does not impact the max invocations value defined on the core contract.
-    function manuallyLimitProjectMaxInvocations(
-        uint256 _projectId,
-        address _coreContract,
-        uint256 _maxInvocations
     ) external;
 
     // Gets if token price is configured, token price in wei, currency symbol,
