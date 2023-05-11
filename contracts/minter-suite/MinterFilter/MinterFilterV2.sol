@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-pragma solidity 0.8.17;
+pragma solidity 0.8.19;
 
 import "../../interfaces/0.8.x/IMinterFilterV1.sol";
 import "../../interfaces/0.8.x/IFilteredMinterV0.sol";
