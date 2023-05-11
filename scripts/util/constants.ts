@@ -9,6 +9,13 @@ export const DELEGATION_REGISTRY_ADDRESSES = {
   mainnet: "0x00000000000076A84feF008CDAbe6409d2FE638B",
 };
 
+// BytecodeStorageReader library addresses on supported networks
+export const BYTECODE_STORAGE_READER_LIBRARY_ADDRESSES = {
+  // note: _different_ address for goerli and mainnet
+  goerli: "0xB8B806A10d16cc80dB788552B54B3ECb4A2A3C3D",
+  mainnet: "0xf0585dF582A0ad119F1616FB82f3b449a98EeCd5",
+};
+
 // known V3 engine registry contracts, and their deployers
 // format is [network]: { [registry address]: [deployer address] }
 export const KNOWN_ENGINE_REGISTRIES = {
@@ -29,5 +36,10 @@ export const KNOWN_ENGINE_REGISTRIES = {
     // [INDEXED] mainnet registry, indexed in mainnet subgraph | deployer: mainnet deployer wallet
     "0x652490c8BB6e7ec3Fd798537D2F348D7904BBbc2":
       "0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63",
+  },
+  "arbitrum-goerli": {
+    // [INDEXED] arbitrum goerli dev | deployer: lindsay dev wallet
+    "0x429af8eE97750aaddE1e8df9e921e11406ff9ed2":
+      "0x3b9038fa89783CBA1933c1689043b4dae2032d1c",
   },
 };

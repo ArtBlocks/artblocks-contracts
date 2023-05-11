@@ -13,7 +13,7 @@ import "../../interfaces/0.8.x/IManifold.sol";
 
 import "@openzeppelin-4.7/contracts/access/Ownable.sol";
 import "../../libs/0.8.x/ERC721_PackedHashSeed.sol";
-import "../../libs/0.8.x/BytecodeStorage.sol";
+import "../../libs/0.8.x/BytecodeStorageV1.sol";
 import "../../libs/0.8.x/Bytes32Strings.sol";
 
 /**
@@ -108,8 +108,7 @@ contract GenArt721CoreV3_Engine_Flex is
     IGenArt721CoreContractV3_Engine_Flex,
     IGenArt721CoreContractExposesHashSeed
 {
-    using BytecodeStorage for string;
-    using BytecodeStorage for address;
+    using BytecodeStorageWriter for string;
     using Bytes32Strings for bytes32;
     uint256 constant ONE_HUNDRED = 100;
     uint256 constant ONE_MILLION = 1_000_000;
@@ -1320,9 +1319,8 @@ contract GenArt721CoreV3_Engine_Flex is
         _onlyNonEmptyString(_script);
         Project storage project = projects[_projectId];
         require(_scriptId < project.scriptCount, "scriptId out of range");
-
         // store script in contract bytecode, replacing reference address from
-        // the contract that no longer exists with the newly created one
+        // the old storage contract with the newly created one
         project.scriptBytecodeAddresses[_scriptId] = _script.writeToBytecode();
         emit ProjectUpdated(_projectId, FIELD_PROJECT_SCRIPT);
     }
@@ -1339,8 +1337,7 @@ contract GenArt721CoreV3_Engine_Flex is
         );
         Project storage project = projects[_projectId];
         require(project.scriptCount > 0, "No scripts to remove");
-
-        // delete reference to contract address that no longer exists
+        // delete reference to old storage contract address
         delete project.scriptBytecodeAddresses[project.scriptCount - 1];
         unchecked {
             project.scriptCount = project.scriptCount - 1;
@@ -1765,7 +1762,7 @@ contract GenArt721CoreV3_Engine_Flex is
         if (_index >= project.scriptCount) {
             return "";
         }
-        return project.scriptBytecodeAddresses[_index].readFromBytecode();
+        return _readFromBytecode(project.scriptBytecodeAddresses[_index]);
     }
 
     /**
@@ -1996,7 +1993,7 @@ contract GenArt721CoreV3_Engine_Flex is
                 bytecodeAddress: _bytecodeAddress,
                 data: (_dependency.dependencyType ==
                     ExternalAssetDependencyType.ONCHAIN)
-                    ? _bytecodeAddress.readFromBytecode()
+                    ? _readFromBytecode(_bytecodeAddress)
                     : ""
             });
     }
@@ -2217,6 +2214,16 @@ contract GenArt721CoreV3_Engine_Flex is
             projectOpen ||
             (block.timestamp - projectCompletedTimestamp <
                 FOUR_WEEKS_IN_SECONDS);
+    }
+
+    /**
+     * Helper for calling `BytecodeStorageReader` external library reader method,
+     * added for bytecode size reduction purposes.
+     */
+    function _readFromBytecode(
+        address _address
+    ) internal view returns (string memory) {
+        return BytecodeStorageReader.readFromBytecode(_address);
     }
 
     // strings library from OpenZeppelin, modified for no constants
