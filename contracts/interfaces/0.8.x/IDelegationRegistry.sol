@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity ^0.8.17;
+pragma solidity ^0.8.19;
 
 /// @dev Source: https://github.com/0xfoobar/delegation-registry/blob/main/src/IDelegationRegistry.sol
 

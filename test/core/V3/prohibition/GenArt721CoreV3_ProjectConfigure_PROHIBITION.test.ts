@@ -106,24 +106,31 @@ for (const coreContractName of coreContractsToTest) {
     });
 
     describe("updateProjectMaxInvocations", function () {
-      it("only allows artist to update", async function () {
+      it("only allows artist or admin to update", async function () {
         const config = await loadFixture(_beforeEach);
-        // deployer cannot update
+        // user cannot update
         await expectRevert(
           config.genArt721Core
-            .connect(config.accounts.deployer)
+            .connect(config.accounts.user)
             .updateProjectMaxInvocations(
               config.projectZero,
               config.maxInvocations - 1
             ),
-          "Only artist"
+          "Only artist or Admin ACL allowed"
         );
+        // deployer can update
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .updateProjectMaxInvocations(
+            config.projectZero,
+            config.maxInvocations - 1
+          );
         // artist can update
         await config.genArt721Core
           .connect(config.accounts.artist)
           .updateProjectMaxInvocations(
             config.projectZero,
-            config.maxInvocations - 1
+            config.maxInvocations - 2
           );
       });
 
@@ -278,14 +285,16 @@ for (const coreContractName of coreContractsToTest) {
 
     describe("updateProjectDescription", function () {
       const errorMessage = "Only artist when unlocked, owner when locked";
-      it("owner cannot update when unlocked", async function () {
+      it("owner can update when unlocked", async function () {
         const config = await loadFixture(_beforeEach);
-        await expectRevert(
-          config.genArt721Core
-            .connect(config.accounts.deployer)
-            .updateProjectDescription(config.projectZero, "new description"),
-          errorMessage
-        );
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .updateProjectDescription(config.projectZero, "new description");
+        // expect view to be updated
+        const projectDetails = await config.genArt721Core
+          .connect(config.accounts.user)
+          .projectDetails(config.projectZero);
+        expect(projectDetails.description).to.equal("new description");
       });
 
       it("artist can update when unlocked", async function () {
@@ -534,20 +543,20 @@ for (const coreContractName of coreContractsToTest) {
         this.config = config;
       });
 
-      it("only allows artist to propose updates", async function () {
+      it("only allows artist or admin to propose updates", async function () {
         // get config from beforeEach
         const config = this.config;
-        // rejects deployer as a proposer of updates
-        await expectRevert(
-          config.genArt721Core
-            .connect(config.accounts.deployer)
-            .proposeArtistPaymentAddressesAndSplits(...config.valuesToUpdateTo),
-          "Only artist"
-        );
         // rejects user as a proposer of updates
         await expectRevert(
           config.genArt721Core
             .connect(config.accounts.user)
+            .proposeArtistPaymentAddressesAndSplits(...config.valuesToUpdateTo),
+          "Only artist"
+        );
+        // rejects owner as a proposer of updates
+        await expectRevert(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
             .proposeArtistPaymentAddressesAndSplits(...config.valuesToUpdateTo),
           "Only artist"
         );
@@ -999,17 +1008,14 @@ for (const coreContractName of coreContractsToTest) {
     });
 
     describe("updateProjectSecondaryMarketRoyaltyPercentage", function () {
-      it("owner can not update when unlocked", async function () {
+      it("owner can update when unlocked", async function () {
         const config = await loadFixture(_beforeEach);
-        await expectRevert(
-          config.genArt721Core
-            .connect(config.accounts.deployer)
-            .updateProjectSecondaryMarketRoyaltyPercentage(
-              config.projectZero,
-              10
-            ),
-          "Only artist"
-        );
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .updateProjectSecondaryMarketRoyaltyPercentage(
+            config.projectZero,
+            10
+          );
       });
 
       it("artist can update when unlocked", async function () {
