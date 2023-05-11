@@ -296,9 +296,9 @@ for (const coreContractName of coreContractsToTest) {
         const config = await loadFixture(_beforeEach);
         let targetCoreVersion;
         if (coreContractName === "GenArt721CoreV3") {
-          targetCoreVersion = "v3.0.2";
+          targetCoreVersion = "v3.1.0";
         } else if (coreContractName === "GenArt721CoreV3_Explorations") {
-          targetCoreVersion = "v3.0.3";
+          targetCoreVersion = "v3.1.1";
         } else if (coreContractName.includes("GenArt721CoreV3_Engine")) {
           targetCoreVersion = "v3.1.2";
         } else {
@@ -642,6 +642,27 @@ for (const coreContractName of coreContractsToTest) {
           ),
           "Token ID does not exist"
         );
+      });
+    });
+
+    describe("tokenIdToHashSeed", function () {
+      it("updates token hash seed from null to non-null when token is minted", async function () {
+        const config = await loadFixture(_beforeEach);
+        // ensure token hash is initially zero
+        expect(
+          await config.genArt721Core.tokenIdToHashSeed(
+            config.projectZeroTokenZero.toNumber()
+          )
+        ).to.be.equal("0x000000000000000000000000"); // bytes12(0)
+        // mint a token and expect token hash seed to be updated to a non-zero hash
+        await config.minter
+          .connect(config.accounts.artist)
+          .purchase(config.projectZero);
+        expect(
+          await config.genArt721Core.tokenIdToHashSeed(
+            config.projectZeroTokenZero.toNumber()
+          )
+        ).to.not.be.equal(ethers.constants.HashZero);
       });
     });
 
