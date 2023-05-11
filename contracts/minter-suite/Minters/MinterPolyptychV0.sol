@@ -13,7 +13,7 @@ import "@openzeppelin-4.5/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin-4.5/contracts/utils/structs/EnumerableSet.sol";
 
-pragma solidity 0.8.17;
+pragma solidity 0.8.19;
 
 /**
  * @title Core contract interface for accessing the randomizer from the minter

@@ -8,7 +8,7 @@ import "../../../../interfaces/0.8.x/IFilteredMinterDAExpSettlementV0.sol";
 import "@openzeppelin-4.7/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
 
-pragma solidity 0.8.17;
+pragma solidity 0.8.19;
 
 /**
  * @title Filtered Minter contract that allows tokens to be minted with ETH.
