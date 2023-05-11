@@ -1,7 +1,7 @@
 import { expectRevert } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { safeAddProject, isCoreV3, T_Config } from "../../util/common";
+import { safeAddProject, isCoreV3, T_Config } from "../../../util/common";
 import { ethers } from "hardhat";
 
 /**

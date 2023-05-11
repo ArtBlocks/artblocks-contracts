@@ -1,6 +1,6 @@
 import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { safeAddProject, T_Config } from "../../util/common";
+import { safeAddProject, T_Config } from "../../../util/common";
 
 /**
  * These tests are intended to check common Event behaviors of
