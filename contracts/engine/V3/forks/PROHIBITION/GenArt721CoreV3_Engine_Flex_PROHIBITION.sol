@@ -54,14 +54,6 @@ import "../../../../libs/0.8.x/Bytes32Strings.sol";
  *   and removeProjectLastScript
  * - updateProjectScriptType
  * - updateProjectAspectRatio
- 
- * - proposeArtistPaymentAddressesAndSplits (Note that this has to be accepted
- *   by adminAcceptArtistAddressesAndSplits to take effect, which is restricted
- *   to the Admin ACL contract, or the artist if the core contract owner has
- *   renounced ownership. Also note that a proposal will be automatically
- *   accepted if the artist only proposes changed payee percentages without
- *   modifying any payee addresses, or is only removing payee addresses, or
- *   if the global config `autoApproveArtistSplitProposals` is set to `true`.)
  * - updateProjectSecondaryMarketRoyaltyPercentage (up to
  *   ARTIST_MAX_SECONDARY_ROYALTY_PERCENTAGE percent)
  * - updateProjectWebsite
@@ -72,6 +64,13 @@ import "../../../../libs/0.8.x/Bytes32Strings.sol";
  * ----------------------------------------------------------------------------
  * The following functions are restricted to only the Artist or Admin ACL
  * contract of a valid project ID:
+ * - proposeArtistPaymentAddressesAndSplits (Note that this has to be accepted
+ *   by adminAcceptArtistAddressesAndSplits to take effect, which is restricted
+ *   to the Admin ACL contract, or the artist if the core contract owner has
+ *   renounced ownership. Also note that a proposal will be automatically
+ *   accepted if the artist only proposes changed payee percentages without
+ *   modifying any payee addresses, or is only removing payee addresses, or
+ *   if the global config `autoApproveArtistSplitProposals` is set to `true`.)
  * - toggleProjectIsPaused (note the artist can still mint while paused)
  * ----------------------------------------------------------------------------
  * The following function is restricted to either the Admin ACL contract, or
