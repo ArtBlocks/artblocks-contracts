@@ -550,12 +550,15 @@ for (const coreContractName of coreContractsToTest) {
           config.genArt721Core
             .connect(config.accounts.user)
             .proposeArtistPaymentAddressesAndSplits(...config.valuesToUpdateTo),
-          "Only artist or Admin ACL allowed"
+          "Only artist"
         );
-        // allows deployer as a proposer of updates
-        await config.genArt721Core
-          .connect(config.accounts.deployer)
-          .proposeArtistPaymentAddressesAndSplits(...config.valuesToUpdateTo);
+        // rejects owner as a proposer of updates
+        await expectRevert(
+          config.genArt721Core
+            .connect(config.accounts.deployer)
+            .proposeArtistPaymentAddressesAndSplits(...config.valuesToUpdateTo),
+          "Only artist"
+        );
         // allows artist to propose new values
         await config.genArt721Core
           .connect(config.accounts.artist)

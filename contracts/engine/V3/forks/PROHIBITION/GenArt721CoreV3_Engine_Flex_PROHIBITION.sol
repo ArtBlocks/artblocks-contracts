@@ -921,10 +921,7 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
         uint256 _additionalPayeeSecondarySalesPercentage
     ) external {
         _onlyValidProjectId(_projectId);
-        _onlyArtistOrAdminACL(
-            _projectId,
-            this.proposeArtistPaymentAddressesAndSplits.selector
-        );
+        _onlyArtist(_projectId);
         _onlyNonZeroAddress(_artistAddress);
         ProjectFinance storage projectFinance = projectIdToFinancials[
             _projectId
