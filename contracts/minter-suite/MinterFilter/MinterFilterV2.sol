@@ -33,7 +33,7 @@ import "@openzeppelin-4.7/contracts/utils/structs/EnumerableSet.sol";
  * ----------------------------------------------------------------------------
  * The following functions are restricted as allowed by this contract's Admin
  * ACL:
- * - updateEngineRegistry
+ * - updateCoreRegistry
  * - approveMinterGlobally
  * - revokeMinterGlobally
  * - removeMintersForProjectsOnContracts
@@ -76,11 +76,9 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
     IAdminACLV0 public adminACLContract;
 
     /**
-     * @notice Engine registry, that tracks all registered core contracts
-     * @dev the engine registry is assumed to also register flagship and
-     * collaboration contracts.
+     * @notice Core registry, that tracks all registered core contracts
      */
-    ICoreRegistryV1 public engineRegistry;
+    ICoreRegistryV1 public coreRegistry;
 
     /// minter address => qty projects across all core contracts currently
     /// using the minter
@@ -173,12 +171,12 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
     }
 
     // function to restrict access to only core contracts registered with the
-    // currently configured engine registry. This is used to prevent
+    // currently configured core registry. This is used to prevent
     // non-registered core contracts from being used with this minter filter.
     function _onlyRegisteredCoreContract(address _coreContract) internal view {
-        // @dev use engine registry to check if core contract is registered
+        // @dev use core registry to check if core contract is registered
         require(
-            engineRegistry.isRegisteredContract(_coreContract),
+            coreRegistry.isRegisteredContract(_coreContract),
             "Only registered core contract"
         );
     }
@@ -214,13 +212,13 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
      * @notice Initializes contract to be a Minter for `_genArt721Address`.
      * @param _adminACLContract Address of admin access control contract, to be
      * set as contract owner.
-     * @param _engineRegistry Address of engine registry contract.
+     * @param _coreRegistry Address of core registry contract.
      */
-    constructor(address _adminACLContract, address _engineRegistry) {
+    constructor(address _adminACLContract, address _coreRegistry) {
         // set AdminACL management contract as owner
         _transferOwnership(_adminACLContract);
-        // set engine registry contract
-        _updateEngineRegistry(_engineRegistry);
+        // set core registry contract
+        _updateCoreRegistry(_coreRegistry);
         emit Deployed();
     }
 
@@ -231,13 +229,13 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
     }
 
     /**
-     * @notice Updates the engine registry contract to be used by this contract.
+     * @notice Updates the core registry contract to be used by this contract.
      * Only callable as allowed by AdminACL of this contract.
-     * @param _engineRegistry Address of the new engine registry contract.
+     * @param _coreRegistry Address of the new core registry contract.
      */
-    function updateEngineRegistry(address _engineRegistry) external {
-        _onlyAdminACL(this.updateEngineRegistry.selector);
-        _updateEngineRegistry(_engineRegistry);
+    function updateCoreRegistry(address _coreRegistry) external {
+        _onlyAdminACL(this.updateCoreRegistry.selector);
+        _updateCoreRegistry(_coreRegistry);
     }
 
     /**
@@ -577,14 +575,14 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
 
     /**
      * @notice View that returns if a core contract is registered with the
-     * engine registry, allowing this minter filter to service it.
+     * core registry, allowing this minter filter to service it.
      * @param _coreContract core contract address to be checked
      * @return bool true if core contract is registered, else false
      */
     function isRegisteredCoreContract(
         address _coreContract
     ) external view override returns (bool) {
-        return engineRegistry.isRegisteredContract(_coreContract);
+        return coreRegistry.isRegisteredContract(_coreContract);
     }
 
     /**
@@ -715,13 +713,13 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
     }
 
     /**
-     * @notice Updates this contract's engine registry contract to
-     * `_engineRegistry`.
-     * @param _engineRegistry New engine registry contract address.
+     * @notice Updates this contract's core registry contract to
+     * `_coreRegistry`.
+     * @param _coreRegistry New core registry contract address.
      */
-    function _updateEngineRegistry(address _engineRegistry) internal {
-        _onlyNonZeroAddress(_engineRegistry);
-        engineRegistry = ICoreRegistryV1(_engineRegistry);
-        emit EngineRegistryUpdated(_engineRegistry);
+    function _updateCoreRegistry(address _coreRegistry) internal {
+        _onlyNonZeroAddress(_coreRegistry);
+        coreRegistry = ICoreRegistryV1(_coreRegistry);
+        emit CoreRegistryUpdated(_coreRegistry);
     }
 }

@@ -6,20 +6,21 @@ import { setupConfigWitMinterFilterV2Suite } from "../../util/fixtures";
 import { deployAndGet, deployCore, safeAddProject } from "../../util/common";
 
 // we use a dummy shared minter for these tests
-const expectedMinterType = "DummyMinter";
+const expectedMinterType = "DummySharedMinter";
 
 const runForEach = [
   {
     core: "GenArt721CoreV3",
-    coreFirstProjectNumber: 0,
-    minter: "MinterSetPriceV4",
   },
   {
     core: "GenArt721CoreV3_Explorations",
-    coreFirstProjectNumber: 0,
-    minter: "MinterSetPriceV4",
   },
-  // TODO - test more cores
+  {
+    core: "GenArt721CoreV3_Engine",
+  },
+  {
+    core: "GenArt721CoreV3_Engine_Flex",
+  },
 ];
 
 // helper functions
@@ -46,7 +47,7 @@ async function deployAndRegisterAdditionalCore(
 }
 
 runForEach.forEach((params) => {
-  describe(`MinterFilterV2 Views w/ core ${params.core} core`, async function () {
+  describe(`MinterFilterV2 Views w/ core ${params.core}`, async function () {
     async function _beforeEach() {
       // load minter filter V2 fixture
       const config = await loadFixture(setupConfigWitMinterFilterV2Suite);

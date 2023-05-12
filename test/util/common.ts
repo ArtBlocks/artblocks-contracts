@@ -338,7 +338,7 @@ export async function deploySharedMinterFilter(
   // deploy minter filter's own adminACL
   const minterFilterAdminACL = await deployAndGet(config, "AdminACLV0", []);
   // deploy MinterFilter's core registry
-  const coreRegistry = await deployAndGet(config, "CoreRegistryV0", []);
+  const coreRegistry = await deployAndGet(config, "CoreRegistryV1", []);
   // deploy minter filter
   const minterFilter = await deployAndGet(config, minterFilterName, [
     minterFilterAdminACL.address,
@@ -349,11 +349,11 @@ export async function deploySharedMinterFilter(
 
 // utility function to deploy basic randomizer, core, and MinterFilter
 // works for core versions V3 (any)
-// registers core contract to CoreRegistryV0
+// registers core contract to CoreRegistryV1
 export async function deployCore(
   config: T_Config,
   coreContractName: string,
-  coreRegistryV0: Contract,
+  CoreRegistryV1: Contract,
   useAdminACLWithEvents: boolean = false,
   _randomizerName: string = "BasicRandomizerV2",
   _adminACLContractName?: string
@@ -386,16 +386,14 @@ export async function deployCore(
     randomizer
       .connect(config.accounts.deployer)
       .assignCoreAndRenounce(genArt721Core.address);
-    // register core contract on CoreRegistryV0
+    // register core contract on CoreRegistryV1
     const coreVersion = await genArt721Core.coreVersion();
     const coreType = await genArt721Core.coreType();
-    await coreRegistryV0
-      .connect(config.accounts.deployer)
-      .registerContract(
-        genArt721Core.address,
-        ethers.utils.formatBytes32String(coreVersion),
-        ethers.utils.formatBytes32String(coreType)
-      );
+    await CoreRegistryV1.connect(config.accounts.deployer).registerContract(
+      genArt721Core.address,
+      ethers.utils.formatBytes32String(coreVersion),
+      ethers.utils.formatBytes32String(coreType)
+    );
   } else if (
     coreContractName.endsWith("V3_Engine") ||
     coreContractName.endsWith("V3_Engine_Flex") ||
@@ -432,14 +430,14 @@ export async function deployCore(
         adminACL.address, // _adminACLContract
         config.projectZero, // starting project ID
         false, // _autoApproveArtistSplitProposals
-        coreRegistryV0.address, // _engineRegistryContract
+        CoreRegistryV1.address, // _engineRegistryContract
       ]
     );
     // assign core contract for randomizer to use
     randomizer
       .connect(config.accounts.deployer)
       .assignCoreAndRenounce(genArt721Core.address);
-    // Engine contracts automatically register themselves on CoreRegistryV0 during deployment
+    // Engine contracts automatically register themselves on CoreRegistryV1 during deployment
   } else {
     throw new Error(
       `deployCore does not support core contract name: ${coreContractName}`

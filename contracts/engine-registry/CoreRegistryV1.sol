@@ -53,7 +53,7 @@ import "@openzeppelin-4.7/contracts/utils/structs/EnumerableSet.sol";
  * Additional privileged roles may be described on minters, registries, and
  * other contracts that may interact with this contract.
  */
-contract CoreRegistryV0 is Ownable, ICoreRegistryV1 {
+contract CoreRegistryV1 is Ownable, ICoreRegistryV1 {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     /// private enumerable set of registered contracts

@@ -20,7 +20,7 @@ contract DummySharedMinter {
     IMinterFilterV1 private immutable minterFilter;
 
     /// minterType for this minter
-    string public constant minterType = "DummyMinter";
+    string public constant minterType = "DummySharedMinter";
 
     /// minter version for this minter
     string public constant minterVersion = "v0.0.0";

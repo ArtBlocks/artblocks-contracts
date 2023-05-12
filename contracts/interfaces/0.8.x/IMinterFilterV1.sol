@@ -81,9 +81,9 @@ interface IMinterFilterV1 {
     event AdminACLUpdated(address indexed adminACLContract);
 
     /**
-     * @notice Engine Registry contract updated to `engineRegistry`.
+     * @notice Core Registry contract updated to `coreRegistry`.
      */
-    event EngineRegistryUpdated(address indexed engineRegistry);
+    event CoreRegistryUpdated(address indexed coreRegistry);
 
     function setMinterForProject(
         uint256 _projectId,
@@ -104,7 +104,7 @@ interface IMinterFilterV1 {
         address _sender
     ) external returns (uint256);
 
-    function updateEngineRegistry(address _engineRegistry) external;
+    function updateCoreRegistry(address _coreRegistry) external;
 
     function getMinterForProject(
         uint256 _projectId,
@@ -118,15 +118,15 @@ interface IMinterFilterV1 {
 
     /**
      * @notice View that returns if a core contract is registered with the
-     * engine registry, allowing this minter filter to service it.
+     * core registry, allowing this minter filter to service it.
      * @param _coreContract core contract address to be checked
      */
     function isRegisteredCoreContract(
         address _coreContract
     ) external view returns (bool);
 
-    /// Address of current engine registry contract
-    function engineRegistry() external view returns (ICoreRegistryV1);
+    /// Address of current core registry contract
+    function coreRegistry() external view returns (ICoreRegistryV1);
 
     /// The current admin ACL contract
     function adminACLContract() external view returns (IAdminACLV0);
