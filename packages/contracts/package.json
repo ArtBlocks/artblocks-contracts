@@ -29,13 +29,8 @@
     "deploy:mainnet:v3-engine": "yarn codegen:mainnet && NODE_ENV=mainnet yarn hardhat run --network mainnet scripts/engine/V3/generic-engine-deployer.ts",
     "deploy:goerli:minter": "yarn hardhat run --network goerli scripts/minter-deployments/V3/generic-minter-deployer-v3core.ts",
     "deploy:mainnet:minter": "yarn hardhat run --network mainnet scripts/minter-deployments/V3/generic-minter-deployer-v3core.ts",
-    "pre-commit": "yarn lint"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "yarn lint",
-      "pre-push": "yarn test"
-    }
+    "pre-commit": "yarn lint",
+    "pre-push": "yarn test"
   },
   "devDependencies": {
     "@aws-sdk/client-s3": "^3.245.0",

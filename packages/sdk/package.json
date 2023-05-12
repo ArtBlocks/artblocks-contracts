@@ -26,7 +26,8 @@
     "fmt": "prettier --write src/**/*.ts && eslint src/**/*.ts --fix",
     "test": "jest --collect-coverage",
     "build:docs": "jsdoc -c jsdoc.json",
-    "pre-commit": "yarn lint"
+    "pre-commit": "yarn lint",
+    "pre-push": "yarn test"
   },
   "lint-staged": {
     "*.{js,ts,tsx, jsx}": [
