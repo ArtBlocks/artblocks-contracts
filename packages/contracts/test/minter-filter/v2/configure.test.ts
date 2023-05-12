@@ -13,25 +13,29 @@ const revertMessages = {
   noRenounceOwnership: "Cannot renounce ownership",
   onlyAdminACL: "Only Admin ACL allowed",
   onlyCoreAdminACL: "Only Core AdminACL allowed",
+  onlyCoreAdminACLOrArtist: "Only Artist or Core Admin ACL",
   onlyRegisteredCore: "Only registered core contract",
   onlyNonZeroAddress: "Only non-zero address",
   minterAlreadyApproved: "Minter already approved",
+  noMinterAssigned: "No minter assigned",
   onlyPreviouslyApprovedMinter: "Only previously approved minter",
+  onlyApprovedMinters: "Only approved minters",
+  onlyValidProjectId: "Only valid project ID",
 };
 
 const runForEach = [
   {
     core: "GenArt721CoreV3",
   },
-  // {
-  //   core: "GenArt721CoreV3_Explorations",
-  // },
-  // {
-  //   core: "GenArt721CoreV3_Engine",
-  // },
-  // {
-  //   core: "GenArt721CoreV3_Engine_Flex",
-  // },
+  {
+    core: "GenArt721CoreV3_Explorations",
+  },
+  {
+    core: "GenArt721CoreV3_Engine",
+  },
+  {
+    core: "GenArt721CoreV3_Engine_Flex",
+  },
 ];
 
 runForEach.forEach((params) => {
@@ -280,7 +284,7 @@ runForEach.forEach((params) => {
     describe("revokeMinterForContract", async function () {
       // fixture used for this describe block
       async function _beforeEach_revokeMinterForContract() {
-        const config = await _beforeEach();
+        const config = await loadFixture(_beforeEach);
         // remove global approval of minter
         await config.minterFilter
           .connect(config.accounts.deployer)
@@ -402,6 +406,565 @@ runForEach.forEach((params) => {
           config.minter.address
         );
         expect(result).to.be.true;
+      });
+    });
+
+    describe("setMinterForProject", async function () {
+      describe("caller auth", async function () {
+        it("does not allow non-core-admin or artist to call", async function () {
+          const config = await loadFixture(_beforeEach);
+          // update core admin to be different than minter filter admin
+          await config.adminACL
+            .connect(config.accounts.deployer)
+            .changeSuperAdmin(config.accounts.deployer2.address, [
+              config.genArt721Core.address,
+            ]);
+          // expect revert when calling from non-core-admin or non-artist
+          await expectRevert(
+            config.minterFilter
+              .connect(config.accounts.deployer)
+              .setMinterForProject(
+                config.projectZero,
+                config.genArt721Core.address,
+                config.minter.address
+              ),
+            revertMessages.onlyCoreAdminACLOrArtist
+          );
+        });
+
+        it("alows core-admin to call", async function () {
+          const config = await loadFixture(_beforeEach);
+          // update core admin to be different than minter filter admin
+          await config.adminACL
+            .connect(config.accounts.deployer)
+            .changeSuperAdmin(config.accounts.deployer2.address, [
+              config.genArt721Core.address,
+            ]);
+          // verify initial state
+          await expectRevert(
+            config.minterFilter.getMinterForProject(
+              config.projectZero,
+              config.genArt721Core.address
+            ),
+            revertMessages.noMinterAssigned
+          );
+          // call from core admin
+          await config.minterFilter
+            .connect(config.accounts.deployer2)
+            .setMinterForProject(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.minter.address
+            );
+          // state should be updated
+          const result = await config.minterFilter.getMinterForProject(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+          expect(result).to.equal(config.minter.address);
+        });
+
+        it("allows artist to call", async function () {
+          const config = await loadFixture(_beforeEach);
+          // verify initial state
+          await expectRevert(
+            config.minterFilter.getMinterForProject(
+              config.projectZero,
+              config.genArt721Core.address
+            ),
+            revertMessages.noMinterAssigned
+          );
+          // call from artist
+          await config.minterFilter
+            .connect(config.accounts.artist)
+            .setMinterForProject(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.minter.address
+            );
+          // state should be updated
+          const result = await config.minterFilter.getMinterForProject(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+          expect(result).to.equal(config.minter.address);
+        });
+      });
+
+      describe("other checks", async function () {
+        it("does not allow unregistered core contracts", async function () {
+          const config = await loadFixture(_beforeEach);
+          // unregister core from core registry
+          await config.coreRegistry
+            .connect(config.accounts.deployer)
+            .unregisterContract(config.genArt721Core.address);
+          // expect revert when calling for unregistered core
+          await expectRevert(
+            config.minterFilter
+              .connect(config.accounts.deployer)
+              .setMinterForProject(
+                config.projectZero,
+                config.genArt721Core.address,
+                config.minter.address
+              ),
+            revertMessages.onlyRegisteredCore
+          );
+        });
+
+        it("does not allow unapproved minters", async function () {
+          const config = await loadFixture(_beforeEach);
+          // expect revert when calling with unapproved minter
+          await expectRevert(
+            config.minterFilter
+              .connect(config.accounts.deployer)
+              .setMinterForProject(
+                config.projectZero,
+                config.genArt721Core.address,
+                constants.ZERO_ADDRESS
+              ),
+            revertMessages.onlyApprovedMinters
+          );
+        });
+
+        it("allows when minter only approved for contract (not global)", async function () {
+          const config = await loadFixture(_beforeEach);
+          // remove global approval of minter
+          await config.minterFilter
+            .connect(config.accounts.deployer)
+            .revokeMinterGlobally(config.minter.address);
+          // approve minter for contract
+          await config.minterFilter
+            .connect(config.accounts.deployer)
+            .approveMinterForContract(
+              config.genArt721Core.address,
+              config.minter.address
+            );
+          // no revert when approving for project on associated contract
+          await config.minterFilter
+            .connect(config.accounts.deployer)
+            .setMinterForProject(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.minter.address
+            );
+        });
+
+        it("does not allow invalid project IDs", async function () {
+          const config = await loadFixture(_beforeEach);
+          // expect revert when calling with invalid project ID
+          await expectRevert(
+            config.minterFilter
+              .connect(config.accounts.deployer)
+              .setMinterForProject(
+                9999,
+                config.genArt721Core.address,
+                config.minter.address
+              ),
+            revertMessages.onlyValidProjectId
+          );
+        });
+      });
+
+      describe("effects", async function () {
+        it("updates minter for project", async function () {
+          const config = await loadFixture(_beforeEach);
+          // verify initial state
+          await expectRevert(
+            config.minterFilter.getMinterForProject(
+              config.projectZero,
+              config.genArt721Core.address
+            ),
+            revertMessages.noMinterAssigned
+          );
+          // assign minter
+          await config.minterFilter
+            .connect(config.accounts.artist)
+            .setMinterForProject(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.minter.address
+            );
+          // verify state is updated
+          const result = await config.minterFilter.getMinterForProject(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+          expect(result).to.equal(config.minter.address);
+        });
+
+        it("increments and decerements num projects using minter counts", async function () {
+          const config = await loadFixture(_beforeEach);
+          // verify initial state
+          let numProjectsUsingMinter =
+            await config.minterFilter.numProjectsUsingMinter(
+              config.minter.address
+            );
+          expect(numProjectsUsingMinter).to.equal(0);
+          // assign minter
+          await config.minterFilter
+            .connect(config.accounts.artist)
+            .setMinterForProject(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.minter.address
+            );
+          // verify state was incremented
+          numProjectsUsingMinter =
+            await config.minterFilter.numProjectsUsingMinter(
+              config.minter.address
+            );
+          expect(numProjectsUsingMinter).to.equal(1);
+          // add another minter
+          await config.minterFilter
+            .connect(config.accounts.artist)
+            .setMinterForProject(
+              config.projectOne,
+              config.genArt721Core.address,
+              config.minter.address
+            );
+          // verify state was incremented
+          numProjectsUsingMinter =
+            await config.minterFilter.numProjectsUsingMinter(
+              config.minter.address
+            );
+          expect(numProjectsUsingMinter).to.equal(2);
+          // count is decremented when project switches to another minter
+          // deploy and add new dummy shared minter
+          const newMinter = await deployAndGet(config, expectedMinterType, [
+            config.minterFilter.address,
+          ]);
+          // approve new minter for contract
+          await config.minterFilter
+            .connect(config.accounts.deployer)
+            .approveMinterForContract(
+              config.genArt721Core.address,
+              newMinter.address
+            );
+          // verify initial state of num projects using new minter
+          let numProjectsUsingNewMinter =
+            await config.minterFilter.numProjectsUsingMinter(newMinter.address);
+          expect(numProjectsUsingNewMinter).to.equal(0);
+          // assign new minter to project previously using old minter
+          await config.minterFilter
+            .connect(config.accounts.artist)
+            .setMinterForProject(
+              config.projectZero,
+              config.genArt721Core.address,
+              newMinter.address
+            );
+          // verify state was decremented on old minter
+          numProjectsUsingMinter =
+            await config.minterFilter.numProjectsUsingMinter(
+              config.minter.address
+            );
+          expect(numProjectsUsingMinter).to.equal(1);
+          // verify state was incremented on new minter
+          numProjectsUsingNewMinter =
+            await config.minterFilter.numProjectsUsingMinter(newMinter.address);
+          expect(numProjectsUsingNewMinter).to.equal(1);
+        });
+      });
+    });
+
+    describe("removeMinterForProject", async function () {
+      describe("caller auth", async function () {
+        it("does not allow non-core-admin or artist to call", async function () {
+          const config = await loadFixture(_beforeEach);
+          // update core admin to be different than minter filter admin
+          await config.adminACL
+            .connect(config.accounts.deployer)
+            .changeSuperAdmin(config.accounts.deployer2.address, [
+              config.genArt721Core.address,
+            ]);
+          // expect revert when calling from non-core-admin or non-artist
+          await expectRevert(
+            config.minterFilter
+              .connect(config.accounts.deployer)
+              .removeMinterForProject(
+                config.projectZero,
+                config.genArt721Core.address
+              ),
+            revertMessages.onlyCoreAdminACLOrArtist
+          );
+        });
+
+        it("alows core-admin to call", async function () {
+          const config = await loadFixture(_beforeEach);
+          // update core admin to be different than minter filter admin
+          await config.adminACL
+            .connect(config.accounts.deployer)
+            .changeSuperAdmin(config.accounts.deployer2.address, [
+              config.genArt721Core.address,
+            ]);
+          // set minter for project
+          await config.minterFilter
+            .connect(config.accounts.deployer2)
+            .setMinterForProject(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.minter.address
+            );
+          // call from core admin
+          await config.minterFilter
+            .connect(config.accounts.deployer2)
+            .removeMinterForProject(
+              config.projectZero,
+              config.genArt721Core.address
+            );
+          // state should be updated
+          await expectRevert(
+            config.minterFilter.getMinterForProject(
+              config.projectZero,
+              config.genArt721Core.address
+            ),
+            revertMessages.noMinterAssigned
+          );
+        });
+
+        it("allows artist to call", async function () {
+          const config = await loadFixture(_beforeEach);
+          // set minter for project
+          await config.minterFilter
+            .connect(config.accounts.deployer)
+            .setMinterForProject(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.minter.address
+            );
+          // call from artist
+          await config.minterFilter
+            .connect(config.accounts.artist)
+            .removeMinterForProject(
+              config.projectZero,
+              config.genArt721Core.address
+            );
+          // state should be updated
+          await expectRevert(
+            config.minterFilter.getMinterForProject(
+              config.projectZero,
+              config.genArt721Core.address
+            ),
+            revertMessages.noMinterAssigned
+          );
+        });
+      });
+
+      describe("other checks", async function () {
+        it("does not allow unregistered core contracts", async function () {
+          const config = await loadFixture(_beforeEach);
+          // unregister core from core registry
+          await config.coreRegistry
+            .connect(config.accounts.deployer)
+            .unregisterContract(config.genArt721Core.address);
+          // expect revert when calling for unregistered core
+          await expectRevert(
+            config.minterFilter
+              .connect(config.accounts.deployer)
+              .removeMinterForProject(
+                config.projectZero,
+                config.genArt721Core.address
+              ),
+            revertMessages.onlyRegisteredCore
+          );
+        });
+
+        it("does not allow for projects without a minter assigned", async function () {
+          const config = await loadFixture(_beforeEach);
+          // verify project zero has no minter assigned
+          await expectRevert(
+            config.minterFilter.getMinterForProject(
+              config.projectZero,
+              config.genArt721Core.address
+            ),
+            revertMessages.noMinterAssigned
+          );
+          // expect revert when calling for project zero
+          await expectRevert(
+            config.minterFilter
+              .connect(config.accounts.deployer)
+              .removeMinterForProject(
+                config.projectZero,
+                config.genArt721Core.address
+              ),
+            revertMessages.noMinterAssigned
+          );
+        });
+      });
+
+      describe("updates state", async function () {
+        it("removes minter from project", async function () {
+          const config = await loadFixture(_beforeEach);
+          // set minter for project
+          await config.minterFilter
+            .connect(config.accounts.deployer)
+            .setMinterForProject(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.minter.address
+            );
+          // verify minter is assigned
+          const result = await config.minterFilter.getMinterForProject(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+          expect(result).to.equal(config.minter.address);
+          // remove minter for project
+          await config.minterFilter
+            .connect(config.accounts.deployer)
+            .removeMinterForProject(
+              config.projectZero,
+              config.genArt721Core.address
+            );
+          // verify minter is removed
+          await expectRevert(
+            config.minterFilter.getMinterForProject(
+              config.projectZero,
+              config.genArt721Core.address
+            ),
+            revertMessages.noMinterAssigned
+          );
+        });
+
+        it("decrements numProjectsUsingMinter", async function () {
+          const config = await loadFixture(_beforeEach);
+          // set minter for project
+          await config.minterFilter
+            .connect(config.accounts.deployer)
+            .setMinterForProject(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.minter.address
+            );
+          // verify numProjectsUsingMinter is incremented
+          let numProjectsUsingMinter =
+            await config.minterFilter.numProjectsUsingMinter(
+              config.minter.address
+            );
+          expect(numProjectsUsingMinter).to.equal(1);
+          // remove minter for project
+          await config.minterFilter
+            .connect(config.accounts.deployer)
+            .removeMinterForProject(
+              config.projectZero,
+              config.genArt721Core.address
+            );
+          // verify numProjectsUsingMinter is decremented
+          numProjectsUsingMinter =
+            await config.minterFilter.numProjectsUsingMinter(
+              config.minter.address
+            );
+          expect(numProjectsUsingMinter).to.equal(0);
+        });
+      });
+    });
+
+    describe("removeMintersForProjectsOnContract", async function () {
+      describe("checks", async function () {
+        it("does not allow unregistered core contracts", async function () {
+          const config = await loadFixture(_beforeEach);
+          // unregister core from core registry
+          await config.coreRegistry
+            .connect(config.accounts.deployer)
+            .unregisterContract(config.genArt721Core.address);
+          // expect revert when calling for unregistered core
+          await expectRevert(
+            config.minterFilter
+              .connect(config.accounts.deployer)
+              .removeMintersForProjectsOnContract(
+                [config.projectZero],
+                config.genArt721Core.address
+              ),
+            revertMessages.onlyRegisteredCore
+          );
+        });
+
+        it("does not allow non-core admin", async function () {
+          const config = await loadFixture(_beforeEach);
+          // expect revert when calling from non-core admin
+          await expectRevert(
+            config.minterFilter
+              .connect(config.accounts.artist)
+              .removeMintersForProjectsOnContract(
+                [config.projectZero],
+                config.genArt721Core.address
+              ),
+            revertMessages.onlyCoreAdminACL
+          );
+        });
+
+        it("reverts when a project does not have minter assigned", async function () {
+          const config = await loadFixture(_beforeEach);
+          // expect revert when calling for project zero
+          await expectRevert(
+            config.minterFilter
+              .connect(config.accounts.deployer)
+              .removeMintersForProjectsOnContract(
+                [config.projectZero],
+                config.genArt721Core.address
+              ),
+            revertMessages.noMinterAssigned
+          );
+        });
+      });
+
+      describe("effects", async function () {
+        it("removes minters for projects", async function () {
+          const config = await loadFixture(_beforeEach);
+          // set minter for projects
+          await config.minterFilter
+            .connect(config.accounts.deployer)
+            .setMinterForProject(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.minter.address
+            );
+          await config.minterFilter
+            .connect(config.accounts.deployer)
+            .setMinterForProject(
+              config.projectOne,
+              config.genArt721Core.address,
+              config.minter.address
+            );
+          // verify minter is assigned
+          let result = await config.minterFilter.getMinterForProject(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+          expect(result).to.equal(config.minter.address);
+          result = await config.minterFilter.getMinterForProject(
+            config.projectOne,
+            config.genArt721Core.address
+          );
+          expect(result).to.equal(config.minter.address);
+          // remove minter for projects
+          await config.minterFilter
+            .connect(config.accounts.deployer)
+            .removeMintersForProjectsOnContract(
+              [config.projectZero, config.projectOne],
+              config.genArt721Core.address
+            );
+          // verify minters are removed
+          await expectRevert(
+            config.minterFilter.getMinterForProject(
+              config.projectZero,
+              config.genArt721Core.address
+            ),
+            revertMessages.noMinterAssigned
+          );
+          await expectRevert(
+            config.minterFilter.getMinterForProject(
+              config.projectOne,
+              config.genArt721Core.address
+            ),
+            revertMessages.noMinterAssigned
+          );
+          // verify projects using minter was decremented
+          const numProjectsUsingMinter =
+            await config.minterFilter.numProjectsUsingMinter(
+              config.minter.address
+            );
+          expect(numProjectsUsingMinter).to.equal(0);
+        });
       });
     });
   });

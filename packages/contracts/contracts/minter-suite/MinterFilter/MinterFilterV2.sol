@@ -718,7 +718,10 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
         // remove minter for project and emit
         // @dev `minterForProject.get()` reverts tx if no minter set for project
         numProjectsUsingMinter[
-            minterForProject[_coreContract].get(_projectId, "No minter set")
+            minterForProject[_coreContract].get(
+                _projectId,
+                "No minter assigned"
+            )
         ]--;
         minterForProject[_coreContract].remove(_projectId);
         emit ProjectMinterRemoved(_projectId, _coreContract);
