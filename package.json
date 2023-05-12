@@ -11,7 +11,7 @@
   "scripts": {
     "build": "yarn workspace @artblocks/contracts run build && yarn workspace @artblocks/sdk run build",
     "prepare": "husky install",
-    "pre-commit": "yarn workspaces run pre-commit",
+    "pre-commit": "yarn workspace @artblocks/contracts run pre-commit && yarn workspace @artblocks/sdk run pre-commit",
     "release": "yarn build && yarn changeset publish"
   },
   "dependencies": {
