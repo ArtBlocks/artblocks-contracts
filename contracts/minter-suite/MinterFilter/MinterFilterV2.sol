@@ -287,8 +287,8 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
      * Only callable as allowed by AdminACL of core contract `_coreContract`.
      * Reverts if core contract is not registered, if minter is already
      * approved for the contract, or if minter does not implement minterType().
-     * @param _minter Minter to be approved.
      * @param _coreContract Core contract to approve minter for.
+     * @param _minter Minter to be approved.
      */
     function approveMinterForContract(
         address _coreContract,
