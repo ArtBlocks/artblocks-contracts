@@ -1,27 +1,12 @@
 import { constants, expectRevert } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { Contract } from "ethers";
+import { revertMessages } from "./constants";
 import { setupConfigWitMinterFilterV2Suite } from "../../util/fixtures";
 import { deployAndGet, deployCore, safeAddProject } from "../../util/common";
 
 // we use a dummy shared minter for these tests
 const expectedMinterType = "DummySharedMinter";
-
-// expected revert messages
-const revertMessages = {
-  noRenounceOwnership: "Cannot renounce ownership",
-  onlyAdminACL: "Only Admin ACL allowed",
-  onlyCoreAdminACL: "Only Core AdminACL allowed",
-  onlyCoreAdminACLOrArtist: "Only Artist or Core Admin ACL",
-  onlyRegisteredCore: "Only registered core contract",
-  onlyNonZeroAddress: "Only non-zero address",
-  minterAlreadyApproved: "Minter already approved",
-  noMinterAssigned: "No minter assigned",
-  onlyPreviouslyApprovedMinter: "Only previously approved minter",
-  onlyApprovedMinters: "Only approved minters",
-  onlyValidProjectId: "Only valid project ID",
-};
 
 const runForEach = [
   {

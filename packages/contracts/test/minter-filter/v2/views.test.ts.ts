@@ -2,6 +2,7 @@ import { constants, expectRevert } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { Contract } from "ethers";
+import { revertMessages } from "./constants";
 import { setupConfigWitMinterFilterV2Suite } from "../../util/fixtures";
 import { deployAndGet, deployCore, safeAddProject } from "../../util/common";
 
@@ -128,9 +129,6 @@ runForEach.forEach((params) => {
     ///////////////////////////////////////////////////////////////////////////
 
     describe("getMinterForProject", async function () {
-      // expected revert messages
-      const noMinterAssignedRevertMessage = "No minter assigned";
-
       it("reverts when project does not have minter", async function () {
         const config = await loadFixture(_beforeEach);
         await expectRevert(
@@ -138,7 +136,7 @@ runForEach.forEach((params) => {
             config.projectZero,
             config.genArt721Core.address
           ),
-          noMinterAssignedRevertMessage
+          revertMessages.noMinterAssigned
         );
       });
 
@@ -150,7 +148,7 @@ runForEach.forEach((params) => {
             config.projectZero,
             config.genArt721Core.address
           ),
-          noMinterAssignedRevertMessage
+          revertMessages.noMinterAssigned
         );
         // assign minter to project zero
         await config.minterFilter

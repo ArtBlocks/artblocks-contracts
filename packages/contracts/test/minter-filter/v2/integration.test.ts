@@ -1,12 +1,9 @@
-import { constants, expectRevert } from "@openzeppelin/test-helpers";
+import { expectRevert } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { Contract } from "ethers";
+import { revertMessages } from "./constants";
 import { setupConfigWitMinterFilterV2Suite } from "../../util/fixtures";
-import { deployAndGet, deployCore, safeAddProject } from "../../util/common";
-
-// we use a dummy shared minter for these tests
-const expectedMinterType = "DummySharedMinter";
+import { deployCore, safeAddProject } from "../../util/common";
 
 const runForEach = [
   {
@@ -23,29 +20,6 @@ const runForEach = [
   },
 ];
 
-// // helper functions
-// async function deployAndRegisterAdditionalCore(
-//   config,
-//   coreContractName,
-//   addInitialProject
-// ) {
-//   // deploy core contract and register on core registry
-//   let newCore: Contract;
-//   ({ genArt721Core: newCore } = await deployCore(
-//     config,
-//     coreContractName,
-//     config.coreRegistry
-//   ));
-//   if (addInitialProject) {
-//     await safeAddProject(
-//       newCore,
-//       config.accounts.deployer,
-//       config.accounts.artist2.address
-//     );
-//   }
-//   return { newCore };
-// }
-
 runForEach.forEach((params) => {
   describe(`MinterFilterV2 Integration tests w/ core ${params.core}`, async function () {
     async function _beforeEach() {
@@ -57,6 +31,11 @@ runForEach.forEach((params) => {
         randomizer: config.randomizer,
         adminACL: config.adminACL,
       } = await deployCore(config, params.core, config.coreRegistry));
+
+      // update core's minter as the minter filter
+      await config.genArt721Core.updateMinterContract(
+        config.minterFilter.address
+      );
 
       // Project setup
       await safeAddProject(
@@ -72,8 +51,64 @@ runForEach.forEach((params) => {
       return config;
     }
 
-    describe("TODO", async function () {
-      // TODO
+    describe("mint_joo", async function () {
+      describe("checks", async function () {
+        it("does not allow project with no minter to call", async function () {
+          const config = await loadFixture(_beforeEach);
+          await expectRevert(
+            config.minterFilter.mint_joo(
+              config.accounts.artist.address,
+              config.projectZero,
+              config.genArt721Core.address,
+              config.accounts.artist.address
+            ),
+            revertMessages.nonExistentKey
+          );
+        });
+
+        it("does not allow project with different minter to call", async function () {
+          const config = await loadFixture(_beforeEach);
+          // assign minter to project zero
+          await config.minterFilter
+            .connect(config.accounts.deployer)
+            .setMinterForProject(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.minter.address
+            );
+          await expectRevert(
+            config.minterFilter.mint_joo(
+              config.accounts.artist.address,
+              config.projectZero,
+              config.genArt721Core.address,
+              config.accounts.artist.address
+            ),
+            revertMessages.onlyAssignedMinter
+          );
+        });
+      });
+
+      describe("effects", async function () {
+        it("mints a token", async function () {
+          const config = await loadFixture(_beforeEach);
+          // assign minter to project zero
+          await config.minterFilter
+            .connect(config.accounts.deployer)
+            .setMinterForProject(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.minter.address
+            );
+          // mint token from minter
+          await config.minter
+            .connect(config.accounts.artist)
+            .purchase(config.projectZero, config.genArt721Core.address);
+          // check that token was minted
+          expect(
+            await config.genArt721Core.balanceOf(config.accounts.artist.address)
+          ).to.eq(1);
+        });
+      });
     });
   });
 });
