@@ -67,3 +67,8 @@ Contracts metadata upsert input:
 Successfully upserted 1 contract
 [ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
 [ACTION] AdminACL's superAdmin address is 0xC430CE0184e536e341e04dCE0f4C37895a92b809, don't forget to update if requred.
+----------------------------------------
+[INFO] Datetime of deployment: 2023-05-12T23:12:41.603Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/prohibition-flex/deployment-config.staging2.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
