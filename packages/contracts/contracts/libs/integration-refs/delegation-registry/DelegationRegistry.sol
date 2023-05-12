@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: CC0-1.0
-pragma solidity ^0.8.17;
+pragma solidity ^0.8.19;
 
 // This is a mock contract to be used in tests.
 // The source code is copied from ETH mainnet, deployed at:0x00000000000076a84fef008cdabe6409d2fe638b
