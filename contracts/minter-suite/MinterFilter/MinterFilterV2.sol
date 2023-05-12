@@ -202,8 +202,7 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
         address _minter
     ) internal view {
         require(
-            globallyApprovedMinters.contains(_minter) ||
-                contractApprovedMinters[_coreContract].contains(_minter),
+            isApprovedMinterForContract(_coreContract, _minter),
             "Only approved minters"
         );
     }
@@ -659,6 +658,32 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
         return
             owner() != address(0) &&
             adminACLContract.allowed(_sender, _contract, _selector);
+    }
+
+    /**
+     * @notice Returns whether `_minter` is globally approved to mint tokens
+     * on any contract.
+     * @param _minter Address of minter to check.
+     */
+    function isGloballyApprovedMinter(
+        address _minter
+    ) public view returns (bool) {
+        return globallyApprovedMinters.contains(_minter);
+    }
+
+    /**
+     * @notice Returns whether `_minter` is approved to mint tokens on
+     * core contract `_coreContract`.
+     * @param _coreContract Address of core contract to check.
+     * @param _minter Address of minter to check.
+     */
+    function isApprovedMinterForContract(
+        address _coreContract,
+        address _minter
+    ) public view returns (bool) {
+        return
+            isGloballyApprovedMinter(_minter) ||
+            contractApprovedMinters[_coreContract].contains(_minter);
     }
 
     /**

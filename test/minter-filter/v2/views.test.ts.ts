@@ -389,6 +389,71 @@ runForEach.forEach((params) => {
       });
     });
 
+    describe("isGloballyApprovedMinter", async function () {
+      it("returns false when minter is not globally approved", async function () {
+        const config = await loadFixture(_beforeEach);
+        let result = await config.minterFilter.isGloballyApprovedMinter(
+          constants.ZERO_ADDRESS
+        );
+        expect(result).to.be.equal(false);
+      });
+
+      it("returns true when minter is globally approved", async function () {
+        const config = await loadFixture(_beforeEach);
+        let result = await config.minterFilter.isGloballyApprovedMinter(
+          config.minter.address
+        );
+        expect(result).to.be.equal(true);
+      });
+    });
+
+    describe("isApprovedMinterForContract", async function () {
+      it("returns false when minter is not approved", async function () {
+        const config = await loadFixture(_beforeEach);
+        let result = await config.minterFilter.isApprovedMinterForContract(
+          config.genArt721Core.address,
+          constants.ZERO_ADDRESS
+        );
+        expect(result).to.be.equal(false);
+      });
+
+      it("returns true when minter is globally approved", async function () {
+        const config = await loadFixture(_beforeEach);
+        let result = await config.minterFilter.isApprovedMinterForContract(
+          config.genArt721Core.address,
+          config.minter.address
+        );
+        expect(result).to.be.equal(true);
+      });
+
+      it("returns true when minter is only approved for contract, not globally approved", async function () {
+        const config = await loadFixture(_beforeEach);
+        // deploy and add new dummy shared minter
+        const newMinter = await deployAndGet(config, expectedMinterType, [
+          config.minterFilter.address,
+        ]);
+        // new minter should not be approved for contract
+        let result = await config.minterFilter.isApprovedMinterForContract(
+          config.genArt721Core.address,
+          newMinter.address
+        );
+        expect(result).to.be.equal(false);
+        // approve new minter for contract
+        await config.minterFilter
+          .connect(config.accounts.deployer)
+          .approveMinterForContract(
+            config.genArt721Core.address,
+            newMinter.address
+          );
+        // new minter should now be approved for contract
+        result = await config.minterFilter.isApprovedMinterForContract(
+          config.genArt721Core.address,
+          newMinter.address
+        );
+        expect(result).to.be.equal(true);
+      });
+    });
+
     describe("owner", async function () {
       it("returns expected value", async function () {
         const config = await loadFixture(_beforeEach);
