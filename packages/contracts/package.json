@@ -30,7 +30,7 @@
     "deploy:goerli:minter": "yarn hardhat run --network goerli scripts/minter-deployments/V3/generic-minter-deployer-v3core.ts",
     "deploy:mainnet:minter": "yarn hardhat run --network mainnet scripts/minter-deployments/V3/generic-minter-deployer-v3core.ts",
     "pre-commit": "yarn lint",
-    "pre-push": "yarn test"
+    "pre-push": "yarn test:parallel"
   },
   "devDependencies": {
     "@aws-sdk/client-s3": "^3.245.0",
