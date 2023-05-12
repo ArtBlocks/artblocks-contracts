@@ -46,7 +46,8 @@ jobs:
       - run:
           name: Hardhat Test
           command: |
-            TEST_FILES="$(circleci tests glob "./packages/contracts/test/**/*.ts" | circleci tests split)"
+            cd ./packages/contracts &&
+            TEST_FILES="$(circleci tests glob "./test/**/*.ts" | circleci tests split)"
             yarn workspace @artblocks/contracts run test ${TEST_FILES}
   coverage-parallel:
     docker:
@@ -72,7 +73,8 @@ jobs:
       - run:
           name: coverage
           command: |
-            TEST_FILES="{$(circleci tests glob "./packages/contracts/test/**/*.ts" | circleci tests split | xargs | sed -e 's/ /,/g')}"
+            cd ./packages/contracts &&
+            TEST_FILES="{$(circleci tests glob "./test/**/*.ts" | circleci tests split | xargs | sed -e 's/ /,/g')}"
             yarn workspace @artblocks/contracts run coverage --testfiles "${TEST_FILES}"
       - run:
           name: save coverage
