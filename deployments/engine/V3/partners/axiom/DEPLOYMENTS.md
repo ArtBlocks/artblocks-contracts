@@ -40,3 +40,24 @@ Date: 2023-04-28T01:30:02.046Z
 
 ---
 
+
+# Minter Deployment
+
+Date: 2023-05-12T22:34:57.715Z
+
+## **Network:** goerli
+
+## **Environment:** staging
+
+**Deployment Input File:** `deployments/engine/V3/partners/axiom/minter-deploy-config.staging.ts`
+
+**MinterDALinV4:** https://goerli.etherscan.io/address/0x9561B7BeA3b546b750df1C55D3aF1694C4EEDc14#code
+
+**Associated core contract:** 0xd6c97e2CA3d2ecE73Eaee6CA7F66faF89F74c98A
+
+**Associated minter filter:** 0x77D4b54e91822E9799AB0900876D6B1cdA752706
+
+**Deployment Args:** 0xd6c97e2CA3d2ecE73Eaee6CA7F66faF89F74c98A,0x77D4b54e91822E9799AB0900876D6B1cdA752706
+
+---
+
