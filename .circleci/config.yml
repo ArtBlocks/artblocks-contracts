@@ -18,7 +18,7 @@ jobs:
           pkg-manager: yarn
       - run:
           name: Lint
-          command: yarn lint
+          command: yarn workspace @artblocks/contracts lint
   test:
     docker:
       - image: "cimg/base:stable"
@@ -34,20 +34,20 @@ jobs:
       - run:
           name: debug list files
           command: |
-            ls ./contracts
+            ls ./packages/contracts/contracts
       - run:
           name: compile contracts
           command: |
-            npx hardhat compile
+            yarn workspace @artblocks/contracts run hardhat compile
       - run:
           name: generate types
           command: |
-            yarn generate:typechain
+            yarn workspace @artblocks/contracts run generate:typechain
       - run:
           name: Hardhat Test
           command: |
-            TEST_FILES="$(circleci tests glob "./test/**/*.ts" | circleci tests split)"
-            yarn test ${TEST_FILES}
+            TEST_FILES="$(circleci tests glob "./packages/contracts/test/**/*.ts" | circleci tests split)"
+            yarn workspace @artblocks/contracts run test ${TEST_FILES}
   coverage-parallel:
     docker:
       - image: "cimg/base:stable"
@@ -63,22 +63,22 @@ jobs:
       - run:
           name: compile contracts
           command: |
-            yarn compile
-            yarn compile
+            yarn workspace @artblocks/contracts run compile
+            yarn workspace @artblocks/contracts run compile
       - run:
           name: generate types
           command: |
-            yarn generate:typechain
+            yarn workspace @artblocks/contracts run generate:typechain
       - run:
           name: coverage
           command: |
-            TEST_FILES="{$(circleci tests glob "./test/**/*.ts" | circleci tests split | xargs | sed -e 's/ /,/g')}"
-            yarn coverage --testfiles "${TEST_FILES}"
+            TEST_FILES="{$(circleci tests glob "./packages/contracts/test/**/*.ts" | circleci tests split | xargs | sed -e 's/ /,/g')}"
+            yarn workspace @artblocks/contracts run coverage --testfiles "${TEST_FILES}"
       - run:
           name: save coverage
           command: |
             mkdir -p /tmp/coverage
-            cp coverage.json /tmp/coverage/cov_$CIRCLE_NODE_INDEX.json
+            cp ./packages/contracts/coverage.json /tmp/coverage/cov_$CIRCLE_NODE_INDEX.json
             chmod -R 777 /tmp/coverage/cov_$CIRCLE_NODE_INDEX.json
       - persist_to_workspace:
           root: /tmp/coverage

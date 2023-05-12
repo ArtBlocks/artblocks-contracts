@@ -2,18 +2,17 @@ name: Frontend SDK Linter
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   sdk-lint:
-
     runs-on: ubuntu-latest
 
     strategy:
       matrix:
-        node-version: [18.x, 20.x]  # support latest LTS and latest stable
+        node-version: [18.x, 20.x] # support latest LTS and latest stable
 
     steps:
       - uses: actions/checkout@v3
@@ -22,7 +21,7 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
       - run: yarn --frozen-lockfile
-        working-directory: artblocks-sdk
+        working-directory: packages/sdk
       - name: Lint
         run: yarn run lint
-        working-directory: artblocks-sdk
+        working-directory: packages/sdk

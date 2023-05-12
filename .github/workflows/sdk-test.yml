@@ -2,18 +2,17 @@ name: Frontend SDK Build and Test
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
 
 jobs:
   sdk-build-test:
-
     runs-on: ubuntu-latest
 
     strategy:
       matrix:
-        node-version: [18.x, 20.x]  # support latest LTS and latest stable
+        node-version: [18.x, 20.x] # support latest LTS and latest stable
 
     steps:
       - uses: actions/checkout@v3
@@ -22,10 +21,10 @@ jobs:
         with:
           node-version: ${{ matrix.node-version }}
       - run: yarn --frozen-lockfile
-        working-directory: artblocks-sdk
+        working-directory: packages/sdk
       - name: Build
         run: yarn run build
-        working-directory: artblocks-sdk
+        working-directory: packages/sdk
       - name: Run Tests
         run: yarn run test
-        working-directory: artblocks-sdk
+        working-directory: packages/sdk
