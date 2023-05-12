@@ -4082,11 +4082,11 @@
     fs-extra "^8.1.0"
 
 "@openzeppelin/hardhat-upgrades@^1.22.0":
-  version "1.25.1"
-  resolved "https://registry.yarnpkg.com/@openzeppelin/hardhat-upgrades/-/hardhat-upgrades-1.25.1.tgz#e0a96f38a3948bb5b8db225bf0172e4b7e5de139"
-  integrity sha512-i9PGhyJRDALrvazNSsQWVUJkIwiZ9fMlidjwOEresBCzCdW8Npigoz4KSmfP78dgQ3kflDm/KWwCmyALnFgZNA==
+  version "1.25.3"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/hardhat-upgrades/-/hardhat-upgrades-1.25.3.tgz#878736e4affdfc959437a4f7f6274b2e343d89ca"
+  integrity sha512-hVgKKWq8ZcWXUwgR3jwPxzB5judoaSHCFnYhVZWcmomyWgBzYv0f3bl3dYjrm5yuIJflxk8YwSPCtGu3C7pLfw==
   dependencies:
-    "@openzeppelin/upgrades-core" "^1.26.0"
+    "@openzeppelin/upgrades-core" "^1.26.2"
     chalk "^4.1.0"
     debug "^4.1.1"
     defender-admin-client "^1.39.0"
@@ -4109,10 +4109,10 @@
     web3 "^1.2.5"
     web3-utils "^1.2.5"
 
-"@openzeppelin/upgrades-core@^1.26.0":
-  version "1.26.0"
-  resolved "https://registry.yarnpkg.com/@openzeppelin/upgrades-core/-/upgrades-core-1.26.0.tgz#809c276cb28540f8279604f169f685892f33f14f"
-  integrity sha512-iUrHdTvMxV4zWQ/baBTz3PMmnhoDyJ+TsnlH4/k15eutQi8G6YnS7ca8GAKm/9RFwHPeSjVcqPuWwa1QqL/1hw==
+"@openzeppelin/upgrades-core@^1.26.2":
+  version "1.26.2"
+  resolved "https://registry.yarnpkg.com/@openzeppelin/upgrades-core/-/upgrades-core-1.26.2.tgz#6ac3d16dca21d9bd76bd55a8a34121b4a78dd2c2"
+  integrity sha512-TJORrgyun5qflPos/47P3j61gDw+7W+tEirSBOYRxfVL1WGjX1n8iaLrijPIqzyeS1MKguN1nckAMspQ4SKrxw==
   dependencies:
     cbor "^8.0.0"
     chalk "^4.1.0"
