@@ -238,7 +238,8 @@ library SplitFundsLib {
      * @param genArt721CoreV3 The address of the deployed core contract.
      */
     function getV3CoreIsEngine(
-        address genArt721CoreV3
+        address genArt721CoreV3,
+        IsEngineCache storage isEngineCache
     ) internal returns (bool) {
         // call getPrimaryRevenueSplits() on core contract
         bytes memory payload = abi.encodeWithSignature(
@@ -257,6 +258,8 @@ library SplitFundsLib {
             // the artist, and artist's additional payee, and Art Blocks.
             // also note that per Solidity ABI encoding, the address return
             // values are padded to 32 bytes.
+            isEngineCache.isCached = true;
+            isEngineCache.isEngine = false;
             return false;
         } else if (returnDataLength == 8 * 32) {
             // 8 32-byte words returned if engine
@@ -266,6 +269,8 @@ library SplitFundsLib {
             // typically Art Blocks, and platform provider (partner).
             // also note that per Solidity ABI encoding, the address return
             // values are padded to 32 bytes.
+            isEngineCache.isCached = true;
+            isEngineCache.isEngine = true;
             return true;
         } else {
             // unexpected return value length

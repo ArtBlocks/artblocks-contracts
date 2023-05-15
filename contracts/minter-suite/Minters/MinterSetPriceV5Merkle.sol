@@ -3,7 +3,7 @@
 
 import "../../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
 import "../../interfaces/0.8.x/IDelegationRegistry.sol";
-import "../../interfaces/0.8.x/IFilteredMinterV3.sol";
+import "../../interfaces/0.8.x/ISharedMinterV0.sol";
 import "../../interfaces/0.8.x/IMinterFilterV1.sol";
 import "../../interfaces/0.8.x/IFilteredSharedProjectMaxInvocationsLimit.sol";
 import "../../interfaces/0.8.x/IFilteredSharedMerkle.sol";
@@ -38,9 +38,8 @@ pragma solidity 0.8.17;
  */
 contract MinterSetPriceV5Merkle is
     ReentrancyGuard,
-    IFilteredMinterV3,
-    IFilteredSharedMerkle,
-    IFilteredSharedProjectMaxInvocationsLimit
+    ISharedMinterV0,
+    IFilteredSharedMerkle
 {
     /// Minter filter address this minter interacts with
     address public immutable minterFilterAddress;
@@ -125,9 +124,11 @@ contract MinterSetPriceV5Merkle is
         if (isEngineCache.isCached) {
             return isEngineCache.isEngine;
         } else {
-            bool isEngine = SplitFundsLib.getV3CoreIsEngine(_coreContract);
-            isEngineCache.isEngine = isEngine;
-            isEngineCache.isCached = true;
+            bool isEngine = SplitFundsLib.getV3CoreIsEngine(
+                _coreContract,
+                isEngineCache
+            );
+            return isEngine;
         }
     }
 
@@ -139,7 +140,7 @@ contract MinterSetPriceV5Merkle is
      * @dev this enables gas reduction after maxInvocations have been reached -
      * core contracts shall still enforce a maxInvocation check during mint.
      */
-    function setProjectMaxInvocations(
+    function syncProjectMaxInvocationsToCore(
         uint256 _projectId,
         address _coreContract
     ) public {
@@ -217,18 +218,6 @@ contract MinterSetPriceV5Merkle is
             _coreContract,
             _maxInvocations
         );
-    }
-
-    /**
-     * @notice Warning: Disabling purchaseTo is not supported on this minter.
-     * This method exists purely for interface-conformance purposes.
-     */
-    function togglePurchaseToDisabled(
-        uint256 _projectId,
-        address _coreContract
-    ) external view {
-        _onlyArtist(_projectId, _coreContract);
-        revert("Action not supported");
     }
 
     /**
@@ -313,7 +302,7 @@ contract MinterSetPriceV5Merkle is
             _projectConfig.maxInvocations == 0 &&
             _projectConfig.maxHasBeenInvoked == false
         ) {
-            setProjectMaxInvocations(_projectId, _coreContract);
+            syncProjectMaxInvocationsToCore(_projectId, _coreContract);
         }
     }
 
@@ -618,7 +607,7 @@ contract MinterSetPriceV5Merkle is
      * @param _address address to be hashed
      * @return bytes32 hashed address, via keccak256 (using encodePacked)
      */
-    function hashAddress(address _address) public pure returns (bytes32) {
+    function hashAddress(address _address) external pure returns (bytes32) {
         return MerkleLib.hashAddress(_address);
     }
 

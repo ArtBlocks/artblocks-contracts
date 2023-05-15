@@ -3,7 +3,7 @@
 
 pragma solidity ^0.8.0;
 
-interface IFilteredMinterV3 {
+interface ISharedMinterV0 {
     // This section defines events for generic project minter configuration updates
     /**
      * @dev Strings not supported. Recommend conversion of (short) strings to
@@ -154,13 +154,6 @@ interface IFilteredMinterV3 {
         string _currencySymbol
     );
 
-    /// togglePurchaseToDisabled updated
-    event PurchaseToDisabledUpdated(
-        uint256 indexed _projectId,
-        address indexed _coreContract,
-        bool _purchaseToDisabled
-    );
-
     /**
      * @notice Local max invocations for project `_projectId`, tied to core contract `_coreContractAddress`,
      * updated to `_maxInvocations`.
@@ -170,6 +163,15 @@ interface IFilteredMinterV3 {
         address indexed _coreContract,
         uint256 _maxInvocations
     );
+
+    // Sets the local max invocations for a given project, checking that the provided max invocations is
+    // less than or equal to the global max invocations for the project set on the core contract.
+    // This does not impact the max invocations value defined on the core contract.
+    function manuallyLimitProjectMaxInvocations(
+        uint256 _projectId,
+        address _coreContract,
+        uint256 _maxInvocations
+    ) external;
 
     // getter function of public variable
     function minterType() external view returns (string memory);
@@ -191,16 +193,9 @@ interface IFilteredMinterV3 {
         address _coreContract
     ) external payable returns (uint256 tokenId);
 
-    // Toggles the ability for `purchaseTo` to be called directly with a
-    // specified receiving address that differs from the TX-sending address.
-    function togglePurchaseToDisabled(
-        uint256 _projectId,
-        address _coreContract
-    ) external;
-
     // Called to make the minter contract aware of the max invocations for a
     // given project.
-    function setProjectMaxInvocations(
+    function syncProjectMaxInvocationsToCore(
         uint256 _projectId,
         address _coreContract
     ) external;

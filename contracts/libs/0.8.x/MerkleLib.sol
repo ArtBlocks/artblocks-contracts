@@ -13,11 +13,11 @@ pragma solidity ^0.8.0;
 
 library MerkleLib {
     using MerkleProof for bytes32[];
-    uint256 public constant DEFAULT_MAX_INVOCATIONS_PER_ADDRESS = 1;
-    bytes32 public constant CONFIG_MERKLE_ROOT = "merkleRoot";
-    bytes32 public constant CONFIG_USE_MAX_INVOCATIONS_PER_ADDRESS_OVERRIDE =
+    uint256 internal constant DEFAULT_MAX_INVOCATIONS_PER_ADDRESS = 1;
+    bytes32 internal constant CONFIG_MERKLE_ROOT = "merkleRoot";
+    bytes32 internal constant CONFIG_USE_MAX_INVOCATIONS_PER_ADDRESS_OVERRIDE =
         "useMaxMintsPerAddrOverride"; // shortened to fit in 32 bytes
-    bytes32 public constant CONFIG_MAX_INVOCATIONS_OVERRIDE =
+    bytes32 internal constant CONFIG_MAX_INVOCATIONS_OVERRIDE =
         "maxMintsPerAddrOverride"; // shortened to match format of previous key
 
     struct ProjectConfig {
@@ -35,13 +35,13 @@ library MerkleLib {
 
     function updateMerkleRoot(
         mapping(address => mapping(uint256 => bytes32))
-            storage projectMerkleRoot,
+            storage projectMerkleRootMapping,
         uint256 _projectId,
         address _coreContract,
         bytes32 _root
     ) internal {
         require(_root != bytes32(0), "Root must be provided");
-        projectMerkleRoot[_coreContract][_projectId] = _root;
+        projectMerkleRootMapping[_coreContract][_projectId] = _root;
     }
 
     function hashAddress(address _address) internal pure returns (bytes32) {
@@ -67,11 +67,11 @@ library MerkleLib {
         uint256 _projectId,
         address _coreContract,
         mapping(address => mapping(uint256 => ProjectConfig))
-            storage projectConfig
-    ) public view returns (uint256) {
-        ProjectConfig storage _projectConfig = projectConfig[_coreContract][
-            _projectId
-        ];
+            storage projectConfigMapping
+    ) internal view returns (uint256) {
+        ProjectConfig storage _projectConfig = projectConfigMapping[
+            _coreContract
+        ][_projectId];
         if (_projectConfig.useMaxInvocationsPerAddressOverride) {
             return uint256(_projectConfig.maxInvocationsPerAddressOverride);
         } else {
@@ -84,11 +84,11 @@ library MerkleLib {
         address _coreContract,
         uint24 _maxInvocationsPerAddress,
         mapping(address => mapping(uint256 => ProjectConfig))
-            storage projectConfig
+            storage projectConfigMapping
     ) internal {
-        ProjectConfig storage _projectConfig = projectConfig[_coreContract][
-            _projectId
-        ];
+        ProjectConfig storage _projectConfig = projectConfigMapping[
+            _coreContract
+        ][_projectId];
         // use override value instead of the contract's default
         // @dev this never changes from true to false; default value is only
         // used if artist has never configured project invocations per address

@@ -4,16 +4,15 @@
 pragma solidity ^0.8.0;
 
 /**
- * @title This interface extends the IFilteredMinterV1 interface in order to
- * add support for including Merkle proofs when purchasing.
+ * @title This interface adds support for including Merkle proofs when purchasing.
  * @author Art Blocks Inc.
  */
 interface IFilteredSharedMerkle {
-    // /**
-    //  * @notice Notifies of the contract's default maximum mints allowed per
-    //  * user for a given project, on this minter. This value can be overridden
-    //  * by the artist of any project at any time.
-    //  */
+    /**
+     * @notice Notifies of the contract's default maximum mints allowed per
+     * user for a given project, on this minter. This value can be overridden
+     * by the artist of any project at any time.
+     */
     event DefaultMaxInvocationsPerAddress(
         uint256 defaultMaxInvocationsPerAddress
     );
