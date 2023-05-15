@@ -64,16 +64,11 @@ library MerkleLib {
     }
 
     function projectMaxInvocationsPerAddress(
-        uint256 _projectId,
-        address _coreContract,
-        mapping(address => mapping(uint256 => ProjectConfig))
-            storage projectConfigMapping
+        ProjectConfig storage projectConfigMapping
     ) internal view returns (uint256) {
-        ProjectConfig storage _projectConfig = projectConfigMapping[
-            _coreContract
-        ][_projectId];
-        if (_projectConfig.useMaxInvocationsPerAddressOverride) {
-            return uint256(_projectConfig.maxInvocationsPerAddressOverride);
+        if (projectConfigMapping.useMaxInvocationsPerAddressOverride) {
+            return
+                uint256(projectConfigMapping.maxInvocationsPerAddressOverride);
         } else {
             return DEFAULT_MAX_INVOCATIONS_PER_ADDRESS;
         }

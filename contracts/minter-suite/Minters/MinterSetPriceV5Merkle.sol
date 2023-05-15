@@ -663,11 +663,9 @@ contract MinterSetPriceV5Merkle is
         uint256 _projectId,
         address _coreContract
     ) public view returns (uint256) {
-        return
-            MerkleLib.projectMaxInvocationsPerAddress(
-                _projectId,
-                _coreContract,
-                projectConfig
-            );
+        ProjectConfig storage _projectConfig = projectConfigMapping[
+            _coreContract
+        ][_projectId];
+        return MerkleLib.projectMaxInvocationsPerAddress(_projectConfig);
     }
 }
