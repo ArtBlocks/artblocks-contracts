@@ -51,11 +51,11 @@ jobs:
           echo "TESTNET_PRIVATE_KEY2=DEAD000000000000000000000000000000000000000000000000000000000000" >> $GITHUB_ENV
           echo "TESTNET_PRIVATE_KEY3=DEAD000000000000000000000000000000000000000000000000000000000000" >> $GITHUB_ENV
       - name: build docs
-        run: yarn docgen
+        run: yarn workspace @artblocks/contracts run docgen
       - name: upload docs artifact
         uses: actions/upload-pages-artifact@v1
         with:
-          path: ./docs
+          path: ./packages/contracts/docs
 
   # Deployment job
   deploy:
