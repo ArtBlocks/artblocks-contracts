@@ -5,7 +5,6 @@ import "../../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
 import "../../interfaces/0.8.x/IDelegationRegistry.sol";
 import "../../interfaces/0.8.x/ISharedMinterV0.sol";
 import "../../interfaces/0.8.x/IMinterFilterV1.sol";
-import "../../interfaces/0.8.x/IFilteredSharedProjectMaxInvocationsLimit.sol";
 import "../../interfaces/0.8.x/IFilteredSharedMerkle.sol";
 
 import "../../libs/0.8.x/MerkleLib.sol";
@@ -336,7 +335,7 @@ contract MinterSetPriceV5Merkle is
         address _coreContract,
         bytes32[] calldata _proof
     ) external payable returns (uint256 tokenId) {
-        tokenId = purchaseTo_do6(
+        tokenId = purchaseTo(
             msg.sender,
             _projectId,
             _coreContract,
@@ -354,7 +353,7 @@ contract MinterSetPriceV5Merkle is
         address _coreContract,
         bytes32[] calldata _proof
     ) external payable returns (uint256 tokenId) {
-        tokenId = purchaseTo_do6(
+        tokenId = purchaseTo(
             msg.sender,
             _projectId,
             _coreContract,
@@ -379,8 +378,7 @@ contract MinterSetPriceV5Merkle is
         address _coreContract,
         bytes32[] calldata _proof
     ) external payable returns (uint256 tokenId) {
-        return
-            purchaseTo_do6(_to, _projectId, _coreContract, _proof, address(0));
+        return purchaseTo(_to, _projectId, _coreContract, _proof, address(0));
     }
 
     /**
@@ -393,19 +391,6 @@ contract MinterSetPriceV5Merkle is
      * @return tokenId Token ID of minted token
      */
     function purchaseTo(
-        address _to,
-        uint256 _projectId,
-        address _coreContract,
-        bytes32[] calldata _proof,
-        address _vault
-    ) external payable returns (uint256 tokenId) {
-        return purchaseTo_do6(_to, _projectId, _coreContract, _proof, _vault);
-    }
-
-    /**
-     * @notice gas-optimized version of purchaseTo(address, uint256).
-     */
-    function purchaseTo_do6(
         address _to,
         uint256 _projectId,
         address _coreContract,
@@ -471,10 +456,8 @@ contract MinterSetPriceV5Merkle is
         );
 
         // limit mints per address by project
-        uint256 _maxProjectInvocationsPerAddress = _projectConfig
-            .useMaxInvocationsPerAddressOverride
-            ? _projectConfig.maxInvocationsPerAddressOverride
-            : MerkleLib.DEFAULT_MAX_INVOCATIONS_PER_ADDRESS;
+        uint256 _maxProjectInvocationsPerAddress = MerkleLib
+            .projectMaxInvocationsPerAddress(_projectConfig);
 
         // note that mint limits index off of the `vault` (when applicable)
         require(
@@ -663,7 +646,7 @@ contract MinterSetPriceV5Merkle is
         uint256 _projectId,
         address _coreContract
     ) public view returns (uint256) {
-        ProjectConfig storage _projectConfig = projectConfigMapping[
+        MerkleLib.ProjectConfig storage _projectConfig = projectConfig[
             _coreContract
         ][_projectId];
         return MerkleLib.projectMaxInvocationsPerAddress(_projectConfig);
