@@ -2,6 +2,7 @@
 // Created By: Art Blocks Inc.
 
 import "../../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
+import "./MerkleLib.sol";
 
 pragma solidity ^0.8.0;
 
@@ -12,6 +13,8 @@ pragma solidity ^0.8.0;
  */
 
 library MaxInvocationsLib {
+    uint256 constant ONE_MILLION = 1_000_000;
+
     struct MaxInvocationsProjectConfig {
         bool maxHasBeenInvoked;
         uint24 maxInvocations;
@@ -22,7 +25,7 @@ library MaxInvocationsLib {
         address _coreContract,
         mapping(address => mapping(uint256 => MaxInvocationsProjectConfig))
             storage projectConfigMapping
-    ) internal {
+    ) internal returns (uint256) {
         uint256 maxInvocations;
         uint256 invocations;
         (invocations, maxInvocations, , , , ) = IGenArt721CoreContractV3_Base(
@@ -39,6 +42,7 @@ library MaxInvocationsLib {
         // than or equal to the previous value of maxInvocations stored locally.
         projectConfigMapping[_coreContract][_projectId].maxHasBeenInvoked =
             invocations == maxInvocations;
+        return maxInvocations;
     }
 
     function manuallyLimitProjectMaxInvocations(
@@ -71,5 +75,39 @@ library MaxInvocationsLib {
         // local maxInvocations value.
         projectConfigMapping[_coreContract][_projectId].maxHasBeenInvoked =
             invocations == _maxInvocations;
+    }
+
+    function purchaseEffectsInvocations(
+        uint256 _projectId,
+        address _coreContract,
+        uint256 _tokenId,
+        mapping(address => mapping(uint256 => MaxInvocationsProjectConfig))
+            storage projectConfigMapping
+    ) internal {
+        // invocation is token number plus one, and will never overflow due to
+        // limit of 1e6 invocations per project. block scope for gas efficiency
+        // (i.e. avoid an unnecessary var initialization to 0).
+        unchecked {
+            uint256 tokenInvocation = (_tokenId % ONE_MILLION) + 1;
+            uint256 localMaxInvocations = projectConfigMapping[_coreContract][
+                _projectId
+            ].maxInvocations;
+            // handle the case where the token invocation == minter local max
+            // invocations occurred on a different minter, and we have a stale
+            // local maxHasBeenInvoked value returning a false negative.
+            // @dev this is a CHECK after EFFECTS, so security was considered
+            // in detail here.
+            require(
+                tokenInvocation <= localMaxInvocations,
+                "Maximum invocations reached"
+            );
+            // in typical case, update the local maxHasBeenInvoked value
+            // to true if the token invocation == minter local max invocations
+            // (enables gas efficient reverts after sellout)
+            if (tokenInvocation == localMaxInvocations) {
+                projectConfigMapping[_coreContract][_projectId]
+                    .maxHasBeenInvoked = true;
+            }
+        }
     }
 }

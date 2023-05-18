@@ -20,28 +20,28 @@ library MerkleLib {
     bytes32 internal constant CONFIG_MAX_INVOCATIONS_OVERRIDE =
         "maxMintsPerAddrOverride"; // shortened to match format of previous key
 
-    struct ProjectConfig {
-        bool maxHasBeenInvoked;
-        bool priceIsConfigured;
+    struct MerkleProjectConfig {
         // initial value is false, so by default, projects limit allowlisted
         // addresses to a mint qty of `DEFAULT_MAX_INVOCATIONS_PER_ADDRESS`
         bool useMaxInvocationsPerAddressOverride;
         // a value of 0 means no limit
         // (only used if `useMaxInvocationsPerAddressOverride` is true)
         uint24 maxInvocationsPerAddressOverride;
-        uint24 maxInvocations;
-        uint256 pricePerTokenInWei;
+        bytes32 merkleRoot;
     }
 
     function updateMerkleRoot(
-        mapping(address => mapping(uint256 => bytes32))
-            storage projectMerkleRootMapping,
+        mapping(address => mapping(uint256 => MerkleProjectConfig))
+            storage projectConfigMapping,
         uint256 _projectId,
         address _coreContract,
         bytes32 _root
     ) internal {
         require(_root != bytes32(0), "Root must be provided");
-        projectMerkleRootMapping[_coreContract][_projectId] = _root;
+        MerkleProjectConfig storage _projectConfig = projectConfigMapping[
+            _coreContract
+        ][_projectId];
+        _projectConfig.merkleRoot = _root;
     }
 
     function hashAddress(address _address) internal pure returns (bytes32) {
@@ -64,7 +64,7 @@ library MerkleLib {
     }
 
     function projectMaxInvocationsPerAddress(
-        ProjectConfig storage projectConfigMapping
+        MerkleProjectConfig storage projectConfigMapping
     ) internal view returns (uint256) {
         if (projectConfigMapping.useMaxInvocationsPerAddressOverride) {
             return
@@ -78,10 +78,10 @@ library MerkleLib {
         uint256 _projectId,
         address _coreContract,
         uint24 _maxInvocationsPerAddress,
-        mapping(address => mapping(uint256 => ProjectConfig))
+        mapping(address => mapping(uint256 => MerkleProjectConfig))
             storage projectConfigMapping
     ) internal {
-        ProjectConfig storage _projectConfig = projectConfigMapping[
+        MerkleProjectConfig storage _projectConfig = projectConfigMapping[
             _coreContract
         ][_projectId];
         // use override value instead of the contract's default

@@ -164,6 +164,11 @@ interface ISharedMinterV0 {
         uint256 _maxInvocations
     );
 
+    struct ProjectConfig {
+        bool priceIsConfigured;
+        uint256 pricePerTokenInWei;
+    }
+
     // Sets the local max invocations for a given project, checking that the provided max invocations is
     // less than or equal to the global max invocations for the project set on the core contract.
     // This does not impact the max invocations value defined on the core contract.
@@ -171,6 +176,13 @@ interface ISharedMinterV0 {
         uint256 _projectId,
         address _coreContract,
         uint256 _maxInvocations
+    ) external;
+
+    // Called to make the minter contract aware of the max invocations for a
+    // given project.
+    function syncProjectMaxInvocationsToCore(
+        uint256 _projectId,
+        address _coreContract
     ) external;
 
     // getter function of public variable
@@ -192,13 +204,6 @@ interface ISharedMinterV0 {
         uint256 _projectId,
         address _coreContract
     ) external payable returns (uint256 tokenId);
-
-    // Called to make the minter contract aware of the max invocations for a
-    // given project.
-    function syncProjectMaxInvocationsToCore(
-        uint256 _projectId,
-        address _coreContract
-    ) external;
 
     // Gets if token price is configured, token price in wei, currency symbol,
     // and currency address, assuming this is project's minter.

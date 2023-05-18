@@ -9,10 +9,11 @@ import "../../interfaces/0.8.x/IFilteredSharedMerkle.sol";
 
 import "../../libs/0.8.x/MerkleLib.sol";
 import "../../libs/0.8.x/SplitFundsLib.sol";
+import "../../libs/0.8.x/MaxInvocationsLib.sol";
 
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
 
-pragma solidity 0.8.17;
+pragma solidity 0.8.19;
 
 /**
  * @title Filtered Minter contract that allows tokens to be minted with ETH.
@@ -54,9 +55,8 @@ contract MinterSetPriceV5Merkle is
 
     uint256 constant ONE_MILLION = 1_000_000;
 
-    /// contractAddress => projectId => project config
-    mapping(address => mapping(uint256 => MerkleLib.ProjectConfig))
-        public projectConfig;
+    /// contractAddress => projectId => base project config
+    mapping(address => mapping(uint256 => ProjectConfig)) public projectConfig;
 
     /// contractAddress => projectId => purchaser address => qty of mints purchased for project
     mapping(address => mapping(uint256 => mapping(address => uint256)))
@@ -71,8 +71,15 @@ contract MinterSetPriceV5Merkle is
     address public immutable delegationRegistryAddress;
     /// Delegation registry address
     IDelegationRegistry private immutable delegationRegistryContract;
-    /// contractAddress => projectId => merkle root
-    mapping(address => mapping(uint256 => bytes32)) public projectMerkleRoot;
+
+    /// contractAddress => projectId => merkle specific project config
+    mapping(address => mapping(uint256 => MerkleLib.MerkleProjectConfig))
+        public merkleProjectConfig;
+
+    // STATE VARIABLES FOR MaxInvocationsLib
+    /// contractAddress => projectId => max invocations specific project config
+    mapping(address => mapping(uint256 => MaxInvocationsLib.MaxInvocationsProjectConfig))
+        public maxInvocationsProjectConfig;
 
     function _onlyArtist(
         uint256 _projectId,
@@ -144,23 +151,12 @@ contract MinterSetPriceV5Merkle is
         address _coreContract
     ) public {
         _onlyArtist(_projectId, _coreContract);
-        uint256 maxInvocations;
-        uint256 invocations;
-        (invocations, maxInvocations, , , , ) = IGenArt721CoreContractV3_Base(
-            _coreContract
-        ).projectStateData(_projectId);
-        // update storage with results
-        projectConfig[_coreContract][_projectId].maxInvocations = uint24(
-            maxInvocations
-        );
-
-        // We need to ensure maxHasBeenInvoked is correctly set after manually syncing the
-        // local maxInvocations value with the core contract's maxInvocations value.
-        // This synced value of maxInvocations from the core contract will always be greater
-        // than or equal to the previous value of maxInvocations stored locally.
-        projectConfig[_coreContract][_projectId].maxHasBeenInvoked =
-            invocations == maxInvocations;
-
+        uint256 maxInvocations = MaxInvocationsLib
+            .syncProjectMaxInvocationsToCore(
+                _projectId,
+                _coreContract,
+                maxInvocationsProjectConfig
+            );
         emit ProjectMaxInvocationsLimitUpdated(
             _projectId,
             _coreContract,
@@ -186,32 +182,12 @@ contract MinterSetPriceV5Merkle is
         uint256 _maxInvocations
     ) external {
         _onlyArtist(_projectId, _coreContract);
-        // CHECKS
-        // ensure that the manually set maxInvocations is not greater than what is set on the core contract
-        uint256 maxInvocations;
-        uint256 invocations;
-        (invocations, maxInvocations, , , , ) = IGenArt721CoreContractV3_Base(
-            _coreContract
-        ).projectStateData(_projectId);
-        require(
-            _maxInvocations <= maxInvocations,
-            "Cannot increase project max invocations above core contract set project max invocations"
+        MaxInvocationsLib.manuallyLimitProjectMaxInvocations(
+            _projectId,
+            _coreContract,
+            _maxInvocations,
+            maxInvocationsProjectConfig
         );
-        require(
-            _maxInvocations >= invocations,
-            "Cannot set project max invocations to less than current invocations"
-        );
-
-        // EFFECTS
-        // update storage with results
-        projectConfig[_coreContract][_projectId].maxInvocations = uint24(
-            _maxInvocations
-        );
-        // We need to ensure maxHasBeenInvoked is correctly set after manually setting the
-        // local maxInvocations value.
-        projectConfig[_coreContract][_projectId].maxHasBeenInvoked =
-            invocations == _maxInvocations;
-
         emit ProjectMaxInvocationsLimitUpdated(
             _projectId,
             _coreContract,
@@ -237,7 +213,9 @@ contract MinterSetPriceV5Merkle is
         uint256 _projectId,
         address _coreContract
     ) external view returns (bool) {
-        return projectConfig[_coreContract][_projectId].maxHasBeenInvoked;
+        return
+            maxInvocationsProjectConfig[_coreContract][_projectId]
+                .maxHasBeenInvoked;
     }
 
     /**
@@ -264,7 +242,11 @@ contract MinterSetPriceV5Merkle is
         uint256 _projectId,
         address _coreContract
     ) external view returns (uint256) {
-        return uint256(projectConfig[_coreContract][_projectId].maxInvocations);
+        return
+            uint256(
+                maxInvocationsProjectConfig[_coreContract][_projectId]
+                    .maxInvocations
+            );
     }
 
     /**
@@ -283,9 +265,13 @@ contract MinterSetPriceV5Merkle is
         uint256 _pricePerTokenInWei
     ) external {
         _onlyArtist(_projectId, _coreContract);
-        MerkleLib.ProjectConfig storage _projectConfig = projectConfig[
-            _coreContract
-        ][_projectId];
+        MaxInvocationsLib.MaxInvocationsProjectConfig
+            storage _maxInvocationsProjectConfig = maxInvocationsProjectConfig[
+                _coreContract
+            ][_projectId];
+        ProjectConfig storage _projectConfig = projectConfig[_coreContract][
+            _projectId
+        ];
         _projectConfig.pricePerTokenInWei = _pricePerTokenInWei;
         _projectConfig.priceIsConfigured = true;
         emit PricePerTokenInWeiUpdated(
@@ -298,8 +284,8 @@ contract MinterSetPriceV5Merkle is
         // @dev if local max invocations and maxHasBeenInvoked are both
         // initial values, we know they have not been populated.
         if (
-            _projectConfig.maxInvocations == 0 &&
-            _projectConfig.maxHasBeenInvoked == false
+            _maxInvocationsProjectConfig.maxInvocations == 0 &&
+            _maxInvocationsProjectConfig.maxHasBeenInvoked == false
         ) {
             syncProjectMaxInvocationsToCore(_projectId, _coreContract);
         }
@@ -398,9 +384,17 @@ contract MinterSetPriceV5Merkle is
         address _vault // acceptable to be `address(0)` if no vault
     ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
-        MerkleLib.ProjectConfig storage _projectConfig = projectConfig[
-            _coreContract
-        ][_projectId];
+        MaxInvocationsLib.MaxInvocationsProjectConfig
+            storage _maxInvocationsProjectConfig = maxInvocationsProjectConfig[
+                _coreContract
+            ][_projectId];
+        ProjectConfig storage _projectConfig = projectConfig[_coreContract][
+            _projectId
+        ];
+        MerkleLib.MerkleProjectConfig
+            storage _merkleProjectConfig = merkleProjectConfig[_coreContract][
+                _projectId
+            ];
 
         // Note that `maxHasBeenInvoked` is only checked here to reduce gas
         // consumption after a project has been fully minted.
@@ -409,7 +403,7 @@ contract MinterSetPriceV5Merkle is
         // the core contract also enforces its own max invocation check during
         // minting.
         require(
-            !_projectConfig.maxHasBeenInvoked,
+            !_maxInvocationsProjectConfig.maxHasBeenInvoked,
             "Maximum number of invocations reached"
         );
 
@@ -448,7 +442,7 @@ contract MinterSetPriceV5Merkle is
         // require valid Merkle proof
         require(
             MerkleLib.verifyAddress(
-                projectMerkleRoot[_coreContract][_projectId],
+                _merkleProjectConfig.merkleRoot,
                 _proof,
                 vault
             ),
@@ -457,7 +451,7 @@ contract MinterSetPriceV5Merkle is
 
         // limit mints per address by project
         uint256 _maxProjectInvocationsPerAddress = MerkleLib
-            .projectMaxInvocationsPerAddress(_projectConfig);
+            .projectMaxInvocationsPerAddress(_merkleProjectConfig);
 
         // note that mint limits index off of the `vault` (when applicable)
         require(
@@ -487,7 +481,8 @@ contract MinterSetPriceV5Merkle is
         // (i.e. avoid an unnecessary var initialization to 0).
         unchecked {
             uint256 tokenInvocation = (tokenId % ONE_MILLION) + 1;
-            uint256 localMaxInvocations = _projectConfig.maxInvocations;
+            uint256 localMaxInvocations = _maxInvocationsProjectConfig
+                .maxInvocations;
             // handle the case where the token invocation == minter local max
             // invocations occurred on a different minter, and we have a stale
             // local maxHasBeenInvoked value returning a false negative.
@@ -501,7 +496,7 @@ contract MinterSetPriceV5Merkle is
             // to true if the token invocation == minter local max invocations
             // (enables gas efficient reverts after sellout)
             if (tokenInvocation == localMaxInvocations) {
-                _projectConfig.maxHasBeenInvoked = true;
+                _maxInvocationsProjectConfig.maxHasBeenInvoked = true;
             }
         }
 
@@ -544,9 +539,9 @@ contract MinterSetPriceV5Merkle is
             address currencyAddress
         )
     {
-        MerkleLib.ProjectConfig storage _projectConfig = projectConfig[
-            _coreContract
-        ][_projectId];
+        ProjectConfig storage _projectConfig = projectConfig[_coreContract][
+            _projectId
+        ];
         isConfigured = _projectConfig.priceIsConfigured;
         tokenPriceInWei = _projectConfig.pricePerTokenInWei;
         currencySymbol = "ETH";
@@ -570,7 +565,7 @@ contract MinterSetPriceV5Merkle is
         _onlyArtist(_projectId, _coreContract);
         require(_root != bytes32(0), "Root must be provided");
         MerkleLib.updateMerkleRoot(
-            projectMerkleRoot,
+            merkleProjectConfig,
             _projectId,
             _coreContract,
             _root
@@ -617,7 +612,7 @@ contract MinterSetPriceV5Merkle is
             _projectId,
             _coreContract,
             _maxInvocationsPerAddress,
-            projectConfig
+            merkleProjectConfig
         );
         emit ConfigValueSet(
             _projectId,
@@ -646,9 +641,10 @@ contract MinterSetPriceV5Merkle is
         uint256 _projectId,
         address _coreContract
     ) public view returns (uint256) {
-        MerkleLib.ProjectConfig storage _projectConfig = projectConfig[
-            _coreContract
-        ][_projectId];
+        MerkleLib.MerkleProjectConfig
+            storage _projectConfig = merkleProjectConfig[_coreContract][
+                _projectId
+            ];
         return MerkleLib.projectMaxInvocationsPerAddress(_projectConfig);
     }
 }
