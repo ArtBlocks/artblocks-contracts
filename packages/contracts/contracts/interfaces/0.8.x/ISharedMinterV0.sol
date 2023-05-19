@@ -18,7 +18,6 @@ interface ISharedMinterV0 {
         address indexed _coreContract,
         bytes32 _key
     );
-
     /// BOOL
     /**
      * @notice Generic project minter configuration event. Sets value of key
@@ -30,7 +29,6 @@ interface ISharedMinterV0 {
         bytes32 _key,
         bool _value
     );
-
     /// UINT256
     /**
      * @notice Generic project minter configuration event. Sets value of key
@@ -42,7 +40,6 @@ interface ISharedMinterV0 {
         bytes32 _key,
         uint256 _value
     );
-
     /**
      * @notice Generic project minter configuration event. Adds value `_value`
      * to the set of uint256 at key `_key` for project `_projectId`.
@@ -53,7 +50,6 @@ interface ISharedMinterV0 {
         bytes32 _key,
         uint256 _value
     );
-
     /**
      * @notice Generic project minter configuration event. Removes value
      * `_value` to the set of uint256 at key `_key` for project `_projectId`.
@@ -64,7 +60,6 @@ interface ISharedMinterV0 {
         bytes32 _key,
         uint256 _value
     );
-
     /// ADDRESS
     /**
      * @notice Generic project minter configuration event. Sets value of key
@@ -76,7 +71,6 @@ interface ISharedMinterV0 {
         bytes32 _key,
         address _value
     );
-
     /**
      * @notice Generic project minter configuration event. Adds value `_value`
      * to the set of addresses at key `_key` for project `_projectId`.
@@ -87,7 +81,6 @@ interface ISharedMinterV0 {
         bytes32 _key,
         address _value
     );
-
     /**
      * @notice Generic project minter configuration event. Removes value
      * `_value` to the set of addresses at key `_key` for project `_projectId`.
@@ -98,7 +91,6 @@ interface ISharedMinterV0 {
         bytes32 _key,
         address _value
     );
-
     /// BYTES32
     /**
      * @notice Generic project minter configuration event. Sets value of key
@@ -110,7 +102,6 @@ interface ISharedMinterV0 {
         bytes32 _key,
         bytes32 _value
     );
-
     /**
      * @notice Generic project minter configuration event. Adds value `_value`
      * to the set of bytes32 at key `_key` for project `_projectId`.
@@ -121,7 +112,6 @@ interface ISharedMinterV0 {
         bytes32 _key,
         bytes32 _value
     );
-
     /**
      * @notice Generic project minter configuration event. Removes value
      * `_value` to the set of bytes32 at key `_key` for project `_projectId`.
@@ -142,7 +132,6 @@ interface ISharedMinterV0 {
         address indexed _coreContract,
         uint256 indexed _pricePerTokenInWei
     );
-
     /**
      * @notice Currency updated for project `_projectId` to symbol
      * `_currencySymbol` and address `_currencyAddress`.
@@ -153,7 +142,6 @@ interface ISharedMinterV0 {
         address indexed _currencyAddress,
         string _currencySymbol
     );
-
     /**
      * @notice Local max invocations for project `_projectId`, tied to core contract `_coreContractAddress`,
      * updated to `_maxInvocations`.
@@ -163,7 +151,6 @@ interface ISharedMinterV0 {
         address indexed _coreContract,
         uint256 _maxInvocations
     );
-
     struct ProjectConfig {
         bool priceIsConfigured;
         uint256 pricePerTokenInWei;
