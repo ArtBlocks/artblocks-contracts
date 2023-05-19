@@ -20,5 +20,5 @@
     "editor.formatOnSave": true
   },
   "graphql-config.dotEnvPath": ".env",
-  "graphql-codegen.configFilePath": "./codegen.ts"
+  "graphql-codegen.configFilePath": "./graphql.config.ts"
 }
