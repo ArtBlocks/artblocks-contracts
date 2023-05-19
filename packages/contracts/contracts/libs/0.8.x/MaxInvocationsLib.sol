@@ -13,7 +13,7 @@ pragma solidity ^0.8.0;
  */
 
 library MaxInvocationsLib {
-    uint256 constant ONE_MILLION = 1_000_000;
+    uint256 internal constant ONE_MILLION = 1_000_000;
 
     struct MaxInvocationsProjectConfig {
         bool maxHasBeenInvoked;
