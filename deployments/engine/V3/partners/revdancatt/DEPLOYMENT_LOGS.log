@@ -1,0 +1,54 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-05-12T23:35:24.838Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/revdancatt/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0xdDF759cd0b6EDFE7B5897A1D07d945fE5dc3554e
+[INFO] Randomizer BasicRandomizerV2 deployed at 0x839399d51498Be750Ae51F4A7498E3d6Cd8c9A4c
+[INFO] Core GenArt721CoreV3_Engine deployed at 0x592fAd4C22B2c311e22a6e56886539Fe11E798AE
+[INFO] Minter Filter MinterFilterV1 deployed at 0x363a8f79dD1989C3b82A79C1E13082137B91F707
+[INFO] MinterSetPriceV4 deployed at 0x1BEB89465f8d746f29450175386B0b7AD41b4eF7
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0x363a8f79dD1989C3b82A79C1E13082137B91F707.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0x1BEB89465f8d746f29450175386B0b7AD41b4eF7 on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0x29B2f895343CAdfB3f5101BEF6484B1F01c83Dc9.
+[INFO] Verifying core contract contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/engine/V3/GenArt721CoreV3_Engine.sol:GenArt721CoreV3_Engine at 0x592fAd4C22B2c311e22a6e56886539Fe11E798AE
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract GenArt721CoreV3_Engine on Etherscan.
+https://goerli.etherscan.io/address/0x592fAd4C22B2c311e22a6e56886539Fe11E798AE#code
+[INFO] Core contract verified on Etherscan at 0x592fAd4C22B2c311e22a6e56886539Fe11E798AE}
+[INFO] Verifying AdminACL contract deployment...
+Compiled 211 Solidity files successfully
+Successfully submitted source code for contract
+contracts/AdminACLV1.sol:AdminACLV1 at 0xdDF759cd0b6EDFE7B5897A1D07d945fE5dc3554e
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract AdminACLV1 on Etherscan.
+https://goerli.etherscan.io/address/0xdDF759cd0b6EDFE7B5897A1D07d945fE5dc3554e#code
+[INFO] AdminACL contract verified on Etherscan at 0xdDF759cd0b6EDFE7B5897A1D07d945fE5dc3554e}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0x363a8f79dD1989C3b82A79C1E13082137B91F707 has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0x363a8f79dD1989C3b82A79C1E13082137B91F707}
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+The contract 0x1BEB89465f8d746f29450175386B0b7AD41b4eF7 has already been verified
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0x1BEB89465f8d746f29450175386B0b7AD41b4eF7}
+Created s3 bucket for https://pop-catt-goerli.s3.amazonaws.com
+[INFO] Created image bucket pop-catt-goerli
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/revdancatt/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x592fad4c22b2c311e22a6e56886539fe11e798ae",
+  "name": "Pop Catt",
+  "bucket_name": "pop-catt-goerli",
+  "default_vertical_name": "fullyonchain"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x29B2f895343CAdfB3f5101BEF6484B1F01c83Dc9, don't forget to update if requred.
