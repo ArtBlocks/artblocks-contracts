@@ -5,7 +5,7 @@ import {
   deployAndGet,
   deployCoreWithMinterFilter,
   safeAddProject,
-} from "../../util/common";
+} from "../../../util/common";
 import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 

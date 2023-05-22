@@ -77,6 +77,9 @@ interface IGenArt721CoreContractV3_Base is IManifold {
         bytes4 _selector
     ) external returns (bool);
 
+    /// getter function of public variable
+    function startingProjectId() external view returns (uint256);
+
     // getter function of public variable
     function nextProjectId() external view returns (uint256);
 

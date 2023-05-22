@@ -7,7 +7,7 @@ import {
   deployAndGet,
   deployCoreWithMinterFilter,
   safeAddProject,
-} from "../../util/common";
+} from "../../../util/common";
 
 import { MinterFilterViews_Common } from "./MinterFilterViews.common";
 

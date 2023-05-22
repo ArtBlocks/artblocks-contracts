@@ -1,7 +1,7 @@
 import { expectRevert } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { T_Config } from "../../util/common";
+import { T_Config } from "../../../util/common";
 
 /**
  * These tests are intended to check common view behaviors of
