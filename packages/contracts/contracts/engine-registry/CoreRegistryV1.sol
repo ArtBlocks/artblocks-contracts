@@ -234,7 +234,7 @@ contract CoreRegistryV1 is Ownable, ICoreRegistryV1 {
         // @dev add returns true only if not already registered
         require(
             registeredContracts.add(_contractAddress),
-            "Only register new contracts"
+            "Contract already registered"
         );
         emit ContractRegistered(_contractAddress, _coreVersion, _coreType);
     }
