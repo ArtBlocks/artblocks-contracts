@@ -1,0 +1,53 @@
+{
+  "name": "@artblocks/sdk",
+  "version": "0.1.0",
+  "description": "JavaScript SDK for configuring and using Art Blocks minters.",
+  "main": "index.js",
+  "repository": "git@github.com:ArtBlocks/artblocks-sdk.git",
+  "author": "Art Blocks, Inc. <privacy@artblocks.io>",
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/preset-env": "^7.21.5",
+    "@babel/preset-typescript": "^7.21.5",
+    "@jest/globals": "^29.5.0",
+    "eslint-config-custom": "*",
+    "jest": "^29.5.0",
+    "jsdoc": "^4.0.2",
+    "jsdoc-plugin-typescript": "^2.2.1",
+    "lint-staged": "^13.2.2",
+    "prettier": "^2.8.8",
+    "tsconfig": "*",
+    "tsup": "^6.7.0",
+    "typescript": "^5.0.4"
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --dts",
+    "lint": "prettier --check src/**/*.ts && eslint src/**/*.ts",
+    "fmt": "prettier --write src/**/*.ts && eslint src/**/*.ts --fix",
+    "test": "jest --collect-coverage",
+    "build:docs": "jsdoc -c jsdoc.json",
+    "pre-commit": "yarn lint",
+    "pre-push": "yarn test"
+  },
+  "lint-staged": {
+    "*.{js,ts,tsx, jsx}": [
+      "eslint --quiet --fix"
+    ],
+    "*.{json,md,html,js,jsx,ts,tsx}": [
+      "prettier --write"
+    ]
+  },
+  "jest": {
+    "coverageThreshold": {
+      "global": {
+        "branches": 100,
+        "functions": 100,
+        "lines": 100,
+        "statements": 100
+      }
+    }
+  },
+  "peerDependencies": {
+    "ethers": "^6.3.0"
+  }
+}
