@@ -1,9 +1,0 @@
-----------------------------------------
-[INFO] Datetime of minter deployment: 2023-04-13T16:52:58.996Z
-[INFO] Minter deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/fab/minter-deploy-config.dev.ts
-----------------------------------------
-[INFO] Datetime of minter deployment: 2023-04-13T16:53:13.181Z
-[INFO] Minter deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/fab/minter-deploy-config.dev.ts
-[INFO] Deploying to network: goerli
-[INFO] Deploying MinterDAExpV4 with deploy args [0x043Eeb8bFd416666b57dd2C5Be439e6fB23e9ce1,0x1A6b570499195139E38Cfa56044Dd748839beE1A]...
-[INFO] MinterDAExpV4 deployed at 0x568D0078D8AFf828d78637209a752f92526150Bf
