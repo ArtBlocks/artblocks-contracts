@@ -27,7 +27,7 @@
     "build": "tsup src/index.ts --dts",
     "lint": "prettier --check src/**/*.ts && eslint src/**/*.ts",
     "fmt": "prettier --write src/**/*.ts && eslint src/**/*.ts --fix",
-    "test": "jest --collect-coverage",
+    "test": "jest",
     "build:docs": "jsdoc -c jsdoc.json",
     "pre-commit": "yarn lint",
     "pre-push": "yarn test",
@@ -42,6 +42,11 @@
     ]
   },
   "jest": {
+    "collectCoverage": true,
+    "coveragePathIgnorePatterns": [
+      "/node_modules/",
+      "/src/contracts"
+    ],
     "coverageThreshold": {
       "global": {
         "branches": 100,
