@@ -1,2 +1,5 @@
 # Request review from the best fit approvers group for this repo.
-*       @ArtBlocks/Eng-Approvers-Contracts
+packages/sdk                   @ArtBlocks/Eng-Approvers-Skunkworks
+packages/tsconfig              @ArtBlocks/Eng-Approvers-Skunkworks
+packages/eslint-config-custom  @ArtBlocks/Eng-Approvers-Skunkworks
+*                              @ArtBlocks/Eng-Approvers-Contracts
