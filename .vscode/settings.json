@@ -20,5 +20,6 @@
     "editor.formatOnSave": true
   },
   "graphql-config.dotEnvPath": ".env",
-  "graphql-codegen.configFilePath": "./codegen.ts"
+  "graphql-codegen.configFilePath": "./codegen.ts",
+  "solidity.packageDefaultDependenciesDirectory": "node_modules"
 }

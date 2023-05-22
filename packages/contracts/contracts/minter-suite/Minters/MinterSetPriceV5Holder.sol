@@ -108,7 +108,7 @@ contract MinterSetPriceV5Holder is
     EnumerableSet.AddressSet private _registeredNFTAddresses;
 
     /**
-     * projectId => ownedNFTAddress => ownedNFTProjectIds => bool
+     * coreContract => projectId => ownedNFTAddress => ownedNFTProjectIds => bool
      * projects whose holders are allowed to purchase a token on `projectId`
      */
     mapping(address => mapping(uint256 => mapping(address => mapping(uint256 => bool))))

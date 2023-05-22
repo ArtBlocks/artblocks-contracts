@@ -6,15 +6,19 @@ import "../../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
 import "../../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
 import "../../interfaces/0.8.x/IGenArt721CoreContractV3_Engine.sol";
 
-import "@openzeppelin-4.7/contracts/token/ERC20/IERC20.sol";
+import "/Users/ben/Documents/artblocks/artblocks-contracts/node_modules/@openzeppelin-4.7/contracts/token/ERC20/IERC20.sol";
 
 pragma solidity ^0.8.0;
 
 /**
  * @title Art Blocks Split Funds Library
- * @notice [TO FILL OUT]
+ * @notice This library is designed for the Art Blocks platform. It splits
+ * Ether (ETH) and ERC-20 token funds among stakeholders, such as sender
+ * (if refund is applicable), providers, artists, and artists' additional
+ * payees.
  * @author Art Blocks Inc.
  */
+
 library SplitFundsLib {
     struct IsEngineCache {
         bool isEngine;
