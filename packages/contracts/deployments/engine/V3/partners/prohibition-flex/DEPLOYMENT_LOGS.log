@@ -1,69 +1,47 @@
 ----------------------------------------
-[INFO] Datetime of deployment: 2023-04-28T00:29:47.577Z
-[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/prohibition-flex/deployment-config.staging.ts
-[INFO] Deploying to network: goerli
-----------------------------------------
-[INFO] Datetime of deployment: 2023-04-28T00:31:03.670Z
-[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/prohibition-flex/deployment-config.staging.ts
+[INFO] Datetime of deployment: 2023-05-12T23:28:21.809Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/prohibition-flex/deployment-config.staging2.ts
 [INFO] Deploying to network: goerli
 [INFO] Deploying to environment: staging
-[INFO] New Admin ACL AdminACLV0_PROHIBITION deployed at address: 0x712D7AB69AE8FAC30b5a5B07B9687e23b54Aad1F
-[INFO] Randomizer BasicRandomizerV2 deployed at 0x942cA5fE7200eF44d44c31fB713A603c0796B2f7
-[INFO] Core GenArt721CoreV3_Engine_Flex_PROHIBITION deployed at 0x7499B8186fE32D20c4ac345fc5eE119eE8A42bC9
-[INFO] Minter Filter MinterFilterV1 deployed at 0x2f5aB55B440Aa946D777b73aBB26847e5ba675c7
-[INFO] MinterSetPriceV4 deployed at 0x5F488A081EC066687382b992391446B8082B0EA9
-[INFO] MinterDALinV4 deployed at 0xbDDd9a4131c05Fec76eAB9F89ef849cC1D018E8F
+[INFO] New Admin ACL AdminACLV0_PROHIBITION deployed at address: 0x451FccC3f538Ee14D83C10121f652B61FFB6d1Fe
+[INFO] Randomizer BasicRandomizerV2 deployed at 0x7C9c765505B32c76CFC33Ec04a19a4D95e294Ca0
+[INFO] Core GenArt721CoreV3_Engine_Flex_PROHIBITION deployed at 0xE480a895DE49B49e37A8f0a8bD7e07FC9844CDb9
+[INFO] Minter Filter MinterFilterV1 deployed at 0xFcEB1B7734ACD21ccB825fd0112d4302F24211E9
+[INFO] MinterSetPriceV4 deployed at 0xDA0F160B399B4f2Dab3DE2411Ce6e87958C7AbF2
+[INFO] MinterDALinV4 deployed at 0x599D042450F7aB6b08ABD1ab4b0011969Dc71344
 [INFO] Assigned randomizer to core and renounced ownership of randomizer
-[INFO] Updated the Minter Filter on the Core contract to 0x2f5aB55B440Aa946D777b73aBB26847e5ba675c7.
-[INFO] Allowlisted minter MinterSetPriceV4 at 0x5F488A081EC066687382b992391446B8082B0EA9 on minter filter.
-[INFO] Allowlisted minter MinterDALinV4 at 0xbDDd9a4131c05Fec76eAB9F89ef849cC1D018E8F on minter filter.
+[INFO] Updated the Minter Filter on the Core contract to 0xFcEB1B7734ACD21ccB825fd0112d4302F24211E9.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0xDA0F160B399B4f2Dab3DE2411Ce6e87958C7AbF2 on minter filter.
+[INFO] Allowlisted minter MinterDALinV4 at 0x599D042450F7aB6b08ABD1ab4b0011969Dc71344 on minter filter.
 [INFO] Skipping adding placeholder initial project.
 [INFO] Skipping adding placeholder initial token.
 [INFO] Transferred superAdmin role on adminACL to 0xC430CE0184e536e341e04dCE0f4C37895a92b809.
 [INFO] Verifying core contract contract deployment...
-Nothing to compile
-Successfully submitted source code for contract
-contracts/engine/V3/forks/PROHIBITION/GenArt721CoreV3_Engine_Flex_PROHIBITION.sol:GenArt721CoreV3_Engine_Flex_PROHIBITION at 0x7499B8186fE32D20c4ac345fc5eE119eE8A42bC9
-for verification on the block explorer. Waiting for verification result...
-
-Successfully verified contract GenArt721CoreV3_Engine_Flex_PROHIBITION on Etherscan.
-https://goerli.etherscan.io/address/0x7499B8186fE32D20c4ac345fc5eE119eE8A42bC9#code
-[INFO] Core contract verified on Etherscan at 0x7499B8186fE32D20c4ac345fc5eE119eE8A42bC9}
+The contract 0xE480a895DE49B49e37A8f0a8bD7e07FC9844CDb9 has already been verified
+[INFO] Core contract verified on Etherscan at 0xE480a895DE49B49e37A8f0a8bD7e07FC9844CDb9}
 [INFO] Verifying AdminACL contract deployment...
-Compiled 205 Solidity files successfully
-Successfully submitted source code for contract
-contracts/engine/V3/forks/PROHIBITION/AdminACLV0_PROHIBITION.sol:AdminACLV0_PROHIBITION at 0x712D7AB69AE8FAC30b5a5B07B9687e23b54Aad1F
-for verification on the block explorer. Waiting for verification result...
-
-Successfully verified contract AdminACLV0_PROHIBITION on Etherscan.
-https://goerli.etherscan.io/address/0x712D7AB69AE8FAC30b5a5B07B9687e23b54Aad1F#code
-[INFO] AdminACL contract verified on Etherscan at 0x712D7AB69AE8FAC30b5a5B07B9687e23b54Aad1F}
+The contract 0x451FccC3f538Ee14D83C10121f652B61FFB6d1Fe has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0x451FccC3f538Ee14D83C10121f652B61FFB6d1Fe}
 [INFO] Verifying MinterFilter contract deployment...
-The contract 0x2f5aB55B440Aa946D777b73aBB26847e5ba675c7 has already been verified
-[INFO] MinterFilter contract verified on Etherscan at 0x2f5aB55B440Aa946D777b73aBB26847e5ba675c7}
+The contract 0xFcEB1B7734ACD21ccB825fd0112d4302F24211E9 has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0xFcEB1B7734ACD21ccB825fd0112d4302F24211E9}
 [INFO] Verifying MinterSetPriceV4 contract deployment...
-The contract 0x5F488A081EC066687382b992391446B8082B0EA9 has already been verified
-[INFO] MinterSetPriceV4 contract verified on Etherscan at 0x5F488A081EC066687382b992391446B8082B0EA9}
+The contract 0xDA0F160B399B4f2Dab3DE2411Ce6e87958C7AbF2 has already been verified
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0xDA0F160B399B4f2Dab3DE2411Ce6e87958C7AbF2}
 [INFO] Verifying MinterDALinV4 contract deployment...
-Compiled 205 Solidity files successfully
-Successfully submitted source code for contract
-contracts/minter-suite/Minters/MinterDALinV4.sol:MinterDALinV4 at 0xbDDd9a4131c05Fec76eAB9F89ef849cC1D018E8F
-for verification on the block explorer. Waiting for verification result...
-
-Successfully verified contract MinterDALinV4 on Etherscan.
-https://goerli.etherscan.io/address/0xbDDd9a4131c05Fec76eAB9F89ef849cC1D018E8F#code
-[INFO] MinterDALinV4 contract verified on Etherscan at 0xbDDd9a4131c05Fec76eAB9F89ef849cC1D018E8F}
-Created s3 bucket for https://prohibition-goerli.s3.amazonaws.com
-[INFO] Created image bucket prohibition-goerli
+The contract 0x599D042450F7aB6b08ABD1ab4b0011969Dc71344 has already been verified
+[INFO] MinterDALinV4 contract verified on Etherscan at 0x599D042450F7aB6b08ABD1ab4b0011969Dc71344}
+Created s3 bucket for https://prohibitionv1-1-goerli.s3.amazonaws.com
+[INFO] Created image bucket prohibitionv1-1-goerli
 [INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/prohibition-flex/DEPLOYMENTS.md
 Upserting 1 contract...
 Contracts metadata upsert input:
 {
-  "address": "0x7499b8186fe32d20c4ac345fc5ee119ee8a42bc9",
-  "name": "Prohibition",
-  "bucket_name": "prohibition-goerli",
+  "address": "0xe480a895de49b49e37a8f0a8bd7e07fc9844cdb9",
+  "name": "ProhibitionV1_1",
+  "bucket_name": "prohibitionv1-1-goerli",
   "default_vertical_name": "flex"
 }
 Successfully upserted 1 contract
 [ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
-[ACTION] AdminACL's superAdmin address is 0xC430CE0184e536e341e04dCE0f4C37895a92b809, don't forget to update if requred.
+[ACTION] AdminACL's superAdmin address is 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63, don't forget to update if requred.

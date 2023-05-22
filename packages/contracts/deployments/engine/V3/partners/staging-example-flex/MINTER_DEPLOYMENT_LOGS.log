@@ -42,3 +42,18 @@ https://goerli.etherscan.io/address/0xEA503d02D36dd7C4DF205be3F1c18C266DdB3411#c
 [INFO] Completed minter deployment! MinterSetPriceV4 deployed to 0xEA503d02D36dd7C4DF205be3F1c18C266DdB3411, and allowlisted on the minter filter at 0x868A6FFA1020E78e73ea7573c443C1BECF934068
 [ACTION] If this minter is to be indexed in a subgraph, ensure it is added to the subgraph's config.
 [ACTION] The minter was not able to be allowlisted on the minter filter, ensure the minter filter is updated by appropriate admin.
+----------------------------------------
+[INFO] Datetime of minter deployment: 2023-05-12T22:37:50.508Z
+[INFO] Minter deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/staging-example-flex/minter-deploy-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying MinterSetPriceV4 with deploy args [0x42F05a460587Ddd1AFFEf43BfF933e78d6b34424,0xA212fF59FeE69C5bB233ceC3873a2cb42546D30b]...
+[INFO] MinterSetPriceV4 deployed at 0xa5D745b8A65e4B451E303591C19f39d2d2C935F0
+[INFO] allowlisted the new minter on the minter filter at 0xA212fF59FeE69C5bB233ceC3873a2cb42546D30b
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+Nothing to compile
+[WARN] Etherscan verification of MinterSetPriceV4 failed: Error: ENOENT: no such file or directory, open '/Users/jakerockland/Code/artblocks-contracts/artifacts/build-info/f5a449f529292eaa743b520bbd4e42da.json'
+[ACTION] Verify MinterSetPriceV4 contract deployment with:
+yarn hardhat verify --network goerli 0xa5D745b8A65e4B451E303591C19f39d2d2C935F0 0x42F05a460587Ddd1AFFEf43BfF933e78d6b34424 0xA212fF59FeE69C5bB233ceC3873a2cb42546D30b
+[INFO] Minter deployment details written/appended to /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/staging-example-flex/DEPLOYMENTS.md
+[INFO] Completed minter deployment! MinterSetPriceV4 deployed to 0xa5D745b8A65e4B451E303591C19f39d2d2C935F0, and allowlisted on the minter filter at 0xA212fF59FeE69C5bB233ceC3873a2cb42546D30b
+[ACTION] If this minter is to be indexed in a subgraph, ensure it is added to the subgraph's config.
