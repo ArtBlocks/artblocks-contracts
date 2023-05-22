@@ -40,7 +40,7 @@ describe("getDelegateVault", () => {
     });
     IDelegationRegistry__factory.connect = mockConnect;
     const vault = await getDelegateVault(provider, DELEGATE_TEST_ADDRESS);
-    expect(vault).toEqual("0x1234");
+    expect(vault).toEqual(FAKE_VAULT_ADDRESS);
   });
 
   it("should return undefined when the user has not delegated", async () => {
