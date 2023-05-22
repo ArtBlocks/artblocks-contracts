@@ -1,0 +1,67 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-05-12T22:57:05.596Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/radix-flex/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0xf36d38f389B29DA35F2580bC0bAB2caa96F33F66
+[INFO] Randomizer BasicRandomizerV2 deployed at 0x28BD09c10aEE693d404BeDcb7f0CB0c6b27b1dde
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x65b8A829F66D25AFbDEa7cCc27C26eBD0ccE8a34
+[INFO] Minter Filter MinterFilterV1 deployed at 0x55e6654b3cFe64d946C14b2CC9364db12d504a32
+[INFO] MinterSetPriceV4 deployed at 0x67350b37c84a0A4A46DA19Ae0c994E645ae7C08C
+[INFO] MinterDAExpSettlementV1 deployed at 0xe30f267e6C1451656604a4175215CC00867e2c86
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0x55e6654b3cFe64d946C14b2CC9364db12d504a32.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0x67350b37c84a0A4A46DA19Ae0c994E645ae7C08C on minter filter.
+[INFO] Allowlisted minter MinterDAExpSettlementV1 at 0xe30f267e6C1451656604a4175215CC00867e2c86 on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0x273E70Be4522Bf31F30F80310D5015a7A26C40BD.
+[INFO] Verifying core contract contract deployment...
+Nothing to compile
+[ACTION] Save the following constructor args config file to a constructor-args.js file, then verify core contract deployment with:
+module.exports = [
+        "Pedestal", // name
+        "PEDSTL", // ticker
+        "0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63", // render provider
+        "0x273E70Be4522Bf31F30F80310D5015a7A26C40BD", // platform provider
+        "0x28BD09c10aEE693d404BeDcb7f0CB0c6b27b1dde", // randomizer
+        "0xf36d38f389B29DA35F2580bC0bAB2caa96F33F66", // admin acl
+        0, // starting project id
+        true, // auto approve artist split proposals
+        "0xEa698596b6009A622C3eD00dD5a8b5d1CAE4fC36" // engine registry
+      ];
+yarn hardhat verify --network goerli --constructor-args constructor-args.js 0x65b8A829F66D25AFbDEa7cCc27C26eBD0ccE8a34
+[INFO] Verifying AdminACL contract deployment...
+Compiled 211 Solidity files successfully
+[WARN] Etherscan verification of AdminACL failed: Error: ENOENT: no such file or directory, open '/Users/jakerockland/Code/artblocks-contracts/artifacts/build-info/f5a449f529292eaa743b520bbd4e42da.json'
+[ACTION] Verify AdminACL contract deployment with:
+yarn hardhat verify --network goerli 0xf36d38f389B29DA35F2580bC0bAB2caa96F33F66 
+[INFO] Verifying MinterFilter contract deployment...
+Compiled 211 Solidity files successfully
+[WARN] Etherscan verification of MinterFilter failed: Error: ENOENT: no such file or directory, open '/Users/jakerockland/Code/artblocks-contracts/artifacts/build-info/f5a449f529292eaa743b520bbd4e42da.json'
+[ACTION] Verify MinterFilter contract deployment with:
+yarn hardhat verify --network goerli 0x55e6654b3cFe64d946C14b2CC9364db12d504a32 0x65b8A829F66D25AFbDEa7cCc27C26eBD0ccE8a34
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+Compiled 211 Solidity files successfully
+[WARN] Etherscan verification of MinterSetPriceV4 failed: Error: ENOENT: no such file or directory, open '/Users/jakerockland/Code/artblocks-contracts/artifacts/build-info/f5a449f529292eaa743b520bbd4e42da.json'
+[ACTION] Verify MinterSetPriceV4 contract deployment with:
+yarn hardhat verify --network goerli 0x67350b37c84a0A4A46DA19Ae0c994E645ae7C08C 0x65b8A829F66D25AFbDEa7cCc27C26eBD0ccE8a34 0x55e6654b3cFe64d946C14b2CC9364db12d504a32
+[INFO] Verifying MinterDAExpSettlementV1 contract deployment...
+Compiled 211 Solidity files successfully
+[WARN] Etherscan verification of MinterDAExpSettlementV1 failed: Error: ENOENT: no such file or directory, open '/Users/jakerockland/Code/artblocks-contracts/artifacts/build-info/f5a449f529292eaa743b520bbd4e42da.json'
+[ACTION] Verify MinterDAExpSettlementV1 contract deployment with:
+yarn hardhat verify --network goerli 0xe30f267e6C1451656604a4175215CC00867e2c86 0x65b8A829F66D25AFbDEa7cCc27C26eBD0ccE8a34 0x55e6654b3cFe64d946C14b2CC9364db12d504a32
+Created s3 bucket for https://pedestal-goerli.s3.amazonaws.com
+[INFO] Created image bucket pedestal-goerli
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/radix-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x65b8a829f66d25afbdea7ccc27c26ebd0cce8a34",
+  "name": "Pedestal",
+  "bucket_name": "pedestal-goerli",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x273E70Be4522Bf31F30F80310D5015a7A26C40BD, don't forget to update if requred.
