@@ -3,7 +3,7 @@ import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { CoreRegistryV1RevertMessages as revertMessages } from "./constants";
 import { setupConfigWitMinterFilterV2Suite } from "../util/fixtures";
-import { deployCore, safeAddProject } from "../util/common";
+import { deployAndGet, deployCore, safeAddProject } from "../util/common";
 import { ethers } from "hardhat";
 
 const runForEach = [
@@ -215,6 +215,28 @@ runForEach.forEach((params) => {
             config.genArt721Core.address
           );
         expect(isRegisteredAfter).to.be.true;
+      });
+
+      it("enforces weak security layer of only owner or registrant", async function () {
+        const config = await loadFixture(_beforeEach);
+        // deploy mock malicious contract
+        const maliciousContract = await deployAndGet(
+          config,
+          "OriginRegisterMock",
+          []
+        );
+        // let malicious contract attempt to hijack deployer tx and register
+        await expectRevert(
+          maliciousContract
+            .connect(config.accounts.deployer)
+            .registerOther(
+              config.coreRegistry.address,
+              constants.ZERO_ADDRESS,
+              ethers.utils.formatBytes32String("DUMMY_VERSION"),
+              ethers.utils.formatBytes32String("DUMMY_TYPE")
+            ),
+          revertMessages.onlyOwnerOrRegistrant
+        );
       });
     });
 

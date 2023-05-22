@@ -5,4 +5,5 @@ export const CoreRegistryV1RevertMessages = {
   contractAlreadyRegistered: "Contract already registered",
   onlyRegisteredContract: "Only registered contract",
   arrayLengthMismatch: "Mismatched array lengths",
+  onlyOwnerOrRegistrant: "Only owner or registrant",
 };
