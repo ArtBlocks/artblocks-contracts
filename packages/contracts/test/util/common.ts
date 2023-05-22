@@ -75,6 +75,7 @@ export type T_Config = {
   randomizer?: Contract;
   minterFilter?: Contract;
   minter?: Contract;
+  altMinter?: Contract;
   adminACL?: Contract;
   minterFilterAdminACL?: Contract;
   coreRegistry?: Contract;
