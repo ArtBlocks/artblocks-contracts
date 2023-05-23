@@ -12,6 +12,10 @@ switch (process.env.NODE_ENV) {
     graphqlAPIEndpoint = process.env.GRAPHQL_API_ENDPOINT_STAGING;
     hasuraAdminSecret = process.env.HASURA_ADMIN_SECRET_STAGING;
     break;
+  case "arbitrum-staging":
+    graphqlAPIEndpoint = process.env.GRAPHQL_API_ENDPOINT_ARBITRUM_STAGING;
+    hasuraAdminSecret = process.env.HASURA_ADMIN_SECRET_ARBITRUM_STAGING;
+    break;
   case "mainnet":
     graphqlAPIEndpoint = process.env.GRAPHQL_API_ENDPOINT_MAINNET;
     hasuraAdminSecret = process.env.HASURA_ADMIN_SECRET_MAINNET;
