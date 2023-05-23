@@ -130,5 +130,7 @@ dist
 .pnp.*
 
 # JSDoc
-
 docs/
+
+# Codegen
+src/generated
