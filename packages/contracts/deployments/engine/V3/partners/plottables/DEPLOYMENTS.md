@@ -84,3 +84,45 @@ Date: 2023-04-28T01:09:17.060Z
 
 ---
 
+
+# Minter Deployment
+
+Date: 2023-05-22T23:32:04.864Z
+
+## **Network:** goerli
+
+## **Environment:** staging
+
+**Deployment Input File:** `deployments/engine/V3/partners/plottables/minter-deploy-config.staging2.ts`
+
+**MinterDAExpSettlementV1:** https://goerli.etherscan.io/address/0xDC4D5400505FbD897583314a52530cD17aF27636#code
+
+**Associated core contract:** 0xCEd5350f5a2Ba24946F92C08260931CFf65dc954
+
+**Associated minter filter:** 0x0AB754254d7243315FFFDC363a6A0997aD9c3118
+
+**Deployment Args:** 0xCEd5350f5a2Ba24946F92C08260931CFf65dc954,0x0AB754254d7243315FFFDC363a6A0997aD9c3118
+
+---
+
+
+# Minter Deployment
+
+Date: 2023-05-22T23:34:23.880Z
+
+## **Network:** goerli
+
+## **Environment:** staging
+
+**Deployment Input File:** `deployments/engine/V3/partners/plottables/minter-deploy-config.staging2.ts`
+
+**MinterDAExpV4:** https://goerli.etherscan.io/address/0xFB82d02ff9d444fa4e14F45e6d0DC79e30061CaD#code
+
+**Associated core contract:** 0xCEd5350f5a2Ba24946F92C08260931CFf65dc954
+
+**Associated minter filter:** 0x0AB754254d7243315FFFDC363a6A0997aD9c3118
+
+**Deployment Args:** 0xCEd5350f5a2Ba24946F92C08260931CFf65dc954,0x0AB754254d7243315FFFDC363a6A0997aD9c3118
+
+---
+

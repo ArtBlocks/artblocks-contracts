@@ -1,0 +1,134 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-05-20T16:51:37.720Z
+[INFO] Deployment configuration file: /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/internal-testing/staging-example-arbitrum-flex/deployment-config.arbitrum-staging.ts
+[INFO] Deploying to network: arbitrum-goerli
+----------------------------------------
+[INFO] Datetime of deployment: 2023-05-22T19:55:58.366Z
+[INFO] Deployment configuration file: /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/internal-testing/staging-example-arbitrum-flex/deployment-config.arbitrum-staging.ts
+[INFO] Deploying to network: arbitrum-goerli
+[INFO] Deploying to environment: arbitrum-staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x36330ca063ADa145f708BA11ef56020eB773668A
+[INFO] Randomizer BasicRandomizerV2 deployed at 0x93d30A427dA0Da386d20083479AC03255baF5d5f
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0xf16a86A6B48ebf5701e42E4d692b23eD59330d94
+[INFO] Minter Filter MinterFilterV1 deployed at 0xC808AdCA852Fa87199B837bF3A210f4c62b68E50
+[INFO] MinterSetPriceV4 deployed at 0xca6DA18FE6Ac29f7d3979E61F4c588016351Ce68
+[INFO] MinterDAExpSettlementV1 deployed at 0xeA02a3D41DAE21bf66B734837C4Ca4Ae03668F93
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0xC808AdCA852Fa87199B837bF3A210f4c62b68E50.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0xca6DA18FE6Ac29f7d3979E61F4c588016351Ce68 on minter filter.
+[INFO] Allowlisted minter MinterDAExpSettlementV1 at 0xeA02a3D41DAE21bf66B734837C4Ca4Ae03668F93 on minter filter.
+[INFO] Added Test Staging Flex Arbitrum project 0 placeholder on Test Staging Flex Arbitrum contract, artist is 0x3b9038fa89783CBA1933c1689043b4dae2032d1c.
+[INFO] Configured set price minter (0xca6DA18FE6Ac29f7d3979E61F4c588016351Ce68) for project 0.
+[INFO] Configured minter price project 0.
+[INFO] Minted token 0 for project 0.
+[INFO] Skipping transfer of superAdmin role on adminACL.
+[INFO] Verifying core contract contract deployment...
+Nothing to compile
+[ACTION] Save the following constructor args config file to a constructor-args.js file, then verify core contract deployment with:
+module.exports = [
+        "Test Staging Flex Arbitrum", // name
+        "STAGING_EX_ARB_FLEX", // ticker
+        "0x3b9038fa89783CBA1933c1689043b4dae2032d1c", // render provider
+        "0x3b9038fa89783CBA1933c1689043b4dae2032d1c", // platform provider
+        "0x93d30A427dA0Da386d20083479AC03255baF5d5f", // randomizer
+        "0x36330ca063ADa145f708BA11ef56020eB773668A", // admin acl
+        0, // starting project id
+        true, // auto approve artist split proposals
+        "0x25841600e79E9A5263Ec4badcC328AD9CFE5f8C8" // engine registry
+      ];
+yarn hardhat verify --network arbitrum-goerli --constructor-args constructor-args.js 0xf16a86A6B48ebf5701e42E4d692b23eD59330d94
+[INFO] Verifying AdminACL contract deployment...
+Compiled 211 Solidity files successfully
+[WARN] Etherscan verification of AdminACL failed: NomicLabsHardhatPluginError: Invalid API Key
+[ACTION] Verify AdminACL contract deployment with:
+yarn hardhat verify --network arbitrum-goerli 0x36330ca063ADa145f708BA11ef56020eB773668A 
+[INFO] Verifying MinterFilter contract deployment...
+----------------------------------------
+[INFO] Datetime of deployment: 2023-05-22T20:01:19.690Z
+[INFO] Deployment configuration file: /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/internal-testing/staging-example-arbitrum-flex/deployment-config.arbitrum-staging.ts
+[INFO] Deploying to network: arbitrum-goerli
+[INFO] Deploying to environment: arbitrum-staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0xACa53072D5FA505819E69e577d2a27714fcA1f1A
+[INFO] Randomizer BasicRandomizerV2 deployed at 0x6457e6602879162869fee21874563775D369E0a5
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x24c2486E1e2c94246138D71cEc088e89E9c80D44
+[INFO] Minter Filter MinterFilterV1 deployed at 0x5E9EDa0F8a6f14e2f900357D1aec1F53507605da
+[INFO] MinterSetPriceV4 deployed at 0x9F1F56C19BA2D64dfa6A3164eFF6B9B8590796D9
+[INFO] MinterDAExpSettlementV1 deployed at 0x58C3B1fCF6c8Ef3a71BE318525b63121eC65E301
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0x5E9EDa0F8a6f14e2f900357D1aec1F53507605da.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0x9F1F56C19BA2D64dfa6A3164eFF6B9B8590796D9 on minter filter.
+[INFO] Allowlisted minter MinterDAExpSettlementV1 at 0x58C3B1fCF6c8Ef3a71BE318525b63121eC65E301 on minter filter.
+[INFO] Added Test Staging Flex Arbitrum project 0 placeholder on Test Staging Flex Arbitrum contract, artist is 0x3b9038fa89783CBA1933c1689043b4dae2032d1c.
+[INFO] Configured set price minter (0x9F1F56C19BA2D64dfa6A3164eFF6B9B8590796D9) for project 0.
+[INFO] Configured minter price project 0.
+[INFO] Minted token 0 for project 0.
+[INFO] Skipping transfer of superAdmin role on adminACL.
+[INFO] Verifying core contract contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/engine/V3/GenArt721CoreV3_Engine_Flex.sol:GenArt721CoreV3_Engine_Flex at 0x24c2486E1e2c94246138D71cEc088e89E9c80D44
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract GenArt721CoreV3_Engine_Flex on Etherscan.
+https://goerli.arbiscan.io/address/0x24c2486E1e2c94246138D71cEc088e89E9c80D44#code
+[INFO] Core contract verified on Etherscan at 0x24c2486E1e2c94246138D71cEc088e89E9c80D44}
+[INFO] Verifying AdminACL contract deployment...
+Compiled 211 Solidity files successfully
+Successfully submitted source code for contract
+contracts/AdminACLV1.sol:AdminACLV1 at 0xACa53072D5FA505819E69e577d2a27714fcA1f1A
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract AdminACLV1 on Etherscan.
+https://goerli.arbiscan.io/address/0xACa53072D5FA505819E69e577d2a27714fcA1f1A#code
+[INFO] AdminACL contract verified on Etherscan at 0xACa53072D5FA505819E69e577d2a27714fcA1f1A}
+[INFO] Verifying MinterFilter contract deployment...
+Compiled 211 Solidity files successfully
+Successfully submitted source code for contract
+contracts/minter-suite/MinterFilter/MinterFilterV1.sol:MinterFilterV1 at 0x5E9EDa0F8a6f14e2f900357D1aec1F53507605da
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterFilterV1 on Etherscan.
+https://goerli.arbiscan.io/address/0x5E9EDa0F8a6f14e2f900357D1aec1F53507605da#code
+[INFO] MinterFilter contract verified on Etherscan at 0x5E9EDa0F8a6f14e2f900357D1aec1F53507605da}
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+Compiled 211 Solidity files successfully
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterSetPriceV4.sol:MinterSetPriceV4 at 0x9F1F56C19BA2D64dfa6A3164eFF6B9B8590796D9
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterSetPriceV4 on Etherscan.
+https://goerli.arbiscan.io/address/0x9F1F56C19BA2D64dfa6A3164eFF6B9B8590796D9#code
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0x9F1F56C19BA2D64dfa6A3164eFF6B9B8590796D9}
+[INFO] Verifying MinterDAExpSettlementV1 contract deployment...
+Compiled 211 Solidity files successfully
+Successfully submitted source code for contract
+contracts/archive/minter-suite/Minters/MinterDAExpSettlement/MinterDAExpSettlementV1.sol:MinterDAExpSettlementV1 at 0x58C3B1fCF6c8Ef3a71BE318525b63121eC65E301
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterDAExpSettlementV1 on Etherscan.
+https://goerli.arbiscan.io/address/0x58C3B1fCF6c8Ef3a71BE318525b63121eC65E301#code
+[INFO] MinterDAExpSettlementV1 contract verified on Etherscan at 0x58C3B1fCF6c8Ef3a71BE318525b63121eC65E301}
+Created s3 bucket for https://test-staging-flex-arbitrum-arbitrum-goerli.s3.amazonaws.com
+[INFO] Created image bucket test-staging-flex-arbitrum-arbitrum-goerli
+[INFO] Deployment details written to /Users/lindsaygilbert/Documents/Projects/artblocks-contracts/packages/contracts/deployments/engine/V3/internal-testing/staging-example-arbitrum-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x24c2486e1e2c94246138d71cec088e89e9c80d44",
+  "name": "Test Staging Flex Arbitrum",
+  "bucket_name": "test-staging-flex-arbitrum-arbitrum-goerli",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+Upserting 1 project...
+Projects metadata upsert input:
+{
+  "id": "0x24c2486e1e2c94246138d71cec088e89e9c80d44-0",
+  "contract_address": "0x24c2486e1e2c94246138d71cec088e89e9c80d44",
+  "project_id": "0",
+  "artist_address": "0x3b9038fa89783cba1933c1689043b4dae2032d1c",
+  "vertical_name": "flex"
+}
+Successfully upserted 1 project
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0x3b9038fa89783CBA1933c1689043b4dae2032d1c. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x3b9038fa89783CBA1933c1689043b4dae2032d1c, don't forget to update if requred.
