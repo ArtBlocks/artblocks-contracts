@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 // Created By: Art Blocks Inc.
 
-import "./interfaces/0.8.x/IRandomizerV2.sol";
+import "./interfaces/0.8.x/IRandomizer_V3CoreBase.sol";
 import "./interfaces/0.8.x/IAdminACLV0.sol";
 import "./interfaces/0.8.x/IGenArt721CoreContractV3.sol";
 import "./interfaces/0.8.x/IGenArt721CoreContractExposesHashSeed.sol";
@@ -167,7 +167,7 @@ contract GenArt721CoreV3 is
     address public artblocksDependencyRegistryAddress;
 
     /// current randomizer contract
-    IRandomizerV2 public randomizerContract;
+    IRandomizer_V3CoreBase public randomizerContract;
 
     /// append-only array of all randomizer contract addresses ever used by
     /// this contract
@@ -1896,7 +1896,7 @@ contract GenArt721CoreV3 is
      * perform input validation where applicable.
      */
     function _updateRandomizerAddress(address _randomizerAddress) internal {
-        randomizerContract = IRandomizerV2(_randomizerAddress);
+        randomizerContract = IRandomizer_V3CoreBase(_randomizerAddress);
         // populate historical randomizer array
         _historicalRandomizerAddresses.push(_randomizerAddress);
         emit PlatformUpdated(FIELD_RANDOMIZER_ADDRESS);
