@@ -360,13 +360,26 @@ export async function deployCore(
   _adminACLContractName?: string
 ): Promise<CoreWithoutMinterSuite> {
   let randomizer, genArt721Core, adminACL;
+  if (_randomizerName.startsWith("SharedRandomizer")) {
+    // deploy pseudorandom atomic, then randomizer
+    const pseudorandomAtomic = await deployAndGet(
+      config,
+      "PseudorandomAtomic",
+      []
+    );
+    randomizer = await deployAndGet(config, _randomizerName, [
+      pseudorandomAtomic.address,
+    ]);
+  } else {
+    // we don't need any constructor args for BasicRandomizers
+    randomizer = await deployAndGet(config, _randomizerName, []);
+  }
 
   // deploy core contract + associated contracts
   if (
     coreContractName.endsWith("V3") ||
     coreContractName.endsWith("V3_Explorations")
   ) {
-    randomizer = await deployAndGet(config, _randomizerName, []);
     let adminACLContractName =
       _adminACLContractName ?? useAdminACLWithEvents
         ? "MockAdminACLV0Events"
@@ -383,10 +396,6 @@ export async function deployCore(
         config.projectZero, // starting project ID
       ]
     );
-    // assign core contract for randomizer to use
-    randomizer
-      .connect(config.accounts.deployer)
-      .assignCoreAndRenounce(genArt721Core.address);
     // register core contract on CoreRegistryV1
     const coreVersion = await genArt721Core.coreVersion();
     const coreType = await genArt721Core.coreType();
@@ -401,7 +410,6 @@ export async function deployCore(
     coreContractName.endsWith("V3_Engine_Flex_PROHIBITION") ||
     coreContractName === "GenArt721CoreV3_Engine_IncorrectCoreType"
   ) {
-    randomizer = await deployAndGet(config, _randomizerName, []);
     let adminACLContractName = useAdminACLWithEvents
       ? "MockAdminACLV0Events"
       : "AdminACLV0";
@@ -434,15 +442,18 @@ export async function deployCore(
         CoreRegistryV1.address, // _engineRegistryContract
       ]
     );
-    // assign core contract for randomizer to use
-    randomizer
-      .connect(config.accounts.deployer)
-      .assignCoreAndRenounce(genArt721Core.address);
     // Engine contracts automatically register themselves on CoreRegistryV1 during deployment
   } else {
     throw new Error(
       `deployCore does not support core contract name: ${coreContractName}`
     );
+  }
+  // complete setup of randomizer, if needed
+  if (!_randomizerName.startsWith("SharedRandomizer")) {
+    // assign core contract for randomizer to use
+    randomizer
+      .connect(config.accounts.deployer)
+      .assignCoreAndRenounce(genArt721Core.address);
   }
   return { randomizer, genArt721Core, adminACL };
 }
