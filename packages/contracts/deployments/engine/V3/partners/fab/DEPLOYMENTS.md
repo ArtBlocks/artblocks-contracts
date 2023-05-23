@@ -99,3 +99,24 @@ Date: 2023-04-14T17:43:12.609Z
 - **Image Bucket:** fab-dao-mainnet
 
 ---
+
+# Minter Deployment
+
+Date: 2023-05-12T22:28:38.681Z
+
+## **Network:** mainnet
+
+## **Environment:** mainnet
+
+**Deployment Input File:** `deployments/engine/V3/partners/fab/minter-deploy-config.mainnet.ts`
+
+**MinterSetPriceERC20V4:** https://etherscan.io/address/0x5fb9fC59B3fCF9Dd6430de6347568b5086Edc7Bb#code
+
+**Associated core contract:** 0xC443588d22Fb0f8dAB928e52014CC23d2Df70743
+
+**Associated minter filter:** 0xC2f71150f845f830BC61E5B61427A79e9D4FBf6B
+
+**Deployment Args:** 0xC443588d22Fb0f8dAB928e52014CC23d2Df70743,0xC2f71150f845f830BC61E5B61427A79e9D4FBf6B
+
+---
+

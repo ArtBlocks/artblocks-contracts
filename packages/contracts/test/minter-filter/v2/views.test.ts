@@ -346,6 +346,47 @@ runForEach.forEach((params) => {
         expect(result[0]).to.be.equal(config.projectZero);
       });
 
+      it("returns expected values when one of two projects on contract is using minter", async function () {
+        const config = await loadFixture(_beforeEach);
+        // assign minter to project zero
+        await config.minterFilter
+          .connect(config.accounts.deployer)
+          .setMinterForProject(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.minter.address
+          );
+        // assign different minter to project one
+        // deploy and add new dummy shared minter
+        const minter2 = await deployAndGet(config, expectedMinterType, [
+          config.minterFilter.address,
+        ]);
+        await config.minterFilter
+          .connect(config.accounts.deployer)
+          .approveMinterGlobally(minter2.address);
+        await config.minterFilter
+          .connect(config.accounts.deployer)
+          .setMinterForProject(
+            config.projectOne,
+            config.genArt721Core.address,
+            minter2.address
+          );
+        // expect contract to have one project using original minter
+        let result = await config.minterFilter.getProjectsOnContractUsingMinter(
+          config.genArt721Core.address,
+          config.minter.address
+        );
+        expect(result.length).to.be.equal(1);
+        expect(result[0]).to.be.equal(config.projectZero);
+        // expect contract to have one project using minter2
+        result = await config.minterFilter.getProjectsOnContractUsingMinter(
+          config.genArt721Core.address,
+          minter2.address
+        );
+        expect(result.length).to.be.equal(1);
+        expect(result[0]).to.be.equal(config.projectOne);
+      });
+
       it("returns expected values when > 1 contract is using minter", async function () {
         const config = await loadFixture(_beforeEach);
         // assign minter to project zero
