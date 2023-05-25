@@ -24,35 +24,35 @@ interface IMinterFilterV1 {
     event Deployed();
 
     /**
-     * @notice Globally approved minter `_minter`.
+     * @notice Globally approved minter `minter`.
      */
-    event MinterApprovedGlobally(address indexed _minter, string _minterType);
+    event MinterApprovedGlobally(address indexed minter, string minterType);
 
     /**
-     * @notice Globally revoked minter `_minter`.
+     * @notice Globally revoked minter `minter`.
      * @dev contract owner may still approve this minter on a per-contract
      * basis.
      */
-    event MinterRevokedGlobally(address indexed _minter);
+    event MinterRevokedGlobally(address indexed minter);
 
     /**
-     * @notice Approved minter `_minter` on core contract
-     * `_coreContract`.
+     * @notice Approved minter `minter` on core contract
+     * `coreContract`.
      */
     event MinterApprovedForContract(
-        address indexed _coreContract,
-        address indexed _minter,
-        string _minterType
+        address indexed coreContract,
+        address indexed minter,
+        string minterType
     );
 
     /**
-     * @notice Globally revoked minter `_minter`.
+     * @notice Revoked minter `minter` on core contract `coreContract`.
      * @dev minter filter owner may still globally approve this minter for all
      * contracts.
      */
     event MinterRevokedForContract(
-        address indexed _coreContract,
-        address indexed _minter
+        address indexed coreContract,
+        address indexed minter
     );
 
     /**
@@ -63,7 +63,7 @@ interface IMinterFilterV1 {
         uint256 indexed projectId,
         address indexed coreContract,
         address indexed minter,
-        string _minterType
+        string minterType
     );
 
     /**
@@ -106,6 +106,8 @@ interface IMinterFilterV1 {
 
     function updateCoreRegistry(address _coreRegistry) external;
 
+    function minterFilterType() external pure returns (string memory);
+
     function getMinterForProject(
         uint256 _projectId,
         address _coreContract
@@ -130,6 +132,23 @@ interface IMinterFilterV1 {
 
     /// The current admin ACL contract
     function adminACLContract() external view returns (IAdminACLV0);
+
+    /// The quantity of projects on a core contract that have assigned minters
+    function getNumProjectsOnContractWithMinters(
+        address _coreContract
+    ) external view returns (uint256);
+
+    function getProjectAndMinterInfoOnContractAt(
+        address _coreContract,
+        uint256 _index
+    )
+        external
+        view
+        returns (
+            uint256 projectId,
+            address minterAddress,
+            string memory minterType
+        );
 
     /**
      * Owner of contract.
