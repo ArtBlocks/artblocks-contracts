@@ -10,7 +10,7 @@
     "@graphql-codegen/client-preset": "^3.0.1",
     "@graphql-codegen/typescript": "^3.0.4",
     "@graphql-codegen/typescript-document-nodes": "^3.0.4",
-    "@graphql-codegen/typescript-operations": "^3.0.4",
+    "@graphql-codegen/typescript-operations": "^4.0.0",
     "@graphql-codegen/typescript-urql": "^3.7.3",
     "dotenv": "^16.0.3",
     "husky": "^8.0.3"
