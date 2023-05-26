@@ -41,3 +41,46 @@ Date: 2023-05-26T21:09:29.303Z
 
 ---
 
+
+# Deployment
+
+Date: 2023-05-26T21:16:47.862Z
+
+## **Network:** goerli
+
+## **Environment:** staging
+
+**Deployment Input File:** `deployments/engine/V3/partners/unit-london-flex/deployment-config.staging.ts`
+
+**GenArt721CoreV3_Engine_Flex:** https://goerli.etherscan.io/address/0x01E2629379A7D776AF7F0534B71724D7eAE4873e#code
+
+**AdminACLV1:** https://goerli.etherscan.io/address/0xaF521be6D5103Ec63e4D75C8B565AFdb504d46e9#code
+
+**Engine Registry:** https://goerli.etherscan.io/address/0xEa698596b6009A622C3eD00dD5a8b5d1CAE4fC36#code
+
+**MinterFilterV1:** https://goerli.etherscan.io/address/0x98790C90af806f248695F1A750c93155c80a9819#code
+
+**Minters:**
+
+**MinterSetPriceV4:** https://goerli.etherscan.io/address/0x8cCD8bF96850369A2c279762000930e7c002125d#code
+
+
+
+**Metadata**
+
+- **Starting Project Id:** 0
+- **Token Name:** Unit London V2
+- **Token Ticker:** UNITLDN
+- **Auto Approve Artist Split Proposals:** true
+- **Render Provider Address, Primary Sales:** deployer
+- **Platform Provider Address, Primary Sales:** 0xb5B7fb32C42c2c1c49285D54A35aa70793404b1F
+- **BytecodeStorageReader Library:** 0xB8B806A10d16cc80dB788552B54B3ECb4A2A3C3D
+
+**Other**
+
+- **Add initial project?:** false
+- **Add initial token?:** false
+- **Image Bucket:** unit-london-v2-goerli
+
+---
+
