@@ -46,7 +46,7 @@
     "collectCoverage": true,
     "coveragePathIgnorePatterns": [
       "/node_modules/",
-      "/src/contracts"
+      "/src/generated"
     ],
     "coverageThreshold": {
       "global": {

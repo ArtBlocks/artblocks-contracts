@@ -1,5 +1,8 @@
 import { describe, it, expect } from "@jest/globals";
-import { generateUserMerkleProof } from "./allowlist";
+import {
+  generateUserMerkleProof,
+  AllowlistEntryDoesNotExist,
+} from "./allowlist";
 
 const ALLOWLIST = [
   "0x81c41D4405bd22A2012830870A10E26D3F740A31",
@@ -19,12 +22,24 @@ describe("generateUserMerkleProof", () => {
     ]);
   });
 
-  it("should generate a empty proof for a user not on the allowlist", () => {
-    expect(
+  it("should generate an empty merkle proof for a single-entry allowlist", () => {
+    expect(generateUserMerkleProof([ALLOWLIST[0]], ALLOWLIST[0])).toEqual([]);
+  });
+
+  it("should raise an error for a user not on the allowlist", () => {
+    expect(() => {
       generateUserMerkleProof(
         ALLOWLIST,
         "0xE523cCE52746962e4d2FB181E59b3A5DcEB65B44"
-      )
-    ).toEqual([]);
+      );
+    }).toThrowError(AllowlistEntryDoesNotExist);
+  });
+});
+
+describe("AllowlistEntryDoesNotExist", () => {
+  it("specifies the name of the error with an error message", () => {
+    const error = new AllowlistEntryDoesNotExist();
+    expect(error.name).toEqual("AllowlistEntryDoesNotExist");
+    expect(error.message.length).toBeGreaterThan(0);
   });
 });

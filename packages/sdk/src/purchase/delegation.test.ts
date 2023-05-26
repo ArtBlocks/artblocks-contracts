@@ -1,14 +1,13 @@
 import { describe, it, expect } from "@jest/globals";
 
 import {
-  MultipleDelegationsError,
-  getDelegateVault,
+  getDelegateVaults,
   getDelegationRegistryContract,
   DELEGATION_REGISTRY,
 } from "./delegation";
 
 import { ethers } from "ethers";
-import { IDelegationRegistry__factory } from "../contracts/factories/IDelegationRegistry__factory";
+import { IDelegationRegistry__factory } from "../generated/contracts/factories/IDelegationRegistry__factory";
 
 const DELEGATE_TEST_ADDRESS = "0x81c41D4405bd22A2012830870A10E26D3F740A31";
 const FAKE_VAULT_ADDRESS = "0xbea796E9f85E9821d4910AE9D2bA64A24b60Aae3";
@@ -39,11 +38,11 @@ describe("getDelegateVault", () => {
       getDelegationsByDelegate: async () => [{ vault: FAKE_VAULT_ADDRESS }],
     });
     IDelegationRegistry__factory.connect = mockConnect;
-    const vault = await getDelegateVault(provider, DELEGATE_TEST_ADDRESS);
-    expect(vault).toEqual(FAKE_VAULT_ADDRESS);
+    const vault = await getDelegateVaults(provider, DELEGATE_TEST_ADDRESS);
+    expect(vault).toEqual([FAKE_VAULT_ADDRESS]);
   });
 
-  it("should return undefined when the user has not delegated", async () => {
+  it("returns 2 vaults when the user is a delegate for 2 vaults", async () => {
     const mockConnect = jest.fn();
     const provider = new ethers.providers.JsonRpcProvider();
     mockConnect.mockReturnValueOnce({
@@ -54,27 +53,19 @@ describe("getDelegateVault", () => {
     });
     IDelegationRegistry__factory.connect = mockConnect;
 
-    await expect(
-      getDelegateVault(provider, DELEGATE_TEST_ADDRESS)
-    ).rejects.toThrowError(MultipleDelegationsError);
+    expect(
+      await getDelegateVaults(provider, DELEGATE_TEST_ADDRESS)
+    ).toHaveLength(2);
   });
 
-  it("should return undefined when the user has not delegated", async () => {
+  it("should return empty array when the user has not delegated", async () => {
     const mockConnect = jest.fn();
     const provider = new ethers.providers.JsonRpcProvider();
     mockConnect.mockReturnValueOnce({
       getDelegationsByDelegate: async () => [],
     });
     IDelegationRegistry__factory.connect = mockConnect;
-    const vault = await getDelegateVault(provider, DELEGATE_TEST_ADDRESS);
-    expect(vault).toBeUndefined();
-  });
-});
-
-describe("MultipleDelegationsError", () => {
-  it("specifies the name of the error with an error message", () => {
-    const error = new MultipleDelegationsError();
-    expect(error.name).toEqual("MultipleDelegationsError");
-    expect(error.message.length).toBeGreaterThan(0);
+    const vaults = await getDelegateVaults(provider, DELEGATE_TEST_ADDRESS);
+    expect(vaults).toEqual([]);
   });
 });
