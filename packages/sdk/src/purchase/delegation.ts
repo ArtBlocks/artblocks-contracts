@@ -1,29 +1,13 @@
 import { ethers, Signer, providers } from "ethers";
 
-import { IDelegationRegistry } from "../contracts/IDelegationRegistry";
-import { IDelegationRegistry__factory } from "../contracts/factories/IDelegationRegistry__factory";
+import { IDelegationRegistry } from "../generated/contracts/IDelegationRegistry";
+import { IDelegationRegistry__factory } from "../generated/contracts/factories/IDelegationRegistry__factory";
 
 /**
  * Define the registry for delegating a hot wallet to mint/claim airdrops on behalf of a vault wallet
  * @see https://delegate.cash/
  */
 export const DELEGATION_REGISTRY = "0x00000000000076a84fef008cdabe6409d2fe638b";
-
-/**
- * @summary Error thrown when a user is a delegate on behalf of multiple vaults.
- * @description Currently, only a single vault can be delegated to at a time.
- * This error is thrown when a user has delegated to multiple vaults, and provides
- * an easy way for SDK consumers to catch this error and display a helpful message
- * to the user.
- */
-export class MultipleDelegationsError extends Error {
-  constructor() {
-    super(
-      "Delegating multiple vaults is not currently supported. You may run into errors when minting allowlisted projects."
-    );
-    this.name = "MultipleDelegationsError";
-  }
-}
 
 /**
  * @summary Get the delegation registry contract.
@@ -45,7 +29,7 @@ export const getDelegationRegistryContract = (
 };
 
 /**
- * @summary Get the vault that the user has delegated to.
+ * @summary Get the vaults for which the user is a delegate.
  * @description This function is used to determine if the user has delegated to a vault. If
  * the user has delegated to a vault, then the user will be able to mint
  * allowlisted projects from that vault. Currently, only a single vault
@@ -54,16 +38,11 @@ export const getDelegationRegistryContract = (
  * @param account the current user's wallet address
  * @returns the single vault address that the user has delegated to
  */
-export async function getDelegateVault(
+export async function getDelegateVaults(
   provider: ethers.providers.Provider,
   account: string
-): Promise<string | undefined> {
+): Promise<string[]> {
   const contract = getDelegationRegistryContract(DELEGATION_REGISTRY, provider);
   const userDelegatedVault = await contract.getDelegationsByDelegate(account);
-
-  if (userDelegatedVault.length > 1) {
-    throw new MultipleDelegationsError();
-  } else {
-    return userDelegatedVault[0]?.vault;
-  }
+  return userDelegatedVault.map((vault) => vault.vault);
 }
