@@ -1,0 +1,45 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-05-26T21:06:38.509Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/unit-london-flex/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0xB21d6613242c8CbB4222B59b8aD24a83989CE2EE
+[INFO] Randomizer BasicRandomizerV2 deployed at 0x8e85d8cab4a2f518CE0DEFB0C1BD711d5274b8C0
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0xd743914D8b769c9384068557125Eb26d9c47e996
+[INFO] Minter Filter MinterFilterV1 deployed at 0x292CFA3A66971B5F62a11debe2A3A94E01f6147e
+[INFO] MinterSetPriceV4 deployed at 0xC66A38eBED9E225E4711DF5895195A13bde9f224
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0x292CFA3A66971B5F62a11debe2A3A94E01f6147e.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0xC66A38eBED9E225E4711DF5895195A13bde9f224 on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0xb5B7fb32C42c2c1c49285D54A35aa70793404b1F.
+[INFO] Verifying core contract contract deployment...
+The contract 0xd743914D8b769c9384068557125Eb26d9c47e996 has already been verified
+[INFO] Core contract verified on Etherscan at 0xd743914D8b769c9384068557125Eb26d9c47e996}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0xB21d6613242c8CbB4222B59b8aD24a83989CE2EE has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0xB21d6613242c8CbB4222B59b8aD24a83989CE2EE}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0x292CFA3A66971B5F62a11debe2A3A94E01f6147e has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0x292CFA3A66971B5F62a11debe2A3A94E01f6147e}
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+The contract 0xC66A38eBED9E225E4711DF5895195A13bde9f224 has already been verified
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0xC66A38eBED9E225E4711DF5895195A13bde9f224}
+Created s3 bucket for https://unit-london-goerli.s3.amazonaws.com
+[INFO] Created image bucket unit-london-goerli
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/unit-london-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0xd743914d8b769c9384068557125eb26d9c47e996",
+  "name": "Unit London",
+  "bucket_name": "unit-london-goerli",
+  "default_vertical_name": "flex"
+}
+Error upserting contracts: [GraphQL] Uniqueness violation. duplicate key value violates unique constraint "contracts_metadata_name_key"
+----------------------------------------
+[INFO] Datetime of deployment: 2023-05-26T21:13:37.189Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/unit-london-flex/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
