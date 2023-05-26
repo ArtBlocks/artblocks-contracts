@@ -30,13 +30,12 @@ export const getDelegationRegistryContract = (
 
 /**
  * @summary Get the vaults for which the user is a delegate.
- * @description This function is used to determine if the user has delegated to a vault. If
+ * @description This function is used to retrieve the vaults for which the user is a delegate. If
  * the user has delegated to a vault, then the user will be able to mint
- * allowlisted projects from that vault. Currently, only a single vault
- * can be delegated for any single wallet at a time.
+ * allowlisted projects from that vault.
  * @param provider ethers provider to use for the contract call
  * @param account the current user's wallet address
- * @returns the single vault address that the user has delegated to
+ * @returns array of vault addresses for which the user is a delegate
  */
 export async function getDelegateVaults(
   provider: ethers.providers.Provider,
