@@ -31,7 +31,7 @@
     "build:docs": "jsdoc -c jsdoc.json",
     "pre-commit": "yarn lint",
     "pre-push": "yarn test",
-    "build:typechain": "typechain --target ethers-v5 --out-dir ./src/contracts './artifacts/*.json' './node_modules/@artblocks/contracts/artifacts/**/*.json'"
+    "build:typechain": "typechain --target ethers-v5 --out-dir ./src/contracts './artifacts/*.json' '../../node_modules/@artblocks/contracts/artifacts/**/*.json'"
   },
   "lint-staged": {
     "*.{js,ts,tsx, jsx}": [
