@@ -304,11 +304,11 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
             contractApprovedMinters[_coreContract].add(_minter),
             "Minter already approved"
         );
-        emit MinterApprovedForContract(
-            _coreContract,
-            _minter,
-            IFilteredMinterV0(_minter).minterType()
-        );
+        emit MinterApprovedForContract({
+            coreContract: _coreContract,
+            minter: _minter,
+            minterType: IFilteredMinterV0(_minter).minterType()
+        });
     }
 
     /**
@@ -338,7 +338,10 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
             contractApprovedMinters[_coreContract].remove(_minter),
             "Only previously approved minter"
         );
-        emit MinterRevokedForContract(_coreContract, _minter);
+        emit MinterRevokedForContract({
+            coreContract: _coreContract,
+            minter: _minter
+        });
     }
 
     /**
@@ -383,12 +386,12 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
         // assign new minter
         numProjectsUsingMinter[_minter]++;
         minterForProject[_coreContract].set(_projectId, _minter);
-        emit ProjectMinterRegistered(
-            _projectId,
-            _coreContract,
-            _minter,
-            IFilteredMinterV0(_minter).minterType()
-        );
+        emit ProjectMinterRegistered({
+            projectId: _projectId,
+            coreContract: _coreContract,
+            minter: _minter,
+            minterType: IFilteredMinterV0(_minter).minterType()
+        });
     }
 
     /**

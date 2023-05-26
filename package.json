@@ -6,13 +6,21 @@
     "packages/*"
   ],
   "devDependencies": {
+    "@graphql-codegen/cli": "^4.0.0",
+    "@graphql-codegen/client-preset": "^3.0.1",
+    "@graphql-codegen/typescript": "^4.0.0",
+    "@graphql-codegen/typescript-document-nodes": "^4.0.0",
+    "@graphql-codegen/typescript-operations": "^4.0.0",
+    "@graphql-codegen/typescript-urql": "^3.7.3",
+    "dotenv": "^16.0.3",
     "husky": "^8.0.3"
   },
   "scripts": {
     "build": "yarn workspace @artblocks/contracts run build && yarn workspace @artblocks/sdk run build",
+    "codegen:project": "graphql-codegen dotenv_config_path=./.env --require dotenv/config --config graphql.config.ts --project",
     "prepare": "husky install",
     "pre-commit": "yarn workspace @artblocks/contracts run pre-commit && yarn workspace @artblocks/sdk run pre-commit",
-    "pre-push": "yarn workspace @artblocks/contracts run pre-push && yarn workspace @artblocks/sdk run pre-push",
+    "pre-push": "yarn workspace @artblocks/sdk run pre-push",
     "release": "yarn build && yarn changeset publish"
   },
   "dependencies": {
