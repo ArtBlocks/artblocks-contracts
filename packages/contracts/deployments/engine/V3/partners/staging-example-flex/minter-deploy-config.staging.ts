@@ -8,7 +8,7 @@ export const minterDeployDetailsArray = [
     // Please set to "dev", "staging", or "mainnet", as appropriate
     environment: "staging",
     minterName: "MinterSetPriceV4",
-    genArt721V3CoreAddress: "0x6200437235E9AB363e83A53666871d745BfE52F3",
-    minterFilterAddress: "0x868A6FFA1020E78e73ea7573c443C1BECF934068",
+    genArt721V3CoreAddress: "0x42F05a460587Ddd1AFFEf43BfF933e78d6b34424",
+    minterFilterAddress: "0xA212fF59FeE69C5bB233ceC3873a2cb42546D30b",
   },
 ];

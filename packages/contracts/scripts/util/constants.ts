@@ -12,6 +12,7 @@ export const DELEGATION_REGISTRY_ADDRESSES = {
 // BytecodeStorageReader library addresses on supported networks
 export const BYTECODE_STORAGE_READER_LIBRARY_ADDRESSES = {
   // note: _different_ address for goerli and mainnet
+  "arbitrum-goerli": "0x681861cD4fC92d70aE57745385065ef862954662",
   goerli: "0xB8B806A10d16cc80dB788552B54B3ECb4A2A3C3D",
   mainnet: "0xf0585dF582A0ad119F1616FB82f3b449a98EeCd5",
 };
@@ -40,6 +41,9 @@ export const KNOWN_ENGINE_REGISTRIES = {
   "arbitrum-goerli": {
     // [INDEXED] arbitrum goerli dev | deployer: lindsay dev wallet
     "0x429af8eE97750aaddE1e8df9e921e11406ff9ed2":
+      "0x3b9038fa89783CBA1933c1689043b4dae2032d1c",
+    // [INDEXED] arbitrum goerli staging | deployer: lindsay dev wallet
+    "0x25841600e79E9A5263Ec4badcC328AD9CFE5f8C8":
       "0x3b9038fa89783CBA1933c1689043b4dae2032d1c",
   },
 };
