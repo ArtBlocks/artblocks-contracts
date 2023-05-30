@@ -116,7 +116,6 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
         uint256 _projectId,
         address _coreContract
     ) public {
-        _onlyArtist(_projectId, _coreContract);
         uint256 maxInvocations = MaxInvocationsLib
             .syncProjectMaxInvocationsToCore(
                 _projectId,

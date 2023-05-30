@@ -249,6 +249,7 @@ contract MinterSetPriceV5Holder is
         // emit approve event
         emit AllowedHoldersOfProjects(
             _projectId,
+            _coreContract,
             _ownedNFTAddresses,
             _ownedNFTProjectIds
         );
@@ -288,6 +289,7 @@ contract MinterSetPriceV5Holder is
         // emit removed event
         emit RemovedHoldersOfProjects(
             _projectId,
+            _coreContract,
             _ownedNFTAddresses,
             _ownedNFTProjectIds
         );
@@ -555,27 +557,7 @@ contract MinterSetPriceV5Holder is
         address _ownedNFTAddress,
         uint256 _ownedNFTTokenId
     ) external payable returns (uint256 tokenId) {
-        tokenId = purchaseTo_dlc(
-            msg.sender,
-            _projectId,
-            _coreContract,
-            _ownedNFTAddress,
-            _ownedNFTTokenId,
-            address(0)
-        );
-        return tokenId;
-    }
-
-    /**
-     * @notice gas-optimized version of purchase(uint256,address,uint256).
-     */
-    function purchase_nnf(
-        uint256 _projectId,
-        address _coreContract,
-        address _ownedNFTAddress,
-        uint256 _ownedNFTTokenId
-    ) external payable returns (uint256 tokenId) {
-        tokenId = purchaseTo_dlc(
+        tokenId = purchaseTo(
             msg.sender,
             _projectId,
             _coreContract,
@@ -605,45 +587,13 @@ contract MinterSetPriceV5Holder is
         uint256 _ownedNFTTokenId
     ) external payable returns (uint256 tokenId) {
         return
-            purchaseTo_dlc(
+            purchaseTo(
                 _to,
                 _projectId,
                 _coreContract,
                 _ownedNFTAddress,
                 _ownedNFTTokenId,
                 address(0)
-            );
-    }
-
-    /**
-     * @notice Purchases a token from project `_projectId` and sets
-     *         the token's owner to `_to`, as a delegate, (the `msg.sender`)
-     *         on behalf of an explicitly defined vault.
-     * @param _to Address to be the new token's owner.
-     * @param _projectId Project ID to mint a token on.
-     * @param _ownedNFTAddress ERC-721 NFT address holding the project token owned by
-     *         _vault (or msg.sender if no _vault is provided) being used to claim right to purchase.
-     * @param _ownedNFTTokenId ERC-721 NFT token ID owned by _vault (or msg.sender if
-     *         no _vault is provided) being used to claim right to purchase.
-     * @param _vault Vault being purchased on behalf of.  Acceptable to be `address(0)` if no vault.
-     * @return tokenId Token ID of minted token
-     */
-    function purchaseTo(
-        address _to,
-        uint256 _projectId,
-        address _coreContract,
-        address _ownedNFTAddress,
-        uint256 _ownedNFTTokenId,
-        address _vault
-    ) external payable returns (uint256 tokenId) {
-        return
-            purchaseTo_dlc(
-                _to,
-                _projectId,
-                _coreContract,
-                _ownedNFTAddress,
-                _ownedNFTTokenId,
-                _vault
             );
     }
 
@@ -658,7 +608,7 @@ contract MinterSetPriceV5Holder is
      * @param _vault Vault being purchased on behalf of. Acceptable to be `address(0)` if no vault.
      * @return tokenId Token ID of minted token
      */
-    function purchaseTo_dlc(
+    function purchaseTo(
         address _to,
         uint256 _projectId,
         address _coreContract,

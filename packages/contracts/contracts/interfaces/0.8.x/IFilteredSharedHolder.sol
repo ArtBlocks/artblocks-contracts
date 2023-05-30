@@ -28,6 +28,7 @@ interface IFilteredSharedHolder {
      */
     event AllowedHoldersOfProjects(
         uint256 indexed _projectId,
+        address _coreContract,
         address[] _ownedNFTAddresses,
         uint256[] _ownedNFTProjectIds
     );
@@ -40,6 +41,7 @@ interface IFilteredSharedHolder {
      */
     event RemovedHoldersOfProjects(
         uint256 indexed _projectId,
+        address _coreContract,
         address[] _ownedNFTAddresses,
         uint256[] _ownedNFTProjectIds
     );

@@ -6,7 +6,7 @@ import "../../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
 import "../../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
 import "../../interfaces/0.8.x/IGenArt721CoreContractV3_Engine.sol";
 
-import "/Users/ben/Documents/artblocks/artblocks-contracts/node_modules/@openzeppelin-4.7/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin-4.7/contracts/token/ERC20/IERC20.sol";
 
 pragma solidity ^0.8.0;
 
