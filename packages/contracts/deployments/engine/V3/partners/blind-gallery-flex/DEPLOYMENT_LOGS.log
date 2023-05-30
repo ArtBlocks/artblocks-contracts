@@ -1,0 +1,84 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-05-26T20:43:09.244Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/blind-gallery-flex/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x8287cbc482A41Dc4feD44988010a96721B422962
+[INFO] Randomizer BasicRandomizerV2 deployed at 0x8a1609c62166E1F5c3ee5A0Ac252c0dD8c56295a
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x7b194B69b6E6e145808780FB2A99a702C65D2D0F
+[INFO] Minter Filter MinterFilterV1 deployed at 0x87BF2D47f2F2F0F7D192Fb57Bff9701373dc8b16
+[INFO] MinterSetPriceV4 deployed at 0xFC7b9BaEa90BcAd3067F32327BA963b23d0684C1
+[INFO] MinterDALinV4 deployed at 0xe9bdeA85fed106d6882d9d6851f7f3A5886B1FB0
+[INFO] MinterMerkleV5 deployed at 0xB17613AD24F7162BAAC130ace822b096Fd3A0e0A
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0x87BF2D47f2F2F0F7D192Fb57Bff9701373dc8b16.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0xFC7b9BaEa90BcAd3067F32327BA963b23d0684C1 on minter filter.
+[INFO] Allowlisted minter MinterDALinV4 at 0xe9bdeA85fed106d6882d9d6851f7f3A5886B1FB0 on minter filter.
+[INFO] Allowlisted minter MinterMerkleV5 at 0xB17613AD24F7162BAAC130ace822b096Fd3A0e0A on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0xA0F3c892D9Ea86Ef0C0b0fe8C5e1727A93Da18D7.
+[INFO] Verifying core contract contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/engine/V3/GenArt721CoreV3_Engine_Flex.sol:GenArt721CoreV3_Engine_Flex at 0x7b194B69b6E6e145808780FB2A99a702C65D2D0F
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract GenArt721CoreV3_Engine_Flex on Etherscan.
+https://goerli.etherscan.io/address/0x7b194B69b6E6e145808780FB2A99a702C65D2D0F#code
+[INFO] Core contract verified on Etherscan at 0x7b194B69b6E6e145808780FB2A99a702C65D2D0F}
+[INFO] Verifying AdminACL contract deployment...
+Compiled 222 Solidity files successfully
+[WARN] Etherscan verification of AdminACL failed: SyntaxError: /Users/jakerockland/Code/artblocks-contracts/packages/contracts/artifacts/contracts/minter-suite/Minters/MinterMerkleV5.sol/MinterMerkleV5.dbg.json: Unexpected end of JSON input
+[ACTION] Verify AdminACL contract deployment with:
+yarn hardhat verify --network goerli 0x8287cbc482A41Dc4feD44988010a96721B422962 
+[INFO] Verifying MinterFilter contract deployment...
+Compiled 222 Solidity files successfully
+Successfully submitted source code for contract
+contracts/minter-suite/MinterFilter/MinterFilterV1.sol:MinterFilterV1 at 0x87BF2D47f2F2F0F7D192Fb57Bff9701373dc8b16
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterFilterV1 on Etherscan.
+https://goerli.etherscan.io/address/0x87BF2D47f2F2F0F7D192Fb57Bff9701373dc8b16#code
+[INFO] MinterFilter contract verified on Etherscan at 0x87BF2D47f2F2F0F7D192Fb57Bff9701373dc8b16}
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+Compiled 222 Solidity files successfully
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterSetPriceV4.sol:MinterSetPriceV4 at 0xFC7b9BaEa90BcAd3067F32327BA963b23d0684C1
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterSetPriceV4 on Etherscan.
+https://goerli.etherscan.io/address/0xFC7b9BaEa90BcAd3067F32327BA963b23d0684C1#code
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0xFC7b9BaEa90BcAd3067F32327BA963b23d0684C1}
+[INFO] Verifying MinterDALinV4 contract deployment...
+Compiled 222 Solidity files successfully
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterDALinV4.sol:MinterDALinV4 at 0xe9bdeA85fed106d6882d9d6851f7f3A5886B1FB0
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterDALinV4 on Etherscan.
+https://goerli.etherscan.io/address/0xe9bdeA85fed106d6882d9d6851f7f3A5886B1FB0#code
+[INFO] MinterDALinV4 contract verified on Etherscan at 0xe9bdeA85fed106d6882d9d6851f7f3A5886B1FB0}
+[INFO] Verifying MinterMerkleV5 contract deployment...
+Compiled 222 Solidity files successfully
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterMerkleV5.sol:MinterMerkleV5 at 0xB17613AD24F7162BAAC130ace822b096Fd3A0e0A
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterMerkleV5 on Etherscan.
+https://goerli.etherscan.io/address/0xB17613AD24F7162BAAC130ace822b096Fd3A0e0A#code
+[INFO] MinterMerkleV5 contract verified on Etherscan at 0xB17613AD24F7162BAAC130ace822b096Fd3A0e0A}
+Created s3 bucket for https://blind-gallery-goerli.s3.amazonaws.com
+[INFO] Created image bucket blind-gallery-goerli
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/blind-gallery-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x7b194b69b6e6e145808780fb2a99a702c65d2d0f",
+  "name": "Blind Gallery",
+  "bucket_name": "blind-gallery-goerli",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0xA0F3c892D9Ea86Ef0C0b0fe8C5e1727A93Da18D7, don't forget to update if requred.

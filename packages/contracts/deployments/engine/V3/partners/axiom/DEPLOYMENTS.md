@@ -61,3 +61,48 @@ Date: 2023-05-12T22:34:57.715Z
 
 ---
 
+
+# Deployment
+
+Date: 2023-05-26T19:59:18.350Z
+
+## **Network:** mainnet
+
+## **Environment:** mainnet
+
+**Deployment Input File:** `deployments/engine/V3/partners/axiom/deployment-config.mainnet.ts`
+
+**GenArt721CoreV3_Engine:** https://etherscan.io/address/0x9209070E1447018638e15b73Dbee46Bf085fcf5f#code
+
+**AdminACLV1:** https://etherscan.io/address/0xD0A385CfF92a27ffC8B3C3ef83fcbC63181A2d66#code
+
+**Engine Registry:** https://etherscan.io/address/0x652490c8BB6e7ec3Fd798537D2F348D7904BBbc2#code
+
+**MinterFilterV1:** https://etherscan.io/address/0xcbc3B677a4c8534626014f58FB683E3974938458#code
+
+**Minters:**
+
+**MinterSetPriceV4:** https://etherscan.io/address/0x3C7e46a41aa80b4CE885221845EAF055EF5cA87D#code
+
+**MinterDALinV4:** https://etherscan.io/address/0xeDa9d6D52eCdCE6efbfC6f4E24C133335431788A#code
+
+
+
+**Metadata**
+
+- **Starting Project Id:** 34
+- **Token Name:** Axiom Space3
+- **Token Ticker:** AXIOM
+- **Auto Approve Artist Split Proposals:** false
+- **Render Provider Address, Primary Sales:** 0x27c914E3E5C4a008C3F04578323293DcAeE13B72
+- **Platform Provider Address, Primary Sales:** 0x52dba55dd2b5de24f51efc6c57231c173e869fb9
+- **BytecodeStorageReader Library:** 0xf0585dF582A0ad119F1616FB82f3b449a98EeCd5
+
+**Other**
+
+- **Add initial project?:** false
+- **Add initial token?:** false
+- **Image Bucket:** axiom-space3-mainnet
+
+---
+
