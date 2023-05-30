@@ -4,7 +4,7 @@ import { deployAndGet, deployCore, safeAddProject } from "../../../util/common";
 import { SetPrice_Common_Events } from "../common.events";
 import { ethers } from "hardhat";
 
-const TARGET_MINTER_NAME = "MinterSetPriceV5";
+const TARGET_MINTER_NAME = "MinterSetPriceV5Merkle";
 const TARGET_MINTER_VERSION = "v5.0.0";
 
 const runForEach = [
@@ -23,7 +23,7 @@ const runForEach = [
 ];
 
 runForEach.forEach((params) => {
-  describe(`MinterSetPrice Events w/ core ${params.core}`, async function () {
+  describe(`MinterSetPriceMerkle Events w/ core ${params.core}`, async function () {
     async function _beforeEach() {
       // load minter filter V2 fixture
       const config = await loadFixture(setupConfigWitMinterFilterV2Suite);
@@ -34,14 +34,21 @@ runForEach.forEach((params) => {
         adminACL: config.adminACL,
       } = await deployCore(config, params.core, config.coreRegistry));
 
+      config.delegationRegistry = await deployAndGet(
+        config,
+        "DelegationRegistry",
+        []
+      );
+
       // update core's minter as the minter filter
       await config.genArt721Core.updateMinterContract(
         config.minterFilter.address
       );
-
-      config.minter = await deployAndGet(config, "MinterSetPriceV5", [
+      config.minter = await deployAndGet(config, TARGET_MINTER_NAME, [
         config.minterFilter.address,
+        config.delegationRegistry.address,
       ]);
+
       await config.minterFilter
         .connect(config.accounts.deployer)
         .approveMinterGlobally(config.minter.address);
@@ -51,6 +58,11 @@ runForEach.forEach((params) => {
       );
 
       // Project setup
+      await safeAddProject(
+        config.genArt721Core,
+        config.accounts.deployer,
+        config.accounts.artist.address
+      );
       await safeAddProject(
         config.genArt721Core,
         config.accounts.deployer,
@@ -106,11 +118,166 @@ runForEach.forEach((params) => {
         .connect(config.accounts.artist)
         .updateProjectMaxInvocations(config.projectOne, 15);
 
+      config.minterSetPrice = await deployAndGet(config, "MinterSetPriceV5", [
+        config.minterFilter.address,
+      ]);
+      await config.minterFilter
+        .connect(config.accounts.deployer)
+        .approveMinterGlobally(config.minterSetPrice.address);
+
+      await config.minterFilter
+        .connect(config.accounts.deployer)
+        .setMinterForProject(
+          config.projectZero,
+          config.genArt721Core.address,
+          config.minterSetPrice.address
+        );
+      await config.minterSetPrice
+        .connect(config.accounts.artist)
+        .updatePricePerTokenInWei(
+          config.projectZero,
+          config.genArt721Core.address,
+          config.pricePerTokenInWei
+        );
+      await config.minterSetPrice
+        .connect(config.accounts.artist)
+        .purchase(config.projectZero, config.genArt721Core.address, {
+          value: config.pricePerTokenInWei,
+        });
+      // switch config.projectZero back to MinterHolderV0
+      await config.minterFilter
+        .connect(config.accounts.deployer)
+        .setMinterForProject(
+          config.projectZero,
+          config.genArt721Core.address,
+          config.minter.address
+        );
+
+      // populate Merkle elements for projects zero, one, and two
+      // populate Merkle elements for projects zero, one, and two
+      const elementsProjectZero = [];
+      const elementsProjectOne = [];
+      const elementsProjectTwo = [];
+
+      elementsProjectZero.push(
+        config.accounts.deployer.address,
+        config.accounts.artist.address,
+        config.accounts.additional.address,
+        config.accounts.user.address,
+        config.accounts.user2.address
+      );
+      elementsProjectOne.push(
+        config.accounts.user.address,
+        config.accounts.additional2.address
+      );
+      elementsProjectTwo.push(config.accounts.additional.address);
+
+      // build Merkle trees for projects zero, one, and two
+      config.merkleTreeZero = new MerkleTree(
+        elementsProjectZero.map((_addr) => hashAddress(_addr)),
+        keccak256,
+        {
+          sortPairs: true,
+        }
+      );
+      config.merkleTreeOne = new MerkleTree(
+        elementsProjectOne.map((_addr) => hashAddress(_addr)),
+        keccak256,
+        {
+          sortPairs: true,
+        }
+      );
+      config.merkleTreeTwo = new MerkleTree(
+        elementsProjectTwo.map((_addr) => hashAddress(_addr)),
+        keccak256,
+        {
+          sortPairs: true,
+        }
+      );
+
+      // update Merkle root for projects zero and one on minter
+      const merkleRootZero = config.merkleTreeZero.getHexRoot();
+      const merkleRootOne = config.merkleTreeOne.getHexRoot();
+      // Merkle root two intentionally not set
+      await config.minter
+        .connect(config.accounts.artist)
+        .updateMerkleRoot(
+          config.projectZero,
+          config.genArt721Core.address,
+          merkleRootZero
+        );
+      await config.minter
+        .connect(config.accounts.artist)
+        .updateMerkleRoot(
+          config.projectOne,
+          config.genArt721Core.address,
+          merkleRootOne
+        );
+
       return config;
     }
 
     describe("Common Set Price Minter Events Tests", async function () {
       await SetPrice_Common_Events(_beforeEach);
+    });
+
+    describe("updateMerkleRoot", async function () {
+      it("emits event when update merkle root", async function () {
+        const config = await loadFixture(_beforeEach);
+        const newMerkleRoot = config.merkleTreeZero.getHexRoot();
+        await expect(
+          config.minter
+            .connect(config.accounts.artist)
+            .updateMerkleRoot(config.projectZero, newMerkleRoot)
+        )
+          .to.emit(config.minter, "ConfigValueSet(uint256,bytes32,bytes32)")
+          .withArgs(config.projectZero, CONFIG_MERKLE_ROOT, newMerkleRoot);
+      });
+    });
+
+    describe("setProjectInvocationsPerAddress", async function () {
+      it("emits events when setting project max invocations per address", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expect(
+          config.minter
+            .connect(config.accounts.artist)
+            .setProjectInvocationsPerAddress(config.projectZero, 0)
+        )
+          .to.emit(config.minter, "ConfigValueSet(uint256,bytes32,bool)")
+          .withArgs(
+            config.projectZero,
+            CONFIG_USE_MAX_INVOCATIONS_PER_ADDRESS_OVERRIDE,
+            true
+          );
+        // expect zero value when set to zero
+        await expect(
+          config.minter
+            .connect(config.accounts.artist)
+            .setProjectInvocationsPerAddress(config.projectZero, 0)
+        )
+          .to.emit(config.minter, "ConfigValueSet(uint256,bytes32,uint256)")
+          .withArgs(config.projectZero, CONFIG_MAX_INVOCATIONS_OVERRIDE, 0);
+        // expect true again
+        await expect(
+          config.minter
+            .connect(config.accounts.artist)
+            .setProjectInvocationsPerAddress(config.projectZero, 0)
+        )
+          .to.emit(config.minter, "ConfigValueSet(uint256,bytes32,bool)")
+          .withArgs(
+            config.projectZero,
+            CONFIG_USE_MAX_INVOCATIONS_PER_ADDRESS_OVERRIDE,
+            true
+          );
+        // expect 999 value when set to 999
+        await expect(
+          config.minter
+            .connect(config.accounts.artist)
+            .setProjectInvocationsPerAddress(config.projectZero, 999)
+        )
+          .to.emit(config.minter, "ConfigValueSet(uint256,bytes32,uint256)")
+          .withArgs(config.projectZero, CONFIG_MAX_INVOCATIONS_OVERRIDE, 999);
+      });
     });
   });
 });

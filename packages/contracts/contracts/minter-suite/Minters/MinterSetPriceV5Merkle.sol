@@ -647,4 +647,63 @@ contract MinterSetPriceV5Merkle is
             ];
         return MerkleLib.projectMaxInvocationsPerAddress(_projectConfig);
     }
+
+    /**
+     * @notice Returns remaining invocations for a given address.
+     * If `projectLimitsMintInvocationsPerAddress` is false, individual
+     * addresses are only limited by the project's maximum invocations, and a
+     * dummy value of zero is returned for `mintInvocationsRemaining`.
+     * If `projectLimitsMintInvocationsPerAddress` is true, the quantity of
+     * remaining mint invocations for address `_address` is returned as
+     * `mintInvocationsRemaining`.
+     * Note that mint invocations per address can be changed at any time by the
+     * artist of a project.
+     * Also note that all mint invocations are limited by a project's maximum
+     * invocations as defined on the core contract. This function may return
+     * a value greater than the project's remaining invocations.
+     */
+    function projectRemainingInvocationsForAddress(
+        uint256 _projectId,
+        address _coreContract,
+        address _address
+    )
+        external
+        view
+        returns (
+            bool projectLimitsMintInvocationsPerAddress,
+            uint256 mintInvocationsRemaining
+        )
+    {
+        MerkleLib.MerkleProjectConfig
+            storage _merkleProjectConfig = merkleProjectConfig[_coreContract][
+                _projectId
+            ];
+        uint256 maxInvocationsPerAddress = MerkleLib
+            .projectMaxInvocationsPerAddress(_merkleProjectConfig);
+
+        if (maxInvocationsPerAddress == 0) {
+            // project does not limit mint invocations per address, so leave
+            // `projectLimitsMintInvocationsPerAddress` at solidity initial
+            // value of false. Also leave `mintInvocationsRemaining` at
+            // solidity initial value of zero, as indicated in this function's
+            // documentation.
+        } else {
+            projectLimitsMintInvocationsPerAddress = true;
+            uint256 userMintInvocations = projectUserMintInvocations[
+                _coreContract
+            ][_projectId][_address];
+            // if user has not reached max invocations per address, return
+            // remaining invocations
+            if (maxInvocationsPerAddress > userMintInvocations) {
+                unchecked {
+                    // will never underflow due to the check above
+                    mintInvocationsRemaining =
+                        maxInvocationsPerAddress -
+                        userMintInvocations;
+                }
+            }
+            // else user has reached their maximum invocations, so leave
+            // `mintInvocationsRemaining` at solidity initial value of zero
+        }
+    }
 }

@@ -85,10 +85,10 @@ contract MinterSetPriceV5Holder is
     IDelegationRegistry private immutable delegationRegistryContract;
 
     /// minterType for this minter
-    string public constant minterType = "MinterHolderV4";
+    string public constant minterType = "MinterSetPriceV5Holder";
 
     /// minter version for this minter
-    string public constant minterVersion = "v4.1.0";
+    string public constant minterVersion = "v5.0.0";
 
     uint256 constant ONE_MILLION = 1_000_000;
 

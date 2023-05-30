@@ -23,7 +23,7 @@ const runForEach = [
 ];
 
 runForEach.forEach((params) => {
-  describe(`MinterSetPrice Views w/ core ${params.core}`, async function () {
+  describe(`MinterSetPriceHolder Views w/ core ${params.core}`, async function () {
     async function _beforeEach() {
       // load minter filter V2 fixture
       const config = await loadFixture(setupConfigWitMinterFilterV2Suite);
@@ -34,17 +34,28 @@ runForEach.forEach((params) => {
         adminACL: config.adminACL,
       } = await deployCore(config, params.core, config.coreRegistry));
 
+      config.delegationRegistry = await deployAndGet(
+        config,
+        "DelegationRegistry",
+        []
+      );
+
       // update core's minter as the minter filter
       await config.genArt721Core.updateMinterContract(
         config.minterFilter.address
       );
-
-      config.minter = await deployAndGet(config, "MinterSetPriceV5", [
+      config.minter = await deployAndGet(config, TARGET_MINTER_NAME, [
         config.minterFilter.address,
+        config.delegationRegistry.address,
       ]);
+
       await config.minterFilter
         .connect(config.accounts.deployer)
         .approveMinterGlobally(config.minter.address);
+
+      config.higherPricePerTokenInWei = config.pricePerTokenInWei.add(
+        ethers.utils.parseEther("0.1")
+      );
 
       // Project setup
       await safeAddProject(
@@ -57,10 +68,50 @@ runForEach.forEach((params) => {
         config.accounts.deployer,
         config.accounts.artist.address
       );
+      await safeAddProject(
+        config.genArt721Core,
+        config.accounts.deployer,
+        config.accounts.artist.address
+      );
+
+      await config.genArt721Core
+        .connect(config.accounts.deployer)
+        .toggleProjectIsActive(config.projectZero);
+      await config.genArt721Core
+        .connect(config.accounts.deployer)
+        .toggleProjectIsActive(config.projectOne);
+      await config.genArt721Core
+        .connect(config.accounts.deployer)
+        .toggleProjectIsActive(config.projectTwo);
+
+      await config.genArt721Core
+        .connect(config.accounts.artist)
+        .toggleProjectIsPaused(config.projectZero);
+      await config.genArt721Core
+        .connect(config.accounts.artist)
+        .toggleProjectIsPaused(config.projectOne);
+      await config.genArt721Core
+        .connect(config.accounts.artist)
+        .toggleProjectIsPaused(config.projectTwo);
+
       await config.minterFilter
         .connect(config.accounts.deployer)
         .setMinterForProject(
           config.projectZero,
+          config.genArt721Core.address,
+          config.minter.address
+        );
+      await config.minterFilter
+        .connect(config.accounts.deployer)
+        .setMinterForProject(
+          config.projectOne,
+          config.genArt721Core.address,
+          config.minter.address
+        );
+      await config.minterFilter
+        .connect(config.accounts.deployer)
+        .setMinterForProject(
+          config.projectTwo,
           config.genArt721Core.address,
           config.minter.address
         );
@@ -73,11 +124,104 @@ runForEach.forEach((params) => {
           config.pricePerTokenInWei
         );
 
+      await config.genArt721Core
+        .connect(config.accounts.artist)
+        .updateProjectMaxInvocations(config.projectZero, 15);
+      await config.genArt721Core
+        .connect(config.accounts.artist)
+        .updateProjectMaxInvocations(config.projectOne, 15);
+
+      config.minterSetPrice = await deployAndGet(config, "MinterSetPriceV5", [
+        config.minterFilter.address,
+      ]);
+      await config.minterFilter
+        .connect(config.accounts.deployer)
+        .approveMinterGlobally(config.minterSetPrice.address);
+
+      await config.minterFilter
+        .connect(config.accounts.deployer)
+        .setMinterForProject(
+          config.projectZero,
+          config.genArt721Core.address,
+          config.minterSetPrice.address
+        );
+      await config.minterSetPrice
+        .connect(config.accounts.artist)
+        .updatePricePerTokenInWei(
+          config.projectZero,
+          config.genArt721Core.address,
+          config.pricePerTokenInWei
+        );
+      await config.minterSetPrice
+        .connect(config.accounts.artist)
+        .purchase(config.projectZero, config.genArt721Core.address, {
+          value: config.pricePerTokenInWei,
+        });
+      // switch config.projectZero back to MinterHolderV0
+      await config.minterFilter
+        .connect(config.accounts.deployer)
+        .setMinterForProject(
+          config.projectZero,
+          config.genArt721Core.address,
+          config.minter.address
+        );
+
+      await config.minter
+        .connect(config.accounts.deployer)
+        .registerNFTAddress(
+          config.genArt721Core.address,
+          config.genArt721Core.address
+        );
+      await config.minter
+        .connect(config.accounts.artist)
+        .allowHoldersOfProjects(
+          config.projectZero,
+          config.genArt721Core.address,
+          [config.genArt721Core.address],
+          [config.projectZero]
+        );
+
       return config;
     }
 
     describe("Common Set Price Minter Views Tests", async function () {
       await SetPrice_Common_Views(_beforeEach);
+    });
+
+    describe("projectMaxHasBeenInvoked", async function () {
+      it("should return true if project has been minted out", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
+        await config.minter
+          .connect(config.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(
+            config.projectZero,
+            config.genArt721Core.address,
+            2
+          );
+        await config.minter
+          .connect(config.accounts.artist)
+          ["purchase(uint256,address,address,uint256)"](
+            config.projectZero,
+            config.genArt721Core.address,
+            config.genArt721Core.address,
+            config.projectZeroTokenZero.toNumber(),
+            {
+              value: config.pricePerTokenInWei,
+            }
+          );
+        let result = await config.minter.projectMaxHasBeenInvoked(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(result).to.equal(true);
+      });
     });
 
     describe("minterVersion", async function () {
