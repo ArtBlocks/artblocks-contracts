@@ -36,7 +36,7 @@ pragma solidity 0.8.19;
  * Additional admin and artist privileged roles may be described on other
  * contracts that this minter integrates with.
  */
-contract MinterSetPriceV5Merkle is
+contract MinterSetPriceMerkleV5 is
     ReentrancyGuard,
     ISharedMinterV0,
     IFilteredSharedMerkle
@@ -48,7 +48,7 @@ contract MinterSetPriceV5Merkle is
     IMinterFilterV1 private immutable minterFilter;
 
     /// minterType for this minter
-    string public constant minterType = "MinterSetPriceV5";
+    string public constant minterType = "MinterSetPriceMerkleV5";
 
     /// minter version for this minter
     string public constant minterVersion = "v5.0.0";
@@ -332,24 +332,6 @@ contract MinterSetPriceV5Merkle is
     }
 
     /**
-     * @notice gas-optimized version of purchase(uint256).
-     */
-    function purchase_H4M(
-        uint256 _projectId,
-        address _coreContract,
-        bytes32[] calldata _proof
-    ) external payable returns (uint256 tokenId) {
-        tokenId = purchaseTo(
-            msg.sender,
-            _projectId,
-            _coreContract,
-            _proof,
-            address(0)
-        );
-        return tokenId;
-    }
-
-    /**
      * @notice Purchases a token from project `_projectId` and sets
      * the token's owner to `_to`.
      * @param _to Address to be the new token's owner.
@@ -476,29 +458,12 @@ contract MinterSetPriceV5Merkle is
             msg.sender
         );
 
-        // invocation is token number plus one, and will never overflow due to
-        // limit of 1e6 invocations per project. block scope for gas efficiency
-        // (i.e. avoid an unnecessary var initialization to 0).
-        unchecked {
-            uint256 tokenInvocation = (tokenId % ONE_MILLION) + 1;
-            uint256 localMaxInvocations = _maxInvocationsProjectConfig
-                .maxInvocations;
-            // handle the case where the token invocation == minter local max
-            // invocations occurred on a different minter, and we have a stale
-            // local maxHasBeenInvoked value returning a false negative.
-            // @dev this is a CHECK after EFFECTS, so security was considered
-            // in detail here.
-            require(
-                tokenInvocation <= localMaxInvocations,
-                "Maximum invocations reached"
-            );
-            // in typical case, update the local maxHasBeenInvoked value
-            // to true if the token invocation == minter local max invocations
-            // (enables gas efficient reverts after sellout)
-            if (tokenInvocation == localMaxInvocations) {
-                _maxInvocationsProjectConfig.maxHasBeenInvoked = true;
-            }
-        }
+        MaxInvocationsLib.purchaseEffectsInvocations(
+            _projectId,
+            _coreContract,
+            tokenId,
+            maxInvocationsProjectConfig
+        );
 
         // INTERACTIONS
         SplitFundsLib.splitFundsETH(

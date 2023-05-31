@@ -13,7 +13,7 @@ const { MerkleTree } = require("merkletreejs");
 const keccak256 = require("keccak256");
 import { revertMessages } from "../../constants";
 
-const TARGET_MINTER_NAME = "MinterSetPriceV5Merkle";
+const TARGET_MINTER_NAME = "MinterSetPriceMerkleV5";
 const TARGET_MINTER_VERSION = "v5.0.0";
 
 const runForEach = [

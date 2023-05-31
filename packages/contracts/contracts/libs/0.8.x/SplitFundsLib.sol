@@ -233,7 +233,8 @@ library SplitFundsLib {
     /**
      * @notice Returns whether a V3 core contract is an Art Blocks Engine
      * contract or not. Return value of false indicates that the core is a
-     * flagship contract.
+     * flagship contract. If this function resolves without reverting, it also
+     * updates the cache state for the given V3 core contract.
      * @dev this function reverts if a core contract does not return the
      * expected number of return values from getPrimaryRevenueSplits() for
      * either a flagship or engine core contract.

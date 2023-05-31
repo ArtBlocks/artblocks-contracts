@@ -270,17 +270,6 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
     }
 
     /**
-     * @notice gas-optimized version of purchase(uint256).
-     */
-    function purchase_H4M(
-        uint256 _projectId,
-        address _coreContract
-    ) external payable returns (uint256 tokenId) {
-        tokenId = purchaseTo(msg.sender, _projectId, _coreContract);
-        return tokenId;
-    }
-
-    /**
      * @notice gas-optimized version of purchaseTo(address, uint256).
      */
     function purchaseTo(
@@ -327,29 +316,12 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
             msg.sender
         );
 
-        // invocation is token number plus one, and will never overflow due to
-        // limit of 1e6 invocations per project. block scope for gas efficiency
-        // (i.e. avoid an unnecessary var initialization to 0).
-        unchecked {
-            uint256 tokenInvocation = (tokenId % ONE_MILLION) + 1;
-            uint256 localMaxInvocations = _maxInvocationsProjectConfig
-                .maxInvocations;
-            // handle the case where the token invocation == minter local max
-            // invocations occurred on a different minter, and we have a stale
-            // local maxHasBeenInvoked value returning a false negative.
-            // @dev this is a CHECK after EFFECTS, so security was considered
-            // in detail here.
-            require(
-                tokenInvocation <= localMaxInvocations,
-                "Maximum invocations reached"
-            );
-            // in typical case, update the local maxHasBeenInvoked value
-            // to true if the token invocation == minter local max invocations
-            // (enables gas efficient reverts after sellout)
-            if (tokenInvocation == localMaxInvocations) {
-                _maxInvocationsProjectConfig.maxHasBeenInvoked = true;
-            }
-        }
+        MaxInvocationsLib.purchaseEffectsInvocations(
+            _projectId,
+            _coreContract,
+            tokenId,
+            maxInvocationsProjectConfig
+        );
 
         // INTERACTIONS
         SplitFundsLib.splitFundsETH(

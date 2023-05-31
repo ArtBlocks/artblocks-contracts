@@ -10,7 +10,7 @@ import {
 import { ethers } from "hardhat";
 import { revertMessages } from "../../constants";
 
-const TARGET_MINTER_NAME = "MinterSetPriceV5Holder";
+const TARGET_MINTER_NAME = "MinterSetPriceHolderV5";
 const TARGET_MINTER_VERSION = "v5.0.0";
 
 const runForEach = [

@@ -12,7 +12,7 @@ import { revertMessages } from "../../constants";
 import { expect } from "chai";
 import { expectRevert } from "@openzeppelin/test-helpers";
 
-const TARGET_MINTER_NAME = "MinterSetPriceV5Holder";
+const TARGET_MINTER_NAME = "MinterSetPriceHolderV5";
 const TARGET_MINTER_VERSION = "v5.0.0";
 
 const runForEach = [

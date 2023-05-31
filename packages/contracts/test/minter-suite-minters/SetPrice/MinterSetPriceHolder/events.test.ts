@@ -5,7 +5,7 @@ import { SetPrice_Common_Events } from "../common.events";
 import { ethers } from "hardhat";
 import { expect } from "chai";
 
-const TARGET_MINTER_NAME = "MinterSetPriceV5Holder";
+const TARGET_MINTER_NAME = "MinterSetPriceHolderV5";
 const TARGET_MINTER_VERSION = "v5.0.0";
 
 const runForEach = [

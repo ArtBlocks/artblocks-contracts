@@ -64,7 +64,7 @@ pragma solidity 0.8.19;
  * wallet-level delegation. Contract-level delegations must be configured for the core
  * token contract as returned by the public immutable variable `genArt721CoreAddress`.
  */
-contract MinterSetPriceV5Holder is
+contract MinterSetPriceHolderV5 is
     ReentrancyGuard,
     ISharedMinterV0,
     IFilteredSharedHolder
@@ -85,7 +85,7 @@ contract MinterSetPriceV5Holder is
     IDelegationRegistry private immutable delegationRegistryContract;
 
     /// minterType for this minter
-    string public constant minterType = "MinterSetPriceV5Holder";
+    string public constant minterType = "MinterSetPriceHolderV5";
 
     /// minter version for this minter
     string public constant minterVersion = "v5.0.0";
@@ -686,29 +686,12 @@ contract MinterSetPriceV5Holder is
 
         // NOTE: delegate-vault handling **ends here**.
 
-        // invocation is token number plus one, and will never overflow due to
-        // limit of 1e6 invocations per project. block scope for gas efficiency
-        // (i.e. avoid an unnecessary var initialization to 0).
-        unchecked {
-            uint256 tokenInvocation = (tokenId % ONE_MILLION) + 1;
-            uint256 localMaxInvocations = _maxInvocationsProjectConfig
-                .maxInvocations;
-            // handle the case where the token invocation == minter local max
-            // invocations occurred on a different minter, and we have a stale
-            // local maxHasBeenInvoked value returning a false negative.
-            // @dev this is a CHECK after EFFECTS, so security was considered
-            // in detail here.
-            require(
-                tokenInvocation <= localMaxInvocations,
-                "Maximum invocations reached"
-            );
-            // in typical case, update the local maxHasBeenInvoked value
-            // to true if the token invocation == minter local max invocations
-            // (enables gas efficient reverts after sellout)
-            if (tokenInvocation == localMaxInvocations) {
-                _maxInvocationsProjectConfig.maxHasBeenInvoked = true;
-            }
-        }
+        MaxInvocationsLib.purchaseEffectsInvocations(
+            _projectId,
+            _coreContract,
+            tokenId,
+            maxInvocationsProjectConfig
+        );
 
         // INTERACTIONS
         // require sender to own NFT used to redeem
