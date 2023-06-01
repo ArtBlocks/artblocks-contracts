@@ -178,7 +178,7 @@ contract GenArt721CoreV3_Engine is
         bool paused;
         string name;
         string artist;
-        string description;
+        address descriptionAddress;
         string website;
         string license;
         string projectBaseURI;
@@ -1028,7 +1028,10 @@ contract GenArt721CoreV3_Engine is
             "Only artist when unlocked, owner when locked"
         );
         // effects
-        projects[_projectId].description = _projectDescription;
+        // store description in contract bytecode, replacing reference address from
+        // the old storage description with the newly created one
+        projects[_projectId].descriptionAddress = _projectDescription
+            .writeToBytecode();
         emit ProjectUpdated(_projectId, FIELD_PROJECT_DESCRIPTION);
     }
 
@@ -1436,7 +1439,7 @@ contract GenArt721CoreV3_Engine is
         Project storage project = projects[_projectId];
         projectName = project.name;
         artist = project.artist;
-        description = project.description;
+        description = _readFromBytecode(project.descriptionAddress);
         website = project.website;
         license = project.license;
     }
