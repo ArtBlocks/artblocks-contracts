@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 // Created By: Art Blocks Inc.
 
-import "../libs/0.8.x/SSTORE2.sol";
+import "../libs/v0.8.x/SSTORE2.sol";
 
 /**
  * @title Art Blocks SSTORE2Mock.

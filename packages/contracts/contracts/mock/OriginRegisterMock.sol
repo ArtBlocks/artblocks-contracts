@@ -2,7 +2,7 @@
 
 pragma solidity 0.8.19;
 
-import {ICoreRegistryV1} from "../interfaces/0.8.x/ICoreRegistryV1.sol";
+import {ICoreRegistryV1} from "../interfaces/v0.8.x/ICoreRegistryV1.sol";
 
 /**
  * @dev Mock contract for testing purposes.
