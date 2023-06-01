@@ -2,7 +2,7 @@
 // Created By: Art Blocks Inc.
 import hre from "hardhat";
 import { ethers } from "hardhat";
-import { BigNumber, Contract } from "ethers";
+import { Contract } from "ethers";
 import path from "path";
 import fs from "fs";
 var util = require("util");
