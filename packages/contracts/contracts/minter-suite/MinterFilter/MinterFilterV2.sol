@@ -3,12 +3,12 @@
 
 pragma solidity 0.8.19;
 
-import "../../interfaces/0.8.x/IMinterFilterV1.sol";
-import "../../interfaces/0.8.x/IFilteredMinterV0.sol";
-import "../../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
-import "../../interfaces/0.8.x/ICoreRegistryV1.sol";
+import "../../interfaces/v0.8.x/IMinterFilterV1.sol";
+import "../../interfaces/v0.8.x/IFilteredMinterV0.sol";
+import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
+import "../../interfaces/v0.8.x/ICoreRegistryV1.sol";
 
-import "../../libs/0.8.x/Bytes32Strings.sol";
+import "../../libs/v0.8.x/Bytes32Strings.sol";
 
 import "@openzeppelin-4.7/contracts/access/Ownable.sol";
 import "@openzeppelin-4.7/contracts/utils/structs/EnumerableMap.sol";

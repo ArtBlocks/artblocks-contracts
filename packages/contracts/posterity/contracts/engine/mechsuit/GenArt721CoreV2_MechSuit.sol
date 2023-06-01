@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Creatd By: Art Blocks Inc.
 
-import "../../libs/0.5.x/CustomERC721Metadata.sol";
-import "../../libs/0.5.x/Strings.sol";
+import "../../libs/v0.5.x/CustomERC721Metadata.sol";
+import "../../libs/v0.5.x/Strings.sol";
 
-import "../../interfaces/0.5.x/IRandomizer.sol";
-import "../../interfaces/0.5.x/IGenArt721CoreV2_PBAB.sol";
+import "../../interfaces/v0.5.x/IRandomizer.sol";
+import "../../interfaces/v0.5.x/IGenArt721CoreV2_PBAB.sol";
 
 pragma solidity ^0.5.0;
 

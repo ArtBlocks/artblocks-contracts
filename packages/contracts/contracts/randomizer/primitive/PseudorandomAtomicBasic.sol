@@ -3,7 +3,7 @@
 
 pragma solidity 0.8.19;
 
-import "../../interfaces/0.8.x/IPseudorandomAtomic.sol";
+import "../../interfaces/v0.8.x/IPseudorandomAtomic.sol";
 
 /**
  * @title PseudorandomAtomic

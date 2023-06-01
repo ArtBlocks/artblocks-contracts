@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../../interfaces/0.8.x/IRandomizer.sol";
-import "../../interfaces/0.8.x/IGenArt721CoreV2_PBAB.sol";
+import "../../interfaces/v0.8.x/IRandomizer.sol";
+import "../../interfaces/v0.8.x/IGenArt721CoreV2_PBAB.sol";
 
 import "@openzeppelin-4.5/contracts/utils/Strings.sol";
 import "@openzeppelin-4.5/contracts/token/ERC721/ERC721.sol";

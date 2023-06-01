@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
-import "../interfaces/0.8.x/IMinterFilterV1.sol";
+import "../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
+import "../interfaces/v0.8.x/IMinterFilterV1.sol";
 
 pragma solidity 0.8.19;
 

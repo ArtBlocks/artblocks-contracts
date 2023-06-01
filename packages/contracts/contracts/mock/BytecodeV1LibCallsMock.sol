@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 // Created By: Art Blocks Inc.
 
-import "../interfaces/0.8.x/IBytecodeStorageReader.sol";
+import "../interfaces/v0.8.x/IBytecodeStorageReader.sol";
 
 /**
  * @title Art Blocks IBytecodeStorageReader-conforming mock.
