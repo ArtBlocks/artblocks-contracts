@@ -3,7 +3,7 @@
 
 pragma solidity ^0.8.0;
 
-import "../../../../../interfaces/0.8.x/IAdminACLV0.sol";
+import "../../../../../interfaces/v0.8.x/IAdminACLV0.sol";
 
 interface IAdminACLV0_PROHIBITION is IAdminACLV0 {
     /**

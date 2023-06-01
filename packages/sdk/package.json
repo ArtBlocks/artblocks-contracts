@@ -7,9 +7,11 @@
   "author": "Art Blocks, Inc. <privacy@artblocks.io>",
   "license": "MIT",
   "devDependencies": {
-    "@babel/preset-env": "^7.21.5",
+    "@babel/core": "^7.22.1",
+    "@babel/preset-env": "^7.22.4",
     "@babel/preset-typescript": "^7.21.5",
     "@jest/globals": "^29.5.0",
+    "@typechain/ethers-v5": "^10.2.1",
     "eslint-config-custom": "*",
     "jest": "^29.5.0",
     "jsdoc": "^4.0.2",
@@ -18,16 +20,19 @@
     "prettier": "^2.8.8",
     "tsconfig": "*",
     "tsup": "^6.7.0",
+    "typechain": "^8.2.0",
     "typescript": "^5.0.4"
   },
   "scripts": {
     "build": "tsup src/index.ts --dts",
+    "codegen": "yarn --cwd=\"../..\" run codegen:project sdk",
     "lint": "prettier --check src/**/*.ts && eslint src/**/*.ts",
     "fmt": "prettier --write src/**/*.ts && eslint src/**/*.ts --fix",
-    "test": "jest --collect-coverage",
+    "test": "jest",
     "build:docs": "jsdoc -c jsdoc.json",
     "pre-commit": "yarn lint",
-    "pre-push": "yarn test"
+    "pre-push": "yarn test",
+    "build:typechain": "typechain --target ethers-v5 --out-dir ./src/generated/contracts './artifacts/*.json' '../../node_modules/@artblocks/contracts/artifacts/contracts/!(*.dbg)*.json'"
   },
   "lint-staged": {
     "*.{js,ts,tsx, jsx}": [
@@ -38,6 +43,11 @@
     ]
   },
   "jest": {
+    "collectCoverage": true,
+    "coveragePathIgnorePatterns": [
+      "/node_modules/",
+      "/src/generated"
+    ],
     "coverageThreshold": {
       "global": {
         "branches": 100,
@@ -49,5 +59,9 @@
   },
   "peerDependencies": {
     "ethers": "^6.3.0"
+  },
+  "dependencies": {
+    "@artblocks/contracts": "^1.0.2",
+    "merkletreejs": "^0.3.10"
   }
 }

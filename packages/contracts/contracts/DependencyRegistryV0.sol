@@ -3,9 +3,9 @@ pragma solidity 0.8.19;
 
 // Created By: Art Blocks Inc.
 
-import "./interfaces/0.8.x/IAdminACLV0.sol";
-import "./interfaces/0.8.x/IDependencyRegistryCompatibleV0.sol";
-import "./interfaces/0.8.x/IDependencyRegistryV0.sol";
+import "./interfaces/v0.8.x/IAdminACLV0.sol";
+import "./interfaces/v0.8.x/IDependencyRegistryCompatibleV0.sol";
+import "./interfaces/v0.8.x/IDependencyRegistryV0.sol";
 
 import "@openzeppelin-4.7/contracts/utils/Strings.sol";
 import "@openzeppelin-4.7/contracts/utils/structs/EnumerableSet.sol";
@@ -13,8 +13,8 @@ import "@openzeppelin-4.8/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin-4.8/contracts-upgradeable/proxy/utils/Initializable.sol";
 import "@openzeppelin-4.5/contracts/utils/math/SafeCast.sol";
 
-import "./libs/0.8.x/BytecodeStorageV1.sol";
-import "./libs/0.8.x/Bytes32Strings.sol";
+import "./libs/v0.8.x/BytecodeStorageV1.sol";
+import "./libs/v0.8.x/Bytes32Strings.sol";
 
 /**
  * @title Art Blocks Dependency Registry, V0.

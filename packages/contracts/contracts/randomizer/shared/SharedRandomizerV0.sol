@@ -3,9 +3,9 @@
 
 pragma solidity 0.8.19;
 
-import "../../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
-import "../../interfaces/0.8.x/ISharedRandomizerV0.sol";
-import "../../interfaces/0.8.x/IPseudorandomAtomic.sol";
+import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
+import "../../interfaces/v0.8.x/ISharedRandomizerV0.sol";
+import "../../interfaces/v0.8.x/IPseudorandomAtomic.sol";
 
 /**
  * @title A shared randomizer contract that enables support of many Art Blocks

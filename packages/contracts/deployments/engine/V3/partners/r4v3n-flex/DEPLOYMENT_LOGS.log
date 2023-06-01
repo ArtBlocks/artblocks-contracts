@@ -1,0 +1,60 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-05-26T20:50:20.995Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/r4v3n-flex/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x2152e3C863C5729F6BcC1b67EE1c0D468701eA6a
+[INFO] Randomizer BasicRandomizerV2 deployed at 0xc83084DdAac473EC2f9D75cB179C9C2c1F75a1Af
+----------------------------------------
+[INFO] Datetime of deployment: 2023-05-26T20:58:07.953Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/r4v3n-flex/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x359E8B5bdB1f587D36e94153870EC051dD397421
+[INFO] Randomizer BasicRandomizerV2 deployed at 0xd14A658Fd872eA3895f9579d12E15880126b20e6
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x639ae7D29E70F32827826b8d6FF031a93c2C02b7
+[INFO] Minter Filter MinterFilterV1 deployed at 0x7330539523F532a57142B8E63E90B2bE215E6C84
+[INFO] MinterSetPriceV4 deployed at 0xdD1530b1ebb40a4C8FEFDc54E88F3B576d05bd07
+[INFO] MinterDAExpSettlementV1 deployed at 0x95a0f2fad7e33474e1c9Cf8D66B036a7768e5F4B
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0x7330539523F532a57142B8E63E90B2bE215E6C84.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0xdD1530b1ebb40a4C8FEFDc54E88F3B576d05bd07 on minter filter.
+[INFO] Allowlisted minter MinterDAExpSettlementV1 at 0x95a0f2fad7e33474e1c9Cf8D66B036a7768e5F4B on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0xF2162BaCC9F76608bA4b11b1a6dac976ED463129.
+[INFO] Verifying core contract contract deployment...
+The contract 0x639ae7D29E70F32827826b8d6FF031a93c2C02b7 has already been verified
+[INFO] Core contract verified on Etherscan at 0x639ae7D29E70F32827826b8d6FF031a93c2C02b7}
+[INFO] Verifying AdminACL contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/AdminACLV1.sol:AdminACLV1 at 0x359E8B5bdB1f587D36e94153870EC051dD397421
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract AdminACLV1 on Etherscan.
+https://goerli.etherscan.io/address/0x359E8B5bdB1f587D36e94153870EC051dD397421#code
+[INFO] AdminACL contract verified on Etherscan at 0x359E8B5bdB1f587D36e94153870EC051dD397421}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0x7330539523F532a57142B8E63E90B2bE215E6C84 has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0x7330539523F532a57142B8E63E90B2bE215E6C84}
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+The contract 0xdD1530b1ebb40a4C8FEFDc54E88F3B576d05bd07 has already been verified
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0xdD1530b1ebb40a4C8FEFDc54E88F3B576d05bd07}
+[INFO] Verifying MinterDAExpSettlementV1 contract deployment...
+The contract 0x95a0f2fad7e33474e1c9Cf8D66B036a7768e5F4B has already been verified
+[INFO] MinterDAExpSettlementV1 contract verified on Etherscan at 0x95a0f2fad7e33474e1c9Cf8D66B036a7768e5F4B}
+Created s3 bucket for https://r4v3n-goerli.s3.amazonaws.com
+[INFO] Created image bucket r4v3n-goerli
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/r4v3n-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x639ae7d29e70f32827826b8d6ff031a93c2c02b7",
+  "name": "r4v3n",
+  "bucket_name": "r4v3n-goerli",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0xF2162BaCC9F76608bA4b11b1a6dac976ED463129, don't forget to update if requred.

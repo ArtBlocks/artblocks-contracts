@@ -1,0 +1,6 @@
+# Placeholder query so codegen works
+query GetProjectMinterConfiguration {
+  project_minter_configurations {
+    id
+  }
+}

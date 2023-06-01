@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../../interfaces/0.8.x/IMinterFilterV0.sol";
-import "../../interfaces/0.8.x/IFilteredMinterV0.sol";
-import "../../interfaces/0.8.x/IAdminACLV0.sol";
-import "../../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
+import "../../interfaces/v0.8.x/IMinterFilterV0.sol";
+import "../../interfaces/v0.8.x/IFilteredMinterV0.sol";
+import "../../interfaces/v0.8.x/IAdminACLV0.sol";
+import "../../interfaces/v0.8.x/IGenArt721CoreContractV3.sol";
 
-import "../../libs/0.8.x/Bytes32Strings.sol";
+import "../../libs/v0.8.x/Bytes32Strings.sol";
 
 import "@openzeppelin-4.5/contracts/utils/structs/EnumerableMap.sol";
 

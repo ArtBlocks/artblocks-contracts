@@ -3,12 +3,12 @@
 
 pragma solidity 0.8.19;
 
-import "../../interfaces/0.8.x/IMinterFilterV1.sol";
-import "../../interfaces/0.8.x/IFilteredMinterV0.sol";
-import "../../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
-import "../../interfaces/0.8.x/ICoreRegistryV1.sol";
+import "../../interfaces/v0.8.x/IMinterFilterV1.sol";
+import "../../interfaces/v0.8.x/IFilteredMinterV0.sol";
+import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
+import "../../interfaces/v0.8.x/ICoreRegistryV1.sol";
 
-import "../../libs/0.8.x/Bytes32Strings.sol";
+import "../../libs/v0.8.x/Bytes32Strings.sol";
 
 import "@openzeppelin-4.7/contracts/access/Ownable.sol";
 import "@openzeppelin-4.7/contracts/utils/structs/EnumerableMap.sol";
@@ -304,11 +304,11 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
             contractApprovedMinters[_coreContract].add(_minter),
             "Minter already approved"
         );
-        emit MinterApprovedForContract(
-            _coreContract,
-            _minter,
-            IFilteredMinterV0(_minter).minterType()
-        );
+        emit MinterApprovedForContract({
+            coreContract: _coreContract,
+            minter: _minter,
+            minterType: IFilteredMinterV0(_minter).minterType()
+        });
     }
 
     /**
@@ -338,7 +338,10 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
             contractApprovedMinters[_coreContract].remove(_minter),
             "Only previously approved minter"
         );
-        emit MinterRevokedForContract(_coreContract, _minter);
+        emit MinterRevokedForContract({
+            coreContract: _coreContract,
+            minter: _minter
+        });
     }
 
     /**
@@ -383,12 +386,12 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
         // assign new minter
         numProjectsUsingMinter[_minter]++;
         minterForProject[_coreContract].set(_projectId, _minter);
-        emit ProjectMinterRegistered(
-            _projectId,
-            _coreContract,
-            _minter,
-            IFilteredMinterV0(_minter).minterType()
-        );
+        emit ProjectMinterRegistered({
+            projectId: _projectId,
+            coreContract: _coreContract,
+            minter: _minter,
+            minterType: IFilteredMinterV0(_minter).minterType()
+        });
     }
 
     /**
