@@ -7,8 +7,8 @@
  *   maintains conforming V1 core contract interface
  */
 
-import "../interfaces/0.5.x/IRandomizer.sol";
-import "../interfaces/0.5.x/IGenArt721CoreContractV1.sol";
+import "../interfaces/v0.5.x/IRandomizer.sol";
+import "../interfaces/v0.5.x/IGenArt721CoreContractV1.sol";
 
 /// -----------------------------------------------------
 /**

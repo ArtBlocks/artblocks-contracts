@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../interfaces/0.8.x/IArtblocksRoyaltyOverride.sol";
-import "../interfaces/0.8.x/IGenArt721CoreV2_PBAB.sol";
+import "../interfaces/v0.8.x/IArtblocksRoyaltyOverride.sol";
+import "../interfaces/v0.8.x/IGenArt721CoreV2_PBAB.sol";
 
 import "@openzeppelin-4.5/contracts/utils/introspection/ERC165.sol";
 

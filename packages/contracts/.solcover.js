@@ -2,8 +2,8 @@ module.exports = {
   skipFiles: [
     "interfaces/",
     "legacy/",
-    "libs/0.5.x/",
-    "libs/0.8.x/ERC721_PackedHashSeed.sol",
+    "libs/v0.5.x/",
+    "libs/v0.8.x/ERC721_PackedHashSeed.sol",
     "libs/abi/",
     "libs/integration-refs/",
     "archive/",

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../../../../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
-import "../../../../interfaces/0.8.x/IMinterFilterV0.sol";
-import "../../../../interfaces/0.8.x/IFilteredMinterDAExpSettlementV0.sol";
+import "../../../../interfaces/v0.8.x/IGenArt721CoreContractV3.sol";
+import "../../../../interfaces/v0.8.x/IMinterFilterV0.sol";
+import "../../../../interfaces/v0.8.x/IFilteredMinterDAExpSettlementV0.sol";
 
 import "@openzeppelin-4.7/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
