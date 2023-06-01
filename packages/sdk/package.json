@@ -20,7 +20,7 @@
     "prettier": "^2.8.8",
     "tsconfig": "*",
     "tsup": "^6.7.0",
-    "typechain": "^8.1.1",
+    "typechain": "^8.2.0",
     "typescript": "^5.0.4"
   },
   "scripts": {

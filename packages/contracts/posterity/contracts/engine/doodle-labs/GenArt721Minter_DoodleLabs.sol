@@ -3,10 +3,10 @@
 
 pragma solidity ^0.5.0;
 
-import "../../libs/0.5.x/SafeMath.sol";
-import "../../libs/0.5.x/Strings.sol";
+import "../../libs/v0.5.x/SafeMath.sol";
+import "../../libs/v0.5.x/Strings.sol";
 
-import "../../interfaces/0.5.x/IGenArt721CoreV2_PBAB.sol";
+import "../../interfaces/v0.5.x/IGenArt721CoreV2_PBAB.sol";
 
 interface ERC20 {
     function balanceOf(address _owner) external view returns (uint256 balance);
