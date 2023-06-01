@@ -106,30 +106,6 @@ describe("GenArt721CoreV3 Gas Tests - Description Updates", async function () {
           const gasUsed2 = receipt2.gasUsed.toNumber();
           console.log("gas used for subsequent description upload: ", gasUsed2);
         });
-
-        it("reports gas to update initial description and subsequent, engine [ @skip-on-coverage ]", async function () {
-          const config = await loadFixture(_beforeEachEngine);
-          // upload initial description
-          const tx = await config.genArt721Core
-            .connect(config.accounts.artist)
-            .updateProjectDescription(
-              config.projectZero,
-              descriptionToTest.description
-            );
-          const receipt = await tx.wait();
-          const gasUsed = receipt.gasUsed.toNumber();
-          console.log("gas used for initial description upload: ", gasUsed);
-          // slightly different description
-          const tx2 = await config.genArt721Core
-            .connect(config.accounts.artist)
-            .updateProjectDescription(
-              config.projectZero,
-              descriptionToTest.description + " "
-            );
-          const receipt2 = await tx2.wait();
-          const gasUsed2 = receipt2.gasUsed.toNumber();
-          console.log("gas used for subsequent description upload: ", gasUsed2);
-        });
       });
     });
   });

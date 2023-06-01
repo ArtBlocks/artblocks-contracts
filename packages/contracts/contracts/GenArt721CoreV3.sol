@@ -186,7 +186,7 @@ contract GenArt721CoreV3 is
         bool paused;
         string name;
         string artist;
-        string description;
+        address descriptionAddress;
         string website;
         string license;
         string projectBaseURI;
@@ -241,7 +241,7 @@ contract GenArt721CoreV3 is
     bool public newProjectsForbidden;
 
     /// version & type of this core contract
-    string public constant coreVersion = "v3.2.0";
+    string public constant coreVersion = "v3.2.2";
     string public constant coreType = "GenArt721CoreV3";
 
     /// default base URI to initialize all new project projectBaseURI values to
@@ -963,7 +963,10 @@ contract GenArt721CoreV3 is
             "Only artist when unlocked, owner when locked"
         );
         // effects
-        projects[_projectId].description = _projectDescription;
+        // store description in contract bytecode, replacing reference address from
+        // the old storage description with the newly created one
+        projects[_projectId].descriptionAddress = _projectDescription
+            .writeToBytecode();
         emit ProjectUpdated(_projectId, FIELD_PROJECT_DESCRIPTION);
     }
 
@@ -1354,7 +1357,12 @@ contract GenArt721CoreV3 is
         Project storage project = projects[_projectId];
         projectName = project.name;
         artist = project.artist;
-        description = project.description;
+        address projectDescriptionBytecodeAddress = project.descriptionAddress;
+        if (projectDescriptionBytecodeAddress == address(0)) {
+            description = "";
+        } else {
+            description = _readFromBytecode(projectDescriptionBytecodeAddress);
+        }
         website = project.website;
         license = project.license;
     }
