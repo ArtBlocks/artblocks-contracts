@@ -104,12 +104,12 @@ library TokenHolderLib {
     ) internal {
         require(
             _ownedNFTAddresses.length == _ownedNFTProjectIds.length,
-            "TokenHolderLib: arrays must be same length"
+            "arrays neq length"
         );
         for (uint256 i = 0; i < _ownedNFTAddresses.length; i++) {
             require(
                 _registeredNFTAddresses.contains(_ownedNFTAddresses[i]),
-                "TokenHolderLib: address not registered"
+                "address not registered"
             );
             allowedProjectHoldersMapping[_coreContract][_projectId][
                 _ownedNFTAddresses[i]

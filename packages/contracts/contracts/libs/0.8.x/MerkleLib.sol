@@ -50,7 +50,7 @@ library MerkleLib {
         address _coreContract,
         bytes32 _root
     ) internal {
-        require(_root != bytes32(0), "Root must be provided");
+        require(_root != bytes32(0), "Must provide root");
         MerkleProjectConfig storage _projectConfig = projectConfigMapping[
             _coreContract
         ][_projectId];

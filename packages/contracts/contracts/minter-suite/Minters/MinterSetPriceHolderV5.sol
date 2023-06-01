@@ -633,16 +633,13 @@ contract MinterSetPriceHolderV5 is
         // minting.
         require(
             !_maxInvocationsProjectConfig.maxHasBeenInvoked,
-            "Maximum number of invocations reached"
+            "Max invocations reached"
         );
 
         // load price of token into memory
         uint256 pricePerTokenInWei = _projectConfig.pricePerTokenInWei;
 
-        require(
-            msg.value >= pricePerTokenInWei,
-            "Must send minimum value to mint!"
-        );
+        require(msg.value >= pricePerTokenInWei, "Min value to mint req.");
 
         // require artist to have configured price of token on this minter
         require(_projectConfig.priceIsConfigured, "Price not configured");

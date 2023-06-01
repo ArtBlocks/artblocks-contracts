@@ -8,18 +8,33 @@ pragma solidity ^0.8.0;
 
 /**
  * @title Art Blocks Max Invocations Library
- * @notice [TO FILL OUT]
+ * @notice This library manages the maximum invocation limits for Art Blocks
+ * projects. It provides functionality for synchronizing, manually limiting, and
+ * updating these limits, ensuring the integrity in relation to the core Art
+ * Blocks contract, and managing updates upon token minting.
+ * @dev Functions include `syncProjectMaxInvocationsToCore`,
+ * `manuallyLimitProjectMaxInvocations`, and `purchaseEffectsInvocations`.
  * @author Art Blocks Inc.
  */
 
 library MaxInvocationsLib {
     uint256 internal constant ONE_MILLION = 1_000_000;
 
+    /**
+     * @notice Data structure that holds max invocations project configuration.
+     */
     struct MaxInvocationsProjectConfig {
         bool maxHasBeenInvoked;
         uint24 maxInvocations;
     }
 
+    /**
+     * @notice Syncs project's max invocations to core contract value.
+     * @param _projectId The id of the project.
+     * @param _coreContract The address of the core contract.
+     * @param projectConfigMapping The mapping that holds max invocations project configurations.
+     * @return uint256 the updated max invocations.
+     */
     function syncProjectMaxInvocationsToCore(
         uint256 _projectId,
         address _coreContract,
@@ -45,6 +60,13 @@ library MaxInvocationsLib {
         return maxInvocations;
     }
 
+    /**
+     * @notice Manually limits project's max invocations.
+     * @param _projectId The id of the project.
+     * @param _coreContract The address of the core contract.
+     * @param _maxInvocations The new max invocations limit.
+     * @param projectConfigMapping The mapping that holds max invocations project configurations.
+     */
     function manuallyLimitProjectMaxInvocations(
         uint256 _projectId,
         address _coreContract,
@@ -57,14 +79,8 @@ library MaxInvocationsLib {
         (invocations, maxInvocations, , , , ) = IGenArt721CoreContractV3_Base(
             _coreContract
         ).projectStateData(_projectId);
-        require(
-            _maxInvocations <= maxInvocations,
-            "Cannot increase project max invocations above core contract set project max invocations"
-        );
-        require(
-            _maxInvocations >= invocations,
-            "Cannot set project max invocations to less than current invocations"
-        );
+        require(_maxInvocations <= maxInvocations, "Invalid max invocations");
+        require(_maxInvocations >= invocations, "Invalid max invocations");
 
         // EFFECTS
         // update storage with results
@@ -77,6 +93,15 @@ library MaxInvocationsLib {
             invocations == _maxInvocations;
     }
 
+    /**
+     * @notice Validate effects on invocations after purchase
+     * @dev This function checks that the token invocation is less than or equal to
+     * the local max invocations, and also updates the local maxHasBeenInvoked value.
+     * @param _projectId The id of the project.
+     * @param _coreContract The address of the core contract.
+     * @param _tokenId The id of the token.
+     * @param projectConfigMapping The mapping that holds max invocations project configurations.
+     */
     function purchaseEffectsInvocations(
         uint256 _projectId,
         address _coreContract,
@@ -99,7 +124,7 @@ library MaxInvocationsLib {
             // in detail here.
             require(
                 tokenInvocation <= localMaxInvocations,
-                "Maximum invocations reached"
+                "Max invocations reached"
             );
             // in typical case, update the local maxHasBeenInvoked value
             // to true if the token invocation == minter local max invocations

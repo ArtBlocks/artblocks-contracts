@@ -294,7 +294,7 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
         // minting.
         require(
             !_maxInvocationsProjectConfig.maxHasBeenInvoked,
-            "Maximum number of invocations reached"
+            "Max invocations reached"
         );
 
         // require artist to have configured price of token on this minter
@@ -303,10 +303,7 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
         // load price of token into memory
         uint256 pricePerTokenInWei = _projectConfig.pricePerTokenInWei;
 
-        require(
-            msg.value >= pricePerTokenInWei,
-            "Must send minimum value to mint!"
-        );
+        require(msg.value >= pricePerTokenInWei, "Min value to mint req.");
 
         // EFFECTS
         tokenId = minterFilter.mint_joo(

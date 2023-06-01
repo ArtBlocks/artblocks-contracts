@@ -386,7 +386,7 @@ contract MinterSetPriceMerkleV5 is
         // minting.
         require(
             !_maxInvocationsProjectConfig.maxHasBeenInvoked,
-            "Maximum number of invocations reached"
+            "Max invocations reached"
         );
 
         // require artist to have configured price of token on this minter
@@ -395,10 +395,7 @@ contract MinterSetPriceMerkleV5 is
         // load price of token into memory
         uint256 pricePerTokenInWei = _projectConfig.pricePerTokenInWei;
 
-        require(
-            msg.value >= pricePerTokenInWei,
-            "Must send minimum value to mint!"
-        );
+        require(msg.value >= pricePerTokenInWei, "Min value to mint req.");
 
         // NOTE: delegate-vault handling **begins here**.
 
@@ -440,7 +437,7 @@ contract MinterSetPriceMerkleV5 is
             projectUserMintInvocations[_coreContract][_projectId][vault] <
                 _maxProjectInvocationsPerAddress ||
                 _maxProjectInvocationsPerAddress == 0,
-            "Maximum number of invocations per address reached"
+            "Max invocations reached"
         );
 
         // EFFECTS
