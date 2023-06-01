@@ -1439,7 +1439,12 @@ contract GenArt721CoreV3_Engine is
         Project storage project = projects[_projectId];
         projectName = project.name;
         artist = project.artist;
-        description = _readFromBytecode(project.descriptionAddress);
+        address projectDescriptionBytecodeAddress = project.descriptionAddress;
+        if (projectDescriptionBytecodeAddress == address(0)) {
+            description = "";
+        } else {
+            description = _readFromBytecode(projectDescriptionBytecodeAddress);
+        }
         website = project.website;
         license = project.license;
     }
