@@ -2,7 +2,7 @@
 // Created By: Art Blocks Inc.
 import hre from "hardhat";
 import { ethers } from "hardhat";
-import { Contract } from "ethers";
+import { BigNumber, Contract } from "ethers";
 import path from "path";
 import fs from "fs";
 var util = require("util");
@@ -433,10 +433,13 @@ async function main() {
       } else {
         await genArt721Core
           .connect(deployer)
-          .updateRenderProviderSplitPercentagePrimary(
-            deployDetails.updateProviderPrimarySalesPercentages,
+          .updateProviderPrimarySalesPercentages(
+            deployDetails.renderProviderSplitPercentagePrimary,
             10
           );
+        console.log(
+          `[INFO] Updated render provider split percentage primary to ${deployDetails.renderProviderSplitPercentagePrimary} percent.`
+        );
       }
     }
     // secondary sales
@@ -468,6 +471,9 @@ async function main() {
             deployDetails.renderProviderSplitBPSSecondary,
             250
           );
+        console.log(
+          `[INFO] Updated render provider split percentage secondary to ${deployDetails.renderProviderSplitBPSSecondary} BPS.`
+        );
       }
     }
 
