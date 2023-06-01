@@ -6305,10 +6305,13 @@
     lodash "^4.17.15"
     ts-essentials "^7.0.1"
 
-"@typechain/ethers-v5@^6.0.5":
-  version "6.0.5"
-  resolved "https://registry.yarnpkg.com/@typechain/ethers-v5/-/ethers-v5-6.0.5.tgz#39bbf9baadd0e8d9efad9d16c60152b7cd9a467b"
-  integrity sha512-KJh+EWuxmX1a17fQWS1ba8DCYcqK7UpdbqMZZwyfiv9FQfn8ZQJX17anbkCMOSU8TV3EvRuJ/vFEKGzKnpkO8g==
+"@typechain/ethers-v5@^11.0.0":
+  version "11.0.0"
+  resolved "https://registry.yarnpkg.com/@typechain/ethers-v5/-/ethers-v5-11.0.0.tgz#8a11b34a386a30eed34375d05a09f893f7df838f"
+  integrity sha512-JDAvOjtzGuEQukgArIEseHznS2+v+vG3TpfODjNj4tu1kgmVu66G9gk7THOO04HJ5q+OJSLx9b46lc3GRGPIVA==
+  dependencies:
+    lodash "^4.17.15"
+    ts-essentials "^7.0.1"
 
 "@types/abstract-leveldown@*":
   version "7.2.1"
@@ -12814,7 +12817,7 @@ istanbul@0.3.x:
     fileset "0.2.x"
     handlebars "^4.0.1"
     js-yaml "3.x"
-    mkdirp "0.5.x"
+    mkdirp "v0.5.x"
     nopt "3.x"
     once "1.x"
     resolve "1.1.x"
@@ -14493,7 +14496,7 @@ mkdirp@0.5.5:
   dependencies:
     minimist "^1.2.5"
 
-mkdirp@0.5.x, mkdirp@^0.5.1, mkdirp@^0.5.5, mkdirp@~0.5.0:
+mkdirp@v0.5.x, mkdirp@^0.5.1, mkdirp@^0.5.5, mkdirp@~0.5.0:
   version "0.5.6"
   resolved "https://registry.yarnpkg.com/mkdirp/-/mkdirp-0.5.6.tgz#7def03d2432dcae4ba1d611445c48396062255f6"
   integrity sha512-FP+p8RB8OWpF3YZBCrP5gtADmtXApB5AMLn+vdyA+PyxCjrCs00mjyUozssO33cwDeT3wNGdLxJ5M//YqtHAJw==
@@ -16627,7 +16630,7 @@ sc-istanbul@^0.4.5:
     glob "^5.0.15"
     handlebars "^4.0.1"
     js-yaml "3.x"
-    mkdirp "0.5.x"
+    mkdirp "v0.5.x"
     nopt "3.x"
     once "1.x"
     resolve "1.1.x"
