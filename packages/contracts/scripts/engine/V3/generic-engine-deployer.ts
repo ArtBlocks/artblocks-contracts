@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
-import hre from "hardhat";
+import hre, { platform } from "hardhat";
 import { ethers } from "hardhat";
-import { Contract } from "ethers";
+import { BigNumber, Contract } from "ethers";
 import path from "path";
 import fs from "fs";
 var util = require("util");
@@ -29,6 +29,9 @@ import { createPBABBucket } from "../../util/aws_s3";
 import { delay, getAppPath } from "../../util/utils";
 const MANUAL_GAS_LIMIT = 500000; // gas
 var log_stdout = process.stdout;
+
+const ONE_HUNDRED_PERCENT = BigNumber.from(100);
+const TEN_THOUSAND_BASIS_POINTS = BigNumber.from(10000);
 
 // These are the core contracts that may be deployed by this script.
 const SUPPORTED_CORE_CONTRACTS = [
@@ -411,68 +414,90 @@ async function main() {
     // primary sales
     if (deployDetails.renderProviderSplitPercentagePrimary) {
       // a render provider split percentage override was provided
+      // get current platform provider split percentage
+      const platformSplitPercentagePrimary =
+        await genArt721Core.platformProviderPrimarySalesPercentage();
       if (
         deployDetails.renderProviderSplitPercentagePrimary < 0 ||
-        deployDetails.renderProviderSplitPercentagePrimary > 90
+        deployDetails.renderProviderSplitPercentagePrimary >
+          ONE_HUNDRED_PERCENT.sub(platformSplitPercentagePrimary)
       ) {
         console.log(
-          `[ERROR] renderProviderSplitPercentagePrimary must be between 0 and 90, but is ${deployDetails.renderProviderSplitPercentagePrimary}`
+          `[ERROR] renderProviderSplitPercentagePrimary must be between 0 and ${ONE_HUNDRED_PERCENT.sub(
+            platformSplitPercentagePrimary
+          ).toNumber()}, but is ${
+            deployDetails.renderProviderSplitPercentagePrimary
+          }`
         );
         console.log(
           `[ACTION] Please manually configure the render provider split percentage on the core contract to a valid value.`
         );
       }
-      const DEFAULT_RENDER_PROVIDER_SPLIT_PERCENTAGE_PRIMARY = 10;
+      const currentRenderProviderSplitPercentagePrimary =
+        await genArt721Core.renderProviderPrimarySalesPercentage();
       if (
-        deployDetails.renderProviderSplitPercentagePrimary ==
-        DEFAULT_RENDER_PROVIDER_SPLIT_PERCENTAGE_PRIMARY
+        parseInt(deployDetails.renderProviderSplitPercentagePrimary) ==
+        currentRenderProviderSplitPercentagePrimary.toNumber()
       ) {
         console.log(
-          `[INFO] Skipping update of render provider split percentage primary, since it is the default value of ${DEFAULT_RENDER_PROVIDER_SPLIT_PERCENTAGE_PRIMARY}.`
+          `[INFO] Skipping update of render provider split percentage primary, since it is already equal to the value of ${currentRenderProviderSplitPercentagePrimary.toNumber()}.`
         );
       } else {
         await genArt721Core
           .connect(deployer)
           .updateProviderPrimarySalesPercentages(
             deployDetails.renderProviderSplitPercentagePrimary,
-            10
+            platformSplitPercentagePrimary
           );
         console.log(
-          `[INFO] Updated render provider split percentage primary to ${deployDetails.renderProviderSplitPercentagePrimary} percent.`
+          `[INFO] Updated render provider split percentage primary to ${
+            deployDetails.renderProviderSplitPercentagePrimary
+          } percent, maintained platform split as ${platformSplitPercentagePrimary.toNumber()} percent.`
         );
       }
     }
     // secondary sales
     if (deployDetails.renderProviderSplitBPSSecondary) {
       // a render provider split percentage override was provided
+      // get current platform provider split percentage
+      const platformSplitBPSSecondary =
+        await genArt721Core.platformProviderSecondarySalesBPS();
       if (
         deployDetails.renderProviderSplitBPSSecondary < 0 ||
-        deployDetails.renderProviderSplitBPSSecondary > 9750
+        deployDetails.renderProviderSplitBPSSecondary >
+          TEN_THOUSAND_BASIS_POINTS.sub(platformSplitBPSSecondary)
       ) {
         console.log(
-          `[ERROR] renderProviderSplitBPSSecondary must be between 0 and 9750, but is ${deployDetails.renderProviderSplitBPSSecondary}`
+          `[ERROR] renderProviderSplitBPSSecondary must be between 0 and ${TEN_THOUSAND_BASIS_POINTS.sub(
+            platformSplitBPSSecondary
+          ).toNumber()}, but is ${
+            deployDetails.renderProviderSplitBPSSecondary
+          }`
         );
         console.log(
           `[ACTION] Please manually configure the render provider split percentage on the core contract to a valid value.`
         );
       }
-      const DEFAULT_RENDER_PROVIDER_SPLIT_PERCENTAGE_SECONDARY = 250;
+      const currentRenderProviderSplitBPSSecondary =
+        await genArt721Core.renderProviderSecondarySalesBPS();
       if (
-        deployDetails.renderProviderSplitBPSSecondary ==
-        DEFAULT_RENDER_PROVIDER_SPLIT_PERCENTAGE_SECONDARY
+        parseInt(deployDetails.renderProviderSplitBPSSecondary) ==
+        currentRenderProviderSplitBPSSecondary.toNumber()
       ) {
         console.log(
-          `[INFO] Skipping update of render provider split percentage secondary, since it is the default value of ${DEFAULT_RENDER_PROVIDER_SPLIT_PERCENTAGE_SECONDARY}.`
+          `[INFO] Skipping update of render provider split percentage secondary, since it is already equal to the value of ${currentRenderProviderSplitBPSSecondary.toNumber()}.`
         );
       } else {
         await genArt721Core
           .connect(deployer)
           .updateProviderSecondarySalesBPS(
             deployDetails.renderProviderSplitBPSSecondary,
-            250
+            platformSplitBPSSecondary
           );
         console.log(
-          `[INFO] Updated render provider split percentage secondary to ${deployDetails.renderProviderSplitBPSSecondary} BPS.`
+          `[INFO] Updated render provider split percentage secondary to ${
+            deployDetails.renderProviderSplitBPSSecondary
+          } BPS, maintained platform split as ${platformSplitBPSSecondary.toNumber()} BPS.`
         );
       }
     }
