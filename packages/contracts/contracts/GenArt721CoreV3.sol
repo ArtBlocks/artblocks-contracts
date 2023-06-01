@@ -944,6 +944,13 @@ contract GenArt721CoreV3 is
     /**
      * @notice Updates description of project `_projectId`.
      * Only artist may call when unlocked, only admin may call when locked.
+     * Note: The BytecodeStorage library is used to store the description to
+     * reduce initial upload cost, however, even minor edits will require an
+     * expensive, entirely new bytecode storage contract to be deployed instead
+     * of relatively cheap updates to already-warm storage slots. This results
+     * in an increased gas cost for minor edits to the description after the
+     * initial upload, but an overall decrease in gas cost for projects with
+     * less than ~3-5 edits (depending on the length of the description).
      * @param _projectId Project ID.
      * @param _projectDescription New project description.
      */
