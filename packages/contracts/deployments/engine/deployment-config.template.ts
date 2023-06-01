@@ -46,6 +46,9 @@ export const deployDetailsArray = [
     // set to the address you want to transfer the superAdmin role to
     // (this will only work if you have set doTransferSuperAdmin to true, can be undefined if you are not transferring)
     newSuperAdminAddress: undefined, // use either "0x..." or undefined if not transferring
+    // optional overrides for the default split percentages (default is 10% primary, 2.5% secondary)
+    renderProviderSplitPercentagePrimary: 10, // percent
+    renderProviderSplitBPSSecondary: 250, // basis points (e.g. 250 = 2.5%)
     // optionally define this to set default vertical name for the contract after deployment.
     // if not defined, the default vertical name will be "unassigned".
     // common values include `fullyonchain`, `flex`, or partnerships like `artblocksxpace`.

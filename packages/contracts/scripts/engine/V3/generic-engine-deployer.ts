@@ -407,6 +407,70 @@ async function main() {
       console.log(`[INFO] Skipping adding placeholder initial token.`);
     }
 
+    // update split percentages if something other than the default is provided
+    // primary sales
+    if (deployDetails.renderProviderSplitPercentagePrimary) {
+      // a render provider split percentage override was provided
+      if (
+        deployDetails.renderProviderSplitPercentagePrimary < 0 ||
+        deployDetails.renderProviderSplitPercentagePrimary > 90
+      ) {
+        console.log(
+          `[ERROR] renderProviderSplitPercentagePrimary must be between 0 and 90, but is ${deployDetails.renderProviderSplitPercentagePrimary}`
+        );
+        console.log(
+          `[ACTION] Please manually configure the render provider split percentage on the core contract to a valid value.`
+        );
+      }
+      const DEFAULT_RENDER_PROVIDER_SPLIT_PERCENTAGE_PRIMARY = 10;
+      if (
+        deployDetails.renderProviderSplitPercentagePrimary ==
+        DEFAULT_RENDER_PROVIDER_SPLIT_PERCENTAGE_PRIMARY
+      ) {
+        console.log(
+          `[INFO] Skipping update of render provider split percentage primary, since it is the default value of ${DEFAULT_RENDER_PROVIDER_SPLIT_PERCENTAGE_PRIMARY}.`
+        );
+      } else {
+        await genArt721Core
+          .connect(deployer)
+          .updateRenderProviderSplitPercentagePrimary(
+            deployDetails.updateProviderPrimarySalesPercentages,
+            10
+          );
+      }
+    }
+    // secondary sales
+    if (deployDetails.renderProviderSplitBPSSecondary) {
+      // a render provider split percentage override was provided
+      if (
+        deployDetails.renderProviderSplitBPSSecondary < 0 ||
+        deployDetails.renderProviderSplitBPSSecondary > 9750
+      ) {
+        console.log(
+          `[ERROR] renderProviderSplitBPSSecondary must be between 0 and 9750, but is ${deployDetails.renderProviderSplitBPSSecondary}`
+        );
+        console.log(
+          `[ACTION] Please manually configure the render provider split percentage on the core contract to a valid value.`
+        );
+      }
+      const DEFAULT_RENDER_PROVIDER_SPLIT_PERCENTAGE_SECONDARY = 250;
+      if (
+        deployDetails.renderProviderSplitBPSSecondary ==
+        DEFAULT_RENDER_PROVIDER_SPLIT_PERCENTAGE_SECONDARY
+      ) {
+        console.log(
+          `[INFO] Skipping update of render provider split percentage secondary, since it is the default value of ${DEFAULT_RENDER_PROVIDER_SPLIT_PERCENTAGE_SECONDARY}.`
+        );
+      } else {
+        await genArt721Core
+          .connect(deployer)
+          .updateProviderSecondarySalesBPS(
+            deployDetails.renderProviderSplitBPSSecondary,
+            250
+          );
+      }
+    }
+
     // transfer superAdmin role on adminACL
     let adminACL: Contract;
     // @dev - we only use functionality in AdminACLV0, so fine to cast as AdminACLV0 here
