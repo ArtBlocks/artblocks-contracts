@@ -22,35 +22,10 @@ library TokenHolderLib {
     uint256 constant ONE_MILLION = 1_000_000;
 
     /**
-     * @dev Registers an NFT address.
-     * @param _registeredNFTAddresses The set of registered NFT addresses.
-     * @param _NFTAddress The NFT address to register.
-     */
-    function registerNFTAddress(
-        EnumerableSet.AddressSet storage _registeredNFTAddresses,
-        address _NFTAddress
-    ) internal {
-        _registeredNFTAddresses.add(_NFTAddress);
-    }
-
-    /**
-     * @dev Unregisters an NFT address.
-     * @param _registeredNFTAddresses The set of registered NFT addresses.
-     * @param _NFTAddress The NFT address to unregister.
-     */
-    function unregisterNFTAddress(
-        EnumerableSet.AddressSet storage _registeredNFTAddresses,
-        address _NFTAddress
-    ) internal {
-        _registeredNFTAddresses.remove(_NFTAddress);
-    }
-
-    /**
      * @dev Allows holders of specific project tokens.
      * @param allowedProjectHoldersMapping A mapping of the allowed holders for a specific project.
      * @param _projectId Project ID to enable minting on.
      * @param _coreContract The address of the core contract.
-     * @param _registeredNFTAddresses The set of registered NFT addresses.
      * @param _ownedNFTAddresses NFT core addresses of projects to be
      * allowlisted. Indexes must align with `_ownedNFTProjectIds`.
      * @param _ownedNFTProjectIds Project IDs on `_ownedNFTAddresses` whose
@@ -62,7 +37,6 @@ library TokenHolderLib {
             storage allowedProjectHoldersMapping,
         uint256 _projectId,
         address _coreContract,
-        EnumerableSet.AddressSet storage _registeredNFTAddresses,
         address[] memory _ownedNFTAddresses,
         uint256[] memory _ownedNFTProjectIds
     ) internal {
@@ -71,10 +45,6 @@ library TokenHolderLib {
             "TokenHolderLib: arrays must be same length"
         );
         for (uint256 i = 0; i < _ownedNFTAddresses.length; i++) {
-            require(
-                _registeredNFTAddresses.contains(_ownedNFTAddresses[i]),
-                "TokenHolderLib: address not registered"
-            );
             allowedProjectHoldersMapping[_coreContract][_projectId][
                 _ownedNFTAddresses[i]
             ][_ownedNFTProjectIds[i]] = true;
@@ -86,7 +56,6 @@ library TokenHolderLib {
      * @param allowedProjectHoldersMapping A mapping of the allowed holders for a specific project.
      * @param _projectId Project ID to enable minting on.
      * @param _coreContract The address of the core contract.
-     * @param _registeredNFTAddresses The set of registered NFT addresses.
      * @param _ownedNFTAddresses NFT core addresses of projects to be removed
      * from allowlist. Indexes must align with `_ownedNFTProjectIds`.
      * @param _ownedNFTProjectIds Project IDs on `_ownedNFTAddresses` whose
@@ -98,7 +67,6 @@ library TokenHolderLib {
             storage allowedProjectHoldersMapping,
         uint256 _projectId,
         address _coreContract,
-        EnumerableSet.AddressSet storage _registeredNFTAddresses,
         address[] memory _ownedNFTAddresses,
         uint256[] memory _ownedNFTProjectIds
     ) internal {
@@ -107,10 +75,6 @@ library TokenHolderLib {
             "arrays neq length"
         );
         for (uint256 i = 0; i < _ownedNFTAddresses.length; i++) {
-            require(
-                _registeredNFTAddresses.contains(_ownedNFTAddresses[i]),
-                "address not registered"
-            );
             allowedProjectHoldersMapping[_coreContract][_projectId][
                 _ownedNFTAddresses[i]
             ][_ownedNFTProjectIds[i]] = false;
@@ -122,7 +86,6 @@ library TokenHolderLib {
      * @param allowedProjectHoldersMapping A mapping of the allowed holders for a specific project.
      * @param _projectId The ID of the project to which the holders belong or from which they will be removed.
      * @param _coreContract The address of the core contract.
-     * @param _registeredNFTAddresses The set of registered NFT addresses.
      * @param _ownedNFTAddressesAdd NFT core addresses of projects to be
      * allowlisted. Indexes must align with `_ownedNFTProjectIdsAdd`.
      * @param _ownedNFTProjectIdsAdd Project IDs on `_ownedNFTAddressesAdd`
@@ -136,12 +99,11 @@ library TokenHolderLib {
      * to mint project `_projectId`. Indexes must align with
      * `_ownedNFTAddressesRemove`.
      */
-    function allowRemoveHoldersOfProjects(
+    function allowAndRemoveHoldersOfProjects(
         mapping(address => mapping(uint256 => mapping(address => mapping(uint256 => bool))))
             storage allowedProjectHoldersMapping,
         uint256 _projectId,
         address _coreContract,
-        EnumerableSet.AddressSet storage _registeredNFTAddresses,
         address[] memory _ownedNFTAddressesAdd,
         uint256[] memory _ownedNFTProjectIdsAdd,
         address[] memory _ownedNFTAddressesRemove,
@@ -151,7 +113,6 @@ library TokenHolderLib {
             allowedProjectHoldersMapping,
             _projectId,
             _coreContract,
-            _registeredNFTAddresses,
             _ownedNFTAddressesAdd,
             _ownedNFTProjectIdsAdd
         );
@@ -159,7 +120,6 @@ library TokenHolderLib {
             allowedProjectHoldersMapping,
             _projectId,
             _coreContract,
-            _registeredNFTAddresses,
             _ownedNFTAddressesRemove,
             _ownedNFTProjectIdsRemove
         );

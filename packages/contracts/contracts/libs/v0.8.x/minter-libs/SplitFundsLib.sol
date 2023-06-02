@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../../interfaces/0.8.x/IMinterBaseV0.sol";
-import "../../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
-import "../../interfaces/0.8.x/IGenArt721CoreContractV3.sol";
-import "../../interfaces/0.8.x/IGenArt721CoreContractV3_Engine.sol";
+import "../../../interfaces/v0.8.x/IMinterBaseV0.sol";
+import "../../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
+import "../../../interfaces/v0.8.x/IGenArt721CoreContractV3.sol";
+import "../../../interfaces/v0.8.x/IGenArt721CoreContractV3_Engine.sol";
 
 import "@openzeppelin-4.7/contracts/token/ERC20/IERC20.sol";
 
@@ -280,6 +280,75 @@ library SplitFundsLib {
         } else {
             // unexpected return value length
             revert("Unexpected revenue split bytes");
+        }
+    }
+
+    /**
+     * @notice Returns whether a V3 core contract is an Art Blocks Engine
+     * contract or not. Return value of false indicates that the core is a
+     * flagship contract. This function does not update the cache state for the
+     * given V3 core contract.
+     * @dev this function reverts if a core contract does not return the
+     * expected number of return values from getPrimaryRevenueSplits() for
+     * either a flagship or engine core contract.
+     * @dev this function uses the length of the return data (in bytes) to
+     * determine whether the core is an engine or not.
+     * @param genArt721CoreV3 The address of the deployed core contract.
+     */
+    function getV3CoreIsEngine(
+        address genArt721CoreV3
+    ) internal view returns (bool) {
+        // call getPrimaryRevenueSplits() on core contract
+        bytes memory payload = abi.encodeWithSignature(
+            "getPrimaryRevenueSplits(uint256,uint256)",
+            0,
+            0
+        );
+        (bool success, bytes memory returnData) = genArt721CoreV3.staticcall(
+            payload
+        );
+        require(success, "getPrimaryRevenueSplits() call failed");
+        // determine whether core is engine or not, based on return data length
+        uint256 returnDataLength = returnData.length;
+        if (returnDataLength == 6 * 32) {
+            // 6 32-byte words returned if flagship (not engine)
+            // @dev 6 32-byte words are expected because the non-engine core
+            // contracts return a payout address and uint256 payment value for
+            // the artist, and artist's additional payee, and Art Blocks.
+            // also note that per Solidity ABI encoding, the address return
+            // values are padded to 32 bytes.
+
+            return false;
+        } else if (returnDataLength == 8 * 32) {
+            // 8 32-byte words returned if engine
+            // @dev 8 32-byte words are expected because the engine core
+            // contracts return a payout address and uint256 payment value for
+            // the artist, artist's additional payee, render provider
+            // typically Art Blocks, and platform provider (partner).
+            // also note that per Solidity ABI encoding, the address return
+            // values are padded to 32 bytes.
+            return true;
+        } else {
+            // unexpected return value length
+            revert("Unexpected revenue split bytes");
+        }
+    }
+
+    /**
+     * @notice Returns whether or not the provided address `_coreContract`
+     * is an Art Blocks Engine core contract. Caches the result for future access.
+     * @param _coreContract Address of the core contract to check.
+     * @param isEngineCache isEngine cache state for the given core contract.
+     */
+    function _isEngine(
+        IsEngineCache storage isEngineCache,
+        address _coreContract
+    ) internal returns (bool) {
+        if (isEngineCache.isCached) {
+            return isEngineCache.isEngine;
+        } else {
+            bool isEngine = getV3CoreIsEngine(_coreContract, isEngineCache);
+            return isEngine;
         }
     }
 }

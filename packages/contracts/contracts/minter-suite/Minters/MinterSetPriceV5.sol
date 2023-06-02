@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
-import "../../interfaces/0.8.x/IDelegationRegistry.sol";
-import "../../interfaces/0.8.x/ISharedMinterV0.sol";
-import "../../interfaces/0.8.x/IMinterFilterV1.sol";
+import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
+import "../../interfaces/v0.8.x/IDelegationRegistry.sol";
+import "../../interfaces/v0.8.x/ISharedMinterV0.sol";
+import "../../interfaces/v0.8.x/IMinterFilterV1.sol";
 
-import "../../libs/0.8.x/SplitFundsLib.sol";
-import "../../libs/0.8.x/MaxInvocationsLib.sol";
+import "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
+import "../../libs/v0.8.x/minter-libs/MaxInvocationsLib.sol";
 
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
 
@@ -52,14 +52,17 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
     /// contractAddress => projectId => base project config
     mapping(address => mapping(uint256 => ProjectConfig)) public projectConfig;
 
-    // STATE VARIABLES FOR SplitFundsLib
+    // STATE VARIABLES FOR SplitFundsLib begin here
     // contractAddress => IsEngineCache
     mapping(address => SplitFundsLib.IsEngineCache) private _isEngineCaches;
+    // STATE VARIABLES FOR SplitFundsLib end here
 
-    // STATE VARIABLES FOR MaxInvocationsLib
+    // STATE VARIABLES FOR MaxInvocationsLib begin here
     /// contractAddress => projectId => max invocations specific project config
     mapping(address => mapping(uint256 => MaxInvocationsLib.MaxInvocationsProjectConfig))
         public maxInvocationsProjectConfig;
+
+    // STATE VARIABLES FOR MaxInvocationsLib end here
 
     function _onlyArtist(
         uint256 _projectId,
@@ -85,22 +88,24 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
     }
 
     /**
-     * @notice Returns whether or not the provided address `_coreContract`
-     * is an Art Blocks Engine core contract. Caches the result for future access.
-     * @param _coreContract Address of the core contract to check.
+     * @notice Checks if the specified `_coreContract` is a valid engine contract.
+     * @dev This function retrieves the cached value of `_coreContract` from
+     * the `isEngineCache` mapping. If the cached value is already set, it
+     * returns the cached value. Otherwise, it calls the `getV3CoreIsEngine`
+     * function from the `SplitFundsLib` library to check if `_coreContract`
+     * is a valid engine contract.
+     * @param _coreContract The address of the contract to check.
+     * @return bool indicating if `_coreContract` is a valid engine contract.
      */
-    function _isEngine(address _coreContract) internal returns (bool) {
+    function isEngineView(address _coreContract) public view returns (bool) {
         SplitFundsLib.IsEngineCache storage isEngineCache = _isEngineCaches[
             _coreContract
         ];
         if (isEngineCache.isCached) {
             return isEngineCache.isEngine;
         } else {
-            bool isEngine = SplitFundsLib.getV3CoreIsEngine(
-                _coreContract,
-                isEngineCache
-            );
-            return isEngine;
+            // @dev this calls the non-modifying variant of getV3CoreIsEngine
+            return SplitFundsLib.getV3CoreIsEngine(_coreContract);
         }
     }
 
@@ -120,7 +125,7 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
             .syncProjectMaxInvocationsToCore(
                 _projectId,
                 _coreContract,
-                maxInvocationsProjectConfig
+                maxInvocationsProjectConfig[_coreContract][_projectId]
             );
         emit ProjectMaxInvocationsLimitUpdated(
             _projectId,
@@ -151,7 +156,7 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
             _projectId,
             _coreContract,
             _maxInvocations,
-            maxInvocationsProjectConfig
+            maxInvocationsProjectConfig[_coreContract][_projectId]
         );
         emit ProjectMaxInvocationsLimitUpdated(
             _projectId,
@@ -314,18 +319,20 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
         );
 
         MaxInvocationsLib.purchaseEffectsInvocations(
-            _projectId,
-            _coreContract,
             tokenId,
-            maxInvocationsProjectConfig
+            maxInvocationsProjectConfig[_coreContract][_projectId]
         );
 
         // INTERACTIONS
+        bool isEngine = SplitFundsLib._isEngine(
+            _isEngineCaches[_coreContract],
+            _coreContract
+        );
         SplitFundsLib.splitFundsETH(
             _projectId,
             pricePerTokenInWei,
             _coreContract,
-            _isEngine(_coreContract)
+            isEngine
         );
 
         return tokenId;
@@ -335,7 +342,8 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
      * @notice Gets if price of token is configured, price of minting a
      * token on project `_projectId`, and currency symbol and address to be
      * used as payment. Supersedes any core contract price information.
-     * @param _projectId Project ID to get price information for.
+     * @param _projectId Project ID to get price information for
+     * @param _coreContract Contract address of the core contract
      * @return isConfigured true only if token price has been configured on
      * this minter
      * @return tokenPriceInWei current price of token on this minter - invalid

@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../../interfaces/0.8.x/IGenArt721CoreContractV3_Base.sol";
-import "../../interfaces/0.8.x/IDelegationRegistry.sol";
-import "../../interfaces/0.8.x/ISharedMinterV0.sol";
-import "../../interfaces/0.8.x/IFilteredSharedHolder.sol";
-import "../../interfaces/0.8.x/IMinterFilterV1.sol";
+import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
+import "../../interfaces/v0.8.x/IDelegationRegistry.sol";
+import "../../interfaces/v0.8.x/ISharedMinterV0.sol";
+import "../../interfaces/v0.8.x/IFilteredSharedHolder.sol";
+import "../../interfaces/v0.8.x/IMinterFilterV1.sol";
 
-import "../../libs/0.8.x/SplitFundsLib.sol";
-import "../../libs/0.8.x/MaxInvocationsLib.sol";
-import "../../libs/0.8.x/TokenHolderLib.sol";
+import "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
+import "../../libs/v0.8.x/minter-libs/MaxInvocationsLib.sol";
+import "../../libs/v0.8.x/minter-libs/TokenHolderLib.sol";
 
 import "@openzeppelin-4.5/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
@@ -92,20 +92,8 @@ contract MinterSetPriceHolderV5 is
 
     uint256 constant ONE_MILLION = 1_000_000;
 
-    /// contractAddress => projectId => base project config
+    // contractAddress => projectId => base project config
     mapping(address => mapping(uint256 => ProjectConfig)) public projectConfig;
-
-    // STATE VARIABLES FOR SplitFundsLib
-    // contractAddress => IsEngineCache
-    mapping(address => SplitFundsLib.IsEngineCache) private _isEngineCaches;
-
-    // STATE VARIABLES FOR MaxInvocationsLib
-    /// contractAddress => projectId => max invocations specific project config
-    mapping(address => mapping(uint256 => MaxInvocationsLib.MaxInvocationsProjectConfig))
-        public maxInvocationsProjectConfig;
-
-    /// Set of core contracts allowed to be queried for token holders
-    EnumerableSet.AddressSet private _registeredNFTAddresses;
 
     /**
      * coreContract => projectId => ownedNFTAddress => ownedNFTProjectIds => bool
@@ -113,6 +101,18 @@ contract MinterSetPriceHolderV5 is
      */
     mapping(address => mapping(uint256 => mapping(address => mapping(uint256 => bool))))
         public allowedProjectHolders;
+
+    // STATE VARIABLES FOR SplitFundsLib begin here
+    // contractAddress => IsEngineCache
+    mapping(address => SplitFundsLib.IsEngineCache) private _isEngineCaches;
+    // STATE VARIABLES FOR SplitFundsLib end here
+
+    // STATE VARIABLES FOR MaxInvocationsLib begin here
+    /// contractAddress => projectId => max invocations specific project config
+    mapping(address => mapping(uint256 => MaxInvocationsLib.MaxInvocationsProjectConfig))
+        public maxInvocationsProjectConfig;
+
+    // STATE VARIABLES FOR MaxInvocationsLib end here
 
     // function to restrict access to only AdminACL allowed calls
     // @dev defers which ACL contract is used to the core contract
@@ -164,57 +164,25 @@ contract MinterSetPriceHolderV5 is
     }
 
     /**
-     * @notice Returns whether or not the provided address `_coreContract`
-     * is an Art Blocks Engine core contract. Caches the result for future access.
-     * @param _coreContract Address of the core contract to check.
+     * @notice Checks if the specified `_coreContract` is a valid engine contract.
+     * @dev This function retrieves the cached value of `_coreContract` from
+     * the `isEngineCache` mapping. If the cached value is already set, it
+     * returns the cached value. Otherwise, it calls the `getV3CoreIsEngine`
+     * function from the `SplitFundsLib` library to check if `_coreContract`
+     * is a valid engine contract.
+     * @param _coreContract The address of the contract to check.
+     * @return bool indicating if `_coreContract` is a valid engine contract.
      */
-    function _isEngine(address _coreContract) internal returns (bool) {
+    function isEngineView(address _coreContract) public view returns (bool) {
         SplitFundsLib.IsEngineCache storage isEngineCache = _isEngineCaches[
             _coreContract
         ];
         if (isEngineCache.isCached) {
             return isEngineCache.isEngine;
         } else {
-            bool isEngine = SplitFundsLib.getV3CoreIsEngine(
-                _coreContract,
-                isEngineCache
-            );
-            return isEngine;
+            // @dev this calls the non-modifying variant of getV3CoreIsEngine
+            return SplitFundsLib.getV3CoreIsEngine(_coreContract);
         }
-    }
-
-    /**
-     *
-     * @notice Registers holders of NFTs at address `_NFTAddress` to be
-     * considered for minting. New core address is assumed to follow syntax of:
-     * `projectId = tokenId / 1_000_000`
-     * @param _NFTAddress NFT core address to be registered.
-     */
-    function registerNFTAddress(
-        address _coreContract,
-        address _NFTAddress
-    ) external {
-        _onlyCoreAdminACL(_coreContract, this.registerNFTAddress.selector);
-        TokenHolderLib.registerNFTAddress(_registeredNFTAddresses, _NFTAddress);
-        emit RegisteredNFTAddress(_NFTAddress);
-    }
-
-    /**
-     *
-     * @notice Unregisters holders of NFTs at address `_NFTAddress` to be
-     * considered for adding to future allowlists.
-     * @param _NFTAddress NFT core address to be unregistered.
-     */
-    function unregisterNFTAddress(
-        address _coreContract,
-        address _NFTAddress
-    ) external {
-        _onlyCoreAdminACL(_coreContract, this.unregisterNFTAddress.selector);
-        TokenHolderLib.unregisterNFTAddress(
-            _registeredNFTAddresses,
-            _NFTAddress
-        );
-        emit UnregisteredNFTAddress(_NFTAddress);
     }
 
     /**
@@ -242,7 +210,6 @@ contract MinterSetPriceHolderV5 is
             allowedProjectHolders,
             _projectId,
             _coreContract,
-            _registeredNFTAddresses,
             _ownedNFTAddresses,
             _ownedNFTProjectIds
         );
@@ -282,7 +249,6 @@ contract MinterSetPriceHolderV5 is
             allowedProjectHolders,
             _projectId,
             _coreContract,
-            _registeredNFTAddresses,
             _ownedNFTAddresses,
             _ownedNFTProjectIds
         );
@@ -323,7 +289,7 @@ contract MinterSetPriceHolderV5 is
      * @dev if a project is included in both add and remove arrays, it will be
      * removed.
      */
-    function allowRemoveHoldersOfProjects(
+    function allowAndRemoveHoldersOfProjects(
         uint256 _projectId,
         address _coreContract,
         address[] memory _ownedNFTAddressesAdd,
@@ -332,15 +298,12 @@ contract MinterSetPriceHolderV5 is
         uint256[] memory _ownedNFTProjectIdsRemove
     ) external {
         _onlyArtist(_projectId, _coreContract);
-        allowHoldersOfProjects(
+        TokenHolderLib.allowAndRemoveHoldersOfProjects(
+            allowedProjectHolders,
             _projectId,
             _coreContract,
             _ownedNFTAddressesAdd,
-            _ownedNFTProjectIdsAdd
-        );
-        removeHoldersOfProjects(
-            _projectId,
-            _coreContract,
+            _ownedNFTProjectIdsAdd,
             _ownedNFTAddressesRemove,
             _ownedNFTProjectIdsRemove
         );
@@ -388,7 +351,7 @@ contract MinterSetPriceHolderV5 is
             .syncProjectMaxInvocationsToCore(
                 _projectId,
                 _coreContract,
-                maxInvocationsProjectConfig
+                maxInvocationsProjectConfig[_coreContract][_projectId]
             );
         emit ProjectMaxInvocationsLimitUpdated(
             _projectId,
@@ -419,7 +382,7 @@ contract MinterSetPriceHolderV5 is
             _projectId,
             _coreContract,
             _maxInvocations,
-            maxInvocationsProjectConfig
+            maxInvocationsProjectConfig[_coreContract][_projectId]
         );
         emit ProjectMaxInvocationsLimitUpdated(
             _projectId,
@@ -684,10 +647,8 @@ contract MinterSetPriceHolderV5 is
         // NOTE: delegate-vault handling **ends here**.
 
         MaxInvocationsLib.purchaseEffectsInvocations(
-            _projectId,
-            _coreContract,
             tokenId,
-            maxInvocationsProjectConfig
+            maxInvocationsProjectConfig[_coreContract][_projectId]
         );
 
         // INTERACTIONS
@@ -705,35 +666,18 @@ contract MinterSetPriceHolderV5 is
 
         // split funds
         // INTERACTIONS
+        bool isEngine = SplitFundsLib._isEngine(
+            _isEngineCaches[_coreContract],
+            _coreContract
+        );
         SplitFundsLib.splitFundsETH(
             _projectId,
             pricePerTokenInWei,
             _coreContract,
-            _isEngine(_coreContract)
+            isEngine
         );
 
         return tokenId;
-    }
-
-    /**
-     * @notice Gets quantity of NFT addresses registered on this minter.
-     * @return uint256 quantity of NFT addresses registered
-     */
-    function getNumRegisteredNFTAddresses() external view returns (uint256) {
-        return _registeredNFTAddresses.length();
-    }
-
-    /**
-     * @notice Get registered NFT core contract address at index `_index` of
-     * enumerable set.
-     * @param _index enumerable set index to query.
-     * @return NFTAddress NFT core contract address at index `_index`
-     * @dev index must be < quantity of registered NFT addresses
-     */
-    function getRegisteredNFTAddressAt(
-        uint256 _index
-    ) external view returns (address NFTAddress) {
-        return _registeredNFTAddresses.at(_index);
     }
 
     /**
