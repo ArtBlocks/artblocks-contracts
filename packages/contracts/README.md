@@ -166,7 +166,7 @@ For details on the Flagship and Engine Minter Suite, see the [minter suite docum
 
 ## Contract Source Code Verification
 
-All mainnet deployments of contracts developed in this repositiory are verified on Etherscan. To protect against centralized source code verification failures (for example, if Etherscan were to dissappear), the PR history of this repository may be used to determine the commit at which a given deployment was performed, and source code verification could be submitted by anyone to a different source code verification service.
+All mainnet deployments of contracts developed in this repositiory are verified on Etherscan. To protect against centralized source code verification failures (for example, if Etherscan were to dissappear), the PR history of this repository may be used to determine the commit at which a given deployment was performed, and source code verification may be submitted by anyone to a different source code verification service. Deployment details are recorded in the `deployments/` directory.
 
 # Royalties
 
