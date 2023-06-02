@@ -93,14 +93,15 @@ contract MinterSetPriceHolderV5 is
     uint256 constant ONE_MILLION = 1_000_000;
 
     // contractAddress => projectId => base project config
-    mapping(address => mapping(uint256 => ProjectConfig)) public projectConfig;
+    mapping(address => mapping(uint256 => ProjectConfig))
+        private _projectConfigMapping;
 
     /**
      * coreContract => projectId => ownedNFTAddress => ownedNFTProjectIds => bool
      * projects whose holders are allowed to purchase a token on `projectId`
      */
     mapping(address => mapping(uint256 => mapping(address => mapping(uint256 => bool))))
-        public allowedProjectHolders;
+        private _allowedProjectHoldersMapping;
 
     // STATE VARIABLES FOR SplitFundsLib begin here
     // contractAddress => IsEngineCache
@@ -110,7 +111,7 @@ contract MinterSetPriceHolderV5 is
     // STATE VARIABLES FOR MaxInvocationsLib begin here
     /// contractAddress => projectId => max invocations specific project config
     mapping(address => mapping(uint256 => MaxInvocationsLib.MaxInvocationsProjectConfig))
-        public maxInvocationsProjectConfig;
+        private _maxInvocationsProjectConfigMapping;
 
     // STATE VARIABLES FOR MaxInvocationsLib end here
 
@@ -163,6 +164,38 @@ contract MinterSetPriceHolderV5 is
         minterFilter = IMinterFilterV1(_minterFilter);
     }
 
+    // public getter functions
+    function maxInvocationsProjectConfig(
+        address _contractAddress,
+        uint256 _projectId
+    )
+        external
+        view
+        returns (MaxInvocationsLib.MaxInvocationsProjectConfig memory)
+    {
+        return
+            _maxInvocationsProjectConfigMapping[_contractAddress][_projectId];
+    }
+
+    function projectConfig(
+        address _contractAddress,
+        uint256 _projectId
+    ) external view returns (ProjectConfig memory) {
+        return _projectConfigMapping[_contractAddress][_projectId];
+    }
+
+    function allowedProjectHolders(
+        address _contractAddress,
+        uint256 _projectId,
+        address _ownedNFTAddress,
+        uint256 _ownedNFTProjectId
+    ) external view returns (bool) {
+        return
+            _allowedProjectHoldersMapping[_contractAddress][_projectId][
+                _ownedNFTAddress
+            ][_ownedNFTProjectId];
+    }
+
     /**
      * @notice Checks if the specified `_coreContract` is a valid engine contract.
      * @dev This function retrieves the cached value of `_coreContract` from
@@ -207,7 +240,7 @@ contract MinterSetPriceHolderV5 is
         _onlyArtist(_projectId, _coreContract);
         // require same length arrays
         TokenHolderLib.allowHoldersOfProjects(
-            allowedProjectHolders,
+            _allowedProjectHoldersMapping,
             _projectId,
             _coreContract,
             _ownedNFTAddresses,
@@ -246,7 +279,7 @@ contract MinterSetPriceHolderV5 is
         _onlyArtist(_projectId, _coreContract);
         // require same length arrays
         TokenHolderLib.removeHoldersOfProjects(
-            allowedProjectHolders,
+            _allowedProjectHoldersMapping,
             _projectId,
             _coreContract,
             _ownedNFTAddresses,
@@ -299,7 +332,7 @@ contract MinterSetPriceHolderV5 is
     ) external {
         _onlyArtist(_projectId, _coreContract);
         TokenHolderLib.allowAndRemoveHoldersOfProjects(
-            allowedProjectHolders,
+            _allowedProjectHoldersMapping,
             _projectId,
             _coreContract,
             _ownedNFTAddressesAdd,
@@ -326,7 +359,7 @@ contract MinterSetPriceHolderV5 is
     ) public view returns (bool) {
         return
             TokenHolderLib.isAllowlistedNFT(
-                allowedProjectHolders,
+                _allowedProjectHoldersMapping,
                 _projectId,
                 _coreContract,
                 _ownedNFTAddress,
@@ -351,7 +384,7 @@ contract MinterSetPriceHolderV5 is
             .syncProjectMaxInvocationsToCore(
                 _projectId,
                 _coreContract,
-                maxInvocationsProjectConfig[_coreContract][_projectId]
+                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
             );
         emit ProjectMaxInvocationsLimitUpdated(
             _projectId,
@@ -382,7 +415,7 @@ contract MinterSetPriceHolderV5 is
             _projectId,
             _coreContract,
             _maxInvocations,
-            maxInvocationsProjectConfig[_coreContract][_projectId]
+            _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
         );
         emit ProjectMaxInvocationsLimitUpdated(
             _projectId,
@@ -410,7 +443,7 @@ contract MinterSetPriceHolderV5 is
         address _coreContract
     ) external view returns (bool) {
         return
-            maxInvocationsProjectConfig[_coreContract][_projectId]
+            _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
                 .maxHasBeenInvoked;
     }
 
@@ -440,7 +473,7 @@ contract MinterSetPriceHolderV5 is
     ) external view returns (uint256) {
         return
             uint256(
-                maxInvocationsProjectConfig[_coreContract][_projectId]
+                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
                     .maxInvocations
             );
     }
@@ -462,12 +495,12 @@ contract MinterSetPriceHolderV5 is
     ) external {
         _onlyArtist(_projectId, _coreContract);
         MaxInvocationsLib.MaxInvocationsProjectConfig
-            storage _maxInvocationsProjectConfig = maxInvocationsProjectConfig[
+            storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
                 _coreContract
             ][_projectId];
-        ProjectConfig storage _projectConfig = projectConfig[_coreContract][
-            _projectId
-        ];
+        ProjectConfig storage _projectConfig = _projectConfigMapping[
+            _coreContract
+        ][_projectId];
         _projectConfig.pricePerTokenInWei = _pricePerTokenInWei;
         _projectConfig.priceIsConfigured = true;
         emit PricePerTokenInWeiUpdated(
@@ -580,11 +613,11 @@ contract MinterSetPriceHolderV5 is
         address _vault
     ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
-        ProjectConfig storage _projectConfig = projectConfig[_coreContract][
-            _projectId
-        ];
+        ProjectConfig storage _projectConfig = _projectConfigMapping[
+            _coreContract
+        ][_projectId];
         MaxInvocationsLib.MaxInvocationsProjectConfig
-            storage _maxInvocationsProjectConfig = maxInvocationsProjectConfig[
+            storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
                 _coreContract
             ][_projectId];
 
@@ -610,7 +643,7 @@ contract MinterSetPriceHolderV5 is
         // require token used to claim to be in set of allowlisted NFTs
         require(
             TokenHolderLib.isAllowlistedNFT(
-                allowedProjectHolders,
+                _allowedProjectHoldersMapping,
                 _projectId,
                 _coreContract,
                 _ownedNFTAddress,
@@ -648,7 +681,7 @@ contract MinterSetPriceHolderV5 is
 
         MaxInvocationsLib.purchaseEffectsInvocations(
             tokenId,
-            maxInvocationsProjectConfig[_coreContract][_projectId]
+            _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
         );
 
         // INTERACTIONS
@@ -708,9 +741,9 @@ contract MinterSetPriceHolderV5 is
             address currencyAddress
         )
     {
-        ProjectConfig storage _projectConfig = projectConfig[_coreContract][
-            _projectId
-        ];
+        ProjectConfig storage _projectConfig = _projectConfigMapping[
+            _coreContract
+        ][_projectId];
         isConfigured = _projectConfig.priceIsConfigured;
         tokenPriceInWei = _projectConfig.pricePerTokenInWei;
         currencySymbol = "ETH";

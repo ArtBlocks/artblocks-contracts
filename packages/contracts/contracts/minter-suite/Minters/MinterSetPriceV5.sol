@@ -50,7 +50,8 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
     uint256 constant ONE_MILLION = 1_000_000;
 
     /// contractAddress => projectId => base project config
-    mapping(address => mapping(uint256 => ProjectConfig)) public projectConfig;
+    mapping(address => mapping(uint256 => ProjectConfig))
+        private _projectConfigMapping;
 
     // STATE VARIABLES FOR SplitFundsLib begin here
     // contractAddress => IsEngineCache
@@ -58,9 +59,9 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
     // STATE VARIABLES FOR SplitFundsLib end here
 
     // STATE VARIABLES FOR MaxInvocationsLib begin here
-    /// contractAddress => projectId => max invocations specific project config
+    // contractAddress => projectId => max invocations specific project config
     mapping(address => mapping(uint256 => MaxInvocationsLib.MaxInvocationsProjectConfig))
-        public maxInvocationsProjectConfig;
+        private _maxInvocationsProjectConfigMapping;
 
     // STATE VARIABLES FOR MaxInvocationsLib end here
 
@@ -85,6 +86,26 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
     constructor(address _minterFilter) ReentrancyGuard() {
         minterFilterAddress = _minterFilter;
         minterFilter = IMinterFilterV1(_minterFilter);
+    }
+
+    // public getter functions
+    function maxInvocationsProjectConfig(
+        address _contractAddress,
+        uint256 _projectId
+    )
+        external
+        view
+        returns (MaxInvocationsLib.MaxInvocationsProjectConfig memory)
+    {
+        return
+            _maxInvocationsProjectConfigMapping[_contractAddress][_projectId];
+    }
+
+    function projectConfig(
+        address _contractAddress,
+        uint256 _projectId
+    ) external view returns (ProjectConfig memory) {
+        return _projectConfigMapping[_contractAddress][_projectId];
     }
 
     /**
@@ -125,7 +146,7 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
             .syncProjectMaxInvocationsToCore(
                 _projectId,
                 _coreContract,
-                maxInvocationsProjectConfig[_coreContract][_projectId]
+                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
             );
         emit ProjectMaxInvocationsLimitUpdated(
             _projectId,
@@ -156,7 +177,7 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
             _projectId,
             _coreContract,
             _maxInvocations,
-            maxInvocationsProjectConfig[_coreContract][_projectId]
+            _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
         );
         emit ProjectMaxInvocationsLimitUpdated(
             _projectId,
@@ -184,7 +205,7 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
         address _coreContract
     ) external view returns (bool) {
         return
-            maxInvocationsProjectConfig[_coreContract][_projectId]
+            _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
                 .maxHasBeenInvoked;
     }
 
@@ -214,7 +235,7 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
     ) external view returns (uint256) {
         return
             uint256(
-                maxInvocationsProjectConfig[_coreContract][_projectId]
+                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
                     .maxInvocations
             );
     }
@@ -236,12 +257,12 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
     ) external {
         _onlyArtist(_projectId, _coreContract);
         MaxInvocationsLib.MaxInvocationsProjectConfig
-            storage _maxInvocationsProjectConfig = maxInvocationsProjectConfig[
+            storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
                 _coreContract
             ][_projectId];
-        ProjectConfig storage _projectConfig = projectConfig[_coreContract][
-            _projectId
-        ];
+        ProjectConfig storage _projectConfig = _projectConfigMapping[
+            _coreContract
+        ][_projectId];
         _projectConfig.pricePerTokenInWei = _pricePerTokenInWei;
         _projectConfig.priceIsConfigured = true;
         emit PricePerTokenInWeiUpdated(
@@ -283,11 +304,11 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
         address _coreContract
     ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
-        ProjectConfig storage _projectConfig = projectConfig[_coreContract][
-            _projectId
-        ];
+        ProjectConfig storage _projectConfig = _projectConfigMapping[
+            _coreContract
+        ][_projectId];
         MaxInvocationsLib.MaxInvocationsProjectConfig
-            storage _maxInvocationsProjectConfig = maxInvocationsProjectConfig[
+            storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
                 _coreContract
             ][_projectId];
 
@@ -320,7 +341,7 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
 
         MaxInvocationsLib.purchaseEffectsInvocations(
             tokenId,
-            maxInvocationsProjectConfig[_coreContract][_projectId]
+            _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
         );
 
         // INTERACTIONS
@@ -366,9 +387,9 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
             address currencyAddress
         )
     {
-        ProjectConfig storage _projectConfig = projectConfig[_coreContract][
-            _projectId
-        ];
+        ProjectConfig storage _projectConfig = _projectConfigMapping[
+            _coreContract
+        ][_projectId];
         isConfigured = _projectConfig.priceIsConfigured;
         tokenPriceInWei = _projectConfig.pricePerTokenInWei;
         currencySymbol = "ETH";
