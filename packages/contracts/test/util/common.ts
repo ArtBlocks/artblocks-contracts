@@ -24,6 +24,7 @@ export type CoreWithMinterSuite = {
   minterFilter: Contract;
   adminACL: Contract;
   engineRegistry?: Contract;
+  artistContract?: Contract;
 };
 
 export type CoreWithoutMinterSuite = {
@@ -84,6 +85,9 @@ export type T_Config = {
   delegationRegistry?: Contract;
   // ref / mocks
   weth?: Contract;
+
+  // Artist contract address
+  artistContract?: Contract;
 };
 
 export async function getAccounts(): Promise<TestAccountsArtBlocks> {
@@ -183,7 +187,7 @@ export async function deployWithStorageLibraryAndGet(
 }
 
 // utility function to deploy basic randomizer, core, and MinterFilter
-// works for core versions V0, V1, V2_PRTNR, V3, MinterFilter V0, V1 (not V2+)
+// works for core versions V0, V1, V2_PRTNR, V3, V4, MinterFilter V0, V1 (not V2+)
 export async function deployCoreWithMinterFilter(
   config: T_Config,
   coreContractName: string,
@@ -195,7 +199,12 @@ export async function deployCoreWithMinterFilter(
   if (coreContractName.endsWith("V2_PBAB")) {
     throw new Error("V2_PBAB not supported");
   }
-  let randomizer, genArt721Core, minterFilter, adminACL, engineRegistry;
+  let randomizer,
+    genArt721Core,
+    minterFilter,
+    adminACL,
+    engineRegistry,
+    artistContract;
   randomizer = await deployAndGet(config, "BasicRandomizer", []);
   if (
     coreContractName.endsWith("V0") ||
@@ -229,6 +238,52 @@ export async function deployCoreWithMinterFilter(
     await genArt721Core
       .connect(config.accounts.deployer)
       .addMintWhitelisted(minterFilter.address);
+  } else if (coreContractName.endsWith("V4")) {
+    randomizer = await deployAndGet(config, _randomizerName, []);
+    let adminACLContractName = useAdminACLWithEvents
+      ? "MockAdminACLV0Events"
+      : "AdminACLV0";
+
+    // if core contract name ends with _PROHIBITION, use that for adminACL too
+    adminACLContractName = coreContractName.endsWith("_PROHIBITION")
+      ? `${adminACLContractName}_PROHIBITION`
+      : adminACLContractName;
+
+    // if function input has adminACL contract name, use that instead
+    adminACLContractName = _adminACLContractName
+      ? _adminACLContractName
+      : adminACLContractName;
+    adminACL = await deployAndGet(config, adminACLContractName, []);
+    genArt721Core = await deployWithStorageLibraryAndGet(
+      config,
+      coreContractName,
+      [
+        config.name,
+        config.symbol,
+        randomizer.address,
+        adminACL.address,
+        0, // _startingProjectId
+      ]
+    );
+
+    // Deploy mock artist contract
+    artistContract = await deployAndGet(config, "MockERC721Creator", [
+      "Test",
+      "Test",
+    ]);
+
+    // assign core contract for randomizer to use
+    randomizer
+      .connect(config.accounts.deployer)
+      .assignCoreAndRenounce(genArt721Core.address);
+    // deploy minter filter
+    minterFilter = await deployAndGet(config, minterFilterName, [
+      genArt721Core.address,
+    ]);
+    // allowlist minterFilter on the core contract
+    await genArt721Core
+      .connect(config.accounts.deployer)
+      .updateMinterContract(minterFilter.address);
   } else if (
     coreContractName.endsWith("V3") ||
     coreContractName.endsWith("V3_Explorations")
@@ -324,7 +379,14 @@ export async function deployCoreWithMinterFilter(
       .connect(config.accounts.deployer)
       .updateMinterContract(minterFilter.address);
   }
-  return { randomizer, genArt721Core, minterFilter, adminACL, engineRegistry };
+  return {
+    randomizer,
+    genArt721Core,
+    minterFilter,
+    adminACL,
+    engineRegistry,
+    artistContract,
+  };
 }
 
 export async function deploySharedMinterFilter(
@@ -349,7 +411,7 @@ export async function deploySharedMinterFilter(
 }
 
 // utility function to deploy basic randomizer, core, and MinterFilter
-// works for core versions V3 (any)
+// works for core versions V3, V4 (any)
 // registers core contract to CoreRegistryV1
 export async function deployCore(
   config: T_Config,
@@ -380,6 +442,31 @@ export async function deployCore(
     coreContractName.endsWith("V3") ||
     coreContractName.endsWith("V3_Explorations")
   ) {
+    let adminACLContractName =
+      _adminACLContractName ?? useAdminACLWithEvents
+        ? "MockAdminACLV0Events"
+        : "AdminACLV0";
+    adminACL = await deployAndGet(config, adminACLContractName, []);
+    genArt721Core = await deployWithStorageLibraryAndGet(
+      config,
+      coreContractName,
+      [
+        config.name,
+        config.symbol,
+        randomizer.address,
+        adminACL.address,
+        config.projectZero, // starting project ID
+      ]
+    );
+    // register core contract on CoreRegistryV1
+    const coreVersion = await genArt721Core.coreVersion();
+    const coreType = await genArt721Core.coreType();
+    await CoreRegistryV1.connect(config.accounts.deployer).registerContract(
+      genArt721Core.address,
+      ethers.utils.formatBytes32String(coreVersion),
+      ethers.utils.formatBytes32String(coreType)
+    );
+  } else if (coreContractName.endsWith("V4")) {
     let adminACLContractName =
       _adminACLContractName ?? useAdminACLWithEvents
         ? "MockAdminACLV0Events"
@@ -523,6 +610,18 @@ export async function isCoreV3(core: Contract): Promise<boolean> {
     }
   } catch {
     // swallow error because function doesn't exist on pre-V3 core contracts
+  }
+  return false;
+}
+
+// utility function to return if core is V4
+export async function isCoreV4(core: Contract): Promise<boolean> {
+  try {
+    if ((await core.coreType()).startsWith("GenArt721CoreV4")) {
+      return true;
+    }
+  } catch {
+    // swallow error because function doesn't exist on pre-V4 core contracts
   }
   return false;
 }

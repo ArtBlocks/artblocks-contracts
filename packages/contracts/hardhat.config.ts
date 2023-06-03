@@ -8,6 +8,8 @@ import "hardhat-contract-sizer";
 import "@nomiclabs/hardhat-etherscan";
 import "hardhat-docgen";
 import "@openzeppelin/hardhat-upgrades";
+import "@manifoldxyz/creator-core-solidity";
+import "@manifoldxyz/libraries-solidity";
 import { solidityConfig } from "./hardhat.solidity-config";
 
 const MAINNET_JSON_RPC_PROVIDER_URL = process.env.MAINNET_JSON_RPC_PROVIDER_URL;
