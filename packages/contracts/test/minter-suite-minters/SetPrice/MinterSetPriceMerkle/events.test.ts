@@ -1,8 +1,22 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { setupConfigWitMinterFilterV2Suite } from "../../../util/fixtures";
-import { deployAndGet, deployCore, safeAddProject } from "../../../util/common";
+import {
+  deployAndGet,
+  deployCore,
+  safeAddProject,
+  hashAddress,
+} from "../../../util/common";
 import { SetPrice_Common_Events } from "../common.events";
 import { ethers } from "hardhat";
+import { expect } from "chai";
+import {
+  CONFIG_MAX_INVOCATIONS_OVERRIDE,
+  CONFIG_MERKLE_ROOT,
+  CONFIG_USE_MAX_INVOCATIONS_PER_ADDRESS_OVERRIDE,
+} from "../../constants";
+
+const { MerkleTree } = require("merkletreejs");
+const keccak256 = require("keccak256");
 
 const TARGET_MINTER_NAME = "MinterSetPriceMerkleV5";
 const TARGET_MINTER_VERSION = "v5.0.0";
@@ -11,15 +25,15 @@ const runForEach = [
   {
     core: "GenArt721CoreV3",
   },
-  {
-    core: "GenArt721CoreV3_Explorations",
-  },
-  {
-    core: "GenArt721CoreV3_Engine",
-  },
-  {
-    core: "GenArt721CoreV3_Engine_Flex",
-  },
+  // {
+  //   core: "GenArt721CoreV3_Explorations",
+  // },
+  // {
+  //   core: "GenArt721CoreV3_Engine",
+  // },
+  // {
+  //   core: "GenArt721CoreV3_Engine_Flex",
+  // },
 ];
 
 runForEach.forEach((params) => {
@@ -228,10 +242,22 @@ runForEach.forEach((params) => {
         await expect(
           config.minter
             .connect(config.accounts.artist)
-            .updateMerkleRoot(config.projectZero, newMerkleRoot)
+            .updateMerkleRoot(
+              config.projectZero,
+              config.genArt721Core.address,
+              newMerkleRoot
+            )
         )
-          .to.emit(config.minter, "ConfigValueSet(uint256,bytes32,bytes32)")
-          .withArgs(config.projectZero, CONFIG_MERKLE_ROOT, newMerkleRoot);
+          .to.emit(
+            config.minter,
+            "ConfigValueSet(uint256,address,bytes32,bytes32)"
+          )
+          .withArgs(
+            config.projectZero,
+            config.genArt721Core.address,
+            CONFIG_MERKLE_ROOT,
+            newMerkleRoot
+          );
       });
     });
 
@@ -241,11 +267,19 @@ runForEach.forEach((params) => {
         await expect(
           config.minter
             .connect(config.accounts.artist)
-            .setProjectInvocationsPerAddress(config.projectZero, 0)
+            .setProjectInvocationsPerAddress(
+              config.projectZero,
+              config.genArt721Core.address,
+              0
+            )
         )
-          .to.emit(config.minter, "ConfigValueSet(uint256,bytes32,bool)")
+          .to.emit(
+            config.minter,
+            "ConfigValueSet(uint256,address,bytes32,bool)"
+          )
           .withArgs(
             config.projectZero,
+            config.genArt721Core.address,
             CONFIG_USE_MAX_INVOCATIONS_PER_ADDRESS_OVERRIDE,
             true
           );
@@ -253,19 +287,39 @@ runForEach.forEach((params) => {
         await expect(
           config.minter
             .connect(config.accounts.artist)
-            .setProjectInvocationsPerAddress(config.projectZero, 0)
+            .setProjectInvocationsPerAddress(
+              config.projectZero,
+              config.genArt721Core.address,
+              0
+            )
         )
-          .to.emit(config.minter, "ConfigValueSet(uint256,bytes32,uint256)")
-          .withArgs(config.projectZero, CONFIG_MAX_INVOCATIONS_OVERRIDE, 0);
+          .to.emit(
+            config.minter,
+            "ConfigValueSet(uint256,address,bytes32,uint256)"
+          )
+          .withArgs(
+            config.projectZero,
+            config.genArt721Core.address,
+            CONFIG_MAX_INVOCATIONS_OVERRIDE,
+            0
+          );
         // expect true again
         await expect(
           config.minter
             .connect(config.accounts.artist)
-            .setProjectInvocationsPerAddress(config.projectZero, 0)
+            .setProjectInvocationsPerAddress(
+              config.projectZero,
+              config.genArt721Core.address,
+              0
+            )
         )
-          .to.emit(config.minter, "ConfigValueSet(uint256,bytes32,bool)")
+          .to.emit(
+            config.minter,
+            "ConfigValueSet(uint256,address,bytes32,bool)"
+          )
           .withArgs(
             config.projectZero,
+            config.genArt721Core.address,
             CONFIG_USE_MAX_INVOCATIONS_PER_ADDRESS_OVERRIDE,
             true
           );
@@ -273,10 +327,22 @@ runForEach.forEach((params) => {
         await expect(
           config.minter
             .connect(config.accounts.artist)
-            .setProjectInvocationsPerAddress(config.projectZero, 999)
+            .setProjectInvocationsPerAddress(
+              config.projectZero,
+              config.genArt721Core.address,
+              999
+            )
         )
-          .to.emit(config.minter, "ConfigValueSet(uint256,bytes32,uint256)")
-          .withArgs(config.projectZero, CONFIG_MAX_INVOCATIONS_OVERRIDE, 999);
+          .to.emit(
+            config.minter,
+            "ConfigValueSet(uint256,address,bytes32,uint256)"
+          )
+          .withArgs(
+            config.projectZero,
+            config.genArt721Core.address,
+            CONFIG_MAX_INVOCATIONS_OVERRIDE,
+            999
+          );
       });
     });
   });

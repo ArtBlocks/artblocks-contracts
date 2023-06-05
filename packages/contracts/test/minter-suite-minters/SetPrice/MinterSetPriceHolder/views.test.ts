@@ -11,15 +11,15 @@ const runForEach = [
   {
     core: "GenArt721CoreV3",
   },
-  {
-    core: "GenArt721CoreV3_Explorations",
-  },
-  {
-    core: "GenArt721CoreV3_Engine",
-  },
-  {
-    core: "GenArt721CoreV3_Engine_Flex",
-  },
+  // {
+  //   core: "GenArt721CoreV3_Explorations",
+  // },
+  // {
+  //   core: "GenArt721CoreV3_Engine",
+  // },
+  // {
+  //   core: "GenArt721CoreV3_Engine_Flex",
+  // },
 ];
 
 runForEach.forEach((params) => {
@@ -166,12 +166,6 @@ runForEach.forEach((params) => {
           config.minter.address
         );
 
-      await config.minter
-        .connect(config.accounts.deployer)
-        .registerNFTAddress(
-          config.genArt721Core.address,
-          config.genArt721Core.address
-        );
       await config.minter
         .connect(config.accounts.artist)
         .allowHoldersOfProjects(

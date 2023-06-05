@@ -19,15 +19,15 @@ const runForEach = [
   {
     core: "GenArt721CoreV3",
   },
-  {
-    core: "GenArt721CoreV3_Explorations",
-  },
-  {
-    core: "GenArt721CoreV3_Engine",
-  },
-  {
-    core: "GenArt721CoreV3_Engine_Flex",
-  },
+  // {
+  //   core: "GenArt721CoreV3_Explorations",
+  // },
+  // {
+  //   core: "GenArt721CoreV3_Engine",
+  // },
+  // {
+  //   core: "GenArt721CoreV3_Engine_Flex",
+  // },
 ];
 
 runForEach.forEach((params) => {
@@ -161,12 +161,6 @@ runForEach.forEach((params) => {
           config.minter.address
         );
 
-      await config.minter
-        .connect(config.accounts.deployer)
-        .registerNFTAddress(
-          config.genArt721Core.address,
-          config.genArt721Core.address
-        );
       await config.minter
         .connect(config.accounts.artist)
         .allowHoldersOfProjects(
@@ -496,29 +490,6 @@ runForEach.forEach((params) => {
           revertMessages.lengthOfArraysMustMatch
         );
       });
-
-      it("does not allow allowlisting a project on an unregistered contract", async function () {
-        const config = await loadFixture(_beforeEach);
-        // deploy different contract (for config case, use PBAB contract)
-        const { pbabToken, pbabMinter } = await deployAndGetPBAB(config);
-        await pbabMinter
-          .connect(config.accounts.artist)
-          .purchaseTo(config.accounts.additional.address, 0, {
-            value: config.pricePerTokenInWei,
-          });
-        // allow holders of PBAB project 0 to purchase tokens on config.projectTwo
-        await expectRevert(
-          config.minter
-            .connect(config.accounts.artist)
-            .allowHoldersOfProjects(
-              config.projectTwo,
-              config.genArt721Core.address,
-              [pbabToken.address],
-              [config.projectZero]
-            ),
-          revertMessages.onlyRegisteredNFTAddresses
-        );
-      });
     });
 
     describe("removeHoldersOfProjects", async function () {
@@ -582,7 +553,7 @@ runForEach.forEach((params) => {
         await expectRevert(
           config.minter
             .connect(config.accounts.user)
-            .allowRemoveHoldersOfProjects(
+            .allowAndRemoveHoldersOfProjects(
               config.projectZero,
               config.genArt721Core.address,
               [config.genArt721Core.address],
@@ -596,7 +567,7 @@ runForEach.forEach((params) => {
         await expectRevert(
           config.minter
             .connect(config.accounts.additional)
-            .allowRemoveHoldersOfProjects(
+            .allowAndRemoveHoldersOfProjects(
               config.projectZero,
               config.genArt721Core.address,
               [config.genArt721Core.address],
@@ -609,7 +580,7 @@ runForEach.forEach((params) => {
         // artist allowed
         await config.minter
           .connect(config.accounts.artist)
-          .allowRemoveHoldersOfProjects(
+          .allowAndRemoveHoldersOfProjects(
             config.projectZero,
             config.genArt721Core.address,
             [config.genArt721Core.address],

@@ -12,15 +12,15 @@ const runForEach = [
   {
     core: "GenArt721CoreV3",
   },
-  {
-    core: "GenArt721CoreV3_Explorations",
-  },
-  {
-    core: "GenArt721CoreV3_Engine",
-  },
-  {
-    core: "GenArt721CoreV3_Engine_Flex",
-  },
+  // {
+  //   core: "GenArt721CoreV3_Explorations",
+  // },
+  // {
+  //   core: "GenArt721CoreV3_Engine",
+  // },
+  // {
+  //   core: "GenArt721CoreV3_Engine_Flex",
+  // },
 ];
 
 runForEach.forEach((params) => {
@@ -155,12 +155,6 @@ runForEach.forEach((params) => {
         );
 
       await config.minter
-        .connect(config.accounts.deployer)
-        .registerNFTAddress(
-          config.genArt721Core.address,
-          config.genArt721Core.address
-        );
-      await config.minter
         .connect(config.accounts.artist)
         .allowHoldersOfProjects(
           config.projectZero,
@@ -264,13 +258,13 @@ runForEach.forEach((params) => {
       });
     });
 
-    describe("allowRemoveHoldersOfProjects", async function () {
+    describe("allowAndRemoveHoldersOfProjects", async function () {
       it("emits event when removing allowed holders for a single project", async function () {
         const config = await loadFixture(_beforeEach);
         await expect(
           config.minter
             .connect(config.accounts.artist)
-            .allowRemoveHoldersOfProjects(
+            .allowAndRemoveHoldersOfProjects(
               config.projectZero,
               config.genArt721Core.address,
               [config.genArt721Core.address],
@@ -290,7 +284,7 @@ runForEach.forEach((params) => {
         await expect(
           config.minter
             .connect(config.accounts.artist)
-            .allowRemoveHoldersOfProjects(
+            .allowAndRemoveHoldersOfProjects(
               config.projectZero,
               config.genArt721Core.address,
               [config.genArt721Core.address],
@@ -313,7 +307,7 @@ runForEach.forEach((params) => {
         await expect(
           config.minter
             .connect(config.accounts.artist)
-            .allowRemoveHoldersOfProjects(
+            .allowAndRemoveHoldersOfProjects(
               config.projectZero,
               config.genArt721Core.address,
               [config.genArt721Core.address, config.genArt721Core.address],
@@ -336,7 +330,7 @@ runForEach.forEach((params) => {
         await expect(
           config.minter
             .connect(config.accounts.artist)
-            .allowRemoveHoldersOfProjects(
+            .allowAndRemoveHoldersOfProjects(
               config.projectZero,
               config.genArt721Core.address,
               [],

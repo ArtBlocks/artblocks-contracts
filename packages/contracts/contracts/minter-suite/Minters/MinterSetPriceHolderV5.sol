@@ -41,7 +41,7 @@ pragma solidity 0.8.19;
  * The following functions are restricted to a project's artist:
  * - allowHoldersOfProjects
  * - removeHoldersOfProjects
- * - allowRemoveHoldersOfProjects
+ * - allowAndRemoveHoldersOfProjects
  * - updatePricePerTokenInWei
  * - setProjectMaxInvocations
  * - manuallyLimitProjectMaxInvocations
@@ -363,6 +363,19 @@ contract MinterSetPriceHolderV5 is
             _coreContract,
             _ownedNFTAddressesAdd,
             _ownedNFTProjectIdsAdd,
+            _ownedNFTAddressesRemove,
+            _ownedNFTProjectIdsRemove
+        );
+        // emit events
+        emit AllowedHoldersOfProjects(
+            _projectId,
+            _coreContract,
+            _ownedNFTAddressesAdd,
+            _ownedNFTProjectIdsAdd
+        );
+        emit RemovedHoldersOfProjects(
+            _projectId,
+            _coreContract,
             _ownedNFTAddressesRemove,
             _ownedNFTProjectIdsRemove
         );

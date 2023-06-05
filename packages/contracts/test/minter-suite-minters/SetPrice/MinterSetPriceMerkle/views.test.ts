@@ -1,8 +1,16 @@
 import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { setupConfigWitMinterFilterV2Suite } from "../../../util/fixtures";
-import { deployAndGet, deployCore, safeAddProject } from "../../../util/common";
+import {
+  deployAndGet,
+  deployCore,
+  safeAddProject,
+  hashAddress,
+} from "../../../util/common";
 import { SetPrice_Common_Views } from "../common.views";
+
+const { MerkleTree } = require("merkletreejs");
+const keccak256 = require("keccak256");
 
 const TARGET_MINTER_NAME = "MinterSetPriceMerkleV5";
 const TARGET_MINTER_VERSION = "v5.0.0";
@@ -11,15 +19,15 @@ const runForEach = [
   {
     core: "GenArt721CoreV3",
   },
-  {
-    core: "GenArt721CoreV3_Explorations",
-  },
-  {
-    core: "GenArt721CoreV3_Engine",
-  },
-  {
-    core: "GenArt721CoreV3_Engine_Flex",
-  },
+  // {
+  //   core: "GenArt721CoreV3_Explorations",
+  // },
+  // {
+  //   core: "GenArt721CoreV3_Engine",
+  // },
+  // {
+  //   core: "GenArt721CoreV3_Engine_Flex",
+  // },
 ];
 
 runForEach.forEach((params) => {

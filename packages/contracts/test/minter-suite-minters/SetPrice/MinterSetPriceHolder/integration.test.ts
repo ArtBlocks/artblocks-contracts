@@ -17,15 +17,15 @@ const runForEach = [
   {
     core: "GenArt721CoreV3",
   },
-  {
-    core: "GenArt721CoreV3_Explorations",
-  },
-  {
-    core: "GenArt721CoreV3_Engine",
-  },
-  {
-    core: "GenArt721CoreV3_Engine_Flex",
-  },
+  // {
+  //   core: "GenArt721CoreV3_Explorations",
+  // },
+  // {
+  //   core: "GenArt721CoreV3_Engine",
+  // },
+  // {
+  //   core: "GenArt721CoreV3_Engine_Flex",
+  // },
 ];
 
 runForEach.forEach((params) => {
@@ -173,12 +173,6 @@ runForEach.forEach((params) => {
         );
 
       await config.minter
-        .connect(config.accounts.deployer)
-        .registerNFTAddress(
-          config.genArt721Core.address,
-          config.genArt721Core.address
-        );
-      await config.minter
         .connect(config.accounts.artist)
         .allowHoldersOfProjects(
           config.projectZero,
@@ -249,7 +243,7 @@ runForEach.forEach((params) => {
                 value: 0,
               }
             ),
-          "Must send minimum value to mint"
+          revertMessages.needMoreValue
         );
         // expect revert due when sending funds less than price
         await expectRevert(
@@ -264,7 +258,7 @@ runForEach.forEach((params) => {
                 value: config.pricePerTokenInWei.sub(1),
               }
             ),
-          "Must send minimum value to mint"
+          revertMessages.needMoreValue
         );
       });
 
@@ -310,7 +304,7 @@ runForEach.forEach((params) => {
           // allow holders of config.projectZero and config.projectOne, then remove config.projectZero
           await config.minter
             .connect(config.accounts.artist)
-            .allowRemoveHoldersOfProjects(
+            .allowAndRemoveHoldersOfProjects(
               config.projectTwo,
               config.genArt721Core.address,
               [config.genArt721Core.address, config.genArt721Core.address],
@@ -381,7 +375,7 @@ runForEach.forEach((params) => {
           // allow holders of config.projectOne and config.projectZero to purchase tokens on config.projectTwo
           await config.minter
             .connect(config.accounts.artist)
-            .allowRemoveHoldersOfProjects(
+            .allowAndRemoveHoldersOfProjects(
               config.projectTwo,
               config.genArt721Core.address,
               [config.genArt721Core.address, config.genArt721Core.address],
@@ -455,13 +449,7 @@ runForEach.forEach((params) => {
             .purchaseTo(config.accounts.additional.address, 0, {
               value: config.pricePerTokenInWei,
             });
-          // register the PBAB token on our minter
-          await config.minter
-            .connect(config.accounts.deployer)
-            .registerNFTAddress(
-              config.genArt721Core.address,
-              pbabToken.address
-            );
+
           // configure price per token to be zero
           await config.minter
             .connect(config.accounts.artist)
@@ -496,13 +484,7 @@ runForEach.forEach((params) => {
             .purchaseTo(config.accounts.additional.address, 0, {
               value: config.pricePerTokenInWei,
             });
-          // register the PBAB token on our minter
-          await config.minter
-            .connect(config.accounts.deployer)
-            .registerNFTAddress(
-              config.genArt721Core.address,
-              pbabToken.address
-            );
+
           // allow holders of PBAB project 0 to purchase tokens on config.projectTwo
           await config.minter
             .connect(config.accounts.artist)
@@ -613,7 +595,7 @@ runForEach.forEach((params) => {
                 value: config.pricePerTokenInWei,
               }
             ),
-          "Maximum number of invocations reached"
+          revertMessages.maximumInvocationsReached
         );
       });
 

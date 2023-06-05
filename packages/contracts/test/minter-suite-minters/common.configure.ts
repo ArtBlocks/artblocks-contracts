@@ -33,7 +33,7 @@ export const Common_Configure = async (
             config.genArt721Core.address,
             config.maxInvocations + 1
           ),
-        "Cannot increase project max invocations above core contract set project max invocations"
+        "Invalid max invocations"
       );
     });
   });

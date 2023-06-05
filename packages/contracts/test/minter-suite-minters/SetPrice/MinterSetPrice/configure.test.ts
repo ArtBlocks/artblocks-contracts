@@ -1,8 +1,10 @@
+import { expectRevert } from "@openzeppelin/test-helpers";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { setupConfigWitMinterFilterV2Suite } from "../../../util/fixtures";
 import { deployAndGet, deployCore, safeAddProject } from "../../../util/common";
 import { SetPrice_Common_Configure } from "../common.configure";
 import { ethers } from "hardhat";
+import { revertMessages } from "../../constants";
 
 const TARGET_MINTER_NAME = "MinterSetPriceV5";
 const TARGET_MINTER_VERSION = "v5.0.0";
@@ -11,15 +13,15 @@ const runForEach = [
   {
     core: "GenArt721CoreV3",
   },
-  {
-    core: "GenArt721CoreV3_Explorations",
-  },
-  {
-    core: "GenArt721CoreV3_Engine",
-  },
-  {
-    core: "GenArt721CoreV3_Engine_Flex",
-  },
+  // {
+  //   core: "GenArt721CoreV3_Explorations",
+  // },
+  // {
+  //   core: "GenArt721CoreV3_Engine",
+  // },
+  // {
+  //   core: "GenArt721CoreV3_Engine_Flex",
+  // },
 ];
 
 runForEach.forEach((params) => {

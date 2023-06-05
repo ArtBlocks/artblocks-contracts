@@ -42,7 +42,7 @@ library TokenHolderLib {
     ) internal {
         require(
             _ownedNFTAddresses.length == _ownedNFTProjectIds.length,
-            "TokenHolderLib: arrays must be same length"
+            "TokenHolderLib: arrays neq length"
         );
         for (uint256 i = 0; i < _ownedNFTAddresses.length; i++) {
             allowedProjectHoldersMapping[_coreContract][_projectId][
@@ -72,7 +72,7 @@ library TokenHolderLib {
     ) internal {
         require(
             _ownedNFTAddresses.length == _ownedNFTProjectIds.length,
-            "arrays neq length"
+            "TokenHolderLib: arrays neq length"
         );
         for (uint256 i = 0; i < _ownedNFTAddresses.length; i++) {
             allowedProjectHoldersMapping[_coreContract][_projectId][

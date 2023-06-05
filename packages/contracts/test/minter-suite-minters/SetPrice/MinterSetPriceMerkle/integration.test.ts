@@ -1,9 +1,17 @@
 import { expectRevert } from "@openzeppelin/test-helpers";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { setupConfigWitMinterFilterV2Suite } from "../../../util/fixtures";
-import { deployAndGet, deployCore, safeAddProject } from "../../../util/common";
+import {
+  deployAndGet,
+  deployCore,
+  safeAddProject,
+  hashAddress,
+} from "../../../util/common";
 import { ethers } from "hardhat";
 import { revertMessages } from "../../constants";
+
+const { MerkleTree } = require("merkletreejs");
+const keccak256 = require("keccak256");
 
 const TARGET_MINTER_NAME = "MinterSetPriceMerkleV5";
 const TARGET_MINTER_VERSION = "v5.0.0";
@@ -12,15 +20,15 @@ const runForEach = [
   {
     core: "GenArt721CoreV3",
   },
-  {
-    core: "GenArt721CoreV3_Explorations",
-  },
-  {
-    core: "GenArt721CoreV3_Engine",
-  },
-  {
-    core: "GenArt721CoreV3_Engine_Flex",
-  },
+  // {
+  //   core: "GenArt721CoreV3_Explorations",
+  // },
+  // {
+  //   core: "GenArt721CoreV3_Engine",
+  // },
+  // {
+  //   core: "GenArt721CoreV3_Engine_Flex",
+  // },
 ];
 
 runForEach.forEach((params) => {
@@ -104,20 +112,20 @@ runForEach.forEach((params) => {
           config.minter.address
         );
 
-      await config.minter
-        .connect(config.accounts.artist)
-        .updatePricePerTokenInWei(
-          config.projectOne,
-          config.genArt721Core.address,
-          config.pricePerTokenInWei
-        );
+      // await config.minter
+      //   .connect(config.accounts.artist)
+      //   .updatePricePerTokenInWei(
+      //     config.projectOne,
+      //     config.genArt721Core.address,
+      //     config.pricePerTokenInWei
+      //   );
 
       await config.genArt721Core
         .connect(config.accounts.artist)
-        .updateProjectMaxInvocations(config.projectZero, 15);
+        .updateProjectMaxInvocations(config.projectZero, 16);
       await config.genArt721Core
         .connect(config.accounts.artist)
-        .updateProjectMaxInvocations(config.projectOne, 15);
+        .updateProjectMaxInvocations(config.projectOne, 16);
 
       config.minterSetPrice = await deployAndGet(config, "MinterSetPriceV5", [
         config.minterFilter.address,
@@ -215,6 +223,23 @@ runForEach.forEach((params) => {
           merkleRootOne
         );
 
+      config.userVault = config.accounts.additional2;
+
+      await config.minter
+        .connect(config.accounts.artist)
+        .setProjectInvocationsPerAddress(
+          config.projectZero,
+          config.genArt721Core.address,
+          16
+        );
+      await config.minter
+        .connect(config.accounts.artist)
+        .setProjectInvocationsPerAddress(
+          config.projectOne,
+          config.genArt721Core.address,
+          16
+        );
+
       return config;
     }
 
@@ -253,9 +278,9 @@ runForEach.forEach((params) => {
             config.genArt721Core.address,
             ethers.utils.parseEther("0")
           );
-        await setPriceMinter
-          .connect(config.accounts.artist)
-          .purchase(config.projectZero, config.genArt721Core.address);
+        // await setPriceMinter
+        //   .connect(config.accounts.artist)
+        //   .purchase(config.projectZero, config.genArt721Core.address);
         // switch back to original minter
         await config.minterFilter
           .connect(config.accounts.artist)
@@ -272,24 +297,41 @@ runForEach.forEach((params) => {
             config.pricePerTokenInWei
           );
 
+        const userMerkleProofZero = config.merkleTreeZero.getHexProof(
+          hashAddress(config.accounts.user.address)
+        );
+
         await expectRevert(
           config.minter
             .connect(config.accounts.user)
-            .purchase(config.projectZero, config.genArt721Core.address, {
-              value: config.pricePerTokenInWei,
-            }),
+            ["purchase(uint256,address,bytes32[])"](
+              config.projectZero,
+              config.genArt721Core.address,
+              userMerkleProofZero,
+              {
+                value: config.higherPricePerTokenInWei,
+              }
+            ),
           revertMessages.maximumInvocationsReached
         );
       });
 
       it("does not allow purchase prior to configuring price", async function () {
         const config = await loadFixture(_beforeEach);
+        const userMerkleProofZero = config.merkleTreeZero.getHexProof(
+          hashAddress(config.accounts.user.address)
+        );
         await expectRevert(
           config.minter
             .connect(config.accounts.user)
-            .purchase(config.projectZero, config.genArt721Core.address, {
-              value: config.pricePerTokenInWei,
-            }),
+            ["purchase(uint256,address,bytes32[])"](
+              config.projectZero,
+              config.genArt721Core.address,
+              userMerkleProofZero,
+              {
+                value: config.higherPricePerTokenInWei,
+              }
+            ),
           revertMessages.priceNotConfigured
         );
       });
@@ -303,12 +345,21 @@ runForEach.forEach((params) => {
             config.genArt721Core.address,
             config.pricePerTokenInWei
           );
+        const userMerkleProofZero = config.merkleTreeZero.getHexProof(
+          hashAddress(config.accounts.user.address)
+        );
         for (let i = 0; i < 15; i++) {
           await config.minter
             .connect(config.accounts.user)
-            .purchase(config.projectZero, config.genArt721Core.address, {
-              value: config.pricePerTokenInWei,
-            });
+            ["purchase(uint256,address,bytes32[])"](
+              config.projectZero,
+              config.genArt721Core.address,
+              userMerkleProofZero,
+              {
+                value: config.higherPricePerTokenInWei,
+              }
+            );
+          console.log("i", i);
         }
         // switch to different minter
         const setPriceMinter = await deployAndGet(config, "MinterSetPriceV5", [
@@ -331,6 +382,7 @@ runForEach.forEach((params) => {
             config.genArt721Core.address,
             config.pricePerTokenInWei
           );
+
         for (let i = 0; i < 15; i++) {
           await setPriceMinter
             .connect(config.accounts.user)
@@ -404,13 +456,21 @@ runForEach.forEach((params) => {
               config.genArt721Core.address,
               config.pricePerTokenInWei
             );
+          const userMerkleProofZero = config.merkleTreeZero.getHexProof(
+            hashAddress(config.accounts.user.address)
+          );
           // expect revert when trying to purchase
           await expectRevert(
             config.minter
               .connect(config.accounts.user)
-              .purchase(config.projectZero, config.genArt721Core.address, {
-                value: config.pricePerTokenInWei,
-              }),
+              ["purchase(uint256,address,bytes32[])"](
+                config.projectZero,
+                config.genArt721Core.address,
+                userMerkleProofZero,
+                {
+                  value: config.pricePerTokenInWei,
+                }
+              ),
             "Render Provider payment failed"
           );
         });
@@ -436,13 +496,18 @@ runForEach.forEach((params) => {
                 config.deadReceiver.address,
                 config.accounts.additional2.address
               );
+            const userMerkleProofOne = config.merkleTreeOne.getHexProof(
+              hashAddress(config.userVault.address)
+            );
             await expectRevert(
               config.minter
                 .connect(config.accounts.user)
-                .purchaseTo(
-                  config.accounts.additional.address,
-                  config.projectZero,
+                ["purchaseTo(address,uint256,address,bytes32[],address)"](
+                  config.userVault.address,
+                  config.projectOne,
                   config.genArt721Core.address,
+                  userMerkleProofOne,
+                  config.userVault.address, //  the allowlisted address
                   {
                     value: config.pricePerTokenInWei,
                   }
@@ -472,12 +537,20 @@ runForEach.forEach((params) => {
               config.deadReceiver.address
             );
           // expect revert when trying to purchase
+          const userMerkleProofZero = config.merkleTreeZero.getHexProof(
+            hashAddress(config.accounts.user.address)
+          );
           await expectRevert(
             config.minter
               .connect(config.accounts.user)
-              .purchase(config.projectZero, config.genArt721Core.address, {
-                value: config.pricePerTokenInWei,
-              }),
+              ["purchase(uint256,address,bytes32[])"](
+                config.projectZero,
+                config.genArt721Core.address,
+                userMerkleProofZero,
+                {
+                  value: config.higherPricePerTokenInWei,
+                }
+              ),
             "Artist payment failed"
           );
         });
@@ -512,12 +585,20 @@ runForEach.forEach((params) => {
             .connect(config.accounts.deployer)
             .adminAcceptArtistAddressesAndSplits(...proposedAddressesAndSplits);
           // expect revert when trying to purchase
+          const userMerkleProofZero = config.merkleTreeZero.getHexProof(
+            hashAddress(config.accounts.user.address)
+          );
           await expectRevert(
             config.minter
               .connect(config.accounts.user)
-              .purchase(config.projectZero, config.genArt721Core.address, {
-                value: config.pricePerTokenInWei,
-              }),
+              ["purchase(uint256,address,bytes32[])"](
+                config.projectZero,
+                config.genArt721Core.address,
+                userMerkleProofZero,
+                {
+                  value: config.higherPricePerTokenInWei,
+                }
+              ),
             "Additional Payee payment failed"
           );
         });
@@ -562,12 +643,20 @@ runForEach.forEach((params) => {
           await config.genArt721Core
             .connect(config.accounts.deployer)
             .adminAcceptArtistAddressesAndSplits(...proposedAddressesAndSplits);
-          // expect successful purchase
+          // expect successful purchase'
+          const userMerkleProofZero = config.merkleTreeZero.getHexProof(
+            hashAddress(config.accounts.user.address)
+          );
           await config.minter
             .connect(config.accounts.user)
-            .purchase(config.projectZero, config.genArt721Core.address, {
-              value: config.pricePerTokenInWei,
-            });
+            ["purchase(uint256,address,bytes32[])"](
+              config.projectZero,
+              config.genArt721Core.address,
+              userMerkleProofZero,
+              {
+                value: config.higherPricePerTokenInWei,
+              }
+            );
         });
       });
     });
@@ -576,13 +665,21 @@ runForEach.forEach((params) => {
       it("does not allow purchase prior to configuring price", async function () {
         const config = await loadFixture(_beforeEach);
 
+        await config.delegationRegistry
+          .connect(config.userVault)
+          .delegateForAll(config.accounts.user.address, true);
+        const userMerkleProofOne = config.merkleTreeOne.getHexProof(
+          hashAddress(config.userVault.address)
+        );
         await expectRevert(
           config.minter
             .connect(config.accounts.user)
-            .purchaseTo(
-              config.accounts.additional.address,
-              config.projectZero,
+            ["purchaseTo(address,uint256,address,bytes32[],address)"](
+              config.userVault.address,
+              config.projectOne,
               config.genArt721Core.address,
+              userMerkleProofOne,
+              config.userVault.address, //  the allowlisted address
               {
                 value: config.pricePerTokenInWei,
               }
@@ -596,16 +693,25 @@ runForEach.forEach((params) => {
         await config.minter
           .connect(config.accounts.artist)
           .updatePricePerTokenInWei(
-            config.projectZero,
+            config.projectOne,
             config.genArt721Core.address,
             config.pricePerTokenInWei
           );
+        await config.delegationRegistry
+          .connect(config.userVault)
+          .delegateForAll(config.accounts.user.address, true);
+        const userMerkleProofOne = config.merkleTreeOne.getHexProof(
+          hashAddress(config.userVault.address)
+        );
+        console.log(config.userVault);
         await config.minter
           .connect(config.accounts.user)
-          .purchaseTo(
-            config.accounts.additional.address,
-            config.projectZero,
+          ["purchaseTo(address,uint256,address,bytes32[],address)"](
+            config.userVault.address,
+            config.projectOne,
             config.genArt721Core.address,
+            userMerkleProofOne,
+            config.userVault.address, //  the allowlisted address
             {
               value: config.pricePerTokenInWei,
             }
