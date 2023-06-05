@@ -16,7 +16,8 @@ import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
 pragma solidity 0.8.19;
 
 /**
- * @title Filtered Minter contract that allows tokens to be minted with ETH.
+ * @title Filtered Minter contract that allows tokens to be minted with ETH
+ * for addresses in a Merkle allowlist.
  * This is designed to be used with GenArt721CoreContractV3 flagship or
  * engine contracts.
  * @author Art Blocks Inc.
@@ -29,12 +30,28 @@ pragma solidity 0.8.19;
  * addresses are secure behind a multi-sig or other access control mechanism.
  * ----------------------------------------------------------------------------
  * The following functions are restricted to a project's artist:
+ * - updateMerkleRoot
  * - updatePricePerTokenInWei
+ * - setProjectInvocationsPerAddress
  * - setProjectMaxInvocations
  * - manuallyLimitProjectMaxInvocations
  * ----------------------------------------------------------------------------
  * Additional admin and artist privileged roles may be described on other
  * contracts that this minter integrates with.
+ * ----------------------------------------------------------------------------
+ * This contract allows vaults to configure token-level or wallet-level
+ * delegation of minting privileges. This allows a vault on an allowlist to
+ * delegate minting privileges to a wallet that is not on the allowlist,
+ * enabling the vault to remain air-gapped while still allowing minting. The
+ * delegation registry contract is responsible for managing these delegations,
+ * and is available at the address returned by the public immutable
+ * `delegationRegistryAddress`. At the time of writing, the delegation
+ * registry enables easy delegation configuring at https://delegate.cash/.
+ * Art Blocks does not guarentee the security of the delegation registry, and
+ * users should take care to ensure that the delegation registry is secure.
+ * Token-level delegations are configured by the vault owner, and contract-
+ * level delegations must be configured for the core token contract as returned
+ * by the public immutable variable `genArt721CoreAddress`.
  */
 contract MinterSetPriceMerkleV5 is
     ReentrancyGuard,
@@ -86,6 +103,13 @@ contract MinterSetPriceMerkleV5 is
 
     // STATE VARIABLES FOR MaxInvocationsLib end here
 
+    // MODIFIERS
+    /**
+     * @dev Throws if called by any account other than the artist of the specified project.
+     * Requirements: `msg.sender` must be the artist associated with `_projectId`.
+     * @param _projectId The ID of the project being checked.
+     * @param _coreContract The address of the GenArt721CoreContractV3_Base contract.
+     */
     function _onlyArtist(
         uint256 _projectId,
         address _coreContract
@@ -123,92 +147,6 @@ contract MinterSetPriceMerkleV5 is
         );
     }
 
-    // public getter functions
-    function maxInvocationsProjectConfig(
-        address _contractAddress,
-        uint256 _projectId
-    )
-        external
-        view
-        returns (MaxInvocationsLib.MaxInvocationsProjectConfig memory)
-    {
-        return
-            _maxInvocationsProjectConfigMapping[_contractAddress][_projectId];
-    }
-
-    function projectConfig(
-        address _contractAddress,
-        uint256 _projectId
-    ) external view returns (ProjectConfig memory) {
-        return _projectConfigMapping[_contractAddress][_projectId];
-    }
-
-    function merkleProjectConfig(
-        address _contractAddress,
-        uint256 _projectId
-    ) external view returns (MerkleLib.MerkleProjectConfig memory) {
-        return _merkleProjectConfigMapping[_contractAddress][_projectId];
-    }
-
-    function projectUserMintInvocations(
-        address _contractAddress,
-        uint256 _projectId,
-        address _purchaser
-    ) external view returns (uint256) {
-        return
-            _projectUserMintInvocationsMapping[_contractAddress][_projectId][
-                _purchaser
-            ];
-    }
-
-    /**
-     * @notice Checks if the specified `_coreContract` is a valid engine contract.
-     * @dev This function retrieves the cached value of `_coreContract` from
-     * the `isEngineCache` mapping. If the cached value is already set, it
-     * returns the cached value. Otherwise, it calls the `getV3CoreIsEngine`
-     * function from the `SplitFundsLib` library to check if `_coreContract`
-     * is a valid engine contract.
-     * @param _coreContract The address of the contract to check.
-     * @return bool indicating if `_coreContract` is a valid engine contract.
-     */
-    function isEngineView(address _coreContract) public view returns (bool) {
-        SplitFundsLib.IsEngineCache storage isEngineCache = _isEngineCaches[
-            _coreContract
-        ];
-        if (isEngineCache.isCached) {
-            return isEngineCache.isEngine;
-        } else {
-            // @dev this calls the non-modifying variant of getV3CoreIsEngine
-            return SplitFundsLib.getV3CoreIsEngine(_coreContract);
-        }
-    }
-
-    /**
-     * @notice Syncs local maximum invocations of project `_projectId` based on
-     * the value currently defined in the core contract.
-     * @param _coreContract Core contract address for the given project.
-     * @param _projectId Project ID to set the maximum invocations for.
-     * @dev this enables gas reduction after maxInvocations have been reached -
-     * core contracts shall still enforce a maxInvocation check during mint.
-     */
-    function syncProjectMaxInvocationsToCore(
-        uint256 _projectId,
-        address _coreContract
-    ) public {
-        _onlyArtist(_projectId, _coreContract);
-        uint256 maxInvocations = MaxInvocationsLib
-            .syncProjectMaxInvocationsToCore(
-                _projectId,
-                _coreContract,
-                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-            );
-        emit ProjectMaxInvocationsLimitUpdated(
-            _projectId,
-            _coreContract,
-            maxInvocations
-        );
-    }
-
     /**
      * @notice Manually sets the local maximum invocations of project `_projectId`
      * with the provided `_maxInvocations`, checking that `_maxInvocations` is less
@@ -238,6 +176,251 @@ contract MinterSetPriceMerkleV5 is
             _coreContract,
             _maxInvocations
         );
+    }
+
+    /**
+     * @notice Updates this minter's price per token of project `_projectId`
+     * to be '_pricePerTokenInWei`, in Wei.
+     * This price supersedes any legacy core contract price per token value.
+     * @dev Note that it is intentionally supported here that the configured
+     * price may be explicitly set to `0`.
+     * @param _projectId Project ID to set the price per token for.
+     * @param _coreContract Core contract address for the given project.
+     * @param _pricePerTokenInWei Price per token to set for the project, in Wei.
+     */
+    function updatePricePerTokenInWei(
+        uint256 _projectId,
+        address _coreContract,
+        uint256 _pricePerTokenInWei
+    ) external {
+        _onlyArtist(_projectId, _coreContract);
+        MaxInvocationsLib.MaxInvocationsProjectConfig
+            storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
+                _coreContract
+            ][_projectId];
+        ProjectConfig storage _projectConfig = _projectConfigMapping[
+            _coreContract
+        ][_projectId];
+        _projectConfig.pricePerTokenInWei = _pricePerTokenInWei;
+        _projectConfig.priceIsConfigured = true;
+        emit PricePerTokenInWeiUpdated(
+            _projectId,
+            _coreContract,
+            _pricePerTokenInWei
+        );
+
+        // sync local max invocations if not initially populated
+        // @dev if local max invocations and maxHasBeenInvoked are both
+        // initial values, we know they have not been populated.
+        if (
+            _maxInvocationsProjectConfig.maxInvocations == 0 &&
+            _maxInvocationsProjectConfig.maxHasBeenInvoked == false
+        ) {
+            syncProjectMaxInvocationsToCore(_projectId, _coreContract);
+        }
+    }
+
+    /**
+     * @notice Update the Merkle root for project `_projectId` on core contract `_coreContract`.
+     * @param _projectId Project ID to be updated.
+     * @param _coreContract Core contract address for the given project.
+     * @param _root root of Merkle tree defining addresses allowed to mint
+     * on project `_projectId`.
+     */
+    function updateMerkleRoot(
+        uint256 _projectId,
+        address _coreContract,
+        bytes32 _root
+    ) external {
+        _onlyArtist(_projectId, _coreContract);
+        require(_root != bytes32(0), "Root must be provided");
+        MerkleLib.updateMerkleRoot(
+            _merkleProjectConfigMapping,
+            _projectId,
+            _coreContract,
+            _root
+        );
+        emit ConfigValueSet(
+            _projectId,
+            _coreContract,
+            MerkleLib.CONFIG_MERKLE_ROOT,
+            _root
+        );
+    }
+
+    /**
+     * @notice Sets maximum allowed invocations per allowlisted address for
+     * project `_project` to `limit`. If `limit` is set to 0, allowlisted
+     * addresses will be able to mint as many times as desired, until the
+     * project reaches its maximum invocations.
+     * Default is a value of 1 if never configured by artist.
+     * @param _projectId Project ID to toggle the mint limit.
+     * @param _coreContract Core contract address for the given project.
+     * @param _maxInvocationsPerAddress Maximum allowed invocations per
+     * allowlisted address.
+     * @dev default value stated above must be updated if the value of
+     * CONFIG_USE_MAX_INVOCATIONS_PER_ADDRESS_OVERRIDE is changed.
+     */
+    function setProjectInvocationsPerAddress(
+        uint256 _projectId,
+        address _coreContract,
+        uint24 _maxInvocationsPerAddress
+    ) external {
+        _onlyArtist(_projectId, _coreContract);
+        MerkleLib.setProjectInvocationsPerAddress(
+            _projectId,
+            _coreContract,
+            _maxInvocationsPerAddress,
+            _merkleProjectConfigMapping
+        );
+        emit ConfigValueSet(
+            _projectId,
+            _coreContract,
+            MerkleLib.CONFIG_USE_MAX_INVOCATIONS_PER_ADDRESS_OVERRIDE,
+            true
+        );
+        emit ConfigValueSet(
+            _projectId,
+            _coreContract,
+            MerkleLib.CONFIG_MAX_INVOCATIONS_OVERRIDE,
+            uint256(_maxInvocationsPerAddress)
+        );
+    }
+
+    /**
+     * @notice Inactive function - requires Merkle proof to purchase.
+     */
+    function purchase(uint256, address) external payable returns (uint256) {
+        revert("Must provide Merkle proof");
+    }
+
+    /**
+     * @notice Purchases a token from project `_projectId`.
+     * @param _projectId Project ID to mint a token on.
+     * @param _coreContract Contract address of the core contract.
+     * @param _proof Merkle proof for the given project.
+     * @return tokenId Token ID of minted token
+     */
+    function purchase(
+        uint256 _projectId,
+        address _coreContract,
+        bytes32[] calldata _proof
+    ) external payable returns (uint256 tokenId) {
+        tokenId = purchaseTo(
+            msg.sender,
+            _projectId,
+            _coreContract,
+            _proof,
+            address(0)
+        );
+        return tokenId;
+    }
+
+    /**
+     * @notice Purchases a token from project `_projectId` and sets
+     * the token's owner to `_to`.
+     * @param _to Address to be the new token's owner.
+     * @param _projectId Project ID to mint a token on.
+     * @param _coreContract Contract address of the core contract.
+     * @param _proof Merkle proof for the given project.
+     * @return tokenId Token ID of minted token
+     */
+    function purchaseTo(
+        address _to,
+        uint256 _projectId,
+        address _coreContract,
+        bytes32[] calldata _proof
+    ) external payable returns (uint256 tokenId) {
+        return purchaseTo(_to, _projectId, _coreContract, _proof, address(0));
+    }
+
+    // public getter functions
+    /**
+     * @notice Gets the maximum invocations project configuration.
+     * @param _coreContract The address of the core contract.
+     * @param _projectId The ID of the project whose data needs to be fetched.
+     * @return MaxInvocationsLib.MaxInvocationsProjectConfig instance with the
+     * configuration data.
+     */
+    function maxInvocationsProjectConfig(
+        address _coreContract,
+        uint256 _projectId
+    )
+        external
+        view
+        returns (MaxInvocationsLib.MaxInvocationsProjectConfig memory)
+    {
+        return _maxInvocationsProjectConfigMapping[_coreContract][_projectId];
+    }
+
+    /**
+     * @notice Gets the base project configuration.
+     * @param _coreContract The address of the core contract.
+     * @param _projectId The ID of the project whose data needs to be fetched.
+     * @return ProjectConfig instance with the project configuration data.
+     */
+    function projectConfig(
+        address _coreContract,
+        uint256 _projectId
+    ) external view returns (ProjectConfig memory) {
+        return _projectConfigMapping[_coreContract][_projectId];
+    }
+
+    /**
+     * @notice Retrieves the Merkle project configuration for a given contract and project.
+     * @dev This function fetches the Merkle project configuration from the
+     * merkleProjectConfigMapping using the provided core contract address and project ID.
+     * @param _coreContract The address of the core contract.
+     * @param _projectId The ID of the project.
+     * @return MerkleLib.MerkleProjectConfig The Merkle project configuration.
+     */
+    function merkleProjectConfig(
+        address _coreContract,
+        uint256 _projectId
+    ) external view returns (MerkleLib.MerkleProjectConfig memory) {
+        return _merkleProjectConfigMapping[_coreContract][_projectId];
+    }
+
+    /**
+     * @notice Retrieves the mint invocation count for a specific project and purchaser.
+     * @dev This function retrieves the number of times a purchaser has minted
+     * in a specific project from the projectUserMintInvocationsMapping.
+     * @param _coreContract The address of the core contract.
+     * @param _projectId The ID of the project.
+     * @param _purchaser The address of the purchaser.
+     * @return uint256 The number of times the purchaser has minted in the given project.
+     */
+    function projectUserMintInvocations(
+        address _coreContract,
+        uint256 _projectId,
+        address _purchaser
+    ) external view returns (uint256) {
+        return
+            _projectUserMintInvocationsMapping[_coreContract][_projectId][
+                _purchaser
+            ];
+    }
+
+    /**
+     * @notice Checks if the specified `_coreContract` is a valid engine contract.
+     * @dev This function retrieves the cached value of `_coreContract` from
+     * the `isEngineCache` mapping. If the cached value is already set, it
+     * returns the cached value. Otherwise, it calls the `getV3CoreIsEngine`
+     * function from the `SplitFundsLib` library to check if `_coreContract`
+     * is a valid engine contract.
+     * @param _coreContract The address of the contract to check.
+     * @return bool indicating if `_coreContract` is a valid engine contract.
+     */
+    function isEngineView(address _coreContract) external view returns (bool) {
+        SplitFundsLib.IsEngineCache storage isEngineCache = _isEngineCaches[
+            _coreContract
+        ];
+        if (isEngineCache.isCached) {
+            return isEngineCache.isEngine;
+        } else {
+            // @dev this calls the non-modifying variant of getV3CoreIsEngine
+            return SplitFundsLib.getV3CoreIsEngine(_coreContract);
+        }
     }
 
     /**
@@ -295,52 +478,156 @@ contract MinterSetPriceMerkleV5 is
     }
 
     /**
-     * @notice Updates this minter's price per token of project `_projectId`
-     * to be '_pricePerTokenInWei`, in Wei.
-     * This price supersedes any legacy core contract price per token value.
-     * @dev Note that it is intentionally supported here that the configured
-     * price may be explicitly set to `0`.
-     * @param _projectId Project ID to set the price per token for.
-     * @param _coreContract Core contract address for the given project.
-     * @param _pricePerTokenInWei Price per token to set for the project, in Wei.
+     * @notice Gets if price of token is configured, price of minting a
+     * token on project `_projectId`, and currency symbol and address to be
+     * used as payment. Supersedes any core contract price information.
+     * @param _projectId Project ID to get price information for.
+     * @param _coreContract Contract address of the core contract.
+     * @return isConfigured true only if token price has been configured on
+     * this minter
+     * @return tokenPriceInWei current price of token on this minter - invalid
+     * if price has not yet been configured
+     * @return currencySymbol currency symbol for purchases of project on this
+     * minter. This minter always returns "ETH"
+     * @return currencyAddress currency address for purchases of project on
+     * this minter. This minter always returns null address, reserved for ether
      */
-    function updatePricePerTokenInWei(
+    function getPriceInfo(
         uint256 _projectId,
-        address _coreContract,
-        uint256 _pricePerTokenInWei
-    ) external {
-        _onlyArtist(_projectId, _coreContract);
-        MaxInvocationsLib.MaxInvocationsProjectConfig
-            storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
-                _coreContract
-            ][_projectId];
+        address _coreContract
+    )
+        external
+        view
+        returns (
+            bool isConfigured,
+            uint256 tokenPriceInWei,
+            string memory currencySymbol,
+            address currencyAddress
+        )
+    {
         ProjectConfig storage _projectConfig = _projectConfigMapping[
             _coreContract
         ][_projectId];
-        _projectConfig.pricePerTokenInWei = _pricePerTokenInWei;
-        _projectConfig.priceIsConfigured = true;
-        emit PricePerTokenInWeiUpdated(
-            _projectId,
-            _coreContract,
-            _pricePerTokenInWei
-        );
+        isConfigured = _projectConfig.priceIsConfigured;
+        tokenPriceInWei = _projectConfig.pricePerTokenInWei;
+        currencySymbol = "ETH";
+        currencyAddress = address(0);
+    }
 
-        // sync local max invocations if not initially populated
-        // @dev if local max invocations and maxHasBeenInvoked are both
-        // initial values, we know they have not been populated.
-        if (
-            _maxInvocationsProjectConfig.maxInvocations == 0 &&
-            _maxInvocationsProjectConfig.maxHasBeenInvoked == false
-        ) {
-            syncProjectMaxInvocationsToCore(_projectId, _coreContract);
+    /**
+     * @notice Returns remaining invocations for a given address.
+     * If `projectLimitsMintInvocationsPerAddress` is false, individual
+     * addresses are only limited by the project's maximum invocations, and a
+     * dummy value of zero is returned for `mintInvocationsRemaining`.
+     * If `projectLimitsMintInvocationsPerAddress` is true, the quantity of
+     * remaining mint invocations for address `_address` is returned as
+     * `mintInvocationsRemaining`.
+     * Note that mint invocations per address can be changed at any time by the
+     * artist of a project.
+     * Also note that all mint invocations are limited by a project's maximum
+     * invocations as defined on the core contract. This function may return
+     * a value greater than the project's remaining invocations.
+     */
+    function projectRemainingInvocationsForAddress(
+        uint256 _projectId,
+        address _coreContract,
+        address _address
+    )
+        external
+        view
+        returns (
+            bool projectLimitsMintInvocationsPerAddress,
+            uint256 mintInvocationsRemaining
+        )
+    {
+        MerkleLib.MerkleProjectConfig
+            storage _merkleProjectConfig = _merkleProjectConfigMapping[
+                _coreContract
+            ][_projectId];
+        uint256 maxInvocationsPerAddress = MerkleLib
+            .projectMaxInvocationsPerAddress(_merkleProjectConfig);
+
+        if (maxInvocationsPerAddress == 0) {
+            // project does not limit mint invocations per address, so leave
+            // `projectLimitsMintInvocationsPerAddress` at solidity initial
+            // value of false. Also leave `mintInvocationsRemaining` at
+            // solidity initial value of zero, as indicated in this function's
+            // documentation.
+        } else {
+            projectLimitsMintInvocationsPerAddress = true;
+            uint256 userMintInvocations = _projectUserMintInvocationsMapping[
+                _coreContract
+            ][_projectId][_address];
+            // if user has not reached max invocations per address, return
+            // remaining invocations
+            if (maxInvocationsPerAddress > userMintInvocations) {
+                unchecked {
+                    // will never underflow due to the check above
+                    mintInvocationsRemaining =
+                        maxInvocationsPerAddress -
+                        userMintInvocations;
+                }
+            }
+            // else user has reached their maximum invocations, so leave
+            // `mintInvocationsRemaining` at solidity initial value of zero
         }
     }
 
     /**
-     * @notice Inactive function - requires Merkle proof to purchase.
+     * @notice projectId => maximum invocations per allowlisted address. If a
+     * a value of 0 is returned, there is no limit on the number of mints per
+     * allowlisted address.
+     * Default behavior is limit 1 mint per address.
+     * This value can be changed at any time by the artist.
+     * @dev default value stated above must be updated if the value of
+     * CONFIG_USE_MAX_INVOCATIONS_PER_ADDRESS_OVERRIDE is changed.
      */
-    function purchase(uint256, address) external payable returns (uint256) {
-        revert("Must provide Merkle proof");
+    function projectMaxInvocationsPerAddress(
+        uint256 _projectId,
+        address _coreContract
+    ) external view returns (uint256) {
+        MerkleLib.MerkleProjectConfig
+            storage _projectConfig = _merkleProjectConfigMapping[_coreContract][
+                _projectId
+            ];
+        return MerkleLib.projectMaxInvocationsPerAddress(_projectConfig);
+    }
+
+    /**
+     * @notice Returns hashed address (to be used as merkle tree leaf).
+     * Included as a public function to enable users to calculate their hashed
+     * address in Solidity when generating proofs off-chain.
+     * @param _address address to be hashed
+     * @return bytes32 hashed address, via keccak256 (using encodePacked)
+     */
+    function hashAddress(address _address) external pure returns (bytes32) {
+        return MerkleLib.hashAddress(_address);
+    }
+
+    /**
+     * @notice Syncs local maximum invocations of project `_projectId` based on
+     * the value currently defined in the core contract.
+     * @param _coreContract Core contract address for the given project.
+     * @param _projectId Project ID to set the maximum invocations for.
+     * @dev this enables gas reduction after maxInvocations have been reached -
+     * core contracts shall still enforce a maxInvocation check during mint.
+     */
+    function syncProjectMaxInvocationsToCore(
+        uint256 _projectId,
+        address _coreContract
+    ) public {
+        _onlyArtist(_projectId, _coreContract);
+        uint256 maxInvocations = MaxInvocationsLib
+            .syncProjectMaxInvocationsToCore(
+                _projectId,
+                _coreContract,
+                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
+            );
+        emit ProjectMaxInvocationsLimitUpdated(
+            _projectId,
+            _coreContract,
+            maxInvocations
+        );
     }
 
     /**
@@ -352,46 +639,6 @@ contract MinterSetPriceMerkleV5 is
         address
     ) public payable returns (uint256) {
         revert("Must provide Merkle proof");
-    }
-
-    /**
-     * @notice Purchases a token from project `_projectId`.
-     * @param _projectId Project ID to mint a token on.
-     * @param _coreContract Contract address of the core contract.
-     * @param _proof Merkle proof for the given project.
-     * @return tokenId Token ID of minted token
-     */
-    function purchase(
-        uint256 _projectId,
-        address _coreContract,
-        bytes32[] calldata _proof
-    ) external payable returns (uint256 tokenId) {
-        tokenId = purchaseTo(
-            msg.sender,
-            _projectId,
-            _coreContract,
-            _proof,
-            address(0)
-        );
-        return tokenId;
-    }
-
-    /**
-     * @notice Purchases a token from project `_projectId` and sets
-     * the token's owner to `_to`.
-     * @param _to Address to be the new token's owner.
-     * @param _projectId Project ID to mint a token on.
-     * @param _coreContract Contract address of the core contract.
-     * @param _proof Merkle proof for the given project.
-     * @return tokenId Token ID of minted token
-     */
-    function purchaseTo(
-        address _to,
-        uint256 _projectId,
-        address _coreContract,
-        bytes32[] calldata _proof
-    ) external payable returns (uint256 tokenId) {
-        return purchaseTo(_to, _projectId, _coreContract, _proof, address(0));
     }
 
     /**
@@ -522,201 +769,5 @@ contract MinterSetPriceMerkleV5 is
         );
 
         return tokenId;
-    }
-
-    /**
-     * @notice Gets if price of token is configured, price of minting a
-     * token on project `_projectId`, and currency symbol and address to be
-     * used as payment. Supersedes any core contract price information.
-     * @param _projectId Project ID to get price information for.
-     * @param _coreContract Contract address of the core contract.
-     * @return isConfigured true only if token price has been configured on
-     * this minter
-     * @return tokenPriceInWei current price of token on this minter - invalid
-     * if price has not yet been configured
-     * @return currencySymbol currency symbol for purchases of project on this
-     * minter. This minter always returns "ETH"
-     * @return currencyAddress currency address for purchases of project on
-     * this minter. This minter always returns null address, reserved for ether
-     */
-    function getPriceInfo(
-        uint256 _projectId,
-        address _coreContract
-    )
-        external
-        view
-        returns (
-            bool isConfigured,
-            uint256 tokenPriceInWei,
-            string memory currencySymbol,
-            address currencyAddress
-        )
-    {
-        ProjectConfig storage _projectConfig = _projectConfigMapping[
-            _coreContract
-        ][_projectId];
-        isConfigured = _projectConfig.priceIsConfigured;
-        tokenPriceInWei = _projectConfig.pricePerTokenInWei;
-        currencySymbol = "ETH";
-        currencyAddress = address(0);
-    }
-
-    // Merkle specific functionality below
-
-    /**
-     * @notice Update the Merkle root for project `_projectId` on core contract `_coreContract`.
-     * @param _projectId Project ID to be updated.
-     * @param _coreContract Core contract address for the given project.
-     * @param _root root of Merkle tree defining addresses allowed to mint
-     * on project `_projectId`.
-     */
-    function updateMerkleRoot(
-        uint256 _projectId,
-        address _coreContract,
-        bytes32 _root
-    ) external {
-        _onlyArtist(_projectId, _coreContract);
-        require(_root != bytes32(0), "Root must be provided");
-        MerkleLib.updateMerkleRoot(
-            _merkleProjectConfigMapping,
-            _projectId,
-            _coreContract,
-            _root
-        );
-        emit ConfigValueSet(
-            _projectId,
-            _coreContract,
-            MerkleLib.CONFIG_MERKLE_ROOT,
-            _root
-        );
-    }
-
-    /**
-     * @notice Returns hashed address (to be used as merkle tree leaf).
-     * Included as a public function to enable users to calculate their hashed
-     * address in Solidity when generating proofs off-chain.
-     * @param _address address to be hashed
-     * @return bytes32 hashed address, via keccak256 (using encodePacked)
-     */
-    function hashAddress(address _address) external pure returns (bytes32) {
-        return MerkleLib.hashAddress(_address);
-    }
-
-    /**
-     * @notice Sets maximum allowed invocations per allowlisted address for
-     * project `_project` to `limit`. If `limit` is set to 0, allowlisted
-     * addresses will be able to mint as many times as desired, until the
-     * project reaches its maximum invocations.
-     * Default is a value of 1 if never configured by artist.
-     * @param _projectId Project ID to toggle the mint limit.
-     * @param _coreContract Core contract address for the given project.
-     * @param _maxInvocationsPerAddress Maximum allowed invocations per
-     * allowlisted address.
-     * @dev default value stated above must be updated if the value of
-     * CONFIG_USE_MAX_INVOCATIONS_PER_ADDRESS_OVERRIDE is changed.
-     */
-    function setProjectInvocationsPerAddress(
-        uint256 _projectId,
-        address _coreContract,
-        uint24 _maxInvocationsPerAddress
-    ) external {
-        _onlyArtist(_projectId, _coreContract);
-        MerkleLib.setProjectInvocationsPerAddress(
-            _projectId,
-            _coreContract,
-            _maxInvocationsPerAddress,
-            _merkleProjectConfigMapping
-        );
-        emit ConfigValueSet(
-            _projectId,
-            _coreContract,
-            MerkleLib.CONFIG_USE_MAX_INVOCATIONS_PER_ADDRESS_OVERRIDE,
-            true
-        );
-        emit ConfigValueSet(
-            _projectId,
-            _coreContract,
-            MerkleLib.CONFIG_MAX_INVOCATIONS_OVERRIDE,
-            uint256(_maxInvocationsPerAddress)
-        );
-    }
-
-    /**
-     * @notice projectId => maximum invocations per allowlisted address. If a
-     * a value of 0 is returned, there is no limit on the number of mints per
-     * allowlisted address.
-     * Default behavior is limit 1 mint per address.
-     * This value can be changed at any time by the artist.
-     * @dev default value stated above must be updated if the value of
-     * CONFIG_USE_MAX_INVOCATIONS_PER_ADDRESS_OVERRIDE is changed.
-     */
-    function projectMaxInvocationsPerAddress(
-        uint256 _projectId,
-        address _coreContract
-    ) public view returns (uint256) {
-        MerkleLib.MerkleProjectConfig
-            storage _projectConfig = _merkleProjectConfigMapping[_coreContract][
-                _projectId
-            ];
-        return MerkleLib.projectMaxInvocationsPerAddress(_projectConfig);
-    }
-
-    /**
-     * @notice Returns remaining invocations for a given address.
-     * If `projectLimitsMintInvocationsPerAddress` is false, individual
-     * addresses are only limited by the project's maximum invocations, and a
-     * dummy value of zero is returned for `mintInvocationsRemaining`.
-     * If `projectLimitsMintInvocationsPerAddress` is true, the quantity of
-     * remaining mint invocations for address `_address` is returned as
-     * `mintInvocationsRemaining`.
-     * Note that mint invocations per address can be changed at any time by the
-     * artist of a project.
-     * Also note that all mint invocations are limited by a project's maximum
-     * invocations as defined on the core contract. This function may return
-     * a value greater than the project's remaining invocations.
-     */
-    function projectRemainingInvocationsForAddress(
-        uint256 _projectId,
-        address _coreContract,
-        address _address
-    )
-        external
-        view
-        returns (
-            bool projectLimitsMintInvocationsPerAddress,
-            uint256 mintInvocationsRemaining
-        )
-    {
-        MerkleLib.MerkleProjectConfig
-            storage _merkleProjectConfig = _merkleProjectConfigMapping[
-                _coreContract
-            ][_projectId];
-        uint256 maxInvocationsPerAddress = MerkleLib
-            .projectMaxInvocationsPerAddress(_merkleProjectConfig);
-
-        if (maxInvocationsPerAddress == 0) {
-            // project does not limit mint invocations per address, so leave
-            // `projectLimitsMintInvocationsPerAddress` at solidity initial
-            // value of false. Also leave `mintInvocationsRemaining` at
-            // solidity initial value of zero, as indicated in this function's
-            // documentation.
-        } else {
-            projectLimitsMintInvocationsPerAddress = true;
-            uint256 userMintInvocations = _projectUserMintInvocationsMapping[
-                _coreContract
-            ][_projectId][_address];
-            // if user has not reached max invocations per address, return
-            // remaining invocations
-            if (maxInvocationsPerAddress > userMintInvocations) {
-                unchecked {
-                    // will never underflow due to the check above
-                    mintInvocationsRemaining =
-                        maxInvocationsPerAddress -
-                        userMintInvocations;
-                }
-            }
-            // else user has reached their maximum invocations, so leave
-            // `mintInvocationsRemaining` at solidity initial value of zero
-        }
     }
 }

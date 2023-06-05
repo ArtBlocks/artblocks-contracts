@@ -65,6 +65,13 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
 
     // STATE VARIABLES FOR MaxInvocationsLib end here
 
+    // MODIFIERS
+    /**
+     * @dev Throws if called by any account other than the artist of the specified project.
+     * Requirements: `msg.sender` must be the artist associated with `_projectId`.
+     * @param _projectId The ID of the project being checked.
+     * @param _coreContract The address of the GenArt721CoreContractV3_Base contract.
+     */
     function _onlyArtist(
         uint256 _projectId,
         address _coreContract
@@ -86,73 +93,6 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
     constructor(address _minterFilter) ReentrancyGuard() {
         minterFilterAddress = _minterFilter;
         minterFilter = IMinterFilterV1(_minterFilter);
-    }
-
-    // public getter functions
-    function maxInvocationsProjectConfig(
-        address _contractAddress,
-        uint256 _projectId
-    )
-        external
-        view
-        returns (MaxInvocationsLib.MaxInvocationsProjectConfig memory)
-    {
-        return
-            _maxInvocationsProjectConfigMapping[_contractAddress][_projectId];
-    }
-
-    function projectConfig(
-        address _contractAddress,
-        uint256 _projectId
-    ) external view returns (ProjectConfig memory) {
-        return _projectConfigMapping[_contractAddress][_projectId];
-    }
-
-    /**
-     * @notice Checks if the specified `_coreContract` is a valid engine contract.
-     * @dev This function retrieves the cached value of `_coreContract` from
-     * the `isEngineCache` mapping. If the cached value is already set, it
-     * returns the cached value. Otherwise, it calls the `getV3CoreIsEngine`
-     * function from the `SplitFundsLib` library to check if `_coreContract`
-     * is a valid engine contract.
-     * @param _coreContract The address of the contract to check.
-     * @return bool indicating if `_coreContract` is a valid engine contract.
-     */
-    function isEngineView(address _coreContract) public view returns (bool) {
-        SplitFundsLib.IsEngineCache storage isEngineCache = _isEngineCaches[
-            _coreContract
-        ];
-        if (isEngineCache.isCached) {
-            return isEngineCache.isEngine;
-        } else {
-            // @dev this calls the non-modifying variant of getV3CoreIsEngine
-            return SplitFundsLib.getV3CoreIsEngine(_coreContract);
-        }
-    }
-
-    /**
-     * @notice Syncs local maximum invocations of project `_projectId` based on
-     * the value currently defined in the core contract.
-     * @param _coreContract Core contract address for the given project.
-     * @param _projectId Project ID to set the maximum invocations for.
-     * @dev this enables gas reduction after maxInvocations have been reached -
-     * core contracts shall still enforce a maxInvocation check during mint.
-     */
-    function syncProjectMaxInvocationsToCore(
-        uint256 _projectId,
-        address _coreContract
-    ) public {
-        uint256 maxInvocations = MaxInvocationsLib
-            .syncProjectMaxInvocationsToCore(
-                _projectId,
-                _coreContract,
-                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-            );
-        emit ProjectMaxInvocationsLimitUpdated(
-            _projectId,
-            _coreContract,
-            maxInvocations
-        );
     }
 
     /**
@@ -184,6 +124,115 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
             _coreContract,
             _maxInvocations
         );
+    }
+
+    /**
+     * @notice Updates this minter's price per token of project `_projectId`
+     * to be '_pricePerTokenInWei`, in Wei.
+     * This price supersedes any legacy core contract price per token value.
+     * @dev Note that it is intentionally supported here that the configured
+     * price may be explicitly set to `0`.
+     * @param _projectId Project ID to set the price per token for.
+     * @param _coreContract Core contract address for the given project.
+     * @param _pricePerTokenInWei Price per token to set for the project, in Wei.
+     */
+    function updatePricePerTokenInWei(
+        uint256 _projectId,
+        address _coreContract,
+        uint256 _pricePerTokenInWei
+    ) external {
+        _onlyArtist(_projectId, _coreContract);
+        MaxInvocationsLib.MaxInvocationsProjectConfig
+            storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
+                _coreContract
+            ][_projectId];
+        ProjectConfig storage _projectConfig = _projectConfigMapping[
+            _coreContract
+        ][_projectId];
+        _projectConfig.pricePerTokenInWei = _pricePerTokenInWei;
+        _projectConfig.priceIsConfigured = true;
+        emit PricePerTokenInWeiUpdated(
+            _projectId,
+            _coreContract,
+            _pricePerTokenInWei
+        );
+
+        // sync local max invocations if not initially populated
+        // @dev if local max invocations and maxHasBeenInvoked are both
+        // initial values, we know they have not been populated.
+        if (
+            _maxInvocationsProjectConfig.maxInvocations == 0 &&
+            _maxInvocationsProjectConfig.maxHasBeenInvoked == false
+        ) {
+            syncProjectMaxInvocationsToCore(_projectId, _coreContract);
+        }
+    }
+
+    /**
+     * @notice Purchases a token from project `_projectId`.
+     * @param _projectId Project ID to mint a token on.
+     * @return tokenId Token ID of minted token
+     */
+    function purchase(
+        uint256 _projectId,
+        address _coreContract
+    ) external payable returns (uint256 tokenId) {
+        tokenId = purchaseTo(msg.sender, _projectId, _coreContract);
+        return tokenId;
+    }
+
+    // public getter functions
+    /**
+     * @notice Gets the maximum invocations project configuration.
+     * @param _coreContract The address of the core contract.
+     * @param _projectId The ID of the project whose data needs to be fetched.
+     * @return MaxInvocationsLib.MaxInvocationsProjectConfig instance with the
+     * configuration data.
+     */
+    function maxInvocationsProjectConfig(
+        address _coreContract,
+        uint256 _projectId
+    )
+        external
+        view
+        returns (MaxInvocationsLib.MaxInvocationsProjectConfig memory)
+    {
+        return _maxInvocationsProjectConfigMapping[_coreContract][_projectId];
+    }
+
+    /**
+     * @notice Gets the base project configuration.
+     * @param _coreContract The address of the core contract.
+     * @param _projectId The ID of the project whose data needs to be fetched.
+     * @return ProjectConfig instance with the project configuration data.
+     */
+    function projectConfig(
+        address _coreContract,
+        uint256 _projectId
+    ) external view returns (ProjectConfig memory) {
+        return _projectConfigMapping[_coreContract][_projectId];
+    }
+
+    /**
+     * @notice Checks if the specified `_coreContract` is a valid engine contract.
+     * @dev This function retrieves the cached value of `_coreContract` from
+     * the `isEngineCache` mapping. If the cached value is already set, it
+     * returns the cached value. Otherwise, it calls the `getV3CoreIsEngine`
+     * function from the `SplitFundsLib` library to check if `_coreContract`
+     * is a valid engine contract.
+     * @param _coreContract The address of the contract to check.
+     * @return bool indicating if `_coreContract` is a valid engine contract.
+     */
+    function isEngineView(address _coreContract) external view returns (bool) {
+        SplitFundsLib.IsEngineCache storage isEngineCache = _isEngineCaches[
+            _coreContract
+        ];
+        if (isEngineCache.isCached) {
+            return isEngineCache.isEngine;
+        } else {
+            // @dev this calls the non-modifying variant of getV3CoreIsEngine
+            return SplitFundsLib.getV3CoreIsEngine(_coreContract);
+        }
     }
 
     /**
@@ -241,58 +290,65 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
     }
 
     /**
-     * @notice Updates this minter's price per token of project `_projectId`
-     * to be '_pricePerTokenInWei`, in Wei.
-     * This price supersedes any legacy core contract price per token value.
-     * @dev Note that it is intentionally supported here that the configured
-     * price may be explicitly set to `0`.
-     * @param _projectId Project ID to set the price per token for.
-     * @param _coreContract Core contract address for the given project.
-     * @param _pricePerTokenInWei Price per token to set for the project, in Wei.
+     * @notice Gets if price of token is configured, price of minting a
+     * token on project `_projectId`, and currency symbol and address to be
+     * used as payment. Supersedes any core contract price information.
+     * @param _projectId Project ID to get price information for
+     * @param _coreContract Contract address of the core contract
+     * @return isConfigured true only if token price has been configured on
+     * this minter
+     * @return tokenPriceInWei current price of token on this minter - invalid
+     * if price has not yet been configured
+     * @return currencySymbol currency symbol for purchases of project on this
+     * minter. This minter always returns "ETH"
+     * @return currencyAddress currency address for purchases of project on
+     * this minter. This minter always returns null address, reserved for ether
      */
-    function updatePricePerTokenInWei(
+    function getPriceInfo(
         uint256 _projectId,
-        address _coreContract,
-        uint256 _pricePerTokenInWei
-    ) external {
-        _onlyArtist(_projectId, _coreContract);
-        MaxInvocationsLib.MaxInvocationsProjectConfig
-            storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
-                _coreContract
-            ][_projectId];
+        address _coreContract
+    )
+        external
+        view
+        returns (
+            bool isConfigured,
+            uint256 tokenPriceInWei,
+            string memory currencySymbol,
+            address currencyAddress
+        )
+    {
         ProjectConfig storage _projectConfig = _projectConfigMapping[
             _coreContract
         ][_projectId];
-        _projectConfig.pricePerTokenInWei = _pricePerTokenInWei;
-        _projectConfig.priceIsConfigured = true;
-        emit PricePerTokenInWeiUpdated(
-            _projectId,
-            _coreContract,
-            _pricePerTokenInWei
-        );
-
-        // sync local max invocations if not initially populated
-        // @dev if local max invocations and maxHasBeenInvoked are both
-        // initial values, we know they have not been populated.
-        if (
-            _maxInvocationsProjectConfig.maxInvocations == 0 &&
-            _maxInvocationsProjectConfig.maxHasBeenInvoked == false
-        ) {
-            syncProjectMaxInvocationsToCore(_projectId, _coreContract);
-        }
+        isConfigured = _projectConfig.priceIsConfigured;
+        tokenPriceInWei = _projectConfig.pricePerTokenInWei;
+        currencySymbol = "ETH";
+        currencyAddress = address(0);
     }
 
     /**
-     * @notice Purchases a token from project `_projectId`.
-     * @param _projectId Project ID to mint a token on.
-     * @return tokenId Token ID of minted token
+     * @notice Syncs local maximum invocations of project `_projectId` based on
+     * the value currently defined in the core contract.
+     * @param _coreContract Core contract address for the given project.
+     * @param _projectId Project ID to set the maximum invocations for.
+     * @dev this enables gas reduction after maxInvocations have been reached -
+     * core contracts shall still enforce a maxInvocation check during mint.
      */
-    function purchase(
+    function syncProjectMaxInvocationsToCore(
         uint256 _projectId,
         address _coreContract
-    ) external payable returns (uint256 tokenId) {
-        tokenId = purchaseTo(msg.sender, _projectId, _coreContract);
-        return tokenId;
+    ) public {
+        uint256 maxInvocations = MaxInvocationsLib
+            .syncProjectMaxInvocationsToCore(
+                _projectId,
+                _coreContract,
+                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
+            );
+        emit ProjectMaxInvocationsLimitUpdated(
+            _projectId,
+            _coreContract,
+            maxInvocations
+        );
     }
 
     /**
@@ -357,42 +413,5 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
         );
 
         return tokenId;
-    }
-
-    /**
-     * @notice Gets if price of token is configured, price of minting a
-     * token on project `_projectId`, and currency symbol and address to be
-     * used as payment. Supersedes any core contract price information.
-     * @param _projectId Project ID to get price information for
-     * @param _coreContract Contract address of the core contract
-     * @return isConfigured true only if token price has been configured on
-     * this minter
-     * @return tokenPriceInWei current price of token on this minter - invalid
-     * if price has not yet been configured
-     * @return currencySymbol currency symbol for purchases of project on this
-     * minter. This minter always returns "ETH"
-     * @return currencyAddress currency address for purchases of project on
-     * this minter. This minter always returns null address, reserved for ether
-     */
-    function getPriceInfo(
-        uint256 _projectId,
-        address _coreContract
-    )
-        external
-        view
-        returns (
-            bool isConfigured,
-            uint256 tokenPriceInWei,
-            string memory currencySymbol,
-            address currencyAddress
-        )
-    {
-        ProjectConfig storage _projectConfig = _projectConfigMapping[
-            _coreContract
-        ][_projectId];
-        isConfigured = _projectConfig.priceIsConfigured;
-        tokenPriceInWei = _projectConfig.pricePerTokenInWei;
-        currencySymbol = "ETH";
-        currencyAddress = address(0);
     }
 }
