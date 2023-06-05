@@ -112,14 +112,6 @@ runForEach.forEach((params) => {
           config.minter.address
         );
 
-      // await config.minter
-      //   .connect(config.accounts.artist)
-      //   .updatePricePerTokenInWei(
-      //     config.projectOne,
-      //     config.genArt721Core.address,
-      //     config.pricePerTokenInWei
-      //   );
-
       await config.genArt721Core
         .connect(config.accounts.artist)
         .updateProjectMaxInvocations(config.projectZero, 16);
