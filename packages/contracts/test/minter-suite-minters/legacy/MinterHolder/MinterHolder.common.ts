@@ -11,12 +11,12 @@ import { BigNumber, Contract } from "ethers";
 import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { Minter_Common } from "../Minter.common";
-import { deployAndGetPBAB, isCoreV3, T_Config } from "../../util/common";
+import { deployAndGetPBAB, isCoreV3, T_Config } from "../../../util/common";
 
 import EthersAdapter from "@gnosis.pm/safe-ethers-lib";
 import Safe from "@gnosis.pm/safe-core-sdk";
 import { SafeTransactionDataPartial } from "@gnosis.pm/safe-core-sdk-types";
-import { getGnosisSafe } from "../../util/GnosisSafeNetwork";
+import { getGnosisSafe } from "../../../util/GnosisSafeNetwork";
 
 /**
  * These tests are intended to check common MinterHolder functionality.

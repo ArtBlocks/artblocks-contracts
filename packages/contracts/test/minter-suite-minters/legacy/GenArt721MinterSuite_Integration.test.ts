@@ -18,7 +18,7 @@ import {
   deployAndGet,
   deployCoreWithMinterFilter,
   safeAddProject,
-} from "../util/common";
+} from "../../util/common";
 
 const runForEach = [
   {

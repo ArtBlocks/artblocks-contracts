@@ -33,7 +33,7 @@ pragma solidity 0.8.19;
  * - updateMerkleRoot
  * - updatePricePerTokenInWei
  * - setProjectInvocationsPerAddress
- * - setProjectMaxInvocations
+ * - syncProjectMaxInvocationsToCore
  * - manuallyLimitProjectMaxInvocations
  * ----------------------------------------------------------------------------
  * Additional admin and artist privileged roles may be described on other

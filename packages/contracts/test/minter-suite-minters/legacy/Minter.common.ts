@@ -3,7 +3,7 @@ import { constants, expectRevert } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { T_Config, deployWithStorageLibraryAndGet } from "../util/common";
+import { T_Config, deployWithStorageLibraryAndGet } from "../../util/common";
 
 /**
  * These tests are intended to check common Minter functionality

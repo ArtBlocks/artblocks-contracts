@@ -4,7 +4,7 @@ import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 
 import { Minter_Common } from "../../Minter.common";
-import { T_Config } from "../../../util/common";
+import { T_Config } from "../../../../util/common";
 
 /**
  * These tests are intended to check common MinterSetPrice functionality.

@@ -7,8 +7,8 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import EthersAdapter from "@gnosis.pm/safe-ethers-lib";
 import Safe from "@gnosis.pm/safe-core-sdk";
 import { SafeTransactionDataPartial } from "@gnosis.pm/safe-core-sdk-types";
-import { getGnosisSafe } from "../../util/GnosisSafeNetwork";
-import { isCoreV3, T_Config } from "../../util/common";
+import { getGnosisSafe } from "../../../util/GnosisSafeNetwork";
+import { isCoreV3, T_Config } from "../../../util/common";
 
 /**
  * These tests are intended to check common MinterSetPriceV1-V4 functionality.

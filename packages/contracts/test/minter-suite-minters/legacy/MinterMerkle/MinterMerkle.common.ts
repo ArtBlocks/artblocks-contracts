@@ -14,12 +14,12 @@ import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 
-import { isCoreV3, deployAndGet, T_Config } from "../../util/common";
+import { isCoreV3, deployAndGet, T_Config } from "../../../util/common";
 
 import EthersAdapter from "@gnosis.pm/safe-ethers-lib";
 import Safe from "@gnosis.pm/safe-core-sdk";
 import { SafeTransactionDataPartial } from "@gnosis.pm/safe-core-sdk-types";
-import { getGnosisSafe } from "../../util/GnosisSafeNetwork";
+import { getGnosisSafe } from "../../../util/GnosisSafeNetwork";
 
 import {
   CONFIG_MERKLE_ROOT,

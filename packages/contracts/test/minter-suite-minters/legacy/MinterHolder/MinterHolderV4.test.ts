@@ -11,7 +11,7 @@ import {
   deployCoreWithMinterFilter,
   requireBigNumberIsClose,
   safeAddProject,
-} from "../../util/common";
+} from "../../../util/common";
 
 import { MinterHolder_Common } from "./MinterHolder.common";
 import { AbiCoder } from "ethers/lib/utils";

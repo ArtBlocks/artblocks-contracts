@@ -245,7 +245,6 @@ runForEach.forEach((params) => {
       });
     });
 
-    // view
     describe("projectMaxInvocationsPerAddress", async function () {
       it("is 1 by default", async function () {
         const config = await loadFixture(_beforeEach);

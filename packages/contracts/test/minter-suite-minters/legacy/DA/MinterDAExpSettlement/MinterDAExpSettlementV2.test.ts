@@ -24,8 +24,8 @@ import {
   deployCoreWithMinterFilter,
   safeAddProject,
   requireBigNumberIsClose,
-} from "../../../util/common";
-import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../util/constants";
+} from "../../../../util/common";
+import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../../util/constants";
 import {
   MinterDAExpSettlement_Common,
   purchaseTokensMidAuction,

@@ -11,7 +11,7 @@ import {
   deployCoreWithMinterFilter,
   requireBigNumberIsClose,
   safeAddProject,
-} from "../../util/common";
+} from "../../../util/common";
 
 import { PolyptychMinter_Common } from "./PolyptychMinter.common";
 

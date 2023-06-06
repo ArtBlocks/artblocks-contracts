@@ -2,9 +2,9 @@ import { constants, expectRevert } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { isCoreV3, T_Config } from "../../../util/common";
+import { isCoreV3, T_Config } from "../../../../util/common";
 
-import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../util/constants";
+import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../../util/constants";
 
 import { Minter_Common } from "../../Minter.common";
 

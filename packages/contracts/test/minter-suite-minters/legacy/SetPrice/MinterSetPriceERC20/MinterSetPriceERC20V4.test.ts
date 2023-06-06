@@ -10,7 +10,7 @@ import {
   deployCoreWithMinterFilter,
   safeAddProject,
   requireBigNumberIsClose,
-} from "../../../util/common";
+} from "../../../../util/common";
 
 import { MinterSetPriceERC20_Common } from "./MinterSetPriceERC20.common";
 import { MinterSetPriceV1V2V3V4_Common } from "../MinterSetPriceV1V2V3V4.common";

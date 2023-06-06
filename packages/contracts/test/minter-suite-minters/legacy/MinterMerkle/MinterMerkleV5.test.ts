@@ -16,7 +16,7 @@ import {
   deployCoreWithMinterFilter,
   requireBigNumberIsClose,
   safeAddProject,
-} from "../../util/common";
+} from "../../../util/common";
 
 import { MinterMerkle_Common, hashAddress } from "./MinterMerkle.common";
 import { BigNumber } from "ethers";

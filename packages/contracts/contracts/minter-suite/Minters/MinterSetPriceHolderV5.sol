@@ -33,17 +33,12 @@ pragma solidity 0.8.19;
  * Care must be taken to ensure that the admin ACL contract and artist
  * addresses are secure behind a multi-sig or other access control mechanism.
  * ----------------------------------------------------------------------------
- * The following functions are restricted to the core contract's Admin ACL
- * contract:
- * - registerNFTAddress
- * - unregisterNFTAddress
- * ----------------------------------------------------------------------------
  * The following functions are restricted to a project's artist:
  * - allowHoldersOfProjects
  * - removeHoldersOfProjects
  * - allowAndRemoveHoldersOfProjects
  * - updatePricePerTokenInWei
- * - setProjectMaxInvocations
+ * - syncProjectMaxInvocationsToCore
  * - manuallyLimitProjectMaxInvocations
  * ----------------------------------------------------------------------------
  * Additional admin and artist privileged roles may be described on other

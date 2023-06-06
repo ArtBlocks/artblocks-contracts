@@ -8,9 +8,9 @@ import {
   getTxResponseTimestamp,
   deployAndGet,
   safeAddProject,
-} from "../../../util/common";
+} from "../../../../util/common";
 
-import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../util/constants";
+import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../../util/constants";
 
 import { Minter_Common } from "../../Minter.common";
 
