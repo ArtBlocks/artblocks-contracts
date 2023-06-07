@@ -380,7 +380,7 @@ contract MinterSetPriceHolderV5 is
      * @notice Inactive function - requires NFT ownership to purchase.
      */
     function purchase(uint256, address) external payable returns (uint256) {
-        revert("Must claim NFT ownership");
+        revert("Purchase requires NFT ownership");
     }
 
     /**
@@ -665,7 +665,7 @@ contract MinterSetPriceHolderV5 is
         uint256,
         address
     ) public payable returns (uint256) {
-        revert("Must claim NFT ownership");
+        revert("Purchase requires NFT ownership");
     }
 
     /**

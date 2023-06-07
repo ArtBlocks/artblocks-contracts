@@ -198,7 +198,7 @@ runForEach.forEach((params) => {
                 value: config.pricePerTokenInWei,
               }
             ),
-          "Must claim NFT ownership"
+          revertMessages.purchaseRequiresNFT
         );
       });
 
@@ -694,7 +694,7 @@ runForEach.forEach((params) => {
                 value: config.pricePerTokenInWei,
               }
             ),
-          "Must claim NFT ownership"
+          revertMessages.purchaseRequiresNFT
         );
       });
 

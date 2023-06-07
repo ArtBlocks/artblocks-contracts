@@ -30,4 +30,5 @@ export const revertMessages = {
   nonExistentKey: "EnumerableMap: nonexistent key",
   lengthOfArraysMustMatch: "TokenHolderLib: arrays neq length",
   onlyRegisteredNFTAddresses: "TokenHolderLib: address not registered",
+  purchaseRequiresNFT: "Purchase requires NFT ownership",
 };
