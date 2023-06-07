@@ -351,7 +351,6 @@ runForEach.forEach((params) => {
                 value: config.higherPricePerTokenInWei,
               }
             );
-          console.log("i", i);
         }
         // switch to different minter
         const setPriceMinter = await deployAndGet(config, "MinterSetPriceV5", [
@@ -695,7 +694,6 @@ runForEach.forEach((params) => {
         const userMerkleProofOne = config.merkleTreeOne.getHexProof(
           hashAddress(config.userVault.address)
         );
-        console.log(config.userVault);
         await config.minter
           .connect(config.accounts.user)
           ["purchaseTo(address,uint256,address,bytes32[],address)"](
@@ -708,6 +706,319 @@ runForEach.forEach((params) => {
               value: config.pricePerTokenInWei,
             }
           );
+      });
+    });
+
+    describe("purchase with an INVALID vault delegate", async function () {
+      it("does NOT allow purchases when no delegation has been set", async function () {
+        // get config from beforeEach
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectOne,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
+        const userMerkleProofOne = config.merkleTreeOne.getHexProof(
+          hashAddress(config.userVault.address)
+        );
+
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            ["purchaseTo(address,uint256,address,bytes32[],address)"](
+              config.userVault.address,
+              config.projectOne,
+              config.genArt721Core.address,
+              userMerkleProofOne,
+              config.userVault.address, //  the allowlisted address
+              {
+                value: config.pricePerTokenInWei,
+              }
+            ),
+          "Invalid delegate-vault pairing"
+        );
+      });
+
+      it("does NOT allow purchases when a token-level delegation has been set", async function () {
+        // get config from beforeEach
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectOne,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
+        await config.delegationRegistry
+          .connect(config.userVault)
+          .delegateForToken(
+            config.accounts.user.address,
+            config.genArt721Core.address,
+            0, // token id zero
+            true
+          );
+        const userMerkleProofOne = config.merkleTreeOne.getHexProof(
+          hashAddress(config.userVault.address)
+        );
+
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            ["purchaseTo(address,uint256,address,bytes32[],address)"](
+              config.userVault.address,
+              config.projectOne,
+              config.genArt721Core.address,
+              userMerkleProofOne,
+              config.userVault.address, //  the allowlisted address
+              {
+                value: config.pricePerTokenInWei,
+              }
+            ),
+          "Invalid delegate-vault pairing"
+        );
+      });
+
+      it("does NOT allow purchases when a contract-level delegation has been set for a different contract", async function () {
+        // get config from beforeEach
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectOne,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
+        await config.delegationRegistry
+          .connect(config.userVault)
+          .delegateForContract(
+            config.accounts.user.address,
+            config.minter.address,
+            true
+          );
+        const userMerkleProofOne = config.merkleTreeOne.getHexProof(
+          hashAddress(config.userVault.address)
+        );
+
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            ["purchaseTo(address,uint256,address,bytes32[],address)"](
+              config.userVault.address,
+              config.projectOne,
+              config.genArt721Core.address,
+              userMerkleProofOne,
+              config.userVault.address, //  the allowlisted address
+              {
+                value: config.pricePerTokenInWei,
+              }
+            ),
+          "Invalid delegate-vault pairing"
+        );
+      });
+
+      it("does NOT allow purchases when a wallet-level delegation has been set for a different hotwallet", async function () {
+        // get config from beforeEach
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectOne,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
+        await config.delegationRegistry
+          .connect(config.userVault)
+          .delegateForAll(config.accounts.user2.address, true);
+        const userMerkleProofOne = config.merkleTreeOne.getHexProof(
+          hashAddress(config.userVault.address)
+        );
+
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            ["purchaseTo(address,uint256,address,bytes32[],address)"](
+              config.userVault.address,
+              config.projectOne,
+              config.genArt721Core.address,
+              userMerkleProofOne,
+              config.userVault.address, //  the allowlisted address
+              {
+                value: config.pricePerTokenInWei,
+              }
+            ),
+          "Invalid delegate-vault pairing"
+        );
+      });
+    });
+
+    describe("Works for different valid delegation levels", async function () {
+      ["delegateForAll", "delegateForContract"].forEach((delegationType) => {
+        describe(`purchaseTo with a VALID vault delegate after ${delegationType}`, async function () {
+          beforeEach(async function () {
+            const config = await loadFixture(_beforeEach);
+            config.userVault = config.accounts.additional2;
+            // delegate the vault to the user
+            let delegationArgs;
+            if (delegationType === "delegateForAll") {
+              delegationArgs = [config.accounts.user.address, true];
+            } else if (delegationType === "delegateForContract") {
+              delegationArgs = [
+                config.accounts.user.address,
+                config.genArt721Core.address,
+                true,
+              ];
+            }
+            await config.delegationRegistry
+              .connect(config.userVault)
+              [delegationType](...delegationArgs);
+            // pass config to tests in this describe block
+            this.config = config;
+          });
+
+          it("does allow purchases", async function () {
+            // get config from beforeEach
+            const config = this.config;
+            await config.minter
+              .connect(config.accounts.artist)
+              .updatePricePerTokenInWei(
+                config.projectOne,
+                config.genArt721Core.address,
+                config.pricePerTokenInWei
+              );
+            // delegate the vault to the user
+            await config.delegationRegistry
+              .connect(config.userVault)
+              .delegateForAll(config.accounts.user.address, true);
+
+            const userMerkleProofOne = config.merkleTreeOne.getHexProof(
+              hashAddress(config.userVault.address)
+            );
+
+            // expect no revert
+            await config.minter
+              .connect(config.accounts.user)
+              ["purchaseTo(address,uint256,address,bytes32[],address)"](
+                config.userVault.address,
+                config.projectOne,
+                config.genArt721Core.address,
+                userMerkleProofOne,
+                config.userVault.address, //  the allowlisted address
+                {
+                  value: config.pricePerTokenInWei,
+                }
+              );
+          });
+
+          it("allows purchases to vault if msg.sender is allowlisted and no vault is provided", async function () {
+            // get config from beforeEach
+            const config = this.config;
+            await config.minter
+              .connect(config.accounts.artist)
+              .updatePricePerTokenInWei(
+                config.projectOne,
+                config.genArt721Core.address,
+                config.pricePerTokenInWei
+              );
+            const userMerkleProofOne = config.merkleTreeOne.getHexProof(
+              hashAddress(config.accounts.user.address)
+            );
+            await config.minter
+              .connect(config.accounts.user)
+              ["purchaseTo(address,uint256,address,bytes32[])"](
+                config.userVault.address,
+                config.projectOne,
+                config.genArt721Core.address,
+                userMerkleProofOne,
+                {
+                  value: config.pricePerTokenInWei,
+                }
+              );
+          });
+
+          it("does not allow purchases with an incorrect proof", async function () {
+            // get config from beforeEach
+            const config = this.config;
+            const userMerkleProofOne = config.merkleTreeOne.getHexProof(
+              hashAddress(config.accounts.user.address)
+            );
+            await config.minter
+              .connect(config.accounts.artist)
+              .updatePricePerTokenInWei(
+                config.projectOne,
+                config.genArt721Core.address,
+                config.pricePerTokenInWei
+              );
+
+            await expectRevert(
+              config.minter
+                .connect(config.accounts.user)
+                ["purchaseTo(address,uint256,address,bytes32[],address)"](
+                  config.userVault.address,
+                  config.projectOne,
+                  config.genArt721Core.address,
+                  userMerkleProofOne,
+                  config.userVault.address, //  the allowlisted address
+                  {
+                    value: config.pricePerTokenInWei,
+                  }
+                ),
+              "Invalid Merkle proof"
+            );
+          });
+
+          it("vault cannot exceed mint limit", async function () {
+            // get config from beforeEach
+            const config = this.config;
+            const userMerkleProofOne = config.merkleTreeOne.getHexProof(
+              hashAddress(config.userVault.address)
+            );
+            await config.minter
+              .connect(config.accounts.artist)
+              .setProjectInvocationsPerAddress(
+                config.projectOne,
+                config.genArt721Core.address,
+                1
+              );
+            await config.minter
+              .connect(config.accounts.artist)
+              .updatePricePerTokenInWei(
+                config.projectOne,
+                config.genArt721Core.address,
+                config.pricePerTokenInWei
+              );
+
+            await config.minter
+              .connect(config.accounts.user)
+              ["purchaseTo(address,uint256,address,bytes32[],address)"](
+                config.userVault.address,
+                config.projectOne,
+                config.genArt721Core.address,
+                userMerkleProofOne,
+                config.userVault.address, //  the allowlisted address
+                {
+                  value: config.pricePerTokenInWei,
+                }
+              );
+
+            await expectRevert(
+              config.minter
+                .connect(config.accounts.user)
+                ["purchaseTo(address,uint256,address,bytes32[],address)"](
+                  config.userVault.address,
+                  config.projectOne,
+                  config.genArt721Core.address,
+                  userMerkleProofOne,
+                  config.userVault.address, //  the allowlisted address
+                  {
+                    value: config.pricePerTokenInWei,
+                  }
+                ),
+              revertMessages.maximumInvocationsReached
+            );
+          });
+        });
       });
     });
   });
