@@ -15,5 +15,3 @@ For V3_Engine core contracts:
   - the `DEPLOYMENTS.md` file should contain the deployment logs, as recorded by whatever deployment script was used.
   - the `DEPLOYMENT_LOGS.log` file should contain the raw deployment logs, as recorded by whatever deployment script was used.
 - Note that deployment scripts are NOT unique to each Engine partner for V3 contracts, and the `deployment-config.<environment>.ts` is intended to be sufficient to fully reproduce the deployment.
-
-All mainnet deployments that occurred after 10 Jan, 2023 should have a corresponding tag+release in the GitHub repository. This is to ensure that Art Blocks provides a well-documented contract deployment history and that the code deployed to mainnet can easily be verified by anyone.
