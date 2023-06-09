@@ -419,7 +419,7 @@ contract MinterSetPriceMerkleV5 is
             return isEngineCache.isEngine;
         } else {
             // @dev this calls the non-modifying variant of getV3CoreIsEngine
-            return SplitFundsLib.getV3CoreIsEngine(_coreContract);
+            return SplitFundsLib.getV3CoreIsEngineView(_coreContract);
         }
     }
 
@@ -751,15 +751,15 @@ contract MinterSetPriceMerkleV5 is
             msg.sender
         );
 
-        MaxInvocationsLib.purchaseEffectsInvocations(
+        MaxInvocationsLib.validatePurchaseEffectsInvocations(
             tokenId,
             _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
         );
 
         // INTERACTIONS
         bool isEngine = SplitFundsLib._isEngine(
-            _isEngineCaches[_coreContract],
-            _coreContract
+            _coreContract,
+            _isEngineCaches[_coreContract]
         );
         SplitFundsLib.splitFundsETH(
             _projectId,

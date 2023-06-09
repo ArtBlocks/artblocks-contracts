@@ -35,6 +35,7 @@ interface IFilteredSharedMerkle {
         bytes32[] calldata _proof
     ) external payable returns (uint256 tokenId);
 
+    // Updates the Merkle root for the desired project.
     function updateMerkleRoot(
         uint256 _projectId,
         address _coreContract,

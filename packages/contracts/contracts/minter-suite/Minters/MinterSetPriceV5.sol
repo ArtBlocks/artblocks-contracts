@@ -171,6 +171,7 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
     /**
      * @notice Purchases a token from project `_projectId`.
      * @param _projectId Project ID to mint a token on.
+     * @param _coreContract Core contract address for the given project.
      * @return tokenId Token ID of minted token
      */
     function purchase(
@@ -231,7 +232,7 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
             return isEngineCache.isEngine;
         } else {
             // @dev this calls the non-modifying variant of getV3CoreIsEngine
-            return SplitFundsLib.getV3CoreIsEngine(_coreContract);
+            return SplitFundsLib.getV3CoreIsEngineView(_coreContract);
         }
     }
 
@@ -352,7 +353,12 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
     }
 
     /**
-     * @notice gas-optimized version of purchaseTo(address, uint256).
+     * @notice Purchases a token from project `_projectId` and sets
+     * the token's owner to `_to`.
+     * @param _to Address to be the new token's owner.
+     * @param _projectId Project ID to mint a token on.
+     * @param _coreContract Core contract address for the given project.
+     * @return tokenId Token ID of minted token
      */
     function purchaseTo(
         address _to,
@@ -395,15 +401,15 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
             msg.sender
         );
 
-        MaxInvocationsLib.purchaseEffectsInvocations(
+        MaxInvocationsLib.validatePurchaseEffectsInvocations(
             tokenId,
             _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
         );
 
         // INTERACTIONS
         bool isEngine = SplitFundsLib._isEngine(
-            _isEngineCaches[_coreContract],
-            _coreContract
+            _coreContract,
+            _isEngineCaches[_coreContract]
         );
         SplitFundsLib.splitFundsETH(
             _projectId,

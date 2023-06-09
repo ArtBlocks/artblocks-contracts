@@ -94,7 +94,7 @@ library MaxInvocationsLib {
      * @param _tokenId The id of the token.
      * @param maxInvocationsProjectConfig Data structure that holds max invocations project configuration.
      */
-    function purchaseEffectsInvocations(
+    function validatePurchaseEffectsInvocations(
         uint256 _tokenId,
         MaxInvocationsProjectConfig storage maxInvocationsProjectConfig
     ) internal {

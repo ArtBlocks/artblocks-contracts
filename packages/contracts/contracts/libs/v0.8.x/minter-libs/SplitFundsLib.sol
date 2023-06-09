@@ -284,6 +284,24 @@ library SplitFundsLib {
     }
 
     /**
+     * @notice Returns whether or not the provided address `_coreContract`
+     * is an Art Blocks Engine core contract. Caches the result for future access.
+     * @param _coreContract Address of the core contract to check.
+     * @param isEngineCache isEngine cache state for the given core contract.
+     */
+    function _isEngine(
+        address _coreContract,
+        IsEngineCache storage isEngineCache
+    ) internal returns (bool) {
+        if (isEngineCache.isCached) {
+            return isEngineCache.isEngine;
+        } else {
+            bool isEngine = getV3CoreIsEngine(_coreContract, isEngineCache);
+            return isEngine;
+        }
+    }
+
+    /**
      * @notice Returns whether a V3 core contract is an Art Blocks Engine
      * contract or not. Return value of false indicates that the core is a
      * flagship contract. This function does not update the cache state for the
@@ -295,7 +313,7 @@ library SplitFundsLib {
      * determine whether the core is an engine or not.
      * @param genArt721CoreV3 The address of the deployed core contract.
      */
-    function getV3CoreIsEngine(
+    function getV3CoreIsEngineView(
         address genArt721CoreV3
     ) internal view returns (bool) {
         // call getPrimaryRevenueSplits() on core contract
@@ -331,24 +349,6 @@ library SplitFundsLib {
         } else {
             // unexpected return value length
             revert("Unexpected revenue split bytes");
-        }
-    }
-
-    /**
-     * @notice Returns whether or not the provided address `_coreContract`
-     * is an Art Blocks Engine core contract. Caches the result for future access.
-     * @param _coreContract Address of the core contract to check.
-     * @param isEngineCache isEngine cache state for the given core contract.
-     */
-    function _isEngine(
-        IsEngineCache storage isEngineCache,
-        address _coreContract
-    ) internal returns (bool) {
-        if (isEngineCache.isCached) {
-            return isEngineCache.isEngine;
-        } else {
-            bool isEngine = getV3CoreIsEngine(_coreContract, isEngineCache);
-            return isEngine;
         }
     }
 }

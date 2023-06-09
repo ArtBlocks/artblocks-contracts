@@ -259,7 +259,6 @@ contract MinterSetPriceHolderV5 is
         uint256[] memory _ownedNFTProjectIds
     ) external {
         _onlyArtist(_projectId, _coreContract);
-        // require same length arrays
         TokenHolderLib.allowHoldersOfProjects(
             _allowedProjectHoldersMapping,
             _projectId,
@@ -536,7 +535,7 @@ contract MinterSetPriceHolderV5 is
             return isEngineCache.isEngine;
         } else {
             // @dev this calls the non-modifying variant of getV3CoreIsEngine
-            return SplitFundsLib.getV3CoreIsEngine(_coreContract);
+            return SplitFundsLib.getV3CoreIsEngineView(_coreContract);
         }
     }
 
@@ -669,7 +668,8 @@ contract MinterSetPriceHolderV5 is
     }
 
     /**
-     * @notice gas-optimized version of purchaseTo(address,uint256,address,uint256,address).
+     * @notice Purchases a token from project `_projectId` and sets
+     * the token's owner to `_to`.
      * @param _to Address to be the new token's owner.
      * @param _projectId Project ID to mint a token on.
      * @param _ownedNFTAddress ERC-721 NFT address holding the project token owned by _vault
@@ -754,7 +754,7 @@ contract MinterSetPriceHolderV5 is
 
         // NOTE: delegate-vault handling **ends here**.
 
-        MaxInvocationsLib.purchaseEffectsInvocations(
+        MaxInvocationsLib.validatePurchaseEffectsInvocations(
             tokenId,
             _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
         );
@@ -775,8 +775,8 @@ contract MinterSetPriceHolderV5 is
         // split funds
         // INTERACTIONS
         bool isEngine = SplitFundsLib._isEngine(
-            _isEngineCaches[_coreContract],
-            _coreContract
+            _coreContract,
+            _isEngineCaches[_coreContract]
         );
         SplitFundsLib.splitFundsETH(
             _projectId,

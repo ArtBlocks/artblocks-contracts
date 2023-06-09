@@ -31,9 +31,33 @@ library MerkleLib {
         // Maximum invocations allowed per address.
         // This will be used if useMaxInvocationsPerAddressOverride is true.
         // A value of 0 means no limit.
+        // @dev Safe to use uint24 because maxInvocationsPerAddressOverride <= 1_000_000
+        // and 1_000_000 << max uint24
         uint24 maxInvocationsPerAddressOverride;
         // The root of the Merkle tree for this project.
         bytes32 merkleRoot;
+    }
+
+    /**
+     * @notice Sets the maximum number of invocations per address for a project.
+     * @param _projectId The ID of the project to set.
+     * @param _coreContract The address of the core contract.
+     * @param _maxInvocationsPerAddress The maximum number of invocations per address.
+     * @param projectConfigMapping The mapping of core contracts to project configs.
+     */
+    function setProjectInvocationsPerAddress(
+        uint256 _projectId,
+        address _coreContract,
+        uint24 _maxInvocationsPerAddress,
+        mapping(address => mapping(uint256 => MerkleProjectConfig))
+            storage projectConfigMapping
+    ) internal {
+        MerkleProjectConfig storage _projectConfig = projectConfigMapping[
+            _coreContract
+        ][_projectId];
+        _projectConfig.useMaxInvocationsPerAddressOverride = true;
+        _projectConfig
+            .maxInvocationsPerAddressOverride = _maxInvocationsPerAddress;
     }
 
     /**
@@ -108,27 +132,5 @@ library MerkleLib {
         } else {
             return DEFAULT_MAX_INVOCATIONS_PER_ADDRESS;
         }
-    }
-
-    /**
-     * @notice Sets the maximum number of invocations per address for a project.
-     * @param _projectId The ID of the project to set.
-     * @param _coreContract The address of the core contract.
-     * @param _maxInvocationsPerAddress The maximum number of invocations per address.
-     * @param projectConfigMapping The mapping of core contracts to project configs.
-     */
-    function setProjectInvocationsPerAddress(
-        uint256 _projectId,
-        address _coreContract,
-        uint24 _maxInvocationsPerAddress,
-        mapping(address => mapping(uint256 => MerkleProjectConfig))
-            storage projectConfigMapping
-    ) internal {
-        MerkleProjectConfig storage _projectConfig = projectConfigMapping[
-            _coreContract
-        ][_projectId];
-        _projectConfig.useMaxInvocationsPerAddressOverride = true;
-        _projectConfig
-            .maxInvocationsPerAddressOverride = _maxInvocationsPerAddress;
     }
 }
