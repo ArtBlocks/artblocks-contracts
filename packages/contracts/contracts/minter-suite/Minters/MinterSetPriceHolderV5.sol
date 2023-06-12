@@ -95,20 +95,31 @@ contract MinterSetPriceHolderV5 is
      * coreContract => projectId => ownedNFTAddress => ownedNFTProjectIds => bool
      * projects whose holders are allowed to purchase a token on `projectId`
      */
-    mapping(address => mapping(uint256 => mapping(address => mapping(uint256 => bool))))
+    mapping(address => mapping(uint256 => TokenHolderLib.HolderProjectConfig))
         private _allowedProjectHoldersMapping;
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR SplitFundsLib begin here
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     // contractAddress => IsEngineCache
     mapping(address => SplitFundsLib.IsEngineCache) private _isEngineCaches;
-    // STATE VARIABLES FOR SplitFundsLib end here
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // STATE VARIABLES FOR SplitFundsLib end here
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR MaxInvocationsLib begin here
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     // contractAddress => projectId => max invocations specific project config
     mapping(address => mapping(uint256 => MaxInvocationsLib.MaxInvocationsProjectConfig))
         private _maxInvocationsProjectConfigMapping;
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR MaxInvocationsLib end here
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     // MODIFIERS
     /**
@@ -245,6 +256,8 @@ contract MinterSetPriceHolderV5 is
      * `_ownedNFTAddresses` assumed to be aligned with `_ownedNFTProjectIds`.
      * e.g. Allows holders of project `_ownedNFTProjectIds[0]` on token
      * contract `_ownedNFTAddresses[0]` to mint `_projectId`.
+     * WARNING: Only Art Blocks Core contracts are compatible with holder allowlisting,
+     * due to assumptions about tokenId and projectId relationships.
      * @param _projectId Project ID to enable minting on.
      * @param _ownedNFTAddresses NFT core addresses of projects to be
      * allowlisted. Indexes must align with `_ownedNFTProjectIds`.
@@ -260,9 +273,7 @@ contract MinterSetPriceHolderV5 is
     ) external {
         _onlyArtist(_projectId, _coreContract);
         TokenHolderLib.allowHoldersOfProjects(
-            _allowedProjectHoldersMapping,
-            _projectId,
-            _coreContract,
+            _allowedProjectHoldersMapping[_coreContract][_projectId],
             _ownedNFTAddresses,
             _ownedNFTProjectIds
         );
@@ -299,9 +310,7 @@ contract MinterSetPriceHolderV5 is
         _onlyArtist(_projectId, _coreContract);
         // require same length arrays
         TokenHolderLib.removeHoldersOfProjects(
-            _allowedProjectHoldersMapping,
-            _projectId,
-            _coreContract,
+            _allowedProjectHoldersMapping[_coreContract][_projectId],
             _ownedNFTAddresses,
             _ownedNFTProjectIds
         );
@@ -326,6 +335,8 @@ contract MinterSetPriceHolderV5 is
      * contract `_ownedNFTAddressesAdd[0]` to mint `_projectId`.
      * `_ownedNFTAddressesRemove` also assumed to be aligned with
      * `_ownedNFTProjectIdsRemove`.
+     * WARNING: Only Art Blocks Core contracts are compatible with holder allowlisting,
+     * due to assumptions about tokenId and projectId relationships.
      * @param _projectId Project ID to enable minting on.
      * @param _ownedNFTAddressesAdd NFT core addresses of projects to be
      * allowlisted. Indexes must align with `_ownedNFTProjectIdsAdd`.
@@ -352,9 +363,7 @@ contract MinterSetPriceHolderV5 is
     ) external {
         _onlyArtist(_projectId, _coreContract);
         TokenHolderLib.allowAndRemoveHoldersOfProjects(
-            _allowedProjectHoldersMapping,
-            _projectId,
-            _coreContract,
+            _allowedProjectHoldersMapping[_coreContract][_projectId],
             _ownedNFTAddressesAdd,
             _ownedNFTProjectIdsAdd,
             _ownedNFTAddressesRemove,
@@ -487,9 +496,8 @@ contract MinterSetPriceHolderV5 is
         uint256 _ownedNFTProjectId
     ) external view returns (bool) {
         return
-            _allowedProjectHoldersMapping[_coreContract][_projectId][
-                _ownedNFTAddress
-            ][_ownedNFTProjectId];
+            _allowedProjectHoldersMapping[_coreContract][_projectId]
+                .allowedProjectHolders[_ownedNFTAddress][_ownedNFTProjectId];
     }
 
     /**
@@ -509,9 +517,7 @@ contract MinterSetPriceHolderV5 is
     ) external view returns (bool) {
         return
             TokenHolderLib.isAllowlistedNFT(
-                _allowedProjectHoldersMapping,
-                _projectId,
-                _coreContract,
+                _allowedProjectHoldersMapping[_coreContract][_projectId],
                 _ownedNFTAddress,
                 _ownedNFTTokenId
             );
@@ -718,9 +724,7 @@ contract MinterSetPriceHolderV5 is
         // require token used to claim to be in set of allowlisted NFTs
         require(
             TokenHolderLib.isAllowlistedNFT(
-                _allowedProjectHoldersMapping,
-                _projectId,
-                _coreContract,
+                _allowedProjectHoldersMapping[_coreContract][_projectId],
                 _ownedNFTAddress,
                 _ownedNFTTokenId
             ),
