@@ -175,6 +175,8 @@ runForEach.forEach((params) => {
           [config.projectZero]
         );
 
+      config.isEngine = params.core.includes("Engine");
+
       return config;
     }
 

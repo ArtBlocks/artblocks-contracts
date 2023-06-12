@@ -546,7 +546,7 @@ runForEach.forEach((params) => {
       });
     });
 
-    describe("allowRemoveHoldersOfProjects", async function () {
+    describe("allowAndRemoveHoldersOfProjects", async function () {
       it("only allows artist to update allowed holders", async function () {
         const config = await loadFixture(_beforeEach);
         // user not allowed

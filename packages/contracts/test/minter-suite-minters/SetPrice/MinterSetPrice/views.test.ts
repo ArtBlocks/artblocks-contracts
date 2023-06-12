@@ -14,9 +14,9 @@ const runForEach = [
   // {
   //   core: "GenArt721CoreV3_Explorations",
   // },
-  // {
-  //   core: "GenArt721CoreV3_Engine",
-  // },
+  {
+    core: "GenArt721CoreV3_Engine",
+  },
   // {
   //   core: "GenArt721CoreV3_Engine_Flex",
   // },
@@ -72,6 +72,7 @@ runForEach.forEach((params) => {
           config.genArt721Core.address,
           config.pricePerTokenInWei
         );
+      config.isEngine = params.core.includes("Engine");
 
       return config;
     }

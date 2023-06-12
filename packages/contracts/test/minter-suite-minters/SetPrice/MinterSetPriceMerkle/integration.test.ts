@@ -145,7 +145,7 @@ runForEach.forEach((params) => {
         .purchase(config.projectZero, config.genArt721Core.address, {
           value: config.pricePerTokenInWei,
         });
-      // switch config.projectZero back to MinterHolderV0
+      // switch config.projectZero back
       await config.minterFilter
         .connect(config.accounts.deployer)
         .setMinterForProject(
@@ -231,6 +231,8 @@ runForEach.forEach((params) => {
           config.genArt721Core.address,
           16
         );
+
+      config.isEngine = params.core.includes("Engine");
 
       return config;
     }

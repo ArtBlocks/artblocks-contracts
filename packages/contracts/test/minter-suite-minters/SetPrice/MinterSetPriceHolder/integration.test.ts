@@ -722,5 +722,173 @@ runForEach.forEach((params) => {
           );
       });
     });
+
+    describe("Works for different valid delegation levels", async function () {
+      ["delegateForAll", "delegateForContract", "delegateForToken"].forEach(
+        (delegationType) => {
+          describe(`purchaseTo with a VALID vault delegate after ${delegationType}`, async function () {
+            beforeEach(async function () {
+              const config = await loadFixture(_beforeEach);
+              // artist account holds mint #0 for delegating
+              config.artistVault = config.accounts.artist;
+              config.userVault = config.accounts.additional2;
+
+              // delegate the vault to the user
+              let delegationArgs;
+              if (delegationType === "delegateForAll") {
+                delegationArgs = [config.accounts.user.address, true];
+              } else if (delegationType === "delegateForContract") {
+                delegationArgs = [
+                  config.accounts.user.address,
+                  config.genArt721Core.address,
+                  true,
+                ];
+              } else if (delegationType === "delegateForToken") {
+                delegationArgs = [
+                  config.accounts.user.address, // delegate
+                  config.genArt721Core.address, // contract address
+                  config.projectZeroTokenZero.toNumber(), // tokenID
+                  true,
+                ];
+              }
+              await config.delegationRegistry
+                .connect(config.userVault)
+                [delegationType](...delegationArgs);
+              // pass config to tests in this describe block
+              this.config = config;
+            });
+
+            it("does allow purchases", async function () {
+              // get config from beforeEach
+              const config = this.config;
+              await config.minter
+                .connect(config.accounts.artist)
+                .updatePricePerTokenInWei(
+                  config.projectZero,
+                  config.genArt721Core.address,
+                  config.pricePerTokenInWei
+                );
+              // // delegate the vault to the user
+              await config.delegationRegistry
+                .connect(config.accounts.artist)
+                .delegateForToken(
+                  config.accounts.user.address, // delegate
+                  config.genArt721Core.address, // contract address
+                  config.projectZeroTokenZero.toNumber(), // tokenID
+                  true
+                );
+
+              // expect no revert
+              await config.minter
+                .connect(config.accounts.user)
+                ["purchaseTo(address,uint256,address,address,uint256,address)"](
+                  config.userVault.address,
+                  config.projectZero,
+                  config.genArt721Core.address,
+                  config.genArt721Core.address,
+                  config.projectZeroTokenZero.toNumber(),
+                  config.accounts.artist.address, //  the allowlisted vault address
+                  {
+                    value: config.pricePerTokenInWei,
+                  }
+                );
+            });
+
+            it("allows purchases to vault if msg.sender is allowlisted and no vault is provided", async function () {
+              // get config from beforeEach
+              const config = this.config;
+              await config.minter
+                .connect(config.accounts.artist)
+                .updatePricePerTokenInWei(
+                  config.projectZero,
+                  config.genArt721Core.address,
+                  config.pricePerTokenInWei
+                );
+              await config.minter
+                .connect(config.accounts.artist)
+                ["purchaseTo(address,uint256,address,address,uint256)"](
+                  config.accounts.additional.address,
+                  config.projectZero,
+                  config.genArt721Core.address,
+                  config.genArt721Core.address,
+                  config.projectZeroTokenZero.toNumber(),
+                  {
+                    value: config.pricePerTokenInWei,
+                  }
+                );
+            });
+
+            it("does not allow purchases with an incorrect token", async function () {
+              // get config from beforeEach
+              const config = this.config;
+              await config.minter
+                .connect(config.accounts.artist)
+                .updatePricePerTokenInWei(
+                  config.projectZero,
+                  config.genArt721Core.address,
+                  config.pricePerTokenInWei
+                );
+
+              await expectRevert(
+                config.minter
+                  .connect(config.accounts.user)
+                  [
+                    "purchaseTo(address,uint256,address,address,uint256,address)"
+                  ](
+                    config.userVault.address,
+                    config.projectOne,
+                    config.genArt721Core.address,
+                    config.genArt721Core.address,
+                    config.projectZeroTokenOne.toNumber(),
+                    config.userVault.address, //  the vault address has NOT been delegated
+                    {
+                      value: config.pricePerTokenInWei,
+                    }
+                  ),
+                "Only allowlisted NFTs"
+              );
+            });
+          });
+        }
+      );
+    });
+
+    describe("purchaseTo with an INVALID vault delegate", async function () {
+      beforeEach(async function () {
+        const config = await loadFixture(_beforeEach);
+        config.userVault = config.accounts.additional2;
+        // intentionally do not add any delegations
+        // pass config to tests in this describe block
+        this.config = config;
+      });
+
+      it("does NOT allow purchases", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            ["purchaseTo(address,uint256,address,address,uint256,address)"](
+              config.userVault.address,
+              config.projectZero,
+              config.genArt721Core.address,
+              config.genArt721Core.address,
+              config.projectZeroTokenZero.toNumber(),
+              config.userVault.address, //  the address has NOT been delegated
+              {
+                value: config.pricePerTokenInWei,
+              }
+            ),
+          "Invalid delegate-vault pairing"
+        );
+      });
+    });
   });
 });

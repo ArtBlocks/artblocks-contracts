@@ -88,4 +88,14 @@ export const Common_Views = async (_beforeEach: () => Promise<T_Config>) => {
       expect(priceInfo.currencyAddress).to.be.equal(constants.ZERO_ADDRESS);
     });
   });
+
+  describe("isEngineView", async function () {
+    it("correctly reports isEngine", async function () {
+      const config = await loadFixture(_beforeEach);
+      const isEngineView = await config.minter
+        .connect(config.accounts.artist)
+        .isEngineView(config.genArt721Core.address);
+      expect(isEngineView).to.be.equal(config.isEngine);
+    });
+  });
 };

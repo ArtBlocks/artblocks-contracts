@@ -222,6 +222,8 @@ runForEach.forEach((params) => {
           merkleRootOne
         );
 
+      config.isEngine = params.core.includes("Engine");
+
       return config;
     }
 
