@@ -51,3 +51,68 @@ Contracts metadata upsert input:
 Successfully upserted 1 contract
 [ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
 [ACTION] AdminACL's superAdmin address is 0x61F1Ca3F65EA947B01bC66379bc4a7C5a07a8A3F, don't forget to update if requred.
+----------------------------------------
+[INFO] Datetime of deployment: 2023-06-12T23:29:35.567Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/variadic-labs/deployment-config.arbitrum.ts
+[INFO] Deploying to network: arbitrum-goerli
+[INFO] Deploying to environment: arbitrum-staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0xbDdE08BD57e5C9fD563eE7aC61618CB2ECdc0ce0
+[INFO] Randomizer BasicRandomizerV2 deployed at 0xDd06d8483868Cd0C5E69C24eEaA2A5F2bEaFd42b
+[INFO] Core GenArt721CoreV3_Engine deployed at 0xdD1724761e8f291545EA18eE16cCB3f1dDD07466
+[INFO] Minter Filter MinterFilterV1 deployed at 0x2146A41F2c1432895d6D0ADF9c60BF0a226Bac0e
+[INFO] MinterSetPriceV4 deployed at 0x47A91457a3a1f700097199Fd63c039c4784384aB
+[INFO] MinterDAExpSettlementV1 deployed at 0xE8394175365Fd746Bb1179244a6F8e3398aa22FF
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0x2146A41F2c1432895d6D0ADF9c60BF0a226Bac0e.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0x47A91457a3a1f700097199Fd63c039c4784384aB on minter filter.
+[INFO] Allowlisted minter MinterDAExpSettlementV1 at 0xE8394175365Fd746Bb1179244a6F8e3398aa22FF on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0x61F1Ca3F65EA947B01bC66379bc4a7C5a07a8A3F.
+[INFO] Verifying core contract contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/engine/V3/GenArt721CoreV3_Engine.sol:GenArt721CoreV3_Engine at 0xdD1724761e8f291545EA18eE16cCB3f1dDD07466
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract GenArt721CoreV3_Engine on Etherscan.
+https://goerli.arbiscan.io/address/0xdD1724761e8f291545EA18eE16cCB3f1dDD07466#code
+[INFO] Core contract verified on Etherscan at 0xdD1724761e8f291545EA18eE16cCB3f1dDD07466}
+[INFO] Verifying AdminACL contract deployment...
+Compiled 222 Solidity files successfully
+Successfully submitted source code for contract
+contracts/AdminACLV1.sol:AdminACLV1 at 0xbDdE08BD57e5C9fD563eE7aC61618CB2ECdc0ce0
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract AdminACLV1 on Etherscan.
+https://goerli.arbiscan.io/address/0xbDdE08BD57e5C9fD563eE7aC61618CB2ECdc0ce0#code
+[INFO] AdminACL contract verified on Etherscan at 0xbDdE08BD57e5C9fD563eE7aC61618CB2ECdc0ce0}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0x2146A41F2c1432895d6D0ADF9c60BF0a226Bac0e has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0x2146A41F2c1432895d6D0ADF9c60BF0a226Bac0e}
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+The contract 0x47A91457a3a1f700097199Fd63c039c4784384aB has already been verified
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0x47A91457a3a1f700097199Fd63c039c4784384aB}
+[INFO] Verifying MinterDAExpSettlementV1 contract deployment...
+Compiled 222 Solidity files successfully
+Successfully submitted source code for contract
+contracts/archive/minter-suite/Minters/MinterDAExpSettlement/MinterDAExpSettlementV1.sol:MinterDAExpSettlementV1 at 0xE8394175365Fd746Bb1179244a6F8e3398aa22FF
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterDAExpSettlementV1 on Etherscan.
+https://goerli.arbiscan.io/address/0xE8394175365Fd746Bb1179244a6F8e3398aa22FF#code
+[INFO] MinterDAExpSettlementV1 contract verified on Etherscan at 0xE8394175365Fd746Bb1179244a6F8e3398aa22FF}
+Created s3 bucket for https://concentric-art-arbitrum-goerli.s3.amazonaws.com
+[INFO] Created image bucket concentric-art-arbitrum-goerli
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/variadic-labs/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0xdd1724761e8f291545ea18ee16ccb3f1ddd07466",
+  "name": "Concentric Art",
+  "bucket_name": "concentric-art-arbitrum-goerli",
+  "default_vertical_name": "fullyonchain"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x61F1Ca3F65EA947B01bC66379bc4a7C5a07a8A3F, don't forget to update if requred.
