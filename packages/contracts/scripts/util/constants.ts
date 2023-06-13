@@ -45,5 +45,8 @@ export const KNOWN_ENGINE_REGISTRIES = {
     // [INDEXED] arbitrum goerli staging | deployer: lindsay dev wallet
     "0x25841600e79E9A5263Ec4badcC328AD9CFE5f8C8":
       "0x3b9038fa89783CBA1933c1689043b4dae2032d1c",
+    // [INDEXED] arbitrum goerli staging | deployer: arbitrum staging deployer wallet
+    "0x3b30d421a6dA95694EaaE09971424F15Eb375269":
+      "0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63",
   },
 };

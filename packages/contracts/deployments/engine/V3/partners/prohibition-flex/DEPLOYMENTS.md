@@ -87,3 +87,48 @@ Date: 2023-05-12T23:31:46.763Z
 
 ---
 
+
+# Deployment
+
+Date: 2023-06-12T23:24:49.728Z
+
+## **Network:** arbitrum-goerli
+
+## **Environment:** arbitrum-staging
+
+**Deployment Input File:** `deployments/engine/V3/partners/prohibition-flex/deployment-config.arbitrum.ts`
+
+**GenArt721CoreV3_Engine_Flex_PROHIBITION:** https://arbitrum-goerli.etherscan.io/address/0xA1631F64d95b7dF046Ca3b00690A5e45DAe9527a#code
+
+**AdminACLV0_PROHIBITION:** https://arbitrum-goerli.etherscan.io/address/0xdAe755c2944Ec125a0D8D5CB082c22837593441a#code
+
+**Engine Registry:** https://arbitrum-goerli.etherscan.io/address/0x3b30d421a6dA95694EaaE09971424F15Eb375269#code
+
+**MinterFilterV1:** https://arbitrum-goerli.etherscan.io/address/0x28f2D3805652FB5d359486dFfb7D08320D403240#code
+
+**Minters:**
+
+**MinterSetPriceV4:** https://arbitrum-goerli.etherscan.io/address/0x7497909537cE00fDda93c12d5083D8647C593c67#code
+
+**MinterDALinV4:** https://arbitrum-goerli.etherscan.io/address/0xd9F14781F6cBA1F4FFB0743BcFd5fC860d1da847#code
+
+
+
+**Metadata**
+
+- **Starting Project Id:** 0
+- **Token Name:** Prohibition
+- **Token Ticker:** PRB
+- **Auto Approve Artist Split Proposals:** true
+- **Render Provider Address, Primary Sales:** deployer
+- **Platform Provider Address, Primary Sales:** 0xC430CE0184e536e341e04dCE0f4C37895a92b809
+- **BytecodeStorageReader Library:** 0x681861cD4fC92d70aE57745385065ef862954662
+
+**Other**
+
+- **Add initial project?:** false
+- **Add initial token?:** false
+- **Image Bucket:** prohibition-arbitrum-goerli
+
+---
+
