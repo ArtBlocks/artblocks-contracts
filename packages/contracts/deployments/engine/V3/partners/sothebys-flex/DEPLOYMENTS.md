@@ -44,3 +44,48 @@ Date: 2023-04-28T00:25:49.263Z
 
 ---
 
+
+# Deployment
+
+Date: 2023-06-08T23:20:55.291Z
+
+## **Network:** mainnet
+
+## **Environment:** mainnet
+
+**Deployment Input File:** `deployments/engine/V3/partners/sothebys-flex/deployment-config.mainnet.ts`
+
+**GenArt721CoreV3_Engine_Flex:** https://etherscan.io/address/0xe034bb2b1B9471e11cf1a0a9199a156fb227aa5D#code
+
+**AdminACLV1:** https://etherscan.io/address/0x4c07d4224f4fbBDf6D4E5dCab39D07175b7Af88c#code
+
+**Engine Registry:** https://etherscan.io/address/0x652490c8BB6e7ec3Fd798537D2F348D7904BBbc2#code
+
+**MinterFilterV1:** https://etherscan.io/address/0x92FFaAc31DDda4cD7E1B366E16b8382Fc256921D#code
+
+**Minters:**
+
+**MinterSetPriceV4:** https://etherscan.io/address/0xF2994f39c281436790CaF443CeECe71b572a3BA6#code
+
+**MinterDAExpV4:** https://etherscan.io/address/0x16bc1d3a5b5ED072ba1cA00e9d39A256Ee314E9C#code
+
+
+
+**Metadata**
+
+- **Starting Project Id:** 0
+- **Token Name:** Sothebys Gen Art
+- **Token Ticker:** STBYS
+- **Auto Approve Artist Split Proposals:** false
+- **Render Provider Address, Primary Sales:** 0xC786c3D630B57D48E399f8023bB0429375f1d22d
+- **Platform Provider Address, Primary Sales:** 0x6E9cb366000470626Ee0b4103Dc9F77CcA19243B
+- **BytecodeStorageReader Library:** 0xf0585dF582A0ad119F1616FB82f3b449a98EeCd5
+
+**Other**
+
+- **Add initial project?:** false
+- **Add initial token?:** false
+- **Image Bucket:** sothebys-gen-art-mainnet
+
+---
+

@@ -74,3 +74,86 @@ Contracts metadata upsert input:
 Successfully upserted 1 contract
 [ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
 [ACTION] AdminACL's superAdmin address is 0xfa37B5833F234540d45E675288EEf1F7D36506Ed, don't forget to update if requred.
+----------------------------------------
+[INFO] Datetime of deployment: 2023-06-08T23:09:59.620Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/sothebys-flex/deployment-config.mainnet.ts
+[INFO] Deploying to network: mainnet
+[INFO] Deploying to environment: mainnet
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x4c07d4224f4fbBDf6D4E5dCab39D07175b7Af88c
+[INFO] Randomizer BasicRandomizerV2 deployed at 0x15BB4B343806Bf946e83A3d5e8BEe57F9DA09C66
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0xe034bb2b1B9471e11cf1a0a9199a156fb227aa5D
+[INFO] Minter Filter MinterFilterV1 deployed at 0x92FFaAc31DDda4cD7E1B366E16b8382Fc256921D
+[INFO] MinterSetPriceV4 deployed at 0xF2994f39c281436790CaF443CeECe71b572a3BA6
+[INFO] MinterDAExpV4 deployed at 0x16bc1d3a5b5ED072ba1cA00e9d39A256Ee314E9C
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0x92FFaAc31DDda4cD7E1B366E16b8382Fc256921D.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0xF2994f39c281436790CaF443CeECe71b572a3BA6 on minter filter.
+[INFO] Allowlisted minter MinterDAExpV4 at 0x16bc1d3a5b5ED072ba1cA00e9d39A256Ee314E9C on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0x6E9cb366000470626Ee0b4103Dc9F77CcA19243B.
+[INFO] Verifying core contract contract deployment...
+Nothing to compile
+[ACTION] Save the following constructor args config file to a constructor-args.js file, then verify core contract deployment with:
+module.exports = [
+        "Sothebys Gen Art", // name
+        "STBYS", // ticker
+        "0xC786c3D630B57D48E399f8023bB0429375f1d22d", // render provider
+        "0x6E9cb366000470626Ee0b4103Dc9F77CcA19243B", // platform provider
+        "0x15BB4B343806Bf946e83A3d5e8BEe57F9DA09C66", // randomizer
+        "0x4c07d4224f4fbBDf6D4E5dCab39D07175b7Af88c", // admin acl
+        0, // starting project id
+        false, // auto approve artist split proposals
+        "0x652490c8BB6e7ec3Fd798537D2F348D7904BBbc2" // engine registry
+      ];
+yarn hardhat verify --network mainnet --constructor-args constructor-args.js 0xe034bb2b1B9471e11cf1a0a9199a156fb227aa5D
+[INFO] Verifying AdminACL contract deployment...
+Compiled 222 Solidity files successfully
+Successfully submitted source code for contract
+contracts/AdminACLV1.sol:AdminACLV1 at 0x4c07d4224f4fbBDf6D4E5dCab39D07175b7Af88c
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract AdminACLV1 on Etherscan.
+https://etherscan.io/address/0x4c07d4224f4fbBDf6D4E5dCab39D07175b7Af88c#code
+[INFO] AdminACL contract verified on Etherscan at 0x4c07d4224f4fbBDf6D4E5dCab39D07175b7Af88c}
+[INFO] Verifying MinterFilter contract deployment...
+Compiled 222 Solidity files successfully
+Successfully submitted source code for contract
+contracts/minter-suite/MinterFilter/MinterFilterV1.sol:MinterFilterV1 at 0x92FFaAc31DDda4cD7E1B366E16b8382Fc256921D
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterFilterV1 on Etherscan.
+https://etherscan.io/address/0x92FFaAc31DDda4cD7E1B366E16b8382Fc256921D#code
+[INFO] MinterFilter contract verified on Etherscan at 0x92FFaAc31DDda4cD7E1B366E16b8382Fc256921D}
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+Compiled 222 Solidity files successfully
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterSetPriceV4.sol:MinterSetPriceV4 at 0xF2994f39c281436790CaF443CeECe71b572a3BA6
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterSetPriceV4 on Etherscan.
+https://etherscan.io/address/0xF2994f39c281436790CaF443CeECe71b572a3BA6#code
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0xF2994f39c281436790CaF443CeECe71b572a3BA6}
+[INFO] Verifying MinterDAExpV4 contract deployment...
+Compiled 222 Solidity files successfully
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterDAExpV4.sol:MinterDAExpV4 at 0x16bc1d3a5b5ED072ba1cA00e9d39A256Ee314E9C
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterDAExpV4 on Etherscan.
+https://etherscan.io/address/0x16bc1d3a5b5ED072ba1cA00e9d39A256Ee314E9C#code
+[INFO] MinterDAExpV4 contract verified on Etherscan at 0x16bc1d3a5b5ED072ba1cA00e9d39A256Ee314E9C}
+Created s3 bucket for https://sothebys-gen-art-mainnet.s3.amazonaws.com
+[INFO] Created image bucket sothebys-gen-art-mainnet
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/sothebys-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0xe034bb2b1b9471e11cf1a0a9199a156fb227aa5d",
+  "name": "Sothebys Gen Art",
+  "bucket_name": "sothebys-gen-art-mainnet",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x6E9cb366000470626Ee0b4103Dc9F77CcA19243B, don't forget to update if requred.
