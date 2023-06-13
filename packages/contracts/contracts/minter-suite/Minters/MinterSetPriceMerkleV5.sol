@@ -141,10 +141,10 @@ contract MinterSetPriceMerkleV5 is
 
     /**
      * @notice Initializes contract to be a Filtered Minter for
-     * `_minterFilter`, integrated with Art Blocks core contract
-     * at address `_genArt721Address`.
+     * `_minterFilter` minter filter.
      * @param _minterFilter Minter filter for which this will be a
      * filtered minter.
+     * @param _delegationRegistryAddress Delegation registry contract address.
      */
     constructor(
         address _minterFilter,
@@ -179,7 +179,7 @@ contract MinterSetPriceMerkleV5 is
     function manuallyLimitProjectMaxInvocations(
         uint256 _projectId,
         address _coreContract,
-        uint256 _maxInvocations
+        uint24 _maxInvocations
     ) external {
         _onlyArtist(_projectId, _coreContract);
         MaxInvocationsLib.manuallyLimitProjectMaxInvocations(
@@ -211,10 +211,6 @@ contract MinterSetPriceMerkleV5 is
         uint256 _pricePerTokenInWei
     ) external {
         _onlyArtist(_projectId, _coreContract);
-        MaxInvocationsLib.MaxInvocationsProjectConfig
-            storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
-                _coreContract
-            ][_projectId];
         ProjectConfig storage _projectConfig = _projectConfigMapping[
             _coreContract
         ][_projectId];
@@ -229,6 +225,10 @@ contract MinterSetPriceMerkleV5 is
         // sync local max invocations if not initially populated
         // @dev if local max invocations and maxHasBeenInvoked are both
         // initial values, we know they have not been populated.
+        MaxInvocationsLib.MaxInvocationsProjectConfig
+            storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
+                _coreContract
+            ][_projectId];
         if (
             _maxInvocationsProjectConfig.maxInvocations == 0 &&
             _maxInvocationsProjectConfig.maxHasBeenInvoked == false
@@ -665,7 +665,7 @@ contract MinterSetPriceMerkleV5 is
      * @param _projectId Project ID to mint a token on.
      * @param _coreContract Contract address of the core contract.
      * @param _proof Merkle proof for the given project.
-     * @return tokenId Token ID of minted token
+     * @param _vault Vault being purchased on behalf of. Acceptable to be `address(0)` if no vault.     * @return tokenId Token ID of minted token
      */
     function purchaseTo(
         address _to,
@@ -689,7 +689,7 @@ contract MinterSetPriceMerkleV5 is
 
         // Note that `maxHasBeenInvoked` is only checked here to reduce gas
         // consumption after a project has been fully minted.
-        // `_projectConfig.maxHasBeenInvoked` is locally cached to reduce
+        // `_maxInvocationsProjectConfig.maxHasBeenInvoked` is locally cached to reduce
         // gas consumption, but if not in sync with the core contract's value,
         // the core contract also enforces its own max invocation check during
         // minting.
@@ -774,7 +774,7 @@ contract MinterSetPriceMerkleV5 is
         );
 
         // INTERACTIONS
-        bool isEngine = SplitFundsLib._isEngine(
+        bool isEngine = SplitFundsLib.isEngine(
             _coreContract,
             _isEngineCaches[_coreContract]
         );

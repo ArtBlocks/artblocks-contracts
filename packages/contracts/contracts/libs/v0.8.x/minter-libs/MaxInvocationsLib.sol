@@ -67,7 +67,7 @@ library MaxInvocationsLib {
     function manuallyLimitProjectMaxInvocations(
         uint256 _projectId,
         address _coreContract,
-        uint256 _maxInvocations,
+        uint24 _maxInvocations,
         MaxInvocationsProjectConfig storage maxInvocationsProjectConfig
     ) internal {
         uint256 maxInvocations;

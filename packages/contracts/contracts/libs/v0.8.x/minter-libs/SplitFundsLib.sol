@@ -289,7 +289,7 @@ library SplitFundsLib {
      * @param _coreContract Address of the core contract to check.
      * @param isEngineCache isEngine cache state for the given core contract.
      */
-    function _isEngine(
+    function isEngine(
         address _coreContract,
         IsEngineCache storage isEngineCache
     ) internal returns (bool) {

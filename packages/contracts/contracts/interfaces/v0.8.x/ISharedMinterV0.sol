@@ -162,7 +162,7 @@ interface ISharedMinterV0 {
     function manuallyLimitProjectMaxInvocations(
         uint256 _projectId,
         address _coreContract,
-        uint256 _maxInvocations
+        uint24 _maxInvocations
     ) external;
 
     // Called to make the minter contract aware of the max invocations for a

@@ -121,7 +121,7 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
     function manuallyLimitProjectMaxInvocations(
         uint256 _projectId,
         address _coreContract,
-        uint256 _maxInvocations
+        uint24 _maxInvocations
     ) external {
         _onlyArtist(_projectId, _coreContract);
         MaxInvocationsLib.manuallyLimitProjectMaxInvocations(
@@ -153,10 +153,6 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
         uint256 _pricePerTokenInWei
     ) external {
         _onlyArtist(_projectId, _coreContract);
-        MaxInvocationsLib.MaxInvocationsProjectConfig
-            storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
-                _coreContract
-            ][_projectId];
         ProjectConfig storage _projectConfig = _projectConfigMapping[
             _coreContract
         ][_projectId];
@@ -171,6 +167,10 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
         // sync local max invocations if not initially populated
         // @dev if local max invocations and maxHasBeenInvoked are both
         // initial values, we know they have not been populated.
+        MaxInvocationsLib.MaxInvocationsProjectConfig
+            storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
+                _coreContract
+            ][_projectId];
         if (
             _maxInvocationsProjectConfig.maxInvocations == 0 &&
             _maxInvocationsProjectConfig.maxHasBeenInvoked == false
@@ -232,6 +232,8 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
      * returns the cached value. Otherwise, it calls the `getV3CoreIsEngine`
      * function from the `SplitFundsLib` library to check if `_coreContract`
      * is a valid engine contract.
+     * @dev This function will revert if the provided `_coreContract` is not
+     * a valid Engine or V3 Flagship contract.
      * @param _coreContract The address of the contract to check.
      * @return bool indicating if `_coreContract` is a valid engine contract.
      */
@@ -350,6 +352,8 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
         uint256 _projectId,
         address _coreContract
     ) public {
+        _onlyArtist(_projectId, _coreContract);
+
         uint256 maxInvocations = MaxInvocationsLib
             .syncProjectMaxInvocationsToCore(
                 _projectId,
@@ -387,7 +391,7 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
 
         // Note that `maxHasBeenInvoked` is only checked here to reduce gas
         // consumption after a project has been fully minted.
-        // `_projectConfig.maxHasBeenInvoked` is locally cached to reduce
+        // `_maxInvocationsProjectConfig.maxHasBeenInvoked` is locally cached to reduce
         // gas consumption, but if not in sync with the core contract's value,
         // the core contract also enforces its own max invocation check during
         // minting.
@@ -418,7 +422,7 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
         );
 
         // INTERACTIONS
-        bool isEngine = SplitFundsLib._isEngine(
+        bool isEngine = SplitFundsLib.isEngine(
             _coreContract,
             _isEngineCaches[_coreContract]
         );

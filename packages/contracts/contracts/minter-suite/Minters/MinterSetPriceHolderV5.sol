@@ -91,13 +91,6 @@ contract MinterSetPriceHolderV5 is
     mapping(address => mapping(uint256 => ProjectConfig))
         private _projectConfigMapping;
 
-    /**
-     * coreContract => projectId => ownedNFTAddress => ownedNFTProjectIds => bool
-     * projects whose holders are allowed to purchase a token on `projectId`
-     */
-    mapping(address => mapping(uint256 => TokenHolderLib.HolderProjectConfig))
-        private _allowedProjectHoldersMapping;
-
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR SplitFundsLib begin here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -119,6 +112,21 @@ contract MinterSetPriceHolderV5 is
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR MaxInvocationsLib end here
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // STATE VARIABLES FOR TokenHolderLib begin here
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * coreContract => projectId => ownedNFTAddress => ownedNFTProjectIds => bool
+     * projects whose holders are allowed to purchase a token on `projectId`
+     */
+    mapping(address => mapping(uint256 => TokenHolderLib.HolderProjectConfig))
+        private _allowedProjectHoldersMapping;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // STATE VARIABLES FOR TokenHolderLib end here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     // MODIFIERS
@@ -160,8 +168,7 @@ contract MinterSetPriceHolderV5 is
      * @notice Initializes contract to be a Filtered Minter for
      * `_minterFilter`, integrated with Art Blocks core contract
      * at address `_genArt721Address`.
-     * @param _minterFilter Minter filter for which
-     * this will a filtered minter.
+     * @param _minterFilter minter filter.
      * @param _delegationRegistryAddress Delegation registry contract address.
      */
     constructor(
@@ -192,7 +199,7 @@ contract MinterSetPriceHolderV5 is
     function manuallyLimitProjectMaxInvocations(
         uint256 _projectId,
         address _coreContract,
-        uint256 _maxInvocations
+        uint24 _maxInvocations
     ) external {
         _onlyArtist(_projectId, _coreContract);
         MaxInvocationsLib.manuallyLimitProjectMaxInvocations(
@@ -224,10 +231,6 @@ contract MinterSetPriceHolderV5 is
         uint256 _pricePerTokenInWei
     ) external {
         _onlyArtist(_projectId, _coreContract);
-        MaxInvocationsLib.MaxInvocationsProjectConfig
-            storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
-                _coreContract
-            ][_projectId];
         ProjectConfig storage _projectConfig = _projectConfigMapping[
             _coreContract
         ][_projectId];
@@ -242,6 +245,10 @@ contract MinterSetPriceHolderV5 is
         // sync local max invocations if not initially populated
         // @dev if local max invocations and maxHasBeenInvoked are both
         // initial values, we know they have not been populated.
+        MaxInvocationsLib.MaxInvocationsProjectConfig
+            storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
+                _coreContract
+            ][_projectId];
         if (
             _maxInvocationsProjectConfig.maxInvocations == 0 &&
             _maxInvocationsProjectConfig.maxHasBeenInvoked == false
@@ -259,6 +266,7 @@ contract MinterSetPriceHolderV5 is
      * WARNING: Only Art Blocks Core contracts are compatible with holder allowlisting,
      * due to assumptions about tokenId and projectId relationships.
      * @param _projectId Project ID to enable minting on.
+     * @param _coreContract Core contract address for the given project.
      * @param _ownedNFTAddresses NFT core addresses of projects to be
      * allowlisted. Indexes must align with `_ownedNFTProjectIds`.
      * @param _ownedNFTProjectIds Project IDs on `_ownedNFTAddresses` whose
@@ -295,6 +303,7 @@ contract MinterSetPriceHolderV5 is
      * e.g. Removes holders of project `_ownedNFTProjectIds[0]` on token
      * contract `_ownedNFTAddresses[0]` from mint allowlist of `_projectId`.
      * @param _projectId Project ID to enable minting on.
+     * @param _coreContract Core contract address for the given project.
      * @param _ownedNFTAddresses NFT core addresses of projects to be removed
      * from allowlist. Indexes must align with `_ownedNFTProjectIds`.
      * @param _ownedNFTProjectIds Project IDs on `_ownedNFTAddresses` whose
@@ -338,6 +347,7 @@ contract MinterSetPriceHolderV5 is
      * WARNING: Only Art Blocks Core contracts are compatible with holder allowlisting,
      * due to assumptions about tokenId and projectId relationships.
      * @param _projectId Project ID to enable minting on.
+     * @param _coreContract Core contract address for the given project.
      * @param _ownedNFTAddressesAdd NFT core addresses of projects to be
      * allowlisted. Indexes must align with `_ownedNFTProjectIdsAdd`.
      * @param _ownedNFTProjectIdsAdd Project IDs on `_ownedNFTAddressesAdd`
@@ -394,6 +404,7 @@ contract MinterSetPriceHolderV5 is
     /**
      * @notice Purchases a token from project `_projectId`.
      * @param _projectId Project ID to mint a token on.
+     * @param _coreContract Core contract address for the given project.
      * @param _ownedNFTAddress ERC-721 NFT address holding the project token
      * owned by msg.sender being used to prove right to purchase.
      * @param _ownedNFTTokenId ERC-721 NFT token ID owned by msg.sender being used
@@ -422,6 +433,7 @@ contract MinterSetPriceHolderV5 is
      * the token's owner to `_to`.
      * @param _to Address to be the new token's owner.
      * @param _projectId Project ID to mint a token on.
+     * @param _coreContract Core contract address for the given project.
      * @param _ownedNFTAddress ERC-721 NFT holding the project token owned by
      * msg.sender being used to claim right to purchase.
      * @param _ownedNFTTokenId ERC-721 NFT token ID owned by msg.sender being used
@@ -503,6 +515,7 @@ contract MinterSetPriceHolderV5 is
     /**
      * @notice Returns if token is an allowlisted NFT for project `_projectId`.
      * @param _projectId Project ID to be checked.
+     * @param _coreContract Core contract address for the given project.
      * @param _ownedNFTAddress ERC-721 NFT token address to be checked.
      * @param _ownedNFTTokenId ERC-721 NFT token ID to be checked.
      * @return bool Token is allowlisted
@@ -639,8 +652,8 @@ contract MinterSetPriceHolderV5 is
     /**
      * @notice Syncs local maximum invocations of project `_projectId` based on
      * the value currently defined in the core contract.
-     * @param _coreContract Core contract address for the given project.
      * @param _projectId Project ID to set the maximum invocations for.
+     * @param _coreContract Core contract address for the given project.
      * @dev this enables gas reduction after maxInvocations have been reached -
      * core contracts shall still enforce a maxInvocation check during mint.
      */
@@ -678,6 +691,7 @@ contract MinterSetPriceHolderV5 is
      * the token's owner to `_to`.
      * @param _to Address to be the new token's owner.
      * @param _projectId Project ID to mint a token on.
+     * @param _coreContract Core contract address for the given project.
      * @param _ownedNFTAddress ERC-721 NFT address holding the project token owned by _vault
      *         (or msg.sender if no _vault is provided) being used to claim right to purchase.
      * @param _ownedNFTTokenId ERC-721 NFT token ID owned by _vault (or msg.sender if
@@ -704,7 +718,7 @@ contract MinterSetPriceHolderV5 is
 
         // Note that `maxHasBeenInvoked` is only checked here to reduce gas
         // consumption after a project has been fully minted.
-        // `_projectConfig.maxHasBeenInvoked` is locally cached to reduce
+        // `_maxInvocationsProjectConfig.maxHasBeenInvoked` is locally cached to reduce
         // gas consumption, but if not in sync with the core contract's value,
         // the core contract also enforces its own max invocation check during
         // minting.
@@ -716,10 +730,10 @@ contract MinterSetPriceHolderV5 is
         // load price of token into memory
         uint256 pricePerTokenInWei = _projectConfig.pricePerTokenInWei;
 
-        require(msg.value >= pricePerTokenInWei, "Min value to mint req.");
-
         // require artist to have configured price of token on this minter
         require(_projectConfig.priceIsConfigured, "Price not configured");
+
+        require(msg.value >= pricePerTokenInWei, "Min value to mint req.");
 
         // require token used to claim to be in set of allowlisted NFTs
         require(
@@ -764,7 +778,7 @@ contract MinterSetPriceHolderV5 is
         );
 
         // INTERACTIONS
-        // require sender to own NFT used to redeem
+        // require vault to own NFT used to redeem
         /**
          * @dev Considered an interaction because calling ownerOf on an NFT
          * contract. Plan is to only register AB/PBAB NFTs on the minter, but
@@ -778,7 +792,7 @@ contract MinterSetPriceHolderV5 is
 
         // split funds
         // INTERACTIONS
-        bool isEngine = SplitFundsLib._isEngine(
+        bool isEngine = SplitFundsLib.isEngine(
             _coreContract,
             _isEngineCaches[_coreContract]
         );
