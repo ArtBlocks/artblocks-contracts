@@ -52,7 +52,7 @@
     "@types/jest": "^29.5.2",
     "@types/mocha": "^10.0.1",
     "@types/prompt": "^1.1.5",
-    "@typescript-eslint/eslint-plugin": "^5.59.9",
+    "@typescript-eslint/eslint-plugin": "^5.59.11",
     "@typescript-eslint/parser": "^5.59.9",
     "aws-sdk-client-mock": "^2.1.1",
     "chai": "^4.3.7",
@@ -90,6 +90,6 @@
     "@openzeppelin-4.8/contracts-upgradeable": "npm:@openzeppelin/contracts-upgradeable@4.8.0",
     "@urql/exchange-retry": "^1.2.0",
     "graphql": "^16.6.0",
-    "urql": "^4.0.3"
+    "urql": "^4.0.4"
   }
 }
