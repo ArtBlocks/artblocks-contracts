@@ -150,7 +150,7 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
     function updatePricePerTokenInWei(
         uint256 _projectId,
         address _coreContract,
-        uint256 _pricePerTokenInWei
+        uint248 _pricePerTokenInWei
     ) external {
         _onlyArtist(_projectId, _coreContract);
         ProjectConfig storage _projectConfig = _projectConfigMapping[

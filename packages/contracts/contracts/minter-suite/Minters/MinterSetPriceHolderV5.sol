@@ -228,7 +228,7 @@ contract MinterSetPriceHolderV5 is
     function updatePricePerTokenInWei(
         uint256 _projectId,
         address _coreContract,
-        uint256 _pricePerTokenInWei
+        uint248 _pricePerTokenInWei
     ) external {
         _onlyArtist(_projectId, _coreContract);
         ProjectConfig storage _projectConfig = _projectConfigMapping[

@@ -152,8 +152,8 @@ interface ISharedMinterV0 {
         uint256 _maxInvocations
     );
     struct ProjectConfig {
+        uint248 pricePerTokenInWei;
         bool priceIsConfigured;
-        uint256 pricePerTokenInWei;
     }
 
     // Sets the local max invocations for a given project, checking that the provided max invocations is
