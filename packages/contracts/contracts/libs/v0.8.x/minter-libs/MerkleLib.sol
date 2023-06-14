@@ -36,25 +36,19 @@ library MerkleLib {
         uint24 maxInvocationsPerAddressOverride;
         // The root of the Merkle tree for this project.
         bytes32 merkleRoot;
+        // The number of current invocations for this project from a given user address.
+        mapping(address => uint256) userMintInvocations;
     }
 
     /**
      * @notice Sets the maximum number of invocations per address for a project.
-     * @param _projectId The ID of the project to set.
-     * @param _coreContract The address of the core contract.
+     * @param _projectConfig Merkle project config.
      * @param _maxInvocationsPerAddress The maximum number of invocations per address.
-     * @param projectConfigMapping The mapping of core contracts to project configs.
      */
     function setProjectInvocationsPerAddress(
-        uint256 _projectId,
-        address _coreContract,
-        uint24 _maxInvocationsPerAddress,
-        mapping(address => mapping(uint256 => MerkleProjectConfig))
-            storage projectConfigMapping
+        MerkleProjectConfig storage _projectConfig,
+        uint24 _maxInvocationsPerAddress
     ) internal {
-        MerkleProjectConfig storage _projectConfig = projectConfigMapping[
-            _coreContract
-        ][_projectId];
         _projectConfig.useMaxInvocationsPerAddressOverride = true;
         _projectConfig
             .maxInvocationsPerAddressOverride = _maxInvocationsPerAddress;
@@ -62,22 +56,14 @@ library MerkleLib {
 
     /**
      * @notice Updates the Merkle root of a project.
-     * @param projectConfigMapping The mapping of core contracts to project configs.
-     * @param _projectId The ID of the project to update.
-     * @param _coreContract The address of the core contract.
+     * @param _projectConfig Merkle project config.
      * @param _root The new Merkle root.
      */
     function updateMerkleRoot(
-        mapping(address => mapping(uint256 => MerkleProjectConfig))
-            storage projectConfigMapping,
-        uint256 _projectId,
-        address _coreContract,
+        MerkleProjectConfig storage _projectConfig,
         bytes32 _root
     ) internal {
         require(_root != bytes32(0), "Must provide root");
-        MerkleProjectConfig storage _projectConfig = projectConfigMapping[
-            _coreContract
-        ][_projectId];
         _projectConfig.merkleRoot = _root;
     }
 
@@ -120,17 +106,70 @@ library MerkleLib {
 
     /**
      * @notice Returns the maximum number of invocations per address for a project.
-     * @param projectConfigMapping The project config to check.
+     * @param _projectConfig The merkle project config to check.
      * @return The maximum number of invocations per address.
      */
     function projectMaxInvocationsPerAddress(
-        MerkleProjectConfig storage projectConfigMapping
+        MerkleProjectConfig storage _projectConfig
     ) internal view returns (uint256) {
-        if (projectConfigMapping.useMaxInvocationsPerAddressOverride) {
-            return
-                uint256(projectConfigMapping.maxInvocationsPerAddressOverride);
+        if (_projectConfig.useMaxInvocationsPerAddressOverride) {
+            return uint256(_projectConfig.maxInvocationsPerAddressOverride);
         } else {
             return DEFAULT_MAX_INVOCATIONS_PER_ADDRESS;
+        }
+    }
+
+    /**
+     * @notice Returns remaining invocations for a given address.
+     * If `projectLimitsMintInvocationsPerAddress` is false, individual
+     * addresses are only limited by the project's maximum invocations, and a
+     * dummy value of zero is returned for `mintInvocationsRemaining`.
+     * If `projectLimitsMintInvocationsPerAddress` is true, the quantity of
+     * remaining mint invocations for address `_address` is returned as
+     * `mintInvocationsRemaining`.
+     * Note that mint invocations per address can be changed at any time by the
+     * artist of a project.
+     * Also note that all mint invocations are limited by a project's maximum
+     * invocations as defined on the core contract. This function may return
+     * a value greater than the project's remaining invocations.
+     */
+    function projectRemainingInvocationsForAddress(
+        MerkleProjectConfig storage _projectConfig,
+        address _address
+    )
+        internal
+        view
+        returns (
+            bool projectLimitsMintInvocationsPerAddress,
+            uint256 mintInvocationsRemaining
+        )
+    {
+        uint256 maxInvocationsPerAddress = projectMaxInvocationsPerAddress(
+            _projectConfig
+        );
+        if (maxInvocationsPerAddress == 0) {
+            // project does not limit mint invocations per address, so leave
+            // `projectLimitsMintInvocationsPerAddress` at solidity initial
+            // value of false. Also leave `mintInvocationsRemaining` at
+            // solidity initial value of zero, as indicated in this function's
+            // documentation.
+        } else {
+            projectLimitsMintInvocationsPerAddress = true;
+            uint256 userMintInvocations = _projectConfig.userMintInvocations[
+                _address
+            ];
+            // if user has not reached max invocations per address, return
+            // remaining invocations
+            if (maxInvocationsPerAddress > userMintInvocations) {
+                unchecked {
+                    // will never underflow due to the check above
+                    mintInvocationsRemaining =
+                        maxInvocationsPerAddress -
+                        userMintInvocations;
+                }
+            }
+            // else user has reached their maximum invocations, so leave
+            // `mintInvocationsRemaining` at solidity initial value of zero
         }
     }
 }

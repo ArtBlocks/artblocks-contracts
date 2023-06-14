@@ -81,10 +81,6 @@ contract MinterSetPriceMerkleV5 is
     mapping(address => mapping(uint256 => ProjectConfig))
         private _projectConfigMapping;
 
-    /// contractAddress => projectId => purchaser address => qty of mints purchased for project
-    mapping(address => mapping(uint256 => mapping(address => uint256)))
-        private _projectUserMintInvocationsMapping;
-
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR SplitFundsLib begin here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -252,9 +248,7 @@ contract MinterSetPriceMerkleV5 is
         _onlyArtist(_projectId, _coreContract);
         require(_root != bytes32(0), "Root must be provided");
         MerkleLib.updateMerkleRoot(
-            _merkleProjectConfigMapping,
-            _projectId,
-            _coreContract,
+            _merkleProjectConfigMapping[_coreContract][_projectId],
             _root
         );
         emit ConfigValueSet(
@@ -285,10 +279,8 @@ contract MinterSetPriceMerkleV5 is
     ) external {
         _onlyArtist(_projectId, _coreContract);
         MerkleLib.setProjectInvocationsPerAddress(
-            _projectId,
-            _coreContract,
-            _maxInvocationsPerAddress,
-            _merkleProjectConfigMapping
+            _merkleProjectConfigMapping[_coreContract][_projectId],
+            _maxInvocationsPerAddress
         );
         emit ConfigValueSet(
             _projectId,
@@ -394,8 +386,16 @@ contract MinterSetPriceMerkleV5 is
     function merkleProjectConfig(
         address _coreContract,
         uint256 _projectId
-    ) external view returns (MerkleLib.MerkleProjectConfig memory) {
-        return _merkleProjectConfigMapping[_coreContract][_projectId];
+    ) external view returns (bool, uint24, bytes32) {
+        MerkleLib.MerkleProjectConfig
+            storage _merkleProjectConfig = _merkleProjectConfigMapping[
+                _coreContract
+            ][_projectId];
+        return (
+            _merkleProjectConfig.useMaxInvocationsPerAddressOverride,
+            _merkleProjectConfig.maxInvocationsPerAddressOverride,
+            _merkleProjectConfig.merkleRoot
+        );
     }
 
     /**
@@ -412,10 +412,11 @@ contract MinterSetPriceMerkleV5 is
         uint256 _projectId,
         address _purchaser
     ) external view returns (uint256) {
-        return
-            _projectUserMintInvocationsMapping[_coreContract][_projectId][
-                _purchaser
-            ];
+        MerkleLib.MerkleProjectConfig
+            storage _merkleProjectConfig = _merkleProjectConfigMapping[
+                _coreContract
+            ][_projectId];
+        return _merkleProjectConfig.userMintInvocations[_purchaser];
     }
 
     /**
@@ -561,33 +562,11 @@ contract MinterSetPriceMerkleV5 is
             storage _merkleProjectConfig = _merkleProjectConfigMapping[
                 _coreContract
             ][_projectId];
-        uint256 maxInvocationsPerAddress = MerkleLib
-            .projectMaxInvocationsPerAddress(_merkleProjectConfig);
-
-        if (maxInvocationsPerAddress == 0) {
-            // project does not limit mint invocations per address, so leave
-            // `projectLimitsMintInvocationsPerAddress` at solidity initial
-            // value of false. Also leave `mintInvocationsRemaining` at
-            // solidity initial value of zero, as indicated in this function's
-            // documentation.
-        } else {
-            projectLimitsMintInvocationsPerAddress = true;
-            uint256 userMintInvocations = _projectUserMintInvocationsMapping[
-                _coreContract
-            ][_projectId][_address];
-            // if user has not reached max invocations per address, return
-            // remaining invocations
-            if (maxInvocationsPerAddress > userMintInvocations) {
-                unchecked {
-                    // will never underflow due to the check above
-                    mintInvocationsRemaining =
-                        maxInvocationsPerAddress -
-                        userMintInvocations;
-                }
-            }
-            // else user has reached their maximum invocations, so leave
-            // `mintInvocationsRemaining` at solidity initial value of zero
-        }
+        return
+            MerkleLib.projectRemainingInvocationsForAddress(
+                _merkleProjectConfig,
+                _address
+            );
     }
 
     /**
@@ -743,9 +722,7 @@ contract MinterSetPriceMerkleV5 is
 
         // note that mint limits index off of the `vault` (when applicable)
         require(
-            _projectUserMintInvocationsMapping[_coreContract][_projectId][
-                vault
-            ] <
+            _merkleProjectConfig.userMintInvocations[vault] <
                 _maxProjectInvocationsPerAddress ||
                 _maxProjectInvocationsPerAddress == 0,
             "Max invocations reached"
@@ -756,9 +733,7 @@ contract MinterSetPriceMerkleV5 is
         unchecked {
             // this will never overflow since user's invocations on a project
             // are limited by the project's max invocations
-            _projectUserMintInvocationsMapping[_coreContract][_projectId][
-                vault
-            ]++;
+            _merkleProjectConfig.userMintInvocations[vault]++;
         }
 
         tokenId = minterFilter.mint_joo(

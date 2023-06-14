@@ -42,7 +42,7 @@ library SplitFundsLib {
         uint256 projectId,
         uint256 pricePerTokenInWei,
         address coreContract,
-        bool isEngine
+        bool _isEngine
     ) internal {
         if (msg.value > 0) {
             bool success_;
@@ -57,7 +57,7 @@ library SplitFundsLib {
                 projectId,
                 pricePerTokenInWei,
                 coreContract,
-                isEngine
+                _isEngine
             );
         }
     }
@@ -75,7 +75,7 @@ library SplitFundsLib {
         uint256 projectId,
         uint256 valueInWei,
         address genArtCoreContract,
-        bool isEngine
+        bool _isEngine
     ) internal {
         if (valueInWei <= 0) {
             return; // return early
@@ -90,7 +90,7 @@ library SplitFundsLib {
         uint256 additionalPayeePrimaryRevenue_;
         address payable additionalPayeePrimaryAddress_;
 
-        if (isEngine) {
+        if (_isEngine) {
             // get engine splits
             uint256 platformProviderRevenue_;
             address payable platformProviderAddress_;
@@ -157,7 +157,7 @@ library SplitFundsLib {
         uint256 pricePerTokenInWei,
         address currencyAddress,
         address genArtCoreContract,
-        bool isEngine
+        bool _isEngine
     ) internal {
         IERC20 _projectCurrency = IERC20(currencyAddress);
         // split remaining funds between foundation, artist, and artist's
@@ -169,7 +169,7 @@ library SplitFundsLib {
         uint256 additionalPayeePrimaryRevenue_;
         address payable additionalPayeePrimaryAddress_;
 
-        if (isEngine) {
+        if (_isEngine) {
             // get engine splits
             uint256 platformProviderRevenue_;
             address payable platformProviderAddress_;
@@ -296,8 +296,8 @@ library SplitFundsLib {
         if (isEngineCache.isCached) {
             return isEngineCache.isEngine;
         } else {
-            bool isEngine = getV3CoreIsEngine(_coreContract, isEngineCache);
-            return isEngine;
+            bool _isEngine = getV3CoreIsEngine(_coreContract, isEngineCache);
+            return _isEngine;
         }
     }
 
