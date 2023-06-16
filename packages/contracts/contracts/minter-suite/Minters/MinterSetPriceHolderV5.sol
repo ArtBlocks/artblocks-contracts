@@ -148,22 +148,6 @@ contract MinterSetPriceHolderV5 is
         );
     }
 
-    // function to restrict access to only AdminACL allowed calls
-    // @dev defers which ACL contract is used to the core contract
-    function _onlyCoreAdminACL(
-        address _coreContract,
-        bytes4 _selector
-    ) internal {
-        require(
-            IGenArt721CoreContractV3_Base(_coreContract).adminACLAllowed(
-                msg.sender,
-                address(this),
-                _selector
-            ),
-            "Only Core AdminACL allowed"
-        );
-    }
-
     /**
      * @notice Initializes contract to be a Filtered Minter for
      * `_minterFilter`, integrated with Art Blocks core contract
@@ -514,8 +498,8 @@ contract MinterSetPriceHolderV5 is
 
     /**
      * @notice Returns if token is an allowlisted NFT for project `_projectId`.
-     * @param _projectId Project ID to be checked.
      * @param _coreContract Core contract address for the given project.
+     * @param _projectId Project ID to be checked.
      * @param _ownedNFTAddress ERC-721 NFT token address to be checked.
      * @param _ownedNFTTokenId ERC-721 NFT token ID to be checked.
      * @return bool Token is allowlisted
@@ -523,8 +507,8 @@ contract MinterSetPriceHolderV5 is
      * @dev assumes project ID can be derived from tokenId / 1_000_000
      */
     function isAllowlistedNFT(
-        uint256 _projectId,
         address _coreContract,
+        uint256 _projectId,
         address _ownedNFTAddress,
         uint256 _ownedNFTTokenId
     ) external view returns (bool) {

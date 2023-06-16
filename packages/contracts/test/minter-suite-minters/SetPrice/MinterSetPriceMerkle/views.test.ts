@@ -248,6 +248,163 @@ runForEach.forEach((params) => {
       });
     });
 
+    describe("projectMaxHasBeenInvoked", async function () {
+      it("should return true if project has been minted out", async function () {
+        const config = await loadFixture(_beforeEach);
+        const userMerkleProofZero = config.merkleTreeZero.getHexProof(
+          hashAddress(config.accounts.user.address)
+        );
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
+        await config.minter
+          .connect(config.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(
+            config.projectZero,
+            config.genArt721Core.address,
+            2
+          );
+        await config.minter
+          .connect(config.accounts.user)
+          ["purchase(uint256,address,bytes32[])"](
+            config.projectZero,
+            config.genArt721Core.address,
+            userMerkleProofZero,
+            {
+              value: config.pricePerTokenInWei,
+            }
+          );
+        let result = await config.minter.projectMaxHasBeenInvoked(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(result).to.equal(true);
+      });
+    });
+
+    describe("isEngineView", async function () {
+      it("uses cached value when available", async function () {
+        const config = await loadFixture(_beforeEach);
+        const userMerkleProofZero = config.merkleTreeZero.getHexProof(
+          hashAddress(config.accounts.user.address)
+        );
+        // purchase token to trigger isEngine caching
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
+        await config.minter
+          .connect(config.accounts.user)
+          ["purchase(uint256,address,bytes32[])"](
+            config.projectZero,
+            config.genArt721Core.address,
+            userMerkleProofZero,
+            {
+              value: config.pricePerTokenInWei,
+            }
+          );
+        const isEngineView = await config.minter
+          .connect(config.accounts.artist)
+          .isEngineView(config.genArt721Core.address);
+        expect(isEngineView).to.be.equal(config.isEngine);
+      });
+    });
+
+    describe("merkleProjectConfig", async function () {
+      it("returns correct merkleProjectConfig", async function () {
+        const config = await loadFixture(_beforeEach);
+        const merkleRootZero = config.merkleTreeZero.getHexRoot();
+        const [
+          useMaxInvocationsPerAddressOverride,
+          maxInvocationsPerAddressOverride,
+          merkleRoot,
+        ] = await config.minter
+          .connect(config.accounts.artist)
+          .merkleProjectConfig(
+            config.genArt721Core.address,
+            config.projectZero
+          );
+        expect(merkleRoot).to.equal(merkleRootZero);
+        expect(useMaxInvocationsPerAddressOverride).to.equal(false);
+        expect(maxInvocationsPerAddressOverride).to.equal(0);
+
+        await config.minter
+          .connect(config.accounts.artist)
+          .setProjectInvocationsPerAddress(
+            config.genArt721Core.address,
+            config.projectZero,
+            999
+          );
+
+        const [
+          useMaxInvocationsPerAddressOverride2,
+          maxInvocationsPerAddressOverride2,
+          merkleRoot2,
+        ] = await config.minter
+          .connect(config.accounts.artist)
+          .merkleProjectConfig(
+            config.genArt721Core.address,
+            config.projectZero
+          );
+        expect(merkleRoot2).to.equal(merkleRootZero);
+        expect(useMaxInvocationsPerAddressOverride2).to.equal(true);
+        expect(maxInvocationsPerAddressOverride2).to.equal(999);
+      });
+    });
+
+    describe("projectUserMintInvocations", async function () {
+      it("should return correct number of mint invocations for a given user", async function () {
+        const config = await loadFixture(_beforeEach);
+        const userMerkleProofZero = config.merkleTreeZero.getHexProof(
+          hashAddress(config.accounts.user.address)
+        );
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
+
+        const projectUserMintInvocationsNone = await config.minter
+          .connect(config.accounts.artist)
+          .projectUserMintInvocations(
+            config.genArt721Core.address,
+            config.projectZero,
+            config.accounts.user.address
+          );
+
+        expect(projectUserMintInvocationsNone.toNumber()).to.equal(0);
+        // mint two tokens
+        await config.minter
+          .connect(config.accounts.user)
+          ["purchase(uint256,address,bytes32[])"](
+            config.projectZero,
+            config.genArt721Core.address,
+            userMerkleProofZero,
+            {
+              value: config.pricePerTokenInWei,
+            }
+          );
+        const projectUserMintInvocations = await config.minter
+          .connect(config.accounts.artist)
+          .projectUserMintInvocations(
+            config.genArt721Core.address,
+            config.projectZero,
+            config.accounts.user.address
+          );
+
+        expect(projectUserMintInvocations.toNumber()).to.equal(1);
+      });
+    });
+
     describe("projectMaxInvocationsPerAddress", async function () {
       it("is 1 by default", async function () {
         const config = await loadFixture(_beforeEach);
@@ -265,8 +422,8 @@ runForEach.forEach((params) => {
         await config.minter
           .connect(config.accounts.artist)
           .setProjectInvocationsPerAddress(
-            config.projectZero,
             config.genArt721Core.address,
+            config.projectZero,
             0
           );
         const projectMaxInvocationsPerAddress_ = await config.minter
@@ -283,8 +440,8 @@ runForEach.forEach((params) => {
         await config.minter
           .connect(config.accounts.artist)
           .setProjectInvocationsPerAddress(
-            config.projectZero,
             config.genArt721Core.address,
+            config.projectZero,
             999
           );
         const projectMaxInvocationsPerAddress_ = await config.minter
@@ -301,15 +458,15 @@ runForEach.forEach((params) => {
         await config.minter
           .connect(config.accounts.artist)
           .setProjectInvocationsPerAddress(
-            config.projectZero,
             config.genArt721Core.address,
+            config.projectZero,
             0
           );
         await config.minter
           .connect(config.accounts.artist)
           .setProjectInvocationsPerAddress(
-            config.projectZero,
             config.genArt721Core.address,
+            config.projectZero,
             999
           );
         const projectMaxInvocationsPerAddress_ = await config.minter
@@ -326,15 +483,15 @@ runForEach.forEach((params) => {
         await config.minter
           .connect(config.accounts.artist)
           .setProjectInvocationsPerAddress(
-            config.projectZero,
             config.genArt721Core.address,
+            config.projectZero,
             0
           );
         await config.minter
           .connect(config.accounts.artist)
           .setProjectInvocationsPerAddress(
-            config.projectZero,
             config.genArt721Core.address,
+            config.projectZero,
             1
           );
         const projectMaxInvocationsPerAddress_ = await config.minter
@@ -433,8 +590,8 @@ runForEach.forEach((params) => {
         await config.minter
           .connect(config.accounts.artist)
           .setProjectInvocationsPerAddress(
-            config.projectZero,
             config.genArt721Core.address,
+            config.projectZero,
             0
           );
         // check remaining invocations response
@@ -495,8 +652,8 @@ runForEach.forEach((params) => {
         await config.minter
           .connect(config.accounts.artist)
           .setProjectInvocationsPerAddress(
-            config.projectZero,
             config.genArt721Core.address,
+            config.projectZero,
             5
           );
         // check remaining invocations response
@@ -544,8 +701,8 @@ runForEach.forEach((params) => {
         await config.minter
           .connect(config.accounts.artist)
           .setProjectInvocationsPerAddress(
-            config.projectZero,
             config.genArt721Core.address,
+            config.projectZero,
             1
           );
         // check remaining invocations response
@@ -562,6 +719,22 @@ runForEach.forEach((params) => {
         expect(
           projectRemainingInvocationsForAddress_.mintInvocationsRemaining.toNumber()
         ).to.equal(0);
+      });
+    });
+
+    describe("processProofForAddress", async function () {
+      it("returns valid hash from processing proof", async function () {
+        const config = await loadFixture(_beforeEach);
+        const userMerkleProofZero = config.merkleTreeZero.getHexProof(
+          hashAddress(config.accounts.user.address)
+        );
+        const hash = await config.minter
+          .connect(config.accounts.user)
+          .processProofForAddress(
+            userMerkleProofZero,
+            config.accounts.user.address
+          );
+        expect(hash).to.equal(config.merkleTreeZero.getHexRoot());
       });
     });
   });

@@ -3,13 +3,13 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import Mocha from "mocha";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import {
-  AdminACLV0,
-  AdminACLV0__factory,
-  DependencyRegistryV0,
-  GenArt721CoreV1,
-  GenArt721CoreV3,
-} from "../../scripts/contracts";
+// import {
+//   AdminACLV0,
+//   AdminACLV0__factory,
+//   DependencyRegistryV0,
+//   GenArt721CoreV1,
+//   GenArt721CoreV3,
+// } from "../../scripts/contracts";
 
 import {
   T_Config,
@@ -30,11 +30,11 @@ const coreContractsToTest = [
   "GenArt721CoreV3_Explorations", // V3 core explorations contract
 ];
 
-interface DependencyRegistryV0TestContext extends Mocha.Context {
-  dependencyRegistry: DependencyRegistryV0;
-  genArt721Core: GenArt721CoreV3;
-  adminACL: AdminACLV0;
-}
+// interface DependencyRegistryV0TestContext extends Mocha.Context {
+//   dependencyRegistry: DependencyRegistryV0;
+//   genArt721Core: GenArt721CoreV3;
+//   adminACL: AdminACLV0;
+// }
 
 /**
  * Tests for V3 core dealing with configuring projects.

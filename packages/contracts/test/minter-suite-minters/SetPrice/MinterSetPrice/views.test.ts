@@ -111,6 +111,31 @@ runForEach.forEach((params) => {
       });
     });
 
+    describe("isEngineView", async function () {
+      it("uses cached value when available", async function () {
+        const config = await loadFixture(_beforeEach);
+
+        // purchase token to trigger isEngine caching
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
+        await config.minter
+          .connect(config.accounts.artist)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.pricePerTokenInWei,
+          });
+
+        const isEngineView = await config.minter
+          .connect(config.accounts.artist)
+          .isEngineView(config.genArt721Core.address);
+        expect(isEngineView).to.be.equal(config.isEngine);
+      });
+    });
+
     describe("minterVersion", async function () {
       it("correctly reports minterVersion", async function () {
         const config = await loadFixture(_beforeEach);

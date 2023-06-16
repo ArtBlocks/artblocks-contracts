@@ -564,8 +564,8 @@ runForEach.forEach((params) => {
           config.minter
             .connect(config.accounts.user)
             .setProjectInvocationsPerAddress(
-              config.projectZero,
               config.genArt721Core.address,
+              config.projectZero,
               0
             ),
           "Only Artist"
@@ -575,8 +575,8 @@ runForEach.forEach((params) => {
           config.minter
             .connect(config.accounts.additional)
             .setProjectInvocationsPerAddress(
-              config.projectZero,
               config.genArt721Core.address,
+              config.projectZero,
               0
             ),
           "Only Artist"
@@ -585,8 +585,8 @@ runForEach.forEach((params) => {
         await config.minter
           .connect(config.accounts.artist)
           .setProjectInvocationsPerAddress(
-            config.projectZero,
             config.genArt721Core.address,
+            config.projectZero,
             0
           );
       });

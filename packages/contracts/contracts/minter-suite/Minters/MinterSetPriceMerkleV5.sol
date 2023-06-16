@@ -265,16 +265,16 @@ contract MinterSetPriceMerkleV5 is
      * addresses will be able to mint as many times as desired, until the
      * project reaches its maximum invocations.
      * Default is a value of 1 if never configured by artist.
-     * @param _projectId Project ID to toggle the mint limit.
      * @param _coreContract Core contract address for the given project.
+     * @param _projectId Project ID to toggle the mint limit.
      * @param _maxInvocationsPerAddress Maximum allowed invocations per
      * allowlisted address.
      * @dev default value stated above must be updated if the value of
      * CONFIG_USE_MAX_INVOCATIONS_PER_ADDRESS_OVERRIDE is changed.
      */
     function setProjectInvocationsPerAddress(
-        uint256 _projectId,
         address _coreContract,
+        uint256 _projectId,
         uint24 _maxInvocationsPerAddress
     ) external {
         _onlyArtist(_projectId, _coreContract);
@@ -417,6 +417,19 @@ contract MinterSetPriceMerkleV5 is
                 _coreContract
             ][_projectId];
         return _merkleProjectConfig.userMintInvocations[_purchaser];
+    }
+
+    /**
+     * @notice Processes a proof for an address.
+     * @param _proof The proof to process.
+     * @param _address The address to process the proof for.
+     * @return The resulting hash from processing the proof.
+     */
+    function processProofForAddress(
+        bytes32[] calldata _proof,
+        address _address
+    ) external view returns (bytes32) {
+        return MerkleLib.processProofForAddress(_proof, _address);
     }
 
     /**

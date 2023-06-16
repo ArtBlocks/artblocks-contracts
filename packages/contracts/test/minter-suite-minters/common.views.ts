@@ -1,7 +1,11 @@
-import { constants } from "@openzeppelin/test-helpers";
+import { constants, expectRevert } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { T_Config } from "../util/common";
+import {
+  T_Config,
+  deployCoreWithMinterFilter,
+  deployAndGet,
+} from "../util/common";
 
 /**
  * These tests are intended to check common views Minter functionality
@@ -96,6 +100,56 @@ export const Common_Views = async (_beforeEach: () => Promise<T_Config>) => {
         .connect(config.accounts.artist)
         .isEngineView(config.genArt721Core.address);
       expect(isEngineView).to.be.equal(config.isEngine);
+    });
+
+    it("reverts if invalid core contract", async function () {
+      const config = await loadFixture(_beforeEach);
+      const coreContractName = "GenArt721CoreV3_Engine_IncorrectCoreType";
+
+      // deploying random (invalid) core contract
+      const { genArt721Core } = await deployCoreWithMinterFilter(
+        config,
+        coreContractName,
+        "MinterFilterV1"
+      );
+
+      expectRevert(
+        config.minter
+          .connect(config.accounts.artist)
+          .isEngineView(genArt721Core.address),
+        "Unexpected revenue split bytes"
+      );
+    });
+  });
+
+  describe("projectConfig", async function () {
+    it("should return proper response when set", async function () {
+      const config = await loadFixture(_beforeEach);
+      await config.minter
+        .connect(config.accounts.artist)
+        .updatePricePerTokenInWei(
+          config.projectZero,
+          config.genArt721Core.address,
+          config.pricePerTokenInWei
+        );
+      const projectConfig = await config.minter
+        .connect(config.accounts.artist)
+        .projectConfig(config.genArt721Core.address, config.projectZero);
+
+      expect(projectConfig.pricePerTokenInWei).to.equal(
+        config.pricePerTokenInWei
+      );
+      expect(projectConfig.priceIsConfigured).to.equal(true);
+    });
+    it("should return proper response when not set", async function () {
+      const config = await loadFixture(_beforeEach);
+
+      const projectConfig = await config.minter
+        .connect(config.accounts.artist)
+        .projectConfig(config.genArt721Core.address, config.projectZero);
+
+      expect(projectConfig.pricePerTokenInWei).to.equal(constants.ZERO_BYTES32);
+      expect(projectConfig.priceIsConfigured).to.equal(false);
     });
   });
 };

@@ -221,6 +221,86 @@ runForEach.forEach((params) => {
       });
     });
 
+    describe("isEngineView", async function () {
+      it("uses cached value when available", async function () {
+        const config = await loadFixture(_beforeEach);
+
+        // purchase token to trigger isEngine caching
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
+        await config.minter
+          .connect(config.accounts.artist)
+          ["purchase(uint256,address,address,uint256)"](
+            config.projectZero,
+            config.genArt721Core.address,
+            config.genArt721Core.address,
+            config.projectZeroTokenZero.toNumber(),
+            {
+              value: config.pricePerTokenInWei,
+            }
+          );
+        const isEngineView = await config.minter
+          .connect(config.accounts.artist)
+          .isEngineView(config.genArt721Core.address);
+        expect(isEngineView).to.be.equal(config.isEngine);
+      });
+    });
+
+    describe("allowedProjectHolders", async function () {
+      it("should return true for a valid NFT project holding for the given project", async function () {
+        const config = await loadFixture(_beforeEach);
+        const allowedProjectHoldersResponse =
+          await config.minter.allowedProjectHolders(
+            config.genArt721Core.address,
+            config.projectZero,
+            config.genArt721Core.address,
+            config.projectZero
+          );
+        expect(allowedProjectHoldersResponse).to.equal(true);
+      });
+
+      it("should return false for an invalid NFT project holding for the given project", async function () {
+        const config = await loadFixture(_beforeEach);
+        const allowedProjectHoldersResponse =
+          await config.minter.allowedProjectHolders(
+            config.genArt721Core.address,
+            config.projectZero,
+            config.genArt721Core.address,
+            config.projectOne
+          );
+        expect(allowedProjectHoldersResponse).to.equal(false);
+      });
+    });
+
+    describe("isAllowlistedNFT", async function () {
+      it("should return true for a token that is allowlisted", async function () {
+        const config = await loadFixture(_beforeEach);
+        const isAllowlistedNFTResponse = await config.minter.isAllowlistedNFT(
+          config.genArt721Core.address,
+          config.projectZero,
+          config.genArt721Core.address,
+          config.projectZeroTokenZero.toNumber()
+        );
+        expect(isAllowlistedNFTResponse).to.equal(true);
+      });
+
+      it("should return false for a token that is not allowlisted", async function () {
+        const config = await loadFixture(_beforeEach);
+        const isAllowlistedNFTResponse = await config.minter.isAllowlistedNFT(
+          config.genArt721Core.address,
+          config.projectZero,
+          config.genArt721Core.address,
+          config.projectThreeTokenZero.toNumber()
+        );
+        expect(isAllowlistedNFTResponse).to.equal(false);
+      });
+    });
+
     describe("minterVersion", async function () {
       it("correctly reports minterVersion", async function () {
         const config = await loadFixture(_beforeEach);
