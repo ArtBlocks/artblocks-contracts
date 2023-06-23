@@ -94,49 +94,34 @@ for (const coreContractName of coreContractsToTest) {
     describe("addProject", async function () {
       it("only allows approved accounts/contracts to add projects", async function () {
         const config = await loadFixture(_beforeEach);
-        let nextProjectId = await config.genArt721Core.nextProjectId();
 
-        // allow user through admin acl
+        // should reject artist
+        await expectRevert(
+          config.genArt721Core
+            .connect(config.accounts.artist)
+            .addProject(`New Project`, config.accounts.artist.address),
+          "Only AdminACL allowed"
+        );
+
+        // allow artist through admin acl
         await config.adminACL
           .connect(config.accounts.deployer)
           .toggleContractSelectorApproval(
             config.genArt721Core.address,
             "0xcc90e725",
-            config.accounts.user.address
+            config.accounts.artist.address
           );
 
-        // projects 0-10 reserved for owner
-        while (nextProjectId.toNumber() < 11) {
-          const projectName = `Project ${nextProjectId.toNumber()}`;
-          await expectRevert(
-            config.genArt721Core
-              .connect(config.accounts.user)
-              .addProject(projectName, config.accounts.artist.address),
-            "AdminACL: Project IDs 0-10 reserved."
-          );
-          await config.genArt721Core
-            .connect(config.accounts.deployer)
-            .addProject(projectName, config.accounts.artist.address);
-          nextProjectId = await config.genArt721Core.nextProjectId();
-        }
-
-        // user was previously allowed to add projects
+        // artist should now be allowed
         await config.genArt721Core
-          .connect(config.accounts.user)
-          .addProject(`Project 11`, config.accounts.artist.address);
-        // disallow user through admin acl
-        await config.adminACL
-          .connect(config.accounts.deployer)
-          .toggleContractSelectorApproval(
-            config.genArt721Core.address,
-            "0xcc90e725",
-            config.accounts.user.address
-          );
-        // should reject user after toggling off
+          .connect(config.accounts.artist)
+          .addProject(`New Project`, config.accounts.artist.address);
+
+        // should still reject user though
         await expectRevert(
           config.genArt721Core
             .connect(config.accounts.user)
-            .addProject(`Project 12`, config.accounts.artist.address),
+            .addProject(`New Project`, config.accounts.user.address),
           "Only AdminACL allowed"
         );
       });

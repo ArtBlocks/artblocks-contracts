@@ -200,7 +200,7 @@ contract AdminACLV0_PROHIBITION is IAdminACLV0_PROHIBITION, ERC165 {
      * @param _contract The contract address.
      * @param _selector The function selector.
      * @return isApproved The approval status.
-     * @dev this function is public instead of internal so that the right to toggle approvals
+     * @dev this function is public insteaad of internal so that the right to toggle approvals
      * can also be delegated
      */
     function allowed(
@@ -208,20 +208,6 @@ contract AdminACLV0_PROHIBITION is IAdminACLV0_PROHIBITION, ERC165 {
         address _contract,
         bytes4 _selector
     ) public view returns (bool) {
-        IGenArt721CoreContractV3_Base coreV3 = IGenArt721CoreContractV3_Base(
-            _contract
-        );
-
-        if (
-            _selector == IGenArt721CoreContractV3_Base.addProject.selector &&
-            coreV3.nextProjectId() <= 10
-        ) {
-            require(
-                superAdmin == _sender,
-                "AdminACL: Project IDs 0-10 reserved."
-            );
-        }
-
         return
             superAdmin == _sender ||
             getContractSelectorApproval(_contract, _selector, _sender);
@@ -235,7 +221,7 @@ contract AdminACLV0_PROHIBITION is IAdminACLV0_PROHIBITION, ERC165 {
      * @param _selector The function selector.
      * @param _projectId The project ID.
      * @return isApproved The approval status.
-     * @dev this function is public instead of internal so that the right to toggle approvals
+     * @dev this function is public insteaad of internal so that the right to toggle approvals
      * can also be delegated
      */
     function allowed(
