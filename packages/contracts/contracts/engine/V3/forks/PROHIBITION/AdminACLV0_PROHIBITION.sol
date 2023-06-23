@@ -212,11 +212,10 @@ contract AdminACLV0_PROHIBITION is IAdminACLV0_PROHIBITION, ERC165 {
             _contract
         );
 
-        bytes4 addProjectSelector = bytes4(
-            keccak256(bytes("addProject(string,address)"))
-        );
-
-        if (_selector == addProjectSelector && coreV3.nextProjectId() <= 10) {
+        if (
+            _selector == IGenArt721CoreContractV3_Base.addProject.selector &&
+            coreV3.nextProjectId() <= 10
+        ) {
             require(
                 superAdmin == _sender,
                 "AdminACL: Project IDs 0-10 reserved."

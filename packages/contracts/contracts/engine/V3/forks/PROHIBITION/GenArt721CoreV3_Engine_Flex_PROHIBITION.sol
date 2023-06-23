@@ -1128,7 +1128,7 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
         _onlyNonZeroAddress(_artistAddress);
         require(!newProjectsForbidden, "New projects forbidden");
         require(
-            adminACLAllowed(
+            IAdminACLV0_PROHIBITION(address(adminACLContract)).allowed(
                 msg.sender,
                 address(this),
                 this.addProject.selector
@@ -2127,13 +2127,7 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
         address _contract,
         bytes4 _selector
     ) public returns (bool) {
-        return
-            owner() != address(0) &&
-            IAdminACLV0_PROHIBITION(address(adminACLContract)).allowed(
-                _sender,
-                _contract,
-                _selector
-            );
+        return adminACLAllowed(_sender, _contract, _selector, type(uint256).max);
     }
 
     /**
