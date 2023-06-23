@@ -91,6 +91,57 @@ for (const coreContractName of coreContractsToTest) {
       return config;
     }
 
+    describe("addProject", async function () {
+      it("only allows approved accounts/contracts to add projects", async function () {
+        const config = await loadFixture(_beforeEach);
+        let nextProjectId = await config.genArt721Core.nextProjectId();
+
+        // allow user through admin acl
+        await config.adminACL
+          .connect(config.accounts.deployer)
+          .toggleContractSelectorApproval(
+            config.genArt721Core.address,
+            "0xcc90e725",
+            config.accounts.user.address
+          );
+
+        // projects 0-10 reserved for owner
+        while (nextProjectId.toNumber() < 11) {
+          const projectName = `Project ${nextProjectId.toNumber()}`;
+          await expectRevert(
+            config.genArt721Core
+              .connect(config.accounts.user)
+              .addProject(projectName, config.accounts.artist.address),
+            "AdminACL: Project IDs 0-10 reserved."
+          );
+          await config.genArt721Core
+            .connect(config.accounts.deployer)
+            .addProject(projectName, config.accounts.artist.address);
+          nextProjectId = await config.genArt721Core.nextProjectId();
+        }
+
+        // user was previously allowed to add projects
+        await config.genArt721Core
+          .connect(config.accounts.user)
+          .addProject(`Project 11`, config.accounts.artist.address);
+        // disallow user through admin acl
+        await config.adminACL
+          .connect(config.accounts.deployer)
+          .toggleContractSelectorApproval(
+            config.genArt721Core.address,
+            "0xcc90e725",
+            config.accounts.user.address
+          );
+        // should reject user after toggling off
+        await expectRevert(
+          config.genArt721Core
+            .connect(config.accounts.user)
+            .addProject(`Project 12`, config.accounts.artist.address),
+          "Only AdminACL allowed"
+        );
+      });
+    });
+
     describe("imported scripts are non-empty", function () {
       it("ensure diffs are captured if project scripts are deleted", async function () {
         const config = await loadFixture(_beforeEach);
@@ -553,13 +604,22 @@ for (const coreContractName of coreContractsToTest) {
             .proposeArtistPaymentAddressesAndSplits(...config.valuesToUpdateTo),
           "Only artist"
         );
-        // rejects owner as a proposer of updates
-        await expectRevert(
-          config.genArt721Core
-            .connect(config.accounts.deployer)
-            .proposeArtistPaymentAddressesAndSplits(...config.valuesToUpdateTo),
-          "Only artist"
-        );
+        // allow user through admin acl
+        await config.adminACL
+          .connect(config.accounts.deployer)
+          .toggleContractSelectorApproval(
+            config.genArt721Core.address,
+            "0x2b65e67d",
+            config.accounts.user.address
+          );
+        // allows user to propose new values
+        await config.genArt721Core
+          .connect(config.accounts.user)
+          .proposeArtistPaymentAddressesAndSplits(...config.valuesToUpdateTo);
+        // allows owner to propose new values
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .proposeArtistPaymentAddressesAndSplits(...config.valuesToUpdateTo);
         // allows artist to propose new values
         await config.genArt721Core
           .connect(config.accounts.artist)

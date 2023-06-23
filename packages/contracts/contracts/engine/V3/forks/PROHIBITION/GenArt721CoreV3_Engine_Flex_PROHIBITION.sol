@@ -919,7 +919,10 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
         uint256 _additionalPayeeSecondarySalesPercentage
     ) external {
         _onlyValidProjectId(_projectId);
-        _onlyArtist(_projectId);
+        _onlyArtistOrAdminACL(
+            _projectId,
+            this.proposeArtistPaymentAddressesAndSplits.selector
+        );
         _onlyNonZeroAddress(_artistAddress);
         ProjectFinance storage projectFinance = projectIdToFinancials[
             _projectId
@@ -1124,6 +1127,14 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
         _onlyNonEmptyString(_projectName);
         _onlyNonZeroAddress(_artistAddress);
         require(!newProjectsForbidden, "New projects forbidden");
+        require(
+            adminACLAllowed(
+                msg.sender,
+                address(this),
+                this.addProject.selector
+            ),
+            "Only AdminACL allowed"
+        );
         uint256 projectId = _nextProjectId;
         projectIdToFinancials[projectId].artistAddress = _artistAddress;
         projects[projectId].name = _projectName;
@@ -2121,8 +2132,7 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
             IAdminACLV0_PROHIBITION(address(adminACLContract)).allowed(
                 _sender,
                 _contract,
-                _selector,
-                type(uint256).max
+                _selector
             );
     }
 
