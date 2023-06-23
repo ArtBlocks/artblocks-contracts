@@ -1,0 +1,164 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-06-01T16:40:02.437Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/internal-testing/dev-example-alt-splits/deployment-config.dev.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: dev
+[INFO] New Admin ACL AdminACLV0 deployed at address: 0x55A39494693872e0875E3D7A7E674A5297d98622
+[INFO] Randomizer BasicRandomizerV2 deployed at 0xF3873156ED36f9C8aFaE90E21AF4654fee821848
+[INFO] Core GenArt721CoreV3_Engine deployed at 0x188Ad3946b05E62B6DD5F859303615F196bE4501
+[INFO] Minter Filter MinterFilterV1 deployed at 0xb4BAFbbad2e89cf8A317F94e1B37966719adF266
+[INFO] MinterSetPriceV4 deployed at 0x7B3c24BB2E0b72067260938321b9dCCe9E43125D
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0xb4BAFbbad2e89cf8A317F94e1B37966719adF266.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0x7B3c24BB2E0b72067260938321b9dCCe9E43125D on minter filter.
+[INFO] Skipping adding placeholder initial project.
+TypeError: genArt721Core.connect(...).updateRenderProviderSplitPercentagePrimary is not a function
+----------------------------------------
+[INFO] Datetime of deployment: 2023-06-01T16:44:41.297Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/internal-testing/dev-example-alt-splits/deployment-config.dev.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: dev
+[INFO] New Admin ACL AdminACLV0 deployed at address: 0x9083eEd4E5D4acf0e3Fb2bec6c443fFAc2b8cC6f
+[INFO] Randomizer BasicRandomizerV2 deployed at 0x9559CEf98EA1099937319CDa1832B59bb5848732
+[INFO] Core GenArt721CoreV3_Engine deployed at 0x1a21414CD12cE2A01918C00Da13d7Bdf53C85c2a
+[INFO] Minter Filter MinterFilterV1 deployed at 0xdd927665811f034c06435C6fb1C686ecC0a70156
+[INFO] MinterSetPriceV4 deployed at 0x7cA4e74ac933D2a8E1cC4a31b62E7d5Fe073cDBa
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0xdd927665811f034c06435C6fb1C686ecC0a70156.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0x7cA4e74ac933D2a8E1cC4a31b62E7d5Fe073cDBa on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+Error: invalid BigNumber value (argument="value", value=undefined, code=INVALID_ARGUMENT, version=bignumber/5.7.0)
+----------------------------------------
+[INFO] Datetime of deployment: 2023-06-01T16:51:32.165Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/internal-testing/dev-example-alt-splits/deployment-config.dev.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: dev
+[INFO] New Admin ACL AdminACLV0 deployed at address: 0x6E94CC43Dfad903bc472A94338FeeaE504A5844C
+[INFO] Randomizer BasicRandomizerV2 deployed at 0x3d689AbbD39c60694574502E696D02eB64410601
+[INFO] Core GenArt721CoreV3_Engine deployed at 0x599b5B00B8C346101BeD25174087766505Ca5260
+[INFO] Minter Filter MinterFilterV1 deployed at 0xEa2D887D8Eb432091DE03b8265DCB00ECAf5745E
+[INFO] MinterSetPriceV4 deployed at 0x97E7cfe648E5F0d31a794790828FA0A9Bb23D534
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0xEa2D887D8Eb432091DE03b8265DCB00ECAf5745E.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0x97E7cfe648E5F0d31a794790828FA0A9Bb23D534 on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Updated render provider split percentage primary to 15 percent.
+[INFO] Updated render provider split percentage secondary to 100 BPS.
+[INFO] Transferred superAdmin role on adminACL to 0x3c6412FEE019f5c50d6F03Aa6F5045d99d9748c4.
+[INFO] Verifying core contract contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/engine/V3/GenArt721CoreV3_Engine.sol:GenArt721CoreV3_Engine at 0x599b5B00B8C346101BeD25174087766505Ca5260
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract GenArt721CoreV3_Engine on Etherscan.
+https://goerli.etherscan.io/address/0x599b5B00B8C346101BeD25174087766505Ca5260#code
+[INFO] Core contract verified on Etherscan at 0x599b5B00B8C346101BeD25174087766505Ca5260}
+[INFO] Verifying AdminACL contract deployment...
+Compiled 222 Solidity files successfully
+Successfully submitted source code for contract
+contracts/AdminACLV0.sol:AdminACLV0 at 0x6E94CC43Dfad903bc472A94338FeeaE504A5844C
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract AdminACLV0 on Etherscan.
+https://goerli.etherscan.io/address/0x6E94CC43Dfad903bc472A94338FeeaE504A5844C#code
+[INFO] AdminACL contract verified on Etherscan at 0x6E94CC43Dfad903bc472A94338FeeaE504A5844C}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0xEa2D887D8Eb432091DE03b8265DCB00ECAf5745E has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0xEa2D887D8Eb432091DE03b8265DCB00ECAf5745E}
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+The contract 0x97E7cfe648E5F0d31a794790828FA0A9Bb23D534 has already been verified
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0x97E7cfe648E5F0d31a794790828FA0A9Bb23D534}
+Created s3 bucket for https://altdevsplits-goerli.s3.amazonaws.com
+[INFO] Created image bucket altdevsplits-goerli
+[INFO] Deployment details written to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/internal-testing/dev-example-alt-splits/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x599b5b00b8c346101bed25174087766505ca5260",
+  "name": "AltDevSplits",
+  "bucket_name": "altdevsplits-goerli",
+  "default_vertical_name": "fullyonchain"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0x2246475beddf9333b6a6D9217194576E7617Afd1. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x3c6412FEE019f5c50d6F03Aa6F5045d99d9748c4, don't forget to update if requred.
+----------------------------------------
+[INFO] Datetime of deployment: 2023-06-01T21:51:10.513Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/internal-testing/dev-example-alt-splits/deployment-config.dev.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: dev
+----------------------------------------
+[INFO] Datetime of deployment: 2023-06-01T21:51:40.999Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/internal-testing/dev-example-alt-splits/deployment-config.dev.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: dev
+[INFO] New Admin ACL AdminACLV0 deployed at address: 0xF00f3f4f452A355569B39C4448cD7Bb758797A41
+[INFO] Randomizer BasicRandomizerV2 deployed at 0xA21d19fD22bB9d25ad2FD08FAF767c5cB8AC6917
+[INFO] Core GenArt721CoreV3_Engine deployed at 0x812D9673460c7528832722B992e11EAa8d9E72FB
+[INFO] Minter Filter MinterFilterV1 deployed at 0x8154AA1fa79ec78CB5AF3995459B98240FdE99Ad
+[INFO] MinterSetPriceV4 deployed at 0x0B986171cB6A7b7a028d605F1f1C6DC8b8D2fEA7
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0x8154AA1fa79ec78CB5AF3995459B98240FdE99Ad.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0x0B986171cB6A7b7a028d605F1f1C6DC8b8D2fEA7 on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Updated render provider split percentage primary to 15 percent, maintained platform split as 10 percent.
+[INFO] Updated render provider split percentage secondary to 100 BPS, maintained platform split as 250 BPS.
+[INFO] Transferred superAdmin role on adminACL to 0x3c6412FEE019f5c50d6F03Aa6F5045d99d9748c4.
+[INFO] Verifying core contract contract deployment...
+Nothing to compile
+[ACTION] Save the following constructor args config file to a constructor-args.js file, then verify core contract deployment with:
+module.exports = [
+        "AltDevSplits", // name
+        "SPLTDEV", // ticker
+        "0x2246475beddf9333b6a6D9217194576E7617Afd1", // render provider
+        "0x2246475beddf9333b6a6D9217194576E7617Afd1", // platform provider
+        "0xA21d19fD22bB9d25ad2FD08FAF767c5cB8AC6917", // randomizer
+        "0xF00f3f4f452A355569B39C4448cD7Bb758797A41", // admin acl
+        0, // starting project id
+        true, // auto approve artist split proposals
+        "0x2A39132E8d594d2c840D6656327fB26d900C05bA" // engine registry
+      ];
+yarn hardhat verify --network goerli --constructor-args constructor-args.js 0x812D9673460c7528832722B992e11EAa8d9E72FB
+[INFO] Verifying AdminACL contract deployment...
+Compiled 222 Solidity files successfully
+Successfully submitted source code for contract
+contracts/AdminACLV0.sol:AdminACLV0 at 0xF00f3f4f452A355569B39C4448cD7Bb758797A41
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract AdminACLV0 on Etherscan.
+https://goerli.etherscan.io/address/0xF00f3f4f452A355569B39C4448cD7Bb758797A41#code
+[INFO] AdminACL contract verified on Etherscan at 0xF00f3f4f452A355569B39C4448cD7Bb758797A41}
+[INFO] Verifying MinterFilter contract deployment...
+Compiled 222 Solidity files successfully
+Successfully submitted source code for contract
+contracts/minter-suite/MinterFilter/MinterFilterV1.sol:MinterFilterV1 at 0x8154AA1fa79ec78CB5AF3995459B98240FdE99Ad
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterFilterV1 on Etherscan.
+https://goerli.etherscan.io/address/0x8154AA1fa79ec78CB5AF3995459B98240FdE99Ad#code
+[INFO] MinterFilter contract verified on Etherscan at 0x8154AA1fa79ec78CB5AF3995459B98240FdE99Ad}
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+Compiled 222 Solidity files successfully
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterSetPriceV4.sol:MinterSetPriceV4 at 0x0B986171cB6A7b7a028d605F1f1C6DC8b8D2fEA7
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterSetPriceV4 on Etherscan.
+https://goerli.etherscan.io/address/0x0B986171cB6A7b7a028d605F1f1C6DC8b8D2fEA7#code
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0x0B986171cB6A7b7a028d605F1f1C6DC8b8D2fEA7}
+Created s3 bucket for https://altdevsplits-goerli.s3.amazonaws.com
+[INFO] Created image bucket altdevsplits-goerli
+[INFO] Deployment details written to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/internal-testing/dev-example-alt-splits/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x812d9673460c7528832722b992e11eaa8d9e72fb",
+  "name": "AltDevSplits",
+  "bucket_name": "altdevsplits-goerli",
+  "default_vertical_name": "fullyonchain"
+}
+Error upserting contracts: [GraphQL] Uniqueness violation. duplicate key value violates unique constraint "contracts_metadata_name_key"

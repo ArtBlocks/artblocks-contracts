@@ -1,0 +1,89 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-03-29T01:30:25.167Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/bright-moments-II/deployment-config.dev.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV0 deployed at address: 0xd8CFd77956b3403f60a65F5726913d4FE40207c1
+[INFO] Randomizer BasicRandomizerV2 deployed at 0xbCaC04C9622Dd2bd6cae3495575A60B798c9fac5
+[INFO] Core GenArt721CoreV3_Engine deployed at 0xBA9ae43837a9ee16927720ff0c2065621A5ABA07
+[INFO] Minter Filter MinterFilterV1 deployed at 0xC0551C3dBfdD3045b4f5CBCa030db9B954B4C4CE
+[INFO] MinterSetPriceV4 deployed at 0xB4Fe7B2e924C5Fd069f4f2D767e8AC50f8299fba
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0xC0551C3dBfdD3045b4f5CBCa030db9B954B4C4CE.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0xB4Fe7B2e924C5Fd069f4f2D767e8AC50f8299fba on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0x18B7511938FBe2EE08ADf3d4A24edB00A5C9B783.
+[INFO] Verifying core contract contract deployment...
+The contract 0xBA9ae43837a9ee16927720ff0c2065621A5ABA07 has already been verified
+[INFO] Core contract verified on Etherscan at 0xBA9ae43837a9ee16927720ff0c2065621A5ABA07}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0xd8CFd77956b3403f60a65F5726913d4FE40207c1 has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0xd8CFd77956b3403f60a65F5726913d4FE40207c1}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0xC0551C3dBfdD3045b4f5CBCa030db9B954B4C4CE has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0xC0551C3dBfdD3045b4f5CBCa030db9B954B4C4CE}
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+The contract 0xB4Fe7B2e924C5Fd069f4f2D767e8AC50f8299fba has already been verified
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0xB4Fe7B2e924C5Fd069f4f2D767e8AC50f8299fba}
+Created s3 bucket for https://bright-moments-ii-goerli.s3.amazonaws.com
+[INFO] Created image bucket bright-moments-ii-goerli
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/bright-moments-II/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0xba9ae43837a9ee16927720ff0c2065621a5aba07",
+  "name": "Bright Moments II",
+  "bucket_name": "bright-moments-ii-goerli",
+  "default_vertical_name": "fullyonchain"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63, don't forget to update if requred.
+----------------------------------------
+[INFO] Datetime of deployment: 2023-06-12T23:39:55.063Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/bright-moments-II/deployment-config.arbitrum.ts
+[INFO] Deploying to network: arbitrum-goerli
+[INFO] Deploying to environment: arbitrum-staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x06Bdff0A69d1b8E18C5B27b03945f024d3490691
+[INFO] Randomizer BasicRandomizerV2 deployed at 0xF9AbD90B27dBfbeD4eF05CAdCd9c95CDc88d52c2
+[INFO] Core GenArt721CoreV3_Engine deployed at 0xa319C382a702682129fcbF55d514E61a16f97f9c
+[INFO] Minter Filter MinterFilterV1 deployed at 0x463B8CED7D22a55Aa4A5d69EF6a54a08AA0feB93
+[INFO] MinterSetPriceV4 deployed at 0x3b1Fe77D72e2DE15EF3A1ff83176e9F9af9E292A
+[INFO] MinterDAExpSettlementV1 deployed at 0xa1577a3EB47CB49afB6b8F53cBcF0E9d613ABEB4
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0x463B8CED7D22a55Aa4A5d69EF6a54a08AA0feB93.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0x3b1Fe77D72e2DE15EF3A1ff83176e9F9af9E292A on minter filter.
+[INFO] Allowlisted minter MinterDAExpSettlementV1 at 0xa1577a3EB47CB49afB6b8F53cBcF0E9d613ABEB4 on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0x18B7511938FBe2EE08ADf3d4A24edB00A5C9B783.
+[INFO] Verifying core contract contract deployment...
+The contract 0xa319C382a702682129fcbF55d514E61a16f97f9c has already been verified
+[INFO] Core contract verified on Etherscan at 0xa319C382a702682129fcbF55d514E61a16f97f9c}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0x06Bdff0A69d1b8E18C5B27b03945f024d3490691 has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0x06Bdff0A69d1b8E18C5B27b03945f024d3490691}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0x463B8CED7D22a55Aa4A5d69EF6a54a08AA0feB93 has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0x463B8CED7D22a55Aa4A5d69EF6a54a08AA0feB93}
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+The contract 0x3b1Fe77D72e2DE15EF3A1ff83176e9F9af9E292A has already been verified
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0x3b1Fe77D72e2DE15EF3A1ff83176e9F9af9E292A}
+[INFO] Verifying MinterDAExpSettlementV1 contract deployment...
+The contract 0xa1577a3EB47CB49afB6b8F53cBcF0E9d613ABEB4 has already been verified
+[INFO] MinterDAExpSettlementV1 contract verified on Etherscan at 0xa1577a3EB47CB49afB6b8F53cBcF0E9d613ABEB4}
+Created s3 bucket for https://bright-moments-arbitrum-arbitrum-goerli.s3.amazonaws.com
+[INFO] Created image bucket bright-moments-arbitrum-arbitrum-goerli
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/bright-moments-II/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0xa319c382a702682129fcbf55d514e61a16f97f9c",
+  "name": "Bright Moments Arbitrum",
+  "bucket_name": "bright-moments-arbitrum-arbitrum-goerli",
+  "default_vertical_name": "fullyonchain"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x18B7511938FBe2EE08ADf3d4A24edB00A5C9B783, don't forget to update if requred.

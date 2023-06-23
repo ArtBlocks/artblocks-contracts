@@ -1,0 +1,64 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-05-12T23:44:42.895Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/verisart-flex/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x924C64F66BD616167552ed3f5D2019466558c433
+[INFO] Randomizer BasicRandomizerV2 deployed at 0x9713A4C5a3f048E8DA96f8c77e3F363BdC602107
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x0A38Ed5437A8e30481dfB421cbe9F3AD8282d4E6
+[INFO] Minter Filter MinterFilterV1 deployed at 0xCF077EA7F0BEc003d9ac02D5f5AccCF5A77b157F
+[INFO] MinterSetPriceV4 deployed at 0xA10e9B31aC9e07f233fF4c8bC2654515346a6fE8
+[INFO] MinterSetPriceERC20V4 deployed at 0x330aAC7274b12258646A697C7367B70EBD6a1900
+[INFO] MinterHolderV4 deployed at 0xB0AE14FA85765D5d40b370cB3994CdD84755e99A
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0xCF077EA7F0BEc003d9ac02D5f5AccCF5A77b157F.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0xA10e9B31aC9e07f233fF4c8bC2654515346a6fE8 on minter filter.
+[INFO] Allowlisted minter MinterSetPriceERC20V4 at 0x330aAC7274b12258646A697C7367B70EBD6a1900 on minter filter.
+[INFO] Allowlisted minter MinterHolderV4 at 0xB0AE14FA85765D5d40b370cB3994CdD84755e99A on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0x97FD319E3d5283296583035C5AdDef1e99e21a2E.
+[INFO] Verifying core contract contract deployment...
+The contract 0x0A38Ed5437A8e30481dfB421cbe9F3AD8282d4E6 has already been verified
+[INFO] Core contract verified on Etherscan at 0x0A38Ed5437A8e30481dfB421cbe9F3AD8282d4E6}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0x924C64F66BD616167552ed3f5D2019466558c433 has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0x924C64F66BD616167552ed3f5D2019466558c433}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0xCF077EA7F0BEc003d9ac02D5f5AccCF5A77b157F has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0xCF077EA7F0BEc003d9ac02D5f5AccCF5A77b157F}
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+The contract 0xA10e9B31aC9e07f233fF4c8bC2654515346a6fE8 has already been verified
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0xA10e9B31aC9e07f233fF4c8bC2654515346a6fE8}
+[INFO] Verifying MinterSetPriceERC20V4 contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterSetPriceERC20V4.sol:MinterSetPriceERC20V4 at 0x330aAC7274b12258646A697C7367B70EBD6a1900
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterSetPriceERC20V4 on Etherscan.
+https://goerli.etherscan.io/address/0x330aAC7274b12258646A697C7367B70EBD6a1900#code
+[INFO] MinterSetPriceERC20V4 contract verified on Etherscan at 0x330aAC7274b12258646A697C7367B70EBD6a1900}
+[INFO] Verifying MinterHolderV4 contract deployment...
+Compiled 211 Solidity files successfully
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterHolderV4.sol:MinterHolderV4 at 0xB0AE14FA85765D5d40b370cB3994CdD84755e99A
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterHolderV4 on Etherscan.
+https://goerli.etherscan.io/address/0xB0AE14FA85765D5d40b370cB3994CdD84755e99A#code
+[INFO] MinterHolderV4 contract verified on Etherscan at 0xB0AE14FA85765D5d40b370cB3994CdD84755e99A}
+Created s3 bucket for https://verisart-test-goerli.s3.amazonaws.com
+[INFO] Created image bucket verisart-test-goerli
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/deployments/engine/V3/partners/verisart-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x0a38ed5437a8e30481dfb421cbe9f3ad8282d4e6",
+  "name": "Verisart Test",
+  "bucket_name": "verisart-test-goerli",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x97FD319E3d5283296583035C5AdDef1e99e21a2E, don't forget to update if requred.
