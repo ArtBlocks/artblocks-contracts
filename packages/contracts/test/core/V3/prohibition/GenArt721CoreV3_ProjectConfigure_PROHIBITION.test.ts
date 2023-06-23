@@ -100,7 +100,7 @@ for (const coreContractName of coreContractsToTest) {
           config.genArt721Core
             .connect(config.accounts.artist)
             .addProject(`New Project`, config.accounts.artist.address),
-          "Only AdminACL allowed"
+          "Only Admin ACL allowed"
         );
 
         // allow artist through admin acl
@@ -122,7 +122,7 @@ for (const coreContractName of coreContractsToTest) {
           config.genArt721Core
             .connect(config.accounts.user)
             .addProject(`New Project`, config.accounts.user.address),
-          "Only AdminACL allowed"
+          "Only Admin ACL allowed"
         );
       });
     });
