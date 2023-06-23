@@ -23,6 +23,7 @@
     "deploy:dev:v3-engine": "yarn codegen && NODE_ENV=dev yarn hardhat run --network goerli scripts/engine/V3/generic-engine-deployer.ts",
     "deploy:dev-arbitrum:v3-engine": "yarn codegen && NODE_ENV=arbitrum-dev yarn hardhat run --network arbitrum-goerli scripts/engine/V3/generic-engine-deployer.ts",
     "deploy:staging-arbitrum:v3-engine": "yarn codegen && NODE_ENV=arbitrum-staging yarn hardhat run --network arbitrum-goerli scripts/engine/V3/generic-engine-deployer.ts",
+    "deploy:arbitrum:v3-engine": "yarn codegen && NODE_ENV=arbitrum yarn hardhat run --network arbitrum scripts/engine/V3/generic-engine-deployer.ts",
     "deploy:staging:v3-engine": "yarn codegen && NODE_ENV=staging yarn hardhat run --network goerli scripts/engine/V3/generic-engine-deployer.ts",
     "deploy:mainnet:v3-engine": "yarn codegen && NODE_ENV=mainnet yarn hardhat run --network mainnet scripts/engine/V3/generic-engine-deployer.ts",
     "deploy:goerli:minter": "yarn hardhat run --network goerli scripts/minter-deployments/V3/generic-minter-deployer-v3core.ts",
