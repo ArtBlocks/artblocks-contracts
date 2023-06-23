@@ -166,4 +166,10 @@ interface IGenArt721CoreContractV3_Base is IManifold {
         uint256 _projectId,
         address _by
     ) external returns (uint256 tokenId);
+
+    // function to add a project
+    function addProject(
+        string memory _projectName,
+        address payable _artistAddress
+    ) external;
 }
