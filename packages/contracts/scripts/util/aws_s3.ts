@@ -9,7 +9,13 @@ const {
 
 // Docs: https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-s3/index.html
 
-const supportedNetworks = ["mainnet", "ropsten", "goerli", "arbitrum-goerli"];
+const supportedNetworks = [
+  "mainnet",
+  "ropsten",
+  "goerli",
+  "arbitrum-goerli",
+  "arbitrum",
+];
 
 const awsCreds = {
   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
