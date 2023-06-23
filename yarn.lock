@@ -11166,10 +11166,10 @@ hardhat-gas-reporter@^1.0.9:
     eth-gas-reporter "^0.2.25"
     sha1 "^1.1.1"
 
-hardhat@^2.15.0:
-  version "2.15.0"
-  resolved "https://registry.yarnpkg.com/hardhat/-/hardhat-2.15.0.tgz#0cacb2b44c4c4651aa8ab649fef12804848b0267"
-  integrity sha512-cC9tM/N10YaES04zPOp7yR13iX3YibqaNmi0//Ep40Nt9ELIJx3kFpQmucur0PAIfXYpGnw5RuXHNLkxpnVHEw==
+hardhat@^2.16.0:
+  version "2.16.0"
+  resolved "https://registry.yarnpkg.com/hardhat/-/hardhat-2.16.0.tgz#c5611d433416b31f6ce92f733b1f1b5236ad6230"
+  integrity sha512-7VQEJPQRAZdtrYUZaU9GgCpP3MBNy/pTdscARNJQMWKj5C+R7V32G5uIZKIqZ4QiqXa6CBfxxe+G+ahxUbHZHA==
   dependencies:
     "@ethersproject/abi" "^5.1.2"
     "@metamask/eth-sig-util" "^4.0.0"
@@ -11210,7 +11210,6 @@ hardhat@^2.15.0:
     mnemonist "^0.38.0"
     mocha "^10.0.0"
     p-map "^4.0.0"
-    qs "^6.7.0"
     raw-body "^2.4.1"
     resolve "1.17.0"
     semver "^6.3.0"
@@ -12273,7 +12272,7 @@ istanbul@0.3.x:
     fileset "0.2.x"
     handlebars "^4.0.1"
     js-yaml "3.x"
-    mkdirp v0.5.x
+    mkdirp "0.5.x"
     nopt "3.x"
     once "1.x"
     resolve "1.1.x"
@@ -15363,7 +15362,7 @@ q@^1.2.0:
   resolved "https://registry.yarnpkg.com/q/-/q-1.5.1.tgz#7e32f75b41381291d04611f1bf14109ac00651d7"
   integrity sha512-kV/CThkXo6xyFEZUugw/+pIOywXcDbFYgSct5cT3gqlbkBE1SJdwy6UQoZvodiWF/ckQLZyDE/Bu1M6gVu5lVw==
 
-qs@6.11.0, qs@^6.4.0, qs@^6.7.0:
+qs@6.11.0, qs@^6.4.0:
   version "6.11.0"
   resolved "https://registry.yarnpkg.com/qs/-/qs-6.11.0.tgz#fd0d963446f7a65e1367e01abd85429453f0c37a"
   integrity sha512-MvjoMCJwEarSbUYk5O+nmoSzSutSsTwF85zcHPQ9OrlFoZOYIjaqBAJIqIXjptyD5vThxGq52Xu/MaJzRkIk4Q==
@@ -16066,7 +16065,7 @@ sc-istanbul@^0.4.5:
     glob "^5.0.15"
     handlebars "^4.0.1"
     js-yaml "3.x"
-    mkdirp v0.5.x
+    mkdirp "0.5.x"
     nopt "3.x"
     once "1.x"
     resolve "1.1.x"
