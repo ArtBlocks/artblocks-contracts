@@ -1133,7 +1133,7 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
                 address(this),
                 this.addProject.selector
             ),
-            "Only AdminACL allowed"
+            "Only Admin ACL allowed"
         );
         uint256 projectId = _nextProjectId;
         projectIdToFinancials[projectId].artistAddress = _artistAddress;
