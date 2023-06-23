@@ -2127,7 +2127,8 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
         address _contract,
         bytes4 _selector
     ) public returns (bool) {
-        return adminACLAllowed(_sender, _contract, _selector, type(uint256).max);
+        return
+            adminACLAllowed(_sender, _contract, _selector, type(uint256).max);
     }
 
     /**
