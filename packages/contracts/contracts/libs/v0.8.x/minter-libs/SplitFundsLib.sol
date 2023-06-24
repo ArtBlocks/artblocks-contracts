@@ -13,7 +13,7 @@ pragma solidity ^0.8.0;
 /**
  * @title Art Blocks Split Funds Library
  * @notice This library is designed for the Art Blocks platform. It splits
- * Ether (ETH) and ERC-20 token funds among stakeholders, such as sender
+ * Ether (ETH) and ERC20 token funds among stakeholders, such as sender
  * (if refund is applicable), providers, artists, and artists' additional
  * payees.
  * @author Art Blocks Inc.
@@ -146,7 +146,7 @@ library SplitFundsLib {
     }
 
     /**
-     * @notice splits ERC-20 funds between providers, artist, and artist's
+     * @notice splits ERC20 funds between providers, artist, and artist's
      * additional payee, for a token purchased on project `_projectId`.
      * @dev possible DoS during splits is acknowledged, and mitigated by
      * business practices, including end-to-end testing on mainnet, and
@@ -156,7 +156,7 @@ library SplitFundsLib {
         uint256 projectId,
         uint256 pricePerTokenInWei,
         address currencyAddress,
-        address genArtCoreContract,
+        address coreContract,
         bool _isEngine
     ) internal {
         IERC20 _projectCurrency = IERC20(currencyAddress);
@@ -182,7 +182,7 @@ library SplitFundsLib {
                 artistAddress_,
                 additionalPayeePrimaryRevenue_,
                 additionalPayeePrimaryAddress_
-            ) = IGenArt721CoreContractV3_Engine(genArtCoreContract)
+            ) = IGenArt721CoreContractV3_Engine(coreContract)
                 .getPrimaryRevenueSplits(projectId, pricePerTokenInWei);
             // Platform Provider payment (only possible if engine)
             if (platformProviderRevenue_ > 0) {
@@ -201,8 +201,10 @@ library SplitFundsLib {
                 artistAddress_,
                 additionalPayeePrimaryRevenue_,
                 additionalPayeePrimaryAddress_
-            ) = IGenArt721CoreContractV3(genArtCoreContract)
-                .getPrimaryRevenueSplits(projectId, pricePerTokenInWei);
+            ) = IGenArt721CoreContractV3(coreContract).getPrimaryRevenueSplits(
+                projectId,
+                pricePerTokenInWei
+            );
         }
         // Art Blocks payment
         if (renderProviderRevenue_ > 0) {
