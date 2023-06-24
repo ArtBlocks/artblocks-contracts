@@ -368,7 +368,7 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
             storage _projectCurrencyConfig = _projectCurrencyConfigs[
                 _coreContract
             ][_projectId];
-        balance = ERC20Lib.getERC20BalanceOf(
+        balance = ERC20Lib.getERC20Balance(
             _projectCurrencyConfig.currencyAddress,
             msg.sender
         );
@@ -384,14 +384,15 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
      * @return remaining Remaining allowance of ERC20
      */
     function checkYourAllowanceOfProjectERC20(
-        uint256 _projectId
+        uint256 _projectId,
+        address _coreContract
     ) external view returns (uint256 remaining) {
         ERC20Lib.ProjectCurrencyConfig
             storage _projectCurrencyConfig = _projectCurrencyConfigs[
                 _coreContract
             ][_projectId];
         remaining = ERC20Lib.getERC20Allowance({
-            _currencyAddress: _projectCurrencyConfigs.currencyAddress,
+            _currencyAddress: _projectCurrencyConfig.currencyAddress,
             _walletAddress: msg.sender,
             _spenderAddress: address(this)
         });
