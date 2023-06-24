@@ -80,6 +80,7 @@ library ERC20Lib {
      * Get the balance of `_currencyAddress` ERC20 tokens for `_walletAddress`.
      * @param _currencyAddress ERC20 token address.
      * @param _walletAddress wallet address.
+     * @return balance
      */
     function getERC20Balance(
         address _currencyAddress,
@@ -88,6 +89,14 @@ library ERC20Lib {
         return IERC20(_currencyAddress).balanceOf(_walletAddress);
     }
 
+    /**
+     * Gets the allowance of `_spenderAddress` to spend `_walletAddress`'s
+     * `_currencyAddress` ERC20 tokens.
+     * @param _currencyAddress ERC20 token address.
+     * @param _walletAddress wallet address.
+     * @param _spenderAddress spender address.
+     * @return allowance
+     */
     function getERC20Allowance(
         address _currencyAddress,
         address _walletAddress,
@@ -97,6 +106,6 @@ library ERC20Lib {
             _walletAddress,
             _spenderAddress
         );
-        return allowance
+        return allowance;
     }
 }
