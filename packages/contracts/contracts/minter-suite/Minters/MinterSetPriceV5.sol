@@ -202,8 +202,8 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
      * configuration data.
      */
     function maxInvocationsProjectConfig(
-        address _coreContract,
-        uint256 _projectId
+        uint256 _projectId,
+        address _coreContract
     )
         external
         view
@@ -219,8 +219,8 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
      * @return ProjectConfig instance with the project configuration data.
      */
     function projectConfig(
-        address _coreContract,
-        uint256 _projectId
+        uint256 _projectId,
+        address _coreContract
     ) external view returns (ProjectConfig memory) {
         return _projectConfigMapping[_coreContract][_projectId];
     }

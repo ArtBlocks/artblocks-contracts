@@ -445,14 +445,14 @@ contract MinterSetPriceHolderV5 is
     // public getter functions
     /**
      * @notice Gets the maximum invocations project configuration.
-     * @param _contractAddress The address of the contract where the data is stored.
      * @param _projectId The ID of the project whose data needs to be fetched.
+     * @param _contractAddress The address of the contract where the data is stored.
      * @return MaxInvocationsLib.MaxInvocationsProjectConfig instance with the
      * configuration data.
      */
     function maxInvocationsProjectConfig(
-        address _contractAddress,
-        uint256 _projectId
+        uint256 _projectId,
+        address _contractAddress
     )
         external
         view
@@ -464,13 +464,13 @@ contract MinterSetPriceHolderV5 is
 
     /**
      * @notice Gets the base project configuration.
-     * @param _contractAddress The address of the contract where the data is stored.
      * @param _projectId The ID of the project whose data needs to be fetched.
+     * @param _contractAddress The address of the contract where the data is stored.
      * @return ProjectConfig instance with the project configuration data.
      */
     function projectConfig(
-        address _contractAddress,
-        uint256 _projectId
+        uint256 _projectId,
+        address _contractAddress
     ) external view returns (ProjectConfig memory) {
         return _projectConfigMapping[_contractAddress][_projectId];
     }
@@ -479,15 +479,15 @@ contract MinterSetPriceHolderV5 is
      * @notice Checks if a specific NFT owner is allowed in a given project.
      * @dev This function retrieves the allowance status of an NFT owner
      * within a specific project from the allowedProjectHoldersMapping.
-     * @param _coreContract Core contract address for the given project.
      * @param _projectId The ID of the project to check.
+     * @param _coreContract Core contract address for the given project.
      * @param _ownedNFTAddress The address of the owned NFT contract.
      * @param _ownedNFTProjectId The ID of the owned NFT project.
      * @return bool True if the NFT owner is allowed in the given project, False otherwise.
      */
     function allowedProjectHolders(
-        address _coreContract,
         uint256 _projectId,
+        address _coreContract,
         address _ownedNFTAddress,
         uint256 _ownedNFTProjectId
     ) external view returns (bool) {
@@ -498,8 +498,8 @@ contract MinterSetPriceHolderV5 is
 
     /**
      * @notice Returns if token is an allowlisted NFT for project `_projectId`.
-     * @param _coreContract Core contract address for the given project.
      * @param _projectId Project ID to be checked.
+     * @param _coreContract Core contract address for the given project.
      * @param _ownedNFTAddress ERC-721 NFT token address to be checked.
      * @param _ownedNFTTokenId ERC-721 NFT token ID to be checked.
      * @return bool Token is allowlisted
@@ -507,8 +507,8 @@ contract MinterSetPriceHolderV5 is
      * @dev assumes project ID can be derived from tokenId / 1_000_000
      */
     function isAllowlistedNFT(
-        address _coreContract,
         uint256 _projectId,
+        address _coreContract,
         address _ownedNFTAddress,
         uint256 _ownedNFTTokenId
     ) external view returns (bool) {

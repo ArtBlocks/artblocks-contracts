@@ -220,15 +220,15 @@ runForEach.forEach((params) => {
       await config.minter
         .connect(config.accounts.artist)
         .setProjectInvocationsPerAddress(
-          config.genArt721Core.address,
           config.projectZero,
+          config.genArt721Core.address,
           16
         );
       await config.minter
         .connect(config.accounts.artist)
         .setProjectInvocationsPerAddress(
-          config.genArt721Core.address,
           config.projectOne,
+          config.genArt721Core.address,
           16
         );
 
@@ -1012,8 +1012,8 @@ runForEach.forEach((params) => {
             await config.minter
               .connect(config.accounts.artist)
               .setProjectInvocationsPerAddress(
-                config.genArt721Core.address,
                 config.projectOne,
+                config.genArt721Core.address,
                 1
               );
             await config.minter
