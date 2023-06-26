@@ -40,3 +40,7 @@ This directory contains a shared ESLint configuration used across the repository
 ### tsconfig
 
 This directory contains a shared TypeScript configuration used across the repository. It's not published as a separate package.
+
+# License
+
+The Art Blocks `artblocks-contracts` repo is open source software licensed under the GNU Lesser General Public License v3.0. For full license text, please see our [LICENSE](https://github.com/ArtBlocks/artblocks-contracts/blob/main/packages/contracts/LICENSE) declaration file.

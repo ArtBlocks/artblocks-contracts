@@ -49,4 +49,9 @@ export const KNOWN_ENGINE_REGISTRIES = {
     "0x3b30d421a6dA95694EaaE09971424F15Eb375269":
       "0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63",
   },
+  arbitrum: {
+    // [INDEXED] arbitrum mainnet | deployer: arbitrum mainnet deployer wallet
+    "0xdAe755c2944Ec125a0D8D5CB082c22837593441a":
+      "0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63",
+  },
 };
