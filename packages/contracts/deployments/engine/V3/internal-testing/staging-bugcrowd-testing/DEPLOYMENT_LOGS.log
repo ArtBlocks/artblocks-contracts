@@ -1,0 +1,120 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-06-13T21:38:18.522Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/internal-testing/staging-bugcrowd-testing/deployment-config.staging-a.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x9898a33C2ab8C08E1e1e151564845B537D41FD92
+[INFO] Randomizer BasicRandomizerV2 deployed at 0x3ea84e64B96F94AA1C37a9B0b395ea4FCF360f77
+[INFO] Core GenArt721CoreV3_Engine deployed at 0x4BFF56b33D6C1cAC2Ef5d59415B64363897E5B58
+[INFO] Minter Filter MinterFilterV1 deployed at 0x335EF40259B75E8Efdb42F34E37170CB3FC515CD
+[INFO] MinterSetPriceV4 deployed at 0x6Ef475E4BB72a61D3a6D558Ea23f74ADE88D4058
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0x335EF40259B75E8Efdb42F34E37170CB3FC515CD.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0x6Ef475E4BB72a61D3a6D558Ea23f74ADE88D4058 on minter filter.
+[INFO] Added Bugcrowd Engine Setup A project 0 placeholder on Bugcrowd Engine Setup A contract, artist is 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63.
+[INFO] Configured set price minter (0x6Ef475E4BB72a61D3a6D558Ea23f74ADE88D4058) for project 0.
+[INFO] Configured minter price project 0.
+[INFO] Minted token 0 for project 0.
+[INFO] Skipping transfer of superAdmin role on adminACL.
+[INFO] Verifying core contract contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/engine/V3/GenArt721CoreV3_Engine.sol:GenArt721CoreV3_Engine at 0x4BFF56b33D6C1cAC2Ef5d59415B64363897E5B58
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract GenArt721CoreV3_Engine on Etherscan.
+https://goerli.etherscan.io/address/0x4BFF56b33D6C1cAC2Ef5d59415B64363897E5B58#code
+[INFO] Core contract verified on Etherscan at 0x4BFF56b33D6C1cAC2Ef5d59415B64363897E5B58}
+[INFO] Verifying AdminACL contract deployment...
+Compiled 222 Solidity files successfully
+Successfully submitted source code for contract
+contracts/AdminACLV1.sol:AdminACLV1 at 0x9898a33C2ab8C08E1e1e151564845B537D41FD92
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract AdminACLV1 on Etherscan.
+https://goerli.etherscan.io/address/0x9898a33C2ab8C08E1e1e151564845B537D41FD92#code
+[INFO] AdminACL contract verified on Etherscan at 0x9898a33C2ab8C08E1e1e151564845B537D41FD92}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0x335EF40259B75E8Efdb42F34E37170CB3FC515CD has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0x335EF40259B75E8Efdb42F34E37170CB3FC515CD}
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+The contract 0x6Ef475E4BB72a61D3a6D558Ea23f74ADE88D4058 has already been verified
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0x6Ef475E4BB72a61D3a6D558Ea23f74ADE88D4058}
+Created s3 bucket for https://bugcrowd-engine-setup-a-goerli.s3.amazonaws.com
+[INFO] Created image bucket bugcrowd-engine-setup-a-goerli
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/internal-testing/staging-bugcrowd-testing/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x4bff56b33d6c1cac2ef5d59415b64363897e5b58",
+  "name": "Bugcrowd Engine Setup A",
+  "bucket_name": "bugcrowd-engine-setup-a-goerli",
+  "default_vertical_name": "fullyonchain"
+}
+Successfully upserted 1 contract
+Upserting 1 project...
+Projects metadata upsert input:
+{
+  "id": "0x4bff56b33d6c1cac2ef5d59415b64363897e5b58-0",
+  "contract_address": "0x4bff56b33d6c1cac2ef5d59415b64363897e5b58",
+  "project_id": "0",
+  "artist_address": "0xb8559af91377e5bab052a4e9a5088cb65a9a4d63",
+  "vertical_name": "fullyonchain"
+}
+Successfully upserted 1 project
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63, don't forget to update if requred.
+----------------------------------------
+[INFO] Datetime of deployment: 2023-06-13T21:50:44.988Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/internal-testing/staging-bugcrowd-testing/deployment-config.staging-b.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x65A04fbD022ca73A965B867D5C3931c6C03c5F65
+[INFO] Randomizer BasicRandomizerV2 deployed at 0xaC96C093fa50eFb0523a35D97667316f5e83779d
+[INFO] Core GenArt721CoreV3_Engine deployed at 0x273C8Eb513c1351b1F4af822D9bEC3746C23B4cf
+[INFO] Minter Filter MinterFilterV1 deployed at 0xDb02c5ca29d9a2f94b08DfA215Be688d1dFa1dBA
+[INFO] MinterSetPriceV4 deployed at 0x4156A5A8696C8e00B7f0ba15A03386B0dbE28c43
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0xDb02c5ca29d9a2f94b08DfA215Be688d1dFa1dBA.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0x4156A5A8696C8e00B7f0ba15A03386B0dbE28c43 on minter filter.
+[INFO] Added Bugcrowd Engine Setup B project 0 placeholder on Bugcrowd Engine Setup B contract, artist is 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63.
+[INFO] Configured set price minter (0x4156A5A8696C8e00B7f0ba15A03386B0dbE28c43) for project 0.
+[INFO] Configured minter price project 0.
+[INFO] Minted token 0 for project 0.
+[INFO] Skipping transfer of superAdmin role on adminACL.
+[INFO] Verifying core contract contract deployment...
+The contract 0x273C8Eb513c1351b1F4af822D9bEC3746C23B4cf has already been verified
+[INFO] Core contract verified on Etherscan at 0x273C8Eb513c1351b1F4af822D9bEC3746C23B4cf}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0x65A04fbD022ca73A965B867D5C3931c6C03c5F65 has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0x65A04fbD022ca73A965B867D5C3931c6C03c5F65}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0xDb02c5ca29d9a2f94b08DfA215Be688d1dFa1dBA has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0xDb02c5ca29d9a2f94b08DfA215Be688d1dFa1dBA}
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+The contract 0x4156A5A8696C8e00B7f0ba15A03386B0dbE28c43 has already been verified
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0x4156A5A8696C8e00B7f0ba15A03386B0dbE28c43}
+Created s3 bucket for https://bugcrowd-engine-setup-b-goerli.s3.amazonaws.com
+[INFO] Created image bucket bugcrowd-engine-setup-b-goerli
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/internal-testing/staging-bugcrowd-testing/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x273c8eb513c1351b1f4af822d9bec3746c23b4cf",
+  "name": "Bugcrowd Engine Setup B",
+  "bucket_name": "bugcrowd-engine-setup-b-goerli",
+  "default_vertical_name": "fullyonchain"
+}
+Successfully upserted 1 contract
+Upserting 1 project...
+Projects metadata upsert input:
+{
+  "id": "0x273c8eb513c1351b1f4af822d9bec3746c23b4cf-0",
+  "contract_address": "0x273c8eb513c1351b1f4af822d9bec3746c23b4cf",
+  "project_id": "0",
+  "artist_address": "0xb8559af91377e5bab052a4e9a5088cb65a9a4d63",
+  "vertical_name": "fullyonchain"
+}
+Successfully upserted 1 project
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63, don't forget to update if requred.

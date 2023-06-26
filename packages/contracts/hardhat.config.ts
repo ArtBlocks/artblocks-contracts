@@ -16,6 +16,7 @@ const MAINNET_PRIVATE_KEY = process.env.MAINNET_PRIVATE_KEY;
 const TESTNET_PRIVATE_KEY = process.env.TESTNET_PRIVATE_KEY;
 
 // Note - If deploying on Arbitrum, set this to ARBISCAN_API_KEY
+// TODO: Fix this in the future; https://github.com/ArtBlocks/artblocks-contracts/issues/788
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
 
 // L2 Configuration
