@@ -2,14 +2,19 @@
 // Created By: Art Blocks Inc.
 
 import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
+import "../../interfaces/v0.8.x/IGenArt721CoreContractExposesHashSeed.sol";
 import "../../interfaces/v0.8.x/IDelegationRegistry.sol";
 import "../../interfaces/v0.8.x/ISharedMinterV0.sol";
 import "../../interfaces/v0.8.x/IFilteredSharedHolder.sol";
+import "../../interfaces/v0.8.x/ISharedMinterPolyptychV0.sol";
 import "../../interfaces/v0.8.x/IMinterFilterV1.sol";
+import "../../interfaces/v0.8.x/ISharedRandomizerV0.sol";
 
 import "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
 import "../../libs/v0.8.x/minter-libs/MaxInvocationsLib.sol";
 import "../../libs/v0.8.x/minter-libs/TokenHolderLib.sol";
+import "../../libs/v0.8.x/minter-libs/ERC20Lib.sol";
+import "../../libs/v0.8.x/minter-libs/PolyptychLib.sol";
 
 import "@openzeppelin-4.5/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
@@ -18,22 +23,51 @@ import "@openzeppelin-4.5/contracts/utils/structs/EnumerableSet.sol";
 pragma solidity 0.8.19;
 
 /**
- * @title Filtered Minter contract that allows tokens to be minted with ETH
- * when purchaser owns an allowlisted ERC-721 NFT. This contract does NOT track
- * if a purchaser has/has not minted already -- it simply restricts purchasing
- * to anybody that holds one or more of a specified list of ERC-721 NFTs.
- * This is designed to be used with GenArt721CoreContractV3 flagship or
- * engine contracts.
+ * @title Core contract interface for accessing the randomizer from the minter
+ * @notice This interface provides the minter with access to the shared
+ * randomizer, allowing the token hash seed for a newly-minted token to be
+ * assigned by the minter if the artist has enabled the project as a polyptych.
+ * Polytptych projects must use the V3 core contract, this polyptych minter,
+ * and a shared randomizer - this interface allows the minter to access the
+ * randomizer.
+ */
+interface IGenArt721CoreContractV3WithSharedRandomizer is
+    IGenArt721CoreContractV3_Base,
+    IGenArt721CoreContractExposesHashSeed
+{
+    /// current randomizer contract, that we cast as a shared randomizer
+    function randomizerContract() external returns (ISharedRandomizerV0);
+}
+
+/**
+ * @title Shared, filtered Minter contract that allows tokens to be minted with
+ * ETH or any configured ERC20 token when purchaser owns an allowlisted ERC-721
+ * NFT.
+ * This contract must be used with an accompanying shared randomizer contract
+ * that is configured to copy the token hash seed from the allowlisted token to
+ * a corresponding newly-minted token.
+ * The source token may only be used to mint one additional polyptych "panel" if the token
+ * has not yet been used to mint a panel with the currently configured panel ID. To add
+ * an additional panel to a project, the panel ID may be incremented for the project
+ * using the `incrementPolyptychProjectPanelId` function. Panel IDs for a project may only
+ * be incremented such that panels must be minted in the order of their panel ID. Tokens
+ * of the same project and panel ID may be minted in any order.
+ * This is designed to be used with IGenArt721CoreContractExposesHashSeed contracts with an
+ * active ISharedRandomizerV0 randomizer available for this minter to use.
+ * This minter requires both a properly configured core contract and shared
+ * randomizer in order to mint polyptych tokens.
  * @author Art Blocks Inc.
  * @notice Privileged Roles and Ownership:
+ * TODO - UPDATE THE FOLLOWING
  * This contract is designed to be managed, with limited powers.
- * Privileged roles and abilities are controlled by the core contract's Admin
- * ACL contract and a project's artist. Both of these roles hold extensive
- * power and can modify minter details.
+ * Privileged roles and abilities are controlled by the project's artist, which
+ * can be modified by the core contract's Admin ACL contract. Both of these
+ * roles hold extensive power and can modify minter details.
  * Care must be taken to ensure that the admin ACL contract and artist
  * addresses are secure behind a multi-sig or other access control mechanism.
  * ----------------------------------------------------------------------------
  * The following functions are restricted to a project's artist:
+ * - updateMerkleRoot
  * - allowHoldersOfProjects
  * - removeHoldersOfProjects
  * - allowAndRemoveHoldersOfProjects
@@ -44,25 +78,25 @@ pragma solidity 0.8.19;
  * Additional admin and artist privileged roles may be described on other
  * contracts that this minter integrates with.
  * ----------------------------------------------------------------------------
- * This contract allows gated minting with support for vaults to delegate minting
- * privileges via an external delegation registry. This means a vault holding an
- * allowed token can delegate minting privileges to a wallet that is not holding an
- * allowed token, enabling the vault to remain air-gapped while still allowing minting.
- * The delegation registry contract is responsible for managing these delegations,
+ * This contract allows vaults to configure token-level or wallet-level
+ * delegation of minting privileges. This allows a vault on an allowlist to
+ * delegate minting privileges to a wallet that is not on the allowlist,
+ * enabling the vault to remain air-gapped while still allowing minting. The
+ * delegation registry contract is responsible for managing these delegations,
  * and is available at the address returned by the public immutable
  * `delegationRegistryAddress`. At the time of writing, the delegation
  * registry enables easy delegation configuring at https://delegate.cash/.
  * Art Blocks does not guarentee the security of the delegation registry, and
  * users should take care to ensure that the delegation registry is secure.
- * Delegations must be configured by the vault owner prior to purchase. Supported
- * delegation types include token-level, contract-level (via genArt721CoreAddress), or
- * wallet-level delegation. Contract-level delegations must be configured for the core
- * token contract as returned by the public immutable variable `genArt721CoreAddress`.
+ * Token-level delegations are configured by the vault owner, and contract-
+ * level delegations must be configured for the core token contract as returned
+ * by the public immutable variable `genArt721CoreAddress`.
  */
-contract MinterSetPriceHolderV5 is
+contract MinterPolyptychV1 is
     ReentrancyGuard,
     ISharedMinterV0,
-    IFilteredSharedHolder
+    IFilteredSharedHolder,
+    ISharedMinterPolyptychV0
 {
     // add Enumerable Set methods
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -80,7 +114,7 @@ contract MinterSetPriceHolderV5 is
     IDelegationRegistry private immutable delegationRegistryContract;
 
     /// minterType for this minter
-    string public constant minterType = "MinterSetPriceHolderV5";
+    string public constant minterType = "MinterPolyptychV1";
 
     /// minter version for this minter
     string public constant minterVersion = "v5.0.0";
@@ -116,6 +150,30 @@ contract MinterSetPriceHolderV5 is
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR TokenHolderLib begin here
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // STATE VARIABLES FOR ERC20Lib begin here
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    // contractAddress => projectId => project currency config
+    mapping(address => mapping(uint256 => ERC20Lib.ProjectCurrencyConfig))
+        private _projectCurrencyConfigs;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // STATE VARIABLES FOR ERC20Lib end here
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // STATE VARIABLES FOR PolyptychLib begin here
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    // contractAddress => projectId => polyptych project config
+    mapping(address => mapping(uint256 => PolyptychLib.PolyptychProjectConfig))
+        private _polyptychProjectConfigs;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // STATE VARIABLES FOR PolyptychLib end here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
@@ -238,6 +296,41 @@ contract MinterSetPriceHolderV5 is
         ) {
             syncProjectMaxInvocationsToCore(_projectId, _coreContract);
         }
+    }
+
+    /**
+     * @notice Updates this minter's price per token of project `_projectId`
+     * to be '_pricePerTokenInWei`, in Wei.
+     * @notice Updates payment currency of project `_projectId` on core
+     * contract `_coreContract` to be `_currencySymbol` at address
+     * `_currencyAddress`.
+     * @param _projectId Project ID to update.
+     * @param _coreContract Core contract address for the given project.
+     * @param _currencySymbol Currency symbol.
+     * @param _currencyAddress Currency address.
+     */
+    function updateProjectCurrencyInfo(
+        uint256 _projectId,
+        address _coreContract,
+        string memory _currencySymbol,
+        address _currencyAddress
+    ) external {
+        _onlyArtist(_projectId, _coreContract);
+        ERC20Lib.ProjectCurrencyConfig
+            storage _projectCurrencyConfig = _projectCurrencyConfigs[
+                _coreContract
+            ][_projectId];
+        ERC20Lib.updateProjectCurrencyInfo({
+            _projectCurrencyConfig: _projectCurrencyConfig,
+            _currencySymbol: _currencySymbol,
+            _currencyAddress: _currencyAddress
+        });
+        emit ProjectCurrencyInfoUpdated({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _currencyAddress: _currencyAddress,
+            _currencySymbol: _currencySymbol
+        });
     }
 
     /**
@@ -378,9 +471,36 @@ contract MinterSetPriceHolderV5 is
     }
 
     /**
+     * @notice Allows the artist to increment the minter to the next polyptych panel
+     * @param _projectId Project ID to increment to its next polyptych panel
+     */
+    function incrementPolyptychProjectPanelId(
+        uint256 _projectId,
+        address _coreContract
+    ) public {
+        _onlyArtist(_projectId, _coreContract);
+        PolyptychLib.PolyptychProjectConfig
+            storage _polyptychProjectConfig = _polyptychProjectConfigs[
+                _coreContract
+            ][_projectId];
+        PolyptychLib.incrementPolyptychProjectPanelId(_polyptychProjectConfig);
+    }
+
+    /**
      * @notice Inactive function - requires NFT ownership to purchase.
      */
     function purchase(uint256, address) external payable returns (uint256) {
+        revert("Purchase requires NFT ownership");
+    }
+
+    /**
+     * @notice Inactive function - requires NFT ownership to purchase.
+     */
+    function purchaseTo(
+        address,
+        uint256,
+        address
+    ) external payable returns (uint256) {
         revert("Purchase requires NFT ownership");
     }
 
@@ -444,7 +564,7 @@ contract MinterSetPriceHolderV5 is
     // public getter functions
     /**
      * @notice Gets the maximum invocations project configuration.
-     * @param _coreContract The address of the contract.
+     * @param _coreContract The address of the core contract.
      * @param _projectId The ID of the project whose data needs to be fetched.
      * @return MaxInvocationsLib.MaxInvocationsProjectConfig instance with the
      * configuration data.
@@ -462,7 +582,7 @@ contract MinterSetPriceHolderV5 is
 
     /**
      * @notice Gets the base project configuration.
-     * @param _coreContract The address of the contract where the data is stored.
+     * @param _coreContract The address of the core contract.
      * @param _projectId The ID of the project whose data needs to be fetched.
      * @return ProjectConfig instance with the project configuration data.
      */
@@ -597,19 +717,66 @@ contract MinterSetPriceHolderV5 is
     }
 
     /**
+     * @notice Gets your balance of the ERC20 token currently set
+     * as the payment currency for project `_projectId` in the core
+     * contract `_coreContract`.
+     * @param _projectId Project ID to be queried.
+     * @param _coreContract The address of the core contract.
+     * @return balance Balance of ERC20
+     */
+    function getYourBalanceOfProjectERC20(
+        uint256 _projectId,
+        address _coreContract
+    ) external view returns (uint256 balance) {
+        ERC20Lib.ProjectCurrencyConfig
+            storage _projectCurrencyConfig = _projectCurrencyConfigs[
+                _coreContract
+            ][_projectId];
+        balance = ERC20Lib.getERC20Balance(
+            _projectCurrencyConfig.currencyAddress,
+            msg.sender
+        );
+        return balance;
+    }
+
+    /**
+     * @notice Gets your allowance for this minter of the ERC20
+     * token currently set as the payment currency for project
+     * `_projectId`.
+     * @param _projectId Project ID to be queried.
+     * @param _coreContract The address of the core contract.
+     * @return remaining Remaining allowance of ERC20
+     */
+    function checkYourAllowanceOfProjectERC20(
+        uint256 _projectId,
+        address _coreContract
+    ) external view returns (uint256 remaining) {
+        ERC20Lib.ProjectCurrencyConfig
+            storage _projectCurrencyConfig = _projectCurrencyConfigs[
+                _coreContract
+            ][_projectId];
+        remaining = ERC20Lib.getERC20Allowance({
+            _currencyAddress: _projectCurrencyConfig.currencyAddress,
+            _walletAddress: msg.sender,
+            _spenderAddress: address(this)
+        });
+        return remaining;
+    }
+
+    /**
      * @notice Gets if price of token is configured, price of minting a
      * token on project `_projectId`, and currency symbol and address to be
      * used as payment. Supersedes any core contract price information.
-     * @param _projectId Project ID to get price information for.
-     * @param _coreContract Contract address of the core contract.
+     * @param _projectId Project ID to get price information for
+     * @param _coreContract Contract address of the core contract
      * @return isConfigured true only if token price has been configured on
      * this minter
      * @return tokenPriceInWei current price of token on this minter - invalid
      * if price has not yet been configured
      * @return currencySymbol currency symbol for purchases of project on this
-     * minter. This minter always returns "ETH"
+     * minter. "ETH" reserved for ether.
      * @return currencyAddress currency address for purchases of project on
-     * this minter. This minter always returns null address, reserved for ether
+     * this minter. Null address reserved for ether.
      */
     function getPriceInfo(
         uint256 _projectId,
@@ -627,17 +794,24 @@ contract MinterSetPriceHolderV5 is
         ProjectConfig storage _projectConfig = _projectConfigMapping[
             _coreContract
         ][_projectId];
+        ERC20Lib.ProjectCurrencyConfig
+            storage _projectCurrencyConfig = _projectCurrencyConfigs[
+                _coreContract
+            ][_projectId];
         isConfigured = _projectConfig.priceIsConfigured;
         tokenPriceInWei = _projectConfig.pricePerTokenInWei;
-        currencySymbol = "ETH";
-        currencyAddress = address(0);
+        currencyAddress = _projectCurrencyConfig.currencyAddress;
+        // default to "ETH"" if project currency address is initial value
+        currencySymbol = currencyAddress == address(0)
+            ? "ETH"
+            : _projectCurrencyConfig.currencySymbol;
     }
 
     /**
      * @notice Syncs local maximum invocations of project `_projectId` based on
      * the value currently defined in the core contract.
-     * @param _projectId Project ID to set the maximum invocations for.
      * @param _coreContract Core contract address for the given project.
+     * @param _projectId Project ID to set the maximum invocations for.
      * @dev this enables gas reduction after maxInvocations have been reached -
      * core contracts shall still enforce a maxInvocation check during mint.
      */
@@ -646,6 +820,7 @@ contract MinterSetPriceHolderV5 is
         address _coreContract
     ) public {
         _onlyArtist(_projectId, _coreContract);
+
         uint256 maxInvocations = MaxInvocationsLib
             .syncProjectMaxInvocationsToCore(
                 _projectId,
@@ -660,27 +835,11 @@ contract MinterSetPriceHolderV5 is
     }
 
     /**
-     * @notice Inactive function - requires NFT ownership to purchase.
-     */
-    function purchaseTo(
-        address,
-        uint256,
-        address
-    ) public payable returns (uint256) {
-        revert("Purchase requires NFT ownership");
-    }
-
-    /**
      * @notice Purchases a token from project `_projectId` and sets
      * the token's owner to `_to`.
      * @param _to Address to be the new token's owner.
      * @param _projectId Project ID to mint a token on.
      * @param _coreContract Core contract address for the given project.
-     * @param _ownedNFTAddress ERC-721 NFT address holding the project token owned by _vault
-     *         (or msg.sender if no _vault is provided) being used to claim right to purchase.
-     * @param _ownedNFTTokenId ERC-721 NFT token ID owned by _vault (or msg.sender if
-     *         no _vault is provided) being used to claim right to purchase.
-     * @param _vault Vault being purchased on behalf of. Acceptable to be `address(0)` if no vault.
      * @return tokenId Token ID of minted token
      */
     function purchaseTo(
@@ -699,6 +858,14 @@ contract MinterSetPriceHolderV5 is
             storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
                 _coreContract
             ][_projectId];
+        ERC20Lib.ProjectCurrencyConfig
+            storage _projectCurrencyConfig = _projectCurrencyConfigs[
+                _coreContract
+            ][_projectId];
+        PolyptychLib.PolyptychProjectConfig
+            storage _polyptychProjectConfig = _polyptychProjectConfigs[
+                _coreContract
+            ][_projectId];
 
         // Note that `maxHasBeenInvoked` is only checked here to reduce gas
         // consumption after a project has been fully minted.
@@ -711,13 +878,8 @@ contract MinterSetPriceHolderV5 is
             "Max invocations reached"
         );
 
-        // load price of token into memory
-        uint256 pricePerTokenInWei = _projectConfig.pricePerTokenInWei;
-
         // require artist to have configured price of token on this minter
         require(_projectConfig.priceIsConfigured, "Price not configured");
-
-        require(msg.value >= pricePerTokenInWei, "Min value to mint req.");
 
         // require token used to claim to be in set of allowlisted NFTs
         require(
@@ -750,11 +912,54 @@ contract MinterSetPriceHolderV5 is
             require(isValidVault, "Invalid delegate-vault pairing");
             vault = _vault;
         }
+        // -----------------------------
+
+        // we need the new token ID in advance of the randomizer setting a token hash
+        IGenArt721CoreContractV3WithSharedRandomizer genArtCoreContract = IGenArt721CoreContractV3WithSharedRandomizer(
+                _coreContract
+            );
+        (uint256 _invocations, , , , , ) = genArtCoreContract.projectStateData(
+            _projectId
+        );
+
+        // uint256 _newTokenId = (_projectId * ONE_MILLION) + _invocations;
 
         // EFFECTS
+
+        // we need to store the new token ID before it is minted so the randomizer can query it
+        IGenArt721CoreContractExposesHashSeed _ownedNFTCoreContract = IGenArt721CoreContractExposesHashSeed(
+                _ownedNFTAddress
+            );
+        bytes12 _targetHashSeed = _ownedNFTCoreContract.tokenIdToHashSeed(
+            _ownedNFTTokenId
+        );
+        // validates hash seed and ensures each hash seed used max once per panel
+        PolyptychLib.validatePolyptychEffects(
+            _polyptychProjectConfig,
+            _targetHashSeed
+        );
+
+        genArtCoreContract.randomizerContract().setPolyptychHashSeed({
+            _coreContract: _coreContract,
+            _tokenId: (_projectId * ONE_MILLION) + _invocations, // new token ID
+            _hashSeed: _targetHashSeed
+        });
+
+        // once mint() is called, the polyptych randomizer will either:
+        // 1) assign a random token hash
+        // 2) if configured, obtain the token hash from the `polyptychSeedHashes` mapping
         tokenId = minterFilter.mint_joo(_to, _projectId, _coreContract, vault);
 
         // NOTE: delegate-vault handling **ends here**.
+
+        // redundant check against reentrancy
+        bytes12 _assignedHashSeed = genArtCoreContract.tokenIdToHashSeed(
+            tokenId
+        );
+        require(
+            _assignedHashSeed == _targetHashSeed,
+            "Unexpected token hash seed"
+        );
 
         MaxInvocationsLib.validatePurchaseEffectsInvocations(
             tokenId,
@@ -762,30 +967,59 @@ contract MinterSetPriceHolderV5 is
         );
 
         // INTERACTIONS
-        // require vault to own NFT used to redeem
+        // require proper ownership of NFT used to redeem
         /**
          * @dev Considered an interaction because calling ownerOf on an NFT
          * contract. Plan is to only integrate with AB/PBAB NFTs on the minter, but
          * in case other NFTs are registered, better to check here. Also,
          * function is non-reentrant, so this is extra cautious.
          */
-        require(
-            IERC721(_ownedNFTAddress).ownerOf(_ownedNFTTokenId) == vault,
-            "Only owner of NFT"
+        address actualNFTOwner = IERC721(_ownedNFTAddress).ownerOf(
+            _ownedNFTTokenId
         );
+        // @dev if the artist is the sender, then the NFT must be owned by the
+        // recipient, otherwise the NFT must be owned by the vault
+        address _artist = genArtCoreContract.projectIdToArtistAddress(
+            _projectId
+        );
+        address targetOwner = (msg.sender == _artist) ? _to : vault;
+        require(actualNFTOwner == targetOwner, "Invalid owner of NFT");
 
         // split funds
-        // INTERACTIONS
         bool isEngine = SplitFundsLib.isEngine(
             _coreContract,
             _isEngineCaches[_coreContract]
         );
-        SplitFundsLib.splitFundsETH(
-            _projectId,
-            pricePerTokenInWei,
-            _coreContract,
-            isEngine
-        );
+        uint256 pricePerTokenInWei = _projectConfig.pricePerTokenInWei;
+        address currencyAddress = _projectCurrencyConfig.currencyAddress;
+        if (currencyAddress != address(0)) {
+            // ERC20 token is used for payment
+            require(msg.value == 0, "ERC20: No ETH when using ERC20");
+            ERC20Lib.validateERC20Approvals({
+                _msgSender: msg.sender,
+                _currencyAddress: currencyAddress,
+                _pricePerTokenInWei: pricePerTokenInWei
+            });
+            SplitFundsLib.splitFundsERC20({
+                projectId: _projectId,
+                pricePerTokenInWei: pricePerTokenInWei,
+                currencyAddress: currencyAddress,
+                coreContract: _coreContract,
+                _isEngine: isEngine
+            });
+        } else {
+            // ETH is used for payment
+            require(
+                msg.value >= pricePerTokenInWei,
+                "ETH: Min value to mint req."
+            );
+            SplitFundsLib.splitFundsETH({
+                projectId: _projectId,
+                pricePerTokenInWei: pricePerTokenInWei,
+                coreContract: _coreContract,
+                _isEngine: isEngine
+            });
+        }
 
         return tokenId;
     }
