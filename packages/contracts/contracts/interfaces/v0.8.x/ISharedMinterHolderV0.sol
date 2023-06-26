@@ -10,16 +10,6 @@ pragma solidity ^0.8.0;
 interface IFilteredSharedHolder {
     event DelegationRegistryUpdated(address delegationRegistry);
     /**
-     * @notice Registered holders of NFTs at address `_NFTAddress` to be
-     * considered for minting.
-     */
-    event RegisteredNFTAddress(address indexed _NFTAddress);
-    /**
-     * @notice Unregistered holders of NFTs at address `_NFTAddress` to be
-     * considered for minting.
-     */
-    event UnregisteredNFTAddress(address indexed _NFTAddress);
-    /**
      * @notice Allow holders of NFTs at addresses `_ownedNFTAddresses`, project
      * IDs `_ownedNFTProjectIds` to mint on project `_projectId`.
      * `_ownedNFTAddresses` assumed to be aligned with `_ownedNFTProjectIds`.
@@ -28,7 +18,7 @@ interface IFilteredSharedHolder {
      */
     event AllowedHoldersOfProjects(
         uint256 indexed _projectId,
-        address _coreContract,
+        address indexed _coreContract,
         address[] _ownedNFTAddresses,
         uint256[] _ownedNFTProjectIds
     );
@@ -41,7 +31,7 @@ interface IFilteredSharedHolder {
      */
     event RemovedHoldersOfProjects(
         uint256 indexed _projectId,
-        address _coreContract,
+        address indexed _coreContract,
         address[] _ownedNFTAddresses,
         uint256[] _ownedNFTProjectIds
     );

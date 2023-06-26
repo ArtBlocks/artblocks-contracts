@@ -5,7 +5,7 @@ import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
 import "../../interfaces/v0.8.x/IDelegationRegistry.sol";
 import "../../interfaces/v0.8.x/ISharedMinterV0.sol";
 import "../../interfaces/v0.8.x/IMinterFilterV1.sol";
-import "../../interfaces/v0.8.x/IFilteredSharedMerkle.sol";
+import "../../interfaces/v0.8.x/ISharedMinterMerkleV0.sol";
 
 import "../../libs/v0.8.x/minter-libs/MerkleLib.sol";
 import "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";

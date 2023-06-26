@@ -4,7 +4,7 @@
 import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
 import "../../interfaces/v0.8.x/IDelegationRegistry.sol";
 import "../../interfaces/v0.8.x/ISharedMinterV0.sol";
-import "../../interfaces/v0.8.x/IFilteredSharedHolder.sol";
+import "../../interfaces/v0.8.x/ISharedMinterHolderV0.sol";
 import "../../interfaces/v0.8.x/IMinterFilterV1.sol";
 
 import "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
@@ -150,8 +150,8 @@ contract MinterSetPriceHolderV5 is
 
     /**
      * @notice Initializes contract to be a Filtered Minter for
-     * `_minterFilter`, integrated with Art Blocks core contract
-     * at address `_genArt721Address`.
+     * `_minterFilter` and sets the delegation registry contract address to
+     * `_delegationRegistryAddress`.
      * @param _minterFilter minter filter.
      * @param _delegationRegistryAddress Delegation registry contract address.
      */
