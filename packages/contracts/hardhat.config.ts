@@ -15,9 +15,8 @@ const GOERLI_JSON_RPC_PROVIDER_URL = process.env.GOERLI_JSON_RPC_PROVIDER_URL;
 const MAINNET_PRIVATE_KEY = process.env.MAINNET_PRIVATE_KEY;
 const TESTNET_PRIVATE_KEY = process.env.TESTNET_PRIVATE_KEY;
 
-// Note - If deploying on Arbitrum, set this to ARBISCAN_API_KEY
-// TODO: Fix this in the future; https://github.com/ArtBlocks/artblocks-contracts/issues/788
 const ETHERSCAN_API_KEY = process.env.ETHERSCAN_API_KEY;
+const ARBISCAN_API_KEY = process.env.ARBISCAN_API_KEY;
 
 // L2 Configuration
 const ARBITRUM_MAINNET_JSON_RPC_PROVIDER_URL =
@@ -69,7 +68,7 @@ module.exports = {
       gasPrice: "auto",
       gasMultiplier: 1.5,
     },
-    "arbitrum-mainnet": {
+    arbitrum: {
       url: ARBITRUM_MAINNET_JSON_RPC_PROVIDER_URL,
       accounts: [`0x${MAINNET_PRIVATE_KEY}`],
       gasPrice: "auto",
@@ -86,7 +85,13 @@ module.exports = {
     },
   },
   etherscan: {
-    apiKey: ETHERSCAN_API_KEY,
+    apiKey: {
+      mainnet: ETHERSCAN_API_KEY,
+      goerli: ETHERSCAN_API_KEY,
+      arbitrum: ARBISCAN_API_KEY, // This is unused but here in case hardhat changes
+      arbitrumOne: ARBISCAN_API_KEY,
+      "arbitrum-goerli": ARBISCAN_API_KEY,
+    },
   },
   contractSizer: {
     alphaSort: true,

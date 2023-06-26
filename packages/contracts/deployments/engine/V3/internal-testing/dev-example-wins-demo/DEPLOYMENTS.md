@@ -38,3 +38,24 @@ Date: 2023-03-03T18:15:32.253Z
 - **Image Bucket:** weekly-wins-demo-goerli
 
 ---
+
+# Minter Deployment
+
+Date: 2023-06-21T16:17:08.603Z
+
+## **Network:** goerli
+
+## **Environment:** dev
+
+**Deployment Input File:** `deployments/engine/V3/internal-testing/dev-example-wins-demo/minter-deploy-config-01.dev.ts`
+
+**MinterDALinV4:** https://goerli.etherscan.io/address/0xD4c7f56b6e530f47DEADdfD92fD70Ac84345bEc3#code
+
+**Associated core contract:** 0x4A185f9A8ee3d247fD564407658602228a8de265
+
+**Associated minter filter:** 0x19254c1226Dbb83EC08Ab07Ba0B5c3994792D9D8
+
+**Deployment Args:** 0x4A185f9A8ee3d247fD564407658602228a8de265,0x19254c1226Dbb83EC08Ab07Ba0B5c3994792D9D8
+
+---
+
