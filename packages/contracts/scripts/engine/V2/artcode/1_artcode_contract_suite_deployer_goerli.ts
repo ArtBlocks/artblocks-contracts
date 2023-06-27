@@ -3,7 +3,7 @@ import { RandomizerArtCode__factory } from "../../contracts/factories/Randomizer
 import { GenArt721CoreV2ArtCode__factory } from "../../contracts/factories/GenArt721CoreV2ArtCode__factory";
 import { GenArt721MinterArtCode__factory } from "../../contracts/factories/GenArt721MinterArtCode__factory";
 
-import { createPBABBucket } from "../../util/aws_s3";
+import { createEngineBucket } from "../../util/aws_s3";
 
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG BEGINS HERE
@@ -100,7 +100,7 @@ async function main() {
   console.log(`Transferred Core contract admin to: ${pbabTransferAddress}.`);
 
   // // Create PBAB Bucket
-  // await createPBABBucket(pbabTokenName, network.name);
+  // await createEngineBucket(pbabTokenName, network.name);
 
   // Output instructions for manual Etherscan verification.
   const standardVerify =

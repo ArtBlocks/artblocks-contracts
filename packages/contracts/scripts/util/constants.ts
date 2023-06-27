@@ -13,6 +13,7 @@ export const DELEGATION_REGISTRY_ADDRESSES = {
 export const BYTECODE_STORAGE_READER_LIBRARY_ADDRESSES = {
   // note: _different_ address for goerli and mainnet
   "arbitrum-goerli": "0x681861cD4fC92d70aE57745385065ef862954662",
+  arbitrum: "0xa07f47c30C262adcC263A4D44595972c50e04db7",
   goerli: "0xB8B806A10d16cc80dB788552B54B3ECb4A2A3C3D",
   mainnet: "0xf0585dF582A0ad119F1616FB82f3b449a98EeCd5",
 };
