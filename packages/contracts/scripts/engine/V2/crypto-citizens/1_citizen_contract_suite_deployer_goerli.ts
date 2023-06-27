@@ -2,7 +2,7 @@ import { ethers } from "hardhat";
 import { GenArt721CoreV2CryptoCitizens__factory } from "../../contracts/factories/GenArt721CoreV2CryptoCitizens__factory";
 import { GenArt721MinterCryptoCitizens__factory } from "../../contracts/factories/GenArt721MinterCryptoCitizens__factory";
 
-import { createPBABBucket } from "../../util/aws_s3";
+import { createEngineBucket } from "../../util/aws_s3";
 
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG BEGINS HERE
@@ -103,7 +103,7 @@ async function main() {
 
   // // Create PBAB Bucket
   // const networkName = network.name == "homestead" ? "mainnet" : network.name;
-  // await createPBABBucket(pbabTokenName, networkName);
+  // await createEngineBucket(pbabTokenName, networkName);
   // console.log(
   //   `pbab bucket created for ${pbabTokenName}, network ${networkName}`
   // );
