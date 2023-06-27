@@ -2,7 +2,7 @@ import { BN, constants } from "@openzeppelin/test-helpers";
 import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 const { MerkleTree } = require("merkletreejs");
-import { hashAddress } from "../../minter-suite-minters/MinterMerkle/MinterMerkle.common";
+import { hashAddress } from "../../minter-suite-minters/legacy/MinterMerkle/MinterMerkle.common";
 const keccak256 = require("keccak256");
 
 const numInitialMints = 500;

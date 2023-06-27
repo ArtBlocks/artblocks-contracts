@@ -4,7 +4,7 @@
 import { ethers } from "hardhat";
 import { GenArt721CoreV2EndaomentGalleryForGood__factory } from "../../contracts/factories/GenArt721CoreV2EndaomentGalleryForGood__factory";
 import { GenArt721MinterEndaomentGalleryForGood__factory } from "../../contracts/factories/GenArt721MinterEndaomentGalleryForGood__factory";
-import { createPBABBucket } from "../../util/aws_s3";
+import { createEngineBucket } from "../../util/aws_s3";
 
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG BEGINS HERE
@@ -41,7 +41,7 @@ async function main() {
     startingProjectId
   );
 
-  await createPBABBucket(pbabTokenName, networkName);
+  await createEngineBucket(pbabTokenName, networkName);
 
   await genArt721Core.deployed();
   console.log(`GenArt721Core deployed at ${genArt721Core.address}`);

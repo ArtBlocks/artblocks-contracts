@@ -132,3 +132,48 @@ Date: 2023-06-12T23:24:49.728Z
 
 ---
 
+
+# Deployment
+
+Date: 2023-06-27T02:19:17.077Z
+
+## **Network:** arbitrum
+
+## **Environment:** arbitrum
+
+**Deployment Input File:** `deployments/engine/V3/partners/prohibition-flex/deployment-config.arbitrum.ts`
+
+**GenArt721CoreV3_Engine_Flex_PROHIBITION:** https://arbitrum.etherscan.io/address/0x47A91457a3a1f700097199Fd63c039c4784384aB#code
+
+**AdminACLV0_PROHIBITION:** https://arbitrum.etherscan.io/address/0xdD1724761e8f291545EA18eE16cCB3f1dDD07466#code
+
+**Engine Registry:** https://arbitrum.etherscan.io/address/0xdAe755c2944Ec125a0D8D5CB082c22837593441a#code
+
+**MinterFilterV1:** https://arbitrum.etherscan.io/address/0xE8394175365Fd746Bb1179244a6F8e3398aa22FF#code
+
+**Minters:**
+
+**MinterSetPriceV4:** https://arbitrum.etherscan.io/address/0xCfc3818816eA26f7406f9FA33a1e4EDd57A01078#code
+
+**MinterDALinV4:** https://arbitrum.etherscan.io/address/0x1c207b57D3FF22f58CE5aD702A2a89F09CE19366#code
+
+
+
+**Metadata**
+
+- **Starting Project Id:** 0
+- **Token Name:** Prohibition
+- **Token Ticker:** PRHBTN
+- **Auto Approve Artist Split Proposals:** true
+- **Render Provider Address, Primary Sales:** 0xD5AdDC3C9a587ba9f888e3164D3acd6535840Ee3
+- **Platform Provider Address, Primary Sales:** 0xd71a0dB203af616F76b6AD24BD54eE46882FF175
+- **BytecodeStorageReader Library:** 0xa07f47c30C262adcC263A4D44595972c50e04db7
+
+**Other**
+
+- **Add initial project?:** false
+- **Add initial token?:** false
+- **Image Bucket:** prohibition-arbitrum
+
+---
+

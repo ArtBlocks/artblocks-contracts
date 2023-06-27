@@ -10,7 +10,7 @@ import { MinterSetPriceV1__factory } from "../../contracts/factories/MinterSetPr
 import { MinterDALinV1__factory } from "../../contracts/factories/MinterDALinV1__factory";
 import { MinterDAExpV1__factory } from "../../contracts/factories/MinterDAExpV1__factory";
 
-import { createPBABBucket } from "../../util/aws_s3";
+import { createEngineBucket } from "../../util/aws_s3";
 
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG BEGINS HERE
@@ -41,7 +41,7 @@ async function main() {
   // DEPLOYMENT BEGINS HERE
   //////////////////////////////////////////////////////////////////////////////
 
-  await createPBABBucket(pbabTokenName, networkName);
+  await createEngineBucket(pbabTokenName, networkName);
 
   // Deploy Core contract.
   console.log(`Using Randomizer deployed at ${randomizerContractAddress}`);

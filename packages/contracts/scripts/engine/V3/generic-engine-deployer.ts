@@ -24,7 +24,7 @@ import {
 } from "../../util/constants";
 import { tryVerify } from "../../util/verification";
 // image bucket creation
-import { createPBABBucket } from "../../util/aws_s3";
+import { createEngineBucket } from "../../util/aws_s3";
 // delay to avoid issues with reorgs and tx failures
 import { delay, getAppPath } from "../../util/utils";
 const MANUAL_GAS_LIMIT = 500000; // gas
@@ -610,7 +610,7 @@ async function main() {
     }
 
     // create image bucket
-    const { bucketName } = await createPBABBucket(tokenName, networkName);
+    const { bucketName } = await createEngineBucket(tokenName, networkName);
     console.log(`[INFO] Created image bucket ${bucketName}`);
 
     //////////////////////////////////////////////////////////////////////////////
