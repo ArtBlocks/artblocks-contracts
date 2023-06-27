@@ -19,10 +19,8 @@
     "build": "yarn workspace @artblocks/contracts run build && yarn workspace @artblocks/sdk run build",
     "codegen:project": "graphql-codegen dotenv_config_path=./.env --require dotenv/config --config graphql.config.ts --project",
     "prepare": "husky install",
-    "pre-commit": "echo",
-    "pre-push": "echo",
-    "pre-commitExempt": "yarn workspace @artblocks/contracts run pre-commit && yarn workspace @artblocks/sdk run pre-commit",
-    "pre-pushExempt": "yarn workspace @artblocks/sdk run pre-push",
+    "pre-commit": "yarn workspace @artblocks/contracts run pre-commit && yarn workspace @artblocks/sdk run pre-commit",
+    "pre-push": "yarn workspace @artblocks/sdk run pre-push",
     "release": "yarn build && yarn changeset publish"
   },
   "dependencies": {
