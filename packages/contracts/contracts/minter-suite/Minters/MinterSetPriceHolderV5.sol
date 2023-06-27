@@ -18,10 +18,11 @@ import "@openzeppelin-4.5/contracts/utils/structs/EnumerableSet.sol";
 pragma solidity 0.8.19;
 
 /**
- * @title Filtered Minter contract that allows tokens to be minted with ETH
- * when purchaser owns an allowlisted ERC-721 NFT. This contract does NOT track
- * if a purchaser has/has not minted already -- it simply restricts purchasing
- * to anybody that holds one or more of a specified list of ERC-721 NFTs.
+ * @title Shared, filtered Minter contract that allows tokens to be minted with
+ * ETH when purchaser owns an allowlisted ERC-721 NFT. This contract does NOT
+ * track if a purchaser has/has not minted already -- it simply restricts
+ * purchasing to anybody that holds one or more of a specified list of ERC-721
+ * NFTs.
  * This is designed to be used with GenArt721CoreContractV3 flagship or
  * engine contracts.
  * @author Art Blocks Inc.

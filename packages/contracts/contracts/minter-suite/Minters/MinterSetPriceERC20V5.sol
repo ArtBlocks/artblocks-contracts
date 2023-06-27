@@ -37,7 +37,7 @@ pragma solidity 0.8.19;
  * Additional admin and artist privileged roles may be described on other
  * contracts that this minter integrates with.
  */
-contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
+contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
     /// Minter filter address this minter interacts with
     address public immutable minterFilterAddress;
 
@@ -430,17 +430,16 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
         ProjectConfig storage _projectConfig = _projectConfigMapping[
             _coreContract
         ][_projectId];
+        isConfigured = _projectConfig.priceIsConfigured;
+        tokenPriceInWei = _projectConfig.pricePerTokenInWei;
+        // get currency info from ERC20Lib
         ERC20Lib.ProjectCurrencyConfig
             storage _projectCurrencyConfig = _projectCurrencyConfigs[
                 _coreContract
             ][_projectId];
-        isConfigured = _projectConfig.priceIsConfigured;
-        tokenPriceInWei = _projectConfig.pricePerTokenInWei;
-        currencyAddress = _projectCurrencyConfig.currencyAddress;
-        // default to "ETH"" if project currency address is initial value
-        currencySymbol = currencyAddress == address(0)
-            ? "ETH"
-            : _projectCurrencyConfig.currencySymbol;
+        (currencyAddress, currencySymbol) = ERC20Lib.getCurrencyInfo(
+            _projectCurrencyConfig
+        );
     }
 
     /**
@@ -528,36 +527,14 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
             _coreContract,
             _isEngineCaches[_coreContract]
         );
-        uint256 pricePerTokenInWei = _projectConfig.pricePerTokenInWei;
-        address currencyAddress = _projectCurrencyConfig.currencyAddress;
-        if (currencyAddress != address(0)) {
-            // ERC20 token is used for payment
-            require(msg.value == 0, "ERC20: No ETH when using ERC20");
-            ERC20Lib.validateERC20Approvals({
-                _msgSender: msg.sender,
-                _currencyAddress: currencyAddress,
-                _pricePerTokenInWei: pricePerTokenInWei
-            });
-            SplitFundsLib.splitFundsERC20({
-                projectId: _projectId,
-                pricePerTokenInWei: pricePerTokenInWei,
-                currencyAddress: currencyAddress,
-                coreContract: _coreContract,
-                _isEngine: isEngine
-            });
-        } else {
-            // ETH is used for payment
-            require(
-                msg.value >= pricePerTokenInWei,
-                "ETH: Min value to mint req."
-            );
-            SplitFundsLib.splitFundsETH({
-                projectId: _projectId,
-                pricePerTokenInWei: pricePerTokenInWei,
-                coreContract: _coreContract,
-                _isEngine: isEngine
-            });
-        }
+        // process payment in either ETH or ERC20
+        ERC20Lib.processFixedPricePayment({
+            _projectCurrencyConfig: _projectCurrencyConfig,
+            _pricePerTokenInWei: _projectConfig.pricePerTokenInWei,
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _isEngine: isEngine
+        });
 
         return tokenId;
     }
