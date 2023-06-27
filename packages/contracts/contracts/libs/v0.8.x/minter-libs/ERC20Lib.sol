@@ -26,10 +26,10 @@ library ERC20Lib {
     }
 
     /**
-     * @notice Updates payment currency of the referenced `ERC20ProjectConfig
+     * @notice Updates payment currency of the referenced ProjectCurrencyConfig
      * to be `_currencySymbol` at address `_currencyAddress`.
      * `_currencySymbol` at address `_currencyAddress`.
-     * @param _projectCurrencyConfig ERC20ProjectConfig to update.
+     * @param _projectCurrencyConfig ProjectCurrencyConfig to update.
      * @param _currencySymbol Currency symbol.
      * @param _currencyAddress Currency address.
      */
@@ -74,6 +74,29 @@ library ERC20Lib {
                 _pricePerTokenInWei,
             "Insufficient ERC20 balance"
         );
+    }
+
+    /**
+     * Gets the currency address and symbol for the referenced
+     * ProjectCurrencyConfig.
+     * @dev properly handles defaulting to "ETH" if project currency address is
+     * initial value
+     * @param _projectCurrencyConfig ProjectCurrencyConfig to read
+     * @return currencyAddress
+     * @return currencySymbol
+     */
+    function getCurrencyInfo(
+        ProjectCurrencyConfig storage _projectCurrencyConfig
+    )
+        internal
+        view
+        returns (address currencyAddress, string memory currencySymbol)
+    {
+        currencyAddress = _projectCurrencyConfig.currencyAddress;
+        // default to "ETH"" if project currency address is initial value
+        currencySymbol = currencyAddress == address(0)
+            ? "ETH"
+            : _projectCurrencyConfig.currencySymbol;
     }
 
     /**

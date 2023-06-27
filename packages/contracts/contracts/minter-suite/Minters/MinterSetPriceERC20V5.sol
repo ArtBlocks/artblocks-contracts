@@ -37,7 +37,7 @@ pragma solidity 0.8.19;
  * Additional admin and artist privileged roles may be described on other
  * contracts that this minter integrates with.
  */
-contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
+contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
     /// Minter filter address this minter interacts with
     address public immutable minterFilterAddress;
 
@@ -430,17 +430,16 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
         ProjectConfig storage _projectConfig = _projectConfigMapping[
             _coreContract
         ][_projectId];
+        isConfigured = _projectConfig.priceIsConfigured;
+        tokenPriceInWei = _projectConfig.pricePerTokenInWei;
+        // get currency info from ERC20Lib
         ERC20Lib.ProjectCurrencyConfig
             storage _projectCurrencyConfig = _projectCurrencyConfigs[
                 _coreContract
             ][_projectId];
-        isConfigured = _projectConfig.priceIsConfigured;
-        tokenPriceInWei = _projectConfig.pricePerTokenInWei;
-        currencyAddress = _projectCurrencyConfig.currencyAddress;
-        // default to "ETH"" if project currency address is initial value
-        currencySymbol = currencyAddress == address(0)
-            ? "ETH"
-            : _projectCurrencyConfig.currencySymbol;
+        (currencyAddress, currencySymbol) = ERC20Lib.getCurrencyInfo(
+            _projectCurrencyConfig
+        );
     }
 
     /**
