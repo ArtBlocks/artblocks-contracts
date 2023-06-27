@@ -3,7 +3,7 @@ import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { revertMessages } from "./constants";
 import { setupConfigWitMinterFilterV2Suite } from "../../util/fixtures";
-import { deployCore, safeAddProject } from "../../util/common";
+import { deployCore, safeAddProject, deployAndGet } from "../../util/common";
 
 // randomizer being tested
 const RANDOMIZER_NAME = "SharedRandomizerV0";
@@ -19,7 +19,7 @@ const runForEach = [
 ];
 
 runForEach.forEach((params) => {
-  describe(`${RANDOMIZER_NAME} Views w/ core ${params.core}`, async function () {
+  describe(`${RANDOMIZER_NAME} Configure w/ core ${params.core}`, async function () {
     async function _beforeEach() {
       // load minter filter V2 fixture
       const config = await loadFixture(setupConfigWitMinterFilterV2Suite);
@@ -35,6 +35,17 @@ runForEach.forEach((params) => {
         false,
         RANDOMIZER_NAME
       ));
+
+      // deploy dummy shared minter
+      // @dev this is a fix to resolve an undetermined issue with tests failing
+      // when ran in conjunction with other tests. It is unknown why there
+      // is a conflict, but this is a fix that makes the minter being used
+      // in this test suite clear and unique.
+      config.minter = await deployAndGet(config, "DummySharedMinter", [
+        config.minterFilter.address,
+      ]);
+      // allowlist dummy shared minter on minter filter
+      await config.minterFilter.approveMinterGlobally(config.minter.address);
 
       // update core's minter as the minter filter
       await config.genArt721Core.updateMinterContract(
