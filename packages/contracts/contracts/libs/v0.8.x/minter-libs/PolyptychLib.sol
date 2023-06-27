@@ -53,7 +53,7 @@ library PolyptychLib {
     function incrementPolyptychProjectPanelId(
         PolyptychProjectConfig storage _polyptychProjectConfig
     ) internal {
-        _polyptychProjectConfig.polyptychPanelId++;
+        ++_polyptychProjectConfig.polyptychPanelId;
     }
 
     /**

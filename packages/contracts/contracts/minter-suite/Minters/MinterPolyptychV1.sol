@@ -38,7 +38,6 @@ pragma solidity 0.8.19;
  * randomizer in order to mint polyptych tokens.
  * @author Art Blocks Inc.
  * @notice Privileged Roles and Ownership:
- * TODO - UPDATE THE FOLLOWING
  * This contract is designed to be managed, with limited powers.
  * Privileged roles and abilities are controlled by the project's artist, which
  * can be modified by the core contract's Admin ACL contract. Both of these
@@ -47,13 +46,14 @@ pragma solidity 0.8.19;
  * addresses are secure behind a multi-sig or other access control mechanism.
  * ----------------------------------------------------------------------------
  * The following functions are restricted to a project's artist:
- * - updateMerkleRoot
+ * - manuallyLimitProjectMaxInvocations
+ * - updatePricePerTokenInWei
+ * - updateProjectCurrencyInfo
  * - allowHoldersOfProjects
  * - removeHoldersOfProjects
  * - allowAndRemoveHoldersOfProjects
- * - updatePricePerTokenInWei
+ * - incrementPolyptychProjectPanelId
  * - syncProjectMaxInvocationsToCore
- * - manuallyLimitProjectMaxInvocations
  * ----------------------------------------------------------------------------
  * Additional admin and artist privileged roles may be described on other
  * contracts that this minter integrates with.
@@ -464,6 +464,11 @@ contract MinterPolyptychV1 is
                 _coreContract
             ][_projectId];
         PolyptychLib.incrementPolyptychProjectPanelId(_polyptychProjectConfig);
+        emit UpdatedPolyptychProjectPanelId(
+            _projectId,
+            _coreContract,
+            _polyptychProjectConfig.polyptychPanelId
+        );
     }
 
     /**
@@ -485,13 +490,15 @@ contract MinterPolyptychV1 is
     }
 
     /**
-     * @notice Purchases a token from project `_projectId`.
+     * @notice Purchases a token from project `_projectId` on core contract
+     * `_coreContract` using an owned NFT at address `_ownedNFTAddress` and
+     * token ID `_ownedNFTTokenId` as the parent token.
      * @param _projectId Project ID to mint a token on.
      * @param _coreContract Core contract address for the given project.
      * @param _ownedNFTAddress ERC-721 NFT address holding the project token
-     * owned by msg.sender being used to prove right to purchase.
-     * @param _ownedNFTTokenId ERC-721 NFT token ID owned by msg.sender being used
-     * to prove right to purchase.
+     * owned by msg.sender being used as the parent token.
+     * @param _ownedNFTTokenId ERC-721 NFT token ID owned by msg.sender to be
+     * used as the parent token.
      * @return tokenId Token ID of minted token
      */
     function purchase(
@@ -512,15 +519,17 @@ contract MinterPolyptychV1 is
     }
 
     /**
-     * @notice Purchases a token from project `_projectId` and sets
-     * the token's owner to `_to`.
+     * @notice Purchases a token from project `_projectId` on core contract
+     * `_coreContract` using an owned NFT at address `_ownedNFTAddress` and
+     * token ID `_ownedNFTTokenId` as the parent token.
+     * Sets the token's owner to `_to`.
      * @param _to Address to be the new token's owner.
      * @param _projectId Project ID to mint a token on.
      * @param _coreContract Core contract address for the given project.
      * @param _ownedNFTAddress ERC-721 NFT holding the project token owned by
-     * msg.sender being used to claim right to purchase.
+     * msg.sender being used as the parent token.
      * @param _ownedNFTTokenId ERC-721 NFT token ID owned by msg.sender being used
-     * to claim right to purchase.
+     * as the parent token.
      * @return tokenId Token ID of minted token
      */
     function purchaseTo(
@@ -544,14 +553,14 @@ contract MinterPolyptychV1 is
     // public getter functions
     /**
      * @notice Gets the maximum invocations project configuration.
-     * @param _coreContract The address of the core contract.
      * @param _projectId The ID of the project whose data needs to be fetched.
+     * @param _coreContract The address of the core contract.
      * @return MaxInvocationsLib.MaxInvocationsProjectConfig instance with the
      * configuration data.
      */
     function maxInvocationsProjectConfig(
-        address _coreContract,
-        uint256 _projectId
+        uint256 _projectId,
+        address _coreContract
     )
         external
         view
@@ -562,13 +571,13 @@ contract MinterPolyptychV1 is
 
     /**
      * @notice Gets the base project configuration.
-     * @param _coreContract The address of the core contract.
      * @param _projectId The ID of the project whose data needs to be fetched.
+     * @param _coreContract The address of the core contract.
      * @return ProjectConfig instance with the project configuration data.
      */
     function projectConfig(
-        address _coreContract,
-        uint256 _projectId
+        uint256 _projectId,
+        address _coreContract
     ) external view returns (ProjectConfig memory) {
         return _projectConfigMapping[_coreContract][_projectId];
     }
@@ -814,11 +823,19 @@ contract MinterPolyptychV1 is
     }
 
     /**
-     * @notice Purchases a token from project `_projectId` and sets
-     * the token's owner to `_to`.
+     * @notice Purchases a token from project `_projectId` on core contract
+     * `_coreContract` using an owned NFT at address `_ownedNFTAddress` and
+     * token ID `_ownedNFTTokenId` as the parent token.
+     * Sets the token's owner to `_to`.
+     * Parent token must be owned by `msg.sender`, or `_vault` if `msg.sender`
+     * is a valid delegate for `_vault`.
      * @param _to Address to be the new token's owner.
      * @param _projectId Project ID to mint a token on.
      * @param _coreContract Core contract address for the given project.
+     * @param _ownedNFTAddress ERC-721 NFT holding the project token owned by
+     * msg.sender or `_vault` being used as the parent token.
+     * @param _ownedNFTTokenId ERC-721 NFT token ID owned by msg.sender or
+     * `_vault` being used as the parent token.
      * @return tokenId Token ID of minted token
      */
     function purchaseTo(
@@ -948,9 +965,9 @@ contract MinterPolyptychV1 is
         );
 
         // INTERACTIONS
-        // require proper ownership of NFT used to redeem
         // block scope to avoid stack too deep error
         {
+            // require proper ownership of NFT used to redeem
             /**
              * @dev Considered an interaction because calling ownerOf on an NFT
              * contract. Plan is to only integrate with AB/PBAB NFTs on the minter, but

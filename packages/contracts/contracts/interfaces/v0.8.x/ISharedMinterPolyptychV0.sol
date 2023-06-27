@@ -8,5 +8,10 @@ pragma solidity ^0.8.0;
  * @author Art Blocks Inc.
  */
 interface ISharedMinterPolyptychV0 {
-    // TODO - determine if this is needed at all...
+    // Emitted when the polyptych panel ID of a project is updated.
+    event UpdatedPolyptychProjectPanelId(
+        uint256 indexed projectId,
+        address indexed coreContract,
+        uint256 polyptychPanelId
+    );
 }
