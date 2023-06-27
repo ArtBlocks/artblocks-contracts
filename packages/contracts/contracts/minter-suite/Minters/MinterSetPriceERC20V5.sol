@@ -527,36 +527,14 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
             _coreContract,
             _isEngineCaches[_coreContract]
         );
-        uint256 pricePerTokenInWei = _projectConfig.pricePerTokenInWei;
-        address currencyAddress = _projectCurrencyConfig.currencyAddress;
-        if (currencyAddress != address(0)) {
-            // ERC20 token is used for payment
-            require(msg.value == 0, "ERC20: No ETH when using ERC20");
-            ERC20Lib.validateERC20Approvals({
-                _msgSender: msg.sender,
-                _currencyAddress: currencyAddress,
-                _pricePerTokenInWei: pricePerTokenInWei
-            });
-            SplitFundsLib.splitFundsERC20({
-                projectId: _projectId,
-                pricePerTokenInWei: pricePerTokenInWei,
-                currencyAddress: currencyAddress,
-                coreContract: _coreContract,
-                _isEngine: isEngine
-            });
-        } else {
-            // ETH is used for payment
-            require(
-                msg.value >= pricePerTokenInWei,
-                "ETH: Min value to mint req."
-            );
-            SplitFundsLib.splitFundsETH({
-                projectId: _projectId,
-                pricePerTokenInWei: pricePerTokenInWei,
-                coreContract: _coreContract,
-                _isEngine: isEngine
-            });
-        }
+        // process payment in either ETH or ERC20
+        ERC20Lib.processFixedPricePayment({
+            _projectCurrencyConfig: _projectCurrencyConfig,
+            _pricePerTokenInWei: _projectConfig.pricePerTokenInWei,
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _isEngine: isEngine
+        });
 
         return tokenId;
     }

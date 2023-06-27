@@ -6,6 +6,8 @@ import "../../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
 import "../../../interfaces/v0.8.x/IGenArt721CoreContractV3.sol";
 import "../../../interfaces/v0.8.x/IGenArt721CoreContractV3_Engine.sol";
 
+import "./SplitFundsLib.sol";
+
 import "@openzeppelin-4.7/contracts/token/ERC20/IERC20.sol";
 
 pragma solidity ^0.8.0;
@@ -47,6 +49,57 @@ library ERC20Lib {
         );
         _projectCurrencyConfig.currencySymbol = _currencySymbol;
         _projectCurrencyConfig.currencyAddress = _currencyAddress;
+    }
+
+    /**
+     * @notice Processes payment for a fixed price project, using either ETH or
+     * ERC20 tokens as payment. If ERC20 tokens are used, the contract must be
+     * approved to spend at least `_pricePerTokenInWei` of `_currencyAddress`,
+     * which is validated in this function.
+     * @dev This function relies on msg.sender and msg.value, so it must be
+     * called directly from the contract that is receiving the payment.
+     * @param _projectCurrencyConfig ProjectCurrencyConfig of the project.
+     * @param _pricePerTokenInWei Price per token in wei.
+     * @param _projectId Project ID.
+     * @param _coreContract Core contract address.
+     * @param _isEngine True if core contract is an engine contract.
+     */
+    function processFixedPricePayment(
+        ProjectCurrencyConfig storage _projectCurrencyConfig,
+        uint256 _pricePerTokenInWei,
+        uint256 _projectId,
+        address _coreContract,
+        bool _isEngine
+    ) internal {
+        address currencyAddress = _projectCurrencyConfig.currencyAddress;
+        if (currencyAddress != address(0)) {
+            // ERC20 token is used for payment
+            require(msg.value == 0, "ERC20: No ETH when using ERC20");
+            validateERC20Approvals({
+                _msgSender: msg.sender,
+                _currencyAddress: currencyAddress,
+                _pricePerTokenInWei: _pricePerTokenInWei
+            });
+            SplitFundsLib.splitFundsERC20({
+                projectId: _projectId,
+                pricePerTokenInWei: _pricePerTokenInWei,
+                currencyAddress: currencyAddress,
+                coreContract: _coreContract,
+                _isEngine: _isEngine
+            });
+        } else {
+            // ETH is used for payment
+            require(
+                msg.value >= _pricePerTokenInWei,
+                "ETH: Min value to mint req."
+            );
+            SplitFundsLib.splitFundsETH({
+                projectId: _projectId,
+                pricePerTokenInWei: _pricePerTokenInWei,
+                coreContract: _coreContract,
+                _isEngine: _isEngine
+            });
+        }
     }
 
     /**

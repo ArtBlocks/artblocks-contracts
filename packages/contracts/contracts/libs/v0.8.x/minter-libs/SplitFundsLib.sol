@@ -32,6 +32,8 @@ library SplitFundsLib {
      * WARNING: This function uses msg.value and msg.sender to determine
      * refund amounts, and therefore may not be applicable to all use cases
      * (e.g. do not use with Dutch Auctions with on-chain settlement).
+     * @dev This function relies on msg.sender and msg.value, so it must be
+     * called directly from the contract that is receiving the payment.
      * @dev possible DoS during splits is acknowledged, and mitigated by
      * business practices, including end-to-end testing on mainnet, and
      * admin-accepted artist payment addresses.
@@ -148,6 +150,8 @@ library SplitFundsLib {
     /**
      * @notice splits ERC20 funds between providers, artist, and artist's
      * additional payee, for a token purchased on project `_projectId`.
+     * @dev This function relies on msg.sender and msg.value, so it must be
+     * called directly from the contract that is receiving the payment.
      * @dev possible DoS during splits is acknowledged, and mitigated by
      * business practices, including end-to-end testing on mainnet, and
      * admin-accepted artist payment addresses.
