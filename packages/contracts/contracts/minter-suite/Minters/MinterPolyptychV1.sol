@@ -5,7 +5,7 @@ import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
 import "../../interfaces/v0.8.x/IGenArt721CoreContractExposesHashSeed.sol";
 import "../../interfaces/v0.8.x/IDelegationRegistry.sol";
 import "../../interfaces/v0.8.x/ISharedMinterV0.sol";
-import "../../interfaces/v0.8.x/IFilteredSharedHolder.sol";
+import "../../interfaces/v0.8.x/ISharedMinterHolderV0.sol";
 import "../../interfaces/v0.8.x/ISharedMinterPolyptychV0.sol";
 import "../../interfaces/v0.8.x/IMinterFilterV1.sol";
 import "../../interfaces/v0.8.x/ISharedRandomizerV0.sol";
@@ -95,7 +95,7 @@ interface IGenArt721CoreContractV3WithSharedRandomizer is
 contract MinterPolyptychV1 is
     ReentrancyGuard,
     ISharedMinterV0,
-    IFilteredSharedHolder,
+    ISharedMinterHolderV0,
     ISharedMinterPolyptychV0
 {
     // add Enumerable Set methods
@@ -794,17 +794,16 @@ contract MinterPolyptychV1 is
         ProjectConfig storage _projectConfig = _projectConfigMapping[
             _coreContract
         ][_projectId];
+        isConfigured = _projectConfig.priceIsConfigured;
+        tokenPriceInWei = _projectConfig.pricePerTokenInWei;
+        // get currency info from ERC20Lib
         ERC20Lib.ProjectCurrencyConfig
             storage _projectCurrencyConfig = _projectCurrencyConfigs[
                 _coreContract
             ][_projectId];
-        isConfigured = _projectConfig.priceIsConfigured;
-        tokenPriceInWei = _projectConfig.pricePerTokenInWei;
-        currencyAddress = _projectCurrencyConfig.currencyAddress;
-        // default to "ETH"" if project currency address is initial value
-        currencySymbol = currencyAddress == address(0)
-            ? "ETH"
-            : _projectCurrencyConfig.currencySymbol;
+        (currencyAddress, currencySymbol) = ERC20Lib.getCurrencyInfo(
+            _projectCurrencyConfig
+        );
     }
 
     /**
@@ -858,14 +857,6 @@ contract MinterPolyptychV1 is
             storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
                 _coreContract
             ][_projectId];
-        ERC20Lib.ProjectCurrencyConfig
-            storage _projectCurrencyConfig = _projectCurrencyConfigs[
-                _coreContract
-            ][_projectId];
-        PolyptychLib.PolyptychProjectConfig
-            storage _polyptychProjectConfig = _polyptychProjectConfigs[
-                _coreContract
-            ][_projectId];
 
         // Note that `maxHasBeenInvoked` is only checked here to reduce gas
         // consumption after a project has been fully minted.
@@ -912,7 +903,6 @@ contract MinterPolyptychV1 is
             require(isValidVault, "Invalid delegate-vault pairing");
             vault = _vault;
         }
-        // -----------------------------
 
         // we need the new token ID in advance of the randomizer setting a token hash
         IGenArt721CoreContractV3WithSharedRandomizer genArtCoreContract = IGenArt721CoreContractV3WithSharedRandomizer(
@@ -922,104 +912,101 @@ contract MinterPolyptychV1 is
             _projectId
         );
 
-        // uint256 _newTokenId = (_projectId * ONE_MILLION) + _invocations;
-
         // EFFECTS
 
         // we need to store the new token ID before it is minted so the randomizer can query it
-        IGenArt721CoreContractExposesHashSeed _ownedNFTCoreContract = IGenArt721CoreContractExposesHashSeed(
+        // block scope to avoid stack too deep error
+        {
+            bytes12 _targetHashSeed = IGenArt721CoreContractExposesHashSeed(
                 _ownedNFTAddress
+            ).tokenIdToHashSeed(_ownedNFTTokenId);
+
+            // block scope to avoid stack too deep error (nested)
+            {
+                // validates hash seed and ensures each hash seed used max once per panel
+                PolyptychLib.PolyptychProjectConfig
+                    storage _polyptychProjectConfig = _polyptychProjectConfigs[
+                        _coreContract
+                    ][_projectId];
+                PolyptychLib.validatePolyptychEffects(
+                    _polyptychProjectConfig,
+                    _targetHashSeed
+                );
+            }
+
+            uint256 _newTokenId = (_projectId * ONE_MILLION) + _invocations;
+            genArtCoreContract.randomizerContract().setPolyptychHashSeed({
+                _coreContract: _coreContract,
+                _tokenId: _newTokenId, // new token ID
+                _hashSeed: _targetHashSeed
+            });
+
+            // once mint() is called, the polyptych randomizer will either:
+            // 1) assign a random token hash
+            // 2) if configured, obtain the token hash from the `polyptychSeedHashes` mapping
+            tokenId = minterFilter.mint_joo(
+                _to,
+                _projectId,
+                _coreContract,
+                vault
             );
-        bytes12 _targetHashSeed = _ownedNFTCoreContract.tokenIdToHashSeed(
-            _ownedNFTTokenId
-        );
-        // validates hash seed and ensures each hash seed used max once per panel
-        PolyptychLib.validatePolyptychEffects(
-            _polyptychProjectConfig,
-            _targetHashSeed
-        );
 
-        genArtCoreContract.randomizerContract().setPolyptychHashSeed({
-            _coreContract: _coreContract,
-            _tokenId: (_projectId * ONE_MILLION) + _invocations, // new token ID
-            _hashSeed: _targetHashSeed
-        });
+            // NOTE: delegate-vault handling **ends here**.
 
-        // once mint() is called, the polyptych randomizer will either:
-        // 1) assign a random token hash
-        // 2) if configured, obtain the token hash from the `polyptychSeedHashes` mapping
-        tokenId = minterFilter.mint_joo(_to, _projectId, _coreContract, vault);
-
-        // NOTE: delegate-vault handling **ends here**.
-
-        // redundant check against reentrancy
-        bytes12 _assignedHashSeed = genArtCoreContract.tokenIdToHashSeed(
-            tokenId
-        );
-        require(
-            _assignedHashSeed == _targetHashSeed,
-            "Unexpected token hash seed"
-        );
+            // redundant check against reentrancy
+            bytes12 _assignedHashSeed = genArtCoreContract.tokenIdToHashSeed(
+                tokenId
+            );
+            require(
+                _assignedHashSeed == _targetHashSeed,
+                "Unexpected token hash seed"
+            );
+        }
 
         MaxInvocationsLib.validatePurchaseEffectsInvocations(
             tokenId,
-            _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
+            _maxInvocationsProjectConfig
         );
 
         // INTERACTIONS
         // require proper ownership of NFT used to redeem
-        /**
-         * @dev Considered an interaction because calling ownerOf on an NFT
-         * contract. Plan is to only integrate with AB/PBAB NFTs on the minter, but
-         * in case other NFTs are registered, better to check here. Also,
-         * function is non-reentrant, so this is extra cautious.
-         */
-        address actualNFTOwner = IERC721(_ownedNFTAddress).ownerOf(
-            _ownedNFTTokenId
-        );
-        // @dev if the artist is the sender, then the NFT must be owned by the
-        // recipient, otherwise the NFT must be owned by the vault
-        address _artist = genArtCoreContract.projectIdToArtistAddress(
-            _projectId
-        );
-        address targetOwner = (msg.sender == _artist) ? _to : vault;
-        require(actualNFTOwner == targetOwner, "Invalid owner of NFT");
+        // block scope to avoid stack too deep error
+        {
+            /**
+             * @dev Considered an interaction because calling ownerOf on an NFT
+             * contract. Plan is to only integrate with AB/PBAB NFTs on the minter, but
+             * in case other NFTs are registered, better to check here. Also,
+             * function is non-reentrant, so this is extra cautious.
+             */
+            address actualNFTOwner = IERC721(_ownedNFTAddress).ownerOf(
+                _ownedNFTTokenId
+            );
+            // @dev if the artist is the sender, then the NFT must be owned by the
+            // recipient, otherwise the NFT must be owned by the vault
+            address _artist = genArtCoreContract.projectIdToArtistAddress(
+                _projectId
+            );
+            address targetOwner = (msg.sender == _artist) ? _to : vault;
+            require(actualNFTOwner == targetOwner, "Invalid owner of NFT");
+        }
 
         // split funds
         bool isEngine = SplitFundsLib.isEngine(
             _coreContract,
             _isEngineCaches[_coreContract]
         );
-        uint256 pricePerTokenInWei = _projectConfig.pricePerTokenInWei;
-        address currencyAddress = _projectCurrencyConfig.currencyAddress;
-        if (currencyAddress != address(0)) {
-            // ERC20 token is used for payment
-            require(msg.value == 0, "ERC20: No ETH when using ERC20");
-            ERC20Lib.validateERC20Approvals({
-                _msgSender: msg.sender,
-                _currencyAddress: currencyAddress,
-                _pricePerTokenInWei: pricePerTokenInWei
-            });
-            SplitFundsLib.splitFundsERC20({
-                projectId: _projectId,
-                pricePerTokenInWei: pricePerTokenInWei,
-                currencyAddress: currencyAddress,
-                coreContract: _coreContract,
-                _isEngine: isEngine
-            });
-        } else {
-            // ETH is used for payment
-            require(
-                msg.value >= pricePerTokenInWei,
-                "ETH: Min value to mint req."
-            );
-            SplitFundsLib.splitFundsETH({
-                projectId: _projectId,
-                pricePerTokenInWei: pricePerTokenInWei,
-                coreContract: _coreContract,
-                _isEngine: isEngine
-            });
-        }
+        // process payment in either ETH or ERC20
+        ERC20Lib.ProjectCurrencyConfig
+            storage _projectCurrencyConfig = _projectCurrencyConfigs[
+                _coreContract
+            ][_projectId];
+        ERC20Lib.processFixedPricePayment({
+            _projectCurrencyConfig: _projectCurrencyConfig,
+            _pricePerTokenInWei: _projectConfig.pricePerTokenInWei,
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _isEngine: isEngine
+        });
 
         return tokenId;
     }
