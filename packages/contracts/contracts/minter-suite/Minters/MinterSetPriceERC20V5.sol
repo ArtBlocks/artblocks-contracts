@@ -245,14 +245,14 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
     // public getter functions
     /**
      * @notice Gets the maximum invocations project configuration.
-     * @param _coreContract The address of the core contract.
      * @param _projectId The ID of the project whose data needs to be fetched.
+     * @param _coreContract The address of the core contract.
      * @return MaxInvocationsLib.MaxInvocationsProjectConfig instance with the
      * configuration data.
      */
     function maxInvocationsProjectConfig(
-        address _coreContract,
-        uint256 _projectId
+        uint256 _projectId,
+        address _coreContract
     )
         external
         view
@@ -263,13 +263,13 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
 
     /**
      * @notice Gets the base project configuration.
-     * @param _coreContract The address of the core contract.
      * @param _projectId The ID of the project whose data needs to be fetched.
+     * @param _coreContract The address of the core contract.
      * @return ProjectConfig instance with the project configuration data.
      */
     function projectConfig(
-        address _coreContract,
-        uint256 _projectId
+        uint256 _projectId,
+        address _coreContract
     ) external view returns (ProjectConfig memory) {
         return _projectConfigMapping[_coreContract][_projectId];
     }
