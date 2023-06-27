@@ -2,42 +2,22 @@
 // Created By: Art Blocks Inc.
 
 import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
-import "../../interfaces/v0.8.x/IGenArt721CoreContractExposesHashSeed.sol";
 import "../../interfaces/v0.8.x/IDelegationRegistry.sol";
 import "../../interfaces/v0.8.x/ISharedMinterV0.sol";
 import "../../interfaces/v0.8.x/ISharedMinterHolderV0.sol";
 import "../../interfaces/v0.8.x/ISharedMinterPolyptychV0.sol";
 import "../../interfaces/v0.8.x/IMinterFilterV1.sol";
-import "../../interfaces/v0.8.x/ISharedRandomizerV0.sol";
 
 import "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
 import "../../libs/v0.8.x/minter-libs/MaxInvocationsLib.sol";
 import "../../libs/v0.8.x/minter-libs/TokenHolderLib.sol";
-import "../../libs/v0.8.x/minter-libs/ERC20Lib.sol";
 import "../../libs/v0.8.x/minter-libs/PolyptychLib.sol";
+import "../../libs/v0.8.x/minter-libs/ERC20Lib.sol";
 
-import "@openzeppelin-4.5/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin-4.5/contracts/utils/structs/EnumerableSet.sol";
 
 pragma solidity 0.8.19;
-
-/**
- * @title Core contract interface for accessing the randomizer from the minter
- * @notice This interface provides the minter with access to the shared
- * randomizer, allowing the token hash seed for a newly-minted token to be
- * assigned by the minter if the artist has enabled the project as a polyptych.
- * Polytptych projects must use the V3 core contract, this polyptych minter,
- * and a shared randomizer - this interface allows the minter to access the
- * randomizer.
- */
-interface IGenArt721CoreContractV3WithSharedRandomizer is
-    IGenArt721CoreContractV3_Base,
-    IGenArt721CoreContractExposesHashSeed
-{
-    /// current randomizer contract, that we cast as a shared randomizer
-    function randomizerContract() external returns (ISharedRandomizerV0);
-}
 
 /**
  * @title Shared, filtered Minter contract that allows tokens to be minted with
@@ -905,7 +885,7 @@ contract MinterPolyptychV1 is
         }
 
         // we need the new token ID in advance of the randomizer setting a token hash
-        IGenArt721CoreContractV3WithSharedRandomizer genArtCoreContract = IGenArt721CoreContractV3WithSharedRandomizer(
+        IGenArt721CoreContractV3_Base genArtCoreContract = IGenArt721CoreContractV3_Base(
                 _coreContract
             );
         (uint256 _invocations, , , , , ) = genArtCoreContract.projectStateData(
@@ -917,9 +897,10 @@ contract MinterPolyptychV1 is
         // we need to store the new token ID before it is minted so the randomizer can query it
         // block scope to avoid stack too deep error
         {
-            bytes12 _targetHashSeed = IGenArt721CoreContractExposesHashSeed(
-                _ownedNFTAddress
-            ).tokenIdToHashSeed(_ownedNFTTokenId);
+            bytes12 _targetHashSeed = PolyptychLib.getTokenHashSeed(
+                _ownedNFTAddress,
+                _ownedNFTTokenId
+            );
 
             // block scope to avoid stack too deep error (nested)
             {
@@ -935,7 +916,7 @@ contract MinterPolyptychV1 is
             }
 
             uint256 _newTokenId = (_projectId * ONE_MILLION) + _invocations;
-            genArtCoreContract.randomizerContract().setPolyptychHashSeed({
+            PolyptychLib.setPolyptychHashSeed({
                 _coreContract: _coreContract,
                 _tokenId: _newTokenId, // new token ID
                 _hashSeed: _targetHashSeed
@@ -954,13 +935,11 @@ contract MinterPolyptychV1 is
             // NOTE: delegate-vault handling **ends here**.
 
             // redundant check against reentrancy
-            bytes12 _assignedHashSeed = genArtCoreContract.tokenIdToHashSeed(
-                tokenId
-            );
-            require(
-                _assignedHashSeed == _targetHashSeed,
-                "Unexpected token hash seed"
-            );
+            PolyptychLib.validateAssignedHashSeed({
+                _coreContract: _coreContract,
+                _tokenId: tokenId,
+                _targetHashSeed: _targetHashSeed
+            });
         }
 
         MaxInvocationsLib.validatePurchaseEffectsInvocations(
@@ -978,16 +957,17 @@ contract MinterPolyptychV1 is
              * in case other NFTs are registered, better to check here. Also,
              * function is non-reentrant, so this is extra cautious.
              */
-            address actualNFTOwner = IERC721(_ownedNFTAddress).ownerOf(
-                _ownedNFTTokenId
-            );
             // @dev if the artist is the sender, then the NFT must be owned by the
             // recipient, otherwise the NFT must be owned by the vault
             address _artist = genArtCoreContract.projectIdToArtistAddress(
                 _projectId
             );
             address targetOwner = (msg.sender == _artist) ? _to : vault;
-            require(actualNFTOwner == targetOwner, "Invalid owner of NFT");
+            TokenHolderLib.validateNFTOwnership({
+                _ownedNFTAddress: _ownedNFTAddress,
+                _ownedNFTTokenId: _ownedNFTTokenId,
+                _targetOwner: targetOwner
+            });
         }
 
         // split funds

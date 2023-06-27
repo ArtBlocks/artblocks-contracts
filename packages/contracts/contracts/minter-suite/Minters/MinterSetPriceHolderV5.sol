@@ -11,7 +11,6 @@ import "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
 import "../../libs/v0.8.x/minter-libs/MaxInvocationsLib.sol";
 import "../../libs/v0.8.x/minter-libs/TokenHolderLib.sol";
 
-import "@openzeppelin-4.5/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin-4.5/contracts/utils/structs/EnumerableSet.sol";
 
@@ -769,10 +768,11 @@ contract MinterSetPriceHolderV5 is
          * in case other NFTs are registered, better to check here. Also,
          * function is non-reentrant, so this is extra cautious.
          */
-        require(
-            IERC721(_ownedNFTAddress).ownerOf(_ownedNFTTokenId) == vault,
-            "Only owner of NFT"
-        );
+        TokenHolderLib.validateNFTOwnership({
+            _ownedNFTAddress: _ownedNFTAddress,
+            _ownedNFTTokenId: _ownedNFTTokenId,
+            _targetOwner: vault
+        });
 
         // split funds
         // INTERACTIONS

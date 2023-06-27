@@ -3,12 +3,29 @@
 
 import "../../../interfaces/v0.8.x/IMinterBaseV0.sol";
 import "../../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
-import "../../../interfaces/v0.8.x/IGenArt721CoreContractV3.sol";
-import "../../../interfaces/v0.8.x/IGenArt721CoreContractV3_Engine.sol";
+import "../../../interfaces/v0.8.x/IGenArt721CoreContractExposesHashSeed.sol";
+import "../../../interfaces/v0.8.x/ISharedRandomizerV0.sol";
 
 import "@openzeppelin-4.7/contracts/token/ERC20/IERC20.sol";
 
 pragma solidity ^0.8.0;
+
+/**
+ * @title Core contract interface for accessing the randomizer from the minter
+ * @notice This interface provides the minter with access to the shared
+ * randomizer, allowing the token hash seed for a newly-minted token to be
+ * assigned by the minter if the artist has enabled the project as a polyptych.
+ * Polytptych projects must use the V3 core contract, this polyptych minter,
+ * and a shared randomizer - this interface allows the minter to access the
+ * randomizer.
+ */
+interface IGenArt721CoreContractV3WithSharedRandomizer is
+    IGenArt721CoreContractV3_Base,
+    IGenArt721CoreContractExposesHashSeed
+{
+    /// current randomizer contract, that we cast as a shared randomizer
+    function randomizerContract() external returns (ISharedRandomizerV0);
+}
 
 /**
  * @title Art Blocks Split Funds Library
@@ -65,5 +82,57 @@ library PolyptychLib {
         _polyptychProjectConfig.polyptychPanelHashSeedIsMinted[_panelId][
             _tokenHashSeed
         ] = true;
+    }
+
+    /**
+     * @notice Sets the polyptych token hash seed on shared randomizer for a
+     * token ID on a core contract.
+     * @dev This function assumes the core contract is configured to use a
+     * shared randomizer that supports polyptych minting.
+     * @param _coreContract Core contract address
+     * @param _tokenId Token ID to set hash seed for
+     * @param _hashSeed Hash seed to set
+     */
+    function setPolyptychHashSeed(
+        address _coreContract,
+        uint256 _tokenId,
+        bytes12 _hashSeed
+    ) internal {
+        IGenArt721CoreContractV3WithSharedRandomizer(_coreContract)
+            .randomizerContract()
+            .setPolyptychHashSeed({
+                _coreContract: _coreContract,
+                _tokenId: _tokenId,
+                _hashSeed: _hashSeed
+            });
+    }
+
+    /**
+     * Validates that token hash seed is assigned to the token ID `_tokenId` on
+     * the core contract `_coreContract`.
+     * Reverts if hash seed is not assigned to the token ID.
+     * @param _coreContract Core contract address
+     * @param _tokenId Token ID to validate
+     * @param _targetHashSeed target hash seed of `_tokenId` on `_coreContract`
+     */
+    function validateAssignedHashSeed(
+        address _coreContract,
+        uint256 _tokenId,
+        bytes12 _targetHashSeed
+    ) internal view {
+        bytes12 _assignedHashSeed = getTokenHashSeed(_coreContract, _tokenId);
+        require(
+            _assignedHashSeed == _targetHashSeed,
+            "Unexpected token hash seed"
+        );
+    }
+
+    function getTokenHashSeed(
+        address _coreContract,
+        uint256 _tokenId
+    ) internal view returns (bytes12) {
+        return
+            IGenArt721CoreContractExposesHashSeed(_coreContract)
+                .tokenIdToHashSeed(_tokenId);
     }
 }
