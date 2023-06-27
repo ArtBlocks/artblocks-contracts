@@ -13,7 +13,7 @@ import { MinterFilterV1__factory } from "../../../contracts/factories/MinterFilt
 import { MinterSetPriceV4__factory } from "../../../contracts/factories/MinterSetPriceV4__factory";
 
 // image bucket creation
-import { createPBABBucket } from "../../../util/aws_s3";
+import { createEngineBucket } from "../../../util/aws_s3";
 // delay to avoid issues with reorgs and tx failures
 import { delay } from "../../../util/utils";
 const EXTRA_DELAY_BETWEEN_TX = 1000; // ms
@@ -231,7 +231,7 @@ async function main() {
       `${standardVerify} --network ${networkName} ${minterSetPrice.address} ${genArt721Core.address} ${minterFilter.address}`
     );
     // create image bucket
-    const payload = await createPBABBucket(tokenName, networkName);
+    const payload = await createEngineBucket(tokenName, networkName);
     console.log(`Set image bucket for this core contract to ${payload["url"]}`);
     // reminder to set core contract type in db
     const coreType = await genArt721Core.coreType();
