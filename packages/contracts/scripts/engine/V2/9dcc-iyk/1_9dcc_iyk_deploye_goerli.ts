@@ -6,7 +6,7 @@ import { ethers } from "hardhat";
 import { delay } from "../../util/utils";
 const EXTRA_DELAY_BETWEEN_TX = 10000; // ms
 
-import { createPBABBucket } from "../../util/aws_s3";
+import { createEngineBucket } from "../../util/aws_s3";
 
 /**
  * This script was created to deploy partner contracts to the goerli
@@ -45,7 +45,7 @@ async function main() {
   //////////////////////////////////////////////////////////////////////////////
 
   // Setup S3 bucket.
-  await createPBABBucket(tokenName, networkName);
+  await createEngineBucket(tokenName, networkName);
 
   // Randomizer contract
   console.log(`Using shared randomizer at ${randomizerAddress}`);

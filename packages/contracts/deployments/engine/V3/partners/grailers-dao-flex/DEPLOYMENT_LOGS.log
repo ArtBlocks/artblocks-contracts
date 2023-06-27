@@ -1,0 +1,59 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-06-27T02:39:22.338Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/grailers-dao-flex/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x40e3538aBE7b78E16397e4Fae2804d72A4356B85
+[INFO] Randomizer BasicRandomizerV2 deployed at 0x3765f4C1e2B51f793Fb505617789B7A53E5D2f15
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x72f0e5Af1B3D68BaE33FBAd441F55489954d9a04
+[INFO] Minter Filter MinterFilterV1 deployed at 0xA5bD9dB063E783152186224A9B26B3073747bdE1
+[INFO] MinterSetPriceV4 deployed at 0x559D8c04CE7C5A9da1fB14793A9b51F3952a5FB9
+[INFO] MinterMerkleV5 deployed at 0xfE322C8069f1EeB55537F74f83f86C4f06C77746
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0xA5bD9dB063E783152186224A9B26B3073747bdE1.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0x559D8c04CE7C5A9da1fB14793A9b51F3952a5FB9 on minter filter.
+[INFO] Allowlisted minter MinterMerkleV5 at 0xfE322C8069f1EeB55537F74f83f86C4f06C77746 on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0x2329FD5F1924b0d6Df643eeEA4Fbf816f415C879.
+[INFO] Verifying core contract contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/engine/V3/GenArt721CoreV3_Engine_Flex.sol:GenArt721CoreV3_Engine_Flex at 0x72f0e5Af1B3D68BaE33FBAd441F55489954d9a04
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract GenArt721CoreV3_Engine_Flex on Etherscan.
+https://goerli.etherscan.io/address/0x72f0e5Af1B3D68BaE33FBAd441F55489954d9a04#code
+[INFO] Core contract verified on Etherscan at 0x72f0e5Af1B3D68BaE33FBAd441F55489954d9a04}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0x40e3538aBE7b78E16397e4Fae2804d72A4356B85 has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0x40e3538aBE7b78E16397e4Fae2804d72A4356B85}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0xA5bD9dB063E783152186224A9B26B3073747bdE1 has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0xA5bD9dB063E783152186224A9B26B3073747bdE1}
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+The contract 0x559D8c04CE7C5A9da1fB14793A9b51F3952a5FB9 has already been verified
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0x559D8c04CE7C5A9da1fB14793A9b51F3952a5FB9}
+[INFO] Verifying MinterMerkleV5 contract deployment...
+Compiled 222 Solidity files successfully
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterMerkleV5.sol:MinterMerkleV5 at 0xfE322C8069f1EeB55537F74f83f86C4f06C77746
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterMerkleV5 on Etherscan.
+https://goerli.etherscan.io/address/0xfE322C8069f1EeB55537F74f83f86C4f06C77746#code
+[INFO] MinterMerkleV5 contract verified on Etherscan at 0xfE322C8069f1EeB55537F74f83f86C4f06C77746}
+Created s3 bucket for https://grailersdao-goerli.s3.amazonaws.com
+[INFO] Created image bucket grailersdao-goerli
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/grailers-dao-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x72f0e5af1b3d68bae33fbad441f55489954d9a04",
+  "name": "GrailersDAO",
+  "bucket_name": "grailersdao-goerli",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x2329FD5F1924b0d6Df643eeEA4Fbf816f415C879, don't forget to update if requred.

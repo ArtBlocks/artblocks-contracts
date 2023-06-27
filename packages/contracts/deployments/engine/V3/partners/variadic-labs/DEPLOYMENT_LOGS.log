@@ -116,3 +116,71 @@ Contracts metadata upsert input:
 Successfully upserted 1 contract
 [ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
 [ACTION] AdminACL's superAdmin address is 0x61F1Ca3F65EA947B01bC66379bc4a7C5a07a8A3F, don't forget to update if requred.
+----------------------------------------
+[INFO] Datetime of deployment: 2023-06-27T01:30:38.392Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/variadic-labs/deployment-config.arbitrum.ts
+[INFO] Deploying to network: arbitrum
+----------------------------------------
+[INFO] Datetime of deployment: 2023-06-27T01:37:21.419Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/variadic-labs/deployment-config.arbitrum.ts
+[INFO] Deploying to network: arbitrum
+[INFO] Deploying to environment: arbitrum
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0xA1631F64d95b7dF046Ca3b00690A5e45DAe9527a
+[INFO] Randomizer BasicRandomizerV2 deployed at 0x28f2D3805652FB5d359486dFfb7D08320D403240
+[INFO] Core GenArt721CoreV3_Engine deployed at 0x7497909537cE00fDda93c12d5083D8647C593c67
+[INFO] Minter Filter MinterFilterV1 deployed at 0xd9F14781F6cBA1F4FFB0743BcFd5fC860d1da847
+[INFO] MinterSetPriceV4 deployed at 0x422f493D257e8eFab558137299a509d5a2702BBc
+[INFO] MinterDAExpSettlementV1 deployed at 0xA84E2eFFfCFd1cbE01785Bd10aaEE520A68CD3DD
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0xd9F14781F6cBA1F4FFB0743BcFd5fC860d1da847.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0x422f493D257e8eFab558137299a509d5a2702BBc on minter filter.
+[INFO] Allowlisted minter MinterDAExpSettlementV1 at 0xA84E2eFFfCFd1cbE01785Bd10aaEE520A68CD3DD on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0x5E4b15b15563396940Cd5FC523707451743Deeac.
+[INFO] Verifying core contract contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/engine/V3/GenArt721CoreV3_Engine.sol:GenArt721CoreV3_Engine at 0x7497909537cE00fDda93c12d5083D8647C593c67
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract GenArt721CoreV3_Engine on Etherscan.
+https://arbiscan.io/address/0x7497909537cE00fDda93c12d5083D8647C593c67#code
+[INFO] Core contract verified on Etherscan at 0x7497909537cE00fDda93c12d5083D8647C593c67}
+[INFO] Verifying AdminACL contract deployment...
+Compiled 222 Solidity files successfully
+Successfully submitted source code for contract
+contracts/AdminACLV1.sol:AdminACLV1 at 0xA1631F64d95b7dF046Ca3b00690A5e45DAe9527a
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract AdminACLV1 on Etherscan.
+https://arbiscan.io/address/0xA1631F64d95b7dF046Ca3b00690A5e45DAe9527a#code
+[INFO] AdminACL contract verified on Etherscan at 0xA1631F64d95b7dF046Ca3b00690A5e45DAe9527a}
+[INFO] Verifying MinterFilter contract deployment...
+Compiled 222 Solidity files successfully
+Successfully submitted source code for contract
+contracts/minter-suite/MinterFilter/MinterFilterV1.sol:MinterFilterV1 at 0xd9F14781F6cBA1F4FFB0743BcFd5fC860d1da847
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterFilterV1 on Etherscan.
+https://arbiscan.io/address/0xd9F14781F6cBA1F4FFB0743BcFd5fC860d1da847#code
+[INFO] MinterFilter contract verified on Etherscan at 0xd9F14781F6cBA1F4FFB0743BcFd5fC860d1da847}
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+Compiled 222 Solidity files successfully
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterSetPriceV4.sol:MinterSetPriceV4 at 0x422f493D257e8eFab558137299a509d5a2702BBc
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterSetPriceV4 on Etherscan.
+https://arbiscan.io/address/0x422f493D257e8eFab558137299a509d5a2702BBc#code
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0x422f493D257e8eFab558137299a509d5a2702BBc}
+[INFO] Verifying MinterDAExpSettlementV1 contract deployment...
+Compiled 222 Solidity files successfully
+Successfully submitted source code for contract
+contracts/archive/minter-suite/Minters/MinterDAExpSettlement/MinterDAExpSettlementV1.sol:MinterDAExpSettlementV1 at 0xA84E2eFFfCFd1cbE01785Bd10aaEE520A68CD3DD
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterDAExpSettlementV1 on Etherscan.
+https://arbiscan.io/address/0xA84E2eFFfCFd1cbE01785Bd10aaEE520A68CD3DD#code
+[INFO] MinterDAExpSettlementV1 contract verified on Etherscan at 0xA84E2eFFfCFd1cbE01785Bd10aaEE520A68CD3DD}
+Created s3 bucket for https://concentric-art-arbitrum.s3.amazonaws.com
