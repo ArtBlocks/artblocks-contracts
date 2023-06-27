@@ -567,3 +567,10 @@ export async function getTxResponseTimestamp(tx) {
   const block = await ethers.provider.getBlock(receipt.blockNumber);
   return block.timestamp;
 }
+
+export function hashAddress(_address) {
+  return Buffer.from(
+    ethers.utils.solidityKeccak256(["address"], [_address]).slice(2),
+    "hex"
+  );
+}
