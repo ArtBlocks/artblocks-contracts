@@ -6,7 +6,7 @@ const {
   PutBucketCorsCommand,
 } = require("@aws-sdk/client-s3");
 import {
-  createPBABBucket,
+  createEngineBucket,
   createBucket,
   updateBucketCors,
 } from "../../scripts/util/aws_s3";
@@ -28,7 +28,7 @@ const expectedCreateBucketResponse = {
   Location: `/${pbabBucketName}`,
 };
 
-const expectedCreatePBABBucketResponse = {
+const expectedcreateEngineBucketResponse = {
   url: pbabBucketURL,
   response: expectedCreateBucketResponse,
 };
@@ -65,7 +65,7 @@ describe("Create S3 Bucket for PBAB", () => {
   it("creates s3 bucket with pbab naming conventions", async () => {
     const pbabTokenName = "Foobar PBAB Bucket";
     const isTest = true;
-    const { payload, bucketName } = await createPBABBucket(
+    const { payload, bucketName } = await createEngineBucket(
       pbabTokenName,
       networkName,
       s3ClientMock as any,
@@ -73,9 +73,9 @@ describe("Create S3 Bucket for PBAB", () => {
     );
     assert(
       payload?.["response"]["Location"] ===
-        expectedCreatePBABBucketResponse["response"]["Location"]
+        expectedcreateEngineBucketResponse["response"]["Location"]
     );
-    assert(payload?.["url"] === expectedCreatePBABBucketResponse["url"]);
+    assert(payload?.["url"] === expectedcreateEngineBucketResponse["url"]);
     assert(bucketName === `foobar-pbab-bucket-${networkName}`);
   });
 });

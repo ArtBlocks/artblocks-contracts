@@ -13,15 +13,15 @@ const runForEach = [
   {
     core: "GenArt721CoreV3",
   },
-  // {
-  //   core: "GenArt721CoreV3_Explorations",
-  // },
-  // {
-  //   core: "GenArt721CoreV3_Engine",
-  // },
-  // {
-  //   core: "GenArt721CoreV3_Engine_Flex",
-  // },
+  {
+    core: "GenArt721CoreV3_Explorations",
+  },
+  {
+    core: "GenArt721CoreV3_Engine",
+  },
+  {
+    core: "GenArt721CoreV3_Engine_Flex",
+  },
 ];
 
 runForEach.forEach((params) => {
@@ -203,8 +203,8 @@ runForEach.forEach((params) => {
         const maxInvocationsProjectConfig = await config.minter
           .connect(config.accounts.artist)
           .maxInvocationsProjectConfig(
-            config.genArt721Core.address,
-            config.projectZero
+            config.projectZero,
+            config.genArt721Core.address
           );
         expect(maxInvocationsProjectConfig.maxInvocations).to.equal(1);
 
@@ -241,8 +241,8 @@ runForEach.forEach((params) => {
         const syncedMaxInvocationsProjectConfig = await config.minter
           .connect(config.accounts.artist)
           .maxInvocationsProjectConfig(
-            config.genArt721Core.address,
-            config.projectZero
+            config.projectZero,
+            config.genArt721Core.address
           );
         expect(syncedMaxInvocationsProjectConfig.maxInvocations).to.equal(15);
       });
@@ -262,8 +262,8 @@ runForEach.forEach((params) => {
         const localMaxInvocations = await config.minter
           .connect(config.accounts.artist)
           .maxInvocationsProjectConfig(
-            config.genArt721Core.address,
-            config.projectOne
+            config.projectOne,
+            config.genArt721Core.address
           );
         expect(localMaxInvocations.maxInvocations).to.equal(1);
 
@@ -294,8 +294,8 @@ runForEach.forEach((params) => {
         const localMaxInvocations2 = await config.minter
           .connect(config.accounts.artist)
           .maxInvocationsProjectConfig(
-            config.genArt721Core.address,
-            config.projectOne
+            config.projectOne,
+            config.genArt721Core.address
           );
         expect(localMaxInvocations2.maxInvocations).to.equal(3);
 
@@ -319,8 +319,8 @@ runForEach.forEach((params) => {
         const localMaxInvocations3 = await config.minter
           .connect(config.accounts.artist)
           .maxInvocationsProjectConfig(
-            config.genArt721Core.address,
-            config.projectOne
+            config.projectOne,
+            config.genArt721Core.address
           );
         expect(localMaxInvocations3.maxInvocations).to.equal(1);
 

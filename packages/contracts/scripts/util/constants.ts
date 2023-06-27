@@ -13,6 +13,7 @@ export const DELEGATION_REGISTRY_ADDRESSES = {
 export const BYTECODE_STORAGE_READER_LIBRARY_ADDRESSES = {
   // note: _different_ address for goerli and mainnet
   "arbitrum-goerli": "0x681861cD4fC92d70aE57745385065ef862954662",
+  arbitrum: "0xa07f47c30C262adcC263A4D44595972c50e04db7",
   goerli: "0xB8B806A10d16cc80dB788552B54B3ECb4A2A3C3D",
   mainnet: "0xf0585dF582A0ad119F1616FB82f3b449a98EeCd5",
 };
@@ -47,6 +48,11 @@ export const KNOWN_ENGINE_REGISTRIES = {
       "0x3b9038fa89783CBA1933c1689043b4dae2032d1c",
     // [INDEXED] arbitrum goerli staging | deployer: arbitrum staging deployer wallet
     "0x3b30d421a6dA95694EaaE09971424F15Eb375269":
+      "0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63",
+  },
+  arbitrum: {
+    // [INDEXED] arbitrum mainnet | deployer: arbitrum mainnet deployer wallet
+    "0xdAe755c2944Ec125a0D8D5CB082c22837593441a":
       "0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63",
   },
 };

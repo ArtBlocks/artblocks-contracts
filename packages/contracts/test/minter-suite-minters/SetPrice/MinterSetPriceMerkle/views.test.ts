@@ -20,15 +20,15 @@ const runForEach = [
   {
     core: "GenArt721CoreV3",
   },
-  // {
-  //   core: "GenArt721CoreV3_Explorations",
-  // },
-  // {
-  //   core: "GenArt721CoreV3_Engine",
-  // },
-  // {
-  //   core: "GenArt721CoreV3_Engine_Flex",
-  // },
+  {
+    core: "GenArt721CoreV3_Explorations",
+  },
+  {
+    core: "GenArt721CoreV3_Engine",
+  },
+  {
+    core: "GenArt721CoreV3_Engine_Flex",
+  },
 ];
 
 runForEach.forEach((params) => {
@@ -328,8 +328,8 @@ runForEach.forEach((params) => {
         ] = await config.minter
           .connect(config.accounts.artist)
           .merkleProjectConfig(
-            config.genArt721Core.address,
-            config.projectZero
+            config.projectZero,
+            config.genArt721Core.address
           );
         expect(merkleRoot).to.equal(merkleRootZero);
         expect(useMaxInvocationsPerAddressOverride).to.equal(false);
@@ -338,8 +338,8 @@ runForEach.forEach((params) => {
         await config.minter
           .connect(config.accounts.artist)
           .setProjectInvocationsPerAddress(
-            config.genArt721Core.address,
             config.projectZero,
+            config.genArt721Core.address,
             999
           );
 
@@ -350,8 +350,8 @@ runForEach.forEach((params) => {
         ] = await config.minter
           .connect(config.accounts.artist)
           .merkleProjectConfig(
-            config.genArt721Core.address,
-            config.projectZero
+            config.projectZero,
+            config.genArt721Core.address
           );
         expect(merkleRoot2).to.equal(merkleRootZero);
         expect(useMaxInvocationsPerAddressOverride2).to.equal(true);
@@ -376,8 +376,8 @@ runForEach.forEach((params) => {
         const projectUserMintInvocationsNone = await config.minter
           .connect(config.accounts.artist)
           .projectUserMintInvocations(
-            config.genArt721Core.address,
             config.projectZero,
+            config.genArt721Core.address,
             config.accounts.user.address
           );
 
@@ -396,8 +396,8 @@ runForEach.forEach((params) => {
         const projectUserMintInvocations = await config.minter
           .connect(config.accounts.artist)
           .projectUserMintInvocations(
-            config.genArt721Core.address,
             config.projectZero,
+            config.genArt721Core.address,
             config.accounts.user.address
           );
 
@@ -422,8 +422,8 @@ runForEach.forEach((params) => {
         await config.minter
           .connect(config.accounts.artist)
           .setProjectInvocationsPerAddress(
-            config.genArt721Core.address,
             config.projectZero,
+            config.genArt721Core.address,
             0
           );
         const projectMaxInvocationsPerAddress_ = await config.minter
@@ -440,8 +440,8 @@ runForEach.forEach((params) => {
         await config.minter
           .connect(config.accounts.artist)
           .setProjectInvocationsPerAddress(
-            config.genArt721Core.address,
             config.projectZero,
+            config.genArt721Core.address,
             999
           );
         const projectMaxInvocationsPerAddress_ = await config.minter
@@ -458,15 +458,15 @@ runForEach.forEach((params) => {
         await config.minter
           .connect(config.accounts.artist)
           .setProjectInvocationsPerAddress(
-            config.genArt721Core.address,
             config.projectZero,
+            config.genArt721Core.address,
             0
           );
         await config.minter
           .connect(config.accounts.artist)
           .setProjectInvocationsPerAddress(
-            config.genArt721Core.address,
             config.projectZero,
+            config.genArt721Core.address,
             999
           );
         const projectMaxInvocationsPerAddress_ = await config.minter
@@ -483,15 +483,15 @@ runForEach.forEach((params) => {
         await config.minter
           .connect(config.accounts.artist)
           .setProjectInvocationsPerAddress(
-            config.genArt721Core.address,
             config.projectZero,
+            config.genArt721Core.address,
             0
           );
         await config.minter
           .connect(config.accounts.artist)
           .setProjectInvocationsPerAddress(
-            config.genArt721Core.address,
             config.projectZero,
+            config.genArt721Core.address,
             1
           );
         const projectMaxInvocationsPerAddress_ = await config.minter
@@ -590,8 +590,8 @@ runForEach.forEach((params) => {
         await config.minter
           .connect(config.accounts.artist)
           .setProjectInvocationsPerAddress(
-            config.genArt721Core.address,
             config.projectZero,
+            config.genArt721Core.address,
             0
           );
         // check remaining invocations response
@@ -652,8 +652,8 @@ runForEach.forEach((params) => {
         await config.minter
           .connect(config.accounts.artist)
           .setProjectInvocationsPerAddress(
-            config.genArt721Core.address,
             config.projectZero,
+            config.genArt721Core.address,
             5
           );
         // check remaining invocations response
@@ -701,8 +701,8 @@ runForEach.forEach((params) => {
         await config.minter
           .connect(config.accounts.artist)
           .setProjectInvocationsPerAddress(
-            config.genArt721Core.address,
             config.projectZero,
+            config.genArt721Core.address,
             1
           );
         // check remaining invocations response
@@ -735,6 +735,18 @@ runForEach.forEach((params) => {
             config.accounts.user.address
           );
         expect(hash).to.equal(config.merkleTreeZero.getHexRoot());
+      });
+    });
+
+    describe("hashAddress", async function () {
+      it("returns valid hash from provided address", async function () {
+        const config = await loadFixture(_beforeEach);
+        const hash = await config.minter
+          .connect(config.accounts.user)
+          .hashAddress(config.accounts.user.address);
+        expect(hash).to.equal(
+          "0x93230d0b2377404a36412e26d231de4c7e1a9fb62e227b420200ee950a5ca9c0"
+        );
       });
     });
   });

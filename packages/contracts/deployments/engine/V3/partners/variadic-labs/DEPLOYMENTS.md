@@ -87,3 +87,48 @@ Date: 2023-06-12T23:36:07.574Z
 
 ---
 
+
+# Deployment
+
+Date: 2023-06-27T01:47:17.883Z
+
+## **Network:** arbitrum
+
+## **Environment:** arbitrum
+
+**Deployment Input File:** `deployments/engine/V3/partners/variadic-labs/deployment-config.arbitrum.ts`
+
+**GenArt721CoreV3_Engine:** https://arbitrum.etherscan.io/address/0x7497909537cE00fDda93c12d5083D8647C593c67#code
+
+**AdminACLV1:** https://arbitrum.etherscan.io/address/0xA1631F64d95b7dF046Ca3b00690A5e45DAe9527a#code
+
+**Engine Registry:** https://arbitrum.etherscan.io/address/0xdAe755c2944Ec125a0D8D5CB082c22837593441a#code
+
+**MinterFilterV1:** https://arbitrum.etherscan.io/address/0xd9F14781F6cBA1F4FFB0743BcFd5fC860d1da847#code
+
+**Minters:**
+
+**MinterSetPriceV4:** https://arbitrum.etherscan.io/address/0x422f493D257e8eFab558137299a509d5a2702BBc#code
+
+**MinterDAExpSettlementV1:** https://arbitrum.etherscan.io/address/0xA84E2eFFfCFd1cbE01785Bd10aaEE520A68CD3DD#code
+
+
+
+**Metadata**
+
+- **Starting Project Id:** 0
+- **Token Name:** Concentric Art
+- **Token Ticker:** CONCENTRIC
+- **Auto Approve Artist Split Proposals:** false
+- **Render Provider Address, Primary Sales:** 0x9a0a334ECeaC3436fd6B3286bB2D4ceEF06809ce
+- **Platform Provider Address, Primary Sales:** 0x5E4b15b15563396940Cd5FC523707451743Deeac
+- **BytecodeStorageReader Library:** 0xa07f47c30C262adcC263A4D44595972c50e04db7
+
+**Other**
+
+- **Add initial project?:** false
+- **Add initial token?:** false
+- **Image Bucket:** concentric-art-arbitrum
+
+---
+

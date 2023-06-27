@@ -140,7 +140,6 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
     /**
      * @notice Updates this minter's price per token of project `_projectId`
      * to be '_pricePerTokenInWei`, in Wei.
-     * This price supersedes any legacy core contract price per token value.
      * @dev Note that it is intentionally supported here that the configured
      * price may be explicitly set to `0`.
      * @param _projectId Project ID to set the price per token for.
@@ -202,8 +201,8 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
      * configuration data.
      */
     function maxInvocationsProjectConfig(
-        address _coreContract,
-        uint256 _projectId
+        uint256 _projectId,
+        address _coreContract
     )
         external
         view
@@ -219,8 +218,8 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
      * @return ProjectConfig instance with the project configuration data.
      */
     function projectConfig(
-        address _coreContract,
-        uint256 _projectId
+        uint256 _projectId,
+        address _coreContract
     ) external view returns (ProjectConfig memory) {
         return _projectConfigMapping[_coreContract][_projectId];
     }

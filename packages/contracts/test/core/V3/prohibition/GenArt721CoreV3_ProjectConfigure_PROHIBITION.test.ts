@@ -91,6 +91,42 @@ for (const coreContractName of coreContractsToTest) {
       return config;
     }
 
+    describe("addProject", async function () {
+      it("only allows approved accounts/contracts to add projects", async function () {
+        const config = await loadFixture(_beforeEach);
+
+        // should reject artist
+        await expectRevert(
+          config.genArt721Core
+            .connect(config.accounts.artist)
+            .addProject(`New Project`, config.accounts.artist.address),
+          "Only Admin ACL allowed"
+        );
+
+        // allow artist through admin acl
+        await config.adminACL
+          .connect(config.accounts.deployer)
+          .toggleContractSelectorApproval(
+            config.genArt721Core.address,
+            "0xcc90e725",
+            config.accounts.artist.address
+          );
+
+        // artist should now be allowed
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .addProject(`New Project`, config.accounts.artist.address);
+
+        // should still reject user though
+        await expectRevert(
+          config.genArt721Core
+            .connect(config.accounts.user)
+            .addProject(`New Project`, config.accounts.user.address),
+          "Only Admin ACL allowed"
+        );
+      });
+    });
+
     describe("imported scripts are non-empty", function () {
       it("ensure diffs are captured if project scripts are deleted", async function () {
         const config = await loadFixture(_beforeEach);
@@ -553,13 +589,22 @@ for (const coreContractName of coreContractsToTest) {
             .proposeArtistPaymentAddressesAndSplits(...config.valuesToUpdateTo),
           "Only artist"
         );
-        // rejects owner as a proposer of updates
-        await expectRevert(
-          config.genArt721Core
-            .connect(config.accounts.deployer)
-            .proposeArtistPaymentAddressesAndSplits(...config.valuesToUpdateTo),
-          "Only artist"
-        );
+        // allow user through admin acl
+        await config.adminACL
+          .connect(config.accounts.deployer)
+          .toggleContractSelectorApproval(
+            config.genArt721Core.address,
+            "0x2b65e67d",
+            config.accounts.user.address
+          );
+        // allows user to propose new values
+        await config.genArt721Core
+          .connect(config.accounts.user)
+          .proposeArtistPaymentAddressesAndSplits(...config.valuesToUpdateTo);
+        // allows owner to propose new values
+        await config.genArt721Core
+          .connect(config.accounts.deployer)
+          .proposeArtistPaymentAddressesAndSplits(...config.valuesToUpdateTo);
         // allows artist to propose new values
         await config.genArt721Core
           .connect(config.accounts.artist)

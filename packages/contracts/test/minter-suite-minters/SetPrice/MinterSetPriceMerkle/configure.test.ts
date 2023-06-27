@@ -351,8 +351,8 @@ runForEach.forEach((params) => {
         const maxInvocationsProjectConfig = await config.minter
           .connect(config.accounts.artist)
           .maxInvocationsProjectConfig(
-            config.genArt721Core.address,
-            config.projectZero
+            config.projectZero,
+            config.genArt721Core.address
           );
         expect(maxInvocationsProjectConfig.maxInvocations).to.equal(2);
 
@@ -394,8 +394,8 @@ runForEach.forEach((params) => {
         const syncedMaxInvocationsProjectConfig = await config.minter
           .connect(config.accounts.artist)
           .maxInvocationsProjectConfig(
-            config.genArt721Core.address,
-            config.projectZero
+            config.projectZero,
+            config.genArt721Core.address
           );
         expect(syncedMaxInvocationsProjectConfig.maxInvocations).to.equal(15);
       });
@@ -427,8 +427,8 @@ runForEach.forEach((params) => {
         const localMaxInvocations = await config.minter
           .connect(config.accounts.artist)
           .maxInvocationsProjectConfig(
-            config.genArt721Core.address,
-            config.projectZero
+            config.projectZero,
+            config.genArt721Core.address
           );
         expect(localMaxInvocations.maxInvocations).to.equal(2);
 
@@ -464,8 +464,8 @@ runForEach.forEach((params) => {
         const localMaxInvocations2 = await config.minter
           .connect(config.accounts.artist)
           .maxInvocationsProjectConfig(
-            config.genArt721Core.address,
-            config.projectZero
+            config.projectZero,
+            config.genArt721Core.address
           );
         expect(localMaxInvocations2.maxInvocations).to.equal(3);
 
@@ -489,8 +489,8 @@ runForEach.forEach((params) => {
         const localMaxInvocations3 = await config.minter
           .connect(config.accounts.artist)
           .maxInvocationsProjectConfig(
-            config.genArt721Core.address,
-            config.projectZero
+            config.projectZero,
+            config.genArt721Core.address
           );
         expect(localMaxInvocations3.maxInvocations).to.equal(2);
 
@@ -564,8 +564,8 @@ runForEach.forEach((params) => {
           config.minter
             .connect(config.accounts.user)
             .setProjectInvocationsPerAddress(
-              config.genArt721Core.address,
               config.projectZero,
+              config.genArt721Core.address,
               0
             ),
           "Only Artist"
@@ -575,8 +575,8 @@ runForEach.forEach((params) => {
           config.minter
             .connect(config.accounts.additional)
             .setProjectInvocationsPerAddress(
-              config.genArt721Core.address,
               config.projectZero,
+              config.genArt721Core.address,
               0
             ),
           "Only Artist"
@@ -585,8 +585,8 @@ runForEach.forEach((params) => {
         await config.minter
           .connect(config.accounts.artist)
           .setProjectInvocationsPerAddress(
-            config.genArt721Core.address,
             config.projectZero,
+            config.genArt721Core.address,
             0
           );
       });
