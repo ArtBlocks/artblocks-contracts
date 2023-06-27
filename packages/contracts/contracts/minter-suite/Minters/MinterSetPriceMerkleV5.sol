@@ -56,7 +56,7 @@ pragma solidity 0.8.19;
 contract MinterSetPriceMerkleV5 is
     ReentrancyGuard,
     ISharedMinterV0,
-    IFilteredSharedMerkle
+    ISharedMinterMerkleV0
 {
     /// Minter filter address this minter interacts with
     address public immutable minterFilterAddress;
@@ -300,6 +300,17 @@ contract MinterSetPriceMerkleV5 is
      * @notice Inactive function - requires Merkle proof to purchase.
      */
     function purchase(uint256, address) external payable returns (uint256) {
+        revert("Must provide Merkle proof");
+    }
+
+    /**
+     * @notice Inactive function - requires Merkle proof to purchase.
+     */
+    function purchaseTo(
+        address,
+        uint256,
+        address
+    ) external payable returns (uint256) {
         revert("Must provide Merkle proof");
     }
 
@@ -637,17 +648,6 @@ contract MinterSetPriceMerkleV5 is
             _coreContract,
             maxInvocations
         );
-    }
-
-    /**
-     * @notice Inactive function - requires Merkle proof to purchase.
-     */
-    function purchaseTo(
-        address,
-        uint256,
-        address
-    ) public payable returns (uint256) {
-        revert("Must provide Merkle proof");
     }
 
     /**

@@ -7,7 +7,7 @@ pragma solidity ^0.8.0;
  * @title This interface adds support for including token holder gating when purchasing.
  * @author Art Blocks Inc.
  */
-interface IFilteredSharedHolder {
+interface ISharedMinterHolderV0 {
     event DelegationRegistryUpdated(address delegationRegistry);
     /**
      * @notice Allow holders of NFTs at addresses `_ownedNFTAddresses`, project

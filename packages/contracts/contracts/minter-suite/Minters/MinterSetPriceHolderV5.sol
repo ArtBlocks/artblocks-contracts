@@ -62,7 +62,7 @@ pragma solidity 0.8.19;
 contract MinterSetPriceHolderV5 is
     ReentrancyGuard,
     ISharedMinterV0,
-    IFilteredSharedHolder
+    ISharedMinterHolderV0
 {
     // add Enumerable Set methods
     using EnumerableSet for EnumerableSet.AddressSet;
@@ -386,6 +386,17 @@ contract MinterSetPriceHolderV5 is
     }
 
     /**
+     * @notice Inactive function - requires NFT ownership to purchase.
+     */
+    function purchaseTo(
+        address,
+        uint256,
+        address
+    ) external payable returns (uint256) {
+        revert("Purchase requires NFT ownership");
+    }
+
+    /**
      * @notice Purchases a token from project `_projectId`.
      * @param _projectId Project ID to mint a token on.
      * @param _coreContract Core contract address for the given project.
@@ -657,17 +668,6 @@ contract MinterSetPriceHolderV5 is
             _coreContract,
             maxInvocations
         );
-    }
-
-    /**
-     * @notice Inactive function - requires NFT ownership to purchase.
-     */
-    function purchaseTo(
-        address,
-        uint256,
-        address
-    ) public payable returns (uint256) {
-        revert("Purchase requires NFT ownership");
     }
 
     /**
