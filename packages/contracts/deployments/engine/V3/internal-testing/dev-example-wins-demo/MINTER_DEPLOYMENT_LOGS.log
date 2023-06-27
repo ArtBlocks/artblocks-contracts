@@ -1,0 +1,19 @@
+----------------------------------------
+[INFO] Datetime of minter deployment: 2023-06-21T16:14:58.803Z
+[INFO] Minter deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/internal-testing/dev-example-wins-demo/minter-deploy-config-01.dev.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying MinterDALinV4 with deploy args [0x4A185f9A8ee3d247fD564407658602228a8de265,0x19254c1226Dbb83EC08Ab07Ba0B5c3994792D9D8]...
+[INFO] MinterDALinV4 deployed at 0xD4c7f56b6e530f47DEADdfD92fD70Ac84345bEc3
+[INFO] allowlisted the new minter on the minter filter at 0x19254c1226Dbb83EC08Ab07Ba0B5c3994792D9D8
+[INFO] Verifying MinterDALinV4 contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterDALinV4.sol:MinterDALinV4 at 0xD4c7f56b6e530f47DEADdfD92fD70Ac84345bEc3
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterDALinV4 on Etherscan.
+https://goerli.etherscan.io/address/0xD4c7f56b6e530f47DEADdfD92fD70Ac84345bEc3#code
+[INFO] MinterDALinV4 contract verified on Etherscan at 0xD4c7f56b6e530f47DEADdfD92fD70Ac84345bEc3}
+[INFO] Minter deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/internal-testing/dev-example-wins-demo/DEPLOYMENTS.md
+[INFO] Completed minter deployment! MinterDALinV4 deployed to 0xD4c7f56b6e530f47DEADdfD92fD70Ac84345bEc3, and allowlisted on the minter filter at 0x19254c1226Dbb83EC08Ab07Ba0B5c3994792D9D8
+[ACTION] If this minter is to be indexed in a subgraph, ensure it is added to the subgraph's config.

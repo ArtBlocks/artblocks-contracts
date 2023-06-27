@@ -25,15 +25,15 @@ const runForEach = [
   {
     core: "GenArt721CoreV3",
   },
-  // {
-  //   core: "GenArt721CoreV3_Explorations",
-  // },
-  // {
-  //   core: "GenArt721CoreV3_Engine",
-  // },
-  // {
-  //   core: "GenArt721CoreV3_Engine_Flex",
-  // },
+  {
+    core: "GenArt721CoreV3_Explorations",
+  },
+  {
+    core: "GenArt721CoreV3_Engine",
+  },
+  {
+    core: "GenArt721CoreV3_Engine_Flex",
+  },
 ];
 
 runForEach.forEach((params) => {
@@ -268,8 +268,8 @@ runForEach.forEach((params) => {
           config.minter
             .connect(config.accounts.artist)
             .setProjectInvocationsPerAddress(
-              config.genArt721Core.address,
               config.projectZero,
+              config.genArt721Core.address,
               0
             )
         )
@@ -288,8 +288,8 @@ runForEach.forEach((params) => {
           config.minter
             .connect(config.accounts.artist)
             .setProjectInvocationsPerAddress(
-              config.genArt721Core.address,
               config.projectZero,
+              config.genArt721Core.address,
               0
             )
         )
@@ -308,8 +308,8 @@ runForEach.forEach((params) => {
           config.minter
             .connect(config.accounts.artist)
             .setProjectInvocationsPerAddress(
-              config.genArt721Core.address,
               config.projectZero,
+              config.genArt721Core.address,
               0
             )
         )
@@ -328,8 +328,8 @@ runForEach.forEach((params) => {
           config.minter
             .connect(config.accounts.artist)
             .setProjectInvocationsPerAddress(
-              config.genArt721Core.address,
               config.projectZero,
+              config.genArt721Core.address,
               999
             )
         )

@@ -436,7 +436,6 @@ describe(`${TARGET_MINTER_NAME} tests using mock core contract(s)`, async functi
   describe("constructor", async function () {
     it("requires correct quantity of return values from `getPrimaryRevenueSplits`", async function () {
       const config = await loadFixture(_beforeEach);
-      const config = await loadFixture(_beforeEach);
       // deploy and configure core contract that returns incorrect quanty of return values for coreType response
       const coreContractName = "GenArt721CoreV3_Engine_IncorrectCoreType";
       const { genArt721Core, minterFilter, randomizer } =

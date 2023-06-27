@@ -73,5 +73,18 @@ export const SetPrice_Common_Configure = async (
           config.genArt721Core.address
         );
     });
+
+    it("does not allow non-artist to call setProjectMaxInvocations", async function () {
+      const config = await loadFixture(_beforeEach);
+      await expectRevert(
+        config.minter
+          .connect(config.accounts.user)
+          .syncProjectMaxInvocationsToCore(
+            config.projectZero,
+            config.genArt721Core.address
+          ),
+        revertMessages.onlyArtist
+      );
+    });
   });
 };

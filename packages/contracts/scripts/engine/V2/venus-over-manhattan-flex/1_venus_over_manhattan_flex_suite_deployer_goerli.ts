@@ -9,7 +9,7 @@ import { GenArt721MinterDAExpPBAB__factory } from "../../contracts/factories/Gen
 import royaltyRegistryABI from "../../../contracts/libs/abi/RoyaltyRegistry.json";
 import { GenArt721RoyaltyOverridePBAB__factory } from "../../contracts/factories/GenArt721RoyaltyOverridePBAB__factory";
 
-import { createPBABBucket } from "../../util/aws_s3";
+import { createEngineBucket } from "../../util/aws_s3";
 
 const hre = require("hardhat");
 
@@ -76,7 +76,7 @@ async function main() {
     randomizerAddress
   );
 
-  await createPBABBucket(pbabTokenName, networkName);
+  await createEngineBucket(pbabTokenName, networkName);
 
   await genArt721Core.deployed();
   console.log(`GenArt721Core deployed at ${genArt721Core.address}`);

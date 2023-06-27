@@ -1,4 +1,4 @@
-import { createPBABBucket } from "../util/aws_s3";
+import { createEngineBucket } from "../util/aws_s3";
 
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG BEGINS HERE
@@ -18,7 +18,7 @@ async function main() {
     console.log(
       `attempting to create flagship bucket for ${pbabTokenName}, network ${networkName}`
     );
-    await createPBABBucket(pbabTokenName, networkName);
+    await createEngineBucket(pbabTokenName, networkName);
     console.log(
       `flagship bucket created for ${pbabTokenName}, network ${networkName}`
     );

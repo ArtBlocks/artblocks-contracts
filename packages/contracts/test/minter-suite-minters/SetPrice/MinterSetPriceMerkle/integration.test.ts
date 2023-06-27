@@ -20,15 +20,15 @@ const runForEach = [
   {
     core: "GenArt721CoreV3",
   },
-  // {
-  //   core: "GenArt721CoreV3_Explorations",
-  // },
-  // {
-  //   core: "GenArt721CoreV3_Engine",
-  // },
-  // {
-  //   core: "GenArt721CoreV3_Engine_Flex",
-  // },
+  {
+    core: "GenArt721CoreV3_Explorations",
+  },
+  {
+    core: "GenArt721CoreV3_Engine",
+  },
+  {
+    core: "GenArt721CoreV3_Engine_Flex",
+  },
 ];
 
 runForEach.forEach((params) => {
@@ -220,15 +220,15 @@ runForEach.forEach((params) => {
       await config.minter
         .connect(config.accounts.artist)
         .setProjectInvocationsPerAddress(
-          config.genArt721Core.address,
           config.projectZero,
+          config.genArt721Core.address,
           16
         );
       await config.minter
         .connect(config.accounts.artist)
         .setProjectInvocationsPerAddress(
-          config.genArt721Core.address,
           config.projectOne,
+          config.genArt721Core.address,
           16
         );
 
@@ -490,7 +490,7 @@ runForEach.forEach((params) => {
           await config.minter
             .connect(config.accounts.artist)
             .updatePricePerTokenInWei(
-              config.projectZero,
+              config.projectOne,
               config.genArt721Core.address,
               config.pricePerTokenInWei
             );
@@ -505,6 +505,9 @@ runForEach.forEach((params) => {
                 config.deadReceiver.address,
                 config.accounts.additional2.address
               );
+            await config.delegationRegistry
+              .connect(config.userVault)
+              .delegateForAll(config.accounts.user.address, true);
             const userMerkleProofOne = config.merkleTreeOne.getHexProof(
               hashAddress(config.userVault.address)
             );
@@ -1012,8 +1015,8 @@ runForEach.forEach((params) => {
             await config.minter
               .connect(config.accounts.artist)
               .setProjectInvocationsPerAddress(
-                config.genArt721Core.address,
                 config.projectOne,
+                config.genArt721Core.address,
                 1
               );
             await config.minter

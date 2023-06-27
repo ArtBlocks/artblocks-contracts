@@ -256,8 +256,8 @@ runForEach.forEach((params) => {
         const config = await loadFixture(_beforeEach);
         const allowedProjectHoldersResponse =
           await config.minter.allowedProjectHolders(
-            config.genArt721Core.address,
             config.projectZero,
+            config.genArt721Core.address,
             config.genArt721Core.address,
             config.projectZero
           );
@@ -268,8 +268,8 @@ runForEach.forEach((params) => {
         const config = await loadFixture(_beforeEach);
         const allowedProjectHoldersResponse =
           await config.minter.allowedProjectHolders(
-            config.genArt721Core.address,
             config.projectZero,
+            config.genArt721Core.address,
             config.genArt721Core.address,
             config.projectOne
           );
@@ -281,8 +281,8 @@ runForEach.forEach((params) => {
       it("should return true for a token that is allowlisted", async function () {
         const config = await loadFixture(_beforeEach);
         const isAllowlistedNFTResponse = await config.minter.isAllowlistedNFT(
-          config.genArt721Core.address,
           config.projectZero,
+          config.genArt721Core.address,
           config.genArt721Core.address,
           config.projectZeroTokenZero.toNumber()
         );
@@ -292,8 +292,8 @@ runForEach.forEach((params) => {
       it("should return false for a token that is not allowlisted", async function () {
         const config = await loadFixture(_beforeEach);
         const isAllowlistedNFTResponse = await config.minter.isAllowlistedNFT(
-          config.genArt721Core.address,
           config.projectZero,
+          config.genArt721Core.address,
           config.genArt721Core.address,
           config.projectThreeTokenZero.toNumber()
         );

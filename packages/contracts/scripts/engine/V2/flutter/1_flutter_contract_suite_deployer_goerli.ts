@@ -3,7 +3,7 @@ import { RandomizerFlutter__factory } from "../../contracts/factories/Randomizer
 import { GenArt721CoreV2Flutter__factory } from "../../contracts/factories/GenArt721CoreV2Flutter__factory";
 import { GenArt721MinterPBAB__factory } from "../../contracts/factories/GenArt721MinterPBAB__factory";
 
-import { createPBABBucket } from "../../util/aws_s3";
+import { createEngineBucket } from "../../util/aws_s3";
 
 //////////////////////////////////////////////////////////////////////////////
 // CONFIG BEGINS HERE
@@ -100,7 +100,7 @@ async function main() {
 
   // // Create PBAB Bucket
   // const networkName = network.name == "homestead" ? "mainnet" : network.name;
-  // await createPBABBucket(pbabTokenName, networkName);
+  // await createEngineBucket(pbabTokenName, networkName);
   // console.log(
   //   `pbab bucket created for ${pbabTokenName}, network ${networkName}`
   // );

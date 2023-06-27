@@ -9,16 +9,32 @@ const {
 
 // Docs: https://docs.aws.amazon.com/AWSJavaScriptSDK/v3/latest/clients/client-s3/index.html
 
-const supportedNetworks = ["mainnet", "ropsten", "goerli", "arbitrum-goerli"];
+const supportedNetworks = [
+  "mainnet",
+  "ropsten",
+  "goerli",
+  "arbitrum-goerli",
+  "arbitrum",
+];
 
-const awsCreds = {
-  accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+const ethereumAWSCreds = {
+  accessKeyId: process.env.ETHEREUM_AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.ETHEREUM_AWS_SECRET_ACCESS_KEY,
 };
 
-const s3Client = new S3Client({
+const arbitrumAWSCreds = {
+  accessKeyId: process.env.ARBITRUM_AWS_ACCESS_KEY_ID,
+  secretAccessKey: process.env.ARBITRUM_AWS_SECRET_ACCESS_KEY,
+};
+
+const ethereumS3Client = new S3Client({
   region: "us-east-1",
-  credentials: awsCreds,
+  credentials: ethereumAWSCreds,
+});
+
+const arbitrumS3Client = new S3Client({
+  region: "us-east-1",
+  credentials: arbitrumAWSCreds,
 });
 
 const createBucket = async (bucketName: string, client: any) => {
@@ -66,10 +82,10 @@ const updateBucketCors = async (bucketName: string, client: any) => {
   return await client.send(command);
 };
 
-const createPBABBucket = async (
+const createEngineBucket = async (
   pbabTokenName: string,
   networkName: string,
-  client: any = s3Client,
+  client?: any,
   isTest: boolean = false
 ) => {
   let payload = {};
@@ -77,20 +93,31 @@ const createPBABBucket = async (
   payload["url"] = "";
   let bucketName = "";
 
-  if (supportedNetworks.includes(networkName) || isTest === true) {
-    bucketName = getPBABBucketName(pbabTokenName, networkName);
-    const bucketURL = getBucketURL(bucketName);
-    const bucketResponse = await createBucket(bucketName, client);
-    await updateBucketCors(bucketName, client);
-
-    payload["response"] = bucketResponse;
-    payload["url"] = bucketURL;
-    console.log(`Created s3 bucket for ${bucketURL}`);
-  } else {
+  // throw error for unsupported networks
+  if (!supportedNetworks.includes(networkName) && isTest === false) {
     throw new Error("Unsupported network");
   }
+
+  // set S3 client depending on selected network
+  if (client === undefined) {
+    if (networkName === "arbitrum" || networkName === "arbitrum-goerli") {
+      client = arbitrumS3Client;
+    } else {
+      client = ethereumS3Client;
+    }
+  }
+
+  // create bucket + update configuration
+  bucketName = getPBABBucketName(pbabTokenName, networkName);
+  const bucketURL = getBucketURL(bucketName);
+  const bucketResponse = await createBucket(bucketName, client);
+  await updateBucketCors(bucketName, client);
+  payload["response"] = bucketResponse;
+  payload["url"] = bucketURL;
+
   // return payload and bucket name
+  console.log(`Created s3 bucket for ${bucketURL}`);
   return { payload, bucketName };
 };
 
-export { createPBABBucket, createBucket, updateBucketCors };
+export { createEngineBucket, createBucket, updateBucketCors };

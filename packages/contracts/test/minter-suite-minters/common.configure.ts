@@ -23,6 +23,21 @@ export const Common_Configure = async (
           config.maxInvocations - 1
         );
     });
+
+    it("does not allow non-artist to call manuallyLimitProjectMaxInvocations", async function () {
+      const config = await loadFixture(_beforeEach);
+      await expectRevert(
+        config.minter
+          .connect(config.accounts.user)
+          .manuallyLimitProjectMaxInvocations(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.maxInvocations - 1
+          ),
+        revertMessages.onlyArtist
+      );
+    });
+
     it("does not support manually setting project max invocations to be greater than the project max invocations set on the core contract", async function () {
       const config = await loadFixture(_beforeEach);
       await expectRevert(
@@ -47,6 +62,18 @@ export const Common_Configure = async (
           .connect(config.accounts.artist)
           .syncProjectMaxInvocationsToCore(99, config.genArt721Core.address),
         revertMessages.projectIdDoesNotExist
+      );
+    });
+    it("does not allow non-artist to call setProjectMaxInvocations", async function () {
+      const config = await loadFixture(_beforeEach);
+      await expectRevert(
+        config.minter
+          .connect(config.accounts.user)
+          .syncProjectMaxInvocationsToCore(
+            config.projectZero,
+            config.genArt721Core.address
+          ),
+        revertMessages.onlyArtist
       );
     });
     it("updates local projectMaxInvocations after syncing to core", async function () {
@@ -74,8 +101,8 @@ export const Common_Configure = async (
       expect(
         (
           await config.minter.maxInvocationsProjectConfig(
-            config.genArt721Core.address,
-            config.projectZero
+            config.projectZero,
+            config.genArt721Core.address
           )
         ).maxInvocations
       ).to.be.equal(2);
