@@ -490,10 +490,6 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
             storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
                 _coreContract
             ][_projectId];
-        ERC20Lib.ProjectCurrencyConfig
-            storage _projectCurrencyConfig = _projectCurrencyConfigs[
-                _coreContract
-            ][_projectId];
 
         // Note that `maxHasBeenInvoked` is only checked here to reduce gas
         // consumption after a project has been fully minted.
@@ -528,6 +524,10 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
             _isEngineCaches[_coreContract]
         );
         // process payment in either ETH or ERC20
+        ERC20Lib.ProjectCurrencyConfig
+            storage _projectCurrencyConfig = _projectCurrencyConfigs[
+                _coreContract
+            ][_projectId];
         ERC20Lib.processFixedPricePayment({
             _projectCurrencyConfig: _projectCurrencyConfig,
             _pricePerTokenInWei: _projectConfig.pricePerTokenInWei,

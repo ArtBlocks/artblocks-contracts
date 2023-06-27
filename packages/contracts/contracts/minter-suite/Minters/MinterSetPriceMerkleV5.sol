@@ -150,10 +150,10 @@ contract MinterSetPriceMerkleV5 is
         minterFilter = IMinterFilterV1(_minterFilter);
 
         delegationRegistryAddress = _delegationRegistryAddress;
-        emit DelegationRegistryUpdated(_delegationRegistryAddress);
         delegationRegistryContract = IDelegationRegistry(
             _delegationRegistryAddress
         );
+        emit DelegationRegistryUpdated(_delegationRegistryAddress);
         // broadcast default max invocations per address for this minter
         emit DefaultMaxInvocationsPerAddress(
             MerkleLib.DEFAULT_MAX_INVOCATIONS_PER_ADDRESS

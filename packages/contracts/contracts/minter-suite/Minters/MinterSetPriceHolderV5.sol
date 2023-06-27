@@ -151,7 +151,8 @@ contract MinterSetPriceHolderV5 is
     /**
      * @notice Initializes contract to be a Filtered Minter for
      * `_minterFilter` minter filter.
-     * @param _minterFilter minter filter.
+     * @param _minterFilter Minter filter for which this will be a
+     * filtered minter.
      * @param _delegationRegistryAddress Delegation registry contract address.
      */
     constructor(
@@ -159,10 +160,10 @@ contract MinterSetPriceHolderV5 is
         address _delegationRegistryAddress
     ) ReentrancyGuard() {
         delegationRegistryAddress = _delegationRegistryAddress;
-        emit DelegationRegistryUpdated(_delegationRegistryAddress);
         delegationRegistryContract = IDelegationRegistry(
             _delegationRegistryAddress
         );
+        emit DelegationRegistryUpdated(_delegationRegistryAddress);
         minterFilterAddress = _minterFilter;
         minterFilter = IMinterFilterV1(_minterFilter);
     }
