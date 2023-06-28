@@ -8,10 +8,13 @@ pragma solidity ^0.8.0;
  * @author Art Blocks Inc.
  */
 interface ISharedMinterPolyptychV0 {
-    // Emitted when the polyptych panel ID of a project is updated.
-    event UpdatedPolyptychProjectPanelId(
-        uint256 indexed projectId,
-        address indexed coreContract,
-        uint256 polyptychPanelId
-    );
+    /**
+     * @notice Allows the artist to increment the minter to the next polyptych panel
+     * @param _projectId Project ID to increment to its next polyptych panel
+     * @param _coreContract Core contract address for the given project.
+     */
+    function incrementPolyptychProjectPanelId(
+        uint256 _projectId,
+        address _coreContract
+    ) external;
 }

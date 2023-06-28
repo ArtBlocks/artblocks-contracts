@@ -37,6 +37,8 @@ interface IGenArt721CoreContractV3WithSharedRandomizer is
  */
 
 library PolyptychLib {
+    bytes32 constant POLYPTYCH_PANEL_ID = "polyptychPanelId";
+
     struct PolyptychProjectConfig {
         // @dev uint24 provides sufficient qty of panels, and could be packed
         // in the future if other values are added to this struct.

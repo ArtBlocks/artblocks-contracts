@@ -453,6 +453,7 @@ contract MinterPolyptychV1 is
     /**
      * @notice Allows the artist to increment the minter to the next polyptych panel
      * @param _projectId Project ID to increment to its next polyptych panel
+     * @param _coreContract Core contract address for the given project.
      */
     function incrementPolyptychProjectPanelId(
         uint256 _projectId,
@@ -464,9 +465,11 @@ contract MinterPolyptychV1 is
                 _coreContract
             ][_projectId];
         PolyptychLib.incrementPolyptychProjectPanelId(_polyptychProjectConfig);
-        emit UpdatedPolyptychProjectPanelId(
+        // index the update
+        emit ConfigValueSet(
             _projectId,
             _coreContract,
+            PolyptychLib.POLYPTYCH_PANEL_ID,
             _polyptychProjectConfig.polyptychPanelId
         );
     }
