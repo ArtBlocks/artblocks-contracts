@@ -79,18 +79,18 @@ library SplitFundsLib {
      * business practices, including end-to-end testing on mainnet, and
      * admin-accepted artist payment addresses.
      * @param _projectId Project ID for which funds shall be split.
-     * @param valueInWei Value to be split, in Wei.
-     * @param genArtCoreContract Address of the GenArt721CoreContract
+     * @param _valueInWei Value to be split, in Wei.
+     * @param _coreContract Address of the GenArt721CoreContract
      * associated with the project.
      * @param _isEngine Whether the core contract is an engine contract.
      */
     function splitRevenuesETH(
         uint256 _projectId,
-        uint256 valueInWei,
-        address genArtCoreContract,
+        uint256 _valueInWei,
+        address _coreContract,
         bool _isEngine
     ) internal {
-        if (valueInWei == 0) {
+        if (_valueInWei == 0) {
             return; // return early
         }
         bool success;
@@ -116,8 +116,8 @@ library SplitFundsLib {
                 artistAddress_,
                 additionalPayeePrimaryRevenue_,
                 additionalPayeePrimaryAddress_
-            ) = IGenArt721CoreContractV3_Engine(genArtCoreContract)
-                .getPrimaryRevenueSplits(_projectId, valueInWei);
+            ) = IGenArt721CoreContractV3_Engine(_coreContract)
+                .getPrimaryRevenueSplits(_projectId, _valueInWei);
             // Platform Provider payment (only possible if engine)
             if (platformProviderRevenue_ > 0) {
                 (success, ) = platformProviderAddress_.call{
@@ -134,8 +134,10 @@ library SplitFundsLib {
                 artistAddress_,
                 additionalPayeePrimaryRevenue_,
                 additionalPayeePrimaryAddress_
-            ) = IGenArt721CoreContractV3(genArtCoreContract)
-                .getPrimaryRevenueSplits(_projectId, valueInWei);
+            ) = IGenArt721CoreContractV3(_coreContract).getPrimaryRevenueSplits(
+                _projectId,
+                _valueInWei
+            );
         }
         // Render Provider / Art Blocks payment
         if (renderProviderRevenue_ > 0) {
@@ -301,13 +303,13 @@ library SplitFundsLib {
      * either a flagship or engine core contract.
      * @dev this function uses the length of the return data (in bytes) to
      * determine whether the core is an engine or not.
-     * @param genArt721CoreV3 The address of the deployed core contract.
-     * @param isEngineCache The storage pointer to the project's
+     * @param _coreContract The address of the deployed core contract.
+     * @param _isEngineCache The storage pointer to the project's
      * IsEngineCache struct.
      */
     function getV3CoreIsEngine(
-        address genArt721CoreV3,
-        IsEngineCache storage isEngineCache
+        address _coreContract,
+        IsEngineCache storage _isEngineCache
     ) internal returns (bool) {
         // call getPrimaryRevenueSplits() on core contract
         bytes memory payload = abi.encodeWithSignature(
@@ -315,7 +317,7 @@ library SplitFundsLib {
             0,
             0
         );
-        (bool success, bytes memory returnData) = genArt721CoreV3.call(payload);
+        (bool success, bytes memory returnData) = _coreContract.call(payload);
         require(success, "getPrimaryRevenueSplits() call failed");
         // determine whether core is engine or not, based on return data length
         uint256 returnDataLength = returnData.length;
@@ -326,8 +328,8 @@ library SplitFundsLib {
             // the artist, and artist's additional payee, and Art Blocks.
             // also note that per Solidity ABI encoding, the address return
             // values are padded to 32 bytes.
-            isEngineCache.isCached = true;
-            isEngineCache.isEngine = false;
+            _isEngineCache.isCached = true;
+            _isEngineCache.isEngine = false;
             return false;
         } else if (returnDataLength == 8 * 32) {
             // 8 32-byte words returned if engine
@@ -337,8 +339,8 @@ library SplitFundsLib {
             // typically Art Blocks, and platform provider (partner).
             // also note that per Solidity ABI encoding, the address return
             // values are padded to 32 bytes.
-            isEngineCache.isCached = true;
-            isEngineCache.isEngine = true;
+            _isEngineCache.isCached = true;
+            _isEngineCache.isEngine = true;
             return true;
         } else {
             // unexpected return value length
@@ -350,17 +352,17 @@ library SplitFundsLib {
      * @notice Returns whether or not the provided address `_coreContract`
      * is an Art Blocks Engine core contract. Caches the result for future access.
      * @param _coreContract Address of the core contract to check.
-     * @param isEngineCache The storage pointer to the project's
+     * @param _isEngineCache The storage pointer to the project's
      * SplitFundsProjectConfig struct.
      */
     function isEngine(
         address _coreContract,
-        IsEngineCache storage isEngineCache
+        IsEngineCache storage _isEngineCache
     ) internal returns (bool) {
-        if (isEngineCache.isCached) {
-            return isEngineCache.isEngine;
+        if (_isEngineCache.isCached) {
+            return _isEngineCache.isEngine;
         } else {
-            bool _isEngine = getV3CoreIsEngine(_coreContract, isEngineCache);
+            bool _isEngine = getV3CoreIsEngine(_coreContract, _isEngineCache);
             return _isEngine;
         }
     }
@@ -375,10 +377,10 @@ library SplitFundsLib {
      * either a flagship or engine core contract.
      * @dev this function uses the length of the return data (in bytes) to
      * determine whether the core is an engine or not.
-     * @param genArt721CoreV3 The address of the deployed core contract.
+     * @param _coreContract The address of the deployed core contract.
      */
     function getV3CoreIsEngineView(
-        address genArt721CoreV3
+        address _coreContract
     ) internal view returns (bool) {
         // call getPrimaryRevenueSplits() on core contract
         bytes memory payload = abi.encodeWithSignature(
@@ -386,7 +388,7 @@ library SplitFundsLib {
             0,
             0
         );
-        (bool success, bytes memory returnData) = genArt721CoreV3.staticcall(
+        (bool success, bytes memory returnData) = _coreContract.staticcall(
             payload
         );
         require(success, "getPrimaryRevenueSplits() call failed");
