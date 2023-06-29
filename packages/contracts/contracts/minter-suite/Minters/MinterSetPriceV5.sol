@@ -196,8 +196,8 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
     // public getter functions
     /**
      * @notice Gets the maximum invocations project configuration.
-     * @param _coreContract The address of the core contract.
      * @param _projectId The ID of the project whose data needs to be fetched.
+     * @param _coreContract The address of the core contract.
      * @return MaxInvocationsLib.MaxInvocationsProjectConfig instance with the
      * configuration data.
      */
@@ -214,8 +214,8 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
 
     /**
      * @notice Gets the base project configuration.
-     * @param _coreContract The address of the core contract.
      * @param _projectId The ID of the project whose data needs to be fetched.
+     * @param _coreContract The address of the core contract.
      * @return ProjectConfig instance with the project configuration data.
      */
     function projectConfig(
@@ -227,7 +227,7 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
 
     /**
      * @notice Checks if the specified `_coreContract` is a valid engine contract.
-     * @dev This function retrieves the cached value of `_coreContract` from
+     * @dev This function retrieves the cached value of `_isEngine` from
      * the `isEngineCache` mapping. If the cached value is already set, it
      * returns the cached value. Otherwise, it calls the `getV3CoreIsEngine`
      * function from the `SplitFundsLib` library to check if `_coreContract`
@@ -306,7 +306,7 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
     /**
      * @notice Gets if price of token is configured, price of minting a
      * token on project `_projectId`, and currency symbol and address to be
-     * used as payment. Supersedes any core contract price information.
+     * used as payment.
      * @param _projectId Project ID to get price information for
      * @param _coreContract Contract address of the core contract
      * @return isConfigured true only if token price has been configured on
@@ -343,8 +343,8 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
     /**
      * @notice Syncs local maximum invocations of project `_projectId` based on
      * the value currently defined in the core contract.
-     * @param _coreContract Core contract address for the given project.
      * @param _projectId Project ID to set the maximum invocations for.
+     * @param _coreContract Core contract address for the given project.
      * @dev this enables gas reduction after maxInvocations have been reached -
      * core contracts shall still enforce a maxInvocation check during mint.
      */
@@ -426,12 +426,12 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
             _coreContract,
             _isEngineCaches[_coreContract]
         );
-        SplitFundsLib.splitFundsETH(
-            _projectId,
-            pricePerTokenInWei,
-            _coreContract,
-            isEngine
-        );
+        SplitFundsLib.splitFundsETH({
+            _projectId: _projectId,
+            _pricePerTokenInWei: pricePerTokenInWei,
+            _coreContract: _coreContract,
+            _isEngine: isEngine
+        });
 
         return tokenId;
     }
