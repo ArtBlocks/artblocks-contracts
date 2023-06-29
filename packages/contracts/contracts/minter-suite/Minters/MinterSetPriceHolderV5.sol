@@ -203,7 +203,6 @@ contract MinterSetPriceHolderV5 is
     /**
      * @notice Updates this minter's price per token of project `_projectId`
      * to be '_pricePerTokenInWei`, in Wei.
-     * This price supersedes any legacy core contract price per token value.
      * @dev Note that it is intentionally supported here that the configured
      * price may be explicitly set to `0`.
      * @param _projectId Project ID to set the price per token for.
@@ -458,33 +457,32 @@ contract MinterSetPriceHolderV5 is
     /**
      * @notice Gets the maximum invocations project configuration.
      * @param _projectId The ID of the project whose data needs to be fetched.
-     * @param _contractAddress The address of the contract where the data is stored.
+     * @param _coreContract The address of the core contract.
      * @return MaxInvocationsLib.MaxInvocationsProjectConfig instance with the
      * configuration data.
      */
     function maxInvocationsProjectConfig(
         uint256 _projectId,
-        address _contractAddress
+        address _coreContract
     )
         external
         view
         returns (MaxInvocationsLib.MaxInvocationsProjectConfig memory)
     {
-        return
-            _maxInvocationsProjectConfigMapping[_contractAddress][_projectId];
+        return _maxInvocationsProjectConfigMapping[_coreContract][_projectId];
     }
 
     /**
      * @notice Gets the base project configuration.
      * @param _projectId The ID of the project whose data needs to be fetched.
-     * @param _contractAddress The address of the contract where the data is stored.
+     * @param _coreContract The address of the contract where the data is stored.
      * @return ProjectConfig instance with the project configuration data.
      */
     function projectConfig(
         uint256 _projectId,
-        address _contractAddress
+        address _coreContract
     ) external view returns (ProjectConfig memory) {
-        return _projectConfigMapping[_contractAddress][_projectId];
+        return _projectConfigMapping[_coreContract][_projectId];
     }
 
     /**
@@ -534,11 +532,13 @@ contract MinterSetPriceHolderV5 is
 
     /**
      * @notice Checks if the specified `_coreContract` is a valid engine contract.
-     * @dev This function retrieves the cached value of `isEngineCached` from
+     * @dev This function retrieves the cached value of `_isEngine` from
      * the `isEngineCache` mapping. If the cached value is already set, it
      * returns the cached value. Otherwise, it calls the `getV3CoreIsEngine`
      * function from the `SplitFundsLib` library to check if `_coreContract`
      * is a valid engine contract.
+     * @dev This function will revert if the provided `_coreContract` is not
+     * a valid Engine or V3 Flagship contract.
      * @param _coreContract The address of the contract to check.
      * @return bool indicating if `_coreContract` is a valid engine contract.
      */
@@ -611,9 +611,9 @@ contract MinterSetPriceHolderV5 is
     /**
      * @notice Gets if price of token is configured, price of minting a
      * token on project `_projectId`, and currency symbol and address to be
-     * used as payment. Supersedes any core contract price information.
-     * @param _projectId Project ID to get price information for.
-     * @param _coreContract Contract address of the core contract.
+     * used as payment.
+     * @param _projectId Project ID to get price information for
+     * @param _coreContract Contract address of the core contract
      * @return isConfigured true only if token price has been configured on
      * this minter
      * @return tokenPriceInWei current price of token on this minter - invalid
@@ -658,6 +658,7 @@ contract MinterSetPriceHolderV5 is
         address _coreContract
     ) public {
         _onlyArtist(_projectId, _coreContract);
+
         uint256 maxInvocations = MaxInvocationsLib
             .syncProjectMaxInvocationsToCore(
                 _projectId,
@@ -712,11 +713,11 @@ contract MinterSetPriceHolderV5 is
             "Max invocations reached"
         );
 
-        // load price of token into memory
-        uint256 pricePerTokenInWei = _projectConfig.pricePerTokenInWei;
-
         // require artist to have configured price of token on this minter
         require(_projectConfig.priceIsConfigured, "Price not configured");
+
+        // load price of token into memory
+        uint256 pricePerTokenInWei = _projectConfig.pricePerTokenInWei;
 
         require(msg.value >= pricePerTokenInWei, "Min value to mint req.");
 
@@ -775,8 +776,8 @@ contract MinterSetPriceHolderV5 is
             "Only owner of NFT"
         );
 
-        // split funds
         // INTERACTIONS
+        // split funds
         bool isEngine = SplitFundsLib.isEngine(
             _coreContract,
             _isEngineCaches[_coreContract]

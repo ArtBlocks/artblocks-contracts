@@ -194,7 +194,6 @@ contract MinterSetPriceMerkleV5 is
     /**
      * @notice Updates this minter's price per token of project `_projectId`
      * to be '_pricePerTokenInWei`, in Wei.
-     * This price supersedes any legacy core contract price per token value.
      * @dev Note that it is intentionally supported here that the configured
      * price may be explicitly set to `0`.
      * @param _projectId Project ID to set the price per token for.
@@ -317,7 +316,7 @@ contract MinterSetPriceMerkleV5 is
     /**
      * @notice Purchases a token from project `_projectId`.
      * @param _projectId Project ID to mint a token on.
-     * @param _coreContract Contract address of the core contract.
+     * @param _coreContract Core contract address for the given project.
      * @param _proof Merkle proof for the given project.
      * @return tokenId Token ID of minted token
      */
@@ -432,11 +431,13 @@ contract MinterSetPriceMerkleV5 is
 
     /**
      * @notice Checks if the specified `_coreContract` is a valid engine contract.
-     * @dev This function retrieves the cached value of `isEngineCached` from
+     * @dev This function retrieves the cached value of `_isEngine` from
      * the `isEngineCache` mapping. If the cached value is already set, it
      * returns the cached value. Otherwise, it calls the `getV3CoreIsEngine`
      * function from the `SplitFundsLib` library to check if `_coreContract`
      * is a valid engine contract.
+     * @dev This function will revert if the provided `_coreContract` is not
+     * a valid Engine or V3 Flagship contract.
      * @param _coreContract The address of the contract to check.
      * @return bool indicating if `_coreContract` is a valid engine contract.
      */
@@ -509,9 +510,9 @@ contract MinterSetPriceMerkleV5 is
     /**
      * @notice Gets if price of token is configured, price of minting a
      * token on project `_projectId`, and currency symbol and address to be
-     * used as payment. Supersedes any core contract price information.
-     * @param _projectId Project ID to get price information for.
-     * @param _coreContract Contract address of the core contract.
+     * used as payment.
+     * @param _projectId Project ID to get price information for
+     * @param _coreContract Contract address of the core contract
      * @return isConfigured true only if token price has been configured on
      * this minter
      * @return tokenPriceInWei current price of token on this minter - invalid
@@ -556,6 +557,14 @@ contract MinterSetPriceMerkleV5 is
      * Also note that all mint invocations are limited by a project's maximum
      * invocations as defined on the core contract. This function may return
      * a value greater than the project's remaining invocations.
+     * @param _projectId Project ID to get remaining invocations for.
+     * @param _coreContract Contract address of the core contract.
+     * @param _address Wallet address to get remaining invocations for.
+     * @return projectLimitsMintInvocationsPerAddress true if project limits
+     * mint invocations per address, false if project does not limit mint
+     * invocations per address.
+     * @return mintInvocationsRemaining quantity of remaining mint invocations
+     * for wallet at `_address`.
      */
     function projectRemainingInvocationsForAddress(
         uint256 _projectId,
@@ -588,6 +597,9 @@ contract MinterSetPriceMerkleV5 is
      * This value can be changed at any time by the artist.
      * @dev default value stated above must be updated if the value of
      * CONFIG_USE_MAX_INVOCATIONS_PER_ADDRESS_OVERRIDE is changed.
+     * @param _projectId Project ID to get maximum invocations per address for.
+     * @param _coreContract Contract address of the core contract.
+     * @return Maximum number of invocations per address for project.
      */
     function projectMaxInvocationsPerAddress(
         uint256 _projectId,
@@ -637,6 +649,7 @@ contract MinterSetPriceMerkleV5 is
         address _coreContract
     ) public {
         _onlyArtist(_projectId, _coreContract);
+
         uint256 maxInvocations = MaxInvocationsLib
             .syncProjectMaxInvocationsToCore(
                 _projectId,
@@ -655,9 +668,11 @@ contract MinterSetPriceMerkleV5 is
      * the token's owner to `_to`.
      * @param _to Address to be the new token's owner.
      * @param _projectId Project ID to mint a token on.
-     * @param _coreContract Contract address of the core contract.
+     * @param _coreContract Core contract address for the given project.
      * @param _proof Merkle proof for the given project.
-     * @param _vault Vault being purchased on behalf of. Acceptable to be `address(0)` if no vault.     * @return tokenId Token ID of minted token
+     * @param _vault Vault being purchased on behalf of. Acceptable to be
+     * `address(0)` if no vault.
+     * @return tokenId Token ID of minted token
      */
     function purchaseTo(
         address _to,
@@ -667,13 +682,13 @@ contract MinterSetPriceMerkleV5 is
         address _vault // acceptable to be `address(0)` if no vault
     ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
+        ProjectConfig storage _projectConfig = _projectConfigMapping[
+            _coreContract
+        ][_projectId];
         MaxInvocationsLib.MaxInvocationsProjectConfig
             storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
                 _coreContract
             ][_projectId];
-        ProjectConfig storage _projectConfig = _projectConfigMapping[
-            _coreContract
-        ][_projectId];
         MerkleLib.MerkleProjectConfig
             storage _merkleProjectConfig = _merkleProjectConfigMapping[
                 _coreContract

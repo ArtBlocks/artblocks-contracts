@@ -199,7 +199,7 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
         address _coreContract,
         string memory _currencySymbol,
         address _currencyAddress
-    ) external {
+    ) external nonReentrant {
         _onlyArtist(_projectId, _coreContract);
         SplitFundsLib.SplitFundsProjectConfig
             storage _splitFundsProjectConfig = _splitFundsProjectConfigs[
@@ -266,8 +266,8 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
 
     /**
      * @notice Checks if the specified `_coreContract` is a valid engine contract.
-     * @dev This function retrieves the cached value of `_isEngineCached` from
-     * the `splitFundsProjectConfig` mapping. If the cached value is already set, it
+     * @dev This function retrieves the cached value of `_isEngine` from
+     * the `isEngineCache` mapping. If the cached value is already set, it
      * returns the cached value. Otherwise, it calls the `getV3CoreIsEngine`
      * function from the `SplitFundsLib` library to check if `_coreContract`
      * is a valid engine contract.
@@ -393,7 +393,7 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
      * @notice Gets if price of token is configured, price of minting a
      * token on project `_projectId`, and currency symbol and address to be
      * used as payment.
-     * isConfigured is only true if a price has been configured, and an ERC20
+     * `isConfigured` is only true if a price has been configured, and an ERC20
      * token has been configured.
      * @param _projectId Project ID to get price information for
      * @param _coreContract Contract address of the core contract
@@ -402,9 +402,11 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
      * @return tokenPriceInWei current price of token on this minter - invalid
      * if price has not yet been configured
      * @return currencySymbol currency symbol for purchases of project on this
-     * minter. "ETH" reserved for ether, and is therefore not allowed.
+     * minter. "UNCONFIG" if not yet configured. Note that currency symbol is
+     * defined by the artist, and is not necessarily the same as the ERC20
+     * token symbol on-chain.
      * @return currencyAddress currency address for purchases of project on
-     * this minter. Null address reserved for ether.
+     * this minter. Null address if not yet configured.
      */
     function getPriceInfo(
         uint256 _projectId,
@@ -441,8 +443,8 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
     /**
      * @notice Syncs local maximum invocations of project `_projectId` based on
      * the value currently defined in the core contract.
-     * @param _coreContract Core contract address for the given project.
      * @param _projectId Project ID to set the maximum invocations for.
+     * @param _coreContract Core contract address for the given project.
      * @dev this enables gas reduction after maxInvocations have been reached -
      * core contracts shall still enforce a maxInvocation check during mint.
      */
@@ -505,7 +507,7 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
         // require artist to have configured price of token on this minter
         require(_projectConfig.priceIsConfigured, "Price not configured");
         // @dev revert occurs during payment split if ERC20 token is not
-        // configured, so not checked here
+        // configured (i.e. address(0)), so check is not performed here
 
         // EFFECTS
         tokenId = minterFilter.mint_joo(
