@@ -419,13 +419,13 @@ library SplitFundsLib {
     /**
      * Gets the currency address and symbol for the referenced
      * SplitFundsProjectConfig.
-     * Properly handles defaulting to "ETH" if project currency address is
-     * initial value, and handles a configured ERC20 token.
+     * Only supports ERC20 tokens - returns currencySymbol of `UNCONFIG` if
+     * `currencyAddress` is zero.
      * @param _splitFundsProjectConfig SplitFundsProjectConfig to read
      * @return currencyAddress
      * @return currencySymbol
      */
-    function getCurrencyInfo(
+    function getCurrencyInfoERC20(
         SplitFundsProjectConfig storage _splitFundsProjectConfig
     )
         internal
@@ -433,9 +433,9 @@ library SplitFundsLib {
         returns (address currencyAddress, string memory currencySymbol)
     {
         currencyAddress = _splitFundsProjectConfig.currencyAddress;
-        // default to "ETH"" if project currency address is initial value
+        // default to "UNCONFIG" if project currency address is initial value
         currencySymbol = currencyAddress == address(0)
-            ? "ETH"
+            ? "UNCONFIG"
             : _splitFundsProjectConfig.currencySymbol;
     }
 

@@ -402,7 +402,7 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
      * @return tokenPriceInWei current price of token on this minter - invalid
      * if price has not yet been configured
      * @return currencySymbol currency symbol for purchases of project on this
-     * minter. "ETH" reserved for ether.
+     * minter. "ETH" reserved for ether, and is therefore not allowed.
      * @return currencyAddress currency address for purchases of project on
      * this minter. Null address reserved for ether.
      */
@@ -428,7 +428,7 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
             storage _splitFundsProjectConfig = _splitFundsProjectConfigs[
                 _coreContract
             ][_projectId];
-        (currencyAddress, currencySymbol) = SplitFundsLib.getCurrencyInfo(
+        (currencyAddress, currencySymbol) = SplitFundsLib.getCurrencyInfoERC20(
             _splitFundsProjectConfig
         );
         // report if price and ERC20 token are configured
