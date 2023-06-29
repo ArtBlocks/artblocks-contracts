@@ -42,31 +42,31 @@ library SplitFundsLib {
      * @dev possible DoS during splits is acknowledged, and mitigated by
      * business practices, including end-to-end testing on mainnet, and
      * admin-accepted artist payment addresses.
-     * @param projectId Project ID for which funds shall be split.
-     * @param pricePerTokenInWei Current price of token, in Wei.
-     * @param coreContract Address of the GenArt721CoreContract associated
+     * @param _projectId Project ID for which funds shall be split.
+     * @param _pricePerTokenInWei Current price of token, in Wei.
+     * @param _coreContract Address of the GenArt721CoreContract associated
      * with the project.
      * @param _isEngine Whether the core contract is an engine contract.
      */
     function splitFundsETH(
-        uint256 projectId,
-        uint256 pricePerTokenInWei,
-        address coreContract,
+        uint256 _projectId,
+        uint256 _pricePerTokenInWei,
+        address _coreContract,
         bool _isEngine
     ) internal {
         if (msg.value > 0) {
             bool success_;
             // send refund to sender
-            uint256 refund = msg.value - pricePerTokenInWei;
+            uint256 refund = msg.value - _pricePerTokenInWei;
             if (refund > 0) {
                 (success_, ) = msg.sender.call{value: refund}("");
                 require(success_, "Refund failed");
             }
             // split revenues
             splitRevenuesETH(
-                projectId,
-                pricePerTokenInWei,
-                coreContract,
+                _projectId,
+                _pricePerTokenInWei,
+                _coreContract,
                 _isEngine
             );
         }
@@ -78,14 +78,14 @@ library SplitFundsLib {
      * @dev possible DoS during splits is acknowledged, and mitigated by
      * business practices, including end-to-end testing on mainnet, and
      * admin-accepted artist payment addresses.
-     * @param projectId Project ID for which funds shall be split.
+     * @param _projectId Project ID for which funds shall be split.
      * @param valueInWei Value to be split, in Wei.
      * @param genArtCoreContract Address of the GenArt721CoreContract
      * associated with the project.
      * @param _isEngine Whether the core contract is an engine contract.
      */
     function splitRevenuesETH(
-        uint256 projectId,
+        uint256 _projectId,
         uint256 valueInWei,
         address genArtCoreContract,
         bool _isEngine
@@ -117,7 +117,7 @@ library SplitFundsLib {
                 additionalPayeePrimaryRevenue_,
                 additionalPayeePrimaryAddress_
             ) = IGenArt721CoreContractV3_Engine(genArtCoreContract)
-                .getPrimaryRevenueSplits(projectId, valueInWei);
+                .getPrimaryRevenueSplits(_projectId, valueInWei);
             // Platform Provider payment (only possible if engine)
             if (platformProviderRevenue_ > 0) {
                 (success, ) = platformProviderAddress_.call{
@@ -135,7 +135,7 @@ library SplitFundsLib {
                 additionalPayeePrimaryRevenue_,
                 additionalPayeePrimaryAddress_
             ) = IGenArt721CoreContractV3(genArtCoreContract)
-                .getPrimaryRevenueSplits(projectId, valueInWei);
+                .getPrimaryRevenueSplits(_projectId, valueInWei);
         }
         // Render Provider / Art Blocks payment
         if (renderProviderRevenue_ > 0) {

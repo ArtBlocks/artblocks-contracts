@@ -781,12 +781,12 @@ contract MinterSetPriceHolderV5 is
             _coreContract,
             _isEngineCaches[_coreContract]
         );
-        SplitFundsLib.splitFundsETH(
-            _projectId,
-            pricePerTokenInWei,
-            _coreContract,
-            isEngine
-        );
+        SplitFundsLib.splitFundsETH({
+            _projectId: _projectId,
+            _pricePerTokenInWei: pricePerTokenInWei,
+            _coreContract: _coreContract,
+            _isEngine: isEngine
+        });
 
         return tokenId;
     }
