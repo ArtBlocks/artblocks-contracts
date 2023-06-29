@@ -294,61 +294,6 @@ library SplitFundsLib {
     }
 
     /**
-     * @notice Returns whether a V3 core contract is an Art Blocks Engine
-     * contract or not. Return value of false indicates that the core is a
-     * flagship contract. If this function resolves without reverting, it also
-     * updates the cache state for the given V3 core contract.
-     * @dev this function reverts if a core contract does not return the
-     * expected number of return values from getPrimaryRevenueSplits() for
-     * either a flagship or engine core contract.
-     * @dev this function uses the length of the return data (in bytes) to
-     * determine whether the core is an engine or not.
-     * @param _coreContract The address of the deployed core contract.
-     * @param _isEngineCache The storage pointer to the project's
-     * IsEngineCache struct.
-     */
-    function getV3CoreIsEngine(
-        address _coreContract,
-        IsEngineCache storage _isEngineCache
-    ) internal returns (bool) {
-        // call getPrimaryRevenueSplits() on core contract
-        bytes memory payload = abi.encodeWithSignature(
-            "getPrimaryRevenueSplits(uint256,uint256)",
-            0,
-            0
-        );
-        (bool success, bytes memory returnData) = _coreContract.call(payload);
-        require(success, "getPrimaryRevenueSplits() call failed");
-        // determine whether core is engine or not, based on return data length
-        uint256 returnDataLength = returnData.length;
-        if (returnDataLength == 6 * 32) {
-            // 6 32-byte words returned if flagship (not engine)
-            // @dev 6 32-byte words are expected because the non-engine core
-            // contracts return a payout address and uint256 payment value for
-            // the artist, and artist's additional payee, and Art Blocks.
-            // also note that per Solidity ABI encoding, the address return
-            // values are padded to 32 bytes.
-            _isEngineCache.isCached = true;
-            _isEngineCache.isEngine = false;
-            return false;
-        } else if (returnDataLength == 8 * 32) {
-            // 8 32-byte words returned if engine
-            // @dev 8 32-byte words are expected because the engine core
-            // contracts return a payout address and uint256 payment value for
-            // the artist, artist's additional payee, render provider
-            // typically Art Blocks, and platform provider (partner).
-            // also note that per Solidity ABI encoding, the address return
-            // values are padded to 32 bytes.
-            _isEngineCache.isCached = true;
-            _isEngineCache.isEngine = true;
-            return true;
-        } else {
-            // unexpected return value length
-            revert("Unexpected revenue split bytes");
-        }
-    }
-
-    /**
      * @notice Returns whether or not the provided address `_coreContract`
      * is an Art Blocks Engine core contract. Caches the result for future access.
      * @param _coreContract Address of the core contract to check.
@@ -442,33 +387,6 @@ library SplitFundsLib {
     }
 
     /**
-     * Validate that `_msgSender` has approved the contract to spend at least
-     * `_pricePerTokenInWei` of `_currencyAddress` ERC20 tokens, and that
-     * `_msgSender` has a balance of at least `_pricePerTokenInWei` of
-     * `_currencyAddress` ERC20 tokens.
-     * Reverts if insufficient allowance or balance.
-     * @param _msgSender Address of the message sender to validate.
-     * @param _currencyAddress Address of the ERC20 token to validate.
-     * @param _pricePerTokenInWei Price per token in wei to validate.
-     */
-    function validateERC20Approvals(
-        address _msgSender,
-        address _currencyAddress,
-        uint256 _pricePerTokenInWei
-    ) internal view {
-        require(
-            IERC20(_currencyAddress).allowance(_msgSender, address(this)) >=
-                _pricePerTokenInWei,
-            "Insufficient ERC20 allowance"
-        );
-        require(
-            IERC20(_currencyAddress).balanceOf(_msgSender) >=
-                _pricePerTokenInWei,
-            "Insufficient ERC20 balance"
-        );
-    }
-
-    /**
      * Get the balance of `_currencyAddress` ERC20 tokens for `_walletAddress`.
      * @param _currencyAddress ERC20 token address.
      * @param _walletAddress wallet address.
@@ -499,5 +417,87 @@ library SplitFundsLib {
             _spenderAddress
         );
         return allowance;
+    }
+
+    /**
+     * @notice Returns whether a V3 core contract is an Art Blocks Engine
+     * contract or not. Return value of false indicates that the core is a
+     * flagship contract. If this function resolves without reverting, it also
+     * updates the cache state for the given V3 core contract.
+     * @dev this function reverts if a core contract does not return the
+     * expected number of return values from getPrimaryRevenueSplits() for
+     * either a flagship or engine core contract.
+     * @dev this function uses the length of the return data (in bytes) to
+     * determine whether the core is an engine or not.
+     * @param _coreContract The address of the deployed core contract.
+     * @param _isEngineCache The storage pointer to the project's
+     * IsEngineCache struct.
+     */
+    function getV3CoreIsEngine(
+        address _coreContract,
+        IsEngineCache storage _isEngineCache
+    ) private returns (bool) {
+        // call getPrimaryRevenueSplits() on core contract
+        bytes memory payload = abi.encodeWithSignature(
+            "getPrimaryRevenueSplits(uint256,uint256)",
+            0,
+            0
+        );
+        (bool success, bytes memory returnData) = _coreContract.call(payload);
+        require(success, "getPrimaryRevenueSplits() call failed");
+        // determine whether core is engine or not, based on return data length
+        uint256 returnDataLength = returnData.length;
+        if (returnDataLength == 6 * 32) {
+            // 6 32-byte words returned if flagship (not engine)
+            // @dev 6 32-byte words are expected because the non-engine core
+            // contracts return a payout address and uint256 payment value for
+            // the artist, and artist's additional payee, and Art Blocks.
+            // also note that per Solidity ABI encoding, the address return
+            // values are padded to 32 bytes.
+            _isEngineCache.isCached = true;
+            _isEngineCache.isEngine = false;
+            return false;
+        } else if (returnDataLength == 8 * 32) {
+            // 8 32-byte words returned if engine
+            // @dev 8 32-byte words are expected because the engine core
+            // contracts return a payout address and uint256 payment value for
+            // the artist, artist's additional payee, render provider
+            // typically Art Blocks, and platform provider (partner).
+            // also note that per Solidity ABI encoding, the address return
+            // values are padded to 32 bytes.
+            _isEngineCache.isCached = true;
+            _isEngineCache.isEngine = true;
+            return true;
+        } else {
+            // unexpected return value length
+            revert("Unexpected revenue split bytes");
+        }
+    }
+
+    /**
+     * Validate that `_msgSender` has approved the contract to spend at least
+     * `_pricePerTokenInWei` of `_currencyAddress` ERC20 tokens, and that
+     * `_msgSender` has a balance of at least `_pricePerTokenInWei` of
+     * `_currencyAddress` ERC20 tokens.
+     * Reverts if insufficient allowance or balance.
+     * @param _msgSender Address of the message sender to validate.
+     * @param _currencyAddress Address of the ERC20 token to validate.
+     * @param _pricePerTokenInWei Price per token in wei to validate.
+     */
+    function validateERC20Approvals(
+        address _msgSender,
+        address _currencyAddress,
+        uint256 _pricePerTokenInWei
+    ) private view {
+        require(
+            IERC20(_currencyAddress).allowance(_msgSender, address(this)) >=
+                _pricePerTokenInWei,
+            "Insufficient ERC20 allowance"
+        );
+        require(
+            IERC20(_currencyAddress).balanceOf(_msgSender) >=
+                _pricePerTokenInWei,
+            "Insufficient ERC20 balance"
+        );
     }
 }
