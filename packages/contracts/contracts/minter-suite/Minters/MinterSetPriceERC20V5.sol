@@ -8,7 +8,6 @@ import "../../interfaces/v0.8.x/IMinterFilterV1.sol";
 
 import "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
 import "../../libs/v0.8.x/minter-libs/MaxInvocationsLib.sol";
-import "../../libs/v0.8.x/minter-libs/ERC20Lib.sol";
 
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
 
@@ -16,7 +15,7 @@ pragma solidity 0.8.19;
 
 /**
  * @title Shared, filtered Minter contract that allows tokens to be minted with
- * ETH or artist-configured ERC20 tokens.
+ * artist-configured ERC20 tokens.
  * This is designed to be used with GenArt721CoreContractV3 flagship or
  * engine contracts.
  * @author Art Blocks Inc.
@@ -63,6 +62,10 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
     // contractAddress => IsEngineCache
     mapping(address => SplitFundsLib.IsEngineCache) private _isEngineCaches;
 
+    // contractAddress => projectId => SplitFundsProjectConfig
+    mapping(address => mapping(uint256 => SplitFundsLib.SplitFundsProjectConfig))
+        private _splitFundsProjectConfigs;
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR SplitFundsLib end here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -77,18 +80,6 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR MaxInvocationsLib end here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR ERC20Lib begin here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    // contractAddress => projectId => project currency config
-    mapping(address => mapping(uint256 => ERC20Lib.ProjectCurrencyConfig))
-        private _projectCurrencyConfigs;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR ERC20Lib end here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     // MODIFIERS
@@ -194,11 +185,10 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
     }
 
     /**
-     * @notice Updates this minter's price per token of project `_projectId`
-     * to be '_pricePerTokenInWei`, in Wei.
      * @notice Updates payment currency of project `_projectId` on core
      * contract `_coreContract` to be `_currencySymbol` at address
      * `_currencyAddress`.
+     * Only supports ERC20 tokens - for ETH minting, use a different minter.
      * @param _projectId Project ID to update.
      * @param _coreContract Core contract address for the given project.
      * @param _currencySymbol Currency symbol.
@@ -211,12 +201,12 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
         address _currencyAddress
     ) external {
         _onlyArtist(_projectId, _coreContract);
-        ERC20Lib.ProjectCurrencyConfig
-            storage _projectCurrencyConfig = _projectCurrencyConfigs[
+        SplitFundsLib.SplitFundsProjectConfig
+            storage _splitFundsProjectConfig = _splitFundsProjectConfigs[
                 _coreContract
             ][_projectId];
-        ERC20Lib.updateProjectCurrencyInfo({
-            _projectCurrencyConfig: _projectCurrencyConfig,
+        SplitFundsLib.updateProjectCurrencyInfoERC20({
+            _splitFundsProjectConfig: _splitFundsProjectConfig,
             _currencySymbol: _currencySymbol,
             _currencyAddress: _currencyAddress
         });
@@ -276,8 +266,8 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
 
     /**
      * @notice Checks if the specified `_coreContract` is a valid engine contract.
-     * @dev This function retrieves the cached value of `_coreContract` from
-     * the `isEngineCache` mapping. If the cached value is already set, it
+     * @dev This function retrieves the cached value of `_isEngineCached` from
+     * the `splitFundsProjectConfig` mapping. If the cached value is already set, it
      * returns the cached value. Otherwise, it calls the `getV3CoreIsEngine`
      * function from the `SplitFundsLib` library to check if `_coreContract`
      * is a valid engine contract.
@@ -364,12 +354,12 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
         uint256 _projectId,
         address _coreContract
     ) external view returns (uint256 balance) {
-        ERC20Lib.ProjectCurrencyConfig
-            storage _projectCurrencyConfig = _projectCurrencyConfigs[
+        SplitFundsLib.SplitFundsProjectConfig
+            storage _splitFundsProjectConfig = _splitFundsProjectConfigs[
                 _coreContract
             ][_projectId];
-        balance = ERC20Lib.getERC20Balance(
-            _projectCurrencyConfig.currencyAddress,
+        balance = SplitFundsLib.getERC20Balance(
+            _splitFundsProjectConfig.currencyAddress,
             msg.sender
         );
         return balance;
@@ -387,12 +377,12 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
         uint256 _projectId,
         address _coreContract
     ) external view returns (uint256 remaining) {
-        ERC20Lib.ProjectCurrencyConfig
-            storage _projectCurrencyConfig = _projectCurrencyConfigs[
+        SplitFundsLib.SplitFundsProjectConfig
+            storage _splitFundsProjectConfig = _splitFundsProjectConfigs[
                 _coreContract
             ][_projectId];
-        remaining = ERC20Lib.getERC20Allowance({
-            _currencyAddress: _projectCurrencyConfig.currencyAddress,
+        remaining = SplitFundsLib.getERC20Allowance({
+            _currencyAddress: _splitFundsProjectConfig.currencyAddress,
             _walletAddress: msg.sender,
             _spenderAddress: address(this)
         });
@@ -402,11 +392,13 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
     /**
      * @notice Gets if price of token is configured, price of minting a
      * token on project `_projectId`, and currency symbol and address to be
-     * used as payment. Supersedes any core contract price information.
+     * used as payment.
+     * isConfigured is only true if a price has been configured, and an ERC20
+     * token has been configured.
      * @param _projectId Project ID to get price information for
      * @param _coreContract Contract address of the core contract
      * @return isConfigured true only if token price has been configured on
-     * this minter
+     * this minter and an ERC20 token has been configured
      * @return tokenPriceInWei current price of token on this minter - invalid
      * if price has not yet been configured
      * @return currencySymbol currency symbol for purchases of project on this
@@ -430,16 +422,20 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
         ProjectConfig storage _projectConfig = _projectConfigMapping[
             _coreContract
         ][_projectId];
-        isConfigured = _projectConfig.priceIsConfigured;
         tokenPriceInWei = _projectConfig.pricePerTokenInWei;
-        // get currency info from ERC20Lib
-        ERC20Lib.ProjectCurrencyConfig
-            storage _projectCurrencyConfig = _projectCurrencyConfigs[
+        // get currency info from SplitFundsLib
+        SplitFundsLib.SplitFundsProjectConfig
+            storage _splitFundsProjectConfig = _splitFundsProjectConfigs[
                 _coreContract
             ][_projectId];
-        (currencyAddress, currencySymbol) = ERC20Lib.getCurrencyInfo(
-            _projectCurrencyConfig
+        (currencyAddress, currencySymbol) = SplitFundsLib.getCurrencyInfo(
+            _splitFundsProjectConfig
         );
+        // report if price and ERC20 token are configured
+        // @dev currencyAddress is non-zero if an ERC20 token is configured
+        isConfigured =
+            _projectConfig.priceIsConfigured &&
+            currencyAddress != address(0);
     }
 
     /**
@@ -490,8 +486,8 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
             storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
                 _coreContract
             ][_projectId];
-        ERC20Lib.ProjectCurrencyConfig
-            storage _projectCurrencyConfig = _projectCurrencyConfigs[
+        SplitFundsLib.SplitFundsProjectConfig
+            storage _splitFundsProjectConfig = _splitFundsProjectConfigs[
                 _coreContract
             ][_projectId];
 
@@ -508,6 +504,8 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
 
         // require artist to have configured price of token on this minter
         require(_projectConfig.priceIsConfigured, "Price not configured");
+        // @dev revert occurs during payment split if ERC20 token is not
+        // configured, so not checked here
 
         // EFFECTS
         tokenId = minterFilter.mint_joo(
@@ -523,15 +521,15 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
         );
 
         // INTERACTIONS
+        // split ERC20 funds
         bool isEngine = SplitFundsLib.isEngine(
             _coreContract,
             _isEngineCaches[_coreContract]
         );
-        // process payment in either ETH or ERC20
-        ERC20Lib.processFixedPricePayment({
-            _projectCurrencyConfig: _projectCurrencyConfig,
-            _pricePerTokenInWei: _projectConfig.pricePerTokenInWei,
+        SplitFundsLib.splitFundsERC20({
+            _splitFundsProjectConfig: _splitFundsProjectConfig,
             _projectId: _projectId,
+            _pricePerTokenInWei: _projectConfig.pricePerTokenInWei,
             _coreContract: _coreContract,
             _isEngine: isEngine
         });
