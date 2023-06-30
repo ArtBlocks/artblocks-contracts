@@ -159,13 +159,14 @@ contract MinterSetPriceHolderV5 is
         address _minterFilter,
         address _delegationRegistryAddress
     ) ReentrancyGuard() {
+        minterFilterAddress = _minterFilter;
+        minterFilter = IMinterFilterV1(_minterFilter);
+
         delegationRegistryAddress = _delegationRegistryAddress;
         delegationRegistryContract = IDelegationRegistry(
             _delegationRegistryAddress
         );
         emit DelegationRegistryUpdated(_delegationRegistryAddress);
-        minterFilterAddress = _minterFilter;
-        minterFilter = IMinterFilterV1(_minterFilter);
     }
 
     /**

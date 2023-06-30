@@ -12,7 +12,6 @@ import "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
 import "../../libs/v0.8.x/minter-libs/MaxInvocationsLib.sol";
 import "../../libs/v0.8.x/minter-libs/TokenHolderLib.sol";
 import "../../libs/v0.8.x/minter-libs/PolyptychLib.sol";
-import "../../libs/v0.8.x/minter-libs/ERC20Lib.sol";
 
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin-4.5/contracts/utils/structs/EnumerableSet.sol";
@@ -21,11 +20,12 @@ pragma solidity 0.8.19;
 
 /**
  * @title Shared, filtered Minter contract that allows tokens to be minted with
- * ETH or any configured ERC20 token when purchaser owns an allowlisted ERC-721
+ * an artist-configured ERC20 token when purchaser owns an allowlisted ERC-721
  * NFT.
  * This contract must be used with an accompanying shared randomizer contract
  * that is configured to copy the token hash seed from the allowlisted token to
- * a corresponding newly-minted token.
+ * a corresponding newly-minted token. This minter contract must be the allowed
+ * hash seed setter contract for the shared randomizer contract.
  * The source token may only be used to mint one additional polyptych "panel" if the token
  * has not yet been used to mint a panel with the currently configured panel ID. To add
  * an additional panel to a project, the panel ID may be incremented for the project
@@ -72,7 +72,7 @@ pragma solidity 0.8.19;
  * level delegations must be configured for the core token contract as returned
  * by the public immutable variable `genArt721CoreAddress`.
  */
-contract MinterPolyptychV1 is
+contract MinterPolyptychERC20V1 is
     ReentrancyGuard,
     ISharedMinterV0,
     ISharedMinterHolderV0,
@@ -94,10 +94,10 @@ contract MinterPolyptychV1 is
     IDelegationRegistry private immutable delegationRegistryContract;
 
     /// minterType for this minter
-    string public constant minterType = "MinterPolyptychV1";
+    string public constant minterType = "MinterPolyptychERC20V1";
 
     /// minter version for this minter
-    string public constant minterVersion = "v5.0.0";
+    string public constant minterVersion = "v1.0.0";
 
     uint256 constant ONE_MILLION = 1_000_000;
 
@@ -111,6 +111,10 @@ contract MinterPolyptychV1 is
 
     // contractAddress => IsEngineCache
     mapping(address => SplitFundsLib.IsEngineCache) private _isEngineCaches;
+
+    // contractAddress => projectId => SplitFundsProjectConfig
+    mapping(address => mapping(uint256 => SplitFundsLib.SplitFundsProjectConfig))
+        private _splitFundsProjectConfigs;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR SplitFundsLib end here
@@ -126,18 +130,6 @@ contract MinterPolyptychV1 is
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR MaxInvocationsLib end here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR ERC20Lib begin here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    // contractAddress => projectId => project currency config
-    mapping(address => mapping(uint256 => ERC20Lib.ProjectCurrencyConfig))
-        private _projectCurrencyConfigs;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR ERC20Lib end here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -197,13 +189,14 @@ contract MinterPolyptychV1 is
         address _minterFilter,
         address _delegationRegistryAddress
     ) ReentrancyGuard() {
+        minterFilterAddress = _minterFilter;
+        minterFilter = IMinterFilterV1(_minterFilter);
+
         delegationRegistryAddress = _delegationRegistryAddress;
         delegationRegistryContract = IDelegationRegistry(
             _delegationRegistryAddress
         );
         emit DelegationRegistryUpdated(_delegationRegistryAddress);
-        minterFilterAddress = _minterFilter;
-        minterFilter = IMinterFilterV1(_minterFilter);
     }
 
     /**
@@ -279,11 +272,10 @@ contract MinterPolyptychV1 is
     }
 
     /**
-     * @notice Updates this minter's price per token of project `_projectId`
-     * to be '_pricePerTokenInWei`, in Wei.
      * @notice Updates payment currency of project `_projectId` on core
      * contract `_coreContract` to be `_currencySymbol` at address
      * `_currencyAddress`.
+     * Only supports ERC20 tokens - for ETH minting, use a different minter.
      * @param _projectId Project ID to update.
      * @param _coreContract Core contract address for the given project.
      * @param _currencySymbol Currency symbol.
@@ -294,14 +286,14 @@ contract MinterPolyptychV1 is
         address _coreContract,
         string memory _currencySymbol,
         address _currencyAddress
-    ) external {
+    ) external nonReentrant {
         _onlyArtist(_projectId, _coreContract);
-        ERC20Lib.ProjectCurrencyConfig
-            storage _projectCurrencyConfig = _projectCurrencyConfigs[
+        SplitFundsLib.SplitFundsProjectConfig
+            storage _splitFundsProjectConfig = _splitFundsProjectConfigs[
                 _coreContract
             ][_projectId];
-        ERC20Lib.updateProjectCurrencyInfo({
-            _projectCurrencyConfig: _projectCurrencyConfig,
+        SplitFundsLib.updateProjectCurrencyInfoERC20({
+            _splitFundsProjectConfig: _splitFundsProjectConfig,
             _currencySymbol: _currencySymbol,
             _currencyAddress: _currencyAddress
         });
@@ -632,7 +624,7 @@ contract MinterPolyptychV1 is
 
     /**
      * @notice Checks if the specified `_coreContract` is a valid engine contract.
-     * @dev This function retrieves the cached value of `_coreContract` from
+     * @dev This function retrieves the cached value of `_isEngine` from
      * the `isEngineCache` mapping. If the cached value is already set, it
      * returns the cached value. Otherwise, it calls the `getV3CoreIsEngine`
      * function from the `SplitFundsLib` library to check if `_coreContract`
@@ -720,12 +712,12 @@ contract MinterPolyptychV1 is
         uint256 _projectId,
         address _coreContract
     ) external view returns (uint256 balance) {
-        ERC20Lib.ProjectCurrencyConfig
-            storage _projectCurrencyConfig = _projectCurrencyConfigs[
+        SplitFundsLib.SplitFundsProjectConfig
+            storage _splitFundsProjectConfig = _splitFundsProjectConfigs[
                 _coreContract
             ][_projectId];
-        balance = ERC20Lib.getERC20Balance(
-            _projectCurrencyConfig.currencyAddress,
+        balance = SplitFundsLib.getERC20Balance(
+            _splitFundsProjectConfig.currencyAddress,
             msg.sender
         );
         return balance;
@@ -743,12 +735,12 @@ contract MinterPolyptychV1 is
         uint256 _projectId,
         address _coreContract
     ) external view returns (uint256 remaining) {
-        ERC20Lib.ProjectCurrencyConfig
-            storage _projectCurrencyConfig = _projectCurrencyConfigs[
+        SplitFundsLib.SplitFundsProjectConfig
+            storage _splitFundsProjectConfig = _splitFundsProjectConfigs[
                 _coreContract
             ][_projectId];
-        remaining = ERC20Lib.getERC20Allowance({
-            _currencyAddress: _projectCurrencyConfig.currencyAddress,
+        remaining = SplitFundsLib.getERC20Allowance({
+            _currencyAddress: _splitFundsProjectConfig.currencyAddress,
             _walletAddress: msg.sender,
             _spenderAddress: address(this)
         });
@@ -758,17 +750,21 @@ contract MinterPolyptychV1 is
     /**
      * @notice Gets if price of token is configured, price of minting a
      * token on project `_projectId`, and currency symbol and address to be
-     * used as payment. Supersedes any core contract price information.
+     * used as payment.
+     * `isConfigured` is only true if a price has been configured, and an ERC20
+     * token has been configured.
      * @param _projectId Project ID to get price information for
      * @param _coreContract Contract address of the core contract
      * @return isConfigured true only if token price has been configured on
-     * this minter
+     * this minter and an ERC20 token has been configured
      * @return tokenPriceInWei current price of token on this minter - invalid
      * if price has not yet been configured
      * @return currencySymbol currency symbol for purchases of project on this
-     * minter. "ETH" reserved for ether.
+     * minter. "UNCONFIG" if not yet configured. Note that currency symbol is
+     * defined by the artist, and is not necessarily the same as the ERC20
+     * token symbol on-chain.
      * @return currencyAddress currency address for purchases of project on
-     * this minter. Null address reserved for ether.
+     * this minter. Null address if not yet configured.
      */
     function getPriceInfo(
         uint256 _projectId,
@@ -786,23 +782,27 @@ contract MinterPolyptychV1 is
         ProjectConfig storage _projectConfig = _projectConfigMapping[
             _coreContract
         ][_projectId];
-        isConfigured = _projectConfig.priceIsConfigured;
         tokenPriceInWei = _projectConfig.pricePerTokenInWei;
-        // get currency info from ERC20Lib
-        ERC20Lib.ProjectCurrencyConfig
-            storage _projectCurrencyConfig = _projectCurrencyConfigs[
+        // get currency info from SplitFundsLib
+        SplitFundsLib.SplitFundsProjectConfig
+            storage _splitFundsProjectConfig = _splitFundsProjectConfigs[
                 _coreContract
             ][_projectId];
-        (currencyAddress, currencySymbol) = ERC20Lib.getCurrencyInfo(
-            _projectCurrencyConfig
+        (currencyAddress, currencySymbol) = SplitFundsLib.getCurrencyInfoERC20(
+            _splitFundsProjectConfig
         );
+        // report if price and ERC20 token are configured
+        // @dev currencyAddress is non-zero if an ERC20 token is configured
+        isConfigured =
+            _projectConfig.priceIsConfigured &&
+            currencyAddress != address(0);
     }
 
     /**
      * @notice Syncs local maximum invocations of project `_projectId` based on
      * the value currently defined in the core contract.
-     * @param _coreContract Core contract address for the given project.
      * @param _projectId Project ID to set the maximum invocations for.
+     * @param _coreContract Core contract address for the given project.
      * @dev this enables gas reduction after maxInvocations have been reached -
      * core contracts shall still enforce a maxInvocation check during mint.
      */
@@ -871,6 +871,8 @@ contract MinterPolyptychV1 is
 
         // require artist to have configured price of token on this minter
         require(_projectConfig.priceIsConfigured, "Price not configured");
+        // @dev revert occurs during payment split if ERC20 token is not
+        // configured (i.e. address(0)), so check is not performed here
 
         // require token used to claim to be in set of allowlisted NFTs
         require(
@@ -995,15 +997,15 @@ contract MinterPolyptychV1 is
             _coreContract,
             _isEngineCaches[_coreContract]
         );
-        // process payment in either ETH or ERC20
-        ERC20Lib.ProjectCurrencyConfig
-            storage _projectCurrencyConfig = _projectCurrencyConfigs[
+        // process payment in ERC20
+        SplitFundsLib.SplitFundsProjectConfig
+            storage _splitFundsProjectConfig = _splitFundsProjectConfigs[
                 _coreContract
             ][_projectId];
-        ERC20Lib.processFixedPricePayment({
-            _projectCurrencyConfig: _projectCurrencyConfig,
-            _pricePerTokenInWei: _projectConfig.pricePerTokenInWei,
+        SplitFundsLib.splitFundsERC20({
+            _splitFundsProjectConfig: _splitFundsProjectConfig,
             _projectId: _projectId,
+            _pricePerTokenInWei: _projectConfig.pricePerTokenInWei,
             _coreContract: _coreContract,
             _isEngine: isEngine
         });
