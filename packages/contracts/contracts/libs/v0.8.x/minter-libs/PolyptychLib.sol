@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../../../interfaces/v0.8.x/IMinterBaseV0.sol";
 import "../../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
 import "../../../interfaces/v0.8.x/IGenArt721CoreContractExposesHashSeed.sol";
 import "../../../interfaces/v0.8.x/ISharedRandomizerV0.sol";
