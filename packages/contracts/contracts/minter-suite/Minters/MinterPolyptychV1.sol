@@ -5,7 +5,6 @@ import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
 import "../../interfaces/v0.8.x/IDelegationRegistry.sol";
 import "../../interfaces/v0.8.x/ISharedMinterV0.sol";
 import "../../interfaces/v0.8.x/ISharedMinterHolderV0.sol";
-import "../../interfaces/v0.8.x/ISharedMinterPolyptychV0.sol";
 import "../../interfaces/v0.8.x/IMinterFilterV1.sol";
 
 import "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
@@ -73,8 +72,7 @@ pragma solidity 0.8.19;
 contract MinterPolyptychV1 is
     ReentrancyGuard,
     ISharedMinterV0,
-    ISharedMinterHolderV0,
-    ISharedMinterPolyptychV0
+    ISharedMinterHolderV0
 {
     // add Enumerable Set methods
     using EnumerableSet for EnumerableSet.AddressSet;
