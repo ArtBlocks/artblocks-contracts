@@ -55,7 +55,7 @@
     "@types/prompt": "^1.1.5",
     "@typescript-eslint/eslint-plugin": "^5.60.1",
     "@typescript-eslint/parser": "^5.60.1",
-    "aws-sdk-client-mock": "^2.2.0",
+    "aws-sdk-client-mock": "^3.0.0",
     "chai": "^4.3.7",
     "coveralls": "^3.1.1",
     "dotenv": "^16.3.1",
