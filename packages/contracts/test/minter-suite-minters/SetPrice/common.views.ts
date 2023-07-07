@@ -1,7 +1,7 @@
 import { constants } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
-import { T_Config } from "../../util/common";
+import { T_Config, isERC20Minter } from "../../util/common";
 import { Common_Views } from "../common.views";
 
 /**
@@ -23,10 +23,15 @@ export const SetPrice_Common_Views = async (
         config.projectZero,
         config.genArt721Core.address
       );
+      const isERC20 = isERC20Minter(config.minter);
+      const expectedSymbol = isERC20 ? "ERC20" : "ETH";
+      const expectedAddress = isERC20
+        ? config.ERC20.address
+        : constants.ZERO_ADDRESS;
       expect(result[0]).to.equal(false);
       expect(result[1]).to.equal(0);
-      expect(result[2]).to.equal("ETH");
-      expect(result[3]).to.equal(constants.ZERO_ADDRESS);
+      expect(result[2]).to.equal(expectedSymbol);
+      expect(result[3]).to.equal(expectedAddress);
     });
 
     it("should return proper response when configured", async function () {
@@ -42,10 +47,15 @@ export const SetPrice_Common_Views = async (
         config.projectZero,
         config.genArt721Core.address
       );
+      const isERC20 = isERC20Minter(config.minter);
+      const expectedSymbol = isERC20 ? "ERC20" : "ETH";
+      const expectedAddress = isERC20
+        ? config.ERC20.address
+        : constants.ZERO_ADDRESS;
       expect(result[0]).to.equal(true);
       expect(result[1]).to.equal(config.pricePerTokenInWei);
-      expect(result[2]).to.equal("ETH");
-      expect(result[3]).to.equal(constants.ZERO_ADDRESS);
+      expect(result[2]).to.equal(expectedSymbol);
+      expect(result[3]).to.equal(expectedAddress);
     });
   });
 };

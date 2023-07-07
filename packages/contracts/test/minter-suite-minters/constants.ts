@@ -15,6 +15,7 @@ export const revertMessages = {
   priceNotConfigured: "Price not configured",
   projectIdDoesNotExist: "Project ID does not exist",
   needMoreValue: "Min value to mint req.",
+  needMoreAllowance: "Insufficient ERC20 allowance",
   noRenounceOwnership: "Cannot renounce ownership",
   onlyAdminACL: "Only Admin ACL allowed",
   onlyCoreAdminACL: "Only Core AdminACL allowed",
@@ -31,4 +32,6 @@ export const revertMessages = {
   lengthOfArraysMustMatch: "TokenHolderLib: arrays neq length",
   onlyRegisteredNFTAddresses: "TokenHolderLib: address not registered",
   purchaseRequiresNFT: "Purchase requires NFT ownership",
+  ERC20TransferToZeroError: "ERC20: transfer to the zero address",
+  ERC20MockBannedTransfer: "ERC20Mock: transfer to banned address",
 };

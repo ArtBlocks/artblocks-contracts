@@ -5,7 +5,11 @@ import {
   T_Config,
   deployCoreWithMinterFilter,
   deployAndGet,
+  isERC20Minter,
 } from "../util/common";
+import { Logger } from "@ethersproject/logger";
+// hide nuisance logs about event overloading
+Logger.setLogLevel(Logger.levels.ERROR);
 
 /**
  * These tests are intended to check common views Minter functionality
@@ -65,6 +69,18 @@ export const Common_Views = async (_beforeEach: () => Promise<T_Config>) => {
 
     it("reports expected isConfigured", async function () {
       const config = await loadFixture(_beforeEach);
+      // fully configure ERC20 minters on project 1
+      if (await isERC20Minter(config.minter)) {
+        await config.minter
+          .connect(config.accounts.artist)
+          .updateProjectCurrencyInfo(
+            config.projectOne,
+            config.genArt721Core.address,
+            "ERC20",
+            config.ERC20.address
+          );
+      }
+      // get currency info for configured project
       let currencyInfo = await config.minter
         .connect(config.accounts.artist)
         .getPriceInfo(config.projectOne, config.genArt721Core.address);
@@ -81,15 +97,23 @@ export const Common_Views = async (_beforeEach: () => Promise<T_Config>) => {
       const priceInfo = await config.minter
         .connect(config.accounts.artist)
         .getPriceInfo(config.projectZero, config.genArt721Core.address);
-      expect(priceInfo.currencySymbol).to.be.equal("ETH");
+      // determine if minter is ERC20 or ETH
+      const isERC20 = await isERC20Minter(config.minter);
+      const targetSymbol = isERC20 ? "ERC20" : "ETH";
+      expect(priceInfo.currencySymbol).to.be.equal(targetSymbol);
     });
 
-    it("reports currency address as null address", async function () {
+    it("reports currency address as null address or ERC20 address", async function () {
       const config = await loadFixture(_beforeEach);
       const priceInfo = await config.minter
         .connect(config.accounts.artist)
         .getPriceInfo(config.projectZero, config.genArt721Core.address);
-      expect(priceInfo.currencyAddress).to.be.equal(constants.ZERO_ADDRESS);
+      // determine if minter is ERC20 or ETH
+      const isERC20 = await isERC20Minter(config.minter);
+      const targetAddress = isERC20
+        ? config.ERC20?.address
+        : constants.ZERO_ADDRESS;
+      expect(priceInfo.currencyAddress).to.be.equal(targetAddress);
     });
   });
 
