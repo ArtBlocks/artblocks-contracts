@@ -82,7 +82,8 @@ runForEach.forEach((params) => {
         const config = await loadFixture(_beforeEach);
         const hashSeedSetterContract =
           await config.randomizer.hashSeedSetterContracts(
-            config.genArt721Core.address
+            config.genArt721Core.address,
+            config.projectZero
           );
         expect(hashSeedSetterContract).to.equal(constants.ZERO_ADDRESS);
       });
@@ -90,15 +91,17 @@ runForEach.forEach((params) => {
       it("should return assigned address by if assigned", async function () {
         const config = await loadFixture(_beforeEach);
         await config.randomizer
-          .connect(config.accounts.deployer)
+          .connect(config.accounts.artist)
           .setHashSeedSetterContract(
             config.genArt721Core.address,
+            config.projectZero,
             config.minter.address
           );
         // verify hash seed setter address
         const hashSeedSetterContract =
           await config.randomizer.hashSeedSetterContracts(
-            config.genArt721Core.address
+            config.genArt721Core.address,
+            config.projectZero
           );
         expect(hashSeedSetterContract).to.equal(config.minter.address);
       });
@@ -118,9 +121,10 @@ runForEach.forEach((params) => {
         const config = await loadFixture(_beforeEach);
         // set polyptych hash seed
         await config.randomizer
-          .connect(config.accounts.deployer)
+          .connect(config.accounts.artist)
           .setHashSeedSetterContract(
             config.genArt721Core.address,
+            config.projectZero,
             config.accounts.artist.address // use EOA for testing purposes
           );
         await config.randomizer

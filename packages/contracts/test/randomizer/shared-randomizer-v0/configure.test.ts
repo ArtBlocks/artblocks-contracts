@@ -73,16 +73,17 @@ runForEach.forEach((params) => {
     });
 
     describe("setHashSeedSetterContract", async function () {
-      it("reverts when non-core-adminACL", async function () {
+      it("reverts when not artist", async function () {
         const config = await loadFixture(_beforeEach);
         await expectRevert(
           config.randomizer
-            .connect(config.accounts.artist)
+            .connect(config.accounts.deployer)
             .setHashSeedSetterContract(
               config.genArt721Core.address,
+              config.projectZero,
               config.accounts.artist.address
             ),
-          revertMessages.onlyCoreAdminACL
+          revertMessages.onlyArtist
         );
       });
 
@@ -90,15 +91,17 @@ runForEach.forEach((params) => {
         const config = await loadFixture(_beforeEach);
         // update hash seed setter contract
         await config.randomizer
-          .connect(config.accounts.deployer)
+          .connect(config.accounts.artist)
           .setHashSeedSetterContract(
             config.genArt721Core.address,
+            config.projectZero,
             config.accounts.artist.address // dummy use EOA for this test
           );
         // check state
         const hashSeedSetterContract =
           await config.randomizer.hashSeedSetterContracts(
-            config.genArt721Core.address
+            config.genArt721Core.address,
+            config.projectZero
           );
         expect(hashSeedSetterContract).to.equal(config.accounts.artist.address);
       });
@@ -181,9 +184,10 @@ runForEach.forEach((params) => {
         // update hash seed setter contract
         // @dev update to EOA for test simplicity
         await config.randomizer
-          .connect(config.accounts.deployer)
+          .connect(config.accounts.artist)
           .setHashSeedSetterContract(
             config.genArt721Core.address,
+            config.projectZero,
             config.accounts.artist.address
           );
         await config.randomizer
@@ -209,9 +213,10 @@ runForEach.forEach((params) => {
         // update hash seed setter contract
         // @dev update to EOA for test simplicity
         await config.randomizer
-          .connect(config.accounts.deployer)
+          .connect(config.accounts.artist)
           .setHashSeedSetterContract(
             config.genArt721Core.address,
+            config.projectZero,
             config.accounts.artist.address
           );
         // assign minter to project zero
@@ -277,9 +282,10 @@ runForEach.forEach((params) => {
           );
         // assign hash seed
         await config.randomizer
-          .connect(config.accounts.deployer)
+          .connect(config.accounts.artist)
           .setHashSeedSetterContract(
             config.genArt721Core.address,
+            config.projectZero,
             config.accounts.artist.address
           );
         await config.randomizer
