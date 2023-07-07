@@ -10,7 +10,7 @@
     "@babel/core": "^7.22.8",
     "@babel/preset-env": "^7.22.7",
     "@babel/preset-typescript": "^7.22.5",
-    "@jest/globals": "^29.5.0",
+    "@jest/globals": "^29.6.1",
     "@typechain/ethers-v5": "^10.2.1",
     "eslint-config-custom": "*",
     "jest": "^29.6.1",
