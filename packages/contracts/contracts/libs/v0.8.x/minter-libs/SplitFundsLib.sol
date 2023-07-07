@@ -20,11 +20,13 @@ pragma solidity ^0.8.0;
  */
 
 library SplitFundsLib {
+    // contract-level variables
     struct IsEngineCache {
         bool isEngine;
         bool isCached;
     }
 
+    // project-level variables
     struct SplitFundsProjectConfig {
         address currencyAddress; // address(0) if ETH
         string currencySymbol; // Assumed to be ETH if null
@@ -223,10 +225,13 @@ library SplitFundsLib {
                 .getPrimaryRevenueSplits(_projectId, _pricePerTokenInWei);
             // Platform Provider payment (only possible if engine)
             if (platformProviderRevenue_ > 0) {
-                _projectCurrency.transferFrom(
-                    msg.sender,
-                    platformProviderAddress_,
-                    platformProviderRevenue_
+                require(
+                    _projectCurrency.transferFrom(
+                        msg.sender,
+                        platformProviderAddress_,
+                        platformProviderRevenue_
+                    ),
+                    "Platform Provider payment failed"
                 );
             }
         } else {
@@ -245,26 +250,37 @@ library SplitFundsLib {
         }
         // Art Blocks payment
         if (renderProviderRevenue_ > 0) {
-            _projectCurrency.transferFrom(
-                msg.sender,
-                renderProviderAddress_,
-                renderProviderRevenue_
+            require(
+                _projectCurrency.transferFrom(
+                    msg.sender,
+                    renderProviderAddress_,
+                    renderProviderRevenue_
+                ),
+                "Render Provider payment failed"
             );
         }
         // artist payment
         if (artistRevenue_ > 0) {
-            _projectCurrency.transferFrom(
-                msg.sender,
-                artistAddress_,
-                artistRevenue_
+            require(
+                _projectCurrency.transferFrom(
+                    msg.sender,
+                    artistAddress_,
+                    artistRevenue_
+                ),
+                "Artist payment failed"
             );
         }
         // additional payee payment
         if (additionalPayeePrimaryRevenue_ > 0) {
-            _projectCurrency.transferFrom(
-                msg.sender,
-                additionalPayeePrimaryAddress_,
-                additionalPayeePrimaryRevenue_
+            // @dev some ERC20 may not revert on transfer failure, so we
+            // check the return value
+            require(
+                _projectCurrency.transferFrom(
+                    msg.sender,
+                    additionalPayeePrimaryAddress_,
+                    additionalPayeePrimaryRevenue_
+                ),
+                "Additional Payee payment failed"
             );
         }
     }
