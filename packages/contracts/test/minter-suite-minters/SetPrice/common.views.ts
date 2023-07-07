@@ -23,10 +23,10 @@ export const SetPrice_Common_Views = async (
         config.projectZero,
         config.genArt721Core.address
       );
-      const isERC20 = isERC20Minter(config.minter);
+      const isERC20 = await isERC20Minter(config.minter);
       const expectedSymbol = isERC20 ? "ERC20" : "ETH";
       const expectedAddress = isERC20
-        ? config.ERC20.address
+        ? config.ERC20?.address
         : constants.ZERO_ADDRESS;
       expect(result[0]).to.equal(false);
       expect(result[1]).to.equal(0);
@@ -47,7 +47,7 @@ export const SetPrice_Common_Views = async (
         config.projectZero,
         config.genArt721Core.address
       );
-      const isERC20 = isERC20Minter(config.minter);
+      const isERC20 = await isERC20Minter(config.minter);
       const expectedSymbol = isERC20 ? "ERC20" : "ETH";
       const expectedAddress = isERC20
         ? config.ERC20.address
