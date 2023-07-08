@@ -178,5 +178,68 @@ runForEach.forEach((params) => {
         expect(minterVersion).to.equal(TARGET_MINTER_NAME);
       });
     });
+
+    describe("getYourBalanceOfProjectERC20", async function () {
+      it("should return zero when balance is zero", async function () {
+        const config = await loadFixture(_beforeEach);
+        const balance = await config.minter
+          .connect(config.accounts.deployer)
+          .getYourBalanceOfProjectERC20(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        expect(balance).to.equal(0);
+      });
+
+      it("should return accurate and non-zero when balance is gt zero", async function () {
+        const config = await loadFixture(_beforeEach);
+        const balance = await config.minter
+          .connect(config.accounts.user)
+          .getYourBalanceOfProjectERC20(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        const actualBalance = await config.ERC20.balanceOf(
+          config.accounts.user.address
+        );
+        expect(balance).to.equal(actualBalance);
+        expect(balance.gt(0)).to.be.true;
+      });
+    });
+
+    describe("checkYourAllowanceOfProjectERC20", async function () {
+      it("should return zero when allowance is zero", async function () {
+        const config = await loadFixture(_beforeEach);
+        const allowance = await config.minter
+          .connect(config.accounts.deployer)
+          .checkYourAllowanceOfProjectERC20(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        expect(allowance).to.equal(0);
+      });
+
+      it("should return accurate and non-zero when allowance is gt zero", async function () {
+        const config = await loadFixture(_beforeEach);
+        const allowanceValue = 100; // small, easy number
+        await config.ERC20.connect(config.accounts.user).approve(
+          config.minter.address,
+          allowanceValue
+        );
+        const allowance = await config.minter
+          .connect(config.accounts.user)
+          .checkYourAllowanceOfProjectERC20(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        const actualAllowance = await config.ERC20.allowance(
+          config.accounts.user.address,
+          config.minter.address
+        );
+        expect(allowance).to.equal(allowanceValue);
+        expect(allowance).to.equal(actualAllowance);
+        expect(allowance.gt(0)).to.be.true;
+      });
+    });
   });
 });
