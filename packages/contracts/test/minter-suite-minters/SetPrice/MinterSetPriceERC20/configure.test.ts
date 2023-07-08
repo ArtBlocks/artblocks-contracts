@@ -213,6 +213,73 @@ runForEach.forEach((params) => {
       });
     });
 
+    describe("updateProjectCurrencyInfo", async function () {
+      it("enforces currency to be non-zero address", async function () {
+        const config = await loadFixture(_beforeEach);
+        // reverts when setting currency zero address
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .updateProjectCurrencyInfo(
+              config.projectZero,
+              config.genArt721Core.address,
+              "ERC20",
+              ethers.constants.AddressZero
+            ),
+          revertMessages.ERC20NullAddress
+        );
+      });
+
+      it("enforces symbol to be non-empty string", async function () {
+        const config = await loadFixture(_beforeEach);
+        // reverts when setting currency zero address
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .updateProjectCurrencyInfo(
+              config.projectZero,
+              config.genArt721Core.address,
+              "",
+              config.ERC20.address
+            ),
+          revertMessages.ERC20NonNullSymbol
+        );
+      });
+    });
+
+    describe("purchase", async function () {
+      it("requires sufficient ERC20 balance", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
+        // user approves minter to spend ERC20 tokens
+        await config.ERC20.connect(config.accounts.user).approve(
+          config.minter.address,
+          config.pricePerTokenInWei
+        );
+        // user sends entire balance to another address
+        const userBalance = await config.ERC20.balanceOf(
+          config.accounts.user.address
+        );
+        await config.ERC20.connect(config.accounts.user).transfer(
+          config.accounts.artist.address,
+          userBalance
+        );
+        // user cannot purchase token
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .purchase(config.projectZero, config.genArt721Core.address),
+          revertMessages.needMoreBalance
+        );
+      });
+    });
+
     describe("syncProjectMaxInvocationsToCore", async function () {
       it("resets maxHasBeenInvoked after it's been set to true locally and then max project invocations is synced from the core contract", async function () {
         const config = await loadFixture(_beforeEach);
@@ -392,6 +459,36 @@ runForEach.forEach((params) => {
             .connect(config.accounts.user)
             .purchase(config.projectZero, config.genArt721Core.address),
           revertMessages.maximumInvocationsReached
+        );
+      });
+
+      it("does not support setting project max invocations less than current invocations", async function () {
+        const config = await loadFixture(_beforeEach);
+        // mint a token
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
+        await config.ERC20.connect(config.accounts.user).approve(
+          config.minter.address,
+          config.pricePerTokenInWei
+        );
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address);
+        // expect revert when setting max invocations to less than current invocations
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .manuallyLimitProjectMaxInvocations(
+              config.projectZero,
+              config.genArt721Core.address,
+              0
+            ),
+          revertMessages.invalidMaxInvocations
         );
       });
     });

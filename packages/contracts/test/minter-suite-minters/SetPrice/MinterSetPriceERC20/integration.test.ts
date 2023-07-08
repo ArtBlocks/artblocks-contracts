@@ -282,6 +282,44 @@ runForEach.forEach((params) => {
       });
 
       describe("payment splitting", async function () {
+        it("handles price of zero", async function () {
+          const config = await loadFixture(_beforeEach);
+          // record user initial balance
+          const userBalance = await config.ERC20.balanceOf(
+            config.accounts.user.address
+          );
+          // update price to zero
+          await config.minter
+            .connect(config.accounts.artist)
+            .updatePricePerTokenInWei(
+              config.projectZero,
+              config.genArt721Core.address,
+              ethers.utils.parseEther("0")
+            );
+          // give minter approval to spend user tokens
+          await config.ERC20.approve(
+            config.minter.address,
+            config.pricePerTokenInWei
+          );
+          // purchase token
+          await config.minter
+            .connect(config.accounts.user)
+            .purchase(config.projectZero, config.genArt721Core.address);
+          // check user balance
+          const userBalanceAfter = await config.ERC20.balanceOf(
+            config.accounts.user.address
+          );
+          expect(userBalanceAfter.toString()).to.equal(userBalance.toString());
+          // remove approval, should still be able to mint
+          await config.ERC20.approve(
+            config.minter.address,
+            ethers.utils.parseEther("0")
+          );
+          await config.minter
+            .connect(config.accounts.user)
+            .purchase(config.projectZero, config.genArt721Core.address);
+        });
+
         it("requires successful payment to render provider", async function () {
           const config = await loadFixture(_beforeEach);
           // update render provider address to the banned ERC20 address, that reverts on receive
@@ -486,6 +524,44 @@ runForEach.forEach((params) => {
           await config.minter
             .connect(config.accounts.user)
             .purchase(config.projectZero, config.genArt721Core.address);
+        });
+
+        it("requires configured, non-zero currency address", async function () {
+          const config = await loadFixture(_beforeEach);
+          await config.minter
+            .connect(config.accounts.artist)
+            .updatePricePerTokenInWei(
+              config.projectOne,
+              config.genArt721Core.address,
+              config.pricePerTokenInWei
+            );
+          // expect revert when trying to purchase
+          await expectRevert(
+            config.minter
+              .connect(config.accounts.user)
+              .purchase(config.projectOne, config.genArt721Core.address),
+            revertMessages.ERC20NotConfigured
+          );
+        });
+
+        it("requires no ETH payment when configured for ERC20", async function () {
+          const config = await loadFixture(_beforeEach);
+          await config.minter
+            .connect(config.accounts.artist)
+            .updatePricePerTokenInWei(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.pricePerTokenInWei
+            );
+          // expect revert when trying to purchase while sending ETH
+          await expectRevert(
+            config.minter
+              .connect(config.accounts.user)
+              .purchase(config.projectZero, config.genArt721Core.address, {
+                value: config.pricePerTokenInWei,
+              }),
+            revertMessages.ERC20NoEther
+          );
         });
       });
     });
