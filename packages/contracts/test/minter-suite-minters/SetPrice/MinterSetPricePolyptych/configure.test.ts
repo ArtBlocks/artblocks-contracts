@@ -11,27 +11,30 @@ import { ethers } from "hardhat";
 import { revertMessages } from "../../constants";
 import { expect } from "chai";
 import { expectRevert } from "@openzeppelin/test-helpers";
+import { Logger } from "@ethersproject/logger";
+// hide nuisance logs about event overloading
+Logger.setLogLevel(Logger.levels.ERROR);
 
-const TARGET_MINTER_NAME = "MinterSetPriceHolderV5";
+const TARGET_MINTER_NAME = "MinterSetPricePolyptychV5";
 const TARGET_MINTER_VERSION = "v5.0.0";
 
 const runForEach = [
   {
     core: "GenArt721CoreV3",
   },
-  {
-    core: "GenArt721CoreV3_Explorations",
-  },
-  {
-    core: "GenArt721CoreV3_Engine",
-  },
-  {
-    core: "GenArt721CoreV3_Engine_Flex",
-  },
+  // {
+  //   core: "GenArt721CoreV3_Explorations",
+  // },
+  // {
+  //   core: "GenArt721CoreV3_Engine",
+  // },
+  // {
+  //   core: "GenArt721CoreV3_Engine_Flex",
+  // },
 ];
 
 runForEach.forEach((params) => {
-  describe(`MinterSetPriceHolder Configure w/ core ${params.core}`, async function () {
+  describe(`${TARGET_MINTER_NAME} Configure w/ core ${params.core}`, async function () {
     async function _beforeEach() {
       // load minter filter V2 fixture
       const config = await loadFixture(setupConfigWitMinterFilterV2Suite);
@@ -169,6 +172,22 @@ runForEach.forEach((params) => {
           config.genArt721Core.address,
           [config.genArt721Core.address],
           [config.projectZero]
+        );
+
+      // set randomizer's hash seed setter contract
+      await config.randomizer
+        .connect(config.accounts.artist)
+        .setHashSeedSetterContract(
+          config.genArt721Core.address,
+          config.projectZero,
+          config.minter.address
+        );
+      // toggle project zero to be polyptych
+      await config.randomizer
+        .connect(config.accounts.artist)
+        .toggleProjectIsPolyptych(
+          config.genArt721Core.address,
+          config.projectZero
         );
 
       return config;

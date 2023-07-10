@@ -15,11 +15,13 @@ interface ISharedRandomizerV0 is IRandomizer_V3CoreBase {
     );
 
     /**
-     * @notice Minter contract at `_hashSeedSetterContract` allowed to assign
-     * token hash seeds on core contract `_coreContract`.
+     * @notice Contract at `_hashSeedSetterContract` allowed to assign
+     * token hash seeds on core contract `_coreContract` for project
+     * `_projectId`.
      */
-    event HashSeedSetterForCoreUpdated(
+    event HashSeedSetterForProjectUpdated(
         address indexed coreContract,
+        uint256 indexed projectId,
         address indexed hashSeedSetterContract
     );
 
@@ -34,15 +36,17 @@ interface ISharedRandomizerV0 is IRandomizer_V3CoreBase {
     );
 
     /**
-     * @notice Allows the owner of a core contract to set the contract that is
+     * @notice Allows the artist of a project to set the contract that is
      * allowed to assign hash seeds to tokens. Typically, this is expected to
      * be a minter contract, such as `MinterPolyptychV1`.
      * @param _coreContract - the core contract that is being configured
+     * @param _projectId - the project ID that is being configured
      * @param _hashSeedSetterContract - the contract that is allowed to assign
      * hash seeds to tokens
      */
     function setHashSeedSetterContract(
         address _coreContract,
+        uint256 _projectId,
         address _hashSeedSetterContract
     ) external;
 
@@ -86,9 +90,11 @@ interface ISharedRandomizerV0 is IRandomizer_V3CoreBase {
      * Returns the hash seed setter contract for a given core contract.
      * Returns address(0) if no hash seed setter contract is set for the core.
      * @param _coreContract - The address of the core contract
+     * @param _projectId - The ID of the project to query
      */
     function hashSeedSetterContracts(
-        address _coreContract
+        address _coreContract,
+        uint256 _projectId
     ) external view returns (address _hashSeedSetterContract);
 
     /**

@@ -579,15 +579,15 @@ contract MinterSetPricePolyptychERC20V5 is
      * @notice Checks if a specific NFT owner is allowed in a given project.
      * @dev This function retrieves the allowance status of an NFT owner
      * within a specific project from the allowedProjectHoldersMapping.
-     * @param _coreContract Core contract address for the given project.
      * @param _projectId The ID of the project to check.
+     * @param _coreContract Core contract address for the given project.
      * @param _ownedNFTAddress The address of the owned NFT contract.
      * @param _ownedNFTProjectId The ID of the owned NFT project.
      * @return bool True if the NFT owner is allowed in the given project, False otherwise.
      */
     function allowedProjectHolders(
-        address _coreContract,
         uint256 _projectId,
+        address _coreContract,
         address _ownedNFTAddress,
         uint256 _ownedNFTProjectId
     ) external view returns (bool) {
@@ -598,8 +598,8 @@ contract MinterSetPricePolyptychERC20V5 is
 
     /**
      * @notice Returns if token is an allowlisted NFT for project `_projectId`.
-     * @param _coreContract Core contract address for the given project.
      * @param _projectId Project ID to be checked.
+     * @param _coreContract Core contract address for the given project.
      * @param _ownedNFTAddress ERC-721 NFT token address to be checked.
      * @param _ownedNFTTokenId ERC-721 NFT token ID to be checked.
      * @return bool Token is allowlisted
@@ -607,8 +607,8 @@ contract MinterSetPricePolyptychERC20V5 is
      * @dev assumes project ID can be derived from tokenId / 1_000_000
      */
     function isAllowlistedNFT(
-        address _coreContract,
         uint256 _projectId,
+        address _coreContract,
         address _ownedNFTAddress,
         uint256 _ownedNFTTokenId
     ) external view returns (bool) {
