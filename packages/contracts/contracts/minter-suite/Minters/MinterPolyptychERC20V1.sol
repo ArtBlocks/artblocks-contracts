@@ -45,14 +45,14 @@ pragma solidity 0.8.19;
  * addresses are secure behind a multi-sig or other access control mechanism.
  * ----------------------------------------------------------------------------
  * The following functions are restricted to a project's artist:
- * - manuallyLimitProjectMaxInvocations
  * - updatePricePerTokenInWei
+ * - syncProjectMaxInvocationsToCore
+ * - manuallyLimitProjectMaxInvocations
  * - updateProjectCurrencyInfo
  * - allowHoldersOfProjects
  * - removeHoldersOfProjects
  * - allowAndRemoveHoldersOfProjects
  * - incrementPolyptychProjectPanelId
- * - syncProjectMaxInvocationsToCore
  * ----------------------------------------------------------------------------
  * Additional admin and artist privileged roles may be described on other
  * contracts that this minter integrates with.
