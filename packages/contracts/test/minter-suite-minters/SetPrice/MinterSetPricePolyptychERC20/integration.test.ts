@@ -13,7 +13,7 @@ import { Logger } from "@ethersproject/logger";
 // hide nuisance logs about event overloading
 Logger.setLogLevel(Logger.levels.ERROR);
 
-const TARGET_MINTER_NAME = "MinterSetPricePolyptychV5";
+const TARGET_MINTER_NAME = "MinterSetPricePolyptychERC20V5";
 const TARGET_MINTER_VERSION = "v5.0.0";
 
 const runForEach = [
@@ -227,6 +227,45 @@ runForEach.forEach((params) => {
           config.projectTwo
         );
 
+      // deploy ERC20 token, sending 100e18 tokens to user
+      const ERC20Factory = await ethers.getContractFactory("ERC20Mock");
+      config.ERC20 = await ERC20Factory.connect(config.accounts.artist).deploy(
+        ethers.utils.parseEther("100")
+      );
+      // artist approve the minter for effectively infinite tokens to simplify tests
+      await config.ERC20.connect(config.accounts.artist).approve(
+        config.minter.address,
+        ethers.utils.parseEther("100")
+      );
+
+      // update currency for project zero, leave project one as unconfigured
+      await config.minter
+        .connect(config.accounts.artist)
+        .updateProjectCurrencyInfo(
+          config.projectZero,
+          config.genArt721Core.address,
+          "ERC20",
+          config.ERC20.address
+        );
+
+      // configure project one to work with polyptych
+      await config.minter
+        .connect(config.accounts.artist)
+        .allowHoldersOfProjects(
+          config.projectOne,
+          config.genArt721Core.address,
+          [config.genArt721Core.address],
+          [config.projectZero]
+        );
+      await config.minter
+        .connect(config.accounts.artist)
+        .updateProjectCurrencyInfo(
+          config.projectOne,
+          config.genArt721Core.address,
+          "ERC20",
+          config.ERC20.address
+        );
+
       return config;
     }
 
@@ -239,10 +278,7 @@ runForEach.forEach((params) => {
             .connect(config.accounts.additional)
             ["purchase(uint256,address)"](
               config.projectZero,
-              config.genArt721Core.address,
-              {
-                value: config.pricePerTokenInWei,
-              }
+              config.genArt721Core.address
             ),
           revertMessages.purchaseRequiresNFT
         );
@@ -258,16 +294,13 @@ runForEach.forEach((params) => {
               config.projectTwo,
               config.genArt721Core.address,
               config.genArt721Core.address,
-              config.projectTwoTokenZero.toNumber(),
-              {
-                value: config.pricePerTokenInWei,
-              }
+              config.projectTwoTokenZero.toNumber()
             ),
           "Price not configured"
         );
       });
 
-      it("does not allow purchase without sending enough funds", async function () {
+      it("does not allow purchase without sufficient ERC20 approvals", async function () {
         const config = await loadFixture(_beforeEach);
         await config.minter
           .connect(config.accounts.artist)
@@ -276,36 +309,81 @@ runForEach.forEach((params) => {
             config.genArt721Core.address,
             config.pricePerTokenInWei
           );
-        // expect revert due when sending zero funds
+        // expect revert due no ERC20 approval
+        await config.ERC20.connect(config.accounts.artist).approve(
+          config.minter.address,
+          ethers.utils.parseEther("0")
+        );
         await expectRevert(
           config.minter
-            .connect(config.accounts.additional)
+            .connect(config.accounts.artist)
             ["purchase(uint256,address,address,uint256)"](
               config.projectOne,
               config.genArt721Core.address,
               config.genArt721Core.address,
-              config.projectZeroTokenZero.toNumber(),
-              {
-                value: 0,
-              }
+              config.projectZeroTokenZero.toNumber()
             ),
-          revertMessages.needMoreValue
+          revertMessages.needMoreAllowance
         );
-        // expect revert due when sending funds less than price
+        // expect revert due when approving funds less than price
+        await config.ERC20.connect(config.accounts.artist).approve(
+          config.minter.address,
+          config.pricePerTokenInWei.sub(1)
+        );
         await expectRevert(
           config.minter
-            .connect(config.accounts.additional)
+            .connect(config.accounts.artist)
             ["purchase(uint256,address,address,uint256)"](
               config.projectOne,
               config.genArt721Core.address,
               config.genArt721Core.address,
-              config.projectZeroTokenZero.toNumber(),
-              {
-                value: config.pricePerTokenInWei.sub(1),
-              }
+              config.projectZeroTokenZero.toNumber()
             ),
-          revertMessages.needMoreValue
+          revertMessages.needMoreAllowance
         );
+
+        it("requires configured, non-zero currency address", async function () {
+          const config = await loadFixture(_beforeEach);
+          await config.minter
+            .connect(config.accounts.artist)
+            .updatePricePerTokenInWei(
+              config.projectOne,
+              config.genArt721Core.address,
+              config.pricePerTokenInWei
+            );
+          // expect revert when trying to purchase
+          await expectRevert(
+            config.minter
+              .connect(config.accounts.artist)
+              ["purchase(uint256,address,address,uint256)"](
+                config.projectOne,
+                config.genArt721Core.address,
+                config.genArt721Core.address,
+                config.projectZeroTokenZero.toNumber()
+              ),
+            revertMessages.ERC20NotConfigured
+          );
+        });
+
+        it("requires no ETH payment when configured for ERC20", async function () {
+          const config = await loadFixture(_beforeEach);
+          await config.minter
+            .connect(config.accounts.artist)
+            .updatePricePerTokenInWei(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.pricePerTokenInWei
+            );
+          // expect revert when trying to purchase while sending ETH
+          await expectRevert(
+            config.minter
+              .connect(config.accounts.user)
+              .purchase(config.projectZero, config.genArt721Core.address, {
+                value: config.pricePerTokenInWei,
+              }),
+            revertMessages.ERC20NoEther
+          );
+        });
       });
 
       describe("allows/disallows based on allowed project holder configuration", async function () {
@@ -336,10 +414,7 @@ runForEach.forEach((params) => {
                 config.projectTwo,
                 config.genArt721Core.address,
                 config.genArt721Core.address,
-                config.projectZeroTokenZero.toNumber(),
-                {
-                  value: config.pricePerTokenInWei,
-                }
+                config.projectZeroTokenZero.toNumber()
               ),
             "Only allowlisted NFTs"
           );
@@ -374,10 +449,7 @@ runForEach.forEach((params) => {
                 config.projectTwo,
                 config.genArt721Core.address,
                 config.genArt721Core.address,
-                config.projectZeroTokenZero.toNumber(),
-                {
-                  value: config.pricePerTokenInWei,
-                }
+                config.projectZeroTokenZero.toNumber()
               ),
             "Only allowlisted NFTs"
           );
@@ -409,10 +481,7 @@ runForEach.forEach((params) => {
               config.projectTwo,
               config.genArt721Core.address,
               config.genArt721Core.address,
-              config.projectZeroTokenZero.toNumber(),
-              {
-                value: config.pricePerTokenInWei,
-              }
+              config.projectZeroTokenZero.toNumber()
             );
         });
 
@@ -444,10 +513,7 @@ runForEach.forEach((params) => {
               config.projectTwo,
               config.genArt721Core.address,
               config.genArt721Core.address,
-              config.projectZeroTokenZero.toNumber(),
-              {
-                value: config.pricePerTokenInWei,
-              }
+              config.projectZeroTokenZero.toNumber()
             );
         });
 
@@ -478,10 +544,7 @@ runForEach.forEach((params) => {
                 config.projectTwo,
                 config.genArt721Core.address,
                 config.genArt721Core.address,
-                config.projectZeroTokenZero.toNumber(),
-                {
-                  value: config.pricePerTokenInWei,
-                }
+                config.projectZeroTokenZero.toNumber()
               ),
             "Only owner of NFT"
           );
@@ -512,10 +575,7 @@ runForEach.forEach((params) => {
                 config.projectTwo,
                 config.genArt721Core.address,
                 pbabToken.address,
-                0,
-                {
-                  value: config.pricePerTokenInWei,
-                }
+                0
               ),
             "Only allowlisted NFTs"
           );
@@ -542,16 +602,17 @@ runForEach.forEach((params) => {
             0
           );
         // allow purchase when intentionally configured price of zero
+        await config.ERC20.connect(config.accounts.artist).approve(
+          config.minter.address,
+          0 // intentionally zero
+        );
         await config.minter
           .connect(config.accounts.artist)
           ["purchase(uint256,address,address,uint256)"](
             config.projectTwo,
             config.genArt721Core.address,
             config.genArt721Core.address,
-            config.projectZeroTokenZero.toNumber(),
-            {
-              value: config.pricePerTokenInWei,
-            }
+            config.projectZeroTokenZero.toNumber()
           );
       });
 
@@ -580,10 +641,7 @@ runForEach.forEach((params) => {
               config.projectOne,
               config.genArt721Core.address,
               config.genArt721Core.address,
-              config.projectZeroTokenZero.toNumber(),
-              {
-                value: config.pricePerTokenInWei,
-              }
+              config.projectZeroTokenZero.toNumber()
             );
           // increment polyptych panel to allow repeat tokenId in next loop
           await config.minter
@@ -602,10 +660,7 @@ runForEach.forEach((params) => {
               config.projectOne,
               config.genArt721Core.address,
               config.genArt721Core.address,
-              config.projectZeroTokenZero.toNumber(),
-              {
-                value: config.pricePerTokenInWei,
-              }
+              config.projectZeroTokenZero.toNumber()
             ),
           revertMessages.maximumInvocationsReached
         );
@@ -633,10 +688,7 @@ runForEach.forEach((params) => {
             config.projectZero,
             config.genArt721Core.address,
             config.genArt721Core.address,
-            config.projectZeroTokenZero.toNumber(),
-            {
-              value: config.pricePerTokenInWei,
-            }
+            config.projectZeroTokenZero.toNumber()
           );
 
         const receipt = await ethers.provider.getTransactionReceipt(tx.hash);
@@ -666,10 +718,7 @@ runForEach.forEach((params) => {
             config.projectZero,
             config.genArt721Core.address,
             config.genArt721Core.address,
-            config.projectZeroTokenZero.toNumber(),
-            {
-              value: config.pricePerTokenInWei,
-            }
+            config.projectZeroTokenZero.toNumber()
           );
         const receipt2 = await ethers.provider.getTransactionReceipt(
           maxSetTx.hash
@@ -707,10 +756,7 @@ runForEach.forEach((params) => {
             ["purchaseTo(address,uint256,address)"](
               config.accounts.additional.address,
               config.projectZero,
-              config.genArt721Core.address,
-              {
-                value: config.pricePerTokenInWei,
-              }
+              config.genArt721Core.address
             ),
           revertMessages.purchaseRequiresNFT
         );
@@ -733,10 +779,7 @@ runForEach.forEach((params) => {
             config.projectZero,
             config.genArt721Core.address,
             config.genArt721Core.address,
-            config.projectZeroTokenZero.toNumber(),
-            {
-              value: config.pricePerTokenInWei,
-            }
+            config.projectZeroTokenZero.toNumber()
           );
       });
     });
@@ -750,6 +793,15 @@ runForEach.forEach((params) => {
               // artist account holds mint #0 for delegating
               config.artistVault = config.accounts.artist;
               config.userVault = config.accounts.additional2;
+              // send and approve ERC20 tokens to avoid test failures
+              await config.ERC20.connect(config.accounts.artist).transfer(
+                config.accounts.user.address,
+                ethers.utils.parseEther("10")
+              );
+              await config.ERC20.connect(config.accounts.user).approve(
+                config.minter.address,
+                ethers.utils.parseEther("10")
+              );
 
               // delegate the vault to the user
               let delegationArgs;
@@ -779,6 +831,7 @@ runForEach.forEach((params) => {
             it("does allow purchases", async function () {
               // get config from beforeEach
               const config = this.config;
+
               await config.minter
                 .connect(config.accounts.artist)
                 .updatePricePerTokenInWei(
@@ -805,10 +858,7 @@ runForEach.forEach((params) => {
                   config.genArt721Core.address,
                   config.genArt721Core.address,
                   config.projectZeroTokenZero.toNumber(),
-                  config.accounts.artist.address, //  the allowlisted vault address
-                  {
-                    value: config.pricePerTokenInWei,
-                  }
+                  config.accounts.artist.address //  the allowlisted vault address
                 );
             });
 
@@ -829,42 +879,8 @@ runForEach.forEach((params) => {
                   config.projectZero,
                   config.genArt721Core.address,
                   config.genArt721Core.address,
-                  config.projectZeroTokenZero.toNumber(),
-                  {
-                    value: config.pricePerTokenInWei,
-                  }
+                  config.projectZeroTokenZero.toNumber()
                 );
-            });
-
-            it("does not allow purchases with an incorrect token", async function () {
-              // get config from beforeEach
-              const config = this.config;
-              await config.minter
-                .connect(config.accounts.artist)
-                .updatePricePerTokenInWei(
-                  config.projectZero,
-                  config.genArt721Core.address,
-                  config.pricePerTokenInWei
-                );
-
-              await expectRevert(
-                config.minter
-                  .connect(config.accounts.user)
-                  [
-                    "purchaseTo(address,uint256,address,address,uint256,address)"
-                  ](
-                    config.userVault.address,
-                    config.projectOne,
-                    config.genArt721Core.address,
-                    config.genArt721Core.address,
-                    config.projectZeroTokenOne.toNumber(),
-                    config.userVault.address, //  the vault address has NOT been delegated
-                    {
-                      value: config.pricePerTokenInWei,
-                    }
-                  ),
-                "Only allowlisted NFTs"
-              );
             });
           });
         }
@@ -875,6 +891,15 @@ runForEach.forEach((params) => {
       beforeEach(async function () {
         const config = await loadFixture(_beforeEach);
         config.userVault = config.accounts.additional2;
+        // send and approve ERC20 tokens to avoid test failures
+        await config.ERC20.connect(config.accounts.artist).transfer(
+          config.accounts.user.address,
+          ethers.utils.parseEther("10")
+        );
+        await config.ERC20.connect(config.accounts.user).approve(
+          config.minter.address,
+          ethers.utils.parseEther("10")
+        );
         // intentionally do not add any delegations
         // pass config to tests in this describe block
         this.config = config;
@@ -899,10 +924,7 @@ runForEach.forEach((params) => {
               config.genArt721Core.address,
               config.genArt721Core.address,
               config.projectZeroTokenZero.toNumber(),
-              config.userVault.address, //  the address has NOT been delegated
-              {
-                value: config.pricePerTokenInWei,
-              }
+              config.userVault.address //  the address has NOT been delegated
             ),
           "Invalid delegate-vault pairing"
         );

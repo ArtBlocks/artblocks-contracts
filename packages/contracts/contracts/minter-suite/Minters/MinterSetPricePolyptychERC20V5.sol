@@ -797,6 +797,53 @@ contract MinterSetPricePolyptychERC20V5 is
     }
 
     /**
+     * Gets the current polyptych panel ID for the given project.
+     * @param _projectId Project ID to be queried
+     * @param _coreContract Contract address of the core contract
+     * @return uint256 representing the current polyptych panel ID for the
+     * given project
+     */
+    function getCurrentPolyptychPanelId(
+        uint256 _projectId,
+        address _coreContract
+    ) external view returns (uint256) {
+        PolyptychLib.PolyptychProjectConfig
+            storage _polyptychProjectConfig = _polyptychProjectConfigs[
+                _coreContract
+            ][_projectId];
+        return PolyptychLib.getPolyptychPanelId(_polyptychProjectConfig);
+    }
+
+    /**
+     * Gets if the hash seed for the given project has been used on a given
+     * polyptych panel id. The current polyptych panel ID for a given project
+     * can be queried via the view function `getCurrentPolyptychPanelId`.
+     * @param _projectId Project ID to be queried
+     * @param _coreContract Contract address of the core contract
+     * @param _panelId Panel ID to be queried
+     * @param _hashSeed Hash seed to be queried
+     * @return bool representing if the hash seed has been used on the given
+     * polyptych panel ID
+     */
+    function getPolyptychPanelHashSeedIsMinted(
+        uint256 _projectId,
+        address _coreContract,
+        uint256 _panelId,
+        bytes12 _hashSeed
+    ) external view returns (bool) {
+        PolyptychLib.PolyptychProjectConfig
+            storage _polyptychProjectConfig = _polyptychProjectConfigs[
+                _coreContract
+            ][_projectId];
+        return
+            PolyptychLib.getPolyptychPanelHashSeedIsMinted(
+                _polyptychProjectConfig,
+                _panelId,
+                _hashSeed
+            );
+    }
+
+    /**
      * @notice Syncs local maximum invocations of project `_projectId` based on
      * the value currently defined in the core contract.
      * @param _projectId Project ID to set the maximum invocations for.
