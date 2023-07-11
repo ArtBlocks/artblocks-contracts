@@ -1,3 +1,4 @@
+import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { setupConfigWitMinterFilterV2Suite } from "../../../util/fixtures";
 import { deployAndGet, deployCore, safeAddProject } from "../../../util/common";
@@ -105,11 +106,40 @@ runForEach.forEach((params) => {
         .connect(config.accounts.artist)
         .updateProjectMaxInvocations(config.projectOne, 15);
 
+      // deploy ERC20 token, sending 100e18 tokens to user
+      const ERC20Factory = await ethers.getContractFactory("ERC20Mock");
+      config.ERC20 = await ERC20Factory.connect(config.accounts.user).deploy(
+        ethers.utils.parseEther("100")
+      );
+
       return config;
     }
 
     describe("Common Set Price Minter Events Tests", async function () {
       await SetPrice_Common_Events(_beforeEach);
+    });
+
+    describe("ProjectCurrencyInfoUpdated", async function () {
+      it("emits event upon currency update", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expect(
+          config.minter
+            .connect(config.accounts.artist)
+            .updateProjectCurrencyInfo(
+              config.projectZero,
+              config.genArt721Core.address,
+              "ERC20",
+              config.ERC20.address
+            )
+        )
+          .to.emit(config.minter, "ProjectCurrencyInfoUpdated")
+          .withArgs(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.ERC20.address,
+            "ERC20"
+          );
+      });
     });
   });
 });
