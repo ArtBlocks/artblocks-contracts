@@ -27,11 +27,9 @@ interface IGenArt721CoreContractV3WithSharedRandomizer is
 }
 
 /**
- * @title Art Blocks Split Funds Library
- * @notice This library is designed for the Art Blocks platform. It splits
- * Ether (ETH) and ERC20 token funds among stakeholders, such as sender
- * (if refund is applicable), providers, artists, and artists' additional
- * payees.
+ * @title Art Blocks Polyptych Minter Library
+ * @notice This library is designed for the Art Blocks platform. It includes
+ * structs and functions to help configure Polyptych minters.
  * @author Art Blocks Inc.
  */
 
