@@ -367,5 +367,33 @@ runForEach.forEach((params) => {
           );
       });
     });
+
+    describe("incrementPolyptychProjectPanelId", async function () {
+      it("emits event when incrementing polyptych project panel id", async function () {
+        const config = await loadFixture(_beforeEach);
+        const initialPanelId = await config.minter.getCurrentPolyptychPanelId(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        await expect(
+          config.minter
+            .connect(config.accounts.artist)
+            .incrementPolyptychProjectPanelId(
+              config.projectZero,
+              config.genArt721Core.address
+            )
+        )
+          .to.emit(
+            config.minter,
+            "ConfigValueSet(uint256,address,bytes32,uint256)"
+          )
+          .withArgs(
+            config.projectZero,
+            config.genArt721Core.address,
+            ethers.utils.formatBytes32String("polyptychPanelId"),
+            initialPanelId.add(1)
+          );
+      });
+    });
   });
 });

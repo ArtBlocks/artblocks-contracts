@@ -12,15 +12,15 @@ const runForEach = [
   {
     core: "GenArt721CoreV3",
   },
-  // {
-  //   core: "GenArt721CoreV3_Explorations",
-  // },
-  // {
-  //   core: "GenArt721CoreV3_Engine",
-  // },
-  // {
-  //   core: "GenArt721CoreV3_Engine_Flex",
-  // },
+  {
+    core: "GenArt721CoreV3_Explorations",
+  },
+  {
+    core: "GenArt721CoreV3_Engine",
+  },
+  {
+    core: "GenArt721CoreV3_Engine_Flex",
+  },
 ];
 
 runForEach.forEach((params) => {
@@ -315,6 +315,83 @@ runForEach.forEach((params) => {
           config.projectThreeTokenZero.toNumber()
         );
         expect(isAllowlistedNFTResponse).to.equal(false);
+      });
+    });
+
+    describe("getCurrentPolyptychPanelId", async function () {
+      it("returns expected values", async function () {
+        const config = await loadFixture(_beforeEach);
+        const initialPanelId = await config.minter.getCurrentPolyptychPanelId(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(initialPanelId).to.equal(0);
+        await config.minter
+          .connect(config.accounts.artist)
+          .incrementPolyptychProjectPanelId(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        const incrementedPanelId =
+          await config.minter.getCurrentPolyptychPanelId(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        expect(incrementedPanelId).to.equal(1);
+      });
+    });
+
+    describe("getPolyptychPanelHashSeedIsMinted", async function () {
+      it("returns expected values", async function () {
+        const config = await loadFixture(_beforeEach);
+        const tokenZeroHashSeed = await config.genArt721Core.tokenIdToHashSeed(
+          config.projectZeroTokenZero.toNumber()
+        );
+        const resultBefore =
+          await config.minter.getPolyptychPanelHashSeedIsMinted(
+            config.projectZero,
+            config.genArt721Core.address,
+            0,
+            tokenZeroHashSeed
+          );
+        expect(resultBefore).to.be.false;
+        // configure price and purchase token
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
+        await config.minter
+          .connect(config.accounts.artist)
+          ["purchase(uint256,address,address,uint256)"](
+            config.projectZero,
+            config.genArt721Core.address,
+            config.genArt721Core.address,
+            config.projectZeroTokenZero.toNumber(),
+            {
+              value: config.pricePerTokenInWei,
+            }
+          );
+        // validate view response after hash seed is used
+        const resultAfter =
+          await config.minter.getPolyptychPanelHashSeedIsMinted(
+            config.projectZero,
+            config.genArt721Core.address,
+            0,
+            tokenZeroHashSeed
+          );
+        expect(resultAfter).to.be.true;
+        // unused panel ID should remain false
+        const resultUnusedPanel =
+          await config.minter.getPolyptychPanelHashSeedIsMinted(
+            config.projectZero,
+            config.genArt721Core.address,
+            1, // unused panel ID
+            tokenZeroHashSeed
+          );
+        expect(resultUnusedPanel).to.be.false;
       });
     });
 

@@ -136,4 +136,21 @@ library PolyptychLib {
             IGenArt721CoreContractExposesHashSeed(_coreContract)
                 .tokenIdToHashSeed(_tokenId);
     }
+
+    function getPolyptychPanelId(
+        PolyptychProjectConfig storage _polyptychProjectConfig
+    ) internal view returns (uint256) {
+        return _polyptychProjectConfig.polyptychPanelId;
+    }
+
+    function getPolyptychPanelHashSeedIsMinted(
+        PolyptychProjectConfig storage _polyptychProjectConfig,
+        uint256 _panelId,
+        bytes12 _hashSeed
+    ) internal view returns (bool) {
+        return
+            _polyptychProjectConfig.polyptychPanelHashSeedIsMinted[_panelId][
+                _hashSeed
+            ];
+    }
 }
