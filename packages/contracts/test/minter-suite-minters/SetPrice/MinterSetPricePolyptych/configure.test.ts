@@ -610,5 +610,115 @@ runForEach.forEach((params) => {
           );
       });
     });
+
+    describe("PolyptychLib: validatePolyptychEffects", async function () {
+      it("only allows one panel per frame", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
+        // can purchase first token
+        await config.minter
+          .connect(config.accounts.artist)
+          ["purchase(uint256,address,address,uint256)"](
+            config.projectZero,
+            config.genArt721Core.address,
+            config.genArt721Core.address,
+            config.projectZeroTokenZero.toNumber(),
+            {
+              value: config.pricePerTokenInWei,
+            }
+          );
+        // cannot purchase second token before incrementing panel
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            ["purchase(uint256,address,address,uint256)"](
+              config.projectZero,
+              config.genArt721Core.address,
+              config.genArt721Core.address,
+              config.projectZeroTokenZero.toNumber(),
+              {
+                value: config.pricePerTokenInWei,
+              }
+            ),
+          revertMessages.panelAlreadyMinted
+        );
+        // increment polyptych panel
+        await config.minter
+          .connect(config.accounts.artist)
+          .incrementPolyptychProjectPanelId(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        // can purchase second token after incrementing panel
+        await config.minter
+          .connect(config.accounts.artist)
+          ["purchase(uint256,address,address,uint256)"](
+            config.projectZero,
+            config.genArt721Core.address,
+            config.genArt721Core.address,
+            config.projectZeroTokenZero.toNumber(),
+            {
+              value: config.pricePerTokenInWei,
+            }
+          );
+        // cannot purchase a third token using token one, because frame is one
+        // per hash, not one per token
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            ["purchase(uint256,address,address,uint256)"](
+              config.projectZero,
+              config.genArt721Core.address,
+              config.genArt721Core.address,
+              config.projectZeroTokenOne.toNumber(),
+              {
+                value: config.pricePerTokenInWei,
+              }
+            ),
+          revertMessages.panelAlreadyMinted
+        );
+      });
+    });
+
+    describe("PolyptychLib: validateAssignedHashSeed", async function () {
+      it("assigns appropriate hash seed", async function () {
+        const config = await loadFixture(_beforeEach);
+        // induce incorrect hash seed by toggling project as NOT polyptych on randomizer
+        await config.randomizer
+          .connect(config.accounts.artist)
+          .toggleProjectIsPolyptych(
+            config.genArt721Core.address,
+            config.projectZero
+          );
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
+        // purchase reverts due to unexpected token hash seed assignment
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            ["purchase(uint256,address,address,uint256)"](
+              config.projectZero,
+              config.genArt721Core.address,
+              config.genArt721Core.address,
+              config.projectZeroTokenZero.toNumber(),
+              {
+                value: config.pricePerTokenInWei,
+              }
+            ),
+          revertMessages.unexpectedHashSeed
+        );
+      });
+    });
   });
 });
