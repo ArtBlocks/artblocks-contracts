@@ -11,6 +11,7 @@ import "../../interfaces/v0.8.x/IMinterFilterV1.sol";
 import "../../libs/v0.8.x/minter-libs/SEALib.sol";
 import "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
 import "../../libs/v0.8.x/minter-libs/MaxInvocationsLib.sol";
+import "../../libs/v0.8.x/minter-libs/AuthLib.sol";
 
 import "@openzeppelin-4.7/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin-4.7/contracts/security/ReentrancyGuard.sol";
@@ -131,9 +132,8 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
     uint24 minterRefundGasLimit = 30_000;
 
     // storage mappings for project and contract configs
-    /// contractAddress => projectId => base project config
-    mapping(address => mapping(uint256 => ProjectConfig))
-        private _projectConfigMapping;
+    // @dev base minter project config is not used on this minter, therefore no
+    // mapping is declared here to ProjectConfig structs
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR SplitFundsLib begin here
@@ -173,53 +173,13 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
     // modifier-like internal functions
     // @dev we use internal functions instead of modifiers to reduce contract
     // bytecode size
-    // ----------------------------------------
-    // function to restrict access to only AdminACL allowed calls, where
-    // AdminACL is the admin of this minter's MinterFilter.
-    function _onlyMinterFilterAdminACL(bytes4 _selector) internal {
-        require(
-            _minterFilterAdminACLAllowed(_selector),
-            "Only Core AdminACL allowed"
-        );
-    }
-
-    // function to restrict access to only the artist of a project
-    function _onlyArtist(
-        uint256 _projectId,
-        address _coreContract
-    ) internal view {
-        require(_senderIsArtist(_projectId, _coreContract), "Only Artist");
-    }
-
-    function _onlyCoreAdminACL(
-        address _coreContract,
-        bytes4 _selector
-    ) internal {
-        require(
-            _coreAdminACLAllowed(_coreContract, _selector),
-            "Only Core AdminACL allowed"
-        );
-    }
-
-    // function to restrict access to only the artist of a project or
-    // AdminACL allowed calls
-    // @dev defers to the ACL contract used on the core contract
-    function _onlyCoreAdminACLOrArtist(
-        uint256 _projectId,
-        address _coreContract,
-        bytes4 _selector
-    ) internal {
-        require(
-            _senderIsArtist(_projectId, _coreContract) ||
-                _coreAdminACLAllowed(_coreContract, _selector),
-            "Only Artist or Admin ACL"
-        );
-    }
 
     // function to require that a value is non-zero
     function _onlyNonZero(uint256 _value) internal pure {
         require(_value != 0, "Only non-zero");
     }
+
+    // @dev contract uses AuthLib for additional modifier-like functions
 
     /**
      * @notice Initializes contract to be a shared, filtered minter for
@@ -252,7 +212,11 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         address _coreContract,
         uint24 _maxInvocations
     ) external {
-        _onlyArtist(_projectId, _coreContract);
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
         MaxInvocationsLib.manuallyLimitProjectMaxInvocations(
             _projectId,
             _coreContract,
@@ -283,7 +247,11 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         uint256 _projectId,
         address _coreContract
     ) public {
-        _onlyArtist(_projectId, _coreContract);
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
 
         uint256 maxInvocations = MaxInvocationsLib
             .syncProjectMaxInvocationsToCore(
@@ -314,7 +282,12 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
     ) external {
         // CHECKS
         _onlyNonZero(_minterTimeBufferSeconds);
-        _onlyMinterFilterAdminACL(this.updateMinterTimeBufferSeconds.selector);
+        AuthLib.onlyMinterFilterAdminACL({
+            _minterFilterAddress: minterFilterAddress,
+            _sender: msg.sender,
+            _contract: address(this),
+            _selector: this.updateMinterTimeBufferSeconds.selector
+        });
         // EFFECTS
         minterTimeBufferSeconds = _minterTimeBufferSeconds;
         emit MinterTimeBufferUpdated(_minterTimeBufferSeconds);
@@ -333,7 +306,12 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
      */
     function updateRefundGasLimit(uint24 _minterRefundGasLimit) external {
         // CHECKS
-        _onlyMinterFilterAdminACL(this.updateRefundGasLimit.selector);
+        AuthLib.onlyMinterFilterAdminACL({
+            _minterFilterAddress: minterFilterAddress,
+            _sender: msg.sender,
+            _contract: address(this),
+            _selector: this.updateRefundGasLimit.selector
+        });
         // @dev max gas limit implicitly checked by using uint16 input arg
         // @dev min gas limit is based on rounding up current cost to send ETH
         // to a Gnosis Safe wallet, which accesses cold address and emits event
@@ -377,7 +355,11 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         // CHECKS
         _onlyNonZero(_basePrice);
         _onlyNonZero(_minBidIncrementPercentage);
-        _onlyArtist(_projectId, _coreContract);
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
         SEALib.SEAProjectConfig storage _SEAProjectConfig = _SEAProjectConfigs[
             _coreContract
         ][_projectId];
@@ -443,11 +425,13 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         uint256 _projectId,
         address _coreContract
     ) external {
-        _onlyCoreAdminACLOrArtist(
-            _projectId,
-            _coreContract,
-            this.resetAuctionDetails.selector
-        );
+        AuthLib.onlyCoreAdminACLOrArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender,
+            _contract: address(this),
+            _selector: this.resetAuctionDetails.selector
+        });
         SEALib.SEAProjectConfig storage _SEAProjectConfig = _SEAProjectConfigs[
             _coreContract
         ][_projectId];
@@ -484,7 +468,12 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         address _coreContract,
         address _to
     ) external {
-        _onlyCoreAdminACL(_coreContract, this.ejectNextTokenTo.selector);
+        AuthLib.onlyCoreAdminACL({
+            _coreContract: _coreContract,
+            _sender: msg.sender,
+            _contract: address(this),
+            _selector: this.ejectNextTokenTo.selector
+        });
         SEALib.SEAProjectConfig storage _SEAProjectConfig = _SEAProjectConfigs[
             _coreContract
         ][_projectId];
@@ -537,7 +526,11 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         uint256 _projectId,
         address _coreContract
     ) public nonReentrant {
-        _onlyArtist(_projectId, _coreContract);
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
         // CHECKS
         // revert if project is not configured on this minter
         SEALib.SEAProjectConfig storage _SEAProjectConfig = _SEAProjectConfigs[
@@ -1157,39 +1150,6 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
             coreContract: _coreContract,
             tokenId: nextTokenId
         });
-    }
-
-    function _senderIsArtist(
-        uint256 _projectId,
-        address _coreContract
-    ) private view returns (bool senderIsArtist) {
-        return
-            msg.sender ==
-            IGenArt721CoreContractV3_Base(_coreContract)
-                .projectIdToArtistAddress(_projectId);
-    }
-
-    function _minterFilterAdminACLAllowed(
-        bytes4 _selector
-    ) private returns (bool) {
-        return
-            minterFilter.adminACLAllowed({
-                _sender: msg.sender,
-                _contract: address(this),
-                _selector: _selector
-            });
-    }
-
-    function _coreAdminACLAllowed(
-        address _coreContract,
-        bytes4 _selector
-    ) private returns (bool) {
-        return
-            IGenArt721CoreContractV3_Base(_coreContract).adminACLAllowed({
-                _sender: msg.sender,
-                _contract: address(this),
-                _selector: _selector
-            });
     }
 
     /**
