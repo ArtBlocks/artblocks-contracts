@@ -96,7 +96,7 @@ import "@openzeppelin-4.7/contracts/utils/math/Math.sol";
  * collectors have sufficient time to place a bid after the final bid and
  * before the auction end time.
  */
-contract MinterSEAV0 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
+contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
     using SafeCast for uint256;
 
     /// Minter filter address this minter interacts with
