@@ -106,6 +106,16 @@ interface IMinterFilterV1 {
 
     function updateCoreRegistry(address _coreRegistry) external;
 
+    /**
+     * @notice Returns if `_sender` is allowed to call function on `_contract`
+     * with `_selector` selector, according to the MinterFilter's Admin ACL.
+     */
+    function adminACLAllowed(
+        address _sender,
+        address _contract,
+        bytes4 _selector
+    ) external returns (bool);
+
     function minterFilterType() external pure returns (string memory);
 
     function getMinterForProject(

@@ -70,6 +70,7 @@ library MaxInvocationsLib {
         uint24 _maxInvocations,
         MaxInvocationsProjectConfig storage maxInvocationsProjectConfig
     ) internal {
+        // CHECKS
         uint256 maxInvocations;
         uint256 invocations;
         (invocations, maxInvocations, , , , ) = IGenArt721CoreContractV3_Base(
@@ -121,5 +122,24 @@ library MaxInvocationsLib {
                 maxInvocationsProjectConfig.maxHasBeenInvoked = true;
             }
         }
+    }
+
+    /**
+     * Helper function to check if max invocations has been initialized.
+     * @dev This function checks if max invocations has been initialized.
+     * @param _maxInvocationsProjectConfig Struct that holds max invocations
+     * project configuration.
+     * @return bool
+     * @dev We know a project's max invocations have never been initialized if
+     * both max invocations and maxHasBeenInvoked are still initial values.
+     * This is because if maxInvocations were ever set to zero,
+     * maxHasBeenInvoked would be set to true.
+     */
+    function maxInvocationsIsInitialized(
+        MaxInvocationsProjectConfig storage _maxInvocationsProjectConfig
+    ) internal view returns (bool) {
+        return
+            !(_maxInvocationsProjectConfig.maxInvocations == 0 &&
+                _maxInvocationsProjectConfig.maxHasBeenInvoked == false);
     }
 }
