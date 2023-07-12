@@ -894,16 +894,7 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         SEALib.SEAProjectConfig storage _SEAProjectConfig = _SEAProjectConfigs[
             _coreContract
         ][_projectId];
-        SEALib.Auction storage _auction = _SEAProjectConfig.activeAuction;
-        // do not return uninitialized auctions (i.e. auctions that do not
-        // exist, where currentBidder is still the default value)
-        require(
-            SEALib.auctionIsInitialized(_auction),
-            "No auction exists on project"
-        );
-        // load entire auction into memory
-        auction = _SEAProjectConfig.activeAuction;
-        return auction;
+        return SEALib.projectActiveAuctionDetails(_SEAProjectConfig);
     }
 
     /**
@@ -928,17 +919,7 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         SEALib.SEAProjectConfig storage _SEAProjectConfig = _SEAProjectConfigs[
             _coreContract
         ][_projectId];
-        SEALib.Auction storage _auction = _SEAProjectConfig.activeAuction;
-        // if project has an active token auction that is not settled, return
-        // that token ID
-        if (
-            SEALib.auctionIsInitialized(_auction) &&
-            (_auction.endTime > block.timestamp)
-        ) {
-            return _auction.tokenId;
-        }
-        // otherwise, return the next expected token ID to be auctioned
-        return getNextTokenId(_projectId, _coreContract);
+        return SEALib.getTokenToBid(_SEAProjectConfig, _projectId);
     }
 
     /**
@@ -952,18 +933,11 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
     function getNextTokenId(
         uint256 _projectId,
         address _coreContract
-    ) public view returns (uint256 nextTokenId) {
+    ) external view returns (uint256 nextTokenId) {
         SEALib.SEAProjectConfig storage _SEAProjectConfig = _SEAProjectConfigs[
             _coreContract
         ][_projectId];
-        if (!_SEAProjectConfig.nextTokenNumberIsPopulated) {
-            revert("Next token not populated");
-        }
-        // @dev overflow automatically checked in Solidity ^0.8.0
-        nextTokenId =
-            (_projectId * ONE_MILLION) +
-            _SEAProjectConfig.nextTokenNumber;
-        return nextTokenId;
+        return SEALib.getNextTokenId(_SEAProjectConfig, _projectId);
     }
 
     /**
@@ -1037,14 +1011,11 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
 
         // EFFECTS
         // create new auction, overwriting previous auction if it exists
-        uint64 endTime = (block.timestamp +
-            _SEAProjectConfig.auctionDurationSeconds).toUint64();
-        _SEAProjectConfig.activeAuction = SEALib.Auction({
-            tokenId: _targetTokenId,
-            currentBid: msg.value,
-            currentBidder: payable(msg.sender),
-            endTime: endTime,
-            settled: false
+        uint64 endTime = SEALib.OverwriteProjectActiveAuction({
+            _SEAProjectConfig: _SEAProjectConfig,
+            _targetTokenId: _targetTokenId,
+            _bidAmount: msg.value,
+            _bidder: payable(msg.sender)
         });
         // mark next token number as not populated
         // @dev intentionally not setting nextTokenNumber to zero to avoid
