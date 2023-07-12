@@ -481,7 +481,7 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         // only if project is not configured (i.e. artist called
         // `resetAuctionDetails`)
         require(
-            !SEALib._projectIsConfigured(_SEAProjectConfig),
+            !SEALib.projectIsConfigured(_SEAProjectConfig),
             "Only unconfigured projects"
         );
         // only if project has a next token assigned
@@ -537,7 +537,7 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
             _coreContract
         ][_projectId];
         require(
-            SEALib._projectIsConfigured(_SEAProjectConfig),
+            SEALib.projectIsConfigured(_SEAProjectConfig),
             "Project not configured"
         );
         // INTERACTIONS
@@ -613,7 +613,7 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         // @dev this check is not strictly necessary, but is included for
         // clear error messaging
         require(
-            SEALib._auctionIsInitialized(_auction),
+            SEALib.auctionIsInitialized(_auction),
             "Auction not initialized"
         );
         if (_auction.settled || (_auction.tokenId != _tokenId)) {
@@ -707,7 +707,7 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         // if no auction exists, or current auction is already settled, attempt
         // to initialize a new auction for the input token ID and immediately
         // return
-        if ((!SEALib._auctionIsInitialized(_auction)) || _auction.settled) {
+        if ((!SEALib.auctionIsInitialized(_auction)) || _auction.settled) {
             _initializeAuctionWithBid(_projectId, _coreContract, _tokenId);
             return;
         }
@@ -898,7 +898,7 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         // do not return uninitialized auctions (i.e. auctions that do not
         // exist, where currentBidder is still the default value)
         require(
-            SEALib._auctionIsInitialized(_auction),
+            SEALib.auctionIsInitialized(_auction),
             "No auction exists on project"
         );
         // load entire auction into memory
@@ -932,7 +932,7 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         // if project has an active token auction that is not settled, return
         // that token ID
         if (
-            SEALib._auctionIsInitialized(_auction) &&
+            SEALib.auctionIsInitialized(_auction) &&
             (_auction.endTime > block.timestamp)
         ) {
             return _auction.tokenId;
@@ -999,7 +999,7 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         // @dev base price of zero indicates auctions are not configured
         // because only base price of gt zero is allowed when configuring
         require(
-            SEALib._projectIsConfigured(_SEAProjectConfig),
+            SEALib.projectIsConfigured(_SEAProjectConfig),
             "Project not configured"
         );
         // only initialize new auctions if they meet the start time
@@ -1014,7 +1014,7 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         // check is not present
         // @dev no cover else branch of next line because unreachable
         require(
-            (!SEALib._auctionIsInitialized(_auction)) || _auction.settled,
+            (!SEALib.auctionIsInitialized(_auction)) || _auction.settled,
             "Existing auction not settled"
         );
         // require valid bid value
@@ -1099,6 +1099,7 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         // attempt to mint new token to this minter contract, only if max
         // invocations has not been reached
         // we require up-to-date invocation data to properly handle last token
+        // and avoid revert if relying on core to limit invocations
         (
             uint256 coreInvocations,
             uint256 coreMaxInvocations,
@@ -1111,11 +1112,11 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
             );
         uint256 localMaxInvocations = _maxInvocationProjectConfig
             .maxInvocations;
-        uint256 minMaxInvocations = Math.min(
+        uint256 limitingMaxInvocations = Math.min(
             coreMaxInvocations,
             localMaxInvocations
         );
-        if (coreInvocations >= minMaxInvocations) {
+        if (coreInvocations >= limitingMaxInvocations) {
             // we have reached the max invocations, so we do not mint a new
             // token as the "next token", and leave the next token number as
             // not populated
@@ -1141,10 +1142,10 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
             );
         }
         // update local maxHasBeenInvoked value if necessary
-        uint256 tokenInvocation = (nextTokenId % ONE_MILLION) + 1;
-        if (tokenInvocation == localMaxInvocations) {
-            _maxInvocationProjectConfig.maxHasBeenInvoked = true;
-        }
+        MaxInvocationsLib.validatePurchaseEffectsInvocations({
+            _tokenId: nextTokenId,
+            maxInvocationsProjectConfig: _maxInvocationProjectConfig
+        });
         emit ProjectNextTokenUpdated({
             projectId: _projectId,
             coreContract: _coreContract,
@@ -1193,19 +1194,18 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         SEALib.SEAProjectConfig storage _SEAProjectConfig = _SEAProjectConfigs[
             _coreContract
         ][_projectId];
-        // ProjectConfig storage _projectConfig = projectConfig[_projectId];
         SEALib.Auction storage _auction = _SEAProjectConfig.activeAuction;
         // base price of zero not allowed when configuring auctions, so use it
         // as indicator of whether auctions are configured for the project
-        bool projectIsConfigured = SEALib._projectIsConfigured(
+        bool projectIsConfigured = SEALib.projectIsConfigured(
             _SEAProjectConfig
         );
-        bool auctionIsAcceptingBids = (SEALib._auctionIsInitialized(_auction) &&
-            block.timestamp < _auction.endTime);
-        isConfigured = projectIsConfigured || auctionIsAcceptingBids;
+        bool auctionIsAcceptingIncreasingBids = SEALib
+            .auctionIsAcceptingIncreasingBids(_auction);
+        isConfigured = projectIsConfigured || auctionIsAcceptingIncreasingBids;
         // only return non-zero price if auction is configured
         if (isConfigured) {
-            if (auctionIsAcceptingBids) {
+            if (auctionIsAcceptingIncreasingBids) {
                 // return current bid plus minimum bid increment
                 // @dev overflow automatically checked in Solidity ^0.8.0
                 tokenPriceInWei =
@@ -1220,6 +1220,8 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
             }
         }
         // else leave tokenPriceInWei as default value of zero
+
+        // currency is always ETH
         currencySymbol = "ETH";
         currencyAddress = address(0);
     }

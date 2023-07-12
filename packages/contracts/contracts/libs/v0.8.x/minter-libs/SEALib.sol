@@ -65,7 +65,7 @@ library SEALib {
      * non-zero when configured.
      * @param _SEAProjectConfig The project config to check.
      */
-    function _projectIsConfigured(
+    function projectIsConfigured(
         SEAProjectConfig storage _SEAProjectConfig
     ) internal view returns (bool) {
         return _SEAProjectConfig.auctionDurationSeconds != 0;
@@ -78,10 +78,26 @@ library SEALib {
      * has been initialized.
      * @param _auction The auction to check.
      */
-    function _auctionIsInitialized(
+    function auctionIsInitialized(
         Auction storage _auction
     ) internal view returns (bool isInitialized) {
         // auction is initialized if currentBidder is non-zero
         return _auction.currentBidder != address(0);
+    }
+
+    /**
+     * Returns bool representing if an auction is accepting bids above base
+     * price. It is accepting bids if it is initialized and has not reached its
+     * end time.
+     * @param _auction The auction to check.
+     */
+    function auctionIsAcceptingIncreasingBids(
+        Auction storage _auction
+    ) internal view returns (bool isAcceptingBids) {
+        // auction is accepting bids if it is initialized and has not reached
+        // its end time
+        isAcceptingBids = (auctionIsInitialized(_auction) &&
+            block.timestamp < _auction.endTime);
+        return isAcceptingBids;
     }
 }
