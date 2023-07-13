@@ -5,8 +5,8 @@ pragma solidity ^0.8.0;
 
 /**
  * @title Art Blocks Helpers Library
- * @notice This library is intended to help with common operations that surface
- * when working within the Art Blocks platform.
+ * @notice This library contains helper functions for common operations in the
+ * Art Blocks ecosystem of smart contracts.
  * @author Art Blocks Inc.
  */
 
