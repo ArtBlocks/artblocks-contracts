@@ -1068,24 +1068,16 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         // attempt to mint new token to this minter contract, only if max
         // invocations has not been reached
         // we require up-to-date invocation data to properly handle last token
-        // and avoid revert if relying on core to limit invocations
-        (
-            uint256 coreInvocations,
-            uint256 coreMaxInvocations,
-            ,
-            ,
-            ,
-
-        ) = IGenArt721CoreContractV3_Base(_coreContract).projectStateData(
-                _projectId
-            );
-        uint256 localMaxInvocations = _maxInvocationProjectConfig
-            .maxInvocations;
-        uint256 limitingMaxInvocations = Math.min(
-            coreMaxInvocations,
-            localMaxInvocations
-        );
-        if (coreInvocations >= limitingMaxInvocations) {
+        // and avoid revert if relying on core to limit invocations, therefore
+        // use MaxInvocationsLib.invocationsRemain, which calls core contract
+        // to get latest invocation data
+        if (
+            !MaxInvocationsLib.invocationsRemain(
+                _maxInvocationProjectConfig,
+                _projectId,
+                _coreContract
+            )
+        ) {
             // we have reached the max invocations, so we do not mint a new
             // token as the "next token", and leave the next token number as
             // not populated
