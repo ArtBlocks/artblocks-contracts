@@ -112,6 +112,33 @@ library SEALib {
     }
 
     /**
+     * @notice Updates the bid state of an Auction.
+     * Note that the auction's end time is extended if the bid is placed within
+     * the last `_timeBufferSeconds` of the auction.
+     * NOTE: This function does not check if the bid is valid. It is assumed
+     * that the bid has already been checked for validity by the caller.
+     * @param _auction Auction to update
+     * @param _timeBufferSeconds Time buffer to extend the auction to if the
+     * bid is placed within the last `_timeBufferSeconds` of the auction.
+     * @param _bidAmount bid amount
+     * @param _bidder bidder's payable address
+     */
+    function AuctionUpdateBid(
+        Auction storage _auction,
+        uint256 _timeBufferSeconds,
+        uint256 _bidAmount,
+        address payable _bidder
+    ) internal {
+        // update auction state
+        _auction.currentBid = _bidAmount;
+        _auction.currentBidder = _bidder;
+        uint256 minEndTime = block.timestamp + _timeBufferSeconds;
+        if (_auction.endTime < minEndTime) {
+            _auction.endTime = minEndTime.toUint64();
+        }
+    }
+
+    /**
      * @notice Determines if a project is configured or not on this minter.
      * Uses project config's `auctionDurationSeconds` to determine if project
      * is configured, because `auctionDurationSeconds` is required to be

@@ -737,13 +737,13 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         // record previous highest bider for refunding
         address payable previousBidder = _auction.currentBidder;
 
-        // update auction state
-        _auction.currentBid = msg.value;
-        _auction.currentBidder = payable(msg.sender);
-        uint256 minEndTime = block.timestamp + minterTimeBufferSeconds;
-        if (auctionEndTime < minEndTime) {
-            _auction.endTime = minEndTime.toUint64();
-        }
+        // update auction bid state
+        SEALib.AuctionUpdateBid({
+            _auction: _auction,
+            _timeBufferSeconds: minterTimeBufferSeconds,
+            _bidAmount: msg.value,
+            _bidder: payable(msg.sender)
+        });
 
         // INTERACTIONS
         // refund previous highest bidder
