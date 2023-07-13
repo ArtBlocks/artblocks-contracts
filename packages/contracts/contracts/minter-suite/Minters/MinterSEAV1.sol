@@ -8,6 +8,7 @@ import "../../interfaces/v0.8.x/ISharedMinterV0.sol";
 import "../../interfaces/v0.8.x/ISharedMinterSEAV0.sol";
 import "../../interfaces/v0.8.x/IMinterFilterV1.sol";
 
+import "../../libs/v0.8.x/ABHelpers.sol";
 import "../../libs/v0.8.x/minter-libs/SEALib.sol";
 import "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
 import "../../libs/v0.8.x/minter-libs/MaxInvocationsLib.sol";
@@ -493,8 +494,10 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         _SEAProjectConfig.nextTokenNumberIsPopulated = false;
         // INTERACTIONS
         // @dev overflow automatically handled by Sol ^0.8.0
-        uint256 nextTokenId = (_projectId * ONE_MILLION) +
-            _SEAProjectConfig.nextTokenNumber;
+        uint256 nextTokenId = ABHelpers.tokenIdFromProjectIdAndTokenNumber({
+            _projectId: _projectId,
+            _tokenNumber: _SEAProjectConfig.nextTokenNumber
+        });
         IERC721(_coreContract).transferFrom({
             from: address(this),
             to: _to,
@@ -575,7 +578,8 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
     ) external payable {
         // ensure tokens are in the same project
         require(
-            _settleTokenId / ONE_MILLION == _bidTokenId / ONE_MILLION,
+            ABHelpers.tokenIdToProjectId(_settleTokenId) ==
+                ABHelpers.tokenIdToProjectId(_bidTokenId),
             "Only tokens in same project"
         );
         // settle completed auction, if applicable
@@ -601,7 +605,7 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         uint256 _tokenId,
         address _coreContract
     ) public nonReentrant {
-        uint256 _projectId = _tokenId / ONE_MILLION;
+        uint256 _projectId = ABHelpers.tokenIdToProjectId(_tokenId);
         SEALib.SEAProjectConfig storage _SEAProjectConfig = _SEAProjectConfigs[
             _coreContract
         ][_projectId];
@@ -693,7 +697,7 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         uint256 _tokenId,
         address _coreContract
     ) public payable nonReentrant {
-        uint256 _projectId = _tokenId / ONE_MILLION;
+        uint256 _projectId = ABHelpers.tokenIdToProjectId(_tokenId);
         SEALib.SEAProjectConfig storage _SEAProjectConfig = _SEAProjectConfigs[
             _coreContract
         ][_projectId];
@@ -1003,7 +1007,8 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         );
         // require next token number is the target token ID
         require(
-            _SEAProjectConfig.nextTokenNumber == _targetTokenId % ONE_MILLION,
+            _SEAProjectConfig.nextTokenNumber ==
+                ABHelpers.tokenIdToTokenNumber(_targetTokenId),
             "Incorrect target token ID"
         );
 
@@ -1099,7 +1104,7 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         // max uint24
         unchecked {
             _SEAProjectConfig.nextTokenNumber = uint24(
-                nextTokenId % ONE_MILLION
+                ABHelpers.tokenIdToTokenNumber(nextTokenId)
             );
         }
         // update local maxHasBeenInvoked value if necessary
