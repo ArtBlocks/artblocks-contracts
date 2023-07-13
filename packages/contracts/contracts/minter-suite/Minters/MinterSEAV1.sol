@@ -422,7 +422,7 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
      * details for.
      * @param _coreContract Core contract address for the given project.
      */
-    function resetAuctionDetails(
+    function resetFutureAuctionDetails(
         uint256 _projectId,
         address _coreContract
     ) external {
@@ -431,17 +431,14 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
             _coreContract: _coreContract,
             _sender: msg.sender,
             _contract: address(this),
-            _selector: this.resetAuctionDetails.selector
+            _selector: this.resetFutureAuctionDetails.selector
         });
         SEALib.SEAProjectConfig storage _SEAProjectConfig = _SEAProjectConfigs[
             _coreContract
         ][_projectId];
         // reset to initial values
-        _SEAProjectConfig.timestampStart = 0;
-        _SEAProjectConfig.auctionDurationSeconds = 0;
-        _SEAProjectConfig.basePrice = 0;
+        SEALib.resetFutureAuctionDetails(_SEAProjectConfig);
         // @dev do not affect next token or max invocations
-
         emit ResetAuctionDetails(_projectId, _coreContract);
     }
 

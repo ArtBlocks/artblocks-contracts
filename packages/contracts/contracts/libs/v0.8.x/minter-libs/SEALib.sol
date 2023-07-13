@@ -65,6 +65,23 @@ library SEALib {
     }
 
     /**
+     * @notice Updates the SEAProjectConfig to clear the current settings for
+     * future auctions on the project. Values are reset to their default
+     * initial values.
+     * Current auction details are not cleared or affected.
+     * @param _SEAProjectConfig SEAProjectConfig to update
+     */
+    function resetFutureAuctionDetails(
+        SEAProjectConfig storage _SEAProjectConfig
+    ) internal {
+        // reset future auction details
+        _SEAProjectConfig.auctionDurationSeconds = 0;
+        _SEAProjectConfig.minBidIncrementPercentage = 0;
+        _SEAProjectConfig.basePrice = 0;
+        _SEAProjectConfig.timestampStart = 0;
+    }
+
+    /**
      * Overwrite the active auction for a project with a new auction.
      * @dev This function is used to initialize a new auction. Care must be
      * taken to ensure that the existing auction is fully complete and settled.
