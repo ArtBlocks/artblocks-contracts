@@ -72,20 +72,22 @@ import "@openzeppelin-4.7/contracts/utils/math/Math.sol";
  * ----------------------------------------------------------------------------
  * The following functions are restricted to the core contract's Admin ACL
  * contract:
- * - updateAllowableAuctionDurationSeconds
- * - updateMinterMinBidIncrementPercentage
- * - updateMinterTimeBufferSeconds
  * - ejectNextTokenTo
  * ----------------------------------------------------------------------------
+ * The following functions are restricted to this minter's minter filter's
+ * Admin ACL contract:
+ * - updateMinterTimeBufferSeconds
+ * - updateRefundGasLimit
+ * ----------------------------------------------------------------------------
  * The following functions are restricted to a project's artist:
- * - setProjectMaxInvocations
+ * - syncProjectMaxInvocationsToCore
  * - manuallyLimitProjectMaxInvocations
  * - configureFutureAuctions
  * - tryPopulateNextToken
  * ----------------------------------------------------------------------------
  * The following functions are restricted to a project's artist or the core
  * contract's Admin ACL contract:
- * - resetAuctionDetails
+ * - resetFutureAuctionDetails
  * ----------------------------------------------------------------------------
  * Additional admin and artist privileged roles may be described on other
  * contracts that this minter integrates with.
