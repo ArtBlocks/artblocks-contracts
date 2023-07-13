@@ -209,4 +209,20 @@ library SEALib {
             _SEAProjectConfig.nextTokenNumber;
         return nextTokenId;
     }
+
+    /**
+     * Returns the minimum next bid amount, given the previous bid amount and
+     * the project's configured minimum bid increment percentage.
+     * @param _SEAProjectConfig SEAProjectConfig to query
+     * @param _previousBid The previous bid amount
+     */
+    function getMinimumNextBid(
+        SEAProjectConfig storage _SEAProjectConfig,
+        uint256 _previousBid
+    ) internal view returns (uint256 minimumNextBid) {
+        // @dev overflow automatically checked in Solidity ^0.8.0
+        return
+            (_previousBid *
+                (100 + _SEAProjectConfig.minBidIncrementPercentage)) / 100;
+    }
 }

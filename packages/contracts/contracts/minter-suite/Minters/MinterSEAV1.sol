@@ -728,9 +728,7 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         // @dev no overflow enforced automatically by solidity ^0.8.0
         require(
             msg.value >=
-                (previousBid *
-                    (100 + _SEAProjectConfig.minBidIncrementPercentage)) /
-                    100,
+                SEALib.getMinimumNextBid(_SEAProjectConfig, previousBid),
             "Bid is too low"
         );
 
@@ -1177,12 +1175,11 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         // only return non-zero price if auction is configured
         if (isConfigured) {
             if (auctionIsAcceptingIncreasingBids) {
-                // return current bid plus minimum bid increment
-                // @dev overflow automatically checked in Solidity ^0.8.0
-                tokenPriceInWei =
-                    (_auction.currentBid *
-                        (100 + _SEAProjectConfig.minBidIncrementPercentage)) /
-                    100;
+                // return minimum next bid, given current bid
+                tokenPriceInWei = SEALib.getMinimumNextBid(
+                    _SEAProjectConfig,
+                    _auction.currentBid
+                );
             } else {
                 // return base (starting) price if if current auction is not
                 // accepting bids (i.e. the minimum initial bid price for the
