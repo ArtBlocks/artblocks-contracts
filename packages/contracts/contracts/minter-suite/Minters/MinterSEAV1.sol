@@ -1163,32 +1163,8 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         SEALib.SEAProjectConfig storage _SEAProjectConfig = _SEAProjectConfigs[
             _coreContract
         ][_projectId];
-        SEALib.Auction storage _auction = _SEAProjectConfig.activeAuction;
-        // base price of zero not allowed when configuring auctions, so use it
-        // as indicator of whether auctions are configured for the project
-        bool projectIsConfigured = SEALib.projectIsConfigured(
-            _SEAProjectConfig
-        );
-        bool auctionIsAcceptingIncreasingBids = SEALib
-            .auctionIsAcceptingIncreasingBids(_auction);
-        isConfigured = projectIsConfigured || auctionIsAcceptingIncreasingBids;
-        // only return non-zero price if auction is configured
-        if (isConfigured) {
-            if (auctionIsAcceptingIncreasingBids) {
-                // return minimum next bid, given current bid
-                tokenPriceInWei = SEALib.getMinimumNextBid(
-                    _SEAProjectConfig,
-                    _auction.currentBid
-                );
-            } else {
-                // return base (starting) price if if current auction is not
-                // accepting bids (i.e. the minimum initial bid price for the
-                // next token auction)
-                tokenPriceInWei = _SEAProjectConfig.basePrice;
-            }
-        }
-        // else leave tokenPriceInWei as default value of zero
-
+        (isConfigured, tokenPriceInWei) = SEALib
+            .getPriceInfoFromSEAProjectConfig(_SEAProjectConfig);
         // currency is always ETH
         currencySymbol = "ETH";
         currencyAddress = address(0);

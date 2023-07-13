@@ -211,6 +211,56 @@ library SEALib {
     }
 
     /**
+     * @notice Gets price info to become the leading bidder on a token auction.
+     * If artist has not called `configureFutureAuctions` and there is no
+     * active token auction accepting bids, `isConfigured` will be false, and a
+     * dummy price of zero is assigned to `tokenPriceInWei`.
+     * If there is an active auction accepting bids, `isConfigured` will be
+     * true, and `tokenPriceInWei` will be the sum of the current bid value and
+     * the minimum bid increment due to the minter's
+     * `minterMinBidIncrementPercentage`.
+     * If there is an auction that has ended (no longer accepting bids), but
+     * the project is configured, `isConfigured` will be true, and
+     * `tokenPriceInWei` will be the minimum initial bid price for the next
+     * token auction.
+     * @param _SEAProjectConfig SEAProjectConfig to be evaluated.
+     * @return isConfigured true only if project auctions are configured.
+     * @return tokenPriceInWei price in wei to become the leading bidder on a
+     * token auction.
+     */
+    function getPriceInfoFromSEAProjectConfig(
+        SEAProjectConfig storage _SEAProjectConfig
+    ) internal view returns (bool isConfigured, uint256 tokenPriceInWei) {
+        SEALib.Auction storage _auction = _SEAProjectConfig.activeAuction;
+        // base price of zero not allowed when configuring auctions, so use it
+        // as indicator of whether auctions are configured for the project
+        bool projectIsConfigured_ = projectIsConfigured(_SEAProjectConfig);
+        bool auctionIsAcceptingIncreasingBids_ = auctionIsAcceptingIncreasingBids(
+                _auction
+            );
+        isConfigured =
+            projectIsConfigured_ ||
+            auctionIsAcceptingIncreasingBids_;
+        // only return non-zero price if auction is configured
+        if (isConfigured) {
+            if (auctionIsAcceptingIncreasingBids_) {
+                // return minimum next bid, given current bid
+                tokenPriceInWei = SEALib.getMinimumNextBid(
+                    _SEAProjectConfig,
+                    _auction.currentBid
+                );
+            } else {
+                // return base (starting) price if if current auction is not
+                // accepting bids (i.e. the minimum initial bid price for the
+                // next token auction)
+                tokenPriceInWei = _SEAProjectConfig.basePrice;
+            }
+        }
+        // else leave tokenPriceInWei as default value of zero
+        // @dev values of `isConfigured` and `tokenPriceInWei` are returned
+    }
+
+    /**
      * Returns the minimum next bid amount, given the previous bid amount and
      * the project's configured minimum bid increment percentage.
      * @param _SEAProjectConfig SEAProjectConfig to query
