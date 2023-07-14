@@ -60,6 +60,9 @@ library SEALib {
         // The time that the auction is scheduled to end
         // max uint64 ~= 1.8e19 sec ~= 570 billion years
         uint64 endTime;
+        // The minimum percentage increase required for the next bid
+        // value is copied from SEAProjectConfig, where it is also a uint8
+        uint8 minBidIncrementPercentage;
         // Whether or not the auction has been settled
         bool settled;
     }
@@ -106,6 +109,8 @@ library SEALib {
             currentBid: _bidAmount,
             currentBidder: _bidder,
             endTime: endTime,
+            minBidIncrementPercentage: _SEAProjectConfig
+                .minBidIncrementPercentage,
             settled: false
         });
         return endTime;
@@ -289,10 +294,7 @@ library SEALib {
         if (isConfigured) {
             if (auctionIsAcceptingIncreasingBids_) {
                 // return minimum next bid, given current bid
-                tokenPriceInWei = SEALib.getMinimumNextBid(
-                    _SEAProjectConfig,
-                    _auction.currentBid
-                );
+                tokenPriceInWei = SEALib.getMinimumNextBid(_auction);
             } else {
                 // return base (starting) price if if current auction is not
                 // accepting bids (i.e. the minimum initial bid price for the
@@ -305,18 +307,17 @@ library SEALib {
     }
 
     /**
-     * Returns the minimum next bid amount, given the previous bid amount and
-     * the project's configured minimum bid increment percentage.
-     * @param _SEAProjectConfig SEAProjectConfig to query
-     * @param _previousBid The previous bid amount
+     * Returns the minimum next bid amount in a configured auction, given the
+     * current bid amount and the project's configured minimum bid increment
+     * percentage.
+     * @param _auction Auction to query
      */
     function getMinimumNextBid(
-        SEAProjectConfig storage _SEAProjectConfig,
-        uint256 _previousBid
+        Auction storage _auction
     ) internal view returns (uint256 minimumNextBid) {
         // @dev overflow automatically checked in Solidity ^0.8.0
         return
-            (_previousBid *
-                (100 + _SEAProjectConfig.minBidIncrementPercentage)) / 100;
+            (_auction.currentBid * (100 + _auction.minBidIncrementPercentage)) /
+            100;
     }
 }

@@ -955,8 +955,7 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         // require bid to be sufficiently greater than current highest bid
         // @dev no overflow enforced automatically by solidity ^0.8.0
         require(
-            msg.value >=
-                SEALib.getMinimumNextBid(_SEAProjectConfig, previousBid),
+            msg.value >= SEALib.getMinimumNextBid(_auction),
             "Bid is too low"
         );
 
