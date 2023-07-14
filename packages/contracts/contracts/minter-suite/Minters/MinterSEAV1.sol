@@ -1077,7 +1077,10 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
             coreContract: _coreContract,
             bidder: msg.sender,
             bidAmount: msg.value,
-            endTime: endTime
+            endTime: endTime,
+            minBidIncrementPercentage: _SEAProjectConfig
+                .activeAuction
+                .minBidIncrementPercentage
         });
 
         // INTERACTIONS

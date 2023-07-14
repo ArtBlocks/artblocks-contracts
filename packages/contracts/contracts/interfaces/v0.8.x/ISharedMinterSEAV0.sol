@@ -36,7 +36,8 @@ interface ISharedMinterSEAV0 {
         address indexed coreContract,
         address indexed bidder,
         uint256 bidAmount,
-        uint64 endTime
+        uint64 endTime,
+        uint8 minBidIncrementPercentage
     );
 
     /// Successful bid placed on token auction
