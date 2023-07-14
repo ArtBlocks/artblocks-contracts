@@ -239,41 +239,6 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
     }
 
     /**
-     * @notice Syncs local maximum invocations of project `_projectId` based on
-     * the value currently defined in the core contract.
-     * @param _projectId Project ID to set the maximum invocations for.
-     * @param _coreContract Core contract address for the given project.
-     * @dev this enables gas reduction after maxInvocations have been reached -
-     * core contracts shall still enforce a maxInvocation check during mint.
-     */
-    function syncProjectMaxInvocationsToCore(
-        uint256 _projectId,
-        address _coreContract
-    ) public {
-        AuthLib.onlyArtist({
-            _projectId: _projectId,
-            _coreContract: _coreContract,
-            _sender: msg.sender
-        });
-
-        uint256 maxInvocations = MaxInvocationsLib
-            .syncProjectMaxInvocationsToCore(
-                _projectId,
-                _coreContract,
-                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-            );
-        emit ProjectMaxInvocationsLimitUpdated(
-            _projectId,
-            _coreContract,
-            maxInvocations
-        );
-
-        // for convenience, try to mint and assign a token to the project's
-        // next slot
-        _tryMintTokenToNextSlot(_projectId, _coreContract);
-    }
-
-    /**
      * @notice Sets the minter-wide time buffer in seconds. The time buffer is
      * the minimum amount of time that must pass between the final bid and the
      * the end of an auction. Auctions are extended if a new bid is placed
@@ -506,6 +471,306 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
     }
 
     /**
+     * @notice Inactive function - see `createBid` or
+     * `settleAuctionAndCreateBid`
+     */
+    function purchase(
+        uint256 /*_projectId*/,
+        address /*_coreContract*/
+    ) external payable returns (uint256 /*tokenId*/) {
+        revert("Inactive function");
+    }
+
+    /**
+     * @notice Inactive function - see `createBid` or
+     * `settleAuctionAndCreateBid`
+     */
+    function purchaseTo(
+        address /*_to*/,
+        uint256 /*_projectId*/,
+        address /*_coreContract*/
+    ) external payable returns (uint256 /*tokenId*/) {
+        revert("Inactive function");
+    }
+
+    /**
+     * @notice View function to return the current minter-level configuration
+     * details.
+     * @return minAuctionDurationSeconds_ Minimum auction duration in seconds.
+     * Note that this value is a constant on this version of the minter.
+     * @return minterTimeBufferSeconds_ Buffer time in seconds
+     * @return minterRefundGasLimit_ Gas limit for refunding ETH
+     */
+    function minterConfigurationDetails()
+        external
+        view
+        returns (
+            uint256 minAuctionDurationSeconds_,
+            uint32 minterTimeBufferSeconds_,
+            uint24 minterRefundGasLimit_
+        )
+    {
+        minAuctionDurationSeconds_ = MIN_AUCTION_DURATION_SECONDS;
+        minterTimeBufferSeconds_ = minterTimeBufferSeconds;
+        minterRefundGasLimit_ = minterRefundGasLimit;
+    }
+
+    /**
+     * @notice projectId => has project reached its maximum number of
+     * invocations? Note that this returns a local cache of the core contract's
+     * state, and may be out of sync with the core contract. This is
+     * intentional, as it only enables gas optimization of mints after a
+     * project's maximum invocations has been reached. A false negative will
+     * only result in a gas cost increase, since the core contract will still
+     * enforce a maxInvocation check during minting. A false positive is not
+     * possible because the V3 core contract only allows maximum invocations
+     * to be reduced, not increased. Based on this rationale, we intentionally
+     * do not do input validation in this method as to whether or not the input
+     * @param `_projectId` is an existing project ID.
+     * @param `_coreContract` is an existing core contract address.
+     */
+    function projectMaxHasBeenInvoked(
+        uint256 _projectId,
+        address _coreContract
+    ) external view returns (bool) {
+        return
+            _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
+                .maxHasBeenInvoked;
+    }
+
+    /**
+     * @notice projectId => project's maximum number of invocations.
+     * Optionally synced with core contract value, for gas optimization.
+     * Note that this returns a local cache of the core contract's
+     * state, and may be out of sync with the core contract. This is
+     * intentional, as it only enables gas optimization of mints after a
+     * project's maximum invocations has been reached.
+     * @dev A number greater than the core contract's project max invocations
+     * will only result in a gas cost increase, since the core contract will
+     * still enforce a maxInvocation check during minting. A number less than
+     * the core contract's project max invocations is only possible when the
+     * project's max invocations have not been synced on this minter, since the
+     * V3 core contract only allows maximum invocations to be reduced, not
+     * increased. When this happens, the minter will enable minting, allowing
+     * the core contract to enforce the max invocations check. Based on this
+     * rationale, we intentionally do not do input validation in this method as
+     * to whether or not the input `_projectId` is an existing project ID.
+     * @param `_projectId` is an existing project ID.
+     * @param `_coreContract` is an existing core contract address.
+     */
+    function projectMaxInvocations(
+        uint256 _projectId,
+        address _coreContract
+    ) external view returns (uint256) {
+        return
+            uint256(
+                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
+                    .maxInvocations
+            );
+    }
+
+    /**
+     * @notice projectId => SEA project configuration details.
+     * Note that in the case of no auction being initialized for the project,
+     * the returned `auction` will be the default struct.
+     * @param _projectId The project ID
+     * @param _coreContract The core contract address
+     * @return _SEAProjectConfig The SEA project configuration details
+     */
+    function SEAProjectConfigurationDetails(
+        uint256 _projectId,
+        address _coreContract
+    ) external view returns (SEALib.SEAProjectConfig memory _SEAProjectConfig) {
+        _SEAProjectConfig = _SEAProjectConfigs[_coreContract][_projectId];
+        // clean up next token number to handle case where it is stale
+        _SEAProjectConfig.nextTokenNumber = _SEAProjectConfig
+            .nextTokenNumberIsPopulated
+            ? _SEAProjectConfig.nextTokenNumber
+            : 0;
+    }
+
+    /**
+     * @notice projectId => active auction details.
+     * @dev reverts if no auction exists for the project.
+     * @param _projectId The project ID
+     * @param _coreContract The core contract address
+     */
+    function projectActiveAuctionDetails(
+        uint256 _projectId,
+        address _coreContract
+    ) external view returns (SEALib.Auction memory auction) {
+        SEALib.SEAProjectConfig storage _SEAProjectConfig = _SEAProjectConfigs[
+            _coreContract
+        ][_projectId];
+        return SEALib.projectActiveAuctionDetails(_SEAProjectConfig);
+    }
+
+    /**
+     * @notice Convenience function that returns either the current token ID
+     * being auctioned, or the next expected token ID to be auction if no
+     * auction is currently initialized or if the current auction has concluded
+     * (block.timestamp > auction.endTime).
+     * This is intended to be useful for frontends or scripts that intend to
+     * call `createBid` or `settleAuctionAndCreateBid`, which requires a
+     * target bid token ID to be passed in as an argument.
+     * The function reverts if a project does not have an active auction and
+     * the next expected token ID has not been populated.
+     * @param _projectId The project ID being queried
+     * @param _coreContract The core contract address
+     * @return The current token ID being auctioned, or the next token ID to be
+     * auctioned if a new auction is ready to be created.
+     */
+    function getTokenToBid(
+        uint256 _projectId,
+        address _coreContract
+    ) external view returns (uint256) {
+        SEALib.SEAProjectConfig storage _SEAProjectConfig = _SEAProjectConfigs[
+            _coreContract
+        ][_projectId];
+        return SEALib.getTokenToBid(_SEAProjectConfig, _projectId);
+    }
+
+    /**
+     * @notice View function that returns the next token ID to be auctioned
+     * by this minter for project `_projectId`.
+     * Reverts if the next token ID has not been populated for the project.
+     * @param _projectId The project ID being queried
+     * @param _coreContract The core contract address
+     * @return nextTokenId The next token ID to be auctioned by this minter
+     */
+    function getNextTokenId(
+        uint256 _projectId,
+        address _coreContract
+    ) external view returns (uint256 nextTokenId) {
+        SEALib.SEAProjectConfig storage _SEAProjectConfig = _SEAProjectConfigs[
+            _coreContract
+        ][_projectId];
+        return SEALib.getNextTokenId(_SEAProjectConfig, _projectId);
+    }
+
+    /**
+     * @notice Gets price info to become the leading bidder on a token auction.
+     * If artist has not called `configureFutureAuctions` and there is no
+     * active token auction accepting bids, `isConfigured` will be false, and a
+     * dummy price of zero is assigned to `tokenPriceInWei`.
+     * If there is an active auction accepting bids, `isConfigured` will be
+     * true, and `tokenPriceInWei` will be the sum of the current bid value and
+     * the minimum bid increment due to the minter's
+     * `minterMinBidIncrementPercentage`.
+     * If there is an auction that has ended (no longer accepting bids), but
+     * the project is configured, `isConfigured` will be true, and
+     * `tokenPriceInWei` will be the minimum initial bid price for the next
+     * token auction.
+     * Also returns currency symbol and address to be being used as payment,
+     * which for this minter is ETH only.
+     * @param _projectId Project ID to get price information for.
+     * @param _coreContract Core contract to get price information for.
+     * @return isConfigured true only if project auctions are configured.
+     * @return tokenPriceInWei price in wei to become the leading bidder on a
+     * token auction.
+     * @return currencySymbol currency symbol for purchases of project on this
+     * minter. This minter always returns "ETH"
+     * @return currencyAddress currency address for purchases of project on
+     * this minter. This minter always returns null address, reserved for ether
+     */
+    function getPriceInfo(
+        uint256 _projectId,
+        address _coreContract
+    )
+        external
+        view
+        returns (
+            bool isConfigured,
+            uint256 tokenPriceInWei,
+            string memory currencySymbol,
+            address currencyAddress
+        )
+    {
+        SEALib.SEAProjectConfig storage _SEAProjectConfig = _SEAProjectConfigs[
+            _coreContract
+        ][_projectId];
+        (isConfigured, tokenPriceInWei) = SEALib
+            .getPriceInfoFromSEAProjectConfig(_SEAProjectConfig);
+        // currency is always ETH
+        currencySymbol = "ETH";
+        currencyAddress = address(0);
+    }
+
+    /**
+     * @notice Settles any complete auction for token `_settleTokenId` (if
+     * applicable), then attempts to create a bid for token
+     * `_bidTokenId` with bid amount and bidder address equal to
+     * `msg.value` and `msg.sender`, respectively.
+     * Intended to gracefully handle the case where a user is front-run by
+     * one or more transactions to settle and/or initialize a new auction,
+     * potentially still placing a bid on the auction for the token ID if the
+     * bid value is sufficiently higher than the current highest bid.
+     * Note that the use of `_bidTokenId` is to prevent the possibility of
+     * transactions that are stuck in the pending pool for long periods of time
+     * from unintentionally bidding on auctions for future tokens.
+     * Note that calls to `settleAuction` and `createBid` are possible
+     * to be called in separate transactions, but this function is provided for
+     * convenience and executes both of those functions in a single
+     * transaction, while handling front-running as gracefully as possible.
+     * @param _settleTokenId Token ID to settle auction for.
+     * @param _bidTokenId Token ID to bid on.
+     * @param _coreContract Core contract address for the given project.
+     * @dev this function is not non-reentrant, but the underlying calls are
+     * to non-reentrant functions.
+     */
+    function settleAuctionAndCreateBid(
+        uint256 _settleTokenId,
+        uint256 _bidTokenId,
+        address _coreContract
+    ) external payable {
+        // ensure tokens are in the same project
+        require(
+            ABHelpers.tokenIdToProjectId(_settleTokenId) ==
+                ABHelpers.tokenIdToProjectId(_bidTokenId),
+            "Only tokens in same project"
+        );
+        // settle completed auction, if applicable
+        settleAuction(_settleTokenId, _coreContract);
+        // attempt to bid on next token
+        createBid(_bidTokenId, _coreContract);
+    }
+
+    /**
+     * @notice Syncs local maximum invocations of project `_projectId` based on
+     * the value currently defined in the core contract.
+     * @param _projectId Project ID to set the maximum invocations for.
+     * @param _coreContract Core contract address for the given project.
+     * @dev this enables gas reduction after maxInvocations have been reached -
+     * core contracts shall still enforce a maxInvocation check during mint.
+     */
+    function syncProjectMaxInvocationsToCore(
+        uint256 _projectId,
+        address _coreContract
+    ) public {
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
+
+        uint256 maxInvocations = MaxInvocationsLib
+            .syncProjectMaxInvocationsToCore(
+                _projectId,
+                _coreContract,
+                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
+            );
+        emit ProjectMaxInvocationsLimitUpdated(
+            _projectId,
+            _coreContract,
+            maxInvocations
+        );
+
+        // for convenience, try to mint and assign a token to the project's
+        // next slot
+        _tryMintTokenToNextSlot(_projectId, _coreContract);
+    }
+
+    /**
      * @notice Emergency, Artist-only function that attempts to mint a new
      * token and set it as the the next token to be auctioned for project
      * `_projectId`.
@@ -546,45 +811,6 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         // attempt to mint new token to this minter contract, only if max
         // invocations has not been reached
         _tryMintTokenToNextSlot(_projectId, _coreContract);
-    }
-
-    /**
-     * @notice Settles any complete auction for token `_settleTokenId` (if
-     * applicable), then attempts to create a bid for token
-     * `_bidTokenId` with bid amount and bidder address equal to
-     * `msg.value` and `msg.sender`, respectively.
-     * Intended to gracefully handle the case where a user is front-run by
-     * one or more transactions to settle and/or initialize a new auction,
-     * potentially still placing a bid on the auction for the token ID if the
-     * bid value is sufficiently higher than the current highest bid.
-     * Note that the use of `_bidTokenId` is to prevent the possibility of
-     * transactions that are stuck in the pending pool for long periods of time
-     * from unintentionally bidding on auctions for future tokens.
-     * Note that calls to `settleAuction` and `createBid` are possible
-     * to be called in separate transactions, but this function is provided for
-     * convenience and executes both of those functions in a single
-     * transaction, while handling front-running as gracefully as possible.
-     * @param _settleTokenId Token ID to settle auction for.
-     * @param _bidTokenId Token ID to bid on.
-     * @param _coreContract Core contract address for the given project.
-     * @dev this function is not non-reentrant, but the underlying calls are
-     * to non-reentrant functions.
-     */
-    function settleAuctionAndCreateBid(
-        uint256 _settleTokenId,
-        uint256 _bidTokenId,
-        address _coreContract
-    ) external payable {
-        // ensure tokens are in the same project
-        require(
-            ABHelpers.tokenIdToProjectId(_settleTokenId) ==
-                ABHelpers.tokenIdToProjectId(_bidTokenId),
-            "Only tokens in same project"
-        );
-        // settle completed auction, if applicable
-        settleAuction(_settleTokenId, _coreContract);
-        // attempt to bid on next token
-        createBid(_bidTokenId, _coreContract);
     }
 
     /**
@@ -764,184 +990,6 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
     }
 
     /**
-     * @notice Inactive function - see `createBid` or
-     * `settleAuctionAndCreateBid`
-     */
-    function purchase(
-        uint256 /*_projectId*/,
-        address /*_coreContract*/
-    ) external payable returns (uint256 /*tokenId*/) {
-        revert("Inactive function");
-    }
-
-    /**
-     * @notice Inactive function - see `createBid` or
-     * `settleAuctionAndCreateBid`
-     */
-    function purchaseTo(
-        address /*_to*/,
-        uint256 /*_projectId*/,
-        address /*_coreContract*/
-    ) external payable returns (uint256 /*tokenId*/) {
-        revert("Inactive function");
-    }
-
-    /**
-     * @notice View function to return the current minter-level configuration
-     * details.
-     * @return minAuctionDurationSeconds_ Minimum auction duration in seconds.
-     * Note that this value is a constant on this version of the minter.
-     * @return minterTimeBufferSeconds_ Buffer time in seconds
-     * @return minterRefundGasLimit_ Gas limit for refunding ETH
-     */
-    function minterConfigurationDetails()
-        external
-        view
-        returns (
-            uint256 minAuctionDurationSeconds_,
-            uint32 minterTimeBufferSeconds_,
-            uint24 minterRefundGasLimit_
-        )
-    {
-        minAuctionDurationSeconds_ = MIN_AUCTION_DURATION_SECONDS;
-        minterTimeBufferSeconds_ = minterTimeBufferSeconds;
-        minterRefundGasLimit_ = minterRefundGasLimit;
-    }
-
-    /**
-     * @notice projectId => has project reached its maximum number of
-     * invocations? Note that this returns a local cache of the core contract's
-     * state, and may be out of sync with the core contract. This is
-     * intentional, as it only enables gas optimization of mints after a
-     * project's maximum invocations has been reached. A false negative will
-     * only result in a gas cost increase, since the core contract will still
-     * enforce a maxInvocation check during minting. A false positive is not
-     * possible because the V3 core contract only allows maximum invocations
-     * to be reduced, not increased. Based on this rationale, we intentionally
-     * do not do input validation in this method as to whether or not the input
-     * @param `_projectId` is an existing project ID.
-     * @param `_coreContract` is an existing core contract address.
-     */
-    function projectMaxHasBeenInvoked(
-        uint256 _projectId,
-        address _coreContract
-    ) external view returns (bool) {
-        return
-            _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-                .maxHasBeenInvoked;
-    }
-
-    /**
-     * @notice projectId => project's maximum number of invocations.
-     * Optionally synced with core contract value, for gas optimization.
-     * Note that this returns a local cache of the core contract's
-     * state, and may be out of sync with the core contract. This is
-     * intentional, as it only enables gas optimization of mints after a
-     * project's maximum invocations has been reached.
-     * @dev A number greater than the core contract's project max invocations
-     * will only result in a gas cost increase, since the core contract will
-     * still enforce a maxInvocation check during minting. A number less than
-     * the core contract's project max invocations is only possible when the
-     * project's max invocations have not been synced on this minter, since the
-     * V3 core contract only allows maximum invocations to be reduced, not
-     * increased. When this happens, the minter will enable minting, allowing
-     * the core contract to enforce the max invocations check. Based on this
-     * rationale, we intentionally do not do input validation in this method as
-     * to whether or not the input `_projectId` is an existing project ID.
-     * @param `_projectId` is an existing project ID.
-     * @param `_coreContract` is an existing core contract address.
-     */
-    function projectMaxInvocations(
-        uint256 _projectId,
-        address _coreContract
-    ) external view returns (uint256) {
-        return
-            uint256(
-                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-                    .maxInvocations
-            );
-    }
-
-    /**
-     * @notice projectId => SEA project configuration details.
-     * Note that in the case of no auction being initialized for the project,
-     * the returned `auction` will be the default struct.
-     * @param _projectId The project ID
-     * @param _coreContract The core contract address
-     * @return _SEAProjectConfig The SEA project configuration details
-     */
-    function SEAProjectConfigurationDetails(
-        uint256 _projectId,
-        address _coreContract
-    ) external view returns (SEALib.SEAProjectConfig memory _SEAProjectConfig) {
-        _SEAProjectConfig = _SEAProjectConfigs[_coreContract][_projectId];
-        // clean up next token number to handle case where it is stale
-        _SEAProjectConfig.nextTokenNumber = _SEAProjectConfig
-            .nextTokenNumberIsPopulated
-            ? _SEAProjectConfig.nextTokenNumber
-            : 0;
-    }
-
-    /**
-     * @notice projectId => active auction details.
-     * @dev reverts if no auction exists for the project.
-     * @param _projectId The project ID
-     * @param _coreContract The core contract address
-     */
-    function projectActiveAuctionDetails(
-        uint256 _projectId,
-        address _coreContract
-    ) external view returns (SEALib.Auction memory auction) {
-        SEALib.SEAProjectConfig storage _SEAProjectConfig = _SEAProjectConfigs[
-            _coreContract
-        ][_projectId];
-        return SEALib.projectActiveAuctionDetails(_SEAProjectConfig);
-    }
-
-    /**
-     * @notice Convenience function that returns either the current token ID
-     * being auctioned, or the next expected token ID to be auction if no
-     * auction is currently initialized or if the current auction has concluded
-     * (block.timestamp > auction.endTime).
-     * This is intended to be useful for frontends or scripts that intend to
-     * call `createBid` or `settleAuctionAndCreateBid`, which requires a
-     * target bid token ID to be passed in as an argument.
-     * The function reverts if a project does not have an active auction and
-     * the next expected token ID has not been populated.
-     * @param _projectId The project ID being queried
-     * @param _coreContract The core contract address
-     * @return The current token ID being auctioned, or the next token ID to be
-     * auctioned if a new auction is ready to be created.
-     */
-    function getTokenToBid(
-        uint256 _projectId,
-        address _coreContract
-    ) external view returns (uint256) {
-        SEALib.SEAProjectConfig storage _SEAProjectConfig = _SEAProjectConfigs[
-            _coreContract
-        ][_projectId];
-        return SEALib.getTokenToBid(_SEAProjectConfig, _projectId);
-    }
-
-    /**
-     * @notice View function that returns the next token ID to be auctioned
-     * by this minter for project `_projectId`.
-     * Reverts if the next token ID has not been populated for the project.
-     * @param _projectId The project ID being queried
-     * @param _coreContract The core contract address
-     * @return nextTokenId The next token ID to be auctioned by this minter
-     */
-    function getNextTokenId(
-        uint256 _projectId,
-        address _coreContract
-    ) external view returns (uint256 nextTokenId) {
-        SEALib.SEAProjectConfig storage _SEAProjectConfig = _SEAProjectConfigs[
-            _coreContract
-        ][_projectId];
-        return SEALib.getNextTokenId(_SEAProjectConfig, _projectId);
-    }
-
-    /**
      * @dev Internal function to initialize an auction for the next token ID
      * on project `_projectId` with a bid of `msg.value` from `msg.sender`.
      * This function reverts in any of the following cases:
@@ -1116,53 +1164,5 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
             coreContract: _coreContract,
             tokenId: nextTokenId
         });
-    }
-
-    /**
-     * @notice Gets price info to become the leading bidder on a token auction.
-     * If artist has not called `configureFutureAuctions` and there is no
-     * active token auction accepting bids, `isConfigured` will be false, and a
-     * dummy price of zero is assigned to `tokenPriceInWei`.
-     * If there is an active auction accepting bids, `isConfigured` will be
-     * true, and `tokenPriceInWei` will be the sum of the current bid value and
-     * the minimum bid increment due to the minter's
-     * `minterMinBidIncrementPercentage`.
-     * If there is an auction that has ended (no longer accepting bids), but
-     * the project is configured, `isConfigured` will be true, and
-     * `tokenPriceInWei` will be the minimum initial bid price for the next
-     * token auction.
-     * Also returns currency symbol and address to be being used as payment,
-     * which for this minter is ETH only.
-     * @param _projectId Project ID to get price information for.
-     * @param _coreContract Core contract to get price information for.
-     * @return isConfigured true only if project auctions are configured.
-     * @return tokenPriceInWei price in wei to become the leading bidder on a
-     * token auction.
-     * @return currencySymbol currency symbol for purchases of project on this
-     * minter. This minter always returns "ETH"
-     * @return currencyAddress currency address for purchases of project on
-     * this minter. This minter always returns null address, reserved for ether
-     */
-    function getPriceInfo(
-        uint256 _projectId,
-        address _coreContract
-    )
-        external
-        view
-        returns (
-            bool isConfigured,
-            uint256 tokenPriceInWei,
-            string memory currencySymbol,
-            address currencyAddress
-        )
-    {
-        SEALib.SEAProjectConfig storage _SEAProjectConfig = _SEAProjectConfigs[
-            _coreContract
-        ][_projectId];
-        (isConfigured, tokenPriceInWei) = SEALib
-            .getPriceInfoFromSEAProjectConfig(_SEAProjectConfig);
-        // currency is always ETH
-        currencySymbol = "ETH";
-        currencyAddress = address(0);
     }
 }
