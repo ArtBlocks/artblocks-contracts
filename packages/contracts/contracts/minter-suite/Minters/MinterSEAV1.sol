@@ -173,16 +173,15 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
     // STATE VARIABLES FOR SEALib end here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    // modifier-like internal functions
+    // MODIFIERS
     // @dev we use internal functions instead of modifiers to reduce contract
     // bytecode size
+    // @dev contract uses AuthLib for additional modifier-like functions
 
     // function to require that a value is non-zero
     function _onlyNonZero(uint256 _value) internal pure {
         require(_value != 0, "Only non-zero");
     }
-
-    // @dev contract uses AuthLib for additional modifier-like functions
 
     /**
      * @notice Initializes contract to be a shared, filtered minter for
