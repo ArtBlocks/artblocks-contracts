@@ -107,3 +107,24 @@ Date: 2023-07-15T00:21:11.297Z
 
 ---
 
+
+# Minter Deployment
+
+Date: 2023-07-15T01:11:36.641Z
+
+## **Network:** mainnet
+
+## **Environment:** mainnet
+
+**Deployment Input File:** `deployments/engine/V3/partners/tender-flex/minter-deploy-config.mainnet.ts`
+
+**MinterDAExpV4:** https://etherscan.io/address/0x582dE6f4c19De758D3A7242B9305f5a483Ad3579#code
+
+**Associated core contract:** 0x959d2F3cAF19d20BDBb4e0A4f21cA8A815EDDF65
+
+**Associated minter filter:** 0x3b90746ac1ccBFC5D6aC3a09d9930Dc3B224a0F9
+
+**Deployment Args:** 0x959d2F3cAF19d20BDBb4e0A4f21cA8A815EDDF65,0x3b90746ac1ccBFC5D6aC3a09d9930Dc3B224a0F9
+
+---
+
