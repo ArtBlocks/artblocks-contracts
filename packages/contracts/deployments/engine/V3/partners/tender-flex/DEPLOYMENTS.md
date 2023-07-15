@@ -86,3 +86,24 @@ Date: 2023-04-14T18:04:03.544Z
 
 ---
 
+
+# Minter Deployment
+
+Date: 2023-07-15T00:21:11.297Z
+
+## **Network:** goerli
+
+## **Environment:** staging
+
+**Deployment Input File:** `deployments/engine/V3/partners/tender-flex/minter-deploy-config.staging.ts`
+
+**MinterDAExpV4:** https://goerli.etherscan.io/address/0x44F2794bdd5Ae1De772Ed2B3796af1074658a709#code
+
+**Associated core contract:** 0xFd0d90a09F8a994A4BAF0896685aaB3275C70Db1
+
+**Associated minter filter:** 0x355C1eB98b95B00203BBF66C54184E7AC88652EC
+
+**Deployment Args:** 0xFd0d90a09F8a994A4BAF0896685aaB3275C70Db1,0x355C1eB98b95B00203BBF66C54184E7AC88652EC
+
+---
+
