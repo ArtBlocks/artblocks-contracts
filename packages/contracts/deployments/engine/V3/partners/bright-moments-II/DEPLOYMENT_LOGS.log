@@ -87,3 +87,62 @@ Contracts metadata upsert input:
 Successfully upserted 1 contract
 [ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
 [ACTION] AdminACL's superAdmin address is 0x18B7511938FBe2EE08ADf3d4A24edB00A5C9B783, don't forget to update if requred.
+----------------------------------------
+[INFO] Datetime of deployment: 2023-07-15T01:27:40.402Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/bright-moments-II/deployment-config.mainnet.ts
+[INFO] Deploying to network: mainnet
+[INFO] Deploying to environment: mainnet
+[INFO] New Admin ACL AdminACLV0 deployed at address: 0xeac2AFc8F4039217384b0EE90430A54BA902cCD5
+[INFO] Randomizer BasicRandomizerV2 deployed at 0x67ECC3A49744371e71fFaEfA10391c5a1d569E30
+[INFO] Core GenArt721CoreV3_Engine deployed at 0x84f12b499F050cB612403c75d9F2777A5995fe17
+[INFO] Minter Filter MinterFilterV1 deployed at 0xb96EaA691BF27D659EB134230cA8262BAF9F9d3c
+[INFO] MinterSetPriceV4 deployed at 0x6b611F416C9ef3c704540Ce98CdC05B748Ef7C19
+[INFO] MinterMerkleV5 deployed at 0x8aDadF5698E04ed346dc768238CFbD2a23F7143E
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0xb96EaA691BF27D659EB134230cA8262BAF9F9d3c.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0x6b611F416C9ef3c704540Ce98CdC05B748Ef7C19 on minter filter.
+[INFO] Allowlisted minter MinterMerkleV5 at 0x8aDadF5698E04ed346dc768238CFbD2a23F7143E on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0xB96E81f80b3AEEf65CB6d0E280b15FD5DBE71937.
+[INFO] Verifying core contract contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/engine/V3/GenArt721CoreV3_Engine.sol:GenArt721CoreV3_Engine at 0x84f12b499F050cB612403c75d9F2777A5995fe17
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract GenArt721CoreV3_Engine on Etherscan.
+https://etherscan.io/address/0x84f12b499F050cB612403c75d9F2777A5995fe17#code
+[INFO] Core contract verified on Etherscan at 0x84f12b499F050cB612403c75d9F2777A5995fe17}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0xeac2AFc8F4039217384b0EE90430A54BA902cCD5 has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0xeac2AFc8F4039217384b0EE90430A54BA902cCD5}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0xb96EaA691BF27D659EB134230cA8262BAF9F9d3c has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0xb96EaA691BF27D659EB134230cA8262BAF9F9d3c}
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+The contract 0x6b611F416C9ef3c704540Ce98CdC05B748Ef7C19 has already been verified
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0x6b611F416C9ef3c704540Ce98CdC05B748Ef7C19}
+[INFO] Verifying MinterMerkleV5 contract deployment...
+Compiled 232 Solidity files successfully
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterMerkleV5.sol:MinterMerkleV5 at 0x8aDadF5698E04ed346dc768238CFbD2a23F7143E
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterMerkleV5 on Etherscan.
+https://etherscan.io/address/0x8aDadF5698E04ed346dc768238CFbD2a23F7143E#code
+[INFO] MinterMerkleV5 contract verified on Etherscan at 0x8aDadF5698E04ed346dc768238CFbD2a23F7143E}
+Created s3 bucket for https://bright-moments-ii-mainnet.s3.amazonaws.com
+[INFO] Created image bucket bright-moments-ii-mainnet
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/bright-moments-II/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x84f12b499f050cb612403c75d9f2777a5995fe17",
+  "name": "Bright Moments II",
+  "bucket_name": "bright-moments-ii-mainnet",
+  "default_vertical_name": "fullyonchain"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0xB96E81f80b3AEEf65CB6d0E280b15FD5DBE71937, don't forget to update if requred.
