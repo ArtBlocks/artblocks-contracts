@@ -78,3 +78,44 @@ Date: 2023-03-31T00:23:06.196Z
 
 ---
 
+
+# Deployment
+
+Date: 2023-07-15T01:23:11.280Z
+
+## **Network:** mainnet
+
+## **Environment:** mainnet
+
+**Deployment Input File:** `deployments/engine/V3/partners/proof-flex/deployment-config.mainnet-2.ts`
+
+**GenArt721CoreV3_Engine_Flex_PROOF:** https://etherscan.io/address/0x294fED5F1D3D30cfA6Fe86A937dC3141EEc8bC6d#code
+
+**AdminACLV0:** https://etherscan.io/address/0x41cc069871054C1EfB4Aa40aF12f673eA2b6a1fC#code
+
+**Engine Registry:** https://etherscan.io/address/0x652490c8BB6e7ec3Fd798537D2F348D7904BBbc2#code
+
+**MinterFilterV1:** https://etherscan.io/address/0x21A95e1E97478db730b9564089A8Ca1D9aCF5B79#code
+
+**Minters:**
+
+
+
+**Metadata**
+
+- **Starting Project Id:** 0
+- **Token Name:** PROOF Blocks 2
+- **Token Ticker:** PRFBLCKS2
+- **Auto Approve Artist Split Proposals:** false
+- **Render Provider Address, Primary Sales:** 0x89dAd82099e14B3C8335352E38052fb2a551F8E8
+- **Platform Provider Address, Primary Sales:** 0x32220f07DBcd18149f619F28cD09FD911cc0372D
+- **BytecodeStorageReader Library:** 0xf0585dF582A0ad119F1616FB82f3b449a98EeCd5
+
+**Other**
+
+- **Add initial project?:** false
+- **Add initial token?:** false
+- **Image Bucket:** proof-blocks-2-mainnet
+
+---
+

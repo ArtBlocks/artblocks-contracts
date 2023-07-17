@@ -1,0 +1,42 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-07-15T00:56:38.346Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/muwave-flex/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV0 deployed at address: 0x23F48df75B74eF55B122457A8AF4C96D7D142eE3
+[INFO] Randomizer BasicRandomizerV2 deployed at 0x87eECdB6B67BEDD039980AC0ACddCB01F5ee16B2
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x7C0893E3642FF8d2Ae7A2a19dB4f71c794AAB4ce
+[INFO] Minter Filter MinterFilterV1 deployed at 0xa6B15B47b227997A80f68817dB7cb132d9C00972
+[INFO] MinterSetPriceV4 deployed at 0xD1f9e0c02c029726bb032215E91a3212e799A773
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0xa6B15B47b227997A80f68817dB7cb132d9C00972.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0xD1f9e0c02c029726bb032215E91a3212e799A773 on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0xdBAf6F4434a3b60B7461A0ae50c2083fE19d5CDb.
+[INFO] Verifying core contract contract deployment...
+The contract 0x7C0893E3642FF8d2Ae7A2a19dB4f71c794AAB4ce has already been verified
+[INFO] Core contract verified on Etherscan at 0x7C0893E3642FF8d2Ae7A2a19dB4f71c794AAB4ce}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0x23F48df75B74eF55B122457A8AF4C96D7D142eE3 has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0x23F48df75B74eF55B122457A8AF4C96D7D142eE3}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0xa6B15B47b227997A80f68817dB7cb132d9C00972 has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0xa6B15B47b227997A80f68817dB7cb132d9C00972}
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+The contract 0xD1f9e0c02c029726bb032215E91a3212e799A773 has already been verified
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0xD1f9e0c02c029726bb032215E91a3212e799A773}
+Created s3 bucket for https://muwave-goerli.s3.amazonaws.com
+[INFO] Created image bucket muwave-goerli
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/muwave-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x7c0893e3642ff8d2ae7a2a19db4f71c794aab4ce",
+  "name": "MuWave",
+  "bucket_name": "muwave-goerli",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63, don't forget to update if requred.
