@@ -49,7 +49,7 @@
     "@openzeppelin/hardhat-upgrades": "^1.28.0",
     "@openzeppelin/test-helpers": "^0.5.16",
     "@remix-project/remixd": "^0.6.15",
-    "@typechain/ethers-v5": "^11.0.0",
+    "@typechain/ethers-v5": "^11.1.0",
     "@types/jest": "^29.5.3",
     "@types/mocha": "^10.0.1",
     "@types/prompt": "^1.1.5",
