@@ -43,4 +43,6 @@ export const revertMessages = {
   panelAlreadyMinted: "Panel already minted",
   unexpectedHashSeed: "Unexpected token hash seed",
   inactiveFunction: "Inactive function",
+  onlyFutureAuctionsOrZero: "Only future start times or 0",
+  auctionTooShort: "Auction duration below minimum",
 };
