@@ -2,6 +2,9 @@ import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { T_Config } from "../../util/common";
 import { Common_Events } from "../common.events";
+import { Logger } from "@ethersproject/logger";
+// hide nuisance logs about event overloading
+Logger.setLogLevel(Logger.levels.ERROR);
 
 /**
  * These tests are intended to check common events Minter functionality
