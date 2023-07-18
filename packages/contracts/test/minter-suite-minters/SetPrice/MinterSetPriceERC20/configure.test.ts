@@ -5,9 +5,11 @@ import { deployAndGet, deployCore, safeAddProject } from "../../../util/common";
 import { SetPrice_Common_Configure } from "../common.configure";
 import { ethers } from "hardhat";
 import { revertMessages } from "../../constants";
+import { Logger } from "@ethersproject/logger";
+// hide nuisance logs about event overloading
+Logger.setLogLevel(Logger.levels.ERROR);
 
-const TARGET_MINTER_NAME = "MinterSetPriceV5";
-const TARGET_MINTER_VERSION = "v5.0.0";
+const TARGET_MINTER_NAME = "MinterSetPriceERC20V5";
 
 const runForEach = [
   {
@@ -25,7 +27,7 @@ const runForEach = [
 ];
 
 runForEach.forEach((params) => {
-  describe(`MinterSetPrice Configure w/ core ${params.core}`, async function () {
+  describe(`${TARGET_MINTER_NAME} Configure w/ core ${params.core}`, async function () {
     async function _beforeEach() {
       // load minter filter V2 fixture
       const config = await loadFixture(setupConfigWitMinterFilterV2Suite);
@@ -41,7 +43,7 @@ runForEach.forEach((params) => {
         config.minterFilter.address
       );
 
-      config.minter = await deployAndGet(config, "MinterSetPriceV5", [
+      config.minter = await deployAndGet(config, TARGET_MINTER_NAME, [
         config.minterFilter.address,
       ]);
       await config.minterFilter
@@ -108,6 +110,22 @@ runForEach.forEach((params) => {
         .connect(config.accounts.artist)
         .updateProjectMaxInvocations(config.projectOne, 15);
 
+      // deploy ERC20 token, sending 100e18 tokens to user
+      const ERC20Factory = await ethers.getContractFactory("ERC20Mock");
+      config.ERC20 = await ERC20Factory.connect(config.accounts.user).deploy(
+        ethers.utils.parseEther("100")
+      );
+
+      // update currency for project zero, leave project one as unconfigured
+      await config.minter
+        .connect(config.accounts.artist)
+        .updateProjectCurrencyInfo(
+          config.projectZero,
+          config.genArt721Core.address,
+          "ERC20",
+          config.ERC20.address
+        );
+
       return config;
     }
 
@@ -128,20 +146,25 @@ runForEach.forEach((params) => {
           );
 
         // cannot purchase token at lower price
+        // approve lower price of ERC20 tokens
+        await config.ERC20.connect(config.accounts.user).approve(
+          config.minter.address,
+          config.pricePerTokenInWei
+        );
         await expectRevert(
           config.minter
             .connect(config.accounts.user)
-            .purchase(config.projectZero, config.genArt721Core.address, {
-              value: config.pricePerTokenInWei,
-            }),
-          revertMessages.needMoreValue
+            .purchase(config.projectZero, config.genArt721Core.address),
+          revertMessages.needMoreAllowance
         );
         // can purchase token at higher price
+        await config.ERC20.connect(config.accounts.user).approve(
+          config.minter.address,
+          config.higherPricePerTokenInWei
+        );
         await config.minter
           .connect(config.accounts.user)
-          .purchase(config.projectZero, config.genArt721Core.address, {
-            value: config.higherPricePerTokenInWei,
-          });
+          .purchase(config.projectZero, config.genArt721Core.address);
       });
 
       it("enforces price update only on desired project", async function () {
@@ -155,7 +178,7 @@ runForEach.forEach((params) => {
             config.pricePerTokenInWei
           );
 
-        // artist increases price of project one
+        // artist increases price of project one and configures currency
         await config.minter
           .connect(config.accounts.artist)
           .updatePricePerTokenInWei(
@@ -163,21 +186,97 @@ runForEach.forEach((params) => {
             config.genArt721Core.address,
             config.higherPricePerTokenInWei
           );
+        await config.minter
+          .connect(config.accounts.artist)
+          .updateProjectCurrencyInfo(
+            config.projectOne,
+            config.genArt721Core.address,
+            "ERC20",
+            config.ERC20.address
+          );
         // cannot purchase project one token at lower price
+        await config.ERC20.connect(config.accounts.user).approve(
+          config.minter.address,
+          config.pricePerTokenInWei
+        );
         await expectRevert(
           config.minter
             .connect(config.accounts.user)
-            .purchase(config.projectOne, config.genArt721Core.address, {
-              value: config.pricePerTokenInWei,
-            }),
-          revertMessages.needMoreValue
+            .purchase(config.projectOne, config.genArt721Core.address),
+          revertMessages.needMoreAllowance
         );
         // can purchase project two token at lower price
+        // @dev approval still granted to minter for pricePerTokenInWei
         await config.minter
           .connect(config.accounts.user)
-          .purchase(config.projectZero, config.genArt721Core.address, {
-            value: config.pricePerTokenInWei,
-          });
+          .purchase(config.projectZero, config.genArt721Core.address);
+      });
+    });
+
+    describe("updateProjectCurrencyInfo", async function () {
+      it("enforces currency to be non-zero address", async function () {
+        const config = await loadFixture(_beforeEach);
+        // reverts when setting currency zero address
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .updateProjectCurrencyInfo(
+              config.projectZero,
+              config.genArt721Core.address,
+              "ERC20",
+              ethers.constants.AddressZero
+            ),
+          revertMessages.ERC20NullAddress
+        );
+      });
+
+      it("enforces symbol to be non-empty string", async function () {
+        const config = await loadFixture(_beforeEach);
+        // reverts when setting currency zero address
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .updateProjectCurrencyInfo(
+              config.projectZero,
+              config.genArt721Core.address,
+              "",
+              config.ERC20.address
+            ),
+          revertMessages.ERC20NonNullSymbol
+        );
+      });
+    });
+
+    describe("purchase", async function () {
+      it("requires sufficient ERC20 balance", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
+        // user approves minter to spend ERC20 tokens
+        await config.ERC20.connect(config.accounts.user).approve(
+          config.minter.address,
+          config.pricePerTokenInWei
+        );
+        // user sends entire balance to another address
+        const userBalance = await config.ERC20.balanceOf(
+          config.accounts.user.address
+        );
+        await config.ERC20.connect(config.accounts.user).transfer(
+          config.accounts.artist.address,
+          userBalance
+        );
+        // user cannot purchase token
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .purchase(config.projectZero, config.genArt721Core.address),
+          revertMessages.needMoreBalance
+        );
       });
     });
 
@@ -209,11 +308,13 @@ runForEach.forEach((params) => {
         expect(maxInvocationsProjectConfig.maxInvocations).to.equal(1);
 
         // mint a token
+        await config.ERC20.connect(config.accounts.user).approve(
+          config.minter.address,
+          config.pricePerTokenInWei
+        );
         await config.minter
           .connect(config.accounts.user)
-          .purchase(config.projectZero, config.genArt721Core.address, {
-            value: config.pricePerTokenInWei,
-          });
+          .purchase(config.projectZero, config.genArt721Core.address);
 
         // expect projectMaxHasBeenInvoked to be true
         const hasMaxBeenInvoked = await config.minter.projectMaxHasBeenInvoked(
@@ -269,10 +370,20 @@ runForEach.forEach((params) => {
 
         // mint a token
         await config.minter
+          .connect(config.accounts.artist)
+          .updateProjectCurrencyInfo(
+            config.projectOne,
+            config.genArt721Core.address,
+            "ERC20",
+            config.ERC20.address
+          );
+        await config.ERC20.connect(config.accounts.user).approve(
+          config.minter.address,
+          config.pricePerTokenInWei
+        );
+        await config.minter
           .connect(config.accounts.user)
-          .purchase(config.projectOne, config.genArt721Core.address, {
-            value: config.pricePerTokenInWei,
-          });
+          .purchase(config.projectOne, config.genArt721Core.address);
 
         // expect projectMaxHasBeenInvoked to be true
         const hasMaxBeenInvoked = await config.minter.projectMaxHasBeenInvoked(
@@ -342,13 +453,42 @@ runForEach.forEach((params) => {
             0
           );
         // revert during purchase
+        // @dev no ERC20 approval needed due to ordering of checks during purchase
         await expectRevert(
           config.minter
             .connect(config.accounts.user)
-            .purchase(config.projectZero, config.genArt721Core.address, {
-              value: config.pricePerTokenInWei,
-            }),
+            .purchase(config.projectZero, config.genArt721Core.address),
           revertMessages.maximumInvocationsReached
+        );
+      });
+
+      it("does not support setting project max invocations less than current invocations", async function () {
+        const config = await loadFixture(_beforeEach);
+        // mint a token
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
+        await config.ERC20.connect(config.accounts.user).approve(
+          config.minter.address,
+          config.pricePerTokenInWei
+        );
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address);
+        // expect revert when setting max invocations to less than current invocations
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .manuallyLimitProjectMaxInvocations(
+              config.projectZero,
+              config.genArt721Core.address,
+              0
+            ),
+          revertMessages.invalidMaxInvocations
         );
       });
     });
