@@ -217,13 +217,17 @@ contract MinterSetPriceMerkleV5 is
             _pricePerTokenInWei
         );
 
-        // sync local max invocations if not initially populated
-        // @dev if local max invocations and maxHasBeenInvoked are both
-        // initial values, we know they have not been populated.
+        // for convenience, sync local max invocations to the core contract if
+        // and only if max invocations have not already been synced.
+        // @dev do not sync if max invocations have already been synced, as
+        // local max invocations could have been manually set to be
+        // intentionally less than the core contract's max invocations.
         MaxInvocationsLib.MaxInvocationsProjectConfig
             storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
                 _coreContract
             ][_projectId];
+        // @dev if local maxInvocations and maxHasBeenInvoked are both
+        // initial values, we know they have not been populated on this minter
         if (
             _maxInvocationsProjectConfig.maxInvocations == 0 &&
             _maxInvocationsProjectConfig.maxHasBeenInvoked == false
