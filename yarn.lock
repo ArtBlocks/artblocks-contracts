@@ -4965,10 +4965,10 @@
     tslib "^2.4.1"
     webcrypto-core "^1.7.4"
 
-"@remix-project/remixd@^0.6.15":
-  version "0.6.15"
-  resolved "https://registry.yarnpkg.com/@remix-project/remixd/-/remixd-0.6.15.tgz#748fb05a988bc6507e68fa90539a61587124ee51"
-  integrity sha512-Ewe9paSWBvIZajBR3EkmF6Yeq+faytstyC1jL8H8QzVPNulpGUtgIix6I2kwiTwcxIGsbKL4QHbgAZGLsbAQzA==
+"@remix-project/remixd@^0.6.16":
+  version "0.6.16"
+  resolved "https://registry.yarnpkg.com/@remix-project/remixd/-/remixd-0.6.16.tgz#708302d7b19bee8c97fe7f4a77615a5398fda11d"
+  integrity sha512-puiwLToryCkNr0Nhkfa8doqKOjpNgk6Rt9LHPHs02FPbbLTC6g7i6gRO2mV3zjLKDYNO+kE3ZOklrYN7yofYYw==
   dependencies:
     "@remixproject/plugin" "0.3.33"
     "@remixproject/plugin-api" "0.3.33"
