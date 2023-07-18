@@ -359,7 +359,11 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
             minBidIncrementPercentage: _minBidIncrementPercentage
         });
 
-        // sync local max invocations if not initially populated
+        // for convenience, sync local max invocations to the core contract if
+        // and only if max invocations have not already been synced.
+        // @dev do not sync if max invocations have already been synced, as
+        // local max invocations could have been manually set to be
+        // intentionally less than the core contract's max invocations.
         if (
             !MaxInvocationsLib.maxInvocationsIsInitialized(
                 _maxInvocationsProjectConfig
