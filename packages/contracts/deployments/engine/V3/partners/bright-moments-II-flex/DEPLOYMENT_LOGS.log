@@ -1,0 +1,51 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-07-15T00:46:39.929Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/bright-moments-II-flex/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+----------------------------------------
+[INFO] Datetime of deployment: 2023-07-15T00:48:32.282Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/bright-moments-II-flex/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV0 deployed at address: 0xA2d28AD2491257694e061633017f98E7491D6772
+[INFO] Randomizer BasicRandomizerV2 deployed at 0x79b4857789Be3aA7191b7E8700fE3563394aA24E
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x0410EbBA076c6ea99a9120eDC11F8e1B118CAa1A
+[INFO] Minter Filter MinterFilterV1 deployed at 0x7fD32dE43897fDf853596E772a6A8C34EeEBbB5c
+[INFO] MinterSetPriceV4 deployed at 0x0E38a25c322880d63D68C30d4703fd0aC4FE46Dd
+[INFO] MinterMerkleV5 deployed at 0x2d262168BF0395639885e1dc08dfbebDf393469c
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0x7fD32dE43897fDf853596E772a6A8C34EeEBbB5c.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0x0E38a25c322880d63D68C30d4703fd0aC4FE46Dd on minter filter.
+[INFO] Allowlisted minter MinterMerkleV5 at 0x2d262168BF0395639885e1dc08dfbebDf393469c on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0x18B7511938FBe2EE08ADf3d4A24edB00A5C9B783.
+[INFO] Verifying core contract contract deployment...
+The contract 0x0410EbBA076c6ea99a9120eDC11F8e1B118CAa1A has already been verified
+[INFO] Core contract verified on Etherscan at 0x0410EbBA076c6ea99a9120eDC11F8e1B118CAa1A}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0xA2d28AD2491257694e061633017f98E7491D6772 has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0xA2d28AD2491257694e061633017f98E7491D6772}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0x7fD32dE43897fDf853596E772a6A8C34EeEBbB5c has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0x7fD32dE43897fDf853596E772a6A8C34EeEBbB5c}
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+The contract 0x0E38a25c322880d63D68C30d4703fd0aC4FE46Dd has already been verified
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0x0E38a25c322880d63D68C30d4703fd0aC4FE46Dd}
+[INFO] Verifying MinterMerkleV5 contract deployment...
+The contract 0x2d262168BF0395639885e1dc08dfbebDf393469c has already been verified
+[INFO] MinterMerkleV5 contract verified on Etherscan at 0x2d262168BF0395639885e1dc08dfbebDf393469c}
+Created s3 bucket for https://bright-moments-flex-ii-goerli.s3.amazonaws.com
+[INFO] Created image bucket bright-moments-flex-ii-goerli
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/bright-moments-II-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x0410ebba076c6ea99a9120edc11f8e1b118caa1a",
+  "name": "Bright Moments Flex II",
+  "bucket_name": "bright-moments-flex-ii-goerli",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x18B7511938FBe2EE08ADf3d4A24edB00A5C9B783, don't forget to update if requred.
