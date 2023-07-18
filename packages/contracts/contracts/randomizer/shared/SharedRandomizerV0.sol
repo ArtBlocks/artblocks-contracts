@@ -168,9 +168,12 @@ contract SharedRandomizerV0 is ISharedRandomizerV0 {
      * @inheritdoc IRandomizer_V3CoreBase
      */
     function assignTokenHash(uint256 _tokenId) external {
-        // @dev this function is callable by any core contract, and does not
-        // does not require any gating.
-        // @dev naming variables for readability
+        // @dev This function is not specifically gated to any specific caller,
+        // but will only call back to the calling contract, `msg.sender`, to
+        // set the specified token's hash seed.
+        // A third party contract calling this function will not be able to set
+        // the token hash seed on a different core contract.
+        // @dev variables are named to improve readability
         address coreContract = msg.sender;
         uint256 projectId = _tokenIdToProjectId(_tokenId);
         bytes32 hashSeed;
