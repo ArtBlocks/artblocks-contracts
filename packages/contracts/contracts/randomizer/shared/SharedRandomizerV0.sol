@@ -31,16 +31,14 @@ import "../../interfaces/v0.8.x/IPseudorandomAtomic.sol";
  * that all requirements are met.
  *
  * @notice Privileged Roles and Ownership:
- * Privileged roles and abilities are controlled by each core contract's admin
- * ACL contract and artists. Both of these roles hold extensive power and can
- * influence the behavior of this randomizer.
- * Care must be taken to ensure that the admin ACL contract and artist
- * addresses are secure behind a multi-sig or other access control mechanism.
- * ----------------------------------------------------------------------------
- * The following function is restricted to each core's Admin ACL contract:
- * - setHashSeedSetterContract
+ * Privileged roles and abilities are controlled by each core contract's
+ * artists.
+ * These roles hold extensive power and can influence the behavior of this
+ * randomizer.
+ * Care must be taken to ensure that the artist addresses are secure.
  * ----------------------------------------------------------------------------
  * The following functions are restricted to only the Artist address:
+ * - setHashSeedSetterContract
  * - toggleProjectIsPolyptych
  * ----------------------------------------------------------------------------
  * The following function is restricted to only the hash seed setter contract
@@ -62,24 +60,9 @@ contract SharedRandomizerV0 is ISharedRandomizerV0 {
     // mapping of core contract => project ID => is polyptych
     mapping(address => mapping(uint256 => bool)) private _projectIsPolyptych;
 
-    // mapping of core contract => hash seed setter contract
-    mapping(address => address) private _hashSeedSetterContracts;
-
-    // modifier to restrict access to only AdminACL allowed calls
-    // @dev defers to ACL contract being used to the core contract
-    function _onlyCoreAdminACL(
-        address _coreContract,
-        bytes4 _selector
-    ) internal {
-        require(
-            IGenArt721CoreContractV3_Base(_coreContract).adminACLAllowed(
-                msg.sender,
-                address(this),
-                _selector
-            ),
-            "Only Core AdminACL allowed"
-        );
-    }
+    // mapping of core contract => projectId => hash seed setter contract
+    mapping(address => mapping(uint256 => address))
+        private _hashSeedSetterContracts;
 
     // modifier to restrict access to only Artist allowed calls
     function _onlyArtist(
@@ -94,11 +77,18 @@ contract SharedRandomizerV0 is ISharedRandomizerV0 {
         );
     }
 
-    // modifier to restrict access to only calls by the hash seed setter
-    // contract of a given core contract
-    function _onlyHashSeedSetterContract(address _coreContract) internal view {
+    /**
+     * Modifier to restrict access to only calls by the hash seed setter
+     * contract of a given project.
+     * @param _coreContract core contract address associated with the project
+     * @param _projectId project ID being set
+     */
+    function _onlyHashSeedSetterContract(
+        address _coreContract,
+        uint256 _projectId
+    ) internal view {
         require(
-            msg.sender == _hashSeedSetterContracts[_coreContract],
+            msg.sender == _hashSeedSetterContracts[_coreContract][_projectId],
             "Only Hash Seed Setter Contract"
         );
     }
@@ -124,15 +114,16 @@ contract SharedRandomizerV0 is ISharedRandomizerV0 {
      */
     function setHashSeedSetterContract(
         address _coreContract,
+        uint256 _projectId,
         address _hashSeedSetterContract
     ) external {
-        _onlyCoreAdminACL(
-            _coreContract,
-            this.setHashSeedSetterContract.selector
-        );
-        _hashSeedSetterContracts[_coreContract] = _hashSeedSetterContract;
-        emit HashSeedSetterForCoreUpdated({
+        _onlyArtist(_coreContract, _projectId);
+        _hashSeedSetterContracts[_coreContract][
+            _projectId
+        ] = _hashSeedSetterContract;
+        emit HashSeedSetterForProjectUpdated({
             coreContract: _coreContract,
+            projectId: _projectId,
             hashSeedSetterContract: _hashSeedSetterContract
         });
     }
@@ -163,7 +154,8 @@ contract SharedRandomizerV0 is ISharedRandomizerV0 {
         uint256 _tokenId,
         bytes12 _hashSeed
     ) external {
-        _onlyHashSeedSetterContract(_coreContract);
+        uint256 projectId = _tokenIdToProjectId(_tokenId);
+        _onlyHashSeedSetterContract(_coreContract, projectId);
         _polyptychHashSeed[_coreContract][_tokenId] = _hashSeed;
         // @dev event indicating token hash seed assigned is not required for
         // subgraph indexing because token hash seeds are still assigned
@@ -176,11 +168,14 @@ contract SharedRandomizerV0 is ISharedRandomizerV0 {
      * @inheritdoc IRandomizer_V3CoreBase
      */
     function assignTokenHash(uint256 _tokenId) external {
-        // @dev this function is callable by any core contract, and does not
-        // does not require any gating.
-        // @dev naming variables for readability
+        // @dev This function is not specifically gated to any specific caller,
+        // but will only call back to the calling contract, `msg.sender`, to
+        // set the specified token's hash seed.
+        // A third party contract calling this function will not be able to set
+        // the token hash seed on a different core contract.
+        // @dev variables are named to improve readability
         address coreContract = msg.sender;
-        uint256 projectId = _tokenId / ONE_MILLION;
+        uint256 projectId = _tokenIdToProjectId(_tokenId);
         bytes32 hashSeed;
         if (_projectIsPolyptych[coreContract][projectId]) {
             hashSeed = _polyptychHashSeed[coreContract][_tokenId];
@@ -210,9 +205,10 @@ contract SharedRandomizerV0 is ISharedRandomizerV0 {
      * @inheritdoc ISharedRandomizerV0
      */
     function hashSeedSetterContracts(
-        address _coreContract
+        address _coreContract,
+        uint256 _projectId
     ) external view returns (address _hashSeedSetterContract) {
-        return _hashSeedSetterContracts[_coreContract];
+        return _hashSeedSetterContracts[_coreContract][_projectId];
     }
 
     /**
@@ -241,5 +237,16 @@ contract SharedRandomizerV0 is ISharedRandomizerV0 {
             pseudorandomAtomicContract.getPseudorandomAtomic(
                 keccak256(abi.encodePacked(_coreContract, _tokenId))
             );
+    }
+
+    /**
+     * @notice Gets the project ID for a given `_tokenId`.
+     * @param _tokenId Token ID to be queried.
+     * @return projectId Project ID for given `_tokenId`.
+     */
+    function _tokenIdToProjectId(
+        uint256 _tokenId
+    ) internal pure returns (uint256 projectId) {
+        return _tokenId / ONE_MILLION;
     }
 }

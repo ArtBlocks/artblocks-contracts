@@ -1,0 +1,65 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-07-15T00:29:10.990Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/plottables-flex/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0xD9d8f2789c05eD400Dd5D6941d98f15F28195BDA
+[INFO] Randomizer BasicRandomizerV2 deployed at 0x24496ba8A642811DF0394157A1D11DD6f97BD9fe
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0xF104F964c5B1c68aeE6447b1C64e9030EB9c1eaF
+[INFO] Minter Filter MinterFilterV1 deployed at 0xA51Ef7A57Ca427eB93037157d044174B1000a3B7
+[INFO] MinterSetPriceV4 deployed at 0x72437114503Ac1967872e2998c4d59c8A25FF6B8
+[INFO] MinterSetPriceERC20V4 deployed at 0xC69824C32eF80fBFcaC3BD91A24a527d16B7AcdA
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0xA51Ef7A57Ca427eB93037157d044174B1000a3B7.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0x72437114503Ac1967872e2998c4d59c8A25FF6B8 on minter filter.
+[INFO] Allowlisted minter MinterSetPriceERC20V4 at 0xC69824C32eF80fBFcaC3BD91A24a527d16B7AcdA on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0xF565d79c35758c752d3DebFdD380D4Eb16A3c6E3.
+[INFO] Verifying core contract contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/engine/V3/GenArt721CoreV3_Engine_Flex.sol:GenArt721CoreV3_Engine_Flex at 0xF104F964c5B1c68aeE6447b1C64e9030EB9c1eaF
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract GenArt721CoreV3_Engine_Flex on Etherscan.
+https://goerli.etherscan.io/address/0xF104F964c5B1c68aeE6447b1C64e9030EB9c1eaF#code
+[INFO] Core contract verified on Etherscan at 0xF104F964c5B1c68aeE6447b1C64e9030EB9c1eaF}
+[INFO] Verifying AdminACL contract deployment...
+Compiled 232 Solidity files successfully
+Successfully submitted source code for contract
+contracts/AdminACLV1.sol:AdminACLV1 at 0xD9d8f2789c05eD400Dd5D6941d98f15F28195BDA
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract AdminACLV1 on Etherscan.
+https://goerli.etherscan.io/address/0xD9d8f2789c05eD400Dd5D6941d98f15F28195BDA#code
+[INFO] AdminACL contract verified on Etherscan at 0xD9d8f2789c05eD400Dd5D6941d98f15F28195BDA}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0xA51Ef7A57Ca427eB93037157d044174B1000a3B7 has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0xA51Ef7A57Ca427eB93037157d044174B1000a3B7}
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+The contract 0x72437114503Ac1967872e2998c4d59c8A25FF6B8 has already been verified
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0x72437114503Ac1967872e2998c4d59c8A25FF6B8}
+[INFO] Verifying MinterSetPriceERC20V4 contract deployment...
+Compiled 232 Solidity files successfully
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterSetPriceERC20V4.sol:MinterSetPriceERC20V4 at 0xC69824C32eF80fBFcaC3BD91A24a527d16B7AcdA
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterSetPriceERC20V4 on Etherscan.
+https://goerli.etherscan.io/address/0xC69824C32eF80fBFcaC3BD91A24a527d16B7AcdA#code
+[INFO] MinterSetPriceERC20V4 contract verified on Etherscan at 0xC69824C32eF80fBFcaC3BD91A24a527d16B7AcdA}
+Created s3 bucket for https://stitchables-goerli.s3.amazonaws.com
+[INFO] Created image bucket stitchables-goerli
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/plottables-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0xf104f964c5b1c68aee6447b1c64e9030eb9c1eaf",
+  "name": "Stitchables",
+  "bucket_name": "stitchables-goerli",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0xF565d79c35758c752d3DebFdD380D4Eb16A3c6E3, don't forget to update if requred.

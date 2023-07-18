@@ -102,3 +102,52 @@ Contracts metadata upsert input:
 Successfully upserted 1 contract
 [ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
 [ACTION] AdminACL's superAdmin address is 0x32220f07DBcd18149f619F28cD09FD911cc0372D, don't forget to update if requred.
+----------------------------------------
+[INFO] Datetime of deployment: 2023-07-15T01:17:59.205Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/proof-flex/deployment-config.mainnet-2.ts
+[INFO] Deploying to network: mainnet
+[INFO] Deploying to environment: mainnet
+[INFO] New Admin ACL AdminACLV0 deployed at address: 0x41cc069871054C1EfB4Aa40aF12f673eA2b6a1fC
+[INFO] Randomizer BasicRandomizerV2 deployed at 0x533D79A2669A22BAfeCdf1696aD6E738E4A2e07b
+[INFO] Core GenArt721CoreV3_Engine_Flex_PROOF deployed at 0x294fED5F1D3D30cfA6Fe86A937dC3141EEc8bC6d
+[INFO] Minter Filter MinterFilterV1 deployed at 0x21A95e1E97478db730b9564089A8Ca1D9aCF5B79
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0x21A95e1E97478db730b9564089A8Ca1D9aCF5B79.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0x32220f07DBcd18149f619F28cD09FD911cc0372D.
+[INFO] Verifying core contract contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/engine/V3/forks/GenArt721CoreV3_Engine_Flex_PROOF.sol:GenArt721CoreV3_Engine_Flex_PROOF at 0x294fED5F1D3D30cfA6Fe86A937dC3141EEc8bC6d
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract GenArt721CoreV3_Engine_Flex_PROOF on Etherscan.
+https://etherscan.io/address/0x294fED5F1D3D30cfA6Fe86A937dC3141EEc8bC6d#code
+[INFO] Core contract verified on Etherscan at 0x294fED5F1D3D30cfA6Fe86A937dC3141EEc8bC6d}
+[INFO] Verifying AdminACL contract deployment...
+Compiled 232 Solidity files successfully
+Successfully submitted source code for contract
+contracts/AdminACLV0.sol:AdminACLV0 at 0x41cc069871054C1EfB4Aa40aF12f673eA2b6a1fC
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract AdminACLV0 on Etherscan.
+https://etherscan.io/address/0x41cc069871054C1EfB4Aa40aF12f673eA2b6a1fC#code
+[INFO] AdminACL contract verified on Etherscan at 0x41cc069871054C1EfB4Aa40aF12f673eA2b6a1fC}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0x21A95e1E97478db730b9564089A8Ca1D9aCF5B79 has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0x21A95e1E97478db730b9564089A8Ca1D9aCF5B79}
+Created s3 bucket for https://proof-blocks-2-mainnet.s3.amazonaws.com
+[INFO] Created image bucket proof-blocks-2-mainnet
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/proof-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x294fed5f1d3d30cfa6fe86a937dc3141eec8bc6d",
+  "name": "PROOF Blocks 2",
+  "bucket_name": "proof-blocks-2-mainnet",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x32220f07DBcd18149f619F28cD09FD911cc0372D, don't forget to update if requred.
