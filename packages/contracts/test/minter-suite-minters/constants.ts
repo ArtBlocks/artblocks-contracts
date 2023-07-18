@@ -42,4 +42,5 @@ export const revertMessages = {
   ERC20NonNullSymbol: "only non-null symbol",
   panelAlreadyMinted: "Panel already minted",
   unexpectedHashSeed: "Unexpected token hash seed",
+  inactiveFunction: "Inactive function",
 };

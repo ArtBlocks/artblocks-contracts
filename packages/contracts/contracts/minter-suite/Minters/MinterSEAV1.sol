@@ -519,6 +519,24 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
     }
 
     /**
+     * @notice Gets the maximum invocations project configuration.
+     * @param _projectId The ID of the project whose data needs to be fetched.
+     * @param _coreContract The address of the core contract.
+     * @return MaxInvocationsLib.MaxInvocationsProjectConfig instance with the
+     * configuration data.
+     */
+    function maxInvocationsProjectConfig(
+        uint256 _projectId,
+        address _coreContract
+    )
+        external
+        view
+        returns (MaxInvocationsLib.MaxInvocationsProjectConfig memory)
+    {
+        return _maxInvocationsProjectConfigMapping[_coreContract][_projectId];
+    }
+
+    /**
      * @notice projectId => has project reached its maximum number of
      * invocations? Note that this returns a local cache of the core contract's
      * state, and may be out of sync with the core contract. This is
@@ -570,6 +588,30 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
                 _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
                     .maxInvocations
             );
+    }
+
+    /**
+     * @notice Checks if the specified `_coreContract` is a valid engine contract.
+     * @dev This function retrieves the cached value of `_isEngine` from
+     * the `isEngineCache` mapping. If the cached value is already set, it
+     * returns the cached value. Otherwise, it calls the `getV3CoreIsEngine`
+     * function from the `SplitFundsLib` library to check if `_coreContract`
+     * is a valid engine contract.
+     * @dev This function will revert if the provided `_coreContract` is not
+     * a valid Engine or V3 Flagship contract.
+     * @param _coreContract The address of the contract to check.
+     * @return bool indicating if `_coreContract` is a valid engine contract.
+     */
+    function isEngineView(address _coreContract) external view returns (bool) {
+        SplitFundsLib.IsEngineCache storage isEngineCache = _isEngineCaches[
+            _coreContract
+        ];
+        if (isEngineCache.isCached) {
+            return isEngineCache.isEngine;
+        } else {
+            // @dev this calls the non-modifying variant of getV3CoreIsEngine
+            return SplitFundsLib.getV3CoreIsEngineView(_coreContract);
+        }
     }
 
     /**
