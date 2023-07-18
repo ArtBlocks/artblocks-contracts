@@ -18,4 +18,9 @@ interface ISharedMinterDAV0 {
         uint256 indexed _projectId,
         address indexed _coreContract
     );
+
+    function projectAuctionParameters(
+        uint256 _projectId,
+        address _coreContract
+    ) external view returns (uint256, uint256, uint256, uint256);
 }

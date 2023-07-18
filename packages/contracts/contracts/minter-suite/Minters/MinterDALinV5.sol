@@ -77,41 +77,6 @@ contract MinterDALinV5 is
     // STATE VARIABLES FOR MaxInvocationsLib end here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    // MODIFIERS
-    /**
-     * @dev Throws if called by any account other than the artist of the specified project.
-     * Requirements: `msg.sender` must be the artist associated with `_projectId`.
-     * @param _projectId The ID of the project being checked.
-     * @param _coreContract The address of the GenArt721CoreContractV3_Base contract.
-     */
-    function _onlyArtist(
-        uint256 _projectId,
-        address _coreContract
-    ) internal view {
-        require(
-            msg.sender ==
-                IGenArt721CoreContractV3_Base(_coreContract)
-                    .projectIdToArtistAddress(_projectId),
-            "Only Artist"
-        );
-    }
-
-    // function to restrict access to only AdminACL allowed calls
-    // @dev defers which ACL contract is used to the core contract
-    function _onlyCoreAdminACL(
-        address _coreContract,
-        bytes4 _selector
-    ) internal {
-        require(
-            IGenArt721CoreContractV3_Base(_coreContract).adminACLAllowed(
-                msg.sender,
-                address(this),
-                _selector
-            ),
-            "Only Core AdminACL allowed"
-        );
-    }
-
     /**
      * @notice Initializes contract to be a Filtered Minter for
      * `_minterFilter` minter filter.
@@ -140,7 +105,11 @@ contract MinterDALinV5 is
         address _coreContract,
         uint24 _maxInvocations
     ) external {
-        _onlyArtist(_projectId, _coreContract);
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
         MaxInvocationsLib.manuallyLimitProjectMaxInvocations(
             _projectId,
             _coreContract,
@@ -173,40 +142,26 @@ contract MinterDALinV5 is
         uint256 _startPrice,
         uint256 _basePrice
     ) external {
-        _onlyArtist(_projectId, _coreContract);
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
         // CHECKS
         DALib.DAProjectConfig
             storage _auctionProjectConfig = _auctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
-        require(
-            _auctionProjectConfig.timestampStart == 0 ||
-                block.timestamp < _auctionProjectConfig.timestampStart,
-            "No modifications mid-auction"
+
+        DALib.setAuctionDetailsLin(
+            _auctionProjectConfig,
+            _auctionTimestampStart,
+            _auctionTimestampEnd,
+            _startPrice,
+            _basePrice,
+            minimumAuctionLengthSeconds
         );
-        require(
-            block.timestamp < _auctionTimestampStart,
-            "Only future auctions"
-        );
-        require(
-            _auctionTimestampEnd > _auctionTimestampStart,
-            "Auction end must be greater than auction start"
-        );
-        require(
-            _auctionTimestampEnd >=
-                _auctionTimestampStart + minimumAuctionLengthSeconds,
-            "Auction length must be at least minimumAuctionLengthSeconds"
-        );
-        require(
-            _startPrice > _basePrice,
-            "Auction start price must be greater than auction end price"
-        );
-        // EFFECTS
-        _auctionProjectConfig.timestampStart = _auctionTimestampStart
-            .toUint64();
-        _auctionProjectConfig.timestampEnd = _auctionTimestampEnd.toUint64();
-        _auctionProjectConfig.startPrice = _startPrice;
-        _auctionProjectConfig.basePrice = _basePrice;
+
         emit SetAuctionDetails(
             _projectId,
             _coreContract,
@@ -240,6 +195,12 @@ contract MinterDALinV5 is
     function setMinimumAuctionLengthSeconds(
         uint256 _minimumAuctionLengthSeconds
     ) external {
+        AuthLib.onlyMinterFilterAdminACL({
+            _minterFilterAddress: minterFilterAddress,
+            _sender: msg.sender,
+            _contract: address(this),
+            _selector: this.setMinimumAuctionLengthSeconds.selector
+        });
         minimumAuctionLengthSeconds = _minimumAuctionLengthSeconds;
         emit AuctionMinimumLengthSecondsUpdated(_minimumAuctionLengthSeconds);
     }
@@ -254,16 +215,18 @@ contract MinterDALinV5 is
         uint256 _projectId,
         address _coreContract
     ) external {
-        _onlyCoreAdminACL(_coreContract, this.resetAuctionDetails.selector);
+        AuthLib.onlyCoreAdminACL({
+            _coreContract: _coreContract,
+            _sender: msg.sender,
+            _contract: address(this),
+            _selector: this.resetAuctionDetails.selector
+        });
         DALib.DAProjectConfig
             storage _auctionProjectConfig = _auctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
-        // reset to initial values
-        _auctionProjectConfig.timestampStart = 0;
-        _auctionProjectConfig.timestampEnd = 0;
-        _auctionProjectConfig.startPrice = 0;
-        _auctionProjectConfig.basePrice = 0;
+
+        DALib.resetAuctionDetailsExp(_auctionProjectConfig);
 
         emit ResetAuctionDetails(_projectId, _coreContract);
     }
@@ -320,16 +283,7 @@ contract MinterDALinV5 is
     function projectAuctionParameters(
         uint256 _projectId,
         address _coreContract
-    )
-        external
-        view
-        returns (
-            uint256 timestampStart,
-            uint256 timestampEnd,
-            uint256 startPrice,
-            uint256 basePrice
-        )
-    {
+    ) external view returns (uint256, uint256, uint256, uint256) {
         DALib.DAProjectConfig
             storage _auctionProjectConfig = _auctionProjectConfigMapping[
                 _coreContract
@@ -521,7 +475,11 @@ contract MinterDALinV5 is
         uint256 _projectId,
         address _coreContract
     ) public {
-        _onlyArtist(_projectId, _coreContract);
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
 
         uint256 maxInvocations = MaxInvocationsLib
             .syncProjectMaxInvocationsToCore(

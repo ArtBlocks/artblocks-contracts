@@ -106,41 +106,6 @@ contract MinterDALinV5 is
     // STATE VARIABLES FOR TokenHolderLib end here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    // MODIFIERS
-    /**
-     * @dev Throws if called by any account other than the artist of the specified project.
-     * Requirements: `msg.sender` must be the artist associated with `_projectId`.
-     * @param _projectId The ID of the project being checked.
-     * @param _coreContract The address of the GenArt721CoreContractV3_Base contract.
-     */
-    function _onlyArtist(
-        uint256 _projectId,
-        address _coreContract
-    ) internal view {
-        require(
-            msg.sender ==
-                IGenArt721CoreContractV3_Base(_coreContract)
-                    .projectIdToArtistAddress(_projectId),
-            "Only Artist"
-        );
-    }
-
-    // function to restrict access to only AdminACL allowed calls
-    // @dev defers which ACL contract is used to the core contract
-    function _onlyCoreAdminACL(
-        address _coreContract,
-        bytes4 _selector
-    ) internal {
-        require(
-            IGenArt721CoreContractV3_Base(_coreContract).adminACLAllowed(
-                msg.sender,
-                address(this),
-                _selector
-            ),
-            "Only Core AdminACL allowed"
-        );
-    }
-
     /**
      * @notice Initializes contract to be a Filtered Minter for
      * `_minterFilter` minter filter.
@@ -178,7 +143,11 @@ contract MinterDALinV5 is
         address _coreContract,
         uint24 _maxInvocations
     ) external {
-        _onlyArtist(_projectId, _coreContract);
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
         MaxInvocationsLib.manuallyLimitProjectMaxInvocations(
             _projectId,
             _coreContract,
@@ -214,7 +183,11 @@ contract MinterDALinV5 is
         address[] memory _ownedNFTAddresses,
         uint256[] memory _ownedNFTProjectIds
     ) external {
-        _onlyArtist(_projectId, _coreContract);
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
         TokenHolderLib.allowHoldersOfProjects(
             _allowedProjectHoldersMapping[_coreContract][_projectId],
             _ownedNFTAddresses,
@@ -251,7 +224,11 @@ contract MinterDALinV5 is
         address[] memory _ownedNFTAddresses,
         uint256[] memory _ownedNFTProjectIds
     ) external {
-        _onlyArtist(_projectId, _coreContract);
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
         // require same length arrays
         TokenHolderLib.removeHoldersOfProjects(
             _allowedProjectHoldersMapping[_coreContract][_projectId],
@@ -306,7 +283,11 @@ contract MinterDALinV5 is
         address[] memory _ownedNFTAddressesRemove,
         uint256[] memory _ownedNFTProjectIdsRemove
     ) external {
-        _onlyArtist(_projectId, _coreContract);
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
         TokenHolderLib.allowAndRemoveHoldersOfProjects(
             _allowedProjectHoldersMapping[_coreContract][_projectId],
             _ownedNFTAddressesAdd,
@@ -348,7 +329,11 @@ contract MinterDALinV5 is
         uint256 _startPrice,
         uint256 _basePrice
     ) external {
-        _onlyArtist(_projectId, _coreContract);
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
         // CHECKS
         DALib.DAProjectConfig
             storage _auctionProjectConfig = _auctionProjectConfigMapping[
@@ -429,7 +414,12 @@ contract MinterDALinV5 is
         uint256 _projectId,
         address _coreContract
     ) external {
-        _onlyCoreAdminACL(_coreContract, this.resetAuctionDetails.selector);
+        AuthLib.onlyCoreAdminACL({
+            _coreContract: _coreContract,
+            _sender: msg.sender,
+            _contract: address(this),
+            _selector: this.resetAuctionDetails.selector
+        });
         DALib.DAProjectConfig
             storage _auctionProjectConfig = _auctionProjectConfigMapping[
                 _coreContract
@@ -798,7 +788,11 @@ contract MinterDALinV5 is
         uint256 _projectId,
         address _coreContract
     ) public {
-        _onlyArtist(_projectId, _coreContract);
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
 
         uint256 maxInvocations = MaxInvocationsLib
             .syncProjectMaxInvocationsToCore(
