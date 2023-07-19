@@ -3,28 +3,12 @@
 
 import "../../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
 import "../../../interfaces/v0.8.x/IGenArt721CoreContractExposesHashSeed.sol";
+import "../../../interfaces/v0.8.x/IGenArt721CoreContractV3WithSharedRandomizer.sol";
 import "../../../interfaces/v0.8.x/ISharedRandomizerV0.sol";
 
 import "@openzeppelin-4.7/contracts/token/ERC20/IERC20.sol";
 
 pragma solidity ^0.8.0;
-
-/**
- * @title Core contract interface for accessing the randomizer from the minter
- * @notice This interface provides the minter with access to the shared
- * randomizer, allowing the token hash seed for a newly-minted token to be
- * assigned by the minter if the artist has enabled the project as a polyptych.
- * Polytptych projects must use the V3 core contract, this polyptych minter,
- * and a shared randomizer - this interface allows the minter to access the
- * randomizer.
- */
-interface IGenArt721CoreContractV3WithSharedRandomizer is
-    IGenArt721CoreContractV3_Base,
-    IGenArt721CoreContractExposesHashSeed
-{
-    /// current randomizer contract, that we cast as a shared randomizer
-    function randomizerContract() external returns (ISharedRandomizerV0);
-}
 
 /**
  * @title Art Blocks Polyptych Minter Library
@@ -126,6 +110,15 @@ library PolyptychLib {
         );
     }
 
+    /**
+     * Gets token hash seed from core contract.
+     * Note that this function assumes the core contract conforms to
+     * `IGenArt721CoreContractExposesHashSeed`, which early versions of V3
+     * core contracts do not. If a contract does not conform to this interface,
+     * this function will revert.
+     * @param _coreContract Core contract address
+     * @param _tokenId Token ID to query hash seed for
+     */
     function getTokenHashSeed(
         address _coreContract,
         uint256 _tokenId
@@ -135,12 +128,25 @@ library PolyptychLib {
                 .tokenIdToHashSeed(_tokenId);
     }
 
+    /**
+     * Gets the current polyptych panel ID from polyptych project config.
+     * Polyptych panel ID is an incremented value that is used to track the
+     * current panel of a polyptych project.
+     * @param _polyptychProjectConfig Polyptych project config struct to query
+     */
     function getPolyptychPanelId(
         PolyptychProjectConfig storage _polyptychProjectConfig
     ) internal view returns (uint256) {
         return _polyptychProjectConfig.polyptychPanelId;
     }
 
+    /**
+     * Gets if a polyptych panel has already been minted for a given panel ID
+     * and hash seed.
+     * @param _polyptychProjectConfig Polyptych project config struct to query
+     * @param _panelId Polyptych panel ID to query
+     * @param _hashSeed Hash seed of panel to query
+     */
     function getPolyptychPanelHashSeedIsMinted(
         PolyptychProjectConfig storage _polyptychProjectConfig,
         uint256 _panelId,
