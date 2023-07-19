@@ -474,6 +474,45 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
     }
 
     /**
+     * @notice Settles any complete auction for token `_settleTokenId` (if
+     * applicable), then attempts to create a bid for token
+     * `_bidTokenId` with bid amount and bidder address equal to
+     * `msg.value` and `msg.sender`, respectively.
+     * Intended to gracefully handle the case where a user is front-run by
+     * one or more transactions to settle and/or initialize a new auction,
+     * potentially still placing a bid on the auction for the token ID if the
+     * bid value is sufficiently higher than the current highest bid.
+     * Note that the use of `_bidTokenId` is to prevent the possibility of
+     * transactions that are stuck in the pending pool for long periods of time
+     * from unintentionally bidding on auctions for future tokens.
+     * Note that calls to `settleAuction` and `createBid` are possible
+     * to be called in separate transactions, but this function is provided for
+     * convenience and executes both of those functions in a single
+     * transaction, while handling front-running as gracefully as possible.
+     * @param _settleTokenId Token ID to settle auction for.
+     * @param _bidTokenId Token ID to bid on.
+     * @param _coreContract Core contract address for the given project.
+     * @dev this function is not non-reentrant, but the underlying calls are
+     * to non-reentrant functions.
+     */
+    function settleAuctionAndCreateBid(
+        uint256 _settleTokenId,
+        uint256 _bidTokenId,
+        address _coreContract
+    ) external payable {
+        // ensure tokens are in the same project
+        require(
+            ABHelpers.tokenIdToProjectId(_settleTokenId) ==
+                ABHelpers.tokenIdToProjectId(_bidTokenId),
+            "Only tokens in same project"
+        );
+        // settle completed auction, if applicable
+        settleAuction(_settleTokenId, _coreContract);
+        // attempt to bid on next token
+        createBid(_bidTokenId, _coreContract);
+    }
+
+    /**
      * @notice Inactive function - see `createBid` or
      * `settleAuctionAndCreateBid`
      */
@@ -739,45 +778,6 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         // currency is always ETH
         currencySymbol = "ETH";
         currencyAddress = address(0);
-    }
-
-    /**
-     * @notice Settles any complete auction for token `_settleTokenId` (if
-     * applicable), then attempts to create a bid for token
-     * `_bidTokenId` with bid amount and bidder address equal to
-     * `msg.value` and `msg.sender`, respectively.
-     * Intended to gracefully handle the case where a user is front-run by
-     * one or more transactions to settle and/or initialize a new auction,
-     * potentially still placing a bid on the auction for the token ID if the
-     * bid value is sufficiently higher than the current highest bid.
-     * Note that the use of `_bidTokenId` is to prevent the possibility of
-     * transactions that are stuck in the pending pool for long periods of time
-     * from unintentionally bidding on auctions for future tokens.
-     * Note that calls to `settleAuction` and `createBid` are possible
-     * to be called in separate transactions, but this function is provided for
-     * convenience and executes both of those functions in a single
-     * transaction, while handling front-running as gracefully as possible.
-     * @param _settleTokenId Token ID to settle auction for.
-     * @param _bidTokenId Token ID to bid on.
-     * @param _coreContract Core contract address for the given project.
-     * @dev this function is not non-reentrant, but the underlying calls are
-     * to non-reentrant functions.
-     */
-    function settleAuctionAndCreateBid(
-        uint256 _settleTokenId,
-        uint256 _bidTokenId,
-        address _coreContract
-    ) external payable {
-        // ensure tokens are in the same project
-        require(
-            ABHelpers.tokenIdToProjectId(_settleTokenId) ==
-                ABHelpers.tokenIdToProjectId(_bidTokenId),
-            "Only tokens in same project"
-        );
-        // settle completed auction, if applicable
-        settleAuction(_settleTokenId, _coreContract);
-        // attempt to bid on next token
-        createBid(_bidTokenId, _coreContract);
     }
 
     /**
