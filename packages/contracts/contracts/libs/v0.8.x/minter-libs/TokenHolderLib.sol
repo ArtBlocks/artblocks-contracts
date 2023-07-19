@@ -2,6 +2,7 @@
 // Created By: Art Blocks Inc.
 
 import "@openzeppelin-4.5/contracts/utils/structs/EnumerableSet.sol";
+import "@openzeppelin-4.7/contracts/token/ERC721/IERC721.sol";
 
 pragma solidity ^0.8.0;
 
@@ -110,6 +111,25 @@ library TokenHolderLib {
             _ownedNFTAddressesRemove,
             _ownedNFTProjectIdsRemove
         );
+    }
+
+    /**
+     * @notice Verify that an NFT is owned by the target owner.
+     * Reverts if target owner is not the owner of the NFT.
+     * @dev Considered an interaction because calling ownerOf on an NFT
+     * contract. Plan is to only integrate with AB/PBAB NFTs on the minter, but
+     * in case other NFTs are registered, better to check here. Also,
+     * function is non-reentrant, so this is extra cautious.
+     */
+    function validateNFTOwnership(
+        address _ownedNFTAddress,
+        uint256 _ownedNFTTokenId,
+        address _targetOwner
+    ) internal view {
+        address actualNFTOwner = IERC721(_ownedNFTAddress).ownerOf(
+            _ownedNFTTokenId
+        );
+        require(actualNFTOwner == _targetOwner, "Only owner of NFT");
     }
 
     /**

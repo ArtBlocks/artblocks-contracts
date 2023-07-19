@@ -11,8 +11,11 @@ import { ethers } from "hardhat";
 import { revertMessages } from "../../constants";
 import { expect } from "chai";
 import { expectRevert } from "@openzeppelin/test-helpers";
+import { Logger } from "@ethersproject/logger";
+// hide nuisance logs about event overloading
+Logger.setLogLevel(Logger.levels.ERROR);
 
-const TARGET_MINTER_NAME = "MinterSetPriceHolderV5";
+const TARGET_MINTER_NAME = "MinterSetPricePolyptychERC20V5";
 const TARGET_MINTER_VERSION = "v5.0.0";
 
 const runForEach = [
@@ -31,7 +34,7 @@ const runForEach = [
 ];
 
 runForEach.forEach((params) => {
-  describe(`MinterSetPriceHolder Configure w/ core ${params.core}`, async function () {
+  describe(`${TARGET_MINTER_NAME} Configure w/ core ${params.core}`, async function () {
     async function _beforeEach() {
       // load minter filter V2 fixture
       const config = await loadFixture(setupConfigWitMinterFilterV2Suite);
@@ -171,6 +174,43 @@ runForEach.forEach((params) => {
           [config.projectZero]
         );
 
+      // set randomizer's hash seed setter contract
+      await config.randomizer
+        .connect(config.accounts.artist)
+        .setHashSeedSetterContract(
+          config.genArt721Core.address,
+          config.projectZero,
+          config.minter.address
+        );
+      // toggle project zero to be polyptych
+      await config.randomizer
+        .connect(config.accounts.artist)
+        .toggleProjectIsPolyptych(
+          config.genArt721Core.address,
+          config.projectZero
+        );
+
+      // deploy ERC20 token, sending 100e18 tokens to artist
+      const ERC20Factory = await ethers.getContractFactory("ERC20Mock");
+      config.ERC20 = await ERC20Factory.connect(config.accounts.artist).deploy(
+        ethers.utils.parseEther("100")
+      );
+      // artist approve the minter for effectively infinite tokens to simplify tests
+      await config.ERC20.connect(config.accounts.artist).approve(
+        config.minter.address,
+        ethers.utils.parseEther("100")
+      );
+
+      // update currency for project zero
+      await config.minter
+        .connect(config.accounts.artist)
+        .updateProjectCurrencyInfo(
+          config.projectZero,
+          config.genArt721Core.address,
+          "ERC20",
+          config.ERC20.address
+        );
+
       return config;
     }
 
@@ -190,18 +230,29 @@ runForEach.forEach((params) => {
             config.higherPricePerTokenInWei
           );
         // can purchase token at higher price
+        await config.ERC20.connect(config.accounts.artist).approve(
+          config.minter.address,
+          config.higherPricePerTokenInWei
+        );
         await config.minter
           .connect(config.accounts.artist)
           ["purchase(uint256,address,address,uint256)"](
             config.projectZero,
             config.genArt721Core.address,
             config.genArt721Core.address,
-            config.projectZeroTokenZero.toNumber(),
-            {
-              value: config.higherPricePerTokenInWei,
-            }
+            config.projectZeroTokenZero.toNumber()
           );
         // cannot purchase token at lower price
+        await config.minter
+          .connect(config.accounts.artist)
+          .incrementPolyptychProjectPanelId(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        await config.ERC20.connect(config.accounts.artist).approve(
+          config.minter.address,
+          config.pricePerTokenInWei
+        );
         await expectRevert(
           config.minter
             .connect(config.accounts.artist)
@@ -209,12 +260,9 @@ runForEach.forEach((params) => {
               config.projectZero,
               config.genArt721Core.address,
               config.genArt721Core.address,
-              config.projectZeroTokenZero.toNumber(),
-              {
-                value: config.pricePerTokenInWei,
-              }
+              config.projectZeroTokenZero.toNumber()
             ),
-          revertMessages.needMoreValue
+          revertMessages.needMoreAllowance
         );
       });
 
@@ -229,7 +277,7 @@ runForEach.forEach((params) => {
             config.pricePerTokenInWei
           );
 
-        // artist increases price of project one
+        // artist increases price of project one, configure polyptych
         await config.minter
           .connect(config.accounts.artist)
           .updatePricePerTokenInWei(
@@ -237,7 +285,40 @@ runForEach.forEach((params) => {
             config.genArt721Core.address,
             config.higherPricePerTokenInWei
           );
+        await config.minter
+          .connect(config.accounts.artist)
+          .allowHoldersOfProjects(
+            config.projectOne,
+            config.genArt721Core.address,
+            [config.genArt721Core.address],
+            [config.projectZero]
+          );
+        await config.minter
+          .connect(config.accounts.artist)
+          .updateProjectCurrencyInfo(
+            config.projectOne,
+            config.genArt721Core.address,
+            "ERC20",
+            config.ERC20.address
+          );
+        await config.randomizer
+          .connect(config.accounts.artist)
+          .setHashSeedSetterContract(
+            config.genArt721Core.address,
+            config.projectOne,
+            config.minter.address
+          );
+        await config.randomizer
+          .connect(config.accounts.artist)
+          .toggleProjectIsPolyptych(
+            config.genArt721Core.address,
+            config.projectOne
+          );
         // cannot purchase project one token at lower price
+        await config.ERC20.connect(config.accounts.artist).approve(
+          config.minter.address,
+          config.pricePerTokenInWei
+        );
         await expectRevert(
           config.minter
             .connect(config.accounts.artist)
@@ -245,12 +326,9 @@ runForEach.forEach((params) => {
               config.projectOne,
               config.genArt721Core.address,
               config.genArt721Core.address,
-              config.projectZeroTokenZero.toNumber(),
-              {
-                value: config.pricePerTokenInWei,
-              }
+              config.projectZeroTokenZero.toNumber()
             ),
-          revertMessages.needMoreValue
+          revertMessages.needMoreAllowance
         );
         // can purchase project two token at lower price
         await config.minter
@@ -259,10 +337,7 @@ runForEach.forEach((params) => {
             config.projectZero,
             config.genArt721Core.address,
             config.genArt721Core.address,
-            config.projectZeroTokenZero.toNumber(),
-            {
-              value: config.pricePerTokenInWei,
-            }
+            config.projectZeroTokenZero.toNumber()
           );
       });
     });
@@ -301,10 +376,7 @@ runForEach.forEach((params) => {
             config.projectZero,
             config.genArt721Core.address,
             config.genArt721Core.address,
-            config.projectZeroTokenZero.toNumber(),
-            {
-              value: config.pricePerTokenInWei,
-            }
+            config.projectZeroTokenZero.toNumber()
           );
 
         // expect projectMaxHasBeenInvoked to be true
@@ -374,10 +446,7 @@ runForEach.forEach((params) => {
             config.projectZero,
             config.genArt721Core.address,
             config.genArt721Core.address,
-            config.projectZeroTokenZero.toNumber(),
-            {
-              value: config.pricePerTokenInWei,
-            }
+            config.projectZeroTokenZero.toNumber()
           );
 
         // expect projectMaxHasBeenInvoked to be true
@@ -589,6 +658,101 @@ runForEach.forEach((params) => {
             [config.genArt721Core.address],
             [config.projectOne]
           );
+      });
+    });
+
+    describe("PolyptychLib: validatePolyptychEffects", async function () {
+      it("only allows one panel per frame", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
+        // can purchase first token
+        await config.minter
+          .connect(config.accounts.artist)
+          ["purchase(uint256,address,address,uint256)"](
+            config.projectZero,
+            config.genArt721Core.address,
+            config.genArt721Core.address,
+            config.projectZeroTokenZero.toNumber()
+          );
+        // cannot purchase second token before incrementing panel
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            ["purchase(uint256,address,address,uint256)"](
+              config.projectZero,
+              config.genArt721Core.address,
+              config.genArt721Core.address,
+              config.projectZeroTokenZero.toNumber()
+            ),
+          revertMessages.panelAlreadyMinted
+        );
+        // increment polyptych panel
+        await config.minter
+          .connect(config.accounts.artist)
+          .incrementPolyptychProjectPanelId(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        // can purchase second token after incrementing panel
+        await config.minter
+          .connect(config.accounts.artist)
+          ["purchase(uint256,address,address,uint256)"](
+            config.projectZero,
+            config.genArt721Core.address,
+            config.genArt721Core.address,
+            config.projectZeroTokenZero.toNumber()
+          );
+        // cannot purchase a third token using token one, because frame is one
+        // per hash, not one per token
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            ["purchase(uint256,address,address,uint256)"](
+              config.projectZero,
+              config.genArt721Core.address,
+              config.genArt721Core.address,
+              config.projectZeroTokenOne.toNumber()
+            ),
+          revertMessages.panelAlreadyMinted
+        );
+      });
+    });
+
+    describe("PolyptychLib: validateAssignedHashSeed", async function () {
+      it("assigns appropriate hash seed", async function () {
+        const config = await loadFixture(_beforeEach);
+        // induce incorrect hash seed by toggling project as NOT polyptych on randomizer
+        await config.randomizer
+          .connect(config.accounts.artist)
+          .toggleProjectIsPolyptych(
+            config.genArt721Core.address,
+            config.projectZero
+          );
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
+        // purchase reverts due to unexpected token hash seed assignment
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            ["purchase(uint256,address,address,uint256)"](
+              config.projectZero,
+              config.genArt721Core.address,
+              config.genArt721Core.address,
+              config.projectZeroTokenZero.toNumber()
+            ),
+          revertMessages.unexpectedHashSeed
+        );
       });
     });
   });

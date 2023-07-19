@@ -79,6 +79,7 @@ export type T_Config = {
   adminACL?: Contract;
   minterFilterAdminACL?: Contract;
   coreRegistry?: Contract;
+  minterSetPrice?: Contract;
   // minter test details
   isEngine?: boolean;
   delegationRegistry?: Contract;
@@ -357,7 +358,7 @@ export async function deployCore(
   coreContractName: string,
   CoreRegistryV1: Contract,
   useAdminACLWithEvents: boolean = false,
-  _randomizerName: string = "BasicRandomizerV2",
+  _randomizerName: string = "SharedRandomizerV0",
   _adminACLContractName?: string
 ): Promise<CoreWithoutMinterSuite> {
   let randomizer, genArt721Core, adminACL;
