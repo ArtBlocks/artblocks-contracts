@@ -868,5 +868,220 @@ runForEach.forEach((params) => {
         });
       });
     });
+
+    describe("settleAuction", async function () {
+      it("reverts if auction not initialized", async function () {
+        const config = await loadFixture(_beforeEach);
+        const targetToken = BigNumber.from(
+          config.projectZeroTokenZero.toString()
+        );
+        // expect revert when auction not initialized
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .settleAuction(targetToken, config.genArt721Core.address),
+          revertMessages.auctionNotInitialized
+        );
+      });
+
+      it("returns early when auction is for a different token ID", async function () {
+        const config = await loadFixture(_beforeEach);
+        const targetToken = BigNumber.from(
+          config.projectZeroTokenOne.toString() // different token ID
+        );
+        await config.minter
+          .connect(config.accounts.artist)
+          .configureFutureAuctions(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.startTime,
+            config.defaultAuctionLengthSeconds,
+            config.basePrice,
+            config.bidIncrementPercentage
+          );
+        await initializeProjectZeroTokenZeroAuction(config);
+        // expect early return when auction is for a different token ID
+        await config.minter
+          .connect(config.accounts.user)
+          .settleAuction(targetToken, config.genArt721Core.address);
+        // verify auction is not settled
+        const seaProjectConfig =
+          await config.minter.SEAProjectConfigurationDetails(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        expect(seaProjectConfig.activeAuction.settled).to.be.false;
+      });
+
+      it("returns early when auction is already settled", async function () {
+        const config = await loadFixture(_beforeEach);
+        const targetToken = BigNumber.from(
+          config.projectZeroTokenZero.toString()
+        );
+        await config.minter
+          .connect(config.accounts.artist)
+          .configureFutureAuctions(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.startTime,
+            config.defaultAuctionLengthSeconds,
+            config.basePrice,
+            config.bidIncrementPercentage
+          );
+        await initializeProjectZeroTokenZeroAuctionAndSettle(config);
+        // expect early return when auction is already settled (no revert)
+        await config.minter
+          .connect(config.accounts.user)
+          .settleAuction(targetToken, config.genArt721Core.address);
+      });
+
+      it("reverts if auction not ended", async function () {
+        const config = await loadFixture(_beforeEach);
+        const targetToken = BigNumber.from(
+          config.projectZeroTokenZero.toString()
+        );
+        await config.minter
+          .connect(config.accounts.artist)
+          .configureFutureAuctions(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.startTime,
+            config.defaultAuctionLengthSeconds,
+            config.basePrice,
+            config.bidIncrementPercentage
+          );
+        await initializeProjectZeroTokenZeroAuction(config);
+        // expect revert when auction not ended
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .settleAuction(targetToken, config.genArt721Core.address),
+          revertMessages.auctionNotEnded
+        );
+      });
+
+      it("updates state", async function () {
+        const config = await loadFixture(_beforeEach);
+        const targetToken = BigNumber.from(
+          config.projectZeroTokenZero.toString()
+        );
+        await config.minter
+          .connect(config.accounts.artist)
+          .configureFutureAuctions(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.startTime,
+            config.defaultAuctionLengthSeconds,
+            config.basePrice,
+            config.bidIncrementPercentage
+          );
+        await initializeProjectZeroTokenZeroAuctionAndAdvanceToEnd(config);
+        // verify/record initial state
+        const initialMinterBalance = await ethers.provider.getBalance(
+          config.minter.address
+        );
+        const initialSeaProjectConfig =
+          await config.minter.SEAProjectConfigurationDetails(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        expect(initialSeaProjectConfig.activeAuction.settled).to.be.false;
+
+        // perform action
+        await config.minter
+          .connect(config.accounts.user)
+          .settleAuction(targetToken, config.genArt721Core.address);
+        // validate state update
+        const minterBalance = await ethers.provider.getBalance(
+          config.minter.address
+        );
+        expect(minterBalance).to.equal(
+          initialMinterBalance.sub(config.basePrice)
+        );
+        const seaProjectConfig =
+          await config.minter.SEAProjectConfigurationDetails(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        expect(seaProjectConfig.activeAuction.settled).to.be.true;
+        const ownerOfTargetToken = await config.genArt721Core.ownerOf(
+          targetToken
+        );
+        expect(ownerOfTargetToken).to.equal(config.accounts.user.address);
+      });
+    });
+
+    describe("settleAuctionAndCreateBid", async function () {
+      // @dev individual calls to settleAuction and createBid are tested
+      // in their respective describe blocks
+      it("reverts if settle and bid token are not in same project", async function () {
+        const config = await loadFixture(_beforeEach);
+        const settleTokenId = BigNumber.from(
+          config.projectZeroTokenOne.toString()
+        );
+        const bidTokenId = BigNumber.from(
+          config.projectOneTokenZero.toString() // different project
+        );
+        // expect revert when tokens arent in same project
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .settleAuctionAndCreateBid(
+              settleTokenId,
+              bidTokenId,
+              config.genArt721Core.address,
+              {
+                value: config.basePrice,
+              }
+            ),
+          revertMessages.onlySameProject
+        );
+      });
+
+      it("settles and bids on correct auction", async function () {
+        const config = await loadFixture(_beforeEach);
+        const settleTokenId = BigNumber.from(
+          config.projectZeroTokenZero.toString()
+        );
+        const bidTokenId = BigNumber.from(
+          config.projectZeroTokenOne.toString() // different project
+        );
+        await config.minter
+          .connect(config.accounts.artist)
+          .configureFutureAuctions(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.startTime,
+            config.defaultAuctionLengthSeconds,
+            config.basePrice,
+            config.bidIncrementPercentage
+          );
+        await initializeProjectZeroTokenZeroAuctionAndAdvanceToEnd(config);
+        // expect settle and bid to succeed, indicating successful routing of
+        // input args
+        await config.minter
+          .connect(config.accounts.user2)
+          .settleAuctionAndCreateBid(
+            settleTokenId,
+            bidTokenId,
+            config.genArt721Core.address,
+            {
+              value: config.basePrice,
+            }
+          );
+        // verify that settle and bid were successful
+        const seaProjectConfig =
+          await config.minter.SEAProjectConfigurationDetails(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        // new active auction for token one should not be settled
+        expect(seaProjectConfig.activeAuction.settled).to.be.false;
+        // new active auction for token one should have correct token ID
+        expect(seaProjectConfig.activeAuction.tokenId).to.equal(
+          bidTokenId.toNumber()
+        );
+      });
+    });
   });
 });

@@ -55,4 +55,7 @@ export const revertMessages = {
   tokenNotBeingAuctioned: "Token ID does not match auction",
   auctionAlreadyEnded: "Auction already ended",
   bidTooLow: "Bid is too low",
+  auctionNotInitialized: "Auction not initialized",
+  auctionNotEnded: "Auction not yet ended",
+  onlySameProject: "Only tokens in same project",
 };
