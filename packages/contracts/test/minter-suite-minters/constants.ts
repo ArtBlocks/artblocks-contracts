@@ -45,4 +45,6 @@ export const revertMessages = {
   inactiveFunction: "Inactive function",
   onlyFutureAuctionsOrZero: "Only future start times or 0",
   auctionTooShort: "Auction duration below minimum",
+  onlyUnconfiguredProjects: "Only unconfigured projects",
+  noNextToken: "No next token",
 };

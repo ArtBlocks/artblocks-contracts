@@ -109,7 +109,7 @@ library AuthLib {
                     _contract: _contract,
                     _selector: _selector
                 }),
-            "Only Artist or Admin ACL"
+            "Only Artist or Core Admin ACL"
         );
     }
 

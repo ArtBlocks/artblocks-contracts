@@ -7,7 +7,8 @@ import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../util/constants";
 import { ethers } from "hardhat";
 import { revertMessages } from "../../constants";
 import { Logger } from "@ethersproject/logger";
-import { constants } from "ethers";
+import { BigNumber, constants } from "ethers";
+import { genArt721CoreV0Sol } from "../../../../scripts/contracts/archive";
 // hide nuisance logs about event overloading
 Logger.setLogLevel(Logger.levels.ERROR);
 
@@ -421,6 +422,253 @@ runForEach.forEach((params) => {
         expect(seaProjectConfig.activeAuction.currentBidder).to.equal(
           constants.AddressZero
         );
+      });
+    });
+
+    describe("resetFutureAuctionDetails", async function () {
+      it("is callable by core admin", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
+          .configureFutureAuctions(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.startTime,
+            config.defaultAuctionLengthSeconds,
+            config.basePrice,
+            config.bidIncrementPercentage
+          );
+        await config.minter
+          .connect(config.accounts.deployer)
+          .resetFutureAuctionDetails(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+      });
+
+      it("is callable by artist", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
+          .configureFutureAuctions(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.startTime,
+            config.defaultAuctionLengthSeconds,
+            config.basePrice,
+            config.bidIncrementPercentage
+          );
+        await config.minter
+          .connect(config.accounts.artist)
+          .resetFutureAuctionDetails(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+      });
+
+      it("is not callable by user", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
+          .configureFutureAuctions(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.startTime,
+            config.defaultAuctionLengthSeconds,
+            config.basePrice,
+            config.bidIncrementPercentage
+          );
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .resetFutureAuctionDetails(
+              config.projectZero,
+              config.genArt721Core.address
+            ),
+          revertMessages.onlyCoreAdminACLOrArtist
+        );
+      });
+
+      it("updates state", async function () {
+        const config = await loadFixture(_beforeEach);
+        // perform actions
+        await config.minter
+          .connect(config.accounts.artist)
+          .configureFutureAuctions(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.startTime,
+            config.defaultAuctionLengthSeconds,
+            config.basePrice,
+            config.bidIncrementPercentage
+          );
+        await config.minter
+          .connect(config.accounts.artist)
+          .resetFutureAuctionDetails(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        // validate state update
+        const seaProjectConfig =
+          await config.minter.SEAProjectConfigurationDetails(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        expect(seaProjectConfig.timestampStart).to.equal(0);
+        expect(seaProjectConfig.auctionDurationSeconds).to.equal(0);
+        expect(seaProjectConfig.minBidIncrementPercentage).to.equal(0);
+        expect(seaProjectConfig.nextTokenNumber).to.equal(
+          config.projectZeroTokenZero.toNumber()
+        );
+        expect(seaProjectConfig.nextTokenNumberIsPopulated).to.equal(true);
+        expect(seaProjectConfig.basePrice).to.equal(0);
+        // current auction should remain uninitialized with current bidder as zero address
+        expect(seaProjectConfig.activeAuction.currentBidder).to.equal(
+          constants.AddressZero
+        );
+      });
+    });
+
+    describe("ejectNextTokenTo", async function () {
+      it("is not callable by artist", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
+          .configureFutureAuctions(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.startTime,
+            config.defaultAuctionLengthSeconds,
+            config.basePrice,
+            config.bidIncrementPercentage
+          );
+        await config.minter
+          .connect(config.accounts.artist)
+          .resetFutureAuctionDetails(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .ejectNextTokenTo(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.accounts.artist.address
+            ),
+          revertMessages.onlyCoreAdminACL
+        );
+      });
+
+      it("is callable by core admin", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
+          .configureFutureAuctions(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.startTime,
+            config.defaultAuctionLengthSeconds,
+            config.basePrice,
+            config.bidIncrementPercentage
+          );
+        await config.minter
+          .connect(config.accounts.artist)
+          .resetFutureAuctionDetails(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        await config.minter
+          .connect(config.accounts.deployer)
+          .ejectNextTokenTo(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.accounts.artist.address
+          );
+      });
+
+      it("does not eject when project is configured", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
+          .configureFutureAuctions(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.startTime,
+            config.defaultAuctionLengthSeconds,
+            config.basePrice,
+            config.bidIncrementPercentage
+          );
+        // project is configured, so eject should revert
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.deployer)
+            .ejectNextTokenTo(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.accounts.artist.address
+            ),
+          revertMessages.onlyUnconfiguredProjects
+        );
+      });
+
+      it("reverts when no next token", async function () {
+        const config = await loadFixture(_beforeEach);
+        // project is unconfigured, but has no next token
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.deployer)
+            .ejectNextTokenTo(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.accounts.artist.address
+            ),
+          revertMessages.noNextToken
+        );
+      });
+
+      it("updates state, performs NFT transfer", async function () {
+        const config = await loadFixture(_beforeEach);
+        // perform action
+        await config.minter
+          .connect(config.accounts.artist)
+          .configureFutureAuctions(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.startTime,
+            config.defaultAuctionLengthSeconds,
+            config.basePrice,
+            config.bidIncrementPercentage
+          );
+        await config.minter
+          .connect(config.accounts.artist)
+          .resetFutureAuctionDetails(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        await config.minter
+          .connect(config.accounts.deployer)
+          .ejectNextTokenTo(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.accounts.user.address
+          );
+        // validate effects
+        const seaProjectConfig =
+          await config.minter.SEAProjectConfigurationDetails(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        expect(seaProjectConfig.nextTokenNumber).to.equal(0);
+        expect(seaProjectConfig.nextTokenNumberIsPopulated).to.equal(false);
+        // user should be the owner of project zero token zero
+        const targetToken = BigNumber.from(
+          config.projectZeroTokenZero.toString()
+        );
+        const ejectedTokenOwner = await config.genArt721Core.ownerOf(
+          targetToken
+        );
+        expect(ejectedTokenOwner).to.equal(config.accounts.user.address);
       });
     });
   });
