@@ -3,8 +3,10 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { setupConfigWitMinterFilterV2Suite } from "../../../util/fixtures";
 import {
-  initializeProjectZeroTokenZeroAuctionAndAdvanceToEnd,
   advanceToAuctionStartTime,
+  initializeProjectZeroTokenZeroAuction,
+  initializeProjectZeroTokenZeroAuctionAndAdvanceToEnd,
+  initializeProjectZeroTokenZeroAuctionAndSettle,
 } from "./helpers";
 import { deployAndGet, deployCore, safeAddProject } from "../../../util/common";
 import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../util/constants";
@@ -742,7 +744,451 @@ runForEach.forEach((params) => {
         });
 
         it("requires next token is populated", async function () {
-          // TODO: encounter revert message: No next token, check max invocations
+          const config = await loadFixture(_beforeEach);
+          const targetToken = BigNumber.from(
+            config.projectZeroTokenZero.toString()
+          );
+          // set max invocations to 1 to hit max invocations quickly
+          await config.minter
+            .connect(config.accounts.artist)
+            .manuallyLimitProjectMaxInvocations(
+              config.projectZero,
+              config.genArt721Core.address,
+              1
+            );
+          await config.minter
+            .connect(config.accounts.artist)
+            .configureFutureAuctions(
+              config.projectZero,
+              config.genArt721Core.address,
+              0, // start at any time
+              config.defaultAuctionLengthSeconds,
+              config.basePrice,
+              config.bidIncrementPercentage
+            );
+          await initializeProjectZeroTokenZeroAuctionAndSettle(config);
+          // next token isn't populated, so we should revert
+          await expectRevert(
+            config.minter
+              .connect(config.accounts.user)
+              .createBid(targetToken, config.genArt721Core.address, {
+                value: config.basePrice,
+              }),
+            revertMessages.onlyNextTokenPopulated
+          );
+        });
+
+        it("requires correct token ID", async function () {
+          const config = await loadFixture(_beforeEach);
+          const targetToken = BigNumber.from(
+            config.projectZeroTokenOne.toString()
+          );
+          await config.minter
+            .connect(config.accounts.artist)
+            .configureFutureAuctions(
+              config.projectZero,
+              config.genArt721Core.address,
+              0, // start at any time
+              config.defaultAuctionLengthSeconds,
+              config.basePrice,
+              config.bidIncrementPercentage
+            );
+          // expect revert when incorrect token is passed
+          await expectRevert(
+            config.minter
+              .connect(config.accounts.user)
+              .createBid(targetToken.add(1), config.genArt721Core.address, {
+                value: config.basePrice,
+              }),
+            revertMessages.incorrectTokenId
+          );
+        });
+
+        it("updates state", async function () {
+          const config = await loadFixture(_beforeEach);
+          const targetToken = BigNumber.from(
+            config.projectZeroTokenZero.toString()
+          );
+          await config.minter
+            .connect(config.accounts.artist)
+            .configureFutureAuctions(
+              config.projectZero,
+              config.genArt721Core.address,
+              0, // start at any time
+              config.defaultAuctionLengthSeconds,
+              config.basePrice,
+              config.bidIncrementPercentage
+            );
+          // perform action
+          const tx = await config.minter
+            .connect(config.accounts.user)
+            .createBid(targetToken, config.genArt721Core.address, {
+              value: config.basePrice,
+            });
+          const receipt = tx.wait();
+          const auctionStartTimestamp = (
+            await config.accounts.deployer.provider.getBlock(
+              receipt.blockNumber
+            )
+          ).timestamp;
+          const expectedAuctionEndTimestamp =
+            auctionStartTimestamp + config.defaultAuctionLengthSeconds;
+          // validate state update
+          const seaProjectConfig =
+            await config.minter.SEAProjectConfigurationDetails(
+              config.projectZero,
+              config.genArt721Core.address
+            );
+          // auction parameters
+          expect(seaProjectConfig.activeAuction.tokenId).to.equal(
+            config.projectZeroTokenZero.toNumber()
+          );
+          expect(seaProjectConfig.activeAuction.currentBid).to.equal(
+            config.basePrice
+          );
+          expect(seaProjectConfig.activeAuction.currentBidder).to.equal(
+            config.accounts.user.address
+          );
+          expect(seaProjectConfig.activeAuction.endTime).to.equal(
+            expectedAuctionEndTimestamp
+          );
+          expect(
+            seaProjectConfig.activeAuction.minBidIncrementPercentage
+          ).to.equal(config.bidIncrementPercentage);
+          expect(seaProjectConfig.activeAuction.settled).to.be.false;
+          // project parameters
+          expect(seaProjectConfig.nextTokenNumberIsPopulated).to.be.true;
+          expect(seaProjectConfig.nextTokenNumber).to.equal(
+            config.projectZeroTokenOne.toNumber()
+          );
+        });
+
+        it("doesn't mint token to next slot if reached max invocations", async function () {
+          const config = await loadFixture(_beforeEach);
+          const targetToken = BigNumber.from(
+            config.projectZeroTokenZero.toString()
+          );
+          await config.minter
+            .connect(config.accounts.artist)
+            .manuallyLimitProjectMaxInvocations(
+              config.projectZero,
+              config.genArt721Core.address,
+              1
+            );
+          await config.minter
+            .connect(config.accounts.artist)
+            .configureFutureAuctions(
+              config.projectZero,
+              config.genArt721Core.address,
+              0, // start at any time
+              config.defaultAuctionLengthSeconds,
+              config.basePrice,
+              config.bidIncrementPercentage
+            );
+          // perform action
+          const tx = await config.minter
+            .connect(config.accounts.user)
+            .createBid(targetToken, config.genArt721Core.address, {
+              value: config.basePrice,
+            });
+          // validate state update
+          const seaProjectConfig =
+            await config.minter.SEAProjectConfigurationDetails(
+              config.projectZero,
+              config.genArt721Core.address
+            );
+          // verify next token is not populated
+          expect(seaProjectConfig.nextTokenNumberIsPopulated).to.be.false;
+        });
+      });
+
+      describe("places bid on existing auction (no initialization required)", async function () {
+        it("reverts if incorrect token ID", async function () {
+          const config = await loadFixture(_beforeEach);
+          const targetToken = BigNumber.from(
+            config.projectZeroTokenOne.toString()
+          );
+          await config.minter
+            .connect(config.accounts.artist)
+            .configureFutureAuctions(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.startTime,
+              config.defaultAuctionLengthSeconds,
+              config.basePrice,
+              config.bidIncrementPercentage
+            );
+          await initializeProjectZeroTokenZeroAuction(config);
+          // expect revert when incorrect token is passed
+          await expectRevert(
+            config.minter
+              .connect(config.accounts.user2)
+              .createBid(targetToken.add(1), config.genArt721Core.address, {
+                value: config.basePrice.mul(2),
+              }),
+            revertMessages.tokenNotBeingAuctioned
+          );
+        });
+
+        it("reverts if auction already ended", async function () {
+          const config = await loadFixture(_beforeEach);
+          const targetToken = BigNumber.from(
+            config.projectZeroTokenZero.toString()
+          );
+          await config.minter
+            .connect(config.accounts.artist)
+            .configureFutureAuctions(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.startTime,
+              config.defaultAuctionLengthSeconds,
+              config.basePrice,
+              config.bidIncrementPercentage
+            );
+          await initializeProjectZeroTokenZeroAuctionAndAdvanceToEnd(config);
+          // expect revert since auction has ended
+          await expectRevert(
+            config.minter
+              .connect(config.accounts.user2)
+              .createBid(targetToken, config.genArt721Core.address, {
+                value: config.basePrice.mul(2),
+              }),
+            revertMessages.auctionAlreadyEnded
+          );
+        });
+
+        it("reverts if bid is not sufficiently higher than current bid", async function () {
+          const config = await loadFixture(_beforeEach);
+          const targetToken = BigNumber.from(
+            config.projectZeroTokenZero.toString()
+          );
+          await config.minter
+            .connect(config.accounts.artist)
+            .configureFutureAuctions(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.startTime,
+              config.defaultAuctionLengthSeconds,
+              config.basePrice,
+              config.bidIncrementPercentage
+            );
+          await initializeProjectZeroTokenZeroAuction(config);
+          // expect revert since bid is not sufficiently higher than current bid
+          await expectRevert(
+            config.minter
+              .connect(config.accounts.user2)
+              .createBid(targetToken, config.genArt721Core.address, {
+                value: config.basePrice.add(1),
+              }),
+            revertMessages.bidTooLow
+          );
+        });
+
+        it("updates auction state (no auction extension required)", async function () {
+          const config = await loadFixture(_beforeEach);
+          const targetToken = BigNumber.from(
+            config.projectZeroTokenZero.toString()
+          );
+          await config.minter
+            .connect(config.accounts.artist)
+            .configureFutureAuctions(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.startTime,
+              config.defaultAuctionLengthSeconds,
+              config.basePrice,
+              config.bidIncrementPercentage
+            );
+          await initializeProjectZeroTokenZeroAuction(config);
+          // perform action
+          const initialSeaProjectConfig =
+            await config.minter.SEAProjectConfigurationDetails(
+              config.projectZero,
+              config.genArt721Core.address
+            );
+          const minNextBid = config.basePrice
+            .mul(
+              initialSeaProjectConfig.activeAuction.minBidIncrementPercentage
+            )
+            .div(100)
+            .add(config.basePrice);
+          await config.minter
+            .connect(config.accounts.user2)
+            .createBid(targetToken, config.genArt721Core.address, {
+              value: minNextBid,
+            });
+          // validate state update
+          const seaProjectConfig =
+            await config.minter.SEAProjectConfigurationDetails(
+              config.projectZero,
+              config.genArt721Core.address
+            );
+          // auction parameters
+          expect(seaProjectConfig.activeAuction.tokenId).to.equal(
+            config.projectZeroTokenZero.toNumber()
+          );
+          expect(seaProjectConfig.activeAuction.currentBid).to.equal(
+            minNextBid
+          );
+          expect(seaProjectConfig.activeAuction.currentBidder).to.equal(
+            config.accounts.user2.address
+          );
+          expect(seaProjectConfig.activeAuction.endTime).to.equal(
+            initialSeaProjectConfig.activeAuction.endTime // no extension
+          );
+        });
+
+        it("updates auction state (auction extension required)", async function () {
+          const config = await loadFixture(_beforeEach);
+          const targetToken = BigNumber.from(
+            config.projectZeroTokenZero.toString()
+          );
+          await config.minter
+            .connect(config.accounts.artist)
+            .configureFutureAuctions(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.startTime,
+              config.defaultAuctionLengthSeconds,
+              config.basePrice,
+              config.bidIncrementPercentage
+            );
+          await initializeProjectZeroTokenZeroAuction(config);
+          // extend to 5 seconds before end of auction (5 for some testing margin)
+          await ethers.provider.send("evm_mine", [
+            config.startTime + config.defaultAuctionLengthSeconds - 5,
+          ]);
+          // perform action
+          const initialSeaProjectConfig =
+            await config.minter.SEAProjectConfigurationDetails(
+              config.projectZero,
+              config.genArt721Core.address
+            );
+          const minNextBid = config.basePrice
+            .mul(
+              initialSeaProjectConfig.activeAuction.minBidIncrementPercentage
+            )
+            .div(100)
+            .add(config.basePrice);
+          const tx = await config.minter
+            .connect(config.accounts.user2)
+            .createBid(targetToken, config.genArt721Core.address, {
+              value: minNextBid,
+            });
+          const receipt = tx.wait();
+          const bidTimestamp = (
+            await config.accounts.deployer.provider.getBlock(
+              receipt.blockNumber
+            )
+          ).timestamp;
+          // validate state update
+          const seaProjectConfig =
+            await config.minter.SEAProjectConfigurationDetails(
+              config.projectZero,
+              config.genArt721Core.address
+            );
+          // auction parameters
+          expect(seaProjectConfig.activeAuction.tokenId).to.equal(
+            config.projectZeroTokenZero.toNumber()
+          );
+          expect(seaProjectConfig.activeAuction.currentBid).to.equal(
+            minNextBid
+          );
+          expect(seaProjectConfig.activeAuction.currentBidder).to.equal(
+            config.accounts.user2.address
+          );
+          // new end time is gt initial end time
+          expect(seaProjectConfig.activeAuction.endTime).to.be.gt(
+            initialSeaProjectConfig.activeAuction.endTime
+          );
+          // auction was extended appropriate amount
+          const minterConfigurationDetails =
+            await config.minter.minterConfigurationDetails();
+          expect(seaProjectConfig.activeAuction.endTime).to.equal(
+            bidTimestamp + minterConfigurationDetails.minterTimeBufferSeconds_
+          );
+        });
+
+        it("refunds previous bidder (no force transfer)", async function () {
+          const config = await loadFixture(_beforeEach);
+          const targetToken = BigNumber.from(
+            config.projectZeroTokenZero.toString()
+          );
+          await config.minter
+            .connect(config.accounts.artist)
+            .configureFutureAuctions(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.startTime,
+              config.defaultAuctionLengthSeconds,
+              config.basePrice,
+              config.bidIncrementPercentage
+            );
+          await initializeProjectZeroTokenZeroAuction(config);
+          // record initial bidder's balance
+          const initialBalance = await config.accounts.user.getBalance();
+          // second bidder places bid, initiating refund to original bidder
+          await config.minter
+            .connect(config.accounts.user2)
+            .createBid(targetToken, config.genArt721Core.address, {
+              value: config.basePrice.mul(2),
+            });
+          // validate refund
+          const finalBalance = await config.accounts.user.getBalance();
+          expect(finalBalance).to.equal(initialBalance.add(config.basePrice));
+        });
+
+        it("refunds previous bidder (fallback force transfer)", async function () {
+          const config = await loadFixture(_beforeEach);
+          const targetToken = BigNumber.from(
+            config.projectZeroTokenZero.toString()
+          );
+          const deadReceiverBidder = await deployAndGet(
+            config,
+            "DeadReceiverBidderMock",
+            []
+          );
+          await config.minter
+            .connect(config.accounts.artist)
+            .configureFutureAuctions(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.startTime,
+              config.defaultAuctionLengthSeconds,
+              config.basePrice,
+              config.bidIncrementPercentage
+            );
+          await initializeProjectZeroTokenZeroAuction(config);
+          // place bid with dead receiver mock
+          const bid2Value = config.basePrice.mul(11).div(10);
+          await deadReceiverBidder
+            .connect(config.accounts.user2)
+            .createBidOnAuctionSharedMinter(
+              config.minter.address,
+              targetToken,
+              config.genArt721Core.address,
+              {
+                value: bid2Value,
+              }
+            );
+          // verify that the dead receiver mock received the funds as ETH fallback
+          // when they are outbid
+          const deadReceiverBalanceBefore = await ethers.provider.getBalance(
+            deadReceiverBidder.address
+          );
+          const Bid3Value = bid2Value.mul(11).div(10);
+          await config.minter
+            .connect(config.accounts.user)
+            .createBid(targetToken, config.genArt721Core.address, {
+              value: Bid3Value,
+            });
+          const deadReceiverBalanceAfter = await ethers.provider.getBalance(
+            deadReceiverBidder.address
+          );
+          // change in balance should be equal to bid2Value
+          expect(deadReceiverBalanceAfter).to.equal(
+            deadReceiverBalanceBefore.add(bid2Value)
+          );
         });
       });
     });

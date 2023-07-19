@@ -20,4 +20,19 @@ contract DeadReceiverBidderMock is DeadReceiverMock {
         );
         require(success, "DeadReceiverBidderMock: call failed");
     }
+
+    function createBidOnAuctionSharedMinter(
+        address minter,
+        uint256 tokenId,
+        address coreContract
+    ) external payable {
+        (bool success, ) = minter.call{value: msg.value}(
+            abi.encodeWithSignature(
+                "createBid(uint256,address)",
+                tokenId,
+                coreContract
+            )
+        );
+        require(success, "DeadReceiverBidderMock: call failed");
+    }
 }

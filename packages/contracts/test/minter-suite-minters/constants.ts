@@ -50,4 +50,9 @@ export const revertMessages = {
   noNextToken: "No next token",
   onlyGteStartTime: "Only gte project start time",
   insufficientInitialBid: "Insufficient initial bid",
+  onlyNextTokenPopulated: "No next token, check max invocations",
+  incorrectTokenId: "Incorrect target token ID",
+  tokenNotBeingAuctioned: "Token ID does not match auction",
+  auctionAlreadyEnded: "Auction already ended",
+  bidTooLow: "Bid is too low",
 };
