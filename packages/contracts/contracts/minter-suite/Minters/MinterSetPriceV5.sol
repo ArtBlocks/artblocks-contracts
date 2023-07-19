@@ -29,7 +29,7 @@ pragma solidity 0.8.19;
  * ----------------------------------------------------------------------------
  * The following functions are restricted to a project's artist:
  * - updatePricePerTokenInWei
- * - setProjectMaxInvocations
+ * - syncProjectMaxInvocationsToCore
  * - manuallyLimitProjectMaxInvocations
  * ----------------------------------------------------------------------------
  * Additional admin and artist privileged roles may be described on other

@@ -4,22 +4,36 @@
 import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
 import "../../interfaces/v0.8.x/IDelegationRegistry.sol";
 import "../../interfaces/v0.8.x/ISharedMinterV0.sol";
+import "../../interfaces/v0.8.x/ISharedMinterHolderV0.sol";
 import "../../interfaces/v0.8.x/IMinterFilterV1.sol";
-import "../../interfaces/v0.8.x/ISharedMinterMerkleV0.sol";
 
-import "../../libs/v0.8.x/minter-libs/MerkleLib.sol";
 import "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
 import "../../libs/v0.8.x/minter-libs/MaxInvocationsLib.sol";
+import "../../libs/v0.8.x/minter-libs/TokenHolderLib.sol";
+import "../../libs/v0.8.x/minter-libs/PolyptychLib.sol";
 
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin-4.5/contracts/utils/structs/EnumerableSet.sol";
 
 pragma solidity 0.8.19;
 
 /**
  * @title Shared, filtered Minter contract that allows tokens to be minted with
- * ETH for addresses in a Merkle allowlist.
- * This is designed to be used with GenArt721CoreContractV3 flagship or
- * engine contracts.
+ * ETH when purchaser owns an allowlisted ERC-721 NFT.
+ * This contract must be used with an accompanying shared randomizer contract
+ * that is configured to copy the token hash seed from the allowlisted token to
+ * a corresponding newly-minted token. This minter contract must be the allowed
+ * hash seed setter contract for the shared randomizer contract.
+ * The source token may only be used to mint one additional polyptych "panel" if the token
+ * has not yet been used to mint a panel with the currently configured panel ID. To add
+ * an additional panel to a project, the panel ID may be incremented for the project
+ * using the `incrementPolyptychProjectPanelId` function. Panel IDs for a project may only
+ * be incremented such that panels must be minted in the order of their panel ID. Tokens
+ * of the same project and panel ID may be minted in any order.
+ * This is designed to be used with IGenArt721CoreContractExposesHashSeed contracts with an
+ * active ISharedRandomizerV0 randomizer available for this minter to use.
+ * This minter requires both a properly configured core contract and shared
+ * randomizer in order to mint polyptych tokens.
  * @author Art Blocks Inc.
  * @notice Privileged Roles and Ownership:
  * This contract is designed to be managed, with limited powers.
@@ -30,11 +44,13 @@ pragma solidity 0.8.19;
  * addresses are secure behind a multi-sig or other access control mechanism.
  * ----------------------------------------------------------------------------
  * The following functions are restricted to a project's artist:
- * - updateMerkleRoot
  * - updatePricePerTokenInWei
- * - setProjectInvocationsPerAddress
  * - syncProjectMaxInvocationsToCore
  * - manuallyLimitProjectMaxInvocations
+ * - allowHoldersOfProjects
+ * - removeHoldersOfProjects
+ * - allowAndRemoveHoldersOfProjects
+ * - incrementPolyptychProjectPanelId
  * ----------------------------------------------------------------------------
  * Additional admin and artist privileged roles may be described on other
  * contracts that this minter integrates with.
@@ -53,29 +69,33 @@ pragma solidity 0.8.19;
  * level delegations must be configured for the core token contract as returned
  * by the public immutable variable `genArt721CoreAddress`.
  */
-contract MinterSetPriceMerkleV5 is
+contract MinterSetPricePolyptychV5 is
     ReentrancyGuard,
     ISharedMinterV0,
-    ISharedMinterMerkleV0
+    ISharedMinterHolderV0
 {
+    // add Enumerable Set methods
+    using EnumerableSet for EnumerableSet.AddressSet;
+
     /// Minter filter address this minter interacts with
     address public immutable minterFilterAddress;
 
     /// Minter filter this minter may interact with.
     IMinterFilterV1 private immutable minterFilter;
 
+    /// Delegation registry address
+    address public immutable delegationRegistryAddress;
+
+    /// Delegation registry address
+    IDelegationRegistry private immutable delegationRegistryContract;
+
     /// minterType for this minter
-    string public constant minterType = "MinterSetPriceMerkleV5";
+    string public constant minterType = "MinterSetPricePolyptychV5";
 
     /// minter version for this minter
     string public constant minterVersion = "v5.0.0";
 
     uint256 constant ONE_MILLION = 1_000_000;
-
-    /// Delegation registry address
-    address public immutable delegationRegistryAddress;
-    /// Delegation registry address
-    IDelegationRegistry private immutable delegationRegistryContract;
 
     /// contractAddress => projectId => base project config
     mapping(address => mapping(uint256 => ProjectConfig))
@@ -93,27 +113,42 @@ contract MinterSetPriceMerkleV5 is
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR MerkleLib begin here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    /// contractAddress => projectId => merkle specific project config
-    mapping(address => mapping(uint256 => MerkleLib.MerkleProjectConfig))
-        private _merkleProjectConfigMapping;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR MerkleLib end here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR MaxInvocationsLib begin here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    /// contractAddress => projectId => max invocations specific project config
+    // contractAddress => projectId => max invocations specific project config
     mapping(address => mapping(uint256 => MaxInvocationsLib.MaxInvocationsProjectConfig))
         private _maxInvocationsProjectConfigMapping;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR MaxInvocationsLib end here
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // STATE VARIABLES FOR PolyptychLib begin here
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    // contractAddress => projectId => polyptych project config
+    mapping(address => mapping(uint256 => PolyptychLib.PolyptychProjectConfig))
+        private _polyptychProjectConfigs;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // STATE VARIABLES FOR PolyptychLib end here
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // STATE VARIABLES FOR TokenHolderLib begin here
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /**
+     * coreContract => projectId => ownedNFTAddress => ownedNFTProjectIds => bool
+     * projects whose holders are allowed to purchase a token on `projectId`
+     */
+    mapping(address => mapping(uint256 => TokenHolderLib.HolderProjectConfig))
+        private _allowedProjectHoldersMapping;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // STATE VARIABLES FOR TokenHolderLib end here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     // MODIFIERS
@@ -154,10 +189,6 @@ contract MinterSetPriceMerkleV5 is
             _delegationRegistryAddress
         );
         emit DelegationRegistryUpdated(_delegationRegistryAddress);
-        // broadcast default max invocations per address for this minter
-        emit DefaultMaxInvocationsPerAddress(
-            MerkleLib.DEFAULT_MAX_INVOCATIONS_PER_ADDRESS
-        );
     }
 
     /**
@@ -217,17 +248,13 @@ contract MinterSetPriceMerkleV5 is
             _pricePerTokenInWei
         );
 
-        // for convenience, sync local max invocations to the core contract if
-        // and only if max invocations have not already been synced.
-        // @dev do not sync if max invocations have already been synced, as
-        // local max invocations could have been manually set to be
-        // intentionally less than the core contract's max invocations.
+        // sync local max invocations if not initially populated
+        // @dev if local max invocations and maxHasBeenInvoked are both
+        // initial values, we know they have not been populated.
         MaxInvocationsLib.MaxInvocationsProjectConfig
             storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
                 _coreContract
             ][_projectId];
-        // @dev if local maxInvocations and maxHasBeenInvoked are both
-        // initial values, we know they have not been populated on this minter
         if (
             _maxInvocationsProjectConfig.maxInvocations == 0 &&
             _maxInvocationsProjectConfig.maxHasBeenInvoked == false
@@ -237,124 +264,243 @@ contract MinterSetPriceMerkleV5 is
     }
 
     /**
-     * @notice Update the Merkle root for project `_projectId` on core contract `_coreContract`.
-     * @param _projectId Project ID to be updated.
+     * @notice Allows holders of NFTs at addresses `_ownedNFTAddresses`,
+     * project IDs `_ownedNFTProjectIds` to mint on project `_projectId`.
+     * `_ownedNFTAddresses` assumed to be aligned with `_ownedNFTProjectIds`.
+     * e.g. Allows holders of project `_ownedNFTProjectIds[0]` on token
+     * contract `_ownedNFTAddresses[0]` to mint `_projectId`.
+     * WARNING: Only Art Blocks Core contracts are compatible with holder allowlisting,
+     * due to assumptions about tokenId and projectId relationships.
+     * @param _projectId Project ID to enable minting on.
      * @param _coreContract Core contract address for the given project.
-     * @param _root root of Merkle tree defining addresses allowed to mint
-     * on project `_projectId`.
+     * @param _ownedNFTAddresses NFT core addresses of projects to be
+     * allowlisted. Indexes must align with `_ownedNFTProjectIds`.
+     * @param _ownedNFTProjectIds Project IDs on `_ownedNFTAddresses` whose
+     * holders shall be allowlisted to mint project `_projectId`. Indexes must
+     * align with `_ownedNFTAddresses`.
      */
-    function updateMerkleRoot(
+    function allowHoldersOfProjects(
         uint256 _projectId,
         address _coreContract,
-        bytes32 _root
+        address[] memory _ownedNFTAddresses,
+        uint256[] memory _ownedNFTProjectIds
     ) external {
         _onlyArtist(_projectId, _coreContract);
-        require(_root != bytes32(0), "Root must be provided");
-        MerkleLib.updateMerkleRoot(
-            _merkleProjectConfigMapping[_coreContract][_projectId],
-            _root
+        TokenHolderLib.allowHoldersOfProjects(
+            _allowedProjectHoldersMapping[_coreContract][_projectId],
+            _ownedNFTAddresses,
+            _ownedNFTProjectIds
         );
-        emit ConfigValueSet(
+        // emit approve event
+        emit AllowedHoldersOfProjects(
             _projectId,
             _coreContract,
-            MerkleLib.CONFIG_MERKLE_ROOT,
-            _root
+            _ownedNFTAddresses,
+            _ownedNFTProjectIds
         );
     }
 
     /**
-     * @notice Sets maximum allowed invocations per allowlisted address for
-     * project `_project` to `limit`. If `limit` is set to 0, allowlisted
-     * addresses will be able to mint as many times as desired, until the
-     * project reaches its maximum invocations.
-     * Default is a value of 1 if never configured by artist.
-     * @param _projectId Project ID to toggle the mint limit.
+     * @notice Removes holders of NFTs at addresses `_ownedNFTAddresses`,
+     * project IDs `_ownedNFTProjectIds` to mint on project `_projectId`. If
+     * other projects owned by a holder are still allowed to mint, holder will
+     * maintain ability to purchase.
+     * `_ownedNFTAddresses` assumed to be aligned with `_ownedNFTProjectIds`.
+     * e.g. Removes holders of project `_ownedNFTProjectIds[0]` on token
+     * contract `_ownedNFTAddresses[0]` from mint allowlist of `_projectId`.
+     * @param _projectId Project ID to enable minting on.
      * @param _coreContract Core contract address for the given project.
-     * @param _maxInvocationsPerAddress Maximum allowed invocations per
-     * allowlisted address.
-     * @dev default value stated above must be updated if the value of
-     * CONFIG_USE_MAX_INVOCATIONS_PER_ADDRESS_OVERRIDE is changed.
+     * @param _ownedNFTAddresses NFT core addresses of projects to be removed
+     * from allowlist. Indexes must align with `_ownedNFTProjectIds`.
+     * @param _ownedNFTProjectIds Project IDs on `_ownedNFTAddresses` whose
+     * holders will be removed from allowlist to mint project `_projectId`.
+     * Indexes must align with `_ownedNFTAddresses`.
      */
-    function setProjectInvocationsPerAddress(
+    function removeHoldersOfProjects(
         uint256 _projectId,
         address _coreContract,
-        uint24 _maxInvocationsPerAddress
+        address[] memory _ownedNFTAddresses,
+        uint256[] memory _ownedNFTProjectIds
     ) external {
         _onlyArtist(_projectId, _coreContract);
-        MerkleLib.setProjectInvocationsPerAddress(
-            _merkleProjectConfigMapping[_coreContract][_projectId],
-            _maxInvocationsPerAddress
+        // require same length arrays
+        TokenHolderLib.removeHoldersOfProjects(
+            _allowedProjectHoldersMapping[_coreContract][_projectId],
+            _ownedNFTAddresses,
+            _ownedNFTProjectIds
         );
-        emit ConfigValueSet(
+        // emit removed event
+        emit RemovedHoldersOfProjects(
             _projectId,
             _coreContract,
-            MerkleLib.CONFIG_USE_MAX_INVOCATIONS_PER_ADDRESS_OVERRIDE,
-            true
-        );
-        emit ConfigValueSet(
-            _projectId,
-            _coreContract,
-            MerkleLib.CONFIG_MAX_INVOCATIONS_OVERRIDE,
-            uint256(_maxInvocationsPerAddress)
+            _ownedNFTAddresses,
+            _ownedNFTProjectIds
         );
     }
 
     /**
-     * @notice Inactive function - requires Merkle proof to purchase.
+     * @notice Allows holders of NFTs at addresses `_ownedNFTAddressesAdd`,
+     * project IDs `_ownedNFTProjectIdsAdd` to mint on project `_projectId`.
+     * Also removes holders of NFTs at addresses `_ownedNFTAddressesRemove`,
+     * project IDs `_ownedNFTProjectIdsRemove` from minting on project
+     * `_projectId`.
+     * `_ownedNFTAddressesAdd` assumed to be aligned with
+     * `_ownedNFTProjectIdsAdd`.
+     * e.g. Allows holders of project `_ownedNFTProjectIdsAdd[0]` on token
+     * contract `_ownedNFTAddressesAdd[0]` to mint `_projectId`.
+     * `_ownedNFTAddressesRemove` also assumed to be aligned with
+     * `_ownedNFTProjectIdsRemove`.
+     * WARNING: Only Art Blocks Core contracts are compatible with holder allowlisting,
+     * due to assumptions about tokenId and projectId relationships.
+     * @param _projectId Project ID to enable minting on.
+     * @param _coreContract Core contract address for the given project.
+     * @param _ownedNFTAddressesAdd NFT core addresses of projects to be
+     * allowlisted. Indexes must align with `_ownedNFTProjectIdsAdd`.
+     * @param _ownedNFTProjectIdsAdd Project IDs on `_ownedNFTAddressesAdd`
+     * whose holders shall be allowlisted to mint project `_projectId`. Indexes
+     * must align with `_ownedNFTAddressesAdd`.
+     * @param _ownedNFTAddressesRemove NFT core addresses of projects to be
+     * removed from allowlist. Indexes must align with
+     * `_ownedNFTProjectIdsRemove`.
+     * @param _ownedNFTProjectIdsRemove Project IDs on
+     * `_ownedNFTAddressesRemove` whose holders will be removed from allowlist
+     * to mint project `_projectId`. Indexes must align with
+     * `_ownedNFTAddressesRemove`.
+     * @dev if a project is included in both add and remove arrays, it will be
+     * removed.
+     */
+    function allowAndRemoveHoldersOfProjects(
+        uint256 _projectId,
+        address _coreContract,
+        address[] memory _ownedNFTAddressesAdd,
+        uint256[] memory _ownedNFTProjectIdsAdd,
+        address[] memory _ownedNFTAddressesRemove,
+        uint256[] memory _ownedNFTProjectIdsRemove
+    ) external {
+        _onlyArtist(_projectId, _coreContract);
+        TokenHolderLib.allowAndRemoveHoldersOfProjects(
+            _allowedProjectHoldersMapping[_coreContract][_projectId],
+            _ownedNFTAddressesAdd,
+            _ownedNFTProjectIdsAdd,
+            _ownedNFTAddressesRemove,
+            _ownedNFTProjectIdsRemove
+        );
+        // emit events
+        emit AllowedHoldersOfProjects(
+            _projectId,
+            _coreContract,
+            _ownedNFTAddressesAdd,
+            _ownedNFTProjectIdsAdd
+        );
+        emit RemovedHoldersOfProjects(
+            _projectId,
+            _coreContract,
+            _ownedNFTAddressesRemove,
+            _ownedNFTProjectIdsRemove
+        );
+    }
+
+    /**
+     * @notice Allows the artist to increment the minter to the next polyptych panel
+     * @param _projectId Project ID to increment to its next polyptych panel
+     * @param _coreContract Core contract address for the given project.
+     */
+    function incrementPolyptychProjectPanelId(
+        uint256 _projectId,
+        address _coreContract
+    ) public {
+        _onlyArtist(_projectId, _coreContract);
+        PolyptychLib.PolyptychProjectConfig
+            storage _polyptychProjectConfig = _polyptychProjectConfigs[
+                _coreContract
+            ][_projectId];
+        PolyptychLib.incrementPolyptychProjectPanelId(_polyptychProjectConfig);
+        // index the update
+        emit ConfigValueSet(
+            _projectId,
+            _coreContract,
+            PolyptychLib.POLYPTYCH_PANEL_ID,
+            _polyptychProjectConfig.polyptychPanelId
+        );
+    }
+
+    /**
+     * @notice Inactive function - requires NFT ownership to purchase.
      */
     function purchase(uint256, address) external payable returns (uint256) {
-        revert("Must provide Merkle proof");
+        revert("Purchase requires NFT ownership");
     }
 
     /**
-     * @notice Inactive function - requires Merkle proof to purchase.
+     * @notice Inactive function - requires NFT ownership to purchase.
      */
     function purchaseTo(
         address,
         uint256,
         address
     ) external payable returns (uint256) {
-        revert("Must provide Merkle proof");
+        revert("Purchase requires NFT ownership");
     }
 
     /**
-     * @notice Purchases a token from project `_projectId`.
+     * @notice Purchases a token from project `_projectId` on core contract
+     * `_coreContract` using an owned NFT at address `_ownedNFTAddress` and
+     * token ID `_ownedNFTTokenId` as the parent token.
      * @param _projectId Project ID to mint a token on.
      * @param _coreContract Core contract address for the given project.
-     * @param _proof Merkle proof for the given project.
+     * @param _ownedNFTAddress ERC-721 NFT address holding the project token
+     * owned by msg.sender being used as the parent token.
+     * @param _ownedNFTTokenId ERC-721 NFT token ID owned by msg.sender to be
+     * used as the parent token.
      * @return tokenId Token ID of minted token
      */
     function purchase(
         uint256 _projectId,
         address _coreContract,
-        bytes32[] calldata _proof
+        address _ownedNFTAddress,
+        uint256 _ownedNFTTokenId
     ) external payable returns (uint256 tokenId) {
         tokenId = purchaseTo(
             msg.sender,
             _projectId,
             _coreContract,
-            _proof,
+            _ownedNFTAddress,
+            _ownedNFTTokenId,
             address(0)
         );
         return tokenId;
     }
 
     /**
-     * @notice Purchases a token from project `_projectId` and sets
-     * the token's owner to `_to`.
+     * @notice Purchases a token from project `_projectId` on core contract
+     * `_coreContract` using an owned NFT at address `_ownedNFTAddress` and
+     * token ID `_ownedNFTTokenId` as the parent token.
+     * Sets the token's owner to `_to`.
      * @param _to Address to be the new token's owner.
      * @param _projectId Project ID to mint a token on.
-     * @param _coreContract Contract address of the core contract.
-     * @param _proof Merkle proof for the given project.
+     * @param _coreContract Core contract address for the given project.
+     * @param _ownedNFTAddress ERC-721 NFT holding the project token owned by
+     * msg.sender being used as the parent token.
+     * @param _ownedNFTTokenId ERC-721 NFT token ID owned by msg.sender being used
+     * as the parent token.
      * @return tokenId Token ID of minted token
      */
     function purchaseTo(
         address _to,
         uint256 _projectId,
         address _coreContract,
-        bytes32[] calldata _proof
+        address _ownedNFTAddress,
+        uint256 _ownedNFTTokenId
     ) external payable returns (uint256 tokenId) {
-        return purchaseTo(_to, _projectId, _coreContract, _proof, address(0));
+        return
+            purchaseTo(
+                _to,
+                _projectId,
+                _coreContract,
+                _ownedNFTAddress,
+                _ownedNFTTokenId,
+                address(0)
+            );
     }
 
     // public getter functions
@@ -390,47 +536,48 @@ contract MinterSetPriceMerkleV5 is
     }
 
     /**
-     * @notice Retrieves the Merkle project configuration for a given contract and project.
-     * @dev This function fetches the Merkle project configuration from the
-     * merkleProjectConfigMapping using the provided core contract address and project ID.
-     * @param _projectId The ID of the project.
-     * @param _coreContract The address of the core contract.
-     * @return MerkleLib.MerkleProjectConfig The Merkle project configuration.
+     * @notice Checks if a specific NFT owner is allowed in a given project.
+     * @dev This function retrieves the allowance status of an NFT owner
+     * within a specific project from the allowedProjectHoldersMapping.
+     * @param _projectId The ID of the project to check.
+     * @param _coreContract Core contract address for the given project.
+     * @param _ownedNFTAddress The address of the owned NFT contract.
+     * @param _ownedNFTProjectId The ID of the owned NFT project.
+     * @return bool True if the NFT owner is allowed in the given project, False otherwise.
      */
-    function merkleProjectConfig(
+    function allowedProjectHolders(
         uint256 _projectId,
-        address _coreContract
-    ) external view returns (bool, uint24, bytes32) {
-        MerkleLib.MerkleProjectConfig
-            storage _merkleProjectConfig = _merkleProjectConfigMapping[
-                _coreContract
-            ][_projectId];
-        return (
-            _merkleProjectConfig.useMaxInvocationsPerAddressOverride,
-            _merkleProjectConfig.maxInvocationsPerAddressOverride,
-            _merkleProjectConfig.merkleRoot
-        );
+        address _coreContract,
+        address _ownedNFTAddress,
+        uint256 _ownedNFTProjectId
+    ) external view returns (bool) {
+        return
+            _allowedProjectHoldersMapping[_coreContract][_projectId]
+                .allowedProjectHolders[_ownedNFTAddress][_ownedNFTProjectId];
     }
 
     /**
-     * @notice Retrieves the mint invocation count for a specific project and purchaser.
-     * @dev This function retrieves the number of times a purchaser has minted
-     * in a specific project from the projectUserMintInvocationsMapping.
-     * @param _projectId The ID of the project.
-     * @param _coreContract The address of the core contract.
-     * @param _purchaser The address of the purchaser.
-     * @return uint256 The number of times the purchaser has minted in the given project.
+     * @notice Returns if token is an allowlisted NFT for project `_projectId`.
+     * @param _projectId Project ID to be checked.
+     * @param _coreContract Core contract address for the given project.
+     * @param _ownedNFTAddress ERC-721 NFT token address to be checked.
+     * @param _ownedNFTTokenId ERC-721 NFT token ID to be checked.
+     * @return bool Token is allowlisted
+     * @dev does not check if token has been used to purchase
+     * @dev assumes project ID can be derived from tokenId / 1_000_000
      */
-    function projectUserMintInvocations(
+    function isAllowlistedNFT(
         uint256 _projectId,
         address _coreContract,
-        address _purchaser
-    ) external view returns (uint256) {
-        MerkleLib.MerkleProjectConfig
-            storage _merkleProjectConfig = _merkleProjectConfigMapping[
-                _coreContract
-            ][_projectId];
-        return _merkleProjectConfig.userMintInvocations[_purchaser];
+        address _ownedNFTAddress,
+        uint256 _ownedNFTTokenId
+    ) external view returns (bool) {
+        return
+            TokenHolderLib.isAllowlistedNFT(
+                _allowedProjectHoldersMapping[_coreContract][_projectId],
+                _ownedNFTAddress,
+                _ownedNFTTokenId
+            );
     }
 
     /**
@@ -549,102 +696,57 @@ contract MinterSetPriceMerkleV5 is
     }
 
     /**
-     * @notice Returns remaining invocations for a given address.
-     * If `projectLimitsMintInvocationsPerAddress` is false, individual
-     * addresses are only limited by the project's maximum invocations, and a
-     * dummy value of zero is returned for `mintInvocationsRemaining`.
-     * If `projectLimitsMintInvocationsPerAddress` is true, the quantity of
-     * remaining mint invocations for address `_address` is returned as
-     * `mintInvocationsRemaining`.
-     * Note that mint invocations per address can be changed at any time by the
-     * artist of a project.
-     * Also note that all mint invocations are limited by a project's maximum
-     * invocations as defined on the core contract. This function may return
-     * a value greater than the project's remaining invocations.
-     * @param _projectId Project ID to get remaining invocations for.
-     * @param _coreContract Contract address of the core contract.
-     * @param _address Wallet address to get remaining invocations for.
-     * @return projectLimitsMintInvocationsPerAddress true if project limits
-     * mint invocations per address, false if project does not limit mint
-     * invocations per address.
-     * @return mintInvocationsRemaining quantity of remaining mint invocations
-     * for wallet at `_address`.
+     * Gets the current polyptych panel ID for the given project.
+     * @param _projectId Project ID to be queried
+     * @param _coreContract Contract address of the core contract
+     * @return uint256 representing the current polyptych panel ID for the
+     * given project
      */
-    function projectRemainingInvocationsForAddress(
-        uint256 _projectId,
-        address _coreContract,
-        address _address
-    )
-        external
-        view
-        returns (
-            bool projectLimitsMintInvocationsPerAddress,
-            uint256 mintInvocationsRemaining
-        )
-    {
-        MerkleLib.MerkleProjectConfig
-            storage _merkleProjectConfig = _merkleProjectConfigMapping[
-                _coreContract
-            ][_projectId];
-        return
-            MerkleLib.projectRemainingInvocationsForAddress(
-                _merkleProjectConfig,
-                _address
-            );
-    }
-
-    /**
-     * @notice projectId => maximum invocations per allowlisted address. If a
-     * a value of 0 is returned, there is no limit on the number of mints per
-     * allowlisted address.
-     * Default behavior is limit 1 mint per address.
-     * This value can be changed at any time by the artist.
-     * @dev default value stated above must be updated if the value of
-     * CONFIG_USE_MAX_INVOCATIONS_PER_ADDRESS_OVERRIDE is changed.
-     * @param _projectId Project ID to get maximum invocations per address for.
-     * @param _coreContract Contract address of the core contract.
-     * @return Maximum number of invocations per address for project.
-     */
-    function projectMaxInvocationsPerAddress(
+    function getCurrentPolyptychPanelId(
         uint256 _projectId,
         address _coreContract
     ) external view returns (uint256) {
-        MerkleLib.MerkleProjectConfig
-            storage _projectConfig = _merkleProjectConfigMapping[_coreContract][
-                _projectId
-            ];
-        return MerkleLib.projectMaxInvocationsPerAddress(_projectConfig);
+        PolyptychLib.PolyptychProjectConfig
+            storage _polyptychProjectConfig = _polyptychProjectConfigs[
+                _coreContract
+            ][_projectId];
+        return PolyptychLib.getPolyptychPanelId(_polyptychProjectConfig);
     }
 
     /**
-     * @notice Processes a proof for an address.
-     * @param _proof The proof to process.
-     * @param _address The address to process the proof for.
-     * @return The resulting hash from processing the proof.
+     * Gets if the hash seed for the given project has been used on a given
+     * polyptych panel id. The current polyptych panel ID for a given project
+     * can be queried via the view function `getCurrentPolyptychPanelId`.
+     * @param _projectId Project ID to be queried
+     * @param _coreContract Contract address of the core contract
+     * @param _panelId Panel ID to be queried
+     * @param _hashSeed Hash seed to be queried
+     * @return bool representing if the hash seed has been used on the given
+     * polyptych panel ID
      */
-    function processProofForAddress(
-        bytes32[] calldata _proof,
-        address _address
-    ) external pure returns (bytes32) {
-        return MerkleLib.processProofForAddress(_proof, _address);
-    }
-
-    /**
-     * @notice Returns hashed address (to be used as merkle tree leaf).
-     * Included as a public function to enable users to calculate their hashed
-     * address in Solidity when generating proofs off-chain.
-     * @param _address address to be hashed
-     * @return bytes32 hashed address, via keccak256 (using encodePacked)
-     */
-    function hashAddress(address _address) external pure returns (bytes32) {
-        return MerkleLib.hashAddress(_address);
+    function getPolyptychPanelHashSeedIsMinted(
+        uint256 _projectId,
+        address _coreContract,
+        uint256 _panelId,
+        bytes12 _hashSeed
+    ) external view returns (bool) {
+        PolyptychLib.PolyptychProjectConfig
+            storage _polyptychProjectConfig = _polyptychProjectConfigs[
+                _coreContract
+            ][_projectId];
+        return
+            PolyptychLib.getPolyptychPanelHashSeedIsMinted(
+                _polyptychProjectConfig,
+                _panelId,
+                _hashSeed
+            );
     }
 
     /**
      * @notice Syncs local maximum invocations of project `_projectId` based on
      * the value currently defined in the core contract.
-     * @param _coreContract Core contract address for the given project.
      * @param _projectId Project ID to set the maximum invocations for.
+     * @param _coreContract Core contract address for the given project.
      * @dev this enables gas reduction after maxInvocations have been reached -
      * core contracts shall still enforce a maxInvocation check during mint.
      */
@@ -668,22 +770,28 @@ contract MinterSetPriceMerkleV5 is
     }
 
     /**
-     * @notice Purchases a token from project `_projectId` and sets
-     * the token's owner to `_to`.
+     * @notice Purchases a token from project `_projectId` on core contract
+     * `_coreContract` using an owned NFT at address `_ownedNFTAddress` and
+     * token ID `_ownedNFTTokenId` as the parent token.
+     * Sets the token's owner to `_to`.
+     * Parent token must be owned by `msg.sender`, or `_vault` if `msg.sender`
+     * is a valid delegate for `_vault`.
      * @param _to Address to be the new token's owner.
      * @param _projectId Project ID to mint a token on.
      * @param _coreContract Core contract address for the given project.
-     * @param _proof Merkle proof for the given project.
-     * @param _vault Vault being purchased on behalf of. Acceptable to be
-     * `address(0)` if no vault.
+     * @param _ownedNFTAddress ERC-721 NFT holding the project token owned by
+     * msg.sender or `_vault` being used as the parent token.
+     * @param _ownedNFTTokenId ERC-721 NFT token ID owned by msg.sender or
+     * `_vault` being used as the parent token.
      * @return tokenId Token ID of minted token
      */
     function purchaseTo(
         address _to,
         uint256 _projectId,
         address _coreContract,
-        bytes32[] calldata _proof,
-        address _vault // acceptable to be `address(0)` if no vault
+        address _ownedNFTAddress,
+        uint256 _ownedNFTTokenId,
+        address _vault
     ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
         ProjectConfig storage _projectConfig = _projectConfigMapping[
@@ -691,10 +799,6 @@ contract MinterSetPriceMerkleV5 is
         ][_projectId];
         MaxInvocationsLib.MaxInvocationsProjectConfig
             storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
-                _coreContract
-            ][_projectId];
-        MerkleLib.MerkleProjectConfig
-            storage _merkleProjectConfig = _merkleProjectConfigMapping[
                 _coreContract
             ][_projectId];
 
@@ -711,11 +815,22 @@ contract MinterSetPriceMerkleV5 is
 
         // require artist to have configured price of token on this minter
         require(_projectConfig.priceIsConfigured, "Price not configured");
+        // @dev pricePerTokenInWei intentionally not loaded as local variable
+        // to avoid stack too deep error
+        require(
+            msg.value >= _projectConfig.pricePerTokenInWei,
+            "Min value to mint req."
+        );
 
-        // load price of token into memory
-        uint256 pricePerTokenInWei = _projectConfig.pricePerTokenInWei;
-
-        require(msg.value >= pricePerTokenInWei, "Min value to mint req.");
+        // require token used to claim to be in set of allowlisted NFTs
+        require(
+            TokenHolderLib.isAllowlistedNFT(
+                _allowedProjectHoldersMapping[_coreContract][_projectId],
+                _ownedNFTAddress,
+                _ownedNFTTokenId
+            ),
+            "Only allowlisted NFTs"
+        );
 
         // NOTE: delegate-vault handling **begins here**.
 
@@ -726,68 +841,113 @@ contract MinterSetPriceMerkleV5 is
         if (_vault != address(0)) {
             // If a vault is provided, it must be valid, otherwise throw rather
             // than optimistically-minting with original `msg.sender`.
-            // Note, we do not check `checkDelegateForAll` as well, as it is known
-            // to be implicitly checked by calling `checkDelegateForContract`.
-            bool isValidDelegee = delegationRegistryContract
-                .checkDelegateForContract(
+            // Note, we do not check `checkDelegateForAll` or `checkDelegateForContract` as well,
+            // as they are known to be implicitly checked by calling `checkDelegateForToken`.
+            bool isValidVault = delegationRegistryContract
+                .checkDelegateForToken(
                     msg.sender, // delegate
                     _vault, // vault
-                    _coreContract // contract
+                    _coreContract, // contract
+                    _ownedNFTTokenId // tokenId
                 );
-            require(isValidDelegee, "Invalid delegate-vault pairing");
+            require(isValidVault, "Invalid delegate-vault pairing");
             vault = _vault;
         }
 
-        // require valid Merkle proof
-        require(
-            MerkleLib.verifyAddress(
-                _merkleProjectConfig.merkleRoot,
-                _proof,
-                vault
-            ),
-            "Invalid Merkle proof"
-        );
-
-        // limit mints per address by project
-        uint256 _maxProjectInvocationsPerAddress = MerkleLib
-            .projectMaxInvocationsPerAddress(_merkleProjectConfig);
-
-        // note that mint limits index off of the `vault` (when applicable)
-        require(
-            _merkleProjectConfig.userMintInvocations[vault] <
-                _maxProjectInvocationsPerAddress ||
-                _maxProjectInvocationsPerAddress == 0,
-            "Max invocations reached"
+        // we need the new token ID in advance of the randomizer setting a token hash
+        IGenArt721CoreContractV3_Base genArtCoreContract = IGenArt721CoreContractV3_Base(
+                _coreContract
+            );
+        (uint256 _invocations, , , , , ) = genArtCoreContract.projectStateData(
+            _projectId
         );
 
         // EFFECTS
-        // increment user's invocations for this project
-        unchecked {
-            // this will never overflow since user's invocations on a project
-            // are limited by the project's max invocations
-            _merkleProjectConfig.userMintInvocations[vault]++;
-        }
 
-        tokenId = minterFilter.mint_joo(
-            _to,
-            _projectId,
-            _coreContract,
-            msg.sender
-        );
+        // we need to store the new token ID before it is minted so the randomizer can query it
+        // block scope to avoid stack too deep error
+        {
+            bytes12 _targetHashSeed = PolyptychLib.getTokenHashSeed(
+                _ownedNFTAddress,
+                _ownedNFTTokenId
+            );
+
+            // block scope to avoid stack too deep error (nested)
+            {
+                // validates hash seed and ensures each hash seed used max once per panel
+                PolyptychLib.PolyptychProjectConfig
+                    storage _polyptychProjectConfig = _polyptychProjectConfigs[
+                        _coreContract
+                    ][_projectId];
+                PolyptychLib.validatePolyptychEffects(
+                    _polyptychProjectConfig,
+                    _targetHashSeed
+                );
+            }
+
+            uint256 _newTokenId = (_projectId * ONE_MILLION) + _invocations;
+            PolyptychLib.setPolyptychHashSeed({
+                _coreContract: _coreContract,
+                _tokenId: _newTokenId, // new token ID
+                _hashSeed: _targetHashSeed
+            });
+
+            // once mint() is called, the polyptych randomizer will either:
+            // 1) assign a random token hash
+            // 2) if configured, obtain the token hash from the `polyptychSeedHashes` mapping
+            tokenId = minterFilter.mint_joo(
+                _to,
+                _projectId,
+                _coreContract,
+                vault
+            );
+
+            // NOTE: delegate-vault handling **ends here**.
+
+            // redundant check against reentrancy
+            PolyptychLib.validateAssignedHashSeed({
+                _coreContract: _coreContract,
+                _tokenId: tokenId,
+                _targetHashSeed: _targetHashSeed
+            });
+        }
 
         MaxInvocationsLib.validatePurchaseEffectsInvocations(
             tokenId,
-            _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
+            _maxInvocationsProjectConfig
         );
 
         // INTERACTIONS
+        // block scope to avoid stack too deep error
+        {
+            // require proper ownership of NFT used to redeem
+            /**
+             * @dev Considered an interaction because calling ownerOf on an NFT
+             * contract. Plan is to only integrate with AB/PBAB NFTs on the minter, but
+             * in case other NFTs are registered, better to check here. Also,
+             * function is non-reentrant, so this is extra cautious.
+             */
+            // @dev if the artist is the sender, then the NFT must be owned by the
+            // recipient, otherwise the NFT must be owned by the vault
+            address _artist = genArtCoreContract.projectIdToArtistAddress(
+                _projectId
+            );
+            address targetOwner = (msg.sender == _artist) ? _to : vault;
+            TokenHolderLib.validateNFTOwnership({
+                _ownedNFTAddress: _ownedNFTAddress,
+                _ownedNFTTokenId: _ownedNFTTokenId,
+                _targetOwner: targetOwner
+            });
+        }
+
+        // split funds
         bool isEngine = SplitFundsLib.isEngine(
             _coreContract,
             _isEngineCaches[_coreContract]
         );
         SplitFundsLib.splitFundsETH({
             _projectId: _projectId,
-            _pricePerTokenInWei: pricePerTokenInWei,
+            _pricePerTokenInWei: _projectConfig.pricePerTokenInWei,
             _coreContract: _coreContract,
             _isEngine: isEngine
         });

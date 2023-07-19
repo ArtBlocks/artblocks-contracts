@@ -492,10 +492,6 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
             storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
                 _coreContract
             ][_projectId];
-        SplitFundsLib.SplitFundsProjectConfig
-            storage _splitFundsProjectConfig = _splitFundsProjectConfigs[
-                _coreContract
-            ][_projectId];
 
         // Note that `maxHasBeenInvoked` is only checked here to reduce gas
         // consumption after a project has been fully minted.
@@ -532,6 +528,11 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
             _coreContract,
             _isEngineCaches[_coreContract]
         );
+        // process payment in ERC20
+        SplitFundsLib.SplitFundsProjectConfig
+            storage _splitFundsProjectConfig = _splitFundsProjectConfigs[
+                _coreContract
+            ][_projectId];
         SplitFundsLib.splitFundsERC20({
             _splitFundsProjectConfig: _splitFundsProjectConfig,
             _projectId: _projectId,

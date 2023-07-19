@@ -14,7 +14,7 @@ const runForEach = [
 ];
 
 runForEach.forEach((params) => {
-  describe(`${RANDOMIZER_NAME} Views w/ core ${params.core}`, async function () {
+  describe(`${RANDOMIZER_NAME} Events w/ core ${params.core}`, async function () {
     async function _beforeEach() {
       // load minter filter V2 fixture
       const config = await loadFixture(setupConfigWitMinterFilterV2Suite);
