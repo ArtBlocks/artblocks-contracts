@@ -3,28 +3,12 @@
 
 import "../../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
 import "../../../interfaces/v0.8.x/IGenArt721CoreContractExposesHashSeed.sol";
+import "../../../interfaces/v0.8.x/IGenArt721CoreContractV3WithSharedRandomizer.sol";
 import "../../../interfaces/v0.8.x/ISharedRandomizerV0.sol";
 
 import "@openzeppelin-4.7/contracts/token/ERC20/IERC20.sol";
 
 pragma solidity ^0.8.0;
-
-/**
- * @title Core contract interface for accessing the randomizer from the minter
- * @notice This interface provides the minter with access to the shared
- * randomizer, allowing the token hash seed for a newly-minted token to be
- * assigned by the minter if the artist has enabled the project as a polyptych.
- * Polytptych projects must use the V3 core contract, this polyptych minter,
- * and a shared randomizer - this interface allows the minter to access the
- * randomizer.
- */
-interface IGenArt721CoreContractV3WithSharedRandomizer is
-    IGenArt721CoreContractV3_Base,
-    IGenArt721CoreContractExposesHashSeed
-{
-    /// current randomizer contract, that we cast as a shared randomizer
-    function randomizerContract() external returns (ISharedRandomizerV0);
-}
 
 /**
  * @title Art Blocks Polyptych Minter Library
