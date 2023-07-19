@@ -110,6 +110,15 @@ library PolyptychLib {
         );
     }
 
+    /**
+     * Gets token hash seed from core contract.
+     * Note that this function assumes the core contract conforms to
+     * `IGenArt721CoreContractExposesHashSeed`, which early versions of V3
+     * core contracts do not. If a contract does not conform to this interface,
+     * this function will revert.
+     * @param _coreContract Core contract address
+     * @param _tokenId Token ID to query hash seed for
+     */
     function getTokenHashSeed(
         address _coreContract,
         uint256 _tokenId
@@ -119,12 +128,25 @@ library PolyptychLib {
                 .tokenIdToHashSeed(_tokenId);
     }
 
+    /**
+     * Gets the current polyptych panel ID from polyptych project config.
+     * Polyptych panel ID is an incremented value that is used to track the
+     * current panel of a polyptych project.
+     * @param _polyptychProjectConfig Polyptych project config struct to query
+     */
     function getPolyptychPanelId(
         PolyptychProjectConfig storage _polyptychProjectConfig
     ) internal view returns (uint256) {
         return _polyptychProjectConfig.polyptychPanelId;
     }
 
+    /**
+     * Gets if a polyptych panel has already been minted for a given panel ID
+     * and hash seed.
+     * @param _polyptychProjectConfig Polyptych project config struct to query
+     * @param _panelId Polyptych panel ID to query
+     * @param _hashSeed Hash seed of panel to query
+     */
     function getPolyptychPanelHashSeedIsMinted(
         PolyptychProjectConfig storage _polyptychProjectConfig,
         uint256 _panelId,
