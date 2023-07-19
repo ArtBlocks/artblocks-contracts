@@ -46,5 +46,8 @@ export const revertMessages = {
   onlyFutureAuctionsOrZero: "Only future start times or 0",
   auctionTooShort: "Auction duration below minimum",
   onlyUnconfiguredProjects: "Only unconfigured projects",
+  onlyConfiguredProjects: "Project not configured",
   noNextToken: "No next token",
+  onlyGteStartTime: "Only gte project start time",
+  insufficientInitialBid: "Insufficient initial bid",
 };

@@ -5,12 +5,16 @@ import { T_Config } from "../../../util/common";
 
 // helper functions for MinterSEA tests
 
-// helper function to initialize a token auction on project zero
-// @dev "user" account is the one who initializes the auction
-export async function initializeProjectZeroTokenZeroAuction(config: T_Config) {
+export async function advanceToAuctionStartTime(config: T_Config) {
   // advance time to auction start time - 1 second
   // @dev this makes next block timestamp equal to auction start time
   await ethers.provider.send("evm_mine", [config.startTime - 1]);
+}
+
+// helper function to initialize a token auction on project zero
+// @dev "user" account is the one who initializes the auction
+export async function initializeProjectZeroTokenZeroAuction(config: T_Config) {
+  await advanceToAuctionStartTime(config);
   // someone initializes the auction
   const targetToken = BigNumber.from(config.projectZeroTokenZero.toString());
   await config.minter

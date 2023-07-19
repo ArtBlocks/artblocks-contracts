@@ -2,6 +2,10 @@ import { expectRevert } from "@openzeppelin/test-helpers";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { setupConfigWitMinterFilterV2Suite } from "../../../util/fixtures";
+import {
+  initializeProjectZeroTokenZeroAuctionAndAdvanceToEnd,
+  advanceToAuctionStartTime,
+} from "./helpers";
 import { deployAndGet, deployCore, safeAddProject } from "../../../util/common";
 import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../util/constants";
 import { ethers } from "hardhat";
@@ -669,6 +673,77 @@ runForEach.forEach((params) => {
           targetToken
         );
         expect(ejectedTokenOwner).to.equal(config.accounts.user.address);
+      });
+    });
+
+    describe("createBid", async function () {
+      describe("initializes auction with bid", async function () {
+        it("reverts if project not configured", async function () {
+          const config = await loadFixture(_beforeEach);
+          const targetToken = BigNumber.from(
+            config.projectZeroTokenZero.toString()
+          );
+          await expectRevert(
+            config.minter
+              .connect(config.accounts.user)
+              .createBid(targetToken, config.genArt721Core.address),
+            revertMessages.onlyConfiguredProjects
+          );
+        });
+
+        it("reverts if project start time is in future", async function () {
+          const config = await loadFixture(_beforeEach);
+          const targetToken = BigNumber.from(
+            config.projectZeroTokenZero.toString()
+          );
+          await config.minter
+            .connect(config.accounts.artist)
+            .configureFutureAuctions(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.startTime + ONE_DAY * 365, // start time set in future
+              config.defaultAuctionLengthSeconds,
+              config.basePrice,
+              config.bidIncrementPercentage
+            );
+
+          await expectRevert(
+            config.minter
+              .connect(config.accounts.user)
+              .createBid(targetToken, config.genArt721Core.address),
+            revertMessages.onlyGteStartTime
+          );
+        });
+
+        it("reverts if insufficient initial bid", async function () {
+          const config = await loadFixture(_beforeEach);
+          const targetToken = BigNumber.from(
+            config.projectZeroTokenOne.toString()
+          );
+          await config.minter
+            .connect(config.accounts.artist)
+            .configureFutureAuctions(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.startTime,
+              config.defaultAuctionLengthSeconds,
+              config.basePrice,
+              config.bidIncrementPercentage
+            );
+          await advanceToAuctionStartTime(config);
+          await expectRevert(
+            config.minter
+              .connect(config.accounts.user)
+              .createBid(targetToken, config.genArt721Core.address, {
+                value: config.basePrice.sub(1),
+              }),
+            revertMessages.insufficientInitialBid
+          );
+        });
+
+        it("requires next token is populated", async function () {
+          // TODO: encounter revert message: No next token, check max invocations
+        });
       });
     });
   });
