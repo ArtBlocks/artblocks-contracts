@@ -670,5 +670,112 @@ runForEach.forEach((params) => {
         expect(ejectedTokenOwner).to.equal(config.accounts.user.address);
       });
     });
+
+    describe("tryPopulateNextToken", async function () {
+      it("reverts when project not configured", async function () {
+        const config = await loadFixture(_beforeEach);
+        // project is unconfigured, so populate should revert
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .tryPopulateNextToken(
+              config.projectZero,
+              config.genArt721Core.address
+            ),
+          revertMessages.onlyConfiguredProjects
+        );
+
+        it("returns early if next token is already populated", async function () {
+          const config = await loadFixture(_beforeEach);
+          await config.minter
+            .connect(config.accounts.artist)
+            .configureFutureAuctions(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.startTime,
+              config.defaultAuctionLengthSeconds,
+              config.basePrice,
+              config.bidIncrementPercentage
+            );
+          // next token is already populated, so populate should return early, not revert
+          await config.minter
+            .connect(config.accounts.artist)
+            .tryPopulateNextToken(
+              config.projectZero,
+              config.genArt721Core.address
+            );
+        });
+
+        it("populates next token for perfect sequence of events", async function () {
+          const config = await loadFixture(_beforeEach);
+          await config.minter
+            .connect(config.accounts.artist)
+            .configureFutureAuctions(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.startTime,
+              config.defaultAuctionLengthSeconds,
+              config.basePrice,
+              config.bidIncrementPercentage
+            );
+          // manually limit max invocations to 1
+          await config.minter
+            .connect(config.accounts.artist)
+            .manuallyLimitProjectMaxInvocations(
+              config.projectZero,
+              config.genArt721Core.address,
+              1
+            );
+          // reset future auctions, eject next token to user
+          await config.minter
+            .connect(config.accounts.artist)
+            .resetFutureAuctionDetails(
+              config.projectZero,
+              config.genArt721Core.address
+            );
+          await config.minter
+            .connect(config.accounts.deployer)
+            .ejectNextTokenTo(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.accounts.user.address
+            );
+          // manually increase limit of max invocations to 2
+          await config.minter
+            .connect(config.accounts.artist)
+            .manuallyLimitProjectMaxInvocations(
+              config.projectZero,
+              config.genArt721Core.address,
+              2
+            );
+          // validate no next token
+          const initialSeaProjectConfig =
+            await config.minter.SEAProjectConfigurationDetails(
+              config.projectZero,
+              config.genArt721Core.address
+            );
+          expect(initialSeaProjectConfig.nextTokenNumberIsPopulated).to.equal(
+            false
+          );
+          // tryPopulateNextToken should now succeed, AND mint next token to minter
+          await config.minter
+            .connect(config.accounts.artist)
+            .tryPopulateNextToken(
+              config.projectZero,
+              config.genArt721Core.address
+            );
+          // validate effects
+          const seaProjectConfig =
+            await config.minter.SEAProjectConfigurationDetails(
+              config.projectZero,
+              config.genArt721Core.address
+            );
+          expect(seaProjectConfig.nextTokenNumber).to.equal(
+            config.projectZeroTokenOne.toNumber()
+          );
+          expect(seaProjectConfig.nextTokenNumberIsPopulated).to.equal(true);
+        });
+      });
+    });
   });
 });
