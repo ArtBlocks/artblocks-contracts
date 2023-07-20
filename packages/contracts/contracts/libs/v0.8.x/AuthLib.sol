@@ -3,13 +3,14 @@
 
 pragma solidity ^0.8.0;
 
-import "../../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
-import "../../../interfaces/v0.8.x/IMinterFilterV1.sol";
+import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
+import "../../interfaces/v0.8.x/IMinterFilterV1.sol";
 
 /**
  * @title Art Blocks Authorization Minter Library
- * @notice This library contains helper functions that may be used by minters
- * to check authorization for performing operations.
+ * @notice This library contains helper functions that may be used contracts to
+ * check authorization for performing operations in the Art Blocks V3 core
+ * contract ecosystem.
  * @author Art Blocks Inc.
  */
 
