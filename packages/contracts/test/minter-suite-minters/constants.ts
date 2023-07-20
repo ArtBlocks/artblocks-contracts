@@ -58,4 +58,6 @@ export const revertMessages = {
   auctionNotInitialized: "Auction not initialized",
   auctionNotEnded: "Auction not yet ended",
   onlySameProject: "Only tokens in same project",
+  noAuction: "No auction exists on project",
+  nextTokenNotPopulated: "Next token not populated",
 };

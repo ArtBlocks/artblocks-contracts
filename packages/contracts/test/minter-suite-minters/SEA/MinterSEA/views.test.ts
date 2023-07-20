@@ -1,12 +1,19 @@
 import { expect } from "chai";
+import { expectRevert } from "@openzeppelin/test-helpers";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { ethers } from "hardhat";
 
-import { initializeProjectZeroTokenZeroAuctionAndSettle } from "./helpers";
+import {
+  initializeProjectZeroTokenZeroAuctionAndSettle,
+  initializeProjectZeroTokenZeroAuction,
+  initializeProjectZeroTokenZeroAuctionAndAdvanceToEnd,
+} from "./helpers";
 import { setupConfigWitMinterFilterV2Suite } from "../../../util/fixtures";
 import { deployAndGet, deployCore, safeAddProject } from "../../../util/common";
 import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../util/constants";
 import { Logger } from "@ethersproject/logger";
+import { revertMessages } from "../../constants";
+import { constants } from "ethers";
 // hide nuisance logs about event overloading
 Logger.setLogLevel(Logger.levels.ERROR);
 
@@ -95,37 +102,6 @@ runForEach.forEach((params) => {
       return config;
     }
 
-    describe("projectMaxHasBeenInvoked", async function () {
-      it("should return true if project has been minted out", async function () {
-        const config = await loadFixture(_beforeEach);
-        await config.minter
-          .connect(config.accounts.artist)
-          .manuallyLimitProjectMaxInvocations(
-            config.projectZero,
-            config.genArt721Core.address,
-            1
-          );
-
-        // mint a token to next slot
-        await config.minter
-          .connect(config.accounts.artist)
-          .configureFutureAuctions(
-            config.projectZero,
-            config.genArt721Core.address,
-            0, // start timestamp
-            600, // auction duration
-            config.pricePerTokenInWei, // price
-            5 // bid increment percentage
-          );
-
-        let result = await config.minter.projectMaxHasBeenInvoked(
-          config.projectZero,
-          config.genArt721Core.address
-        );
-        expect(result).to.equal(true);
-      });
-    });
-
     describe("isEngineView", async function () {
       it("uses cached value when available", async function () {
         const config = await loadFixture(_beforeEach);
@@ -153,6 +129,353 @@ runForEach.forEach((params) => {
         const config = await loadFixture(_beforeEach);
         const minterVersion = await config.minter.minterType();
         expect(minterVersion).to.equal(TARGET_MINTER_NAME);
+      });
+    });
+
+    describe("minterConfigurationDetails", async function () {
+      it("returns correct configuration details", async function () {
+        const config = await loadFixture(_beforeEach);
+        const minterConfigurationDetails =
+          await config.minter.minterConfigurationDetails();
+        expect(minterConfigurationDetails.minAuctionDurationSeconds_).to.equal(
+          60
+        );
+        expect(minterConfigurationDetails.minterTimeBufferSeconds_).to.equal(
+          120
+        );
+        expect(minterConfigurationDetails.minterRefundGasLimit_).to.equal(
+          30_000
+        );
+      });
+    });
+
+    describe("maxInvocationsProjectConfig", async function () {
+      it("returns expected values for uninitialized project", async function () {
+        const config = await loadFixture(_beforeEach);
+        const maxInvocationsProjectConfig =
+          await config.minter.maxInvocationsProjectConfig(
+            config.projectOne,
+            config.genArt721Core.address
+          );
+        expect(maxInvocationsProjectConfig.maxHasBeenInvoked).to.equal(false);
+        expect(maxInvocationsProjectConfig.maxInvocations).to.equal(0);
+      });
+
+      it("returns expected values for initialized project", async function () {
+        const config = await loadFixture(_beforeEach);
+        const maxInvocationsProjectConfig =
+          await config.minter.maxInvocationsProjectConfig(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        expect(maxInvocationsProjectConfig.maxHasBeenInvoked).to.equal(false);
+        expect(maxInvocationsProjectConfig.maxInvocations).to.equal(1_000_000);
+      });
+    });
+
+    describe("projectMaxHasBeenInvoked", async function () {
+      it("returns expected false", async function () {
+        const config = await loadFixture(_beforeEach);
+        const projectMaxHasBeenInvoked =
+          await config.minter.projectMaxHasBeenInvoked(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        expect(projectMaxHasBeenInvoked).to.equal(false);
+      });
+
+      it("returns expected true", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(
+            config.projectZero,
+            config.genArt721Core.address,
+            1
+          );
+        const projectMaxHasBeenInvoked =
+          await config.minter.projectMaxHasBeenInvoked(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        expect(projectMaxHasBeenInvoked).to.equal(true);
+      });
+    });
+
+    describe("projectMaxInvocations", async function () {
+      it("returns expected value", async function () {
+        const config = await loadFixture(_beforeEach);
+        const projectMaxInvocations = await config.minter.projectMaxInvocations(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(projectMaxInvocations).to.equal(1_000_000);
+      });
+    });
+
+    describe("SEAProjectConfigurationDetails", async function () {
+      it("returns default struct for unconfigured project", async function () {
+        const config = await loadFixture(_beforeEach);
+        const SEAProjectConfigurationDetails =
+          await config.minter.SEAProjectConfigurationDetails(
+            config.projectOne,
+            config.genArt721Core.address
+          );
+        expect(SEAProjectConfigurationDetails.timestampStart).to.equal(0);
+        expect(SEAProjectConfigurationDetails.auctionDurationSeconds).to.equal(
+          0
+        );
+        expect(
+          SEAProjectConfigurationDetails.minBidIncrementPercentage
+        ).to.equal(0);
+        expect(SEAProjectConfigurationDetails.nextTokenNumber).to.equal(0);
+        expect(SEAProjectConfigurationDetails.nextTokenNumberIsPopulated).to.be
+          .false;
+        expect(SEAProjectConfigurationDetails.basePrice).to.equal(0);
+        // @dev check two fields on auction is sufficient to confirm struct is default
+        expect(SEAProjectConfigurationDetails.activeAuction.tokenId).to.equal(
+          0
+        );
+        expect(SEAProjectConfigurationDetails.activeAuction.endTime).to.equal(
+          0
+        );
+      });
+
+      it("returns populated struct for configured project", async function () {
+        const config = await loadFixture(_beforeEach);
+        // also configure auction
+        await initializeProjectZeroTokenZeroAuction(config);
+        // verify view response
+        const SEAProjectConfigurationDetails =
+          await config.minter.SEAProjectConfigurationDetails(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        expect(SEAProjectConfigurationDetails.timestampStart).to.be.gt(0);
+        expect(SEAProjectConfigurationDetails.auctionDurationSeconds).to.equal(
+          config.defaultAuctionLengthSeconds
+        );
+        expect(
+          SEAProjectConfigurationDetails.minBidIncrementPercentage
+        ).to.equal(config.bidIncrementPercentage);
+        expect(SEAProjectConfigurationDetails.nextTokenNumber).to.equal(1);
+        expect(SEAProjectConfigurationDetails.nextTokenNumberIsPopulated).to.be
+          .true;
+        expect(SEAProjectConfigurationDetails.basePrice).to.equal(
+          config.basePrice
+        );
+        // check fields on auction
+        expect(SEAProjectConfigurationDetails.activeAuction.tokenId).to.equal(
+          0
+        );
+        expect(
+          SEAProjectConfigurationDetails.activeAuction.currentBid
+        ).to.equal(config.basePrice);
+        expect(
+          SEAProjectConfigurationDetails.activeAuction.currentBidder
+        ).to.equal(config.accounts.user.address);
+        expect(SEAProjectConfigurationDetails.activeAuction.endTime).to.be.gt(
+          0
+        );
+        expect(
+          SEAProjectConfigurationDetails.activeAuction.minBidIncrementPercentage
+        ).to.equal(config.bidIncrementPercentage);
+        expect(SEAProjectConfigurationDetails.activeAuction.settled).to.be
+          .false;
+      });
+    });
+
+    describe("projectActiveAuctionDetails", async function () {
+      it("reverts if no auction exists for the project", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.minter.projectActiveAuctionDetails(
+            config.projectZero,
+            config.genArt721Core.address
+          ),
+          revertMessages.noAuction
+        );
+      });
+
+      it("returns expected values for active auction", async function () {
+        const config = await loadFixture(_beforeEach);
+        // also configure auction
+        await initializeProjectZeroTokenZeroAuction(config);
+        // verify view response
+        const auctionDetails = await config.minter.projectActiveAuctionDetails(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(auctionDetails.tokenId).to.equal(0);
+        expect(auctionDetails.currentBid).to.equal(config.basePrice);
+        expect(auctionDetails.currentBidder).to.equal(
+          config.accounts.user.address
+        );
+        expect(auctionDetails.endTime).to.be.gt(0);
+        expect(auctionDetails.minBidIncrementPercentage).to.equal(
+          config.bidIncrementPercentage
+        );
+        expect(auctionDetails.settled).to.be.false;
+      });
+    });
+
+    describe("getTokenToBid", async function () {
+      it("reverts for unconfigured project with no next token", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.minter.getTokenToBid(
+            config.projectOne,
+            config.genArt721Core.address
+          ),
+          revertMessages.nextTokenNotPopulated
+        );
+      });
+
+      it("returns expected value for configured project with active auction", async function () {
+        const config = await loadFixture(_beforeEach);
+        // also configure auction
+        await initializeProjectZeroTokenZeroAuction(config);
+        // verify view response
+        const tokenToBid = await config.minter.getTokenToBid(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(tokenToBid).to.equal(0);
+      });
+
+      it("returns expected value for configured project with ended, non-settled auction", async function () {
+        const config = await loadFixture(_beforeEach);
+        // also configure auction
+        await initializeProjectZeroTokenZeroAuctionAndAdvanceToEnd(config);
+        // verify view response
+        const tokenToBid = await config.minter.getTokenToBid(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(tokenToBid).to.equal(1);
+      });
+
+      it("returns expected value for configured project with settled auction", async function () {
+        const config = await loadFixture(_beforeEach);
+        // also configure auction
+        await initializeProjectZeroTokenZeroAuctionAndSettle(config);
+        // verify view response
+        const tokenToBid = await config.minter.getTokenToBid(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(tokenToBid).to.equal(1);
+      });
+    });
+
+    describe("getNextTokenId", async function () {
+      it("reverts for unconfigured project with no next token", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.minter.getNextTokenId(
+            config.projectOne,
+            config.genArt721Core.address
+          ),
+          revertMessages.nextTokenNotPopulated
+        );
+      });
+
+      it("returns expected value for configured project with no active auction", async function () {
+        const config = await loadFixture(_beforeEach);
+        // verify view response
+        const nextToken = await config.minter.getNextTokenId(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(nextToken).to.equal(0);
+      });
+
+      it("returns expected value for configured project with active auction", async function () {
+        const config = await loadFixture(_beforeEach);
+        // also configure auction
+        await initializeProjectZeroTokenZeroAuction(config);
+        // verify view response
+        const nextToken = await config.minter.getNextTokenId(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(nextToken).to.equal(1);
+      });
+    });
+
+    describe("getPriceInfo", async function () {
+      it("returns expected value for unconfigured project", async function () {
+        const config = await loadFixture(_beforeEach);
+        // verify view response
+        const priceInfo = await config.minter.getPriceInfo(
+          config.projectOne,
+          config.genArt721Core.address
+        );
+        expect(priceInfo.isConfigured).to.be.false;
+        expect(priceInfo.tokenPriceInWei).to.equal(0);
+        expect(priceInfo.currencySymbol).to.equal("ETH");
+        expect(priceInfo.currencyAddress).to.equal(constants.AddressZero);
+      });
+
+      it("returns expected value for configured project without active auction", async function () {
+        const config = await loadFixture(_beforeEach);
+        // verify view response
+        const priceInfo = await config.minter.getPriceInfo(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(priceInfo.isConfigured).to.be.true;
+        expect(priceInfo.tokenPriceInWei).to.equal(config.basePrice);
+        expect(priceInfo.currencySymbol).to.equal("ETH");
+        expect(priceInfo.currencyAddress).to.equal(constants.AddressZero);
+      });
+
+      it("returns expected value for configured project with active auction", async function () {
+        const config = await loadFixture(_beforeEach);
+        // also configure and start auction
+        await initializeProjectZeroTokenZeroAuction(config);
+        const minNextBidValue = config.basePrice
+          .mul(config.bidIncrementPercentage + 100)
+          .div(100);
+        // verify view response
+        const priceInfo = await config.minter.getPriceInfo(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(priceInfo.isConfigured).to.be.true;
+        expect(priceInfo.tokenPriceInWei).to.equal(minNextBidValue);
+        expect(priceInfo.currencySymbol).to.equal("ETH");
+        expect(priceInfo.currencyAddress).to.equal(constants.AddressZero);
+      });
+
+      it("returns expected value for configured project with ended auction", async function () {
+        const config = await loadFixture(_beforeEach);
+        // also configure and start auction
+        await initializeProjectZeroTokenZeroAuctionAndAdvanceToEnd(config);
+        // verify view response
+        const priceInfo = await config.minter.getPriceInfo(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(priceInfo.isConfigured).to.be.true;
+        expect(priceInfo.tokenPriceInWei).to.equal(config.basePrice);
+        expect(priceInfo.currencySymbol).to.equal("ETH");
+        expect(priceInfo.currencyAddress).to.equal(constants.AddressZero);
+      });
+
+      it("returns expected value for configured project with ended, settled auction", async function () {
+        const config = await loadFixture(_beforeEach);
+        // also configure and start auction
+        await initializeProjectZeroTokenZeroAuctionAndSettle(config);
+        // verify view response
+        const priceInfo = await config.minter.getPriceInfo(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(priceInfo.isConfigured).to.be.true;
+        expect(priceInfo.tokenPriceInWei).to.equal(config.basePrice);
+        expect(priceInfo.currencySymbol).to.equal("ETH");
+        expect(priceInfo.currencyAddress).to.equal(constants.AddressZero);
       });
     });
   });
