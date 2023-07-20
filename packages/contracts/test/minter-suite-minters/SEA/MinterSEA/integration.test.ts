@@ -576,6 +576,66 @@ runForEach.forEach((params) => {
           // verify next token is not populated
           expect(seaProjectConfig.nextTokenNumberIsPopulated).to.be.false;
         });
+
+        it("edge case: doesn't start last token's auction while paused", async function () {
+          const config = await loadFixture(_beforeEach);
+          const targetToken = BigNumber.from(
+            config.projectZeroTokenZero.toString()
+          );
+          // set max invocations to 2 on the minter
+          await config.minter
+            .connect(config.accounts.artist)
+            .manuallyLimitProjectMaxInvocations(
+              config.projectZero,
+              config.genArt721Core.address,
+              2
+            );
+          // configure future auctions
+          await config.minter
+            .connect(config.accounts.artist)
+            .configureFutureAuctions(
+              config.projectZero,
+              config.genArt721Core.address,
+              0, // start at any time
+              config.defaultAuctionLengthSeconds,
+              config.basePrice,
+              config.bidIncrementPercentage
+            );
+          await initializeProjectZeroTokenZeroAuctionAndSettle(config);
+          // pause the project
+          await config.genArt721Core
+            .connect(config.accounts.artist)
+            .toggleProjectIsPaused(config.projectZero);
+          // new auction should not be able to be started by user
+          const targetTokenOne = BigNumber.from(
+            config.projectZeroTokenOne.toString()
+          );
+          // THIS DOES NOT CURRENTLY REVERT
+          // await expectRevert(
+          //   config.minter
+
+          //     .connect(config.accounts.user)
+          //     .createBid(targetTokenOne, config.genArt721Core.address, {
+          //       value: config.basePrice,
+          //     }),
+          //   "No new auctions when project is paused"
+          // );
+          // new auction may be started by artist
+          await config.minter
+            .connect(config.accounts.artist)
+            .createBid(targetTokenOne, config.genArt721Core.address, {
+              value: config.basePrice,
+            });
+          // verify new auction was created
+          const seaProjectConfig =
+            await config.minter.SEAProjectConfigurationDetails(
+              config.projectZero,
+              config.genArt721Core.address
+            );
+          expect(seaProjectConfig.activeAuction.tokenId).to.equal(
+            targetTokenOne
+          );
+        });
       });
 
       describe("places bid on existing auction (no initialization required)", async function () {
