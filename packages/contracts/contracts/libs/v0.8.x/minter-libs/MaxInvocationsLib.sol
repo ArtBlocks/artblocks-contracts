@@ -143,8 +143,7 @@ library MaxInvocationsLib {
         MaxInvocationsProjectConfig storage _maxInvocationsProjectConfig
     ) internal view returns (bool) {
         return
-            !(_maxInvocationsProjectConfig.maxInvocations == 0 &&
-                _maxInvocationsProjectConfig.maxHasBeenInvoked == false);
+            _maxInvocationsProjectConfig.maxInvocations != 0 || _maxInvocationsProjectConfig.maxHasBeenInvoked;
     }
 
     /**
