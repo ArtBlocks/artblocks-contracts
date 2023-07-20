@@ -577,7 +577,7 @@ runForEach.forEach((params) => {
           expect(seaProjectConfig.nextTokenNumberIsPopulated).to.be.false;
         });
 
-        it("edge case: doesn't start last token's auction while paused", async function () {
+        it("edge case: does start last token's auction while paused (if already loaded into minter's next token slot)", async function () {
           const config = await loadFixture(_beforeEach);
           const targetToken = BigNumber.from(
             config.projectZeroTokenZero.toString()
@@ -606,23 +606,16 @@ runForEach.forEach((params) => {
           await config.genArt721Core
             .connect(config.accounts.artist)
             .toggleProjectIsPaused(config.projectZero);
-          // new auction should not be able to be started by user
+          // new auction should be able to be started by user, since last token
+          // already loaded into minter's next token slot during previous
+          // auction's initialization
           const targetTokenOne = BigNumber.from(
             config.projectZeroTokenOne.toString()
           );
-          // THIS DOES NOT CURRENTLY REVERT
-          // await expectRevert(
-          //   config.minter
-
-          //     .connect(config.accounts.user)
-          //     .createBid(targetTokenOne, config.genArt721Core.address, {
-          //       value: config.basePrice,
-          //     }),
-          //   "No new auctions when project is paused"
-          // );
-          // new auction may be started by artist
+          // new auction may be started by user, since last token already loaded
+          // into minter's next token slot
           await config.minter
-            .connect(config.accounts.artist)
+            .connect(config.accounts.user)
             .createBid(targetTokenOne, config.genArt721Core.address, {
               value: config.basePrice,
             });
