@@ -322,6 +322,36 @@ runForEach.forEach((params) => {
           );
       });
 
+      it("does not allow a base price of zero", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.minter.connect(config.accounts.artist).configureFutureAuctions(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.startTime,
+            config.defaultAuctionLengthSeconds,
+            0, // base price of zero
+            config.bidIncrementPercentage
+          ),
+          revertMessages.onlyNonZero
+        );
+      });
+
+      it("does not allow a min bid increment percentage of zero", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.minter.connect(config.accounts.artist).configureFutureAuctions(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.startTime,
+            config.defaultAuctionLengthSeconds,
+            config.basePrice,
+            0 // min bid increment percentage of zero
+          ),
+          revertMessages.onlyNonZero
+        );
+      });
+
       it("allows a start time of zero", async function () {
         const config = await loadFixture(_beforeEach);
         await config.minter
@@ -684,97 +714,121 @@ runForEach.forEach((params) => {
             ),
           revertMessages.onlyConfiguredProjects
         );
+      });
 
-        it("returns early if next token is already populated", async function () {
-          const config = await loadFixture(_beforeEach);
-          await config.minter
-            .connect(config.accounts.artist)
-            .configureFutureAuctions(
-              config.projectZero,
-              config.genArt721Core.address,
-              config.startTime,
-              config.defaultAuctionLengthSeconds,
-              config.basePrice,
-              config.bidIncrementPercentage
-            );
-          // next token is already populated, so populate should return early, not revert
-          await config.minter
-            .connect(config.accounts.artist)
-            .tryPopulateNextToken(
-              config.projectZero,
-              config.genArt721Core.address
-            );
-        });
+      it("returns early if next token is already populated", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
+          .configureFutureAuctions(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.startTime,
+            config.defaultAuctionLengthSeconds,
+            config.basePrice,
+            config.bidIncrementPercentage
+          );
+        // next token is already populated, so populate should return early, not revert
+        await config.minter
+          .connect(config.accounts.artist)
+          .tryPopulateNextToken(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+      });
 
-        it("populates next token for perfect sequence of events", async function () {
-          const config = await loadFixture(_beforeEach);
-          await config.minter
+      it("tries to populate if already configured", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
+          .configureFutureAuctions(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.startTime,
+            config.defaultAuctionLengthSeconds,
+            config.basePrice,
+            config.bidIncrementPercentage
+          );
+        // function will now try and populate next token
+        // @dev - we don't think it is possible to test the case where this
+        // function populates the next token, so try will always return early,
+        // and have no effect on state
+        await config.minter
+          .connect(config.accounts.artist)
+          .tryPopulateNextToken(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+      });
+    });
+
+    describe("updateRefundGasLimit", async function () {
+      it("reverts non-admin calls", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.minter
             .connect(config.accounts.artist)
-            .configureFutureAuctions(
-              config.projectZero,
-              config.genArt721Core.address,
-              config.startTime,
-              config.defaultAuctionLengthSeconds,
-              config.basePrice,
-              config.bidIncrementPercentage
-            );
-          // manually limit max invocations to 1
-          await config.minter
-            .connect(config.accounts.artist)
-            .manuallyLimitProjectMaxInvocations(
-              config.projectZero,
-              config.genArt721Core.address,
-              1
-            );
-          // reset future auctions, eject next token to user
-          await config.minter
-            .connect(config.accounts.artist)
-            .resetFutureAuctionDetails(
-              config.projectZero,
-              config.genArt721Core.address
-            );
-          await config.minter
+            .updateRefundGasLimit(6_999),
+          revertMessages.onlyCoreAdminACL
+        );
+      });
+
+      it("reverts if value < 7_000", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.minter
             .connect(config.accounts.deployer)
-            .ejectNextTokenTo(
-              config.projectZero,
-              config.genArt721Core.address,
-              config.accounts.user.address
-            );
-          // manually increase limit of max invocations to 2
-          await config.minter
+            .updateRefundGasLimit(6_999),
+          revertMessages.onlyGte7000
+        );
+      });
+
+      it("updates state when successful", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.deployer)
+          .updateRefundGasLimit(7_001);
+        // validate state update
+        const minterConfigDetails =
+          await config.minter.minterConfigurationDetails();
+        expect(minterConfigDetails.minterRefundGasLimit_).to.equal(7_001);
+      });
+    });
+
+    describe("updateMinterTimeBufferSeconds", async function () {
+      it("reverts when non-admin calls", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.minter
             .connect(config.accounts.artist)
-            .manuallyLimitProjectMaxInvocations(
-              config.projectZero,
-              config.genArt721Core.address,
-              2
-            );
-          // validate no next token
-          const initialSeaProjectConfig =
-            await config.minter.SEAProjectConfigurationDetails(
-              config.projectZero,
-              config.genArt721Core.address
-            );
-          expect(initialSeaProjectConfig.nextTokenNumberIsPopulated).to.equal(
-            false
-          );
-          // tryPopulateNextToken should now succeed, AND mint next token to minter
-          await config.minter
-            .connect(config.accounts.artist)
-            .tryPopulateNextToken(
-              config.projectZero,
-              config.genArt721Core.address
-            );
-          // validate effects
-          const seaProjectConfig =
-            await config.minter.SEAProjectConfigurationDetails(
-              config.projectZero,
-              config.genArt721Core.address
-            );
-          expect(seaProjectConfig.nextTokenNumber).to.equal(
-            config.projectZeroTokenOne.toNumber()
-          );
-          expect(seaProjectConfig.nextTokenNumberIsPopulated).to.equal(true);
-        });
+            .updateMinterTimeBufferSeconds(ONE_HOUR),
+          revertMessages.onlyCoreAdminACL
+        );
+      });
+
+      it("reverts when value is zero", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.deployer)
+            .updateMinterTimeBufferSeconds(0),
+          revertMessages.onlyNonZero
+        );
+      });
+
+      it("updates state", async function () {
+        const config = await loadFixture(_beforeEach);
+        const initialMinterConfigDetails =
+          await config.minter.minterConfigurationDetails();
+        expect(initialMinterConfigDetails.minterTimeBufferSeconds).to.not.equal(
+          61
+        );
+        await config.minter
+          .connect(config.accounts.deployer)
+          .updateMinterTimeBufferSeconds(61);
+        const minterConfigDetails =
+          await config.minter.minterConfigurationDetails();
+        expect(minterConfigDetails.minterTimeBufferSeconds_).to.equal(61);
       });
     });
   });

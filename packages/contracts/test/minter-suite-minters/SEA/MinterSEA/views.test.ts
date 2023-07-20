@@ -114,6 +114,15 @@ runForEach.forEach((params) => {
           .isEngineView(config.genArt721Core.address);
         expect(isEngineView).to.be.equal(config.isEngine);
       });
+
+      it("fetches value when not cached", async function () {
+        const config = await loadFixture(_beforeEach);
+
+        const isEngineView = await config.minter
+          .connect(config.accounts.artist)
+          .isEngineView(config.genArt721Core.address);
+        expect(isEngineView).to.be.equal(config.isEngine);
+      });
     });
 
     describe("minterVersion", async function () {

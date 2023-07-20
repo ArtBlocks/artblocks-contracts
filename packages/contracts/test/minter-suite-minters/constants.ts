@@ -22,6 +22,7 @@ export const revertMessages = {
   onlyCoreAdminACLOrArtist: "Only Artist or Core Admin ACL",
   onlyRegisteredCore: "Only registered core contract",
   onlyNonZeroAddress: "Only non-zero address",
+  onlyNonZero: "Only non-zero",
   minterAlreadyApproved: "Minter already approved",
   noMinterAssigned: "No minter assigned",
   onlyPreviouslyApprovedMinter: "Only previously approved minter",
@@ -60,4 +61,5 @@ export const revertMessages = {
   onlySameProject: "Only tokens in same project",
   noAuction: "No auction exists on project",
   nextTokenNotPopulated: "Next token not populated",
+  onlyGte7000: "Only gte 7_000",
 };
