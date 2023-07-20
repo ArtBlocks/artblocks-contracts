@@ -145,21 +145,6 @@
     "@aws-sdk/util-utf8-browser" "^3.0.0"
     tslib "^1.11.1"
 
-"@aws-sdk/chunked-blob-reader-native@3.310.0":
-  version "3.310.0"
-  resolved "https://registry.yarnpkg.com/@aws-sdk/chunked-blob-reader-native/-/chunked-blob-reader-native-3.310.0.tgz#98d43a6213557835b3bbb0cd2ee0a4e2088e916a"
-  integrity sha512-RuhyUY9hCd6KWA2DMF/U6rilYLLRYrDY6e0lq3Of1yzSRFxi4bk9ZMCF0mxf/9ppsB5eudUjrOypYgm6Axt3zw==
-  dependencies:
-    "@aws-sdk/util-base64" "3.310.0"
-    tslib "^2.5.0"
-
-"@aws-sdk/chunked-blob-reader@3.310.0":
-  version "3.310.0"
-  resolved "https://registry.yarnpkg.com/@aws-sdk/chunked-blob-reader/-/chunked-blob-reader-3.310.0.tgz#2ada1b024a2745c2fe7e869606fab781325f981e"
-  integrity sha512-CrJS3exo4mWaLnWxfCH+w88Ou0IcAZSIkk4QbmxiHl/5Dq705OLoxf4385MVyExpqpeVJYOYQ2WaD8i/pQZ2fg==
-  dependencies:
-    tslib "^2.5.0"
-
 "@aws-sdk/client-cognito-identity@3.370.0":
   version "3.370.0"
   resolved "https://registry.yarnpkg.com/@aws-sdk/client-cognito-identity/-/client-cognito-identity-3.370.0.tgz#cfa6bc1a1b4b3631d0a62cd9861e56a397faba43"
@@ -202,19 +187,17 @@
     "@smithy/util-utf8" "^1.0.1"
     tslib "^2.5.0"
 
-"@aws-sdk/client-s3@^3.370.0":
-  version "3.370.0"
-  resolved "https://registry.yarnpkg.com/@aws-sdk/client-s3/-/client-s3-3.370.0.tgz#047a005040c7687bd291bc15c4153ed0ab16ab1a"
-  integrity sha512-+b53hI+C+tIiE6OhIvaUXD5qC0zFrCWIu6EKT597W+4XzfFIZE0BGgolP8pC1lLDghPjCFSmAm9Efcb2a1sPvw==
+"@aws-sdk/client-s3@^3.373.0":
+  version "3.373.0"
+  resolved "https://registry.yarnpkg.com/@aws-sdk/client-s3/-/client-s3-3.373.0.tgz#b50f47d6ab4de6e6d71ef2f39e06508c2ca4075a"
+  integrity sha512-cdgxK/C6CqmVXNYFTzaRDviV5MBiUx/Z6ghQhPJYxl0/FlOQ82x8yhCzhf1E6/LI6IHFKA7ypz0qf+I7nGp8+A==
   dependencies:
     "@aws-crypto/sha1-browser" "3.0.0"
     "@aws-crypto/sha256-browser" "3.0.0"
     "@aws-crypto/sha256-js" "3.0.0"
     "@aws-sdk/client-sts" "3.370.0"
     "@aws-sdk/credential-provider-node" "3.370.0"
-    "@aws-sdk/hash-blob-browser" "3.370.0"
     "@aws-sdk/hash-stream-node" "3.370.0"
-    "@aws-sdk/md5-js" "3.370.0"
     "@aws-sdk/middleware-bucket-endpoint" "3.370.0"
     "@aws-sdk/middleware-expect-continue" "3.370.0"
     "@aws-sdk/middleware-flexible-checksums" "3.370.0"
@@ -237,8 +220,10 @@
     "@smithy/eventstream-serde-config-resolver" "^1.0.1"
     "@smithy/eventstream-serde-node" "^1.0.1"
     "@smithy/fetch-http-handler" "^1.0.1"
+    "@smithy/hash-blob-browser" "^1.0.1"
     "@smithy/hash-node" "^1.0.1"
     "@smithy/invalid-dependency" "^1.0.1"
+    "@smithy/md5-js" "^1.0.1"
     "@smithy/middleware-content-length" "^1.0.1"
     "@smithy/middleware-endpoint" "^1.0.2"
     "@smithy/middleware-retry" "^1.0.3"
@@ -492,16 +477,6 @@
     "@smithy/types" "^1.1.0"
     tslib "^2.5.0"
 
-"@aws-sdk/hash-blob-browser@3.370.0":
-  version "3.370.0"
-  resolved "https://registry.yarnpkg.com/@aws-sdk/hash-blob-browser/-/hash-blob-browser-3.370.0.tgz#e18f92c222496de6a26f671ae4d708ad95336859"
-  integrity sha512-DyStaznfloyF9jN3KvG6puOAjt25alXoBNeHBF2FyLlEEbrOqUmso39JB5LVAw2/KB4UmCNsbAXFb6WktX/yHQ==
-  dependencies:
-    "@aws-sdk/chunked-blob-reader" "3.310.0"
-    "@aws-sdk/chunked-blob-reader-native" "3.310.0"
-    "@aws-sdk/types" "3.370.0"
-    tslib "^2.5.0"
-
 "@aws-sdk/hash-stream-node@3.370.0":
   version "3.370.0"
   resolved "https://registry.yarnpkg.com/@aws-sdk/hash-stream-node/-/hash-stream-node-3.370.0.tgz#95330f409145c88e162117afd89e3d5e00ff6e86"
@@ -516,15 +491,6 @@
   resolved "https://registry.yarnpkg.com/@aws-sdk/is-array-buffer/-/is-array-buffer-3.310.0.tgz#f87a79f1b858c88744f07e8d8d0a791df204017e"
   integrity sha512-urnbcCR+h9NWUnmOtet/s4ghvzsidFmspfhYaHAmSRdy9yDjdjBJMFjjsn85A1ODUktztm+cVncXjQ38WCMjMQ==
   dependencies:
-    tslib "^2.5.0"
-
-"@aws-sdk/md5-js@3.370.0":
-  version "3.370.0"
-  resolved "https://registry.yarnpkg.com/@aws-sdk/md5-js/-/md5-js-3.370.0.tgz#b0758574fa0556afbfa633ce5d21d5510fa18bb2"
-  integrity sha512-wch3+hiRdFGsu5E+w3WU9qmumQErKshtgetd6wMgFYm2MPSksFU58rM/aiwiWRA6knpcaShKaPKMmGnuX3HwhQ==
-  dependencies:
-    "@aws-sdk/types" "3.370.0"
-    "@aws-sdk/util-utf8" "3.310.0"
     tslib "^2.5.0"
 
 "@aws-sdk/middleware-bucket-endpoint@3.370.0":
@@ -691,14 +657,6 @@
   resolved "https://registry.yarnpkg.com/@aws-sdk/util-arn-parser/-/util-arn-parser-3.310.0.tgz#861ff8810851be52a320ec9e4786f15b5fc74fba"
   integrity sha512-jL8509owp/xB9+Or0pvn3Fe+b94qfklc2yPowZZIFAkFcCSIdkIglz18cPDWnYAcy9JGewpMS1COXKIUhZkJsA==
   dependencies:
-    tslib "^2.5.0"
-
-"@aws-sdk/util-base64@3.310.0":
-  version "3.310.0"
-  resolved "https://registry.yarnpkg.com/@aws-sdk/util-base64/-/util-base64-3.310.0.tgz#d0fd49aff358c5a6e771d0001c63b1f97acbe34c"
-  integrity sha512-v3+HBKQvqgdzcbL+pFswlx5HQsd9L6ZTlyPVL2LS9nNXnCcR3XgGz9jRskikRUuUvUXtkSG1J88GAOnJ/apTPg==
-  dependencies:
-    "@aws-sdk/util-buffer-from" "3.310.0"
     tslib "^2.5.0"
 
 "@aws-sdk/util-buffer-from@3.310.0":
@@ -5212,6 +5170,21 @@
     "@smithy/types" "^1.1.0"
     tslib "^2.5.0"
 
+"@smithy/chunked-blob-reader-native@^1.0.2":
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/@smithy/chunked-blob-reader-native/-/chunked-blob-reader-native-1.0.2.tgz#c6045b30f37824b4648ee8d06d68b2e8df400460"
+  integrity sha512-ychahynhO3kMhw/nWX3AAVaMeGezsH6ugc6UZ/P9DABgYcPkDMOmtZOOe3yGI9OYuLB/ZG4y+Gd0eHv5ClEdNw==
+  dependencies:
+    "@smithy/util-base64" "^1.0.2"
+    tslib "^2.5.0"
+
+"@smithy/chunked-blob-reader@^1.0.2":
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/@smithy/chunked-blob-reader/-/chunked-blob-reader-1.0.2.tgz#be1d2c91a4430de371207c5f143228d4cd671eb0"
+  integrity sha512-B2x76NIPqC883lvnISprpO2eDlI41SznmoDTehoPbVpVcI2A7Nwg3nYA+p8XTpFF06cIFgjmOs9M0il2HquFQQ==
+  dependencies:
+    tslib "^2.5.0"
+
 "@smithy/config-resolver@^1.0.1":
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/@smithy/config-resolver/-/config-resolver-1.0.1.tgz#da1c9f13f485e7cbb46e8aa62fe31c98deb6c403"
@@ -5289,6 +5262,16 @@
     "@smithy/util-base64" "^1.0.1"
     tslib "^2.5.0"
 
+"@smithy/hash-blob-browser@^1.0.1":
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/@smithy/hash-blob-browser/-/hash-blob-browser-1.0.2.tgz#c23b4a85540bdc3aea0e26e9fda8983b2a6006de"
+  integrity sha512-6SFzZ18aZNplDTvmbUhaxB83TVPGhe0FEAQInYQIj2lQd5Qraw2/KEE8HIfW4UxqxcoTSb0aYS0PqdUhI+dttQ==
+  dependencies:
+    "@smithy/chunked-blob-reader" "^1.0.2"
+    "@smithy/chunked-blob-reader-native" "^1.0.2"
+    "@smithy/types" "^1.1.1"
+    tslib "^2.5.0"
+
 "@smithy/hash-node@^1.0.1":
   version "1.0.1"
   resolved "https://registry.yarnpkg.com/@smithy/hash-node/-/hash-node-1.0.1.tgz#9cffefd78f74a99d7f0d99f19596be1a163f70b1"
@@ -5312,6 +5295,22 @@
   resolved "https://registry.yarnpkg.com/@smithy/is-array-buffer/-/is-array-buffer-1.0.1.tgz#42997d8321234438c141089120b5d3c9d68b0400"
   integrity sha512-fHSTW70gANnzPYWNDcWkPXpp+QMbHhKozbQm/+Denkhp4gwSiPuAovWZRpJa9sXO+Q4dOnNzYN2max1vTCEroA==
   dependencies:
+    tslib "^2.5.0"
+
+"@smithy/is-array-buffer@^1.0.2":
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/@smithy/is-array-buffer/-/is-array-buffer-1.0.2.tgz#224702a2364d698f0a36ecb2c240c0c9541ecfb6"
+  integrity sha512-pkyBnsBRpe+c/6ASavqIMRBdRtZNJEVJOEzhpxZ9JoAXiZYbkfaSMRA/O1dUxGdJ653GHONunnZ4xMo/LJ7utQ==
+  dependencies:
+    tslib "^2.5.0"
+
+"@smithy/md5-js@^1.0.1":
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/@smithy/md5-js/-/md5-js-1.0.2.tgz#bbcbdfc7afc3497ce74b1cb84026999753a813fb"
+  integrity sha512-0yUgIvIUt63Rb5+ErZTraQguc4Vu3Fw7NKJL0ozLnj1hcYDrt45pfQjUMztKBE7ve32vCnuSOA4LCAe3fudHZA==
+  dependencies:
+    "@smithy/types" "^1.1.1"
+    "@smithy/util-utf8" "^1.0.2"
     tslib "^2.5.0"
 
 "@smithy/middleware-content-length@^1.0.1":
@@ -5469,12 +5468,12 @@
     "@smithy/types" "^1.1.1"
     tslib "^2.5.0"
 
-"@smithy/util-base64@^1.0.1":
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/@smithy/util-base64/-/util-base64-1.0.1.tgz#69f682a542ca57ffb732da6f2e9309d238d52d84"
-  integrity sha512-rJcpRi/yUi6TyCEkjdTH86/ExBuKlfctEXhG9/4gMJ3/cnPcHJJnr0mQ9evSEO+3DbpT/Nxq90bcTBdTIAmCig==
+"@smithy/util-base64@^1.0.1", "@smithy/util-base64@^1.0.2":
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/@smithy/util-base64/-/util-base64-1.0.2.tgz#6cdd5a9356dafad3c531123c12cd77d674762da0"
+  integrity sha512-BCm15WILJ3SL93nusoxvJGMVfAMWHZhdeDZPtpAaskozuexd0eF6szdz4kbXaKp38bFCSenA6bkUHqaE3KK0dA==
   dependencies:
-    "@smithy/util-buffer-from" "^1.0.1"
+    "@smithy/util-buffer-from" "^1.0.2"
     tslib "^2.5.0"
 
 "@smithy/util-body-length-browser@^1.0.1":
@@ -5497,6 +5496,14 @@
   integrity sha512-363N7Wq0ceUgE5lLe6kaR6GlJs2/m4r9V6bRMfIszb6P1FZbbRRM2FQYUWWPFSsRymm9mJL18b3fjiVsIvhDGg==
   dependencies:
     "@smithy/is-array-buffer" "^1.0.1"
+    tslib "^2.5.0"
+
+"@smithy/util-buffer-from@^1.0.2":
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/@smithy/util-buffer-from/-/util-buffer-from-1.0.2.tgz#27e19573d721962bd2443f23d4edadb8206b2cb5"
+  integrity sha512-lHAYIyrBO9RANrPvccnPjU03MJnWZ66wWuC5GjWWQVfsmPwU6m00aakZkzHdUT6tGCkGacXSgArP5wgTgA+oCw==
+  dependencies:
+    "@smithy/is-array-buffer" "^1.0.2"
     tslib "^2.5.0"
 
 "@smithy/util-config-provider@^1.0.1":
@@ -5578,12 +5585,12 @@
   dependencies:
     tslib "^2.5.0"
 
-"@smithy/util-utf8@^1.0.1":
-  version "1.0.1"
-  resolved "https://registry.yarnpkg.com/@smithy/util-utf8/-/util-utf8-1.0.1.tgz#6ce31e1f165212b1060aae11f7de4fe06ce8533a"
-  integrity sha512-iX6XHpjh4DFEUIBSKp2tjy3pYnLQMsJ62zYi1BVAC0kobE6p8AVpiZnxsU3ZkgQatAsUaEspFHUZ7CL7oSqaPQ==
+"@smithy/util-utf8@^1.0.1", "@smithy/util-utf8@^1.0.2":
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/@smithy/util-utf8/-/util-utf8-1.0.2.tgz#b34c27b4efbe4f0edb6560b6d4f743088302671f"
+  integrity sha512-V4cyjKfJlARui0dMBfWJMQAmJzoW77i4N3EjkH/bwnE2Ngbl4tqD2Y0C/xzpzY/J1BdxeCKxAebVFk8aFCaSCw==
   dependencies:
-    "@smithy/util-buffer-from" "^1.0.1"
+    "@smithy/util-buffer-from" "^1.0.2"
     tslib "^2.5.0"
 
 "@smithy/util-waiter@^1.0.1":
