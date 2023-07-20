@@ -364,17 +364,18 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         // @dev do not sync if max invocations have already been synced, as
         // local max invocations could have been manually set to be
         // intentionally less than the core contract's max invocations.
+        // sync local max invocations if not initially populated
         if (
-            !MaxInvocationsLib.maxInvocationsIsInitialized(
+            MaxInvocationsLib.maxInvocationsIsInitialized(
                 _maxInvocationsProjectConfig
             )
         ) {
+            // for convenience, try to mint to next token slot
+            _tryMintTokenToNextSlot(_projectId, _coreContract);
+        } else {
             syncProjectMaxInvocationsToCore(_projectId, _coreContract);
             // @dev syncProjectMaxInvocationsToCore function calls
             // _tryMintTokenToNextSlot, so we do not call it here.
-        } else {
-            // for convenience, try to mint to next token slot
-            _tryMintTokenToNextSlot(_projectId, _coreContract);
         }
     }
 
