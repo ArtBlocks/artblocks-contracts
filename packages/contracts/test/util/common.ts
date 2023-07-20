@@ -70,6 +70,7 @@ export type T_Config = {
   auctionStartTimeOffset?: number;
   targetMinterName?: string;
   defaultAuctionLengthSeconds?: number;
+  bidIncrementPercentage?: number;
   // contracts
   genArt721Core?: Contract;
   randomizer?: Contract;
@@ -80,6 +81,7 @@ export type T_Config = {
   minterFilterAdminACL?: Contract;
   coreRegistry?: Contract;
   minterSetPrice?: Contract;
+  deadReceiver?: Contract;
   // minter test details
   isEngine?: boolean;
   delegationRegistry?: Contract;
