@@ -1010,7 +1010,7 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         address payable previousBidder = _auction.currentBidder;
 
         // update auction bid state
-        SEALib.AuctionUpdateBid({
+        SEALib.auctionUpdateBid({
             _auction: _auction,
             _timeBufferSeconds: minterTimeBufferSeconds,
             _bidAmount: msg.value,
@@ -1105,7 +1105,7 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
 
         // EFFECTS
         // create new auction, overwriting previous auction if it exists
-        uint64 endTime = SEALib.OverwriteProjectActiveAuction({
+        uint64 endTime = SEALib.overwriteProjectActiveAuction({
             _SEAProjectConfig: _SEAProjectConfig,
             _targetTokenId: _targetTokenId,
             _bidAmount: msg.value,

@@ -94,7 +94,7 @@ library SEALib {
      * @param _bidder initial bidder's payable address
      * @return endTime end time of the newly created auction
      */
-    function OverwriteProjectActiveAuction(
+    function overwriteProjectActiveAuction(
         SEAProjectConfig storage _SEAProjectConfig,
         uint256 _targetTokenId,
         uint256 _bidAmount,
@@ -128,7 +128,7 @@ library SEALib {
      * @param _bidAmount bid amount
      * @param _bidder bidder's payable address
      */
-    function AuctionUpdateBid(
+    function auctionUpdateBid(
         Auction storage _auction,
         uint256 _timeBufferSeconds,
         uint256 _bidAmount,
@@ -194,13 +194,10 @@ library SEALib {
     function projectActiveAuctionDetails(
         SEAProjectConfig storage _SEAProjectConfig
     ) internal view returns (Auction memory auction) {
-        SEALib.Auction storage _auction = _SEAProjectConfig.activeAuction;
+        Auction storage _auction = _SEAProjectConfig.activeAuction;
         // do not return uninitialized auctions (i.e. auctions that do not
         // exist, where currentBidder is still the default value)
-        require(
-            SEALib.auctionIsInitialized(_auction),
-            "No auction exists on project"
-        );
+        require(auctionIsInitialized(_auction), "No auction exists on project");
         // load entire auction into memory
         auction = _SEAProjectConfig.activeAuction;
         return auction;
@@ -280,7 +277,7 @@ library SEALib {
     function getPriceInfoFromSEAProjectConfig(
         SEAProjectConfig storage _SEAProjectConfig
     ) internal view returns (bool isConfigured, uint256 tokenPriceInWei) {
-        SEALib.Auction storage _auction = _SEAProjectConfig.activeAuction;
+        Auction storage _auction = _SEAProjectConfig.activeAuction;
         // base price of zero not allowed when configuring auctions, so use it
         // as indicator of whether auctions are configured for the project
         bool projectIsConfigured_ = projectIsConfigured(_SEAProjectConfig);
@@ -294,7 +291,7 @@ library SEALib {
         if (isConfigured) {
             if (auctionIsAcceptingIncreasingBids_) {
                 // return minimum next bid, given current bid
-                tokenPriceInWei = SEALib.getMinimumNextBid(_auction);
+                tokenPriceInWei = getMinimumNextBid(_auction);
             } else {
                 // return base (starting) price if if current auction is not
                 // accepting bids (i.e. the minimum initial bid price for the
