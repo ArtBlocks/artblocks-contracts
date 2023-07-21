@@ -6,6 +6,7 @@ import "../../interfaces/v0.8.x/IDelegationRegistry.sol";
 import "../../interfaces/v0.8.x/ISharedMinterV0.sol";
 import "../../interfaces/v0.8.x/IMinterFilterV1.sol";
 
+import "../../libs/v0.8.x/AuthLib.sol";
 import "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
 import "../../libs/v0.8.x/minter-libs/MaxInvocationsLib.sol";
 
@@ -78,22 +79,13 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     // MODIFIERS
-    /**
-     * @dev Throws if called by any account other than the artist of the specified project.
-     * Requirements: `msg.sender` must be the artist associated with `_projectId`.
-     * @param _projectId The ID of the project being checked.
-     * @param _coreContract The address of the GenArt721CoreContractV3_Base contract.
-     */
-    function _onlyArtist(
-        uint256 _projectId,
-        address _coreContract
-    ) internal view {
-        require(
-            msg.sender ==
-                IGenArt721CoreContractV3_Base(_coreContract)
-                    .projectIdToArtistAddress(_projectId),
-            "Only Artist"
-        );
+    // @dev contract uses modifier-like internal functions instead of modifiers
+    // to reduce contract bytecode size
+    // @dev contract uses AuthLib for some modifier-like functions
+
+    // function to require that a value is non-zero
+    function _onlyNonZero(uint256 _value) internal pure {
+        require(_value != 0, "Only non-zero");
     }
 
     /**
@@ -124,7 +116,11 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
         address _coreContract,
         uint24 _maxInvocations
     ) external {
-        _onlyArtist(_projectId, _coreContract);
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
         MaxInvocationsLib.manuallyLimitProjectMaxInvocations(
             _projectId,
             _coreContract,
@@ -152,7 +148,11 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
         address _coreContract,
         uint248 _pricePerTokenInWei
     ) external {
-        _onlyArtist(_projectId, _coreContract);
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
         ProjectConfig storage _projectConfig = _projectConfigMapping[
             _coreContract
         ][_projectId];
@@ -356,7 +356,11 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
         uint256 _projectId,
         address _coreContract
     ) public {
-        _onlyArtist(_projectId, _coreContract);
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
 
         uint256 maxInvocations = MaxInvocationsLib
             .syncProjectMaxInvocationsToCore(
