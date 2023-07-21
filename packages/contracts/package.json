@@ -46,7 +46,7 @@
     "@nomiclabs/hardhat-truffle5": "^2.0.7",
     "@nomiclabs/hardhat-waffle": "^2.0.3",
     "@nomiclabs/hardhat-web3": "^2.0.0",
-    "@openzeppelin/hardhat-upgrades": "^1.28.0",
+    "@openzeppelin/hardhat-upgrades": "^2.0.1",
     "@openzeppelin/test-helpers": "^0.5.16",
     "@remix-project/remixd": "^0.6.16",
     "@typechain/ethers-v5": "^11.1.0",
