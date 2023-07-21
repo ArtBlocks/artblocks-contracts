@@ -174,9 +174,9 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     // MODIFIERS
-    // @dev we use internal functions instead of modifiers to reduce contract
-    // bytecode size
-    // @dev contract uses AuthLib for additional modifier-like functions
+    // @dev contract uses modifier-like internal functions instead of modifiers
+    // to reduce contract bytecode size
+    // @dev contract uses AuthLib for some modifier-like functions
 
     // function to require that a value is non-zero
     function _onlyNonZero(uint256 _value) internal pure {
