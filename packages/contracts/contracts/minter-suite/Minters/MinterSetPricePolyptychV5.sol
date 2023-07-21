@@ -251,8 +251,9 @@ contract MinterSetPricePolyptychV5 is
                 _coreContract
             ][_projectId];
         if (
-            _maxInvocationsProjectConfig.maxInvocations == 0 &&
-            _maxInvocationsProjectConfig.maxHasBeenInvoked == false
+            !MaxInvocationsLib.maxInvocationsIsInitialized(
+                _maxInvocationsProjectConfig
+            )
         ) {
             syncProjectMaxInvocationsToCore(_projectId, _coreContract);
         }

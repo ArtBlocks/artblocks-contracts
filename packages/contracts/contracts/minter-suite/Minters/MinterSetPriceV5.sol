@@ -171,8 +171,9 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
         // @dev if local maxInvocations and maxHasBeenInvoked are both
         // initial values, we know they have not been populated on this minter
         if (
-            _maxInvocationsProjectConfig.maxInvocations == 0 &&
-            _maxInvocationsProjectConfig.maxHasBeenInvoked == false
+            !MaxInvocationsLib.maxInvocationsIsInitialized(
+                _maxInvocationsProjectConfig
+            )
         ) {
             syncProjectMaxInvocationsToCore(_projectId, _coreContract);
         }
