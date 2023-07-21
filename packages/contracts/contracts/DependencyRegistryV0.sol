@@ -169,7 +169,8 @@ contract DependencyRegistryV0 is
     }
 
     /**
-     * @notice Adds a script to dependency `_dependencyType`.
+     * @notice Adds a script to dependency `_dependencyType`, by way of
+     *         providing a string to write to bytecode storage.
      * @param _dependencyType dependency to be updated.
      * @param _script Script to be added. Required to be a non-empty string,
      * but no further validation is performed.
@@ -191,11 +192,12 @@ contract DependencyRegistryV0 is
     }
 
     /**
-     * @notice Updates script for dependencyType `_dependencyType` at script ID `_scriptId`.
+     * @notice Updates script for dependencyType `_dependencyType` at script ID `_scriptId`,
+     *         by way of providing a string to write to bytecode storage.
      * @param _dependencyType dependency to be updated.
      * @param _scriptId Script ID to be updated.
      * @param _script The updated script value. Required to be a non-empty
-     * string, but no further validation is performed.
+     *                string, but no further validation is performed.
      */
     function updateDependencyScript(
         bytes32 _dependencyType,
@@ -211,6 +213,53 @@ contract DependencyRegistryV0 is
         // the contract that no longer exists with the newly created one
         dependency.scriptBytecodeAddresses[_scriptId] = _script
             .writeToBytecode();
+
+        emit DependencyScriptUpdated(_dependencyType);
+    }
+
+    /**
+     * @notice Adds a script to dependency `_dependencyType`, by way of
+     *         providing an already written chunk of bytecode storage.
+     * @param _dependencyType dependency to be updated.
+     * @param _scriptPointer Address of script to be added. Required to be a non-zero address,
+     *                       but no further validation is performed.
+     */
+    function addDependencyScriptPointer(
+        bytes32 _dependencyType,
+        address _scriptPointer
+    ) external {
+        _onlyAdminACL(this.addDependencyScriptPointer.selector);
+        _onlyNonZeroAddress(_scriptPointer);
+        _onlyExistingDependencyType(_dependencyType);
+        Dependency storage dependency = dependencyDetails[_dependencyType];
+        // store script in contract bytecode
+        dependency.scriptBytecodeAddresses[
+            dependency.scriptCount
+        ] = _scriptPointer;
+        dependency.scriptCount = dependency.scriptCount + 1;
+
+        emit DependencyScriptUpdated(_dependencyType);
+    }
+
+    /**
+     * @notice Updates script for dependencyType `_dependencyType` at script ID `_scriptId`,
+     *         by way of providing an already written chunk of bytecode storage.
+     * @param _dependencyType dependency to be updated.
+     * @param _scriptId Script ID to be updated.
+     * @param _scriptPointer The updated script pointer (address of bytecode storage).
+     *                Required to be a non-zero address, but no further validation is performed.
+     */
+    function updateDependencyScriptPointer(
+        bytes32 _dependencyType,
+        uint256 _scriptId,
+        address _scriptPointer
+    ) external {
+        _onlyAdminACL(this.updateDependencyScriptPointer.selector);
+        _onlyNonZeroAddress(_scriptPointer);
+        _onlyExistingDependencyType(_dependencyType);
+        Dependency storage dependency = dependencyDetails[_dependencyType];
+        require(_scriptId < dependency.scriptCount, "scriptId out of range");
+        dependency.scriptBytecodeAddresses[_scriptId] = _scriptPointer;
 
         emit DependencyScriptUpdated(_dependencyType);
     }
@@ -717,7 +766,7 @@ contract DependencyRegistryV0 is
 
     /**
      * @notice Returns address with bytecode containing script for
-     * dependency `_dependencyTypes` at script index `_index`.
+     *         dependency `_dependencyTypes` at script index `_index`.
      */
     function getDependencyScriptBytecodeAddressAtIndex(
         bytes32 _dependencyType,
@@ -728,9 +777,30 @@ contract DependencyRegistryV0 is
     }
 
     /**
+     * @notice Returns the storage library version for
+     *         dependency `_dependencyTypes` at script index `_index`.
+     */
+    function getDependencyScriptBytecodeStorageVersionAtIndex(
+        bytes32 _dependencyType,
+        uint256 _index
+    ) external view returns (bytes32) {
+        return
+            BytecodeStorageReader.getLibraryVersionForBytecode(
+                dependencyDetails[_dependencyType].scriptBytecodeAddresses[
+                    _index
+                ]
+            );
+    }
+
+    /**
      * @notice Returns script for dependency `_dependencyType` at script index `_index`.
      * @param _dependencyType dependency to be queried.
      * @param _index Index of script to be queried.
+     * @dev This method attempts to introspectively determine which library version of
+     *      `BytecodeStorage` was used to write the stored script string that is being
+     *      read back, in order to use the proper read approach. If the version is
+     *      non-determinate, a fall-back to reading using the assumption that the bytes
+     *      were written with `SSTORE2` is used.
      */
     function getDependencyScriptAtIndex(
         bytes32 _dependencyType,
@@ -742,7 +812,20 @@ contract DependencyRegistryV0 is
             return "";
         }
 
-        return _readFromBytecode(dependency.scriptBytecodeAddresses[_index]);
+        address scriptAddress = dependency.scriptBytecodeAddresses[_index];
+        bytes32 storageVersion = BytecodeStorageReader
+            .getLibraryVersionForBytecode(scriptAddress);
+
+        if (storageVersion == BytecodeStorageReader.UNKNOWN_VERSION_STRING) {
+            return
+                string(
+                    BytecodeStorageReader.readBytesFromSSTORE2Bytecode(
+                        scriptAddress
+                    )
+                );
+        } else {
+            return BytecodeStorageReader.readFromBytecode(scriptAddress);
+        }
     }
 
     /**
@@ -835,15 +918,5 @@ contract DependencyRegistryV0 is
     function _transferOwnership(address newOwner) internal override {
         OwnableUpgradeable._transferOwnership(newOwner);
         adminACLContract = IAdminACLV0(newOwner);
-    }
-
-    /**
-     * Helper for calling `BytecodeStorageReader` external library reader method,
-     * added for bytecode size reduction purposes.
-     */
-    function _readFromBytecode(
-        address _address
-    ) internal view returns (string memory) {
-        return BytecodeStorageReader.readFromBytecode(_address);
     }
 }
