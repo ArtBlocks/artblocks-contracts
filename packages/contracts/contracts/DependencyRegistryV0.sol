@@ -647,6 +647,17 @@ contract DependencyRegistryV0 is
     }
 
     /**
+     * @notice Returns whether the given contract address is a supported core contract.
+     * @param coreContractAddress Address of the core contract to be queried.
+     * @return True if the given contract address is a supported core contract.
+     */
+    function isSupportedCoreContract(
+        address coreContractAddress
+    ) external view returns (bool) {
+        return _supportedCoreContracts.contains(coreContractAddress);
+    }
+
+    /**
      * @notice Returns a list of supported core contracts.
      * @return List of supported core contracts.
      * @dev This is only intended to be called outside of block
