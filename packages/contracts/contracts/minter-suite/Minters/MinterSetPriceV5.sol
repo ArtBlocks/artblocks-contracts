@@ -83,11 +83,6 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
     // to reduce contract bytecode size
     // @dev contract uses AuthLib for some modifier-like functions
 
-    // function to require that a value is non-zero
-    function _onlyNonZero(uint256 _value) internal pure {
-        require(_value != 0, "Only non-zero");
-    }
-
     /**
      * @notice Initializes contract to be a Filtered Minter for
      * `_minterFilter` minter filter.
