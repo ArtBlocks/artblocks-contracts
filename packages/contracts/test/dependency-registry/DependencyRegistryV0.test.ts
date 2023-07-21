@@ -1447,6 +1447,12 @@ describe(`DependencyRegistryV0`, async function () {
         expect(supportedCoreContracts).to.deep.eq([
           config.genArt721Core.address,
         ]);
+
+        const isSupportedCoreContract =
+          await config.dependencyRegistry.isSupportedCoreContract(
+            config.genArt721Core.address
+          );
+        expect(isSupportedCoreContract).to.eq(true);
       });
     });
     describe("removeSupportedCoreContract", function () {
