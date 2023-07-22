@@ -83,7 +83,7 @@ library PolyptychLib {
     ) internal {
         IGenArt721CoreContractV3WithSharedRandomizer(_coreContract)
             .randomizerContract()
-            .setPolyptychHashSeed({
+            .preSetHashSeed({
                 _coreContract: _coreContract,
                 _tokenId: _tokenId,
                 _hashSeed: _hashSeed
