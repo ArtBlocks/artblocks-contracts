@@ -185,7 +185,7 @@ runForEach.forEach((params) => {
       // toggle project zero to be polyptych
       await config.randomizer
         .connect(config.accounts.artist)
-        .toggleProjectIsPolyptych(
+        .toggleProjectUseAssignedHashSeed(
           config.genArt721Core.address,
           config.projectZero
         );
@@ -310,7 +310,7 @@ runForEach.forEach((params) => {
           );
         await config.randomizer
           .connect(config.accounts.artist)
-          .toggleProjectIsPolyptych(
+          .toggleProjectUseAssignedHashSeed(
             config.genArt721Core.address,
             config.projectOne
           );
@@ -730,7 +730,7 @@ runForEach.forEach((params) => {
         // induce incorrect hash seed by toggling project as NOT polyptych on randomizer
         await config.randomizer
           .connect(config.accounts.artist)
-          .toggleProjectIsPolyptych(
+          .toggleProjectUseAssignedHashSeed(
             config.genArt721Core.address,
             config.projectZero
           );
