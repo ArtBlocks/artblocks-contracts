@@ -310,6 +310,70 @@ library SplitFundsLib {
     }
 
     /**
+     * @notice Force sends `amount` (in wei) ETH to `to`, with a gas stipend
+     * equal to `minterRefundGasLimit`.
+     * If sending via the normal procedure fails, force sends the ETH by
+     * creating a temporary contract which uses `SELFDESTRUCT` to force send
+     * the ETH.
+     * Reverts if the current contract has insufficient balance.
+     * @param _to The address to send ETH to.
+     * @param _amount The amount of ETH to send.
+     * @dev This function is adapted from the `forceSafeTransferETH` function
+     * in the `https://github.com/Vectorized/solady` repository, with
+     * modifications to not check if the current contract has sufficient
+     * balance. Therefore, the contract should be checked for sufficient
+     * balance before calling this function in the minter itself, if
+     * applicable.
+     */
+    function forceSafeTransferETH(
+        address _to,
+        uint256 _amount,
+        uint256 _minterRefundGasLimit
+    ) internal {
+        // Manually inlined because the compiler doesn't inline functions with
+        // branches.
+        /// @solidity memory-safe-assembly
+        assembly {
+            // @dev intentionally do not check if this contract has sufficient
+            // balance, because that is not intended to be a valid state.
+
+            // Transfer the ETH and check if it succeeded or not.
+            if iszero(call(_minterRefundGasLimit, _to, _amount, 0, 0, 0, 0)) {
+                // if the transfer failed, we create a temporary contract with
+                // initialization code that uses `SELFDESTRUCT` to force send
+                // the ETH.
+                // note: Compatible with `SENDALL`:
+                // https://eips.ethereum.org/EIPS/eip-4758
+
+                //---------------------------------------------------------------------------------------------------------------//
+                // Opcode  | Opcode + Arguments  | Description        | Stack View                                               //
+                //---------------------------------------------------------------------------------------------------------------//
+                // Contract creation code that uses `SELFDESTRUCT` to force send ETH to a specified address.                     //
+                // Creation code summary: 0x73<20-byte toAddress>0xff                                                            //
+                //---------------------------------------------------------------------------------------------------------------//
+                // 0x73    |  0x73_toAddress     | PUSH20 toAddress   | toAddress                                                //
+                // 0xFF    |  0xFF               | SELFDESTRUCT       |                                                          //
+                //---------------------------------------------------------------------------------------------------------------//
+                // Store the address in scratch space, starting at 0x00, which begins the 20-byte address at 32-20=12 in memory
+                // @dev use scratch space because we have enough space for simple creation code (less than 0x40 bytes)
+                mstore(0x00, _to)
+                // store opcode PUSH20 immediately before the address, starting at 0x0b (11) in memory
+                mstore8(0x0b, 0x73)
+                // store opcode SELFDESTRUCT immediately after the address, starting at 0x20 (32) in memory
+                mstore8(0x20, 0xff)
+                // this will always succeed because the contract creation code is
+                // valid, and the address is valid because it is a 20-byte value
+                if iszero(create(_amount, 0x0b, 0x16)) {
+                    // @dev For better gas estimation.
+                    if iszero(gt(gas(), 1000000)) {
+                        revert(0, 0)
+                    }
+                }
+            }
+        }
+    }
+
+    /**
      * @notice Returns whether or not the provided address `_coreContract`
      * is an Art Blocks Engine core contract. Caches the result for future access.
      * @param _coreContract Address of the core contract to check.

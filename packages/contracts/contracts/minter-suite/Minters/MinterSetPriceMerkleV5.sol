@@ -7,6 +7,7 @@ import "../../interfaces/v0.8.x/ISharedMinterV0.sol";
 import "../../interfaces/v0.8.x/IMinterFilterV1.sol";
 import "../../interfaces/v0.8.x/ISharedMinterMerkleV0.sol";
 
+import "../../libs/v0.8.x/AuthLib.sol";
 import "../../libs/v0.8.x/minter-libs/MerkleLib.sol";
 import "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
 import "../../libs/v0.8.x/minter-libs/MaxInvocationsLib.sol";
@@ -117,23 +118,9 @@ contract MinterSetPriceMerkleV5 is
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     // MODIFIERS
-    /**
-     * @dev Throws if called by any account other than the artist of the specified project.
-     * Requirements: `msg.sender` must be the artist associated with `_projectId`.
-     * @param _projectId The ID of the project being checked.
-     * @param _coreContract The address of the GenArt721CoreContractV3_Base contract.
-     */
-    function _onlyArtist(
-        uint256 _projectId,
-        address _coreContract
-    ) internal view {
-        require(
-            msg.sender ==
-                IGenArt721CoreContractV3_Base(_coreContract)
-                    .projectIdToArtistAddress(_projectId),
-            "Only Artist"
-        );
-    }
+    // @dev contract uses modifier-like internal functions instead of modifiers
+    // to reduce contract bytecode size
+    // @dev contract uses AuthLib for some modifier-like functions
 
     /**
      * @notice Initializes contract to be a Filtered Minter for
@@ -150,10 +137,10 @@ contract MinterSetPriceMerkleV5 is
         minterFilter = IMinterFilterV1(_minterFilter);
 
         delegationRegistryAddress = _delegationRegistryAddress;
-        emit DelegationRegistryUpdated(_delegationRegistryAddress);
         delegationRegistryContract = IDelegationRegistry(
             _delegationRegistryAddress
         );
+        emit DelegationRegistryUpdated(_delegationRegistryAddress);
         // broadcast default max invocations per address for this minter
         emit DefaultMaxInvocationsPerAddress(
             MerkleLib.DEFAULT_MAX_INVOCATIONS_PER_ADDRESS
@@ -177,7 +164,11 @@ contract MinterSetPriceMerkleV5 is
         address _coreContract,
         uint24 _maxInvocations
     ) external {
-        _onlyArtist(_projectId, _coreContract);
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
         MaxInvocationsLib.manuallyLimitProjectMaxInvocations(
             _projectId,
             _coreContract,
@@ -205,7 +196,11 @@ contract MinterSetPriceMerkleV5 is
         address _coreContract,
         uint248 _pricePerTokenInWei
     ) external {
-        _onlyArtist(_projectId, _coreContract);
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
         ProjectConfig storage _projectConfig = _projectConfigMapping[
             _coreContract
         ][_projectId];
@@ -248,7 +243,11 @@ contract MinterSetPriceMerkleV5 is
         address _coreContract,
         bytes32 _root
     ) external {
-        _onlyArtist(_projectId, _coreContract);
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
         require(_root != bytes32(0), "Root must be provided");
         MerkleLib.updateMerkleRoot(
             _merkleProjectConfigMapping[_coreContract][_projectId],
@@ -280,7 +279,11 @@ contract MinterSetPriceMerkleV5 is
         address _coreContract,
         uint24 _maxInvocationsPerAddress
     ) external {
-        _onlyArtist(_projectId, _coreContract);
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
         MerkleLib.setProjectInvocationsPerAddress(
             _merkleProjectConfigMapping[_coreContract][_projectId],
             _maxInvocationsPerAddress
@@ -652,7 +655,11 @@ contract MinterSetPriceMerkleV5 is
         uint256 _projectId,
         address _coreContract
     ) public {
-        _onlyArtist(_projectId, _coreContract);
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
 
         uint256 maxInvocations = MaxInvocationsLib
             .syncProjectMaxInvocationsToCore(
