@@ -15,23 +15,10 @@ import { delay, getConfigInputs } from "../util/utils";
 import { EXTRA_DELAY_BETWEEN_TX } from "../util/constants";
 
 /**
- * This script was created to deploy a shared randomizer contract.
+ * This generic script was created to deploy shared randomizer contracts.
  * It is intended to document the deployment process and provide a reference
  * for the steps required to deploy the shared randomizer contract.
  */
-//////////////////////////////////////////////////////////////////////////////
-// CONFIG BEGINS HERE
-//////////////////////////////////////////////////////////////////////////////
-const randomizerName = "SharedRandomizerV0";
-// if the following is undefined, a new pseudorandomAtomicContract will be deployed
-// if the following is defined, the existing pseudorandomAtomicContract will be used
-let pseudorandomAtomicContractAddress = undefined;
-// the following can be undefined if pseudorandomAtomicContractAddress is defined
-const pseudorandomAtomicContractName = "PseudorandomAtomic";
-//////////////////////////////////////////////////////////////////////////////
-// CONFIG ENDS HERE
-//////////////////////////////////////////////////////////////////////////////
-
 async function main() {
   // get deployment configuration details
   const { deployConfigDetailsArray, deploymentConfigFile, inputFileDirectory } =
@@ -50,23 +37,34 @@ async function main() {
   //////////////////////////////////////////////////////////////////////////////
   // @dev perform input validation for ALL deploy config details to avoid mid-deployment failures
 
-  // Perform the following steps for each to-be-deployed minter contract
+  // Perform the following steps for each to-be-deployed randomizer contract
   for (let index = 0; index < deployConfigDetailsArray.length; index++) {
+    const deployDetails = deployConfigDetailsArray[index];
     // ensure mainnet uses pre-deployed pseudorandomAtomicContract
     if (networkName != "goerli" && networkName != "arbitrum-goerli") {
       // deploying on a mainnet
-      if (!pseudorandomAtomicContractAddress) {
+      if (!deployDetails.pseudorandomAtomicContractAddress) {
         throw new Error(
           "[ERROR] pseudorandomAtomicContractAddress must be defined when deploying to mainnet, because it should already have been deployed"
         );
       }
+    }
+    if (
+      !(
+        deployDetails.pseudorandomAtomicContractAddress ||
+        deployDetails.pseudorandomAtomicContractName
+      )
+    ) {
+      throw new Error(
+        `[ERROR] pseudorandomAtomicContractAddress or pseudorandomAtomicContractName must be defined at index ${index}`
+      );
     }
   }
   //////////////////////////////////////////////////////////////////////////////
   // INPUT VERIFICATION ENDS HERE
   //////////////////////////////////////////////////////////////////////////////
 
-  // Perform the following steps for each to-be-deployed minter contract
+  // Perform the following steps for each to-be-deployed randomizer contract
   for (let index = 0; index < deployConfigDetailsArray.length; index++) {
     const deployDetails = deployConfigDetailsArray[index];
 
@@ -75,37 +73,43 @@ async function main() {
     //////////////////////////////////////////////////////////////////////////////
 
     // if pseudorandomAtomicContractAddress is undefined, deploy a new one
-    let pseudorandomAtomicContract;
-    if (pseudorandomAtomicContractAddress) {
+    if (deployDetails.pseudorandomAtomicContractAddress) {
       // if pseudorandomAtomicContractAddress is defined, use the existing one
       console.log(
-        `[INFO] Using existing pseudorandomAtomicContract at ${pseudorandomAtomicContractAddress}`
+        `[INFO] Using existing pseudorandomAtomicContract at ${deployDetails.pseudorandomAtomicContractAddress}`
       );
     } else {
       // deploy new contract and record new address
       const pseudorandomAtomicContractFactory = await ethers.getContractFactory(
-        pseudorandomAtomicContractName
+        deployDetails.pseudorandomAtomicContractName
       );
-      pseudorandomAtomicContract =
+      const pseudorandomAtomicContract =
         await pseudorandomAtomicContractFactory.deploy();
       await pseudorandomAtomicContract.deployed();
       // update pseudorandomAtomicContractAddress for use in the rest of the script
-      pseudorandomAtomicContractAddress = pseudorandomAtomicContract.address;
+      deployDetails.pseudorandomAtomicContractAddress =
+        pseudorandomAtomicContract.address;
       console.log(
-        `[INFO] pseudorandom atomic contract ${pseudorandomAtomicContractName} deployed at ${pseudorandomAtomicContractAddress}`
+        `[INFO] pseudorandom atomic contract ${deployDetails.pseudorandomAtomicContractName} deployed at ${deployDetails.pseudorandomAtomicContractAddress}`
       );
       await delay(EXTRA_DELAY_BETWEEN_TX);
     }
 
     // Deploy new shared randomizer contract
-    const randomizerConstructorArgs = [pseudorandomAtomicContractAddress];
-    const randomizerFactory = await ethers.getContractFactory(randomizerName);
+    const randomizerConstructorArgs = [
+      deployDetails.pseudorandomAtomicContractAddress,
+    ];
+    const randomizerFactory = await ethers.getContractFactory(
+      deployDetails.randomizerName
+    );
     const randomizer = await randomizerFactory.deploy(
       ...randomizerConstructorArgs
     );
     await randomizer.deployed();
     const randomizerAddress = randomizer.address;
-    console.log(`[INFO] ${randomizerName} deployed at ${randomizerAddress}`);
+    console.log(
+      `[INFO] ${deployDetails.randomizerName} deployed at ${randomizerAddress}`
+    );
     await delay(EXTRA_DELAY_BETWEEN_TX);
 
     //////////////////////////////////////////////////////////////////////////////
@@ -126,7 +130,7 @@ async function main() {
 
     // verify shared randomizer (not pseudorandom atomic contract at this time)
     await tryVerify(
-      randomizerName,
+      deployDetails.randomizerName,
       randomizerAddress,
       randomizerConstructorArgs,
       networkName
@@ -158,7 +162,9 @@ Date: ${new Date().toISOString()}
       deployDetails.randomizerName
     }:** https://${etherscanSubdomain}etherscan.io/address/${randomizerAddress}#code
 
-**Associated pseudorandom atomic contract:** ${pseudorandomAtomicContractAddress}
+**Associated pseudorandom atomic contract:** ${
+      deployDetails.pseudorandomAtomicContractAddress
+    }
 
 **Deployment Args:** ${randomizerConstructorArgs}
 

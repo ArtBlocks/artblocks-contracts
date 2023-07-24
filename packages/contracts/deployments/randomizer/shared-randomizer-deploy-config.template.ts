@@ -11,7 +11,7 @@ export const deployConfigDetailsArray = [
     randomizerName: "SharedRandomizerV0",
     // if the following is undefined, a new pseudorandomAtomicContract will be deployed.
     // if the following is defined, the existing pseudorandomAtomicContract will be used.
-    pseudorandomAtomicContractAddress: "undefined",
+    pseudorandomAtomicContractAddress: undefined,
     // the following can be undefined if pseudorandomAtomicContractAddress is defined,
     // but must be defined if pseudorandomAtomicContractAddress is undefined (since new
     // pseudorandomAtomicContract will be deployed)

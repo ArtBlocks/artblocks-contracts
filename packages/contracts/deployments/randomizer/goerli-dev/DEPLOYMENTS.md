@@ -1,7 +1,6 @@
-
 # Shared Randomizer Deployment
 
-Date: 2023-07-24T19:47:08.383Z
+Date: 2023-07-24T20:43:35.919Z
 
 ## **Network:** goerli
 
@@ -9,11 +8,10 @@ Date: 2023-07-24T19:47:08.383Z
 
 **Deployment Input File:** `deployments/randomizer/goerli-dev/shared-randomizer-deploy-config.dev.ts`
 
-**SharedRandomizerV0:** https://goerli.etherscan.io/address/0x3dA7222e258D5373356974bE9DfF9f5199fD298A#code
+**SharedRandomizerV0:** https://goerli.etherscan.io/address/0xd0fB5CCBc8c7e594849f2790dC1585FDb1b3FdA2#code
 
-**Associated pseudorandom atomic contract:** 0x47b243C56Bd0e3440Ce936e81d30d0B955405d7e
+**Associated pseudorandom atomic contract:** 0xB79767d3f87c140a3a48316f1917b6b6298A5Dfa
 
-**Deployment Args:** 0x47b243C56Bd0e3440Ce936e81d30d0B955405d7e
+**Deployment Args:** 0xB79767d3f87c140a3a48316f1917b6b6298A5Dfa
 
 ---
-
