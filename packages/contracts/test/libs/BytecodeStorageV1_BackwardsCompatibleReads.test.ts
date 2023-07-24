@@ -62,7 +62,6 @@ describe("BytecodeStorageV1 Backwards Compatible Reads Tests", async function ()
 
     // Retrieve the address of the written target text from the SSTORE2 library.
     const textBytecodeAddress = getLatestTextDeploymentAddressSSTORE2(
-      config,
       config.sstore2Mock
     );
 
@@ -96,7 +95,6 @@ describe("BytecodeStorageV1 Backwards Compatible Reads Tests", async function ()
 
     // Retrieve the address of the written target text from the V0 library.
     const textBytecodeAddress = getLatestTextDeploymentAddressV0(
-      config,
       config.bytecodeV0TextCR_DMock
     );
 
@@ -116,10 +114,7 @@ describe("BytecodeStorageV1 Backwards Compatible Reads Tests", async function ()
 
   // Helper that retrieves the address of the most recently deployed contract
   // containing bytecode for storage, from the SSTORE2 library.
-  async function getLatestTextDeploymentAddressSSTORE2(
-    config: BytecodeStorageBackwardsCompatibleTestConfig,
-    sstore2Mock: Contract
-  ) {
+  async function getLatestTextDeploymentAddressSSTORE2(sstore2Mock: Contract) {
     const nextTextSlotId = await sstore2Mock.nextTextSlotId();
     // decrement from `nextTextSlotId` to get last updated slot
     const textSlotId = nextTextSlotId - 1;
@@ -132,7 +127,6 @@ describe("BytecodeStorageV1 Backwards Compatible Reads Tests", async function ()
   // Helper that retrieves the address of the most recently deployed contract
   // containing bytecode for storage, from the V0 ByteCode storage library.
   async function getLatestTextDeploymentAddressV0(
-    config: BytecodeStorageBackwardsCompatibleTestConfig,
     bytecodeV0TextCR_DMock: Contract
   ) {
     const nextTextSlotId = await bytecodeV0TextCR_DMock.nextTextSlotId();
@@ -146,7 +140,6 @@ describe("BytecodeStorageV1 Backwards Compatible Reads Tests", async function ()
   // Helper that retrieves the address of the most recently deployed contract
   // containing bytecode for storage, from the V0 ByteCode storage library.
   async function getLatestTextDeploymentAddressV1(
-    config: BytecodeStorageBackwardsCompatibleTestConfig,
     bytecodeV1TextCR_DMock: Contract
   ) {
     const nextTextSlotId = await bytecodeV1TextCR_DMock.nextTextSlotId();
@@ -280,7 +273,6 @@ describe("BytecodeStorageV1 Backwards Compatible Reads Tests", async function ()
         .connect(config.accounts.deployer)
         .createText("zip zipppity zoooop zop");
       const textBytecodeAddress = getLatestTextDeploymentAddressV0(
-        config,
         config.bytecodeV0TextCR_DMock
       );
 
@@ -305,7 +297,6 @@ describe("BytecodeStorageV1 Backwards Compatible Reads Tests", async function ()
         .connect(config.accounts.deployer)
         .createText("zip zipppity zoooop zop");
       const textBytecodeAddress = getLatestTextDeploymentAddressSSTORE2(
-        config,
         config.sstore2Mock
       );
 
@@ -326,7 +317,6 @@ describe("BytecodeStorageV1 Backwards Compatible Reads Tests", async function ()
         .connect(config.accounts.deployer)
         .createText("zip zipppity zoooop zop");
       const textBytecodeAddress = getLatestTextDeploymentAddressSSTORE2(
-        config,
         config.sstore2Mock
       );
 
@@ -350,7 +340,6 @@ describe("BytecodeStorageV1 Backwards Compatible Reads Tests", async function ()
         .connect(config.accounts.deployer)
         .createText("zip zipppity zoooop zop");
       const textBytecodeAddress = getLatestTextDeploymentAddressV0(
-        config,
         config.bytecodeV0TextCR_DMock
       );
 
@@ -373,7 +362,6 @@ describe("BytecodeStorageV1 Backwards Compatible Reads Tests", async function ()
         .connect(config.accounts.deployer)
         .createText("zip zipppity zoooop zop");
       const textBytecodeAddress = getLatestTextDeploymentAddressV1(
-        config,
         config.bytecodeV1TextCR_DMock
       );
 

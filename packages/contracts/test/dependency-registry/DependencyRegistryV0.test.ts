@@ -1,14 +1,18 @@
 import { expectRevert, constants } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
+import { Contract } from "ethers";
 import Mocha from "mocha";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+
 import {
   AdminACLV0,
   AdminACLV0__factory,
   DependencyRegistryV0,
   GenArt721CoreV1,
   GenArt721CoreV3,
+  BytecodeV1TextCR_DMock,
+  SSTORE2Mock,
 } from "../../scripts/contracts";
 
 import {
@@ -46,6 +50,31 @@ describe(`DependencyRegistryV0`, async function () {
     "https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.0.0/p5.min.js";
   const preferredRepository = "https://github.com/processing/p5.js";
   const referenceWebsite = "https://p5js.org/";
+
+  // Helper that retrieves the address of the most recently deployed contract
+  // containing bytecode for storage, from the SSTORE2 library.
+  async function getLatestTextDeploymentAddressSSTORE2(sstore2Mock: Contract) {
+    const nextTextSlotId = await sstore2Mock.nextTextSlotId();
+    // decrement from `nextTextSlotId` to get last updated slot
+    const textSlotId = nextTextSlotId - 1;
+    const textBytecodeAddress = await sstore2Mock.storedTextBytecodeAddresses(
+      textSlotId
+    );
+    return textBytecodeAddress;
+  }
+
+  // Helper that retrieves the address of the most recently deployed contract
+  // containing bytecode for storage, from the V0 ByteCode storage library.
+  async function getLatestTextDeploymentAddressV1(
+    bytecodeV1TextCR_DMock: Contract
+  ) {
+    const nextTextSlotId = await bytecodeV1TextCR_DMock.nextTextSlotId();
+    // decrement from `nextTextSlotId` to get last updated slot
+    const textSlotId = nextTextSlotId - 1;
+    const textBytecodeAddress =
+      await bytecodeV1TextCR_DMock.storedTextBytecodeAddresses(textSlotId);
+    return textBytecodeAddress;
+  }
 
   async function _beforeEach() {
     let config: T_Config = {
@@ -104,6 +133,21 @@ describe(`DependencyRegistryV0`, async function () {
     await config.minter
       .connect(config.accounts.artist)
       .updatePricePerTokenInWei(config.projectZero, 0);
+
+    // set up library mocks
+    // deploy the V1 library mock
+    config.bytecodeV1TextCR_DMock = await deployWithStorageLibraryAndGet(
+      config,
+      "BytecodeV1TextCR_DMock",
+      [] // no deployment args
+    );
+    // deploy the SSTORE2 library mock
+    config.sstore2Mock = await deployAndGet(
+      config,
+      "SSTORE2Mock",
+      [] // no deployment args
+    );
+
     return config;
   }
 
@@ -523,6 +567,20 @@ describe(`DependencyRegistryV0`, async function () {
         );
       // pass config to tests in this describe block
       this.config = config;
+    });
+
+    // TODO!
+    describe("direct pointer compatibility", function () {
+      it("does not allow non-admins to add a script pointer", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.user)
+            .addDependencyScriptPointer(dependencyTypeBytes, "on-chain script"),
+          ONLY_ADMIN_ACL_ERROR
+        );
+      });
     });
 
     describe("addDependencyScript", function () {
