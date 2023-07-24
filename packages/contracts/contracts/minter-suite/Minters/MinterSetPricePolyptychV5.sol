@@ -250,7 +250,7 @@ contract MinterSetPricePolyptychV5 is
                 _coreContract
             ][_projectId];
         if (
-            !MaxInvocationsLib.maxInvocationsIsInitialized(
+            MaxInvocationsLib.maxInvocationsIsUnconfigured(
                 _maxInvocationsProjectConfig
             )
         ) {

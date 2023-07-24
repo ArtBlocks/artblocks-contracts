@@ -129,8 +129,8 @@ library MaxInvocationsLib {
     }
 
     /**
-     * Helper function to check if max invocations has been initialized.
-     * @dev This function checks if max invocations has been initialized.
+     * Helper function to check if max invocations has not been initialized.
+     * Returns true if not initialized, false if initialized.
      * @param _maxInvocationsProjectConfig Struct that holds max invocations
      * project configuration.
      * @return bool
@@ -139,12 +139,12 @@ library MaxInvocationsLib {
      * This is because if maxInvocations were ever set to zero,
      * maxHasBeenInvoked would be set to true.
      */
-    function maxInvocationsIsInitialized(
+    function maxInvocationsIsUnconfigured(
         MaxInvocationsProjectConfig storage _maxInvocationsProjectConfig
     ) internal view returns (bool) {
         return
-            _maxInvocationsProjectConfig.maxInvocations != 0 ||
-            _maxInvocationsProjectConfig.maxHasBeenInvoked;
+            _maxInvocationsProjectConfig.maxInvocations == 0 &&
+            !_maxInvocationsProjectConfig.maxHasBeenInvoked;
     }
 
     /**
