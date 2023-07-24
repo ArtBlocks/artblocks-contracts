@@ -1,0 +1,13 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-07-24T19:44:51.967Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/randomizer/goerli-dev/shared-randomizer-deploy-config.dev.ts
+[INFO] pseudorandom atomic contract PseudorandomAtomic deployed at 0x47b243C56Bd0e3440Ce936e81d30d0B955405d7e
+[INFO] SharedRandomizerV0 deployed at 0x3dA7222e258D5373356974bE9DfF9f5199fD298A
+[INFO] Verifying SharedRandomizerV0 contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/randomizer/shared/SharedRandomizerV0.sol:SharedRandomizerV0 at 0x3dA7222e258D5373356974bE9DfF9f5199fD298A
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract SharedRandomizerV0 on Etherscan.
+https://goerli.etherscan.io/address/0x3dA7222e258D5373356974bE9DfF9f5199fD298A#code
