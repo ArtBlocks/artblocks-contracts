@@ -83,6 +83,7 @@ export type T_Config = {
   isEngine?: boolean;
   delegationRegistry?: Contract;
   // ref / mocks
+  ERC20?: Contract;
   weth?: Contract;
 };
 
@@ -573,4 +574,12 @@ export function hashAddress(_address) {
     ethers.utils.solidityKeccak256(["address"], [_address]).slice(2),
     "hex"
   );
+}
+
+// utility function to return if contract is ERC20Minter
+// @dev intended to only be used with shared minter contracts
+export async function isERC20Minter(_contract: Contract) {
+  const minterType = await _contract.minterType();
+  console.log("minterType", minterType);
+  return minterType.includes("ERC20");
 }
