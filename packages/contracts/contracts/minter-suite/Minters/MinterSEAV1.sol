@@ -115,8 +115,6 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
     /// minter version for this minter
     string public constant minterVersion = "v1.0.0";
 
-    uint256 constant ONE_MILLION = 1_000_000;
-
     uint256 public constant MIN_AUCTION_DURATION_SECONDS = 60; // seconds
 
     // minter-wide, AdminACL-configurable parameters, where AdminACL is the
