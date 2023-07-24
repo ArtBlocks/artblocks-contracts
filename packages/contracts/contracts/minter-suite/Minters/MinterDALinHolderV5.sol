@@ -13,7 +13,7 @@ import "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
 import "../../libs/v0.8.x/minter-libs/MaxInvocationsLib.sol";
 import "../../libs/v0.8.x/minter-libs/TokenHolderLib.sol";
 import "../../libs/v0.8.x/minter-libs/DALib.sol";
-import "../../libs/v0.8.x/minter-libs/AuthLib.sol";
+import "../../libs/v0.8.x/AuthLib.sol";
 
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin-4.5/contracts/utils/math/SafeCast.sol";
@@ -124,6 +124,7 @@ contract MinterDALinV5 is
 
         minterFilterAddress = _minterFilter;
         minterFilter = IMinterFilterV1(_minterFilter);
+        emit AuctionMinimumLengthSecondsUpdated(minimumAuctionLengthSeconds);
     }
 
     /**
@@ -424,11 +425,8 @@ contract MinterDALinV5 is
             storage _auctionProjectConfig = _auctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
-        // reset to initial values
-        _auctionProjectConfig.timestampStart = 0;
-        _auctionProjectConfig.timestampEnd = 0;
-        _auctionProjectConfig.startPrice = 0;
-        _auctionProjectConfig.basePrice = 0;
+
+        delete _auctionProjectConfig[_coreContract][_projectId];
 
         emit ResetAuctionDetails(_projectId, _coreContract);
     }
@@ -537,7 +535,13 @@ contract MinterDALinV5 is
     }
 
     /**
-     * @notice coreContract => projectId => auction parameters
+     * @notice Retrieves the auction parameters for a specific project.
+     * @param _projectId The unique identifier for the project.
+     * @param _coreContract The address of the core contract for the project.
+     * @return timestampStart The start timestamp for the auction.
+     * @return timestampEnd The end timestamp for the auction.
+     * @return startPrice The starting price of the auction.
+     * @return basePrice The base price of the auction.
      */
     function projectAuctionParameters(
         uint256 _projectId,

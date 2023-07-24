@@ -17,11 +17,12 @@ library DALib {
     using SafeCast for uint256;
 
     struct DAProjectConfig {
+        // @dev max uint64 ~= 1.8e19 sec ~= 570 billion years
         uint64 timestampStart;
         uint64 timestampEnd;
+        uint64 priceDecayHalfLifeSeconds;
         uint256 startPrice;
         uint256 basePrice;
-        uint64 priceDecayHalfLifeSeconds;
     }
 
     function resetAuctionDetailsExp(
@@ -52,8 +53,7 @@ library DALib {
         uint256 _minimumAuctionLengthSeconds
     ) external {
         require(
-            _auctionProjectConfigMapping.timestampStart == 0 ||
-                block.timestamp < _auctionProjectConfigMapping.timestampStart,
+            block.timestamp < _auctionProjectConfigMapping.timestampStart,
             "No modifications mid-auction"
         );
         require(
