@@ -107,13 +107,13 @@ runForEach.forEach((params) => {
       });
     });
 
-    describe("toggleProjectIsPolyptych", async function () {
+    describe("toggleProjectUseAssignedHashSeed", async function () {
       it("reverts when non-artist", async function () {
         const config = await loadFixture(_beforeEach);
         await expectRevert(
           config.randomizer
             .connect(config.accounts.deployer)
-            .toggleProjectIsPolyptych(
+            .toggleProjectUseAssignedHashSeed(
               config.genArt721Core.address,
               config.projectZero
             ),
@@ -124,7 +124,7 @@ runForEach.forEach((params) => {
       it("updates state", async function () {
         const config = await loadFixture(_beforeEach);
         // check initial state
-        let isPolyptych = await config.randomizer.projectIsPolyptych(
+        let isPolyptych = await config.randomizer.projectUsesHashSeedSetter(
           config.genArt721Core.address,
           config.projectZero
         );
@@ -132,12 +132,12 @@ runForEach.forEach((params) => {
         // toggle project is polyptych
         await config.randomizer
           .connect(config.accounts.artist)
-          .toggleProjectIsPolyptych(
+          .toggleProjectUseAssignedHashSeed(
             config.genArt721Core.address,
             config.projectZero
           );
         // check state
-        isPolyptych = await config.randomizer.projectIsPolyptych(
+        isPolyptych = await config.randomizer.projectUsesHashSeedSetter(
           config.genArt721Core.address,
           config.projectZero
         );
@@ -145,12 +145,12 @@ runForEach.forEach((params) => {
         // toggle project back to non-polyptych
         await config.randomizer
           .connect(config.accounts.artist)
-          .toggleProjectIsPolyptych(
+          .toggleProjectUseAssignedHashSeed(
             config.genArt721Core.address,
             config.projectZero
           );
         // check state
-        isPolyptych = await config.randomizer.projectIsPolyptych(
+        isPolyptych = await config.randomizer.projectUsesHashSeedSetter(
           config.genArt721Core.address,
           config.projectZero
         );
@@ -158,13 +158,13 @@ runForEach.forEach((params) => {
       });
     });
 
-    describe("setPolyptychHashSeed", async function () {
+    describe("preSetHashSeed", async function () {
       it("reverts when non-hashSeedSetterContract", async function () {
         const config = await loadFixture(_beforeEach);
         await expectRevert(
           config.randomizer
             .connect(config.accounts.deployer)
-            .setPolyptychHashSeed(
+            .preSetHashSeed(
               config.genArt721Core.address,
               config.projectZeroTokenZero.toNumber(),
               NONZERO_HASH_SEED
@@ -176,7 +176,7 @@ runForEach.forEach((params) => {
       it("updates state", async function () {
         const config = await loadFixture(_beforeEach);
         // verify pre-state
-        let hashSeed = await config.randomizer.polyptychHashSeed(
+        let hashSeed = await config.randomizer.preAssignedHashSeed(
           config.genArt721Core.address,
           config.projectZeroTokenZero.toNumber()
         );
@@ -192,13 +192,13 @@ runForEach.forEach((params) => {
           );
         await config.randomizer
           .connect(config.accounts.artist)
-          .setPolyptychHashSeed(
+          .preSetHashSeed(
             config.genArt721Core.address,
             config.projectZeroTokenZero.toNumber(),
             NONZERO_HASH_SEED
           );
         // verify state
-        hashSeed = await config.randomizer.polyptychHashSeed(
+        hashSeed = await config.randomizer.preAssignedHashSeed(
           config.genArt721Core.address,
           config.projectZeroTokenZero.toNumber()
         );
@@ -235,7 +235,7 @@ runForEach.forEach((params) => {
         // toggle project to polyptych
         await config.randomizer
           .connect(config.accounts.artist)
-          .toggleProjectIsPolyptych(
+          .toggleProjectUseAssignedHashSeed(
             config.genArt721Core.address,
             config.projectZero
           );
@@ -276,7 +276,7 @@ runForEach.forEach((params) => {
         // toggle project to polyptych
         await config.randomizer
           .connect(config.accounts.artist)
-          .toggleProjectIsPolyptych(
+          .toggleProjectUseAssignedHashSeed(
             config.genArt721Core.address,
             config.projectZero
           );
@@ -290,7 +290,7 @@ runForEach.forEach((params) => {
           );
         await config.randomizer
           .connect(config.accounts.artist)
-          .setPolyptychHashSeed(
+          .preSetHashSeed(
             config.genArt721Core.address,
             config.projectZeroTokenZero.toNumber(),
             NONZERO_HASH_SEED
