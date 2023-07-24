@@ -40,6 +40,12 @@ async function main() {
   // Perform the following steps for each to-be-deployed randomizer contract
   for (let index = 0; index < deployConfigDetailsArray.length; index++) {
     const deployDetails = deployConfigDetailsArray[index];
+    // check network consistency
+    if (networkName != deployDetails.network) {
+      throw new Error(
+        `[ERROR] config file's network ${deployDetails.network} does not match the network you are deploying to ${networkName}`
+      );
+    }
     // ensure mainnet uses pre-deployed pseudorandomAtomicContract
     if (networkName != "goerli" && networkName != "arbitrum-goerli") {
       // deploying on a mainnet
@@ -186,6 +192,9 @@ Date: ${new Date().toISOString()}
   console.log(
     `[INFO] No contracts were migrated to use the new shared randomizers. Each contract must be migrated individually.`
   );
+
+  // @dev delay to ensure logs are fully printed to disk
+  await delay(EXTRA_DELAY_BETWEEN_TX);
 }
 
 main()
