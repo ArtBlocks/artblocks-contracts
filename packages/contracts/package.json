@@ -36,6 +36,10 @@
     "deploy:shared-minter-filter:mainnet": "yarn hardhat run --network mainnet scripts/minter-filter-deployments/shared-minter-filter-deployer.ts",
     "deploy:shared-minter-filter:arbitrum-goerli": "yarn hardhat run --network arbitrum-goerli scripts/minter-filter-deployments/shared-minter-filter-deployer.ts",
     "deploy:shared-minter-filter:arbitrum": "yarn hardhat run --network arbitrum scripts/minter-filter-deployments/shared-minter-filter-deployer.ts",
+    "deploy:shared-shared-minters:goerli": "yarn hardhat run --network goerli scripts/minter-deployments/shared-minters-deployer.ts",
+    "deploy:shared-shared-minters:mainnet": "yarn hardhat run --network mainnet scripts/minter-deployments/shared-minters-deployer.ts",
+    "deploy:shared-shared-minters:arbitrum-goerli": "yarn hardhat run --network arbitrum-goerli scripts/minter-deployments/shared-minters-deployer.ts",
+    "deploy:shared-shared-minters:arbitrum": "yarn hardhat run --network arbitrum scripts/minter-deployments/shared-minters-deployer.ts",
     "pre-commit": "yarn lint"
   },
   "devDependencies": {

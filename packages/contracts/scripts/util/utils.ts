@@ -40,6 +40,10 @@ export type DeployConfigDetails = {
   minterFilterName?: string;
   existingCoreRegistry?: string;
   coreRegistryContractName?: string;
+  // shared minter fields
+  minterName?: string;
+  minterFilterAddress?: string;
+  approveMinterGlobally?: boolean;
 };
 
 export async function getConfigInputs(
