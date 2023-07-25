@@ -818,6 +818,8 @@ contract DependencyRegistryV0 is
      *      read back, in order to use the proper read approach. If the version is
      *      non-determinate, a fall-back to reading using the assumption that the bytes
      *      were written with `SSTORE2` is used.
+     *      Also note that in this `SSTORE2` fallback handling, the approach of casting bytes to string
+     *      can cause failure (e.g. unexpected continuation byte).
      */
     function getDependencyScript(
         bytes32 _dependencyType,
