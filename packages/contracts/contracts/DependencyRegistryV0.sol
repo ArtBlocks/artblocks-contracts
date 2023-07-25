@@ -47,8 +47,10 @@ contract DependencyRegistryV0 is
 
     struct Dependency {
         string preferredCDN;
+        // mapping from additional CDN index to CDN URLr
         mapping(uint256 => string) additionalCDNs;
         string preferredRepository;
+        // mapping from additional repository index to repository URL
         mapping(uint256 => string) additionalRepositories;
         string referenceWebsite;
         // mapping from script index to address storing script in bytecode
@@ -95,6 +97,13 @@ contract DependencyRegistryV0 is
             _dependencyTypes.contains(_dependencyType),
             "Dependency type does not exist"
         );
+    }
+
+    function _onlyInRangeIndex(
+        uint256 _index,
+        uint256 _maxIndex
+    ) internal pure {
+        require(_index < _maxIndex, "Index out of range");
     }
 
     /**
@@ -173,7 +182,7 @@ contract DependencyRegistryV0 is
      *         providing a string to write to bytecode storage.
      * @param _dependencyType Name of dependency type (i.e. "type@version") used to identify dependency.
      * @param _script Script to be added. Required to be a non-empty string,
-     * but no further validation is performed.
+     *                but no further validation is performed.
      */
     function addDependencyScript(
         bytes32 _dependencyType,
@@ -192,27 +201,26 @@ contract DependencyRegistryV0 is
     }
 
     /**
-     * @notice Updates script for dependencyType `_dependencyType` at script ID `_scriptId`,
+     * @notice Updates script for dependencyType `_dependencyType` at script `_index`,
      *         by way of providing a string to write to bytecode storage.
      * @param _dependencyType Name of dependency type (i.e. "type@version") used to identify dependency.
-     * @param _scriptId Script ID to be updated.
+     * @param _index The index of a given script, relative to the overall `scriptCount`.
      * @param _script The updated script value. Required to be a non-empty
      *                string, but no further validation is performed.
      */
     function updateDependencyScript(
         bytes32 _dependencyType,
-        uint256 _scriptId,
+        uint256 _index,
         string memory _script
     ) external {
         _onlyAdminACL(this.updateDependencyScript.selector);
         _onlyNonEmptyString(_script);
         _onlyExistingDependencyType(_dependencyType);
         Dependency storage dependency = dependencyDetails[_dependencyType];
-        require(_scriptId < dependency.scriptCount, "scriptId out of range");
+        _onlyInRangeIndex(_index, dependency.scriptCount);
         // store script in contract bytecode, replacing reference address from
         // the contract that no longer exists with the newly created one
-        dependency.scriptBytecodeAddresses[_scriptId] = _script
-            .writeToBytecode();
+        dependency.scriptBytecodeAddresses[_index] = _script.writeToBytecode();
 
         emit DependencyScriptUpdated(_dependencyType);
     }
@@ -242,24 +250,24 @@ contract DependencyRegistryV0 is
     }
 
     /**
-     * @notice Updates script for dependencyType `_dependencyType` at script ID `_scriptId`,
+     * @notice Updates script for dependencyType `_dependencyType` at script `_index`,
      *         by way of providing an already written chunk of bytecode storage.
      * @param _dependencyType Name of dependency type (i.e. "type@version") used to identify dependency.
-     * @param _scriptId Script ID to be updated.
+     * @param _index The index of a given script, relative to the overall `scriptCount`.
      * @param _scriptPointer The updated script pointer (address of bytecode storage).
-     *                Required to be a non-zero address, but no further validation is performed.
+     *                       Required to be a non-zero address, but no further validation is performed.
      */
     function updateDependencyScriptPointer(
         bytes32 _dependencyType,
-        uint256 _scriptId,
+        uint256 _index,
         address _scriptPointer
     ) external {
         _onlyAdminACL(this.updateDependencyScriptPointer.selector);
         _onlyNonZeroAddress(_scriptPointer);
         _onlyExistingDependencyType(_dependencyType);
         Dependency storage dependency = dependencyDetails[_dependencyType];
-        require(_scriptId < dependency.scriptCount, "scriptId out of range");
-        dependency.scriptBytecodeAddresses[_scriptId] = _scriptPointer;
+        _onlyInRangeIndex(_index, dependency.scriptCount);
+        dependency.scriptBytecodeAddresses[_index] = _scriptPointer;
 
         emit DependencyScriptUpdated(_dependencyType);
     }
@@ -341,7 +349,7 @@ contract DependencyRegistryV0 is
      * @notice Adds a new CDN url to `_dependencyType`.
      * @param _dependencyType Name of dependency type (i.e. "type@version") used to identify dependency.
      * @param _additionalCDN CDN URL to be added. Required to be a non-empty string,
-     * but no further validation is performed.
+     *                       but no further validation is performed.
      */
     function addDependencyAdditionalCDN(
         bytes32 _dependencyType,
@@ -368,18 +376,18 @@ contract DependencyRegistryV0 is
      * Removal is done by swapping the element to be removed with the last element in the array, then deleting this last element.
      * Assets with indices higher than `_index` can have their indices adjusted as a result of this operation.
      * @param _dependencyType Name of dependency type (i.e. "type@version") used to identify dependency.
-     * @param _index Additional CDN index
+     * @param _index The index of an additional CDN, relative to the overall `additionalCDNCount`.
      */
-    function removeDependencyAdditionalCDNAtIndex(
+    function removeDependencyAdditionalCDN(
         bytes32 _dependencyType,
         uint256 _index
     ) external {
-        _onlyAdminACL(this.removeDependencyAdditionalCDNAtIndex.selector);
+        _onlyAdminACL(this.removeDependencyAdditionalCDN.selector);
         _onlyExistingDependencyType(_dependencyType);
         Dependency storage dependency = dependencyDetails[_dependencyType];
 
         uint256 additionalCDNCount = dependency.additionalCDNCount;
-        require(_index < additionalCDNCount, "Asset index out of range");
+        _onlyInRangeIndex(_index, additionalCDNCount);
 
         uint256 lastElementIndex = additionalCDNCount - 1;
 
@@ -396,20 +404,19 @@ contract DependencyRegistryV0 is
     /**
      * @notice Updates additional CDN for dependency `_dependencyType` at `_index`.
      * @param _dependencyType Name of dependency type (i.e. "type@version") used to identify dependency.
-     * @param _index Additional CDN index.
+     * @param _index The index of an additional CDN, relative to the overall `additionalCDNCount`.
      * @param _additionalCDN New CDN URL.
      */
-    function updateDependencyAdditionalCDNAtIndex(
+    function updateDependencyAdditionalCDN(
         bytes32 _dependencyType,
         uint256 _index,
         string memory _additionalCDN
     ) external {
-        _onlyAdminACL(this.updateDependencyAdditionalCDNAtIndex.selector);
+        _onlyAdminACL(this.updateDependencyAdditionalCDN.selector);
         _onlyNonEmptyString(_additionalCDN);
         _onlyExistingDependencyType(_dependencyType);
         Dependency storage dependency = dependencyDetails[_dependencyType];
-        uint24 additionalCDNCount = dependency.additionalCDNCount;
-        require(_index < additionalCDNCount, "Asset index out of range");
+        _onlyInRangeIndex(_index, dependency.additionalCDNCount);
 
         dependency.additionalCDNs[_index] = _additionalCDN;
 
@@ -456,21 +463,18 @@ contract DependencyRegistryV0 is
      * Removal is done by swapping the element to be removed with the last element in the array, then deleting this last element.
      * Assets with indices higher than `_index` can have their indices adjusted as a result of this operation.
      * @param _dependencyType Name of dependency type (i.e. "type@version") used to identify dependency.
-     * @param _index Additional repository index.
+     * @param _index The index of an additional repository, relative to the overall `additionalRepositoryCount`.
      */
-    function removeDependencyAdditionalRepositoryAtIndex(
+    function removeDependencyAdditionalRepository(
         bytes32 _dependencyType,
         uint256 _index
     ) external {
-        _onlyAdminACL(
-            this.removeDependencyAdditionalRepositoryAtIndex.selector
-        );
+        _onlyAdminACL(this.removeDependencyAdditionalRepository.selector);
         _onlyExistingDependencyType(_dependencyType);
         Dependency storage dependency = dependencyDetails[_dependencyType];
-        uint256 additionalRepositoryCount = uint256(
-            dependency.additionalRepositoryCount
-        );
-        require(_index < additionalRepositoryCount, "Asset index out of range");
+        uint256 additionalRepositoryCount = dependency
+            .additionalRepositoryCount;
+        _onlyInRangeIndex(_index, additionalRepositoryCount);
 
         uint256 lastElementIndex = additionalRepositoryCount - 1;
 
@@ -487,22 +491,19 @@ contract DependencyRegistryV0 is
     /**
      * @notice Updates additional repository for dependency `_dependencyType` at `_index`.
      * @param _dependencyType Name of dependency type (i.e. "type@version") used to identify dependency.
-     * @param _index Additional repository index.
+     * @param _index The index of an additional repository, relative to the overall `additionalRepositoryCount`.
      * @param _additionalRepository New Repository URL.
      */
-    function updateDependencyAdditionalRepositoryAtIndex(
+    function updateDependencyAdditionalRepository(
         bytes32 _dependencyType,
         uint256 _index,
         string memory _additionalRepository
     ) external {
-        _onlyAdminACL(
-            this.updateDependencyAdditionalRepositoryAtIndex.selector
-        );
+        _onlyAdminACL(this.updateDependencyAdditionalRepository.selector);
         _onlyNonEmptyString(_additionalRepository);
         _onlyExistingDependencyType(_dependencyType);
         Dependency storage dependency = dependencyDetails[_dependencyType];
-        uint24 additionalRepositoryCount = dependency.additionalRepositoryCount;
-        require(_index < additionalRepositoryCount, "Asset index out of range");
+        _onlyInRangeIndex(_index, dependency.additionalRepositoryCount);
 
         dependency.additionalRepositories[_index] = _additionalRepository;
 
@@ -620,12 +621,12 @@ contract DependencyRegistryV0 is
 
     /**
      * @notice Returns registered depenedency type at index `_index`.
-     * @return Registered dependency at `_index`.
+     * @return Registered dependency at `_index`, relative to the overall length of the dependency type set.
      */
-    function getDependencyTypeAtIndex(
+    function getDependencyType(
         uint256 _index
     ) external view returns (string memory) {
-        require(_dependencyTypes.length() > _index, "Index out of range");
+        _onlyInRangeIndex(_index, _dependencyTypes.length());
         return _dependencyTypes.at(_index).toString();
     }
 
@@ -633,7 +634,7 @@ contract DependencyRegistryV0 is
      * @notice Returns details for a given depedency type `_dependencyType`.
      * @param _dependencyType Name of dependency type (i.e. "type@version") used to identify dependency.
      * @return typeAndVersion String representation of `_dependencyType`.
-     * (e.g. "p5js(atSymbol)1.0.0")
+     *                        (e.g. "p5js(atSymbol)1.0.0")
      * @return preferredCDN Preferred CDN URL for dependency
      * @return additionalCDNCount Count of additional CDN URLs for dependency
      * @return preferredRepository Preferred repository URL for dependency
@@ -682,16 +683,14 @@ contract DependencyRegistryV0 is
 
     /**
      * @notice Returns the address of the supported core contract at index `_index`.
-     * @param _index Index of the core contract to be returned.
+     * @param _index Index of the core contract to be returned, relative to the overall
+     *               list of supported core contracts.
      * @return address of the core contract.
      */
-    function getSupportedCoreContractAtIndex(
+    function getSupportedCoreContract(
         uint256 _index
     ) external view returns (address) {
-        require(
-            _supportedCoreContracts.length() > _index,
-            "Index out of bounds"
-        );
+        _onlyInRangeIndex(_index, _supportedCoreContracts.length());
         return _supportedCoreContracts.at(_index);
     }
 
@@ -732,26 +731,29 @@ contract DependencyRegistryV0 is
     /**
      * @notice Returns the additional CDN URL at index `_index` for dependency `_dependencyType`.
      * @param _dependencyType Name of dependency type (i.e. "type@version") used to identify dependency.
-     * @param _index Index of the additional CDN URL to be returned.
+     * @param _index The index of an additional CDN, relative to the overall `additionalCDNCount`.
      */
-    function getDependencyAdditionalCDNAtIndex(
+    function getDependencyAdditionalCDN(
         bytes32 _dependencyType,
         uint256 _index
     ) external view returns (string memory) {
-        return dependencyDetails[_dependencyType].additionalCDNs[_index];
+        Dependency storage dependency = dependencyDetails[_dependencyType];
+        _onlyInRangeIndex(_index, dependency.additionalCDNCount);
+        return dependency.additionalCDNs[_index];
     }
 
     /**
      * @notice Returns the additional repository URL at index `_index` for dependency `_dependencyType`.
      * @param _dependencyType Name of dependency type (i.e. "type@version") used to identify dependency.
-     * @param _index Index of the additional repository URL to be returned.
+     * @param _index The index of an additional repository, relative to the overall `additionalRepositoryCount`.
      */
-    function getDependencyAdditionalRepositoryAtIndex(
+    function getDependencyAdditionalRepository(
         bytes32 _dependencyType,
         uint256 _index
     ) external view returns (string memory) {
-        return
-            dependencyDetails[_dependencyType].additionalRepositories[_index];
+        Dependency storage dependency = dependencyDetails[_dependencyType];
+        _onlyInRangeIndex(_index, dependency.additionalRepositoryCount);
+        return dependency.additionalRepositories[_index];
     }
 
     /**
@@ -767,20 +769,24 @@ contract DependencyRegistryV0 is
     /**
      * @notice Returns address with bytecode containing script for
      *         dependency `_dependencyTypes` at script index `_index`.
+     * @param _dependencyType Name of dependency type (i.e. "type@version") used to identify dependency.
+     * @param _index The index of a given script, relative to the overall `scriptCount`.
+     * @return The address of the bytecode storage for the script at the given index, if it can be determined.
      */
-    function getDependencyScriptBytecodeAddressAtIndex(
+    function getDependencyScriptBytecodeAddress(
         bytes32 _dependencyType,
         uint256 _index
     ) external view returns (address) {
-        return
-            dependencyDetails[_dependencyType].scriptBytecodeAddresses[_index];
+        Dependency storage dependency = dependencyDetails[_dependencyType];
+        _onlyInRangeIndex(_index, dependency.scriptCount);
+        return dependency.scriptBytecodeAddresses[_index];
     }
 
     /**
      * @notice Returns the storage library version for
      *         dependency `_dependencyTypes` at script index `_index`.
      * @param _dependencyType Name of dependency type (i.e. "type@version") used to identify dependency.
-     * @param _index Index of script to be queried in the array of dependency script chunks.
+     * @param _index The index of a given script, relative to the overall `scriptCount`.
      * @return The storage library version for the script at the given index, if it can be determined.
      * @dev Note that we only expect this to be determinable if the script was written using a version
      *      of the Art Blocks `BytecodeStorage` library, and in other cases the fallback will be the
@@ -788,10 +794,12 @@ contract DependencyRegistryV0 is
      *      is inclusive of the in the case of `SSTORE2` written data blobs, which are an unknown version
      *      that can be fallback-read optimistically.
      */
-    function getDependencyScriptBytecodeStorageVersionAtIndex(
+    function getDependencyScriptBytecodeStorageVersion(
         bytes32 _dependencyType,
         uint256 _index
     ) external view returns (bytes32) {
+        Dependency storage dependency = dependencyDetails[_dependencyType];
+        _onlyInRangeIndex(_index, dependency.scriptCount);
         return
             BytecodeStorageReader.getLibraryVersionForBytecode(
                 dependencyDetails[_dependencyType].scriptBytecodeAddresses[
@@ -803,7 +811,7 @@ contract DependencyRegistryV0 is
     /**
      * @notice Returns script for dependency `_dependencyType` at script index `_index`.
      * @param _dependencyType Name of dependency type (i.e. "type@version") used to identify dependency.
-     * @param _index Index of script to be queried.
+     * @param _index The index of a given script, relative to the overall `scriptCount`.
      * @return A string containing the script content at the given script chunk index for a given dependency.
      * @dev This method attempts to introspectively determine which library version of
      *      `BytecodeStorage` was used to write the stored script string that is being
@@ -811,15 +819,12 @@ contract DependencyRegistryV0 is
      *      non-determinate, a fall-back to reading using the assumption that the bytes
      *      were written with `SSTORE2` is used.
      */
-    function getDependencyScriptAtIndex(
+    function getDependencyScript(
         bytes32 _dependencyType,
         uint256 _index
     ) external view returns (string memory) {
         Dependency storage dependency = dependencyDetails[_dependencyType];
-        // If trying to access an out-of-index script, return the empty string.
-        if (_index >= dependency.scriptCount) {
-            return "";
-        }
+        _onlyInRangeIndex(_index, dependency.scriptCount);
 
         address scriptAddress = dependency.scriptBytecodeAddresses[_index];
         bytes32 storageVersion = BytecodeStorageReader
