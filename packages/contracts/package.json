@@ -28,6 +28,10 @@
     "deploy:mainnet:v3-engine": "yarn codegen && NODE_ENV=mainnet yarn hardhat run --network mainnet scripts/engine/V3/generic-engine-deployer.ts",
     "deploy:goerli:minter": "yarn hardhat run --network goerli scripts/minter-deployments/V3/generic-minter-deployer-v3core.ts",
     "deploy:mainnet:minter": "yarn hardhat run --network mainnet scripts/minter-deployments/V3/generic-minter-deployer-v3core.ts",
+    "deploy:shared-randomizer:goerli": "yarn hardhat run --network goerli scripts/randomizer-deployments/shared-randomizer-deployer.ts",
+    "deploy:shared-randomizer:mainnet": "yarn hardhat run --network mainnet scripts/randomizer-deployments/shared-randomizer-deployer.ts",
+    "deploy:shared-randomizer:arbitrum-goerli": "yarn hardhat run --network arbitrum-goerli scripts/randomizer-deployments/shared-randomizer-deployer.ts",
+    "deploy:shared-randomizer:arbitrum": "yarn hardhat run --network arbitrum scripts/randomizer-deployments/shared-randomizer-deployer.ts",
     "pre-commit": "yarn lint"
   },
   "devDependencies": {
@@ -91,6 +95,6 @@
     "@openzeppelin-4.8/contracts-upgradeable": "npm:@openzeppelin/contracts-upgradeable@4.8.0",
     "@urql/exchange-retry": "^1.2.0",
     "graphql": "^16.7.1",
-    "urql": "^4.0.4"
+    "urql": "^4.0.5"
   }
 }
