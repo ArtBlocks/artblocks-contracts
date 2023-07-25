@@ -149,7 +149,7 @@ contract DependencyRegistryV0 is
 
     /**
      * @notice Removes a dependency.
-     * @param _dependencyType Name of dependency type (i.e. "type@version")
+     * @param _dependencyType Name of dependency type (i.e. "type@version") used to identify dependency.
      */
     function removeDependency(bytes32 _dependencyType) external {
         _onlyAdminACL(this.removeDependency.selector);
@@ -171,7 +171,7 @@ contract DependencyRegistryV0 is
     /**
      * @notice Adds a script to dependency `_dependencyType`, by way of
      *         providing a string to write to bytecode storage.
-     * @param _dependencyType dependency to be updated.
+     * @param _dependencyType Name of dependency type (i.e. "type@version") used to identify dependency.
      * @param _script Script to be added. Required to be a non-empty string,
      * but no further validation is performed.
      */
@@ -194,7 +194,7 @@ contract DependencyRegistryV0 is
     /**
      * @notice Updates script for dependencyType `_dependencyType` at script ID `_scriptId`,
      *         by way of providing a string to write to bytecode storage.
-     * @param _dependencyType dependency to be updated.
+     * @param _dependencyType Name of dependency type (i.e. "type@version") used to identify dependency.
      * @param _scriptId Script ID to be updated.
      * @param _script The updated script value. Required to be a non-empty
      *                string, but no further validation is performed.
@@ -220,7 +220,7 @@ contract DependencyRegistryV0 is
     /**
      * @notice Adds a script to dependency `_dependencyType`, by way of
      *         providing an already written chunk of bytecode storage.
-     * @param _dependencyType dependency to be updated.
+     * @param _dependencyType Name of dependency type (i.e. "type@version") used to identify dependency.
      * @param _scriptPointer Address of script to be added. Required to be a non-zero address,
      *                       but no further validation is performed.
      */
@@ -244,7 +244,7 @@ contract DependencyRegistryV0 is
     /**
      * @notice Updates script for dependencyType `_dependencyType` at script ID `_scriptId`,
      *         by way of providing an already written chunk of bytecode storage.
-     * @param _dependencyType dependency to be updated.
+     * @param _dependencyType Name of dependency type (i.e. "type@version") used to identify dependency.
      * @param _scriptId Script ID to be updated.
      * @param _scriptPointer The updated script pointer (address of bytecode storage).
      *                Required to be a non-zero address, but no further validation is performed.
@@ -266,7 +266,7 @@ contract DependencyRegistryV0 is
 
     /**
      * @notice Removes last script from dependency `_dependencyType`.
-     * @param _dependencyType dependency to be updated.
+     * @param _dependencyType Name of dependency type (i.e. "type@version") used to identify dependency.
      */
     function removeDependencyLastScript(bytes32 _dependencyType) external {
         _onlyAdminACL(this.removeDependencyLastScript.selector);
@@ -284,7 +284,7 @@ contract DependencyRegistryV0 is
 
     /**
      * @notice Updates preferred CDN for dependency `_dependencyType`.
-     * @param _dependencyType dependency to be updated.
+     * @param _dependencyType Name of dependency type (i.e. "type@version") used to identify dependency.
      * @param _preferredCDN URL for preferred CDN.
      */
     function updateDependencyPreferredCDN(
@@ -300,7 +300,7 @@ contract DependencyRegistryV0 is
 
     /**
      * @notice Updates preferred repository for dependency `_dependencyType`.
-     * @param _dependencyType dependency to be updated.
+     * @param _dependencyType Name of dependency type (i.e. "type@version") used to identify dependency.
      * @param _preferredRepository URL for preferred repository.
      */
     function updateDependencyPreferredRepository(
@@ -320,7 +320,7 @@ contract DependencyRegistryV0 is
 
     /**
      * @notice Updates project website for dependency `_dependencyType`.
-     * @param _dependencyType dependency to be updated.
+     * @param _dependencyType Name of dependency type (i.e. "type@version") used to identify dependency.
      * @param _referenceWebsite URL for project website.
      */
     function updateDependencyReferenceWebsite(
@@ -339,7 +339,7 @@ contract DependencyRegistryV0 is
 
     /**
      * @notice Adds a new CDN url to `_dependencyType`.
-     * @param _dependencyType dependency to be updated.
+     * @param _dependencyType Name of dependency type (i.e. "type@version") used to identify dependency.
      * @param _additionalCDN CDN URL to be added. Required to be a non-empty string,
      * but no further validation is performed.
      */
@@ -367,7 +367,7 @@ contract DependencyRegistryV0 is
      * @notice Removes additional CDN for dependency `_dependencyId` at index `_index`.
      * Removal is done by swapping the element to be removed with the last element in the array, then deleting this last element.
      * Assets with indices higher than `_index` can have their indices adjusted as a result of this operation.
-     * @param _dependencyType dependency to be updated.
+     * @param _dependencyType Name of dependency type (i.e. "type@version") used to identify dependency.
      * @param _index Additional CDN index
      */
     function removeDependencyAdditionalCDNAtIndex(
@@ -395,7 +395,7 @@ contract DependencyRegistryV0 is
 
     /**
      * @notice Updates additional CDN for dependency `_dependencyType` at `_index`.
-     * @param _dependencyType dependency to be updated.
+     * @param _dependencyType Name of dependency type (i.e. "type@version") used to identify dependency.
      * @param _index Additional CDN index.
      * @param _additionalCDN New CDN URL.
      */
@@ -422,7 +422,7 @@ contract DependencyRegistryV0 is
 
     /**
      * @notice Adds a new repository URL to dependency `_dependencyType`.
-     * @param _dependencyType dependency to be updated.
+     * @param _dependencyType Name of dependency type (i.e. "type@version") used to identify dependency.
      * @param _additionalRepository Repository URL to be added. Required to be a non-empty string,
      * but no further validation is performed.
      */
@@ -455,7 +455,7 @@ contract DependencyRegistryV0 is
      * @notice Removes additional repository for depenency `_dependencyId` at index `_index`.
      * Removal is done by swapping the element to be removed with the last element in the array, then deleting this last element.
      * Assets with indices higher than `_index` can have their indices adjusted as a result of this operation.
-     * @param _dependencyType dependency to be updated.
+     * @param _dependencyType Name of dependency type (i.e. "type@version") used to identify dependency.
      * @param _index Additional repository index.
      */
     function removeDependencyAdditionalRepositoryAtIndex(
@@ -486,7 +486,7 @@ contract DependencyRegistryV0 is
 
     /**
      * @notice Updates additional repository for dependency `_dependencyType` at `_index`.
-     * @param _dependencyType dependency to be updated.
+     * @param _dependencyType Name of dependency type (i.e. "type@version") used to identify dependency.
      * @param _index Additional repository index.
      * @param _additionalRepository New Repository URL.
      */
@@ -549,7 +549,7 @@ contract DependencyRegistryV0 is
      * type (`_dependencyType`).
      * @param _contractAddress Core contract address.
      * @param _projectId Project to override script type and version for.
-     * @param _dependencyType Dependency type to return for project.
+     * @param _dependencyType Name of dependency type (i.e. "type@version") used to identify dependency.
      */
     function addProjectDependencyTypeOverride(
         address _contractAddress,
@@ -630,8 +630,8 @@ contract DependencyRegistryV0 is
     }
 
     /**
-     * @notice Returns details for depedency type `_dependencyType`.
-     * @param _dependencyType Dependency type to be queried.
+     * @notice Returns details for a given depedency type `_dependencyType`.
+     * @param _dependencyType Name of dependency type (i.e. "type@version") used to identify dependency.
      * @return typeAndVersion String representation of `_dependencyType`.
      * (e.g. "p5js(atSymbol)1.0.0")
      * @return preferredCDN Preferred CDN URL for dependency
@@ -731,7 +731,7 @@ contract DependencyRegistryV0 is
 
     /**
      * @notice Returns the additional CDN URL at index `_index` for dependency `_dependencyType`.
-     * @param _dependencyType Dependency type to be queried.
+     * @param _dependencyType Name of dependency type (i.e. "type@version") used to identify dependency.
      * @param _index Index of the additional CDN URL to be returned.
      */
     function getDependencyAdditionalCDNAtIndex(
@@ -743,7 +743,7 @@ contract DependencyRegistryV0 is
 
     /**
      * @notice Returns the additional repository URL at index `_index` for dependency `_dependencyType`.
-     * @param _dependencyType Dependency type to be queried.
+     * @param _dependencyType Name of dependency type (i.e. "type@version") used to identify dependency.
      * @param _index Index of the additional repository URL to be returned.
      */
     function getDependencyAdditionalRepositoryAtIndex(
@@ -756,7 +756,7 @@ contract DependencyRegistryV0 is
 
     /**
      * @notice Returns the count of scripts for dependency `_dependencyType`.
-     * @param _dependencyType Dependency type to be queried.
+     * @param _dependencyType Name of dependency type (i.e. "type@version") used to identify dependency.
      */
     function getDependencyScriptCount(
         bytes32 _dependencyType
@@ -779,6 +779,14 @@ contract DependencyRegistryV0 is
     /**
      * @notice Returns the storage library version for
      *         dependency `_dependencyTypes` at script index `_index`.
+     * @param _dependencyType Name of dependency type (i.e. "type@version") used to identify dependency.
+     * @param _index Index of script to be queried in the array of dependency script chunks.
+     * @return The storage library version for the script at the given index, if it can be determined.
+     * @dev Note that we only expect this to be determinable if the script was written using a version
+     *      of the Art Blocks `BytecodeStorage` library, and in other cases the fallback will be the
+     *      unknown version string, as defined by the `BytecodeStorage` UNKNOWN_VERSION_STRING – this
+     *      is inclusive of the in the case of `SSTORE2` written data blobs, which are an unknown version
+     *      that can be fallback-read optimistically.
      */
     function getDependencyScriptBytecodeStorageVersionAtIndex(
         bytes32 _dependencyType,
@@ -794,7 +802,7 @@ contract DependencyRegistryV0 is
 
     /**
      * @notice Returns script for dependency `_dependencyType` at script index `_index`.
-     * @param _dependencyType dependency to be queried.
+     * @param _dependencyType Name of dependency type (i.e. "type@version") used to identify dependency.
      * @param _index Index of script to be queried.
      * @dev This method attempts to introspectively determine which library version of
      *      `BytecodeStorage` was used to write the stored script string that is being
@@ -836,7 +844,7 @@ contract DependencyRegistryV0 is
      * an override set, this will revert.
      * @param _contractAddress Core contract address.
      * @param _projectId Project to return dependency type for.
-     * @return dependencyType Dependency type used by project.
+     * @return dependencyType Identifier for the dependency (i.e. "type@version") used by project.
      */
     function getDependencyTypeForProject(
         address _contractAddress,
