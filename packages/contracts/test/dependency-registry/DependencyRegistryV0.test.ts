@@ -23,10 +23,12 @@ import {
   deployWithStorageLibraryAndGet,
   deployCoreWithMinterFilter,
 } from "../util/common";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 const ONLY_ADMIN_ACL_ERROR = "Only Admin ACL allowed";
 const ONLY_EXISTING_DEPENDENCY_TYPE_ERROR = "Dependency type does not exist";
 const ONLY_NON_EMPTY_STRING_ERROR = "Must input non-empty string";
+const ONLY_NON_ZERO_ADDRESS_ERROR = "Must input non-zero address";
 
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
@@ -51,9 +53,16 @@ describe(`DependencyRegistryV0`, async function () {
   const preferredRepository = "https://github.com/processing/p5.js";
   const referenceWebsite = "https://p5js.org/";
 
-  // Helper that retrieves the address of the most recently deployed contract
-  // containing bytecode for storage, from the SSTORE2 library.
-  async function getLatestTextDeploymentAddressSSTORE2(sstore2Mock: Contract) {
+  // Helper that retrieves writes content to blockchain bytecode storage using SSTORE2,
+  // and returns the address of that content.
+  async function writeContentWithSSTORE2(
+    content: string,
+    sstore2Mock: Contract,
+    writer: SignerWithAddress
+  ) {
+    // write
+    await sstore2Mock.connect(writer).createText(content);
+
     const nextTextSlotId = await sstore2Mock.nextTextSlotId();
     // decrement from `nextTextSlotId` to get last updated slot
     const textSlotId = nextTextSlotId - 1;
@@ -65,9 +74,14 @@ describe(`DependencyRegistryV0`, async function () {
 
   // Helper that retrieves the address of the most recently deployed contract
   // containing bytecode for storage, from the V0 ByteCode storage library.
-  async function getLatestTextDeploymentAddressV1(
-    bytecodeV1TextCR_DMock: Contract
+  async function writeContentWithBytecodeStorageV1(
+    content: string,
+    bytecodeV1TextCR_DMock: Contract,
+    writer: SignerWithAddress
   ) {
+    // write
+    await bytecodeV1TextCR_DMock.connect(writer).createText(content);
+
     const nextTextSlotId = await bytecodeV1TextCR_DMock.nextTextSlotId();
     // decrement from `nextTextSlotId` to get last updated slot
     const textSlotId = nextTextSlotId - 1;
@@ -569,20 +583,6 @@ describe(`DependencyRegistryV0`, async function () {
       this.config = config;
     });
 
-    // TODO!
-    describe("direct pointer compatibility", function () {
-      it("does not allow non-admins to add a script pointer", async function () {
-        // get config from beforeEach
-        const config = this.config;
-        await expectRevert(
-          config.dependencyRegistry
-            .connect(config.accounts.user)
-            .addDependencyScriptPointer(dependencyTypeBytes, "on-chain script"),
-          ONLY_ADMIN_ACL_ERROR
-        );
-      });
-    });
-
     describe("addDependencyScript", function () {
       it("does not allow non-admins to add a script", async function () {
         // get config from beforeEach
@@ -825,6 +825,321 @@ describe(`DependencyRegistryV0`, async function () {
         expect(storedScript).to.eq(updatedScript);
       });
     });
+
+    describe("addDependencyScriptPointer", function () {
+      it("does not allow non-admins to add a script pointer", async function () {
+        // get config from beforeEach
+        const config = this.config;
+
+        const contentAddress = writeContentWithBytecodeStorageV1(
+          "on-chain script",
+          config.bytecodeV1TextCR_DMock,
+          config.accounts.deployer
+        );
+
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.user)
+            .addDependencyScriptPointer(dependencyTypeBytes, contentAddress),
+          ONLY_ADMIN_ACL_ERROR
+        );
+      });
+
+      it("does not allow adding a script to a dependency that does not exist", async function () {
+        // get config from beforeEach
+        const config = this.config;
+
+        const contentAddress = writeContentWithBytecodeStorageV1(
+          "on-chain script",
+          config.bytecodeV1TextCR_DMock,
+          config.accounts.deployer
+        );
+
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .addDependencyScriptPointer(
+              ethers.utils.formatBytes32String("nonExistentDependencyType"),
+              contentAddress
+            ),
+          ONLY_EXISTING_DEPENDENCY_TYPE_ERROR
+        );
+      });
+
+      it("does not allow specifying zero address as script pointer", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .addDependencyScriptPointer(
+              dependencyTypeBytes,
+              constants.ZERO_ADDRESS
+            ),
+          ONLY_NON_ZERO_ADDRESS_ERROR
+        );
+      });
+
+      it("supports BytecodeStorageV1 reads/writes", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        const script = "on-chain script";
+        const contentAddress = writeContentWithBytecodeStorageV1(
+          script,
+          config.bytecodeV1TextCR_DMock,
+          config.accounts.deployer
+        );
+
+        await expect(
+          config.dependencyRegistry.addDependencyScriptPointer(
+            dependencyTypeBytes,
+            contentAddress
+          )
+        )
+          .to.emit(config.dependencyRegistry, "DependencyScriptUpdated")
+          .withArgs(dependencyTypeBytes);
+
+        const dependencyDetails =
+          await config.dependencyRegistry.getDependencyDetails(
+            dependencyTypeBytes
+          );
+
+        expect(dependencyDetails.scriptCount).to.eq(1);
+
+        const scriptCount =
+          await config.dependencyRegistry.getDependencyScriptCount(
+            dependencyTypeBytes
+          );
+        expect(scriptCount).to.eq(1);
+
+        const storedScript =
+          await config.dependencyRegistry.getDependencyScriptAtIndex(
+            dependencyTypeBytes,
+            0
+          );
+        expect(storedScript).to.eq(script);
+      });
+
+      it("supports SSTORE2 reads/writes", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        const script = "on-chain script";
+        const contentAddress = writeContentWithSSTORE2(
+          script,
+          config.sstore2Mock,
+          config.accounts.deployer
+        );
+
+        await expect(
+          config.dependencyRegistry.addDependencyScriptPointer(
+            dependencyTypeBytes,
+            contentAddress
+          )
+        )
+          .to.emit(config.dependencyRegistry, "DependencyScriptUpdated")
+          .withArgs(dependencyTypeBytes);
+
+        const dependencyDetails =
+          await config.dependencyRegistry.getDependencyDetails(
+            dependencyTypeBytes
+          );
+
+        expect(dependencyDetails.scriptCount).to.eq(1);
+
+        const scriptCount =
+          await config.dependencyRegistry.getDependencyScriptCount(
+            dependencyTypeBytes
+          );
+        expect(scriptCount).to.eq(1);
+
+        const storedScript =
+          await config.dependencyRegistry.getDependencyScriptAtIndex(
+            dependencyTypeBytes,
+            0
+          );
+        expect(storedScript).to.eq(script);
+      });
+    });
+
+    describe("updateDependencyScriptPointer", function () {
+      it("does not allow non-admins to update a script pointer", async function () {
+        // get config from beforeEach
+        const config = this.config;
+
+        const contentAddress = writeContentWithBytecodeStorageV1(
+          "on-chain script",
+          config.bytecodeV1TextCR_DMock,
+          config.accounts.deployer
+        );
+
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.user)
+            .updateDependencyScriptPointer(
+              dependencyTypeBytes,
+              0,
+              contentAddress
+            ),
+          ONLY_ADMIN_ACL_ERROR
+        );
+      });
+
+      it("does not allow update a script for a dependency that does not exist", async function () {
+        // get config from beforeEach
+        const config = this.config;
+
+        const contentAddress = writeContentWithBytecodeStorageV1(
+          "on-chain script",
+          config.bytecodeV1TextCR_DMock,
+          config.accounts.deployer
+        );
+
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .updateDependencyScriptPointer(
+              ethers.utils.formatBytes32String("nonExistentDependencyType"),
+              0,
+              contentAddress
+            ),
+          ONLY_EXISTING_DEPENDENCY_TYPE_ERROR
+        );
+      });
+
+      it("does not allow updating a script that is out of range", async function () {
+        // get config from beforeEach
+        const config = this.config;
+
+        const contentAddress = writeContentWithBytecodeStorageV1(
+          "on-chain script",
+          config.bytecodeV1TextCR_DMock,
+          config.accounts.deployer
+        );
+
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .updateDependencyScriptPointer(
+              dependencyTypeBytes,
+              0,
+              contentAddress
+            ),
+          "scriptId out of range"
+        );
+      });
+
+      it("does not allow specifying zero address as script pointer", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .updateDependencyScriptPointer(
+              dependencyTypeBytes,
+              0,
+              constants.ZERO_ADDRESS
+            ),
+          ONLY_NON_ZERO_ADDRESS_ERROR
+        );
+      });
+
+      it("supports BytecodeStorageV1 reads/writes", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        const script = "on-chain script";
+        const contentAddress = writeContentWithBytecodeStorageV1(
+          script,
+          config.bytecodeV1TextCR_DMock,
+          config.accounts.deployer
+        );
+
+        // add modified script first, before then updating it
+        const garbledScript = script.split("").reverse().join("");
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .addDependencyScript(dependencyTypeBytes, garbledScript);
+
+        await expect(
+          config.dependencyRegistry.updateDependencyScriptPointer(
+            dependencyTypeBytes,
+            0,
+            contentAddress
+          )
+        )
+          .to.emit(config.dependencyRegistry, "DependencyScriptUpdated")
+          .withArgs(dependencyTypeBytes);
+
+        const dependencyDetails =
+          await config.dependencyRegistry.getDependencyDetails(
+            dependencyTypeBytes
+          );
+
+        expect(dependencyDetails.scriptCount).to.eq(1);
+
+        const scriptCount =
+          await config.dependencyRegistry.getDependencyScriptCount(
+            dependencyTypeBytes
+          );
+        expect(scriptCount).to.eq(1);
+
+        const storedScript =
+          await config.dependencyRegistry.getDependencyScriptAtIndex(
+            dependencyTypeBytes,
+            0
+          );
+        expect(storedScript).to.eq(script);
+        expect(garbledScript).to.not.eq(script);
+      });
+
+      it("supports SSTORE2 reads/writes", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        const script = "on-chain script";
+        const contentAddress = writeContentWithSSTORE2(
+          script,
+          config.sstore2Mock,
+          config.accounts.deployer
+        );
+
+        // add modified script first, before then updating it
+        const garbledScript = script.split("").reverse().join("");
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .addDependencyScript(dependencyTypeBytes, garbledScript);
+
+        await expect(
+          config.dependencyRegistry.updateDependencyScriptPointer(
+            dependencyTypeBytes,
+            0,
+            contentAddress
+          )
+        )
+          .to.emit(config.dependencyRegistry, "DependencyScriptUpdated")
+          .withArgs(dependencyTypeBytes);
+
+        const dependencyDetails =
+          await config.dependencyRegistry.getDependencyDetails(
+            dependencyTypeBytes
+          );
+
+        expect(dependencyDetails.scriptCount).to.eq(1);
+
+        const scriptCount =
+          await config.dependencyRegistry.getDependencyScriptCount(
+            dependencyTypeBytes
+          );
+        expect(scriptCount).to.eq(1);
+
+        const storedScript =
+          await config.dependencyRegistry.getDependencyScriptAtIndex(
+            dependencyTypeBytes,
+            0
+          );
+        expect(storedScript).to.eq(script);
+        expect(garbledScript).to.not.eq(script);
+      });
+    });
+
     describe("views", function () {
       it("getDependencyDetails", async function () {
         // get config from beforeEach
@@ -881,6 +1196,63 @@ describe(`DependencyRegistryV0`, async function () {
         );
         expect(scriptBytecode).to.contain(
           ethers.utils.hexlify(ethers.utils.toUtf8Bytes(script)).substring(2)
+        );
+      });
+
+      it("getDependencyScriptBytecodeStorageVersionAtIndex (BytecodeStorageV1)", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        const script = "on-chain script";
+        const contentAddress = writeContentWithBytecodeStorageV1(
+          script,
+          config.bytecodeV1TextCR_DMock,
+          config.accounts.deployer
+        );
+
+        await config.dependencyRegistry.addDependencyScriptPointer(
+          dependencyTypeBytes,
+          contentAddress
+        );
+
+        const bytecodeStorageVersionBytes =
+          await config.dependencyRegistry.getDependencyScriptBytecodeStorageVersionAtIndex(
+            dependencyTypeBytes,
+            0
+          );
+        let bytecodeStorageVersionUTF8 = ethers.utils.toUtf8String(
+          bytecodeStorageVersionBytes
+        );
+        expect(bytecodeStorageVersionUTF8).to.eq(
+          "BytecodeStorage_V1.0.0_________ "
+        );
+      });
+
+      it("getDependencyScriptBytecodeStorageVersionAtIndex (SSTORE2)", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        const script = "on-chain script";
+        const contentAddress = writeContentWithSSTORE2(
+          script,
+          config.sstore2Mock,
+          config.accounts.deployer
+        );
+
+        await config.dependencyRegistry.addDependencyScriptPointer(
+          dependencyTypeBytes,
+          contentAddress
+        );
+
+        const bytecodeStorageVersionBytes =
+          await config.dependencyRegistry.getDependencyScriptBytecodeStorageVersionAtIndex(
+            dependencyTypeBytes,
+            0
+          );
+
+        let bytecodeStorageVersionUTF8 = ethers.utils.toUtf8String(
+          bytecodeStorageVersionBytes
+        );
+        expect(bytecodeStorageVersionUTF8).to.eq(
+          "UNKNOWN_VERSION_STRING_________ "
         );
       });
     });
