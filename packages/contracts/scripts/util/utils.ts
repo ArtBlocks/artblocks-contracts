@@ -34,6 +34,12 @@ export type DeployConfigDetails = {
   randomizerName?: string;
   pseudorandomAtomicContractAddress?: string;
   pseudorandomAtomicContractName?: string;
+  // shared minter filter fields
+  existingAdminACL?: string;
+  adminACLContractName?: string;
+  minterFilterName?: string;
+  existingCoreRegistry?: string;
+  coreRegistryContractName?: string;
 };
 
 export async function getConfigInputs(
