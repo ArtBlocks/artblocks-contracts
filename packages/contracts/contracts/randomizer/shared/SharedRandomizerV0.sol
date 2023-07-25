@@ -16,16 +16,17 @@ import "../../interfaces/v0.8.x/IPseudorandomAtomic.sol";
  * `assignTokenHash` function, as long as the call does not revert.
  *
  * The randomizer generates a token's hash seed in one of two ways:
- * 1. If the project of the token is specified as a polyptych, the randomizer
- * will assign the token the hash seed as previously set by the project's hash
- * seed setter contract. If no hash seed has been set, the randomizer will
- * revert.
- * 2. If the project of the token is not specified as a polyptych, the
- * randomizer will generate a new hash seed using the `IPseudorandomAtomic`
- * contract, which is immutable and set during deployment.
+ * 1. If the project of the token is specified as using a hash seed setter
+ * contract, the randomizer will assign the token the hash seed as previously
+ * pre-set by the project's hash seed setter contract. If no hash seed has
+ * been set, the randomizer will revert (will not assign null token hash).
+ * 2. If the project of the token is not specified as using a hash seed setter
+ * contract, the randomizer will generate a new hash seed using the
+ * `IPseudorandomAtomic` contract, which is immutable and set during
+ * deployment.
  *
- * When using this randomizer for ployptych minting, several requirements may
- * be required by the hash seed setter contract, including the possibility
+ * @dev When using this randomizer for ployptych minting, several requirements
+ * may be required by the hash seed setter contract, including the possibility
  * that a token's hash seed must be available in a public getter function on
  * the core contract. Please inspect the hash seed setter contract to ensure
  * that all requirements are met.
@@ -39,11 +40,11 @@ import "../../interfaces/v0.8.x/IPseudorandomAtomic.sol";
  * ----------------------------------------------------------------------------
  * The following functions are restricted to only the Artist address:
  * - setHashSeedSetterContract
- * - toggleProjectIsPolyptych
+ * - toggleProjectUseAssignedHashSeed
  * ----------------------------------------------------------------------------
  * The following function is restricted to only the hash seed setter contract
  * of a given core contract:
- * - setPolyptychHashSeed
+ * - preSetHashSeed
  * ----------------------------------------------------------------------------
  * Additional admin and artist privileged roles may be described on minters,
  * registries, and other contracts that may interact with this randomizer.
@@ -54,11 +55,16 @@ contract SharedRandomizerV0 is ISharedRandomizerV0 {
     // constant used to obtain the project ID from the token ID
     uint256 internal constant ONE_MILLION = 1_000_000;
 
-    // mapping of core contract => token ID => hash seed
-    mapping(address => mapping(uint256 => bytes12)) private _polyptychHashSeed;
+    // mapping of core contract => token ID => pre-assigned hash seed
+    // @dev this mapping is only used when the project is configured as using
+    // a hash seed setter contract. It is not populated when the project is
+    // using pseudorandomAtomicContract.
+    mapping(address => mapping(uint256 => bytes12))
+        private _preAssignedHashSeeds;
 
-    // mapping of core contract => project ID => is polyptych
-    mapping(address => mapping(uint256 => bool)) private _projectIsPolyptych;
+    // mapping of core contract => project ID => usesHashSeedSetter Contract
+    mapping(address => mapping(uint256 => bool))
+        private _projectUsesHashSeedSetter;
 
     // mapping of core contract => projectId => hash seed setter contract
     mapping(address => mapping(uint256 => address))
@@ -131,32 +137,34 @@ contract SharedRandomizerV0 is ISharedRandomizerV0 {
     /**
      * @inheritdoc ISharedRandomizerV0
      */
-    function toggleProjectIsPolyptych(
+    function toggleProjectUseAssignedHashSeed(
         address _coreContract,
         uint256 _projectId
     ) external {
         _onlyArtist(_coreContract, _projectId);
-        _projectIsPolyptych[_coreContract][_projectId] = !_projectIsPolyptych[
-            _coreContract
-        ][_projectId];
-        emit ProjectIsPolyptychUpdated({
+        _projectUsesHashSeedSetter[_coreContract][
+            _projectId
+        ] = !_projectUsesHashSeedSetter[_coreContract][_projectId];
+        emit ProjectUsingHashSeedSetterUpdated({
             coreContract: _coreContract,
             projectId: _projectId,
-            isPolyptych: _projectIsPolyptych[_coreContract][_projectId]
+            usingHashSeedSetter: _projectUsesHashSeedSetter[_coreContract][
+                _projectId
+            ]
         });
     }
 
     /**
      * @inheritdoc ISharedRandomizerV0
      */
-    function setPolyptychHashSeed(
+    function preSetHashSeed(
         address _coreContract,
         uint256 _tokenId,
         bytes12 _hashSeed
     ) external {
         uint256 projectId = _tokenIdToProjectId(_tokenId);
         _onlyHashSeedSetterContract(_coreContract, projectId);
-        _polyptychHashSeed[_coreContract][_tokenId] = _hashSeed;
+        _preAssignedHashSeeds[_coreContract][_tokenId] = _hashSeed;
         // @dev event indicating token hash seed assigned is not required for
         // subgraph indexing because token hash seeds are still assigned
         // atomically in `assignTokenHash` function. If token hash seeds were
@@ -177,8 +185,8 @@ contract SharedRandomizerV0 is ISharedRandomizerV0 {
         address coreContract = msg.sender;
         uint256 projectId = _tokenIdToProjectId(_tokenId);
         bytes32 hashSeed;
-        if (_projectIsPolyptych[coreContract][projectId]) {
-            hashSeed = _polyptychHashSeed[coreContract][_tokenId];
+        if (_projectUsesHashSeedSetter[coreContract][projectId]) {
+            hashSeed = _preAssignedHashSeeds[coreContract][_tokenId];
         } else {
             hashSeed = _getPseudorandomAtomic(coreContract, _tokenId);
         }
@@ -194,11 +202,11 @@ contract SharedRandomizerV0 is ISharedRandomizerV0 {
     /**
      * @inheritdoc ISharedRandomizerV0
      */
-    function projectIsPolyptych(
+    function projectUsesHashSeedSetter(
         address _coreContract,
         uint256 _projectId
-    ) external view returns (bool _isPolyptych) {
-        return _projectIsPolyptych[_coreContract][_projectId];
+    ) external view returns (bool _usingHashSeedSetter) {
+        return _projectUsesHashSeedSetter[_coreContract][_projectId];
     }
 
     /**
@@ -214,11 +222,11 @@ contract SharedRandomizerV0 is ISharedRandomizerV0 {
     /**
      * @inheritdoc ISharedRandomizerV0
      */
-    function polyptychHashSeed(
+    function preAssignedHashSeed(
         address _coreContract,
         uint256 _tokenId
     ) external view returns (bytes12 _hashSeed) {
-        return _polyptychHashSeed[_coreContract][_tokenId];
+        return _preAssignedHashSeeds[_coreContract][_tokenId];
     }
 
     /**

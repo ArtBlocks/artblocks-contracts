@@ -2,15 +2,15 @@
 // Created By: Art Blocks Inc.
 
 import { ethers } from "hardhat";
-import { tryVerify } from "../../util/verification";
+import { tryVerify } from "../../../util/verification";
 
 // hide nuisance logs about event overloading
 import { Logger } from "@ethersproject/logger";
 Logger.setLogLevel(Logger.levels.ERROR);
 
 // delay to avoid issues with reorgs and tx failures
-import { delay } from "../../util/utils";
-import { EXTRA_DELAY_BETWEEN_TX } from "../../util/constants";
+import { delay } from "../../../util/utils";
+import { EXTRA_DELAY_BETWEEN_TX } from "../../../util/constants";
 
 /**
  * This script was created to deploy polyptych randomizer as required for the MinterPolyptychV0 contract to the Ethereum

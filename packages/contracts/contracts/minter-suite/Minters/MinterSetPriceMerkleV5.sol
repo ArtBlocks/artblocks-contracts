@@ -71,8 +71,6 @@ contract MinterSetPriceMerkleV5 is
     /// minter version for this minter
     string public constant minterVersion = "v5.0.0";
 
-    uint256 constant ONE_MILLION = 1_000_000;
-
     /// Delegation registry address
     address public immutable delegationRegistryAddress;
     /// Delegation registry address

@@ -7,6 +7,7 @@ import "../../interfaces/v0.8.x/ISharedMinterV0.sol";
 import "../../interfaces/v0.8.x/ISharedMinterHolderV0.sol";
 import "../../interfaces/v0.8.x/IMinterFilterV1.sol";
 
+import "../../libs/v0.8.x/ABHelpers.sol";
 import "../../libs/v0.8.x/AuthLib.sol";
 import "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
 import "../../libs/v0.8.x/minter-libs/MaxInvocationsLib.sol";
@@ -95,8 +96,6 @@ contract MinterSetPricePolyptychV5 is
 
     /// minter version for this minter
     string public constant minterVersion = "v5.0.0";
-
-    uint256 constant ONE_MILLION = 1_000_000;
 
     /// contractAddress => projectId => base project config
     mapping(address => mapping(uint256 => ProjectConfig))
@@ -900,7 +899,12 @@ contract MinterSetPricePolyptychV5 is
                 );
             }
 
-            uint256 _newTokenId = (_projectId * ONE_MILLION) + _invocations;
+            uint256 _newTokenId = ABHelpers.tokenIdFromProjectIdAndTokenNumber({
+                _projectId: _projectId,
+                // @dev next token number is current invocations due to number
+                // being zero-based-indexed
+                _tokenNumber: _invocations
+            });
             PolyptychLib.setPolyptychHashSeed({
                 _coreContract: _coreContract,
                 _tokenId: _newTokenId, // new token ID
