@@ -804,6 +804,7 @@ contract DependencyRegistryV0 is
      * @notice Returns script for dependency `_dependencyType` at script index `_index`.
      * @param _dependencyType Name of dependency type (i.e. "type@version") used to identify dependency.
      * @param _index Index of script to be queried.
+     * @return A string containing the script content at the given script chunk index for a given dependency.
      * @dev This method attempts to introspectively determine which library version of
      *      `BytecodeStorage` was used to write the stored script string that is being
      *      read back, in order to use the proper read approach. If the version is
