@@ -1503,6 +1503,12 @@ describe(`DependencyRegistryV0`, async function () {
         const supportedCoreContracts =
           await config.dependencyRegistry.getSupportedCoreContracts();
         expect(supportedCoreContracts).to.deep.eq([]);
+
+        const isSupportedCoreContract =
+          await config.dependencyRegistry.isSupportedCoreContract(
+            config.genArt721Core.address
+          );
+        expect(isSupportedCoreContract).to.eq(false);
       });
     });
     describe("addProjectDependencyTypeOverride", function () {
