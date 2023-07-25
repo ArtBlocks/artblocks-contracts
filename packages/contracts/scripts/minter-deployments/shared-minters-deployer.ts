@@ -21,6 +21,8 @@ import {
 // allowlisting call only)
 const ASSUMED_MINTER_FILTER_NAME = "MinterFilterV2";
 
+const followOnActions: string[] = [];
+
 /**
  * This generic script was created to deploy shared minter contracts.
  * It is intended to document the deployment process and provide a reference
@@ -113,12 +115,23 @@ async function main() {
         ASSUMED_MINTER_FILTER_NAME,
         deployDetails.minterFilterAddress
       );
-      const tx = await minterFilter.approveMinterGlobally(minterAddress);
-      await tx.wait();
-      console.log(
-        `[INFO] ${deployDetails.minterName} approved globally on minter filter at ${deployDetails.minterFilterAddress}`
-      );
-      await delay(EXTRA_DELAY_BETWEEN_TX);
+      try {
+        const tx = await minterFilter.approveMinterGlobally(minterAddress);
+        await tx.wait();
+        console.log(
+          `[INFO] ${deployDetails.minterName} approved globally on minter filter at ${deployDetails.minterFilterAddress}`
+        );
+        await delay(EXTRA_DELAY_BETWEEN_TX);
+      } catch (error) {
+        console.log(
+          `[ERROR] ${deployDetails.minterName} failed to approve globally on minter filter at ${deployDetails.minterFilterAddress}`
+        );
+        console.log(error);
+        // push action onto follow-on actions
+        followOnActions.push(
+          `[ACTION] ${deployDetails.minterName}: call approveMinterGlobally(${minterAddress}) on ${deployDetails.minterFilterAddress} from admin wallet`
+        );
+      }
     }
 
     //////////////////////////////////////////////////////////////////////////////
@@ -182,6 +195,8 @@ Date: ${new Date().toISOString()}
   }
 
   console.log(`[INFO] Done!`);
+  // log any follow-on actions
+  followOnActions.forEach((action) => console.log(action));
 
   // @dev delay to ensure logs are fully printed to disk
   await delay(EXTRA_DELAY_BETWEEN_TX);
