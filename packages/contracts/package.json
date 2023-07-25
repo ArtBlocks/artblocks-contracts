@@ -32,6 +32,10 @@
     "deploy:shared-randomizer:mainnet": "yarn hardhat run --network mainnet scripts/randomizer-deployments/shared-randomizer-deployer.ts",
     "deploy:shared-randomizer:arbitrum-goerli": "yarn hardhat run --network arbitrum-goerli scripts/randomizer-deployments/shared-randomizer-deployer.ts",
     "deploy:shared-randomizer:arbitrum": "yarn hardhat run --network arbitrum scripts/randomizer-deployments/shared-randomizer-deployer.ts",
+    "deploy:shared-minter-filter:goerli": "yarn hardhat run --network goerli scripts/minter-filter-deployments/shared-minter-filter-deployer.ts",
+    "deploy:shared-minter-filter:mainnet": "yarn hardhat run --network mainnet scripts/minter-filter-deployments/shared-minter-filter-deployer.ts",
+    "deploy:shared-minter-filter:arbitrum-goerli": "yarn hardhat run --network arbitrum-goerli scripts/minter-filter-deployments/shared-minter-filter-deployer.ts",
+    "deploy:shared-minter-filter:arbitrum": "yarn hardhat run --network arbitrum scripts/minter-filter-deployments/shared-minter-filter-deployer.ts",
     "pre-commit": "yarn lint"
   },
   "devDependencies": {
@@ -83,7 +87,7 @@
     "solidity-coverage": "^0.8.4",
     "ts-node": "^9.1.1",
     "tsconfig": "*",
-    "typechain": "^8.3.0",
+    "typechain": "^8.3.1",
     "typescript": "^5.1.6"
   },
   "author": "Art Blocks, Inc",

@@ -13,18 +13,19 @@ Logger.setLogLevel(Logger.levels.ERROR);
 // delay to avoid issues with reorgs and tx failures
 import { delay, getConfigInputs } from "../util/utils";
 import { EXTRA_DELAY_BETWEEN_TX } from "../util/constants";
+import { Contract } from "ethers";
 
 /**
- * This generic script was created to deploy shared randomizer contracts.
+ * This generic script was created to deploy shared minter filter contracts.
  * It is intended to document the deployment process and provide a reference
- * for the steps required to deploy the shared randomizer contract.
+ * for the steps required to deploy the contract.
  */
 async function main() {
   // get deployment configuration details
   const { deployConfigDetailsArray, deploymentConfigFile, inputFileDirectory } =
     await getConfigInputs(
-      "deployments/randomizer/shared-randomizer-deploy-config.template.ts",
-      "shared randomizer deployment config file"
+      "deployments/minter-filter/shared-minter-filter-deploy-config.template.ts",
+      "shared minter-filter deployment config file"
     );
 
   // get accounts and network
@@ -37,7 +38,7 @@ async function main() {
   //////////////////////////////////////////////////////////////////////////////
   // @dev perform input validation for ALL deploy config details to avoid mid-deployment failures
 
-  // Perform the following steps for each to-be-deployed randomizer contract
+  // Perform the following steps for each to-be-deployed contract
   for (let index = 0; index < deployConfigDetailsArray.length; index++) {
     const deployDetails = deployConfigDetailsArray[index];
     // check network consistency
@@ -46,23 +47,23 @@ async function main() {
         `[ERROR] config file's network ${deployDetails.network} does not match the network you are deploying to ${networkName}`
       );
     }
-    // ensure mainnet uses pre-deployed pseudorandomAtomicContract
-    if (networkName != "goerli" && networkName != "arbitrum-goerli") {
-      // deploying on a mainnet
-      if (!deployDetails.pseudorandomAtomicContractAddress) {
-        throw new Error(
-          "[ERROR] pseudorandomAtomicContractAddress must be defined when deploying to mainnet, because it should already have been deployed"
-        );
-      }
+    // check sufficient adminACL input
+    if (
+      !(deployDetails.existingAdminACL || deployDetails.adminACLContractName)
+    ) {
+      throw new Error(
+        `[ERROR] existingAdminACL or adminACLContractName must be defined at index ${index}`
+      );
     }
+    // check sufficient coreRegistry input
     if (
       !(
-        deployDetails.pseudorandomAtomicContractAddress ||
-        deployDetails.pseudorandomAtomicContractName
+        deployDetails.existingCoreRegistry ||
+        deployDetails.coreRegistryContractName
       )
     ) {
       throw new Error(
-        `[ERROR] pseudorandomAtomicContractAddress or pseudorandomAtomicContractName must be defined at index ${index}`
+        `[ERROR] existingAdminACL or adminACLContractName must be defined at index ${index}`
       );
     }
   }
@@ -70,7 +71,7 @@ async function main() {
   // INPUT VERIFICATION ENDS HERE
   //////////////////////////////////////////////////////////////////////////////
 
-  // Perform the following steps for each to-be-deployed randomizer contract
+  // Perform the following steps for each to-be-deployed contract
   for (let index = 0; index < deployConfigDetailsArray.length; index++) {
     const deployDetails = deployConfigDetailsArray[index];
 
@@ -78,43 +79,67 @@ async function main() {
     // DEPLOYMENT BEGINS HERE
     //////////////////////////////////////////////////////////////////////////////
 
-    // if pseudorandomAtomicContractAddress is undefined, deploy a new one
-    if (deployDetails.pseudorandomAtomicContractAddress) {
-      // if pseudorandomAtomicContractAddress is defined, use the existing one
+    // get or deploy admin ACL contract
+    let adminACLContractAddress: string | undefined;
+    if (deployDetails.existingAdminACL) {
+      // use the existing contract
+      adminACLContractAddress = deployDetails.existingAdminACL;
       console.log(
-        `[INFO] Using existing pseudorandomAtomicContract at ${deployDetails.pseudorandomAtomicContractAddress}`
+        `[INFO] Using existing adminACL at ${adminACLContractAddress}`
       );
     } else {
       // deploy new contract and record new address
-      const pseudorandomAtomicContractFactory = await ethers.getContractFactory(
-        deployDetails.pseudorandomAtomicContractName
+      const adminACLContractFactory = await ethers.getContractFactory(
+        deployDetails.adminACLContractName
       );
-      const pseudorandomAtomicContract =
-        await pseudorandomAtomicContractFactory.deploy();
-      await pseudorandomAtomicContract.deployed();
-      // update pseudorandomAtomicContractAddress for use in the rest of the script
-      deployDetails.pseudorandomAtomicContractAddress =
-        pseudorandomAtomicContract.address;
+      const adminACLContract = await adminACLContractFactory.deploy();
+      await adminACLContract.deployed();
+      // update existing AdminACL for use in the rest of the script
+      adminACLContractAddress = adminACLContract.address;
       console.log(
-        `[INFO] pseudorandom atomic contract ${deployDetails.pseudorandomAtomicContractName} deployed at ${deployDetails.pseudorandomAtomicContractAddress}`
+        `[INFO] Admin ACL contract ${deployDetails.adminACLContractName} deployed at ${adminACLContractAddress}`
       );
       await delay(EXTRA_DELAY_BETWEEN_TX);
     }
 
-    // Deploy new shared randomizer contract
-    const randomizerConstructorArgs = [
-      deployDetails.pseudorandomAtomicContractAddress,
+    // get or deploy Core Registry contract
+    let coreRegistryAddress: string | undefined;
+    if (deployDetails.existingCoreRegistry) {
+      // use the existing contract
+      coreRegistryAddress = deployDetails.existingCoreRegistry;
+      console.log(
+        `[INFO] Using existing Core Registry at ${coreRegistryAddress}`
+      );
+    } else {
+      // deploy new contract and record new address
+      const coreRegistryContractFactory = await ethers.getContractFactory(
+        deployDetails.coreRegistryContractName
+      );
+      const coreRegistryContract = await coreRegistryContractFactory.deploy();
+      await coreRegistryContract.deployed();
+      // update existing Core Registry for use in the rest of the script
+      coreRegistryAddress = coreRegistryContract.address;
+      console.log(
+        `[INFO] Core Registry contract ${deployDetails.coreRegistryContractName} deployed at ${coreRegistryAddress}`
+      );
+      await delay(EXTRA_DELAY_BETWEEN_TX);
+    }
+
+    // deploy new shared minter filter contract
+    const minterFilterConstructorArgs = [
+      adminACLContractAddress,
+      coreRegistryAddress,
     ];
-    const randomizerFactory = await ethers.getContractFactory(
-      deployDetails.randomizerName
+    const minterFilterFactory = await ethers.getContractFactory(
+      deployDetails.minterFilterName
     );
-    const randomizer = await randomizerFactory.deploy(
-      ...randomizerConstructorArgs
+    const minterFilter = await minterFilterFactory.deploy(
+      ...minterFilterConstructorArgs
     );
-    await randomizer.deployed();
-    const randomizerAddress = randomizer.address;
+    await minterFilter.deployed();
+    const minterFilterAddress = minterFilter.address;
     console.log(
-      `[INFO] ${deployDetails.randomizerName} deployed at ${randomizerAddress}`
+      `[INFO] ${deployDetails.minterFilterName} deployed at ${minterFilterAddress}`
     );
     await delay(EXTRA_DELAY_BETWEEN_TX);
 
@@ -134,11 +159,31 @@ async function main() {
     // VERIFICATION BEGINS HERE
     //////////////////////////////////////////////////////////////////////////////
 
-    // verify shared randomizer (not pseudorandom atomic contract at this time)
+    // verify any new adminACL contract
+    if (!deployDetails.existingAdminACL) {
+      await tryVerify(
+        deployDetails.adminACLContractName,
+        adminACLContractAddress,
+        [],
+        networkName
+      );
+    }
+
+    // verify any new core registry contract
+    if (!deployDetails.existingCoreRegistry) {
+      await tryVerify(
+        deployDetails.coreRegistryContractName,
+        coreRegistryAddress,
+        [],
+        networkName
+      );
+    }
+
+    // verify shared minter filter
     await tryVerify(
-      deployDetails.randomizerName,
-      randomizerAddress,
-      randomizerConstructorArgs,
+      deployDetails.minterFilterName,
+      minterFilterAddress,
+      minterFilterConstructorArgs,
       networkName
     );
 
@@ -154,7 +199,7 @@ async function main() {
     const etherscanSubdomain =
       networkName === "mainnet" ? "" : `${networkName}.`;
     const outputMd = `
-# Shared Randomizer Deployment
+# Shared Minter Filter Deployment
 
 Date: ${new Date().toISOString()}
 
@@ -165,14 +210,14 @@ Date: ${new Date().toISOString()}
 **Deployment Input File:** \`${deploymentConfigFile}\`
 
 **${
-      deployDetails.randomizerName
-    }:** https://${etherscanSubdomain}etherscan.io/address/${randomizerAddress}#code
+      deployDetails.minterFilterName
+    }:** https://${etherscanSubdomain}etherscan.io/address/${minterFilterAddress}#code
 
-**Associated pseudorandom atomic contract:** ${
-      deployDetails.pseudorandomAtomicContractAddress
-    }
+**Associated AdminACL contract:** ${adminACLContractAddress}
 
-**Deployment Args:** ${randomizerConstructorArgs}
+**Associated CoreRegistry contract:** ${coreRegistryAddress}
+
+**Deployment Args:** ${minterFilterConstructorArgs}
 
 ---
 
@@ -190,7 +235,7 @@ Date: ${new Date().toISOString()}
 
   console.log(`[INFO] Done!`);
   console.log(
-    `[INFO] No contracts were migrated to use the new shared randomizers. Each contract must be migrated individually.`
+    `[INFO] Ensure any superAdmin migration actions are performed before proceeding to use the deployed contracts.`
   );
 
   // @dev delay to ensure logs are fully printed to disk
