@@ -51,8 +51,6 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
     /// minter version for this minter
     string public constant minterVersion = "v5.0.0";
 
-    uint256 constant ONE_MILLION = 1_000_000;
-
     /// contractAddress => projectId => base project config
     mapping(address => mapping(uint256 => ProjectConfig))
         private _projectConfigMapping;
@@ -177,8 +175,9 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
         // @dev if local maxInvocations and maxHasBeenInvoked are both
         // initial values, we know they have not been populated on this minter
         if (
-            _maxInvocationsProjectConfig.maxInvocations == 0 &&
-            _maxInvocationsProjectConfig.maxHasBeenInvoked == false
+            MaxInvocationsLib.maxInvocationsIsUnconfigured(
+                _maxInvocationsProjectConfig
+            )
         ) {
             syncProjectMaxInvocationsToCore(_projectId, _coreContract);
         }
@@ -311,8 +310,9 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
         address _coreContract
     ) external view returns (bool) {
         return
-            _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-                .maxHasBeenInvoked;
+            MaxInvocationsLib.getMaxHasBeenInvoked(
+                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
+            );
     }
 
     /**
@@ -340,9 +340,8 @@ contract MinterSetPriceERC20V5 is ReentrancyGuard, ISharedMinterV0 {
         address _coreContract
     ) external view returns (uint256) {
         return
-            uint256(
+            MaxInvocationsLib.getMaxInvocations(
                 _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-                    .maxInvocations
             );
     }
 

@@ -115,8 +115,6 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
     /// minter version for this minter
     string public constant minterVersion = "v1.0.0";
 
-    uint256 constant ONE_MILLION = 1_000_000;
-
     uint256 public constant MIN_AUCTION_DURATION_SECONDS = 60; // seconds
 
     // minter-wide, AdminACL-configurable parameters, where AdminACL is the
@@ -366,16 +364,16 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         // intentionally less than the core contract's max invocations.
         // sync local max invocations if not initially populated
         if (
-            MaxInvocationsLib.maxInvocationsIsInitialized(
+            MaxInvocationsLib.maxInvocationsIsUnconfigured(
                 _maxInvocationsProjectConfig
             )
         ) {
-            // for convenience, try to mint to next token slot
-            _tryMintTokenToNextSlot(_projectId, _coreContract);
-        } else {
             syncProjectMaxInvocationsToCore(_projectId, _coreContract);
             // @dev syncProjectMaxInvocationsToCore function calls
             // _tryMintTokenToNextSlot, so we do not call it here.
+        } else {
+            // for convenience, try to mint to next token slot
+            _tryMintTokenToNextSlot(_projectId, _coreContract);
         }
     }
 
@@ -595,8 +593,9 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         address _coreContract
     ) external view returns (bool) {
         return
-            _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-                .maxHasBeenInvoked;
+            MaxInvocationsLib.getMaxHasBeenInvoked(
+                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
+            );
     }
 
     /**
@@ -624,9 +623,8 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         address _coreContract
     ) external view returns (uint256) {
         return
-            uint256(
+            MaxInvocationsLib.getMaxInvocations(
                 _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-                    .maxInvocations
             );
     }
 
