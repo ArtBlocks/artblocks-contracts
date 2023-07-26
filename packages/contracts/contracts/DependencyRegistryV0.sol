@@ -99,11 +99,8 @@ contract DependencyRegistryV0 is
         );
     }
 
-    function _onlyInRangeIndex(
-        uint256 _index,
-        uint256 _maxIndex
-    ) internal pure {
-        require(_index < _maxIndex, "Index out of range");
+    function _onlyInRangeIndex(uint256 _index, uint256 _length) internal pure {
+        require(_index < _length, "Index out of range");
     }
 
     /**
@@ -217,7 +214,7 @@ contract DependencyRegistryV0 is
         _onlyNonEmptyString(_script);
         _onlyExistingDependencyType(_dependencyType);
         Dependency storage dependency = dependencyDetails[_dependencyType];
-        _onlyInRangeIndex(_index, dependency.scriptCount);
+        _onlyInRangeIndex({_index: _index, _length: dependency.scriptCount});
         // store script in contract bytecode, replacing reference address from
         // the contract that no longer exists with the newly created one
         dependency.scriptBytecodeAddresses[_index] = _script.writeToBytecode();
@@ -266,7 +263,7 @@ contract DependencyRegistryV0 is
         _onlyNonZeroAddress(_scriptPointer);
         _onlyExistingDependencyType(_dependencyType);
         Dependency storage dependency = dependencyDetails[_dependencyType];
-        _onlyInRangeIndex(_index, dependency.scriptCount);
+        _onlyInRangeIndex({_index: _index, _length: dependency.scriptCount});
         dependency.scriptBytecodeAddresses[_index] = _scriptPointer;
 
         emit DependencyScriptUpdated(_dependencyType);
@@ -387,7 +384,7 @@ contract DependencyRegistryV0 is
         Dependency storage dependency = dependencyDetails[_dependencyType];
 
         uint256 additionalCDNCount = dependency.additionalCDNCount;
-        _onlyInRangeIndex(_index, additionalCDNCount);
+        _onlyInRangeIndex({_index: _index, _length: additionalCDNCount});
 
         uint256 lastElementIndex = additionalCDNCount - 1;
 
@@ -416,7 +413,10 @@ contract DependencyRegistryV0 is
         _onlyNonEmptyString(_additionalCDN);
         _onlyExistingDependencyType(_dependencyType);
         Dependency storage dependency = dependencyDetails[_dependencyType];
-        _onlyInRangeIndex(_index, dependency.additionalCDNCount);
+        _onlyInRangeIndex({
+            _index: _index,
+            _length: dependency.additionalCDNCount
+        });
 
         dependency.additionalCDNs[_index] = _additionalCDN;
 
@@ -474,7 +474,7 @@ contract DependencyRegistryV0 is
         Dependency storage dependency = dependencyDetails[_dependencyType];
         uint256 additionalRepositoryCount = dependency
             .additionalRepositoryCount;
-        _onlyInRangeIndex(_index, additionalRepositoryCount);
+        _onlyInRangeIndex({_index: _index, _length: additionalRepositoryCount});
 
         uint256 lastElementIndex = additionalRepositoryCount - 1;
 
@@ -503,7 +503,10 @@ contract DependencyRegistryV0 is
         _onlyNonEmptyString(_additionalRepository);
         _onlyExistingDependencyType(_dependencyType);
         Dependency storage dependency = dependencyDetails[_dependencyType];
-        _onlyInRangeIndex(_index, dependency.additionalRepositoryCount);
+        _onlyInRangeIndex({
+            _index: _index,
+            _length: dependency.additionalRepositoryCount
+        });
 
         dependency.additionalRepositories[_index] = _additionalRepository;
 
@@ -626,7 +629,7 @@ contract DependencyRegistryV0 is
     function getDependencyType(
         uint256 _index
     ) external view returns (string memory) {
-        _onlyInRangeIndex(_index, _dependencyTypes.length());
+        _onlyInRangeIndex({_index: _index, _length: _dependencyTypes.length()});
         return _dependencyTypes.at(_index).toString();
     }
 
@@ -690,7 +693,10 @@ contract DependencyRegistryV0 is
     function getSupportedCoreContract(
         uint256 _index
     ) external view returns (address) {
-        _onlyInRangeIndex(_index, _supportedCoreContracts.length());
+        _onlyInRangeIndex({
+            _index: _index,
+            _length: _supportedCoreContracts.length()
+        });
         return _supportedCoreContracts.at(_index);
     }
 
@@ -738,7 +744,10 @@ contract DependencyRegistryV0 is
         uint256 _index
     ) external view returns (string memory) {
         Dependency storage dependency = dependencyDetails[_dependencyType];
-        _onlyInRangeIndex(_index, dependency.additionalCDNCount);
+        _onlyInRangeIndex({
+            _index: _index,
+            _length: dependency.additionalCDNCount
+        });
         return dependency.additionalCDNs[_index];
     }
 
@@ -752,7 +761,10 @@ contract DependencyRegistryV0 is
         uint256 _index
     ) external view returns (string memory) {
         Dependency storage dependency = dependencyDetails[_dependencyType];
-        _onlyInRangeIndex(_index, dependency.additionalRepositoryCount);
+        _onlyInRangeIndex({
+            _index: _index,
+            _length: dependency.additionalRepositoryCount
+        });
         return dependency.additionalRepositories[_index];
     }
 
@@ -778,7 +790,7 @@ contract DependencyRegistryV0 is
         uint256 _index
     ) external view returns (address) {
         Dependency storage dependency = dependencyDetails[_dependencyType];
-        _onlyInRangeIndex(_index, dependency.scriptCount);
+        _onlyInRangeIndex({_index: _index, _length: dependency.scriptCount});
         return dependency.scriptBytecodeAddresses[_index];
     }
 
@@ -799,7 +811,7 @@ contract DependencyRegistryV0 is
         uint256 _index
     ) external view returns (bytes32) {
         Dependency storage dependency = dependencyDetails[_dependencyType];
-        _onlyInRangeIndex(_index, dependency.scriptCount);
+        _onlyInRangeIndex({_index: _index, _length: dependency.scriptCount});
         return
             BytecodeStorageReader.getLibraryVersionForBytecode(
                 dependencyDetails[_dependencyType].scriptBytecodeAddresses[
@@ -826,7 +838,7 @@ contract DependencyRegistryV0 is
         uint256 _index
     ) external view returns (string memory) {
         Dependency storage dependency = dependencyDetails[_dependencyType];
-        _onlyInRangeIndex(_index, dependency.scriptCount);
+        _onlyInRangeIndex({_index: _index, _length: dependency.scriptCount});
 
         address scriptAddress = dependency.scriptBytecodeAddresses[_index];
         bytes32 storageVersion = BytecodeStorageReader
