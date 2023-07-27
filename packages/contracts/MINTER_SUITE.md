@@ -63,11 +63,11 @@ These are the smart contracts that receive funds, and split them between the art
 
 ### Other Flagship Minter Contracts
 
+Legacy minting contract for flagship V0 core: [0x47e312d99c09ce61a866c83cbbbbed5a4b9d33e7](https://etherscan.io/address/0x47e312d99c09ce61a866c83cbbbbed5a4b9d33e7).
+
 MinterFilterV0 for flagship V1 core: [0x4aafCE293b9B0faD169c78049A81e400f518E199](https://etherscan.io/address/0x4aafCE293b9B0faD169c78049A81e400f518E199#code).
 
-MinterFilterV1 for flagship V3 core: TBD
-
-Legacy minting contract for flagship V0 core: [0x47e312d99c09ce61a866c83cbbbbed5a4b9d33e7](https://etherscan.io/address/0x47e312d99c09ce61a866c83cbbbbed5a4b9d33e7).
+MinterFilterV2 for flagship V3 core: TBD
 
 ## Art Blocks Engine
 
