@@ -4,6 +4,14 @@
 pragma solidity ^0.8.0;
 
 interface ISharedMinterDAExpV0 {
+    event SetAuctionDetailsExp(
+        uint256 indexed _projectId,
+        address indexed _coreContract,
+        uint256 _auctionTimestampStart,
+        uint256 _priceDecayHalfLifeSeconds,
+        uint256 _startPrice,
+        uint256 _basePrice
+    );
     /// Maximum and minimum allowed price decay half lifes updated.
     event AuctionMinHalfLifeSecondsUpdated(
         uint256 _minimumPriceDecayHalfLifeSeconds

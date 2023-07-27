@@ -150,12 +150,15 @@ contract MinterDAExpV5 is
             _coreContract: _coreContract,
             _sender: msg.sender
         });
-        MaxInvocationsLib.manuallyLimitProjectMaxInvocations(
-            _projectId,
-            _coreContract,
-            _maxInvocations,
-            _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-        );
+        MaxInvocationsLib.manuallyLimitProjectMaxInvocations({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _maxInvocations: _maxInvocations,
+            maxInvocationsProjectConfig: _maxInvocationsProjectConfigMapping[
+                _coreContract
+            ][_projectId]
+        });
+
         emit ProjectMaxInvocationsLimitUpdated(
             _projectId,
             _coreContract,
@@ -190,11 +193,14 @@ contract MinterDAExpV5 is
             _coreContract: _coreContract,
             _sender: msg.sender
         });
-        TokenHolderLib.allowHoldersOfProjects(
-            _allowedProjectHoldersMapping[_coreContract][_projectId],
-            _ownedNFTAddresses,
-            _ownedNFTProjectIds
-        );
+        TokenHolderLib.allowHoldersOfProjects({
+            holderProjectConfig: _allowedProjectHoldersMapping[_coreContract][
+                _projectId
+            ],
+            _ownedNFTAddresses: _ownedNFTAddresses,
+            _ownedNFTProjectIds: _ownedNFTProjectIds
+        });
+
         // emit approve event
         emit AllowedHoldersOfProjects(
             _projectId,
@@ -232,11 +238,14 @@ contract MinterDAExpV5 is
             _sender: msg.sender
         });
         // require same length arrays
-        TokenHolderLib.removeHoldersOfProjects(
-            _allowedProjectHoldersMapping[_coreContract][_projectId],
-            _ownedNFTAddresses,
-            _ownedNFTProjectIds
-        );
+        TokenHolderLib.removeHoldersOfProjects({
+            holderProjectConfig: _allowedProjectHoldersMapping[_coreContract][
+                _projectId
+            ],
+            _ownedNFTAddresses: _ownedNFTAddresses,
+            _ownedNFTProjectIds: _ownedNFTProjectIds
+        });
+
         // emit removed event
         emit RemovedHoldersOfProjects(
             _projectId,
@@ -290,13 +299,16 @@ contract MinterDAExpV5 is
             _coreContract: _coreContract,
             _sender: msg.sender
         });
-        TokenHolderLib.allowAndRemoveHoldersOfProjects(
-            _allowedProjectHoldersMapping[_coreContract][_projectId],
-            _ownedNFTAddressesAdd,
-            _ownedNFTProjectIdsAdd,
-            _ownedNFTAddressesRemove,
-            _ownedNFTProjectIdsRemove
-        );
+        TokenHolderLib.allowAndRemoveHoldersOfProjects({
+            holderProjectConfig: _allowedProjectHoldersMapping[_coreContract][
+                _projectId
+            ],
+            _ownedNFTAddressesAdd: _ownedNFTAddressesAdd,
+            _ownedNFTProjectIdsAdd: _ownedNFTProjectIdsAdd,
+            _ownedNFTAddressesRemove: _ownedNFTAddressesRemove,
+            _ownedNFTProjectIdsRemove: _ownedNFTProjectIdsRemove
+        });
+
         // emit events
         emit AllowedHoldersOfProjects(
             _projectId,
@@ -327,8 +339,8 @@ contract MinterDAExpV5 is
     function setAuctionDetails(
         uint256 _projectId,
         address _coreContract,
-        uint256 _auctionTimestampStart,
-        uint256 _priceDecayHalfLifeSeconds,
+        uint64 _auctionTimestampStart,
+        uint64 _priceDecayHalfLifeSeconds,
         uint256 _startPrice,
         uint256 _basePrice
     ) external {
@@ -342,33 +354,21 @@ contract MinterDAExpV5 is
             storage _auctionProjectConfig = _auctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
+
         require(
-            _auctionProjectConfig.timestampStart == 0 ||
-                block.timestamp < _auctionProjectConfig.timestampStart,
-            "No modifications mid-auction"
-        );
-        require(
-            block.timestamp < _auctionTimestampStart,
-            "Only future auctions"
-        );
-        require(
-            _startPrice > _basePrice,
-            "Auction start price must be greater than auction end price"
-        );
-        require(
-            (_auctionProjectConfig.priceDecayHalfLifeSeconds >=
-                minimumPriceDecayHalfLifeSeconds),
+            (_priceDecayHalfLifeSeconds >= minimumPriceDecayHalfLifeSeconds),
             "Price decay half life must be greater than min allowable value"
         );
-        // EFFECTS
-        _auctionProjectConfig.timestampStart = _auctionTimestampStart
-            .toUint64();
-        _auctionProjectConfig
-            .priceDecayHalfLifeSeconds = _priceDecayHalfLifeSeconds.toUint64();
-        _auctionProjectConfig.startPrice = _startPrice;
-        _auctionProjectConfig.basePrice = _basePrice;
 
-        emit SetAuctionDetails(
+        DALib.setAuctionDetailsExp({
+            _auctionProjectConfigMapping: _auctionProjectConfig,
+            _auctionTimestampStart: _auctionTimestampStart,
+            _priceDecayHalfLifeSeconds: _priceDecayHalfLifeSeconds,
+            _startPrice: _startPrice,
+            _basePrice: _basePrice
+        });
+
+        emit SetAuctionDetailsExp(
             _projectId,
             _coreContract,
             _auctionTimestampStart,
@@ -435,12 +435,7 @@ contract MinterDAExpV5 is
             _contract: address(this),
             _selector: this.resetAuctionDetails.selector
         });
-        DALib.DAProjectConfig
-            storage _auctionProjectConfig = _auctionProjectConfigMapping[
-                _coreContract
-            ][_projectId];
-
-        delete _auctionProjectConfig[_coreContract][_projectId];
+        delete _auctionProjectConfigMapping[_coreContract][_projectId];
 
         emit ResetAuctionDetails(_projectId, _coreContract);
     }
@@ -475,14 +470,15 @@ contract MinterDAExpV5 is
         address _ownedNFTAddress,
         uint256 _ownedNFTTokenId
     ) external payable returns (uint256 tokenId) {
-        tokenId = purchaseTo(
-            msg.sender,
-            _projectId,
-            _coreContract,
-            _ownedNFTAddress,
-            _ownedNFTTokenId,
-            address(0)
-        );
+        tokenId = purchaseTo({
+            _to: msg.sender,
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _ownedNFTAddress: _ownedNFTAddress,
+            _ownedNFTTokenId: _ownedNFTTokenId,
+            _vault: address(0)
+        });
+
         return tokenId;
     }
 
@@ -506,14 +502,14 @@ contract MinterDAExpV5 is
         uint256 _ownedNFTTokenId
     ) external payable returns (uint256 tokenId) {
         return
-            purchaseTo(
-                _to,
-                _projectId,
-                _coreContract,
-                _ownedNFTAddress,
-                _ownedNFTTokenId,
-                address(0)
-            );
+            purchaseTo({
+                _to: _to,
+                _projectId: _projectId,
+                _coreContract: _coreContract,
+                _ownedNFTAddress: _ownedNFTAddress,
+                _ownedNFTTokenId: _ownedNFTTokenId,
+                _vault: address(0)
+            });
     }
 
     // public getter functions
@@ -802,11 +798,13 @@ contract MinterDAExpV5 is
         uint256 _ownedNFTTokenId
     ) external view returns (bool) {
         return
-            TokenHolderLib.isAllowlistedNFT(
-                _allowedProjectHoldersMapping[_coreContract][_projectId],
-                _ownedNFTAddress,
-                _ownedNFTTokenId
-            );
+            TokenHolderLib.isAllowlistedNFT({
+                holderProjectConfig: _allowedProjectHoldersMapping[
+                    _coreContract
+                ][_projectId],
+                _ownedNFTAddress: _ownedNFTAddress,
+                _ownedNFTTokenId: _ownedNFTTokenId
+            });
     }
 
     /**
@@ -828,11 +826,13 @@ contract MinterDAExpV5 is
         });
 
         uint256 maxInvocations = MaxInvocationsLib
-            .syncProjectMaxInvocationsToCore(
-                _projectId,
-                _coreContract,
-                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-            );
+            .syncProjectMaxInvocationsToCore({
+                _projectId: _projectId,
+                _coreContract: _coreContract,
+                maxInvocationsProjectConfig: _maxInvocationsProjectConfigMapping[
+                    _coreContract
+                ][_projectId]
+            });
         emit ProjectMaxInvocationsLimitUpdated(
             _projectId,
             _coreContract,
@@ -878,11 +878,13 @@ contract MinterDAExpV5 is
 
         // require token used to claim to be in set of allowlisted NFTs
         require(
-            TokenHolderLib.isAllowlistedNFT(
-                _allowedProjectHoldersMapping[_coreContract][_projectId],
-                _ownedNFTAddress,
-                _ownedNFTTokenId
-            ),
+            TokenHolderLib.isAllowlistedNFT({
+                holderProjectConfig: _allowedProjectHoldersMapping[
+                    _coreContract
+                ][_projectId],
+                _ownedNFTAddress: _ownedNFTAddress,
+                _ownedNFTTokenId: _ownedNFTTokenId
+            }),
             "Only allowlisted NFTs"
         );
 
@@ -896,18 +898,24 @@ contract MinterDAExpV5 is
             // Note, we do not check `checkDelegateForAll` or `checkDelegateForContract` as well,
             // as they are known to be implicitly checked by calling `checkDelegateForToken`.
             bool isValidVault = delegationRegistryContract
-                .checkDelegateForToken(
-                    msg.sender, // delegate
-                    _vault, // vault
-                    _coreContract, // contract
-                    _ownedNFTTokenId // tokenId
-                );
+                .checkDelegateForToken({
+                    delegate: msg.sender,
+                    vault: _vault,
+                    contract_: _coreContract,
+                    tokenId: _ownedNFTTokenId
+                });
+
             require(isValidVault, "Invalid delegate-vault pairing");
             vault = _vault;
         }
 
         // EFFECTS
-        tokenId = minterFilter.mint_joo(_to, _projectId, _coreContract, vault);
+        tokenId = minterFilter.mint_joo({
+            _to: _to,
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: vault
+        });
 
         MaxInvocationsLib.validatePurchaseEffectsInvocations(
             tokenId,
@@ -919,12 +927,12 @@ contract MinterDAExpV5 is
             _coreContract,
             _isEngineCaches[_coreContract]
         );
-        SplitFundsLib.splitFundsETH(
-            _projectId,
-            pricePerTokenInWei,
-            _coreContract,
-            isEngine
-        );
+        SplitFundsLib.splitFundsETH({
+            _projectId: _projectId,
+            _pricePerTokenInWei: pricePerTokenInWei,
+            _coreContract: _coreContract,
+            _isEngine: isEngine
+        });
 
         return tokenId;
     }

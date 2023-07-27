@@ -4,6 +4,15 @@
 pragma solidity ^0.8.0;
 
 interface ISharedMinterDALinV0 {
+    event SetAuctionDetailsLin(
+        uint256 indexed _projectId,
+        address indexed _coreContract,
+        uint256 _auctionTimestampStart,
+        uint256 _auctionTimestampEnd,
+        uint256 _startPrice,
+        uint256 _basePrice
+    );
+
     /// Minimum allowed auction length updated
     event AuctionMinimumLengthSecondsUpdated(
         uint256 _minimumAuctionLengthSeconds

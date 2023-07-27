@@ -46,11 +46,10 @@ library DALib {
 
     function setAuctionDetailsLin(
         DAProjectConfig storage _auctionProjectConfigMapping,
-        uint256 _auctionTimestampStart,
-        uint256 _auctionTimestampEnd,
+        uint64 _auctionTimestampStart,
+        uint64 _auctionTimestampEnd,
         uint256 _startPrice,
-        uint256 _basePrice,
-        uint256 _minimumAuctionLengthSeconds
+        uint256 _basePrice
     ) external {
         require(
             block.timestamp < _auctionProjectConfigMapping.timestampStart,
@@ -61,38 +60,25 @@ library DALib {
             "Only future auctions"
         );
         require(
-            _auctionTimestampEnd > _auctionTimestampStart,
-            "Auction end must be greater than auction start"
-        );
-        require(
-            _auctionTimestampEnd >=
-                _auctionTimestampStart + _minimumAuctionLengthSeconds,
-            "Auction length must be at least minimumAuctionLengthSeconds"
-        );
-        require(
             _startPrice > _basePrice,
             "Auction start price must be greater than auction end price"
         );
         // EFFECTS
-        _auctionProjectConfigMapping.timestampStart = _auctionTimestampStart
-            .toUint64();
-        _auctionProjectConfigMapping.timestampEnd = _auctionTimestampEnd
-            .toUint64();
+        _auctionProjectConfigMapping.timestampStart = _auctionTimestampStart;
+        _auctionProjectConfigMapping.timestampEnd = _auctionTimestampEnd;
         _auctionProjectConfigMapping.startPrice = _startPrice;
         _auctionProjectConfigMapping.basePrice = _basePrice;
     }
 
     function setAuctionDetailsExp(
         DAProjectConfig storage _auctionProjectConfigMapping,
-        uint256 _auctionTimestampStart,
-        uint256 _priceDecayHalfLifeSeconds,
+        uint64 _auctionTimestampStart,
+        uint64 _priceDecayHalfLifeSeconds,
         uint256 _startPrice,
-        uint256 _basePrice,
-        uint256 _minimumPriceDecayHalfLifeSeconds
+        uint256 _basePrice
     ) external {
         require(
-            _auctionProjectConfigMapping.timestampStart == 0 ||
-                block.timestamp < _auctionProjectConfigMapping.timestampStart,
+            block.timestamp < _auctionProjectConfigMapping.timestampStart,
             "No modifications mid-auction"
         );
         require(
@@ -103,16 +89,11 @@ library DALib {
             _startPrice > _basePrice,
             "Auction start price must be greater than auction end price"
         );
-        require(
-            (_auctionProjectConfigMapping.priceDecayHalfLifeSeconds >=
-                _minimumPriceDecayHalfLifeSeconds),
-            "Price decay half life must be greater than min allowable value"
-        );
+
         // EFFECTS
-        _auctionProjectConfigMapping.timestampStart = _auctionTimestampStart
-            .toUint64();
+        _auctionProjectConfigMapping.timestampStart = _auctionTimestampStart;
         _auctionProjectConfigMapping
-            .priceDecayHalfLifeSeconds = _priceDecayHalfLifeSeconds.toUint64();
+            .priceDecayHalfLifeSeconds = _priceDecayHalfLifeSeconds;
         _auctionProjectConfigMapping.startPrice = _startPrice;
         _auctionProjectConfigMapping.basePrice = _basePrice;
     }

@@ -113,12 +113,14 @@ contract MinterDAExpV5 is
             _coreContract: _coreContract,
             _sender: msg.sender
         });
-        MaxInvocationsLib.manuallyLimitProjectMaxInvocations(
-            _projectId,
-            _coreContract,
-            _maxInvocations,
-            _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-        );
+        MaxInvocationsLib.manuallyLimitProjectMaxInvocations({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _maxInvocations: _maxInvocations,
+            maxInvocationsProjectConfig: _maxInvocationsProjectConfigMapping[
+                _coreContract
+            ][_projectId]
+        });
         emit ProjectMaxInvocationsLimitUpdated(
             _projectId,
             _coreContract,
@@ -141,8 +143,8 @@ contract MinterDAExpV5 is
     function setAuctionDetails(
         uint256 _projectId,
         address _coreContract,
-        uint256 _auctionTimestampStart,
-        uint256 _priceDecayHalfLifeSeconds,
+        uint64 _auctionTimestampStart,
+        uint64 _priceDecayHalfLifeSeconds,
         uint256 _startPrice,
         uint256 _basePrice
     ) external {
@@ -157,16 +159,20 @@ contract MinterDAExpV5 is
                 _coreContract
             ][_projectId];
 
-        DALib.setAuctionDetailsExp(
-            _auctionProjectConfig,
-            _auctionTimestampStart,
-            _priceDecayHalfLifeSeconds,
-            _startPrice,
-            _basePrice,
-            minimumPriceDecayHalfLifeSeconds
+        require(
+            (_priceDecayHalfLifeSeconds >= minimumPriceDecayHalfLifeSeconds),
+            "Price decay half life must be greater than min allowable value"
         );
 
-        emit SetAuctionDetails(
+        DALib.setAuctionDetailsExp({
+            _auctionProjectConfigMapping: _auctionProjectConfig,
+            _auctionTimestampStart: _auctionTimestampStart,
+            _priceDecayHalfLifeSeconds: _priceDecayHalfLifeSeconds,
+            _startPrice: _startPrice,
+            _basePrice: _basePrice
+        });
+
+        emit SetAuctionDetailsExp(
             _projectId,
             _coreContract,
             _auctionTimestampStart,
@@ -233,12 +239,8 @@ contract MinterDAExpV5 is
             _contract: address(this),
             _selector: this.resetAuctionDetails.selector
         });
-        DALib.DAProjectConfig
-            storage _auctionProjectConfig = _auctionProjectConfigMapping[
-                _coreContract
-            ][_projectId];
 
-        delete _auctionProjectConfig[_coreContract][_projectId];
+        delete _auctionProjectConfigMapping[_coreContract][_projectId];
 
         emit ResetAuctionDetails(_projectId, _coreContract);
     }
@@ -253,7 +255,12 @@ contract MinterDAExpV5 is
         uint256 _projectId,
         address _coreContract
     ) external payable returns (uint256 tokenId) {
-        tokenId = purchaseTo(msg.sender, _projectId, _coreContract);
+        tokenId = purchaseTo({
+            _to: msg.sender,
+            _projectId: _projectId,
+            _coreContract: _coreContract
+        });
+
         return tokenId;
     }
 
@@ -524,11 +531,13 @@ contract MinterDAExpV5 is
         });
 
         uint256 maxInvocations = MaxInvocationsLib
-            .syncProjectMaxInvocationsToCore(
-                _projectId,
-                _coreContract,
-                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-            );
+            .syncProjectMaxInvocationsToCore({
+                _projectId: _projectId,
+                _coreContract: _coreContract,
+                maxInvocationsProjectConfig: _maxInvocationsProjectConfigMapping[
+                    _coreContract
+                ][_projectId]
+            });
         emit ProjectMaxInvocationsLimitUpdated(
             _projectId,
             _coreContract,
@@ -570,12 +579,12 @@ contract MinterDAExpV5 is
         require(msg.value >= pricePerTokenInWei, "Min value to mint req.");
 
         // EFFECTS
-        tokenId = minterFilter.mint_joo(
-            _to,
-            _projectId,
-            _coreContract,
-            msg.sender
-        );
+        tokenId = minterFilter.mint_joo({
+            _to: _to,
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
 
         MaxInvocationsLib.validatePurchaseEffectsInvocations(
             tokenId,
@@ -587,12 +596,12 @@ contract MinterDAExpV5 is
             _coreContract,
             _isEngineCaches[_coreContract]
         );
-        SplitFundsLib.splitFundsETH(
-            _projectId,
-            pricePerTokenInWei,
-            _coreContract,
-            isEngine
-        );
+        SplitFundsLib.splitFundsETH({
+            _projectId: _projectId,
+            _pricePerTokenInWei: pricePerTokenInWei,
+            _coreContract: _coreContract,
+            _isEngine: isEngine
+        });
 
         return tokenId;
     }
