@@ -2,7 +2,6 @@
 // Created By: Art Blocks Inc.
 
 import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
-import "../../interfaces/v0.8.x/IDelegationRegistry.sol";
 import "../../interfaces/v0.8.x/ISharedMinterV0.sol";
 import "../../interfaces/v0.8.x/ISharedMinterDAV0.sol";
 import "../../interfaces/v0.8.x/ISharedMinterDAExpV0.sol";
@@ -39,7 +38,7 @@ contract MinterDAExpV5 is
     IMinterFilterV1 private immutable minterFilter;
 
     /// minterType for this minter
-    string public constant minterType = "MinterDALinV5";
+    string public constant minterType = "MinterDAExpV5";
 
     /// minter version for this minter
     string public constant minterVersion = "v5.0.0";
@@ -145,8 +144,8 @@ contract MinterDAExpV5 is
         address _coreContract,
         uint64 _auctionTimestampStart,
         uint64 _priceDecayHalfLifeSeconds,
-        uint256 _startPrice,
-        uint256 _basePrice
+        uint128 _startPrice,
+        uint128 _basePrice
     ) external {
         AuthLib.onlyArtist({
             _projectId: _projectId,
@@ -409,62 +408,6 @@ contract MinterDAExpV5 is
     }
 
     /**
-     * @notice Gets price of minting a token on project `_projectId` given
-     * the project's AuctionParameters and current block timestamp.
-     * Reverts if auction has not yet started or auction is unconfigured.
-     * @param _projectId Project ID to get price of token for.
-     * @param _coreContract Contract address of the core contract
-     * @return current price of token in Wei
-     */
-    function _getPrice(
-        uint256 _projectId,
-        address _coreContract
-    ) private view returns (uint256) {
-        DALib.DAProjectConfig
-            storage auctionProjectConfig = _auctionProjectConfigMapping[
-                _coreContract
-            ][_projectId];
-        // move parameters to memory if used more than once
-        uint256 _timestampStart = uint256(auctionProjectConfig.timestampStart);
-        uint256 _priceDecayHalfLifeSeconds = uint256(
-            auctionProjectConfig.priceDecayHalfLifeSeconds
-        );
-        uint256 _basePrice = auctionProjectConfig.basePrice;
-
-        require(block.timestamp > _timestampStart, "Auction not yet started");
-        require(_priceDecayHalfLifeSeconds > 0, "Only configured auctions");
-        uint256 decayedPrice = auctionProjectConfig.startPrice;
-        uint256 elapsedTimeSeconds;
-        unchecked {
-            // already checked that block.timestamp > _timestampStart above
-            elapsedTimeSeconds = block.timestamp - _timestampStart;
-        }
-        // Divide by two (via bit-shifting) for the number of entirely completed
-        // half-lives that have elapsed since auction start time.
-        unchecked {
-            // already required _priceDecayHalfLifeSeconds > 0
-            decayedPrice >>= elapsedTimeSeconds / _priceDecayHalfLifeSeconds;
-        }
-        // Perform a linear interpolation between partial half-life points, to
-        // approximate the current place on a perfect exponential decay curve.
-        unchecked {
-            // value of expression is provably always less than decayedPrice,
-            // so no underflow is possible when the subtraction assignment
-            // operator is used on decayedPrice.
-            decayedPrice -=
-                (decayedPrice *
-                    (elapsedTimeSeconds % _priceDecayHalfLifeSeconds)) /
-                _priceDecayHalfLifeSeconds /
-                2;
-        }
-        if (decayedPrice < _basePrice) {
-            // Price may not decay below stay `basePrice`.
-            return _basePrice;
-        }
-        return decayedPrice;
-    }
-
-    /**
      * @notice Gets if price of token is configured, price of minting a
      * token on project `_projectId`, and currency symbol and address to be
      * used as payment. Supersedes any core contract price information.
@@ -506,7 +449,7 @@ contract MinterDAExpV5 is
             // it would otherwise revert
             tokenPriceInWei = 0;
         } else {
-            tokenPriceInWei = _getPrice(_projectId, _coreContract);
+            tokenPriceInWei = DALib.getPriceExp(auctionProjectConfig);
         }
         currencySymbol = "ETH";
         currencyAddress = address(0);
@@ -564,6 +507,11 @@ contract MinterDAExpV5 is
                 _coreContract
             ][_projectId];
 
+        DALib.DAProjectConfig
+            storage _auctionProjectConfig = _auctionProjectConfigMapping[
+                _coreContract
+            ][_projectId];
+
         // Note that `maxHasBeenInvoked` is only checked here to reduce gas
         // consumption after a project has been fully minted.
         // `_maxInvocationsProjectConfig.maxHasBeenInvoked` is locally cached to reduce
@@ -575,7 +523,7 @@ contract MinterDAExpV5 is
             "Max invocations reached"
         );
 
-        uint256 pricePerTokenInWei = _getPrice(_projectId, _coreContract);
+        uint256 pricePerTokenInWei = DALib.getPriceExp(_auctionProjectConfig);
         require(msg.value >= pricePerTokenInWei, "Min value to mint req.");
 
         // EFFECTS

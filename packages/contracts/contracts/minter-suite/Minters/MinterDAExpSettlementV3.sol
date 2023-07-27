@@ -6,18 +6,15 @@ import "../../interfaces/v0.8.x/IDelegationRegistry.sol";
 import "../../interfaces/v0.8.x/ISharedMinterV0.sol";
 import "../../interfaces/v0.8.x/ISharedMinterDAV0.sol";
 import "../../interfaces/v0.8.x/ISharedMinterDAExpV0.sol";
-import "../../interfaces/v0.8.x/ISharedMinterHolderV0.sol";
 import "../../interfaces/v0.8.x/IMinterFilterV1.sol";
 
 import "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
 import "../../libs/v0.8.x/minter-libs/MaxInvocationsLib.sol";
-import "../../libs/v0.8.x/minter-libs/TokenHolderLib.sol";
 import "../../libs/v0.8.x/minter-libs/DALib.sol";
 import "../../libs/v0.8.x/AuthLib.sol";
 
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin-4.5/contracts/utils/math/SafeCast.sol";
-import "@openzeppelin-4.5/contracts/utils/structs/EnumerableSet.sol";
 
 pragma solidity 0.8.19;
 
@@ -28,31 +25,21 @@ pragma solidity 0.8.19;
  * @author Art Blocks Inc.
  * @notice Privileged Roles and Ownership:
  */
-contract MinterDAExpV5 is
+contract MinterDAExpSettlementV3 is
     ReentrancyGuard,
     ISharedMinterV0,
     ISharedMinterDAV0,
-    ISharedMinterDAExpV0,
-    ISharedMinterHolderV0
+    ISharedMinterDAExpV0
 {
     using SafeCast for uint256;
-    // add Enumerable Set methods
-    using EnumerableSet for EnumerableSet.AddressSet;
-
     /// Minter filter address this minter interacts with
     address public immutable minterFilterAddress;
 
     /// Minter filter this minter may interact with.
     IMinterFilterV1 private immutable minterFilter;
 
-    // Delegation registry address
-    address public immutable delegationRegistryAddress;
-
-    // Delegation registry address
-    IDelegationRegistry private immutable delegationRegistryContract;
-
     /// minterType for this minter
-    string public constant minterType = "MinterDAExpHolderV5";
+    string public constant minterType = "MinterDAExpSettlementV3";
 
     /// minter version for this minter
     string public constant minterVersion = "v5.0.0";
@@ -92,37 +79,13 @@ contract MinterDAExpV5 is
     // STATE VARIABLES FOR MaxInvocationsLib end here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR TokenHolderLib begin here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    /**
-     * coreContract => projectId => ownedNFTAddress => ownedNFTProjectIds => bool
-     * projects whose holders are allowed to purchase a token on `projectId`
-     */
-    mapping(address => mapping(uint256 => TokenHolderLib.HolderProjectConfig))
-        private _allowedProjectHoldersMapping;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR TokenHolderLib end here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
     /**
      * @notice Initializes contract to be a Filtered Minter for
      * `_minterFilter` minter filter.
      * @param _minterFilter Minter filter for which this will be a
      * filtered minter.
      */
-    constructor(
-        address _minterFilter,
-        address _delegationRegistryAddress
-    ) ReentrancyGuard() {
-        delegationRegistryAddress = _delegationRegistryAddress;
-        emit DelegationRegistryUpdated(_delegationRegistryAddress);
-        delegationRegistryContract = IDelegationRegistry(
-            _delegationRegistryAddress
-        );
-
+    constructor(address _minterFilter) ReentrancyGuard() {
         minterFilterAddress = _minterFilter;
         minterFilter = IMinterFilterV1(_minterFilter);
         emit AuctionMinHalfLifeSecondsUpdated(minimumPriceDecayHalfLifeSeconds);
@@ -158,169 +121,10 @@ contract MinterDAExpV5 is
                 _coreContract
             ][_projectId]
         });
-
         emit ProjectMaxInvocationsLimitUpdated(
             _projectId,
             _coreContract,
             _maxInvocations
-        );
-    }
-
-    /**
-     * @notice Allows holders of NFTs at addresses `_ownedNFTAddresses`,
-     * project IDs `_ownedNFTProjectIds` to mint on project `_projectId`.
-     * `_ownedNFTAddresses` assumed to be aligned with `_ownedNFTProjectIds`.
-     * e.g. Allows holders of project `_ownedNFTProjectIds[0]` on token
-     * contract `_ownedNFTAddresses[0]` to mint `_projectId`.
-     * WARNING: Only Art Blocks Core contracts are compatible with holder allowlisting,
-     * due to assumptions about tokenId and projectId relationships.
-     * @param _projectId Project ID to enable minting on.
-     * @param _coreContract Core contract address for the given project.
-     * @param _ownedNFTAddresses NFT core addresses of projects to be
-     * allowlisted. Indexes must align with `_ownedNFTProjectIds`.
-     * @param _ownedNFTProjectIds Project IDs on `_ownedNFTAddresses` whose
-     * holders shall be allowlisted to mint project `_projectId`. Indexes must
-     * align with `_ownedNFTAddresses`.
-     */
-    function allowHoldersOfProjects(
-        uint256 _projectId,
-        address _coreContract,
-        address[] memory _ownedNFTAddresses,
-        uint256[] memory _ownedNFTProjectIds
-    ) external {
-        AuthLib.onlyArtist({
-            _projectId: _projectId,
-            _coreContract: _coreContract,
-            _sender: msg.sender
-        });
-        TokenHolderLib.allowHoldersOfProjects({
-            holderProjectConfig: _allowedProjectHoldersMapping[_coreContract][
-                _projectId
-            ],
-            _ownedNFTAddresses: _ownedNFTAddresses,
-            _ownedNFTProjectIds: _ownedNFTProjectIds
-        });
-
-        // emit approve event
-        emit AllowedHoldersOfProjects(
-            _projectId,
-            _coreContract,
-            _ownedNFTAddresses,
-            _ownedNFTProjectIds
-        );
-    }
-
-    /**
-     * @notice Removes holders of NFTs at addresses `_ownedNFTAddresses`,
-     * project IDs `_ownedNFTProjectIds` to mint on project `_projectId`. If
-     * other projects owned by a holder are still allowed to mint, holder will
-     * maintain ability to purchase.
-     * `_ownedNFTAddresses` assumed to be aligned with `_ownedNFTProjectIds`.
-     * e.g. Removes holders of project `_ownedNFTProjectIds[0]` on token
-     * contract `_ownedNFTAddresses[0]` from mint allowlist of `_projectId`.
-     * @param _projectId Project ID to enable minting on.
-     * @param _coreContract Core contract address for the given project.
-     * @param _ownedNFTAddresses NFT core addresses of projects to be removed
-     * from allowlist. Indexes must align with `_ownedNFTProjectIds`.
-     * @param _ownedNFTProjectIds Project IDs on `_ownedNFTAddresses` whose
-     * holders will be removed from allowlist to mint project `_projectId`.
-     * Indexes must align with `_ownedNFTAddresses`.
-     */
-    function removeHoldersOfProjects(
-        uint256 _projectId,
-        address _coreContract,
-        address[] memory _ownedNFTAddresses,
-        uint256[] memory _ownedNFTProjectIds
-    ) external {
-        AuthLib.onlyArtist({
-            _projectId: _projectId,
-            _coreContract: _coreContract,
-            _sender: msg.sender
-        });
-        // require same length arrays
-        TokenHolderLib.removeHoldersOfProjects({
-            holderProjectConfig: _allowedProjectHoldersMapping[_coreContract][
-                _projectId
-            ],
-            _ownedNFTAddresses: _ownedNFTAddresses,
-            _ownedNFTProjectIds: _ownedNFTProjectIds
-        });
-
-        // emit removed event
-        emit RemovedHoldersOfProjects(
-            _projectId,
-            _coreContract,
-            _ownedNFTAddresses,
-            _ownedNFTProjectIds
-        );
-    }
-
-    /**
-     * @notice Allows holders of NFTs at addresses `_ownedNFTAddressesAdd`,
-     * project IDs `_ownedNFTProjectIdsAdd` to mint on project `_projectId`.
-     * Also removes holders of NFTs at addresses `_ownedNFTAddressesRemove`,
-     * project IDs `_ownedNFTProjectIdsRemove` from minting on project
-     * `_projectId`.
-     * `_ownedNFTAddressesAdd` assumed to be aligned with
-     * `_ownedNFTProjectIdsAdd`.
-     * e.g. Allows holders of project `_ownedNFTProjectIdsAdd[0]` on token
-     * contract `_ownedNFTAddressesAdd[0]` to mint `_projectId`.
-     * `_ownedNFTAddressesRemove` also assumed to be aligned with
-     * `_ownedNFTProjectIdsRemove`.
-     * WARNING: Only Art Blocks Core contracts are compatible with holder allowlisting,
-     * due to assumptions about tokenId and projectId relationships.
-     * @param _projectId Project ID to enable minting on.
-     * @param _coreContract Core contract address for the given project.
-     * @param _ownedNFTAddressesAdd NFT core addresses of projects to be
-     * allowlisted. Indexes must align with `_ownedNFTProjectIdsAdd`.
-     * @param _ownedNFTProjectIdsAdd Project IDs on `_ownedNFTAddressesAdd`
-     * whose holders shall be allowlisted to mint project `_projectId`. Indexes
-     * must align with `_ownedNFTAddressesAdd`.
-     * @param _ownedNFTAddressesRemove NFT core addresses of projects to be
-     * removed from allowlist. Indexes must align with
-     * `_ownedNFTProjectIdsRemove`.
-     * @param _ownedNFTProjectIdsRemove Project IDs on
-     * `_ownedNFTAddressesRemove` whose holders will be removed from allowlist
-     * to mint project `_projectId`. Indexes must align with
-     * `_ownedNFTAddressesRemove`.
-     * @dev if a project is included in both add and remove arrays, it will be
-     * removed.
-     */
-    function allowAndRemoveHoldersOfProjects(
-        uint256 _projectId,
-        address _coreContract,
-        address[] memory _ownedNFTAddressesAdd,
-        uint256[] memory _ownedNFTProjectIdsAdd,
-        address[] memory _ownedNFTAddressesRemove,
-        uint256[] memory _ownedNFTProjectIdsRemove
-    ) external {
-        AuthLib.onlyArtist({
-            _projectId: _projectId,
-            _coreContract: _coreContract,
-            _sender: msg.sender
-        });
-        TokenHolderLib.allowAndRemoveHoldersOfProjects({
-            holderProjectConfig: _allowedProjectHoldersMapping[_coreContract][
-                _projectId
-            ],
-            _ownedNFTAddressesAdd: _ownedNFTAddressesAdd,
-            _ownedNFTProjectIdsAdd: _ownedNFTProjectIdsAdd,
-            _ownedNFTAddressesRemove: _ownedNFTAddressesRemove,
-            _ownedNFTProjectIdsRemove: _ownedNFTProjectIdsRemove
-        });
-
-        // emit events
-        emit AllowedHoldersOfProjects(
-            _projectId,
-            _coreContract,
-            _ownedNFTAddressesAdd,
-            _ownedNFTProjectIdsAdd
-        );
-        emit RemovedHoldersOfProjects(
-            _projectId,
-            _coreContract,
-            _ownedNFTAddressesRemove,
-            _ownedNFTProjectIdsRemove
         );
     }
 
@@ -435,27 +239,10 @@ contract MinterDAExpV5 is
             _contract: address(this),
             _selector: this.resetAuctionDetails.selector
         });
+
         delete _auctionProjectConfigMapping[_coreContract][_projectId];
 
         emit ResetAuctionDetails(_projectId, _coreContract);
-    }
-
-    /**
-     * @notice Inactive function - requires NFT ownership to purchase.
-     */
-    function purchase(uint256, address) external payable returns (uint256) {
-        revert("Purchase requires NFT ownership");
-    }
-
-    /**
-     * @notice Inactive function - requires NFT ownership to purchase.
-     */
-    function purchaseTo(
-        address,
-        uint256,
-        address
-    ) external payable returns (uint256) {
-        revert("Purchase requires NFT ownership");
     }
 
     /**
@@ -466,50 +253,15 @@ contract MinterDAExpV5 is
      */
     function purchase(
         uint256 _projectId,
-        address _coreContract,
-        address _ownedNFTAddress,
-        uint256 _ownedNFTTokenId
+        address _coreContract
     ) external payable returns (uint256 tokenId) {
         tokenId = purchaseTo({
             _to: msg.sender,
             _projectId: _projectId,
-            _coreContract: _coreContract,
-            _ownedNFTAddress: _ownedNFTAddress,
-            _ownedNFTTokenId: _ownedNFTTokenId,
-            _vault: address(0)
+            _coreContract: _coreContract
         });
 
         return tokenId;
-    }
-
-    /**
-     * @notice Purchases a token from project `_projectId` and sets
-     * the token's owner to `_to`.
-     * @param _to Address to be the new token's owner.
-     * @param _projectId Project ID to mint a token on.
-     * @param _coreContract Core contract address for the given project.
-     * @param _ownedNFTAddress ERC-721 NFT holding the project token owned by
-     * msg.sender being used to claim right to purchase.
-     * @param _ownedNFTTokenId ERC-721 NFT token ID owned by msg.sender being used
-     * to claim right to purchase.
-     * @return tokenId Token ID of minted token
-     */
-    function purchaseTo(
-        address _to,
-        uint256 _projectId,
-        address _coreContract,
-        address _ownedNFTAddress,
-        uint256 _ownedNFTTokenId
-    ) external payable returns (uint256 tokenId) {
-        return
-            purchaseTo({
-                _to: _to,
-                _projectId: _projectId,
-                _coreContract: _coreContract,
-                _ownedNFTAddress: _ownedNFTAddress,
-                _ownedNFTTokenId: _ownedNFTTokenId,
-                _vault: address(0)
-            });
     }
 
     // public getter functions
@@ -761,53 +513,6 @@ contract MinterDAExpV5 is
     }
 
     /**
-     * @notice Checks if a specific NFT owner is allowed in a given project.
-     * @dev This function retrieves the allowance status of an NFT owner
-     * within a specific project from the allowedProjectHoldersMapping.
-     * @param _projectId The ID of the project to check.
-     * @param _coreContract Core contract address for the given project.
-     * @param _ownedNFTAddress The address of the owned NFT contract.
-     * @param _ownedNFTProjectId The ID of the owned NFT project.
-     * @return bool True if the NFT owner is allowed in the given project, False otherwise.
-     */
-    function allowedProjectHolders(
-        uint256 _projectId,
-        address _coreContract,
-        address _ownedNFTAddress,
-        uint256 _ownedNFTProjectId
-    ) external view returns (bool) {
-        return
-            _allowedProjectHoldersMapping[_coreContract][_projectId]
-                .allowedProjectHolders[_ownedNFTAddress][_ownedNFTProjectId];
-    }
-
-    /**
-     * @notice Returns if token is an allowlisted NFT for project `_projectId`.
-     * @param _projectId Project ID to be checked.
-     * @param _coreContract Core contract address for the given project.
-     * @param _ownedNFTAddress ERC-721 NFT token address to be checked.
-     * @param _ownedNFTTokenId ERC-721 NFT token ID to be checked.
-     * @return bool Token is allowlisted
-     * @dev does not check if token has been used to purchase
-     * @dev assumes project ID can be derived from tokenId / 1_000_000
-     */
-    function isAllowlistedNFT(
-        uint256 _projectId,
-        address _coreContract,
-        address _ownedNFTAddress,
-        uint256 _ownedNFTTokenId
-    ) external view returns (bool) {
-        return
-            TokenHolderLib.isAllowlistedNFT({
-                holderProjectConfig: _allowedProjectHoldersMapping[
-                    _coreContract
-                ][_projectId],
-                _ownedNFTAddress: _ownedNFTAddress,
-                _ownedNFTTokenId: _ownedNFTTokenId
-            });
-    }
-
-    /**
      * @notice Syncs local maximum invocations of project `_projectId` based on
      * the value currently defined in the core contract.
      * @param _coreContract Core contract address for the given project.
@@ -818,26 +523,13 @@ contract MinterDAExpV5 is
     function syncProjectMaxInvocationsToCore(
         uint256 _projectId,
         address _coreContract
-    ) public {
+    ) external view {
         AuthLib.onlyArtist({
             _projectId: _projectId,
             _coreContract: _coreContract,
             _sender: msg.sender
         });
-
-        uint256 maxInvocations = MaxInvocationsLib
-            .syncProjectMaxInvocationsToCore({
-                _projectId: _projectId,
-                _coreContract: _coreContract,
-                maxInvocationsProjectConfig: _maxInvocationsProjectConfigMapping[
-                    _coreContract
-                ][_projectId]
-            });
-        emit ProjectMaxInvocationsLimitUpdated(
-            _projectId,
-            _coreContract,
-            maxInvocations
-        );
+        revert("Not implemented");
     }
 
     /**
@@ -851,10 +543,7 @@ contract MinterDAExpV5 is
     function purchaseTo(
         address _to,
         uint256 _projectId,
-        address _coreContract,
-        address _ownedNFTAddress,
-        uint256 _ownedNFTTokenId,
-        address _vault
+        address _coreContract
     ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
         MaxInvocationsLib.MaxInvocationsProjectConfig
@@ -876,45 +565,12 @@ contract MinterDAExpV5 is
         uint256 pricePerTokenInWei = _getPrice(_projectId, _coreContract);
         require(msg.value >= pricePerTokenInWei, "Min value to mint req.");
 
-        // require token used to claim to be in set of allowlisted NFTs
-        require(
-            TokenHolderLib.isAllowlistedNFT({
-                holderProjectConfig: _allowedProjectHoldersMapping[
-                    _coreContract
-                ][_projectId],
-                _ownedNFTAddress: _ownedNFTAddress,
-                _ownedNFTTokenId: _ownedNFTTokenId
-            }),
-            "Only allowlisted NFTs"
-        );
-
-        // handle that the vault may be either the `msg.sender` in the case
-        // that there is not a true vault, or may be `_vault` if one is
-        // provided explicitly (and it is valid).
-        address vault = msg.sender;
-        if (_vault != address(0)) {
-            // If a vault is provided, it must be valid, otherwise throw rather
-            // than optimistically-minting with original `msg.sender`.
-            // Note, we do not check `checkDelegateForAll` or `checkDelegateForContract` as well,
-            // as they are known to be implicitly checked by calling `checkDelegateForToken`.
-            bool isValidVault = delegationRegistryContract
-                .checkDelegateForToken({
-                    delegate: msg.sender,
-                    vault: _vault,
-                    contract_: _coreContract,
-                    tokenId: _ownedNFTTokenId
-                });
-
-            require(isValidVault, "Invalid delegate-vault pairing");
-            vault = _vault;
-        }
-
         // EFFECTS
         tokenId = minterFilter.mint_joo({
             _to: _to,
             _projectId: _projectId,
             _coreContract: _coreContract,
-            _sender: vault
+            _sender: msg.sender
         });
 
         MaxInvocationsLib.validatePurchaseEffectsInvocations(

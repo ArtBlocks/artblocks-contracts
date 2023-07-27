@@ -21,8 +21,8 @@ library DALib {
         uint64 timestampStart;
         uint64 timestampEnd;
         uint64 priceDecayHalfLifeSeconds;
-        uint256 startPrice;
-        uint256 basePrice;
+        uint128 startPrice;
+        uint128 basePrice;
     }
 
     function resetAuctionDetailsExp(
@@ -48,8 +48,8 @@ library DALib {
         DAProjectConfig storage _auctionProjectConfigMapping,
         uint64 _auctionTimestampStart,
         uint64 _auctionTimestampEnd,
-        uint256 _startPrice,
-        uint256 _basePrice
+        uint128 _startPrice,
+        uint128 _basePrice
     ) external {
         require(
             block.timestamp < _auctionProjectConfigMapping.timestampStart,
@@ -74,8 +74,8 @@ library DALib {
         DAProjectConfig storage _auctionProjectConfigMapping,
         uint64 _auctionTimestampStart,
         uint64 _priceDecayHalfLifeSeconds,
-        uint256 _startPrice,
-        uint256 _basePrice
+        uint128 _startPrice,
+        uint128 _basePrice
     ) external {
         require(
             block.timestamp < _auctionProjectConfigMapping.timestampStart,
@@ -96,5 +96,82 @@ library DALib {
             .priceDecayHalfLifeSeconds = _priceDecayHalfLifeSeconds;
         _auctionProjectConfigMapping.startPrice = _startPrice;
         _auctionProjectConfigMapping.basePrice = _basePrice;
+    }
+
+    function getPriceLin(
+        DAProjectConfig storage _auctionProjectConfigMapping
+    ) external view returns (uint256) {
+        // move parameters to memory if used more than once
+        uint256 _timestampStart = uint256(
+            _auctionProjectConfigMapping.timestampStart
+        );
+        uint256 _timestampEnd = uint256(
+            _auctionProjectConfigMapping.timestampEnd
+        );
+        uint256 _startPrice = _auctionProjectConfigMapping.startPrice;
+        uint256 _basePrice = _auctionProjectConfigMapping.basePrice;
+
+        require(block.timestamp > _timestampStart, "Auction not yet started");
+        if (block.timestamp >= _timestampEnd) {
+            require(_timestampEnd > 0, "Only configured auctions");
+            return _basePrice;
+        }
+        uint256 elapsedTime;
+        uint256 duration;
+        uint256 startToEndDiff;
+        unchecked {
+            // already checked that block.timestamp > _timestampStart
+            elapsedTime = block.timestamp - _timestampStart;
+            // _timestampEnd > _timestampStart enforced during assignment
+            duration = _timestampEnd - _timestampStart;
+            // _startPrice > _basePrice enforced during assignment
+            startToEndDiff = _startPrice - _basePrice;
+        }
+        return _startPrice - ((elapsedTime * startToEndDiff) / duration);
+    }
+
+    function getPriceExp(
+        DAProjectConfig storage _auctionProjectConfigMapping
+    ) external view returns (uint256) {
+        // move parameters to memory if used more than once
+        uint256 _timestampStart = uint256(
+            _auctionProjectConfigMapping.timestampStart
+        );
+        uint256 _priceDecayHalfLifeSeconds = uint256(
+            _auctionProjectConfigMapping.priceDecayHalfLifeSeconds
+        );
+        uint256 _basePrice = _auctionProjectConfigMapping.basePrice;
+
+        require(block.timestamp > _timestampStart, "Auction not yet started");
+        require(_priceDecayHalfLifeSeconds > 0, "Only configured auctions");
+        uint256 decayedPrice = _auctionProjectConfigMapping.startPrice;
+        uint256 elapsedTimeSeconds;
+        unchecked {
+            // already checked that block.timestamp > _timestampStart above
+            elapsedTimeSeconds = block.timestamp - _timestampStart;
+        }
+        // Divide by two (via bit-shifting) for the number of entirely completed
+        // half-lives that have elapsed since auction start time.
+        unchecked {
+            // already required _priceDecayHalfLifeSeconds > 0
+            decayedPrice >>= elapsedTimeSeconds / _priceDecayHalfLifeSeconds;
+        }
+        // Perform a linear interpolation between partial half-life points, to
+        // approximate the current place on a perfect exponential decay curve.
+        unchecked {
+            // value of expression is provably always less than decayedPrice,
+            // so no underflow is possible when the subtraction assignment
+            // operator is used on decayedPrice.
+            decayedPrice -=
+                (decayedPrice *
+                    (elapsedTimeSeconds % _priceDecayHalfLifeSeconds)) /
+                _priceDecayHalfLifeSeconds /
+                2;
+        }
+        if (decayedPrice < _basePrice) {
+            // Price may not decay below stay `basePrice`.
+            return _basePrice;
+        }
+        return decayedPrice;
     }
 }

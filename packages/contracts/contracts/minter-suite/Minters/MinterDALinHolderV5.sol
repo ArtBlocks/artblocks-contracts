@@ -52,7 +52,7 @@ contract MinterDALinV5 is
     IDelegationRegistry private immutable delegationRegistryContract;
 
     /// minterType for this minter
-    string public constant minterType = "MinterDALinV5";
+    string public constant minterType = "MinterDALinHolderV5";
 
     /// minter version for this minter
     string public constant minterVersion = "v5.0.0";
