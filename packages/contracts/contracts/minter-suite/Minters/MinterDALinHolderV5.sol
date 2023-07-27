@@ -336,8 +336,8 @@ contract MinterDALinV5 is
         address _coreContract,
         uint64 _auctionTimestampStart,
         uint64 _auctionTimestampEnd,
-        uint256 _startPrice,
-        uint256 _basePrice
+        uint128 _startPrice,
+        uint128 _basePrice
     ) external {
         AuthLib.onlyArtist({
             _projectId: _projectId,
@@ -638,47 +638,6 @@ contract MinterDALinV5 is
     }
 
     /**
-     * @notice Gets price of minting a token on project `_projectId` given
-     * the project's AuctionParameters and current block timestamp.
-     * Reverts if auction has not yet started or auction is unconfigured.
-     * @param _projectId Project ID to get price of token for.
-     * @param _coreContract Contract address of the core contract
-     * @return current price of token in Wei
-     */
-    function _getPrice(
-        uint256 _projectId,
-        address _coreContract
-    ) private view returns (uint256) {
-        DALib.DAProjectConfig
-            storage auctionProjectConfig = _auctionProjectConfigMapping[
-                _coreContract
-            ][_projectId];
-        // move parameters to memory if used more than once
-        uint256 _timestampStart = uint256(auctionProjectConfig.timestampStart);
-        uint256 _timestampEnd = uint256(auctionProjectConfig.timestampEnd);
-        uint256 _startPrice = auctionProjectConfig.startPrice;
-        uint256 _basePrice = auctionProjectConfig.basePrice;
-
-        require(block.timestamp > _timestampStart, "Auction not yet started");
-        if (block.timestamp >= _timestampEnd) {
-            require(_timestampEnd > 0, "Only configured auctions");
-            return _basePrice;
-        }
-        uint256 elapsedTime;
-        uint256 duration;
-        uint256 startToEndDiff;
-        unchecked {
-            // already checked that block.timestamp > _timestampStart
-            elapsedTime = block.timestamp - _timestampStart;
-            // _timestampEnd > _timestampStart enforced during assignment
-            duration = _timestampEnd - _timestampStart;
-            // _startPrice > _basePrice enforced during assignment
-            startToEndDiff = _startPrice - _basePrice;
-        }
-        return _startPrice - ((elapsedTime * startToEndDiff) / duration);
-    }
-
-    /**
      * @notice Gets if price of token is configured, price of minting a
      * token on project `_projectId`, and currency symbol and address to be
      * used as payment. Supersedes any core contract price information.
@@ -720,7 +679,7 @@ contract MinterDALinV5 is
             // it would otherwise revert
             tokenPriceInWei = 0;
         } else {
-            tokenPriceInWei = _getPrice(_projectId, _coreContract);
+            tokenPriceInWei = DALib.getPriceLin(auctionProjectConfig);
         }
         currencySymbol = "ETH";
         currencyAddress = address(0);
@@ -828,6 +787,10 @@ contract MinterDALinV5 is
                 _coreContract
             ][_projectId];
 
+        DALib.DAProjectConfig
+            storage _auctionProjectConfig = _auctionProjectConfigMapping[
+                _coreContract
+            ][_projectId];
         // Note that `maxHasBeenInvoked` is only checked here to reduce gas
         // consumption after a project has been fully minted.
         // `_maxInvocationsProjectConfig.maxHasBeenInvoked` is locally cached to reduce
@@ -839,7 +802,7 @@ contract MinterDALinV5 is
             "Max invocations reached"
         );
 
-        uint256 pricePerTokenInWei = _getPrice(_projectId, _coreContract);
+        uint256 pricePerTokenInWei = DALib.getPriceLin(_auctionProjectConfig);
         require(msg.value >= pricePerTokenInWei, "Min value to mint req.");
 
         // require token used to claim to be in set of allowlisted NFTs

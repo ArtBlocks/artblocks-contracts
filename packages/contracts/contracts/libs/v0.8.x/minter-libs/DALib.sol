@@ -98,6 +98,12 @@ library DALib {
         _auctionProjectConfigMapping.basePrice = _basePrice;
     }
 
+    /**
+     * @notice Gets price of minting a token given
+     * the project's AuctionParameters and current block timestamp.
+     * Reverts if auction has not yet started or auction is unconfigured.
+     * @return current price of token in Wei
+     */
     function getPriceLin(
         DAProjectConfig storage _auctionProjectConfigMapping
     ) external view returns (uint256) {
@@ -130,6 +136,12 @@ library DALib {
         return _startPrice - ((elapsedTime * startToEndDiff) / duration);
     }
 
+    /**
+     * @notice Gets price of minting a token given
+     * the project's AuctionParameters and current block timestamp.
+     * Reverts if auction has not yet started or auction is unconfigured.
+     * @return current price of token in Wei
+     */
     function getPriceExp(
         DAProjectConfig storage _auctionProjectConfigMapping
     ) external view returns (uint256) {
