@@ -190,7 +190,7 @@ runForEach.forEach((params) => {
       // toggle project zero to be polyptych
       await config.randomizer
         .connect(config.accounts.artist)
-        .toggleProjectIsPolyptych(
+        .toggleProjectUseAssignedHashSeed(
           config.genArt721Core.address,
           config.projectZero
         );

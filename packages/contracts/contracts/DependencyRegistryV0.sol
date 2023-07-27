@@ -134,10 +134,10 @@ contract DependencyRegistryV0 is
         );
 
         _dependencyTypes.add(_dependencyType);
-        Dependency storage dependencyType = dependencyDetails[_dependencyType];
-        dependencyType.preferredCDN = _preferredCDN;
-        dependencyType.preferredRepository = _preferredRepository;
-        dependencyType.referenceWebsite = _referenceWebsite;
+        Dependency storage dependency = dependencyDetails[_dependencyType];
+        dependency.preferredCDN = _preferredCDN;
+        dependency.preferredRepository = _preferredRepository;
+        dependency.referenceWebsite = _referenceWebsite;
 
         emit DependencyAdded(
             _dependencyType,
@@ -205,14 +205,11 @@ contract DependencyRegistryV0 is
         _onlyAdminACL(this.updateDependencyScript.selector);
         _onlyNonEmptyString(_script);
         _onlyExistingDependencyType(_dependencyType);
-        Dependency storage dependencyType = dependencyDetails[_dependencyType];
-        require(
-            _scriptId < dependencyType.scriptCount,
-            "scriptId out of range"
-        );
+        Dependency storage dependency = dependencyDetails[_dependencyType];
+        require(_scriptId < dependency.scriptCount, "scriptId out of range");
         // store script in contract bytecode, replacing reference address from
         // the contract that no longer exists with the newly created one
-        dependencyType.scriptBytecodeAddresses[_scriptId] = _script
+        dependency.scriptBytecodeAddresses[_scriptId] = _script
             .writeToBytecode();
 
         emit DependencyScriptUpdated(_dependencyType);
@@ -647,6 +644,17 @@ contract DependencyRegistryV0 is
             "Index out of bounds"
         );
         return _supportedCoreContracts.at(_index);
+    }
+
+    /**
+     * @notice Returns whether the given contract address is a supported core contract.
+     * @param coreContractAddress Address of the core contract to be queried.
+     * @return True if the given contract address is a supported core contract.
+     */
+    function isSupportedCoreContract(
+        address coreContractAddress
+    ) external view returns (bool) {
+        return _supportedCoreContracts.contains(coreContractAddress);
     }
 
     /**
