@@ -145,14 +145,14 @@
     "@aws-sdk/util-utf8-browser" "^3.0.0"
     tslib "^1.11.1"
 
-"@aws-sdk/client-cognito-identity@3.370.0":
-  version "3.370.0"
-  resolved "https://registry.yarnpkg.com/@aws-sdk/client-cognito-identity/-/client-cognito-identity-3.370.0.tgz#cfa6bc1a1b4b3631d0a62cd9861e56a397faba43"
-  integrity sha512-/dQFXT8y0WUD/731cdLjCrxNxH7Wtg2uZx7PggevTZs9Yr2fdGPSHehIYfvpCvi59yeG9T2Cl8sFnxXL1OEx4A==
+"@aws-sdk/client-cognito-identity@3.377.0":
+  version "3.377.0"
+  resolved "https://registry.yarnpkg.com/@aws-sdk/client-cognito-identity/-/client-cognito-identity-3.377.0.tgz#31127a379e63bf184ec23b629b3eb1f9ac91b647"
+  integrity sha512-wpr1NIx18GrrwiiYZ4aF/FSMpBGXOg4FBtloohA5sAAXmIDjY8yYsfuyI9YF5HIrYnc5ZL3a9NQXgva0ahepdQ==
   dependencies:
     "@aws-crypto/sha256-browser" "3.0.0"
     "@aws-crypto/sha256-js" "3.0.0"
-    "@aws-sdk/client-sts" "3.370.0"
+    "@aws-sdk/client-sts" "3.377.0"
     "@aws-sdk/credential-provider-node" "3.370.0"
     "@aws-sdk/middleware-host-header" "3.370.0"
     "@aws-sdk/middleware-logger" "3.370.0"
@@ -187,17 +187,17 @@
     "@smithy/util-utf8" "^1.0.1"
     tslib "^2.5.0"
 
-"@aws-sdk/client-s3@^3.374.0":
-  version "3.374.0"
-  resolved "https://registry.yarnpkg.com/@aws-sdk/client-s3/-/client-s3-3.374.0.tgz#d5428ace90a24717bb35d59ff9db04ab94af5767"
-  integrity sha512-1qhzOHN48DPAvHi/G2FQfx1DXpbiOfOUqJvnSCRKKo7UaPPN1426Ufw2qizTRiLo/suK2ABCb7spbTxqEFjvLw==
+"@aws-sdk/client-s3@^3.377.0":
+  version "3.377.0"
+  resolved "https://registry.yarnpkg.com/@aws-sdk/client-s3/-/client-s3-3.377.0.tgz#4e348e8d4a92640b70d964c50323027a6ba33577"
+  integrity sha512-sbZ3iJKhwMRVAK/AFVzUFcmojRhGvDfUDF1ouB/zLOCeGY0UekP/HnUNHmowYpFQsvHiEo0rQjmbbrGrlFPijw==
   dependencies:
     "@aws-crypto/sha1-browser" "3.0.0"
     "@aws-crypto/sha256-browser" "3.0.0"
     "@aws-crypto/sha256-js" "3.0.0"
-    "@aws-sdk/client-sts" "3.370.0"
+    "@aws-sdk/client-sts" "3.377.0"
     "@aws-sdk/credential-provider-node" "3.370.0"
-    "@aws-sdk/hash-stream-node" "3.374.0"
+    "@aws-sdk/hash-stream-node" "*"
     "@aws-sdk/middleware-bucket-endpoint" "3.370.0"
     "@aws-sdk/middleware-expect-continue" "3.370.0"
     "@aws-sdk/middleware-flexible-checksums" "3.374.0"
@@ -325,10 +325,10 @@
     "@smithy/util-utf8" "^1.0.1"
     tslib "^2.5.0"
 
-"@aws-sdk/client-sts@3.370.0":
-  version "3.370.0"
-  resolved "https://registry.yarnpkg.com/@aws-sdk/client-sts/-/client-sts-3.370.0.tgz#65879fa35b396035dcab446c782056ef768f48af"
-  integrity sha512-utFxOPWIzbN+3kc415Je2o4J72hOLNhgR2Gt5EnRSggC3yOnkC4GzauxG8n7n5gZGBX45eyubHyPOXLOIyoqQA==
+"@aws-sdk/client-sts@3.377.0":
+  version "3.377.0"
+  resolved "https://registry.yarnpkg.com/@aws-sdk/client-sts/-/client-sts-3.377.0.tgz#a8345709f2c07725391905e768500cc1f5eb6fab"
+  integrity sha512-K/yTHxVtTIwU42qCxbv78eT74j+GZMCcQ5TUd2fwxEWeq8HcIWcTIhujv7F6UtdrQHrou20wZ/+jMQtVKfkXXQ==
   dependencies:
     "@aws-crypto/sha256-browser" "3.0.0"
     "@aws-crypto/sha256-js" "3.0.0"
@@ -368,12 +368,12 @@
     fast-xml-parser "4.2.5"
     tslib "^2.5.0"
 
-"@aws-sdk/credential-provider-cognito-identity@3.370.0":
-  version "3.370.0"
-  resolved "https://registry.yarnpkg.com/@aws-sdk/credential-provider-cognito-identity/-/credential-provider-cognito-identity-3.370.0.tgz#ba251131db44368473b151178a7c2329058dad39"
-  integrity sha512-OjNAN72+QoyJAmOayi47AlFzpQc4E59LWRE2GKgH0F1pEgr3t34T0/EHusCoxUjOz5mRRXrKjNlHVC7ezOFEcg==
+"@aws-sdk/credential-provider-cognito-identity@3.377.0":
+  version "3.377.0"
+  resolved "https://registry.yarnpkg.com/@aws-sdk/credential-provider-cognito-identity/-/credential-provider-cognito-identity-3.377.0.tgz#b2bcaa03d5f9b7d0ac919feea492865e3c358aa9"
+  integrity sha512-tF52N78Xw4RJUyyx7UdnBgTHDMimmuHXk6gx3bT3ycmeDxFpJeMXSEIkemk/qbeChNqeAWPprqZiSAq7t/ssuQ==
   dependencies:
-    "@aws-sdk/client-cognito-identity" "3.370.0"
+    "@aws-sdk/client-cognito-identity" "3.377.0"
     "@aws-sdk/types" "3.370.0"
     "@smithy/property-provider" "^1.0.1"
     "@smithy/types" "^1.1.0"
@@ -456,15 +456,15 @@
     "@smithy/types" "^1.1.0"
     tslib "^2.5.0"
 
-"@aws-sdk/credential-providers@^3.370.0":
-  version "3.370.0"
-  resolved "https://registry.yarnpkg.com/@aws-sdk/credential-providers/-/credential-providers-3.370.0.tgz#280878e08298e959e1877a733ed6ead1cb3486d8"
-  integrity sha512-K5yUHJPB2QJKWzKoz1YCE2xJDvYL6bvCRyoT0mRPWbITrDjFuWxbe1QXWcMymwQIyzOITAnZq5fvj456KhPATg==
+"@aws-sdk/credential-providers@^3.377.0":
+  version "3.377.0"
+  resolved "https://registry.yarnpkg.com/@aws-sdk/credential-providers/-/credential-providers-3.377.0.tgz#759489f9b4898d0c4f4037935bffeff7cce999c1"
+  integrity sha512-dO5//5dqiDbK+Zvu7Zn4AghEe4L3ElY2LXPFdCJCY5s7KkztbkfeQ11TCkhHdPh+CEF8f5Ef7sdT7GIOpuWQ5g==
   dependencies:
-    "@aws-sdk/client-cognito-identity" "3.370.0"
+    "@aws-sdk/client-cognito-identity" "3.377.0"
     "@aws-sdk/client-sso" "3.370.0"
-    "@aws-sdk/client-sts" "3.370.0"
-    "@aws-sdk/credential-provider-cognito-identity" "3.370.0"
+    "@aws-sdk/client-sts" "3.377.0"
+    "@aws-sdk/credential-provider-cognito-identity" "3.377.0"
     "@aws-sdk/credential-provider-env" "3.370.0"
     "@aws-sdk/credential-provider-ini" "3.370.0"
     "@aws-sdk/credential-provider-node" "3.370.0"
@@ -477,7 +477,7 @@
     "@smithy/types" "^1.1.0"
     tslib "^2.5.0"
 
-"@aws-sdk/hash-stream-node@3.374.0":
+"@aws-sdk/hash-stream-node@*":
   version "3.374.0"
   resolved "https://registry.yarnpkg.com/@aws-sdk/hash-stream-node/-/hash-stream-node-3.374.0.tgz#d98c3d73f4ad2677acfff2d84a8b394a10c00763"
   integrity sha512-Ta7YEFcgc+d4Rt7foV/fbgnXP8IgMAb+JVzZVYcHTwQf836+PdjGfKbamYkh8cM2xE47hzZqPe+BacCjePqH7g==
@@ -3492,16 +3492,16 @@
     "@graphql-codegen/plugin-helpers" "^5.0.0"
     tslib "~2.5.0"
 
-"@graphql-codegen/cli@^4.0.1":
-  version "4.0.1"
-  resolved "https://registry.yarnpkg.com/@graphql-codegen/cli/-/cli-4.0.1.tgz#2bd494d55aaef0dfe86eefe1fa42bff81f5147fe"
-  integrity sha512-/H4imnGOl3hoPXLKmIiGUnXpmBmeIClSZie/YHDzD5N59cZlGGJlIOOrUlOTDpJx5JNU1MTQcRjyTToOYM5IfA==
+"@graphql-codegen/cli@^5.0.0":
+  version "5.0.0"
+  resolved "https://registry.yarnpkg.com/@graphql-codegen/cli/-/cli-5.0.0.tgz#761dcf08cfee88bbdd9cdf8097b2343445ec6f0a"
+  integrity sha512-A7J7+be/a6e+/ul2KI5sfJlpoqeqwX8EzktaKCeduyVKgOLA6W5t+NUGf6QumBDXU8PEOqXk3o3F+RAwCWOiqA==
   dependencies:
     "@babel/generator" "^7.18.13"
     "@babel/template" "^7.18.10"
     "@babel/types" "^7.18.13"
     "@graphql-codegen/core" "^4.0.0"
-    "@graphql-codegen/plugin-helpers" "^5.0.0"
+    "@graphql-codegen/plugin-helpers" "^5.0.1"
     "@graphql-tools/apollo-engine-loader" "^8.0.0"
     "@graphql-tools/code-file-loader" "^8.0.0"
     "@graphql-tools/git-loader" "^8.0.0"
@@ -3512,7 +3512,6 @@
     "@graphql-tools/prisma-loader" "^8.0.0"
     "@graphql-tools/url-loader" "^8.0.0"
     "@graphql-tools/utils" "^10.0.0"
-    "@parcel/watcher" "^2.1.0"
     "@whatwg-node/fetch" "^0.8.0"
     chalk "^4.1.0"
     cosmiconfig "^8.1.3"
@@ -3530,19 +3529,19 @@
     string-env-interpolation "^1.0.1"
     ts-log "^2.2.3"
     tslib "^2.4.0"
-    yaml "^1.10.0"
+    yaml "^2.3.1"
     yargs "^17.0.0"
 
-"@graphql-codegen/client-preset@^4.0.1":
-  version "4.0.1"
-  resolved "https://registry.yarnpkg.com/@graphql-codegen/client-preset/-/client-preset-4.0.1.tgz#6d9883525511ebbd6deaacdccf2c4673fad3263f"
-  integrity sha512-8kt8z1JK4CGbBb+oedSCyHENNxh8UHdEFU8sBCtN4QpKsfmsEXhHHeJCTRPVbQKtEZyfVuBqf89DzuSNLs0DFw==
+"@graphql-codegen/client-preset@^4.1.0":
+  version "4.1.0"
+  resolved "https://registry.yarnpkg.com/@graphql-codegen/client-preset/-/client-preset-4.1.0.tgz#81becd32b78b207b0e966876900537ec172d8df1"
+  integrity sha512-/3Ymb/fjxIF1+HGmaI1YwSZbWsrZAWMSQjh3dU425eBjctjsVQ6gzGRr+l/gE5F1mtmCf+vlbTAT03heAc/QIw==
   dependencies:
     "@babel/helper-plugin-utils" "^7.20.2"
     "@babel/template" "^7.20.7"
     "@graphql-codegen/add" "^5.0.0"
     "@graphql-codegen/gql-tag-operations" "4.0.1"
-    "@graphql-codegen/plugin-helpers" "^5.0.0"
+    "@graphql-codegen/plugin-helpers" "^5.0.1"
     "@graphql-codegen/typed-document-node" "^5.0.1"
     "@graphql-codegen/typescript" "^4.0.1"
     "@graphql-codegen/typescript-operations" "^4.0.1"
@@ -3585,10 +3584,10 @@
     lodash "~4.17.0"
     tslib "~2.4.0"
 
-"@graphql-codegen/plugin-helpers@^5.0.0":
-  version "5.0.0"
-  resolved "https://registry.yarnpkg.com/@graphql-codegen/plugin-helpers/-/plugin-helpers-5.0.0.tgz#40c18217454af5cf8317e5f46cf4d38e8cc78ae4"
-  integrity sha512-suL2ZMkBAU2a4YbBHaZvUPsV1z0q3cW6S96Z/eYYfkRIsJoe2vN+wNZ9Xdzmqx0JLmeeFCBSoBGC0imFyXlkDQ==
+"@graphql-codegen/plugin-helpers@^5.0.0", "@graphql-codegen/plugin-helpers@^5.0.1":
+  version "5.0.1"
+  resolved "https://registry.yarnpkg.com/@graphql-codegen/plugin-helpers/-/plugin-helpers-5.0.1.tgz#e2429fcfba3f078d5aa18aa062d46c922bbb0d55"
+  integrity sha512-6L5sb9D8wptZhnhLLBcheSPU7Tg//DGWgc5tQBWX46KYTOTQHGqDpv50FxAJJOyFVJrveN9otWk9UT9/yfY4ww==
   dependencies:
     "@graphql-tools/utils" "^10.0.0"
     change-case-all "1.0.15"
@@ -4861,16 +4860,6 @@
     minimist "^1.2.7"
     proper-lockfile "^4.1.1"
     solidity-ast "^0.4.15"
-
-"@parcel/watcher@^2.1.0":
-  version "2.1.0"
-  resolved "https://registry.yarnpkg.com/@parcel/watcher/-/watcher-2.1.0.tgz#5f32969362db4893922c526a842d8af7a8538545"
-  integrity sha512-8s8yYjd19pDSsBpbkOHnT6Z2+UJSuLQx61pCFM0s5wSRvKCEMDjd/cHY3/GI1szHIWbpXpsJdg3V6ISGGx9xDw==
-  dependencies:
-    is-glob "^4.0.3"
-    micromatch "^4.0.5"
-    node-addon-api "^3.2.1"
-    node-gyp-build "^4.3.0"
 
 "@peculiar/asn1-schema@^2.1.6", "@peculiar/asn1-schema@^2.3.0":
   version "2.3.3"
@@ -14314,11 +14303,6 @@ node-addon-api@^2.0.0:
   resolved "https://registry.yarnpkg.com/node-addon-api/-/node-addon-api-2.0.2.tgz#432cfa82962ce494b132e9d72a15b29f71ff5d32"
   integrity sha512-Ntyt4AIXyaLIuMHF6IOoTakB3K+RWxwtsHNRxllEoA6vPwP9o4866g6YWDLUdnucilZhmkxiHwHr11gAENw+QA==
 
-node-addon-api@^3.2.1:
-  version "3.2.1"
-  resolved "https://registry.yarnpkg.com/node-addon-api/-/node-addon-api-3.2.1.tgz#81325e0a2117789c0128dab65e7e38f07ceba161"
-  integrity sha512-mmcei9JghVNDYydghQmeDX8KoAm0FAiYyIcUt/N4nhyAipB17pllZQDOJD2fotxABnt4Mdz+dKTO7eftLg4d0A==
-
 node-emoji@^1.10.0:
   version "1.11.0"
   resolved "https://registry.yarnpkg.com/node-emoji/-/node-emoji-1.11.0.tgz#69a0150e6946e2f115e9d7ea4df7971e2628301c"
@@ -19707,12 +19691,7 @@ yaml-ast-parser@^0.0.43:
   resolved "https://registry.yarnpkg.com/yaml-ast-parser/-/yaml-ast-parser-0.0.43.tgz#e8a23e6fb4c38076ab92995c5dca33f3d3d7c9bb"
   integrity sha512-2PTINUwsRqSd+s8XxKaJWQlUuEMHJQyEuh2edBbW8KNJz0SJPwUSD2zRWqezFEdN7IzAgeuYHFUCF7o8zRdZ0A==
 
-yaml@^1.10.0:
-  version "1.10.2"
-  resolved "https://registry.yarnpkg.com/yaml/-/yaml-1.10.2.tgz#2301c5ffbf12b467de8da2333a459e29e7920e4b"
-  integrity sha512-r3vXyErRCYJ7wg28yvBY5VSoAF8ZvlcW9/BwUzEtUsjvX/DKs24dIkuwjtuprwJJHsbyUbLApepYTR1BN4uHrg==
-
-yaml@^2.1.1, yaml@^2.2.2:
+yaml@^2.1.1, yaml@^2.2.2, yaml@^2.3.1:
   version "2.3.1"
   resolved "https://registry.yarnpkg.com/yaml/-/yaml-2.3.1.tgz#02fe0975d23cd441242aa7204e09fc28ac2ac33b"
   integrity sha512-2eHWfjaoXgTBC2jNM1LRef62VQa0umtvRiDSk6HSzW7RvS5YtkabJrwYLLEKWBc8a5U2PTSCs+dJjUTJdlHsWQ==
