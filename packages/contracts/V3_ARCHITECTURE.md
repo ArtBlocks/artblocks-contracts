@@ -12,7 +12,7 @@ The V3 core contract integrates with a few peripheral contracts to offer flexibl
 
 - [Admin Access Control List (ACL) contract](#admin-access-control-list-acl-contract)
 - [Randomizer contract](#randomizer-contract)
-- [Engine Registry contract](#engine-registry-contract)
+- [Core Registry contract](#core-registry-contract)
 - [Minter Suite contracts](#minter-suite-contracts)
 - [Royalty Registry contract (by Manifold)](./ROYALTIES.md)
 
@@ -34,15 +34,20 @@ A diagram of the V3 core contract and Admin ACL contract integration is shown be
 
 The Randomizer contract is used to generate pseudo random numbers for the V3 core contract, when new tokens are minted. This architecture is designed to be highly flexible, enabling designs that may desire to use asynchrounous random number generation or other hash generation methods (such as our Polyptych Randomizer contract).
 
+A shared randomizer was developed as part of our shared minter suite development, and may be used to generate random numbers for all V3 tokens. The randomizer is designed to handle all globally approved shared minters, including minters that may assign token hashes directly such as the Polyptych minter.
+
 A diagram of the V3 core contract and Randomizer contract integration is shown below:
 
 ![randomizer-diagram](./images/randomizer-v3-core-integration.png)
 
-### Engine Registry contract
+### Core Registry contract
 
-The Engine Registry contract notifies our subgraph indexing service of new Art Blocks Engine tokens. When the Engine Registry emits an event, the subgraph indexing service is notified and the Engine contract is indexed and made available for querying on the Art Blocks subgraph.
+The Core Registry contract performs two functions:
 
-A diagram of the V3 core contract and Engine Registry contract integration is shown below:
+1. Notifies our subgraph indexing service of newly deployed Art Blocks Engine contracts. When the Core Registry emits an event, the subgraph indexing service is notified and the Engine contract is indexed and made available for querying on the Art Blocks subgraph.
+2. Provides an on-chain registry of all V3 Art Blocks core contracts. This registry is used by the shared minter filter contract to validate that a given project is on a valid and approved Art Blocks V3 Core contract, approved for use on the Art Blocks platform. This is primarily done to prevent phishing attacks, limiting shared minters to only minting tokens on approved Art Blocks V3 Core contracts.
+
+A diagram of the V3 core contract and Core Registry contract integration is shown below:
 
 ![engine-registry-diagram](./images/engine-registry-v3-core-integration.png)
 
