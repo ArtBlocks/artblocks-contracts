@@ -43,3 +43,24 @@ Date: 2023-06-27T02:46:36.476Z
 
 ---
 
+
+# Minter Deployment
+
+Date: 2023-07-28T16:25:23.878Z
+
+## **Network:** goerli
+
+## **Environment:** staging
+
+**Deployment Input File:** `deployments/engine/V3/partners/grailers-dao-flex/minter-deploy-config.staging.ts`
+
+**MinterHolderV4:** https://goerli.etherscan.io/address/0x80c6F7472fdF098bCb547e2F42ba55AC1abA2884#code
+
+**Associated core contract:** 0x72f0e5Af1B3D68BaE33FBAd441F55489954d9a04
+
+**Associated minter filter:** 0xA5bD9dB063E783152186224A9B26B3073747bdE1
+
+**Deployment Args:** 0x72f0e5Af1B3D68BaE33FBAd441F55489954d9a04,0xA5bD9dB063E783152186224A9B26B3073747bdE1,0x00000000000076A84feF008CDAbe6409d2FE638B
+
+---
+
