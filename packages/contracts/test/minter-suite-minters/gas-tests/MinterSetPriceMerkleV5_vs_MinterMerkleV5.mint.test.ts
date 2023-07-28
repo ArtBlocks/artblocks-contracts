@@ -1,6 +1,10 @@
+import { BN, constants } from "@openzeppelin/test-helpers";
 import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { setupConfigWitMinterFilterV2Suite } from "../../util/fixtures";
+const { MerkleTree } = require("merkletreejs");
+import { hashAddress } from "../legacy/MinterMerkle/MinterMerkle.common";
+const keccak256 = require("keccak256");
 
 import {
   T_Config,
@@ -12,7 +16,7 @@ import {
   deployCore,
 } from "../../util/common";
 
-const NUM_INITIAL_MINTS = 500;
+const NUM_INITIAL_MINTS = 10;
 const NUM_MINTS_TO_AVERAGE = 25;
 const MAX_INVOCATIONS = NUM_INITIAL_MINTS + NUM_MINTS_TO_AVERAGE;
 const CORE_NAME = "GenArt721CoreV3";
@@ -40,6 +44,12 @@ describe(`${CORE_NAME} Gas Tests`, async function () {
       adminACL: config.adminACL,
     } = await deployCore(config, CORE_NAME, config.coreRegistry));
 
+    config.delegationRegistry = await deployAndGet(
+      config,
+      "DelegationRegistry",
+      []
+    );
+
     // make price artifically low to enable more mints to simulate real-world common use cases
     config.pricePerTokenInWei = ethers.utils.parseEther("0.1");
 
@@ -48,9 +58,11 @@ describe(`${CORE_NAME} Gas Tests`, async function () {
       config.minterFilter.address
     );
 
-    config.minter = await deployAndGet(config, "MinterSetPriceV5", [
+    config.minter = await deployAndGet(config, "MinterSetPriceMerkleV5", [
       config.minterFilter.address,
+      config.delegationRegistry.address,
     ]);
+
     await config.minterFilter
       .connect(config.accounts.deployer)
       .approveMinterGlobally(config.minter.address);
@@ -91,13 +103,57 @@ describe(`${CORE_NAME} Gas Tests`, async function () {
       .connect(config.accounts.artist)
       .updateProjectMaxInvocations(config.projectOne, MAX_INVOCATIONS);
 
+    // define Merkle allowlist
+    const elementsProjectOne = [];
+
+    elementsProjectOne.push(
+      config.accounts.deployer.address,
+      config.accounts.artist.address,
+      config.accounts.additional.address,
+      config.accounts.user.address,
+      config.accounts.user2.address
+    );
+
+    config.merkleTreeOne = new MerkleTree(
+      elementsProjectOne.map((_addr) => hashAddress(_addr)),
+      keccak256,
+      {
+        sortPairs: true,
+      }
+    );
+    const merkleRootOne = config.merkleTreeOne.getHexRoot();
+    await config.minter
+      .connect(config.accounts.artist)
+      .updateMerkleRoot(
+        config.projectOne,
+        config.genArt721Core.address,
+        merkleRootOne
+      );
+    // allow MAX_INVOCATIONS from a single address
+    await config.minter
+      .connect(config.accounts.artist)
+      .setProjectInvocationsPerAddress(
+        config.projectOne,
+        config.genArt721Core.address,
+        MAX_INVOCATIONS
+      );
+
+    config.userMerkleProofOne = config.merkleTreeOne.getHexProof(
+      hashAddress(config.accounts.user.address)
+    );
+
     // mint NUM_INITIAL_MINTS tokens on project one to simulate a typical real-world use case
     for (let i = 0; i < NUM_INITIAL_MINTS; i++) {
       await config.minter
         .connect(config.accounts.user)
-        .purchase(config.projectOne, config.genArt721Core.address, {
-          value: config.pricePerTokenInWei,
-        });
+        ["purchase(uint256,address,bytes32[])"](
+          config.projectOne,
+          config.genArt721Core.address,
+          config.userMerkleProofOne,
+          {
+            value: config.pricePerTokenInWei,
+          }
+        );
     }
 
     return config;
@@ -112,6 +168,12 @@ describe(`${CORE_NAME} Gas Tests`, async function () {
     // make price artifically low to enable more mints to simulate real-world common use cases
     config.pricePerTokenInWei = ethers.utils.parseEther("0.1");
 
+    config.delegationRegistry = await deployAndGet(
+      config,
+      "DelegationRegistry",
+      []
+    );
+
     // deploy and configure minter filter and minter
     ({
       genArt721Core: config.genArt721Core,
@@ -119,9 +181,10 @@ describe(`${CORE_NAME} Gas Tests`, async function () {
       randomizer: config.randomizer,
     } = await deployCoreWithMinterFilter(config, CORE_NAME, "MinterFilterV1"));
 
-    config.minter = await deployAndGet(config, "MinterSetPriceV4", [
+    config.minter = await deployAndGet(config, "MinterMerkleV5", [
       config.genArt721Core.address,
       config.minterFilter.address,
+      config.delegationRegistry.address,
     ]);
 
     // add two projects to perform mints on project one
@@ -154,26 +217,68 @@ describe(`${CORE_NAME} Gas Tests`, async function () {
       .connect(config.accounts.artist)
       .updatePricePerTokenInWei(config.projectOne, config.pricePerTokenInWei);
 
+    // define Merkle allowlist
+    const elementsProjectOne = [];
+
+    elementsProjectOne.push(
+      config.accounts.deployer.address,
+      config.accounts.artist.address,
+      config.accounts.additional.address,
+      config.accounts.user.address,
+      config.accounts.user2.address
+    );
+
+    config.merkleTreeOne = new MerkleTree(
+      elementsProjectOne.map((_addr) => hashAddress(_addr)),
+      keccak256,
+      {
+        sortPairs: true,
+      }
+    );
+    const merkleRootOne = config.merkleTreeOne.getHexRoot();
+    await config.minter
+      .connect(config.accounts.artist)
+      .updateMerkleRoot(config.projectOne, merkleRootOne);
+    // allow MAX_INVOCATIONS from a single address
+    await config.minter
+      .connect(config.accounts.artist)
+      .setProjectInvocationsPerAddress(config.projectOne, MAX_INVOCATIONS);
+
+    config.userMerkleProofOne = config.merkleTreeOne.getHexProof(
+      hashAddress(config.accounts.user.address)
+    );
+
     // mint NUM_INITIAL_MINTS tokens on project one to simulate a typical real-world use case
     for (let i = 0; i < NUM_INITIAL_MINTS; i++) {
       await config.minter
         .connect(config.accounts.user)
-        .purchase(config.projectOne, { value: config.pricePerTokenInWei });
+        ["purchase(uint256,bytes32[])"](
+          config.projectOne,
+          config.userMerkleProofOne,
+          {
+            value: config.pricePerTokenInWei,
+          }
+        );
     }
     return config;
   }
 
   describe("LEGACY mint gas measurement", function () {
-    it("test gas cost of mint on LEGACY MinterSetPrice [ @skip-on-coverage ]", async function () {
+    it("test gas cost of mint on LEGACY Minter Merkle [ @skip-on-coverage ]", async function () {
       const config = await loadFixture(_beforeEachMinterSuiteLegacy);
+
       // report gas over an average of NUM_MINTS_TO_AVERAGE purchases
       const receipts = [];
       for (let index = 0; index < NUM_MINTS_TO_AVERAGE; index++) {
         const tx = await config.minter
           .connect(config.accounts.user)
-          .purchase_H4M(config.projectOne, {
-            value: config.pricePerTokenInWei,
-          });
+          ["purchase(uint256,bytes32[])"](
+            config.projectOne,
+            config.userMerkleProofOne,
+            {
+              value: config.pricePerTokenInWei,
+            }
+          );
         receipts.push(await ethers.provider.getTransactionReceipt(tx.hash));
       }
       const gasUseds = receipts.map((receipt) => receipt.gasUsed);
@@ -198,16 +303,21 @@ describe(`${CORE_NAME} Gas Tests`, async function () {
   });
 
   describe("SHARED MINTER SUITE mint gas measurement", function () {
-    it("test gas cost of mint on SHARED MinterSetPrice [ @skip-on-coverage ]", async function () {
+    it("test gas cost of mint on SHARED MinterSetPriceMerkle [ @skip-on-coverage ]", async function () {
       const config = await loadFixture(_beforeEachMinterSuiteV2);
       // report gas over an average of NUM_MINTS_TO_AVERAGE purchases
       const receipts = [];
       for (let index = 0; index < NUM_MINTS_TO_AVERAGE; index++) {
         const tx = await config.minter
           .connect(config.accounts.user)
-          .purchase(config.projectOne, config.genArt721Core.address, {
-            value: config.pricePerTokenInWei,
-          });
+          ["purchase(uint256,address,bytes32[])"](
+            config.projectOne,
+            config.genArt721Core.address,
+            config.userMerkleProofOne,
+            {
+              value: config.pricePerTokenInWei,
+            }
+          );
         receipts.push(await ethers.provider.getTransactionReceipt(tx.hash));
       }
       const gasUseds = receipts.map((receipt) => receipt.gasUsed);
