@@ -34,7 +34,7 @@ A diagram of the V3 core contract and Admin ACL contract integration is shown be
 
 The Randomizer contract is used to generate pseudo random numbers for the V3 core contract, when new tokens are minted. This architecture is designed to be highly flexible, enabling designs that may desire to use asynchrounous random number generation or other hash generation methods (such as our Polyptych Randomizer contract).
 
-A shared randomizer was developed as part of our shared minter suite development, and may be used to generate random numbers for all V3 tokens. The randomizer is designed to handle all globally approved shared minters, including minters that may assign token hashes directly such as the Polyptych minter.
+A shared randomizer was developed as part of our shared minter suite development, and may be used to generate pseudorandom numbers for all V3 tokens. The randomizer is designed to handle all globally approved shared minters, including minters that may assign token hashes directly such as the Polyptych minter.
 
 A diagram of the V3 core contract and Randomizer contract integration is shown below:
 
