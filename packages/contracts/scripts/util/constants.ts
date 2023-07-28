@@ -18,9 +18,73 @@ export const BYTECODE_STORAGE_READER_LIBRARY_ADDRESSES = {
   mainnet: "0xf0585dF582A0ad119F1616FB82f3b449a98EeCd5",
 };
 
+// TODO: add addresses when deployed
+// Active shared minter filter contracts being used for the shared minter
+// suite, on each network and environment.
+// format is [network]: { [environment]: [minter filter address] }
+export const ACTIVE_SHARED_MINTER_FILTERS = {
+  goerli: {
+    dev: "0xTBD",
+    staging: "0xTBD",
+  },
+  mainnet: {
+    mainnet: "0xTBD",
+  },
+  "arbitrum-goerli": {
+    dev: "0xTBD",
+    staging: "0xTBD",
+  },
+  arbitrum: {
+    mainnet: "0xTBD",
+  },
+};
+
+// TODO: add addresses when deployed
+// Active shared randomizer contracts being used for the shared minter
+// suite, on each network and environment.
+// format is [network]: { [environment]: [randomizer address] }
+export const ACTIVE_SHARED_RANDOMIZERS = {
+  goerli: {
+    dev: "0xTBD",
+    staging: "0xTBD",
+  },
+  mainnet: {
+    mainnet: "0xTBD",
+  },
+  "arbitrum-goerli": {
+    dev: "0xTBD",
+    staging: "0xTBD",
+  },
+  arbitrum: {
+    mainnet: "0xTBD",
+  },
+};
+
+// TODO: add addresses when deployed
+// Active core registry contracts being used on the shared minter suite, on
+// each network and environment
+// format is [network]: { [environment]: [registry address] }
+export const ACTIVE_CORE_REGISTRIES = {
+  goerli: {
+    dev: "0xTBD",
+    staging: "0xTBD",
+  },
+  mainnet: {
+    mainnet: "0xTBD",
+  },
+  "arbitrum-goerli": {
+    dev: "0xTBD",
+    staging: "0xTBD",
+  },
+  arbitrum: {
+    mainnet: "0xTBD",
+  },
+};
+
+// DEPRECATED - use ACTIVE_CORE_REGISTRIES after migration to shared minter suite
 // known V3 engine registry contracts, and their deployers
 // format is [network]: { [registry address]: [deployer address] }
-export const KNOWN_ENGINE_REGISTRIES = {
+export const DEPRECATED_ENGINE_REGISTRIES = {
   goerli: {
     // [INDEXED] goerli staging registry, indexed in staging subgraph | deployer: staging deployer wallet
     "0xEa698596b6009A622C3eD00dD5a8b5d1CAE4fC36":
