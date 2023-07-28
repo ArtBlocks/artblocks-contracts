@@ -16,9 +16,9 @@ import {
 
 import {
   BYTECODE_STORAGE_READER_LIBRARY_ADDRESSES,
-  ACTIVE_CORE_REGISTRIES,
-  ACTIVE_SHARED_MINTER_FILTERS,
-  ACTIVE_SHARED_RANDOMIZERS,
+  getActiveSharedMinterFilter,
+  getActiveSharedRandomizer,
+  getActiveCoreRegistry,
   EXTRA_DELAY_BETWEEN_TX,
 } from "../../util/constants";
 import { tryVerify } from "../../util/verification";
@@ -86,9 +86,20 @@ async function main() {
       );
     }
 
+    // verify a shared minter filter address is defined for network and environment
+    // @dev throws if not found
+    getActiveSharedMinterFilter(networkName, deployDetails.environment);
+
+    // verify a shared randomizer address is defined for network and environment
+    // @dev throws if not found
+    getActiveSharedRandomizer(networkName, deployDetails.environment);
+
     // verify deployer wallet is allowed to add projects to the core registry contract
-    const activeCoreRegistryAddress =
-      ACTIVE_CORE_REGISTRIES[networkName][deployDetails.environment];
+    // @dev throws if not found
+    const activeCoreRegistryAddress = await getActiveCoreRegistry(
+      networkName,
+      deployDetails.environment
+    );
     const coreRegistryContract = await ethers.getContractAt(
       "CoreRegistryV1",
       activeCoreRegistryAddress
@@ -152,8 +163,10 @@ async function main() {
     const networkName = network.name == "homestead" ? "mainnet" : network.name;
     const bytecodeStorageLibraryAddress =
       BYTECODE_STORAGE_READER_LIBRARY_ADDRESSES[networkName];
-    const activeCoreRegistryAddress =
-      ACTIVE_CORE_REGISTRIES[networkName][deployDetails.environment];
+    const activeCoreRegistryAddress = await getActiveCoreRegistry(
+      networkName,
+      deployDetails.environment
+    );
 
     //////////////////////////////////////////////////////////////////////////////
     // DEPLOYMENT (SHARED) BEGINS HERE
@@ -193,8 +206,10 @@ async function main() {
     //////////////////////////////////////////////////////////////////////////////
 
     // specify shared randomizer contract
-    const randomizerAddress =
-      ACTIVE_SHARED_RANDOMIZERS[networkName][deployDetails.environment];
+    const randomizerAddress = getActiveSharedRandomizer(
+      networkName,
+      deployDetails.environment
+    );
     console.log(`[INFO] Using shared Randomizer at ${randomizerAddress}`);
 
     // Deploy Core contract
@@ -249,8 +264,10 @@ async function main() {
     //////////////////////////////////////////////////////////////////////////////
 
     // Set the Minter to MinterFilter on the Core contract.
-    const minterFilterAddress =
-      ACTIVE_SHARED_MINTER_FILTERS[networkName][deployDetails.environment];
+    const minterFilterAddress = getActiveSharedMinterFilter(
+      networkName,
+      deployDetails.environment
+    );
     await genArt721Core
       .connect(deployer)
       .updateMinterContract(minterFilterAddress);

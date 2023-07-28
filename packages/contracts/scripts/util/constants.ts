@@ -1,3 +1,5 @@
+import { ethers } from "hardhat";
+
 // empirically have found adding 10 seconds between txs in scripts is enough to
 // avoid chain reorgs and tx failures
 export const EXTRA_DELAY_BETWEEN_TX = 10000; // ms
@@ -18,11 +20,31 @@ export const BYTECODE_STORAGE_READER_LIBRARY_ADDRESSES = {
   mainnet: "0xf0585dF582A0ad119F1616FB82f3b449a98EeCd5",
 };
 
+/**
+ * Get active shared minter filter contract address for the given network and
+ * environment.
+ * @param networkName network name (e.g. "goerli", "mainnet", "arbitrum", etc.)
+ * @param environment environment (e.g. "dev", "staging", "mainnet")
+ * @returns active shared minter filter contract address
+ */
+export function getActiveSharedMinterFilter(
+  networkName: string,
+  environment: string
+): string {
+  const activeMinterFilter =
+    ACTIVE_SHARED_MINTER_FILTERS[networkName]?.[environment];
+  if (!activeMinterFilter) {
+    throw new Error(
+      `No active shared minter filter found for network ${networkName} and environment ${environment}`
+    );
+  }
+  return activeMinterFilter;
+}
 // TODO: add addresses when deployed
 // Active shared minter filter contracts being used for the shared minter
 // suite, on each network and environment.
 // format is [network]: { [environment]: [minter filter address] }
-export const ACTIVE_SHARED_MINTER_FILTERS = {
+const ACTIVE_SHARED_MINTER_FILTERS = {
   goerli: {
     dev: "0xTBD",
     staging: "0xTBD",
@@ -39,11 +61,31 @@ export const ACTIVE_SHARED_MINTER_FILTERS = {
   },
 };
 
+/**
+ * Get active shared randomizer contract address for the given network and
+ * environment.
+ * @param networkName network name (e.g. "goerli", "mainnet", "arbitrum", etc.)
+ * @param environment environment (e.g. "dev", "staging", "mainnet")
+ * @returns active shared randomizer contract address
+ */
+export function getActiveSharedRandomizer(
+  networkName: string,
+  environment: string
+): string {
+  const activeSharedRandomizer =
+    ACTIVE_SHARED_RANDOMIZERS[networkName]?.[environment];
+  if (!activeSharedRandomizer) {
+    throw new Error(
+      `No active shared randomizer found for network ${networkName} and environment ${environment}`
+    );
+  }
+  return activeSharedRandomizer;
+}
 // TODO: add addresses when deployed
 // Active shared randomizer contracts being used for the shared minter
 // suite, on each network and environment.
 // format is [network]: { [environment]: [randomizer address] }
-export const ACTIVE_SHARED_RANDOMIZERS = {
+const ACTIVE_SHARED_RANDOMIZERS = {
   goerli: {
     dev: "0xTBD",
     staging: "0xTBD",
@@ -60,29 +102,37 @@ export const ACTIVE_SHARED_RANDOMIZERS = {
   },
 };
 
-// TODO: add addresses when deployed
-// Active core registry contracts being used on the shared minter suite, on
-// each network and environment
-// format is [network]: { [environment]: [registry address] }
-export const ACTIVE_CORE_REGISTRIES = {
-  goerli: {
-    dev: "0xTBD",
-    staging: "0xTBD",
-  },
-  mainnet: {
-    mainnet: "0xTBD",
-  },
-  "arbitrum-goerli": {
-    dev: "0xTBD",
-    staging: "0xTBD",
-  },
-  arbitrum: {
-    mainnet: "0xTBD",
-  },
-};
+/**
+ * Gets active core registry contract address for the given network and
+ * environment.
+ * @dev keys off of the current core registry of the active Minter Filter for
+ * the given network and environment
+ * @param networkName
+ * @param environment
+ * @returns
+ */
+export async function getActiveCoreRegistry(
+  networkName: string,
+  environment: string
+) {
+  // get the active minter filter for the network and environment
+  const activeMinterFilter = getActiveSharedMinterFilter(
+    networkName,
+    environment
+  );
+  const minterFilterFactory = await ethers.getContractFactory("MinterFilterV2");
+  const minterFilter = minterFilterFactory.attach(activeMinterFilter);
+  const activeCoreRegistry = await minterFilter.coreRegistry();
+  if (!activeCoreRegistry?.address) {
+    throw new Error(
+      `No active core registry found for network ${networkName} and environment ${environment}`
+    );
+  }
+  return activeCoreRegistry.address;
+}
 
-// DEPRECATED - use ACTIVE_CORE_REGISTRIES after migration to shared minter suite
-// known V3 engine registry contracts, and their deployers
+// DEPRECATED - use getActiveCoreRegistry after migration to shared minter suite
+// deprecated V3 engine registry contracts, and their deployers
 // format is [network]: { [registry address]: [deployer address] }
 export const DEPRECATED_ENGINE_REGISTRIES = {
   goerli: {
