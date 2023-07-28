@@ -78,7 +78,7 @@ interface IDependencyRegistryV0 {
      * @notice Returns address with bytecode containing script for
      * dependency type `_dependencyTypes` at script index `_index`.
      */
-    function getDependencyScriptBytecodeAddressAtIndex(
+    function getDependencyScriptBytecodeAddress(
         bytes32 _dependencyType,
         uint256 _index
     ) external view returns (address);
@@ -88,7 +88,7 @@ interface IDependencyRegistryV0 {
      * @param _dependencyType Dependency type to be queried.
      * @param _index Index of script to be queried.
      */
-    function getDependencyScriptAtIndex(
+    function getDependencyScript(
         bytes32 _dependencyType,
         uint256 _index
     ) external view returns (string memory);
