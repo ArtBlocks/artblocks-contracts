@@ -10,7 +10,7 @@ import "../../interfaces/v0.8.x/IMinterFilterV1.sol";
 
 import "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
 import "../../libs/v0.8.x/minter-libs/MaxInvocationsLib.sol";
-import "../../libs/v0.8.x/minter-libs/DALib.sol";
+import "../../libs/v0.8.x/minter-libs/DALinLib.sol";
 import "../../libs/v0.8.x/AuthLib.sol";
 
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
@@ -57,7 +57,7 @@ contract MinterDALinV5 is
     // STATE VARIABLES FOR SplitFundsLib end here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    mapping(address => mapping(uint256 => DALib.DAProjectConfig))
+    mapping(address => mapping(uint256 => DALinLib.DAProjectConfig))
         private _auctionProjectConfigMapping;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -148,7 +148,7 @@ contract MinterDALinV5 is
             _sender: msg.sender
         });
         // CHECKS
-        DALib.DAProjectConfig
+        DALinLib.DAProjectConfig
             storage _auctionProjectConfig = _auctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
@@ -159,8 +159,8 @@ contract MinterDALinV5 is
             "Auction length must be at least minimumAuctionLengthSeconds"
         );
 
-        DALib.setAuctionDetailsLin({
-            _auctionProjectConfigMapping: _auctionProjectConfig,
+        DALinLib.setAuctionDetailsLin({
+            _DAProjectConfig: _auctionProjectConfig,
             _auctionTimestampStart: _auctionTimestampStart,
             _auctionTimestampEnd: _auctionTimestampEnd,
             _startPrice: _startPrice,
@@ -292,7 +292,7 @@ contract MinterDALinV5 is
             uint128 basePrice
         )
     {
-        DALib.DAProjectConfig
+        DALinLib.DAProjectConfig
             storage _auctionProjectConfig = _auctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
@@ -410,7 +410,7 @@ contract MinterDALinV5 is
             address currencyAddress
         )
     {
-        DALib.DAProjectConfig
+        DALinLib.DAProjectConfig
             storage auctionProjectConfig = _auctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
@@ -424,7 +424,7 @@ contract MinterDALinV5 is
             // it would otherwise revert
             tokenPriceInWei = 0;
         } else {
-            tokenPriceInWei = DALib.getPriceLin(auctionProjectConfig);
+            tokenPriceInWei = DALinLib.getPriceLin(auctionProjectConfig);
         }
         currencySymbol = "ETH";
         currencyAddress = address(0);
@@ -481,7 +481,7 @@ contract MinterDALinV5 is
             storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
                 _coreContract
             ][_projectId];
-        DALib.DAProjectConfig
+        DALinLib.DAProjectConfig
             storage _auctionProjectConfig = _auctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
@@ -496,7 +496,9 @@ contract MinterDALinV5 is
             "Max invocations reached"
         );
 
-        uint256 pricePerTokenInWei = DALib.getPriceLin(_auctionProjectConfig);
+        uint256 pricePerTokenInWei = DALinLib.getPriceLin(
+            _auctionProjectConfig
+        );
         require(msg.value >= pricePerTokenInWei, "Min value to mint req.");
 
         // EFFECTS

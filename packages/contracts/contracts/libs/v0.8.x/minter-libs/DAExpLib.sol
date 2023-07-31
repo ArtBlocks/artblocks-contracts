@@ -13,11 +13,10 @@ pragma solidity ^0.8.0;
  * @author Art Blocks Inc.
  */
 
-library DALib {
+library DAExpLib {
     struct DAProjectConfig {
         // @dev max uint64 ~= 1.8e19 sec ~= 570 billion years
         uint64 timestampStart;
-        uint64 timestampEnd;
         uint64 priceDecayHalfLifeSeconds;
         // @dev Prices are packed internally as uint128, resulting in a maximum
         // allowed price of ~3.4e20 ETH. This is many orders of magnitude
@@ -26,32 +25,17 @@ library DALib {
         uint128 basePrice;
     }
 
-    function setAuctionDetailsLin(
-        DAProjectConfig storage _DAProjectConfig,
-        uint64 _auctionTimestampStart,
-        uint64 _auctionTimestampEnd,
-        uint128 _startPrice,
-        uint128 _basePrice
-    ) internal {
-        require(
-            block.timestamp < _DAProjectConfig.timestampStart,
-            "No modifications mid-auction"
-        );
-        require(
-            block.timestamp < _auctionTimestampStart,
-            "Only future auctions"
-        );
-        require(
-            _startPrice > _basePrice,
-            "Auction start price must be greater than auction end price"
-        );
-        // EFFECTS
-        _DAProjectConfig.timestampStart = _auctionTimestampStart;
-        _DAProjectConfig.timestampEnd = _auctionTimestampEnd;
-        _DAProjectConfig.startPrice = _startPrice;
-        _DAProjectConfig.basePrice = _basePrice;
-    }
-
+    /**
+     * @notice Sets auction details for an exponential-price auction type.
+     * @dev The function sets the auction start timestamp, price decay half-life, starting, and base prices for an exponential-price auction.
+     * @dev Minter implementations should ensure that _priceDecayHalfLifeSeconds value is greater than
+     * the minter's minimum allowable value for price decay half-life.
+     * @param _DAProjectConfig The storage reference to the DAProjectConfig struct.
+     * @param _auctionTimestampStart The timestamp when the auction will start.
+     * @param _priceDecayHalfLifeSeconds The half-life time for price decay in seconds.
+     * @param _startPrice The starting price of the auction.
+     * @param _basePrice The base price of the auction.
+     */
     function setAuctionDetailsExp(
         DAProjectConfig storage _DAProjectConfig,
         uint64 _auctionTimestampStart,
@@ -77,40 +61,6 @@ library DALib {
         _DAProjectConfig.priceDecayHalfLifeSeconds = _priceDecayHalfLifeSeconds;
         _DAProjectConfig.startPrice = _startPrice;
         _DAProjectConfig.basePrice = _basePrice;
-    }
-
-    /**
-     * @notice Gets price of minting a token given
-     * the project's AuctionParameters and current block timestamp.
-     * Reverts if auction has not yet started or auction is unconfigured.
-     * @return current price of token in Wei
-     */
-    function getPriceLin(
-        DAProjectConfig storage _DAProjectConfig
-    ) internal view returns (uint256) {
-        // move parameters to memory if used more than once
-        uint256 _timestampStart = uint256(_DAProjectConfig.timestampStart);
-        uint256 _timestampEnd = uint256(_DAProjectConfig.timestampEnd);
-        uint256 _startPrice = _DAProjectConfig.startPrice;
-        uint256 _basePrice = _DAProjectConfig.basePrice;
-
-        require(block.timestamp > _timestampStart, "Auction not yet started");
-        if (block.timestamp >= _timestampEnd) {
-            require(_timestampEnd > 0, "Only configured auctions");
-            return _basePrice;
-        }
-        uint256 elapsedTime;
-        uint256 duration;
-        uint256 startToEndDiff;
-        unchecked {
-            // already checked that block.timestamp > _timestampStart
-            elapsedTime = block.timestamp - _timestampStart;
-            // _timestampEnd > _timestampStart enforced during assignment
-            duration = _timestampEnd - _timestampStart;
-            // _startPrice > _basePrice enforced during assignment
-            startToEndDiff = _startPrice - _basePrice;
-        }
-        return _startPrice - ((elapsedTime * startToEndDiff) / duration);
     }
 
     /**

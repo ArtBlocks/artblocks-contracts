@@ -12,7 +12,7 @@ import "../../interfaces/v0.8.x/IMinterFilterV1.sol";
 import "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
 import "../../libs/v0.8.x/minter-libs/MaxInvocationsLib.sol";
 import "../../libs/v0.8.x/minter-libs/TokenHolderLib.sol";
-import "../../libs/v0.8.x/minter-libs/DALib.sol";
+import "../../libs/v0.8.x/minter-libs/DAExpLib.sol";
 import "../../libs/v0.8.x/AuthLib.sol";
 
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
@@ -71,7 +71,7 @@ contract MinterDAExpV5 is
     // STATE VARIABLES FOR SplitFundsLib end here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    mapping(address => mapping(uint256 => DALib.DAProjectConfig))
+    mapping(address => mapping(uint256 => DAExpLib.DAProjectConfig))
         private _auctionProjectConfigMapping;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -344,7 +344,7 @@ contract MinterDAExpV5 is
             _sender: msg.sender
         });
         // CHECKS
-        DALib.DAProjectConfig
+        DAExpLib.DAProjectConfig
             storage _auctionProjectConfig = _auctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
@@ -354,7 +354,7 @@ contract MinterDAExpV5 is
             "Price decay half life must be greater than min allowable value"
         );
 
-        DALib.setAuctionDetailsExp({
+        DAExpLib.setAuctionDetailsExp({
             _DAProjectConfig: _auctionProjectConfig,
             _auctionTimestampStart: _auctionTimestampStart,
             _priceDecayHalfLifeSeconds: _priceDecayHalfLifeSeconds,
@@ -547,7 +547,7 @@ contract MinterDAExpV5 is
             uint128 basePrice
         )
     {
-        DALib.DAProjectConfig
+        DAExpLib.DAProjectConfig
             storage _auctionProjectConfig = _auctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
@@ -665,7 +665,7 @@ contract MinterDAExpV5 is
             address currencyAddress
         )
     {
-        DALib.DAProjectConfig
+        DAExpLib.DAProjectConfig
             storage auctionProjectConfig = _auctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
@@ -679,7 +679,7 @@ contract MinterDAExpV5 is
             // it would otherwise revert
             tokenPriceInWei = 0;
         } else {
-            tokenPriceInWei = DALib.getPriceExp(auctionProjectConfig);
+            tokenPriceInWei = DAExpLib.getPriceExp(auctionProjectConfig);
         }
         currencySymbol = "ETH";
         currencyAddress = address(0);
@@ -787,7 +787,7 @@ contract MinterDAExpV5 is
                 _coreContract
             ][_projectId];
 
-        DALib.DAProjectConfig
+        DAExpLib.DAProjectConfig
             storage _auctionProjectConfig = _auctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
@@ -802,7 +802,9 @@ contract MinterDAExpV5 is
             "Max invocations reached"
         );
 
-        uint256 pricePerTokenInWei = DALib.getPriceLin(_auctionProjectConfig);
+        uint256 pricePerTokenInWei = DAExpLib.getPriceExp(
+            _auctionProjectConfig
+        );
         require(msg.value >= pricePerTokenInWei, "Min value to mint req.");
 
         // require token used to claim to be in set of allowlisted NFTs
