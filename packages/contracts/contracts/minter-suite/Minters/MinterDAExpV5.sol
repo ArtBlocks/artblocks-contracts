@@ -13,7 +13,6 @@ import "../../libs/v0.8.x/minter-libs/DALib.sol";
 import "../../libs/v0.8.x/AuthLib.sol";
 
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin-4.5/contracts/utils/math/SafeCast.sol";
 
 pragma solidity 0.8.19;
 
@@ -30,7 +29,6 @@ contract MinterDAExpV5 is
     ISharedMinterDAV0,
     ISharedMinterDAExpV0
 {
-    using SafeCast for uint256;
     /// Minter filter address this minter interacts with
     address public immutable minterFilterAddress;
 
@@ -47,10 +45,6 @@ contract MinterDAExpV5 is
     //// Minimum price decay half life: price must decay with a half life of at
     /// least this amount (must cut in half at least every N seconds).
     uint256 public minimumPriceDecayHalfLifeSeconds = 300; // 5 minutes
-
-    /// contractAddress => projectId => base project config
-    mapping(address => mapping(uint256 => ProjectConfig))
-        private _projectConfigMapping;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR SplitFundsLib begin here
@@ -164,7 +158,7 @@ contract MinterDAExpV5 is
         );
 
         DALib.setAuctionDetailsExp({
-            _auctionProjectConfigMapping: _auctionProjectConfig,
+            _DAProjectConfig: _auctionProjectConfig,
             _auctionTimestampStart: _auctionTimestampStart,
             _priceDecayHalfLifeSeconds: _priceDecayHalfLifeSeconds,
             _startPrice: _startPrice,
@@ -283,19 +277,6 @@ contract MinterDAExpV5 is
     }
 
     /**
-     * @notice Gets the base project configuration.
-     * @param _coreContract The address of the core contract.
-     * @param _projectId The ID of the project whose data needs to be fetched.
-     * @return ProjectConfig instance with the project configuration data.
-     */
-    function projectConfig(
-        uint256 _projectId,
-        address _coreContract
-    ) external view returns (ProjectConfig memory) {
-        return _projectConfigMapping[_coreContract][_projectId];
-    }
-
-    /**
      * @notice Retrieves the auction parameters for a specific project.
      * @param _projectId The unique identifier for the project.
      * @param _coreContract The address of the core contract for the project.
@@ -311,10 +292,10 @@ contract MinterDAExpV5 is
         external
         view
         returns (
-            uint256 timestampStart,
-            uint256 priceDecayHalfLifeSeconds,
-            uint256 startPrice,
-            uint256 basePrice
+            uint64 timestampStart,
+            uint64 priceDecayHalfLifeSeconds,
+            uint128 startPrice,
+            uint128 basePrice
         )
     {
         DALib.DAProjectConfig
@@ -372,8 +353,9 @@ contract MinterDAExpV5 is
         address _coreContract
     ) external view returns (bool) {
         return
-            _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-                .maxHasBeenInvoked;
+            MaxInvocationsLib.getMaxHasBeenInvoked(
+                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
+            );
     }
 
     /**
@@ -401,9 +383,8 @@ contract MinterDAExpV5 is
         address _coreContract
     ) external view returns (uint256) {
         return
-            uint256(
+            MaxInvocationsLib.getMaxInvocations(
                 _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-                    .maxInvocations
             );
     }
 

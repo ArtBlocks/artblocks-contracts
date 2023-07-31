@@ -8,6 +8,7 @@ import "../../interfaces/v0.8.x/ISharedMinterDAV0.sol";
 import "../../interfaces/v0.8.x/ISharedMinterDAExpV0.sol";
 import "../../interfaces/v0.8.x/IMinterFilterV1.sol";
 
+import "../../libs/v0.8.x/minter-libs/SettlementLib.sol";
 import "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
 import "../../libs/v0.8.x/minter-libs/MaxInvocationsLib.sol";
 import "../../libs/v0.8.x/minter-libs/DALib.sol";
@@ -64,8 +65,27 @@ contract MinterDAExpSettlementV3 is
     // STATE VARIABLES FOR SplitFundsLib end here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // STATE VARIABLES FOR SettlementLib begin here
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    mapping(address => mapping(uint256 => SettlementLib.SettlementAuctionProjectConfig))
+        private _settlementAuctionProjectConfigMapping;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // STATE VARIABLES FOR SettlementLib end here
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // STATE VARIABLES FOR DALib begin here
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
     mapping(address => mapping(uint256 => DALib.DAProjectConfig))
         private _auctionProjectConfigMapping;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // STATE VARIABLES FOR DALib end here
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR MaxInvocationsLib begin here
@@ -145,8 +165,8 @@ contract MinterDAExpSettlementV3 is
         address _coreContract,
         uint64 _auctionTimestampStart,
         uint64 _priceDecayHalfLifeSeconds,
-        uint256 _startPrice,
-        uint256 _basePrice
+        uint128 _startPrice,
+        uint128 _basePrice
     ) external {
         AuthLib.onlyArtist({
             _projectId: _projectId,
@@ -158,6 +178,22 @@ contract MinterDAExpSettlementV3 is
             storage _auctionProjectConfig = _auctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
+        SettlementLib.SettlementAuctionProjectConfig
+            storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
+                _coreContract
+            ][_projectId];
+
+        // If previous purchases have been made, require monotonically
+        // decreasing purchase prices to preserve settlement and revenue
+        // claiming logic. Since base price is always non-zero, if
+        // latestPurchasePrice is zero, then no previous purchases have been
+        // made, and startPrice may be set to any value.
+        require(
+            _settlementAuctionProjectConfig.latestPurchasePrice == 0 || // never purchased
+                _startPrice <=
+                _settlementAuctionProjectConfig.latestPurchasePrice,
+            "Auction start price must be <= latest purchase price"
+        );
 
         require(
             (_priceDecayHalfLifeSeconds >= minimumPriceDecayHalfLifeSeconds),
@@ -523,7 +559,7 @@ contract MinterDAExpSettlementV3 is
     function syncProjectMaxInvocationsToCore(
         uint256 _projectId,
         address _coreContract
-    ) external view {
+    ) public {
         AuthLib.onlyArtist({
             _projectId: _projectId,
             _coreContract: _coreContract,

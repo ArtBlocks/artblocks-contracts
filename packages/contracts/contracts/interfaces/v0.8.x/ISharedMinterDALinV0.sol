@@ -7,10 +7,10 @@ interface ISharedMinterDALinV0 {
     event SetAuctionDetailsLin(
         uint256 indexed _projectId,
         address indexed _coreContract,
-        uint256 _auctionTimestampStart,
-        uint256 _auctionTimestampEnd,
-        uint256 _startPrice,
-        uint256 _basePrice
+        uint64 _auctionTimestampStart,
+        uint64 _auctionTimestampEnd,
+        uint128 _startPrice,
+        uint128 _basePrice
     );
 
     /// Minimum allowed auction length updated

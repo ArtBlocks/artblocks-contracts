@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
+import "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
 
 pragma solidity ^0.8.0;
 
@@ -10,6 +11,8 @@ pragma solidity ^0.8.0;
  */
 
 library SettlementLib {
+    using SafeCast for uint256;
+
     struct SettlementAuctionProjectConfig {
         // set to true only after artist + admin revenues have been collected
         bool auctionRevenuesCollected;
@@ -39,9 +42,28 @@ library SettlementLib {
     function withdrawArtistAndAdminRevenues(uint256 _projectId) external;
 
     function reclaimProjectExcessSettlementFunds(
-        address payable _to,
-        uint256 _projectId
+        SettlementAuctionProjectConfig
+            storage _settlementAuctionProjectConfigMapping,
+        Receipt storage _receiptMapping
     )
         external
-        returns (uint256 excessSettlementFunds, uint256 requiredAmountPosted);
+        returns (uint256 excessSettlementFunds, uint256 requiredAmountPosted)
+    {
+        uint256 numPurchased = _receiptMapping.numPurchased;
+        require(numPurchased > 0, "No purchases made by this address");
+
+        // require that a user has purchased at least one token on this project
+
+        uint256 currentSettledTokenPrice = _settlementAuctionProjectConfigMapping
+                .latestPurchasePrice;
+
+        // calculate the excess settlement funds amount
+        // implicit overflow/underflow checks in solidity ^0.8
+        uint256 requiredAmountPosted = numPurchased * currentSettledTokenPrice;
+        uint256 excessSettlementFunds = _receiptMapping.netPosted -
+            requiredAmountPosted;
+        // update Receipt in storage
+        _receiptMapping.netPosted = requiredAmountPosted.toUint232();
+        return (excessSettlementFunds, requiredAmountPosted);
+    }
 }

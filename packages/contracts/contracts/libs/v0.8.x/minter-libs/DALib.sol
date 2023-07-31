@@ -14,45 +14,27 @@ pragma solidity ^0.8.0;
  */
 
 library DALib {
-    using SafeCast for uint256;
-
     struct DAProjectConfig {
         // @dev max uint64 ~= 1.8e19 sec ~= 570 billion years
         uint64 timestampStart;
         uint64 timestampEnd;
         uint64 priceDecayHalfLifeSeconds;
+        // @dev Prices are packed internally as uint128, resulting in a maximum
+        // allowed price of ~3.4e20 ETH. This is many orders of magnitude
+        // greater than current ETH supply.
         uint128 startPrice;
         uint128 basePrice;
     }
 
-    function resetAuctionDetailsExp(
-        DAProjectConfig storage _auctionProjectConfigMapping
-    ) external {
-        _auctionProjectConfigMapping.timestampStart = 0;
-        _auctionProjectConfigMapping.priceDecayHalfLifeSeconds = 0;
-        _auctionProjectConfigMapping.startPrice = 0;
-        _auctionProjectConfigMapping.basePrice = 0;
-    }
-
-    function resetAuctionDetailsLin(
-        DAProjectConfig storage _auctionProjectConfigMapping
-    ) external {
-        // reset to initial values
-        _auctionProjectConfigMapping.timestampStart = 0;
-        _auctionProjectConfigMapping.timestampEnd = 0;
-        _auctionProjectConfigMapping.startPrice = 0;
-        _auctionProjectConfigMapping.basePrice = 0;
-    }
-
     function setAuctionDetailsLin(
-        DAProjectConfig storage _auctionProjectConfigMapping,
+        DAProjectConfig storage _DAProjectConfig,
         uint64 _auctionTimestampStart,
         uint64 _auctionTimestampEnd,
         uint128 _startPrice,
         uint128 _basePrice
-    ) external {
+    ) internal {
         require(
-            block.timestamp < _auctionProjectConfigMapping.timestampStart,
+            block.timestamp < _DAProjectConfig.timestampStart,
             "No modifications mid-auction"
         );
         require(
@@ -64,21 +46,21 @@ library DALib {
             "Auction start price must be greater than auction end price"
         );
         // EFFECTS
-        _auctionProjectConfigMapping.timestampStart = _auctionTimestampStart;
-        _auctionProjectConfigMapping.timestampEnd = _auctionTimestampEnd;
-        _auctionProjectConfigMapping.startPrice = _startPrice;
-        _auctionProjectConfigMapping.basePrice = _basePrice;
+        _DAProjectConfig.timestampStart = _auctionTimestampStart;
+        _DAProjectConfig.timestampEnd = _auctionTimestampEnd;
+        _DAProjectConfig.startPrice = _startPrice;
+        _DAProjectConfig.basePrice = _basePrice;
     }
 
     function setAuctionDetailsExp(
-        DAProjectConfig storage _auctionProjectConfigMapping,
+        DAProjectConfig storage _DAProjectConfig,
         uint64 _auctionTimestampStart,
         uint64 _priceDecayHalfLifeSeconds,
         uint128 _startPrice,
         uint128 _basePrice
-    ) external {
+    ) internal {
         require(
-            block.timestamp < _auctionProjectConfigMapping.timestampStart,
+            block.timestamp < _DAProjectConfig.timestampStart,
             "No modifications mid-auction"
         );
         require(
@@ -91,11 +73,10 @@ library DALib {
         );
 
         // EFFECTS
-        _auctionProjectConfigMapping.timestampStart = _auctionTimestampStart;
-        _auctionProjectConfigMapping
-            .priceDecayHalfLifeSeconds = _priceDecayHalfLifeSeconds;
-        _auctionProjectConfigMapping.startPrice = _startPrice;
-        _auctionProjectConfigMapping.basePrice = _basePrice;
+        _DAProjectConfig.timestampStart = _auctionTimestampStart;
+        _DAProjectConfig.priceDecayHalfLifeSeconds = _priceDecayHalfLifeSeconds;
+        _DAProjectConfig.startPrice = _startPrice;
+        _DAProjectConfig.basePrice = _basePrice;
     }
 
     /**
@@ -105,17 +86,13 @@ library DALib {
      * @return current price of token in Wei
      */
     function getPriceLin(
-        DAProjectConfig storage _auctionProjectConfigMapping
-    ) external view returns (uint256) {
+        DAProjectConfig storage _DAProjectConfig
+    ) internal view returns (uint256) {
         // move parameters to memory if used more than once
-        uint256 _timestampStart = uint256(
-            _auctionProjectConfigMapping.timestampStart
-        );
-        uint256 _timestampEnd = uint256(
-            _auctionProjectConfigMapping.timestampEnd
-        );
-        uint256 _startPrice = _auctionProjectConfigMapping.startPrice;
-        uint256 _basePrice = _auctionProjectConfigMapping.basePrice;
+        uint256 _timestampStart = uint256(_DAProjectConfig.timestampStart);
+        uint256 _timestampEnd = uint256(_DAProjectConfig.timestampEnd);
+        uint256 _startPrice = _DAProjectConfig.startPrice;
+        uint256 _basePrice = _DAProjectConfig.basePrice;
 
         require(block.timestamp > _timestampStart, "Auction not yet started");
         if (block.timestamp >= _timestampEnd) {
@@ -143,20 +120,18 @@ library DALib {
      * @return current price of token in Wei
      */
     function getPriceExp(
-        DAProjectConfig storage _auctionProjectConfigMapping
-    ) external view returns (uint256) {
+        DAProjectConfig storage _DAProjectConfig
+    ) internal view returns (uint256) {
         // move parameters to memory if used more than once
-        uint256 _timestampStart = uint256(
-            _auctionProjectConfigMapping.timestampStart
-        );
+        uint256 _timestampStart = uint256(_DAProjectConfig.timestampStart);
         uint256 _priceDecayHalfLifeSeconds = uint256(
-            _auctionProjectConfigMapping.priceDecayHalfLifeSeconds
+            _DAProjectConfig.priceDecayHalfLifeSeconds
         );
-        uint256 _basePrice = _auctionProjectConfigMapping.basePrice;
+        uint256 _basePrice = _DAProjectConfig.basePrice;
 
         require(block.timestamp > _timestampStart, "Auction not yet started");
         require(_priceDecayHalfLifeSeconds > 0, "Only configured auctions");
-        uint256 decayedPrice = _auctionProjectConfigMapping.startPrice;
+        uint256 decayedPrice = _DAProjectConfig.startPrice;
         uint256 elapsedTimeSeconds;
         unchecked {
             // already checked that block.timestamp > _timestampStart above

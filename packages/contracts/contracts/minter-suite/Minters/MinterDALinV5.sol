@@ -14,7 +14,6 @@ import "../../libs/v0.8.x/minter-libs/DALib.sol";
 import "../../libs/v0.8.x/AuthLib.sol";
 
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin-4.5/contracts/utils/math/SafeCast.sol";
 
 pragma solidity 0.8.19;
 
@@ -31,7 +30,6 @@ contract MinterDALinV5 is
     ISharedMinterDAV0,
     ISharedMinterDALinV0
 {
-    using SafeCast for uint256;
     /// Minter filter address this minter interacts with
     address public immutable minterFilterAddress;
 
@@ -47,10 +45,6 @@ contract MinterDALinV5 is
     uint256 constant ONE_MILLION = 1_000_000;
     /// Minimum auction length in seconds
     uint256 public minimumAuctionLengthSeconds = 3600;
-
-    /// contractAddress => projectId => base project config
-    mapping(address => mapping(uint256 => ProjectConfig))
-        private _projectConfigMapping;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR SplitFundsLib begin here
@@ -145,8 +139,8 @@ contract MinterDALinV5 is
         address _coreContract,
         uint64 _auctionTimestampStart,
         uint64 _auctionTimestampEnd,
-        uint256 _startPrice,
-        uint256 _basePrice
+        uint128 _startPrice,
+        uint128 _basePrice
     ) external {
         AuthLib.onlyArtist({
             _projectId: _projectId,
@@ -277,19 +271,6 @@ contract MinterDALinV5 is
     }
 
     /**
-     * @notice Gets the base project configuration.
-     * @param _coreContract The address of the core contract.
-     * @param _projectId The ID of the project whose data needs to be fetched.
-     * @return ProjectConfig instance with the project configuration data.
-     */
-    function projectConfig(
-        uint256 _projectId,
-        address _coreContract
-    ) external view returns (ProjectConfig memory) {
-        return _projectConfigMapping[_coreContract][_projectId];
-    }
-
-    /**
      * @notice Retrieves the auction parameters for a specific project.
      * @param _projectId The unique identifier for the project.
      * @param _coreContract The address of the core contract for the project.
@@ -305,10 +286,10 @@ contract MinterDALinV5 is
         external
         view
         returns (
-            uint256 timestampStart,
-            uint256 timestampEnd,
-            uint256 startPrice,
-            uint256 basePrice
+            uint64 timestampStart,
+            uint64 timestampEnd,
+            uint128 startPrice,
+            uint128 basePrice
         )
     {
         DALib.DAProjectConfig
@@ -366,8 +347,9 @@ contract MinterDALinV5 is
         address _coreContract
     ) external view returns (bool) {
         return
-            _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-                .maxHasBeenInvoked;
+            MaxInvocationsLib.getMaxHasBeenInvoked(
+                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
+            );
     }
 
     /**
@@ -395,9 +377,8 @@ contract MinterDALinV5 is
         address _coreContract
     ) external view returns (uint256) {
         return
-            uint256(
+            MaxInvocationsLib.getMaxInvocations(
                 _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-                    .maxInvocations
             );
     }
 
