@@ -140,3 +140,27 @@ The contract 0xc78d2705379b5CeFf37FEAbf8E3F14021B8412e8 has already been verifie
 [INFO] MinterSetPriceV4 contract verified on Etherscan at 0xc78d2705379b5CeFf37FEAbf8E3F14021B8412e8}
 [INFO] Verifying MinterHolderV4 contract deployment...
 Nothing to compile
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterHolderV4.sol:MinterHolderV4 at 0x9fA04a3B1b1F24Bc7236F2CD196BacB54B965cA0
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterHolderV4 on Etherscan.
+https://etherscan.io/address/0x9fA04a3B1b1F24Bc7236F2CD196BacB54B965cA0#code
+[INFO] MinterHolderV4 contract verified on Etherscan at 0x9fA04a3B1b1F24Bc7236F2CD196BacB54B965cA0}
+[INFO] Verifying MinterMerkleV5 contract deployment...
+The contract 0x082672910558F2C5a491823A3D965cd4004C330b has already been verified
+[INFO] MinterMerkleV5 contract verified on Etherscan at 0x082672910558F2C5a491823A3D965cd4004C330b}
+Created s3 bucket for https://grailers-mainnet.s3.amazonaws.com
+[INFO] Created image bucket grailers-mainnet
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/grailers-dao-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0xaf40b66072fe00cacf5a25cd1b7f1688cde20f2f",
+  "name": "Grailers",
+  "bucket_name": "grailers-mainnet",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x2329FD5F1924b0d6Df643eeEA4Fbf816f415C879, don't forget to update if requred.

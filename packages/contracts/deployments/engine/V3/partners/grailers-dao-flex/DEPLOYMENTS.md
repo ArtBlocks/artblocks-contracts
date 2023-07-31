@@ -64,3 +64,50 @@ Date: 2023-07-28T16:25:23.878Z
 
 ---
 
+
+# Deployment
+
+Date: 2023-07-31T23:29:47.881Z
+
+## **Network:** mainnet
+
+## **Environment:** mainnet
+
+**Deployment Input File:** `deployments/engine/V3/partners/grailers-dao-flex/deployment-config.mainnet.ts`
+
+**GenArt721CoreV3_Engine_Flex:** https://etherscan.io/address/0xAf40b66072Fe00CAcF5A25Cd1b7F1688Cde20f2F#code
+
+**AdminACLV1:** https://etherscan.io/address/0xe84F94FBdF755288F47B77887c4604e7817afB26#code
+
+**Engine Registry:** https://etherscan.io/address/0x652490c8BB6e7ec3Fd798537D2F348D7904BBbc2#code
+
+**MinterFilterV1:** https://etherscan.io/address/0x13a8Fca80084Bb968EDE9AA69E38b0cF59Ba603f#code
+
+**Minters:**
+
+**MinterSetPriceV4:** https://etherscan.io/address/0xc78d2705379b5CeFf37FEAbf8E3F14021B8412e8#code
+
+**MinterHolderV4:** https://etherscan.io/address/0x9fA04a3B1b1F24Bc7236F2CD196BacB54B965cA0#code
+
+**MinterMerkleV5:** https://etherscan.io/address/0x082672910558F2C5a491823A3D965cd4004C330b#code
+
+
+
+**Metadata**
+
+- **Starting Project Id:** 1
+- **Token Name:** Grailers
+- **Token Ticker:** GRAILS
+- **Auto Approve Artist Split Proposals:** false
+- **Render Provider Address, Primary Sales:** 0x29A96f721b2F9f4fb0d40791Ff4018471440aC72
+- **Platform Provider Address, Primary Sales:** 0x2329FD5F1924b0d6Df643eeEA4Fbf816f415C879
+- **BytecodeStorageReader Library:** 0xf0585dF582A0ad119F1616FB82f3b449a98EeCd5
+
+**Other**
+
+- **Add initial project?:** false
+- **Add initial token?:** false
+- **Image Bucket:** grailers-mainnet
+
+---
+
