@@ -17,11 +17,44 @@ import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
 pragma solidity 0.8.19;
 
 /**
- * @title Filtered Minter contract that allows tokens to be minted with ETH.
+ * @title Shared, filtered Minter contract that allows tokens to be minted with
+ * ETH. Pricing is achieved using an automated, exponential Dutch-auction mechanism.
  * This is designed to be used with GenArt721CoreContractV3 flagship or
  * engine contracts.
  * @author Art Blocks Inc.
  * @notice Privileged Roles and Ownership:
+ * This contract is designed to be managed, with limited powers.
+ * Privileged roles and abilities are controlled by the project's artist, which
+ * can be modified by the core contract's Admin ACL contract. Both of these
+ * roles hold extensive power and can modify minter details.
+ * Care must be taken to ensure that the admin ACL contract and artist
+ * addresses are secure behind a multi-sig or other access control mechanism.
+ * ----------------------------------------------------------------------------
+ * The following functions are restricted to the minter filter's Admin ACL
+ * contract:
+ * - setMinimumPriceDecayHalfLifeSeconds
+ * ----------------------------------------------------------------------------
+ * The following functions are restricted to the core contract's Admin ACL
+ * contract:
+ * - resetAuctionDetails (note: this will prevent minting until a new auction
+ *   is created)
+ * ----------------------------------------------------------------------------
+ * The following functions are restricted to a project's artist:
+ * - setAuctionDetails (note: this may only be called when there is no active
+ *   auction)
+ * - syncProjectMaxInvocationsToCore
+ * - manuallyLimitProjectMaxInvocations
+ * ----------------------------------------------------------------------------
+ * Additional admin and artist privileged roles may be described on other
+ * contracts that this minter integrates with.
+ *
+ *  @dev Note that while this minter makes use of `block.timestamp` and it is
+ * technically possible that this value is manipulated by block producers, such
+ * manipulation will not have material impact on the price values of this minter
+ * given the business practices for how pricing is congfigured for this minter
+ * and that variations on the order of less than a minute should not
+ * meaningfully impact price given the minimum allowable price decay rate that
+ * this minter intends to support.
  */
 contract MinterDAExpV5 is
     ReentrancyGuard,
@@ -44,7 +77,7 @@ contract MinterDAExpV5 is
     uint256 constant ONE_MILLION = 1_000_000;
     //// Minimum price decay half life: price must decay with a half life of at
     /// least this amount (must cut in half at least every N seconds).
-    uint256 public minimumPriceDecayHalfLifeSeconds = 300; // 5 minutes
+    uint256 public minimumPriceDecayHalfLifeSeconds = 45; // 45 seconds
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR SplitFundsLib begin here
@@ -60,7 +93,7 @@ contract MinterDAExpV5 is
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR DAExpLib begin here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    
+
     mapping(address => mapping(uint256 => DAExpLib.DAProjectConfig))
         private _auctionProjectConfigMapping;
 
@@ -174,14 +207,14 @@ contract MinterDAExpV5 is
             _basePrice: _basePrice
         });
 
-        emit SetAuctionDetailsExp(
-            _projectId,
-            _coreContract,
-            _auctionTimestampStart,
-            _priceDecayHalfLifeSeconds,
-            _startPrice,
-            _basePrice
-        );
+        emit SetAuctionDetailsExp({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _auctionTimestampStart: _auctionTimestampStart,
+            _priceDecayHalfLifeSeconds: _priceDecayHalfLifeSeconds,
+            _startPrice: _startPrice,
+            _basePrice: _basePrice
+        });
 
         MaxInvocationsLib.MaxInvocationsProjectConfig
             storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
@@ -313,7 +346,8 @@ contract MinterDAExpV5 is
                 _coreContract
             ][_projectId];
         timestampStart = _auctionProjectConfig.timestampStart;
-        priceDecayHalfLifeSeconds = _auctionProjectConfig.priceDecayHalfLifeSeconds;
+        priceDecayHalfLifeSeconds = _auctionProjectConfig
+            .priceDecayHalfLifeSeconds;
         startPrice = _auctionProjectConfig.startPrice;
         basePrice = _auctionProjectConfig.basePrice;
     }

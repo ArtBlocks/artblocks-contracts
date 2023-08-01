@@ -48,7 +48,7 @@ contract MinterDAExpSettlementV3 is
     uint256 constant ONE_MILLION = 1_000_000;
     //// Minimum price decay half life: price must decay with a half life of at
     /// least this amount (must cut in half at least every N seconds).
-    uint256 public minimumPriceDecayHalfLifeSeconds = 300; // 5 minutes
+    uint256 public minimumPriceDecayHalfLifeSeconds = 45; // 45 seconds
 
     /// contractAddress => projectId => base project config
     mapping(address => mapping(uint256 => ProjectConfig))
@@ -208,14 +208,14 @@ contract MinterDAExpSettlementV3 is
             _basePrice: _basePrice
         });
 
-        emit SetAuctionDetailsExp(
-            _projectId,
-            _coreContract,
-            _auctionTimestampStart,
-            _priceDecayHalfLifeSeconds,
-            _startPrice,
-            _basePrice
-        );
+        emit SetAuctionDetailsExp({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _auctionTimestampStart: _auctionTimestampStart,
+            _priceDecayHalfLifeSeconds: _priceDecayHalfLifeSeconds,
+            _startPrice: _startPrice,
+            _basePrice: _basePrice
+        });
 
         MaxInvocationsLib.MaxInvocationsProjectConfig
             storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[

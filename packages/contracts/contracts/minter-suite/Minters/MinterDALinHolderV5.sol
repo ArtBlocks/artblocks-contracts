@@ -21,11 +21,65 @@ import "@openzeppelin-4.5/contracts/utils/structs/EnumerableSet.sol";
 pragma solidity 0.8.19;
 
 /**
- * @title Filtered Minter contract that allows tokens to be minted with ETH.
+ * @title Shared, filtered Minter contract that allows tokens to be minted with
+ * ETH when purchaser owns an allowlisted ERC-721 NFT. This contract does NOT
+ * track if a purchaser has/has not minted already -- it simply restricts
+ * purchasing to anybody that holds one or more of a specified list of ERC-721
+ * NFTs. Pricing is achieved using an automated, linear Dutch-auction mechanism.
  * This is designed to be used with GenArt721CoreContractV3 flagship or
  * engine contracts.
  * @author Art Blocks Inc.
  * @notice Privileged Roles and Ownership:
+ * This contract is designed to be managed, with limited powers.
+ * Privileged roles and abilities are controlled by the project's artist, which
+ * can be modified by the core contract's Admin ACL contract. Both of these
+ * roles hold extensive power and can modify minter details.
+ * Care must be taken to ensure that the admin ACL contract and artist
+ * addresses are secure behind a multi-sig or other access control mechanism.
+ * ----------------------------------------------------------------------------
+ * The following functions are restricted to the minter filter's Admin ACL
+ * contract:
+ * - setMinimumPriceDecayHalfLifeSeconds
+ * ----------------------------------------------------------------------------
+ * The following functions are restricted to the core contract's Admin ACL
+ * contract:
+ * - resetAuctionDetails (note: this will prevent minting until a new auction
+ *   is created)
+ * ----------------------------------------------------------------------------
+ * The following functions are restricted to a project's artist:
+ * - setAuctionDetails (note: this may only be called when there is no active
+ *   auction)
+ * - syncProjectMaxInvocationsToCore
+ * - manuallyLimitProjectMaxInvocations
+ * - allowHoldersOfProjects
+ * - removeHoldersOfProjects
+ * - allowAndRemoveHoldersOfProjects
+ * ----------------------------------------------------------------------------
+ * Additional admin and artist privileged roles may be described on other
+ * contracts that this minter integrates with.
+ *
+ * This contract allows gated minting with support for vaults to delegate minting
+ * privileges via an external delegation registry. This means a vault holding an
+ * allowed token can delegate minting privileges to a wallet that is not holding an
+ * allowed token, enabling the vault to remain air-gapped while still allowing minting.
+ * The delegation registry contract is responsible for managing these delegations,
+ * and is available at the address returned by the public immutable
+ * `delegationRegistryAddress`. At the time of writing, the delegation
+ * registry enables easy delegation configuring at https://delegate.cash/.
+ * Art Blocks does not guarentee the security of the delegation registry, and
+ * users should take care to ensure that the delegation registry is secure.
+ * Delegations must be configured by the vault owner prior to purchase. Supported
+ * delegation types include token-level, contract-level (via genArt721CoreAddress), or
+ * wallet-level delegation. Contract-level delegations must be configured for the core
+ * token contract as returned by the public immutable variable `genArt721CoreAddress`.
+ *
+ *  @dev Note that while this minter makes use of `block.timestamp` and it is
+ * technically possible that this value is manipulated by block producers, such
+ * manipulation will not have material impact on the price values of this minter
+ * given the business practices for how pricing is congfigured for this minter
+ * and that variations on the order of less than a minute should not
+ * meaningfully impact price given the minimum allowable price decay rate that
+ * this minter intends to support.
  */
 contract MinterDALinV5 is
     ReentrancyGuard,
@@ -57,7 +111,7 @@ contract MinterDALinV5 is
 
     uint256 constant ONE_MILLION = 1_000_000;
     /// Minimum auction length in seconds
-    uint256 public minimumAuctionLengthSeconds = 3600;
+    uint256 public minimumAuctionLengthSeconds = 600;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR SplitFundsLib begin here
@@ -357,14 +411,14 @@ contract MinterDALinV5 is
             _basePrice: _basePrice
         });
 
-        emit SetAuctionDetailsLin(
-            _projectId,
-            _coreContract,
-            _auctionTimestampStart,
-            _auctionTimestampEnd,
-            _startPrice,
-            _basePrice
-        );
+        emit SetAuctionDetailsLin({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _auctionTimestampStart: _auctionTimestampStart,
+            _auctionTimestampEnd: _auctionTimestampEnd,
+            _startPrice: _startPrice,
+            _basePrice: _basePrice
+        });
 
         MaxInvocationsLib.MaxInvocationsProjectConfig
             storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[

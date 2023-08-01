@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "@openzeppelin-4.5/contracts/utils/math/SafeCast.sol";
-
 pragma solidity ^0.8.0;
 
 /**
@@ -74,9 +72,9 @@ library DAExpLib {
         DAProjectConfig storage _DAProjectConfig
     ) internal view returns (uint256) {
         // move parameters to memory if used more than once
-        uint256 _timestampStart =_DAProjectConfig.timestampStart;
-        uint256 _priceDecayHalfLifeSeconds =
-            _DAProjectConfig.priceDecayHalfLifeSeconds;
+        uint256 _timestampStart = _DAProjectConfig.timestampStart;
+        uint256 _priceDecayHalfLifeSeconds = _DAProjectConfig
+            .priceDecayHalfLifeSeconds;
         uint256 _basePrice = _DAProjectConfig.basePrice;
 
         require(block.timestamp > _timestampStart, "Auction not yet started");
