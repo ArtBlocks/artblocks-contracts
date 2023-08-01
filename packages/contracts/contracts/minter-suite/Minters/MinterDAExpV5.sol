@@ -57,8 +57,16 @@ contract MinterDAExpV5 is
     // STATE VARIABLES FOR SplitFundsLib end here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // STATE VARIABLES FOR DAExpLib begin here
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    
     mapping(address => mapping(uint256 => DAExpLib.DAProjectConfig))
         private _auctionProjectConfigMapping;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // STATE VARIABLES FOR DAExpLib end here
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR MaxInvocationsLib begin here
@@ -157,6 +165,7 @@ contract MinterDAExpV5 is
             "Price decay half life must be greater than min allowable value"
         );
 
+        // EFFECTS
         DAExpLib.setAuctionDetailsExp({
             _DAProjectConfig: _auctionProjectConfig,
             _auctionTimestampStart: _auctionTimestampStart,
@@ -183,8 +192,9 @@ contract MinterDAExpV5 is
         // @dev if local max invocations and maxHasBeenInvoked are both
         // initial values, we know they have not been populated.
         if (
-            _maxInvocationsProjectConfig.maxInvocations == 0 &&
-            _maxInvocationsProjectConfig.maxHasBeenInvoked == false
+            MaxInvocationsLib.maxInvocationsIsUnconfigured(
+                _maxInvocationsProjectConfig
+            )
         ) {
             syncProjectMaxInvocationsToCore(_projectId, _coreContract);
         }
@@ -302,12 +312,10 @@ contract MinterDAExpV5 is
             storage _auctionProjectConfig = _auctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
-        return (
-            _auctionProjectConfig.timestampStart,
-            _auctionProjectConfig.priceDecayHalfLifeSeconds,
-            _auctionProjectConfig.startPrice,
-            _auctionProjectConfig.basePrice
-        );
+        timestampStart = _auctionProjectConfig.timestampStart;
+        priceDecayHalfLifeSeconds = _auctionProjectConfig.priceDecayHalfLifeSeconds;
+        startPrice = _auctionProjectConfig.startPrice;
+        basePrice = _auctionProjectConfig.basePrice;
     }
 
     /**
@@ -504,6 +512,7 @@ contract MinterDAExpV5 is
             "Max invocations reached"
         );
 
+        // getPriceExp reverts if auction is unconfigured or has not started
         uint256 pricePerTokenInWei = DAExpLib.getPriceExp(
             _auctionProjectConfig
         );
@@ -519,7 +528,7 @@ contract MinterDAExpV5 is
 
         MaxInvocationsLib.validatePurchaseEffectsInvocations(
             tokenId,
-            _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
+            _maxInvocationsProjectConfig
         );
 
         // INTERACTIONS

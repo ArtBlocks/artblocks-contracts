@@ -57,8 +57,16 @@ contract MinterDALinV5 is
     // STATE VARIABLES FOR SplitFundsLib end here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // STATE VARIABLES FOR DALinLib begin here
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    
     mapping(address => mapping(uint256 => DALinLib.DAProjectConfig))
         private _auctionProjectConfigMapping;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // STATE VARIABLES FOR DALinLib end here
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR MaxInvocationsLib begin here
@@ -185,8 +193,9 @@ contract MinterDALinV5 is
         // @dev if local max invocations and maxHasBeenInvoked are both
         // initial values, we know they have not been populated.
         if (
-            _maxInvocationsProjectConfig.maxInvocations == 0 &&
-            _maxInvocationsProjectConfig.maxHasBeenInvoked == false
+            MaxInvocationsLib.maxInvocationsIsUnconfigured(
+                _maxInvocationsProjectConfig
+            )
         ) {
             syncProjectMaxInvocationsToCore(_projectId, _coreContract);
         }
@@ -296,12 +305,10 @@ contract MinterDALinV5 is
             storage _auctionProjectConfig = _auctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
-        return (
-            _auctionProjectConfig.timestampStart,
-            _auctionProjectConfig.timestampEnd,
-            _auctionProjectConfig.startPrice,
-            _auctionProjectConfig.basePrice
-        );
+        timestampStart = _auctionProjectConfig.timestampStart;
+        timestampEnd = _auctionProjectConfig.timestampEnd;
+        startPrice = _auctionProjectConfig.startPrice;
+        basePrice = _auctionProjectConfig.basePrice;
     }
 
     /**
@@ -496,6 +503,7 @@ contract MinterDALinV5 is
             "Max invocations reached"
         );
 
+        // getPriceLin reverts if auction is unconfigured or has not started
         uint256 pricePerTokenInWei = DALinLib.getPriceLin(
             _auctionProjectConfig
         );
@@ -511,7 +519,7 @@ contract MinterDALinV5 is
 
         MaxInvocationsLib.validatePurchaseEffectsInvocations(
             tokenId,
-            _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
+            _maxInvocationsProjectConfig
         );
 
         // INTERACTIONS

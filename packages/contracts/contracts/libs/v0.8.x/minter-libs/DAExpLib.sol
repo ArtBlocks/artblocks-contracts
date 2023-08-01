@@ -44,7 +44,8 @@ library DAExpLib {
         uint128 _basePrice
     ) internal {
         require(
-            block.timestamp < _DAProjectConfig.timestampStart,
+            _DAProjectConfig.timestampStart == 0 ||
+                block.timestamp < _DAProjectConfig.timestampStart,
             "No modifications mid-auction"
         );
         require(
@@ -73,10 +74,9 @@ library DAExpLib {
         DAProjectConfig storage _DAProjectConfig
     ) internal view returns (uint256) {
         // move parameters to memory if used more than once
-        uint256 _timestampStart = uint256(_DAProjectConfig.timestampStart);
-        uint256 _priceDecayHalfLifeSeconds = uint256(
-            _DAProjectConfig.priceDecayHalfLifeSeconds
-        );
+        uint256 _timestampStart =_DAProjectConfig.timestampStart;
+        uint256 _priceDecayHalfLifeSeconds =
+            _DAProjectConfig.priceDecayHalfLifeSeconds;
         uint256 _basePrice = _DAProjectConfig.basePrice;
 
         require(block.timestamp > _timestampStart, "Auction not yet started");

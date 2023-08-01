@@ -44,7 +44,8 @@ library DALinLib {
         uint128 _basePrice
     ) internal {
         require(
-            block.timestamp < _DAProjectConfig.timestampStart,
+            _DAProjectConfig.timestampStart == 0 ||
+                block.timestamp < _DAProjectConfig.timestampStart,
             "No modifications mid-auction"
         );
         require(
