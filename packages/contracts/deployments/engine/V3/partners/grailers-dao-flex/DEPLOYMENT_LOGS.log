@@ -57,3 +57,110 @@ Contracts metadata upsert input:
 Successfully upserted 1 contract
 [ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
 [ACTION] AdminACL's superAdmin address is 0x2329FD5F1924b0d6Df643eeEA4Fbf816f415C879, don't forget to update if requred.
+----------------------------------------
+[INFO] Datetime of deployment: 2023-07-28T16:41:57.221Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/grailers-dao-flex/deployment-config.mainnet.ts
+[INFO] Deploying to network: mainnet
+[INFO] Deploying to environment: mainnet
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0xb6E2DA507df8457f71fFBFe7778b558e4E196020
+[INFO] Randomizer BasicRandomizerV2 deployed at 0x263388f07CCF58300D8cC968E2Ab969Ac4c8dAFe
+----------------------------------------
+[INFO] Datetime of deployment: 2023-07-28T16:53:30.853Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/grailers-dao-flex/deployment-config.mainnet.ts
+[INFO] Deploying to network: mainnet
+[INFO] Deploying to environment: mainnet
+[INFO] Using existing Admin ACL at address: 0xb6E2DA507df8457f71fFBFe7778b558e4E196020
+[INFO] Randomizer BasicRandomizerV2 deployed at 0xbf842b7509B9749F03212C20dDC07E66f452dB07
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x764EB084a2b2E88cC625961E921AAd5026a618bA
+[INFO] Minter Filter MinterFilterV1 deployed at 0x130752304784d5826daFbB080b75BD01Ee7d533e
+[INFO] MinterSetPriceV4 deployed at 0x934E79A1Fa697C70927F2dD8AD2C2B3c14935519
+----------------------------------------
+Manual note: revoked ownership of `0x764EB084a2b2E88cC625961E921AAd5026a618bA` and restarting the entire deploy process, as this is lower risk than attempting to manually resume the deployment based on the place where it had failed previously.----------------------------------------
+[INFO] Datetime of deployment: 2023-07-31T23:03:38.777Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/grailers-dao-flex/deployment-config.mainnet.ts
+[INFO] Deploying to network: mainnet
+[INFO] Deploying to environment: mainnet
+[INFO] Using existing Admin ACL at address: 0xb6E2DA507df8457f71fFBFe7778b558e4E196020
+[INFO] Randomizer BasicRandomizerV2 deployed at 0x355C1eB98b95B00203BBF66C54184E7AC88652EC
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x324BC45C9f257F177166bE4f6E7d2F551b5a1F03
+[INFO] Minter Filter MinterFilterV1 deployed at 0xdAF93f2B04960D3d54878FF67616163b6066D494
+[INFO] MinterSetPriceV4 deployed at 0xD4Fc100f16D9f3ff2452D34A7cB76E857ed13766
+[INFO] MinterHolderV4 deployed at 0x3f8E663cBa99ddA21514f51a73A54fE13c52FA7D
+[INFO] MinterMerkleV5 deployed at 0x103F8A3cfdFEda35B5E4De712698ffA3a57b4C68
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0xdAF93f2B04960D3d54878FF67616163b6066D494.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0xD4Fc100f16D9f3ff2452D34A7cB76E857ed13766 on minter filter.
+[INFO] Allowlisted minter MinterHolderV4 at 0x3f8E663cBa99ddA21514f51a73A54fE13c52FA7D on minter filter.
+[INFO] Allowlisted minter MinterMerkleV5 at 0x103F8A3cfdFEda35B5E4De712698ffA3a57b4C68 on minter filter.
+[INFO] Skipping adding placeholder initial project.
+----------------------------------------
+[INFO] Datetime of deployment: 2023-07-31T23:19:16.946Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/grailers-dao-flex/deployment-config.mainnet.ts
+[INFO] Deploying to network: mainnet
+[INFO] Deploying to environment: mainnet
+[INFO] Using existing Admin ACL at address: 0xb6E2DA507df8457f71fFBFe7778b558e4E196020
+[INFO] Randomizer BasicRandomizerV2 deployed at 0xC3893c375D39D990706BBC7a87ff56114795E873
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x4AE867912a3d8E74E063516242AB6a7273f38cf9
+[INFO] Minter Filter MinterFilterV1 deployed at 0xc01D7f1708644ce55280A3ccBcC4933042009DA9
+[INFO] MinterSetPriceV4 deployed at 0xB252e4ae9BF16c8C6786CAe62fBcb7Ff0d108D95
+[INFO] MinterHolderV4 deployed at 0x6DA82D4c5dc16282484315Fb8CbbAbEa777B1783
+[INFO] MinterMerkleV5 deployed at 0x52F434CA5E10a91e600373dA83b4810cDbe13694
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+----------------------------------------
+[INFO] Datetime of deployment: 2023-07-31T23:24:14.328Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/grailers-dao-flex/deployment-config.mainnet.ts
+[INFO] Deploying to network: mainnet
+[INFO] Deploying to environment: mainnet
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0xe84F94FBdF755288F47B77887c4604e7817afB26
+[INFO] Randomizer BasicRandomizerV2 deployed at 0xdb11Fa351CBb5a4268882F16a6954906cCB8416e
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0xAf40b66072Fe00CAcF5A25Cd1b7F1688Cde20f2F
+[INFO] Minter Filter MinterFilterV1 deployed at 0x13a8Fca80084Bb968EDE9AA69E38b0cF59Ba603f
+[INFO] MinterSetPriceV4 deployed at 0xc78d2705379b5CeFf37FEAbf8E3F14021B8412e8
+[INFO] MinterHolderV4 deployed at 0x9fA04a3B1b1F24Bc7236F2CD196BacB54B965cA0
+[INFO] MinterMerkleV5 deployed at 0x082672910558F2C5a491823A3D965cd4004C330b
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0x13a8Fca80084Bb968EDE9AA69E38b0cF59Ba603f.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0xc78d2705379b5CeFf37FEAbf8E3F14021B8412e8 on minter filter.
+[INFO] Allowlisted minter MinterHolderV4 at 0x9fA04a3B1b1F24Bc7236F2CD196BacB54B965cA0 on minter filter.
+[INFO] Allowlisted minter MinterMerkleV5 at 0x082672910558F2C5a491823A3D965cd4004C330b on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0x2329FD5F1924b0d6Df643eeEA4Fbf816f415C879.
+[INFO] Verifying core contract contract deployment...
+The contract 0xAf40b66072Fe00CAcF5A25Cd1b7F1688Cde20f2F has already been verified
+[INFO] Core contract verified on Etherscan at 0xAf40b66072Fe00CAcF5A25Cd1b7F1688Cde20f2F}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0xe84F94FBdF755288F47B77887c4604e7817afB26 has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0xe84F94FBdF755288F47B77887c4604e7817afB26}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0x13a8Fca80084Bb968EDE9AA69E38b0cF59Ba603f has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0x13a8Fca80084Bb968EDE9AA69E38b0cF59Ba603f}
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+The contract 0xc78d2705379b5CeFf37FEAbf8E3F14021B8412e8 has already been verified
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0xc78d2705379b5CeFf37FEAbf8E3F14021B8412e8}
+[INFO] Verifying MinterHolderV4 contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterHolderV4.sol:MinterHolderV4 at 0x9fA04a3B1b1F24Bc7236F2CD196BacB54B965cA0
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterHolderV4 on Etherscan.
+https://etherscan.io/address/0x9fA04a3B1b1F24Bc7236F2CD196BacB54B965cA0#code
+[INFO] MinterHolderV4 contract verified on Etherscan at 0x9fA04a3B1b1F24Bc7236F2CD196BacB54B965cA0}
+[INFO] Verifying MinterMerkleV5 contract deployment...
+The contract 0x082672910558F2C5a491823A3D965cd4004C330b has already been verified
+[INFO] MinterMerkleV5 contract verified on Etherscan at 0x082672910558F2C5a491823A3D965cd4004C330b}
+Created s3 bucket for https://grailers-mainnet.s3.amazonaws.com
+[INFO] Created image bucket grailers-mainnet
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/grailers-dao-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0xaf40b66072fe00cacf5a25cd1b7f1688cde20f2f",
+  "name": "Grailers",
+  "bucket_name": "grailers-mainnet",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x2329FD5F1924b0d6Df643eeEA4Fbf816f415C879, don't forget to update if requred.
