@@ -12,7 +12,7 @@ interface ISharedMinterDAExpV0 {
         uint128 _startPrice,
         uint128 _basePrice
     );
-    /// Maximum and minimum allowed price decay half lifes updated.
+    /// Minimum allowed price decay half life seconds updated.
     event AuctionMinHalfLifeSecondsUpdated(
         uint256 _minimumPriceDecayHalfLifeSeconds
     );
