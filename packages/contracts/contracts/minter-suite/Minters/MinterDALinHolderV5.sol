@@ -81,7 +81,7 @@ pragma solidity 0.8.19;
  * meaningfully impact price given the minimum allowable price decay rate that
  * this minter intends to support.
  */
-contract MinterDALinV5 is
+contract MinterDALinHolderV5 is
     ReentrancyGuard,
     ISharedMinterV0,
     ISharedMinterDAV0,
