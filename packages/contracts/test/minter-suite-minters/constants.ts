@@ -62,4 +62,5 @@ export const revertMessages = {
   noAuction: "No auction exists on project",
   nextTokenNotPopulated: "Next token not populated",
   onlyGte7000: "Only gte 7_000",
+  onlyConfiguredAuctions: "Only configured auctions",
 };
