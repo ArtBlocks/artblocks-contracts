@@ -6,7 +6,10 @@ import { deployAndGet, deployCore, safeAddProject } from "../../../util/common";
 import { ethers } from "hardhat";
 import { revertMessages } from "../../constants";
 import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../util/constants";
-import { configureProjectZeroAuctionAndAdvanceToStart } from "./helpers";
+import {
+  configureProjectZeroAuction,
+  configureProjectZeroAuctionAndAdvanceToStart,
+} from "./helpers";
 import { Common_Views } from "../../common.views";
 import { Logger } from "@ethersproject/logger";
 // hide nuisance logs about event overloading
@@ -157,6 +160,62 @@ runForEach.forEach((params) => {
         const config = await loadFixture(_beforeEach);
         const minterType = await config.minter.minterType();
         expect(minterType).to.equal(TARGET_MINTER_NAME);
+      });
+    });
+
+    describe("getPriceInfo", async function () {
+      it("returns correct price of zero when unconfigured auction", async function () {
+        const config = await loadFixture(_beforeEach);
+        const priceInfo = await config.minter.getPriceInfo(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(priceInfo.isConfigured).to.equal(false);
+        expect(priceInfo.tokenPriceInWei).to.equal(0);
+      });
+    });
+
+    describe("minimumPriceDecayHalfLifeSeconds", async function () {
+      it("returns correct initial value", async function () {
+        const config = await loadFixture(_beforeEach);
+        const minimumPriceDecayHalfLifeSeconds =
+          await config.minter.minimumPriceDecayHalfLifeSeconds();
+        expect(minimumPriceDecayHalfLifeSeconds).to.equal(45);
+      });
+    });
+
+    describe("projectAuctionParameters", async function () {
+      it("returns correct unconfigured values", async function () {
+        const config = await loadFixture(_beforeEach);
+        const projectAuctionParameters =
+          await config.minter.projectAuctionParameters(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        expect(projectAuctionParameters.timestampStart).to.equal(0);
+        expect(projectAuctionParameters.priceDecayHalfLifeSeconds).to.equal(0);
+        expect(projectAuctionParameters.startPrice.toString()).to.equal("0");
+        expect(projectAuctionParameters.basePrice.toString()).to.equal("0");
+      });
+
+      it("returns correct configured values", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuction(config);
+        const projectAuctionParameters =
+          await config.minter.projectAuctionParameters(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        expect(projectAuctionParameters.timestampStart).to.equal(
+          config.startTime
+        );
+        expect(projectAuctionParameters.priceDecayHalfLifeSeconds).to.equal(
+          config.defaultHalfLife
+        );
+        expect(projectAuctionParameters.startPrice).to.equal(
+          config.startingPrice
+        );
+        expect(projectAuctionParameters.basePrice).to.equal(config.basePrice);
       });
     });
   });
