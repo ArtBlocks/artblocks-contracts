@@ -382,6 +382,23 @@ runForEach.forEach((params) => {
         expect(auctionDetails.basePrice).to.equal(config.basePrice);
       });
 
+      it("Allows modifications pre-auction", async function () {
+        const config = await loadFixture(_beforeEach);
+        // configure auction
+        await configureProjectZeroAuction(config);
+        // expect no revert when modifing auction details pre-auction
+        await config.minter
+          .connect(config.accounts.artist)
+          .setAuctionDetails(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.startTime,
+            config.defaultHalfLife,
+            config.startingPrice,
+            config.basePrice
+          );
+      });
+
       it("No modifications mid-auction", async function () {
         const config = await loadFixture(_beforeEach);
         // configure auction

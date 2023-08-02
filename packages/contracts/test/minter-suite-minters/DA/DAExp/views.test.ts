@@ -8,6 +8,7 @@ import { revertMessages } from "../../constants";
 import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../util/constants";
 import {
   configureProjectZeroAuction,
+  configureProjectZeroAuctionAndAdvanceOneDay,
   configureProjectZeroAuctionAndAdvanceToStart,
 } from "./helpers";
 import { Common_Views } from "../../common.views";
@@ -172,6 +173,68 @@ runForEach.forEach((params) => {
         );
         expect(priceInfo.isConfigured).to.equal(false);
         expect(priceInfo.tokenPriceInWei).to.equal(0);
+      });
+
+      it("returns correct price mid-auction", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndAdvanceToStart(config);
+        let priceInfo = await config.minter.getPriceInfo(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(priceInfo.isConfigured).to.equal(true);
+        expect(priceInfo.tokenPriceInWei).to.equal(config.startingPrice);
+        // advance exactly one half life and check that price is halved
+        await ethers.provider.send("evm_mine", [
+          config.startTime + config.defaultHalfLife,
+        ]);
+        priceInfo = await config.minter.getPriceInfo(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        const targetPriceAfterOneHalfLife = config.startingPrice.div(2);
+        expect(priceInfo.isConfigured).to.equal(true);
+        expect(priceInfo.tokenPriceInWei).to.equal(targetPriceAfterOneHalfLife);
+        // advance exactly 1.5 half lives, and check that price is down another 25%
+        // @dev this ensures that between half life points, the price is decaying linearly as expected
+        await ethers.provider.send("evm_mine", [
+          config.startTime + config.defaultHalfLife * 1.5,
+        ]);
+        priceInfo = await config.minter.getPriceInfo(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        const targetPriceAfterOneAndAHalfHalfLives = targetPriceAfterOneHalfLife
+          .mul(3)
+          .div(4);
+        expect(priceInfo.isConfigured).to.equal(true);
+        expect(priceInfo.tokenPriceInWei).to.equal(
+          targetPriceAfterOneAndAHalfHalfLives
+        );
+        // advance exactly 2 half lives, and check that price is down to 1/4 of starting price
+        await ethers.provider.send("evm_mine", [
+          config.startTime + config.defaultHalfLife * 2,
+        ]);
+        priceInfo = await config.minter.getPriceInfo(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        const targetPriceAfterTwoHalfLives = config.startingPrice.div(4);
+        expect(priceInfo.isConfigured).to.equal(true);
+        expect(priceInfo.tokenPriceInWei).to.equal(
+          targetPriceAfterTwoHalfLives
+        );
+      });
+
+      it("returns correct price after auction", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndAdvanceOneDay(config);
+        const priceInfo = await config.minter.getPriceInfo(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(priceInfo.isConfigured).to.equal(true);
+        expect(priceInfo.tokenPriceInWei).to.equal(config.basePrice);
       });
     });
 

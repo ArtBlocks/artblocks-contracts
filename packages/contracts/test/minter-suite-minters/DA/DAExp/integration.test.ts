@@ -6,7 +6,10 @@ import { deployAndGet, deployCore, safeAddProject } from "../../../util/common";
 import { ethers } from "hardhat";
 import { revertMessages } from "../../constants";
 import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../util/constants";
-import { configureProjectZeroAuctionAndAdvanceToStart } from "./helpers";
+import {
+  configureProjectZeroAuction,
+  configureProjectZeroAuctionAndAdvanceToStart,
+} from "./helpers";
 import { Logger } from "@ethersproject/logger";
 // hide nuisance logs about event overloading
 Logger.setLogLevel(Logger.levels.ERROR);
@@ -441,6 +444,19 @@ runForEach.forEach((params) => {
               value: config.startingPrice.mul(95).div(100), // price hasn't gone down by 5% yet
             }),
           revertMessages.needMoreValue
+        );
+      });
+
+      it("does not allow minting before auction start", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuction(config);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .purchase(config.projectZero, config.genArt721Core.address, {
+              value: config.startingPrice,
+            }),
+          revertMessages.auctionNotStarted
         );
       });
 

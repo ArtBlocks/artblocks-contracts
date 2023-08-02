@@ -68,6 +68,7 @@ export const revertMessages = {
     "Price decay half life must be greater than min allowable value",
   noMidAuction: "No modifications mid-auction",
   onlyFutureAuctions: "Only future auctions",
+  auctionNotStarted: "Auction not yet started",
   invalidDAPrices: "Auction start price must be greater than auction end price",
   noZeroHalfLife: "Half life of zero not allowed",
 };
