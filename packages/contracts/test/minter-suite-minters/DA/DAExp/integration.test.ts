@@ -430,6 +430,33 @@ runForEach.forEach((params) => {
             });
         });
       });
+
+      it("requires min value to mint", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndAdvanceToStart(config);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .purchase(config.projectZero, config.genArt721Core.address, {
+              value: config.startingPrice.mul(95).div(100), // price hasn't gone down by 5% yet
+            }),
+          revertMessages.needMoreValue
+        );
+      });
+
+      it("mints token to sender", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndAdvanceToStart(config);
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        const ownerOf = await config.genArt721Core.ownerOf(
+          config.projectZeroTokenZero.toNumber()
+        );
+        expect(ownerOf).to.equal(config.accounts.user.address);
+      });
     });
 
     describe("purchaseTo", async function () {
@@ -463,6 +490,25 @@ runForEach.forEach((params) => {
               value: config.startingPrice,
             }
           );
+      });
+
+      it("mints token to _to", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndAdvanceToStart(config);
+        await config.minter
+          .connect(config.accounts.user)
+          .purchaseTo(
+            config.accounts.additional.address,
+            config.projectZero,
+            config.genArt721Core.address,
+            {
+              value: config.startingPrice,
+            }
+          );
+        const ownerOf = await config.genArt721Core.ownerOf(
+          config.projectZeroTokenZero.toNumber()
+        );
+        expect(ownerOf).to.equal(config.accounts.additional.address);
       });
     });
   });
