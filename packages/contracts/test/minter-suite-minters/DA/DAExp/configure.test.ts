@@ -6,7 +6,10 @@ import { deployAndGet, deployCore, safeAddProject } from "../../../util/common";
 import { ethers } from "hardhat";
 import { revertMessages } from "../../constants";
 import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../util/constants";
-import { configureProjectZeroAuctionAndAdvanceToStart } from "./helpers";
+import {
+  configureProjectZeroAuction,
+  configureProjectZeroAuctionAndAdvanceToStart,
+} from "./helpers";
 import { Common_Configure } from "../../common.configure";
 import { Logger } from "@ethersproject/logger";
 // hide nuisance logs about event overloading
@@ -279,6 +282,318 @@ runForEach.forEach((params) => {
       });
     });
 
-    // TODO: Add more tests
+    describe("setAuctionDetails", async function () {
+      it("does not allow non-artist to call", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.deployer)
+            .setAuctionDetails(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.startTime,
+              config.defaultHalfLife,
+              config.startingPrice,
+              config.basePrice
+            ),
+          revertMessages.onlyArtist
+        );
+      });
+
+      it("does allow artist to call", async function () {
+        const config = await loadFixture(_beforeEach);
+        // expect to not revert
+        await config.minter
+          .connect(config.accounts.artist)
+          .setAuctionDetails(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.startTime,
+            config.defaultHalfLife,
+            config.startingPrice,
+            config.basePrice
+          );
+      });
+
+      it("does not allow half seconds life lt min half life seconds", async function () {
+        const config = await loadFixture(_beforeEach);
+        const minHalfLife =
+          await config.minter.minimumPriceDecayHalfLifeSeconds();
+        // expect to not revert
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .setAuctionDetails(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.startTime,
+              minHalfLife.sub(1),
+              config.startingPrice,
+              config.basePrice
+            ),
+          revertMessages.halfLifeTooShort
+        );
+      });
+
+      it("does allow half seconds life gte min half life seconds", async function () {
+        const config = await loadFixture(_beforeEach);
+        const minHalfLife =
+          await config.minter.minimumPriceDecayHalfLifeSeconds();
+        // expect to not revert
+        await config.minter
+          .connect(config.accounts.artist)
+          .setAuctionDetails(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.startTime,
+            minHalfLife,
+            config.startingPrice,
+            config.basePrice
+          );
+      });
+
+      it("Updates auction details state", async function () {
+        const config = await loadFixture(_beforeEach);
+        // get initial auction state, verify it's not initialized
+        const initialAuctionDetails = await config.minter
+          .connect(config.accounts.artist)
+          .projectAuctionParameters(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        expect(initialAuctionDetails.timestampStart).to.equal(0);
+        expect(initialAuctionDetails.priceDecayHalfLifeSeconds).to.equal(0);
+        expect(initialAuctionDetails.startPrice).to.equal(0);
+        expect(initialAuctionDetails.basePrice).to.equal(0);
+        // configure auction
+        await configureProjectZeroAuction(config);
+        // expect auction details to be set
+        const auctionDetails = await config.minter
+          .connect(config.accounts.artist)
+          .projectAuctionParameters(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        expect(auctionDetails.timestampStart).to.equal(config.startTime);
+        expect(auctionDetails.priceDecayHalfLifeSeconds).to.equal(
+          config.defaultHalfLife
+        );
+        expect(auctionDetails.startPrice).to.equal(config.startingPrice);
+        expect(auctionDetails.basePrice).to.equal(config.basePrice);
+      });
+
+      it("No modifications mid-auction", async function () {
+        const config = await loadFixture(_beforeEach);
+        // configure auction
+        await configureProjectZeroAuctionAndAdvanceToStart(config);
+        // expect revert when trying to modify auction details mid-auction
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .setAuctionDetails(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.startTime,
+              config.defaultHalfLife,
+              config.startingPrice,
+              config.basePrice
+            ),
+          revertMessages.noMidAuction
+        );
+      });
+
+      it("Only future auctions", async function () {
+        const config = await loadFixture(_beforeEach);
+        // expect revert when setting auction start time to past
+        await expectRevert(
+          config.minter.connect(config.accounts.artist).setAuctionDetails(
+            config.projectZero,
+            config.genArt721Core.address,
+            1, // timestamp 1 is in the past
+            config.defaultHalfLife,
+            config.startingPrice,
+            config.basePrice
+          ),
+          revertMessages.onlyFutureAuctions
+        );
+      });
+
+      it("Auction start price must be greater than auction end price", async function () {
+        const config = await loadFixture(_beforeEach);
+        // expect revert when setting auction start price is <= auction end price
+        await expectRevert(
+          config.minter.connect(config.accounts.artist).setAuctionDetails(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.startTime,
+            config.defaultHalfLife,
+            config.startingPrice,
+            config.startingPrice.add(1) // start price is <= end price
+          ),
+          revertMessages.invalidDAPrices
+        );
+      });
+
+      it("Syncs project max invocations to core if unconfigured", async function () {
+        const config = await loadFixture(_beforeEach);
+        // verify max invocations not initialized
+        const maxInvocationsProjectConfig =
+          await config.minter.maxInvocationsProjectConfig(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        expect(maxInvocationsProjectConfig.maxInvocations).to.equal(0);
+        expect(maxInvocationsProjectConfig.maxHasBeenInvoked).to.equal(false);
+        // configure auction
+        await config.minter
+          .connect(config.accounts.artist)
+          .setAuctionDetails(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.startTime,
+            config.defaultHalfLife,
+            config.startingPrice,
+            config.basePrice
+          );
+        // verify max invocations initialized
+        const maxInvocationsProjectConfig2 =
+          await config.minter.maxInvocationsProjectConfig(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        expect(maxInvocationsProjectConfig2.maxInvocations).to.equal(15);
+        expect(maxInvocationsProjectConfig2.maxHasBeenInvoked).to.equal(false);
+      });
+
+      it("Maintains manually set project max invocations if already configured", async function () {
+        const config = await loadFixture(_beforeEach);
+        // manually limit max invocations < core max invocations
+        await config.minter
+          .connect(config.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(
+            config.projectZero,
+            config.genArt721Core.address,
+            1
+          );
+        // configure auction
+        await config.minter
+          .connect(config.accounts.artist)
+          .setAuctionDetails(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.startTime,
+            config.defaultHalfLife,
+            config.startingPrice,
+            config.basePrice
+          );
+        // verify max invocations remains manually set value
+        const maxInvocationsProjectConfig2 =
+          await config.minter.maxInvocationsProjectConfig(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        expect(maxInvocationsProjectConfig2.maxInvocations).to.equal(1);
+        expect(maxInvocationsProjectConfig2.maxHasBeenInvoked).to.equal(false);
+      });
+    });
+
+    describe("setMinimumPriceDecayHalfLifeSeconds", async function () {
+      it("is not callable by non-admin", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .setMinimumPriceDecayHalfLifeSeconds(1),
+          revertMessages.onlyMinterFilterACL
+        );
+      });
+
+      it("is callable by minter filter admin", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.deployer)
+          .setMinimumPriceDecayHalfLifeSeconds(1);
+      });
+
+      it("doesn't allow half life of zero", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.deployer)
+            .setMinimumPriceDecayHalfLifeSeconds(0),
+          revertMessages.noZeroHalfLife
+        );
+      });
+
+      it("updates state", async function () {
+        const config = await loadFixture(_beforeEach);
+        // verify initial condition
+        const minHalfLifeInitial =
+          await config.minter.minimumPriceDecayHalfLifeSeconds();
+        expect(minHalfLifeInitial).to.not.equal(1);
+        await config.minter
+          .connect(config.accounts.deployer)
+          .setMinimumPriceDecayHalfLifeSeconds(1);
+        // verify state update
+        const minHalfLife =
+          await config.minter.minimumPriceDecayHalfLifeSeconds();
+        expect(minHalfLife).to.equal(1);
+      });
+    });
+
+    describe("resetAuctionDetails", async function () {
+      it("is not callable by non-core admin", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .resetAuctionDetails(
+              config.projectZero,
+              config.genArt721Core.address
+            ),
+          revertMessages.onlyCoreAdminACL
+        );
+      });
+
+      it("is callable by core admin", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.deployer)
+          .resetAuctionDetails(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+      });
+
+      it("updates state", async function () {
+        const config = await loadFixture(_beforeEach);
+        // configure auction
+        await configureProjectZeroAuction(config);
+        // verify auction details are set
+        const auctionDetails = await config.minter.projectAuctionParameters(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(auctionDetails.timestampStart).to.equal(config.startTime);
+        // no need to verify all auction details, just one is sufficient
+
+        // reset auction details
+        await config.minter
+          .connect(config.accounts.deployer)
+          .resetAuctionDetails(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        // verify auction details are reset
+        const auctionDetails2 = await config.minter.projectAuctionParameters(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(auctionDetails2.timestampStart).to.equal(0);
+        expect(auctionDetails2.priceDecayHalfLifeSeconds).to.equal(0);
+        expect(auctionDetails2.startPrice).to.equal(0);
+        expect(auctionDetails2.basePrice).to.equal(0);
+      });
+    });
   });
 });
