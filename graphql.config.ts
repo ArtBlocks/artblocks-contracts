@@ -1,4 +1,7 @@
 import { CodegenConfig } from "@graphql-codegen/cli";
+import { IGraphQLConfig, SchemaPointerSingle } from "graphql-config";
+
+// TODO: Add types
 
 const baseConfig = {
   schema: {
@@ -46,7 +49,11 @@ const config = {
     },
     sdk: {
       ...baseConfig,
-      documents: ["packages/sdk/**/*.graphql", "packages/sdk/**/*.ts"],
+      documents: [
+        "packages/sdk/**/*.graphql",
+        "packages/sdk/**/*.ts",
+        "!packages/sdk/**/node_modules/**",
+      ],
       extensions: {
         codegen: {
           generates: {
