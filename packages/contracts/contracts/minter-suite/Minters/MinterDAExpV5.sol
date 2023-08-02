@@ -463,14 +463,15 @@ contract MinterDAExpV5 is
                 _coreContract
             ][_projectId];
         isConfigured = (auctionProjectConfig.startPrice > 0);
-        if (block.timestamp <= auctionProjectConfig.timestampStart) {
-            // Provide a reasonable value for `tokenPriceInWei` when it would
-            // otherwise revert, using the starting price before auction starts.
-            tokenPriceInWei = auctionProjectConfig.startPrice;
-        } else if (auctionProjectConfig.startPrice == 0) {
+        if (!isConfigured) {
             // In the case of unconfigured auction, return price of zero when
-            // it would otherwise revert
+            // getPriceExp would otherwise revert
             tokenPriceInWei = 0;
+        } else if (block.timestamp <= auctionProjectConfig.timestampStart) {
+            // Provide a reasonable value for `tokenPriceInWei` when
+            // getPriceExp would otherwise revert, using the starting price
+            // before auction starts.
+            tokenPriceInWei = auctionProjectConfig.startPrice;
         } else {
             tokenPriceInWei = DAExpLib.getPriceExp(auctionProjectConfig);
         }
