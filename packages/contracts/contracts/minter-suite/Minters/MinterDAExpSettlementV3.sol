@@ -11,11 +11,10 @@ import "../../interfaces/v0.8.x/IMinterFilterV1.sol";
 import "../../libs/v0.8.x/minter-libs/SettlementLib.sol";
 import "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
 import "../../libs/v0.8.x/minter-libs/MaxInvocationsLib.sol";
-import "../../libs/v0.8.x/minter-libs/DALib.sol";
+import "../../libs/v0.8.x/minter-libs/DAExpLib.sol";
 import "../../libs/v0.8.x/AuthLib.sol";
 
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin-4.5/contracts/utils/math/SafeCast.sol";
 
 pragma solidity 0.8.19;
 
@@ -32,7 +31,6 @@ contract MinterDAExpSettlementV3 is
     ISharedMinterDAV0,
     ISharedMinterDAExpV0
 {
-    using SafeCast for uint256;
     /// Minter filter address this minter interacts with
     address public immutable minterFilterAddress;
 
@@ -43,16 +41,12 @@ contract MinterDAExpSettlementV3 is
     string public constant minterType = "MinterDAExpSettlementV3";
 
     /// minter version for this minter
-    string public constant minterVersion = "v5.0.0";
+    string public constant minterVersion = "v3.0.0";
 
     uint256 constant ONE_MILLION = 1_000_000;
     //// Minimum price decay half life: price must decay with a half life of at
     /// least this amount (must cut in half at least every N seconds).
     uint256 public minimumPriceDecayHalfLifeSeconds = 45; // 45 seconds
-
-    /// contractAddress => projectId => base project config
-    mapping(address => mapping(uint256 => ProjectConfig))
-        private _projectConfigMapping;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR SplitFundsLib begin here
@@ -76,15 +70,19 @@ contract MinterDAExpSettlementV3 is
     // STATE VARIABLES FOR SettlementLib end here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    /// user address => project ID => receipt
+    mapping(address => mapping(uint256 => SettlementLib.Receipt))
+        private _receiptsMapping;
+
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR DALib begin here
+    // STATE VARIABLES FOR DAExpLib begin here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    mapping(address => mapping(uint256 => DALib.DAProjectConfig))
+    mapping(address => mapping(uint256 => DAExpLib.DAProjectConfig))
         private _auctionProjectConfigMapping;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR DALib end here
+    // STATE VARIABLES FOR DAExpLib end here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -174,7 +172,7 @@ contract MinterDAExpSettlementV3 is
             _sender: msg.sender
         });
         // CHECKS
-        DALib.DAProjectConfig
+        DAExpLib.DAProjectConfig
             storage _auctionProjectConfig = _auctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
@@ -200,8 +198,8 @@ contract MinterDAExpSettlementV3 is
             "Price decay half life must be greater than min allowable value"
         );
 
-        DALib.setAuctionDetailsExp({
-            _auctionProjectConfigMapping: _auctionProjectConfig,
+        DAExpLib.setAuctionDetailsExp({
+            _DAProjectConfig: _auctionProjectConfig,
             _auctionTimestampStart: _auctionTimestampStart,
             _priceDecayHalfLifeSeconds: _priceDecayHalfLifeSeconds,
             _startPrice: _startPrice,
@@ -222,15 +220,11 @@ contract MinterDAExpSettlementV3 is
                 _coreContract
             ][_projectId];
 
-        // sync local max invocations if not initially populated
-        // @dev if local max invocations and maxHasBeenInvoked are both
-        // initial values, we know they have not been populated.
-        if (
-            _maxInvocationsProjectConfig.maxInvocations == 0 &&
-            _maxInvocationsProjectConfig.maxHasBeenInvoked == false
-        ) {
-            syncProjectMaxInvocationsToCore(_projectId, _coreContract);
-        }
+        MaxInvocationsLib.refreshMaxInvocations(
+            _projectId,
+            _coreContract,
+            _maxInvocationsProjectConfig
+        );
     }
 
     /**
@@ -276,9 +270,138 @@ contract MinterDAExpSettlementV3 is
             _selector: this.resetAuctionDetails.selector
         });
 
+        SettlementLib.SettlementAuctionProjectConfig
+            storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
+                _coreContract
+            ][_projectId];
+
+        // no reset after revenues collected, since that solidifies amount due
+        require(
+            !_settlementAuctionProjectConfig.auctionRevenuesCollected,
+            "Only before revenues collected"
+        );
+
         delete _auctionProjectConfigMapping[_coreContract][_projectId];
 
         emit ResetAuctionDetails(_projectId, _coreContract);
+    }
+
+    /**
+     * @notice This represents an admin stepping in and reducing the sellout
+     * price of an auction. This is only callable by the core admin, only
+     * after the auction is complete, but before project revenues are
+     * withdrawn.
+     * This is only intended to be used in the case where for some reason, the
+     * sellout price was too high.
+     * @param _projectId Project ID to reduce auction sellout price for.
+     * @param _newSelloutPrice New sellout price to set for the auction. Must
+     * be less than the current sellout price.
+     */
+    function adminEmergencyReduceSelloutPrice(
+        uint256 _projectId,
+        address _coreContract,
+        uint256 _newSelloutPrice
+    ) external {
+        AuthLib.onlyCoreAdminACL({
+            _coreContract: _coreContract,
+            _sender: msg.sender,
+            _contract: address(this),
+            _selector: this.adminEmergencyReduceSelloutPrice.selector
+        });
+
+        SettlementLib.SettlementAuctionProjectConfig
+            storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
+                _coreContract
+            ][_projectId];
+
+        require(
+            !_settlementAuctionProjectConfig.auctionRevenuesCollected,
+            "Only before revenues collected"
+        );
+
+        MaxInvocationsLib.MaxInvocationsProjectConfig
+            storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
+                _coreContract
+            ][_projectId];
+        DAExpLib.DAProjectConfig
+            storage _auctionProjectConfig = _auctionProjectConfigMapping[
+                _coreContract
+            ][_projectId];
+
+        // refresh max invocations, updating any local values that are
+        // illogical with respect to the current core contract state, and
+        // ensuring that local hasMaxBeenInvoked is accurate.
+        MaxInvocationsLib.refreshMaxInvocations(
+            _projectId,
+            _coreContract,
+            _maxInvocationsProjectConfig
+        );
+
+        SettlementLib.adminEmergencyReduceSelloutPrice({
+            _newSelloutPrice: _newSelloutPrice,
+            _settlementAuctionProjectConfig: _settlementAuctionProjectConfig,
+            _maxInvocationsProjectConfig: _maxInvocationsProjectConfig
+        });
+        // ensure _newSelloutPrice is non-zero
+        emit SelloutPriceUpdated(_projectId, _coreContract, _newSelloutPrice);
+    }
+
+    /**
+     * @notice This withdraws project revenues for the artist and admin.
+     * This function is only callable by the artist or admin, and only after
+     * one of the following is true:
+     * - the auction has sold out above base price
+     * - the auction has reached base price
+     * Note that revenues are not claimable if in a temporary state after
+     * an auction is reset.
+     * Revenues may only be collected a single time per project.
+     * After revenues are collected, auction parameters will never be allowed
+     * to be reset, and excess settlement funds will become immutable and fully
+     * deterministic.
+     */
+    function withdrawArtistAndAdminRevenues(
+        uint256 _projectId,
+        address _coreContract
+    ) external nonReentrant {
+        AuthLib.onlyCoreAdminACL({
+            _coreContract: _coreContract,
+            _sender: msg.sender,
+            _contract: address(this),
+            _selector: this.adminEmergencyReduceSelloutPrice.selector
+        });
+
+        SettlementLib.SettlementAuctionProjectConfig
+            storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
+                _coreContract
+            ][_projectId];
+        MaxInvocationsLib.MaxInvocationsProjectConfig
+            storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
+                _coreContract
+            ][_projectId];
+        DAExpLib.DAProjectConfig
+            storage _auctionProjectConfig = _auctionProjectConfigMapping[
+                _coreContract
+            ][_projectId];
+
+        uint256 netRevenues = SettlementLib.getArtistAndAdminRevenues({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _settlementAuctionProjectConfigMapping: _settlementAuctionProjectConfig,
+            _maxInvocationsProjectConfigMapping: _maxInvocationsProjectConfig,
+            _auctionProjectConfigMapping: _auctionProjectConfig
+        });
+        // INTERACTIONS
+        bool isEngine = SplitFundsLib.isEngine(
+            _coreContract,
+            _isEngineCaches[_coreContract]
+        );
+        SplitFundsLib.splitFundsETH({
+            _projectId: _projectId,
+            _pricePerTokenInWei: netRevenues,
+            _coreContract: _coreContract,
+            _isEngine: isEngine
+        });
+        emit ArtistAndAdminRevenuesWithdrawn(_projectId);
     }
 
     /**
@@ -320,19 +443,6 @@ contract MinterDAExpSettlementV3 is
     }
 
     /**
-     * @notice Gets the base project configuration.
-     * @param _coreContract The address of the core contract.
-     * @param _projectId The ID of the project whose data needs to be fetched.
-     * @return ProjectConfig instance with the project configuration data.
-     */
-    function projectConfig(
-        uint256 _projectId,
-        address _coreContract
-    ) external view returns (ProjectConfig memory) {
-        return _projectConfigMapping[_coreContract][_projectId];
-    }
-
-    /**
      * @notice Retrieves the auction parameters for a specific project.
      * @param _projectId The unique identifier for the project.
      * @param _coreContract The address of the core contract for the project.
@@ -348,13 +458,13 @@ contract MinterDAExpSettlementV3 is
         external
         view
         returns (
-            uint256 timestampStart,
-            uint256 priceDecayHalfLifeSeconds,
-            uint256 startPrice,
-            uint256 basePrice
+            uint64 timestampStart,
+            uint64 priceDecayHalfLifeSeconds,
+            uint128 startPrice,
+            uint128 basePrice
         )
     {
-        DALib.DAProjectConfig
+        DAExpLib.DAProjectConfig
             storage _auctionProjectConfig = _auctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
@@ -456,7 +566,7 @@ contract MinterDAExpSettlementV3 is
         uint256 _projectId,
         address _coreContract
     ) private view returns (uint256) {
-        DALib.DAProjectConfig
+        DAExpLib.DAProjectConfig
             storage auctionProjectConfig = _auctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
@@ -528,7 +638,7 @@ contract MinterDAExpSettlementV3 is
             address currencyAddress
         )
     {
-        DALib.DAProjectConfig
+        DAExpLib.DAProjectConfig
             storage auctionProjectConfig = _auctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
@@ -546,6 +656,212 @@ contract MinterDAExpSettlementV3 is
         }
         currencySymbol = "ETH";
         currencyAddress = address(0);
+    }
+
+    /**
+     * @notice Reclaims the sender's payment above current settled price for
+     * project `_projectId`. The current settled price is the the price paid
+     * for the most recently purchased token, or the base price if the artist
+     * has withdrawn revenues after the auction reached base price.
+     * This function is callable at any point, but is expected to typically be
+     * called after auction has sold out above base price or after the auction
+     * has been purchased at base price. This minimizes the amount of gas
+     * required to send all excess settlement funds to the sender.
+     * Sends excess settlement funds to msg.sender.
+     * @param _projectId Project ID to reclaim excess settlement funds on.
+     */
+    function reclaimProjectExcessSettlementFunds(
+        uint256 _projectId,
+        address _coreContract
+    ) external {
+        reclaimProjectExcessSettlementFundsTo(
+            payable(msg.sender),
+            _projectId,
+            _coreContract
+        );
+    }
+
+    /**
+     * @notice Reclaims the sender's payment above current settled price for
+     * project `_projectId`. The current settled price is the the price paid
+     * for the most recently purchased token, or the base price if the artist
+     * has withdrawn revenues after the auction reached base price.
+     * This function is callable at any point, but is expected to typically be
+     * called after auction has sold out above base price or after the auction
+     * has been purchased at base price. This minimizes the amount of gas
+     * required to send all excess settlement funds.
+     * Sends excess settlement funds to address `_to`.
+     * @param _to Address to send excess settlement funds to.
+     * @param _projectId Project ID to reclaim excess settlement funds on.
+     */
+    function reclaimProjectExcessSettlementFundsTo(
+        address payable _to,
+        uint256 _projectId,
+        address _coreContract
+    ) public nonReentrant {
+        require(_to != address(0), "No claiming to the zero address");
+
+        SettlementLib.SettlementAuctionProjectConfig
+            storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
+                _coreContract
+            ][_projectId];
+        SettlementLib.Receipt storage _receipt = _receiptsMapping[msg.sender][
+            _projectId
+        ];
+
+        (
+            uint256 excessSettlementFunds,
+            uint256 requiredAmountPosted
+        ) = SettlementLib.getProjectExcessSettlementFunds({
+                _settlementAuctionProjectConfigMapping: _settlementAuctionProjectConfig,
+                _receipsMapping: _receipt
+            });
+
+        emit ReceiptUpdated(
+            msg.sender,
+            _projectId,
+            _receipt.numPurchased,
+            requiredAmountPosted
+        );
+
+        // INTERACTIONS
+        bool success_;
+        (success_, ) = _to.call{value: excessSettlementFunds}("");
+        require(success_, "Reclaiming failed");
+    }
+
+    /**
+     * @notice Reclaims the sender's payment above current settled price for
+     * projects in `_projectIds`. The current settled price is the the price
+     * paid for the most recently purchased token, or the base price if the
+     * artist has withdrawn revenues after the auction reached base price.
+     * This function is callable at any point, but is expected to typically be
+     * called after auction has sold out above base price or after the auction
+     * has been purchased at base price. This minimizes the amount of gas
+     * required to send all excess settlement funds to the sender.
+     * Sends total of all excess settlement funds to msg.sender in a single
+     * chunk. Entire transaction reverts if any excess settlement calculation
+     * fails.
+     * @param _projectIds Array of project IDs to reclaim excess settlement
+     * funds on.
+     */
+    function reclaimProjectsExcessSettlementFunds(
+        uint256[] calldata _projectIds,
+        address _coreContract
+    ) external {
+        reclaimProjectsExcessSettlementFundsTo(
+            payable(msg.sender),
+            _projectIds,
+            _coreContract
+        );
+    }
+
+    /**
+     * @notice Gets the current excess settlement funds on project `_projectId`
+     * for address `_walletAddress`. The returned value is expected to change
+     * throughtout an auction, since the latest purchase price is used when
+     * determining excess settlement funds.
+     * A user may claim excess settlement funds by calling the function
+     * `reclaimProjectExcessSettlementFunds(_projectId)`.
+     * @param _projectId Project ID to query.
+     * @param _walletAddress Account address for which the excess posted funds
+     * is being queried.
+     * @return excessSettlementFundsInWei Amount of excess settlement funds, in
+     * wei
+     */
+    function getProjectExcessSettlementFunds(
+        uint256 _projectId,
+        address _coreContract,
+        address _walletAddress
+    ) external view returns (uint256 excessSettlementFundsInWei) {
+        // input validation
+        require(_walletAddress != address(0), "No zero address");
+
+        SettlementLib.SettlementAuctionProjectConfig
+            storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
+                _coreContract
+            ][_projectId];
+        SettlementLib.Receipt storage _receipt = _receiptsMapping[
+            _walletAddress
+        ][_projectId];
+
+        (
+            uint256 excessSettlementFunds,
+            uint256 requiredAmountPosted
+        ) = SettlementLib.getProjectExcessSettlementFunds({
+                _settlementAuctionProjectConfigMapping: _settlementAuctionProjectConfig,
+                _receipsMapping: _receipt
+            });
+    }
+
+    /**
+     * @notice Reclaims the sender's payment above current settled price for
+     * projects in `_projectIds`. The current settled price is the the price
+     * paid for the most recently purchased token, or the base price if the
+     * artist has withdrawn revenues after the auction reached base price.
+     * This function is callable at any point, but is expected to typically be
+     * called after auction has sold out above base price or after the auction
+     * has been purchased at base price. This minimizes the amount of gas
+     * required to send all excess settlement funds to the sender.
+     * Sends total of all excess settlement funds to `_to` in a single
+     * chunk. Entire transaction reverts if any excess settlement calculation
+     * fails.
+     * @param _to Address to send excess settlement funds to.
+     * @param _projectIds Array of project IDs to reclaim excess settlement
+     * funds on.
+     */
+    function reclaimProjectsExcessSettlementFundsTo(
+        address payable _to,
+        uint256[] memory _projectIds,
+        address _coreContract
+    ) public nonReentrant {
+        // CHECKS
+        // input validation
+        require(_to != address(0), "No claiming to the zero address");
+        // EFFECTS
+        // for each project, tally up the excess settlement funds and update
+        // the receipt in storage
+        uint256 excessSettlementFunds;
+        uint256 projectIdsLength = _projectIds.length;
+        for (uint256 i; i < projectIdsLength; ) {
+            uint256 projectId = _projectIds[i];
+
+            SettlementLib.SettlementAuctionProjectConfig
+                storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
+                    _coreContract
+                ][projectId];
+            SettlementLib.Receipt storage _receipt = _receiptsMapping[
+                msg.sender
+            ][projectId];
+
+            (uint256 funds, uint256 requiredAmountPosted) = SettlementLib
+                .getProjectExcessSettlementFunds({
+                    _settlementAuctionProjectConfigMapping: _settlementAuctionProjectConfig,
+                    _receipsMapping: _receipt
+                });
+
+            excessSettlementFunds += funds;
+
+            // emit event indicating new receipt state
+            emit ReceiptUpdated(
+                msg.sender,
+                projectId,
+                _receipt.numPurchased,
+                requiredAmountPosted
+            );
+            // gas efficiently increment i
+            // won't overflow due to for loop, as well as gas limts
+            unchecked {
+                ++i;
+            }
+        }
+
+        // INTERACTIONS
+        // send excess settlement funds in a single chunk for all
+        // projects
+        bool success_;
+        (success_, ) = _to.call{value: excessSettlementFunds}("");
+        require(success_, "Reclaiming failed");
     }
 
     /**
@@ -627,5 +943,32 @@ contract MinterDAExpSettlementV3 is
         });
 
         return tokenId;
+    }
+
+    /**
+     * @notice Verifies the cached values of a project's maxInvocation state
+     * are logically consistent with the core contract's maxInvocation state,
+     * or populates them to equal the core contract's maxInvocation state if
+     *  they have never been populated.
+     */
+    function _refreshMaxInvocations(
+        uint256 _projectId,
+        address _coreContract
+    ) internal {
+        MaxInvocationsLib.MaxInvocationsProjectConfig
+            storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
+                _coreContract
+            ][_projectId];
+        MaxInvocationsLib.refreshMaxInvocations(
+            _projectId,
+            _coreContract,
+            _maxInvocationsProjectConfig
+        );
+
+        emit ProjectMaxInvocationsLimitUpdated(
+            _projectId,
+            _coreContract,
+            _maxInvocationsProjectConfig.maxInvocations
+        );
     }
 }

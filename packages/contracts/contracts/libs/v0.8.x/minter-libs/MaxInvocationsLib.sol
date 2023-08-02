@@ -234,4 +234,99 @@ library MaxInvocationsLib {
     ) internal view returns (bool) {
         return _maxInvocationsProjectConfig.maxHasBeenInvoked;
     }
+
+    /**
+     * @notice Verifies the cached values of a project's maxInvocation state
+     * are logically consistent with the core contract's maxInvocation state,
+     * or populates them to equal the core contract's maxInvocation state if
+     *  they have never been populated.\
+     *  @dev intended for use with settlement lib
+     */
+    function refreshMaxInvocations(
+        uint256 _projectId,
+        address _coreContract,
+        MaxInvocationsProjectConfig storage _maxInvocationsProjectConfig
+    ) internal {
+        // project's max invocations and has max been invoked can only be
+        // initial values if never populated, because setting a maxInvocations
+        // of zero means maxHasBeenInvoked would be set to true
+        bool notPopulated = (_maxInvocationsProjectConfig.maxInvocations == 0 &&
+            _maxInvocationsProjectConfig.maxHasBeenInvoked == false);
+        if (notPopulated) {
+            // sync the minter max invocation state to equal the values on the
+            // core contract (least restrictive state)
+            MaxInvocationsLib.syncProjectMaxInvocationsToCore(
+                _projectId,
+                _coreContract,
+                _maxInvocationsProjectConfig
+            );
+        } else {
+            // if using local max invocations, validate the local state
+            // (i.e. ensure local max invocations not greater than core max
+            // invocations)
+            MaxInvocationsLib.validateProjectMaxInvocations(
+                _projectId,
+                _coreContract,
+                _maxInvocationsProjectConfig
+            );
+        }
+    }
+
+    // @dev intended for use with settlement lib
+    function validateProjectMaxInvocations(
+        uint256 _projectId,
+        address _coreContract,
+        MaxInvocationsProjectConfig storage _maxInvocationsProjectConfig
+    ) internal {
+        uint256 coreMaxInvocations;
+        uint256 coreInvocations;
+        (coreInvocations, coreMaxInvocations) = MaxInvocationsLib
+            .coreContractInvocationData(_projectId, _coreContract);
+
+        uint256 localMaxInvocations = _maxInvocationsProjectConfig
+            .maxInvocations;
+        // check if local max invocations is illogical relative to core
+        // contract's max invocations
+        if (localMaxInvocations > coreMaxInvocations) {
+            // set local max invocations to core contract's max invocations
+            _maxInvocationsProjectConfig.maxInvocations = uint24(
+                coreMaxInvocations
+            );
+            // update the project's `maxHasBeenInvoked` state
+            // @dev core values are equivalent to local values, use for gas
+            // efficiency
+            _maxInvocationsProjectConfig
+                .maxHasBeenInvoked = (coreMaxInvocations == coreInvocations);
+        } else if (coreInvocations >= localMaxInvocations) {
+            // ensure the local `maxHasBeenInvoked` state is accurate to
+            // prevent any false negatives due to minting on other minters
+            _maxInvocationsProjectConfig.maxHasBeenInvoked = true;
+        }
+    }
+
+    function projectMaxHasBeenInvokedSafe(
+        uint256 _projectId,
+        address _coreContract,
+        MaxInvocationsProjectConfig storage _maxInvocationsProjectConfig
+    ) internal view returns (bool) {
+        // get max invocations from core contract
+        uint256 coreInvocations;
+        uint256 coreMaxInvocations;
+        (coreInvocations, coreMaxInvocations) = MaxInvocationsLib
+            .coreContractInvocationData(_projectId, _coreContract);
+        uint256 localMaxInvocations = _maxInvocationsProjectConfig
+            .maxInvocations;
+        // value is locally defined, and could be out of date.
+        // only possible illogical state is if local max invocations is
+        // greater than core contract's max invocations, in which case
+        // we should use the core contract's max invocations
+        if (localMaxInvocations > coreMaxInvocations) {
+            // local max invocations is stale and illogical, defer to core
+            // contract's max invocations since it is the limiting factor
+            return (coreMaxInvocations == coreInvocations);
+        }
+        // local max invocations is limiting, so check core invocations against
+        // local max invocations
+        return (coreInvocations >= localMaxInvocations);
+    }
 }
