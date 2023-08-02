@@ -4,8 +4,9 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { setupConfigWitMinterFilterV2Suite } from "../../../util/fixtures";
 import { deployAndGet, deployCore, safeAddProject } from "../../../util/common";
 import { ethers } from "hardhat";
+import { AbiCoder } from "ethers/lib/utils";
 import { ONE_MINUTE } from "../../../util/constants";
-import { configureProjectZeroAuctionAndAdvanceToStart } from "./helpers";
+import { configureProjectZeroAuction } from "./helpers";
 import { Common_Events } from "../../common.events";
 import { Logger } from "@ethersproject/logger";
 // hide nuisance logs about event overloading
@@ -119,6 +120,83 @@ runForEach.forEach((params) => {
       await Common_Events(_beforeEach);
     });
 
-    // TODO: Add more events
+    describe("AuctionMinHalfLifeSecondsUpdated", async function () {
+      it("emits during deploy", async function () {
+        const config = await loadFixture(_beforeEach);
+        const contractFactory = await ethers.getContractFactory(
+          TARGET_MINTER_NAME
+        );
+        const tx = await contractFactory.deploy(config.minterFilter.address);
+        const receipt = await tx.deployTransaction.wait();
+        // target event "AuctionMinHalfLifeSecondsUpdated" is the log at index 0
+        let targetLog = receipt.logs[0];
+        // expect log 0 to be AuctionMinHalfLifeSecondsUpdated
+        expect(targetLog.topics[0]).to.be.equal(
+          ethers.utils.keccak256(
+            ethers.utils.toUtf8Bytes(
+              "AuctionMinHalfLifeSecondsUpdated(uint256)"
+            )
+          )
+        );
+        // expect field to be the hard-coded default value
+        const abiCoder = new AbiCoder();
+        expect(targetLog.data).to.be.equal(abiCoder.encode(["uint256"], [45]));
+      });
+
+      it("emits when being configured", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expect(
+          config.minter
+            .connect(config.accounts.deployer)
+            .setMinimumPriceDecayHalfLifeSeconds(1)
+        )
+          .to.emit(config.minter, "AuctionMinHalfLifeSecondsUpdated")
+          .withArgs(1);
+      });
+    });
+
+    describe("SetAuctionDetailsExp", async function () {
+      it("emits when auction is configured", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expect(
+          config.minter
+            .connect(config.accounts.artist)
+            .setAuctionDetails(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.startTime,
+              config.defaultHalfLife,
+              config.startingPrice,
+              config.basePrice
+            )
+        )
+          .to.emit(config.minter, "SetAuctionDetailsExp")
+          .withArgs(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.startTime,
+            config.defaultHalfLife,
+            config.startingPrice,
+            config.basePrice
+          );
+      });
+    });
+
+    describe("ResetAuctionDetails", async function () {
+      it("emits when auction is reset", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuction(config);
+        await expect(
+          config.minter
+            .connect(config.accounts.deployer)
+            .resetAuctionDetails(
+              config.projectZero,
+              config.genArt721Core.address
+            )
+        )
+          .to.emit(config.minter, "ResetAuctionDetails")
+          .withArgs(config.projectZero, config.genArt721Core.address);
+      });
+    });
   });
 });
