@@ -38,6 +38,8 @@ library SettlementExpLib {
     }
 
     function adminEmergencyReduceSelloutPrice(
+        uint256 _projectId,
+        address _coreContract,
         uint256 _newSelloutPrice,
         SettlementAuctionProjectConfig
             storage _settlementAuctionProjectConfigMapping,
@@ -45,6 +47,20 @@ library SettlementExpLib {
             storage _maxInvocationsProjectConfigMapping,
         DAExpLib.DAProjectConfig storage _DAProjectConfigMapping
     ) internal {
+        // CHECKS
+        require(
+            !_settlementAuctionProjectConfigMapping.auctionRevenuesCollected,
+            "Only before revenues collected"
+        );
+
+        // refresh max invocations, updating any local values that are
+        // illogical with respect to the current core contract state, and
+        // ensuring that local hasMaxBeenInvoked is accurate.
+        MaxInvocationsLib.refreshMaxInvocations(
+            _projectId,
+            _coreContract,
+            _maxInvocationsProjectConfigMapping
+        );
         require(
             _newSelloutPrice >= _DAProjectConfigMapping.basePrice,
             "May only reduce sellout price to base price or greater"
@@ -64,6 +80,7 @@ library SettlementExpLib {
         );
         // ensure _newSelloutPrice is non-zero
         require(_newSelloutPrice > 0, "Only sellout prices > 0");
+        // EFFECTS
         _settlementAuctionProjectConfigMapping
             .latestPurchasePrice = _newSelloutPrice;
     }
@@ -289,5 +306,25 @@ library SettlementExpLib {
             });
         }
         return tokenPriceInWei;
+    }
+
+    /**
+     * Returns if a new auction's start price is valid, given the current
+     * state of the project's settlement auction configuration.
+     * @param _startPrice starting price of new auction, in wei
+     * @param _settlementAuctionProjectConfig SettlementAuctionProjectConfig
+     * struct for the project being configured for a new auction.
+     */
+    function isValidStartPrice(
+        uint256 _startPrice,
+        SettlementAuctionProjectConfig storage _settlementAuctionProjectConfig
+    ) internal view returns (bool) {
+        // If previous purchases have been made, require monotonically
+        // decreasing purchase prices to preserve settlement and revenue
+        // claiming logic. Since base price is always non-zero, if
+        // latestPurchasePrice is zero, then no previous purchases have been
+        // made, and startPrice may be set to any value.
+        return (_settlementAuctionProjectConfig.latestPurchasePrice == 0 || // never purchased
+            _startPrice <= _settlementAuctionProjectConfig.latestPurchasePrice);
     }
 }

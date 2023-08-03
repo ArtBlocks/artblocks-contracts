@@ -237,18 +237,14 @@ contract MinterDAExpSettlementV3 is
                 _coreContract
             ][_projectId];
 
-        // If previous purchases have been made, require monotonically
-        // decreasing purchase prices to preserve settlement and revenue
-        // claiming logic. Since base price is always non-zero, if
-        // latestPurchasePrice is zero, then no previous purchases have been
-        // made, and startPrice may be set to any value.
+        // require valid start price on a settlement minter
         require(
-            _settlementAuctionProjectConfig.latestPurchasePrice == 0 || // never purchased
-                _startPrice <=
-                _settlementAuctionProjectConfig.latestPurchasePrice,
-            "Auction start price must be <= latest purchase price"
+            SettlementExpLib.isValidStartPrice({
+                _startPrice: _startPrice,
+                _settlementAuctionProjectConfig: _settlementAuctionProjectConfig
+            })
         );
-
+        // require valid half life for this minter
         require(
             (_priceDecayHalfLifeSeconds >= minimumPriceDecayHalfLifeSeconds),
             "Price decay half life must be greater than min allowable value"
@@ -272,11 +268,18 @@ contract MinterDAExpSettlementV3 is
             _basePrice: _basePrice
         });
 
+        // refresh max invocations, ensuring the values are populated, and
+        // updating any local values that are illogical with respect to the
+        // current core contract state.
+        // @dev this refresh enables the guarantee that a project's max
+        // invocation state is always populated if an auction is configured.
         MaxInvocationsLib.MaxInvocationsProjectConfig
             storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
                 _coreContract
             ][_projectId];
-
+        // @dev this minter pays the higher gas cost of a full refresh here due
+        // to the more severe ux degredation of a stale minter-local max
+        // invocations state.
         MaxInvocationsLib.refreshMaxInvocations(
             _projectId,
             _coreContract,
@@ -338,8 +341,16 @@ contract MinterDAExpSettlementV3 is
             "Only before revenues collected"
         );
 
+        // EFFECTS
+        // delete auction parameters
         delete _auctionProjectConfigMapping[_coreContract][_projectId];
 
+        // @dev do NOT delete settlement parameters, as they are used to
+        // determine settlement amounts even through a reset
+
+        // @dev V3: changed this event to be fully consistent with
+        // non-settlement minters, as the settlement-specific parameters were
+        // not being used for any indexing purposes
         emit ResetAuctionDetails(_projectId, _coreContract);
     }
 
@@ -370,12 +381,6 @@ contract MinterDAExpSettlementV3 is
             storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
-
-        require(
-            !_settlementAuctionProjectConfig.auctionRevenuesCollected,
-            "Only before revenues collected"
-        );
-
         MaxInvocationsLib.MaxInvocationsProjectConfig
             storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
                 _coreContract
@@ -385,22 +390,14 @@ contract MinterDAExpSettlementV3 is
                 _coreContract
             ][_projectId];
 
-        // refresh max invocations, updating any local values that are
-        // illogical with respect to the current core contract state, and
-        // ensuring that local hasMaxBeenInvoked is accurate.
-        MaxInvocationsLib.refreshMaxInvocations(
-            _projectId,
-            _coreContract,
-            _maxInvocationsProjectConfig
-        );
-
         SettlementExpLib.adminEmergencyReduceSelloutPrice({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
             _newSelloutPrice: _newSelloutPrice,
             _settlementAuctionProjectConfigMapping: _settlementAuctionProjectConfig,
             _maxInvocationsProjectConfigMapping: _maxInvocationsProjectConfig,
             _DAProjectConfigMapping: _auctionProjectConfig
         });
-        // ensure _newSelloutPrice is non-zero
         emit SelloutPriceUpdated(_projectId, _coreContract, _newSelloutPrice);
     }
 
