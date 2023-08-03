@@ -2,7 +2,6 @@
 // Created By: Art Blocks Inc.
 
 import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
-import "../../interfaces/v0.8.x/IDelegationRegistry.sol";
 import "../../interfaces/v0.8.x/ISharedMinterV0.sol";
 import "../../interfaces/v0.8.x/ISharedMinterDAV0.sol";
 import "../../interfaces/v0.8.x/ISharedMinterDALinV0.sol";
@@ -77,7 +76,7 @@ contract MinterDALinV5 is
 
     uint256 constant ONE_MILLION = 1_000_000;
     /// Minimum auction length in seconds
-    uint256 public minimumAuctionLengthSeconds = 600;
+    uint256 public minimumAuctionLengthSeconds = 600; // 10 minutes
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR SplitFundsLib begin here
@@ -122,7 +121,6 @@ contract MinterDALinV5 is
     constructor(address _minterFilter) ReentrancyGuard() {
         minterFilterAddress = _minterFilter;
         minterFilter = IMinterFilterV1(_minterFilter);
-
         emit AuctionMinimumLengthSecondsUpdated(minimumAuctionLengthSeconds);
     }
 
@@ -200,6 +198,7 @@ contract MinterDALinV5 is
             "Auction length must be at least minimumAuctionLengthSeconds"
         );
 
+        // EFFECTS
         DALinLib.setAuctionDetailsLin({
             _DAProjectConfig: _auctionProjectConfig,
             _auctionTimestampStart: _auctionTimestampStart,
@@ -285,9 +284,9 @@ contract MinterDALinV5 is
         address _coreContract
     ) external payable returns (uint256 tokenId) {
         tokenId = purchaseTo({
+            _to: msg.sender,
             _projectId: _projectId,
-            _coreContract: _coreContract,
-            _to: msg.sender
+            _coreContract: _coreContract
         });
 
         return tokenId;
@@ -522,10 +521,12 @@ contract MinterDALinV5 is
             storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
                 _coreContract
             ][_projectId];
+
         DALinLib.DAProjectConfig
             storage _auctionProjectConfig = _auctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
+
         // Note that `maxHasBeenInvoked` is only checked here to reduce gas
         // consumption after a project has been fully minted.
         // `_maxInvocationsProjectConfig.maxHasBeenInvoked` is locally cached to reduce
