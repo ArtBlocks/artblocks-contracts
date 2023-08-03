@@ -71,4 +71,6 @@ export const revertMessages = {
   auctionNotStarted: "Auction not yet started",
   invalidDAPrices: "Auction start price must be greater than auction end price",
   noZeroHalfLife: "Half life of zero not allowed",
+  tooShortAuction:
+    "Auction length must be at least minimumAuctionLengthSeconds",
 };

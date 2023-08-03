@@ -67,6 +67,7 @@ export type T_Config = {
   basePrice?: BigNumber;
   defaultHalfLife?: number;
   startTime?: number;
+  endTime?: number;
   auctionStartTimeOffset?: number;
   targetMinterName?: string;
   defaultAuctionLengthSeconds?: number;
