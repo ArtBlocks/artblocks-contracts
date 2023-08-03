@@ -6,14 +6,16 @@ import "../../interfaces/v0.8.x/IDelegationRegistry.sol";
 import "../../interfaces/v0.8.x/ISharedMinterV0.sol";
 import "../../interfaces/v0.8.x/ISharedMinterDAV0.sol";
 import "../../interfaces/v0.8.x/ISharedMinterDAExpV0.sol";
+import "../../interfaces/v0.8.x/ISharedMinterDAExpSettlementV0.sol";
 import "../../interfaces/v0.8.x/IMinterFilterV1.sol";
 
-import "../../libs/v0.8.x/minter-libs/SettlementLib.sol";
+import "../../libs/v0.8.x/minter-libs/SettlementExpLib.sol";
 import "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
 import "../../libs/v0.8.x/minter-libs/MaxInvocationsLib.sol";
 import "../../libs/v0.8.x/minter-libs/DAExpLib.sol";
 import "../../libs/v0.8.x/AuthLib.sol";
 
+import "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
 
 pragma solidity 0.8.19;
@@ -29,8 +31,11 @@ contract MinterDAExpSettlementV3 is
     ReentrancyGuard,
     ISharedMinterV0,
     ISharedMinterDAV0,
-    ISharedMinterDAExpV0
+    ISharedMinterDAExpV0,
+    ISharedMinterDAExpSettlementV0
 {
+    using SafeCast for uint256;
+
     /// Minter filter address this minter interacts with
     address public immutable minterFilterAddress;
 
@@ -60,18 +65,18 @@ contract MinterDAExpSettlementV3 is
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR SettlementLib begin here
+    // STATE VARIABLES FOR SettlementExpLib begin here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    mapping(address => mapping(uint256 => SettlementLib.SettlementAuctionProjectConfig))
+    mapping(address => mapping(uint256 => SettlementExpLib.SettlementAuctionProjectConfig))
         private _settlementAuctionProjectConfigMapping;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR SettlementLib end here
+    // STATE VARIABLES FOR SettlementExpLib end here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /// user address => project ID => receipt
-    mapping(address => mapping(uint256 => SettlementLib.Receipt))
+    mapping(address => mapping(uint256 => SettlementExpLib.Receipt))
         private _receiptsMapping;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -176,7 +181,7 @@ contract MinterDAExpSettlementV3 is
             storage _auctionProjectConfig = _auctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
-        SettlementLib.SettlementAuctionProjectConfig
+        SettlementExpLib.SettlementAuctionProjectConfig
             storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
@@ -270,7 +275,7 @@ contract MinterDAExpSettlementV3 is
             _selector: this.resetAuctionDetails.selector
         });
 
-        SettlementLib.SettlementAuctionProjectConfig
+        SettlementExpLib.SettlementAuctionProjectConfig
             storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
@@ -309,7 +314,7 @@ contract MinterDAExpSettlementV3 is
             _selector: this.adminEmergencyReduceSelloutPrice.selector
         });
 
-        SettlementLib.SettlementAuctionProjectConfig
+        SettlementExpLib.SettlementAuctionProjectConfig
             storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
@@ -337,10 +342,11 @@ contract MinterDAExpSettlementV3 is
             _maxInvocationsProjectConfig
         );
 
-        SettlementLib.adminEmergencyReduceSelloutPrice({
+        SettlementExpLib.adminEmergencyReduceSelloutPrice({
             _newSelloutPrice: _newSelloutPrice,
-            _settlementAuctionProjectConfig: _settlementAuctionProjectConfig,
-            _maxInvocationsProjectConfig: _maxInvocationsProjectConfig
+            _settlementAuctionProjectConfigMapping: _settlementAuctionProjectConfig,
+            _maxInvocationsProjectConfigMapping: _maxInvocationsProjectConfig,
+            _DAProjectConfigMapping: _auctionProjectConfig
         });
         // ensure _newSelloutPrice is non-zero
         emit SelloutPriceUpdated(_projectId, _coreContract, _newSelloutPrice);
@@ -370,7 +376,7 @@ contract MinterDAExpSettlementV3 is
             _selector: this.adminEmergencyReduceSelloutPrice.selector
         });
 
-        SettlementLib.SettlementAuctionProjectConfig
+        SettlementExpLib.SettlementAuctionProjectConfig
             storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
@@ -383,12 +389,12 @@ contract MinterDAExpSettlementV3 is
                 _coreContract
             ][_projectId];
 
-        uint256 netRevenues = SettlementLib.getArtistAndAdminRevenues({
+        uint256 netRevenues = SettlementExpLib.getArtistAndAdminRevenues({
             _projectId: _projectId,
             _coreContract: _coreContract,
             _settlementAuctionProjectConfigMapping: _settlementAuctionProjectConfig,
             _maxInvocationsProjectConfigMapping: _maxInvocationsProjectConfig,
-            _auctionProjectConfigMapping: _auctionProjectConfig
+            _DAProjectConfigMapping: _auctionProjectConfig
         });
         // INTERACTIONS
         bool isEngine = SplitFundsLib.isEngine(
@@ -401,7 +407,7 @@ contract MinterDAExpSettlementV3 is
             _coreContract: _coreContract,
             _isEngine: isEngine
         });
-        emit ArtistAndAdminRevenuesWithdrawn(_projectId);
+        emit ArtistAndAdminRevenuesWithdrawn(_projectId, _coreContract);
     }
 
     /**
@@ -555,6 +561,35 @@ contract MinterDAExpSettlementV3 is
     }
 
     /**
+     * @notice Gets the latest purchase price for project `_projectId`, or 0 if
+     * no purchases have been made.
+     */
+    function getProjectLatestPurchasePrice(
+        uint256 _projectId,
+        address _coreContract
+    ) external view returns (uint256 latestPurchasePrice) {
+        SettlementExpLib.SettlementAuctionProjectConfig
+            storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
+                _coreContract
+            ][_projectId];
+        return _settlementAuctionProjectConfig.latestPurchasePrice;
+    }
+
+    /**
+     * @notice Gets the number of settleable invocations for project `_projectId`.
+     */
+    function getNumSettleableInvocations(
+        uint256 _projectId,
+        address _coreContract
+    ) external view returns (uint256 numSettleableInvocations) {
+        SettlementExpLib.SettlementAuctionProjectConfig
+            storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
+                _coreContract
+            ][_projectId];
+        return _settlementAuctionProjectConfig.numSettleableInvocations;
+    }
+
+    /**
      * @notice Gets price of minting a token on project `_projectId` given
      * the project's AuctionParameters and current block timestamp.
      * Reverts if auction has not yet started or auction is unconfigured.
@@ -701,25 +736,27 @@ contract MinterDAExpSettlementV3 is
     ) public nonReentrant {
         require(_to != address(0), "No claiming to the zero address");
 
-        SettlementLib.SettlementAuctionProjectConfig
+        SettlementExpLib.SettlementAuctionProjectConfig
             storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
-        SettlementLib.Receipt storage _receipt = _receiptsMapping[msg.sender][
-            _projectId
-        ];
+        SettlementExpLib.Receipt storage _receipt = _receiptsMapping[
+            msg.sender
+        ][_projectId];
 
         (
             uint256 excessSettlementFunds,
             uint256 requiredAmountPosted
-        ) = SettlementLib.getProjectExcessSettlementFunds({
+        ) = SettlementExpLib.getProjectExcessSettlementFunds({
                 _settlementAuctionProjectConfigMapping: _settlementAuctionProjectConfig,
-                _receipsMapping: _receipt
+                _receiptMapping: _receipt
             });
+        _receipt.netPosted = requiredAmountPosted.toUint232();
 
         emit ReceiptUpdated(
             msg.sender,
             _projectId,
+            _coreContract,
             _receipt.numPurchased,
             requiredAmountPosted
         );
@@ -777,21 +814,20 @@ contract MinterDAExpSettlementV3 is
         // input validation
         require(_walletAddress != address(0), "No zero address");
 
-        SettlementLib.SettlementAuctionProjectConfig
+        SettlementExpLib.SettlementAuctionProjectConfig
             storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
-        SettlementLib.Receipt storage _receipt = _receiptsMapping[
+        SettlementExpLib.Receipt storage _receipt = _receiptsMapping[
             _walletAddress
         ][_projectId];
 
-        (
-            uint256 excessSettlementFunds,
-            uint256 requiredAmountPosted
-        ) = SettlementLib.getProjectExcessSettlementFunds({
+        (uint256 excessSettlementFunds, ) = SettlementExpLib
+            .getProjectExcessSettlementFunds({
                 _settlementAuctionProjectConfigMapping: _settlementAuctionProjectConfig,
-                _receipsMapping: _receipt
+                _receiptMapping: _receipt
             });
+        return excessSettlementFunds;
     }
 
     /**
@@ -826,19 +862,20 @@ contract MinterDAExpSettlementV3 is
         for (uint256 i; i < projectIdsLength; ) {
             uint256 projectId = _projectIds[i];
 
-            SettlementLib.SettlementAuctionProjectConfig
+            SettlementExpLib.SettlementAuctionProjectConfig
                 storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
                     _coreContract
                 ][projectId];
-            SettlementLib.Receipt storage _receipt = _receiptsMapping[
+            SettlementExpLib.Receipt storage _receipt = _receiptsMapping[
                 msg.sender
             ][projectId];
 
-            (uint256 funds, uint256 requiredAmountPosted) = SettlementLib
+            (uint256 funds, uint256 requiredAmountPosted) = SettlementExpLib
                 .getProjectExcessSettlementFunds({
                     _settlementAuctionProjectConfigMapping: _settlementAuctionProjectConfig,
-                    _receipsMapping: _receipt
+                    _receiptMapping: _receipt
                 });
+            _receipt.netPosted = requiredAmountPosted.toUint232();
 
             excessSettlementFunds += funds;
 
@@ -846,6 +883,7 @@ contract MinterDAExpSettlementV3 is
             emit ReceiptUpdated(
                 msg.sender,
                 projectId,
+                _coreContract,
                 _receipt.numPurchased,
                 requiredAmountPosted
             );
@@ -875,7 +913,7 @@ contract MinterDAExpSettlementV3 is
     function syncProjectMaxInvocationsToCore(
         uint256 _projectId,
         address _coreContract
-    ) public {
+    ) public view {
         AuthLib.onlyArtist({
             _projectId: _projectId,
             _coreContract: _coreContract,
@@ -898,8 +936,16 @@ contract MinterDAExpSettlementV3 is
         address _coreContract
     ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
+        SettlementExpLib.SettlementAuctionProjectConfig
+            storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
+                _coreContract
+            ][_projectId];
         MaxInvocationsLib.MaxInvocationsProjectConfig
             storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
+                _coreContract
+            ][_projectId];
+        DAExpLib.DAProjectConfig
+            storage _auctionProjectConfig = _auctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
 
@@ -914,10 +960,56 @@ contract MinterDAExpSettlementV3 is
             "Max invocations reached"
         );
 
-        uint256 pricePerTokenInWei = _getPrice(_projectId, _coreContract);
-        require(msg.value >= pricePerTokenInWei, "Min value to mint req.");
+        // _getPriceUnsafe reverts if auction has not yet started or auction is
+        // unconfigured, and auction has not sold out or revenues have not been
+        // withdrawn.
+        // @dev _getPriceUnsafe is guaranteed to be accurate unless the core
+        // contract is limiting invocations and we have stale local state
+        // returning a false negative that max invocations have been reached.
+        // This is acceptable, because that case will revert this
+        // call later on in this function, when the core contract's max
+        // invocation check fails.
+        uint256 currentPriceInWei = SettlementExpLib.getPriceUnsafe({
+            _settlementAuctionProjectConfigMapping: _settlementAuctionProjectConfig,
+            _maxInvocationsProjectConfigMapping: _maxInvocationsProjectConfig,
+            _DAProjectConfigMapping: _auctionProjectConfig
+        });
 
         // EFFECTS
+        // update the purchaser's receipt and require sufficient net payment
+        SettlementExpLib.Receipt storage receipt = _receiptsMapping[msg.sender][
+            _projectId
+        ];
+        // in memory copy + update
+        uint256 netPosted = receipt.netPosted + msg.value;
+        uint256 numPurchased = receipt.numPurchased + 1;
+
+        // require sufficient payment on project
+        require(
+            netPosted >= numPurchased * currentPriceInWei,
+            "Must send minimum value to mint"
+        );
+
+        // update Receipt in storage
+        // @dev overflow checks are not required since the added values cannot
+        // be enough to overflow due to maximum invocations or supply of ETH
+        receipt.netPosted = uint232(netPosted);
+        receipt.numPurchased = uint24(numPurchased);
+
+        // emit event indicating new receipt state
+        emit ReceiptUpdated(
+            msg.sender,
+            _projectId,
+            _coreContract,
+            numPurchased,
+            netPosted
+        );
+
+        // update latest purchase price (on this minter) in storage
+        // @dev this is used to enforce monotonically decreasing purchase price
+        // across multiple auctions
+        _settlementAuctionProjectConfig.latestPurchasePrice = currentPriceInWei;
+
         tokenId = minterFilter.mint_joo({
             _to: _to,
             _projectId: _projectId,
@@ -925,22 +1017,55 @@ contract MinterDAExpSettlementV3 is
             _sender: msg.sender
         });
 
-        MaxInvocationsLib.validatePurchaseEffectsInvocations(
-            tokenId,
-            _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-        );
+        // invocation is token number plus one, and will never overflow due to
+        // limit of 1e6 invocations per project. block scope for gas efficiency
+        // (i.e. avoid an unnecessary var initialization to 0).
+        unchecked {
+            uint256 tokenInvocation = (tokenId % ONE_MILLION) + 1;
+            uint256 localMaxInvocations = _maxInvocationsProjectConfig
+                .maxInvocations;
+            // handle the case where the token invocation == minter local max
+            // invocations occurred on a different minter, and we have a stale
+            // local maxHasBeenInvoked value returning a false negative.
+            // @dev this is a CHECK after EFFECTS, so security was considered
+            // in detail here.
+            require(
+                tokenInvocation <= localMaxInvocations,
+                "Maximum number of invocations reached"
+            );
+            // in typical case, update the local maxHasBeenInvoked value
+            // to true if the token invocation == minter local max invocations
+            // (enables gas efficient reverts after sellout)
+            if (tokenInvocation == localMaxInvocations) {
+                _maxInvocationsProjectConfig.maxHasBeenInvoked = true;
+            }
+        }
 
         // INTERACTIONS
-        bool isEngine = SplitFundsLib.isEngine(
-            _coreContract,
-            _isEngineCaches[_coreContract]
-        );
-        SplitFundsLib.splitFundsETH({
-            _projectId: _projectId,
-            _pricePerTokenInWei: pricePerTokenInWei,
-            _coreContract: _coreContract,
-            _isEngine: isEngine
-        });
+        if (_settlementAuctionProjectConfig.auctionRevenuesCollected) {
+            // if revenues have been collected, split funds immediately.
+            // @dev note that we are guaranteed to be at auction base price,
+            // since we know we didn't sellout prior to this tx.
+            // note that we don't refund msg.sender here, since a separate
+            // settlement mechanism is provided on this minter, unrelated to
+            // msg.value
+            // INTERACTIONS
+            bool isEngine = SplitFundsLib.isEngine(
+                _coreContract,
+                _isEngineCaches[_coreContract]
+            );
+            SplitFundsLib.splitFundsETH({
+                _projectId: _projectId,
+                _pricePerTokenInWei: currentPriceInWei,
+                _coreContract: _coreContract,
+                _isEngine: isEngine
+            });
+        } else {
+            // increment the number of settleable invocations that will be
+            // claimable by the artist and admin once auction is validated.
+            // do not split revenue here since will be claimed at a later time.
+            _settlementAuctionProjectConfig.numSettleableInvocations++;
+        }
 
         return tokenId;
     }

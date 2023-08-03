@@ -12,9 +12,7 @@ pragma solidity ^0.8.0;
  * @author Art Blocks Inc.
  */
 
-library SettlementLib {
-    using SafeCast for uint256;
-
+library SettlementExpLib {
     struct SettlementAuctionProjectConfig {
         // set to true only after artist + admin revenues have been collected
         bool auctionRevenuesCollected;
@@ -280,6 +278,7 @@ library SettlementLib {
         Receipt storage _receiptMapping
     )
         internal
+        view
         returns (uint256 excessSettlementFunds, uint256 requiredAmountPosted)
     {
         uint256 numPurchased = _receiptMapping.numPurchased;
@@ -296,8 +295,6 @@ library SettlementLib {
         excessSettlementFunds =
             _receiptMapping.netPosted -
             requiredAmountPosted;
-        // update Receipt in storage
-        _receiptMapping.netPosted = requiredAmountPosted.toUint232();
         return (excessSettlementFunds, requiredAmountPosted);
     }
 }
