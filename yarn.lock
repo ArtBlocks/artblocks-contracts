@@ -187,10 +187,10 @@
     "@smithy/util-utf8" "^2.0.0"
     tslib "^2.5.0"
 
-"@aws-sdk/client-s3@^3.382.0":
-  version "3.382.0"
-  resolved "https://registry.yarnpkg.com/@aws-sdk/client-s3/-/client-s3-3.382.0.tgz#5c48510bf588268229da46f90482fd28972ec847"
-  integrity sha512-7s5DI1dw5HUF9+tHuZzkJaZBcaE3kuGsMw17/enEa8YdF0CtL5rW46FlzQ3/7NYIKc9rhDtb0UMakEej1cWFtg==
+"@aws-sdk/client-s3@^3.383.0":
+  version "3.383.0"
+  resolved "https://registry.yarnpkg.com/@aws-sdk/client-s3/-/client-s3-3.383.0.tgz#b6bedda58166e49de7b20605a69253b60c112fd1"
+  integrity sha512-8x3WtuGHy3mESB3UxbZKdrZgMDBqqyPdUGwnkM8YeC8VkGce5pS98OgYe350aUNSzTkE3dNipzYZtm2BjalAyA==
   dependencies:
     "@aws-crypto/sha1-browser" "3.0.0"
     "@aws-crypto/sha256-browser" "3.0.0"
@@ -199,7 +199,7 @@
     "@aws-sdk/credential-provider-node" "3.382.0"
     "@aws-sdk/middleware-bucket-endpoint" "3.378.0"
     "@aws-sdk/middleware-expect-continue" "3.378.0"
-    "@aws-sdk/middleware-flexible-checksums" "3.378.0"
+    "@aws-sdk/middleware-flexible-checksums" "3.383.0"
     "@aws-sdk/middleware-host-header" "3.379.1"
     "@aws-sdk/middleware-location-constraint" "3.379.1"
     "@aws-sdk/middleware-logger" "3.378.0"
@@ -499,10 +499,10 @@
     "@smithy/types" "^2.0.2"
     tslib "^2.5.0"
 
-"@aws-sdk/middleware-flexible-checksums@3.378.0":
-  version "3.378.0"
-  resolved "https://registry.yarnpkg.com/@aws-sdk/middleware-flexible-checksums/-/middleware-flexible-checksums-3.378.0.tgz#41ab38b78ce2a8c10b52ea617c4187747ecf3c8d"
-  integrity sha512-pHkcVTu2T+x/1fpPHMpRDpXY5zxDsjijv3C6Nz/nm3gQrZvQ3fYDrQdV3Oj6Xeg40B3kkcp/bzgDo7MDzG088A==
+"@aws-sdk/middleware-flexible-checksums@3.383.0":
+  version "3.383.0"
+  resolved "https://registry.yarnpkg.com/@aws-sdk/middleware-flexible-checksums/-/middleware-flexible-checksums-3.383.0.tgz#0f7484a67c7b415ffd76cd1a38eed6671ae51104"
+  integrity sha512-RxIuby6Nz4pgKqNtt9Rdr2gWtOLrl9shZrteVuPh42n/dSOtCIhsG0fffKqy247I6oUghicoVJK9v0mxfINu/w==
   dependencies:
     "@aws-crypto/crc32" "3.0.0"
     "@aws-crypto/crc32c" "3.0.0"
@@ -9572,10 +9572,10 @@ escope@^3.6.0:
     esrecurse "^4.1.0"
     estraverse "^4.1.1"
 
-eslint-config-prettier@^8.9.0:
-  version "8.9.0"
-  resolved "https://registry.yarnpkg.com/eslint-config-prettier/-/eslint-config-prettier-8.9.0.tgz#094b6254b2804b0544f7cee535f802b6d29ee10b"
-  integrity sha512-+sbni7NfVXnOpnRadUA8S28AUlsZt9GjgFvABIRL9Hkn8KqNzOp+7Lw4QWtrwn20KzU3wqu1QoOj2m+7rKRqkA==
+eslint-config-prettier@^8.10.0:
+  version "8.10.0"
+  resolved "https://registry.yarnpkg.com/eslint-config-prettier/-/eslint-config-prettier-8.10.0.tgz#3a06a662130807e2502fc3ff8b4143d8a0658e11"
+  integrity sha512-SM8AMJdeQqRYT9O9zguiruQZaN7+z+E4eAP9oiLNGKMtomwaB1E9dcgUD6ZAn/eQAb52USbvezbiljfZUhbJcg==
 
 eslint-plugin-mocha@^10.1.0:
   version "10.1.0"
@@ -15262,10 +15262,10 @@ prettier-plugin-solidity@^1.1.1:
   resolved "https://registry.yarnpkg.com/prettier/-/prettier-2.8.8.tgz#e8c5d7e98a4305ffe3de2e1fc4aca1a71c28b1da"
   integrity sha512-tdN8qQGvNjw4CHbY+XXk0JgCXn9QiF21a55rBe5LJAU+kDyC4WQn4+awm2Xfk2lQMk5fKup9XgzTZtGkjBdP9Q==
 
-prettier@^3.0.0:
-  version "3.0.0"
-  resolved "https://registry.yarnpkg.com/prettier/-/prettier-3.0.0.tgz#e7b19f691245a21d618c68bc54dc06122f6105ae"
-  integrity sha512-zBf5eHpwHOGPC47h0zrPyNn+eAEIdEzfywMoYn2XPi0P44Zp0tSq64rq0xAREh4auw2cJZHo9QUob+NqCQky4g==
+prettier@^3.0.1:
+  version "3.0.1"
+  resolved "https://registry.yarnpkg.com/prettier/-/prettier-3.0.1.tgz#65271fc9320ce4913c57747a70ce635b30beaa40"
+  integrity sha512-fcOWSnnpCrovBsmFZIGIy9UqK2FaI7Hqax+DIO0A9UxeVoY4iweyaFjS5TavZN97Hfehph0nhsZnjlVKzEQSrQ==
 
 pretty-error@^4.0.0:
   version "4.0.0"
@@ -17499,10 +17499,10 @@ tsort@0.0.1:
   resolved "https://registry.yarnpkg.com/tsort/-/tsort-0.0.1.tgz#e2280f5e817f8bf4275657fd0f9aebd44f5a2786"
   integrity sha512-Tyrf5mxF8Ofs1tNoxA13lFeZ2Zrbd6cKbuH3V+MQ5sb6DtBj5FjrXVsRWT8YvNAQTqNoz66dz1WsbigI22aEnw==
 
-tsup@^7.1.0:
-  version "7.1.0"
-  resolved "https://registry.yarnpkg.com/tsup/-/tsup-7.1.0.tgz#11369762b68032da118a714a38d5a1d26ac45293"
-  integrity sha512-mazl/GRAk70j8S43/AbSYXGgvRP54oQeX8Un4iZxzATHt0roW0t6HYDVZIXMw0ZQIpvr1nFMniIVnN5186lW7w==
+tsup@^7.2.0:
+  version "7.2.0"
+  resolved "https://registry.yarnpkg.com/tsup/-/tsup-7.2.0.tgz#bb24c0d5e436477900c712e42adc67200607303c"
+  integrity sha512-vDHlczXbgUvY3rWvqFEbSqmC1L7woozbzngMqTtL2PGBODTtWlRwGDDawhvWzr5c1QjKe4OAKqJGfE1xeXUvtQ==
   dependencies:
     bundle-require "^4.0.0"
     cac "^6.7.12"
