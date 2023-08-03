@@ -137,6 +137,7 @@ library SettlementExpLib {
             // base price of zero indicates no sales, since base price of zero
             // is not allowed when configuring an auction.
             require(basePrice > 0, "Only latestPurchasePrice > 0");
+            // if the price is base price, the auction is valid and may be claimed
             // update the latest purchase price to the base price, to ensure
             // the base price is used for all future settlement calculations
             _settlementAuctionProjectConfigMapping
@@ -144,7 +145,6 @@ library SettlementExpLib {
         }
         // EFFECTS
         _settlementAuctionProjectConfigMapping.auctionRevenuesCollected = true;
-        // if the price is base price, the auction is valid and may be claimed
         // calculate the artist and admin revenues
         uint256 netRevenues = _settlementAuctionProjectConfigMapping
             .numSettleableInvocations * _price;

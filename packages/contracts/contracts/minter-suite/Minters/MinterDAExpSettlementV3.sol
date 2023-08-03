@@ -439,6 +439,9 @@ contract MinterDAExpSettlementV3 is
                 _coreContract
             ][_projectId];
 
+        // @dev the following function affects settlement state and marks
+        // revenues as collected. Therefore revenues MUST be subsequently sent
+        // distributed in this call.
         uint256 netRevenues = SettlementExpLib.getArtistAndAdminRevenues({
             _projectId: _projectId,
             _coreContract: _coreContract,
@@ -503,7 +506,8 @@ contract MinterDAExpSettlementV3 is
      * @param _projectId The unique identifier for the project.
      * @param _coreContract The address of the core contract for the project.
      * @return timestampStart The start timestamp for the auction.
-     * @return priceDecayHalfLifeSeconds The half-life for the price decay during the auction, in seconds.
+     * @return priceDecayHalfLifeSeconds The half-life for the price decay
+     * during the auction, in seconds.
      * @return startPrice The starting price of the auction.
      * @return basePrice The base price of the auction.
      */
@@ -524,12 +528,11 @@ contract MinterDAExpSettlementV3 is
             storage _auctionProjectConfig = _auctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
-        return (
-            _auctionProjectConfig.timestampStart,
-            _auctionProjectConfig.priceDecayHalfLifeSeconds,
-            _auctionProjectConfig.startPrice,
-            _auctionProjectConfig.basePrice
-        );
+        timestampStart = _auctionProjectConfig.timestampStart;
+        priceDecayHalfLifeSeconds = _auctionProjectConfig
+            .priceDecayHalfLifeSeconds;
+        startPrice = _auctionProjectConfig.startPrice;
+        basePrice = _auctionProjectConfig.basePrice;
     }
 
     /**
@@ -575,8 +578,9 @@ contract MinterDAExpSettlementV3 is
         address _coreContract
     ) external view returns (bool) {
         return
-            _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-                .maxHasBeenInvoked;
+            MaxInvocationsLib.getMaxHasBeenInvoked(
+                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
+            );
     }
 
     /**
@@ -604,15 +608,16 @@ contract MinterDAExpSettlementV3 is
         address _coreContract
     ) external view returns (uint256) {
         return
-            uint256(
+            MaxInvocationsLib.getMaxInvocations(
                 _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-                    .maxInvocations
             );
     }
 
     /**
      * @notice Gets the latest purchase price for project `_projectId`, or 0 if
      * no purchases have been made.
+     * @param _projectId Project ID to get latest purchase price for.
+     * @param _coreContract Contract address of the core contract
      */
     function getProjectLatestPurchasePrice(
         uint256 _projectId,
@@ -627,6 +632,8 @@ contract MinterDAExpSettlementV3 is
 
     /**
      * @notice Gets the number of settleable invocations for project `_projectId`.
+     * @param _projectId Project ID to get number of settleable invocations for.
+     * @param _coreContract Contract address of the core contract
      */
     function getNumSettleableInvocations(
         uint256 _projectId,
@@ -710,15 +717,17 @@ contract MinterDAExpSettlementV3 is
 
     /**
      * @notice Reclaims the sender's payment above current settled price for
-     * project `_projectId`. The current settled price is the the price paid
-     * for the most recently purchased token, or the base price if the artist
-     * has withdrawn revenues after the auction reached base price.
+     * project `_projectId` on core contract `_coreContract`.
+     * The current settled price is the the price paid for the most recently
+     * purchased token, or the base price if the artist has withdrawn revenues
+     * after the auction reached base price.
      * This function is callable at any point, but is expected to typically be
      * called after auction has sold out above base price or after the auction
      * has been purchased at base price. This minimizes the amount of gas
      * required to send all excess settlement funds to the sender.
      * Sends excess settlement funds to msg.sender.
      * @param _projectId Project ID to reclaim excess settlement funds on.
+     * @param _coreContract Contract address of the core contract
      */
     function reclaimProjectExcessSettlementFunds(
         uint256 _projectId,
@@ -733,16 +742,18 @@ contract MinterDAExpSettlementV3 is
 
     /**
      * @notice Reclaims the sender's payment above current settled price for
-     * project `_projectId`. The current settled price is the the price paid
-     * for the most recently purchased token, or the base price if the artist
-     * has withdrawn revenues after the auction reached base price.
+     * project `_projectId` on core contract `_coreContract`.
+     * The current settled price is the the price paid for the most recently
+     * purchased token, or the base price if the artist has withdrawn revenues
+     * after the auction reached base price.
      * This function is callable at any point, but is expected to typically be
      * called after auction has sold out above base price or after the auction
      * has been purchased at base price. This minimizes the amount of gas
-     * required to send all excess settlement funds.
+     * required to send all excess settlement funds to the sender.
      * Sends excess settlement funds to address `_to`.
      * @param _to Address to send excess settlement funds to.
      * @param _projectId Project ID to reclaim excess settlement funds on.
+     * @param _coreContract Contract address of the core contract
      */
     function reclaimProjectExcessSettlementFundsTo(
         address payable _to,
@@ -782,6 +793,7 @@ contract MinterDAExpSettlementV3 is
         require(success_, "Reclaiming failed");
     }
 
+    // TODO - FIX THIS to use an array of core contracts (aligned)
     /**
      * @notice Reclaims the sender's payment above current settled price for
      * projects in `_projectIds`. The current settled price is the the price
@@ -959,6 +971,7 @@ contract MinterDAExpSettlementV3 is
             storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
                 _coreContract
             ][_projectId];
+
         DAExpLib.DAProjectConfig
             storage _auctionProjectConfig = _auctionProjectConfigMapping[
                 _coreContract
@@ -1083,32 +1096,5 @@ contract MinterDAExpSettlementV3 is
         }
 
         return tokenId;
-    }
-
-    /**
-     * @notice Verifies the cached values of a project's maxInvocation state
-     * are logically consistent with the core contract's maxInvocation state,
-     * or populates them to equal the core contract's maxInvocation state if
-     *  they have never been populated.
-     */
-    function _refreshMaxInvocations(
-        uint256 _projectId,
-        address _coreContract
-    ) internal {
-        MaxInvocationsLib.MaxInvocationsProjectConfig
-            storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
-                _coreContract
-            ][_projectId];
-        MaxInvocationsLib.refreshMaxInvocations(
-            _projectId,
-            _coreContract,
-            _maxInvocationsProjectConfig
-        );
-
-        emit ProjectMaxInvocationsLimitUpdated(
-            _projectId,
-            _coreContract,
-            _maxInvocationsProjectConfig.maxInvocations
-        );
     }
 }
