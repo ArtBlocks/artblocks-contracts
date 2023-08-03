@@ -4,10 +4,10 @@
 pragma solidity ^0.8.0;
 
 /**
- * @title Art Blocks Merkle Library
- * @notice This library is designed to manage and verify merkle based gating for Art Blocks projects.
- * It provides functionalities such as updating the merkle root of project, verifying an address against a proof,
- * and setting the maximum number of invocations per address for a project.
+ * @title Art Blocks Dutch Auction (linear price curve) Library
+ * @notice This library is designed to implement logic and checks for Art
+ * Blocks projects using an exponential Dutch auctionprice curve for minting
+ * tokens.
  * @author Art Blocks Inc.
  */
 
@@ -25,10 +25,15 @@ library DALinLib {
 
     /**
      * @notice Sets auction details for a linear-price auction type.
-     * @dev The function sets the auction start and end timestamps, starting and base prices for a linear-price auction.
-     * @dev Minter implementations should ensure that _auctionTimestampEnd is at least equal to the
-     * minimum auction length in seconds as defined by the minter.
-     * @param _DAProjectConfig The storage reference to the DAProjectConfig struct.
+     * @dev The function sets the auction start timestamp, auction end
+     * timestamp, starting, and base prices for a linear-price auction.
+     * @dev Minter implementations should ensure that any additional guard-
+     * rails are properly checked outside of this function. For example, the
+     * minter should check that auction length is greater than the minter's
+     * minimum allowable value (if the minter chooses to include that guard-
+     * rail).
+     * @param _DAProjectConfig The storage reference to the DAProjectConfig
+     * struct.
      * @param _auctionTimestampStart The timestamp when the auction will start.
      * @param _auctionTimestampEnd The timestamp when the auction will end.
      * @param _startPrice The starting price of the auction.
@@ -54,6 +59,7 @@ library DALinLib {
             _startPrice > _basePrice,
             "Auction start price must be greater than auction end price"
         );
+
         // EFFECTS
         _DAProjectConfig.timestampStart = _auctionTimestampStart;
         _DAProjectConfig.timestampEnd = _auctionTimestampEnd;
@@ -62,9 +68,10 @@ library DALinLib {
     }
 
     /**
-     * @notice Gets price of minting a token given
-     * the project's AuctionParameters and current block timestamp.
-     * Reverts if auction has not yet started or auction is unconfigured.
+     * @notice Gets price of minting a token given the project's
+     * DAProjectConfig.
+     * This function reverts if auction has not yet started, or if auction is
+     * unconfigured.
      * @return current price of token in Wei
      */
     function getPriceLin(

@@ -1,0 +1,53 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-07-28T16:30:59.674Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/hackatao-flex/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0xc2F4F8B95B40D340b95C47A4cceD26E44ab6d11d
+[INFO] Randomizer BasicRandomizerV2 deployed at 0xb39B569e5763d8beE676624A1fFb6d20d4837C50
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0xB7168235De560F3c1730e26F2A4d45179f059906
+[INFO] Minter Filter MinterFilterV1 deployed at 0x07580B8f821C6FEAF8f122b32A51682F485198C3
+[INFO] MinterDAExpSettlementV1 deployed at 0xFaFeb43a9c28C3A2ca58135A9f43d29975627560
+[INFO] MinterMerkleV5 deployed at 0xa089EFA05928512B138CcF41f32C7a4503F5d259
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0x07580B8f821C6FEAF8f122b32A51682F485198C3.
+[INFO] Allowlisted minter MinterDAExpSettlementV1 at 0xFaFeb43a9c28C3A2ca58135A9f43d29975627560 on minter filter.
+[INFO] Allowlisted minter MinterMerkleV5 at 0xa089EFA05928512B138CcF41f32C7a4503F5d259 on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0x20C0706E8c2c3938f70a81981E350b04a704b4fe.
+[INFO] Verifying core contract contract deployment...
+The contract 0xB7168235De560F3c1730e26F2A4d45179f059906 has already been verified
+[INFO] Core contract verified on Etherscan at 0xB7168235De560F3c1730e26F2A4d45179f059906}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0xc2F4F8B95B40D340b95C47A4cceD26E44ab6d11d has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0xc2F4F8B95B40D340b95C47A4cceD26E44ab6d11d}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0x07580B8f821C6FEAF8f122b32A51682F485198C3 has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0x07580B8f821C6FEAF8f122b32A51682F485198C3}
+[INFO] Verifying MinterDAExpSettlementV1 contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/archive/minter-suite/Minters/MinterDAExpSettlement/MinterDAExpSettlementV1.sol:MinterDAExpSettlementV1 at 0xFaFeb43a9c28C3A2ca58135A9f43d29975627560
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterDAExpSettlementV1 on Etherscan.
+https://goerli.etherscan.io/address/0xFaFeb43a9c28C3A2ca58135A9f43d29975627560#code
+[INFO] MinterDAExpSettlementV1 contract verified on Etherscan at 0xFaFeb43a9c28C3A2ca58135A9f43d29975627560}
+[INFO] Verifying MinterMerkleV5 contract deployment...
+The contract 0xa089EFA05928512B138CcF41f32C7a4503F5d259 has already been verified
+[INFO] MinterMerkleV5 contract verified on Etherscan at 0xa089EFA05928512B138CcF41f32C7a4503F5d259}
+Created s3 bucket for https://23lab-goerli.s3.amazonaws.com
+[INFO] Created image bucket 23lab-goerli
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/hackatao-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0xb7168235de560f3c1730e26f2a4d45179f059906",
+  "name": "23Lab",
+  "bucket_name": "23lab-goerli",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x20C0706E8c2c3938f70a81981E350b04a704b4fe, don't forget to update if requred.
