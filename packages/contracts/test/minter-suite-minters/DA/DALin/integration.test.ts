@@ -14,7 +14,7 @@ import { Logger } from "@ethersproject/logger";
 // hide nuisance logs about event overloading
 Logger.setLogLevel(Logger.levels.ERROR);
 
-const TARGET_MINTER_NAME = "MinterDAExpV5";
+const TARGET_MINTER_NAME = "MinterDALinV5";
 const TARGET_MINTER_VERSION = "v5.0.0";
 
 const runForEach = [
