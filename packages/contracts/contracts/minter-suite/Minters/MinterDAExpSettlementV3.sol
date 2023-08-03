@@ -99,8 +99,8 @@ contract MinterDAExpSettlementV3 is
     string public constant minterVersion = "v3.0.0";
 
     uint256 constant ONE_MILLION = 1_000_000;
-    //// Minimum price decay half life: price must decay with a half life of at
-    /// least this amount (must cut in half at least every N seconds).
+    /// Minimum price decay half life: price can decay with a half life of a
+    /// minimum of this amount (can cut in half a minimum of every N seconds).
     uint256 public minimumPriceDecayHalfLifeSeconds = 45; // 45 seconds
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -194,6 +194,7 @@ contract MinterDAExpSettlementV3 is
                 _coreContract
             ][_projectId]
         });
+
         emit ProjectMaxInvocationsLimitUpdated(
             _projectId,
             _coreContract,
@@ -253,6 +254,7 @@ contract MinterDAExpSettlementV3 is
             "Price decay half life must be greater than min allowable value"
         );
 
+        // EFFECTS
         DAExpLib.setAuctionDetailsExp({
             _DAProjectConfig: _auctionProjectConfig,
             _auctionTimestampStart: _auctionTimestampStart,
@@ -641,62 +643,6 @@ contract MinterDAExpSettlementV3 is
     }
 
     /**
-     * @notice Gets price of minting a token on project `_projectId` given
-     * the project's AuctionParameters and current block timestamp.
-     * Reverts if auction has not yet started or auction is unconfigured.
-     * @param _projectId Project ID to get price of token for.
-     * @param _coreContract Contract address of the core contract
-     * @return current price of token in Wei
-     */
-    function _getPrice(
-        uint256 _projectId,
-        address _coreContract
-    ) private view returns (uint256) {
-        DAExpLib.DAProjectConfig
-            storage auctionProjectConfig = _auctionProjectConfigMapping[
-                _coreContract
-            ][_projectId];
-        // move parameters to memory if used more than once
-        uint256 _timestampStart = uint256(auctionProjectConfig.timestampStart);
-        uint256 _priceDecayHalfLifeSeconds = uint256(
-            auctionProjectConfig.priceDecayHalfLifeSeconds
-        );
-        uint256 _basePrice = auctionProjectConfig.basePrice;
-
-        require(block.timestamp > _timestampStart, "Auction not yet started");
-        require(_priceDecayHalfLifeSeconds > 0, "Only configured auctions");
-        uint256 decayedPrice = auctionProjectConfig.startPrice;
-        uint256 elapsedTimeSeconds;
-        unchecked {
-            // already checked that block.timestamp > _timestampStart above
-            elapsedTimeSeconds = block.timestamp - _timestampStart;
-        }
-        // Divide by two (via bit-shifting) for the number of entirely completed
-        // half-lives that have elapsed since auction start time.
-        unchecked {
-            // already required _priceDecayHalfLifeSeconds > 0
-            decayedPrice >>= elapsedTimeSeconds / _priceDecayHalfLifeSeconds;
-        }
-        // Perform a linear interpolation between partial half-life points, to
-        // approximate the current place on a perfect exponential decay curve.
-        unchecked {
-            // value of expression is provably always less than decayedPrice,
-            // so no underflow is possible when the subtraction assignment
-            // operator is used on decayedPrice.
-            decayedPrice -=
-                (decayedPrice *
-                    (elapsedTimeSeconds % _priceDecayHalfLifeSeconds)) /
-                _priceDecayHalfLifeSeconds /
-                2;
-        }
-        if (decayedPrice < _basePrice) {
-            // Price may not decay below stay `basePrice`.
-            return _basePrice;
-        }
-        return decayedPrice;
-    }
-
-    /**
      * @notice Gets if price of token is configured, price of minting a
      * token on project `_projectId`, and currency symbol and address to be
      * used as payment. Supersedes any core contract price information.
@@ -724,21 +670,42 @@ contract MinterDAExpSettlementV3 is
             address currencyAddress
         )
     {
+        SettlementExpLib.SettlementAuctionProjectConfig
+            storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
+                _coreContract
+            ][_projectId];
+        MaxInvocationsLib.MaxInvocationsProjectConfig
+            storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
+                _coreContract
+            ][_projectId];
         DAExpLib.DAProjectConfig
             storage auctionProjectConfig = _auctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
+
+        // take action based on configured state
         isConfigured = (auctionProjectConfig.startPrice > 0);
-        if (block.timestamp <= auctionProjectConfig.timestampStart) {
-            // Provide a reasonable value for `tokenPriceInWei` when it would
-            // otherwise revert, using the starting price before auction starts.
-            tokenPriceInWei = auctionProjectConfig.startPrice;
-        } else if (auctionProjectConfig.startPrice == 0) {
+        if (!isConfigured) {
             // In the case of unconfigured auction, return price of zero when
-            // it would otherwise revert
+            // getPriceSafe would otherwise revert
             tokenPriceInWei = 0;
+        } else if (block.timestamp <= auctionProjectConfig.timestampStart) {
+            // Provide a reasonable value for `tokenPriceInWei` when
+            // getPriceSafe would otherwise revert, using the starting price
+            // before auction starts.
+            tokenPriceInWei = auctionProjectConfig.startPrice;
         } else {
-            tokenPriceInWei = _getPrice(_projectId, _coreContract);
+            // call getPriceSafe to get the current price
+            // @dev we do not use getPriceUnsafe here, as this is a view
+            // function, and we prefer to use the extra gas to appropriately
+            // correct for the case of a stale minter max invocation state.
+            tokenPriceInWei = SettlementExpLib.getPriceSafe({
+                _projectId: _projectId,
+                _coreContract: _coreContract,
+                _settlementAuctionProjectConfigMapping: _settlementAuctionProjectConfig,
+                _maxInvocationsProjectConfigMapping: _maxInvocationsProjectConfig,
+                _DAProjectConfigMapping: auctionProjectConfig
+            });
         }
         currencySymbol = "ETH";
         currencyAddress = address(0);

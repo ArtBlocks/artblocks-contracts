@@ -72,7 +72,8 @@ library DAExpLib {
      * @notice Gets price of minting a token given the project's
      * DAProjectConfig.
      * This function reverts if auction has not yet started, or if auction is
-     * unconfigured.
+     * unconfigured, which is relied upon by certain minter implications for
+     * security.
      * @return uint256 current price of token in Wei
      */
     function getPriceExp(

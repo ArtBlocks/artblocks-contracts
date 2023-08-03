@@ -68,147 +68,6 @@ library SettlementExpLib {
             .latestPurchasePrice = _newSelloutPrice;
     }
 
-    /**
-     * @notice Gets price of minting a token on project `_projectId` given
-     * the project's AuctionParameters and current block timestamp.
-     * Reverts if auction has not yet started or auction is unconfigured, and
-     * auction has not sold out or revenues have not been withdrawn.
-     * Price is guaranteed to be accurate, regardless of the current state of
-     * the locally cached minter max invocations.
-     * @dev This method is less gas efficient than `_getPriceUnsafe`, but is
-     * guaranteed to be accurate.
-     * @param _projectId Project ID to get price of token for.
-     * @return tokenPriceInWei current price of token in Wei
-     * @dev This method calculates price decay using a linear interpolation
-     * of exponential decay based on the artist-provided half-life for price
-     * decay, `_priceDecayHalfLifeSeconds`.
-     */
-    function getPriceSafe(
-        uint256 _projectId,
-        address _coreContract,
-        SettlementAuctionProjectConfig
-            storage _settlementAuctionProjectConfigMapping,
-        MaxInvocationsLib.MaxInvocationsProjectConfig
-            storage _maxInvocationsProjectConfigMapping,
-        DAExpLib.DAProjectConfig storage _DAProjectConfigMapping
-    ) private view returns (uint256 tokenPriceInWei) {
-        // accurately check if project has sold out
-        if (
-            projectMaxHasBeenInvokedSafe({
-                _projectId: _projectId,
-                _coreContract: _coreContract,
-                _maxInvocationsProjectConfigMapping: _maxInvocationsProjectConfigMapping
-            })
-        ) {
-            // max invocations have been reached, return the latest purchased
-            // price
-            tokenPriceInWei = _settlementAuctionProjectConfigMapping
-                .latestPurchasePrice;
-        } else {
-            // if not sold out, return the current price
-            tokenPriceInWei = getPriceUnsafe({
-                _settlementAuctionProjectConfigMapping: _settlementAuctionProjectConfigMapping,
-                _maxInvocationsProjectConfigMapping: _maxInvocationsProjectConfigMapping,
-                _DAProjectConfigMapping: _DAProjectConfigMapping
-            });
-        }
-        return tokenPriceInWei;
-    }
-
-    /**
-     * @notice Returns true if the project `_projectId` is sold out, false
-     * otherwise. This function returns an accurate value regardless of whether
-     * the project's maximum invocations value cached locally on the minter is
-     * up to date with the core contract's maximum invocations value.
-     * @param _projectId Project ID to check if sold out.
-     * @return bool true if the project is sold out, false otherwise.
-     * @dev this is a view method, and will not update the minter's local
-     * cached state.
-     */
-    function projectMaxHasBeenInvokedSafe(
-        uint256 _projectId,
-        address _coreContract,
-        MaxInvocationsLib.MaxInvocationsProjectConfig
-            storage _maxInvocationsProjectConfigMapping
-    ) internal view returns (bool) {
-        uint256 coreInvocations;
-        uint256 coreMaxInvocations;
-        (coreInvocations, coreMaxInvocations) = MaxInvocationsLib
-            .coreContractInvocationData(_projectId, _coreContract);
-
-        uint256 localMaxInvocations = _maxInvocationsProjectConfigMapping
-            .maxInvocations;
-        // value is locally defined, and could be out of date.
-        // only possible illogical state is if local max invocations is
-        // greater than core contract's max invocations, in which case
-        // we should use the core contract's max invocations
-        if (localMaxInvocations > coreMaxInvocations) {
-            // local max invocations is stale and illogical, defer to core
-            // contract's max invocations since it is the limiting factor
-            return (coreMaxInvocations == coreInvocations);
-        }
-        // local max invocations is limiting, so check core invocations against
-        // local max invocations
-        return (coreInvocations >= localMaxInvocations);
-    }
-
-    function getPriceUnsafe(
-        SettlementAuctionProjectConfig
-            storage _settlementAuctionProjectConfigMapping,
-        MaxInvocationsLib.MaxInvocationsProjectConfig
-            storage _maxInvocationsProjectConfigMapping,
-        DAExpLib.DAProjectConfig storage _DAProjectConfigMapping
-    ) internal view returns (uint256) {
-        if (
-            _maxInvocationsProjectConfigMapping.maxHasBeenInvoked ||
-            _settlementAuctionProjectConfigMapping.auctionRevenuesCollected
-        ) {
-            return _settlementAuctionProjectConfigMapping.latestPurchasePrice;
-        }
-        // otherwise calculate price based on current block timestamp and
-        // auction configuration (will revert if auction has not started)
-        // move parameters to memory if used more than once
-        uint256 _timestampStart = uint256(
-            _DAProjectConfigMapping.timestampStart
-        );
-        uint256 _priceDecayHalfLifeSeconds = uint256(
-            _DAProjectConfigMapping.priceDecayHalfLifeSeconds
-        );
-        uint256 _basePrice = _DAProjectConfigMapping.basePrice;
-
-        require(block.timestamp > _timestampStart, "Auction not yet started");
-        require(_priceDecayHalfLifeSeconds > 0, "Only configured auctions");
-        uint256 decayedPrice = _DAProjectConfigMapping.startPrice;
-        uint256 elapsedTimeSeconds;
-        unchecked {
-            // already checked that block.timestamp > _timestampStart above
-            elapsedTimeSeconds = block.timestamp - _timestampStart;
-        }
-        // Divide by two (via bit-shifting) for the number of entirely completed
-        // half-lives that have elapsed since auction start time.
-        unchecked {
-            // already required _priceDecayHalfLifeSeconds > 0
-            decayedPrice >>= elapsedTimeSeconds / _priceDecayHalfLifeSeconds;
-        }
-        // Perform a linear interpolation between partial half-life points, to
-        // approximate the current place on a perfect exponential decay curve.
-        unchecked {
-            // value of expression is provably always less than decayedPrice,
-            // so no underflow is possible when the subtraction assignment
-            // operator is used on decayedPrice.
-            decayedPrice -=
-                (decayedPrice *
-                    (elapsedTimeSeconds % _priceDecayHalfLifeSeconds)) /
-                _priceDecayHalfLifeSeconds /
-                2;
-        }
-        if (decayedPrice < _basePrice) {
-            // Price may not decay below stay `basePrice`.
-            return _basePrice;
-        }
-        return decayedPrice;
-    }
-
     function getArtistAndAdminRevenues(
         uint256 _projectId,
         address _coreContract,
@@ -299,5 +158,136 @@ library SettlementExpLib {
             _receiptMapping.netPosted -
             requiredAmountPosted;
         return (excessSettlementFunds, requiredAmountPosted);
+    }
+
+    /**
+     * @notice Returns true if the project `_projectId` is sold out, false
+     * otherwise. This function returns an accurate value regardless of whether
+     * the project's maximum invocations value cached locally on the minter is
+     * up to date with the core contract's maximum invocations value.
+     * @param _projectId Project ID to check if sold out.
+     * @return bool true if the project is sold out, false otherwise.
+     * @dev this is a view method, and will not update the minter's local
+     * cached state.
+     */
+    function projectMaxHasBeenInvokedSafe(
+        uint256 _projectId,
+        address _coreContract,
+        MaxInvocationsLib.MaxInvocationsProjectConfig
+            storage _maxInvocationsProjectConfigMapping
+    ) internal view returns (bool) {
+        uint256 coreInvocations;
+        uint256 coreMaxInvocations;
+        (coreInvocations, coreMaxInvocations) = MaxInvocationsLib
+            .coreContractInvocationData(_projectId, _coreContract);
+
+        uint256 localMaxInvocations = _maxInvocationsProjectConfigMapping
+            .maxInvocations;
+        // value is locally defined, and could be out of date.
+        // only possible illogical state is if local max invocations is
+        // greater than core contract's max invocations, in which case
+        // we should use the core contract's max invocations
+        if (localMaxInvocations > coreMaxInvocations) {
+            // local max invocations is stale and illogical, defer to core
+            // contract's max invocations since it is the limiting factor
+            return (coreMaxInvocations == coreInvocations);
+        }
+        // local max invocations is limiting, so check core invocations against
+        // local max invocations
+        return (coreInvocations >= localMaxInvocations);
+    }
+
+    /**
+     * @notice Gets price of minting a token on project `_projectId` given
+     * the project's AuctionParameters and current block timestamp.
+     * Reverts if auction has not yet started or auction is unconfigured, and
+     * local hasMaxBeenInvoked is false and revenues have not been withdrawn.
+     * Price is guaranteed to be accurate unless the minter's local
+     * hasMaxBeenInvoked is stale and returning a false negative.
+     * @dev when an accurate price is required regardless of the current state
+     * state of the locally cached minter max invocations, use the less gas
+     * efficient function `_getPriceSafe`.
+     * @param _settlementAuctionProjectConfigMapping SettlementAuctionProjectConfig
+     * struct for the project.
+     * @param _maxInvocationsProjectConfigMapping MaxInvocationsProjectConfig
+     * struct for the project.
+     * @param _DAProjectConfigMapping DAProjectConfig struct for the project.
+     * @return uint256 current price of token in Wei, accurate if minter max
+     * invocations are up to date
+     * @dev This method calculates price decay using a linear interpolation
+     * of exponential decay based on the artist-provided half-life for price
+     * decay, `_priceDecayHalfLifeSeconds`.
+     */
+    function getPriceUnsafe(
+        SettlementAuctionProjectConfig
+            storage _settlementAuctionProjectConfigMapping,
+        MaxInvocationsLib.MaxInvocationsProjectConfig
+            storage _maxInvocationsProjectConfigMapping,
+        DAExpLib.DAProjectConfig storage _DAProjectConfigMapping
+    ) internal view returns (uint256) {
+        // return latest purchase price if:
+        // - minter is aware of a sold-out auction (without updating max
+        // invocation value)
+        // - auction revenues have been collected, at which point the latest
+        // purchase price will never change again
+        if (
+            _maxInvocationsProjectConfigMapping.maxHasBeenInvoked ||
+            _settlementAuctionProjectConfigMapping.auctionRevenuesCollected
+        ) {
+            return _settlementAuctionProjectConfigMapping.latestPurchasePrice;
+        }
+        // otherwise calculate price based on current block timestamp and
+        // auction configuration
+        // @dev this will revert if auction has not yet started or auction is
+        // unconfigured, which is relied upon for security.
+        return
+            DAExpLib.getPriceExp({_DAProjectConfig: _DAProjectConfigMapping});
+    }
+
+    /**
+     * @notice Gets price of minting a token on project `_projectId` given
+     * the project's AuctionParameters and current block timestamp.
+     * This is labeled as "safe", because price is guaranteed to be accurate
+     * even in the case of a stale locally cached minter max invocations.
+     * Reverts if auction has not yet started or auction is unconfigured, and
+     * auction has not sold out or revenues have not been withdrawn.
+     * @dev This method is less gas efficient than `_getPriceUnsafe`, but is
+     * guaranteed to be accurate.
+     * @param _projectId Project ID to get price of token for.
+     * @return tokenPriceInWei current price of token in Wei
+     * @dev This method calculates price decay using a linear interpolation
+     * of exponential decay based on the artist-provided half-life for price
+     * decay, `_priceDecayHalfLifeSeconds`.
+     */
+    function getPriceSafe(
+        uint256 _projectId,
+        address _coreContract,
+        SettlementAuctionProjectConfig
+            storage _settlementAuctionProjectConfigMapping,
+        MaxInvocationsLib.MaxInvocationsProjectConfig
+            storage _maxInvocationsProjectConfigMapping,
+        DAExpLib.DAProjectConfig storage _DAProjectConfigMapping
+    ) internal view returns (uint256 tokenPriceInWei) {
+        // accurately check if project has sold out
+        if (
+            projectMaxHasBeenInvokedSafe({
+                _projectId: _projectId,
+                _coreContract: _coreContract,
+                _maxInvocationsProjectConfigMapping: _maxInvocationsProjectConfigMapping
+            })
+        ) {
+            // max invocations have been reached, return the latest purchased
+            // price
+            tokenPriceInWei = _settlementAuctionProjectConfigMapping
+                .latestPurchasePrice;
+        } else {
+            // if not sold out, return the current price via getPriceUnsafe
+            tokenPriceInWei = getPriceUnsafe({
+                _settlementAuctionProjectConfigMapping: _settlementAuctionProjectConfigMapping,
+                _maxInvocationsProjectConfigMapping: _maxInvocationsProjectConfigMapping,
+                _DAProjectConfigMapping: _DAProjectConfigMapping
+            });
+        }
+        return tokenPriceInWei;
     }
 }
