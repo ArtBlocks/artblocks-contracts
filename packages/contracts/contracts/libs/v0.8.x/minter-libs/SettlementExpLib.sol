@@ -7,8 +7,11 @@ import "./DAExpLib.sol";
 pragma solidity ^0.8.0;
 
 /**
- * @title Art Blocks Settlement Library
- * @notice
+ * @title Art Blocks Settlement Library for Exponential Auctions
+ * @notice This library manages the settlement logic for Art Blocks settlement
+ * minters. It provides functionality for managing a project's settlement state
+ * via the SettlementAuctionProjectConfig struct, and managing an individual's
+ * settlement state on a given project via the Receipt struct.
  * @author Art Blocks Inc.
  */
 

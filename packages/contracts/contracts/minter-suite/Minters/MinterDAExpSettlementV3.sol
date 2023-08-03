@@ -21,11 +21,61 @@ import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
 pragma solidity 0.8.19;
 
 /**
- * @title Filtered Minter contract that allows tokens to be minted with ETH.
+ * @title Shared, filtered Minter contract that allows tokens to be minted with
+ * ETH.
+ * Pricing is achieved using an automated Dutch-auction mechanism, with a
+ * settlement mechanism for tokens purchased before the auction ends.
  * This is designed to be used with GenArt721CoreContractV3 flagship or
  * engine contracts.
  * @author Art Blocks Inc.
  * @notice Privileged Roles and Ownership:
+ * This contract is designed to be managed, with limited powers.
+ * Privileged roles and abilities are controlled by the core contract's Admin
+ * ACL contract and a project's artist. Both of these roles hold extensive
+ * power and can modify minter details.
+ * Care must be taken to ensure that the admin ACL contract and artist
+ * addresses are secure behind a multi-sig or other access control mechanism.
+ * Additionally, the purchaser of a token has some trust assumptions regarding
+ * settlement, beyond typical minter Art Blocks trust assumptions. In general,
+ * Artists and Admin are trusted to not abuse their powers in a way that
+ * would artifically inflate the sellout price of a project. They are
+ * incentivized to not do so, as it would diminish their reputation and
+ * ability to sell future projects. Agreements between Admin and Artist
+ * may or may not be in place to further dissuade artificial inflation of an
+ * auction's sellout price.
+ * ----------------------------------------------------------------------------
+ * The following functions are restricted to the minter filter's Admin ACL
+ * contract:
+ * - setMinimumPriceDecayHalfLifeSeconds
+ * ----------------------------------------------------------------------------
+ * The following functions are restricted to the core contract's Admin ACL
+ * contract:
+ * - resetAuctionDetails (note: this will prevent minting until a new auction
+ *   is created)
+ * - adminEmergencyReduceSelloutPrice
+ * ----------------------------------------------------------------------------
+ * The following functions are restricted to a project's artist or the core
+ * contract's Admin ACL contract:
+ * - withdrawArtistAndAdminRevenues (note: this may only be called after an
+ *   auction has sold out or has reached base price)
+ * ----------------------------------------------------------------------------
+ * The following functions are restricted to a project's artist:
+ * - setAuctionDetails (note: this may only be called when there is no active
+ *   auction, and must start at a price less than or equal to any previously
+ *   made purchases)
+ * - syncProjectMaxInvocationsToCore
+ * - manuallyLimitProjectMaxInvocations
+ * ----------------------------------------------------------------------------
+ * Additional admin and artist privileged roles may be described on other
+ * contracts that this minter integrates with.
+ *
+ * @dev Note that while this minter makes use of `block.timestamp` and it is
+ * technically possible that this value is manipulated by block producers via
+ * denial of service (in PoS), such manipulation will not have material impact
+ * on the price values of this minter given the business practices for how
+ * pricing is congfigured for this minter and that variations on the order of
+ * less than a minute should not meaningfully impact price given the minimum
+ * allowable price decay rate that this minter intends to support.
  */
 contract MinterDAExpSettlementV3 is
     ReentrancyGuard,
@@ -71,13 +121,13 @@ contract MinterDAExpSettlementV3 is
     mapping(address => mapping(uint256 => SettlementExpLib.SettlementAuctionProjectConfig))
         private _settlementAuctionProjectConfigMapping;
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR SettlementExpLib end here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
     /// user address => project ID => receipt
     mapping(address => mapping(uint256 => SettlementExpLib.Receipt))
         private _receiptsMapping;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // STATE VARIABLES FOR SettlementExpLib end here
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR DAExpLib begin here
@@ -369,7 +419,8 @@ contract MinterDAExpSettlementV3 is
         uint256 _projectId,
         address _coreContract
     ) external nonReentrant {
-        AuthLib.onlyCoreAdminACL({
+        AuthLib.onlyCoreAdminACLOrArtist({
+            _projectId: _projectId,
             _coreContract: _coreContract,
             _sender: msg.sender,
             _contract: address(this),
