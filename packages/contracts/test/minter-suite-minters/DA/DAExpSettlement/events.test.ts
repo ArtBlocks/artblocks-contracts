@@ -5,7 +5,13 @@ import { deployAndGet, deployCore, safeAddProject } from "../../../util/common";
 import { ethers } from "hardhat";
 import { AbiCoder } from "ethers/lib/utils";
 import { ONE_MINUTE } from "../../../util/constants";
-import { configureProjectZeroAuction } from "./helpers";
+import {
+  configureProjectZeroAuction,
+  configureProjectZeroAuctionAndAdvanceOneDayAndWithdrawRevenues,
+  configureProjectZeroAuctionAndAdvanceToStart,
+  configureProjectZeroAuctionAndSellout,
+  configureProjectOneOnNewCoreAndSellout,
+} from "./helpers";
 import { Common_Events } from "../../common.events";
 import { Logger } from "@ethersproject/logger";
 // hide nuisance logs about event overloading
@@ -195,6 +201,196 @@ runForEach.forEach((params) => {
         )
           .to.emit(config.minter, "ResetAuctionDetails")
           .withArgs(config.projectZero, config.genArt721Core.address);
+      });
+    });
+
+    describe("SelloutPriceUpdated", async function () {
+      it("emits when admin emergency updates sellout price", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndSellout(config);
+        // expect no revert
+        // @dev target a unique sellout price value
+        const targetNewSelloutPrice = config.basePrice.add(1);
+        await expect(
+          config.minter
+            .connect(config.accounts.deployer)
+            .adminEmergencyReduceSelloutPrice(
+              config.projectZero,
+              config.genArt721Core.address,
+              targetNewSelloutPrice
+            )
+        )
+          .to.emit(config.minter, "SelloutPriceUpdated")
+          .withArgs(
+            config.projectZero,
+            config.genArt721Core.address,
+            targetNewSelloutPrice
+          );
+      });
+    });
+
+    describe("ArtistAndAdminRevenuesWithdrawn", async function () {
+      it("emits when artist and admin revenues are withdrawn", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndSellout(config);
+        // expect no revert
+        await expect(
+          config.minter
+            .connect(config.accounts.artist)
+            .withdrawArtistAndAdminRevenues(
+              config.projectZero,
+              config.genArt721Core.address
+            )
+        )
+          .to.emit(config.minter, "ArtistAndAdminRevenuesWithdrawn")
+          .withArgs(config.projectZero, config.genArt721Core.address);
+      });
+    });
+
+    describe("ReceiptUpdated", async function () {
+      it("emits during reclaimable purchases", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndAdvanceToStart(config);
+        // expect purchase to emit event
+        await expect(
+          config.minter
+            .connect(config.accounts.user)
+            .purchase(config.projectZero, config.genArt721Core.address, {
+              value: config.startingPrice,
+            })
+        )
+          .to.emit(config.minter, "ReceiptUpdated")
+          .withArgs(
+            config.accounts.user.address,
+            config.projectZero,
+            config.genArt721Core.address,
+            1, // one sale
+            config.startingPrice // posted amount
+          );
+        // expect another purchase to emit event
+        await expect(
+          config.minter
+            .connect(config.accounts.user)
+            .purchase(config.projectZero, config.genArt721Core.address, {
+              value: config.startingPrice,
+            })
+        )
+          .to.emit(config.minter, "ReceiptUpdated")
+          .withArgs(
+            config.accounts.user.address,
+            config.projectZero,
+            config.genArt721Core.address,
+            2, // two sales
+            config.startingPrice.mul(2) // posted amount * 2
+          );
+      });
+
+      it("emits during non-reclaimable purchases", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndAdvanceOneDayAndWithdrawRevenues(
+          config
+        );
+        // expect purchase to emit event
+        await expect(
+          config.minter
+            .connect(config.accounts.user)
+            .purchase(config.projectZero, config.genArt721Core.address, {
+              value: config.startingPrice,
+            })
+        )
+          .to.emit(config.minter, "ReceiptUpdated")
+          .withArgs(
+            config.accounts.user.address,
+            config.projectZero,
+            config.genArt721Core.address,
+            1, // one sale
+            config.startingPrice // posted amount
+          );
+        // expect another purchase to emit event
+        await expect(
+          config.minter
+            .connect(config.accounts.user)
+            .purchase(config.projectZero, config.genArt721Core.address, {
+              value: config.startingPrice,
+            })
+        )
+          .to.emit(config.minter, "ReceiptUpdated")
+          .withArgs(
+            config.accounts.user.address,
+            config.projectZero,
+            config.genArt721Core.address,
+            2, // two sales
+            config.startingPrice.mul(2) // posted amount * 2
+          );
+      });
+
+      it("emits during reclaimProjectExcessSettlementFundsTo", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndSellout(config);
+        const selloutPrice = await config.minter.getProjectLatestPurchasePrice(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        // expect call to emit event
+        await expect(
+          config.minter
+            .connect(config.accounts.user)
+            .reclaimProjectExcessSettlementFundsTo(
+              config.accounts.user.address,
+              config.projectZero,
+              config.genArt721Core.address
+            )
+        )
+          .to.emit(config.minter, "ReceiptUpdated")
+          .withArgs(
+            config.accounts.user.address,
+            config.projectZero,
+            config.genArt721Core.address,
+            1, // one sale
+            selloutPrice // actual amount due (not necessarily posted amount)
+          );
+      });
+
+      it("emits during reclaimProjectsExcessSettlementFundsTo (multi-project)", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndSellout(config);
+        const selloutPrice = await config.minter.getProjectLatestPurchasePrice(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        // also deploy a second project on different core contract, and sellout
+        const newCore = await configureProjectOneOnNewCoreAndSellout(config);
+        const selloutPriceTwo =
+          await config.minter.getProjectLatestPurchasePrice(
+            config.projectOne,
+            newCore.address
+          );
+        // expect call to emit event
+        await expect(
+          config.minter
+            .connect(config.accounts.user)
+            .reclaimProjectsExcessSettlementFundsTo(
+              config.accounts.user.address,
+              [config.projectZero, config.projectOne],
+              [config.genArt721Core.address, newCore.address]
+            )
+        )
+          .to.emit(config.minter, "ReceiptUpdated")
+          .withArgs(
+            config.accounts.user.address,
+            config.projectZero,
+            config.genArt721Core.address,
+            1, // one sale
+            selloutPrice // actual amount due (not necessarily posted amount)
+          )
+          .and.to.emit(config.minter, "ReceiptUpdated")
+          .withArgs(
+            config.accounts.user.address,
+            config.projectOne,
+            newCore.address,
+            1, // one sale
+            selloutPriceTwo // actual amount due (not necessarily posted amount)
+          );
       });
     });
   });

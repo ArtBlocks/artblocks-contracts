@@ -1,7 +1,9 @@
 import { ethers } from "hardhat";
 
 import { T_Config, deployAndGet } from "../../../util/common";
-import { ONE_DAY } from "../../../util/constants";
+import { ONE_DAY, ONE_MINUTE } from "../../../util/constants";
+import { Contract } from "ethers";
+import { deployCore } from "../../../util/common";
 
 // helper functions for DAExp Settlement tests
 
@@ -117,4 +119,65 @@ export async function mintTokenOnDifferentMinter(config: T_Config) {
     config.genArt721Core.address,
     config.minter.address
   );
+}
+
+/**
+ * Deploys a new core contract, and configures project one to use config.minter.
+ * Then sells out project one, via a purchase from user account.
+ * @param config config object
+ * @returns newly deployed core contract
+ */
+export async function configureProjectOneOnNewCoreAndSellout(
+  config: T_Config
+): Promise<Contract> {
+  // deploy new core contract
+  let newCore: Contract;
+  ({ genArt721Core: newCore } = await deployCore(
+    config,
+    "GenArt721CoreV3",
+    config.coreRegistry
+  ));
+  // const coreVersion = await newCore.coreVersion();
+  // const coreType = await newCore.coreType();
+  // configure the new core to use the shared minter filter
+  await newCore
+    .connect(config.accounts.deployer)
+    .updateMinterContract(config.minterFilter.address);
+  // add project and set up for minting
+  await newCore
+    .connect(config.accounts.deployer)
+    .addProject("NAME_1", config.accounts.artist.address);
+  await newCore
+    .connect(config.accounts.deployer)
+    .addProject("NAME_2", config.accounts.artist.address);
+  await newCore.toggleProjectIsActive(1);
+  await newCore.connect(config.accounts.artist).toggleProjectIsPaused(1);
+  await config.minterFilter.setMinterForProject(
+    1,
+    newCore.address,
+    config.minter.address
+  );
+  // configure minter
+  const newStartTime = config.startTime + ONE_DAY + ONE_MINUTE;
+  await config.minter
+    .connect(config.accounts.artist)
+    .setAuctionDetails(
+      1,
+      newCore.address,
+      newStartTime,
+      config.defaultHalfLife,
+      config.startingPrice,
+      config.basePrice
+    );
+  // advance time to starting of auction
+  await ethers.provider.send("evm_mine", [newStartTime]);
+  // set max invocations to 1
+  await config.minter
+    .connect(config.accounts.artist)
+    .manuallyLimitProjectMaxInvocations(1, newCore.address, 1);
+  // purchase token
+  await config.minter
+    .connect(config.accounts.user)
+    .purchase(1, newCore.address, { value: config.startingPrice });
+  return newCore;
 }
