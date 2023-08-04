@@ -2,7 +2,6 @@
 // Created By: Art Blocks Inc.
 
 import "../../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
-import "./MerkleLib.sol";
 
 import "@openzeppelin-4.7/contracts/utils/math/Math.sol";
 

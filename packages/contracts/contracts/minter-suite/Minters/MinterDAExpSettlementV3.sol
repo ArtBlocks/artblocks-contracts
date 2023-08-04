@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
-import "../../interfaces/v0.8.x/IDelegationRegistry.sol";
 import "../../interfaces/v0.8.x/ISharedMinterV0.sol";
 import "../../interfaces/v0.8.x/ISharedMinterDAV0.sol";
 import "../../interfaces/v0.8.x/ISharedMinterDAExpV0.sol";
@@ -98,7 +96,6 @@ contract MinterDAExpSettlementV3 is
     /// minter version for this minter
     string public constant minterVersion = "v3.0.0";
 
-    uint256 constant ONE_MILLION = 1_000_000;
     /// Minimum price decay half life: price can decay with a half life of a
     /// minimum of this amount (can cut in half a minimum of every N seconds).
     uint256 public minimumPriceDecayHalfLifeSeconds = 45; // 45 seconds
