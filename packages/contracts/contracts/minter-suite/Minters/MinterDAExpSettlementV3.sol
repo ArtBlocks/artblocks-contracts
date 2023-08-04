@@ -61,7 +61,7 @@ pragma solidity 0.8.19;
  * - setAuctionDetails (note: this may only be called when there is no active
  *   auction, and must start at a price less than or equal to any previously
  *   made purchases)
- * - syncProjectMaxInvocationsToCore
+ * - syncProjectMaxInvocationsToCore (no implemented)
  * - manuallyLimitProjectMaxInvocations
  * ----------------------------------------------------------------------------
  * Additional admin and artist privileged roles may be described on other
@@ -938,12 +938,13 @@ contract MinterDAExpSettlementV3 is
     }
 
     /**
-     * @notice Syncs local maximum invocations of project `_projectId` based on
-     * the value currently defined in the core contract.
+     * @notice This function is intentionally not implemented for this version
+     * of the minter. Due to potential for unintended consequences, the
+     * function `manuallyLimitProjectMaxInvocations` should be used to manually
+     * and explicitly limit the maximum invocations for a project to a value
+     * other than the core contract's maximum invocations for a project.
      * @param _coreContract Core contract address for the given project.
      * @param _projectId Project ID to set the maximum invocations for.
-     * @dev this enables gas reduction after maxInvocations have been reached -
-     * core contracts shall still enforce a maxInvocation check during mint.
      */
     function syncProjectMaxInvocationsToCore(
         uint256 _projectId,
