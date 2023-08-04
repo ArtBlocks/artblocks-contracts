@@ -461,6 +461,60 @@ contract MinterDAExpSettlementV3 is
     }
 
     /**
+     * @notice Reclaims the sender's payment above current settled price for
+     * project `_projectId` on core contract `_coreContract`.
+     * The current settled price is the the price paid for the most recently
+     * purchased token, or the base price if the artist has withdrawn revenues
+     * after the auction reached base price.
+     * This function is callable at any point, but is expected to typically be
+     * called after auction has sold out above base price or after the auction
+     * has been purchased at base price. This minimizes the amount of gas
+     * required to send all excess settlement funds to the sender.
+     * Sends excess settlement funds to msg.sender.
+     * @param _projectId Project ID to reclaim excess settlement funds on.
+     * @param _coreContract Contract address of the core contract
+     */
+    function reclaimProjectExcessSettlementFunds(
+        uint256 _projectId,
+        address _coreContract
+    ) external {
+        reclaimProjectExcessSettlementFundsTo(
+            payable(msg.sender),
+            _projectId,
+            _coreContract
+        );
+    }
+
+    /**
+     * @notice Reclaims the sender's payment above current settled price for
+     * projects in `_projectIds`. The current settled price is the the price
+     * paid for the most recently purchased token, or the base price if the
+     * artist has withdrawn revenues after the auction reached base price.
+     * This function is callable at any point, but is expected to typically be
+     * called after auction has sold out above base price or after the auction
+     * has been purchased at base price. This minimizes the amount of gas
+     * required to send all excess settlement funds to the sender.
+     * Sends total of all excess settlement funds to msg.sender in a single
+     * chunk. Entire transaction reverts if any excess settlement calculation
+     * fails.
+     * @param _projectIds Array of project IDs to reclaim excess settlement
+     * funds on.
+     * @param _coreContracts Array of core contract addresses for the given
+     * projects. Must be in the same order as `_projectIds` (aligned by index).
+     */
+    function reclaimProjectsExcessSettlementFunds(
+        uint256[] calldata _projectIds,
+        address[] calldata _coreContracts
+    ) external {
+        // @dev input validation checks are performed in subcall
+        reclaimProjectsExcessSettlementFundsTo(
+            payable(msg.sender),
+            _projectIds,
+            _coreContracts
+        );
+    }
+
+    /**
      * @notice Purchases a token from project `_projectId`.
      * @param _projectId Project ID to mint a token on.
      * @param _coreContract Core contract address for the given project.
@@ -710,60 +764,6 @@ contract MinterDAExpSettlementV3 is
         }
         currencySymbol = "ETH";
         currencyAddress = address(0);
-    }
-
-    /**
-     * @notice Reclaims the sender's payment above current settled price for
-     * project `_projectId` on core contract `_coreContract`.
-     * The current settled price is the the price paid for the most recently
-     * purchased token, or the base price if the artist has withdrawn revenues
-     * after the auction reached base price.
-     * This function is callable at any point, but is expected to typically be
-     * called after auction has sold out above base price or after the auction
-     * has been purchased at base price. This minimizes the amount of gas
-     * required to send all excess settlement funds to the sender.
-     * Sends excess settlement funds to msg.sender.
-     * @param _projectId Project ID to reclaim excess settlement funds on.
-     * @param _coreContract Contract address of the core contract
-     */
-    function reclaimProjectExcessSettlementFunds(
-        uint256 _projectId,
-        address _coreContract
-    ) external {
-        reclaimProjectExcessSettlementFundsTo(
-            payable(msg.sender),
-            _projectId,
-            _coreContract
-        );
-    }
-
-    /**
-     * @notice Reclaims the sender's payment above current settled price for
-     * projects in `_projectIds`. The current settled price is the the price
-     * paid for the most recently purchased token, or the base price if the
-     * artist has withdrawn revenues after the auction reached base price.
-     * This function is callable at any point, but is expected to typically be
-     * called after auction has sold out above base price or after the auction
-     * has been purchased at base price. This minimizes the amount of gas
-     * required to send all excess settlement funds to the sender.
-     * Sends total of all excess settlement funds to msg.sender in a single
-     * chunk. Entire transaction reverts if any excess settlement calculation
-     * fails.
-     * @param _projectIds Array of project IDs to reclaim excess settlement
-     * funds on.
-     * @param _coreContracts Array of core contract addresses for the given
-     * projects. Must be in the same order as `_projectIds` (aligned by index).
-     */
-    function reclaimProjectsExcessSettlementFunds(
-        uint256[] calldata _projectIds,
-        address[] calldata _coreContracts
-    ) external {
-        // @dev input validation checks are performed in subcall
-        reclaimProjectsExcessSettlementFundsTo(
-            payable(msg.sender),
-            _projectIds,
-            _coreContracts
-        );
     }
 
     /**
