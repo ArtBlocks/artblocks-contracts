@@ -73,4 +73,5 @@ export const revertMessages = {
   noZeroHalfLife: "Half life of zero not allowed",
   tooShortAuction:
     "Auction length must be at least minimumAuctionLengthSeconds",
+  notImplemented: "Not implemented",
 };
