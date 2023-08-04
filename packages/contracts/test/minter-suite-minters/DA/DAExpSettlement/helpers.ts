@@ -38,6 +38,30 @@ export async function configureProjectZeroAuctionAndAdvanceToStart(
 }
 
 // helper function to configure auction on project zero, and then
+// advance time to auction start time. Max invocations are then
+// set to one, a purchase is performed, and the auction is left
+// in a state where it is sold out, but no revenues have been collected.
+export async function configureProjectZeroAuctionAndSellout(config: T_Config) {
+  await configureProjectZeroAuction(config);
+  // advance time to starting of auction
+  await advanceToAuctionStartTime(config);
+  // set max invocations to 1
+  await config.minter
+    .connect(config.accounts.artist)
+    .manuallyLimitProjectMaxInvocations(
+      config.projectZero,
+      config.genArt721Core.address,
+      1
+    );
+  // purchase token
+  await config.minter
+    .connect(config.accounts.user)
+    .purchase(config.projectZero, config.genArt721Core.address, {
+      value: config.startingPrice,
+    });
+}
+
+// helper function to configure auction on project zero, and then
 // advance time one day after auction start time
 export async function configureProjectZeroAuctionAndAdvanceOneDay(
   config: T_Config
@@ -48,7 +72,7 @@ export async function configureProjectZeroAuctionAndAdvanceOneDay(
 }
 
 // helper function to configure auction on project zero, and then
-// advance time one day after auction start time
+// advance time one day after auction start time, then collect revenues
 export async function configureProjectZeroAuctionAndAdvanceOneDayAndWithdrawRevenues(
   config: T_Config
 ) {

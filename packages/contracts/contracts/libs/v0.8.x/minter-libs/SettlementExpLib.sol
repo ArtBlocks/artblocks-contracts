@@ -99,7 +99,7 @@ library SettlementExpLib {
         );
         require(
             _newSelloutPrice >= _DAProjectConfigMapping.basePrice,
-            "May only reduce sellout price to base price or greater"
+            "Only gte base price"
         );
         // require max invocations has been reached
         require(
@@ -115,6 +115,9 @@ library SettlementExpLib {
             "May only reduce sellout price"
         );
         // ensure _newSelloutPrice is non-zero
+        // @dev this is a redundant check since minter doesn't allow base price
+        // of zero, but is included in case that logic changes in the future.
+        // @dev no coverage else branch of following line because redundant
         require(_newSelloutPrice > 0, "Only sellout prices > 0");
         // EFFECTS
         _settlementAuctionProjectConfigMapping

@@ -239,8 +239,11 @@ contract MinterDAExpSettlementV3 is
             SettlementExpLib.isValidStartPrice({
                 _startPrice: _startPrice,
                 _settlementAuctionProjectConfig: _settlementAuctionProjectConfig
-            })
+            }),
+            "Only monotonic decreasing price"
         );
+        // do not allow a base price of zero (to simplify logic on this minter)
+        require(_basePrice > 0, "Base price must be non-zero");
         // require valid half life for this minter
         require(
             (_priceDecayHalfLifeSeconds >= minimumPriceDecayHalfLifeSeconds),

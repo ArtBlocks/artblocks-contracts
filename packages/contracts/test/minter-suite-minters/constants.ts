@@ -74,4 +74,10 @@ export const revertMessages = {
   tooShortAuction:
     "Auction length must be at least minimumAuctionLengthSeconds",
   notImplemented: "Not implemented",
+  onlyDecreasingPrice: "Only monotonic decreasing price",
+  onlyBeforeRevenuesWithdrawn: "Only before revenues collected",
+  onlyGteBasePrice: "Only gte base price",
+  onlyCompleteAuction: "Auction must be complete",
+  onlyReduceSelloutPrice: "May only reduce sellout price",
+  onlyNonZeroBasePrice: "Base price must be non-zero",
 };

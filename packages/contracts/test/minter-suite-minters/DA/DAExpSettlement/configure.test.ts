@@ -9,6 +9,8 @@ import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../util/constants";
 import {
   configureProjectZeroAuction,
   configureProjectZeroAuctionAndAdvanceToStart,
+  configureProjectZeroAuctionAndSellout,
+  configureProjectZeroAuctionAndAdvanceOneDayAndWithdrawRevenues,
 } from "./helpers";
 import { Common_Configure } from "../../common.configure";
 import { Logger } from "@ethersproject/logger";
@@ -472,6 +474,70 @@ runForEach.forEach((params) => {
         expect(maxInvocationsProjectConfig2.maxInvocations).to.equal(1);
         expect(maxInvocationsProjectConfig2.maxHasBeenInvoked).to.equal(false);
       });
+
+      it("requires monatonically decreasing start price", async function () {
+        const config = await loadFixture(_beforeEach);
+        // configure auction, expect no revert because no latest purchase price
+        await configureProjectZeroAuctionAndAdvanceToStart(config);
+        // purchase a token to define a latestPurchasePrice
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        // reset the auction
+        await config.minter
+          .connect(config.accounts.deployer)
+          .resetAuctionDetails(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        // re-configure a new auction with a start price that is not monatonically decreasing,
+        // expect revert
+        const lastPurchasePrice =
+          await config.minter.getProjectLatestPurchasePrice(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        await expectRevert(
+          config.minter.connect(config.accounts.artist).setAuctionDetails(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.startTime + ONE_DAY,
+            config.defaultHalfLife,
+            lastPurchasePrice.add(1), // too high
+            config.basePrice
+          ),
+          revertMessages.onlyDecreasingPrice
+        );
+        // expect no revert when re-configuring with a start price that is monatonically decreasing
+        await config.minter
+          .connect(config.accounts.artist)
+          .setAuctionDetails(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.startTime + ONE_DAY,
+            config.defaultHalfLife,
+            lastPurchasePrice,
+            config.basePrice
+          );
+      });
+
+      it("does not allow base price of zero", async function () {
+        const config = await loadFixture(_beforeEach);
+        // expect revert when setting base price to zero
+        await expectRevert(
+          config.minter.connect(config.accounts.artist).setAuctionDetails(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.startTime,
+            config.defaultHalfLife,
+            config.startingPrice,
+            0 // base price of zero
+          ),
+          revertMessages.onlyNonZeroBasePrice
+        );
+      });
     });
 
     describe("setMinimumPriceDecayHalfLifeSeconds", async function () {
@@ -542,6 +608,22 @@ runForEach.forEach((params) => {
           );
       });
 
+      it("reverts after revenues are collected", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndAdvanceOneDayAndWithdrawRevenues(
+          config
+        );
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.deployer)
+            .resetAuctionDetails(
+              config.projectZero,
+              config.genArt721Core.address
+            ),
+          revertMessages.onlyBeforeRevenuesWithdrawn
+        );
+      });
+
       it("updates state", async function () {
         const config = await loadFixture(_beforeEach);
         // configure auction
@@ -570,6 +652,115 @@ runForEach.forEach((params) => {
         expect(auctionDetails2.priceDecayHalfLifeSeconds).to.equal(0);
         expect(auctionDetails2.startPrice).to.equal(0);
         expect(auctionDetails2.basePrice).to.equal(0);
+      });
+    });
+
+    describe("adminEmergencyReduceSelloutPrice", async function () {
+      it("is not callable by non-core admin", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .adminEmergencyReduceSelloutPrice(
+              config.projectZero,
+              config.genArt721Core.address,
+              1
+            ),
+          revertMessages.onlyCoreAdminACL
+        );
+      });
+
+      it("is callable by core admin", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndSellout(config);
+        // expect no revert
+        await config.minter
+          .connect(config.accounts.deployer)
+          .adminEmergencyReduceSelloutPrice(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.basePrice
+          );
+      });
+
+      it("May only reduce sellout price to base price or greater", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndSellout(config);
+        // expect revert when reducing sellout price below base price
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.deployer)
+            .adminEmergencyReduceSelloutPrice(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.basePrice.sub(1)
+            ),
+          revertMessages.onlyGteBasePrice
+        );
+      });
+
+      it("Auction must be complete", async function () {
+        const config = await loadFixture(_beforeEach);
+        // do not reach max invocations
+        // expect revert
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.deployer)
+            .adminEmergencyReduceSelloutPrice(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.basePrice
+            ),
+          revertMessages.onlyCompleteAuction
+        );
+      });
+
+      it("May only reduce sellout price", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndSellout(config);
+        const selloutPrice = await config.minter.getProjectLatestPurchasePrice(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        // expect revert when equal
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.deployer)
+            .adminEmergencyReduceSelloutPrice(
+              config.projectZero,
+              config.genArt721Core.address,
+              selloutPrice // equal
+            ),
+          revertMessages.onlyReduceSelloutPrice
+        );
+        // expect revert when greater than
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.deployer)
+            .adminEmergencyReduceSelloutPrice(
+              config.projectZero,
+              config.genArt721Core.address,
+              selloutPrice.add(1) // greater than
+            ),
+          revertMessages.onlyReduceSelloutPrice
+        );
+      });
+
+      it("Only allows sellout price gt zero", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndSellout(config);
+        // expect revert when zero
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.deployer)
+            .adminEmergencyReduceSelloutPrice(
+              config.projectZero,
+              config.genArt721Core.address,
+              0
+            ),
+          // we hit a previous check due to redundant check of zero base price
+          revertMessages.onlyGteBasePrice
+        );
       });
     });
   });
