@@ -121,8 +121,8 @@ contract MinterDAExpSettlementV3 is
     mapping(address => mapping(uint256 => SettlementExpLib.SettlementAuctionProjectConfig))
         private _settlementAuctionProjectConfigMapping;
 
-    /// user address => project ID => receipt
-    mapping(address => mapping(uint256 => SettlementExpLib.Receipt))
+    /// user address => contractAddress => project ID => receipt
+    mapping(address => mapping(address => mapping(uint256 => SettlementExpLib.Receipt)))
         private _receiptsMapping;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -742,60 +742,6 @@ contract MinterDAExpSettlementV3 is
 
     /**
      * @notice Reclaims the sender's payment above current settled price for
-     * project `_projectId` on core contract `_coreContract`.
-     * The current settled price is the the price paid for the most recently
-     * purchased token, or the base price if the artist has withdrawn revenues
-     * after the auction reached base price.
-     * This function is callable at any point, but is expected to typically be
-     * called after auction has sold out above base price or after the auction
-     * has been purchased at base price. This minimizes the amount of gas
-     * required to send all excess settlement funds to the sender.
-     * Sends excess settlement funds to address `_to`.
-     * @param _to Address to send excess settlement funds to.
-     * @param _projectId Project ID to reclaim excess settlement funds on.
-     * @param _coreContract Contract address of the core contract
-     */
-    function reclaimProjectExcessSettlementFundsTo(
-        address payable _to,
-        uint256 _projectId,
-        address _coreContract
-    ) public nonReentrant {
-        require(_to != address(0), "No claiming to the zero address");
-
-        SettlementExpLib.SettlementAuctionProjectConfig
-            storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
-                _coreContract
-            ][_projectId];
-        SettlementExpLib.Receipt storage _receipt = _receiptsMapping[
-            msg.sender
-        ][_projectId];
-
-        (
-            uint256 excessSettlementFunds,
-            uint256 requiredAmountPosted
-        ) = SettlementExpLib.getProjectExcessSettlementFunds({
-                _settlementAuctionProjectConfigMapping: _settlementAuctionProjectConfig,
-                _receiptMapping: _receipt
-            });
-        _receipt.netPosted = requiredAmountPosted.toUint232();
-
-        emit ReceiptUpdated(
-            msg.sender,
-            _projectId,
-            _coreContract,
-            _receipt.numPurchased,
-            requiredAmountPosted
-        );
-
-        // INTERACTIONS
-        bool success_;
-        (success_, ) = _to.call{value: excessSettlementFunds}("");
-        require(success_, "Reclaiming failed");
-    }
-
-    // TODO - FIX THIS to use an array of core contracts (aligned)
-    /**
-     * @notice Reclaims the sender's payment above current settled price for
      * projects in `_projectIds`. The current settled price is the the price
      * paid for the most recently purchased token, or the base price if the
      * artist has withdrawn revenues after the auction reached base price.
@@ -808,15 +754,18 @@ contract MinterDAExpSettlementV3 is
      * fails.
      * @param _projectIds Array of project IDs to reclaim excess settlement
      * funds on.
+     * @param _coreContracts Array of core contract addresses for the given
+     * projects. Must be in the same order as `_projectIds` (aligned by index).
      */
     function reclaimProjectsExcessSettlementFunds(
         uint256[] calldata _projectIds,
-        address _coreContract
+        address[] calldata _coreContracts
     ) external {
+        // @dev input validation checks are performed in subcall
         reclaimProjectsExcessSettlementFundsTo(
             payable(msg.sender),
             _projectIds,
-            _coreContract
+            _coreContracts
         );
     }
 
@@ -847,14 +796,67 @@ contract MinterDAExpSettlementV3 is
             ][_projectId];
         SettlementExpLib.Receipt storage _receipt = _receiptsMapping[
             _walletAddress
-        ][_projectId];
+        ][_coreContract][_projectId];
 
-        (uint256 excessSettlementFunds, ) = SettlementExpLib
+        (excessSettlementFundsInWei, ) = SettlementExpLib
             .getProjectExcessSettlementFunds({
                 _settlementAuctionProjectConfigMapping: _settlementAuctionProjectConfig,
                 _receiptMapping: _receipt
             });
-        return excessSettlementFunds;
+        return excessSettlementFundsInWei;
+    }
+
+    /**
+     * @notice Reclaims the sender's payment above current settled price for
+     * project `_projectId` on core contract `_coreContract`.
+     * The current settled price is the the price paid for the most recently
+     * purchased token, or the base price if the artist has withdrawn revenues
+     * after the auction reached base price.
+     * This function is callable at any point, but is expected to typically be
+     * called after auction has sold out above base price or after the auction
+     * has been purchased at base price. This minimizes the amount of gas
+     * required to send all excess settlement funds to the sender.
+     * Sends excess settlement funds to address `_to`.
+     * @param _to Address to send excess settlement funds to.
+     * @param _projectId Project ID to reclaim excess settlement funds on.
+     * @param _coreContract Contract address of the core contract
+     */
+    function reclaimProjectExcessSettlementFundsTo(
+        address payable _to,
+        uint256 _projectId,
+        address _coreContract
+    ) public nonReentrant {
+        require(_to != address(0), "No claiming to the zero address");
+
+        SettlementExpLib.SettlementAuctionProjectConfig
+            storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
+                _coreContract
+            ][_projectId];
+        SettlementExpLib.Receipt storage _receipt = _receiptsMapping[
+            msg.sender
+        ][_coreContract][_projectId];
+
+        (
+            uint256 excessSettlementFunds,
+            uint256 requiredAmountPosted
+        ) = SettlementExpLib.getProjectExcessSettlementFunds({
+                _settlementAuctionProjectConfigMapping: _settlementAuctionProjectConfig,
+                _receiptMapping: _receipt
+            });
+        _receipt.netPosted = requiredAmountPosted.toUint232();
+
+        emit ReceiptUpdated({
+            _purchaser: msg.sender,
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _numPurchased: _receipt.numPurchased,
+            _netPosted: requiredAmountPosted
+        });
+
+        // INTERACTIONS
+        bool success_;
+        (success_, ) = _to.call{value: excessSettlementFunds}("");
+        require(success_, "Reclaiming failed");
     }
 
     /**
@@ -872,48 +874,57 @@ contract MinterDAExpSettlementV3 is
      * @param _to Address to send excess settlement funds to.
      * @param _projectIds Array of project IDs to reclaim excess settlement
      * funds on.
+     * @param _coreContracts Array of core contract addresses for the given
+     * projects. Must be in the same order as `_projectIds` (aligned by index).
      */
     function reclaimProjectsExcessSettlementFundsTo(
         address payable _to,
-        uint256[] memory _projectIds,
-        address _coreContract
+        uint256[] calldata _projectIds,
+        address[] calldata _coreContracts
     ) public nonReentrant {
         // CHECKS
         // input validation
         require(_to != address(0), "No claiming to the zero address");
+        uint256 projectIdsLength = _projectIds.length;
+        require(
+            projectIdsLength == _coreContracts.length,
+            "Array lengths must match"
+        );
         // EFFECTS
         // for each project, tally up the excess settlement funds and update
         // the receipt in storage
         uint256 excessSettlementFunds;
-        uint256 projectIdsLength = _projectIds.length;
         for (uint256 i; i < projectIdsLength; ) {
             uint256 projectId = _projectIds[i];
+            address coreContract = _coreContracts[i];
 
             SettlementExpLib.SettlementAuctionProjectConfig
                 storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
-                    _coreContract
+                    coreContract
                 ][projectId];
             SettlementExpLib.Receipt storage _receipt = _receiptsMapping[
                 msg.sender
-            ][projectId];
+            ][coreContract][projectId];
 
-            (uint256 funds, uint256 requiredAmountPosted) = SettlementExpLib
-                .getProjectExcessSettlementFunds({
+            (
+                uint256 excessSettlementFundsForProject,
+                uint256 requiredAmountPosted
+            ) = SettlementExpLib.getProjectExcessSettlementFunds({
                     _settlementAuctionProjectConfigMapping: _settlementAuctionProjectConfig,
                     _receiptMapping: _receipt
                 });
             _receipt.netPosted = requiredAmountPosted.toUint232();
 
-            excessSettlementFunds += funds;
+            excessSettlementFunds += excessSettlementFundsForProject;
 
             // emit event indicating new receipt state
-            emit ReceiptUpdated(
-                msg.sender,
-                projectId,
-                _coreContract,
-                _receipt.numPurchased,
-                requiredAmountPosted
-            );
+            emit ReceiptUpdated({
+                _purchaser: msg.sender,
+                _projectId: projectId,
+                _coreContract: coreContract,
+                _numPurchased: _receipt.numPurchased,
+                _netPosted: requiredAmountPosted
+            });
             // gas efficiently increment i
             // won't overflow due to for loop, as well as gas limts
             unchecked {
@@ -1006,8 +1017,8 @@ contract MinterDAExpSettlementV3 is
         // EFFECTS
         // update the purchaser's receipt and require sufficient net payment
         SettlementExpLib.Receipt storage receipt = _receiptsMapping[msg.sender][
-            _projectId
-        ];
+            _coreContract
+        ][_projectId];
         // in memory copy + update
         uint256 netPosted = receipt.netPosted + msg.value;
         uint256 numPurchased = receipt.numPurchased + 1;
