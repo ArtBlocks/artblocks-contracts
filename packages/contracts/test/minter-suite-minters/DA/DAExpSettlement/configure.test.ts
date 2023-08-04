@@ -11,6 +11,7 @@ import {
   configureProjectZeroAuctionAndAdvanceToStart,
   configureProjectZeroAuctionAndSellout,
   configureProjectZeroAuctionAndAdvanceOneDayAndWithdrawRevenues,
+  mintTokenOnDifferentMinter,
 } from "./helpers";
 import { Common_Configure } from "../../common.configure";
 import { Logger } from "@ethersproject/logger";
@@ -761,6 +762,225 @@ runForEach.forEach((params) => {
           // we hit a previous check due to redundant check of zero base price
           revertMessages.onlyGteBasePrice
         );
+      });
+    });
+
+    describe("withdrawArtistAndAdminRevenues", async function () {
+      it("is not callable by non-core admin or artist", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndSellout(config);
+        // expect revert when called by non-core admin or artist
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .withdrawArtistAndAdminRevenues(
+              config.projectZero,
+              config.genArt721Core.address
+            ),
+          revertMessages.onlyCoreAdminACLOrArtist
+        );
+      });
+
+      it("is callable by core admin", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndSellout(config);
+        // expect no revert
+        await config.minter
+          .connect(config.accounts.deployer)
+          .withdrawArtistAndAdminRevenues(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+      });
+
+      it("is callable by artist", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndSellout(config);
+        // expect no revert
+        await config.minter
+          .connect(config.accounts.artist)
+          .withdrawArtistAndAdminRevenues(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+      });
+
+      it("is not callable more than once", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndSellout(config);
+        // no revert on initial call
+        await config.minter
+          .connect(config.accounts.artist)
+          .withdrawArtistAndAdminRevenues(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        // expect revert when called by non-core admin or artist
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .withdrawArtistAndAdminRevenues(
+              config.projectZero,
+              config.genArt721Core.address
+            ),
+          revertMessages.revenuesAlreadyCollected
+        );
+      });
+
+      it("refreshes max invocations from other mints on core", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndAdvanceToStart(config);
+        // mint a token
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        // set max invocations to 2 on minter
+        await config.minter
+          .connect(config.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(
+            config.projectZero,
+            config.genArt721Core.address,
+            2
+          );
+        // mint another token on a different Minter
+        await mintTokenOnDifferentMinter(config);
+        // can now call withdrawArtistAndAdminRevenues, because invocations
+        // from other minter will be accounted for
+        await config.minter
+          .connect(config.accounts.artist)
+          .withdrawArtistAndAdminRevenues(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+      });
+
+      it("requires sellout if last purchase price is > base price", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndAdvanceToStart(config);
+        // mint a token
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        // set max invocations to 2 on minter
+        await config.minter
+          .connect(config.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(
+            config.projectZero,
+            config.genArt721Core.address,
+            2
+          );
+        // reverts because last purchase price is > base price and auction is
+        // not sold out
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .withdrawArtistAndAdminRevenues(
+              config.projectZero,
+              config.genArt721Core.address
+            ),
+          revertMessages.auctionNotSoldOut
+        );
+      });
+
+      it("calculates appropriate net revenues, sellout above base price", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndAdvanceToStart(config);
+        await config.minter
+          .connect(config.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(
+            config.projectZero,
+            config.genArt721Core.address,
+            2
+          );
+        // purchase a token
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        const firstPurchasePrice =
+          await config.minter.getProjectLatestPurchasePrice(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        // wait one minute
+        await ethers.provider.send("evm_mine", [config.startTime + ONE_MINUTE]);
+        // purchase another token
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        // get latest purchase price
+        const secondPurchasePrice =
+          await config.minter.getProjectLatestPurchasePrice(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        // withdraw revenues
+        const artistInitialBalance = await config.accounts.artist.getBalance();
+        // payment addresses?
+        await config.minter
+          .connect(config.accounts.deployer)
+          .withdrawArtistAndAdminRevenues(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        const artistFinalBalance = await config.accounts.artist.getBalance();
+        // expect artist to receive 90% of latest purchase price, times 2 for 2 tokens
+        expect(artistFinalBalance).to.be.gt(0);
+        expect(secondPurchasePrice).to.be.gt(0);
+        const allowedNumericalError = 1; // 1 wei error allowed
+        expect(artistFinalBalance.sub(artistInitialBalance)).to.equal(
+          secondPurchasePrice.mul(2).mul(9).div(10).add(allowedNumericalError)
+        );
+        expect(secondPurchasePrice).to.be.lt(firstPurchasePrice);
+        expect(secondPurchasePrice).to.be.gt(config.basePrice);
+      });
+
+      it("calculates appropriate net revenues, reached base price", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndAdvanceToStart(config);
+        await config.minter
+          .connect(config.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(
+            config.projectZero,
+            config.genArt721Core.address,
+            2
+          );
+        // purchase a token
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        const firstPurchasePrice =
+          await config.minter.getProjectLatestPurchasePrice(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        // wait one day and reach base price
+        await ethers.provider.send("evm_mine", [config.startTime + ONE_DAY]);
+        // withdraw revenues
+        const artistInitialBalance = await config.accounts.artist.getBalance();
+        // payment addresses?
+        await config.minter
+          .connect(config.accounts.deployer)
+          .withdrawArtistAndAdminRevenues(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        const artistFinalBalance = await config.accounts.artist.getBalance();
+        // expect artist to receive 90% of base price
+        expect(artistFinalBalance).to.be.gt(0);
+        expect(artistFinalBalance.sub(artistInitialBalance)).to.equal(
+          config.basePrice.mul(9).div(10)
+        );
+        expect(firstPurchasePrice).to.be.gt(config.basePrice);
       });
     });
   });

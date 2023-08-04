@@ -80,4 +80,7 @@ export const revertMessages = {
   onlyCompleteAuction: "Auction must be complete",
   onlyReduceSelloutPrice: "May only reduce sellout price",
   onlyNonZeroBasePrice: "Base price must be non-zero",
+  revenuesAlreadyCollected: "Revenues already collected",
+  auctionNotSoldOut: "Active auction not yet sold out",
+  onlyNonZeroLatestPurchasePrice: "Only latestPurchasePrice > 0",
 };

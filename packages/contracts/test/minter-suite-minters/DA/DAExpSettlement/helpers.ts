@@ -1,6 +1,6 @@
 import { ethers } from "hardhat";
 
-import { T_Config } from "../../../util/common";
+import { T_Config, deployAndGet } from "../../../util/common";
 import { ONE_DAY } from "../../../util/constants";
 
 // helper functions for DAExp Settlement tests
@@ -85,4 +85,36 @@ export async function configureProjectZeroAuctionAndAdvanceOneDayAndWithdrawReve
       config.projectZero,
       config.genArt721Core.address
     );
+}
+
+export async function mintTokenOnDifferentMinter(config: T_Config) {
+  const minterSetPrice = await deployAndGet(config, "MinterSetPriceV5", [
+    config.minterFilter.address,
+  ]);
+  await config.minterFilter
+    .connect(config.accounts.deployer)
+    .approveMinterGlobally(minterSetPrice.address);
+  await config.minterFilter.setMinterForProject(
+    config.projectZero,
+    config.genArt721Core.address,
+    minterSetPrice.address
+  );
+  await minterSetPrice
+    .connect(config.accounts.artist)
+    .updatePricePerTokenInWei(
+      config.projectZero,
+      config.genArt721Core.address,
+      config.pricePerTokenInWei
+    );
+  await minterSetPrice
+    .connect(config.accounts.artist)
+    .purchase(config.projectZero, config.genArt721Core.address, {
+      value: config.pricePerTokenInWei,
+    });
+  // set minter back to original Minter
+  await config.minterFilter.setMinterForProject(
+    config.projectZero,
+    config.genArt721Core.address,
+    config.minter.address
+  );
 }

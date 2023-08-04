@@ -175,6 +175,7 @@ library SettlementExpLib {
             uint256 basePrice = _DAProjectConfigMapping.basePrice;
             // base price of zero indicates no sales, since base price of zero
             // is not allowed when configuring an auction.
+            // @dev no coverage else branch of following line because redundant
             require(basePrice > 0, "Only latestPurchasePrice > 0");
             // if the price is base price, the auction is valid and may be claimed
             // update the latest purchase price to the base price, to ensure
