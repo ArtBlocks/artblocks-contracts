@@ -982,7 +982,6 @@ contract MinterDAExpSettlementV3 is
             storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
                 _coreContract
             ][_projectId];
-
         DAExpLib.DAProjectConfig
             storage _auctionProjectConfig = _auctionProjectConfigMapping[
                 _coreContract
@@ -1036,13 +1035,13 @@ contract MinterDAExpSettlementV3 is
         receipt.numPurchased = uint24(numPurchased);
 
         // emit event indicating new receipt state
-        emit ReceiptUpdated(
-            msg.sender,
-            _projectId,
-            _coreContract,
-            numPurchased,
-            netPosted
-        );
+        emit ReceiptUpdated({
+            _purchaser: msg.sender,
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _numPurchased: numPurchased,
+            _netPosted: netPosted
+        });
 
         // update latest purchase price (on this minter) in storage
         // @dev this is used to enforce monotonically decreasing purchase price
@@ -1056,31 +1055,16 @@ contract MinterDAExpSettlementV3 is
             _sender: msg.sender
         });
 
-        // invocation is token number plus one, and will never overflow due to
-        // limit of 1e6 invocations per project. block scope for gas efficiency
-        // (i.e. avoid an unnecessary var initialization to 0).
-        unchecked {
-            uint256 tokenInvocation = (tokenId % ONE_MILLION) + 1;
-            uint256 localMaxInvocations = _maxInvocationsProjectConfig
-                .maxInvocations;
-            // handle the case where the token invocation == minter local max
-            // invocations occurred on a different minter, and we have a stale
-            // local maxHasBeenInvoked value returning a false negative.
-            // @dev this is a CHECK after EFFECTS, so security was considered
-            // in detail here.
-            require(
-                tokenInvocation <= localMaxInvocations,
-                "Maximum number of invocations reached"
-            );
-            // in typical case, update the local maxHasBeenInvoked value
-            // to true if the token invocation == minter local max invocations
-            // (enables gas efficient reverts after sellout)
-            if (tokenInvocation == localMaxInvocations) {
-                _maxInvocationsProjectConfig.maxHasBeenInvoked = true;
-            }
-        }
+        // verify token invocation is valid given local minter max invocations,
+        // update local maxHasBeenInvoked
+        MaxInvocationsLib.validatePurchaseEffectsInvocations(
+            tokenId,
+            _maxInvocationsProjectConfig
+        );
 
         // INTERACTIONS
+        // @dev this logic is intentionally defined here to avoid a dependency
+        // in SettlementLib on SplitFundsLib, which would increase complexity
         if (_settlementAuctionProjectConfig.auctionRevenuesCollected) {
             // if revenues have been collected, split funds immediately.
             // @dev note that we are guaranteed to be at auction base price,

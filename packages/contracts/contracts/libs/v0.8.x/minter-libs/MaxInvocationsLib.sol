@@ -93,11 +93,15 @@ library MaxInvocationsLib {
     }
 
     /**
-     * @notice Validate effects on invocations after purchase
-     * @dev This function checks that the token invocation is less than or equal to
-     * the local max invocations, and also updates the local maxHasBeenInvoked value.
+     * @notice Validate effects on invocations after purchase. This ensures
+     * that the token invocation is less than or equal to the local max
+     * invocations, and also updates the local maxHasBeenInvoked value.
+     * @dev This function checks that the token invocation is less than or
+     * equal to the local max invocations, and also updates the local
+     * maxHasBeenInvoked value.
      * @param _tokenId The id of the token.
-     * @param maxInvocationsProjectConfig Data structure that holds max invocations project configuration.
+     * @param maxInvocationsProjectConfig Data structure that holds max
+     * invocations project configuration.
      */
     function validatePurchaseEffectsInvocations(
         uint256 _tokenId,
