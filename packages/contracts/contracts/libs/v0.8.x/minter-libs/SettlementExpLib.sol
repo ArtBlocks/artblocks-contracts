@@ -37,6 +37,42 @@ library SettlementExpLib {
         uint24 numPurchased;
     }
 
+    /**
+     * This function updates the _receipt to include `msg.value` and increments
+     * the number of tokens purchased by 1. It then checks that the updated
+     * receipt is valid (i.e. sufficient funds have been posted for the
+     * number of tokens purchased on the updated receipt), and reverts if not.
+     * The new receipt net posted and num purchased are then returned to make
+     * the values available in a gas-efficient manner to the caller of this
+     * function.
+     * @param _receipt Receipt struct for the user on the project being checked
+     * @param _currentPriceInWei current price of token in Wei
+     * @return netPosted total funds posted by user on project (that have not
+     * been yet settled), including the current transaction
+     * @return numPurchased total number of tokens purchased by user on
+     * project, including the current transaction
+     */
+    function validateReceiptEffects(
+        Receipt storage _receipt,
+        uint256 _currentPriceInWei
+    ) internal returns (uint256 netPosted, uint256 numPurchased) {
+        // in memory copy + update
+        netPosted = _receipt.netPosted + msg.value;
+        numPurchased = _receipt.numPurchased + 1;
+
+        // require sufficient payment on project
+        require(
+            netPosted >= numPurchased * _currentPriceInWei,
+            "Min value to mint req."
+        );
+
+        // update Receipt in storage
+        // @dev overflow checks are not required since the added values cannot
+        // be enough to overflow due to maximum invocations or supply of ETH
+        _receipt.netPosted = uint232(netPosted);
+        _receipt.numPurchased = uint24(numPurchased);
+    }
+
     function adminEmergencyReduceSelloutPrice(
         uint256 _projectId,
         address _coreContract,

@@ -61,8 +61,8 @@ pragma solidity 0.8.19;
  * - setAuctionDetails (note: this may only be called when there is no active
  *   auction, and must start at a price less than or equal to any previously
  *   made purchases)
- * - syncProjectMaxInvocationsToCore (no implemented)
  * - manuallyLimitProjectMaxInvocations
+ * - syncProjectMaxInvocationsToCore (not implemented)
  * ----------------------------------------------------------------------------
  * Additional admin and artist privileged roles may be described on other
  * contracts that this minter integrates with.
@@ -1016,21 +1016,9 @@ contract MinterDAExpSettlementV3 is
         SettlementExpLib.Receipt storage receipt = _receiptsMapping[msg.sender][
             _coreContract
         ][_projectId];
-        // in memory copy + update
-        uint256 netPosted = receipt.netPosted + msg.value;
-        uint256 numPurchased = receipt.numPurchased + 1;
 
-        // require sufficient payment on project
-        require(
-            netPosted >= numPurchased * currentPriceInWei,
-            "Must send minimum value to mint"
-        );
-
-        // update Receipt in storage
-        // @dev overflow checks are not required since the added values cannot
-        // be enough to overflow due to maximum invocations or supply of ETH
-        receipt.netPosted = uint232(netPosted);
-        receipt.numPurchased = uint24(numPurchased);
+        (uint256 netPosted, uint256 numPurchased) = SettlementExpLib
+            .validateReceiptEffects(receipt, currentPriceInWei);
 
         // emit event indicating new receipt state
         emit ReceiptUpdated({
