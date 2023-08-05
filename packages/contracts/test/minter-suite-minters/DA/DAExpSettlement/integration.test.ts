@@ -8,6 +8,7 @@ import { revertMessages } from "../../constants";
 import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../util/constants";
 import {
   configureProjectZeroAuction,
+  configureProjectZeroAuctionAndAdvanceOneDay,
   configureProjectZeroAuctionAndAdvanceOneDayAndWithdrawRevenues,
   configureProjectZeroAuctionAndAdvanceToStart,
 } from "./helpers";
@@ -493,6 +494,197 @@ runForEach.forEach((params) => {
           config.projectZeroTokenZero.toNumber()
         );
         expect(ownerOf).to.equal(config.accounts.user.address);
+      });
+
+      it("updates receipt for multiple purchases", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndAdvanceToStart(config);
+        // purchase 1
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        const purchasePrice1 =
+          await config.minter.getProjectLatestPurchasePrice(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        const excessSettlementFunds1 =
+          await config.minter.getProjectExcessSettlementFunds(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.accounts.user.address
+          );
+        expect(excessSettlementFunds1).to.be.gt(0);
+        expect(excessSettlementFunds1).to.equal(
+          config.startingPrice.sub(purchasePrice1)
+        );
+        // purchase 2
+        // advance 1 minute
+        await ethers.provider.send("evm_mine", [config.startTime + ONE_MINUTE]);
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        const purchasePrice2 =
+          await config.minter.getProjectLatestPurchasePrice(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        const excessSettlementFunds2 =
+          await config.minter.getProjectExcessSettlementFunds(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.accounts.user.address
+          );
+        expect(excessSettlementFunds2).to.be.gt(0);
+        expect(excessSettlementFunds2).to.equal(
+          config.startingPrice.sub(purchasePrice2).mul(2) // two tokens at net purchase price 2
+        );
+      });
+
+      it("updates numSettleableInvocations before revenues collected", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndAdvanceToStart(config);
+        // purchase 1
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        const numSettleableInvocations1 =
+          await config.minter.getNumSettleableInvocations(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        expect(numSettleableInvocations1).to.equal(1);
+        // purchase 2
+        // advance 1 minute
+        await ethers.provider.send("evm_mine", [config.startTime + ONE_MINUTE]);
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        const numSettleableInvocations2 =
+          await config.minter.getNumSettleableInvocations(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        expect(numSettleableInvocations2).to.equal(2);
+      });
+
+      it("does not update numSettleableInvocations after revenues collected", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndAdvanceToStart(config);
+        // purchase 1
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        const numSettleableInvocations1 =
+          await config.minter.getNumSettleableInvocations(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        expect(numSettleableInvocations1).to.equal(1);
+        // advance to past end of auction and collect revenues
+        // advance 1 day
+        await ethers.provider.send("evm_mine", [config.startTime + ONE_DAY]);
+        await config.minter
+          .connect(config.accounts.artist)
+          .withdrawArtistAndAdminRevenues(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        // purchase 2
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        const numSettleableInvocations2 =
+          await config.minter.getNumSettleableInvocations(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        // expect numSettleableInvocations to be unchanged (i.e. should still be 1)
+        expect(numSettleableInvocations2).to.equal(1);
+      });
+
+      it("does not distribute revenues before auction end", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndAdvanceToStart(config);
+        // purchase 1
+        const artistBalance1 = await config.accounts.artist.getBalance();
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        // expect no revenues to be distributed
+        const artistBalance2 = await config.accounts.artist.getBalance();
+        expect(artistBalance2).to.equal(artistBalance1);
+      });
+
+      it("does not distribute revenues before after end before revenues collected", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndAdvanceOneDay(config);
+        // purchase 1
+        const artistBalance1 = await config.accounts.artist.getBalance();
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        // expect no revenues to be distributed
+        const artistBalance2 = await config.accounts.artist.getBalance();
+        expect(artistBalance2).to.equal(artistBalance1);
+      });
+
+      it("does distribute revenues after reaching base price and revenues collected", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndAdvanceOneDayAndWithdrawRevenues(
+          config
+        );
+        // purchase 1
+        const artistBalance1 = await config.accounts.artist.getBalance();
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        // expect revenues to have been distributed
+        const artistBalance2 = await config.accounts.artist.getBalance();
+        const expectedRevenue = config.basePrice.mul(9).div(10); // 90% to artist
+        expect(artistBalance2).to.equal(artistBalance1.add(expectedRevenue));
+      });
+
+      it("updates latest purchase price", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndAdvanceToStart(config);
+        const initialLatestPurchasePrice =
+          await config.minter.getProjectLatestPurchasePrice(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        expect(initialLatestPurchasePrice).to.equal(0);
+        // purchase
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        // verify latest purchase price updated
+        const latestPurchasePrice1 =
+          await config.minter.getProjectLatestPurchasePrice(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        expect(latestPurchasePrice1).to.not.equal(0);
       });
     });
 
