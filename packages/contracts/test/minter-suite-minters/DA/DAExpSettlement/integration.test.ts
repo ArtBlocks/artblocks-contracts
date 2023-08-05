@@ -740,7 +740,407 @@ runForEach.forEach((params) => {
         expect(ownerOf).to.equal(config.accounts.additional.address);
       });
     });
-  });
 
-  // TODO: Add more integration tests
+    describe("reclaimProjectExcessSettlementFunds", async function () {
+      it("requires a prior purchase", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .reclaimProjectExcessSettlementFunds(
+              config.projectZero,
+              config.genArt721Core.address
+            ),
+          revertMessages.noPurchasesMade
+        );
+      });
+
+      it("claims all excess settlement funds", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndAdvanceToStart(config);
+        // purchase
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        // advance 1 minute
+        await ethers.provider.send("evm_mine", [config.startTime + ONE_MINUTE]);
+        // purchase
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        // ensure excess settlement funds are available
+        const excessSettlementFunds1 =
+          await config.minter.getProjectExcessSettlementFunds(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.accounts.user.address
+          );
+        expect(excessSettlementFunds1).to.be.gt(0);
+        // reclaim excess settlement funds
+        await config.minter
+          .connect(config.accounts.user)
+          .reclaimProjectExcessSettlementFunds(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        // ensure excess settlement funds are no longer available
+        const excessSettlementFunds2 =
+          await config.minter.getProjectExcessSettlementFunds(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.accounts.user.address
+          );
+        expect(excessSettlementFunds2).to.equal(0);
+      });
+
+      it("sends excess settlement funds to caller", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndAdvanceToStart(config);
+        // purchase
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        // advance 1 minute
+        await ethers.provider.send("evm_mine", [config.startTime + ONE_MINUTE]);
+        // purchase
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        // ensure excess settlement funds are available
+        const excessSettlementFunds1 =
+          await config.minter.getProjectExcessSettlementFunds(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.accounts.user.address
+          );
+        expect(excessSettlementFunds1).to.be.gt(0);
+        // reclaim excess settlement funds
+        const userBalance1 = await config.accounts.user.getBalance();
+        // @dev gas price to 0 to ensure user balance is not affected by gas costs
+        await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", [
+          "0x0",
+        ]);
+        await config.minter
+          .connect(config.accounts.user)
+          .reclaimProjectExcessSettlementFunds(
+            config.projectZero,
+            config.genArt721Core.address,
+            {
+              gasPrice: 0,
+            }
+          );
+        const userBalance2 = await config.accounts.user.getBalance();
+        // ensure user balance has increased by excess settlement funds
+        expect(userBalance2).to.equal(userBalance1.add(excessSettlementFunds1));
+      });
+    });
+
+    describe("reclaimProjectsExcessSettlementFunds", async function () {
+      it("requires a prior purchase", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .reclaimProjectsExcessSettlementFunds(
+              [config.projectZero],
+              [config.genArt721Core.address]
+            ),
+          revertMessages.noPurchasesMade
+        );
+      });
+
+      it("claims all excess settlement funds", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndAdvanceToStart(config);
+        // purchase
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        // advance 1 minute
+        await ethers.provider.send("evm_mine", [config.startTime + ONE_MINUTE]);
+        // purchase
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        // ensure excess settlement funds are available
+        const excessSettlementFunds1 =
+          await config.minter.getProjectExcessSettlementFunds(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.accounts.user.address
+          );
+        expect(excessSettlementFunds1).to.be.gt(0);
+        // reclaim excess settlement funds
+        await config.minter
+          .connect(config.accounts.user)
+          .reclaimProjectsExcessSettlementFunds(
+            [config.projectZero],
+            [config.genArt721Core.address]
+          );
+        // ensure excess settlement funds are no longer available
+        const excessSettlementFunds2 =
+          await config.minter.getProjectExcessSettlementFunds(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.accounts.user.address
+          );
+        expect(excessSettlementFunds2).to.equal(0);
+      });
+
+      it("sends excess settlement funds to caller", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndAdvanceToStart(config);
+        // purchase
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        // advance 1 minute
+        await ethers.provider.send("evm_mine", [config.startTime + ONE_MINUTE]);
+        // purchase
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        // ensure excess settlement funds are available
+        const excessSettlementFunds1 =
+          await config.minter.getProjectExcessSettlementFunds(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.accounts.user.address
+          );
+        expect(excessSettlementFunds1).to.be.gt(0);
+        // reclaim excess settlement funds
+        const userBalance1 = await config.accounts.user.getBalance();
+        // @dev gas price to 0 to ensure user balance is not affected by gas costs
+        await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", [
+          "0x0",
+        ]);
+        await config.minter
+          .connect(config.accounts.user)
+          .reclaimProjectsExcessSettlementFunds(
+            [config.projectZero],
+            [config.genArt721Core.address],
+            {
+              gasPrice: 0,
+            }
+          );
+        const userBalance2 = await config.accounts.user.getBalance();
+        // ensure user balance has increased by excess settlement funds
+        expect(userBalance2).to.equal(userBalance1.add(excessSettlementFunds1));
+      });
+
+      // @dev multi-project + multi-contract claiming receipt validation is tested in ./events.test.ts
+    });
+
+    describe("reclaimProjectExcessSettlementFundsTo", async function () {
+      it("doesn't allow reclaiming to zero address", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .reclaimProjectExcessSettlementFundsTo(
+              ethers.constants.AddressZero,
+              config.projectZero,
+              config.genArt721Core.address
+            ),
+          revertMessages.noClaimToZeroAddress
+        );
+      });
+
+      it("sends excess settlement funds to _to", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndAdvanceToStart(config);
+        // purchase
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        // advance 1 minute
+        await ethers.provider.send("evm_mine", [config.startTime + ONE_MINUTE]);
+        // purchase
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        // ensure excess settlement funds are available
+        const excessSettlementFunds1 =
+          await config.minter.getProjectExcessSettlementFunds(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.accounts.user.address
+          );
+        expect(excessSettlementFunds1).to.be.gt(0);
+        // reclaim excess settlement funds
+        const additionalBalance1 =
+          await config.accounts.additional.getBalance();
+        await config.minter
+          .connect(config.accounts.user)
+          .reclaimProjectExcessSettlementFundsTo(
+            config.accounts.additional.address,
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        const additionalBalance2 =
+          await config.accounts.additional.getBalance();
+        // ensure additional balance has increased by excess settlement funds
+        expect(additionalBalance2).to.equal(
+          additionalBalance1.add(excessSettlementFunds1)
+        );
+      });
+
+      it("requires successful payment", async function () {
+        const config = await loadFixture(_beforeEach);
+        const deadReceiver = await deployAndGet(config, "DeadReceiverMock", []);
+        await configureProjectZeroAuctionAndAdvanceToStart(config);
+        // purchase
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        // advance 1 minute
+        await ethers.provider.send("evm_mine", [config.startTime + ONE_MINUTE]);
+        // purchase
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        // ensure excess settlement funds are available
+        const excessSettlementFunds1 =
+          await config.minter.getProjectExcessSettlementFunds(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.accounts.user.address
+          );
+        expect(excessSettlementFunds1).to.be.gt(0);
+        // revert when reclaim excess settlement funds to dead receiver
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .reclaimProjectExcessSettlementFundsTo(
+              deadReceiver.address,
+              config.projectZero,
+              config.genArt721Core.address
+            ),
+          revertMessages.reclaimingFailed
+        );
+      });
+    });
+
+    describe("reclaimProjectsExcessSettlementFundsTo", async function () {
+      it("doesn't allow reclaiming to zero address", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .reclaimProjectsExcessSettlementFundsTo(
+              ethers.constants.AddressZero,
+              [config.projectZero],
+              [config.genArt721Core.address]
+            ),
+          revertMessages.noClaimToZeroAddress
+        );
+      });
+
+      it("sends excess settlement funds to _to", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndAdvanceToStart(config);
+        // purchase
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        // advance 1 minute
+        await ethers.provider.send("evm_mine", [config.startTime + ONE_MINUTE]);
+        // purchase
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        // ensure excess settlement funds are available
+        const excessSettlementFunds1 =
+          await config.minter.getProjectExcessSettlementFunds(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.accounts.user.address
+          );
+        expect(excessSettlementFunds1).to.be.gt(0);
+        // reclaim excess settlement funds
+        const additionalBalance1 =
+          await config.accounts.additional.getBalance();
+        await config.minter
+          .connect(config.accounts.user)
+          .reclaimProjectsExcessSettlementFundsTo(
+            config.accounts.additional.address,
+            [config.projectZero],
+            [config.genArt721Core.address]
+          );
+        const additionalBalance2 =
+          await config.accounts.additional.getBalance();
+        // ensure additional balance has increased by excess settlement funds
+        expect(additionalBalance2).to.equal(
+          additionalBalance1.add(excessSettlementFunds1)
+        );
+      });
+
+      it("requires successful payment", async function () {
+        const config = await loadFixture(_beforeEach);
+        const deadReceiver = await deployAndGet(config, "DeadReceiverMock", []);
+        await configureProjectZeroAuctionAndAdvanceToStart(config);
+        // purchase
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        // advance 1 minute
+        await ethers.provider.send("evm_mine", [config.startTime + ONE_MINUTE]);
+        // purchase
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        // ensure excess settlement funds are available
+        const excessSettlementFunds1 =
+          await config.minter.getProjectExcessSettlementFunds(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.accounts.user.address
+          );
+        expect(excessSettlementFunds1).to.be.gt(0);
+        // revert when reclaim excess settlement funds to dead receiver
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .reclaimProjectsExcessSettlementFundsTo(
+              deadReceiver.address,
+              [config.projectZero],
+              [config.genArt721Core.address]
+            ),
+          revertMessages.reclaimingFailed
+        );
+      });
+    });
+  });
 });

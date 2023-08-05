@@ -83,4 +83,7 @@ export const revertMessages = {
   revenuesAlreadyCollected: "Revenues already collected",
   auctionNotSoldOut: "Active auction not yet sold out",
   onlyNonZeroLatestPurchasePrice: "Only latestPurchasePrice > 0",
+  noClaimToZeroAddress: "No claiming to the zero address",
+  noPurchasesMade: "No purchases made by this address",
+  reclaimingFailed: "Reclaiming failed",
 };
