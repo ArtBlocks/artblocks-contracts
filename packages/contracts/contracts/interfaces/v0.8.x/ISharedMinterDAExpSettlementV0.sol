@@ -11,7 +11,7 @@ interface ISharedMinterDAExpSettlementV0 is ISharedMinterDAExpV0 {
     event SelloutPriceUpdated(
         uint256 indexed _projectId,
         address indexed _coreContract,
-        uint256 _selloutPrice
+        uint128 _selloutPrice
     );
 
     /// artist and admin have withdrawn revenues from settleable purchases for
@@ -28,8 +28,8 @@ interface ISharedMinterDAExpSettlementV0 is ISharedMinterDAExpV0 {
         address indexed _purchaser,
         uint256 indexed _projectId,
         address indexed _coreContract,
-        uint256 _numPurchased,
-        uint256 _netPosted
+        uint24 _numPurchased,
+        uint232 _netPosted
     );
 
     /// returns latest purchase price for project `_projectId`, or 0 if no

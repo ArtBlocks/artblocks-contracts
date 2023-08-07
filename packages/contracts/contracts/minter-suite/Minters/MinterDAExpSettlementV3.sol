@@ -843,14 +843,15 @@ contract MinterDAExpSettlementV3 is
                 _settlementAuctionProjectConfig: _settlementAuctionProjectConfig,
                 _receipt: _receipt
             });
-        _receipt.netPosted = requiredAmountPosted.toUint232();
+        uint232 newNetPosted = requiredAmountPosted.toUint232();
+        _receipt.netPosted = newNetPosted;
 
         emit ReceiptUpdated({
             _purchaser: msg.sender,
             _projectId: _projectId,
             _coreContract: _coreContract,
             _numPurchased: _receipt.numPurchased,
-            _netPosted: requiredAmountPosted
+            _netPosted: newNetPosted
         });
 
         // INTERACTIONS
@@ -913,7 +914,8 @@ contract MinterDAExpSettlementV3 is
                     _settlementAuctionProjectConfig: _settlementAuctionProjectConfig,
                     _receipt: _receipt
                 });
-            _receipt.netPosted = requiredAmountPosted.toUint232();
+            uint232 newNetPosted = requiredAmountPosted.toUint232();
+            _receipt.netPosted = newNetPosted;
 
             excessSettlementFunds += excessSettlementFundsForProject;
 
@@ -923,7 +925,7 @@ contract MinterDAExpSettlementV3 is
                 _projectId: projectId,
                 _coreContract: coreContract,
                 _numPurchased: _receipt.numPurchased,
-                _netPosted: requiredAmountPosted
+                _netPosted: newNetPosted
             });
             // gas efficiently increment i
             // won't overflow due to for loop, as well as gas limts
@@ -1020,7 +1022,7 @@ contract MinterDAExpSettlementV3 is
             _coreContract
         ][_projectId];
 
-        (uint256 netPosted, uint256 numPurchased) = SettlementExpLib
+        (uint232 netPosted, uint24 numPurchased) = SettlementExpLib
             .validateReceiptEffects(receipt, currentPriceInWei);
 
         // emit event indicating new receipt state

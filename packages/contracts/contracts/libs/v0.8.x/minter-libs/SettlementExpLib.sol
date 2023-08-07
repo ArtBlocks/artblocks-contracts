@@ -4,6 +4,8 @@
 import "./MaxInvocationsLib.sol";
 import "./DAExpLib.sol";
 
+import "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
+
 pragma solidity ^0.8.0;
 
 /**
@@ -16,6 +18,8 @@ pragma solidity ^0.8.0;
  */
 
 library SettlementExpLib {
+    using SafeCast for uint256;
+
     // The SettlementAuctionProjectConfig struct tracks the state of a project's
     // settlement auction. It tracks the number of tokens minted that have
     // potential of future settlement, the latest purchase price of a token on
@@ -66,9 +70,9 @@ library SettlementExpLib {
     function validateReceiptEffects(
         Receipt storage _receipt,
         uint256 _currentPriceInWei
-    ) internal returns (uint256 netPosted, uint256 numPurchased) {
+    ) internal returns (uint232 netPosted, uint24 numPurchased) {
         // in memory copy + update
-        netPosted = _receipt.netPosted + msg.value;
+        netPosted = (_receipt.netPosted + msg.value).toUint232();
         numPurchased = _receipt.numPurchased + 1;
 
         // require sufficient payment on project
@@ -80,8 +84,8 @@ library SettlementExpLib {
         // update Receipt in storage
         // @dev overflow checks are not required since the added values cannot
         // be enough to overflow due to maximum invocations or supply of ETH
-        _receipt.netPosted = uint232(netPosted);
-        _receipt.numPurchased = uint24(numPurchased);
+        _receipt.netPosted = netPosted;
+        _receipt.numPurchased = numPurchased;
     }
 
     /**
