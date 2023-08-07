@@ -1056,6 +1056,20 @@ runForEach.forEach((params) => {
         );
       });
 
+      it("requires same length projects and core contracts", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .reclaimProjectsExcessSettlementFundsTo(
+              config.accounts.user.address,
+              [config.projectZero, config.projectOne],
+              [config.genArt721Core.address]
+            ),
+          revertMessages.arrayLengthsMatch
+        );
+      });
+
       it("sends excess settlement funds to _to", async function () {
         const config = await loadFixture(_beforeEach);
         await configureProjectZeroAuctionAndAdvanceToStart(config);

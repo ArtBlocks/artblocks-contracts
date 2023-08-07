@@ -87,4 +87,5 @@ export const revertMessages = {
   noPurchasesMade: "No purchases made by this address",
   reclaimingFailed: "Reclaiming failed",
   noZeroAddress: "No zero address",
+  arrayLengthsMatch: "Array lengths must match",
 };
