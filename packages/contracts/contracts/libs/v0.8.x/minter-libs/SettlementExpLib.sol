@@ -217,43 +217,6 @@ library SettlementExpLib {
     }
 
     /**
-     * @notice Returns true if the project `_projectId` is sold out, false
-     * otherwise. This function returns an accurate value regardless of whether
-     * the project's maximum invocations value cached locally on the minter is
-     * up to date with the core contract's maximum invocations value.
-     * @param _projectId Project ID to check if sold out.
-     * @return bool true if the project is sold out, false otherwise.
-     * @dev this is a view method, and will not update the minter's local
-     * cached state.
-     */
-    function projectMaxHasBeenInvokedSafe(
-        uint256 _projectId,
-        address _coreContract,
-        MaxInvocationsLib.MaxInvocationsProjectConfig
-            storage _maxInvocationsProjectConfigMapping
-    ) internal view returns (bool) {
-        uint256 coreInvocations;
-        uint256 coreMaxInvocations;
-        (coreInvocations, coreMaxInvocations) = MaxInvocationsLib
-            .coreContractInvocationData(_projectId, _coreContract);
-
-        uint256 localMaxInvocations = _maxInvocationsProjectConfigMapping
-            .maxInvocations;
-        // value is locally defined, and could be out of date.
-        // only possible illogical state is if local max invocations is
-        // greater than core contract's max invocations, in which case
-        // we should use the core contract's max invocations
-        if (localMaxInvocations > coreMaxInvocations) {
-            // local max invocations is stale and illogical, defer to core
-            // contract's max invocations since it is the limiting factor
-            return (coreMaxInvocations == coreInvocations);
-        }
-        // local max invocations is limiting, so check core invocations against
-        // local max invocations
-        return (coreInvocations >= localMaxInvocations);
-    }
-
-    /**
      * @notice Gets price of minting a token on project `_projectId` given
      * the project's AuctionParameters and current block timestamp.
      * Reverts if auction has not yet started or auction is unconfigured, and
@@ -326,10 +289,10 @@ library SettlementExpLib {
     ) internal view returns (uint256 tokenPriceInWei) {
         // accurately check if project has sold out
         if (
-            projectMaxHasBeenInvokedSafe({
+            MaxInvocationsLib.projectMaxHasBeenInvokedSafe({
                 _projectId: _projectId,
                 _coreContract: _coreContract,
-                _maxInvocationsProjectConfigMapping: _maxInvocationsProjectConfigMapping
+                _maxInvocationsProjectConfig: _maxInvocationsProjectConfigMapping
             })
         ) {
             // max invocations have been reached, return the latest purchased
