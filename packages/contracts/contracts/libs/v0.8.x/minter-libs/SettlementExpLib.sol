@@ -84,6 +84,18 @@ library SettlementExpLib {
         _receipt.numPurchased = uint24(numPurchased);
     }
 
+    /**
+     * @notice Emergency override function that allows a sellout price of a
+     * completed auction to be reduced to something below current latest
+     * purchase price, but gte base price. This is useful in the case that a
+     * project's auction artifically sold out at a price higher than the
+     * project's base price, and the artist wishes to allow settlement at a
+     * lower price (and thus lower settlement revenues, increasing purchaser
+     * returned settlement funds by the minter to collectors).
+     * @param _projectId Project ID to reduce auction sellout price for.
+     * @param _newSelloutPrice New sellout price to set for the auction. Must
+     * be less than the current sellout price, gte base price.
+     */
     function adminEmergencyReduceSelloutPrice(
         uint256 _projectId,
         address _coreContract,
@@ -133,6 +145,21 @@ library SettlementExpLib {
         _settlementAuctionProjectConfig.latestPurchasePrice = _newSelloutPrice;
     }
 
+    /**
+     * @notice Gets the net revenues from the project's auction, in wei, and
+     * marks the auction as having had its revenues collected.
+     * IMPORTANT - this affects state and marks revenues collected as true, so
+     * revenue distribution should be done immediately after this function is
+     * called.
+     * @param _projectId Project ID to get revenues for
+     * @param _coreContract Core contract address
+     * @param _settlementAuctionProjectConfig SettlementAuctionProjectConfig
+     * struct for the project.
+     * @param _maxInvocationsProjectConfig MaxInvocationProjectConfig struct
+     * for the project.
+     * @param _DAProjectConfig DAProjectConfig struct for the project.
+     * @return netRevenues net revenues from the project's auction, in wei
+     */
     function getArtistAndAdminRevenues(
         uint256 _projectId,
         address _coreContract,
@@ -140,7 +167,7 @@ library SettlementExpLib {
         MaxInvocationsLib.MaxInvocationsProjectConfig
             storage _maxInvocationsProjectConfig,
         DAExpLib.DAProjectConfig storage _DAProjectConfig
-    ) internal returns (uint256) {
+    ) internal returns (uint256 netRevenues) {
         // require revenues to not have already been collected
         require(
             !_settlementAuctionProjectConfig.auctionRevenuesCollected,
@@ -193,11 +220,23 @@ library SettlementExpLib {
         // EFFECTS
         _settlementAuctionProjectConfig.auctionRevenuesCollected = true;
         // calculate the artist and admin revenues
-        uint256 netRevenues = _settlementAuctionProjectConfig
-            .numSettleableInvocations * _price;
+        netRevenues =
+            _settlementAuctionProjectConfig.numSettleableInvocations *
+            _price;
         return netRevenues;
     }
 
+    /**
+     *
+     * @param _settlementAuctionProjectConfig SettlementAuctionProjectConfig
+     * struct for the project.
+     * Reverts if no purchases have been made on the project by the collector
+     * being checked.
+     * @param _receipt Receipt struct for the collector on the project being
+     * checked
+     * @return excessSettlementFunds excess settlement funds, in wei
+     * @return requiredAmountPosted required amount to be posted by user, in wei
+     */
     function getProjectExcessSettlementFunds(
         SettlementAuctionProjectConfig storage _settlementAuctionProjectConfig,
         Receipt storage _receipt
