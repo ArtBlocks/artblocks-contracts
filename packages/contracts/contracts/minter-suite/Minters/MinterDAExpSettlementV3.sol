@@ -394,9 +394,9 @@ contract MinterDAExpSettlementV3 is
             _projectId: _projectId,
             _coreContract: _coreContract,
             _newSelloutPrice: _newSelloutPrice,
-            _settlementAuctionProjectConfigMapping: _settlementAuctionProjectConfig,
-            _maxInvocationsProjectConfigMapping: _maxInvocationsProjectConfig,
-            _DAProjectConfigMapping: _auctionProjectConfig
+            _settlementAuctionProjectConfig: _settlementAuctionProjectConfig,
+            _maxInvocationsProjectConfig: _maxInvocationsProjectConfig,
+            _DAProjectConfig: _auctionProjectConfig
         });
         emit SelloutPriceUpdated(_projectId, _coreContract, _newSelloutPrice);
     }
@@ -445,9 +445,9 @@ contract MinterDAExpSettlementV3 is
         uint256 netRevenues = SettlementExpLib.getArtistAndAdminRevenues({
             _projectId: _projectId,
             _coreContract: _coreContract,
-            _settlementAuctionProjectConfigMapping: _settlementAuctionProjectConfig,
-            _maxInvocationsProjectConfigMapping: _maxInvocationsProjectConfig,
-            _DAProjectConfigMapping: _auctionProjectConfig
+            _settlementAuctionProjectConfig: _settlementAuctionProjectConfig,
+            _maxInvocationsProjectConfig: _maxInvocationsProjectConfig,
+            _DAProjectConfig: _auctionProjectConfig
         });
         // INTERACTIONS
         bool isEngine = SplitFundsLib.isEngine(
@@ -760,9 +760,9 @@ contract MinterDAExpSettlementV3 is
             tokenPriceInWei = SettlementExpLib.getPriceSafe({
                 _projectId: _projectId,
                 _coreContract: _coreContract,
-                _settlementAuctionProjectConfigMapping: _settlementAuctionProjectConfig,
-                _maxInvocationsProjectConfigMapping: _maxInvocationsProjectConfig,
-                _DAProjectConfigMapping: auctionProjectConfig
+                _settlementAuctionProjectConfig: _settlementAuctionProjectConfig,
+                _maxInvocationsProjectConfig: _maxInvocationsProjectConfig,
+                _DAProjectConfig: auctionProjectConfig
             });
         }
         currencySymbol = "ETH";
@@ -800,8 +800,8 @@ contract MinterDAExpSettlementV3 is
 
         (excessSettlementFundsInWei, ) = SettlementExpLib
             .getProjectExcessSettlementFunds({
-                _settlementAuctionProjectConfigMapping: _settlementAuctionProjectConfig,
-                _receiptMapping: _receipt
+                _settlementAuctionProjectConfig: _settlementAuctionProjectConfig,
+                _receipt: _receipt
             });
         return excessSettlementFundsInWei;
     }
@@ -840,8 +840,8 @@ contract MinterDAExpSettlementV3 is
             uint256 excessSettlementFunds,
             uint256 requiredAmountPosted
         ) = SettlementExpLib.getProjectExcessSettlementFunds({
-                _settlementAuctionProjectConfigMapping: _settlementAuctionProjectConfig,
-                _receiptMapping: _receipt
+                _settlementAuctionProjectConfig: _settlementAuctionProjectConfig,
+                _receipt: _receipt
             });
         _receipt.netPosted = requiredAmountPosted.toUint232();
 
@@ -910,8 +910,8 @@ contract MinterDAExpSettlementV3 is
                 uint256 excessSettlementFundsForProject,
                 uint256 requiredAmountPosted
             ) = SettlementExpLib.getProjectExcessSettlementFunds({
-                    _settlementAuctionProjectConfigMapping: _settlementAuctionProjectConfig,
-                    _receiptMapping: _receipt
+                    _settlementAuctionProjectConfig: _settlementAuctionProjectConfig,
+                    _receipt: _receipt
                 });
             _receipt.netPosted = requiredAmountPosted.toUint232();
 
@@ -1009,9 +1009,9 @@ contract MinterDAExpSettlementV3 is
         // call later on in this function, when the core contract's max
         // invocation check fails.
         uint256 currentPriceInWei = SettlementExpLib.getPriceUnsafe({
-            _settlementAuctionProjectConfigMapping: _settlementAuctionProjectConfig,
-            _maxInvocationsProjectConfigMapping: _maxInvocationsProjectConfig,
-            _DAProjectConfigMapping: _auctionProjectConfig
+            _settlementAuctionProjectConfig: _settlementAuctionProjectConfig,
+            _maxInvocationsProjectConfig: _maxInvocationsProjectConfig,
+            _DAProjectConfig: _auctionProjectConfig
         });
 
         // EFFECTS

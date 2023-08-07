@@ -77,15 +77,14 @@ library SettlementExpLib {
         uint256 _projectId,
         address _coreContract,
         uint256 _newSelloutPrice,
-        SettlementAuctionProjectConfig
-            storage _settlementAuctionProjectConfigMapping,
+        SettlementAuctionProjectConfig storage _settlementAuctionProjectConfig,
         MaxInvocationsLib.MaxInvocationsProjectConfig
-            storage _maxInvocationsProjectConfigMapping,
-        DAExpLib.DAProjectConfig storage _DAProjectConfigMapping
+            storage _maxInvocationsProjectConfig,
+        DAExpLib.DAProjectConfig storage _DAProjectConfig
     ) internal {
         // CHECKS
         require(
-            !_settlementAuctionProjectConfigMapping.auctionRevenuesCollected,
+            !_settlementAuctionProjectConfig.auctionRevenuesCollected,
             "Only before revenues collected"
         );
 
@@ -95,15 +94,15 @@ library SettlementExpLib {
         MaxInvocationsLib.refreshMaxInvocations(
             _projectId,
             _coreContract,
-            _maxInvocationsProjectConfigMapping
+            _maxInvocationsProjectConfig
         );
         require(
-            _newSelloutPrice >= _DAProjectConfigMapping.basePrice,
+            _newSelloutPrice >= _DAProjectConfig.basePrice,
             "Only gte base price"
         );
         // require max invocations has been reached
         require(
-            _maxInvocationsProjectConfigMapping.maxHasBeenInvoked,
+            _maxInvocationsProjectConfig.maxHasBeenInvoked,
             "Auction must be complete"
         );
         // @dev no need to check that auction max invocations has been reached,
@@ -111,7 +110,7 @@ library SettlementExpLib {
         // check will fail.
         require(
             _newSelloutPrice <
-                _settlementAuctionProjectConfigMapping.latestPurchasePrice,
+                _settlementAuctionProjectConfig.latestPurchasePrice,
             "May only reduce sellout price"
         );
         // ensure _newSelloutPrice is non-zero
@@ -120,22 +119,20 @@ library SettlementExpLib {
         // @dev no coverage else branch of following line because redundant
         require(_newSelloutPrice > 0, "Only sellout prices > 0");
         // EFFECTS
-        _settlementAuctionProjectConfigMapping
-            .latestPurchasePrice = _newSelloutPrice;
+        _settlementAuctionProjectConfig.latestPurchasePrice = _newSelloutPrice;
     }
 
     function getArtistAndAdminRevenues(
         uint256 _projectId,
         address _coreContract,
-        SettlementAuctionProjectConfig
-            storage _settlementAuctionProjectConfigMapping,
+        SettlementAuctionProjectConfig storage _settlementAuctionProjectConfig,
         MaxInvocationsLib.MaxInvocationsProjectConfig
-            storage _maxInvocationsProjectConfigMapping,
-        DAExpLib.DAProjectConfig storage _DAProjectConfigMapping
+            storage _maxInvocationsProjectConfig,
+        DAExpLib.DAProjectConfig storage _DAProjectConfig
     ) internal returns (uint256) {
         // require revenues to not have already been collected
         require(
-            !_settlementAuctionProjectConfigMapping.auctionRevenuesCollected,
+            !_settlementAuctionProjectConfig.auctionRevenuesCollected,
             "Revenues already collected"
         );
         // refresh max invocations, updating any local values that are
@@ -144,7 +141,7 @@ library SettlementExpLib {
         MaxInvocationsLib.refreshMaxInvocations(
             _projectId,
             _coreContract,
-            _maxInvocationsProjectConfigMapping
+            _maxInvocationsProjectConfig
         );
 
         // get the current net price of the auction - reverts if no auction
@@ -156,23 +153,23 @@ library SettlementExpLib {
         // @dev price is guaranteed <= _projectConfig.latestPurchasePrice,
         // since this minter enforces monotonically decreasing purchase prices.
         uint256 _price = getPriceUnsafe({
-            _settlementAuctionProjectConfigMapping: _settlementAuctionProjectConfigMapping,
-            _maxInvocationsProjectConfigMapping: _maxInvocationsProjectConfigMapping,
-            _DAProjectConfigMapping: _DAProjectConfigMapping
+            _settlementAuctionProjectConfig: _settlementAuctionProjectConfig,
+            _maxInvocationsProjectConfig: _maxInvocationsProjectConfig,
+            _DAProjectConfig: _DAProjectConfig
         });
         // if the price is not base price, require that the auction have
         // reached max invocations. This prevents premature withdrawl
         // before final auction price is possible to know.
-        if (_price != _DAProjectConfigMapping.basePrice) {
+        if (_price != _DAProjectConfig.basePrice) {
             // @dev we can trust maxHasBeenInvoked, since we just
             // refreshed it above with _refreshMaxInvocations, preventing any
             // false negatives
             require(
-                _maxInvocationsProjectConfigMapping.maxHasBeenInvoked,
+                _maxInvocationsProjectConfig.maxHasBeenInvoked,
                 "Active auction not yet sold out"
             );
         } else {
-            uint256 basePrice = _DAProjectConfigMapping.basePrice;
+            uint256 basePrice = _DAProjectConfig.basePrice;
             // base price of zero indicates no sales, since base price of zero
             // is not allowed when configuring an auction.
             // @dev no coverage else branch of following line because redundant
@@ -180,39 +177,35 @@ library SettlementExpLib {
             // if the price is base price, the auction is valid and may be claimed
             // update the latest purchase price to the base price, to ensure
             // the base price is used for all future settlement calculations
-            _settlementAuctionProjectConfigMapping
-                .latestPurchasePrice = basePrice;
+            _settlementAuctionProjectConfig.latestPurchasePrice = basePrice;
         }
         // EFFECTS
-        _settlementAuctionProjectConfigMapping.auctionRevenuesCollected = true;
+        _settlementAuctionProjectConfig.auctionRevenuesCollected = true;
         // calculate the artist and admin revenues
-        uint256 netRevenues = _settlementAuctionProjectConfigMapping
+        uint256 netRevenues = _settlementAuctionProjectConfig
             .numSettleableInvocations * _price;
         return netRevenues;
     }
 
     function getProjectExcessSettlementFunds(
-        SettlementAuctionProjectConfig
-            storage _settlementAuctionProjectConfigMapping,
-        Receipt storage _receiptMapping
+        SettlementAuctionProjectConfig storage _settlementAuctionProjectConfig,
+        Receipt storage _receipt
     )
         internal
         view
         returns (uint256 excessSettlementFunds, uint256 requiredAmountPosted)
     {
         // require that a user has purchased at least one token on this project
-        uint256 numPurchased = _receiptMapping.numPurchased;
+        uint256 numPurchased = _receipt.numPurchased;
         require(numPurchased > 0, "No purchases made by this address");
 
-        uint256 currentSettledTokenPrice = _settlementAuctionProjectConfigMapping
-                .latestPurchasePrice;
+        uint256 currentSettledTokenPrice = _settlementAuctionProjectConfig
+            .latestPurchasePrice;
 
         // calculate the excess settlement funds amount
         // implicit overflow/underflow checks in solidity ^0.8
         requiredAmountPosted = numPurchased * currentSettledTokenPrice;
-        excessSettlementFunds =
-            _receiptMapping.netPosted -
-            requiredAmountPosted;
+        excessSettlementFunds = _receipt.netPosted - requiredAmountPosted;
         return (excessSettlementFunds, requiredAmountPosted);
     }
 
@@ -226,11 +219,11 @@ library SettlementExpLib {
      * @dev when an accurate price is required regardless of the current state
      * state of the locally cached minter max invocations, use the less gas
      * efficient function `_getPriceSafe`.
-     * @param _settlementAuctionProjectConfigMapping SettlementAuctionProjectConfig
+     * @param _settlementAuctionProjectConfig SettlementAuctionProjectConfig
      * struct for the project.
-     * @param _maxInvocationsProjectConfigMapping MaxInvocationsProjectConfig
+     * @param _maxInvocationsProjectConfig MaxInvocationsProjectConfig
      * struct for the project.
-     * @param _DAProjectConfigMapping DAProjectConfig struct for the project.
+     * @param _DAProjectConfig DAProjectConfig struct for the project.
      * @return uint256 current price of token in Wei, accurate if minter max
      * invocations are up to date
      * @dev This method calculates price decay using a linear interpolation
@@ -238,11 +231,10 @@ library SettlementExpLib {
      * decay, `_priceDecayHalfLifeSeconds`.
      */
     function getPriceUnsafe(
-        SettlementAuctionProjectConfig
-            storage _settlementAuctionProjectConfigMapping,
+        SettlementAuctionProjectConfig storage _settlementAuctionProjectConfig,
         MaxInvocationsLib.MaxInvocationsProjectConfig
-            storage _maxInvocationsProjectConfigMapping,
-        DAExpLib.DAProjectConfig storage _DAProjectConfigMapping
+            storage _maxInvocationsProjectConfig,
+        DAExpLib.DAProjectConfig storage _DAProjectConfig
     ) internal view returns (uint256) {
         // return latest purchase price if:
         // - minter is aware of a sold-out auction (without updating max
@@ -250,17 +242,16 @@ library SettlementExpLib {
         // - auction revenues have been collected, at which point the latest
         // purchase price will never change again
         if (
-            _maxInvocationsProjectConfigMapping.maxHasBeenInvoked ||
-            _settlementAuctionProjectConfigMapping.auctionRevenuesCollected
+            _maxInvocationsProjectConfig.maxHasBeenInvoked ||
+            _settlementAuctionProjectConfig.auctionRevenuesCollected
         ) {
-            return _settlementAuctionProjectConfigMapping.latestPurchasePrice;
+            return _settlementAuctionProjectConfig.latestPurchasePrice;
         }
         // otherwise calculate price based on current block timestamp and
         // auction configuration
         // @dev this will revert if auction has not yet started or auction is
         // unconfigured, which is relied upon for security.
-        return
-            DAExpLib.getPriceExp({_DAProjectConfig: _DAProjectConfigMapping});
+        return DAExpLib.getPriceExp({_DAProjectConfig: _DAProjectConfig});
     }
 
     /**
@@ -281,30 +272,29 @@ library SettlementExpLib {
     function getPriceSafe(
         uint256 _projectId,
         address _coreContract,
-        SettlementAuctionProjectConfig
-            storage _settlementAuctionProjectConfigMapping,
+        SettlementAuctionProjectConfig storage _settlementAuctionProjectConfig,
         MaxInvocationsLib.MaxInvocationsProjectConfig
-            storage _maxInvocationsProjectConfigMapping,
-        DAExpLib.DAProjectConfig storage _DAProjectConfigMapping
+            storage _maxInvocationsProjectConfig,
+        DAExpLib.DAProjectConfig storage _DAProjectConfig
     ) internal view returns (uint256 tokenPriceInWei) {
         // accurately check if project has sold out
         if (
             MaxInvocationsLib.projectMaxHasBeenInvokedSafe({
                 _projectId: _projectId,
                 _coreContract: _coreContract,
-                _maxInvocationsProjectConfig: _maxInvocationsProjectConfigMapping
+                _maxInvocationsProjectConfig: _maxInvocationsProjectConfig
             })
         ) {
             // max invocations have been reached, return the latest purchased
             // price
-            tokenPriceInWei = _settlementAuctionProjectConfigMapping
+            tokenPriceInWei = _settlementAuctionProjectConfig
                 .latestPurchasePrice;
         } else {
             // if not sold out, return the current price via getPriceUnsafe
             tokenPriceInWei = getPriceUnsafe({
-                _settlementAuctionProjectConfigMapping: _settlementAuctionProjectConfigMapping,
-                _maxInvocationsProjectConfigMapping: _maxInvocationsProjectConfigMapping,
-                _DAProjectConfigMapping: _DAProjectConfigMapping
+                _settlementAuctionProjectConfig: _settlementAuctionProjectConfig,
+                _maxInvocationsProjectConfig: _maxInvocationsProjectConfig,
+                _DAProjectConfig: _DAProjectConfig
             });
         }
         return tokenPriceInWei;
