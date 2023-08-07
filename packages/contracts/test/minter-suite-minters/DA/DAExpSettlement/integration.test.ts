@@ -58,10 +58,6 @@ runForEach.forEach((params) => {
         .connect(config.accounts.deployer)
         .approveMinterGlobally(config.minter.address);
 
-      config.higherPricePerTokenInWei = config.pricePerTokenInWei.add(
-        ethers.utils.parseEther("0.1")
-      );
-
       // Project setup
       await safeAddProject(
         config.genArt721Core,

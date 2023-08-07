@@ -200,10 +200,9 @@ library SettlementExpLib {
         view
         returns (uint256 excessSettlementFunds, uint256 requiredAmountPosted)
     {
+        // require that a user has purchased at least one token on this project
         uint256 numPurchased = _receiptMapping.numPurchased;
         require(numPurchased > 0, "No purchases made by this address");
-
-        // require that a user has purchased at least one token on this project
 
         uint256 currentSettledTokenPrice = _settlementAuctionProjectConfigMapping
                 .latestPurchasePrice;

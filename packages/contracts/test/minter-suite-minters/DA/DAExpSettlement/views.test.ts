@@ -10,6 +10,7 @@ import {
   configureProjectZeroAuction,
   configureProjectZeroAuctionAndAdvanceOneDay,
   configureProjectZeroAuctionAndAdvanceToStart,
+  configureProjectZeroAuctionAndSellout,
 } from "./helpers";
 import { Common_Views } from "../../common.views";
 import { Logger } from "@ethersproject/logger";
@@ -69,6 +70,14 @@ runForEach.forEach((params) => {
         config.accounts.deployer,
         config.accounts.artist.address
       );
+
+      await config.genArt721Core
+        .connect(config.accounts.deployer)
+        .toggleProjectIsActive(config.projectZero);
+
+      await config.genArt721Core
+        .connect(config.accounts.artist)
+        .toggleProjectIsPaused(config.projectZero);
       await config.minterFilter
         .connect(config.accounts.deployer)
         .setMinterForProject(
@@ -76,6 +85,10 @@ runForEach.forEach((params) => {
           config.genArt721Core.address,
           config.minter.address
         );
+
+      await config.genArt721Core
+        .connect(config.accounts.artist)
+        .updateProjectMaxInvocations(config.projectZero, config.maxInvocations);
 
       const blockNumber = await ethers.provider.getBlockNumber();
       const block = await ethers.provider.getBlock(blockNumber);
@@ -133,13 +146,20 @@ runForEach.forEach((params) => {
       it("uses cached value when available", async function () {
         const config = await loadFixture(_beforeEach);
 
-        // purchase token to trigger isEngine caching
+        // purchase token and withdrawArtistAndAdminRevenues to trigger isEngine caching
         await configureProjectZeroAuctionAndAdvanceToStart(config);
         await config.minter
           .connect(config.accounts.artist)
           .purchase(config.projectZero, config.genArt721Core.address, {
             value: config.startingPrice,
           });
+        await ethers.provider.send("evm_mine", [config.startTime + ONE_DAY]);
+        await config.minter
+          .connect(config.accounts.artist)
+          .withdrawArtistAndAdminRevenues(
+            config.projectZero,
+            config.genArt721Core.address
+          );
 
         const isEngineView = await config.minter
           .connect(config.accounts.artist)
@@ -236,6 +256,55 @@ runForEach.forEach((params) => {
         expect(priceInfo.isConfigured).to.equal(true);
         expect(priceInfo.tokenPriceInWei).to.equal(config.basePrice);
       });
+
+      it("returns last sale price after sellout mid-auction", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndSellout(config);
+        // advance past auction end time to check that time does not affect returned price
+        await ethers.provider.send("evm_mine", [config.startTime + ONE_DAY]);
+        const priceInfo = await config.minter.getPriceInfo(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(priceInfo.isConfigured).to.equal(true);
+        // we didn't record exact purchase price, but ensuring it is greater than base price
+        // is sufficient to ensure that it is the last sale price
+        expect(priceInfo.tokenPriceInWei).to.be.gt(config.basePrice);
+      });
+
+      it("returns last sale price after core max invocations hit, stale minter max invocations", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndAdvanceToStart(config);
+        // set minter max invocations to >1
+        await config.minter
+          .connect(config.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(
+            config.projectZero,
+            config.genArt721Core.address,
+            15
+          );
+        // set core contract max invocations to 1
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .updateProjectMaxInvocations(config.projectZero, 1);
+        // purchase token
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+
+        // advance past auction end time to check that time does not affect returned price
+        await ethers.provider.send("evm_mine", [config.startTime + ONE_DAY]);
+        const priceInfo = await config.minter.getPriceInfo(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(priceInfo.isConfigured).to.equal(true);
+        // we didn't record exact purchase price, but ensuring it is greater than base price
+        // is sufficient to ensure that it is the last sale price
+        expect(priceInfo.tokenPriceInWei).to.be.gt(config.basePrice);
+      });
     });
 
     describe("minimumPriceDecayHalfLifeSeconds", async function () {
@@ -279,6 +348,173 @@ runForEach.forEach((params) => {
           config.startingPrice
         );
         expect(projectAuctionParameters.basePrice).to.equal(config.basePrice);
+      });
+    });
+
+    describe("getProjectLatestPurchasePrice", async function () {
+      it("returns zero if no purchases have been made", async function () {
+        const config = await loadFixture(_beforeEach);
+        const projectLatestPurchasePrice =
+          await config.minter.getProjectLatestPurchasePrice(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        expect(projectLatestPurchasePrice).to.equal(0);
+      });
+
+      it("returns latest purchase price after each purchase", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndAdvanceToStart(config);
+        // verify initial state
+        const initialProjectLatestPurchasePrice =
+          await config.minter.getProjectLatestPurchasePrice(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        expect(initialProjectLatestPurchasePrice).to.equal(0);
+        // purchase token
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        // verify state is updated
+        const projectLatestPurchasePrice1 =
+          await config.minter.getProjectLatestPurchasePrice(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        expect(projectLatestPurchasePrice1).to.be.gt(0);
+        // purchase second token one minute later
+        await ethers.provider.send("evm_mine", [config.startTime + ONE_MINUTE]);
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        // verify state is updated
+        const projectLatestPurchasePrice2 =
+          await config.minter.getProjectLatestPurchasePrice(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        expect(projectLatestPurchasePrice2).to.be.gt(0);
+        expect(projectLatestPurchasePrice2).to.be.lt(
+          projectLatestPurchasePrice1
+        );
+      });
+
+      it("returns latest purchase price even during a reset state", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndAdvanceToStart(config);
+        // verify initial state
+        const initialProjectLatestPurchasePrice =
+          await config.minter.getProjectLatestPurchasePrice(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        expect(initialProjectLatestPurchasePrice).to.equal(0);
+        // purchase token
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        // verify state is updated
+        const projectLatestPurchasePrice1 =
+          await config.minter.getProjectLatestPurchasePrice(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        expect(projectLatestPurchasePrice1).to.be.gt(0);
+        // auction is reset after 1 minute
+        await ethers.provider.send("evm_mine", [config.startTime + ONE_MINUTE]);
+        await config.minter
+          .connect(config.accounts.deployer)
+          .resetAuctionDetails(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        // verify latest purchase price is still the same
+        const projectLatestPurchasePrice2 =
+          await config.minter.getProjectLatestPurchasePrice(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        expect(projectLatestPurchasePrice2).to.equal(
+          projectLatestPurchasePrice1
+        );
+      });
+    });
+
+    describe("getNumSettleableInvocations", async function () {
+      it("returns zero if no purchases have been made", async function () {
+        const config = await loadFixture(_beforeEach);
+        const numSettleableInvocations =
+          await config.minter.getNumSettleableInvocations(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        expect(numSettleableInvocations).to.equal(0);
+      });
+
+      it("returns value if settleable purchase has been made", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndAdvanceToStart(config);
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        const numSettleableInvocations =
+          await config.minter.getNumSettleableInvocations(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        expect(numSettleableInvocations).to.equal(1);
+      });
+    });
+
+    describe("getProjectExcessSettlementFunds", async function () {
+      it("does not allow query of zero address", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.minter.getProjectExcessSettlementFunds(
+            config.projectZero,
+            config.genArt721Core.address,
+            ethers.constants.AddressZero
+          ),
+          revertMessages.noZeroAddress
+        );
+      });
+
+      it("reverts when no purchases made", async function () {
+        const config = await loadFixture(_beforeEach);
+        await expectRevert(
+          config.minter.getProjectExcessSettlementFunds(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.accounts.user.address
+          ),
+          revertMessages.noPurchasesMade
+        );
+      });
+
+      it("returns expected values when purchase has been made", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndAdvanceToStart(config);
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice.add(1), // add 1 to ensure excess funds
+          });
+        const excessSettlementFunds =
+          await config.minter.getProjectExcessSettlementFunds(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.accounts.user.address
+          );
+        expect(excessSettlementFunds).to.be.gt(0);
       });
     });
   });

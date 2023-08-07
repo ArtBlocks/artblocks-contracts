@@ -86,4 +86,5 @@ export const revertMessages = {
   noClaimToZeroAddress: "No claiming to the zero address",
   noPurchasesMade: "No purchases made by this address",
   reclaimingFailed: "Reclaiming failed",
+  noZeroAddress: "No zero address",
 };

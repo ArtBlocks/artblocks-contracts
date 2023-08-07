@@ -763,6 +763,30 @@ runForEach.forEach((params) => {
           revertMessages.onlyGteBasePrice
         );
       });
+
+      it("Only before revenues collected", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndSellout(config);
+        // collect revenues
+        await config.minter
+          .connect(config.accounts.artist)
+          .withdrawArtistAndAdminRevenues(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+        // expect revert after revenues collected
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.deployer)
+            .adminEmergencyReduceSelloutPrice(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.basePrice
+            ),
+          // we hit a previous check due to redundant check of zero base price
+          revertMessages.onlyBeforeRevenuesWithdrawn
+        );
+      });
     });
 
     describe("withdrawArtistAndAdminRevenues", async function () {
