@@ -398,7 +398,12 @@ contract MinterDAExpSettlementV3 is
             _maxInvocationsProjectConfig: _maxInvocationsProjectConfig,
             _DAProjectConfig: _auctionProjectConfig
         });
-        emit SelloutPriceUpdated(_projectId, _coreContract, _newSelloutPrice);
+        emit ConfigValueSet(
+            _projectId,
+            _coreContract,
+            SettlementExpLib.CONFIG_CURRENT_SETTLED_PRICE,
+            uint256(_newSelloutPrice)
+        );
     }
 
     /**

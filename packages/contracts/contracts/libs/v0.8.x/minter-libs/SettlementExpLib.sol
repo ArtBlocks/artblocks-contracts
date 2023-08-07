@@ -20,6 +20,9 @@ pragma solidity ^0.8.0;
 library SettlementExpLib {
     using SafeCast for uint256;
 
+    bytes32 internal constant CONFIG_CURRENT_SETTLED_PRICE =
+        "currentSettledPrice";
+
     // The SettlementAuctionProjectConfig struct tracks the state of a project's
     // settlement auction. It tracks the number of tokens minted that have
     // potential of future settlement, the latest purchase price of a token on

@@ -5,15 +5,6 @@ pragma solidity ^0.8.0;
 import "./ISharedMinterDAExpV0.sol";
 
 interface ISharedMinterDAExpSettlementV0 is ISharedMinterDAExpV0 {
-    /// sellout price updated for project `projectId`.
-    /// @dev does not use generic event because likely will trigger additional
-    /// actions in indexing layer
-    event SelloutPriceUpdated(
-        uint256 indexed _projectId,
-        address indexed _coreContract,
-        uint128 _selloutPrice
-    );
-
     /// artist and admin have withdrawn revenues from settleable purchases for
     /// project `projectId`.
     /// @dev does not use generic event because likely will trigger additional
