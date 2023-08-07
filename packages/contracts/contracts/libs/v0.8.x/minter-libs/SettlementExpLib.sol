@@ -16,20 +16,31 @@ pragma solidity ^0.8.0;
  */
 
 library SettlementExpLib {
+    // The SettlementAuctionProjectConfig struct tracks the state of a project's
+    // settlement auction. It tracks the number of tokens minted that have
+    // potential of future settlement, the latest purchase price of a token on
+    // the project, and whether or not the auction's revenues have been
+    // collected.
     struct SettlementAuctionProjectConfig {
         // set to true only after artist + admin revenues have been collected
         bool auctionRevenuesCollected;
         // number of tokens minted that have potential of future settlement.
-        // max uint24 > 16.7 million tokens > 1 million tokens/project max
+        // @dev max uint24 > 16.7 million tokens > 1 million tokens/project max
         uint24 numSettleableInvocations;
         // When non-zero, this value is used as a reference when an auction is
         // reset by admin, and then a new auction is configured by an artist.
         // In that case, the new auction will be required to have a starting
         // price less than or equal to this value, if one or more purchases
         // have been made on this minter.
-        uint256 latestPurchasePrice;
+        // @dev max uint128 allows for > 1e51 ETH (much more than max supply)
+        // This enables struct packing, and is consistent with prices value
+        // limits in DAExpLib's DAProjectConfig struct.
+        uint128 latestPurchasePrice;
     }
 
+    // The Receipt struct tracks the state of a user's settlement on a given
+    // project. It tracks the total funds posted by the user on the project
+    // and the number of tokens purchased by the user on the project.
     struct Receipt {
         // max uint232 allows for > 1e51 ETH (much more than max supply)
         uint232 netPosted;
@@ -76,7 +87,7 @@ library SettlementExpLib {
     function adminEmergencyReduceSelloutPrice(
         uint256 _projectId,
         address _coreContract,
-        uint256 _newSelloutPrice,
+        uint128 _newSelloutPrice,
         SettlementAuctionProjectConfig storage _settlementAuctionProjectConfig,
         MaxInvocationsLib.MaxInvocationsProjectConfig
             storage _maxInvocationsProjectConfig,
@@ -169,7 +180,7 @@ library SettlementExpLib {
                 "Active auction not yet sold out"
             );
         } else {
-            uint256 basePrice = _DAProjectConfig.basePrice;
+            uint128 basePrice = _DAProjectConfig.basePrice;
             // base price of zero indicates no sales, since base price of zero
             // is not allowed when configuring an auction.
             // @dev no coverage else branch of following line because redundant
