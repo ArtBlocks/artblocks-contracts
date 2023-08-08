@@ -655,7 +655,9 @@ runForEach.forEach((params) => {
           });
         // expect revenues to have been distributed
         const artistBalance2 = await config.accounts.artist.getBalance();
-        const expectedRevenue = config.basePrice.mul(9).div(10); // 90% to artist
+        const expectedRevenue = config.isEngine
+          ? config.basePrice.mul(8).div(10) // 80% to artist
+          : config.basePrice.mul(9).div(10); // 90% to artist
         expect(artistBalance2).to.equal(artistBalance1.add(expectedRevenue));
       });
 

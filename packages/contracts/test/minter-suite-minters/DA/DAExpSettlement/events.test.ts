@@ -220,7 +220,10 @@ runForEach.forEach((params) => {
               targetNewSelloutPrice
             )
         )
-          .to.emit(config.minter, "ConfigValueSet")
+          .to.emit(
+            config.minter,
+            "ConfigValueSet(uint256,address,bytes32,uint256)"
+          )
           .withArgs(
             config.projectZero,
             config.genArt721Core.address,
@@ -243,7 +246,10 @@ runForEach.forEach((params) => {
               config.genArt721Core.address
             )
         )
-          .to.emit(config.minter, "ConfigValueSet")
+          .to.emit(
+            config.minter,
+            "ConfigValueSet(uint256,address,bytes32,bool)"
+          )
           .withArgs(
             config.projectZero,
             config.genArt721Core.address,

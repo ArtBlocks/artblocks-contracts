@@ -115,6 +115,8 @@ runForEach.forEach((params) => {
       config.basePrice = config.pricePerTokenInWei;
       config.startingPrice = config.basePrice.mul(5);
 
+      config.isEngine = params.core.includes("Engine");
+
       return config;
     }
 
@@ -955,13 +957,19 @@ runForEach.forEach((params) => {
             config.genArt721Core.address
           );
         const artistFinalBalance = await config.accounts.artist.getBalance();
+        const expectedRevenue = config.isEngine
+          ? secondPurchasePrice.mul(8).div(10).mul(2) // 80% to artist
+          : secondPurchasePrice.mul(9).div(10).mul(2); // 90% to artist
         // expect artist to receive 90% of latest purchase price, times 2 for 2 tokens
-        expect(artistFinalBalance).to.be.gt(0);
+        expect(expectedRevenue).to.be.gt(0);
         expect(secondPurchasePrice).to.be.gt(0);
-        const allowedNumericalError = 1; // 1 wei error allowed
-        expect(artistFinalBalance.sub(artistInitialBalance)).to.equal(
-          secondPurchasePrice.mul(2).mul(9).div(10).add(allowedNumericalError)
-        );
+        // expected numerical tolerance is ~2 wei for the two purchases
+        expect(
+          artistFinalBalance
+            .sub(artistInitialBalance)
+            .sub(expectedRevenue)
+            .abs()
+        ).to.be.lte(2);
         expect(secondPurchasePrice).to.be.lt(firstPurchasePrice);
         expect(secondPurchasePrice).to.be.gt(config.basePrice);
       });
@@ -999,10 +1007,13 @@ runForEach.forEach((params) => {
             config.genArt721Core.address
           );
         const artistFinalBalance = await config.accounts.artist.getBalance();
+        const expectedRevenue = config.isEngine
+          ? config.basePrice.mul(8).div(10) // 80% to artist
+          : config.basePrice.mul(9).div(10); // 90% to artist
         // expect artist to receive 90% of base price
         expect(artistFinalBalance).to.be.gt(0);
         expect(artistFinalBalance.sub(artistInitialBalance)).to.equal(
-          config.basePrice.mul(9).div(10)
+          expectedRevenue
         );
         expect(firstPurchasePrice).to.be.gt(config.basePrice);
       });
