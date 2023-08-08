@@ -204,7 +204,7 @@ runForEach.forEach((params) => {
       });
     });
 
-    describe("SelloutPriceUpdated", async function () {
+    describe("Generic: SelloutPriceUpdated", async function () {
       it("emits when admin emergency updates sellout price", async function () {
         const config = await loadFixture(_beforeEach);
         await configureProjectZeroAuctionAndSellout(config);
@@ -220,16 +220,17 @@ runForEach.forEach((params) => {
               targetNewSelloutPrice
             )
         )
-          .to.emit(config.minter, "SelloutPriceUpdated")
+          .to.emit(config.minter, "ConfigValueSet")
           .withArgs(
             config.projectZero,
             config.genArt721Core.address,
+            ethers.utils.formatBytes32String("currentSettledPrice"),
             targetNewSelloutPrice
           );
       });
     });
 
-    describe("ArtistAndAdminRevenuesWithdrawn", async function () {
+    describe("Generic: ArtistAndAdminRevenuesWithdrawn", async function () {
       it("emits when artist and admin revenues are withdrawn", async function () {
         const config = await loadFixture(_beforeEach);
         await configureProjectZeroAuctionAndSellout(config);
@@ -242,8 +243,13 @@ runForEach.forEach((params) => {
               config.genArt721Core.address
             )
         )
-          .to.emit(config.minter, "ArtistAndAdminRevenuesWithdrawn")
-          .withArgs(config.projectZero, config.genArt721Core.address);
+          .to.emit(config.minter, "ConfigValueSet")
+          .withArgs(
+            config.projectZero,
+            config.genArt721Core.address,
+            ethers.utils.formatBytes32String("auctionRevenuesCollected"),
+            true
+          );
       });
     });
 
