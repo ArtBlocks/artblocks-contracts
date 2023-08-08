@@ -11,9 +11,8 @@ import { Logger } from "@ethersproject/logger";
 Logger.setLogLevel(Logger.levels.ERROR);
 
 // delay to avoid issues with reorgs and tx failures
-import { delay, getConfigInputs } from "../util/utils";
+import { delay, getConfigInputs, requireLowGasPrice } from "../util/utils";
 import { EXTRA_DELAY_BETWEEN_TX } from "../util/constants";
-import { Contract } from "ethers";
 
 /**
  * This generic script was created to deploy shared minter filter contracts.
@@ -21,6 +20,9 @@ import { Contract } from "ethers";
  * for the steps required to deploy the contract.
  */
 async function main() {
+  // ensure current network gas price is below configured threshold
+  await requireLowGasPrice();
+
   // get deployment configuration details
   const { deployConfigDetailsArray, deploymentConfigFile, inputFileDirectory } =
     await getConfigInputs(

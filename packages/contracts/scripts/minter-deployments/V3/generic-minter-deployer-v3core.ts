@@ -13,7 +13,7 @@ Logger.setLogLevel(Logger.levels.ERROR);
 import prompt from "prompt";
 
 // delay to avoid issues with reorgs and tx failures
-import { delay, getAppPath } from "../../util/utils";
+import { delay, getAppPath, requireLowGasPrice } from "../../util/utils";
 import {
   DELEGATION_REGISTRY_ADDRESSES,
   WETH_ADDRESSES,
@@ -27,6 +27,9 @@ import {
  * for the steps required to deploy any minter contract for any V3 core contract.
  */
 async function main() {
+  // ensure current network gas price is below configured threshold
+  await requireLowGasPrice();
+
   // get repo's root directory absolute path
   const appPath = await getAppPath();
   console.log(appPath);

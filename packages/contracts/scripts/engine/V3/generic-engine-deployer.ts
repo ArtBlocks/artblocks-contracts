@@ -26,7 +26,7 @@ import { tryVerify } from "../../util/verification";
 // image bucket creation
 import { createEngineBucket } from "../../util/aws_s3";
 // delay to avoid issues with reorgs and tx failures
-import { delay, getAppPath } from "../../util/utils";
+import { delay, getAppPath, requireLowGasPrice } from "../../util/utils";
 const MANUAL_GAS_LIMIT = 500000; // gas
 var log_stdout = process.stdout;
 
@@ -50,6 +50,9 @@ const SUPPORTED_CORE_CONTRACTS = [
  * deployment by the configured superAdmin.
  */
 async function main() {
+  // ensure current network gas price is below configured threshold
+  await requireLowGasPrice();
+
   // get repo's root directory absolute path
   const appPath = await getAppPath();
   console.log(appPath);
