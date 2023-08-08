@@ -27,6 +27,7 @@ import { tryVerify } from "../../util/verification";
 import { createEngineBucket } from "../../util/aws_s3";
 // delay to avoid issues with reorgs and tx failures
 import { delay, getAppPath } from "../../util/utils";
+import { deploy } from "@openzeppelin/hardhat-upgrades/dist/utils";
 const MANUAL_GAS_LIMIT = 500000; // gas
 var log_stdout = process.stdout;
 
@@ -171,6 +172,24 @@ async function main() {
         `[ERROR] No bytecode storage reader library address configured for network ${networkName}`
       );
     }
+
+    // verify a sensible AdminACL input config
+    if (deployDetails.existingAdminACL) {
+      // ensure a valid address
+      ethers.utils.isAddress(deployDetails.existingAdminACL);
+      // @dev it is acceptable to have an adminACLContractName or
+      // not have an adminACLContractName if existingAdminACL is defined
+    } else {
+      // ensure that the adminACL contract name is defined
+      if (deployDetails.adminACLContractName == undefined) {
+        throw new Error(
+          `[ERROR] adminACLContractName must be defined if existingAdminACL is not defined`
+        );
+      }
+      // ensure that the adminACL contract name is valid (i.e. the following doesn't throw)
+      await ethers.getContractFactory(deployDetails.adminACLContractName);
+    }
+
     //////////////////////////////////////////////////////////////////////////////
     // INPUT VALIDATION ENDS HERE
     //////////////////////////////////////////////////////////////////////////////
