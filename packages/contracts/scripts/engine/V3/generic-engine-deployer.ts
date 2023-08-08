@@ -27,7 +27,6 @@ import { tryVerify } from "../../util/verification";
 import { createEngineBucket } from "../../util/aws_s3";
 // delay to avoid issues with reorgs and tx failures
 import { delay, getAppPath } from "../../util/utils";
-import { deploy } from "@openzeppelin/hardhat-upgrades/dist/utils";
 const MANUAL_GAS_LIMIT = 500000; // gas
 var log_stdout = process.stdout;
 
