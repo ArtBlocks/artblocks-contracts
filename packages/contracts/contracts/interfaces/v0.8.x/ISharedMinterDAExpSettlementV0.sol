@@ -5,15 +5,6 @@ pragma solidity ^0.8.0;
 import "./ISharedMinterDAExpV0.sol";
 
 interface ISharedMinterDAExpSettlementV0 is ISharedMinterDAExpV0 {
-    /// artist and admin have withdrawn revenues from settleable purchases for
-    /// project `projectId`.
-    /// @dev does not use generic event because likely will trigger additional
-    /// actions in indexing layer
-    event ArtistAndAdminRevenuesWithdrawn(
-        uint256 indexed _projectId,
-        address indexed _coreContract
-    );
-
     /// receipt has an updated state
     event ReceiptUpdated(
         address indexed _purchaser,

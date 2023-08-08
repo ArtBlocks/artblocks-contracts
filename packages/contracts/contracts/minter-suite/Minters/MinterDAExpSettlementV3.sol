@@ -465,7 +465,12 @@ contract MinterDAExpSettlementV3 is
             _coreContract: _coreContract,
             _isEngine: isEngine
         });
-        emit ArtistAndAdminRevenuesWithdrawn(_projectId, _coreContract);
+        emit ConfigValueSet(
+            _projectId,
+            _coreContract,
+            SettlementExpLib.CONFIG_AUCTION_REVENUES_COLLECTED,
+            true
+        );
     }
 
     /**

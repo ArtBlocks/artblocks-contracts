@@ -22,6 +22,8 @@ library SettlementExpLib {
 
     bytes32 internal constant CONFIG_CURRENT_SETTLED_PRICE =
         "currentSettledPrice";
+    bytes32 internal constant CONFIG_AUCTION_REVENUES_COLLECTED =
+        "auctionRevenuesCollected";
 
     // The SettlementAuctionProjectConfig struct tracks the state of a project's
     // settlement auction. It tracks the number of tokens minted that have
