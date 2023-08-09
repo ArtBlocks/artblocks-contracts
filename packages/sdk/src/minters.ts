@@ -1,4 +1,10 @@
-import { ConfigurationSchema, FormFieldSchema } from "./json-schema";
+import {
+  ConfigurationSchema,
+  FormFieldSchema,
+  OnChainCompoundNonArrayFormFieldSchema,
+  OnChainFormFieldSchema,
+  OnChainNonArrayFormFieldSchema,
+} from "./json-schema";
 import { Maybe } from "./generated/graphql";
 import { WalletClient } from "viem";
 import { ZodValidationSchema } from "./utils";
@@ -8,19 +14,22 @@ export type AvailableMinter = {
   type: string;
 };
 
+export type ConfigurationForm = {
+  formSchema: FormFieldSchema;
+  initialFormValues: Record<string, any>;
+  zodSchema: ZodValidationSchema;
+  handleSubmit: (
+    formValues: Record<string, any>,
+    signer: WalletClient
+  ) => Promise<void>;
+};
+
 export type SelectedMinter = AvailableMinter & {
   basePrice: Maybe<string>;
   currencyAddress: Maybe<string>;
   currencySymbol: Maybe<string>;
   extraMinterDetails: any;
-  configurationForms: {
-    formSchema: FormFieldSchema;
-    zodSchema: ZodValidationSchema;
-    handleSubmit: (
-      args: Record<string, any>,
-      signer: WalletClient
-    ) => Promise<void>;
-  }[];
+  configurationForms: ConfigurationForm[];
 };
 
 export function filterProjectIdFromFormSchema(
@@ -43,14 +52,52 @@ export function filterProjectIdFromFormSchema(
   };
 }
 
+export const minterSelectionSchema: OnChainCompoundNonArrayFormFieldSchema = {
+  title: "Set Minter For Project",
+  type: "object",
+  compound: true,
+  compoundBehavior: "transactionGroup",
+  onChain: true,
+  transactionDetails: {
+    functionName: "setMinterForProject",
+    args: ["project_id", "minter.address"],
+    abi: [
+      {
+        inputs: [
+          {
+            internalType: "uint256",
+            name: "",
+            type: "uint256",
+          },
+          {
+            internalType: "address",
+            name: "",
+            type: "address",
+          },
+        ],
+        name: "setMinterForProject",
+        outputs: [],
+        stateMutability: "nonpayable",
+        type: "function",
+      },
+    ],
+  },
+  properties: {
+    "minter.address": {
+      type: "string",
+      title: "Minter Address",
+    },
+  },
+  required: ["minter.address"],
+};
+
 export const mockMinterSchemaMap: Record<string, ConfigurationSchema> = {
   MinterDALin: {
-    $id: "https://example.com/schemas/setAuctionDetails.json",
     title: "Linear Dutch Auction Configuration Form",
     type: "object",
     properties: {
       setAuctionDetails: {
-        displayName: "Set Auction Details",
+        title: "Set Auction Details",
         type: "object",
         compound: true,
         compoundBehavior: "transactionGroup",
@@ -59,9 +106,9 @@ export const mockMinterSchemaMap: Record<string, ConfigurationSchema> = {
           functionName: "setAuctionDetails",
           args: [
             "project_id",
-            "extraMinterDetails.auctionTimestampStart",
-            "extraMinterDetails.auctionTimestampEnd",
-            "extraMinterDetails.startPrice",
+            "extra_minter_details.endTime",
+            "extra_minter_details.startTime",
+            "extra_minter_details.startPrice",
             "base_price",
           ],
           abi: [
@@ -103,38 +150,42 @@ export const mockMinterSchemaMap: Record<string, ConfigurationSchema> = {
         properties: {
           project_id: {
             type: "integer",
-            displayName: "Project ID",
+            title: "Project ID",
             minimum: 1,
           },
-          auctionTimestampStart: {
+          "extra_minter_details.startTime": {
             type: "integer",
-            displayName: "Auction Start Timestamp",
+            title: "Auction Start Timestamp",
             minimum: 0,
+            default: 0,
           },
-          priceDecayHalfLifeSeconds: {
+          "extra_minter_details.endTime": {
             type: "integer",
-            displayName: "Price Decay Half-Life (seconds)",
+            title: "Auction End Timestamp",
             minimum: 0,
+            default: 0,
           },
-          startPrice: {
+          "extra_minter_details.startPrice": {
             type: "integer",
-            displayName: "Auction Start Price (wei)",
+            title: "Auction Start Price (wei)",
+            default: 0,
           },
-          basePrice: {
+          base_price: {
             type: "integer",
-            displayName: "Auction Base Price (wei)",
+            title: "Auction Base Price (wei)",
+            default: 0,
           },
         },
         required: [
           "project_id",
-          "auctionTimestampStart",
-          "priceDecayHalfLifeSeconds",
-          "startPrice",
-          "basePrice",
+          "extra_minter_details.auctionTimestampStart",
+          "extra_minter_details.auctionTimestampEnd",
+          "extra_minter_details.startPrice",
+          "base_price",
         ],
       },
       resetAuctionDetails: {
-        displayName: "Reset Auction Details",
+        title: "Reset Auction Details",
         type: "object",
         format: "button",
         onChain: true,
@@ -162,7 +213,7 @@ export const mockMinterSchemaMap: Record<string, ConfigurationSchema> = {
         properties: {
           project_id: {
             type: "string",
-            displayName: "Project ID",
+            title: "Project ID",
           },
         },
       },

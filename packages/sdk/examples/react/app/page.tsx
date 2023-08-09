@@ -1,9 +1,9 @@
-import { AbDebugger } from "@/components/ab-debugger";
+import { ProjectConfiguration } from "@/app/project-configuration";
 
 export default function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <AbDebugger />
+      <ProjectConfiguration />
     </main>
   );
 }

@@ -12,6 +12,7 @@
     "@babel/preset-typescript": "^7.22.5",
     "@jest/globals": "^29.5.0",
     "@typechain/ethers-v5": "^10.2.1",
+    "@types/lodash": "^4.14.196",
     "eslint-config-custom": "*",
     "jest": "^29.5.0",
     "jsdoc": "^4.0.2",
@@ -67,6 +68,7 @@
     "ethers": "^6.3.0",
     "graphql": "^16.7.1",
     "graphql-request": "^6.1.0",
+    "lodash": "^4.17.21",
     "merkletreejs": "^0.3.10",
     "viem": "^1.0.9",
     "zod": "^3.21.4"

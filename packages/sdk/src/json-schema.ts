@@ -43,24 +43,7 @@ interface Option {
 /**
  * BaseFormFieldAttributes extends ConfigurationSchema7 to describe a basic property in the schema.
  */
-export interface BaseFormFieldSchema extends JSONSchema7 {
-  /** The display name of the property. */
-  displayName: string;
-
-  /** Optional display label corresponding to the enum value. */
-  displayLabels?: string[];
-
-  /** An array of options for the property. Only relevant to array properties. */
-  options?: Option[];
-
-  /** The name of another property that this property depends on. */
-  dependsOn?: string;
-
-  /** Optional object containing fields with values of an array of fields that they are dependent on. */
-  dependencies?: {
-    [key: string]: string[];
-  };
-}
+export type BaseFormFieldSchema = JSONSchema7;
 
 interface FormFieldProperties {
   properties?: { [key: string]: BaseFormFieldSchema };
@@ -175,9 +158,6 @@ export interface ConfigurationSchema extends JSONSchema7 {
   dependencies?: {
     [key: string]: string[];
   };
-
-  /** A flag indicating if additional properties are allowed. */
-  additionalProperties: boolean;
 }
 
 /**
