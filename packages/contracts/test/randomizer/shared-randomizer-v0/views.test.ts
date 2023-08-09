@@ -50,10 +50,10 @@ runForEach.forEach((params) => {
       expect(RANDOMIZER_NAME).to.equal("SharedRandomizerV0");
     });
 
-    describe("projectIsPolyptych", async function () {
+    describe("projectUsesHashSeedSetter", async function () {
       it("should return false if project is not polyptych", async function () {
         const config = await loadFixture(_beforeEach);
-        const isPolyptych = await config.randomizer.projectIsPolyptych(
+        const isPolyptych = await config.randomizer.projectUsesHashSeedSetter(
           config.genArt721Core.address,
           config.projectZero
         );
@@ -65,11 +65,11 @@ runForEach.forEach((params) => {
         // set project as polyptych
         await config.randomizer
           .connect(config.accounts.artist)
-          .toggleProjectIsPolyptych(
+          .toggleProjectUseAssignedHashSeed(
             config.genArt721Core.address,
             config.projectZero
           );
-        const isPolyptych = await config.randomizer.projectIsPolyptych(
+        const isPolyptych = await config.randomizer.projectUsesHashSeedSetter(
           config.genArt721Core.address,
           config.projectZero
         );
@@ -82,7 +82,8 @@ runForEach.forEach((params) => {
         const config = await loadFixture(_beforeEach);
         const hashSeedSetterContract =
           await config.randomizer.hashSeedSetterContracts(
-            config.genArt721Core.address
+            config.genArt721Core.address,
+            config.projectZero
           );
         expect(hashSeedSetterContract).to.equal(constants.ZERO_ADDRESS);
       });
@@ -90,24 +91,26 @@ runForEach.forEach((params) => {
       it("should return assigned address by if assigned", async function () {
         const config = await loadFixture(_beforeEach);
         await config.randomizer
-          .connect(config.accounts.deployer)
+          .connect(config.accounts.artist)
           .setHashSeedSetterContract(
             config.genArt721Core.address,
+            config.projectZero,
             config.minter.address
           );
         // verify hash seed setter address
         const hashSeedSetterContract =
           await config.randomizer.hashSeedSetterContracts(
-            config.genArt721Core.address
+            config.genArt721Core.address,
+            config.projectZero
           );
         expect(hashSeedSetterContract).to.equal(config.minter.address);
       });
     });
 
-    describe("polyptychHashSeed", async function () {
+    describe("preAssignedHashSeed", async function () {
       it("returns zero by default", async function () {
         const config = await loadFixture(_beforeEach);
-        const hashSeed = await config.randomizer.polyptychHashSeed(
+        const hashSeed = await config.randomizer.preAssignedHashSeed(
           config.genArt721Core.address,
           config.projectZeroTokenZero.toNumber()
         );
@@ -118,20 +121,21 @@ runForEach.forEach((params) => {
         const config = await loadFixture(_beforeEach);
         // set polyptych hash seed
         await config.randomizer
-          .connect(config.accounts.deployer)
+          .connect(config.accounts.artist)
           .setHashSeedSetterContract(
             config.genArt721Core.address,
+            config.projectZero,
             config.accounts.artist.address // use EOA for testing purposes
           );
         await config.randomizer
           .connect(config.accounts.artist)
-          .setPolyptychHashSeed(
+          .preSetHashSeed(
             config.genArt721Core.address,
             config.projectZeroTokenZero.toNumber(),
             NONZERO_HASH_SEED
           );
         // verify hash seed
-        const hashSeed = await config.randomizer.polyptychHashSeed(
+        const hashSeed = await config.randomizer.preAssignedHashSeed(
           config.genArt721Core.address,
           config.projectZeroTokenZero.toNumber()
         );

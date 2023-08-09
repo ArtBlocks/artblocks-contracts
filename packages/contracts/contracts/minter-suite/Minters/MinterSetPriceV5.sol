@@ -6,6 +6,7 @@ import "../../interfaces/v0.8.x/IDelegationRegistry.sol";
 import "../../interfaces/v0.8.x/ISharedMinterV0.sol";
 import "../../interfaces/v0.8.x/IMinterFilterV1.sol";
 
+import "../../libs/v0.8.x/AuthLib.sol";
 import "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
 import "../../libs/v0.8.x/minter-libs/MaxInvocationsLib.sol";
 
@@ -14,7 +15,8 @@ import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
 pragma solidity 0.8.19;
 
 /**
- * @title Filtered Minter contract that allows tokens to be minted with ETH.
+ * @title Shared, filtered Minter contract that allows tokens to be minted with
+ * ETH.
  * This is designed to be used with GenArt721CoreContractV3 flagship or
  * engine contracts.
  * @author Art Blocks Inc.
@@ -28,7 +30,7 @@ pragma solidity 0.8.19;
  * ----------------------------------------------------------------------------
  * The following functions are restricted to a project's artist:
  * - updatePricePerTokenInWei
- * - setProjectMaxInvocations
+ * - syncProjectMaxInvocationsToCore
  * - manuallyLimitProjectMaxInvocations
  * ----------------------------------------------------------------------------
  * Additional admin and artist privileged roles may be described on other
@@ -46,8 +48,6 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
 
     /// minter version for this minter
     string public constant minterVersion = "v5.0.0";
-
-    uint256 constant ONE_MILLION = 1_000_000;
 
     /// contractAddress => projectId => base project config
     mapping(address => mapping(uint256 => ProjectConfig))
@@ -77,23 +77,9 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     // MODIFIERS
-    /**
-     * @dev Throws if called by any account other than the artist of the specified project.
-     * Requirements: `msg.sender` must be the artist associated with `_projectId`.
-     * @param _projectId The ID of the project being checked.
-     * @param _coreContract The address of the GenArt721CoreContractV3_Base contract.
-     */
-    function _onlyArtist(
-        uint256 _projectId,
-        address _coreContract
-    ) internal view {
-        require(
-            msg.sender ==
-                IGenArt721CoreContractV3_Base(_coreContract)
-                    .projectIdToArtistAddress(_projectId),
-            "Only Artist"
-        );
-    }
+    // @dev contract uses modifier-like internal functions instead of modifiers
+    // to reduce contract bytecode size
+    // @dev contract uses AuthLib for some modifier-like functions
 
     /**
      * @notice Initializes contract to be a Filtered Minter for
@@ -123,7 +109,11 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
         address _coreContract,
         uint24 _maxInvocations
     ) external {
-        _onlyArtist(_projectId, _coreContract);
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
         MaxInvocationsLib.manuallyLimitProjectMaxInvocations(
             _projectId,
             _coreContract,
@@ -151,7 +141,11 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
         address _coreContract,
         uint248 _pricePerTokenInWei
     ) external {
-        _onlyArtist(_projectId, _coreContract);
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
         ProjectConfig storage _projectConfig = _projectConfigMapping[
             _coreContract
         ][_projectId];
@@ -163,16 +157,21 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
             _pricePerTokenInWei
         );
 
-        // sync local max invocations if not initially populated
-        // @dev if local max invocations and maxHasBeenInvoked are both
-        // initial values, we know they have not been populated.
+        // for convenience, sync local max invocations to the core contract if
+        // and only if max invocations have not already been synced.
+        // @dev do not sync if max invocations have already been synced, as
+        // local max invocations could have been manually set to be
+        // intentionally less than the core contract's max invocations.
         MaxInvocationsLib.MaxInvocationsProjectConfig
             storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
                 _coreContract
             ][_projectId];
+        // @dev if local maxInvocations and maxHasBeenInvoked are both
+        // initial values, we know they have not been populated on this minter
         if (
-            _maxInvocationsProjectConfig.maxInvocations == 0 &&
-            _maxInvocationsProjectConfig.maxHasBeenInvoked == false
+            MaxInvocationsLib.maxInvocationsIsUnconfigured(
+                _maxInvocationsProjectConfig
+            )
         ) {
             syncProjectMaxInvocationsToCore(_projectId, _coreContract);
         }
@@ -195,8 +194,8 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
     // public getter functions
     /**
      * @notice Gets the maximum invocations project configuration.
-     * @param _coreContract The address of the core contract.
      * @param _projectId The ID of the project whose data needs to be fetched.
+     * @param _coreContract The address of the core contract.
      * @return MaxInvocationsLib.MaxInvocationsProjectConfig instance with the
      * configuration data.
      */
@@ -213,8 +212,8 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
 
     /**
      * @notice Gets the base project configuration.
-     * @param _coreContract The address of the core contract.
      * @param _projectId The ID of the project whose data needs to be fetched.
+     * @param _coreContract The address of the core contract.
      * @return ProjectConfig instance with the project configuration data.
      */
     function projectConfig(
@@ -226,7 +225,7 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
 
     /**
      * @notice Checks if the specified `_coreContract` is a valid engine contract.
-     * @dev This function retrieves the cached value of `_coreContract` from
+     * @dev This function retrieves the cached value of `_isEngine` from
      * the `isEngineCache` mapping. If the cached value is already set, it
      * returns the cached value. Otherwise, it calls the `getV3CoreIsEngine`
      * function from the `SplitFundsLib` library to check if `_coreContract`
@@ -267,8 +266,9 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
         address _coreContract
     ) external view returns (bool) {
         return
-            _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-                .maxHasBeenInvoked;
+            MaxInvocationsLib.getMaxHasBeenInvoked(
+                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
+            );
     }
 
     /**
@@ -296,16 +296,15 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
         address _coreContract
     ) external view returns (uint256) {
         return
-            uint256(
+            MaxInvocationsLib.getMaxInvocations(
                 _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-                    .maxInvocations
             );
     }
 
     /**
      * @notice Gets if price of token is configured, price of minting a
      * token on project `_projectId`, and currency symbol and address to be
-     * used as payment. Supersedes any core contract price information.
+     * used as payment.
      * @param _projectId Project ID to get price information for
      * @param _coreContract Contract address of the core contract
      * @return isConfigured true only if token price has been configured on
@@ -342,8 +341,8 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
     /**
      * @notice Syncs local maximum invocations of project `_projectId` based on
      * the value currently defined in the core contract.
-     * @param _coreContract Core contract address for the given project.
      * @param _projectId Project ID to set the maximum invocations for.
+     * @param _coreContract Core contract address for the given project.
      * @dev this enables gas reduction after maxInvocations have been reached -
      * core contracts shall still enforce a maxInvocation check during mint.
      */
@@ -351,7 +350,11 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
         uint256 _projectId,
         address _coreContract
     ) public {
-        _onlyArtist(_projectId, _coreContract);
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
 
         uint256 maxInvocations = MaxInvocationsLib
             .syncProjectMaxInvocationsToCore(
@@ -425,12 +428,12 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
             _coreContract,
             _isEngineCaches[_coreContract]
         );
-        SplitFundsLib.splitFundsETH(
-            _projectId,
-            pricePerTokenInWei,
-            _coreContract,
-            isEngine
-        );
+        SplitFundsLib.splitFundsETH({
+            _projectId: _projectId,
+            _pricePerTokenInWei: pricePerTokenInWei,
+            _coreContract: _coreContract,
+            _isEngine: isEngine
+        });
 
         return tokenId;
     }

@@ -14,7 +14,7 @@ const runForEach = [
 ];
 
 runForEach.forEach((params) => {
-  describe(`${RANDOMIZER_NAME} Views w/ core ${params.core}`, async function () {
+  describe(`${RANDOMIZER_NAME} Events w/ core ${params.core}`, async function () {
     async function _beforeEach() {
       // load minter filter V2 fixture
       const config = await loadFixture(setupConfigWitMinterFilterV2Suite);
@@ -72,47 +72,51 @@ runForEach.forEach((params) => {
       });
     });
 
-    describe("HashSeedSetterForCoreUpdated", async function () {
+    describe("HashSeedSetterForProjectUpdated", async function () {
       it("emits when updating hash seed setter for contract", async function () {
         const config = await loadFixture(_beforeEach);
         await expect(
-          await config.randomizer.setHashSeedSetterContract(
-            config.genArt721Core.address,
-            config.accounts.artist.address
-          )
+          await config.randomizer
+            .connect(config.accounts.artist)
+            .setHashSeedSetterContract(
+              config.genArt721Core.address,
+              config.projectZero,
+              config.accounts.artist.address
+            )
         )
-          .to.emit(config.randomizer, "HashSeedSetterForCoreUpdated")
+          .to.emit(config.randomizer, "HashSeedSetterForProjectUpdated")
           .withArgs(
             config.genArt721Core.address,
+            config.projectZero,
             config.accounts.artist.address
           );
       });
     });
 
-    describe("toggleProjectIsPolyptych", async function () {
+    describe("toggleProjectUseAssignedHashSeed", async function () {
       it("emits when toggling project is polyptych", async function () {
         const config = await loadFixture(_beforeEach);
         // emits true when toggled on
         await expect(
           config.randomizer
             .connect(config.accounts.artist)
-            .toggleProjectIsPolyptych(
+            .toggleProjectUseAssignedHashSeed(
               config.genArt721Core.address,
               config.projectZero
             )
         )
-          .to.emit(config.randomizer, "ProjectIsPolyptychUpdated")
+          .to.emit(config.randomizer, "ProjectUsingHashSeedSetterUpdated")
           .withArgs(config.genArt721Core.address, config.projectZero, true);
         // emits false when toggled off
         await expect(
           config.randomizer
             .connect(config.accounts.artist)
-            .toggleProjectIsPolyptych(
+            .toggleProjectUseAssignedHashSeed(
               config.genArt721Core.address,
               config.projectZero
             )
         )
-          .to.emit(config.randomizer, "ProjectIsPolyptychUpdated")
+          .to.emit(config.randomizer, "ProjectUsingHashSeedSetterUpdated")
           .withArgs(config.genArt721Core.address, config.projectZero, false);
       });
     });

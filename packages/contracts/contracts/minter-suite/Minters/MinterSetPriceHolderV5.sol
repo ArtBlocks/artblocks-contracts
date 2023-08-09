@@ -7,21 +7,22 @@ import "../../interfaces/v0.8.x/ISharedMinterV0.sol";
 import "../../interfaces/v0.8.x/ISharedMinterHolderV0.sol";
 import "../../interfaces/v0.8.x/IMinterFilterV1.sol";
 
+import "../../libs/v0.8.x/AuthLib.sol";
 import "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
 import "../../libs/v0.8.x/minter-libs/MaxInvocationsLib.sol";
 import "../../libs/v0.8.x/minter-libs/TokenHolderLib.sol";
 
-import "@openzeppelin-4.5/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin-4.5/contracts/utils/structs/EnumerableSet.sol";
 
 pragma solidity 0.8.19;
 
 /**
- * @title Filtered Minter contract that allows tokens to be minted with ETH
- * when purchaser owns an allowlisted ERC-721 NFT. This contract does NOT track
- * if a purchaser has/has not minted already -- it simply restricts purchasing
- * to anybody that holds one or more of a specified list of ERC-721 NFTs.
+ * @title Shared, filtered Minter contract that allows tokens to be minted with
+ * ETH when purchaser owns an allowlisted ERC-721 NFT. This contract does NOT
+ * track if a purchaser has/has not minted already -- it simply restricts
+ * purchasing to anybody that holds one or more of a specified list of ERC-721
+ * NFTs.
  * This is designed to be used with GenArt721CoreContractV3 flagship or
  * engine contracts.
  * @author Art Blocks Inc.
@@ -67,27 +68,25 @@ contract MinterSetPriceHolderV5 is
     // add Enumerable Set methods
     using EnumerableSet for EnumerableSet.AddressSet;
 
-    // Minter filter address this minter interacts with
+    /// Minter filter address this minter interacts with
     address public immutable minterFilterAddress;
 
-    // Minter filter this minter may interact with.
+    /// Minter filter this minter may interact with.
     IMinterFilterV1 private immutable minterFilter;
 
-    // Delegation registry address
+    /// Delegation registry address
     address public immutable delegationRegistryAddress;
 
-    // Delegation registry address
+    /// Delegation registry address
     IDelegationRegistry private immutable delegationRegistryContract;
 
-    // minterType for this minter
+    /// minterType for this minter
     string public constant minterType = "MinterSetPriceHolderV5";
 
-    // minter version for this minter
+    /// minter version for this minter
     string public constant minterVersion = "v5.0.0";
 
-    uint256 constant ONE_MILLION = 1_000_000;
-
-    // contractAddress => projectId => base project config
+    /// contractAddress => projectId => base project config
     mapping(address => mapping(uint256 => ProjectConfig))
         private _projectConfigMapping;
 
@@ -130,42 +129,29 @@ contract MinterSetPriceHolderV5 is
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     // MODIFIERS
-    /**
-     * @dev Throws if called by any account other than the artist of the specified project.
-     * Requirements: `msg.sender` must be the artist associated with `_projectId`.
-     * @param _projectId The ID of the project being checked.
-     * @param _coreContract The address of the GenArt721CoreContractV3_Base contract.
-     */
-    function _onlyArtist(
-        uint256 _projectId,
-        address _coreContract
-    ) internal view {
-        require(
-            msg.sender ==
-                IGenArt721CoreContractV3_Base(_coreContract)
-                    .projectIdToArtistAddress(_projectId),
-            "Only Artist"
-        );
-    }
+    // @dev contract uses modifier-like internal functions instead of modifiers
+    // to reduce contract bytecode size
+    // @dev contract uses AuthLib for some modifier-like functions
 
     /**
      * @notice Initializes contract to be a Filtered Minter for
-     * `_minterFilter` and sets the delegation registry contract address to
-     * `_delegationRegistryAddress`.
-     * @param _minterFilter minter filter.
+     * `_minterFilter` minter filter.
+     * @param _minterFilter Minter filter for which this will be a
+     * filtered minter.
      * @param _delegationRegistryAddress Delegation registry contract address.
      */
     constructor(
         address _minterFilter,
         address _delegationRegistryAddress
     ) ReentrancyGuard() {
+        minterFilterAddress = _minterFilter;
+        minterFilter = IMinterFilterV1(_minterFilter);
+
         delegationRegistryAddress = _delegationRegistryAddress;
-        emit DelegationRegistryUpdated(_delegationRegistryAddress);
         delegationRegistryContract = IDelegationRegistry(
             _delegationRegistryAddress
         );
-        minterFilterAddress = _minterFilter;
-        minterFilter = IMinterFilterV1(_minterFilter);
+        emit DelegationRegistryUpdated(_delegationRegistryAddress);
     }
 
     /**
@@ -185,7 +171,11 @@ contract MinterSetPriceHolderV5 is
         address _coreContract,
         uint24 _maxInvocations
     ) external {
-        _onlyArtist(_projectId, _coreContract);
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
         MaxInvocationsLib.manuallyLimitProjectMaxInvocations(
             _projectId,
             _coreContract,
@@ -202,7 +192,6 @@ contract MinterSetPriceHolderV5 is
     /**
      * @notice Updates this minter's price per token of project `_projectId`
      * to be '_pricePerTokenInWei`, in Wei.
-     * This price supersedes any legacy core contract price per token value.
      * @dev Note that it is intentionally supported here that the configured
      * price may be explicitly set to `0`.
      * @param _projectId Project ID to set the price per token for.
@@ -214,7 +203,11 @@ contract MinterSetPriceHolderV5 is
         address _coreContract,
         uint248 _pricePerTokenInWei
     ) external {
-        _onlyArtist(_projectId, _coreContract);
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
         ProjectConfig storage _projectConfig = _projectConfigMapping[
             _coreContract
         ][_projectId];
@@ -226,16 +219,21 @@ contract MinterSetPriceHolderV5 is
             _pricePerTokenInWei
         );
 
-        // sync local max invocations if not initially populated
-        // @dev if local max invocations and maxHasBeenInvoked are both
-        // initial values, we know they have not been populated.
+        // for convenience, sync local max invocations to the core contract if
+        // and only if max invocations have not already been synced.
+        // @dev do not sync if max invocations have already been synced, as
+        // local max invocations could have been manually set to be
+        // intentionally less than the core contract's max invocations.
         MaxInvocationsLib.MaxInvocationsProjectConfig
             storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
                 _coreContract
             ][_projectId];
+        // @dev if local maxInvocations and maxHasBeenInvoked are both
+        // initial values, we know they have not been populated on this minter
         if (
-            _maxInvocationsProjectConfig.maxInvocations == 0 &&
-            _maxInvocationsProjectConfig.maxHasBeenInvoked == false
+            MaxInvocationsLib.maxInvocationsIsUnconfigured(
+                _maxInvocationsProjectConfig
+            )
         ) {
             syncProjectMaxInvocationsToCore(_projectId, _coreContract);
         }
@@ -263,7 +261,11 @@ contract MinterSetPriceHolderV5 is
         address[] memory _ownedNFTAddresses,
         uint256[] memory _ownedNFTProjectIds
     ) external {
-        _onlyArtist(_projectId, _coreContract);
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
         TokenHolderLib.allowHoldersOfProjects(
             _allowedProjectHoldersMapping[_coreContract][_projectId],
             _ownedNFTAddresses,
@@ -300,7 +302,11 @@ contract MinterSetPriceHolderV5 is
         address[] memory _ownedNFTAddresses,
         uint256[] memory _ownedNFTProjectIds
     ) external {
-        _onlyArtist(_projectId, _coreContract);
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
         // require same length arrays
         TokenHolderLib.removeHoldersOfProjects(
             _allowedProjectHoldersMapping[_coreContract][_projectId],
@@ -355,7 +361,11 @@ contract MinterSetPriceHolderV5 is
         address[] memory _ownedNFTAddressesRemove,
         uint256[] memory _ownedNFTProjectIdsRemove
     ) external {
-        _onlyArtist(_projectId, _coreContract);
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
         TokenHolderLib.allowAndRemoveHoldersOfProjects(
             _allowedProjectHoldersMapping[_coreContract][_projectId],
             _ownedNFTAddressesAdd,
@@ -457,33 +467,32 @@ contract MinterSetPriceHolderV5 is
     /**
      * @notice Gets the maximum invocations project configuration.
      * @param _projectId The ID of the project whose data needs to be fetched.
-     * @param _contractAddress The address of the contract where the data is stored.
+     * @param _coreContract The address of the core contract.
      * @return MaxInvocationsLib.MaxInvocationsProjectConfig instance with the
      * configuration data.
      */
     function maxInvocationsProjectConfig(
         uint256 _projectId,
-        address _contractAddress
+        address _coreContract
     )
         external
         view
         returns (MaxInvocationsLib.MaxInvocationsProjectConfig memory)
     {
-        return
-            _maxInvocationsProjectConfigMapping[_contractAddress][_projectId];
+        return _maxInvocationsProjectConfigMapping[_coreContract][_projectId];
     }
 
     /**
      * @notice Gets the base project configuration.
      * @param _projectId The ID of the project whose data needs to be fetched.
-     * @param _contractAddress The address of the contract where the data is stored.
+     * @param _coreContract The address of the contract where the data is stored.
      * @return ProjectConfig instance with the project configuration data.
      */
     function projectConfig(
         uint256 _projectId,
-        address _contractAddress
+        address _coreContract
     ) external view returns (ProjectConfig memory) {
-        return _projectConfigMapping[_contractAddress][_projectId];
+        return _projectConfigMapping[_coreContract][_projectId];
     }
 
     /**
@@ -533,11 +542,13 @@ contract MinterSetPriceHolderV5 is
 
     /**
      * @notice Checks if the specified `_coreContract` is a valid engine contract.
-     * @dev This function retrieves the cached value of `_coreContract` from
+     * @dev This function retrieves the cached value of `_isEngine` from
      * the `isEngineCache` mapping. If the cached value is already set, it
      * returns the cached value. Otherwise, it calls the `getV3CoreIsEngine`
      * function from the `SplitFundsLib` library to check if `_coreContract`
      * is a valid engine contract.
+     * @dev This function will revert if the provided `_coreContract` is not
+     * a valid Engine or V3 Flagship contract.
      * @param _coreContract The address of the contract to check.
      * @return bool indicating if `_coreContract` is a valid engine contract.
      */
@@ -572,8 +583,9 @@ contract MinterSetPriceHolderV5 is
         address _coreContract
     ) external view returns (bool) {
         return
-            _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-                .maxHasBeenInvoked;
+            MaxInvocationsLib.getMaxHasBeenInvoked(
+                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
+            );
     }
 
     /**
@@ -601,18 +613,17 @@ contract MinterSetPriceHolderV5 is
         address _coreContract
     ) external view returns (uint256) {
         return
-            uint256(
+            MaxInvocationsLib.getMaxInvocations(
                 _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-                    .maxInvocations
             );
     }
 
     /**
      * @notice Gets if price of token is configured, price of minting a
      * token on project `_projectId`, and currency symbol and address to be
-     * used as payment. Supersedes any core contract price information.
-     * @param _projectId Project ID to get price information for.
-     * @param _coreContract Contract address of the core contract.
+     * used as payment.
+     * @param _projectId Project ID to get price information for
+     * @param _coreContract Contract address of the core contract
      * @return isConfigured true only if token price has been configured on
      * this minter
      * @return tokenPriceInWei current price of token on this minter - invalid
@@ -656,7 +667,12 @@ contract MinterSetPriceHolderV5 is
         uint256 _projectId,
         address _coreContract
     ) public {
-        _onlyArtist(_projectId, _coreContract);
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
+
         uint256 maxInvocations = MaxInvocationsLib
             .syncProjectMaxInvocationsToCore(
                 _projectId,
@@ -711,11 +727,11 @@ contract MinterSetPriceHolderV5 is
             "Max invocations reached"
         );
 
-        // load price of token into memory
-        uint256 pricePerTokenInWei = _projectConfig.pricePerTokenInWei;
-
         // require artist to have configured price of token on this minter
         require(_projectConfig.priceIsConfigured, "Price not configured");
+
+        // load price of token into memory
+        uint256 pricePerTokenInWei = _projectConfig.pricePerTokenInWei;
 
         require(msg.value >= pricePerTokenInWei, "Min value to mint req.");
 
@@ -765,27 +781,28 @@ contract MinterSetPriceHolderV5 is
         // require vault to own NFT used to redeem
         /**
          * @dev Considered an interaction because calling ownerOf on an NFT
-         * contract. Plan is to only register AB/PBAB NFTs on the minter, but
+         * contract. Plan is to only integrate with AB/PBAB NFTs on the minter, but
          * in case other NFTs are registered, better to check here. Also,
-         * function is non-reentrant, so being extra cautious.
+         * function is non-reentrant, so this is extra cautious.
          */
-        require(
-            IERC721(_ownedNFTAddress).ownerOf(_ownedNFTTokenId) == vault,
-            "Only owner of NFT"
-        );
+        TokenHolderLib.validateNFTOwnership({
+            _ownedNFTAddress: _ownedNFTAddress,
+            _ownedNFTTokenId: _ownedNFTTokenId,
+            _targetOwner: vault
+        });
 
-        // split funds
         // INTERACTIONS
+        // split funds
         bool isEngine = SplitFundsLib.isEngine(
             _coreContract,
             _isEngineCaches[_coreContract]
         );
-        SplitFundsLib.splitFundsETH(
-            _projectId,
-            pricePerTokenInWei,
-            _coreContract,
-            isEngine
-        );
+        SplitFundsLib.splitFundsETH({
+            _projectId: _projectId,
+            _pricePerTokenInWei: pricePerTokenInWei,
+            _coreContract: _coreContract,
+            _isEngine: isEngine
+        });
 
         return tokenId;
     }

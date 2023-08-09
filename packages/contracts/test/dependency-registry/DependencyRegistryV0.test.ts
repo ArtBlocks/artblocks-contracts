@@ -1,14 +1,18 @@
 import { expectRevert, constants } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
+import { Contract } from "ethers";
 import Mocha from "mocha";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
+
 import {
   AdminACLV0,
   AdminACLV0__factory,
   DependencyRegistryV0,
   GenArt721CoreV1,
   GenArt721CoreV3,
+  BytecodeV1TextCR_DMock,
+  SSTORE2Mock,
 } from "../../scripts/contracts";
 
 import {
@@ -19,10 +23,13 @@ import {
   deployWithStorageLibraryAndGet,
   deployCoreWithMinterFilter,
 } from "../util/common";
+import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 const ONLY_ADMIN_ACL_ERROR = "Only Admin ACL allowed";
 const ONLY_EXISTING_DEPENDENCY_TYPE_ERROR = "Dependency type does not exist";
 const ONLY_NON_EMPTY_STRING_ERROR = "Must input non-empty string";
+const ONLY_NON_ZERO_ADDRESS_ERROR = "Must input non-zero address";
+const INDEX_OUT_OF_RANGE_ERROR = "Index out of range";
 
 // test the following V3 core contract derivatives:
 const coreContractsToTest = [
@@ -46,6 +53,43 @@ describe(`DependencyRegistryV0`, async function () {
     "https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.0.0/p5.min.js";
   const preferredRepository = "https://github.com/processing/p5.js";
   const referenceWebsite = "https://p5js.org/";
+
+  // Helper that retrieves writes content to blockchain bytecode storage using SSTORE2,
+  // and returns the address of that content.
+  async function writeContentWithSSTORE2(
+    content: string,
+    sstore2Mock: Contract,
+    writer: SignerWithAddress
+  ) {
+    // write
+    await sstore2Mock.connect(writer).createText(content);
+
+    const nextTextSlotId = await sstore2Mock.nextTextSlotId();
+    // decrement from `nextTextSlotId` to get last updated slot
+    const textSlotId = nextTextSlotId - 1;
+    const textBytecodeAddress = await sstore2Mock.storedTextBytecodeAddresses(
+      textSlotId
+    );
+    return textBytecodeAddress;
+  }
+
+  // Helper that retrieves the address of the most recently deployed contract
+  // containing bytecode for storage, from the V0 ByteCode storage library.
+  async function writeContentWithBytecodeStorageV1(
+    content: string,
+    bytecodeV1TextCR_DMock: Contract,
+    writer: SignerWithAddress
+  ) {
+    // write
+    await bytecodeV1TextCR_DMock.connect(writer).createText(content);
+
+    const nextTextSlotId = await bytecodeV1TextCR_DMock.nextTextSlotId();
+    // decrement from `nextTextSlotId` to get last updated slot
+    const textSlotId = nextTextSlotId - 1;
+    const textBytecodeAddress =
+      await bytecodeV1TextCR_DMock.storedTextBytecodeAddresses(textSlotId);
+    return textBytecodeAddress;
+  }
 
   async function _beforeEach() {
     let config: T_Config = {
@@ -104,6 +148,21 @@ describe(`DependencyRegistryV0`, async function () {
     await config.minter
       .connect(config.accounts.artist)
       .updatePricePerTokenInWei(config.projectZero, 0);
+
+    // set up library mocks
+    // deploy the V1 library mock
+    config.bytecodeV1TextCR_DMock = await deployWithStorageLibraryAndGet(
+      config,
+      "BytecodeV1TextCR_DMock",
+      [] // no deployment args
+    );
+    // deploy the SSTORE2 library mock
+    config.sstore2Mock = await deployAndGet(
+      config,
+      "SSTORE2Mock",
+      [] // no deployment args
+    );
+
     return config;
   }
 
@@ -177,8 +236,9 @@ describe(`DependencyRegistryV0`, async function () {
           await config.dependencyRegistry.getDependencyTypeCount();
         expect(registeredDependencyCount).to.eq(1);
 
-        const storedDepType =
-          await config.dependencyRegistry.getDependencyTypeAtIndex(0);
+        const storedDepType = await config.dependencyRegistry.getDependencyType(
+          0
+        );
         expect(storedDepType).to.eq(dependencyType);
 
         const dependencyTypes =
@@ -261,7 +321,7 @@ describe(`DependencyRegistryV0`, async function () {
         );
 
         // Remove additional CDNs
-        await config.dependencyRegistry.removeDependencyAdditionalCDNAtIndex(
+        await config.dependencyRegistry.removeDependencyAdditionalCDN(
           dependencyTypeBytes,
           0
         );
@@ -280,7 +340,7 @@ describe(`DependencyRegistryV0`, async function () {
         );
 
         // Remove additional repositories
-        await config.dependencyRegistry.removeDependencyAdditionalRepositoryAtIndex(
+        await config.dependencyRegistry.removeDependencyAdditionalRepository(
           dependencyTypeBytes,
           0
         );
@@ -589,7 +649,7 @@ describe(`DependencyRegistryV0`, async function () {
         expect(scriptCount).to.eq(1);
 
         const storedScript =
-          await config.dependencyRegistry.getDependencyScriptAtIndex(
+          await config.dependencyRegistry.getDependencyScript(
             dependencyTypeBytes,
             0
           );
@@ -663,12 +723,10 @@ describe(`DependencyRegistryV0`, async function () {
           );
         expect(scriptCount).to.eq(0);
 
-        const storedScript =
-          await config.dependencyRegistry.getDependencyScriptAtIndex(
-            dependencyTypeBytes,
-            0
-          );
-        expect(storedScript).to.eq("");
+        await expectRevert(
+          config.dependencyRegistry.getDependencyScript(dependencyTypeBytes, 0),
+          INDEX_OUT_OF_RANGE_ERROR
+        );
       });
     });
 
@@ -706,7 +764,7 @@ describe(`DependencyRegistryV0`, async function () {
           config.dependencyRegistry
             .connect(config.accounts.deployer)
             .updateDependencyScript(dependencyTypeBytes, 0, "on-chain script"),
-          "scriptId out of range"
+          INDEX_OUT_OF_RANGE_ERROR
         );
       });
 
@@ -760,13 +818,328 @@ describe(`DependencyRegistryV0`, async function () {
         expect(scriptCount).to.eq(1);
 
         const storedScript =
-          await config.dependencyRegistry.getDependencyScriptAtIndex(
+          await config.dependencyRegistry.getDependencyScript(
             dependencyTypeBytes,
             0
           );
         expect(storedScript).to.eq(updatedScript);
       });
     });
+
+    describe("addDependencyScriptPointer", function () {
+      it("does not allow non-admins to add a script pointer", async function () {
+        // get config from beforeEach
+        const config = this.config;
+
+        const contentAddress = writeContentWithBytecodeStorageV1(
+          "on-chain script",
+          config.bytecodeV1TextCR_DMock,
+          config.accounts.deployer
+        );
+
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.user)
+            .addDependencyScriptPointer(dependencyTypeBytes, contentAddress),
+          ONLY_ADMIN_ACL_ERROR
+        );
+      });
+
+      it("does not allow adding a script to a dependency that does not exist", async function () {
+        // get config from beforeEach
+        const config = this.config;
+
+        const contentAddress = writeContentWithBytecodeStorageV1(
+          "on-chain script",
+          config.bytecodeV1TextCR_DMock,
+          config.accounts.deployer
+        );
+
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .addDependencyScriptPointer(
+              ethers.utils.formatBytes32String("nonExistentDependencyType"),
+              contentAddress
+            ),
+          ONLY_EXISTING_DEPENDENCY_TYPE_ERROR
+        );
+      });
+
+      it("does not allow specifying zero address as script pointer", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .addDependencyScriptPointer(
+              dependencyTypeBytes,
+              constants.ZERO_ADDRESS
+            ),
+          ONLY_NON_ZERO_ADDRESS_ERROR
+        );
+      });
+
+      it("supports BytecodeStorageV1 reads/writes", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        const script = "on-chain script";
+        const contentAddress = writeContentWithBytecodeStorageV1(
+          script,
+          config.bytecodeV1TextCR_DMock,
+          config.accounts.deployer
+        );
+
+        await expect(
+          config.dependencyRegistry.addDependencyScriptPointer(
+            dependencyTypeBytes,
+            contentAddress
+          )
+        )
+          .to.emit(config.dependencyRegistry, "DependencyScriptUpdated")
+          .withArgs(dependencyTypeBytes);
+
+        const dependencyDetails =
+          await config.dependencyRegistry.getDependencyDetails(
+            dependencyTypeBytes
+          );
+
+        expect(dependencyDetails.scriptCount).to.eq(1);
+
+        const scriptCount =
+          await config.dependencyRegistry.getDependencyScriptCount(
+            dependencyTypeBytes
+          );
+        expect(scriptCount).to.eq(1);
+
+        const storedScript =
+          await config.dependencyRegistry.getDependencyScript(
+            dependencyTypeBytes,
+            0
+          );
+        expect(storedScript).to.eq(script);
+      });
+
+      it("supports SSTORE2 reads/writes", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        const script = "on-chain script";
+        const contentAddress = writeContentWithSSTORE2(
+          script,
+          config.sstore2Mock,
+          config.accounts.deployer
+        );
+
+        await expect(
+          config.dependencyRegistry.addDependencyScriptPointer(
+            dependencyTypeBytes,
+            contentAddress
+          )
+        )
+          .to.emit(config.dependencyRegistry, "DependencyScriptUpdated")
+          .withArgs(dependencyTypeBytes);
+
+        const dependencyDetails =
+          await config.dependencyRegistry.getDependencyDetails(
+            dependencyTypeBytes
+          );
+
+        expect(dependencyDetails.scriptCount).to.eq(1);
+
+        const scriptCount =
+          await config.dependencyRegistry.getDependencyScriptCount(
+            dependencyTypeBytes
+          );
+        expect(scriptCount).to.eq(1);
+
+        const storedScript =
+          await config.dependencyRegistry.getDependencyScript(
+            dependencyTypeBytes,
+            0
+          );
+        expect(storedScript).to.eq(script);
+      });
+    });
+
+    describe("updateDependencyScriptPointer", function () {
+      it("does not allow non-admins to update a script pointer", async function () {
+        // get config from beforeEach
+        const config = this.config;
+
+        const contentAddress = writeContentWithBytecodeStorageV1(
+          "on-chain script",
+          config.bytecodeV1TextCR_DMock,
+          config.accounts.deployer
+        );
+
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.user)
+            .updateDependencyScriptPointer(
+              dependencyTypeBytes,
+              0,
+              contentAddress
+            ),
+          ONLY_ADMIN_ACL_ERROR
+        );
+      });
+
+      it("does not allow update a script for a dependency that does not exist", async function () {
+        // get config from beforeEach
+        const config = this.config;
+
+        const contentAddress = writeContentWithBytecodeStorageV1(
+          "on-chain script",
+          config.bytecodeV1TextCR_DMock,
+          config.accounts.deployer
+        );
+
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .updateDependencyScriptPointer(
+              ethers.utils.formatBytes32String("nonExistentDependencyType"),
+              0,
+              contentAddress
+            ),
+          ONLY_EXISTING_DEPENDENCY_TYPE_ERROR
+        );
+      });
+
+      it("does not allow updating a script that is out of range", async function () {
+        // get config from beforeEach
+        const config = this.config;
+
+        const contentAddress = writeContentWithBytecodeStorageV1(
+          "on-chain script",
+          config.bytecodeV1TextCR_DMock,
+          config.accounts.deployer
+        );
+
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .updateDependencyScriptPointer(
+              dependencyTypeBytes,
+              0,
+              contentAddress
+            ),
+          INDEX_OUT_OF_RANGE_ERROR
+        );
+      });
+
+      it("does not allow specifying zero address as script pointer", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .updateDependencyScriptPointer(
+              dependencyTypeBytes,
+              0,
+              constants.ZERO_ADDRESS
+            ),
+          ONLY_NON_ZERO_ADDRESS_ERROR
+        );
+      });
+
+      it("supports BytecodeStorageV1 reads/writes", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        const script = "on-chain script";
+        const contentAddress = writeContentWithBytecodeStorageV1(
+          script,
+          config.bytecodeV1TextCR_DMock,
+          config.accounts.deployer
+        );
+
+        // add modified script first, before then updating it
+        const garbledScript = script.split("").reverse().join("");
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .addDependencyScript(dependencyTypeBytes, garbledScript);
+
+        await expect(
+          config.dependencyRegistry.updateDependencyScriptPointer(
+            dependencyTypeBytes,
+            0,
+            contentAddress
+          )
+        )
+          .to.emit(config.dependencyRegistry, "DependencyScriptUpdated")
+          .withArgs(dependencyTypeBytes);
+
+        const dependencyDetails =
+          await config.dependencyRegistry.getDependencyDetails(
+            dependencyTypeBytes
+          );
+
+        expect(dependencyDetails.scriptCount).to.eq(1);
+
+        const scriptCount =
+          await config.dependencyRegistry.getDependencyScriptCount(
+            dependencyTypeBytes
+          );
+        expect(scriptCount).to.eq(1);
+
+        const storedScript =
+          await config.dependencyRegistry.getDependencyScript(
+            dependencyTypeBytes,
+            0
+          );
+        expect(storedScript).to.eq(script);
+        expect(garbledScript).to.not.eq(script);
+      });
+
+      it("supports SSTORE2 reads/writes", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        const script = "on-chain script";
+        const contentAddress = writeContentWithSSTORE2(
+          script,
+          config.sstore2Mock,
+          config.accounts.deployer
+        );
+
+        // add modified script first, before then updating it
+        const garbledScript = script.split("").reverse().join("");
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .addDependencyScript(dependencyTypeBytes, garbledScript);
+
+        await expect(
+          config.dependencyRegistry.updateDependencyScriptPointer(
+            dependencyTypeBytes,
+            0,
+            contentAddress
+          )
+        )
+          .to.emit(config.dependencyRegistry, "DependencyScriptUpdated")
+          .withArgs(dependencyTypeBytes);
+
+        const dependencyDetails =
+          await config.dependencyRegistry.getDependencyDetails(
+            dependencyTypeBytes
+          );
+
+        expect(dependencyDetails.scriptCount).to.eq(1);
+
+        const scriptCount =
+          await config.dependencyRegistry.getDependencyScriptCount(
+            dependencyTypeBytes
+          );
+        expect(scriptCount).to.eq(1);
+
+        const storedScript =
+          await config.dependencyRegistry.getDependencyScript(
+            dependencyTypeBytes,
+            0
+          );
+        expect(storedScript).to.eq(script);
+        expect(garbledScript).to.not.eq(script);
+      });
+    });
+
     describe("views", function () {
       it("getDependencyDetails", async function () {
         // get config from beforeEach
@@ -786,7 +1159,7 @@ describe(`DependencyRegistryV0`, async function () {
         expect(dependencyDetails.availableOnChain).to.eq(true);
       });
 
-      it("getDependencyScriptAtIndex", async function () {
+      it("getDependencyScript", async function () {
         // get config from beforeEach
         const config = this.config;
         const script = "on-chain script";
@@ -796,14 +1169,14 @@ describe(`DependencyRegistryV0`, async function () {
           .addDependencyScript(dependencyTypeBytes, script);
 
         const storedScript =
-          await config.dependencyRegistry.getDependencyScriptAtIndex(
+          await config.dependencyRegistry.getDependencyScript(
             dependencyTypeBytes,
             0
           );
         expect(storedScript).to.eq(script);
       });
 
-      it("getDependencyScriptBytecodeAddressAtIndex", async function () {
+      it("getDependencyScriptBytecodeAddress", async function () {
         // get config from beforeEach
         const config = this.config;
         const script = "on-chain script";
@@ -813,7 +1186,7 @@ describe(`DependencyRegistryV0`, async function () {
           .addDependencyScript(dependencyTypeBytes, script);
 
         const storedScriptByteCodeAddress =
-          await config.dependencyRegistry.getDependencyScriptBytecodeAddressAtIndex(
+          await config.dependencyRegistry.getDependencyScriptBytecodeAddress(
             dependencyTypeBytes,
             0
           );
@@ -823,6 +1196,63 @@ describe(`DependencyRegistryV0`, async function () {
         );
         expect(scriptBytecode).to.contain(
           ethers.utils.hexlify(ethers.utils.toUtf8Bytes(script)).substring(2)
+        );
+      });
+
+      it("getDependencyScriptBytecodeStorageVersion (BytecodeStorageV1)", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        const script = "on-chain script";
+        const contentAddress = writeContentWithBytecodeStorageV1(
+          script,
+          config.bytecodeV1TextCR_DMock,
+          config.accounts.deployer
+        );
+
+        await config.dependencyRegistry.addDependencyScriptPointer(
+          dependencyTypeBytes,
+          contentAddress
+        );
+
+        const bytecodeStorageVersionBytes =
+          await config.dependencyRegistry.getDependencyScriptBytecodeStorageVersion(
+            dependencyTypeBytes,
+            0
+          );
+        let bytecodeStorageVersionUTF8 = ethers.utils.toUtf8String(
+          bytecodeStorageVersionBytes
+        );
+        expect(bytecodeStorageVersionUTF8).to.eq(
+          "BytecodeStorage_V1.0.0_________ "
+        );
+      });
+
+      it("getDependencyScriptBytecodeStorageVersion (SSTORE2)", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        const script = "on-chain script";
+        const contentAddress = writeContentWithSSTORE2(
+          script,
+          config.sstore2Mock,
+          config.accounts.deployer
+        );
+
+        await config.dependencyRegistry.addDependencyScriptPointer(
+          dependencyTypeBytes,
+          contentAddress
+        );
+
+        const bytecodeStorageVersionBytes =
+          await config.dependencyRegistry.getDependencyScriptBytecodeStorageVersion(
+            dependencyTypeBytes,
+            0
+          );
+
+        let bytecodeStorageVersionUTF8 = ethers.utils.toUtf8String(
+          bytecodeStorageVersionBytes
+        );
+        expect(bytecodeStorageVersionUTF8).to.eq(
+          "UNKNOWN_VERSION_STRING_________ "
         );
       });
     });
@@ -898,21 +1328,21 @@ describe(`DependencyRegistryV0`, async function () {
         expect(dependencyDetails.additionalCDNCount).to.eq(1);
 
         const storedCDN =
-          await config.dependencyRegistry.getDependencyAdditionalCDNAtIndex(
+          await config.dependencyRegistry.getDependencyAdditionalCDN(
             dependencyTypeBytes,
             0
           );
         expect(storedCDN).to.eq("https://cdn.com");
       });
     });
-    describe("removeDependencyAdditionalCDNAtIndex", function () {
+    describe("removeDependencyAdditionalCDN", function () {
       it("does not allow non-admins to remove a cdn", async function () {
         // get config from beforeEach
         const config = this.config;
         await expectRevert(
           config.dependencyRegistry
             .connect(config.accounts.user)
-            .removeDependencyAdditionalCDNAtIndex(dependencyTypeBytes, 0),
+            .removeDependencyAdditionalCDN(dependencyTypeBytes, 0),
           ONLY_ADMIN_ACL_ERROR
         );
       });
@@ -923,7 +1353,7 @@ describe(`DependencyRegistryV0`, async function () {
         await expectRevert(
           config.dependencyRegistry
             .connect(config.accounts.deployer)
-            .removeDependencyAdditionalCDNAtIndex(
+            .removeDependencyAdditionalCDN(
               ethers.utils.formatBytes32String("nonExistentDependencyType"),
               0
             ),
@@ -937,8 +1367,8 @@ describe(`DependencyRegistryV0`, async function () {
         await expectRevert(
           config.dependencyRegistry
             .connect(config.accounts.deployer)
-            .removeDependencyAdditionalCDNAtIndex(dependencyTypeBytes, 0),
-          "Asset index out of range"
+            .removeDependencyAdditionalCDN(dependencyTypeBytes, 0),
+          INDEX_OUT_OF_RANGE_ERROR
         );
       });
 
@@ -952,7 +1382,7 @@ describe(`DependencyRegistryV0`, async function () {
         await expect(
           config.dependencyRegistry
             .connect(config.accounts.deployer)
-            .removeDependencyAdditionalCDNAtIndex(dependencyTypeBytes, 0)
+            .removeDependencyAdditionalCDN(dependencyTypeBytes, 0)
         )
           .to.emit(config.dependencyRegistry, "DependencyAdditionalCDNRemoved")
           .withArgs(dependencyTypeBytes, 0);
@@ -963,17 +1393,25 @@ describe(`DependencyRegistryV0`, async function () {
           );
 
         expect(dependencyDetails.additionalCDNCount).to.eq(0);
+
+        expectRevert(
+          config.dependencyRegistry.getDependencyAdditionalCDN(
+            dependencyTypeBytes,
+            0
+          ),
+          INDEX_OUT_OF_RANGE_ERROR
+        );
       });
     });
 
-    describe("updateDependencyAdditionalCDNAtIndex", function () {
+    describe("updateDependencyAdditionalCDN", function () {
       it("does not allow non-admins to update a cdn", async function () {
         // get config from beforeEach
         const config = this.config;
         await expectRevert(
           config.dependencyRegistry
             .connect(config.accounts.user)
-            .updateDependencyAdditionalCDNAtIndex(
+            .updateDependencyAdditionalCDN(
               dependencyTypeBytes,
               0,
               "https://cdn.com"
@@ -987,7 +1425,7 @@ describe(`DependencyRegistryV0`, async function () {
         await expectRevert(
           config.dependencyRegistry
             .connect(config.accounts.deployer)
-            .updateDependencyAdditionalCDNAtIndex(
+            .updateDependencyAdditionalCDN(
               ethers.utils.formatBytes32String("nonExistentDependencyType"),
               0,
               "https://cdn.com"
@@ -1001,12 +1439,12 @@ describe(`DependencyRegistryV0`, async function () {
         await expectRevert(
           config.dependencyRegistry
             .connect(config.accounts.deployer)
-            .updateDependencyAdditionalCDNAtIndex(
+            .updateDependencyAdditionalCDN(
               dependencyTypeBytes,
               0,
               "https://cdn.com"
             ),
-          "Asset index out of range"
+          INDEX_OUT_OF_RANGE_ERROR
         );
       });
       it("does not allow updating a cdn with empty string", async function () {
@@ -1015,7 +1453,7 @@ describe(`DependencyRegistryV0`, async function () {
         await expectRevert(
           config.dependencyRegistry
             .connect(config.accounts.deployer)
-            .updateDependencyAdditionalCDNAtIndex(dependencyTypeBytes, 0, ""),
+            .updateDependencyAdditionalCDN(dependencyTypeBytes, 0, ""),
           ONLY_NON_EMPTY_STRING_ERROR
         );
       });
@@ -1029,7 +1467,7 @@ describe(`DependencyRegistryV0`, async function () {
         await expect(
           config.dependencyRegistry
             .connect(config.accounts.deployer)
-            .updateDependencyAdditionalCDNAtIndex(
+            .updateDependencyAdditionalCDN(
               dependencyTypeBytes,
               0,
               "https://cdn2.com"
@@ -1046,7 +1484,7 @@ describe(`DependencyRegistryV0`, async function () {
         expect(dependencyDetails.additionalCDNCount).to.eq(1);
 
         const storedCDN =
-          await config.dependencyRegistry.getDependencyAdditionalCDNAtIndex(
+          await config.dependencyRegistry.getDependencyAdditionalCDN(
             dependencyTypeBytes,
             0
           );
@@ -1069,7 +1507,7 @@ describe(`DependencyRegistryV0`, async function () {
         expect(dependencyDetails.additionalCDNCount).to.eq(1);
       });
 
-      it("getDependencyAdditionalCDNAtIndex", async function () {
+      it("getDependencyAdditionalCDN", async function () {
         // get config from beforeEach
         const config = this.config;
         await config.dependencyRegistry
@@ -1077,7 +1515,7 @@ describe(`DependencyRegistryV0`, async function () {
           .addDependencyAdditionalCDN(dependencyTypeBytes, "https://cdn.com");
 
         const storedCDN =
-          await config.dependencyRegistry.getDependencyAdditionalCDNAtIndex(
+          await config.dependencyRegistry.getDependencyAdditionalCDN(
             dependencyTypeBytes,
             0
           );
@@ -1162,24 +1600,21 @@ describe(`DependencyRegistryV0`, async function () {
         expect(dependencyDetails.additionalRepositoryCount).to.eq(1);
 
         const storedRepository =
-          await config.dependencyRegistry.getDependencyAdditionalRepositoryAtIndex(
+          await config.dependencyRegistry.getDependencyAdditionalRepository(
             dependencyTypeBytes,
             0
           );
         expect(storedRepository).to.eq("https://github.com");
       });
     });
-    describe("removeDependencyAdditionalRepositoryAtIndex", function () {
+    describe("removeDependencyAdditionalRepository", function () {
       it("does not allow non-admins to remove additional repository", async function () {
         // get config from beforeEach
         const config = this.config;
         await expectRevert(
           config.dependencyRegistry
             .connect(config.accounts.user)
-            .removeDependencyAdditionalRepositoryAtIndex(
-              dependencyTypeBytes,
-              0
-            ),
+            .removeDependencyAdditionalRepository(dependencyTypeBytes, 0),
           ONLY_ADMIN_ACL_ERROR
         );
       });
@@ -1189,7 +1624,7 @@ describe(`DependencyRegistryV0`, async function () {
         await expectRevert(
           config.dependencyRegistry
             .connect(config.accounts.deployer)
-            .removeDependencyAdditionalRepositoryAtIndex(
+            .removeDependencyAdditionalRepository(
               ethers.utils.formatBytes32String("nonExistentDependencyType"),
               0
             ),
@@ -1202,11 +1637,8 @@ describe(`DependencyRegistryV0`, async function () {
         await expectRevert(
           config.dependencyRegistry
             .connect(config.accounts.deployer)
-            .removeDependencyAdditionalRepositoryAtIndex(
-              dependencyTypeBytes,
-              1
-            ),
-          "Asset index out of range"
+            .removeDependencyAdditionalRepository(dependencyTypeBytes, 1),
+          INDEX_OUT_OF_RANGE_ERROR
         );
       });
       it("allows admin to remove additional repository", async function () {
@@ -1222,7 +1654,7 @@ describe(`DependencyRegistryV0`, async function () {
         await expect(
           config.dependencyRegistry
             .connect(config.accounts.deployer)
-            .removeDependencyAdditionalRepositoryAtIndex(dependencyTypeBytes, 0)
+            .removeDependencyAdditionalRepository(dependencyTypeBytes, 0)
         )
           .to.emit(
             config.dependencyRegistry,
@@ -1237,22 +1669,23 @@ describe(`DependencyRegistryV0`, async function () {
 
         expect(dependencyDetails.additionalRepositoryCount).to.eq(0);
 
-        const storedRepository =
-          await config.dependencyRegistry.getDependencyAdditionalRepositoryAtIndex(
+        expectRevert(
+          config.dependencyRegistry.getDependencyAdditionalRepository(
             dependencyTypeBytes,
             0
-          );
-        expect(storedRepository).to.eq("");
+          ),
+          INDEX_OUT_OF_RANGE_ERROR
+        );
       });
     });
-    describe("updateDependencyAdditionalRepositoryAtIndex", function () {
+    describe("updateDependencyAdditionalRepository", function () {
       it("does not allow non-admins to update additional repository", async function () {
         // get config from beforeEach
         const config = this.config;
         await expectRevert(
           config.dependencyRegistry
             .connect(config.accounts.user)
-            .updateDependencyAdditionalRepositoryAtIndex(
+            .updateDependencyAdditionalRepository(
               dependencyTypeBytes,
               0,
               "https://github.com"
@@ -1266,7 +1699,7 @@ describe(`DependencyRegistryV0`, async function () {
         await expectRevert(
           config.dependencyRegistry
             .connect(config.accounts.deployer)
-            .updateDependencyAdditionalRepositoryAtIndex(
+            .updateDependencyAdditionalRepository(
               ethers.utils.formatBytes32String("nonExistentDependencyType"),
               0,
               "https://github.com"
@@ -1280,12 +1713,12 @@ describe(`DependencyRegistryV0`, async function () {
         await expectRevert(
           config.dependencyRegistry
             .connect(config.accounts.deployer)
-            .updateDependencyAdditionalRepositoryAtIndex(
+            .updateDependencyAdditionalRepository(
               dependencyTypeBytes,
               1,
               "https://github.com"
             ),
-          "Asset index out of range"
+          INDEX_OUT_OF_RANGE_ERROR
         );
       });
       it("does not allow updating additional repository to empty string", async function () {
@@ -1294,11 +1727,7 @@ describe(`DependencyRegistryV0`, async function () {
         await expectRevert(
           config.dependencyRegistry
             .connect(config.accounts.deployer)
-            .updateDependencyAdditionalRepositoryAtIndex(
-              dependencyTypeBytes,
-              0,
-              ""
-            ),
+            .updateDependencyAdditionalRepository(dependencyTypeBytes, 0, ""),
           ONLY_NON_EMPTY_STRING_ERROR
         );
       });
@@ -1315,7 +1744,7 @@ describe(`DependencyRegistryV0`, async function () {
         await expect(
           config.dependencyRegistry
             .connect(config.accounts.deployer)
-            .updateDependencyAdditionalRepositoryAtIndex(
+            .updateDependencyAdditionalRepository(
               dependencyTypeBytes,
               0,
               "https://bitbucket.com"
@@ -1328,7 +1757,7 @@ describe(`DependencyRegistryV0`, async function () {
           .withArgs(dependencyTypeBytes, "https://bitbucket.com", 0);
 
         const storedRepository =
-          await config.dependencyRegistry.getDependencyAdditionalRepositoryAtIndex(
+          await config.dependencyRegistry.getDependencyAdditionalRepository(
             dependencyTypeBytes,
             0
           );
@@ -1354,7 +1783,7 @@ describe(`DependencyRegistryV0`, async function () {
 
         expect(dependencyDetails.additionalRepositoryCount).to.eq(1);
       });
-      it("getDependencyAdditionalRepositoryAtIndex", async function () {
+      it("getDependencyAdditionalRepository", async function () {
         // get config from beforeEach
         const config = this.config;
         await config.dependencyRegistry
@@ -1365,7 +1794,7 @@ describe(`DependencyRegistryV0`, async function () {
           );
 
         const storedRepository =
-          await config.dependencyRegistry.getDependencyAdditionalRepositoryAtIndex(
+          await config.dependencyRegistry.getDependencyAdditionalRepository(
             dependencyTypeBytes,
             0
           );
@@ -1439,7 +1868,7 @@ describe(`DependencyRegistryV0`, async function () {
         expect(supportedCoreContractCount).to.eq(1);
 
         const storedCoreContract =
-          await config.dependencyRegistry.getSupportedCoreContractAtIndex(0);
+          await config.dependencyRegistry.getSupportedCoreContract(0);
         expect(storedCoreContract).to.eq(config.genArt721Core.address);
 
         const supportedCoreContracts =
@@ -1447,6 +1876,12 @@ describe(`DependencyRegistryV0`, async function () {
         expect(supportedCoreContracts).to.deep.eq([
           config.genArt721Core.address,
         ]);
+
+        const isSupportedCoreContract =
+          await config.dependencyRegistry.isSupportedCoreContract(
+            config.genArt721Core.address
+          );
+        expect(isSupportedCoreContract).to.eq(true);
       });
     });
     describe("removeSupportedCoreContract", function () {
@@ -1490,13 +1925,19 @@ describe(`DependencyRegistryV0`, async function () {
         expect(supportedCoreContractCount).to.eq(0);
 
         await expectRevert(
-          config.dependencyRegistry.getSupportedCoreContractAtIndex(0),
-          "Index out of bounds"
+          config.dependencyRegistry.getSupportedCoreContract(0),
+          INDEX_OUT_OF_RANGE_ERROR
         );
 
         const supportedCoreContracts =
           await config.dependencyRegistry.getSupportedCoreContracts();
         expect(supportedCoreContracts).to.deep.eq([]);
+
+        const isSupportedCoreContract =
+          await config.dependencyRegistry.isSupportedCoreContract(
+            config.genArt721Core.address
+          );
+        expect(isSupportedCoreContract).to.eq(false);
       });
     });
     describe("addProjectDependencyTypeOverride", function () {

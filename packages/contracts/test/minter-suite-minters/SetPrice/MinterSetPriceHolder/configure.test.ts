@@ -126,6 +126,7 @@ runForEach.forEach((params) => {
         .connect(config.accounts.artist)
         .updateProjectMaxInvocations(config.projectOne, 15);
 
+      // mint a token on project zero to be used as test "holder" token
       config.minterSetPrice = await deployAndGet(config, "MinterSetPriceV5", [
         config.minterFilter.address,
       ]);
@@ -152,7 +153,7 @@ runForEach.forEach((params) => {
         .purchase(config.projectZero, config.genArt721Core.address, {
           value: config.pricePerTokenInWei,
         });
-      // switch config.projectZero back to MinterHolderV0
+      // switch config.projectZero back to tested minter
       await config.minterFilter
         .connect(config.accounts.deployer)
         .setMinterForProject(

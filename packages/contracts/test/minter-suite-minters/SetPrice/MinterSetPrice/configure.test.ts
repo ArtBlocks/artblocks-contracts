@@ -331,6 +331,26 @@ runForEach.forEach((params) => {
         );
         expect(hasMaxBeenInvoked3).to.be.true;
       });
+
+      it("enforces project max invocations set on minter", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(
+            config.projectZero,
+            config.genArt721Core.address,
+            0
+          );
+        // revert during purchase
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.user)
+            .purchase(config.projectZero, config.genArt721Core.address, {
+              value: config.pricePerTokenInWei,
+            }),
+          revertMessages.maximumInvocationsReached
+        );
+      });
     });
   });
 });
