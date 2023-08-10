@@ -9,9 +9,6 @@ import {
   ZodString,
 } from "zod";
 import { BaseFormFieldSchema, FormFieldSchema } from "./json-schema";
-import set from "lodash/set";
-import get from "lodash/get";
-import mapValues from "lodash/mapValues";
 
 export type Hex = `0x${string}`;
 
@@ -74,100 +71,6 @@ export type SupportedZodSchema =
 export type ZodValidationSchema = ZodObject<{
   [k in string]: ZodOptional<SupportedZodSchema>;
 }>;
-
-// export function formFieldSchemaToZod(
-//   formFieldSchema: FormFieldSchema
-// ): ZodValidationSchema {
-//   const zodSchema: Record<string, SupportedZodSchema> = {};
-//   const altZodSchema: Record<string, SupportedZodSchema> = {};
-
-//   for (const key in formFieldSchema.properties) {
-//     const prop = formFieldSchema.properties[key];
-//     let zodProp: SupportedZodSchema;
-//     switch (prop.type) {
-//       case "integer":
-//         zodProp = z.number().int();
-//         if (prop.minimum !== undefined) {
-//           zodProp = zodProp.min(prop.minimum);
-//         }
-//         if (prop.maximum !== undefined) {
-//           zodProp = zodProp.max(prop.maximum);
-//         }
-//         break;
-//       case "string":
-//         zodProp = z.string();
-//         break;
-//       default:
-//         throw new Error(`Unsupported type: ${prop.type}`);
-//     }
-
-//     if (formFieldSchema.required?.includes(key)) {
-//       if (zodProp instanceof z.ZodNumber) {
-//         zodProp = zodProp.refine((val) => val !== undefined);
-//       } else if (zodProp instanceof z.ZodString) {
-//         zodProp = zodProp.refine((val) => val !== undefined);
-//       }
-//     }
-//     zodSchema[key] = zodProp;
-//     set(altZodSchema, key, zodProp);
-//   }
-
-//   const schema = z.object(zodSchema).partial();
-//   console.log(zodSchema);
-
-//   return schema;
-// }
-
-// export function formFieldSchemaToZod(
-//   formFieldSchema: FormFieldSchema
-// ): z.ZodObject<any> {
-//   function nestProperties(properties: Record<string, BaseFormFieldSchema>) {
-//     const nested: Record<string, any> = {};
-//     for (const [key, value] of Object.entries(properties)) {
-//       set(nested, key, value);
-//     }
-//     return nested;
-//   }
-
-//   function toZod(prop: any): SupportedZodSchema {
-//     switch (prop.type) {
-//       case "integer": {
-//         console.log("COERCE");
-//         let zodProp = z.coerce.number().int();
-//         if (prop.minimum !== undefined) {
-//           zodProp = zodProp.min(prop.minimum);
-//         }
-//         if (prop.maximum !== undefined) {
-//           zodProp = zodProp.max(prop.maximum);
-//         }
-//         return zodProp;
-//       }
-//       case "string":
-//         return z.string();
-//       case "object": {
-//         const objectProps: Record<string, SupportedZodSchema> = {};
-//         for (const key in prop.properties) {
-//           objectProps[key] = toZod(prop.properties[key]);
-//         }
-//         return z.object(objectProps);
-//       }
-//       default:
-//         throw new Error(`Unsupported type: ${prop.type}`);
-//     }
-//   }
-
-//   const nestedProperties = nestProperties(formFieldSchema.properties ?? {});
-
-//   const zodSchema: Record<string, SupportedZodSchema> = {};
-//   for (const key in formFieldSchema.properties) {
-//     zodSchema[key] = toZod(formFieldSchema.properties[key]);
-//     if (formFieldSchema.required?.includes(key)) {
-//       zodSchema[key] = zodSchema[key].optional();
-//     }
-//   }
-
-//   return z.object(zodSchema);
-// }
 
 function nestDotNotationProperties(
   schema: FormFieldSchema
@@ -330,13 +233,13 @@ export async function asyncPoll<T>(
   const endTime = new Date().getTime() + pollTimeout;
   const checkCondition = (
     resolve: (value: T | PromiseLike<T>) => void,
-    reject: (reason?: any) => void
+    reject: (reason?: Error) => void
   ): void => {
     Promise.resolve(fn())
       .then((result) => {
         const currentTime = new Date().getTime();
         if (result.done) {
-          resolve(result.data as any);
+          resolve(result.data as T);
         } else if (currentTime < endTime) {
           setTimeout(checkCondition, pollInterval, resolve, reject);
         } else {
