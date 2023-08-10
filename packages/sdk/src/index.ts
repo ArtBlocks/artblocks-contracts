@@ -12,8 +12,9 @@ import {
   FormFieldSchema,
   isOnChainFormFieldSchema,
 } from "./json-schema";
-import { formFieldSchemaToZod } from "./utils";
+import { AsyncData, asyncPoll, formFieldSchemaToZod } from "./utils";
 import {
+  GetProjectMinterConfigurationUpdatesQuery,
   ProjectMinterConfigurationDetailsFragment,
   ProjectMinterConfigurationDetailsFragmentDoc,
 } from "./generated/graphql";
@@ -69,6 +70,17 @@ const getProjectMinterConfigurationQueryDocument = graphql(/* GraphQL */ `
   }
 `);
 
+const getProjectMinterConfigurationUpdatesQueryDocument =
+  graphql(/* GraphQL */ `
+    query GetProjectMinterConfigurationUpdates($projectId: String!) {
+      projects_metadata_by_pk(id: $projectId) {
+        minter_configuration {
+          properties_updated_at
+        }
+      }
+    }
+  `);
+
 export default class ArtBlocksSDK {
   publicClient: PublicClient;
   graphqlEndpoint: string;
@@ -80,18 +92,21 @@ export default class ArtBlocksSDK {
     this.graphqlEndpoint = graphqlEndpoint;
   }
 
-  async getProjectMinterConfiguration(
-    coreContractAddress: string,
-    projectId: number
-  ) {
-    // Load the initial configuration
-    let configuration = await this.loadProjectMinterConfiguration(
-      coreContractAddress,
-      projectId
-    );
-
+  async getProjectMinterConfiguration(projectId: string) {
     // Create a list of subscribers
-    let subscribers: Array<(config: typeof configuration) => void> = [];
+    let subscribers: Array<(config: ConfigurationForm[]) => void> = [];
+
+    const notifySubscribers = (updatedConfig: ConfigurationForm[]) => {
+      for (const subscriber of subscribers) {
+        subscriber(updatedConfig);
+      }
+    };
+
+    // Load the initial configuration
+    const configuration = await this.loadProjectMinterConfiguration(
+      projectId,
+      notifySubscribers
+    );
 
     return {
       // Provide a method to access the current configuration
@@ -99,15 +114,7 @@ export default class ArtBlocksSDK {
 
       // Provide a method to refresh the configuration
       refresh: async () => {
-        configuration = await this.loadProjectMinterConfiguration(
-          coreContractAddress,
-          projectId
-        );
-
-        // Notify subscribers of the change
-        for (const subscriber of subscribers) {
-          subscriber(configuration);
-        }
+        await this.loadProjectMinterConfiguration(projectId, notifySubscribers);
       },
 
       // Provide a method to subscribe to changes in the configuration
@@ -125,15 +132,18 @@ export default class ArtBlocksSDK {
   }
 
   private async loadProjectMinterConfiguration(
-    coreContractAddress: string,
-    projectId: number
+    projectId: string,
+    onConfigurationChange: (config: ConfigurationForm[]) => void
   ): Promise<ConfigurationForm[]> {
+    const [coreContractAddress, projectIndexString] = projectId.split("-");
+    const projectIndex = Number(projectIndexString);
+
     // Get current minter configuration details from the database
     const res = await request(
       this.graphqlEndpoint,
       getProjectMinterConfigurationQueryDocument,
       {
-        projectId: `${coreContractAddress}-${projectId}`,
+        projectId,
       },
       {
         Authorization: `Bearer ${this.jwt}`,
@@ -143,7 +153,7 @@ export default class ArtBlocksSDK {
 
     if (!project) {
       throw new Error(
-        `Could not find project with core contract address ${coreContractAddress} and project id ${projectId}`
+        `Could not find project with id ${projectId} in the database`
       );
     }
 
@@ -201,7 +211,7 @@ export default class ArtBlocksSDK {
           const functionArgs = this.mapFormValuesToArgs(
             minterSelectionSchema.transactionDetails.args,
             formValues,
-            projectId,
+            projectIndex,
             coreContractAddress
           );
 
@@ -260,7 +270,7 @@ export default class ArtBlocksSDK {
             const functionArgs = this.mapFormValuesToArgs(
               schemaWithProjectIdFiltered.transactionDetails.args,
               formValues,
-              projectId,
+              projectIndex,
               coreContractAddress
             );
 
@@ -272,6 +282,25 @@ export default class ArtBlocksSDK {
                 schemaWithProjectIdFiltered.transactionDetails.functionName,
               args: functionArgs, // this needs to come from values,
             });
+
+            const transactionConfirmedAt = new Date();
+
+            const expectedUpdates =
+              schemaWithProjectIdFiltered.transactionDetails.args;
+
+            // Poll for updates to the configuration
+            await this.pollForProjectMinterConfigurationUpdates(
+              projectId,
+              transactionConfirmedAt,
+              expectedUpdates
+            );
+
+            onConfigurationChange(
+              await this.loadProjectMinterConfiguration(
+                projectId,
+                onConfigurationChange
+              )
+            );
           },
         };
       })
@@ -296,46 +325,104 @@ export default class ArtBlocksSDK {
       return;
     }
 
-    try {
-      const hash = await walletClient.writeContract({
-        address,
-        abi,
-        functionName,
-        args,
-        account: walletClient.account,
-        chain: walletClient.chain,
+    const hash = await walletClient.writeContract({
+      address,
+      abi,
+      functionName,
+      args,
+      account: walletClient.account,
+      chain: walletClient.chain,
+    });
+
+    if (hash) {
+      // If the transaction reverts this will throw an error
+      const { status } = await this.publicClient.waitForTransactionReceipt({
+        hash,
       });
 
-      if (hash) {
-        const { status } = await this.publicClient.waitForTransactionReceipt({
-          hash,
-        });
-        console.log("STATUS ", status);
-      } else {
-        console.log("ERROR");
+      if (status !== "success") {
+        throw new Error("Transaction reverted");
       }
-    } catch (err) {
-      console.error(`ERROR: ${err}`);
+    } else {
+      throw new Error("Cannot retrieve transaction hash");
     }
   }
 
   private mapFormValuesToArgs(
     schemaArgs: string[],
     formValues: Record<string, any>,
-    projectId: number,
+    projectIndex: number,
     coreContractAddress: string
   ): (string | number)[] {
     return schemaArgs.reduce<(string | number)[]>((acc, arg) => {
-      if (arg === "project_id") {
-        return acc.concat(projectId);
+      if (arg === "projectIndex") {
+        return acc.concat(projectIndex);
       }
 
-      if (arg === "contract_address") {
+      if (arg === "coreContractAddress") {
         return acc.concat(coreContractAddress);
       }
 
       return acc.concat(get(formValues, arg));
     }, []);
+  }
+
+  private async pollForProjectMinterConfigurationUpdates(
+    projectId: string,
+    transactionConfirmedAt: Date,
+    updateProperties: string[]
+  ) {
+    await asyncPoll(
+      async (): Promise<
+        AsyncData<
+          GetProjectMinterConfigurationUpdatesQuery["projects_metadata_by_pk"]
+        >
+      > => {
+        try {
+          const result = await request(
+            this.graphqlEndpoint,
+            getProjectMinterConfigurationUpdatesQueryDocument,
+            {
+              projectId,
+            },
+            {
+              Authorization: `Bearer ${this.jwt}`,
+            }
+          );
+          const project = result.projects_metadata_by_pk;
+
+          if (!project) {
+            return Promise.reject(
+              new Error(`Could not find project with id ${projectId}`)
+            );
+          }
+
+          const hasUpdatedProperty = updateProperties.some((property) => {
+            return (
+              project.minter_configuration?.properties_updated_at &&
+              new Date(
+                project.minter_configuration.properties_updated_at[property]
+              ) > transactionConfirmedAt
+            );
+          });
+
+          if (hasUpdatedProperty) {
+            return Promise.resolve({
+              done: true,
+              data: project,
+            });
+          } else {
+            return Promise.resolve({
+              done: false,
+            });
+          }
+        } catch (err) {
+          return Promise.reject(err);
+        }
+      },
+      500, // interval
+      90000 // timeout
+    );
   }
 }
 

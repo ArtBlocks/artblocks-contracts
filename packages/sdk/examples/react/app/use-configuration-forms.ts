@@ -7,14 +7,14 @@ type UseConfigurationFormsReturn = {
   configurationForms: ConfigurationForm[] | null;
   isLoading: boolean;
   error: Error | null;
-  refreshConfiguration: () => Promise<void>;
 };
 
 export function useConfigurationForms(
-  sdk: ArtBlocksSDK,
-  coreContractAddress: string,
-  projectId: number
+  sdk: ArtBlocksSDK | null,
+  projectId: string
 ): UseConfigurationFormsReturn {
+  if (!sdk) throw new Error("SDK is not initialized");
+
   const [configurationForms, setConfigurationForms] = useState<
     ConfigurationForm[] | null
   >(null);
@@ -27,15 +27,10 @@ export function useConfigurationForms(
     const fetchConfiguration = async () => {
       setIsLoading(true);
       try {
-        const config = await sdk.getProjectMinterConfiguration(
-          coreContractAddress,
-          projectId
-        );
+        const config = await sdk.getProjectMinterConfiguration(projectId);
         setConfigurationForms(config.forms);
-
-        // Subscribe to future updates
-        unsubscribe = config.subscribe((updatedConfig) => {
-          setConfigurationForms(updatedConfig);
+        unsubscribe = config.subscribe((newConfigForms) => {
+          setConfigurationForms(newConfigForms);
         });
       } catch (err) {
         setError(err as Error);
@@ -50,24 +45,11 @@ export function useConfigurationForms(
     return () => {
       if (unsubscribe) unsubscribe();
     };
-  }, [sdk, coreContractAddress, projectId]);
-
-  const refreshConfiguration = async () => {
-    try {
-      const config = await sdk.getProjectMinterConfiguration(
-        coreContractAddress,
-        projectId
-      );
-      await config.refresh();
-    } catch (err) {
-      setError(err as Error);
-    }
-  };
+  }, [sdk, projectId]);
 
   return {
     configurationForms,
     isLoading,
     error,
-    refreshConfiguration,
   };
 }

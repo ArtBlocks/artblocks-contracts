@@ -2,8 +2,6 @@ import {
   ConfigurationSchema,
   FormFieldSchema,
   OnChainCompoundNonArrayFormFieldSchema,
-  OnChainFormFieldSchema,
-  OnChainNonArrayFormFieldSchema,
 } from "./json-schema";
 import { Maybe } from "./generated/graphql";
 import { WalletClient } from "viem";
@@ -37,12 +35,12 @@ export function filterProjectIdFromFormSchema(
 ): FormFieldSchema {
   // If properties are defined, remove projectId
   const properties = schema.properties
-    ? (({ project_id, ...rest }) => rest)(schema.properties)
+    ? (({ projectIndex, ...rest }) => rest)(schema.properties)
     : undefined;
 
   // If required is defined, filter out projectId
   const required = schema.required
-    ? schema.required.filter((item) => item !== "project_id")
+    ? schema.required.filter((item) => item !== "projectIndex")
     : undefined;
 
   return {
@@ -60,7 +58,7 @@ export const minterSelectionSchema: OnChainCompoundNonArrayFormFieldSchema = {
   onChain: true,
   transactionDetails: {
     functionName: "setMinterForProject",
-    args: ["project_id", "minter.address"],
+    args: ["projectIndex", "minter.address"],
     abi: [
       {
         inputs: [
@@ -105,9 +103,9 @@ export const mockMinterSchemaMap: Record<string, ConfigurationSchema> = {
         transactionDetails: {
           functionName: "setAuctionDetails",
           args: [
-            "project_id",
-            "extra_minter_details.endTime",
+            "projectIndex",
             "extra_minter_details.startTime",
+            "extra_minter_details.endTime",
             "extra_minter_details.startPrice",
             "base_price",
           ],
@@ -148,7 +146,7 @@ export const mockMinterSchemaMap: Record<string, ConfigurationSchema> = {
           ],
         },
         properties: {
-          project_id: {
+          projectIndex: {
             type: "integer",
             title: "Project ID",
             minimum: 1,
@@ -177,7 +175,7 @@ export const mockMinterSchemaMap: Record<string, ConfigurationSchema> = {
           },
         },
         required: [
-          "project_id",
+          "projectIndex",
           "extra_minter_details.auctionTimestampStart",
           "extra_minter_details.auctionTimestampEnd",
           "extra_minter_details.startPrice",
@@ -193,7 +191,7 @@ export const mockMinterSchemaMap: Record<string, ConfigurationSchema> = {
         compoundBehavior: "transactionGroup",
         transactionDetails: {
           functionName: "resetAuctionDetails",
-          args: ["project_id"],
+          args: ["projectIndex"],
           abi: [
             {
               inputs: [
@@ -211,8 +209,8 @@ export const mockMinterSchemaMap: Record<string, ConfigurationSchema> = {
           ],
         },
         properties: {
-          project_id: {
-            type: "string",
+          projectIndex: {
+            type: "integer",
             title: "Project ID",
           },
         },
