@@ -43,7 +43,24 @@ interface Option {
 /**
  * BaseFormFieldAttributes extends ConfigurationSchema7 to describe a basic property in the schema.
  */
-export type BaseFormFieldSchema = JSONSchema7;
+export interface BaseFormFieldSchema extends Omit<JSONSchema7, "properties"> {
+  /** Optional display label corresponding to the enum value. */
+  displayLabels?: string[];
+
+  /** An array of options for the property. Only relevant to array properties. */
+  options?: Option[];
+
+  /** The name of another property that this property depends on. */
+  dependsOn?: string;
+
+  /** Optional property indicating that a field is conditionally required. */
+  dependent?: boolean;
+
+  /** Optional property indicating how a field should be transformed before submitting. */
+  submissionProcessing?: "merkleRoot";
+
+  properties?: { [key: string]: BaseFormFieldSchema | boolean } | undefined;
+}
 
 interface FormFieldProperties {
   properties?: { [key: string]: BaseFormFieldSchema };
@@ -154,10 +171,7 @@ export interface ConfigurationSchema extends JSONSchema7 {
     [key: string]: FormFieldSchema;
   };
 
-  /** Optional object containing fields with values of an array of fields that they are dependent on. */
-  dependencies?: {
-    [key: string]: string[];
-  };
+  additionalProperties?: boolean;
 }
 
 /**

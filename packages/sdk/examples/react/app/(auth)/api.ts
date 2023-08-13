@@ -88,5 +88,13 @@ export async function getJWT(
   }
 
   const responseBody = await response.json();
+
+  if (responseBody?.data?.authenticate) {
+    localStorage.setItem(
+      "ab-sdk-session",
+      JSON.stringify(responseBody.data.authenticate)
+    );
+  }
+
   return responseBody.data.authenticate;
 }

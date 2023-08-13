@@ -91,7 +91,7 @@ export const minterSelectionSchema: OnChainCompoundNonArrayFormFieldSchema = {
 
 export const mockMinterSchemaMap: Record<string, ConfigurationSchema> = {
   MinterDALin: {
-    title: "Linear Dutch Auction Configuration Form",
+    title: "Linear Dutch Auction Minter Configuration Form",
     type: "object",
     properties: {
       setAuctionDetails: {
@@ -214,6 +214,195 @@ export const mockMinterSchemaMap: Record<string, ConfigurationSchema> = {
             title: "Project ID",
           },
         },
+      },
+    },
+    additionalProperties: true,
+  },
+  MinterSetPrice: {
+    title: "Set Price Minter Configuration Form",
+    type: "object",
+    properties: {
+      updatePricePerTokenInWei: {
+        title: "Update Price Per Token In Wei",
+        type: "object",
+        onChain: true,
+        transactionDetails: {
+          functionName: "updatePricePerTokenInWei",
+          args: ["projectIndex", "base_price"],
+          abi: [
+            {
+              inputs: [
+                {
+                  internalType: "uint256",
+                  name: "_projectId",
+                  type: "uint256",
+                },
+                {
+                  internalType: "uint256",
+                  name: "_pricePerTokenInWei",
+                  type: "uint256",
+                },
+              ],
+              name: "updatePricePerTokenInWei",
+              outputs: [],
+              stateMutability: "nonpayable",
+              type: "function",
+            },
+          ],
+        },
+        properties: {
+          projectIndex: {
+            type: "integer",
+            title: "Project Index",
+            minimum: 0,
+          },
+          base_price: {
+            type: "integer",
+            title: "Base Price (wei)",
+            default: 0,
+          },
+        },
+        required: ["projectIndex", "base_price"],
+      },
+    },
+    additionalProperties: true,
+  },
+  MinterMerkleV5: {
+    title: "Minter Configuration Form",
+    type: "object",
+    properties: {
+      updateMerkleRoot: {
+        title: "Update Merkle Root",
+        type: "object",
+        onChain: true,
+        transactionDetails: {
+          functionName: "updateMerkleRoot",
+          args: ["projectIndex", "extraMinterDetails.merkleRoot"],
+          abi: [
+            {
+              inputs: [
+                {
+                  internalType: "uint256",
+                  name: "_projectId",
+                  type: "uint256",
+                },
+                {
+                  internalType: "bytes32",
+                  name: "_root",
+                  type: "bytes32",
+                },
+              ],
+              name: "updateMerkleRoot",
+              outputs: [],
+              stateMutability: "nonpayable",
+              type: "function",
+            },
+          ],
+        },
+        properties: {
+          projectIndex: {
+            type: "integer",
+            title: "Project Index",
+            minimum: 0,
+          },
+          allowListFile: {
+            type: "string",
+            format: "data-url",
+            description: "Upload a file with the allowed addresses",
+            title: "Allowed Addresses File",
+            submissionProcessing: "merkleRoot",
+          },
+          "extra_minter_details.merkleRoot": {
+            readOnly: true,
+            type: "string",
+            title: "Merkle Root",
+          },
+        },
+        required: ["projectIndex", "ext"],
+      },
+      setProjectInvocationsPerAddress: {
+        title: "Set Project Invocations Per Address",
+        type: "object",
+        onChain: true,
+        transactionDetails: {
+          functionName: "setProjectInvocationsPerAddress",
+          args: ["projectIndex", "maxInvocationsPerAddress"],
+          abi: [
+            {
+              inputs: [
+                {
+                  internalType: "uint256",
+                  name: "_projectId",
+                  type: "uint256",
+                },
+                {
+                  internalType: "uint24",
+                  name: "_maxInvocationsPerAddress",
+                  type: "uint24",
+                },
+              ],
+              name: "setProjectInvocationsPerAddress",
+              outputs: [],
+              stateMutability: "nonpayable",
+              type: "function",
+            },
+          ],
+        },
+        properties: {
+          projectIndex: {
+            type: "integer",
+            title: "Project Index",
+            minimum: 0,
+          },
+          maxInvocationsPerAddress: {
+            type: "integer",
+            title: "Max Invocations Per Address",
+            minimum: 0,
+          },
+        },
+        required: ["projectIndex", "maxInvocationsPerAddress"],
+      },
+      updatePricePerTokenInWei: {
+        title: "Update Price Per Token In Wei",
+        type: "object",
+        onChain: true,
+        transactionDetails: {
+          functionName: "updatePricePerTokenInWei",
+          args: ["projectIndex", "base_price"],
+          abi: [
+            {
+              inputs: [
+                {
+                  internalType: "uint256",
+                  name: "_projectId",
+                  type: "uint256",
+                },
+                {
+                  internalType: "uint256",
+                  name: "_pricePerTokenInWei",
+                  type: "uint256",
+                },
+              ],
+              name: "updatePricePerTokenInWei",
+              outputs: [],
+              stateMutability: "nonpayable",
+              type: "function",
+            },
+          ],
+        },
+        properties: {
+          projectIndex: {
+            type: "integer",
+            title: "Project Index",
+            minimum: 0,
+          },
+          base_price: {
+            type: "integer",
+            title: "Base Price (wei)",
+            default: 0,
+          },
+        },
+        required: ["projectIndex", "base_price"],
       },
     },
     additionalProperties: true,

@@ -22,6 +22,7 @@ module.exports = {
       "error",
       { ignoreRestSiblings: true },
     ],
+    "@typescript-eslint/no-explicit-any": "warn",
   },
   ignorePatterns: [".eslintrc.js", "src/generated/**/*"],
 };

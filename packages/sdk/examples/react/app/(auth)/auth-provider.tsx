@@ -4,6 +4,7 @@ import { useEffect, useReducer, createContext, useContext } from "react";
 import { useAccount, useDisconnect, useWalletClient } from "wagmi";
 import { WalletClient } from "wagmi";
 import { getAuthMessage, getJWT } from "./api";
+import { getStoredSession } from "./local-storage";
 
 interface AuthState {
   loading: boolean;
@@ -48,23 +49,27 @@ async function authenticate(
   signer: WalletClient
 ): Promise<void> {
   dispatch({ type: "AUTHENTICATING" });
-  const message = await getAuthMessage(
-    address,
-    window.location.host,
-    window.location.origin
-  );
+  let session = getStoredSession();
 
-  const signature = await signer.signMessage({ message });
+  if (!session) {
+    const message = await getAuthMessage(
+      address,
+      window.location.host,
+      window.location.origin
+    );
 
-  const { jwt, expiration } = await getJWT({
-    message,
-    publicAddress: address.toLowerCase(),
-    signature,
-  });
+    const signature = await signer.signMessage({ message });
+
+    session = await getJWT({
+      message,
+      publicAddress: address.toLowerCase(),
+      signature,
+    });
+  }
 
   dispatch({
     type: "AUTHENTICATED",
-    payload: { jwt, expiration, loading: false },
+    payload: { ...session, loading: false },
   });
 }
 
@@ -84,7 +89,7 @@ function AuthProvider({
       authenticate(dispatch, address, signer);
     }
 
-    if (jwt && !isConnected) {
+    if (jwt && !isConnected && !isConnecting) {
       dispatch({ type: "SIGNOUT" });
     }
   }, [address, isConnected, signer, jwt, isConnecting, isReconnecting]);
