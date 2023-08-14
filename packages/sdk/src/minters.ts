@@ -7,18 +7,29 @@ import { Maybe } from "./generated/graphql";
 import { WalletClient } from "viem";
 import { ZodValidationSchema } from "./utils";
 
+export const SubmissionStatusEnum = {
+  AWAITING_USER_SIGNATURE: "AWAITING_USER_SIGNATURE",
+  CONFIRMING: "CONFIRMING",
+  SYNCING: "SYNCING",
+} as const;
+
+export type SubmissionStatus =
+  (typeof SubmissionStatusEnum)[keyof typeof SubmissionStatusEnum];
+
 export type AvailableMinter = {
   address: string;
   type: string;
 };
 
 export type ConfigurationForm = {
+  key: string;
   formSchema: FormFieldSchema;
   initialFormValues: Record<string, any>;
   zodSchema: ZodValidationSchema;
   handleSubmit: (
     formValues: Record<string, any>,
-    signer: WalletClient
+    signer: WalletClient,
+    onProgress?: (status: SubmissionStatus) => void
   ) => Promise<void>;
 };
 

@@ -8,6 +8,7 @@ export async function submitTransaction({
   abi,
   functionName,
   args,
+  onUserAccepted,
 }: {
   publicClient: PublicClient;
   walletClient: WalletClient;
@@ -15,6 +16,7 @@ export async function submitTransaction({
   abi: Abi;
   functionName: string;
   args: (string | number)[];
+  onUserAccepted?: () => void;
 }) {
   if (!walletClient.account) {
     return;
@@ -28,6 +30,8 @@ export async function submitTransaction({
     account: walletClient.account,
     chain: walletClient.chain,
   });
+
+  onUserAccepted?.();
 
   if (hash) {
     // If the transaction reverts this will throw an error

@@ -2,6 +2,7 @@ import request from "graphql-request";
 import ArtBlocksSDK from "../index";
 import {
   ConfigurationForm,
+  SubmissionStatusEnum,
   filterProjectIdFromFormSchema,
   minterSelectionSchema,
   mockMinterSchemaMap,
@@ -113,9 +114,10 @@ export async function generateProjectMinterConfigurationForms(
     ];
 
   configurationForms = configurationForms.concat(
-    Object.entries(minterConfigurationSchema.properties).map(([, value]) => {
+    Object.entries(minterConfigurationSchema.properties).map(([key, value]) => {
       return generateMinterForm({
         ...context,
+        key,
         formSchema: value,
         minterConfiguration,
       });
@@ -153,6 +155,7 @@ function generateSelectMinterForm({
 
   // Initialize configurationForms with the minter selection form
   const form = {
+    key: "setMinterForProject",
     formSchema: minterSelectionSchemaWithMinters,
     initialFormValues: getInitialMinterConfigurationValuesForFormField(
       minterSelectionSchema,
@@ -225,14 +228,16 @@ function generateSelectMinterForm({
 }
 
 type GenerateMinterFormArgs = GenerateProjectMinterConfigurationFormsContext & {
-  minterConfiguration: NonNullable<ProjectMinterConfigurationDetailsFragment>;
+  key: string;
   formSchema: FormFieldSchema;
+  minterConfiguration: NonNullable<ProjectMinterConfigurationDetailsFragment>;
 };
 
 // Forms to configure a minter for a project
 function generateMinterForm(args: GenerateMinterFormArgs): ConfigurationForm {
   const {
     sdk,
+    key,
     projectId,
     formSchema,
     projectIndex,
@@ -249,12 +254,14 @@ function generateMinterForm(args: GenerateMinterFormArgs): ConfigurationForm {
   );
 
   return {
+    key,
     formSchema: schemaWithProjectIdFiltered,
     initialFormValues,
     zodSchema: formFieldSchemaToZod(schemaWithProjectIdFiltered),
     handleSubmit: async (
       formValues: Record<string, any>,
-      walletClient: WalletClient
+      walletClient: WalletClient,
+      onProgress?: (status: SubmissionStatus) => void
     ) => {
       if (
         !minterConfiguration.minter ||
@@ -262,8 +269,10 @@ function generateMinterForm(args: GenerateMinterFormArgs): ConfigurationForm {
         !("abi" in schemaWithProjectIdFiltered.transactionDetails) ||
         !walletClient.account
       ) {
-        return;
+        throw new Error("Invalid form configuration");
       }
+
+      onProgress?.(SubmissionStatusEnum.AWAITING_USER_SIGNATURE);
 
       // Check if any of the form values should be transformed before submitting the transaction
       // const transformedForm;
@@ -289,8 +298,10 @@ function generateMinterForm(args: GenerateMinterFormArgs): ConfigurationForm {
         functionName:
           schemaWithProjectIdFiltered.transactionDetails.functionName,
         args: functionArgs, // sdk needs to come from values,
+        onUserAccepted: () => onProgress?.(SubmissionStatusEnum.CONFIRMING),
       });
 
+      onProgress?.(SubmissionStatusEnum.SYNCING);
       const transactionConfirmedAt = new Date();
 
       const expectedUpdates =

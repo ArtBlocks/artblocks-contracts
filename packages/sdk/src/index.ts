@@ -1,4 +1,8 @@
-import { ConfigurationForm } from "./minters";
+import {
+  ConfigurationForm,
+  SubmissionStatusEnum,
+  SubmissionStatus,
+} from "./minters";
 import { PublicClient } from "viem";
 import { generateProjectMinterConfigurationForms } from "./minter-configuration";
 
@@ -72,3 +76,5 @@ export default class ArtBlocksSDK {
     };
   }
 }
+
+export { type ConfigurationForm, SubmissionStatusEnum, type SubmissionStatus };
