@@ -155,6 +155,7 @@ contract MinterDAExpV5 is
                 _coreContract
             ][_projectId]
         });
+
         emit ProjectMaxInvocationsLimitUpdated(
             _projectId,
             _coreContract,
@@ -324,7 +325,8 @@ contract MinterDAExpV5 is
      * @param _projectId The unique identifier for the project.
      * @param _coreContract The address of the core contract for the project.
      * @return timestampStart The start timestamp for the auction.
-     * @return priceDecayHalfLifeSeconds The half-life for the price decay during the auction, in seconds.
+     * @return priceDecayHalfLifeSeconds The half-life for the price decay
+     * during the auction, in seconds.
      * @return startPrice The starting price of the auction.
      * @return basePrice The base price of the auction.
      */

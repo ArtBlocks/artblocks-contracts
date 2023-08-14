@@ -4,10 +4,10 @@
 pragma solidity ^0.8.0;
 
 /**
- * @title Art Blocks Merkle Library
- * @notice This library is designed to manage and verify merkle based gating for Art Blocks projects.
- * It provides functionalities such as updating the merkle root of project, verifying an address against a proof,
- * and setting the maximum number of invocations per address for a project.
+ * @title Art Blocks Dutch Auction (exponential price curve) Library
+ * @notice This library is designed to implement logic and checks for Art
+ * Blocks projects using an exponential Dutch auctionprice curve for minting
+ * tokens.
  * @author Art Blocks Inc.
  */
 
@@ -25,12 +25,18 @@ library DAExpLib {
 
     /**
      * @notice Sets auction details for an exponential-price auction type.
-     * @dev The function sets the auction start timestamp, price decay half-life, starting, and base prices for an exponential-price auction.
-     * @dev Minter implementations should ensure that _priceDecayHalfLifeSeconds value is greater than
-     * the minter's minimum allowable value for price decay half-life.
-     * @param _DAProjectConfig The storage reference to the DAProjectConfig struct.
+     * @dev The function sets the auction start timestamp, price decay
+     * half-life, starting, and base prices for an exponential-price auction.
+     * @dev Minter implementations should ensure that any additional guard-
+     * rails are properly checked outside of this function. For example, the
+     * minter should check that _priceDecayHalfLifeSeconds is greater than the
+     * minter's minimum allowable value for price decay half-life (if the
+     * minter chooses to include that guard-rail).
+     * @param _DAProjectConfig The storage reference to the DAProjectConfig
+     * struct.
      * @param _auctionTimestampStart The timestamp when the auction will start.
-     * @param _priceDecayHalfLifeSeconds The half-life time for price decay in seconds.
+     * @param _priceDecayHalfLifeSeconds The half-life time for price decay in
+     * seconds.
      * @param _startPrice The starting price of the auction.
      * @param _basePrice The base price of the auction.
      */
@@ -63,10 +69,11 @@ library DAExpLib {
     }
 
     /**
-     * @notice Gets price of minting a token given
-     * the project's AuctionParameters and current block timestamp.
-     * Reverts if auction has not yet started or auction is unconfigured.
-     * @return current price of token in Wei
+     * @notice Gets price of minting a token given the project's
+     * DAProjectConfig.
+     * This function reverts if auction has not yet started, or if auction is
+     * unconfigured.
+     * @return uint256 current price of token in Wei
      */
     function getPriceExp(
         DAProjectConfig storage _DAProjectConfig
