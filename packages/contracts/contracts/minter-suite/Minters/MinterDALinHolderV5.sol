@@ -111,7 +111,7 @@ contract MinterDALinHolderV5 is
 
     uint256 constant ONE_MILLION = 1_000_000;
     /// Minimum auction length in seconds
-    uint256 public minimumAuctionLengthSeconds = 600;
+    uint256 public minimumAuctionLengthSeconds = 600; // 10 minutes
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR SplitFundsLib begin here
@@ -431,8 +431,9 @@ contract MinterDALinHolderV5 is
         // @dev if local max invocations and maxHasBeenInvoked are both
         // initial values, we know they have not been populated.
         if (
-            _maxInvocationsProjectConfig.maxInvocations == 0 &&
-            _maxInvocationsProjectConfig.maxHasBeenInvoked == false
+            MaxInvocationsLib.maxInvocationsIsUnconfigured(
+                _maxInvocationsProjectConfig
+            )
         ) {
             syncProjectMaxInvocationsToCore(_projectId, _coreContract);
         }
@@ -446,6 +447,12 @@ contract MinterDALinHolderV5 is
     function setMinimumAuctionLengthSeconds(
         uint256 _minimumAuctionLengthSeconds
     ) external {
+        AuthLib.onlyMinterFilterAdminACL({
+            _minterFilterAddress: minterFilterAddress,
+            _sender: msg.sender,
+            _contract: address(this),
+            _selector: this.setMinimumAuctionLengthSeconds.selector
+        });
         minimumAuctionLengthSeconds = _minimumAuctionLengthSeconds;
         emit AuctionMinimumLengthSecondsUpdated(_minimumAuctionLengthSeconds);
     }
@@ -588,12 +595,10 @@ contract MinterDALinHolderV5 is
             storage _auctionProjectConfig = _auctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
-        return (
-            _auctionProjectConfig.timestampStart,
-            _auctionProjectConfig.timestampEnd,
-            _auctionProjectConfig.startPrice,
-            _auctionProjectConfig.basePrice
-        );
+        timestampStart = _auctionProjectConfig.timestampStart;
+        timestampEnd = _auctionProjectConfig.timestampEnd;
+        startPrice = _auctionProjectConfig.startPrice;
+        basePrice = _auctionProjectConfig.basePrice;
     }
 
     /**
@@ -707,14 +712,15 @@ contract MinterDALinHolderV5 is
                 _coreContract
             ][_projectId];
         isConfigured = (auctionProjectConfig.startPrice > 0);
-        if (block.timestamp <= auctionProjectConfig.timestampStart) {
-            // Provide a reasonable value for `tokenPriceInWei` when it would
-            // otherwise revert, using the starting price before auction starts.
-            tokenPriceInWei = auctionProjectConfig.startPrice;
-        } else if (auctionProjectConfig.timestampEnd == 0) {
+        if (!isConfigured) {
             // In the case of unconfigured auction, return price of zero when
-            // it would otherwise revert
+            // getPriceLin would otherwise revert
             tokenPriceInWei = 0;
+        } else if (block.timestamp <= auctionProjectConfig.timestampStart) {
+            // Provide a reasonable value for `tokenPriceInWei` when
+            // getPriceLin would otherwise revert, using the starting price
+            // before auction starts.
+            tokenPriceInWei = auctionProjectConfig.startPrice;
         } else {
             tokenPriceInWei = DALinLib.getPriceLin(auctionProjectConfig);
         }

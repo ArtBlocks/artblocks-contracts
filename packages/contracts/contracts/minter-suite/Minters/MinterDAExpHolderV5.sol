@@ -436,8 +436,9 @@ contract MinterDAExpHolderV5 is
         // @dev if local max invocations and maxHasBeenInvoked are both
         // initial values, we know they have not been populated.
         if (
-            _maxInvocationsProjectConfig.maxInvocations == 0 &&
-            _maxInvocationsProjectConfig.maxHasBeenInvoked == false
+            MaxInvocationsLib.maxInvocationsIsUnconfigured(
+                _maxInvocationsProjectConfig
+            )
         ) {
             syncProjectMaxInvocationsToCore(_projectId, _coreContract);
         }
@@ -607,12 +608,11 @@ contract MinterDAExpHolderV5 is
             storage _auctionProjectConfig = _auctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
-        return (
-            _auctionProjectConfig.timestampStart,
-            _auctionProjectConfig.priceDecayHalfLifeSeconds,
-            _auctionProjectConfig.startPrice,
-            _auctionProjectConfig.basePrice
-        );
+        timestampStart = _auctionProjectConfig.timestampStart;
+        priceDecayHalfLifeSeconds = _auctionProjectConfig
+            .priceDecayHalfLifeSeconds;
+        startPrice = _auctionProjectConfig.startPrice;
+        basePrice = _auctionProjectConfig.basePrice;
     }
 
     /**
@@ -726,14 +726,15 @@ contract MinterDAExpHolderV5 is
                 _coreContract
             ][_projectId];
         isConfigured = (auctionProjectConfig.startPrice > 0);
-        if (block.timestamp <= auctionProjectConfig.timestampStart) {
-            // Provide a reasonable value for `tokenPriceInWei` when it would
-            // otherwise revert, using the starting price before auction starts.
-            tokenPriceInWei = auctionProjectConfig.startPrice;
-        } else if (auctionProjectConfig.startPrice == 0) {
+        if (!isConfigured) {
             // In the case of unconfigured auction, return price of zero when
-            // it would otherwise revert
+            // getPriceExp would otherwise revert
             tokenPriceInWei = 0;
+        } else if (block.timestamp <= auctionProjectConfig.timestampStart) {
+            // Provide a reasonable value for `tokenPriceInWei` when
+            // getPriceExp would otherwise revert, using the starting price
+            // before auction starts.
+            tokenPriceInWei = auctionProjectConfig.startPrice;
         } else {
             tokenPriceInWei = DAExpLib.getPriceExp(auctionProjectConfig);
         }
