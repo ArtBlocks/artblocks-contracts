@@ -191,6 +191,10 @@ contract MinterDALinV5 is
             storage _auctionProjectConfig = _auctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
+        MaxInvocationsLib.MaxInvocationsProjectConfig
+            storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
+                _coreContract
+            ][_projectId];
 
         require(
             _auctionTimestampEnd >=
@@ -199,12 +203,16 @@ contract MinterDALinV5 is
         );
 
         // EFFECTS
+        bool maxHasBeenInvoked = MaxInvocationsLib.getMaxHasBeenInvoked(
+            _maxInvocationsProjectConfig
+        );
         DALinLib.setAuctionDetailsLin({
             _DAProjectConfig: _auctionProjectConfig,
             _auctionTimestampStart: _auctionTimestampStart,
             _auctionTimestampEnd: _auctionTimestampEnd,
             _startPrice: _startPrice,
-            _basePrice: _basePrice
+            _basePrice: _basePrice,
+            _maxHasBeenInvoked: maxHasBeenInvoked
         });
 
         emit SetAuctionDetailsLin({
@@ -215,11 +223,6 @@ contract MinterDALinV5 is
             _startPrice: _startPrice,
             _basePrice: _basePrice
         });
-
-        MaxInvocationsLib.MaxInvocationsProjectConfig
-            storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
-                _coreContract
-            ][_projectId];
 
         // sync local max invocations if not initially populated
         // @dev if local max invocations and maxHasBeenInvoked are both

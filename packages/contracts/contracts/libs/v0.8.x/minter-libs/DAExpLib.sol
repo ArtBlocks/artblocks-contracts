@@ -39,17 +39,21 @@ library DAExpLib {
      * seconds.
      * @param _startPrice The starting price of the auction.
      * @param _basePrice The base price of the auction.
+     * @param _maxHasBeenInvoked Whether or not the minter-local max
+     * invocations have been invoked.
      */
     function setAuctionDetailsExp(
         DAProjectConfig storage _DAProjectConfig,
         uint64 _auctionTimestampStart,
         uint64 _priceDecayHalfLifeSeconds,
         uint128 _startPrice,
-        uint128 _basePrice
+        uint128 _basePrice,
+        bool _maxHasBeenInvoked
     ) internal {
         require(
-            _DAProjectConfig.timestampStart == 0 ||
-                block.timestamp < _DAProjectConfig.timestampStart,
+            _DAProjectConfig.timestampStart == 0 || // uninitialized
+                block.timestamp < _DAProjectConfig.timestampStart || // auction not yet started
+                _maxHasBeenInvoked, // minter-local max invocations have been reached
             "No modifications mid-auction"
         );
         require(
