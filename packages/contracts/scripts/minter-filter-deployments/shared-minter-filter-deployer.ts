@@ -13,7 +13,6 @@ Logger.setLogLevel(Logger.levels.ERROR);
 // delay to avoid issues with reorgs and tx failures
 import { delay, getConfigInputs } from "../util/utils";
 import { EXTRA_DELAY_BETWEEN_TX } from "../util/constants";
-import { Contract } from "ethers";
 
 /**
  * This generic script was created to deploy shared minter filter contracts.
