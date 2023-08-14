@@ -67,6 +67,7 @@ export type T_Config = {
   basePrice?: BigNumber;
   defaultHalfLife?: number;
   startTime?: number;
+  endTime?: number;
   auctionStartTimeOffset?: number;
   targetMinterName?: string;
   defaultAuctionLengthSeconds?: number;
@@ -583,6 +584,12 @@ export function hashAddress(_address) {
 // @dev intended to only be used with shared minter contracts
 export async function isERC20Minter(_contract: Contract) {
   const minterType = await _contract.minterType();
-  console.log("minterType", minterType);
   return minterType.includes("ERC20");
+}
+
+// utility function to return if contract is a Dutch auction minter
+// @dev intended to only be used with shared minter contracts
+export async function isDAMinter(_contract: Contract) {
+  const minterType = await _contract.minterType();
+  return minterType.includes("DA");
 }
