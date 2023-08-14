@@ -20,6 +20,7 @@ export const revertMessages = {
   onlyAdminACL: "Only Admin ACL allowed",
   onlyCoreAdminACL: "Only Core AdminACL allowed",
   onlyCoreAdminACLOrArtist: "Only Artist or Core Admin ACL",
+  onlyMinterFilterACL: "Only MinterFilter AdminACL",
   onlyRegisteredCore: "Only registered core contract",
   onlyNonZeroAddress: "Only non-zero address",
   onlyNonZero: "Only non-zero",
@@ -62,4 +63,14 @@ export const revertMessages = {
   noAuction: "No auction exists on project",
   nextTokenNotPopulated: "Next token not populated",
   onlyGte7000: "Only gte 7_000",
+  onlyConfiguredAuctions: "Only configured auctions",
+  halfLifeTooShort:
+    "Price decay half life must be greater than min allowable value",
+  noMidAuction: "No modifications mid-auction",
+  onlyFutureAuctions: "Only future auctions",
+  auctionNotStarted: "Auction not yet started",
+  invalidDAPrices: "Auction start price must be greater than auction end price",
+  noZeroHalfLife: "Half life of zero not allowed",
+  tooShortAuction:
+    "Auction length must be at least minimumAuctionLengthSeconds",
 };
