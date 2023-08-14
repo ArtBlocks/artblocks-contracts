@@ -8,7 +8,6 @@
 import hre from "hardhat";
 import { ethers } from "hardhat";
 import { tryVerify } from "../../util/verification";
-import { requireLowGasPrice } from "../../util/utils";
 
 /**
  * This script was created to deploy the V3 core Engine contracts,
@@ -27,9 +26,6 @@ const engineRegistryContractName = "EngineRegistryV0";
 // CONFIG ENDS HERE
 //////////////////////////////////////////////////////////////////////////////
 async function main() {
-  // ensure current network gas price is below configured threshold
-  await requireLowGasPrice();
-
   const [deployer] = await ethers.getSigners();
   const network = await ethers.provider.getNetwork();
   const networkName = network.name == "homestead" ? "mainnet" : network.name;
