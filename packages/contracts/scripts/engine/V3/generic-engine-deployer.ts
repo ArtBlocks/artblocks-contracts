@@ -176,8 +176,10 @@ async function main() {
     if (deployDetails.existingAdminACL) {
       // ensure a valid address
       ethers.utils.isAddress(deployDetails.existingAdminACL);
-      // @dev it is acceptable to have an adminACLContractName or
-      // not have an adminACLContractName if existingAdminACL is defined
+      // ensure we have a factory for adminACLContractName, because we use it in this script
+      const _adminACLContractName = deployDetails.adminACLContractName;
+      // @dev getContractFactory throws if no factory is found for _adminACLContractName
+      await ethers.getContractFactory(_adminACLContractName);
     } else {
       // ensure that the adminACL contract name is defined
       if (deployDetails.adminACLContractName == undefined) {
