@@ -12,7 +12,7 @@ import {
   getAllowlistUploadUrlQueryDocument,
   getProjectMinterConfigurationUpdatesQueryDocument,
   updateOffChainExtraMinterDetailsMutationDocument,
-} from "./graphql";
+} from "./graphql-operations";
 import {
   getMerkleRoot,
   readFileAsText,

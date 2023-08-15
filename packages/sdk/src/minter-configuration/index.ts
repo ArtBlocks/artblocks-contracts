@@ -7,7 +7,7 @@ import {
   minterSelectionSchema,
   mockMinterSchemaMap,
 } from "../minters";
-import { getProjectMinterConfigurationQueryDocument } from "./graphql";
+import { getProjectMinterConfigurationQueryDocument } from "./graphql-operations";
 import { useFragment } from "../generated";
 import {
   GetProjectMinterConfigurationQuery,

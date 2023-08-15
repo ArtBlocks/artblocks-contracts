@@ -1,7 +1,7 @@
 import { graphql } from "../generated/gql";
 
-export const getProjectMinterConfigurationQueryDocument = graphql(
-  /* GraphQL */ `
+export const getProjectMinterConfigurationQueryDocument =
+  graphql(/* GraphQL */ `
     query GetProjectMinterConfiguration($projectId: String!) {
       projects_metadata_by_pk(id: $projectId) {
         project_id
@@ -42,11 +42,10 @@ export const getProjectMinterConfigurationQueryDocument = graphql(
         }
       }
     }
-  `
-);
+  `);
 
-export const getProjectMinterConfigurationUpdatesQueryDocument = graphql(
-  /* GraphQL */ `
+export const getProjectMinterConfigurationUpdatesQueryDocument =
+  graphql(/* GraphQL */ `
     query GetProjectMinterConfigurationUpdates($projectId: String!) {
       projects_metadata_by_pk(id: $projectId) {
         minter_configuration {
@@ -54,8 +53,7 @@ export const getProjectMinterConfigurationUpdatesQueryDocument = graphql(
         }
       }
     }
-  `
-);
+  `);
 
 export const getAllowlistUploadUrlQueryDocument = graphql(/* GraphQL */ `
   query GetAllowlistUploadUrl($projectId: String!) {
@@ -66,8 +64,8 @@ export const getAllowlistUploadUrlQueryDocument = graphql(/* GraphQL */ `
   }
 `);
 
-export const updateOffChainExtraMinterDetailsMutationDocument = graphql(
-  /* GraphQL */ `
+export const updateOffChainExtraMinterDetailsMutationDocument =
+  graphql(/* GraphQL */ `
     mutation UpdateOffChainExtraMinterDetails(
       $projectMinterConfigId: String!
       $extraMinterDetails: jsonb!
@@ -79,5 +77,4 @@ export const updateOffChainExtraMinterDetailsMutationDocument = graphql(
         offchain_extra_minter_details
       }
     }
-  `
-);
+  `);
