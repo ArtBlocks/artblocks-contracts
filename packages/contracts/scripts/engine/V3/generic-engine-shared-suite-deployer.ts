@@ -150,6 +150,14 @@ async function main() {
         `[ERROR] No bytecode storage reader library address configured for network ${networkName}`
       );
     }
+
+    // verify a sensible AdminACL input config
+    // ensure that the adminACL contract name is valid (i.e. the following doesn't throw)
+    await ethers.getContractFactory(deployDetails.adminACLContractName);
+    if (deployDetails.existingAdminACL) {
+      // ensure a valid address
+      ethers.utils.isAddress(deployDetails.existingAdminACL);
+    }
   }
 
   //////////////////////////////////////////////////////////////////////////////
