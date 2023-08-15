@@ -419,6 +419,37 @@ runForEach.forEach((params) => {
         );
       });
 
+      it("Modifications okay after minter-local max invocations reached", async function () {
+        const config = await loadFixture(_beforeEach);
+        // configure auction
+        await configureProjectZeroAuctionAndAdvanceToStart(config);
+        // configure minter-local max invocations to 1
+        await config.minter
+          .connect(config.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(
+            config.projectZero,
+            config.genArt721Core.address,
+            1
+          );
+        // mint a token
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        // expect no revert when modifying auction after minter-local max invocations reached
+        await config.minter
+          .connect(config.accounts.artist)
+          .setAuctionDetails(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.startTime + ONE_DAY,
+            config.defaultHalfLife,
+            config.startingPrice,
+            config.basePrice
+          );
+      });
+
       it("Only future auctions", async function () {
         const config = await loadFixture(_beforeEach);
         // expect revert when setting auction start time to past
