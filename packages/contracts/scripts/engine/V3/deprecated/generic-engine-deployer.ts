@@ -748,9 +748,16 @@ ${deployedMinterNames
     //////////////////////////////////////////////////////////////////////////////
 
     // Reminder to update provider payment addresses that are left as the deployer for now.
-    console.log(
-      `[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: ${deployer.address}. Update later as needed.`
-    );
+    if (renderProviderAddress === deployer.address) {
+      console.log(
+        `[ACTION] render provider sales payment addresses remain as deployer addresses: ${deployer.address}. Update later as needed.`
+      );
+    }
+    if (platformProviderAddress === deployer.address) {
+      console.log(
+        `[ACTION] platform provider sales payment addresses remain as deployer addresses: ${deployer.address}. Update later as needed.`
+      );
+    }
 
     // Reminder to update adminACL superAdmin if needed
     const adminACLSuperAdmin = await adminACL.superAdmin();
