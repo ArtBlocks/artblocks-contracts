@@ -64,7 +64,7 @@
     "@artblocks/contracts": "^1.0.2",
     "abitype": "^0.8.7",
     "encoding": "^0.1.13",
-    "ethers": "^6.3.0",
+    "ethers": "^6.7.0",
     "graphql": "^16.7.1",
     "graphql-request": "^6.1.0",
     "lodash": "^4.17.21",
