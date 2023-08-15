@@ -8,8 +8,7 @@ export const deployDetailsArray = [
     environment: "dev",
     // if you want to use an existing admin ACL, set the address here (otherwise set as undefined to deploy a new one)
     existingAdminACL: undefined,
-    // the following can be undefined if you are using an existing admin ACL, otherwise define the Admin ACL contract name
-    // if deploying a new AdminACL
+    // the following must always be defined and accurate, even if using an existing admin ACL
     adminACLContractName: "AdminACLV1",
     // See the `KNOWN_ENGINE_REGISTRIES` object in `/scripts/engine/V3/constants.ts` for the correct registry address for
     // the intended network and the corresponding deployer wallet addresses
