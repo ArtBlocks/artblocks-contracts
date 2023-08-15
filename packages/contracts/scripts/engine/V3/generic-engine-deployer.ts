@@ -171,6 +171,26 @@ async function main() {
         `[ERROR] No bytecode storage reader library address configured for network ${networkName}`
       );
     }
+
+    // verify a sensible AdminACL input config
+    if (deployDetails.existingAdminACL) {
+      // ensure a valid address
+      ethers.utils.isAddress(deployDetails.existingAdminACL);
+      // ensure we have a factory for adminACLContractName, because we use it in this script
+      const _adminACLContractName = deployDetails.adminACLContractName;
+      // @dev getContractFactory throws if no factory is found for _adminACLContractName
+      await ethers.getContractFactory(_adminACLContractName);
+    } else {
+      // ensure that the adminACL contract name is defined
+      if (deployDetails.adminACLContractName == undefined) {
+        throw new Error(
+          `[ERROR] adminACLContractName must be defined if existingAdminACL is not defined`
+        );
+      }
+      // ensure that the adminACL contract name is valid (i.e. the following doesn't throw)
+      await ethers.getContractFactory(deployDetails.adminACLContractName);
+    }
+
     //////////////////////////////////////////////////////////////////////////////
     // INPUT VALIDATION ENDS HERE
     //////////////////////////////////////////////////////////////////////////////
