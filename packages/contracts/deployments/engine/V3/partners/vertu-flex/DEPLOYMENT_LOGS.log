@@ -66,3 +66,55 @@ Contracts metadata upsert input:
 Successfully upserted 1 contract
 [ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
 [ACTION] AdminACL's superAdmin address is 0x57F1C8d52baFCbDDCAaa71BE11FEA6E48e11af11, don't forget to update if requred.
+----------------------------------------
+[INFO] Datetime of deployment: 2023-08-11T21:55:24.650Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/vertu-flex/deployment-config.mainnet.ts
+[INFO] Deploying to network: mainnet
+[INFO] Deploying to environment: mainnet
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x7B80A64e267796070Aa506d6514fE54b8F18379C
+[INFO] Randomizer BasicRandomizerV2 deployed at 0xc9bf1e74C21001EEEB2246130BE6Aaa2eD7a3282
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0xEdd5c3D8e8fC1E88b93A98282b8ccfD953C483A4
+[INFO] Minter Filter MinterFilterV1 deployed at 0xC1A1D0b3c8202e2dd0Ceb220d917F35A987a6aD8
+[INFO] MinterSetPriceV4 deployed at 0x1D86474E5eFDcED2D2f8B81c37D296dcC44D74c4
+[INFO] MinterDAExpSettlementV1 deployed at 0x7edCcC63734B719A3bCD619A839d78BDA241Afb7
+[INFO] MinterMerkleV5 deployed at 0x82B99bBA7E0A36634B99562fF8F2f9ca783043C9
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0xC1A1D0b3c8202e2dd0Ceb220d917F35A987a6aD8.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0x1D86474E5eFDcED2D2f8B81c37D296dcC44D74c4 on minter filter.
+[INFO] Allowlisted minter MinterDAExpSettlementV1 at 0x7edCcC63734B719A3bCD619A839d78BDA241Afb7 on minter filter.
+[INFO] Allowlisted minter MinterMerkleV5 at 0x82B99bBA7E0A36634B99562fF8F2f9ca783043C9 on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0x57F1C8d52baFCbDDCAaa71BE11FEA6E48e11af11.
+[INFO] Verifying core contract contract deployment...
+The contract 0xEdd5c3D8e8fC1E88b93A98282b8ccfD953C483A4 has already been verified
+[INFO] Core contract verified on Etherscan at 0xEdd5c3D8e8fC1E88b93A98282b8ccfD953C483A4}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0x7B80A64e267796070Aa506d6514fE54b8F18379C has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0x7B80A64e267796070Aa506d6514fE54b8F18379C}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0xC1A1D0b3c8202e2dd0Ceb220d917F35A987a6aD8 has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0xC1A1D0b3c8202e2dd0Ceb220d917F35A987a6aD8}
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+The contract 0x1D86474E5eFDcED2D2f8B81c37D296dcC44D74c4 has already been verified
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0x1D86474E5eFDcED2D2f8B81c37D296dcC44D74c4}
+[INFO] Verifying MinterDAExpSettlementV1 contract deployment...
+The contract 0x7edCcC63734B719A3bCD619A839d78BDA241Afb7 has already been verified
+[INFO] MinterDAExpSettlementV1 contract verified on Etherscan at 0x7edCcC63734B719A3bCD619A839d78BDA241Afb7}
+[INFO] Verifying MinterMerkleV5 contract deployment...
+The contract 0x82B99bBA7E0A36634B99562fF8F2f9ca783043C9 has already been verified
+[INFO] MinterMerkleV5 contract verified on Etherscan at 0x82B99bBA7E0A36634B99562fF8F2f9ca783043C9}
+Created s3 bucket for https://vertu-fine-art-mainnet.s3.amazonaws.com
+[INFO] Created image bucket vertu-fine-art-mainnet
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/vertu-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0xedd5c3d8e8fc1e88b93a98282b8ccfd953c483a4",
+  "name": "Vertu Fine Art",
+  "bucket_name": "vertu-fine-art-mainnet",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x57F1C8d52baFCbDDCAaa71BE11FEA6E48e11af11, don't forget to update if requred.
