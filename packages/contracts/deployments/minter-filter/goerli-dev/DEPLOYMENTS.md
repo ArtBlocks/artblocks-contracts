@@ -1,7 +1,7 @@
 
 # Shared Minter Filter Deployment
 
-Date: 2023-07-24T22:03:24.318Z
+Date: 2023-08-15T22:49:15.570Z
 
 ## **Network:** goerli
 
@@ -9,13 +9,13 @@ Date: 2023-07-24T22:03:24.318Z
 
 **Deployment Input File:** `deployments/minter-filter/goerli-dev/shared-minter-filter-deploy-config.dev.ts`
 
-**MinterFilterV2:** https://goerli.etherscan.io/address/0xf4AC1A3904A1ED2c9E969666A24541bB6e4Cd39f#code
+**MinterFilterV2:** https://goerli.etherscan.io/address/0xb02d7B810AA2a0697A430C9389062b9F486D2CC5#code
 
-**Associated AdminACL contract:** 0x98F5F8541677F52967FFd80a9A377547616F5eC4
+**Associated AdminACL contract:** 0x54AdA89D4127b90aFDB12e241D87216A300Cb78f
 
-**Associated CoreRegistry contract:** 0x6472Bf1C68197e1e124200743a51Ee62745f290B
+**Associated CoreRegistry contract:** 0x1560B0c7571C0c9E7db3B2Fe9540D37f85b4BDf2
 
-**Deployment Args:** 0x98F5F8541677F52967FFd80a9A377547616F5eC4,0x6472Bf1C68197e1e124200743a51Ee62745f290B
+**Deployment Args:** 0x54AdA89D4127b90aFDB12e241D87216A300Cb78f,0x1560B0c7571C0c9E7db3B2Fe9540D37f85b4BDf2
 
 ---
 

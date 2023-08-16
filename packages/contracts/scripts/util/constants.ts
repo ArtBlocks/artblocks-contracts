@@ -46,7 +46,7 @@ export function getActiveSharedMinterFilter(
 // format is [network]: { [environment]: [minter filter address] }
 const ACTIVE_SHARED_MINTER_FILTERS = {
   goerli: {
-    dev: "0xTBD",
+    dev: "0xb02d7B810AA2a0697A430C9389062b9F486D2CC5",
     staging: "0xTBD",
   },
   mainnet: {
@@ -87,7 +87,7 @@ export function getActiveSharedRandomizer(
 // format is [network]: { [environment]: [randomizer address] }
 const ACTIVE_SHARED_RANDOMIZERS = {
   goerli: {
-    dev: "0xTBD",
+    dev: "0xD023790a7Bf5Dd71414409dc62008B8a190e0C28",
     staging: "0xTBD",
   },
   mainnet: {

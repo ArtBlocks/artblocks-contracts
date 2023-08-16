@@ -1,69 +1,16 @@
 ----------------------------------------
-[INFO] Datetime of deployment: 2023-07-24T22:58:23.909Z
+[INFO] Datetime of deployment: 2023-08-15T22:55:23.397Z
 [INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minters/goerli-dev/shared-minter-deploy-config.dev.ts
-[INFO] MinterSetPriceV5 deployed at 0x3E7A537785bbb4E2537E39674C6eb01F1EFfE859
-----------------------------------------
-[INFO] Datetime of deployment: 2023-07-24T23:01:03.856Z
-[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minters/goerli-dev/shared-minter-deploy-config.dev.ts
-[INFO] MinterSetPriceV5 deployed at 0xDe5958d422011B7eF350c0359932A79eCeeda1Ea
-[INFO] MinterSetPriceV5 approved globally on minter filter at 0xf4AC1A3904A1ED2c9E969666A24541bB6e4Cd39f
+[INFO] MinterSetPriceV5 deployed at 0xbd920Aa905ec1B20A48406d9B097102b07A2275C
+[INFO] MinterSetPriceV5 approved globally on minter filter at 0xb02d7B810AA2a0697A430C9389062b9F486D2CC5
 [INFO] Verifying MinterSetPriceV5 contract deployment...
+Nothing to compile
 Successfully submitted source code for contract
-contracts/minter-suite/Minters/MinterSetPriceV5.sol:MinterSetPriceV5 at 0xDe5958d422011B7eF350c0359932A79eCeeda1Ea
+contracts/minter-suite/Minters/MinterSetPriceV5.sol:MinterSetPriceV5 at 0xbd920Aa905ec1B20A48406d9B097102b07A2275C
 for verification on the block explorer. Waiting for verification result...
 
 Successfully verified contract MinterSetPriceV5 on Etherscan.
-https://goerli.etherscan.io/address/0xDe5958d422011B7eF350c0359932A79eCeeda1Ea#code
-[INFO] MinterSetPriceV5 contract verified on Etherscan at 0xDe5958d422011B7eF350c0359932A79eCeeda1Ea}
-[INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minters/goerli-dev/DEPLOYMENTS.md
-[INFO] MinterSetPriceERC20V5 deployed at 0x122c2fd2510bB4282ac8444b428d365Ab0B9cD79
-[INFO] MinterSetPriceERC20V5 approved globally on minter filter at 0xf4AC1A3904A1ED2c9E969666A24541bB6e4Cd39f
-[INFO] Verifying MinterSetPriceERC20V5 contract deployment...
-Successfully submitted source code for contract
-contracts/minter-suite/Minters/MinterSetPriceERC20V5.sol:MinterSetPriceERC20V5 at 0x122c2fd2510bB4282ac8444b428d365Ab0B9cD79
-for verification on the block explorer. Waiting for verification result...
-
-Successfully verified contract MinterSetPriceERC20V5 on Etherscan.
-https://goerli.etherscan.io/address/0x122c2fd2510bB4282ac8444b428d365Ab0B9cD79#code
-[INFO] MinterSetPriceERC20V5 contract verified on Etherscan at 0x122c2fd2510bB4282ac8444b428d365Ab0B9cD79}
-[INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minters/goerli-dev/DEPLOYMENTS.md
-----------------------------------------
-[INFO] Datetime of deployment: 2023-07-24T23:07:33.705Z
-[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minters/goerli-dev/shared-minter-deploy-config.dev.ts
-[INFO] MinterSetPriceMerkleV5 deployed at 0x0063EDa582ba319e55a3fa73Ad0aD1B1B3Ea7BF2
-[INFO] MinterSetPriceMerkleV5 approved globally on minter filter at 0xf4AC1A3904A1ED2c9E969666A24541bB6e4Cd39f
-[INFO] Verifying MinterSetPriceMerkleV5 contract deployment...
-Nothing to compile
-Successfully submitted source code for contract
-contracts/minter-suite/Minters/MinterSetPriceMerkleV5.sol:MinterSetPriceMerkleV5 at 0x0063EDa582ba319e55a3fa73Ad0aD1B1B3Ea7BF2
-for verification on the block explorer. Waiting for verification result...
-
-Successfully verified contract MinterSetPriceMerkleV5 on Etherscan.
-https://goerli.etherscan.io/address/0x0063EDa582ba319e55a3fa73Ad0aD1B1B3Ea7BF2#code
-[INFO] MinterSetPriceMerkleV5 contract verified on Etherscan at 0x0063EDa582ba319e55a3fa73Ad0aD1B1B3Ea7BF2}
-[INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minters/goerli-dev/DEPLOYMENTS.md
-[INFO] MinterSetPriceHolderV5 deployed at 0xFd7Bd15A0535E6Dfa5e67D73b645F9AEf23302c4
-[INFO] MinterSetPriceHolderV5 approved globally on minter filter at 0xf4AC1A3904A1ED2c9E969666A24541bB6e4Cd39f
-[INFO] Verifying MinterSetPriceHolderV5 contract deployment...
-Compiled 242 Solidity files successfully
-Successfully submitted source code for contract
-contracts/minter-suite/Minters/MinterSetPriceHolderV5.sol:MinterSetPriceHolderV5 at 0xFd7Bd15A0535E6Dfa5e67D73b645F9AEf23302c4
-for verification on the block explorer. Waiting for verification result...
-
-Successfully verified contract MinterSetPriceHolderV5 on Etherscan.
-https://goerli.etherscan.io/address/0xFd7Bd15A0535E6Dfa5e67D73b645F9AEf23302c4#code
-[INFO] MinterSetPriceHolderV5 contract verified on Etherscan at 0xFd7Bd15A0535E6Dfa5e67D73b645F9AEf23302c4}
-[INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minters/goerli-dev/DEPLOYMENTS.md
-[INFO] MinterSetPricePolyptychV5 deployed at 0x545c37342aFA702F40E1f709244ecc4B9EA41E09
-[INFO] MinterSetPricePolyptychV5 approved globally on minter filter at 0xf4AC1A3904A1ED2c9E969666A24541bB6e4Cd39f
-[INFO] Verifying MinterSetPricePolyptychV5 contract deployment...
-Compiled 242 Solidity files successfully
-Successfully submitted source code for contract
-contracts/minter-suite/Minters/MinterSetPricePolyptychV5.sol:MinterSetPricePolyptychV5 at 0x545c37342aFA702F40E1f709244ecc4B9EA41E09
-for verification on the block explorer. Waiting for verification result...
-
-Successfully verified contract MinterSetPricePolyptychV5 on Etherscan.
-https://goerli.etherscan.io/address/0x545c37342aFA702F40E1f709244ecc4B9EA41E09#code
-[INFO] MinterSetPricePolyptychV5 contract verified on Etherscan at 0x545c37342aFA702F40E1f709244ecc4B9EA41E09}
+https://goerli.etherscan.io/address/0xbd920Aa905ec1B20A48406d9B097102b07A2275C#code
+[INFO] MinterSetPriceV5 contract verified on Etherscan at 0xbd920Aa905ec1B20A48406d9B097102b07A2275C}
 [INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minters/goerli-dev/DEPLOYMENTS.md
 [INFO] Done!

@@ -1,30 +1,26 @@
 ----------------------------------------
-[INFO] Datetime of deployment: 2023-07-24T21:58:45.797Z
+[INFO] Datetime of deployment: 2023-08-15T22:46:43.368Z
 [INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minter-filter/goerli-dev/shared-minter-filter-deploy-config.dev.ts
-[INFO] Admin ACL contract AdminACLV0 deployed at 0x98F5F8541677F52967FFd80a9A377547616F5eC4
-[INFO] Core Registry contract CoreRegistryV1 deployed at 0x6472Bf1C68197e1e124200743a51Ee62745f290B
-[INFO] MinterFilterV2 deployed at 0xf4AC1A3904A1ED2c9E969666A24541bB6e4Cd39f
+[INFO] Admin ACL contract AdminACLV0 deployed at 0x54AdA89D4127b90aFDB12e241D87216A300Cb78f
+[INFO] Core Registry contract CoreRegistryV1 deployed at 0x1560B0c7571C0c9E7db3B2Fe9540D37f85b4BDf2
+[INFO] MinterFilterV2 deployed at 0xb02d7B810AA2a0697A430C9389062b9F486D2CC5
 [INFO] Verifying AdminACLV0 contract deployment...
-The contract 0x98F5F8541677F52967FFd80a9A377547616F5eC4 has already been verified
-[INFO] AdminACLV0 contract verified on Etherscan at 0x98F5F8541677F52967FFd80a9A377547616F5eC4}
+The contract 0x54AdA89D4127b90aFDB12e241D87216A300Cb78f has already been verified
+[INFO] AdminACLV0 contract verified on Etherscan at 0x54AdA89D4127b90aFDB12e241D87216A300Cb78f}
 [INFO] Verifying CoreRegistryV1 contract deployment...
+The contract 0x1560B0c7571C0c9E7db3B2Fe9540D37f85b4BDf2 has already been verified
+[INFO] CoreRegistryV1 contract verified on Etherscan at 0x1560B0c7571C0c9E7db3B2Fe9540D37f85b4BDf2}
+[INFO] Verifying MinterFilterV2 contract deployment...
 Nothing to compile
 Successfully submitted source code for contract
-contracts/engine-registry/CoreRegistryV1.sol:CoreRegistryV1 at 0x6472Bf1C68197e1e124200743a51Ee62745f290B
+contracts/minter-suite/MinterFilter/MinterFilterV2.sol:MinterFilterV2 at 0xb02d7B810AA2a0697A430C9389062b9F486D2CC5
 for verification on the block explorer. Waiting for verification result...
 
-Successfully verified contract CoreRegistryV1 on Etherscan.
-https://goerli.etherscan.io/address/0x6472Bf1C68197e1e124200743a51Ee62745f290B#code
-[INFO] CoreRegistryV1 contract verified on Etherscan at 0x6472Bf1C68197e1e124200743a51Ee62745f290B}
-[INFO] Verifying MinterFilterV2 contract deployment...
-Compiled 242 Solidity files successfully
-Successfully submitted source code for contract
-contracts/minter-suite/MinterFilter/MinterFilterV2.sol:MinterFilterV2 at 0xf4AC1A3904A1ED2c9E969666A24541bB6e4Cd39f
-for verification on the block explorer. Waiting for verification result...
-
-Successfully verified contract MinterFilterV2 on Etherscan.
-https://goerli.etherscan.io/address/0xf4AC1A3904A1ED2c9E969666A24541bB6e4Cd39f#code
-[INFO] MinterFilterV2 contract verified on Etherscan at 0xf4AC1A3904A1ED2c9E969666A24541bB6e4Cd39f}
+[WARN] Etherscan verification of MinterFilterV2 failed: NomicLabsHardhatPluginError: The Etherscan API responded with a failure status.
+The verification may still succeed but should be checked manually.
+Reason: Already Verified
+[ACTION] Verify MinterFilterV2 contract deployment with:
+yarn hardhat verify --network goerli 0xb02d7B810AA2a0697A430C9389062b9F486D2CC5 0x54AdA89D4127b90aFDB12e241D87216A300Cb78f 0x1560B0c7571C0c9E7db3B2Fe9540D37f85b4BDf2
 [INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minter-filter/goerli-dev/DEPLOYMENTS.md
 [INFO] Done!
 [INFO] Ensure any superAdmin migration actions are performed before proceeding to use the deployed contracts.

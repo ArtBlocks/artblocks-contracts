@@ -9,47 +9,7 @@ export const deployConfigDetailsArray = [
     // Please set to "dev", "staging", or "mainnet", as appropriate
     environment: "dev",
     minterName: "MinterSetPriceV5",
-    minterFilterAddress: "0xf4AC1A3904A1ED2c9E969666A24541bB6e4Cd39f",
-    // may only set to true if deploying from the MinterFilter's admin wallet
-    approveMinterGlobally: true,
-  },
-  {
-    network: "goerli",
-    // environment is only used for metadata purposes, and is not used in the deployment process
-    // Please set to "dev", "staging", or "mainnet", as appropriate
-    environment: "dev",
-    minterName: "MinterSetPriceERC20V5",
-    minterFilterAddress: "0xf4AC1A3904A1ED2c9E969666A24541bB6e4Cd39f",
-    // may only set to true if deploying from the MinterFilter's admin wallet
-    approveMinterGlobally: true,
-  },
-  {
-    network: "goerli",
-    // environment is only used for metadata purposes, and is not used in the deployment process
-    // Please set to "dev", "staging", or "mainnet", as appropriate
-    environment: "dev",
-    minterName: "MinterSetPriceMerkleV5",
-    minterFilterAddress: "0xf4AC1A3904A1ED2c9E969666A24541bB6e4Cd39f",
-    // may only set to true if deploying from the MinterFilter's admin wallet
-    approveMinterGlobally: true,
-  },
-  {
-    network: "goerli",
-    // environment is only used for metadata purposes, and is not used in the deployment process
-    // Please set to "dev", "staging", or "mainnet", as appropriate
-    environment: "dev",
-    minterName: "MinterSetPriceHolderV5",
-    minterFilterAddress: "0xf4AC1A3904A1ED2c9E969666A24541bB6e4Cd39f",
-    // may only set to true if deploying from the MinterFilter's admin wallet
-    approveMinterGlobally: true,
-  },
-  {
-    network: "goerli",
-    // environment is only used for metadata purposes, and is not used in the deployment process
-    // Please set to "dev", "staging", or "mainnet", as appropriate
-    environment: "dev",
-    minterName: "MinterSetPricePolyptychV5",
-    minterFilterAddress: "0xf4AC1A3904A1ED2c9E969666A24541bB6e4Cd39f",
+    minterFilterAddress: "0xb02d7B810AA2a0697A430C9389062b9F486D2CC5",
     // may only set to true if deploying from the MinterFilter's admin wallet
     approveMinterGlobally: true,
   },
