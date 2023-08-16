@@ -1,4 +1,3 @@
-
 # Deployment
 
 Date: 2023-08-16T21:35:29.695Z
@@ -33,7 +32,6 @@ Date: 2023-08-16T21:35:29.695Z
 
 - **Add initial project?:** false
 - **Add initial token?:** false
-- **Image Bucket:** TBD
+- **Image Bucket:** engine-sharedsuite-goerli.s3.amazonaws.com
 
 ---
-
