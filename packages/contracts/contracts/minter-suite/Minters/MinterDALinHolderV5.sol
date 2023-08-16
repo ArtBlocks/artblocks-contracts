@@ -890,10 +890,26 @@ contract MinterDALinHolderV5 is
             _sender: vault
         });
 
+        // NOTE: delegate-vault handling **ends here**.
+
         MaxInvocationsLib.validatePurchaseEffectsInvocations(
             tokenId,
             _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
         );
+
+        // INTERACTIONS
+        // require vault to own NFT used to redeem
+        /**
+         * @dev Considered an interaction because calling ownerOf on an NFT
+         * contract. Plan is to only integrate with AB/PBAB NFTs on the minter, but
+         * in case other NFTs are registered, better to check here. Also,
+         * function is non-reentrant, so this is extra cautious.
+         */
+        TokenHolderLib.validateNFTOwnership({
+            _ownedNFTAddress: _ownedNFTAddress,
+            _ownedNFTTokenId: _ownedNFTTokenId,
+            _targetOwner: vault
+        });
 
         // INTERACTIONS
         bool isEngine = SplitFundsLib.isEngine(

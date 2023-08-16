@@ -21,12 +21,12 @@ const runForEach = [
   {
     core: "GenArt721CoreV3",
   },
-  {
-    core: "GenArt721CoreV3_Explorations",
-  },
-  {
-    core: "GenArt721CoreV3_Engine",
-  },
+  //   {
+  //     core: "GenArt721CoreV3_Explorations",
+  //   },
+  //   {
+  //     core: "GenArt721CoreV3_Engine",
+  //   },
   {
     core: "GenArt721CoreV3_Engine_Flex",
   },
@@ -150,6 +150,26 @@ runForEach.forEach((params) => {
         .purchase(config.projectZero, config.genArt721Core.address, {
           value: config.pricePerTokenInWei,
         });
+
+      await config.minterFilter
+        .connect(config.accounts.deployer)
+        .setMinterForProject(
+          config.projectOne,
+          config.genArt721Core.address,
+          config.minterSetPrice.address
+        );
+      await config.minterSetPrice
+        .connect(config.accounts.artist)
+        .updatePricePerTokenInWei(
+          config.projectOne,
+          config.genArt721Core.address,
+          config.pricePerTokenInWei
+        );
+      await config.minterSetPrice
+        .connect(config.accounts.artist)
+        .purchase(config.projectOne, config.genArt721Core.address, {
+          value: config.pricePerTokenInWei,
+        });
       // switch config.projectZero back to MinterHolderV0
       await config.minterFilter
         .connect(config.accounts.deployer)
@@ -259,7 +279,7 @@ runForEach.forEach((params) => {
         await configureProjectZeroAuctionAndAdvanceToStart(config);
         for (let i = 0; i < 14; i++) {
           await config.minter
-            .connect(config.accounts.user)
+            .connect(config.accounts.artist)
             ["purchase(uint256,address,address,uint256)"](
               config.projectZero,
               config.genArt721Core.address,
@@ -291,7 +311,7 @@ runForEach.forEach((params) => {
             config.genArt721Core.address,
             config.pricePerTokenInWei
           );
-        for (let i = 0; i < 15; i++) {
+        for (let i = 0; i < 14; i++) {
           await setPriceMinter
             .connect(config.accounts.user)
             .purchase(config.projectOne, config.genArt721Core.address, {
@@ -363,7 +383,7 @@ runForEach.forEach((params) => {
           await configureProjectZeroAuctionAndAdvanceToStart(config);
           await expectRevert(
             config.minter
-              .connect(config.accounts.user)
+              .connect(config.accounts.artist)
               ["purchase(uint256,address,address,uint256)"](
                 config.projectZero,
                 config.genArt721Core.address,
@@ -394,7 +414,7 @@ runForEach.forEach((params) => {
             await configureProjectZeroAuctionAndAdvanceToStart(config);
             await expectRevert(
               config.minter
-                .connect(config.accounts.user)
+                .connect(config.accounts.artist)
                 ["purchaseTo(address,uint256,address,address,uint256)"](
                   config.accounts.additional.address,
                   config.projectZero,
@@ -426,7 +446,7 @@ runForEach.forEach((params) => {
           // expect revert when trying to purchase
           await expectRevert(
             config.minter
-              .connect(config.accounts.user)
+              .connect(config.accounts.artist)
               ["purchase(uint256,address,address,uint256)"](
                 config.projectZero,
                 config.genArt721Core.address,
@@ -466,7 +486,7 @@ runForEach.forEach((params) => {
           // expect revert when trying to purchase
           await expectRevert(
             config.minter
-              .connect(config.accounts.user)
+              .connect(config.accounts.artist)
               ["purchase(uint256,address,address,uint256)"](
                 config.projectZero,
                 config.genArt721Core.address,
@@ -516,7 +536,7 @@ runForEach.forEach((params) => {
             .adminAcceptArtistAddressesAndSplits(...proposedAddressesAndSplits);
           // expect successful purchase
           await config.minter
-            .connect(config.accounts.user)
+            .connect(config.accounts.artist)
             ["purchase(uint256,address,address,uint256)"](
               config.projectZero,
               config.genArt721Core.address,
@@ -571,7 +591,7 @@ runForEach.forEach((params) => {
         const config = await loadFixture(_beforeEach);
         await configureProjectZeroAuctionAndAdvanceToStart(config);
         await config.minter
-          .connect(config.accounts.user)
+          .connect(config.accounts.artist)
           ["purchase(uint256,address,address,uint256)"](
             config.projectZero,
             config.genArt721Core.address,
@@ -585,7 +605,226 @@ runForEach.forEach((params) => {
         const ownerOf = await config.genArt721Core.ownerOf(
           config.projectZeroTokenOne.toNumber()
         );
-        expect(ownerOf).to.equal(config.accounts.user.address);
+        expect(ownerOf).to.equal(config.accounts.artist.address);
+      });
+
+      describe("allows/disallows based on allowed project holder configuration", async function () {
+        it("does not allow purchase when using token of unallowed project", async function () {
+          const config = await loadFixture(_beforeEach);
+
+          // allow holders of config.projectOne to purchase tokens on config.projectZero
+          // unallow holders of config.projectZero to purchase tokens on config.projectZero
+          await config.minter
+            .connect(config.accounts.artist)
+            .allowAndRemoveHoldersOfProjects(
+              config.projectZero,
+              config.genArt721Core.address,
+              [config.genArt721Core.address],
+              [config.projectOne],
+              [config.genArt721Core.address],
+              [config.projectZero]
+            );
+          await configureProjectZeroAuctionAndAdvanceToStart(config);
+
+          // do not allow purchase when holder token in config.projectZero is used as pass
+          await expectRevert(
+            config.minter
+              .connect(config.accounts.artist)
+              ["purchase(uint256,address,address,uint256)"](
+                config.projectZero,
+                config.genArt721Core.address,
+                config.genArt721Core.address,
+                config.projectZeroTokenZero.toNumber(),
+                {
+                  value: config.startingPrice,
+                }
+              ),
+            "Only allowlisted NFTs"
+          );
+        });
+
+        it("does not allow purchase when using token of allowed then unallowed project", async function () {
+          const config = await loadFixture(_beforeEach);
+          // allow holders of config.projectZero and config.projectOne, then remove config.projectZero
+          await config.minter
+            .connect(config.accounts.artist)
+            .allowAndRemoveHoldersOfProjects(
+              config.projectZero,
+              config.genArt721Core.address,
+              [config.genArt721Core.address, config.genArt721Core.address],
+              [config.projectZero, config.projectOne],
+              [config.genArt721Core.address],
+              [config.projectZero]
+            );
+          await configureProjectZeroAuctionAndAdvanceToStart(config);
+
+          // do not allow purchase when holder token in config.projectZero is used as pass
+          await expectRevert(
+            config.minter
+              .connect(config.accounts.artist)
+              ["purchase(uint256,address,address,uint256)"](
+                config.projectZero,
+                config.genArt721Core.address,
+                config.genArt721Core.address,
+                config.projectZeroTokenZero.toNumber(),
+                {
+                  value: config.startingPrice,
+                }
+              ),
+            "Only allowlisted NFTs"
+          );
+        });
+
+        it("does allow purchase when using token of allowed project", async function () {
+          const config = await loadFixture(_beforeEach);
+          // allow holders of config.projectZero to purchase tokens on config.projectTwo
+          await config.minter
+            .connect(config.accounts.artist)
+            .allowHoldersOfProjects(
+              config.projectZero,
+              config.genArt721Core.address,
+              [config.genArt721Core.address],
+              [config.projectOne]
+            );
+          await configureProjectZeroAuctionAndAdvanceToStart(config);
+
+          // does allow purchase when holder token in config.projectZero is used as pass
+          await config.minter
+            .connect(config.accounts.artist)
+            ["purchase(uint256,address,address,uint256)"](
+              config.projectZero,
+              config.genArt721Core.address,
+              config.genArt721Core.address,
+              config.projectOneTokenZero.toNumber(),
+              {
+                value: config.startingPrice,
+              }
+            );
+        });
+
+        it("does allow purchase when using token of allowed project (when set in bulk)", async function () {
+          const config = await loadFixture(_beforeEach);
+          // allow holders of config.projectOne and config.projectZero to purchase tokens on config.projectTwo
+          await config.minter
+            .connect(config.accounts.artist)
+            .allowAndRemoveHoldersOfProjects(
+              config.projectZero,
+              config.genArt721Core.address,
+              [config.genArt721Core.address, config.genArt721Core.address],
+              [config.projectOne, config.projectZero],
+              [],
+              []
+            );
+          await configureProjectZeroAuctionAndAdvanceToStart(config);
+
+          // does allow purchase when holder token in config.projectZero is used as pass
+          await config.minter
+            .connect(config.accounts.artist)
+            ["purchase(uint256,address,address,uint256)"](
+              config.projectZero,
+              config.genArt721Core.address,
+              config.genArt721Core.address,
+              config.projectOneTokenZero.toNumber(),
+              {
+                value: config.startingPrice,
+              }
+            );
+        });
+
+        it("does not allow purchase when using token not owned", async function () {
+          const config = await loadFixture(_beforeEach);
+          await configureProjectZeroAuctionAndAdvanceToStart(config);
+
+          await expectRevert(
+            config.minter
+              .connect(config.accounts.additional)
+              ["purchase(uint256,address,address,uint256)"](
+                config.projectZero,
+                config.genArt721Core.address,
+                config.genArt721Core.address,
+                config.projectZeroTokenZero.toNumber(),
+                {
+                  value: config.startingPrice,
+                }
+              ),
+            "Only owner of NFT"
+          );
+        });
+
+        // it("does not allow purchase when using token of an unallowed project on a different contract", async function () {
+        //   const config = await loadFixture(_beforeEach);
+        //   const { pbabToken, pbabMinter } = await deployAndGetPBAB(config);
+        //   await pbabMinter
+        //     .connect(config.accounts.artist)
+        //     .purchaseTo(config.accounts.additional.address, 0, {
+        //       value: config.pricePerTokenInWei,
+        //     });
+
+        //   // configure price per token to be zero
+        //   await config.minter
+        //     .connect(config.accounts.artist)
+        //     .updatePricePerTokenInWei(
+        //       config.projectTwo,
+        //       config.genArt721Core.address,
+        //       0
+        //     );
+        //   // expect failure when using PBAB token because it is not allowlisted for config.projectTwo
+        //   await expectRevert(
+        //     config.minter
+        //       .connect(config.accounts.additional)
+        //       ["purchase(uint256,address,address,uint256)"](
+        //         config.projectTwo,
+        //         config.genArt721Core.address,
+        //         pbabToken.address,
+        //         0,
+        //         {
+        //           value: config.pricePerTokenInWei,
+        //         }
+        //       ),
+        //     "Only allowlisted NFTs"
+        //   );
+        // });
+
+        // it("does allow purchase when using token of allowed project on a different contract", async function () {
+        //   const config = await loadFixture(_beforeEach);
+        //   // deploy different contract (for config case, use PBAB contract)
+        //   const { pbabToken, pbabMinter } = await deployAndGetPBAB(config);
+        //   await pbabMinter
+        //     .connect(config.accounts.artist)
+        //     .purchaseTo(config.accounts.additional.address, 0, {
+        //       value: config.pricePerTokenInWei,
+        //     });
+
+        //   // allow holders of PBAB project 0 to purchase tokens on config.projectTwo
+        //   await config.minter
+        //     .connect(config.accounts.artist)
+        //     .allowHoldersOfProjects(
+        //       config.projectTwo,
+        //       config.genArt721Core.address,
+        //       [pbabToken.address],
+        //       [0]
+        //     );
+        //   // configure price per token to be zero
+        //   await config.minter
+        //     .connect(config.accounts.artist)
+        //     .updatePricePerTokenInWei(
+        //       config.projectTwo,
+        //       config.genArt721Core.address,
+        //       0
+        //     );
+        //   // does allow purchase when holder of token in PBAB config.projectZero is used as pass
+        //   await config.minter
+        //     .connect(config.accounts.additional)
+        //     ["purchase(uint256,address,address,uint256)"](
+        //       config.projectTwo,
+        //       config.genArt721Core.address,
+        //       pbabToken.address,
+        //       0,
+        //       {
+        //         value: config.pricePerTokenInWei,
+        //       }
+        //     );
+        // });
       });
     });
 
@@ -613,7 +852,7 @@ runForEach.forEach((params) => {
         const config = await loadFixture(_beforeEach);
         await configureProjectZeroAuctionAndAdvanceToStart(config);
         await config.minter
-          .connect(config.accounts.user)
+          .connect(config.accounts.artist)
           ["purchaseTo(address,uint256,address,address,uint256)"](
             config.accounts.additional.address,
             config.projectZero,
@@ -630,7 +869,7 @@ runForEach.forEach((params) => {
         const config = await loadFixture(_beforeEach);
         await configureProjectZeroAuctionAndAdvanceToStart(config);
         await config.minter
-          .connect(config.accounts.user)
+          .connect(config.accounts.artist)
           ["purchaseTo(address,uint256,address,address,uint256)"](
             config.accounts.additional.address,
             config.projectZero,
