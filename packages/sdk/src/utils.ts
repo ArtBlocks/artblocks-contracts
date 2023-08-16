@@ -2,6 +2,7 @@ import { PublicClient, WalletClient } from "viem";
 import { Abi, AbiFunction, AbiParameter } from "abitype";
 import {
   z,
+  ZodArray,
   ZodEffects,
   ZodNumber,
   ZodObject,
@@ -64,6 +65,7 @@ export type SupportedZodSchema =
   | ZodNumber
   | ZodString
   | ZodObject<any>
+  | ZodArray<any>
   | ZodEffects<ZodNumber, number, number>
   | ZodEffects<ZodString, string, string>
   | ZodOptional<SupportedZodSchema>;
@@ -132,9 +134,18 @@ export function formFieldSchemaToZod(
     switch (prop.type) {
       case "integer":
         zodProp = z.coerce.number().int();
+        if (prop.minimum) {
+          zodProp = zodProp.min(prop.minimum);
+        }
+        if (prop.maximum) {
+          zodProp = zodProp.max(prop.maximum);
+        }
         break;
       case "string":
         zodProp = z.string();
+        if (prop.pattern) {
+          zodProp = zodProp.regex(new RegExp(prop.pattern));
+        }
         break;
       case "object": {
         const objectProps: Record<string, SupportedZodSchema> = {};
@@ -147,6 +158,21 @@ export function formFieldSchemaToZod(
           }
         }
         zodProp = z.object(objectProps);
+        break;
+      }
+      case "array": {
+        // TODO: Items can also be an array of schemas, not totally sure the use case though
+        // maybe for a tuple like structure.
+        if (
+          prop.items &&
+          !Array.isArray(prop.items) &&
+          typeof prop.items === "object"
+        ) {
+          const itemZodSchema = toZod(prop.items, "");
+          zodProp = z.array(itemZodSchema);
+        } else {
+          throw new Error("Unsupported items array");
+        }
         break;
       }
       default:

@@ -8,6 +8,10 @@ export const getProjectMinterConfigurationQueryDocument =
         user_is_artist
 
         contract {
+          type {
+            project_configuration_schema
+          }
+
           user_is_allowlisted
           minter_filter {
             address
@@ -21,6 +25,8 @@ export const getProjectMinterConfigurationQueryDocument =
           }
         }
         minter_configuration {
+          currency_address
+          currency_symbol
           ...ProjectMinterConfigurationDetails
         }
       }

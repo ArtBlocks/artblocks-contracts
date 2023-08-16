@@ -2,10 +2,10 @@ import request from "graphql-request";
 import ArtBlocksSDK from "../index";
 import {
   ConfigurationForm,
+  SubmissionStatus,
   SubmissionStatusEnum,
   filterProjectIdFromFormSchema,
   minterSelectionSchema,
-  mockMinterSchemaMap,
 } from "../minters";
 import { getProjectMinterConfigurationQueryDocument } from "./graphql-operations";
 import { useFragment } from "../generated";
@@ -14,7 +14,11 @@ import {
   ProjectMinterConfigurationDetailsFragment,
   ProjectMinterConfigurationDetailsFragmentDoc,
 } from "../generated/graphql";
-import { FormFieldSchema, isOnChainFormFieldSchema } from "../json-schema";
+import {
+  ConfigurationSchema,
+  FormFieldSchema,
+  isOnChainFormFieldSchema,
+} from "../json-schema";
 import { formFieldSchemaToZod } from "../utils";
 import { submitTransaction } from "../utils/web3";
 import { Abi, Hex, WalletClient } from "viem";
@@ -107,11 +111,13 @@ export async function generateProjectMinterConfigurationForms(
     return configurationForms;
   }
 
-  // TODO: Get the schema from the minter type
-  const minterConfigurationSchema =
-    mockMinterSchemaMap[
-      minterConfiguration.minter?.type?.unversioned_type as string
-    ];
+  const minterConfigurationSchema = project.contract.type
+    ?.project_configuration_schema as ConfigurationSchema;
+
+  if (!minterConfigurationSchema) {
+    console.warn("No minter configuration schema found for project", projectId);
+    return configurationForms;
+  }
 
   configurationForms = configurationForms.concat(
     Object.entries(minterConfigurationSchema.properties).map(([key, value]) => {
@@ -266,7 +272,7 @@ function generateMinterForm(args: GenerateMinterFormArgs): ConfigurationForm {
       if (
         !minterConfiguration.minter ||
         !isOnChainFormFieldSchema(schemaWithProjectIdFiltered) ||
-        !("abi" in schemaWithProjectIdFiltered.transactionDetails) ||
+        !schemaWithProjectIdFiltered.transactionDetails ||
         !walletClient.account
       ) {
         throw new Error("Invalid form configuration");

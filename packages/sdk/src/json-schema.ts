@@ -57,7 +57,7 @@ export interface BaseFormFieldSchema extends Omit<JSONSchema7, "properties"> {
   dependent?: boolean;
 
   /** Optional property indicating how a field should be transformed before submitting. */
-  submissionProcessing?: "merkleRoot";
+  submissionProcessing?: "merkleRoot" | "tokenHolderAllowlist";
 
   properties?: { [key: string]: BaseFormFieldSchema | boolean } | undefined;
 }

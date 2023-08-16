@@ -1,6 +1,7 @@
 import request from "graphql-request";
 import get from "lodash/get";
 import set from "lodash/set";
+import difference from "lodash/difference";
 import ArtBlocksSDK from "..";
 import {
   GetProjectMinterConfigurationUpdatesQuery,
@@ -156,7 +157,7 @@ export async function transformProjectMinterConfigurationFormValues(
   // Iterate through form values and look them up in the schema
   // to see if they have submissionTransformation set. If they
   // do, apply the relevant transformation.
-  const transformedFormValues: Record<string, any> = {};
+  let transformedFormValues: Record<string, any> = {};
   for (const [key, value] of Object.entries(formValues)) {
     const fieldSchema = schema.properties?.[key];
     if (typeof fieldSchema === "object" && fieldSchema.submissionProcessing) {
@@ -167,6 +168,18 @@ export async function transformProjectMinterConfigurationFormValues(
             args
           );
           transformedFormValues[key] = merkleRoot;
+          break;
+        }
+        case "tokenHolderAllowlist": {
+          const allowRemoveArgs = processProjectContractTokenHolderList(
+            value,
+            args
+          );
+
+          transformedFormValues = {
+            ...transformedFormValues,
+            ...allowRemoveArgs,
+          };
         }
       }
     } else {
@@ -276,6 +289,80 @@ async function processAllowlistFileToMerkleRoot(
   );
 
   return merkleRoot;
+}
+
+type RemoveHoldersOfProjectArgs = {
+  ownedNFTAddressesRemove: string[];
+  ownedNFTProjectIdsRemove: string[];
+};
+
+type AllowHoldersOfProjectsArgs = {
+  ownedNFTAddressesAdd: string[];
+  ownedNFTProjectIdsAdd: string[];
+};
+
+function processProjectContractTokenHolderList(
+  value: unknown,
+  args: TransformProjectMinterConfigurationFormValuesArgs
+): AllowHoldersOfProjectsArgs & RemoveHoldersOfProjectArgs {
+  const { minterConfiguration } = args;
+
+  // Expect the form value to be an array of strings
+  if (!Array.isArray(value) || !value.every((val) => typeof val === "string")) {
+    throw new Error("Unexpected form value for token holder allowlist.");
+  }
+
+  const currentlyAllowedProjectIds: string[] =
+    minterConfiguration.extra_minter_details.allowlistedAddressAndProjectId ??
+    [];
+  const updatedAllowedProjectIds = value;
+
+  // Expect the list to be submitted as a single array of strings of the formate
+  // <contract address>-<project index>. This is the format of project ids in our db.
+  const addedProjectIds: string[] = difference(
+    updatedAllowedProjectIds,
+    currentlyAllowedProjectIds
+  );
+
+  const removedProjectIds: string[] = difference(
+    currentlyAllowedProjectIds,
+    updatedAllowedProjectIds
+  );
+
+  const addArgs = addedProjectIds.reduce<AllowHoldersOfProjectsArgs>(
+    (acc, id) => {
+      const [contractAddress, projectIndex] = id.split("-");
+      return {
+        ownedNFTAddressesAdd: [...acc.ownedNFTAddressesAdd, contractAddress],
+        ownedNFTProjectIdsAdd: [...acc.ownedNFTProjectIdsAdd, projectIndex],
+      };
+    },
+    {} as AllowHoldersOfProjectsArgs
+  );
+
+  // Split both add and remove lists into split arrays one for the
+  // contract address and one for project index (id on the contract)
+  const removeArgs = removedProjectIds.reduce<RemoveHoldersOfProjectArgs>(
+    (acc, id) => {
+      const [contractAddress, projectIndex] = id.split("-");
+      return {
+        ownedNFTAddressesRemove: [
+          ...acc.ownedNFTAddressesRemove,
+          contractAddress,
+        ],
+        ownedNFTProjectIdsRemove: [
+          ...acc.ownedNFTProjectIdsRemove,
+          projectIndex,
+        ],
+      };
+    },
+    {} as RemoveHoldersOfProjectArgs
+  );
+
+  return {
+    ...removeArgs,
+    ...addArgs,
+  };
 }
 
 export function getAllowedPrivilegedRoles(
