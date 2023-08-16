@@ -12,6 +12,7 @@ import { AsyncData, asyncPoll } from "../utils";
 import {
   getAllowlistUploadUrlQueryDocument,
   getProjectMinterConfigurationUpdatesQueryDocument,
+  getProjectsMetadataUpdatesQueryDocument,
   updateOffChainExtraMinterDetailsMutationDocument,
 } from "./graphql-operations";
 import {
@@ -52,13 +53,89 @@ export async function pollForProjectMinterConfigurationUpdates(
           );
         }
 
+        const transactionConfirmedAtTimestamp =
+          transactionConfirmedAt.getTime();
+
         const hasUpdatedProperty = updateProperties.some((property) => {
-          return (
-            project.minter_configuration?.properties_updated_at &&
-            new Date(
-              project.minter_configuration.properties_updated_at[property]
-            ) > transactionConfirmedAt
+          const propertyUpdatedAt = new Date(
+            project.minter_configuration?.properties_updated_at?.[property] ?? 0
           );
+
+          const propertyUpdatedAtTimestamp = propertyUpdatedAt.getTime();
+
+          console.log({
+            propertyUpdatedAtTimestamp,
+            transactionConfirmedAtTimestamp,
+            propertyUpdatedAt,
+            transactionConfirmedAt,
+            difference:
+              propertyUpdatedAtTimestamp - transactionConfirmedAtTimestamp,
+          });
+
+          return propertyUpdatedAtTimestamp > transactionConfirmedAtTimestamp;
+        });
+
+        if (hasUpdatedProperty) {
+          return Promise.resolve({
+            done: true,
+            data: project,
+          });
+        } else {
+          return Promise.resolve({
+            done: false,
+          });
+        }
+      } catch (err) {
+        return Promise.reject(err);
+      }
+    },
+    500, // interval
+    90000 // timeout
+  );
+}
+
+export async function pollForProjectUpdates(
+  sdk: ArtBlocksSDK,
+  projectId: string,
+  transactionConfirmedAt: Date,
+  updateProperties: string[]
+) {
+  await asyncPoll(
+    async (): Promise<
+      AsyncData<
+        GetProjectMinterConfigurationUpdatesQuery["projects_metadata_by_pk"]
+      >
+    > => {
+      try {
+        const result = await request(
+          sdk.graphqlEndpoint,
+          getProjectsMetadataUpdatesQueryDocument,
+          {
+            projectId,
+          },
+          {
+            Authorization: `Bearer ${sdk.jwt}`,
+          }
+        );
+        const project = result.projects_metadata_by_pk;
+
+        if (!project) {
+          return Promise.reject(
+            new Error(`Could not find project with id ${projectId}`)
+          );
+        }
+
+        const transactionConfirmedAtTimestamp =
+          transactionConfirmedAt.getTime();
+
+        const hasUpdatedProperty = updateProperties.some((property) => {
+          const propertyUpdatedAt = new Date(
+            project.properties_updated_at?.[property] ?? 0
+          );
+
+          const propertyUpdatedAtTimestamp = propertyUpdatedAt.getTime();
+
+          return propertyUpdatedAtTimestamp > transactionConfirmedAtTimestamp;
         });
 
         if (hasUpdatedProperty) {

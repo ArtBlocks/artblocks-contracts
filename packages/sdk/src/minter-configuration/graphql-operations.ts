@@ -8,10 +8,6 @@ export const getProjectMinterConfigurationQueryDocument =
         user_is_artist
 
         contract {
-          type {
-            project_configuration_schema
-          }
-
           user_is_allowlisted
           minter_filter {
             address
@@ -20,6 +16,8 @@ export const getProjectMinterConfigurationQueryDocument =
               minter_type
               type {
                 label
+                unversioned_type
+                version_number
               }
             }
           }
@@ -43,6 +41,7 @@ export const getProjectMinterConfigurationQueryDocument =
         address
         minter_type
         type {
+          project_configuration_schema
           unversioned_type
           version_number
         }
@@ -60,6 +59,14 @@ export const getProjectMinterConfigurationUpdatesQueryDocument =
       }
     }
   `);
+
+export const getProjectsMetadataUpdatesQueryDocument = graphql(/* GraphQL */ `
+  query GetProjectsMetadataUpdatesQuery($projectId: String!) {
+    projects_metadata_by_pk(id: $projectId) {
+      properties_updated_at
+    }
+  }
+`);
 
 export const getAllowlistUploadUrlQueryDocument = graphql(/* GraphQL */ `
   query GetAllowlistUploadUrl($projectId: String!) {

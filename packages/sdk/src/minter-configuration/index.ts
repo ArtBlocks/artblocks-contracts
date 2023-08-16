@@ -27,8 +27,10 @@ import {
   getInitialMinterConfigurationValuesForFormField,
   mapFormValuesToArgs,
   pollForProjectMinterConfigurationUpdates,
+  pollForProjectUpdates,
   transformProjectMinterConfigurationFormValues,
 } from "./utils";
+import get from "lodash/get";
 
 type GenerateProjectMinterConfigurationFormsArgs = {
   projectId: string;
@@ -111,8 +113,8 @@ export async function generateProjectMinterConfigurationForms(
     return configurationForms;
   }
 
-  const minterConfigurationSchema = project.contract.type
-    ?.project_configuration_schema as ConfigurationSchema;
+  const minterConfigurationSchema: ConfigurationSchema =
+    minterConfiguration.minter.type?.project_configuration_schema;
 
   if (!minterConfigurationSchema) {
     console.warn("No minter configuration schema found for project", projectId);
@@ -151,12 +153,27 @@ function generateSelectMinterForm({
   // property of the minter selection form schema
   const minterSelectionSchemaWithMinters = minterSelectionSchema;
   if (minterSelectionSchemaWithMinters.properties?.["minter.address"]) {
-    minterSelectionSchemaWithMinters.properties["minter.address"].oneOf = (
-      project.contract.minter_filter.globally_allowed_minters || []
-    ).map((minter) => ({
-      const: minter.address,
-      title: minter.type?.label ?? undefined,
-    }));
+    const globallyAllowedMinters =
+      project.contract.minter_filter.globally_allowed_minters ?? [];
+    const latestMinters = globallyAllowedMinters.reduce(
+      (dedupedMinters, minter) => {
+        return dedupedMinters.filter((mntr) => {
+          return (
+            minterConfiguration?.minter?.address === mntr.address ||
+            mntr.type?.unversioned_type !== minter.type?.unversioned_type ||
+            (mntr.type?.version_number || 0) >=
+              (minter.type?.version_number || 0)
+          );
+        });
+      },
+      globallyAllowedMinters
+    );
+
+    minterSelectionSchemaWithMinters.properties["minter.address"].oneOf =
+      latestMinters.map((minter) => ({
+        const: minter.address,
+        title: `${minter.type?.label ?? ""} - ${minter.address}`,
+      }));
   }
 
   // Initialize configurationForms with the minter selection form
@@ -177,9 +194,10 @@ function generateSelectMinterForm({
       if (
         !project ||
         !project.contract.minter_filter ||
-        !formValues["minter.address"] ||
+        !get(formValues, "minter.address") ||
         !walletClient.account
       ) {
+        console.warn("handleSubmit called without required data");
         return;
       }
 
@@ -211,12 +229,9 @@ function generateSelectMinterForm({
       // Poll for updates to the configuration, this will return
       // when the minter_address column has been updated to a
       // time after the transaction was confirmed
-      await pollForProjectMinterConfigurationUpdates(
-        sdk,
-        projectId,
-        transactionConfirmedAt,
-        ["minter_address"]
-      );
+      await pollForProjectUpdates(sdk, projectId, transactionConfirmedAt, [
+        "minter_configuration_id",
+      ]);
 
       const updatedForms = await generateProjectMinterConfigurationForms({
         sdk,

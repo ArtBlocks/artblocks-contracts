@@ -132,8 +132,13 @@ export function formFieldSchemaToZod(
   ): SupportedZodSchema {
     let zodProp: SupportedZodSchema;
     switch (prop.type) {
+      case "number":
       case "integer":
-        zodProp = z.coerce.number().int();
+        zodProp = z.coerce.number();
+        if (prop.type === "integer") {
+          zodProp = zodProp.int();
+        }
+
         if (prop.minimum) {
           zodProp = zodProp.min(prop.minimum);
         }
