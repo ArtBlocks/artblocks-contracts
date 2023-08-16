@@ -482,8 +482,15 @@ async function main() {
     }
 
     // create image bucket
-    const { bucketName } = await createEngineBucket(tokenName, networkName);
-    console.log(`[INFO] Created image bucket ${bucketName}`);
+    let imageBucketCreated = false;
+    let bucketName = "TBD";
+    try {
+      ({ bucketName } = await createEngineBucket(tokenName, networkName));
+      console.log(`[INFO] Created image bucket ${bucketName}`);
+      imageBucketCreated = true;
+    } catch (error) {
+      console.log(`[ERROR] Failed to create image bucket`);
+    }
 
     //////////////////////////////////////////////////////////////////////////////
     // VERIFICATION ENDS HERE
@@ -593,6 +600,14 @@ Date: ${new Date().toISOString()}
     console.log(
       `[ACTION] AdminACL's superAdmin address is ${adminACLSuperAdmin}, don't forget to update if requred.`
     );
+
+    if (!imageBucketCreated) {
+      console.log(
+        `[ACTION] Manually create an image bucket for ${tokenName} due to failure when this script was ran.`
+      );
+    }
+    // extra delay to ensure all logs are written to files
+    await delay(1000);
 
     //////////////////////////////////////////////////////////////////////////////
     // FOLLOW-ON ACTIONS ENDS HERE

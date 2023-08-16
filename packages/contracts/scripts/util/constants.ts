@@ -114,7 +114,7 @@ const ACTIVE_SHARED_RANDOMIZERS = {
 export async function getActiveCoreRegistry(
   networkName: string,
   environment: string
-) {
+): Promise<string> {
   // get the active minter filter for the network and environment
   const activeMinterFilter = getActiveSharedMinterFilter(
     networkName,
@@ -122,13 +122,13 @@ export async function getActiveCoreRegistry(
   );
   const minterFilterFactory = await ethers.getContractFactory("MinterFilterV2");
   const minterFilter = minterFilterFactory.attach(activeMinterFilter);
-  const activeCoreRegistry = await minterFilter.coreRegistry();
-  if (!activeCoreRegistry?.address) {
+  const activeCoreRegistryAddress = await minterFilter.coreRegistry();
+  if (!activeCoreRegistryAddress) {
     throw new Error(
       `No active core registry found for network ${networkName} and environment ${environment}`
     );
   }
-  return activeCoreRegistry.address;
+  return activeCoreRegistryAddress;
 }
 
 // DEPRECATED - use getActiveCoreRegistry after migration to shared minter suite
