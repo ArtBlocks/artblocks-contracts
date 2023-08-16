@@ -31,3 +31,4 @@ Successfully upserted 1 contract
 [ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0x2246475beddf9333b6a6D9217194576E7617Afd1. Update later as needed.
 [ACTION] AdminACL's superAdmin address is 0x2246475beddf9333b6a6D9217194576E7617Afd1, don't forget to update if requred.
 [ACTION] Manually create an image bucket for Engine-SharedSuite due to failure when this script was ran.
+[UPDATE] RO: manually created image bucket - failure was due to incorrectly configured env file.
