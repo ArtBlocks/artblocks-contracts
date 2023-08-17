@@ -187,7 +187,8 @@ function generateSelectMinterForm({
     zodSchema: formFieldSchemaToZod(minterSelectionSchema),
     handleSubmit: async (
       formValues: Record<string, any>,
-      walletClient: WalletClient
+      walletClient: WalletClient,
+      onProgress?: (status: SubmissionStatus) => void
     ) => {
       // We need basic information about the project and the
       // minter to submit the transaction
@@ -200,6 +201,8 @@ function generateSelectMinterForm({
         console.warn("handleSubmit called without required data");
         return;
       }
+
+      onProgress?.(SubmissionStatusEnum.AWAITING_USER_SIGNATURE);
 
       // Get the minter filter address for minter selection
       const minterFilterAddress: Hex = project.contract.minter_filter
@@ -221,7 +224,12 @@ function generateSelectMinterForm({
         abi: minterSelectionSchema.transactionDetails.abi as Abi,
         functionName: minterSelectionSchema.transactionDetails.functionName,
         args: functionArgs,
+        onUserAccepted: () => {
+          onProgress?.(SubmissionStatusEnum.CONFIRMING);
+        },
       });
+
+      onProgress?.(SubmissionStatusEnum.SYNCING);
 
       // Save the time the transaction was confirmed
       const transactionConfirmedAt = new Date();
