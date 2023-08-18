@@ -117,9 +117,8 @@ runForEach.forEach((params) => {
       describe("all defaults emitted during deployment", async function () {
         it("emits during deployment", async function () {
           const config = await loadFixture(_beforeEach);
-          const contractFactory = await ethers.getContractFactory(
-            TARGET_MINTER_NAME
-          );
+          const contractFactory =
+            await ethers.getContractFactory(TARGET_MINTER_NAME);
           const tx = await contractFactory.deploy(config.minterFilter.address);
           const receipt = await tx.deployTransaction.wait();
           // target event "DelegationRegistryUpdated" is the log at index 0
