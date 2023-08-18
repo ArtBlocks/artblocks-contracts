@@ -204,7 +204,8 @@ runForEach.forEach((params) => {
         ]);
         const receipt = await tx.deployTransaction.wait();
         // target event "AuctionMinimumLengthSecondsUpdated" is the log at index 0
-        let targetLog = receipt.logs[0];
+        let targetLog = receipt.logs[1];
+        console.log(receipt);
         // expect log 0 to be AuctionMinimumLengthSecondsUpdated
         expect(targetLog.topics[0]).to.be.equal(
           ethers.utils.keccak256(
