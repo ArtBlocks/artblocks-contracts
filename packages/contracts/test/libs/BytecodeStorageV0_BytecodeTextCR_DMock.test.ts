@@ -158,9 +158,10 @@ describe("BytecodeStorageV0 + BytecodeV0TextCR_DMock Library Tests", async funct
         config,
         config.bytecodeV0TextCR_DMock
       );
-      const text = await config.bytecodeV0TextCR_DMock.readTextAtAddress(
-        textBytecodeAddress
-      );
+      const text =
+        await config.bytecodeV0TextCR_DMock.readTextAtAddress(
+          textBytecodeAddress
+        );
       expect(text).to.equal(targetText);
     });
 
@@ -193,9 +194,10 @@ describe("BytecodeStorageV0 + BytecodeV0TextCR_DMock Library Tests", async funct
         "BytecodeV0TextCR_DMock",
         [] // no deployment args
       );
-      const text = await additionalBytecodeV0TextCR_DMock.readTextAtAddress(
-        textBytecodeAddress
-      );
+      const text =
+        await additionalBytecodeV0TextCR_DMock.readTextAtAddress(
+          textBytecodeAddress
+        );
       expect(text).to.equal(targetText);
     });
   });
@@ -242,8 +244,8 @@ describe("BytecodeStorageV0 + BytecodeV0TextCR_DMock Library Tests", async funct
         await config.bytecodeV0TextCR_DMock.readAuthorForTextAtAddress(
           textBytecodeAddress
         );
-      const resolvedMockAddress = await config.bytecodeV0TextCR_DMock
-        .resolvedAddress;
+      const resolvedMockAddress =
+        await config.bytecodeV0TextCR_DMock.resolvedAddress;
       expect(textAuthorAddress).to.equal(resolvedMockAddress);
     });
 
@@ -277,8 +279,8 @@ describe("BytecodeStorageV0 + BytecodeV0TextCR_DMock Library Tests", async funct
         await additionalBytecodeV0TextCR_DMock.readAuthorForTextAtAddress(
           textBytecodeAddress
         );
-      const resolvedMockAddress = await config.bytecodeV0TextCR_DMock
-        .resolvedAddress;
+      const resolvedMockAddress =
+        await config.bytecodeV0TextCR_DMock.resolvedAddress;
       expect(textAuthorAddress).to.equal(resolvedMockAddress);
     });
   });
@@ -299,9 +301,8 @@ describe("BytecodeStorageV0 + BytecodeV0TextCR_DMock Library Tests", async funct
         config.bytecodeV0TextCR_DMock
       );
 
-      const deployedBytecode = await ethers.provider.getCode(
-        textBytecodeAddress
-      );
+      const deployedBytecode =
+        await ethers.provider.getCode(textBytecodeAddress);
       expect(deployedBytecode).to.not.equal("0x");
 
       const nextTextSlotId =
@@ -312,9 +313,8 @@ describe("BytecodeStorageV0 + BytecodeV0TextCR_DMock Library Tests", async funct
         .connect(config.accounts.deployer)
         .deleteText(textSlotId);
 
-      const removedBytecode = await ethers.provider.getCode(
-        textBytecodeAddress
-      );
+      const removedBytecode =
+        await ethers.provider.getCode(textBytecodeAddress);
       expect(removedBytecode).to.equal("0x");
     });
 
@@ -333,18 +333,16 @@ describe("BytecodeStorageV0 + BytecodeV0TextCR_DMock Library Tests", async funct
         config.bytecodeV0TextCR_DMock
       );
 
-      const deployedBytecode = await ethers.provider.getCode(
-        textBytecodeAddress
-      );
+      const deployedBytecode =
+        await ethers.provider.getCode(textBytecodeAddress);
       expect(deployedBytecode).to.not.equal("0x");
 
       await config.bytecodeV0TextCR_DMock
         .connect(config.accounts.deployer)
         .callWithNonsenseData(textBytecodeAddress, "0xFF");
 
-      const removedBytecode = await ethers.provider.getCode(
-        textBytecodeAddress
-      );
+      const removedBytecode =
+        await ethers.provider.getCode(textBytecodeAddress);
       expect(removedBytecode).to.equal("0x");
     });
 
@@ -363,9 +361,8 @@ describe("BytecodeStorageV0 + BytecodeV0TextCR_DMock Library Tests", async funct
         config.bytecodeV0TextCR_DMock
       );
 
-      const deployedBytecode = await ethers.provider.getCode(
-        textBytecodeAddress
-      );
+      const deployedBytecode =
+        await ethers.provider.getCode(textBytecodeAddress);
       expect(deployedBytecode).to.not.equal("0x");
 
       // Non-writer addresses should **not** be able to purge bytecode storage.
@@ -401,9 +398,8 @@ describe("BytecodeStorageV0 + BytecodeV0TextCR_DMock Library Tests", async funct
         .callWithoutData(textBytecodeAddress);
 
       // Deployed bytes are unchanged.
-      const notRemovedBytecode = await ethers.provider.getCode(
-        textBytecodeAddress
-      );
+      const notRemovedBytecode =
+        await ethers.provider.getCode(textBytecodeAddress);
       expect(notRemovedBytecode).to.equal(deployedBytecode);
       expect(notRemovedBytecode).to.not.equal("0x");
     });
@@ -418,9 +414,8 @@ describe("BytecodeStorageV0 + BytecodeV0TextCR_DMock Library Tests", async funct
         config.bytecodeV0TextCR_DMock
       );
 
-      const deployedBytecode = await ethers.provider.getCode(
-        textBytecodeAddress
-      );
+      const deployedBytecode =
+        await ethers.provider.getCode(textBytecodeAddress);
       expect(deployedBytecode).to.not.equal("0x");
 
       // deploy a second instance of the library mock
@@ -438,9 +433,8 @@ describe("BytecodeStorageV0 + BytecodeV0TextCR_DMock Library Tests", async funct
       );
 
       // Deployed bytes are unchanged.
-      const notRemovedBytecode = await ethers.provider.getCode(
-        textBytecodeAddress
-      );
+      const notRemovedBytecode =
+        await ethers.provider.getCode(textBytecodeAddress);
       expect(notRemovedBytecode).to.equal(deployedBytecode);
       expect(notRemovedBytecode).to.not.equal("0x");
     });
