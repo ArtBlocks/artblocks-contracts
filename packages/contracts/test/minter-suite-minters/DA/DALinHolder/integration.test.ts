@@ -2,7 +2,12 @@ import { expectRevert } from "@openzeppelin/test-helpers";
 import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { setupConfigWitMinterFilterV2Suite } from "../../../util/fixtures";
-import { deployAndGet, deployCore, safeAddProject } from "../../../util/common";
+import {
+  deployAndGet,
+  deployCore,
+  safeAddProject,
+  deployAndGetPBAB,
+} from "../../../util/common";
 import { ethers } from "hardhat";
 import { revertMessages } from "../../constants";
 import { ONE_MINUTE, ONE_HOUR, ONE_DAY } from "../../../util/constants";
@@ -21,12 +26,12 @@ const runForEach = [
   {
     core: "GenArt721CoreV3",
   },
-  //   {
-  //     core: "GenArt721CoreV3_Explorations",
-  //   },
-  //   {
-  //     core: "GenArt721CoreV3_Engine",
-  //   },
+  {
+    core: "GenArt721CoreV3_Explorations",
+  },
+  {
+    core: "GenArt721CoreV3_Engine",
+  },
   {
     core: "GenArt721CoreV3_Engine_Flex",
   },
@@ -751,80 +756,68 @@ runForEach.forEach((params) => {
           );
         });
 
-        // it("does not allow purchase when using token of an unallowed project on a different contract", async function () {
-        //   const config = await loadFixture(_beforeEach);
-        //   const { pbabToken, pbabMinter } = await deployAndGetPBAB(config);
-        //   await pbabMinter
-        //     .connect(config.accounts.artist)
-        //     .purchaseTo(config.accounts.additional.address, 0, {
-        //       value: config.pricePerTokenInWei,
-        //     });
+        it("does not allow purchase when using token of an unallowed project on a different contract", async function () {
+          const config = await loadFixture(_beforeEach);
+          await configureProjectZeroAuctionAndAdvanceToStart(config);
 
-        //   // configure price per token to be zero
-        //   await config.minter
-        //     .connect(config.accounts.artist)
-        //     .updatePricePerTokenInWei(
-        //       config.projectTwo,
-        //       config.genArt721Core.address,
-        //       0
-        //     );
-        //   // expect failure when using PBAB token because it is not allowlisted for config.projectTwo
-        //   await expectRevert(
-        //     config.minter
-        //       .connect(config.accounts.additional)
-        //       ["purchase(uint256,address,address,uint256)"](
-        //         config.projectTwo,
-        //         config.genArt721Core.address,
-        //         pbabToken.address,
-        //         0,
-        //         {
-        //           value: config.pricePerTokenInWei,
-        //         }
-        //       ),
-        //     "Only allowlisted NFTs"
-        //   );
-        // });
+          const { pbabToken, pbabMinter } = await deployAndGetPBAB(config);
+          await pbabMinter
+            .connect(config.accounts.artist)
+            .purchaseTo(config.accounts.additional.address, 0, {
+              value: config.pricePerTokenInWei,
+            });
 
-        // it("does allow purchase when using token of allowed project on a different contract", async function () {
-        //   const config = await loadFixture(_beforeEach);
-        //   // deploy different contract (for config case, use PBAB contract)
-        //   const { pbabToken, pbabMinter } = await deployAndGetPBAB(config);
-        //   await pbabMinter
-        //     .connect(config.accounts.artist)
-        //     .purchaseTo(config.accounts.additional.address, 0, {
-        //       value: config.pricePerTokenInWei,
-        //     });
+          // expect failure when using PBAB token because it is not allowlisted for config.projectTwo
+          await expectRevert(
+            config.minter
+              .connect(config.accounts.additional)
+              ["purchase(uint256,address,address,uint256)"](
+                config.projectZero,
+                config.genArt721Core.address,
+                pbabToken.address,
+                0,
+                {
+                  value: config.startingPrice,
+                }
+              ),
+            "Only allowlisted NFTs"
+          );
+        });
 
-        //   // allow holders of PBAB project 0 to purchase tokens on config.projectTwo
-        //   await config.minter
-        //     .connect(config.accounts.artist)
-        //     .allowHoldersOfProjects(
-        //       config.projectTwo,
-        //       config.genArt721Core.address,
-        //       [pbabToken.address],
-        //       [0]
-        //     );
-        //   // configure price per token to be zero
-        //   await config.minter
-        //     .connect(config.accounts.artist)
-        //     .updatePricePerTokenInWei(
-        //       config.projectTwo,
-        //       config.genArt721Core.address,
-        //       0
-        //     );
-        //   // does allow purchase when holder of token in PBAB config.projectZero is used as pass
-        //   await config.minter
-        //     .connect(config.accounts.additional)
-        //     ["purchase(uint256,address,address,uint256)"](
-        //       config.projectTwo,
-        //       config.genArt721Core.address,
-        //       pbabToken.address,
-        //       0,
-        //       {
-        //         value: config.pricePerTokenInWei,
-        //       }
-        //     );
-        // });
+        it("does allow purchase when using token of allowed project on a different contract", async function () {
+          const config = await loadFixture(_beforeEach);
+          // deploy different contract (for config case, use PBAB contract)
+          const { pbabToken, pbabMinter } = await deployAndGetPBAB(config);
+          await pbabMinter
+            .connect(config.accounts.artist)
+            .purchaseTo(config.accounts.additional.address, 0, {
+              value: config.pricePerTokenInWei,
+            });
+
+          // allow holders of PBAB project 0 to purchase tokens on config.projectTwo
+          await config.minter
+            .connect(config.accounts.artist)
+            .allowHoldersOfProjects(
+              config.projectZero,
+              config.genArt721Core.address,
+              [pbabToken.address],
+              [0]
+            );
+          await configureProjectZeroAuctionAndAdvanceToStart(config);
+
+          // does allow purchase when holder of token in PBAB config.projectZero is used as pass
+          await config.minter
+            .connect(config.accounts.additional)
+            ["purchase(uint256,address,address,uint256)"](
+              config.projectZero,
+              config.genArt721Core.address,
+              pbabToken.address,
+              0,
+              {
+                value: config.startingPrice,
+              }
+            );
+        });
       });
     });
 
