@@ -376,6 +376,14 @@ contract MinterDAExpHolderV5 is
 
     /**
      * @notice Sets auction details for project `_projectId`.
+     * Requires one of the following:
+     * - The auction is unconfigured
+     * - The auction has not yet started
+     * - The minter-local max invocations have been reached
+     * @dev Note that allowing the artist to set auction details after reaching
+     * max invocations effectively grants the artist the ability to set a new
+     * auction at any point, since minter-local max invocations can be set by
+     * the artist.
      * @param _projectId Project ID to set auction details for.
      * @param _coreContract Core contract address for the given project.
      * @param _auctionTimestampStart Timestamp at which to start the auction.
@@ -404,18 +412,27 @@ contract MinterDAExpHolderV5 is
             storage _auctionProjectConfig = _auctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
+        MaxInvocationsLib.MaxInvocationsProjectConfig
+            storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
+                _coreContract
+            ][_projectId];
 
         require(
             (_priceDecayHalfLifeSeconds >= minimumPriceDecayHalfLifeSeconds),
             "Price decay half life must be greater than min allowable value"
         );
 
+        // EFFECTS
+        bool maxHasBeenInvoked = MaxInvocationsLib.getMaxHasBeenInvoked(
+            _maxInvocationsProjectConfig
+        );
         DAExpLib.setAuctionDetailsExp({
             _DAProjectConfig: _auctionProjectConfig,
             _auctionTimestampStart: _auctionTimestampStart,
             _priceDecayHalfLifeSeconds: _priceDecayHalfLifeSeconds,
             _startPrice: _startPrice,
-            _basePrice: _basePrice
+            _basePrice: _basePrice,
+            _maxHasBeenInvoked: maxHasBeenInvoked
         });
 
         emit SetAuctionDetailsExp({
@@ -426,11 +443,6 @@ contract MinterDAExpHolderV5 is
             _startPrice: _startPrice,
             _basePrice: _basePrice
         });
-
-        MaxInvocationsLib.MaxInvocationsProjectConfig
-            storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
-                _coreContract
-            ][_projectId];
 
         // sync local max invocations if not initially populated
         // @dev if local max invocations and maxHasBeenInvoked are both
