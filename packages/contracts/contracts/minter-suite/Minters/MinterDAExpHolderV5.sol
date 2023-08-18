@@ -498,6 +498,7 @@ contract MinterDAExpHolderV5 is
             _contract: address(this),
             _selector: this.resetAuctionDetails.selector
         });
+
         delete _auctionProjectConfigMapping[_coreContract][_projectId];
 
         emit ResetAuctionDetails(_projectId, _coreContract);
@@ -523,6 +524,9 @@ contract MinterDAExpHolderV5 is
 
     /**
      * @notice Purchases a token from project `_projectId`.
+     * Note: Collectors should not send excessive value with their purchase
+     * transaction, because the artist has the ability to change the auction
+     * details at any time, including the price.
      * @param _projectId Project ID to mint a token on.
      * @param _coreContract Core contract address for the given project.
      * @return tokenId Token ID of minted token
@@ -548,6 +552,9 @@ contract MinterDAExpHolderV5 is
     /**
      * @notice Purchases a token from project `_projectId` and sets
      * the token's owner to `_to`.
+     * Note: Collectors should not send excessive value with their purchase
+     * transaction, because the artist has the ability to change the auction
+     * details at any time, including the price.
      * @param _to Address to be the new token's owner.
      * @param _projectId Project ID to mint a token on.
      * @param _coreContract Core contract address for the given project.
@@ -599,7 +606,8 @@ contract MinterDAExpHolderV5 is
      * @param _projectId The unique identifier for the project.
      * @param _coreContract The address of the core contract for the project.
      * @return timestampStart The start timestamp for the auction.
-     * @return priceDecayHalfLifeSeconds The half-life for the price decay during the auction, in seconds.
+     * @return priceDecayHalfLifeSeconds The half-life for the price decay
+     * during the auction, in seconds.
      * @return startPrice The starting price of the auction.
      * @return basePrice The base price of the auction.
      */
@@ -837,6 +845,9 @@ contract MinterDAExpHolderV5 is
     /**
      * @notice Purchases a token from project `_projectId` and sets
      * the token's owner to `_to`.
+     * Note: Collectors should not send excessive value with their purchase
+     * transaction, because the artist has the ability to change the auction
+     * details at any time, including the price.
      * @param _to Address to be the new token's owner.
      * @param _projectId Project ID to mint a token on.
      * @param _coreContract Core contract address for the given project.
@@ -860,6 +871,7 @@ contract MinterDAExpHolderV5 is
             storage _auctionProjectConfig = _auctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
+
         // Note that `maxHasBeenInvoked` is only checked here to reduce gas
         // consumption after a project has been fully minted.
         // `_maxInvocationsProjectConfig.maxHasBeenInvoked` is locally cached to reduce
@@ -871,6 +883,7 @@ contract MinterDAExpHolderV5 is
             "Max invocations reached"
         );
 
+        // getPriceExp reverts if auction is unconfigured or has not started
         uint256 pricePerTokenInWei = DAExpLib.getPriceExp(
             _auctionProjectConfig
         );
@@ -921,7 +934,7 @@ contract MinterDAExpHolderV5 is
 
         MaxInvocationsLib.validatePurchaseEffectsInvocations(
             tokenId,
-            _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
+            _maxInvocationsProjectConfig
         );
 
         // INTERACTIONS

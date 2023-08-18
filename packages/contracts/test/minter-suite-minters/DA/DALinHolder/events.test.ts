@@ -195,9 +195,8 @@ runForEach.forEach((params) => {
     describe("AuctionMinimumLengthSecondsUpdated", async function () {
       it("emits during deploy", async function () {
         const config = await loadFixture(_beforeEach);
-        const contractFactory = await ethers.getContractFactory(
-          TARGET_MINTER_NAME
-        );
+        const contractFactory =
+          await ethers.getContractFactory(TARGET_MINTER_NAME);
         const tx = await deployAndGet(config, TARGET_MINTER_NAME, [
           config.minterFilter.address,
           config.delegationRegistry.address,
