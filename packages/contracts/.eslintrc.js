@@ -4,7 +4,7 @@ module.exports = {
     tsconfigRootDir: __dirname,
     project: "./tsconfig.json",
   },
-  plugins: ["@typescript-eslint", "mocha", "prettier"],
+  plugins: ["@typescript-eslint", "mocha"],
   extends: ["custom"],
   rules: {
     "@typescript-eslint/no-floating-promises": ["error"],
