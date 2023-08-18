@@ -319,9 +319,8 @@ for (const coreContractName of coreContractsToTest) {
           .connect(config.accounts.artist)
           .manuallyLimitProjectMaxInvocations(config.projectZero, 1);
         // switch to different minter
-        const setPriceFactory = await ethers.getContractFactory(
-          "MinterSetPriceV4"
-        );
+        const setPriceFactory =
+          await ethers.getContractFactory("MinterSetPriceV4");
         const setPriceMinter = await setPriceFactory.deploy(
           config.genArt721Core.address,
           config.minterFilter.address
