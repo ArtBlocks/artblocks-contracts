@@ -164,6 +164,10 @@ contract MinterDALinV5 is
 
     /**
      * @notice Sets auction details for project `_projectId`.
+     * @dev Note that allowing the artist to set auction details after reaching
+     * max invocations effectively grants the artist the ability to set a new
+     * auction at any point, since minter-local max invocations can be set by
+     * the artist.
      * @param _projectId Project ID to set auction details for.
      * @param _coreContract Core contract address for the given project.
      * @param _auctionTimestampStart Timestamp at which to start the auction.
@@ -191,6 +195,10 @@ contract MinterDALinV5 is
             storage _auctionProjectConfig = _auctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
+        MaxInvocationsLib.MaxInvocationsProjectConfig
+            storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
+                _coreContract
+            ][_projectId];
 
         require(
             _auctionTimestampEnd >=
@@ -199,12 +207,16 @@ contract MinterDALinV5 is
         );
 
         // EFFECTS
+        bool maxHasBeenInvoked = MaxInvocationsLib.getMaxHasBeenInvoked(
+            _maxInvocationsProjectConfig
+        );
         DALinLib.setAuctionDetailsLin({
             _DAProjectConfig: _auctionProjectConfig,
             _auctionTimestampStart: _auctionTimestampStart,
             _auctionTimestampEnd: _auctionTimestampEnd,
             _startPrice: _startPrice,
-            _basePrice: _basePrice
+            _basePrice: _basePrice,
+            _maxHasBeenInvoked: maxHasBeenInvoked
         });
 
         emit SetAuctionDetailsLin({
@@ -215,11 +227,6 @@ contract MinterDALinV5 is
             _startPrice: _startPrice,
             _basePrice: _basePrice
         });
-
-        MaxInvocationsLib.MaxInvocationsProjectConfig
-            storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
-                _coreContract
-            ][_projectId];
 
         // sync local max invocations if not initially populated
         // @dev if local max invocations and maxHasBeenInvoked are both
@@ -275,6 +282,9 @@ contract MinterDALinV5 is
 
     /**
      * @notice Purchases a token from project `_projectId`.
+     * Note: Collectors should not send excessive value with their purchase
+     * transaction, because the artist has the ability to change the auction
+     * details at any time, including the price.
      * @param _projectId Project ID to mint a token on.
      * @param _coreContract Core contract address for the given project.
      * @return tokenId Token ID of minted token
@@ -506,6 +516,9 @@ contract MinterDALinV5 is
     /**
      * @notice Purchases a token from project `_projectId` and sets
      * the token's owner to `_to`.
+     * Note: Collectors should not send excessive value with their purchase
+     * transaction, because the artist has the ability to change the auction
+     * details at any time, including the price.
      * @param _to Address to be the new token's owner.
      * @param _projectId Project ID to mint a token on.
      * @param _coreContract Core contract address for the given project.
