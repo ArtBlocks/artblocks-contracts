@@ -260,7 +260,7 @@ contract MinterDAExpSettlementV3 is
             // we set this to false so it prevents artist from altering auction
             // even after max has been invoked (require explicit auction reset
             // on settlement minter)
-            _maxHasBeenInvoked: false
+            _allowReconfigureAfterStart: false
         });
 
         emit SetAuctionDetailsExp({
