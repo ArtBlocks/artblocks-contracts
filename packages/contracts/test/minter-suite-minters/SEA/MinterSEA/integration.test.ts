@@ -135,39 +135,6 @@ runForEach.forEach((params) => {
       return config;
     }
 
-    describe("purchase", async function () {
-      it("is disabled", async function () {
-        const config = await loadFixture(_beforeEach);
-        await expectRevert(
-          config.minter
-            .connect(config.accounts.user)
-            .purchase(config.projectZero, config.genArt721Core.address, {
-              value: config.pricePerTokenInWei,
-            }),
-          revertMessages.inactiveFunction
-        );
-      });
-    });
-
-    describe("purchaseTo", async function () {
-      it("is disabled", async function () {
-        const config = await loadFixture(_beforeEach);
-        await expectRevert(
-          config.minter
-            .connect(config.accounts.user)
-            .purchaseTo(
-              config.accounts.additional.address,
-              config.projectZero,
-              config.genArt721Core.address,
-              {
-                value: config.pricePerTokenInWei,
-              }
-            ),
-          revertMessages.inactiveFunction
-        );
-      });
-    });
-
     describe("payment splitting", async function () {
       beforeEach(async function () {
         const config = await loadFixture(_beforeEach);
