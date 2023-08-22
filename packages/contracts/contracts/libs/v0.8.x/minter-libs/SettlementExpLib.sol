@@ -227,9 +227,9 @@ library SettlementExpLib {
             // if the price is base price, the auction is valid and may be claimed
             // update the latest purchase price to the base price, to ensure
             // the base price is used for all future settlement calculations
+            // EFFECTS
             _settlementAuctionProjectConfig.latestPurchasePrice = basePrice;
         }
-        // EFFECTS
         _settlementAuctionProjectConfig.auctionRevenuesCollected = true;
         // calculate the artist and admin revenues
         uint256 netRevenues = _settlementAuctionProjectConfig
