@@ -10,6 +10,7 @@ import "../../interfaces/v0.8.x/IMinterFilterV1.sol";
 import "../../libs/v0.8.x/AuthLib.sol";
 import "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
 import "../../libs/v0.8.x/minter-libs/MaxInvocationsLib.sol";
+import "../../libs/v0.8.x/minter-libs/SetPriceLib.sol";
 import "../../libs/v0.8.x/minter-libs/TokenHolderLib.sol";
 import "../../libs/v0.8.x/minter-libs/PolyptychLib.sol";
 
@@ -100,9 +101,17 @@ contract MinterSetPricePolyptychERC20V5 is
 
     uint256 constant ONE_MILLION = 1_000_000;
 
-    /// contractAddress => projectId => base project config
-    mapping(address => mapping(uint256 => ProjectConfig))
-        private _projectConfigMapping;
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // STATE VARIABLES FOR SetPriceLib begin here
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /// contractAddress => projectId => set price project config
+    mapping(address => mapping(uint256 => SetPriceLib.SetPriceProjectConfig))
+        private _setPriceProjectConfigMapping;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // STATE VARIABLES FOR SetPriceLib end here
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR SplitFundsLib begin here
@@ -238,11 +247,14 @@ contract MinterSetPricePolyptychERC20V5 is
             _coreContract: _coreContract,
             _sender: msg.sender
         });
-        ProjectConfig storage _projectConfig = _projectConfigMapping[
-            _coreContract
-        ][_projectId];
-        _projectConfig.pricePerTokenInWei = _pricePerTokenInWei;
-        _projectConfig.priceIsConfigured = true;
+        SetPriceLib.SetPriceProjectConfig
+            storage _setPriceProjectConfig = _setPriceProjectConfigMapping[
+                _coreContract
+            ][_projectId];
+        SetPriceLib.updatePricePerTokenInWei(
+            _pricePerTokenInWei,
+            _setPriceProjectConfig
+        );
         emit PricePerTokenInWeiUpdated(
             _projectId,
             _coreContract,
@@ -261,8 +273,9 @@ contract MinterSetPricePolyptychERC20V5 is
         // @dev if local maxInvocations and maxHasBeenInvoked are both
         // initial values, we know they have not been populated on this minter
         if (
-            _maxInvocationsProjectConfig.maxInvocations == 0 &&
-            _maxInvocationsProjectConfig.maxHasBeenInvoked == false
+            MaxInvocationsLib.maxInvocationsIsUnconfigured(
+                _maxInvocationsProjectConfig
+            )
         ) {
             syncProjectMaxInvocationsToCore(_projectId, _coreContract);
         }
@@ -484,24 +497,6 @@ contract MinterSetPricePolyptychERC20V5 is
     }
 
     /**
-     * @notice Inactive function - requires NFT ownership to purchase.
-     */
-    function purchase(uint256, address) external payable returns (uint256) {
-        revert("Purchase requires NFT ownership");
-    }
-
-    /**
-     * @notice Inactive function - requires NFT ownership to purchase.
-     */
-    function purchaseTo(
-        address,
-        uint256,
-        address
-    ) external payable returns (uint256) {
-        revert("Purchase requires NFT ownership");
-    }
-
-    /**
      * @notice Purchases a token from project `_projectId` on core contract
      * `_coreContract` using an owned NFT at address `_ownedNFTAddress` and
      * token ID `_ownedNFTTokenId` as the parent token.
@@ -582,16 +577,17 @@ contract MinterSetPricePolyptychERC20V5 is
     }
 
     /**
-     * @notice Gets the base project configuration.
+     * @notice Gets the set price project configuration.
      * @param _projectId The ID of the project whose data needs to be fetched.
      * @param _coreContract The address of the core contract.
-     * @return ProjectConfig instance with the project configuration data.
+     * @return SetPriceProjectConfig struct with the fixed price project
+     * configuration data.
      */
-    function projectConfig(
+    function setPriceProjectConfig(
         uint256 _projectId,
         address _coreContract
-    ) external view returns (ProjectConfig memory) {
-        return _projectConfigMapping[_coreContract][_projectId];
+    ) external view returns (SetPriceLib.SetPriceProjectConfig memory) {
+        return _setPriceProjectConfigMapping[_coreContract][_projectId];
     }
 
     /**
@@ -682,8 +678,9 @@ contract MinterSetPricePolyptychERC20V5 is
         address _coreContract
     ) external view returns (bool) {
         return
-            _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-                .maxHasBeenInvoked;
+            MaxInvocationsLib.getMaxHasBeenInvoked(
+                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
+            );
     }
 
     /**
@@ -711,9 +708,8 @@ contract MinterSetPricePolyptychERC20V5 is
         address _coreContract
     ) external view returns (uint256) {
         return
-            uint256(
+            MaxInvocationsLib.getMaxInvocations(
                 _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-                    .maxInvocations
             );
     }
 
@@ -796,10 +792,11 @@ contract MinterSetPricePolyptychERC20V5 is
             address currencyAddress
         )
     {
-        ProjectConfig storage _projectConfig = _projectConfigMapping[
-            _coreContract
-        ][_projectId];
-        tokenPriceInWei = _projectConfig.pricePerTokenInWei;
+        SetPriceLib.SetPriceProjectConfig
+            storage _setPriceProjectConfig = _setPriceProjectConfigMapping[
+                _coreContract
+            ][_projectId];
+        tokenPriceInWei = _setPriceProjectConfig.pricePerTokenInWei;
         // get currency info from SplitFundsLib
         SplitFundsLib.SplitFundsProjectConfig
             storage _splitFundsProjectConfig = _splitFundsProjectConfigs[
@@ -811,7 +808,7 @@ contract MinterSetPricePolyptychERC20V5 is
         // report if price and ERC20 token are configured
         // @dev currencyAddress is non-zero if an ERC20 token is configured
         isConfigured =
-            _projectConfig.priceIsConfigured &&
+            _setPriceProjectConfig.priceIsConfigured &&
             currencyAddress != address(0);
     }
 
@@ -918,9 +915,10 @@ contract MinterSetPricePolyptychERC20V5 is
         address _vault
     ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
-        ProjectConfig storage _projectConfig = _projectConfigMapping[
-            _coreContract
-        ][_projectId];
+        SetPriceLib.SetPriceProjectConfig
+            storage _setPriceProjectConfig = _setPriceProjectConfigMapping[
+                _coreContract
+            ][_projectId];
         MaxInvocationsLib.MaxInvocationsProjectConfig
             storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
                 _coreContract
@@ -938,7 +936,10 @@ contract MinterSetPricePolyptychERC20V5 is
         );
 
         // require artist to have configured price of token on this minter
-        require(_projectConfig.priceIsConfigured, "Price not configured");
+        require(
+            _setPriceProjectConfig.priceIsConfigured,
+            "Price not configured"
+        );
         // @dev revert occurs during payment split if ERC20 token is not
         // configured (i.e. address(0)), so check is not performed here
 
@@ -1073,7 +1074,7 @@ contract MinterSetPricePolyptychERC20V5 is
         SplitFundsLib.splitFundsERC20({
             _splitFundsProjectConfig: _splitFundsProjectConfig,
             _projectId: _projectId,
-            _pricePerTokenInWei: _projectConfig.pricePerTokenInWei,
+            _pricePerTokenInWei: _setPriceProjectConfig.pricePerTokenInWei,
             _coreContract: _coreContract,
             _isEngine: isEngine
         });
