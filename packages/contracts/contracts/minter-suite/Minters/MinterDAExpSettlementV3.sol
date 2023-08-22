@@ -284,11 +284,20 @@ contract MinterDAExpSettlementV3 is
         // @dev this minter pays the higher gas cost of a full refresh here due
         // to the more severe ux degredation of a stale minter-local max
         // invocations state.
-        MaxInvocationsLib.refreshMaxInvocations(
+        bool maxInvocationsUpdated = MaxInvocationsLib.refreshMaxInvocations(
             _projectId,
             _coreContract,
             _maxInvocationsProjectConfig
         );
+
+        // emit event to update state
+        if (maxInvocationsUpdated) {
+            emit ProjectMaxInvocationsLimitUpdated(
+                _projectId,
+                _coreContract,
+                _maxInvocationsProjectConfig.maxInvocations
+            );
+        }
     }
 
     /**
@@ -394,20 +403,28 @@ contract MinterDAExpSettlementV3 is
                 _coreContract
             ][_projectId];
 
-        SettlementExpLib.adminEmergencyReduceSelloutPrice({
-            _projectId: _projectId,
-            _coreContract: _coreContract,
-            _newSelloutPrice: _newSelloutPrice,
-            _settlementAuctionProjectConfig: _settlementAuctionProjectConfig,
-            _maxInvocationsProjectConfig: _maxInvocationsProjectConfig,
-            _DAProjectConfig: _auctionProjectConfig
-        });
+        bool maxInvocationsUpdated = SettlementExpLib
+            .adminEmergencyReduceSelloutPrice({
+                _projectId: _projectId,
+                _coreContract: _coreContract,
+                _newSelloutPrice: _newSelloutPrice,
+                _settlementAuctionProjectConfig: _settlementAuctionProjectConfig,
+                _maxInvocationsProjectConfig: _maxInvocationsProjectConfig,
+                _DAProjectConfig: _auctionProjectConfig
+            });
         emit ConfigValueSet(
             _projectId,
             _coreContract,
             SettlementExpLib.CONFIG_CURRENT_SETTLED_PRICE,
             uint256(_newSelloutPrice)
         );
+        if (maxInvocationsUpdated) {
+            emit ProjectMaxInvocationsLimitUpdated(
+                _projectId,
+                _coreContract,
+                _maxInvocationsProjectConfig.maxInvocations
+            );
+        }
     }
 
     /**
@@ -451,13 +468,14 @@ contract MinterDAExpSettlementV3 is
         // @dev the following function affects settlement state and marks
         // revenues as collected. Therefore revenues MUST be subsequently sent
         // distributed in this call.
-        uint256 netRevenues = SettlementExpLib.getArtistAndAdminRevenues({
-            _projectId: _projectId,
-            _coreContract: _coreContract,
-            _settlementAuctionProjectConfig: _settlementAuctionProjectConfig,
-            _maxInvocationsProjectConfig: _maxInvocationsProjectConfig,
-            _DAProjectConfig: _auctionProjectConfig
-        });
+        (uint256 netRevenues, bool maxInvocationsUpdated) = SettlementExpLib
+            .getArtistAndAdminRevenues({
+                _projectId: _projectId,
+                _coreContract: _coreContract,
+                _settlementAuctionProjectConfig: _settlementAuctionProjectConfig,
+                _maxInvocationsProjectConfig: _maxInvocationsProjectConfig,
+                _DAProjectConfig: _auctionProjectConfig
+            });
         // INTERACTIONS
         bool isEngine = SplitFundsLib.isEngine(
             _coreContract,
@@ -475,6 +493,13 @@ contract MinterDAExpSettlementV3 is
             SettlementExpLib.CONFIG_AUCTION_REVENUES_COLLECTED,
             true
         );
+        if (maxInvocationsUpdated) {
+            emit ProjectMaxInvocationsLimitUpdated(
+                _projectId,
+                _coreContract,
+                _maxInvocationsProjectConfig.maxInvocations
+            );
+        }
     }
 
     /**

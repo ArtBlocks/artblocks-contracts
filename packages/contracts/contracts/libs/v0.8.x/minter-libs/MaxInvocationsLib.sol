@@ -275,88 +275,74 @@ library MaxInvocationsLib {
     }
 
     /**
-     * @notice Verifies the cached values of a project's maxInvocation state
-     * are logically consistent with the core contract's maxInvocation state,
-     * or populates them to equal the core contract's maxInvocation state if
-     * they have never been populated or are illogical (e.g. minter max
-     * invocations are greater than core contract max invocations).
-     * @dev intended for use with settlement lib
+     * @notice Refreshes max invocations to account for core contract max
+     * invocations state, without imposing any additional restrictions on the
+     * minter's max invocations state.
+     * If minter max invocations have never been populated, this function will
+     * populate them to equal the core contract's max invocations state (which
+     * is the least restrictive state).
+     * If minter max invocations have been populated, this function will ensure
+     * the minter's max invocations are not greater than the core contract's
+     * max invocations (which would be stale and illogical), and update the
+     * minter's max invocations and maxHasBeenInvoked state to be consistent
+     * with the core contract's max invocations.
+     * If the minter max invocations have been populated and are not greater
+     * than the core contract's max invocations, this function will do nothing,
+     * since that is a valid state in which the minter has been configured to
+     * be more restrictive than the core contract.
      * @dev assumes core contract's max invocations may only be reduced, which
-     * is the case for V3 core contracts
+     * is the case for all V3 core contracts
      */
     function refreshMaxInvocations(
         uint256 _projectId,
         address _coreContract,
         MaxInvocationsProjectConfig storage _maxInvocationsProjectConfig
-    ) internal {
-        // project's max invocations and has max been invoked can only be
-        // initial values if never populated, because setting a maxInvocations
-        // of zero means maxHasBeenInvoked would be set to true
-        bool notPopulated = (_maxInvocationsProjectConfig.maxInvocations == 0 &&
-            _maxInvocationsProjectConfig.maxHasBeenInvoked == false);
-        if (notPopulated) {
-            // sync the minter max invocation state to equal the values on the
-            // core contract (least restrictive state)
+    ) internal returns (bool maxInvocationsUpdated) {
+        if (maxInvocationsIsUnconfigured(_maxInvocationsProjectConfig)) {
+            // populate the minter max invocation state to equal the values on
+            // the core contract (least restrictive state)
             MaxInvocationsLib.syncProjectMaxInvocationsToCore(
                 _projectId,
                 _coreContract,
                 _maxInvocationsProjectConfig
             );
+            // return true to indicate max invocation state update
+            maxInvocationsUpdated = true;
         } else {
-            // if using local max invocations, validate the local state
-            // (i.e. ensure local max invocations not greater than core max
-            // invocations)
-            _validateProjectMaxInvocations(
-                _projectId,
-                _coreContract,
+            // if local max invocations were already populated, validate the local state
+            uint256 coreMaxInvocations;
+            uint256 coreInvocations;
+            (coreInvocations, coreMaxInvocations) = MaxInvocationsLib
+                .coreContractInvocationData(_projectId, _coreContract);
+
+            uint256 localMaxInvocations = _maxInvocationsProjectConfig
+                .maxInvocations;
+            if (localMaxInvocations > coreMaxInvocations) {
+                // if local max invocations are greater than core max invocations, make
+                // them equal since that is the least restrictive logical state
+                // @dev this is only possible if the core contract's max invocations
+                // have been reduced since the minter's max invocations were last
+                // updated
+                // set local max invocations to core contract's max invocations
+                _maxInvocationsProjectConfig.maxInvocations = uint24(
+                    coreMaxInvocations
+                );
+                // update the minter's `maxHasBeenInvoked` state
                 _maxInvocationsProjectConfig
-            );
-        }
-    }
-
-    /**
-     * Helper function for refreshMaxInvocations, that handles the case where
-     * max invocations have been set on the minter. This function ensures the
-     * minter's max invocations are not illogical relative to the core
-     * contract's max invocations, and updates the minter's max invocations and
-     * maxHasBeenInvoked state to be consistent with the core contract's max
-     * invocations.
-     * @dev intended for use with settlement lib
-     * @dev assumes core contract's max invocations may only be reduced, which
-     * is the case for V3 core contracts
-     * @param _projectId The id of the project.
-     * @param _coreContract The address of the core contract.
-     * @param _maxInvocationsProjectConfig MaxInvocationsProjectConfig struct
-     */
-    // @dev intended for use with settlement lib
-    function _validateProjectMaxInvocations(
-        uint256 _projectId,
-        address _coreContract,
-        MaxInvocationsProjectConfig storage _maxInvocationsProjectConfig
-    ) private {
-        uint256 coreMaxInvocations;
-        uint256 coreInvocations;
-        (coreInvocations, coreMaxInvocations) = MaxInvocationsLib
-            .coreContractInvocationData(_projectId, _coreContract);
-
-        uint256 localMaxInvocations = _maxInvocationsProjectConfig
-            .maxInvocations;
-        // check if local max invocations is illogical relative to core
-        // contract's max invocations
-        if (localMaxInvocations > coreMaxInvocations) {
-            // set local max invocations to core contract's max invocations
-            _maxInvocationsProjectConfig.maxInvocations = uint24(
-                coreMaxInvocations
-            );
-            // update the project's `maxHasBeenInvoked` state
-            // @dev core values are equivalent to local values, use for gas
-            // efficiency
-            _maxInvocationsProjectConfig
-                .maxHasBeenInvoked = (coreMaxInvocations == coreInvocations);
-        } else if (coreInvocations >= localMaxInvocations) {
-            // ensure the local `maxHasBeenInvoked` state is accurate to
-            // prevent any false negatives due to minting on other minters
-            _maxInvocationsProjectConfig.maxHasBeenInvoked = true;
+                    .maxHasBeenInvoked = (coreMaxInvocations ==
+                    coreInvocations);
+                // return true to indicate max invocation state update
+                maxInvocationsUpdated = true;
+            } else if (coreInvocations >= localMaxInvocations) {
+                // core invocations are greater than this minter's max
+                // invocations, indicating that minting must have occurred on
+                // another minter. update the minter's `maxHasBeenInvoked` to
+                // true to prevent any false negatives on
+                // `getMaxHasBeenInvoked'
+                _maxInvocationsProjectConfig.maxHasBeenInvoked = true;
+                // @dev do not return true, because we did not change the value
+                // of minter-local max invocations
+            }
         }
     }
 }

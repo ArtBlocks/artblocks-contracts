@@ -404,5 +404,120 @@ runForEach.forEach((params) => {
           );
       });
     });
+
+    describe("ProjectMaxInvocationsLimitUpdated", async function () {
+      // tests for this event are also performed in common minter events tests
+
+      it("emits during setAuctionDetails when minter-local max invocations are updated", async function () {
+        const config = await loadFixture(_beforeEach);
+        // artist configures auction
+        await expect(
+          config.minter
+            .connect(config.accounts.artist)
+            .setAuctionDetails(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.startTime,
+              config.defaultHalfLife,
+              config.startingPrice,
+              config.basePrice
+            )
+        )
+          .to.emit(config.minter, "ProjectMaxInvocationsLimitUpdated")
+          .withArgs(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.maxInvocations
+          );
+      });
+
+      it("does not emit during setAuctionDetails when minter-local max invocations are not updated", async function () {
+        const config = await loadFixture(_beforeEach);
+        // initial configure, max invocations are updated
+        await config.minter
+          .connect(config.accounts.artist)
+          .setAuctionDetails(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.startTime,
+            config.defaultHalfLife,
+            config.startingPrice,
+            config.basePrice
+          );
+        // subsequent configure, max invocations are not updated
+        await expect(
+          config.minter
+            .connect(config.accounts.artist)
+            .setAuctionDetails(
+              config.projectZero,
+              config.genArt721Core.address,
+              config.startTime,
+              config.defaultHalfLife,
+              config.startingPrice,
+              config.basePrice
+            )
+        ).to.not.emit(config.minter, "ProjectMaxInvocationsLimitUpdated");
+      });
+
+      // @dev don't think it is possible to test case where adminEmergencyReduceSelloutPrice ends up emitting event here
+
+      it("does not emit during adminEmergencyReduceSelloutPrice when minter-local max invocations are not updated", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndSellout(config);
+        // @dev target a unique sellout price value
+        const targetNewSelloutPrice = config.basePrice.add(1);
+        await expect(
+          config.minter
+            .connect(config.accounts.deployer)
+            .adminEmergencyReduceSelloutPrice(
+              config.projectZero,
+              config.genArt721Core.address,
+              targetNewSelloutPrice
+            )
+        ).to.not.emit(config.minter, "ProjectMaxInvocationsLimitUpdated");
+      });
+
+      it("emits during withdrawArtistAndAdminRevenues when minter-local max invocations are updated", async function () {
+        const config = await loadFixture(_beforeEach);
+        // artist configures auction
+        await configureProjectZeroAuctionAndAdvanceToStart(config);
+        // user purchases
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        // artist reduces max invocations to 1 on core contract
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .updateProjectMaxInvocations(config.projectZero, 1);
+        // expect call to emit event
+        await expect(
+          config.minter
+            .connect(config.accounts.artist)
+            .withdrawArtistAndAdminRevenues(
+              config.projectZero,
+              config.genArt721Core.address
+            )
+        )
+          .to.emit(config.minter, "ProjectMaxInvocationsLimitUpdated")
+          .withArgs(config.projectZero, config.genArt721Core.address, 1);
+      });
+
+      it("does not emit during withdrawArtistAndAdminRevenues when minter-local max invocations are not updated", async function () {
+        const config = await loadFixture(_beforeEach);
+        // artist configures auction
+        await configureProjectZeroAuctionAndSellout(config);
+        // expect call to not emit event (since max invocations not out of sync)
+        await expect(
+          config.minter
+            .connect(config.accounts.artist)
+            .withdrawArtistAndAdminRevenues(
+              config.projectZero,
+              config.genArt721Core.address
+            )
+        ).to.not.emit(config.minter, "ProjectMaxInvocationsLimitUpdated");
+      });
+    });
   });
 });

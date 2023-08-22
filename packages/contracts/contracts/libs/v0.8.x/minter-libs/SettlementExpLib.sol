@@ -113,7 +113,7 @@ library SettlementExpLib {
         MaxInvocationsLib.MaxInvocationsProjectConfig
             storage _maxInvocationsProjectConfig,
         DAExpLib.DAProjectConfig storage _DAProjectConfig
-    ) internal {
+    ) internal returns (bool maxInvocationsUpdated) {
         // CHECKS
         require(
             !_settlementAuctionProjectConfig.auctionRevenuesCollected,
@@ -123,7 +123,7 @@ library SettlementExpLib {
         // refresh max invocations, updating any local values that are
         // illogical with respect to the current core contract state, and
         // ensuring that local hasMaxBeenInvoked is accurate.
-        MaxInvocationsLib.refreshMaxInvocations(
+        maxInvocationsUpdated = MaxInvocationsLib.refreshMaxInvocations(
             _projectId,
             _coreContract,
             _maxInvocationsProjectConfig
@@ -176,7 +176,7 @@ library SettlementExpLib {
         MaxInvocationsLib.MaxInvocationsProjectConfig
             storage _maxInvocationsProjectConfig,
         DAExpLib.DAProjectConfig storage _DAProjectConfig
-    ) internal returns (uint256 netRevenues) {
+    ) internal returns (uint256 netRevenues, bool maxInvocationsUpdated) {
         // require revenues to not have already been collected
         require(
             !_settlementAuctionProjectConfig.auctionRevenuesCollected,
@@ -185,7 +185,7 @@ library SettlementExpLib {
         // refresh max invocations, updating any local values that are
         // illogical with respect to the current core contract state, and
         // ensuring that local hasMaxBeenInvoked is accurate.
-        MaxInvocationsLib.refreshMaxInvocations(
+        maxInvocationsUpdated = MaxInvocationsLib.refreshMaxInvocations(
             _projectId,
             _coreContract,
             _maxInvocationsProjectConfig
@@ -209,7 +209,7 @@ library SettlementExpLib {
         // before final auction price is possible to know.
         if (_price != _DAProjectConfig.basePrice) {
             // @dev we can trust maxHasBeenInvoked, since we just
-            // refreshed it above with _refreshMaxInvocations, preventing any
+            // refreshed it above with refreshMaxInvocations, preventing any
             // false negatives
             require(
                 _maxInvocationsProjectConfig.maxHasBeenInvoked,
@@ -232,7 +232,7 @@ library SettlementExpLib {
         netRevenues =
             _settlementAuctionProjectConfig.numSettleableInvocations *
             _price;
-        return netRevenues;
+        // @dev netRevenues & maxInvocationsUpdated are returned
     }
 
     /**
