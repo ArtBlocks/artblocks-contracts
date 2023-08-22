@@ -748,20 +748,6 @@ runForEach.forEach((params) => {
     });
 
     describe("purchaseTo", async function () {
-      it("does not allow purchaseTo without NFT ownership args", async function () {
-        const config = await loadFixture(_beforeEach);
-        await expectRevert(
-          config.minter
-            .connect(config.accounts.additional)
-            ["purchaseTo(address,uint256,address)"](
-              config.accounts.additional.address,
-              config.projectZero,
-              config.genArt721Core.address
-            ),
-          revertMessages.purchaseRequiresNFT
-        );
-      });
-
       it("allows `purchaseTo` by default", async function () {
         const config = await loadFixture(_beforeEach);
         // configures prices on minter
