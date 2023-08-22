@@ -7,6 +7,7 @@ import "../../interfaces/v0.8.x/ISharedMinterV0.sol";
 import "../../interfaces/v0.8.x/ISharedMinterHolderV0.sol";
 import "../../interfaces/v0.8.x/IMinterFilterV1.sol";
 
+import "../../libs/v0.8.x/AuthLib.sol";
 import "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
 import "../../libs/v0.8.x/minter-libs/MaxInvocationsLib.sol";
 import "../../libs/v0.8.x/minter-libs/SetPriceLib.sol";
@@ -167,23 +168,9 @@ contract MinterSetPricePolyptychERC20V5 is
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     // MODIFIERS
-    /**
-     * @dev Throws if called by any account other than the artist of the specified project.
-     * Requirements: `msg.sender` must be the artist associated with `_projectId`.
-     * @param _projectId The ID of the project being checked.
-     * @param _coreContract The address of the GenArt721CoreContractV3_Base contract.
-     */
-    function _onlyArtist(
-        uint256 _projectId,
-        address _coreContract
-    ) internal view {
-        require(
-            msg.sender ==
-                IGenArt721CoreContractV3_Base(_coreContract)
-                    .projectIdToArtistAddress(_projectId),
-            "Only Artist"
-        );
-    }
+    // @dev contract uses modifier-like internal functions instead of modifiers
+    // to reduce contract bytecode size
+    // @dev contract uses AuthLib for some modifier-like functions
 
     /**
      * @notice Initializes contract to be a Filtered Minter for
@@ -223,7 +210,11 @@ contract MinterSetPricePolyptychERC20V5 is
         address _coreContract,
         uint24 _maxInvocations
     ) external {
-        _onlyArtist(_projectId, _coreContract);
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
         MaxInvocationsLib.manuallyLimitProjectMaxInvocations(
             _projectId,
             _coreContract,
@@ -251,7 +242,11 @@ contract MinterSetPricePolyptychERC20V5 is
         address _coreContract,
         uint248 _pricePerTokenInWei
     ) external {
-        _onlyArtist(_projectId, _coreContract);
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
         SetPriceLib.SetPriceProjectConfig
             storage _setPriceProjectConfig = _setPriceProjectConfigMapping[
                 _coreContract
@@ -302,7 +297,11 @@ contract MinterSetPricePolyptychERC20V5 is
         string memory _currencySymbol,
         address _currencyAddress
     ) external nonReentrant {
-        _onlyArtist(_projectId, _coreContract);
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
         SplitFundsLib.SplitFundsProjectConfig
             storage _splitFundsProjectConfig = _splitFundsProjectConfigs[
                 _coreContract
@@ -342,7 +341,11 @@ contract MinterSetPricePolyptychERC20V5 is
         address[] memory _ownedNFTAddresses,
         uint256[] memory _ownedNFTProjectIds
     ) external {
-        _onlyArtist(_projectId, _coreContract);
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
         TokenHolderLib.allowHoldersOfProjects(
             _allowedProjectHoldersMapping[_coreContract][_projectId],
             _ownedNFTAddresses,
@@ -379,7 +382,11 @@ contract MinterSetPricePolyptychERC20V5 is
         address[] memory _ownedNFTAddresses,
         uint256[] memory _ownedNFTProjectIds
     ) external {
-        _onlyArtist(_projectId, _coreContract);
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
         // require same length arrays
         TokenHolderLib.removeHoldersOfProjects(
             _allowedProjectHoldersMapping[_coreContract][_projectId],
@@ -434,7 +441,11 @@ contract MinterSetPricePolyptychERC20V5 is
         address[] memory _ownedNFTAddressesRemove,
         uint256[] memory _ownedNFTProjectIdsRemove
     ) external {
-        _onlyArtist(_projectId, _coreContract);
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
         TokenHolderLib.allowAndRemoveHoldersOfProjects(
             _allowedProjectHoldersMapping[_coreContract][_projectId],
             _ownedNFTAddressesAdd,
@@ -466,7 +477,11 @@ contract MinterSetPricePolyptychERC20V5 is
         uint256 _projectId,
         address _coreContract
     ) public {
-        _onlyArtist(_projectId, _coreContract);
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
         PolyptychLib.PolyptychProjectConfig
             storage _polyptychProjectConfig = _polyptychProjectConfigs[
                 _coreContract
@@ -856,7 +871,11 @@ contract MinterSetPricePolyptychERC20V5 is
         uint256 _projectId,
         address _coreContract
     ) public {
-        _onlyArtist(_projectId, _coreContract);
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
 
         uint256 maxInvocations = MaxInvocationsLib
             .syncProjectMaxInvocationsToCore(
