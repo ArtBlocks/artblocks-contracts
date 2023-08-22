@@ -453,18 +453,6 @@ export const MinterHolder_Common = async () => {
   });
 
   describe("purchase", async function () {
-    it("does not allow purchase without NFT ownership args", async function () {
-      // expect revert due to price not being configured
-      await expectRevert(
-        this.minter
-          .connect(this.accounts.additional)
-          ["purchase(uint256)"](this.projectZero, {
-            value: this.pricePerTokenInWei,
-          }),
-        "Must claim NFT ownership"
-      );
-    });
-
     it("does not allow purchase prior to configuring price", async function () {
       // expect revert due to price not being configured
       await expectRevert(

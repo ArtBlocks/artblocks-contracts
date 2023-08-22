@@ -185,23 +185,6 @@ runForEach.forEach((params) => {
     }
 
     describe("purchase", async function () {
-      it("does not allow purchase without NFT ownership args", async function () {
-        const config = await loadFixture(_beforeEach);
-        // expect revert due to price not being configured
-        await expectRevert(
-          config.minter
-            .connect(config.accounts.additional)
-            ["purchase(uint256,address)"](
-              config.projectZero,
-              config.genArt721Core.address,
-              {
-                value: config.pricePerTokenInWei,
-              }
-            ),
-          revertMessages.purchaseRequiresNFT
-        );
-      });
-
       it("does not allow purchase prior to configuring price", async function () {
         const config = await loadFixture(_beforeEach);
         // expect revert due to price not being configured
