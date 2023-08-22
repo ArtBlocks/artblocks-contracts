@@ -3,6 +3,7 @@
 
 import "./MaxInvocationsLib.sol";
 import "./DAExpLib.sol";
+import "./SplitFundsLib.sol";
 
 import "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
 
@@ -155,11 +156,10 @@ library SettlementExpLib {
     }
 
     /**
-     * @notice Gets the net revenues from the project's auction, in wei, and
+     * @notice Distributes the net revenues from the project's auction, and
      * marks the auction as having had its revenues collected.
-     * IMPORTANT - this affects state and marks revenues collected as true, so
-     * revenue distribution should be done immediately after this function is
-     * called.
+     * IMPORTANT - this affects state and distributes revenue funds, so it
+     * performs all three of CHECKS, EFFECTS and INTERACTIONS.
      * @param _projectId Project ID to get revenues for
      * @param _coreContract Core contract address
      * @param _settlementAuctionProjectConfig SettlementAuctionProjectConfig
@@ -167,16 +167,19 @@ library SettlementExpLib {
      * @param _maxInvocationsProjectConfig MaxInvocationProjectConfig struct
      * for the project.
      * @param _DAProjectConfig DAProjectConfig struct for the project.
-     * @return netRevenues net revenues from the project's auction, in wei
+     * @param _isEngine bool indicating whether the core contract is an engine
+     * @return maxInvocationsUpdated whether or not the minter's local max
+     * invocations state was updated during this function call.
      */
-    function getArtistAndAdminRevenues(
+    function distributeArtistAndAdminRevenues(
         uint256 _projectId,
         address _coreContract,
         SettlementAuctionProjectConfig storage _settlementAuctionProjectConfig,
         MaxInvocationsLib.MaxInvocationsProjectConfig
             storage _maxInvocationsProjectConfig,
-        DAExpLib.DAProjectConfig storage _DAProjectConfig
-    ) internal returns (uint256 netRevenues, bool maxInvocationsUpdated) {
+        DAExpLib.DAProjectConfig storage _DAProjectConfig,
+        bool _isEngine
+    ) internal returns (bool maxInvocationsUpdated) {
         // require revenues to not have already been collected
         require(
             !_settlementAuctionProjectConfig.auctionRevenuesCollected,
@@ -229,10 +232,16 @@ library SettlementExpLib {
         // EFFECTS
         _settlementAuctionProjectConfig.auctionRevenuesCollected = true;
         // calculate the artist and admin revenues
-        netRevenues =
-            _settlementAuctionProjectConfig.numSettleableInvocations *
-            _price;
-        // @dev netRevenues & maxInvocationsUpdated are returned
+        uint256 netRevenues = _settlementAuctionProjectConfig
+            .numSettleableInvocations * _price;
+        // INTERACTIONS
+        SplitFundsLib.splitRevenuesETH({
+            _projectId: _projectId,
+            _valueInWei: netRevenues,
+            _coreContract: _coreContract,
+            _isEngine: _isEngine
+        });
+        // @dev maxInvocationsUpdated is returned
     }
 
     /**

@@ -468,25 +468,23 @@ contract MinterDAExpSettlementV3 is
         // @dev the following function affects settlement state and marks
         // revenues as collected. Therefore revenues MUST be subsequently sent
         // distributed in this call.
-        (uint256 netRevenues, bool maxInvocationsUpdated) = SettlementExpLib
-            .getArtistAndAdminRevenues({
-                _projectId: _projectId,
-                _coreContract: _coreContract,
-                _settlementAuctionProjectConfig: _settlementAuctionProjectConfig,
-                _maxInvocationsProjectConfig: _maxInvocationsProjectConfig,
-                _DAProjectConfig: _auctionProjectConfig
-            });
-        // INTERACTIONS
+        // @dev getting isEngine is considered a potential interaction, but
+        // with a trusted contract, and therefore may be done prior to some
+        // checks and effects
         bool isEngine = SplitFundsLib.isEngine(
             _coreContract,
             _isEngineCaches[_coreContract]
         );
-        SplitFundsLib.splitRevenuesETH({
-            _projectId: _projectId,
-            _valueInWei: netRevenues,
-            _coreContract: _coreContract,
-            _isEngine: isEngine
-        });
+        // CHECKS-EFFECTS-INTERACTIONS
+        bool maxInvocationsUpdated = SettlementExpLib
+            .distributeArtistAndAdminRevenues({
+                _projectId: _projectId,
+                _coreContract: _coreContract,
+                _settlementAuctionProjectConfig: _settlementAuctionProjectConfig,
+                _maxInvocationsProjectConfig: _maxInvocationsProjectConfig,
+                _DAProjectConfig: _auctionProjectConfig,
+                _isEngine: isEngine
+            });
         emit ConfigValueSet(
             _projectId,
             _coreContract,
