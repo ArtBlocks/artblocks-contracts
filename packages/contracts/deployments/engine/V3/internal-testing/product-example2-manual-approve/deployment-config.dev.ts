@@ -20,8 +20,8 @@ export const deployDetailsArray = [
     tokenTicker: "PRD_MAN2",
     startingProjectId: 0,
     autoApproveArtistSplitProposals: false,
-    renderProviderAddress: "deployer", // use either "0x..." or special "deployer" which sets the render provider to the deployer
-    platformProviderAddress: "deployer", // use either "0x..." or special "deployer" which sets the render provider to the deployer
+    renderProviderAddress: "0x6B807b1Cc7E5Cb402f4D9647042d94411c5E6C34", // use either "0x..." or special "deployer" which sets the render provider to the deployer
+    platformProviderAddress: "0x6B807b1Cc7E5Cb402f4D9647042d94411c5E6C34", // use either "0x..." or special "deployer" which sets the render provider to the deployer
     // minter suite
     minterFilterContractName: "MinterFilterV1",
     minters: [
