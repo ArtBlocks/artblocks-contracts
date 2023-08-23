@@ -30,6 +30,66 @@ describe(`${CORE_NAME} Gas Tests`, async function () {
   // increase test timeout from 20s to 40s due to minting NUM_INITIAL_MINTS tokens in beforeEach
   this.timeout(40000);
 
+  async function _beforeEachMinterSuiteLegacy() {
+    let config: T_Config = {
+      accounts: await getAccounts(),
+    };
+    config = await assignDefaultConstants(config);
+
+    // make price artifically low to enable more mints to simulate real-world common use cases
+    config.pricePerTokenInWei = ethers.utils.parseEther("0.1");
+
+    // deploy and configure minter filter and minter
+    ({
+      genArt721Core: config.genArt721Core,
+      minterFilter: config.minterFilter,
+      randomizer: config.randomizer,
+    } = await deployCoreWithMinterFilter(config, CORE_NAME, "MinterFilterV1"));
+
+    config.minter = await deployAndGet(config, "MinterSetPriceV4", [
+      config.genArt721Core.address,
+      config.minterFilter.address,
+    ]);
+
+    // add two projects to perform mints on project one
+    for (let i = 0; i < 2; i++) {
+      await safeAddProject(
+        config.genArt721Core,
+        config.accounts.deployer,
+        config.accounts.artist.address
+      );
+    }
+
+    // configure project one
+    await config.genArt721Core
+      .connect(config.accounts.deployer)
+      .toggleProjectIsActive(config.projectOne);
+    await config.genArt721Core
+      .connect(config.accounts.artist)
+      .toggleProjectIsPaused(config.projectOne);
+    await config.genArt721Core
+      .connect(config.accounts.artist)
+      .updateProjectMaxInvocations(config.projectOne, MAX_INVOCATIONS);
+    // configure minter for project one
+    await config.minterFilter
+      .connect(config.accounts.deployer)
+      .addApprovedMinter(config.minter.address);
+    await config.minterFilter
+      .connect(config.accounts.deployer)
+      .setMinterForProject(config.projectOne, config.minter.address);
+    await config.minter
+      .connect(config.accounts.artist)
+      .updatePricePerTokenInWei(config.projectOne, config.pricePerTokenInWei);
+
+    // mint NUM_INITIAL_MINTS tokens on project one to simulate a typical real-world use case
+    for (let i = 0; i < NUM_INITIAL_MINTS; i++) {
+      await config.minter
+        .connect(config.accounts.user)
+        .purchase(config.projectOne, { value: config.pricePerTokenInWei });
+    }
+    return config;
+  }
+
   async function _beforeEachMinterSuiteV2() {
     // load minter filter V2 fixture
     const config = await loadFixture(setupConfigWitMinterFilterV2Suite);
@@ -100,66 +160,6 @@ describe(`${CORE_NAME} Gas Tests`, async function () {
         });
     }
 
-    return config;
-  }
-
-  async function _beforeEachMinterSuiteLegacy() {
-    let config: T_Config = {
-      accounts: await getAccounts(),
-    };
-    config = await assignDefaultConstants(config);
-
-    // make price artifically low to enable more mints to simulate real-world common use cases
-    config.pricePerTokenInWei = ethers.utils.parseEther("0.1");
-
-    // deploy and configure minter filter and minter
-    ({
-      genArt721Core: config.genArt721Core,
-      minterFilter: config.minterFilter,
-      randomizer: config.randomizer,
-    } = await deployCoreWithMinterFilter(config, CORE_NAME, "MinterFilterV1"));
-
-    config.minter = await deployAndGet(config, "MinterSetPriceV4", [
-      config.genArt721Core.address,
-      config.minterFilter.address,
-    ]);
-
-    // add two projects to perform mints on project one
-    for (let i = 0; i < 2; i++) {
-      await safeAddProject(
-        config.genArt721Core,
-        config.accounts.deployer,
-        config.accounts.artist.address
-      );
-    }
-
-    // configure project one
-    await config.genArt721Core
-      .connect(config.accounts.deployer)
-      .toggleProjectIsActive(config.projectOne);
-    await config.genArt721Core
-      .connect(config.accounts.artist)
-      .toggleProjectIsPaused(config.projectOne);
-    await config.genArt721Core
-      .connect(config.accounts.artist)
-      .updateProjectMaxInvocations(config.projectOne, MAX_INVOCATIONS);
-    // configure minter for project one
-    await config.minterFilter
-      .connect(config.accounts.deployer)
-      .addApprovedMinter(config.minter.address);
-    await config.minterFilter
-      .connect(config.accounts.deployer)
-      .setMinterForProject(config.projectOne, config.minter.address);
-    await config.minter
-      .connect(config.accounts.artist)
-      .updatePricePerTokenInWei(config.projectOne, config.pricePerTokenInWei);
-
-    // mint NUM_INITIAL_MINTS tokens on project one to simulate a typical real-world use case
-    for (let i = 0; i < NUM_INITIAL_MINTS; i++) {
-      await config.minter
-        .connect(config.accounts.user)
-        .purchase(config.projectOne, { value: config.pricePerTokenInWei });
-    }
     return config;
   }
 
