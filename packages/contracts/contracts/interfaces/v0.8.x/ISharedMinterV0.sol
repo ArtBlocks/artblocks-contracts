@@ -151,10 +151,6 @@ interface ISharedMinterV0 {
         address indexed _coreContract,
         uint256 _maxInvocations
     );
-    struct ProjectConfig {
-        uint248 pricePerTokenInWei;
-        bool priceIsConfigured;
-    }
 
     // Sets the local max invocations for a given project, checking that the provided max invocations is
     // less than or equal to the global max invocations for the project set on the core contract.
@@ -176,21 +172,6 @@ interface ISharedMinterV0 {
     function minterType() external view returns (string memory);
 
     function minterFilterAddress() external returns (address);
-
-    // Triggers a purchase of a token from the desired project, to the
-    // TX-sending address.
-    function purchase(
-        uint256 _projectId,
-        address _coreContract
-    ) external payable returns (uint256 tokenId);
-
-    // Triggers a purchase of a token from the desired project, to the specified
-    // receiving address.
-    function purchaseTo(
-        address _to,
-        uint256 _projectId,
-        address _coreContract
-    ) external payable returns (uint256 tokenId);
 
     // Gets if token price is configured, token price in wei, currency symbol,
     // and currency address, assuming this is project's minter.
