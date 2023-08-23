@@ -109,7 +109,6 @@ contract MinterDAExpHolderV5 is
     /// minter version for this minter
     string public constant minterVersion = "v5.0.0";
 
-    uint256 constant ONE_MILLION = 1_000_000;
     //// Minimum price decay half life: price must decay with a half life of at
     /// least this amount (must cut in half at least every N seconds).
     uint256 public minimumPriceDecayHalfLifeSeconds = 45; // 45 seconds
@@ -509,24 +508,6 @@ contract MinterDAExpHolderV5 is
         delete _auctionProjectConfigMapping[_coreContract][_projectId];
 
         emit ResetAuctionDetails(_projectId, _coreContract);
-    }
-
-    /**
-     * @notice Inactive function - requires NFT ownership to purchase.
-     */
-    function purchase(uint256, address) external payable returns (uint256) {
-        revert("Purchase requires NFT ownership");
-    }
-
-    /**
-     * @notice Inactive function - requires NFT ownership to purchase.
-     */
-    function purchaseTo(
-        address,
-        uint256,
-        address
-    ) external payable returns (uint256) {
-        revert("Purchase requires NFT ownership");
     }
 
     /**
