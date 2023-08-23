@@ -218,7 +218,7 @@ contract MinterDALinV5 is
             _auctionTimestampEnd: _auctionTimestampEnd,
             _startPrice: _startPrice,
             _basePrice: _basePrice,
-            _maxHasBeenInvoked: maxHasBeenInvoked
+            _allowReconfigureAfterStart: maxHasBeenInvoked
         });
 
         emit SetAuctionDetailsLin({

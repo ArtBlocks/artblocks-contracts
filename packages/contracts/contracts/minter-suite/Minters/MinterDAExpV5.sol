@@ -223,7 +223,7 @@ contract MinterDAExpV5 is
             _priceDecayHalfLifeSeconds: _priceDecayHalfLifeSeconds,
             _startPrice: _startPrice,
             _basePrice: _basePrice,
-            _maxHasBeenInvoked: maxHasBeenInvoked
+            _allowReconfigureAfterStart: maxHasBeenInvoked
         });
 
         emit SetAuctionDetailsExp({
