@@ -64,9 +64,8 @@ describe("GenArt721RoyaltyOverride_PBAB", async function () {
       platformRoyaltyAddr1,
       platformRoyaltyAddr2,
     };
-    const randomizerFactory = await ethers.getContractFactory(
-      "BasicRandomizer"
-    );
+    const randomizerFactory =
+      await ethers.getContractFactory("BasicRandomizer");
     config.randomizer = await randomizerFactory.deploy();
     const artblocksFactory_PBAB = await ethers.getContractFactory(
       "GenArt721CoreV2_PBAB"

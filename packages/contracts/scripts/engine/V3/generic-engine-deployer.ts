@@ -529,9 +529,8 @@ async function main() {
     if (deployDetails.existingAdminACL) {
       adminACLContractName = deployDetails.adminACLContractName;
     }
-    const adminACLFactory = await ethers.getContractFactory(
-      adminACLContractName
-    );
+    const adminACLFactory =
+      await ethers.getContractFactory(adminACLContractName);
     adminACL = adminACLFactory.attach(adminACLAddress);
     if (deployDetails.doTransferSuperAdmin) {
       // transfer superAdmin role on adminACL, triggering indexing update on new core contract
@@ -746,20 +745,29 @@ ${deployedMinterNames
     //////////////////////////////////////////////////////////////////////////////
 
     // Reminder to update provider payment addresses that are left as the deployer for now.
-    console.log(
-      `[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: ${deployer.address}. Update later as needed.`
-    );
+    if (renderProviderAddress === deployer.address) {
+      console.log(
+        `[ACTION] render provider sales payment addresses remain as deployer addresses: ${deployer.address}. Update later as needed.`
+      );
+    }
+    if (platformProviderAddress === deployer.address) {
+      console.log(
+        `[ACTION] platform provider sales payment addresses remain as deployer addresses: ${deployer.address}. Update later as needed.`
+      );
+    }
 
     // Reminder to update adminACL superAdmin if needed
     const adminACLSuperAdmin = await adminACL.superAdmin();
     console.log(
-      `[ACTION] AdminACL's superAdmin address is ${adminACLSuperAdmin}, don't forget to update if requred.`
+      `[ACTION] AdminACL's superAdmin address is ${adminACLSuperAdmin}, don't forget to update if required.`
     );
 
     // reminder to add to subgraph config if desire to index minter filter
     console.log(
       `[ACTION] Subgraph: Add Minter Filter and Minter contracts to subgraph config if desire to index minter suite.`
     );
+    // delay to finish logging to file
+    await delay(1000);
 
     //////////////////////////////////////////////////////////////////////////////
     // FOLLOW-ON ACTIONS ENDS HERE

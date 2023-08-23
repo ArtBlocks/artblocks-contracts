@@ -60,9 +60,8 @@ describe("GenArt721RoyaltyOverride", async function () {
       artblocksRoyaltyAddr1,
       artblocksRoyaltyAddr2,
     };
-    const randomizerFactory = await ethers.getContractFactory(
-      "BasicRandomizer"
-    );
+    const randomizerFactory =
+      await ethers.getContractFactory("BasicRandomizer");
     config.randomizer = await randomizerFactory.deploy();
     const artblocksFactory = await ethers.getContractFactory("GenArt721CoreV1");
     config.tokenA = await artblocksFactory
@@ -93,9 +92,8 @@ describe("GenArt721RoyaltyOverride", async function () {
 
     // mint a token on each project because accurate royalties may only be looked
     // up for existing (core returns royalties for tokenId=0 on non-existant tokens)
-    const minterFilterFactory = await ethers.getContractFactory(
-      "MinterFilterV0"
-    );
+    const minterFilterFactory =
+      await ethers.getContractFactory("MinterFilterV0");
     config.minterFilterA = await minterFilterFactory.deploy(
       config.tokenA.address
     );

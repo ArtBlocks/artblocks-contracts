@@ -1,0 +1,74 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-08-22T17:13:18.564Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/internal-testing/product-example-manual-approve/deployment-config.dev.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: dev
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0xBE77D57D04B85F7d9741d8149675D9bA7358f5A0
+[INFO] Randomizer BasicRandomizerV2 deployed at 0xaAc63ACA947Db7E0Ab8baC8476cb8ACa0de03BA8
+[INFO] Core GenArt721CoreV3_Engine deployed at 0x6A709B53e900036ecc8d6F4BEdE58c1E2dC97cff
+[INFO] Minter Filter MinterFilterV1 deployed at 0x3318083274EEa571719e1385a73b7a15aAf374c8
+[INFO] MinterSetPriceV4 deployed at 0x0545Bc606cbB33E96329Ac3F828a55aba91ef30B
+[INFO] MinterSetPriceERC20V4 deployed at 0x9f16eF13b59f3f404ac98396EEee00457B5A5688
+[INFO] MinterDAExpV4 deployed at 0x779a4e995BcEAA209894dea02bfd349f398de05e
+[INFO] MinterDAExpSettlementV1 deployed at 0x9d6744cB65E63346839765C3F1516388AbB20B4E
+[INFO] MinterDALinV4 deployed at 0x9B6Cd3b5C98ae2975474165241C4afAc8D190B10
+[INFO] MinterHolderV4 deployed at 0xa18C38daD4fcbd48623df2BB461cb213E0278E53
+[INFO] MinterMerkleV5 deployed at 0xd968F90ed0DaA4040EA783E93bD8E6B7ef077cBB
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0x3318083274EEa571719e1385a73b7a15aAf374c8.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0x0545Bc606cbB33E96329Ac3F828a55aba91ef30B on minter filter.
+[INFO] Allowlisted minter MinterSetPriceERC20V4 at 0x9f16eF13b59f3f404ac98396EEee00457B5A5688 on minter filter.
+[INFO] Allowlisted minter MinterDAExpV4 at 0x779a4e995BcEAA209894dea02bfd349f398de05e on minter filter.
+[INFO] Allowlisted minter MinterDAExpSettlementV1 at 0x9d6744cB65E63346839765C3F1516388AbB20B4E on minter filter.
+[INFO] Allowlisted minter MinterDALinV4 at 0x9B6Cd3b5C98ae2975474165241C4afAc8D190B10 on minter filter.
+[INFO] Allowlisted minter MinterHolderV4 at 0xa18C38daD4fcbd48623df2BB461cb213E0278E53 on minter filter.
+[INFO] Allowlisted minter MinterMerkleV5 at 0xd968F90ed0DaA4040EA783E93bD8E6B7ef077cBB on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Skipping update of render provider split percentage primary, since it is already equal to the value of 10.
+[INFO] Skipping update of render provider split percentage secondary, since it is already equal to the value of 250.
+[INFO] Transferred superAdmin role on adminACL to 0x037cC282DaC1254e9D81269E85046d719C60EAA5.
+[INFO] Verifying core contract contract deployment...
+The contract 0x6A709B53e900036ecc8d6F4BEdE58c1E2dC97cff has already been verified
+[INFO] Core contract verified on Etherscan at 0x6A709B53e900036ecc8d6F4BEdE58c1E2dC97cff}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0xBE77D57D04B85F7d9741d8149675D9bA7358f5A0 has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0xBE77D57D04B85F7d9741d8149675D9bA7358f5A0}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0x3318083274EEa571719e1385a73b7a15aAf374c8 has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0x3318083274EEa571719e1385a73b7a15aAf374c8}
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+The contract 0x0545Bc606cbB33E96329Ac3F828a55aba91ef30B has already been verified
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0x0545Bc606cbB33E96329Ac3F828a55aba91ef30B}
+[INFO] Verifying MinterSetPriceERC20V4 contract deployment...
+The contract 0x9f16eF13b59f3f404ac98396EEee00457B5A5688 has already been verified
+[INFO] MinterSetPriceERC20V4 contract verified on Etherscan at 0x9f16eF13b59f3f404ac98396EEee00457B5A5688}
+[INFO] Verifying MinterDAExpV4 contract deployment...
+The contract 0x779a4e995BcEAA209894dea02bfd349f398de05e has already been verified
+[INFO] MinterDAExpV4 contract verified on Etherscan at 0x779a4e995BcEAA209894dea02bfd349f398de05e}
+[INFO] Verifying MinterDAExpSettlementV1 contract deployment...
+The contract 0x9d6744cB65E63346839765C3F1516388AbB20B4E has already been verified
+[INFO] MinterDAExpSettlementV1 contract verified on Etherscan at 0x9d6744cB65E63346839765C3F1516388AbB20B4E}
+[INFO] Verifying MinterDALinV4 contract deployment...
+The contract 0x9B6Cd3b5C98ae2975474165241C4afAc8D190B10 has already been verified
+[INFO] MinterDALinV4 contract verified on Etherscan at 0x9B6Cd3b5C98ae2975474165241C4afAc8D190B10}
+[INFO] Verifying MinterHolderV4 contract deployment...
+The contract 0xa18C38daD4fcbd48623df2BB461cb213E0278E53 has already been verified
+[INFO] MinterHolderV4 contract verified on Etherscan at 0xa18C38daD4fcbd48623df2BB461cb213E0278E53}
+[INFO] Verifying MinterMerkleV5 contract deployment...
+The contract 0xd968F90ed0DaA4040EA783E93bD8E6B7ef077cBB has already been verified
+[INFO] MinterMerkleV5 contract verified on Etherscan at 0xd968F90ed0DaA4040EA783E93bD8E6B7ef077cBB}
+Created s3 bucket for https://productdevelopmentmanual-goerli.s3.amazonaws.com
+[INFO] Created image bucket productdevelopmentmanual-goerli
+[INFO] Deployment details written to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/internal-testing/product-example-manual-approve/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x6a709b53e900036ecc8d6f4bede58c1e2dc97cff",
+  "name": "ProductDevelopmentManual",
+  "bucket_name": "productdevelopmentmanual-goerli",
+  "default_vertical_name": "fullyonchain"
+}
+Successfully upserted 1 contract
+[ACTION] AdminACL's superAdmin address is 0x037cC282DaC1254e9D81269E85046d719C60EAA5, don't forget to update if required.
+[ACTION] Subgraph: Add Minter Filter and Minter contracts to subgraph config if desire to index minter suite.

@@ -2,6 +2,7 @@
 // Created By: Art Blocks Inc.
 
 import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
+import "../../interfaces/v0.8.x/ISharedMinterSimplePurchase.sol";
 import "../../interfaces/v0.8.x/ISharedMinterV0.sol";
 import "../../interfaces/v0.8.x/ISharedMinterDAV0.sol";
 import "../../interfaces/v0.8.x/ISharedMinterDAExpV0.sol";
@@ -58,6 +59,7 @@ pragma solidity 0.8.19;
  */
 contract MinterDAExpV5 is
     ReentrancyGuard,
+    ISharedMinterSimplePurchase,
     ISharedMinterV0,
     ISharedMinterDAV0,
     ISharedMinterDAExpV0
@@ -221,7 +223,7 @@ contract MinterDAExpV5 is
             _priceDecayHalfLifeSeconds: _priceDecayHalfLifeSeconds,
             _startPrice: _startPrice,
             _basePrice: _basePrice,
-            _maxHasBeenInvoked: maxHasBeenInvoked
+            _allowReconfigureAfterStart: maxHasBeenInvoked
         });
 
         emit SetAuctionDetailsExp({
