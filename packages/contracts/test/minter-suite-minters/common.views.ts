@@ -164,7 +164,10 @@ export const Common_Views = async (_beforeEach: () => Promise<T_Config>) => {
         );
       const projectConfig = await config.minter
         .connect(config.accounts.artist)
-        .projectConfig(config.projectZero, config.genArt721Core.address);
+        .setPriceProjectConfig(
+          config.projectZero,
+          config.genArt721Core.address
+        );
 
       expect(projectConfig.pricePerTokenInWei).to.equal(
         config.pricePerTokenInWei
@@ -181,7 +184,10 @@ export const Common_Views = async (_beforeEach: () => Promise<T_Config>) => {
 
       const projectConfig = await config.minter
         .connect(config.accounts.artist)
-        .projectConfig(config.projectZero, config.genArt721Core.address);
+        .setPriceProjectConfig(
+          config.projectZero,
+          config.genArt721Core.address
+        );
 
       expect(projectConfig.pricePerTokenInWei).to.equal(constants.ZERO_BYTES32);
       expect(projectConfig.priceIsConfigured).to.equal(false);
