@@ -38,8 +38,10 @@ library DALinLib {
      * @param _auctionTimestampEnd The timestamp when the auction will end.
      * @param _startPrice The starting price of the auction.
      * @param _basePrice The base price of the auction.
-     * @param _maxHasBeenInvoked Whether or not the minter-local max
-     * invocations have been invoked.
+     * @param _allowReconfigureAfterStart Bool indicating whether the auction
+     * can be reconfigured after it has started. This is sometimes useful for
+     * minter implementations that want to allow an artist to reconfigure the
+     * auction after it has reached minter-local max invocations, for example.
      */
     function setAuctionDetailsLin(
         DAProjectConfig storage _DAProjectConfig,
@@ -47,12 +49,12 @@ library DALinLib {
         uint64 _auctionTimestampEnd,
         uint128 _startPrice,
         uint128 _basePrice,
-        bool _maxHasBeenInvoked
+        bool _allowReconfigureAfterStart
     ) internal {
         require(
             _DAProjectConfig.timestampStart == 0 || // uninitialized
                 block.timestamp < _DAProjectConfig.timestampStart || // auction not yet started
-                _maxHasBeenInvoked, // minter-local max invocations have been reached
+                _allowReconfigureAfterStart, // specifically allowing reconfiguration after start
             "No modifications mid-auction"
         );
         require(
