@@ -525,12 +525,9 @@ contract DependencyRegistryV0 is
         _onlyAdminACL(this.addSupportedCoreContract.selector);
         _onlyNonZeroAddress(_contractAddress);
         require(
-            !_supportedCoreContracts.contains(_contractAddress),
+            _supportedCoreContracts.add(_contractAddress),
             "Contract already supported"
         );
-
-        _supportedCoreContracts.add(_contractAddress);
-
         emit SupportedCoreContractAdded(_contractAddress);
     }
 
