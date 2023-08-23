@@ -460,7 +460,7 @@ contract MinterSetPricePolyptychERC20V5 is
             _ownedNFTAddressesRemove: _ownedNFTAddressesRemove,
             _ownedNFTProjectIdsRemove: _ownedNFTProjectIdsRemove
         });
-        
+
         // emit events
         emit AllowedHoldersOfProjects(
             _projectId,
