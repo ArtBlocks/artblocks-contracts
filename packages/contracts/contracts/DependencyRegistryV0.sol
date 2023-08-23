@@ -23,7 +23,7 @@ import "./libs/v0.8.x/Bytes32Strings.sol";
  * Permissions managed by ACL contract. If/when we ever call
  * renounceOwnership() this will becom a frozen, immutable registry
  * as no upgrades will be possible.
- * This contract This contract is intended to be an auxiliary reference registry
+ * This contract is intended to be an auxiliary reference registry
  * to our non-upgradeable and immutable ERC-721 conforming core contracts,
  * and has been made upgradeable as we expect its required functionality in
  * relation to the Art Blocks ecosystem to evolve over time.
