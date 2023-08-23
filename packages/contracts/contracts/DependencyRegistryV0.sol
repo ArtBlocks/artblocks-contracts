@@ -537,9 +537,10 @@ contract DependencyRegistryV0 is
      */
     function removeSupportedCoreContract(address _contractAddress) external {
         _onlyAdminACL(this.removeSupportedCoreContract.selector);
-        _onlySupportedCoreContract(_contractAddress);
-        _supportedCoreContracts.remove(_contractAddress);
-
+        require(
+            _supportedCoreContracts.remove(_contractAddress),
+            "Core contract already removed or not in set"
+        );
         emit SupportedCoreContractRemoved(_contractAddress);
     }
 

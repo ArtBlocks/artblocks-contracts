@@ -1839,6 +1839,28 @@ describe(`DependencyRegistryV0`, async function () {
           "Contract already supported"
         );
       });
+      it("does not allow removing supported core contract that has already been removed", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .addSupportedCoreContract(config.genArt721Core.address);
+
+        await expect(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .removeSupportedCoreContract(config.genArt721Core.address)
+        )
+          .to.emit(config.dependencyRegistry, "SupportedCoreContractRemoved")
+          .withArgs(config.genArt721Core.address);
+
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .removeSupportedCoreContract(config.genArt721Core.address),
+          "Core contract already removed or not in set"
+        );
+      });
       it("does not allow the zero addresss", async function () {
         // get config from beforeEach
         const config = this.config;
@@ -1900,7 +1922,7 @@ describe(`DependencyRegistryV0`, async function () {
           config.dependencyRegistry
             .connect(config.accounts.deployer)
             .removeSupportedCoreContract(config.genArt721Core.address),
-          "Core contract not supported"
+          "Core contract already removed or not in set"
         );
       });
       it("allows admin to remove supported core contract", async function () {
