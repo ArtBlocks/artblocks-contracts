@@ -690,11 +690,12 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
             ];
         uint256 numMinters = _contractApprovedMinters.length();
         mintersWithTypes = new MinterWithType[](numMinters);
-        // iterate over all globally approved minters, adding to array
+        // iterate over all minters approved for a given contract, adding to
+        // array
         for (uint256 i; i < numMinters; ) {
             address minterAddress = _contractApprovedMinters.at(i);
             // @dev we know minterType() does not revert, because it was called
-            // when globally approving the minter
+            // when approving the minter for a contract
             string memory minterType = ISharedMinterV0(minterAddress)
                 .minterType();
             mintersWithTypes[i] = MinterWithType({
