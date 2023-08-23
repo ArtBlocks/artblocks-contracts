@@ -1,16 +1,19 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
+import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
 import "../../interfaces/v0.8.x/IDelegationRegistry.sol";
 import "../../interfaces/v0.8.x/ISharedMinterV0.sol";
+import "../../interfaces/v0.8.x/ISharedMinterDAV0.sol";
+import "../../interfaces/v0.8.x/ISharedMinterDALinV0.sol";
 import "../../interfaces/v0.8.x/ISharedMinterHolderV0.sol";
 import "../../interfaces/v0.8.x/IMinterFilterV1.sol";
 
-import "../../libs/v0.8.x/AuthLib.sol";
 import "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
 import "../../libs/v0.8.x/minter-libs/MaxInvocationsLib.sol";
 import "../../libs/v0.8.x/minter-libs/TokenHolderLib.sol";
-import "../../libs/v0.8.x/minter-libs/SetPriceLib.sol";
+import "../../libs/v0.8.x/minter-libs/DALinLib.sol";
+import "../../libs/v0.8.x/AuthLib.sol";
 
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin-4.5/contracts/utils/structs/EnumerableSet.sol";
@@ -22,29 +25,39 @@ pragma solidity 0.8.19;
  * ETH when purchaser owns an allowlisted ERC-721 NFT. This contract does NOT
  * track if a purchaser has/has not minted already -- it simply restricts
  * purchasing to anybody that holds one or more of a specified list of ERC-721
- * NFTs.
+ * NFTs. Pricing is achieved using an automated, linear Dutch-auction mechanism.
  * This is designed to be used with GenArt721CoreContractV3 flagship or
  * engine contracts.
  * @author Art Blocks Inc.
  * @notice Privileged Roles and Ownership:
  * This contract is designed to be managed, with limited powers.
- * Privileged roles and abilities are controlled by the core contract's Admin
- * ACL contract and a project's artist. Both of these roles hold extensive
- * power and can modify minter details.
+ * Privileged roles and abilities are controlled by the project's artist, which
+ * can be modified by the core contract's Admin ACL contract. Both of these
+ * roles hold extensive power and can modify minter details.
  * Care must be taken to ensure that the admin ACL contract and artist
  * addresses are secure behind a multi-sig or other access control mechanism.
  * ----------------------------------------------------------------------------
+ * The following functions are restricted to the minter filter's Admin ACL
+ * contract:
+ * - setMinimumPriceDecayHalfLifeSeconds
+ * ----------------------------------------------------------------------------
+ * The following functions are restricted to the core contract's Admin ACL
+ * contract:
+ * - resetAuctionDetails (note: this will prevent minting until a new auction
+ *   is created)
+ * ----------------------------------------------------------------------------
  * The following functions are restricted to a project's artist:
+ * - setAuctionDetails (note: this may only be called when there is no active
+ *   auction)
+ * - syncProjectMaxInvocationsToCore
+ * - manuallyLimitProjectMaxInvocations
  * - allowHoldersOfProjects
  * - removeHoldersOfProjects
  * - allowAndRemoveHoldersOfProjects
- * - updatePricePerTokenInWei
- * - syncProjectMaxInvocationsToCore
- * - manuallyLimitProjectMaxInvocations
  * ----------------------------------------------------------------------------
  * Additional admin and artist privileged roles may be described on other
  * contracts that this minter integrates with.
- * ----------------------------------------------------------------------------
+ *
  * This contract allows gated minting with support for vaults to delegate minting
  * privileges via an external delegation registry. This means a vault holding an
  * allowed token can delegate minting privileges to a wallet that is not holding an
@@ -59,10 +72,20 @@ pragma solidity 0.8.19;
  * delegation types include token-level, contract-level (via genArt721CoreAddress), or
  * wallet-level delegation. Contract-level delegations must be configured for the core
  * token contract as returned by the public immutable variable `genArt721CoreAddress`.
+ *
+ *  @dev Note that while this minter makes use of `block.timestamp` and it is
+ * technically possible that this value is manipulated by block producers, such
+ * manipulation will not have material impact on the price values of this minter
+ * given the business practices for how pricing is congfigured for this minter
+ * and that variations on the order of less than a minute should not
+ * meaningfully impact price given the minimum allowable price decay rate that
+ * this minter intends to support.
  */
-contract MinterSetPriceHolderV5 is
+contract MinterDALinHolderV5 is
     ReentrancyGuard,
     ISharedMinterV0,
+    ISharedMinterDAV0,
+    ISharedMinterDALinV0,
     ISharedMinterHolderV0
 {
     // add Enumerable Set methods
@@ -74,29 +97,20 @@ contract MinterSetPriceHolderV5 is
     /// Minter filter this minter may interact with.
     IMinterFilterV1 private immutable minterFilter;
 
-    /// Delegation registry address
+    // Delegation registry address
     address public immutable delegationRegistryAddress;
 
-    /// Delegation registry address
+    // Delegation registry address
     IDelegationRegistry private immutable delegationRegistryContract;
 
     /// minterType for this minter
-    string public constant minterType = "MinterSetPriceHolderV5";
+    string public constant minterType = "MinterDALinHolderV5";
 
     /// minter version for this minter
     string public constant minterVersion = "v5.0.0";
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR SetPriceLib begin here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    /// contractAddress => projectId => set price project config
-    mapping(address => mapping(uint256 => SetPriceLib.SetPriceProjectConfig))
-        private _setPriceProjectConfigMapping;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR SetPriceLib end here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /// Minimum auction length in seconds
+    uint256 public minimumAuctionLengthSeconds = 600; // 10 minutes
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR SplitFundsLib begin here
@@ -107,6 +121,17 @@ contract MinterSetPriceHolderV5 is
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR SplitFundsLib end here
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // STATE VARIABLES FOR DALinLib begin here
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    mapping(address => mapping(uint256 => DALinLib.DAProjectConfig))
+        private _auctionProjectConfigMapping;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // STATE VARIABLES FOR DALinLib end here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -136,17 +161,11 @@ contract MinterSetPriceHolderV5 is
     // STATE VARIABLES FOR TokenHolderLib end here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    // MODIFIERS
-    // @dev contract uses modifier-like internal functions instead of modifiers
-    // to reduce contract bytecode size
-    // @dev contract uses AuthLib for some modifier-like functions
-
     /**
      * @notice Initializes contract to be a Filtered Minter for
      * `_minterFilter` minter filter.
      * @param _minterFilter Minter filter for which this will be a
      * filtered minter.
-     * @param _delegationRegistryAddress Delegation registry contract address.
      */
     constructor(
         address _minterFilter,
@@ -160,6 +179,7 @@ contract MinterSetPriceHolderV5 is
             _delegationRegistryAddress
         );
         emit DelegationRegistryUpdated(_delegationRegistryAddress);
+        emit AuctionMinimumLengthSecondsUpdated(minimumAuctionLengthSeconds);
     }
 
     /**
@@ -184,70 +204,20 @@ contract MinterSetPriceHolderV5 is
             _coreContract: _coreContract,
             _sender: msg.sender
         });
-        MaxInvocationsLib.manuallyLimitProjectMaxInvocations(
-            _projectId,
-            _coreContract,
-            _maxInvocations,
-            _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-        );
+        MaxInvocationsLib.manuallyLimitProjectMaxInvocations({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _maxInvocations: _maxInvocations,
+            maxInvocationsProjectConfig: _maxInvocationsProjectConfigMapping[
+                _coreContract
+            ][_projectId]
+        });
+
         emit ProjectMaxInvocationsLimitUpdated(
             _projectId,
             _coreContract,
             _maxInvocations
         );
-    }
-
-    /**
-     * @notice Updates this minter's price per token of project `_projectId`
-     * to be '_pricePerTokenInWei`, in Wei.
-     * @dev Note that it is intentionally supported here that the configured
-     * price may be explicitly set to `0`.
-     * @param _projectId Project ID to set the price per token for.
-     * @param _coreContract Core contract address for the given project.
-     * @param _pricePerTokenInWei Price per token to set for the project, in Wei.
-     */
-    function updatePricePerTokenInWei(
-        uint256 _projectId,
-        address _coreContract,
-        uint248 _pricePerTokenInWei
-    ) external {
-        AuthLib.onlyArtist({
-            _projectId: _projectId,
-            _coreContract: _coreContract,
-            _sender: msg.sender
-        });
-        SetPriceLib.SetPriceProjectConfig
-            storage _setPriceProjectConfig = _setPriceProjectConfigMapping[
-                _coreContract
-            ][_projectId];
-        SetPriceLib.updatePricePerTokenInWei(
-            _pricePerTokenInWei,
-            _setPriceProjectConfig
-        );
-        emit PricePerTokenInWeiUpdated(
-            _projectId,
-            _coreContract,
-            _pricePerTokenInWei
-        );
-
-        // for convenience, sync local max invocations to the core contract if
-        // and only if max invocations have not already been synced.
-        // @dev do not sync if max invocations have already been synced, as
-        // local max invocations could have been manually set to be
-        // intentionally less than the core contract's max invocations.
-        MaxInvocationsLib.MaxInvocationsProjectConfig
-            storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
-                _coreContract
-            ][_projectId];
-        // @dev if local maxInvocations and maxHasBeenInvoked are both
-        // initial values, we know they have not been populated on this minter
-        if (
-            MaxInvocationsLib.maxInvocationsIsUnconfigured(
-                _maxInvocationsProjectConfig
-            )
-        ) {
-            syncProjectMaxInvocationsToCore(_projectId, _coreContract);
-        }
     }
 
     /**
@@ -284,7 +254,6 @@ contract MinterSetPriceHolderV5 is
             _ownedNFTAddresses: _ownedNFTAddresses,
             _ownedNFTProjectIds: _ownedNFTProjectIds
         });
-
         // emit approve event
         emit AllowedHoldersOfProjects(
             _projectId,
@@ -329,7 +298,6 @@ contract MinterSetPriceHolderV5 is
             _ownedNFTAddresses: _ownedNFTAddresses,
             _ownedNFTProjectIds: _ownedNFTProjectIds
         });
-
         // emit removed event
         emit RemovedHoldersOfProjects(
             _projectId,
@@ -409,13 +377,139 @@ contract MinterSetPriceHolderV5 is
     }
 
     /**
+     * @notice Sets auction details for project `_projectId`.
+     * Requires one of the following:
+     * - The auction is unconfigured
+     * - The auction has not yet started
+     * - The minter-local max invocations have been reached
+     * @dev Note that allowing the artist to set auction details after reaching
+     * max invocations effectively grants the artist the ability to set a new
+     * auction at any point, since minter-local max invocations can be set by
+     * the artist.
+     * @param _projectId Project ID to set auction details for.
+     * @param _coreContract Core contract address for the given project.
+     * @param _auctionTimestampStart Timestamp at which to start the auction.
+     * @param _auctionTimestampEnd Timestamp at which to end the auction.
+     * @param _startPrice Price at which to start the auction, in Wei.
+     * @param _basePrice Resting price of the auction, in Wei.
+     * @dev Note that it is intentionally supported here that the configured
+     * price may be explicitly set to `0`.
+     */
+    function setAuctionDetails(
+        uint256 _projectId,
+        address _coreContract,
+        uint64 _auctionTimestampStart,
+        uint64 _auctionTimestampEnd,
+        uint128 _startPrice,
+        uint128 _basePrice
+    ) external {
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
+        // CHECKS
+        DALinLib.DAProjectConfig
+            storage _auctionProjectConfig = _auctionProjectConfigMapping[
+                _coreContract
+            ][_projectId];
+        MaxInvocationsLib.MaxInvocationsProjectConfig
+            storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
+                _coreContract
+            ][_projectId];
+
+        require(
+            _auctionTimestampEnd >=
+                _auctionTimestampStart + minimumAuctionLengthSeconds,
+            "Auction length must be at least minimumAuctionLengthSeconds"
+        );
+
+        // EFFECTS
+        bool maxHasBeenInvoked = MaxInvocationsLib.getMaxHasBeenInvoked(
+            _maxInvocationsProjectConfig
+        );
+        DALinLib.setAuctionDetailsLin({
+            _DAProjectConfig: _auctionProjectConfig,
+            _auctionTimestampStart: _auctionTimestampStart,
+            _auctionTimestampEnd: _auctionTimestampEnd,
+            _startPrice: _startPrice,
+            _basePrice: _basePrice,
+            _allowReconfigureAfterStart: maxHasBeenInvoked
+        });
+
+        emit SetAuctionDetailsLin({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _auctionTimestampStart: _auctionTimestampStart,
+            _auctionTimestampEnd: _auctionTimestampEnd,
+            _startPrice: _startPrice,
+            _basePrice: _basePrice
+        });
+
+        // sync local max invocations if not initially populated
+        // @dev if local max invocations and maxHasBeenInvoked are both
+        // initial values, we know they have not been populated.
+        if (
+            MaxInvocationsLib.maxInvocationsIsUnconfigured(
+                _maxInvocationsProjectConfig
+            )
+        ) {
+            syncProjectMaxInvocationsToCore(_projectId, _coreContract);
+        }
+    }
+
+    /**
+     * @notice Sets minimum auction length to `_minimumAuctionLengthSeconds`
+     * for all projects.
+     * @param _minimumAuctionLengthSeconds Minimum auction length in seconds.
+     */
+    function setMinimumAuctionLengthSeconds(
+        uint256 _minimumAuctionLengthSeconds
+    ) external {
+        AuthLib.onlyMinterFilterAdminACL({
+            _minterFilterAddress: minterFilterAddress,
+            _sender: msg.sender,
+            _contract: address(this),
+            _selector: this.setMinimumAuctionLengthSeconds.selector
+        });
+        minimumAuctionLengthSeconds = _minimumAuctionLengthSeconds;
+        emit AuctionMinimumLengthSecondsUpdated(_minimumAuctionLengthSeconds);
+    }
+
+    /**
+     * @notice Resets auction details for project `_projectId`, zero-ing out all
+     * relevant auction fields. Not intended to be used in normal auction
+     * operation, but rather only in case of the need to halt an auction.
+     * @param _projectId Project ID to set auction details for.
+     * @param _coreContract Core contract address for the given project.
+     */
+    function resetAuctionDetails(
+        uint256 _projectId,
+        address _coreContract
+    ) external {
+        AuthLib.onlyCoreAdminACL({
+            _coreContract: _coreContract,
+            _sender: msg.sender,
+            _contract: address(this),
+            _selector: this.resetAuctionDetails.selector
+        });
+
+        delete _auctionProjectConfigMapping[_coreContract][_projectId];
+
+        emit ResetAuctionDetails(_projectId, _coreContract);
+    }
+
+    /**
      * @notice Purchases a token from project `_projectId`.
+     * Note: Collectors should not send excessive value with their purchase
+     * transaction, because the artist has the ability to change the auction
+     * details at any time, including the price.
      * @param _projectId Project ID to mint a token on.
      * @param _coreContract Core contract address for the given project.
-     * @param _ownedNFTAddress ERC-721 NFT address holding the project token
-     * owned by msg.sender being used to prove right to purchase.
+     * @param _ownedNFTAddress ERC-721 NFT holding the project token owned by
+     * msg.sender being used to claim right to purchase.
      * @param _ownedNFTTokenId ERC-721 NFT token ID owned by msg.sender being used
-     * to prove right to purchase.
+     * to claim right to purchase.
      * @return tokenId Token ID of minted token
      */
     function purchase(
@@ -424,20 +518,24 @@ contract MinterSetPriceHolderV5 is
         address _ownedNFTAddress,
         uint256 _ownedNFTTokenId
     ) external payable returns (uint256 tokenId) {
-        tokenId = purchaseTo(
-            msg.sender,
-            _projectId,
-            _coreContract,
-            _ownedNFTAddress,
-            _ownedNFTTokenId,
-            address(0)
-        );
+        tokenId = purchaseTo({
+            _to: msg.sender,
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _ownedNFTAddress: _ownedNFTAddress,
+            _ownedNFTTokenId: _ownedNFTTokenId,
+            _vault: address(0)
+        });
+
         return tokenId;
     }
 
     /**
      * @notice Purchases a token from project `_projectId` and sets
      * the token's owner to `_to`.
+     * Note: Collectors should not send excessive value with their purchase
+     * transaction, because the artist has the ability to change the auction
+     * details at any time, including the price.
      * @param _to Address to be the new token's owner.
      * @param _projectId Project ID to mint a token on.
      * @param _coreContract Core contract address for the given project.
@@ -455,14 +553,14 @@ contract MinterSetPriceHolderV5 is
         uint256 _ownedNFTTokenId
     ) external payable returns (uint256 tokenId) {
         return
-            purchaseTo(
-                _to,
-                _projectId,
-                _coreContract,
-                _ownedNFTAddress,
-                _ownedNFTTokenId,
-                address(0)
-            );
+            purchaseTo({
+                _to: _to,
+                _projectId: _projectId,
+                _coreContract: _coreContract,
+                _ownedNFTAddress: _ownedNFTAddress,
+                _ownedNFTTokenId: _ownedNFTTokenId,
+                _vault: address(0)
+            });
     }
 
     // public getter functions
@@ -485,17 +583,162 @@ contract MinterSetPriceHolderV5 is
     }
 
     /**
-     * @notice Gets the set price project configuration.
-     * @param _projectId The ID of the project whose data needs to be fetched.
-     * @param _coreContract The address of the core contract.
-     * @return SetPriceProjectConfig struct with the fixed price project
-     * configuration data.
+     * @notice Retrieves the auction parameters for a specific project.
+     * @param _projectId The unique identifier for the project.
+     * @param _coreContract The address of the core contract for the project.
+     * @return timestampStart The start timestamp for the auction.
+     * @return timestampEnd The end timestamp for the auction.
+     * @return startPrice The starting price of the auction.
+     * @return basePrice The base price of the auction.
      */
-    function setPriceProjectConfig(
+    function projectAuctionParameters(
         uint256 _projectId,
         address _coreContract
-    ) external view returns (SetPriceLib.SetPriceProjectConfig memory) {
-        return _setPriceProjectConfigMapping[_coreContract][_projectId];
+    )
+        external
+        view
+        returns (
+            uint64 timestampStart,
+            uint64 timestampEnd,
+            uint128 startPrice,
+            uint128 basePrice
+        )
+    {
+        DALinLib.DAProjectConfig
+            storage _auctionProjectConfig = _auctionProjectConfigMapping[
+                _coreContract
+            ][_projectId];
+        timestampStart = _auctionProjectConfig.timestampStart;
+        timestampEnd = _auctionProjectConfig.timestampEnd;
+        startPrice = _auctionProjectConfig.startPrice;
+        basePrice = _auctionProjectConfig.basePrice;
+    }
+
+    /**
+     * @notice Checks if the specified `_coreContract` is a valid engine contract.
+     * @dev This function retrieves the cached value of `_coreContract` from
+     * the `isEngineCache` mapping. If the cached value is already set, it
+     * returns the cached value. Otherwise, it calls the `getV3CoreIsEngine`
+     * function from the `SplitFundsLib` library to check if `_coreContract`
+     * is a valid engine contract.
+     * @dev This function will revert if the provided `_coreContract` is not
+     * a valid Engine or V3 Flagship contract.
+     * @param _coreContract The address of the contract to check.
+     * @return bool indicating if `_coreContract` is a valid engine contract.
+     */
+    function isEngineView(address _coreContract) external view returns (bool) {
+        SplitFundsLib.IsEngineCache storage isEngineCache = _isEngineCaches[
+            _coreContract
+        ];
+        if (isEngineCache.isCached) {
+            return isEngineCache.isEngine;
+        } else {
+            // @dev this calls the non-modifying variant of getV3CoreIsEngine
+            return SplitFundsLib.getV3CoreIsEngineView(_coreContract);
+        }
+    }
+
+    /**
+     * @notice projectId => has project reached its maximum number of
+     * invocations? Note that this returns a local cache of the core contract's
+     * state, and may be out of sync with the core contract. This is
+     * intentional, as it only enables gas optimization of mints after a
+     * project's maximum invocations has been reached. A false negative will
+     * only result in a gas cost increase, since the core contract will still
+     * enforce a maxInvocation check during minting. A false positive is not
+     * possible because the V3 core contract only allows maximum invocations
+     * to be reduced, not increased. Based on this rationale, we intentionally
+     * do not do input validation in this method as to whether or not the input
+     * @param _projectId is an existing project ID.
+     * @param _coreContract is an existing core contract address.
+     */
+    function projectMaxHasBeenInvoked(
+        uint256 _projectId,
+        address _coreContract
+    ) external view returns (bool) {
+        return
+            MaxInvocationsLib.getMaxHasBeenInvoked(
+                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
+            );
+    }
+
+    /**
+     * @notice projectId => project's maximum number of invocations.
+     * Optionally synced with core contract value, for gas optimization.
+     * Note that this returns a local cache of the core contract's
+     * state, and may be out of sync with the core contract. This is
+     * intentional, as it only enables gas optimization of mints after a
+     * project's maximum invocations has been reached.
+     * @dev A number greater than the core contract's project max invocations
+     * will only result in a gas cost increase, since the core contract will
+     * still enforce a maxInvocation check during minting. A number less than
+     * the core contract's project max invocations is only possible when the
+     * project's max invocations have not been synced on this minter, since the
+     * V3 core contract only allows maximum invocations to be reduced, not
+     * increased. When this happens, the minter will enable minting, allowing
+     * the core contract to enforce the max invocations check. Based on this
+     * rationale, we intentionally do not do input validation in this method as
+     * to whether or not the input `_projectId` is an existing project ID.
+     * @param `_projectId` is an existing project ID.
+     * @param `_coreContract` is an existing core contract address.
+     */
+    function projectMaxInvocations(
+        uint256 _projectId,
+        address _coreContract
+    ) external view returns (uint256) {
+        return
+            MaxInvocationsLib.getMaxInvocations(
+                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
+            );
+    }
+
+    /**
+     * @notice Gets if price of token is configured, price of minting a
+     * token on project `_projectId`, and currency symbol and address to be
+     * used as payment. Supersedes any core contract price information.
+     * @param _projectId Project ID to get price information for
+     * @param _coreContract Contract address of the core contract
+     * @return isConfigured true only if token price has been configured on
+     * this minter
+     * @return tokenPriceInWei current price of token on this minter - invalid
+     * if price has not yet been configured
+     * @return currencySymbol currency symbol for purchases of project on this
+     * minter. This minter always returns "ETH"
+     * @return currencyAddress currency address for purchases of project on
+     * this minter. This minter always returns null address, reserved for ether
+     */
+    function getPriceInfo(
+        uint256 _projectId,
+        address _coreContract
+    )
+        external
+        view
+        returns (
+            bool isConfigured,
+            uint256 tokenPriceInWei,
+            string memory currencySymbol,
+            address currencyAddress
+        )
+    {
+        DALinLib.DAProjectConfig
+            storage auctionProjectConfig = _auctionProjectConfigMapping[
+                _coreContract
+            ][_projectId];
+        isConfigured = (auctionProjectConfig.startPrice > 0);
+        if (!isConfigured) {
+            // In the case of unconfigured auction, return price of zero when
+            // getPriceLin would otherwise revert
+            tokenPriceInWei = 0;
+        } else if (block.timestamp <= auctionProjectConfig.timestampStart) {
+            // Provide a reasonable value for `tokenPriceInWei` when
+            // getPriceLin would otherwise revert, using the starting price
+            // before auction starts.
+            tokenPriceInWei = auctionProjectConfig.startPrice;
+        } else {
+            tokenPriceInWei = DALinLib.getPriceLin(auctionProjectConfig);
+        }
+        currencySymbol = "ETH";
+        currencyAddress = address(0);
     }
 
     /**
@@ -546,122 +789,6 @@ contract MinterSetPriceHolderV5 is
     }
 
     /**
-     * @notice Checks if the specified `_coreContract` is a valid engine contract.
-     * @dev This function retrieves the cached value of `_isEngine` from
-     * the `isEngineCache` mapping. If the cached value is already set, it
-     * returns the cached value. Otherwise, it calls the `getV3CoreIsEngine`
-     * function from the `SplitFundsLib` library to check if `_coreContract`
-     * is a valid engine contract.
-     * @dev This function will revert if the provided `_coreContract` is not
-     * a valid Engine or V3 Flagship contract.
-     * @param _coreContract The address of the contract to check.
-     * @return bool indicating if `_coreContract` is a valid engine contract.
-     */
-    function isEngineView(address _coreContract) external view returns (bool) {
-        SplitFundsLib.IsEngineCache storage isEngineCache = _isEngineCaches[
-            _coreContract
-        ];
-        if (isEngineCache.isCached) {
-            return isEngineCache.isEngine;
-        } else {
-            // @dev this calls the non-modifying variant of getV3CoreIsEngine
-            return SplitFundsLib.getV3CoreIsEngineView(_coreContract);
-        }
-    }
-
-    /**
-     * @notice projectId => has project reached its maximum number of
-     * invocations? Note that this returns a local cache of the core contract's
-     * state, and may be out of sync with the core contract. This is
-     * intentional, as it only enables gas optimization of mints after a
-     * project's maximum invocations has been reached. A false negative will
-     * only result in a gas cost increase, since the core contract will still
-     * enforce a maxInvocation check during minting. A false positive is not
-     * possible because the V3 core contract only allows maximum invocations
-     * to be reduced, not increased. Based on this rationale, we intentionally
-     * do not do input validation in this method as to whether or not the input
-     * @param `_projectId` is an existing project ID.
-     * @param `_coreContract` is an existing core contract address.
-     */
-    function projectMaxHasBeenInvoked(
-        uint256 _projectId,
-        address _coreContract
-    ) external view returns (bool) {
-        return
-            MaxInvocationsLib.getMaxHasBeenInvoked(
-                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-            );
-    }
-
-    /**
-     * @notice projectId => project's maximum number of invocations.
-     * Optionally synced with core contract value, for gas optimization.
-     * Note that this returns a local cache of the core contract's
-     * state, and may be out of sync with the core contract. This is
-     * intentional, as it only enables gas optimization of mints after a
-     * project's maximum invocations has been reached.
-     * @dev A number greater than the core contract's project max invocations
-     * will only result in a gas cost increase, since the core contract will
-     * still enforce a maxInvocation check during minting. A number less than
-     * the core contract's project max invocations is only possible when the
-     * project's max invocations have not been synced on this minter, since the
-     * V3 core contract only allows maximum invocations to be reduced, not
-     * increased. When this happens, the minter will enable minting, allowing
-     * the core contract to enforce the max invocations check. Based on this
-     * rationale, we intentionally do not do input validation in this method as
-     * to whether or not the input `_projectId` is an existing project ID.
-     * @param `_projectId` is an existing project ID.
-     * @param `_coreContract` is an existing core contract address.
-     */
-    function projectMaxInvocations(
-        uint256 _projectId,
-        address _coreContract
-    ) external view returns (uint256) {
-        return
-            MaxInvocationsLib.getMaxInvocations(
-                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-            );
-    }
-
-    /**
-     * @notice Gets if price of token is configured, price of minting a
-     * token on project `_projectId`, and currency symbol and address to be
-     * used as payment.
-     * @param _projectId Project ID to get price information for
-     * @param _coreContract Contract address of the core contract
-     * @return isConfigured true only if token price has been configured on
-     * this minter
-     * @return tokenPriceInWei current price of token on this minter - invalid
-     * if price has not yet been configured
-     * @return currencySymbol currency symbol for purchases of project on this
-     * minter. This minter always returns "ETH"
-     * @return currencyAddress currency address for purchases of project on
-     * this minter. This minter always returns null address, reserved for ether
-     */
-    function getPriceInfo(
-        uint256 _projectId,
-        address _coreContract
-    )
-        external
-        view
-        returns (
-            bool isConfigured,
-            uint256 tokenPriceInWei,
-            string memory currencySymbol,
-            address currencyAddress
-        )
-    {
-        SetPriceLib.SetPriceProjectConfig
-            storage _setPriceProjectConfig = _setPriceProjectConfigMapping[
-                _coreContract
-            ][_projectId];
-        isConfigured = _setPriceProjectConfig.priceIsConfigured;
-        tokenPriceInWei = _setPriceProjectConfig.pricePerTokenInWei;
-        currencySymbol = "ETH";
-        currencyAddress = address(0);
-    }
-
-    /**
      * @notice Syncs local maximum invocations of project `_projectId` based on
      * the value currently defined in the core contract.
      * @param _projectId Project ID to set the maximum invocations for.
@@ -680,11 +807,13 @@ contract MinterSetPriceHolderV5 is
         });
 
         uint256 maxInvocations = MaxInvocationsLib
-            .syncProjectMaxInvocationsToCore(
-                _projectId,
-                _coreContract,
-                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-            );
+            .syncProjectMaxInvocationsToCore({
+                _projectId: _projectId,
+                _coreContract: _coreContract,
+                maxInvocationsProjectConfig: _maxInvocationsProjectConfigMapping[
+                    _coreContract
+                ][_projectId]
+            });
         emit ProjectMaxInvocationsLimitUpdated(
             _projectId,
             _coreContract,
@@ -695,14 +824,16 @@ contract MinterSetPriceHolderV5 is
     /**
      * @notice Purchases a token from project `_projectId` and sets
      * the token's owner to `_to`.
+     * Note: Collectors should not send excessive value with their purchase
+     * transaction, because the artist has the ability to change the auction
+     * details at any time, including the price.
      * @param _to Address to be the new token's owner.
      * @param _projectId Project ID to mint a token on.
      * @param _coreContract Core contract address for the given project.
-     * @param _ownedNFTAddress ERC-721 NFT address holding the project token owned by _vault
-     *         (or msg.sender if no _vault is provided) being used to claim right to purchase.
-     * @param _ownedNFTTokenId ERC-721 NFT token ID owned by _vault (or msg.sender if
-     *         no _vault is provided) being used to claim right to purchase.
-     * @param _vault Vault being purchased on behalf of. Acceptable to be `address(0)` if no vault.
+     * @param _ownedNFTAddress ERC-721 NFT holding the project token owned by
+     * msg.sender being used to claim right to purchase.
+     * @param _ownedNFTTokenId ERC-721 NFT token ID owned by msg.sender being used
+     * to claim right to purchase.
      * @return tokenId Token ID of minted token
      */
     function purchaseTo(
@@ -714,12 +845,13 @@ contract MinterSetPriceHolderV5 is
         address _vault
     ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
-        SetPriceLib.SetPriceProjectConfig
-            storage _setPriceProjectConfig = _setPriceProjectConfigMapping[
-                _coreContract
-            ][_projectId];
         MaxInvocationsLib.MaxInvocationsProjectConfig
             storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
+                _coreContract
+            ][_projectId];
+
+        DALinLib.DAProjectConfig
+            storage _auctionProjectConfig = _auctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
 
@@ -734,15 +866,10 @@ contract MinterSetPriceHolderV5 is
             "Max invocations reached"
         );
 
-        // require artist to have configured price of token on this minter
-        require(
-            _setPriceProjectConfig.priceIsConfigured,
-            "Price not configured"
+        // getPriceLin reverts if auction is unconfigured or has not started
+        uint256 pricePerTokenInWei = DALinLib.getPriceLin(
+            _auctionProjectConfig
         );
-
-        // load price of token into memory
-        uint256 pricePerTokenInWei = _setPriceProjectConfig.pricePerTokenInWei;
-
         require(msg.value >= pricePerTokenInWei, "Min value to mint req.");
 
         // require token used to claim to be in set of allowlisted NFTs
@@ -769,24 +896,29 @@ contract MinterSetPriceHolderV5 is
             // Note, we do not check `checkDelegateForAll` or `checkDelegateForContract` as well,
             // as they are known to be implicitly checked by calling `checkDelegateForToken`.
             bool isValidVault = delegationRegistryContract
-                .checkDelegateForToken(
-                    msg.sender, // delegate
-                    _vault, // vault
-                    _coreContract, // contract
-                    _ownedNFTTokenId // tokenId
-                );
+                .checkDelegateForToken({
+                    delegate: msg.sender,
+                    vault: _vault,
+                    contract_: _coreContract,
+                    tokenId: _ownedNFTTokenId
+                });
             require(isValidVault, "Invalid delegate-vault pairing");
             vault = _vault;
         }
 
         // EFFECTS
-        tokenId = minterFilter.mint_joo(_to, _projectId, _coreContract, vault);
+        tokenId = minterFilter.mint_joo({
+            _to: _to,
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: vault
+        });
 
         // NOTE: delegate-vault handling **ends here**.
 
         MaxInvocationsLib.validatePurchaseEffectsInvocations(
             tokenId,
-            _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
+            _maxInvocationsProjectConfig
         );
 
         // INTERACTIONS
@@ -803,8 +935,6 @@ contract MinterSetPriceHolderV5 is
             _targetOwner: vault
         });
 
-        // INTERACTIONS
-        // split funds
         bool isEngine = SplitFundsLib.isEngine(
             _coreContract,
             _isEngineCaches[_coreContract]
