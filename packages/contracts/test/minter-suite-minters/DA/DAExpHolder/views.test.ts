@@ -395,5 +395,55 @@ runForEach.forEach((params) => {
         expect(projectAuctionParameters.basePrice).to.equal(config.basePrice);
       });
     });
+
+    describe("allowedProjectHolders", async function () {
+      it("should return true for a valid NFT project holding for the given project", async function () {
+        const config = await loadFixture(_beforeEach);
+        const allowedProjectHoldersResponse =
+          await config.minter.allowedProjectHolders(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.genArt721Core.address,
+            config.projectZero
+          );
+        expect(allowedProjectHoldersResponse).to.equal(true);
+      });
+
+      it("should return false for an invalid NFT project holding for the given project", async function () {
+        const config = await loadFixture(_beforeEach);
+        const allowedProjectHoldersResponse =
+          await config.minter.allowedProjectHolders(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.genArt721Core.address,
+            config.projectOne
+          );
+        expect(allowedProjectHoldersResponse).to.equal(false);
+      });
+    });
+
+    describe("isAllowlistedNFT", async function () {
+      it("should return true for a token that is allowlisted", async function () {
+        const config = await loadFixture(_beforeEach);
+        const isAllowlistedNFTResponse = await config.minter.isAllowlistedNFT(
+          config.projectZero,
+          config.genArt721Core.address,
+          config.genArt721Core.address,
+          config.projectZeroTokenZero.toNumber()
+        );
+        expect(isAllowlistedNFTResponse).to.equal(true);
+      });
+
+      it("should return false for a token that is not allowlisted", async function () {
+        const config = await loadFixture(_beforeEach);
+        const isAllowlistedNFTResponse = await config.minter.isAllowlistedNFT(
+          config.projectZero,
+          config.genArt721Core.address,
+          config.genArt721Core.address,
+          config.projectThreeTokenZero.toNumber()
+        );
+        expect(isAllowlistedNFTResponse).to.equal(false);
+      });
+    });
   });
 });

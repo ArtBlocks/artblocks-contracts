@@ -263,6 +263,7 @@ contract MinterDALinV5 is
      * relevant auction fields. Not intended to be used in normal auction
      * operation, but rather only in case of the need to halt an auction.
      * @param _projectId Project ID to set auction details for.
+     * @param _coreContract Core contract address for the given project.
      */
     function resetAuctionDetails(
         uint256 _projectId,
@@ -305,8 +306,8 @@ contract MinterDALinV5 is
     // public getter functions
     /**
      * @notice Gets the maximum invocations project configuration.
-     * @param _coreContract The address of the core contract.
      * @param _projectId The ID of the project whose data needs to be fetched.
+     * @param _coreContract The address of the core contract.
      * @return MaxInvocationsLib.MaxInvocationsProjectConfig instance with the
      * configuration data.
      */
@@ -388,8 +389,8 @@ contract MinterDALinV5 is
      * possible because the V3 core contract only allows maximum invocations
      * to be reduced, not increased. Based on this rationale, we intentionally
      * do not do input validation in this method as to whether or not the input
-     * @param `_projectId` is an existing project ID.
-     * @param `_coreContract` is an existing core contract address.
+     * @param _projectId is an existing project ID.
+     * @param _coreContract is an existing core contract address.
      */
     function projectMaxHasBeenInvoked(
         uint256 _projectId,
@@ -418,8 +419,8 @@ contract MinterDALinV5 is
      * the core contract to enforce the max invocations check. Based on this
      * rationale, we intentionally do not do input validation in this method as
      * to whether or not the input `_projectId` is an existing project ID.
-     * @param `_projectId` is an existing project ID.
-     * @param `_coreContract` is an existing core contract address.
+     * @param _projectId is an existing project ID.
+     * @param _coreContract is an existing core contract address.
      */
     function projectMaxInvocations(
         uint256 _projectId,
@@ -483,8 +484,8 @@ contract MinterDALinV5 is
     /**
      * @notice Syncs local maximum invocations of project `_projectId` based on
      * the value currently defined in the core contract.
-     * @param _coreContract Core contract address for the given project.
      * @param _projectId Project ID to set the maximum invocations for.
+     * @param _coreContract Core contract address for the given project.
      * @dev this enables gas reduction after maxInvocations have been reached -
      * core contracts shall still enforce a maxInvocation check during mint.
      */

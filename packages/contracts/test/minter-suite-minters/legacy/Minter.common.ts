@@ -27,8 +27,9 @@ export const Minter_Common = async (_beforeEach: () => Promise<T_Config>) => {
         [config.name, config.symbol, config.randomizer.address, adminACL, 0]
       );
 
-      const minterFilterFactory =
-        await ethers.getContractFactory("MinterFilterV1");
+      const minterFilterFactory = await ethers.getContractFactory(
+        "MinterFilterV1"
+      );
       const minterFilter = await minterFilterFactory.deploy(token2.address);
       const minterType = await config.minter.minterType();
       const minterFactory = await ethers.getContractFactory(

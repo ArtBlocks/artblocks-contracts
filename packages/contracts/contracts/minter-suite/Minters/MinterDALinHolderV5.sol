@@ -124,10 +124,16 @@ contract MinterDALinHolderV5 is
     // STATE VARIABLES FOR SplitFundsLib end here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    // TODO
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // STATE VARIABLES FOR DALinLib begin here
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     mapping(address => mapping(uint256 => DALinLib.DAProjectConfig))
         private _auctionProjectConfigMapping;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // STATE VARIABLES FOR DALinLib end here
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR MaxInvocationsLib begin here
@@ -166,14 +172,14 @@ contract MinterDALinHolderV5 is
         address _minterFilter,
         address _delegationRegistryAddress
     ) ReentrancyGuard() {
+        minterFilterAddress = _minterFilter;
+        minterFilter = IMinterFilterV1(_minterFilter);
+
         delegationRegistryAddress = _delegationRegistryAddress;
-        emit DelegationRegistryUpdated(_delegationRegistryAddress);
         delegationRegistryContract = IDelegationRegistry(
             _delegationRegistryAddress
         );
-
-        minterFilterAddress = _minterFilter;
-        minterFilter = IMinterFilterV1(_minterFilter);
+        emit DelegationRegistryUpdated(_delegationRegistryAddress);
         emit AuctionMinimumLengthSecondsUpdated(minimumAuctionLengthSeconds);
     }
 
@@ -514,6 +520,10 @@ contract MinterDALinHolderV5 is
      * details at any time, including the price.
      * @param _projectId Project ID to mint a token on.
      * @param _coreContract Core contract address for the given project.
+     * @param _ownedNFTAddress ERC-721 NFT holding the project token owned by
+     * msg.sender being used to claim right to purchase.
+     * @param _ownedNFTTokenId ERC-721 NFT token ID owned by msg.sender being used
+     * to claim right to purchase.
      * @return tokenId Token ID of minted token
      */
     function purchase(
@@ -834,6 +844,10 @@ contract MinterDALinHolderV5 is
      * @param _to Address to be the new token's owner.
      * @param _projectId Project ID to mint a token on.
      * @param _coreContract Core contract address for the given project.
+     * @param _ownedNFTAddress ERC-721 NFT holding the project token owned by
+     * msg.sender being used to claim right to purchase.
+     * @param _ownedNFTTokenId ERC-721 NFT token ID owned by msg.sender being used
+     * to claim right to purchase.
      * @return tokenId Token ID of minted token
      */
     function purchaseTo(
@@ -884,6 +898,8 @@ contract MinterDALinHolderV5 is
             "Only allowlisted NFTs"
         );
 
+        // NOTE: delegate-vault handling **begins here**.
+
         // handle that the vault may be either the `msg.sender` in the case
         // that there is not a true vault, or may be `_vault` if one is
         // provided explicitly (and it is valid).
@@ -933,7 +949,6 @@ contract MinterDALinHolderV5 is
             _targetOwner: vault
         });
 
-        // INTERACTIONS
         bool isEngine = SplitFundsLib.isEngine(
             _coreContract,
             _isEngineCaches[_coreContract]

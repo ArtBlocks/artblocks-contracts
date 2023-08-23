@@ -195,8 +195,6 @@ runForEach.forEach((params) => {
     describe("AuctionMinimumLengthSecondsUpdated", async function () {
       it("emits during deploy", async function () {
         const config = await loadFixture(_beforeEach);
-        const contractFactory =
-          await ethers.getContractFactory(TARGET_MINTER_NAME);
         const tx = await deployAndGet(config, TARGET_MINTER_NAME, [
           config.minterFilter.address,
           config.delegationRegistry.address,
@@ -204,7 +202,6 @@ runForEach.forEach((params) => {
         const receipt = await tx.deployTransaction.wait();
         // target event "AuctionMinimumLengthSecondsUpdated" is the log at index 0
         let targetLog = receipt.logs[1];
-        console.log(receipt);
         // expect log 0 to be AuctionMinimumLengthSecondsUpdated
         expect(targetLog.topics[0]).to.be.equal(
           ethers.utils.keccak256(

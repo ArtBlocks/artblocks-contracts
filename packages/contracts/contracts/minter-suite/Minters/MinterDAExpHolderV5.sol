@@ -125,10 +125,16 @@ contract MinterDAExpHolderV5 is
     // STATE VARIABLES FOR SplitFundsLib end here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    // TODO
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // STATE VARIABLES FOR DAExpLib begin here
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     mapping(address => mapping(uint256 => DAExpLib.DAProjectConfig))
         private _auctionProjectConfigMapping;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // STATE VARIABLES FOR DAExpLib end here
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR MaxInvocationsLib begin here
@@ -167,14 +173,14 @@ contract MinterDAExpHolderV5 is
         address _minterFilter,
         address _delegationRegistryAddress
     ) ReentrancyGuard() {
+        minterFilterAddress = _minterFilter;
+        minterFilter = IMinterFilterV1(_minterFilter);
+
         delegationRegistryAddress = _delegationRegistryAddress;
-        emit DelegationRegistryUpdated(_delegationRegistryAddress);
         delegationRegistryContract = IDelegationRegistry(
             _delegationRegistryAddress
         );
-
-        minterFilterAddress = _minterFilter;
-        minterFilter = IMinterFilterV1(_minterFilter);
+        emit DelegationRegistryUpdated(_delegationRegistryAddress);
         emit AuctionMinHalfLifeSecondsUpdated(minimumPriceDecayHalfLifeSeconds);
     }
 
@@ -487,6 +493,7 @@ contract MinterDAExpHolderV5 is
      * relevant auction fields. Not intended to be used in normal auction
      * operation, but rather only in case of the need to halt an auction.
      * @param _projectId Project ID to set auction details for.
+     * @param _coreContract Core contract address for the given project.
      */
     function resetAuctionDetails(
         uint256 _projectId,
@@ -529,6 +536,10 @@ contract MinterDAExpHolderV5 is
      * details at any time, including the price.
      * @param _projectId Project ID to mint a token on.
      * @param _coreContract Core contract address for the given project.
+     * @param _ownedNFTAddress ERC-721 NFT holding the project token owned by
+     * msg.sender being used to claim right to purchase.
+     * @param _ownedNFTTokenId ERC-721 NFT token ID owned by msg.sender being used
+     * to claim right to purchase.
      * @return tokenId Token ID of minted token
      */
     function purchase(
@@ -585,8 +596,8 @@ contract MinterDAExpHolderV5 is
     // public getter functions
     /**
      * @notice Gets the maximum invocations project configuration.
-     * @param _coreContract The address of the core contract.
      * @param _projectId The ID of the project whose data needs to be fetched.
+     * @param _coreContract The address of the core contract.
      * @return MaxInvocationsLib.MaxInvocationsProjectConfig instance with the
      * configuration data.
      */
@@ -670,8 +681,8 @@ contract MinterDAExpHolderV5 is
      * possible because the V3 core contract only allows maximum invocations
      * to be reduced, not increased. Based on this rationale, we intentionally
      * do not do input validation in this method as to whether or not the input
-     * @param `_projectId` is an existing project ID.
-     * @param `_coreContract` is an existing core contract address.
+     * @param _projectId is an existing project ID.
+     * @param _coreContract is an existing core contract address.
      */
     function projectMaxHasBeenInvoked(
         uint256 _projectId,
@@ -700,8 +711,8 @@ contract MinterDAExpHolderV5 is
      * the core contract to enforce the max invocations check. Based on this
      * rationale, we intentionally do not do input validation in this method as
      * to whether or not the input `_projectId` is an existing project ID.
-     * @param `_projectId` is an existing project ID.
-     * @param `_coreContract` is an existing core contract address.
+     * @param _projectId is an existing project ID.
+     * @param _coreContract is an existing core contract address.
      */
     function projectMaxInvocations(
         uint256 _projectId,
@@ -812,8 +823,8 @@ contract MinterDAExpHolderV5 is
     /**
      * @notice Syncs local maximum invocations of project `_projectId` based on
      * the value currently defined in the core contract.
-     * @param _coreContract Core contract address for the given project.
      * @param _projectId Project ID to set the maximum invocations for.
+     * @param _coreContract Core contract address for the given project.
      * @dev this enables gas reduction after maxInvocations have been reached -
      * core contracts shall still enforce a maxInvocation check during mint.
      */
@@ -851,6 +862,10 @@ contract MinterDAExpHolderV5 is
      * @param _to Address to be the new token's owner.
      * @param _projectId Project ID to mint a token on.
      * @param _coreContract Core contract address for the given project.
+     * @param _ownedNFTAddress ERC-721 NFT holding the project token owned by
+     * msg.sender being used to claim right to purchase.
+     * @param _ownedNFTTokenId ERC-721 NFT token ID owned by msg.sender being used
+     * to claim right to purchase.
      * @return tokenId Token ID of minted token
      */
     function purchaseTo(
@@ -900,6 +915,8 @@ contract MinterDAExpHolderV5 is
             }),
             "Only allowlisted NFTs"
         );
+
+        // NOTE: delegate-vault handling **begins here**.
 
         // handle that the vault may be either the `msg.sender` in the case
         // that there is not a true vault, or may be `_vault` if one is
@@ -951,7 +968,6 @@ contract MinterDAExpHolderV5 is
             _targetOwner: vault
         });
 
-        // INTERACTIONS
         bool isEngine = SplitFundsLib.isEngine(
             _coreContract,
             _isEngineCaches[_coreContract]

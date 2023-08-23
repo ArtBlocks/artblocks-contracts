@@ -694,8 +694,9 @@ runForEach.forEach((params) => {
         const targetToken = BigNumber.from(
           config.projectZeroTokenZero.toString()
         );
-        const ejectedTokenOwner =
-          await config.genArt721Core.ownerOf(targetToken);
+        const ejectedTokenOwner = await config.genArt721Core.ownerOf(
+          targetToken
+        );
         expect(ejectedTokenOwner).to.equal(config.accounts.user.address);
       });
     });

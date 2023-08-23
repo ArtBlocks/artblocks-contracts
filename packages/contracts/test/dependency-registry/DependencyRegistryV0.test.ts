@@ -67,8 +67,9 @@ describe(`DependencyRegistryV0`, async function () {
     const nextTextSlotId = await sstore2Mock.nextTextSlotId();
     // decrement from `nextTextSlotId` to get last updated slot
     const textSlotId = nextTextSlotId - 1;
-    const textBytecodeAddress =
-      await sstore2Mock.storedTextBytecodeAddresses(textSlotId);
+    const textBytecodeAddress = await sstore2Mock.storedTextBytecodeAddresses(
+      textSlotId
+    );
     return textBytecodeAddress;
   }
 
@@ -235,8 +236,9 @@ describe(`DependencyRegistryV0`, async function () {
           await config.dependencyRegistry.getDependencyTypeCount();
         expect(registeredDependencyCount).to.eq(1);
 
-        const storedDepType =
-          await config.dependencyRegistry.getDependencyType(0);
+        const storedDepType = await config.dependencyRegistry.getDependencyType(
+          0
+        );
         expect(storedDepType).to.eq(dependencyType);
 
         const dependencyTypes =

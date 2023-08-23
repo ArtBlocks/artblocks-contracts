@@ -330,11 +330,14 @@ contract MinterSetPricePolyptychERC20V5 is
         uint256[] memory _ownedNFTProjectIds
     ) external {
         _onlyArtist(_projectId, _coreContract);
-        TokenHolderLib.allowHoldersOfProjects(
-            _allowedProjectHoldersMapping[_coreContract][_projectId],
-            _ownedNFTAddresses,
-            _ownedNFTProjectIds
-        );
+        TokenHolderLib.allowHoldersOfProjects({
+            holderProjectConfig: _allowedProjectHoldersMapping[_coreContract][
+                _projectId
+            ],
+            _ownedNFTAddresses: _ownedNFTAddresses,
+            _ownedNFTProjectIds: _ownedNFTProjectIds
+        });
+
         // emit approve event
         emit AllowedHoldersOfProjects(
             _projectId,
@@ -368,11 +371,13 @@ contract MinterSetPricePolyptychERC20V5 is
     ) external {
         _onlyArtist(_projectId, _coreContract);
         // require same length arrays
-        TokenHolderLib.removeHoldersOfProjects(
-            _allowedProjectHoldersMapping[_coreContract][_projectId],
-            _ownedNFTAddresses,
-            _ownedNFTProjectIds
-        );
+        TokenHolderLib.removeHoldersOfProjects({
+            holderProjectConfig: _allowedProjectHoldersMapping[_coreContract][
+                _projectId
+            ],
+            _ownedNFTAddresses: _ownedNFTAddresses,
+            _ownedNFTProjectIds: _ownedNFTProjectIds
+        });
         // emit removed event
         emit RemovedHoldersOfProjects(
             _projectId,
@@ -422,13 +427,16 @@ contract MinterSetPricePolyptychERC20V5 is
         uint256[] memory _ownedNFTProjectIdsRemove
     ) external {
         _onlyArtist(_projectId, _coreContract);
-        TokenHolderLib.allowAndRemoveHoldersOfProjects(
-            _allowedProjectHoldersMapping[_coreContract][_projectId],
-            _ownedNFTAddressesAdd,
-            _ownedNFTProjectIdsAdd,
-            _ownedNFTAddressesRemove,
-            _ownedNFTProjectIdsRemove
-        );
+        TokenHolderLib.allowAndRemoveHoldersOfProjects({
+            holderProjectConfig: _allowedProjectHoldersMapping[_coreContract][
+                _projectId
+            ],
+            _ownedNFTAddressesAdd: _ownedNFTAddressesAdd,
+            _ownedNFTProjectIdsAdd: _ownedNFTProjectIdsAdd,
+            _ownedNFTAddressesRemove: _ownedNFTAddressesRemove,
+            _ownedNFTProjectIdsRemove: _ownedNFTProjectIdsRemove
+        });
+
         // emit events
         emit AllowedHoldersOfProjects(
             _projectId,
@@ -617,11 +625,13 @@ contract MinterSetPricePolyptychERC20V5 is
         uint256 _ownedNFTTokenId
     ) external view returns (bool) {
         return
-            TokenHolderLib.isAllowlistedNFT(
-                _allowedProjectHoldersMapping[_coreContract][_projectId],
-                _ownedNFTAddress,
-                _ownedNFTTokenId
-            );
+            TokenHolderLib.isAllowlistedNFT({
+                holderProjectConfig: _allowedProjectHoldersMapping[
+                    _coreContract
+                ][_projectId],
+                _ownedNFTAddress: _ownedNFTAddress,
+                _ownedNFTTokenId: _ownedNFTTokenId
+            });
     }
 
     /**
@@ -925,11 +935,13 @@ contract MinterSetPricePolyptychERC20V5 is
 
         // require token used to claim to be in set of allowlisted NFTs
         require(
-            TokenHolderLib.isAllowlistedNFT(
-                _allowedProjectHoldersMapping[_coreContract][_projectId],
-                _ownedNFTAddress,
-                _ownedNFTTokenId
-            ),
+            TokenHolderLib.isAllowlistedNFT({
+                holderProjectConfig: _allowedProjectHoldersMapping[
+                    _coreContract
+                ][_projectId],
+                _ownedNFTAddress: _ownedNFTAddress,
+                _ownedNFTTokenId: _ownedNFTTokenId
+            }),
             "Only allowlisted NFTs"
         );
 

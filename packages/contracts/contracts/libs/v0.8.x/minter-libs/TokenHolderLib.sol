@@ -6,8 +6,6 @@ import "@openzeppelin-4.7/contracts/token/ERC721/IERC721.sol";
 
 pragma solidity ^0.8.0;
 
-import "hardhat/console.sol";
-
 /**
  * @title Art Blocks Token Holder Library
  * @notice This library provides a collection of functions for managing and
