@@ -525,6 +525,7 @@ contract DependencyRegistryV0 is
         _onlyAdminACL(this.addSupportedCoreContract.selector);
         _onlyNonZeroAddress(_contractAddress);
         require(
+            // @dev the add function returns false if set already contains value
             _supportedCoreContracts.add(_contractAddress),
             "Contract already supported"
         );
@@ -538,6 +539,7 @@ contract DependencyRegistryV0 is
     function removeSupportedCoreContract(address _contractAddress) external {
         _onlyAdminACL(this.removeSupportedCoreContract.selector);
         require(
+            // @dev the remove function returns false if set does not contain value
             _supportedCoreContracts.remove(_contractAddress),
             "Core contract already removed or not in set"
         );
