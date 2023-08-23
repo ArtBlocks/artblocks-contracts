@@ -187,10 +187,10 @@
     "@smithy/util-utf8" "^2.0.0"
     tslib "^2.5.0"
 
-"@aws-sdk/client-s3@^3.395.0":
-  version "3.395.0"
-  resolved "https://registry.yarnpkg.com/@aws-sdk/client-s3/-/client-s3-3.395.0.tgz#f78c52e574c194e01e56402414771acc4710bc04"
-  integrity sha512-mKEDt/1oS9Cjd+5kS88XPO26hvbIvx6Dzcyih26qz1Gb2BVIZm9y1KopFHtpyCLuOVIhsrXFkfEMoFwggM/swQ==
+"@aws-sdk/client-s3@^3.397.0":
+  version "3.397.0"
+  resolved "https://registry.yarnpkg.com/@aws-sdk/client-s3/-/client-s3-3.397.0.tgz#21602d0df0772fdb4f8ca5ad2069ce96276ba948"
+  integrity sha512-fowHUInFQPFBSjhOy5+A0J+tmgwADuOcW4X8JfNtlaEXdMROir2JnRFAN8zkzXYD0iylHbYVBnnjH5pLBCY3Ig==
   dependencies:
     "@aws-crypto/sha1-browser" "3.0.0"
     "@aws-crypto/sha256-browser" "3.0.0"
