@@ -635,6 +635,42 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
     }
 
     /**
+     * @notice Gets all minters that are globally approved on this minter
+     * filter. Returns an array of MinterWithType structs, which contain the
+     * minter address and minter type.
+     * This function has unbounded gas, and should only be used for off-chain
+     * queries.
+     * Alternatively, the subgraph indexing layer may be used to query these
+     * values.
+     * @return mintersWithTypes Array of MinterWithType structs, which contain
+     * the minter address and minter type.
+     */
+    function getAllGloballyApprovedMinters()
+        external
+        view
+        returns (MinterWithType[] memory mintersWithTypes)
+    {
+        // initialize arrays with appropriate length
+        uint256 numMinters = globallyApprovedMinters.length();
+        mintersWithTypes = new MinterWithType[](numMinters);
+        // iterate over all globally approved minters, adding to array
+        for (uint256 i; i < numMinters; ) {
+            address minterAddress = globallyApprovedMinters.at(i);
+            // @dev we know minterType() does not revert, because it was called
+            // when globally approving the minter
+            string memory minterType = IFilteredMinterV0(minterAddress)
+                .minterType();
+            mintersWithTypes[i] = MinterWithType({
+                minterAddress: minterAddress,
+                minterType: minterType
+            });
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    /**
      * @notice Convenience function that returns whether `_sender` is allowed
      * to call function with selector `_selector` on contract `_contract`, as
      * determined by this contract's current Admin ACL contract. Expected use
