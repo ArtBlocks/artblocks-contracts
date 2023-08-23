@@ -1337,9 +1337,8 @@ export const PolyptychMinter_Common = async (
       const projectStateDataBefore = await viewFunctionWithInvocations(
         config.projectZero
       );
-      const executeTxResponse = await safeSdk2.executeTransaction(
-        safeTransaction
-      );
+      const executeTxResponse =
+        await safeSdk2.executeTransaction(safeTransaction);
       await executeTxResponse.transactionResponse?.wait();
       const projectStateDataAfter = await viewFunctionWithInvocations(
         config.projectZero
