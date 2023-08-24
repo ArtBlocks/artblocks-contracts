@@ -512,29 +512,6 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
     }
 
     /**
-     * @notice Inactive function - see `createBid` or
-     * `settleAuctionAndCreateBid`
-     */
-    function purchase(
-        uint256 /*_projectId*/,
-        address /*_coreContract*/
-    ) external payable returns (uint256 /*tokenId*/) {
-        revert("Inactive function");
-    }
-
-    /**
-     * @notice Inactive function - see `createBid` or
-     * `settleAuctionAndCreateBid`
-     */
-    function purchaseTo(
-        address /*_to*/,
-        uint256 /*_projectId*/,
-        address /*_coreContract*/
-    ) external payable returns (uint256 /*tokenId*/) {
-        revert("Inactive function");
-    }
-
-    /**
      * @notice View function to return the current minter-level configuration
      * details.
      * @return minAuctionDurationSeconds_ Minimum auction duration in seconds.
