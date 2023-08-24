@@ -9,8 +9,8 @@ interface ISharedMinterDAExpV0 {
         address indexed _coreContract,
         uint40 _auctionTimestampStart,
         uint40 _priceDecayHalfLifeSeconds,
-        uint88 _startPrice,
-        uint88 _basePrice
+        uint256 _startPrice,
+        uint256 _basePrice
     );
     /// Minimum allowed price decay half life seconds updated.
     event AuctionMinHalfLifeSecondsUpdated(

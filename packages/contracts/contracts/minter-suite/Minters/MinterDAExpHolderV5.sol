@@ -15,6 +15,7 @@ import "../../libs/v0.8.x/minter-libs/TokenHolderLib.sol";
 import "../../libs/v0.8.x/minter-libs/DAExpLib.sol";
 import "../../libs/v0.8.x/AuthLib.sol";
 
+import "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin-4.5/contracts/utils/structs/EnumerableSet.sol";
 
@@ -88,6 +89,7 @@ contract MinterDAExpHolderV5 is
     ISharedMinterDAExpV0,
     ISharedMinterHolderV0
 {
+    using SafeCast for uint256;
     // add Enumerable Set methods
     using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -404,8 +406,8 @@ contract MinterDAExpHolderV5 is
         address _coreContract,
         uint40 _auctionTimestampStart,
         uint40 _priceDecayHalfLifeSeconds,
-        uint88 _startPrice,
-        uint88 _basePrice
+        uint256 _startPrice,
+        uint256 _basePrice
     ) external {
         AuthLib.onlyArtist({
             _projectId: _projectId,
@@ -435,8 +437,8 @@ contract MinterDAExpHolderV5 is
             _DAProjectConfig: _auctionProjectConfig,
             _auctionTimestampStart: _auctionTimestampStart,
             _priceDecayHalfLifeSeconds: _priceDecayHalfLifeSeconds,
-            _startPrice: _startPrice,
-            _basePrice: _basePrice,
+            _startPrice: _startPrice.toUint88(),
+            _basePrice: _basePrice.toUint88(),
             _allowReconfigureAfterStart: maxHasBeenInvoked
         });
 
@@ -612,8 +614,8 @@ contract MinterDAExpHolderV5 is
         returns (
             uint40 timestampStart,
             uint40 priceDecayHalfLifeSeconds,
-            uint88 startPrice,
-            uint88 basePrice
+            uint256 startPrice,
+            uint256 basePrice
         )
     {
         DAExpLib.DAProjectConfig

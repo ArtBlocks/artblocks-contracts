@@ -216,8 +216,8 @@ contract MinterDAExpSettlementV3 is
         address _coreContract,
         uint40 _auctionTimestampStart,
         uint40 _priceDecayHalfLifeSeconds,
-        uint88 _startPrice,
-        uint88 _basePrice
+        uint256 _startPrice,
+        uint256 _basePrice
     ) external {
         AuthLib.onlyArtist({
             _projectId: _projectId,
@@ -255,8 +255,8 @@ contract MinterDAExpSettlementV3 is
             _DAProjectConfig: _auctionProjectConfig,
             _auctionTimestampStart: _auctionTimestampStart,
             _priceDecayHalfLifeSeconds: _priceDecayHalfLifeSeconds,
-            _startPrice: _startPrice,
-            _basePrice: _basePrice,
+            _startPrice: _startPrice.toUint88(),
+            _basePrice: _basePrice.toUint88(),
             // we set this to false so it prevents artist from altering auction
             // even after max has been invoked (require explicit auction reset
             // on settlement minter)
@@ -611,8 +611,8 @@ contract MinterDAExpSettlementV3 is
         returns (
             uint40 timestampStart,
             uint40 priceDecayHalfLifeSeconds,
-            uint88 startPrice,
-            uint88 basePrice
+            uint256 startPrice,
+            uint256 basePrice
         )
     {
         DAExpLib.DAProjectConfig
