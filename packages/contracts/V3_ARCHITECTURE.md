@@ -36,9 +36,11 @@ The Randomizer contract is used to generate pseudo random numbers for the V3 cor
 
 A shared randomizer was developed as part of our shared minter suite development, and may be used to generate pseudorandom numbers for all V3 tokens. The randomizer is designed to handle all globally approved shared minters, including minters that may assign token hashes directly such as the Polyptych minter.
 
-A diagram of the V3 core contract and Randomizer contract integration is shown below:
+A diagram of the V3 core contract and shared Randomizer contract integration is shown below:
 
 ![randomizer-diagram](./images/randomizer-v3-core-integration.png)
+
+> Note: This is an area of active development, and many core contracts will use their own, non-shared randomizer contracts during migration to the shared randomizer and shared minter suite. An architecture diagram for the legacy randomizer contract is shown below: ![legacy-randomizer-diagram](./images/randomizer-v3-core-integration-legacy.png)
 
 ### Core Registry contract
 

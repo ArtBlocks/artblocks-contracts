@@ -85,9 +85,11 @@ For a more detailed overview of this architecture, please see the [V3 Contract A
 
 ## Minter Suite
 
-Art Blocks has developed a shared Minter Suite that is used to mint tokens for all Art Blocks Engine V3 tokens. The Minter Suite is designed to be highly flexible, and can be used to mint tokens in a variety of ways on any V3 Flagship or Art Blocks Engine contract.
+Art Blocks has developed a shared Minter Suite that can be used to mint tokens. The Minter Suite is designed to be highly flexible, and can be used to mint tokens in a variety of ways on any V3 Flagship or Art Blocks Engine contract.
 
-For details on the Art Blocks Shared Minter Suite, see the [minter suite documenation](./MINTER_SUITE.md).
+A legacy, non-shared minter suite is also currently used by many partners, and is still in use by many partners during migration to the shared minter suite.
+
+For details on the Art Blocks Minter Suite, see the [minter suite documenation](./MINTER_SUITE.md).
 
 # Deployments
 
@@ -164,14 +166,14 @@ Given that it is an externally linked library with a shared public deployment, t
 
 Art Blocks has developed a shared Randomizer contract that is used to generate pseudo-random numbers for all Art Blocks Engine V3 tokens. The Randomizer contract is designed to handle all globally approved shared minters, including minters that may assign token hashes directly such as the Polyptych minter.
 
+Note that this is an area of active development, and legacy randomizer contracts will continue to be used by many contracts as they migrate to the shared randomizer and shared minter suite. Previous versions of the Randomizer contract are recorded on each V3 core contract itself, able to be queried via the `getHistoricalRandomizerAt()` function.
+
 The most recent version of the Shared Randomizer contract is deployed at the following addresses:
 
 - Goerli: TBD
 - Mainnet: TBD
 - Arbitrum Goerli: TBD
 - Arbitrum: TBD
-
-> Note: Previous versions of the Randomizer contract are recorded on each V3 core contract itself, able to be queried via the `getHistoricalRandomizerAt()` function.
 
 ## Contract Source Code Verification
 
