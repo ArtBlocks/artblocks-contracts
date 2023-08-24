@@ -402,10 +402,10 @@ contract MinterDAExpHolderV5 is
     function setAuctionDetails(
         uint256 _projectId,
         address _coreContract,
-        uint64 _auctionTimestampStart,
-        uint64 _priceDecayHalfLifeSeconds,
-        uint128 _startPrice,
-        uint128 _basePrice
+        uint40 _auctionTimestampStart,
+        uint40 _priceDecayHalfLifeSeconds,
+        uint88 _startPrice,
+        uint88 _basePrice
     ) external {
         AuthLib.onlyArtist({
             _projectId: _projectId,
@@ -610,10 +610,10 @@ contract MinterDAExpHolderV5 is
         external
         view
         returns (
-            uint64 timestampStart,
-            uint64 priceDecayHalfLifeSeconds,
-            uint128 startPrice,
-            uint128 basePrice
+            uint40 timestampStart,
+            uint40 priceDecayHalfLifeSeconds,
+            uint88 startPrice,
+            uint88 basePrice
         )
     {
         DAExpLib.DAProjectConfig
