@@ -46,6 +46,7 @@ contract DependencyRegistryV0 is
     IAdminACLV0 public adminACLContract;
 
     struct Dependency {
+        bytes32 licenseType;
         string preferredCDN;
         // mapping from additional CDN index to CDN URLr
         mapping(uint256 => string) additionalCDNs;
@@ -64,6 +65,8 @@ contract DependencyRegistryV0 is
     EnumerableSet.Bytes32Set private _dependencyTypes;
     // mapping from dependencyTypes to Dependency, which stores the properties of each dependency
     mapping(bytes32 => Dependency) dependencyDetails;
+    // source code license types, MIT, GPL, etc.
+    EnumerableSet.Bytes32Set private _licenseTypes;
 
     // set of supported core ArtBlocks contracts
     EnumerableSet.AddressSet private _supportedCoreContracts;
@@ -106,6 +109,15 @@ contract DependencyRegistryV0 is
         require(_index < _length, "Index out of range");
     }
 
+    function _onlyExistingLicenseType(
+        bytes32 _licenseType
+    ) internal view {
+        require(
+            _licenseTypes.contains(_licenseType),
+            "License type does not exist"
+        );
+    }
+
     /**
      * @notice Initializes contract.
      * @param _adminACLContract Address of admin access control contract, to be
@@ -118,18 +130,33 @@ contract DependencyRegistryV0 is
     }
 
     /**
+     * @notice Adds a new license type that can be used by dependencies.
+     */
+    function addLicenseType(bytes32 _licenseType) external {
+        _onlyAdminACL(this.addLicenseType.selector);
+        require(
+            _licenseTypes.add(_licenseType),
+            "License type already exists"
+        );
+       emit LicenseTypeAdded(_licenseType);
+    }
+
+    /**
      * @notice Adds a new dependency.
      * @param _dependencyType Name of dependency type (i.e. "type@version") used to identify dependency.
+     * @param _licenseType License type for dependency, must be a registered license type.
      * @param _preferredCDN Preferred CDN for dependency.
      * @param _preferredRepository Preferred repository for dependency.
      */
     function addDependency(
         bytes32 _dependencyType,
+        bytes32 _licenseType,
         string memory _preferredCDN,
         string memory _preferredRepository,
         string memory _referenceWebsite
     ) external {
         _onlyAdminACL(this.addDependency.selector);
+        _onlyExistingLicenseType(_licenseType);
         require(
             _dependencyType.containsExactCharacterQty(
                 AT_CHARACTER_CODE,
@@ -144,12 +171,14 @@ contract DependencyRegistryV0 is
         );
 
         Dependency storage dependency = dependencyDetails[_dependencyType];
+        dependency.licenseType = _licenseType;
         dependency.preferredCDN = _preferredCDN;
         dependency.preferredRepository = _preferredRepository;
         dependency.referenceWebsite = _referenceWebsite;
 
         emit DependencyAdded(
             _dependencyType,
+            _licenseType,
             _preferredCDN,
             _preferredRepository,
             _referenceWebsite
@@ -637,10 +666,48 @@ contract DependencyRegistryV0 is
     }
 
     /**
+     * @notice Returns number of registered license types
+     * @return Number of registered license types.
+     * @dev This is only intended to be called outside of block
+     * execution where there is no gas limit.
+     */
+    function getLicenseTypes() external view returns (string[] memory) {
+        string[] memory licenseTypes = new string[](
+            _licenseTypes.length()
+        );
+        uint256 numLicenseTypes = _licenseTypes.length();
+
+        for (uint256 i = 0; i < numLicenseTypes; i++) {
+            licenseTypes[i] = _licenseTypes.at(i).toString();
+        }
+        return licenseTypes;
+    }
+
+    /**
+     * @notice Returns number of registered license types
+     * @return Number of registered license types.
+     */
+    function getLicenseTypeCount() external view returns (uint256) {
+        return _licenseTypes.length();
+    }
+
+    /**
+     * @notice Returns registered license type at index `_index`.
+     * @return Registered license type at `_index`, relative to the overall length of the license type set.
+     */
+    function getLicenseType(
+        uint256 _index
+    ) external view returns (string memory) {
+        _onlyInRangeIndex({_index: _index, _length: _licenseTypes.length()});
+        return _licenseTypes.at(_index).toString();
+    }
+
+    /**
      * @notice Returns details for a given depedency type `_dependencyType`.
      * @param _dependencyType Name of dependency type (i.e. "type@version") used to identify dependency.
      * @return typeAndVersion String representation of `_dependencyType`.
      *                        (e.g. "p5js(atSymbol)1.0.0")
+     * @return licenseType License type for dependency
      * @return preferredCDN Preferred CDN URL for dependency
      * @return additionalCDNCount Count of additional CDN URLs for dependency
      * @return preferredRepository Preferred repository URL for dependency
@@ -656,6 +723,7 @@ contract DependencyRegistryV0 is
         view
         returns (
             string memory typeAndVersion,
+            string memory licenseType,
             string memory preferredCDN,
             uint24 additionalCDNCount,
             string memory preferredRepository,
@@ -669,6 +737,7 @@ contract DependencyRegistryV0 is
 
         return (
             _dependencyType.toString(),
+            dependency.licenseType.toString(),
             dependency.preferredCDN,
             dependency.additionalCDNCount,
             dependency.preferredRepository,
