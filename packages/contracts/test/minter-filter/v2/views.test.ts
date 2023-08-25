@@ -530,6 +530,64 @@ runForEach.forEach((params) => {
       });
     });
 
+    describe("getAllContractApprovedMinters", async function () {
+      it("returns empty array when no minter approved for contract", async function () {
+        const config = await loadFixture(_beforeEach);
+        let result = await config.minterFilter.getAllContractApprovedMinters(
+          config.genArt721Core.address
+        );
+        expect(result).to.be.empty;
+      });
+
+      it("returns expected when minter is approved for contract", async function () {
+        const config = await loadFixture(_beforeEach);
+        // approve a single minter for contract
+        await config.minterFilter
+          .connect(config.accounts.deployer)
+          .approveMinterForContract(
+            config.genArt721Core.address,
+            config.minter.address
+          );
+        // verify result
+        let result = await config.minterFilter.getAllContractApprovedMinters(
+          config.genArt721Core.address
+        );
+        expect(result[0][0]).to.be.equal(config.minter.address);
+        expect(result[0][1]).to.be.equal(expectedMinterType);
+        expect(result.length).to.be.equal(1);
+      });
+
+      it("returns expected when >1 minter is approved for contract", async function () {
+        const config = await loadFixture(_beforeEach);
+        // deploy and add new dummy shared minter
+        const newMinter = await deployAndGet(config, expectedMinterType, [
+          config.minterFilter.address,
+        ]);
+        // approve two minters for contract
+        await config.minterFilter
+          .connect(config.accounts.deployer)
+          .approveMinterForContract(
+            config.genArt721Core.address,
+            config.minter.address
+          );
+        await config.minterFilter
+          .connect(config.accounts.deployer)
+          .approveMinterForContract(
+            config.genArt721Core.address,
+            newMinter.address
+          );
+        // expect both minters to be approved
+        let result = await config.minterFilter.getAllContractApprovedMinters(
+          config.genArt721Core.address
+        );
+        expect(result[0][0]).to.be.equal(config.minter.address);
+        expect(result[0][1]).to.be.equal(expectedMinterType);
+        expect(result[1][0]).to.be.equal(newMinter.address);
+        expect(result[1][1]).to.be.equal(expectedMinterType);
+        expect(result.length).to.be.equal(2);
+      });
+    });
+
     describe("owner", async function () {
       it("returns expected value", async function () {
         const config = await loadFixture(_beforeEach);
