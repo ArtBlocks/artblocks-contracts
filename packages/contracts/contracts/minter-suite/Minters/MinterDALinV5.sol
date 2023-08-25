@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../../interfaces/v0.8.x/ISharedMinterSimplePurchase.sol";
+import "../../interfaces/v0.8.x/ISharedMinterSimplePurchaseV0.sol";
 import "../../interfaces/v0.8.x/ISharedMinterV0.sol";
 import "../../interfaces/v0.8.x/ISharedMinterDAV0.sol";
 import "../../interfaces/v0.8.x/ISharedMinterDALinV0.sol";
@@ -59,7 +59,7 @@ pragma solidity 0.8.19;
  */
 contract MinterDALinV5 is
     ReentrancyGuard,
-    ISharedMinterSimplePurchase,
+    ISharedMinterSimplePurchaseV0,
     ISharedMinterV0,
     ISharedMinterDAV0,
     ISharedMinterDALinV0
