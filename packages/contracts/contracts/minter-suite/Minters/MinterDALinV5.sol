@@ -181,10 +181,10 @@ contract MinterDALinV5 is
     function setAuctionDetails(
         uint256 _projectId,
         address _coreContract,
-        uint64 _auctionTimestampStart,
-        uint64 _auctionTimestampEnd,
-        uint128 _startPrice,
-        uint128 _basePrice
+        uint40 _auctionTimestampStart,
+        uint40 _auctionTimestampEnd,
+        uint88 _startPrice,
+        uint88 _basePrice
     ) external {
         AuthLib.onlyArtist({
             _projectId: _projectId,
@@ -339,10 +339,10 @@ contract MinterDALinV5 is
         external
         view
         returns (
-            uint64 timestampStart,
-            uint64 timestampEnd,
-            uint128 startPrice,
-            uint128 basePrice
+            uint40 timestampStart,
+            uint40 timestampEnd,
+            uint88 startPrice,
+            uint88 basePrice
         )
     {
         DALinLib.DAProjectConfig
