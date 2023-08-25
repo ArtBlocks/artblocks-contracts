@@ -62,6 +62,9 @@ const config = {
               config: {
                 ...basePluginConfig,
               },
+              presetConfig: {
+                fragmentMasking: false,
+              },
             },
           },
         },

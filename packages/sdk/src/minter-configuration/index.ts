@@ -1,5 +1,5 @@
 import request from "graphql-request";
-import ArtBlocksSDK from "../index";
+import ArtBlocksSDK, { ProjectConfigData } from "../index";
 import {
   ConfigurationForm,
   SubmissionStatus,
@@ -8,11 +8,9 @@ import {
   minterSelectionSchema,
 } from "../minters";
 import { getProjectMinterConfigurationQueryDocument } from "./graphql-operations";
-import { useFragment } from "../generated";
 import {
   GetProjectMinterConfigurationQuery,
   ProjectMinterConfigurationDetailsFragment,
-  ProjectMinterConfigurationDetailsFragmentDoc,
 } from "../generated/graphql";
 import {
   ConfigurationSchema,
@@ -34,7 +32,10 @@ import get from "lodash/get";
 
 type GenerateProjectMinterConfigurationFormsArgs = {
   projectId: string;
-  onConfigurationChange: (configuration: ConfigurationForm[]) => void;
+  onConfigurationChange: (args: {
+    data: ProjectConfigData;
+    forms: ConfigurationForm[];
+  }) => void;
   sdk: ArtBlocksSDK;
 };
 
@@ -58,7 +59,10 @@ type ProjectWithMinterFilter = NonNullable<
 
 export async function generateProjectMinterConfigurationForms(
   args: GenerateProjectMinterConfigurationFormsArgs
-): Promise<ConfigurationForm[]> {
+): Promise<{
+  data: GetProjectMinterConfigurationQuery["projects_metadata_by_pk"];
+  forms: ConfigurationForm[];
+}> {
   const { projectId, sdk } = args;
   const [coreContractAddress, projectIndexString] = projectId.split("-");
   const projectIndex = Number(projectIndexString);
@@ -104,13 +108,10 @@ export async function generateProjectMinterConfigurationForms(
   let configurationForms = [minterSelectionForm];
 
   // If no minter has been selected, return only the minter selection form
-  const minterConfiguration = useFragment(
-    ProjectMinterConfigurationDetailsFragmentDoc,
-    res.projects_metadata_by_pk?.minter_configuration
-  );
+  const minterConfiguration = res.projects_metadata_by_pk?.minter_configuration;
 
   if (!minterConfiguration || !minterConfiguration.minter) {
-    return configurationForms;
+    return { data: project, forms: configurationForms };
   }
 
   const minterConfigurationSchema: ConfigurationSchema =
@@ -118,7 +119,7 @@ export async function generateProjectMinterConfigurationForms(
 
   if (!minterConfigurationSchema) {
     console.warn("No minter configuration schema found for project", projectId);
-    return configurationForms;
+    return { data: project, forms: configurationForms };
   }
 
   configurationForms = configurationForms.concat(
@@ -132,7 +133,7 @@ export async function generateProjectMinterConfigurationForms(
     })
   );
 
-  return configurationForms;
+  return { data: project, forms: configurationForms };
 }
 
 // Form to choose a minter
@@ -144,10 +145,7 @@ function generateSelectMinterForm({
   coreContractAddress,
   onConfigurationChange,
 }: GenerateProjectMinterConfigurationFormsContext): ConfigurationForm {
-  const minterConfiguration = useFragment(
-    ProjectMinterConfigurationDetailsFragmentDoc,
-    project.minter_configuration
-  );
+  const minterConfiguration = project.minter_configuration;
 
   // Map available minters to oneOf entries on the minter.address
   // property of the minter selection form schema

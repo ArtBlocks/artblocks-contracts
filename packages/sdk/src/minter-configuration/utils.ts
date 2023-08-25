@@ -63,15 +63,6 @@ export async function pollForProjectMinterConfigurationUpdates(
 
           const propertyUpdatedAtTimestamp = propertyUpdatedAt.getTime();
 
-          console.log({
-            propertyUpdatedAtTimestamp,
-            transactionConfirmedAtTimestamp,
-            propertyUpdatedAt,
-            transactionConfirmedAt,
-            difference:
-              propertyUpdatedAtTimestamp - transactionConfirmedAtTimestamp,
-          });
-
           return propertyUpdatedAtTimestamp > transactionConfirmedAtTimestamp;
         });
 

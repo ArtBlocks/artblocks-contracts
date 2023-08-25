@@ -3,11 +3,13 @@ import { Abi, AbiFunction, AbiParameter } from "abitype";
 import {
   z,
   ZodArray,
+  ZodBigInt,
   ZodEffects,
   ZodNumber,
   ZodObject,
   ZodOptional,
   ZodString,
+  ZodUnion,
 } from "zod";
 import { BaseFormFieldSchema, FormFieldSchema } from "./json-schema";
 
@@ -63,11 +65,17 @@ export async function waitForConfirmations(
 
 export type SupportedZodSchema =
   | ZodNumber
+  | ZodBigInt
   | ZodString
   | ZodObject<any>
   | ZodArray<any>
   | ZodEffects<ZodNumber, number, number>
   | ZodEffects<ZodString, string, string>
+  | ZodEffects<
+      ZodUnion<[ZodString, ZodNumber]>,
+      string | number,
+      string | number
+    >
   | ZodOptional<SupportedZodSchema>;
 
 export type ZodValidationSchema = ZodObject<{
@@ -134,17 +142,52 @@ export function formFieldSchemaToZod(
     switch (prop.type) {
       case "number":
       case "integer":
-        zodProp = z.coerce.number();
         if (prop.type === "integer") {
-          zodProp = zodProp.int();
+          // Depending on the input value
+          zodProp = z
+            .union([z.string(), z.number()])
+            .superRefine((val, ctx) => {
+              try {
+                const transformedVal =
+                  typeof val === "string" ? BigInt(val) : val;
+
+                if (prop.minimum && transformedVal < prop.minimum) {
+                  ctx.addIssue({
+                    code: z.ZodIssueCode.too_small,
+                    minimum: prop.minimum,
+                    type: "number",
+                    inclusive: true,
+                    message: "Value is too small",
+                  });
+                }
+
+                if (prop.maximum && transformedVal > prop.maximum) {
+                  ctx.addIssue({
+                    code: z.ZodIssueCode.too_big,
+                    maximum: prop.maximum,
+                    type: "number",
+                    inclusive: true,
+                    message: "Value is too big",
+                  });
+                }
+              } catch (e) {
+                ctx.addIssue({
+                  code: z.ZodIssueCode.invalid_type,
+                  expected: "number",
+                  received: typeof val,
+                });
+              }
+            });
+        } else {
+          zodProp = z.coerce.number();
+          if (prop.minimum) {
+            zodProp = zodProp.min(prop.minimum);
+          }
+          if (prop.maximum) {
+            zodProp = zodProp.max(prop.maximum);
+          }
         }
 
-        if (prop.minimum) {
-          zodProp = zodProp.min(prop.minimum);
-        }
-        if (prop.maximum) {
-          zodProp = zodProp.max(prop.maximum);
-        }
         break;
       case "string":
         zodProp = z.string();
