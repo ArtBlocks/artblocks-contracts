@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
-import "../../interfaces/v0.8.x/ISharedMinterSimplePurchase.sol";
+import "../../interfaces/v0.8.x/ISharedMinterSimplePurchaseV0.sol";
 import "../../interfaces/v0.8.x/ISharedMinterV0.sol";
 import "../../interfaces/v0.8.x/ISharedMinterDAV0.sol";
 import "../../interfaces/v0.8.x/ISharedMinterDALinV0.sol";
@@ -13,6 +12,7 @@ import "../../libs/v0.8.x/minter-libs/MaxInvocationsLib.sol";
 import "../../libs/v0.8.x/minter-libs/DALinLib.sol";
 import "../../libs/v0.8.x/AuthLib.sol";
 
+import "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
 
 pragma solidity 0.8.19;
@@ -59,11 +59,12 @@ pragma solidity 0.8.19;
  */
 contract MinterDALinV5 is
     ReentrancyGuard,
-    ISharedMinterSimplePurchase,
+    ISharedMinterSimplePurchaseV0,
     ISharedMinterV0,
     ISharedMinterDAV0,
     ISharedMinterDALinV0
 {
+    using SafeCast for uint256;
     /// Minter filter address this minter interacts with
     address public immutable minterFilterAddress;
 
@@ -182,10 +183,10 @@ contract MinterDALinV5 is
     function setAuctionDetails(
         uint256 _projectId,
         address _coreContract,
-        uint64 _auctionTimestampStart,
-        uint64 _auctionTimestampEnd,
-        uint128 _startPrice,
-        uint128 _basePrice
+        uint40 _auctionTimestampStart,
+        uint40 _auctionTimestampEnd,
+        uint256 _startPrice,
+        uint256 _basePrice
     ) external {
         AuthLib.onlyArtist({
             _projectId: _projectId,
@@ -216,8 +217,8 @@ contract MinterDALinV5 is
             _DAProjectConfig: _auctionProjectConfig,
             _auctionTimestampStart: _auctionTimestampStart,
             _auctionTimestampEnd: _auctionTimestampEnd,
-            _startPrice: _startPrice,
-            _basePrice: _basePrice,
+            _startPrice: _startPrice.toUint88(),
+            _basePrice: _basePrice.toUint88(),
             _allowReconfigureAfterStart: maxHasBeenInvoked
         });
 
@@ -340,10 +341,10 @@ contract MinterDALinV5 is
         external
         view
         returns (
-            uint64 timestampStart,
-            uint64 timestampEnd,
-            uint128 startPrice,
-            uint128 basePrice
+            uint40 timestampStart,
+            uint40 timestampEnd,
+            uint256 startPrice,
+            uint256 basePrice
         )
     {
         DALinLib.DAProjectConfig

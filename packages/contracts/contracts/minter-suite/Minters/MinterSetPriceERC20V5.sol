@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
-import "../../interfaces/v0.8.x/ISharedMinterSimplePurchase.sol";
+import "../../interfaces/v0.8.x/ISharedMinterSimplePurchaseV0.sol";
 import "../../interfaces/v0.8.x/ISharedMinterV0.sol";
 import "../../interfaces/v0.8.x/IMinterFilterV1.sol";
 
@@ -41,7 +40,7 @@ pragma solidity 0.8.19;
  */
 contract MinterSetPriceERC20V5 is
     ReentrancyGuard,
-    ISharedMinterSimplePurchase,
+    ISharedMinterSimplePurchaseV0,
     ISharedMinterV0
 {
     /// Minter filter address this minter interacts with

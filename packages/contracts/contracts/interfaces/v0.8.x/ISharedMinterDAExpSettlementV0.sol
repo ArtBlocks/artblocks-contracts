@@ -11,7 +11,7 @@ interface ISharedMinterDAExpSettlementV0 is ISharedMinterDAExpV0 {
         uint256 indexed _projectId,
         address indexed _coreContract,
         uint24 _numPurchased,
-        uint232 _netPosted
+        uint256 _netPosted
     );
 
     /// returns latest purchase price for project `_projectId`, or 0 if no

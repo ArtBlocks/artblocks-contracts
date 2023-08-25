@@ -10,7 +10,7 @@ pragma solidity ^0.8.0;
  * purchase a token are the project id and the core contract address, and an
  * optional recipient address.
  */
-interface ISharedMinterSimplePurchase {
+interface ISharedMinterSimplePurchaseV0 {
     // Triggers a purchase of a token from the desired project, to the
     // TX-sending address.
     function purchase(
