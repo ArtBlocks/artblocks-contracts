@@ -138,6 +138,10 @@ contract DependencyRegistryV0 is
             _licenseTypes.add(_licenseType),
             "License type already exists"
         );
+        require(
+            _licenseType != bytes32(""),
+            "License type cannot be empty string"
+        );
        emit LicenseTypeAdded(_licenseType);
     }
 
