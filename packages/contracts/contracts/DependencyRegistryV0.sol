@@ -60,9 +60,12 @@ contract DependencyRegistryV0 is
         uint24 scriptCount;
     }
 
+    // dependency types, i.e. "type@version"
     EnumerableSet.Bytes32Set private _dependencyTypes;
+    // mapping from dependencyTypes to Dependency, which stores the properties of each dependency
     mapping(bytes32 => Dependency) dependencyDetails;
 
+    // set of supported core ArtBlocks contracts
     EnumerableSet.AddressSet private _supportedCoreContracts;
     mapping(address => mapping(uint256 => bytes32)) projectDependencyTypeOverrides;
 
