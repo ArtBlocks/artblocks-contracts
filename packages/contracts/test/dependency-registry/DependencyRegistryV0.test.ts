@@ -199,6 +199,35 @@ describe(`DependencyRegistryV0`, async function () {
         const registeredLicenseCount =
           await config.dependencyRegistry.getLicenseTypeCount();
         expect(registeredLicenseCount).to.eq(2);
+
+        const licenseTypes = await config.dependencyRegistry.getLicenseTypes();
+        expect(licenseTypes).to.deep.eq(["MIT", "GPL4"]);
+
+        const storedLicenseType =
+          await config.dependencyRegistry.getLicenseType(1);
+        expect(storedLicenseType).to.eq("GPL4");
+      });
+
+      it("does not allow adding an existing license type", async function () {
+        const config = await loadFixture(_beforeEach);
+        // admin can update
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .addLicenseType(licenseTypeBytes),
+          "License type already exists"
+        );
+      });
+
+      it("does not allow adding an empty string as a license type", async function () {
+        const config = await loadFixture(_beforeEach);
+        // admin can update
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .addLicenseType(ethers.utils.formatBytes32String("")),
+          "License type cannot be empty string"
+        );
       });
     });
 
@@ -246,6 +275,23 @@ describe(`DependencyRegistryV0`, async function () {
               referenceWebsite
             ),
           "must contain exactly one @"
+        );
+      });
+
+      it("does not allow a dependency to be added without a valid license type", async function () {
+        const config = await loadFixture(_beforeEach);
+        // deployer cannot update
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .addDependency(
+              dependencyTypeBytes,
+              ethers.utils.formatBytes32String("nonExistentLicenseType"),
+              preferredCDN,
+              preferredRepository,
+              referenceWebsite
+            ),
+          "License type does not exist"
         );
       });
 
