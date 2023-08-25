@@ -14,6 +14,7 @@ import "../../libs/v0.8.x/minter-libs/TokenHolderLib.sol";
 import "../../libs/v0.8.x/minter-libs/DALinLib.sol";
 import "../../libs/v0.8.x/AuthLib.sol";
 
+import "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin-4.5/contracts/utils/structs/EnumerableSet.sol";
 
@@ -87,6 +88,7 @@ contract MinterDALinHolderV5 is
     ISharedMinterDALinV0,
     ISharedMinterHolderV0
 {
+    using SafeCast for uint256;
     // add Enumerable Set methods
     using EnumerableSet for EnumerableSet.AddressSet;
 
@@ -399,8 +401,8 @@ contract MinterDALinHolderV5 is
         address _coreContract,
         uint40 _auctionTimestampStart,
         uint40 _auctionTimestampEnd,
-        uint88 _startPrice,
-        uint88 _basePrice
+        uint256 _startPrice,
+        uint256 _basePrice
     ) external {
         AuthLib.onlyArtist({
             _projectId: _projectId,
@@ -431,8 +433,8 @@ contract MinterDALinHolderV5 is
             _DAProjectConfig: _auctionProjectConfig,
             _auctionTimestampStart: _auctionTimestampStart,
             _auctionTimestampEnd: _auctionTimestampEnd,
-            _startPrice: _startPrice,
-            _basePrice: _basePrice,
+            _startPrice: _startPrice.toUint88(),
+            _basePrice: _basePrice.toUint88(),
             _allowReconfigureAfterStart: maxHasBeenInvoked
         });
 
@@ -599,8 +601,8 @@ contract MinterDALinHolderV5 is
         returns (
             uint40 timestampStart,
             uint40 timestampEnd,
-            uint88 startPrice,
-            uint88 basePrice
+            uint256 startPrice,
+            uint256 basePrice
         )
     {
         DALinLib.DAProjectConfig

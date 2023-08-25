@@ -9,8 +9,8 @@ interface ISharedMinterDALinV0 {
         address indexed _coreContract,
         uint40 _auctionTimestampStart,
         uint40 _auctionTimestampEnd,
-        uint88 _startPrice,
-        uint88 _basePrice
+        uint256 _startPrice,
+        uint256 _basePrice
     );
 
     /// Minimum allowed auction length updated
