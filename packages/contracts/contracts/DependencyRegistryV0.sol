@@ -131,18 +131,18 @@ contract DependencyRegistryV0 is
     ) external {
         _onlyAdminACL(this.addDependency.selector);
         require(
-            !_dependencyTypes.contains(_dependencyType),
-            "Dependency type already exists"
-        );
-        require(
             _dependencyType.containsExactCharacterQty(
                 AT_CHARACTER_CODE,
                 uint8(1)
             ),
             "must contain exactly one @"
         );
+        require(
+            // @dev the add function returns false if set already contains value
+            _dependencyTypes.add(_dependencyType),
+            "Dependency type already exists"
+        );
 
-        _dependencyTypes.add(_dependencyType);
         Dependency storage dependency = dependencyDetails[_dependencyType];
         dependency.preferredCDN = _preferredCDN;
         dependency.preferredRepository = _preferredRepository;
