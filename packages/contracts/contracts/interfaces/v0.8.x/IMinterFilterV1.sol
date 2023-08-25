@@ -172,6 +172,10 @@ interface IMinterFilterV1 {
         view
         returns (MinterWithType[] memory mintersWithTypes);
 
+    function getAllContractApprovedMinters(
+        address _coreContract
+    ) external view returns (MinterWithType[] memory mintersWithTypes);
+
     /**
      * Owner of contract.
      * @dev This returns the address of the Admin ACL contract.
