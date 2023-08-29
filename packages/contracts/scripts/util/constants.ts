@@ -46,7 +46,7 @@ export function getActiveSharedMinterFilter(
 // format is [network]: { [environment]: [minter filter address] }
 const ACTIVE_SHARED_MINTER_FILTERS = {
   goerli: {
-    dev: "0xb02d7B810AA2a0697A430C9389062b9F486D2CC5",
+    dev: "0x6f333Fd0323B1dcfe67100690d0c0c16D66e0208",
     staging: "0xTBD",
   },
   mainnet: {
