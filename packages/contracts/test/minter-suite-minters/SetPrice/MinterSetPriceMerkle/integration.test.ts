@@ -238,22 +238,6 @@ runForEach.forEach((params) => {
     }
 
     describe("purchase", async function () {
-      it("requires merkle proof to purchase", async function () {
-        const config = await loadFixture(_beforeEach);
-        await expectRevert(
-          config.minter
-            .connect(config.accounts.user)
-            ["purchase(uint256,address)"](
-              config.projectZero,
-              config.genArt721Core.address,
-              {
-                value: config.higherPricePerTokenInWei,
-              }
-            ),
-          "Must provide Merkle proof"
-        );
-      });
-
       it("does not allow purchases even if local max invocations value is returning a false negative", async function () {
         const config = await loadFixture(_beforeEach);
         // set local max invocations to 1
@@ -674,23 +658,6 @@ runForEach.forEach((params) => {
     });
 
     describe("purchaseTo", async function () {
-      it("requires merkle proof to purchase", async function () {
-        const config = await loadFixture(_beforeEach);
-        await expectRevert(
-          config.minter
-            .connect(config.accounts.user)
-            ["purchaseTo(address,uint256,address)"](
-              config.userVault.address,
-              config.projectZero,
-              config.genArt721Core.address,
-              {
-                value: config.higherPricePerTokenInWei,
-              }
-            ),
-          "Must provide Merkle proof"
-        );
-      });
-
       it("does not allow purchase prior to configuring price", async function () {
         const config = await loadFixture(_beforeEach);
 

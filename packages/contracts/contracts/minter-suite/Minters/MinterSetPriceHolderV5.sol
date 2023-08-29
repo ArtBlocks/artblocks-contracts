@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
 import "../../interfaces/v0.8.x/IDelegationRegistry.sol";
 import "../../interfaces/v0.8.x/ISharedMinterV0.sol";
 import "../../interfaces/v0.8.x/ISharedMinterHolderV0.sol";
@@ -11,6 +10,7 @@ import "../../libs/v0.8.x/AuthLib.sol";
 import "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
 import "../../libs/v0.8.x/minter-libs/MaxInvocationsLib.sol";
 import "../../libs/v0.8.x/minter-libs/TokenHolderLib.sol";
+import "../../libs/v0.8.x/minter-libs/SetPriceLib.sol";
 
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin-4.5/contracts/utils/structs/EnumerableSet.sol";
@@ -86,9 +86,17 @@ contract MinterSetPriceHolderV5 is
     /// minter version for this minter
     string public constant minterVersion = "v5.0.0";
 
-    /// contractAddress => projectId => base project config
-    mapping(address => mapping(uint256 => ProjectConfig))
-        private _projectConfigMapping;
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // STATE VARIABLES FOR SetPriceLib begin here
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /// contractAddress => projectId => set price project config
+    mapping(address => mapping(uint256 => SetPriceLib.SetPriceProjectConfig))
+        private _setPriceProjectConfigMapping;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // STATE VARIABLES FOR SetPriceLib end here
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR SplitFundsLib begin here
@@ -208,11 +216,14 @@ contract MinterSetPriceHolderV5 is
             _coreContract: _coreContract,
             _sender: msg.sender
         });
-        ProjectConfig storage _projectConfig = _projectConfigMapping[
-            _coreContract
-        ][_projectId];
-        _projectConfig.pricePerTokenInWei = _pricePerTokenInWei;
-        _projectConfig.priceIsConfigured = true;
+        SetPriceLib.SetPriceProjectConfig
+            storage _setPriceProjectConfig = _setPriceProjectConfigMapping[
+                _coreContract
+            ][_projectId];
+        SetPriceLib.updatePricePerTokenInWei(
+            _pricePerTokenInWei,
+            _setPriceProjectConfig
+        );
         emit PricePerTokenInWeiUpdated(
             _projectId,
             _coreContract,
@@ -266,11 +277,14 @@ contract MinterSetPriceHolderV5 is
             _coreContract: _coreContract,
             _sender: msg.sender
         });
-        TokenHolderLib.allowHoldersOfProjects(
-            _allowedProjectHoldersMapping[_coreContract][_projectId],
-            _ownedNFTAddresses,
-            _ownedNFTProjectIds
-        );
+        TokenHolderLib.allowHoldersOfProjects({
+            holderProjectConfig: _allowedProjectHoldersMapping[_coreContract][
+                _projectId
+            ],
+            _ownedNFTAddresses: _ownedNFTAddresses,
+            _ownedNFTProjectIds: _ownedNFTProjectIds
+        });
+
         // emit approve event
         emit AllowedHoldersOfProjects(
             _projectId,
@@ -308,11 +322,14 @@ contract MinterSetPriceHolderV5 is
             _sender: msg.sender
         });
         // require same length arrays
-        TokenHolderLib.removeHoldersOfProjects(
-            _allowedProjectHoldersMapping[_coreContract][_projectId],
-            _ownedNFTAddresses,
-            _ownedNFTProjectIds
-        );
+        TokenHolderLib.removeHoldersOfProjects({
+            holderProjectConfig: _allowedProjectHoldersMapping[_coreContract][
+                _projectId
+            ],
+            _ownedNFTAddresses: _ownedNFTAddresses,
+            _ownedNFTProjectIds: _ownedNFTProjectIds
+        });
+
         // emit removed event
         emit RemovedHoldersOfProjects(
             _projectId,
@@ -366,13 +383,16 @@ contract MinterSetPriceHolderV5 is
             _coreContract: _coreContract,
             _sender: msg.sender
         });
-        TokenHolderLib.allowAndRemoveHoldersOfProjects(
-            _allowedProjectHoldersMapping[_coreContract][_projectId],
-            _ownedNFTAddressesAdd,
-            _ownedNFTProjectIdsAdd,
-            _ownedNFTAddressesRemove,
-            _ownedNFTProjectIdsRemove
-        );
+        TokenHolderLib.allowAndRemoveHoldersOfProjects({
+            holderProjectConfig: _allowedProjectHoldersMapping[_coreContract][
+                _projectId
+            ],
+            _ownedNFTAddressesAdd: _ownedNFTAddressesAdd,
+            _ownedNFTProjectIdsAdd: _ownedNFTProjectIdsAdd,
+            _ownedNFTAddressesRemove: _ownedNFTAddressesRemove,
+            _ownedNFTProjectIdsRemove: _ownedNFTProjectIdsRemove
+        });
+
         // emit events
         emit AllowedHoldersOfProjects(
             _projectId,
@@ -386,24 +406,6 @@ contract MinterSetPriceHolderV5 is
             _ownedNFTAddressesRemove,
             _ownedNFTProjectIdsRemove
         );
-    }
-
-    /**
-     * @notice Inactive function - requires NFT ownership to purchase.
-     */
-    function purchase(uint256, address) external payable returns (uint256) {
-        revert("Purchase requires NFT ownership");
-    }
-
-    /**
-     * @notice Inactive function - requires NFT ownership to purchase.
-     */
-    function purchaseTo(
-        address,
-        uint256,
-        address
-    ) external payable returns (uint256) {
-        revert("Purchase requires NFT ownership");
     }
 
     /**
@@ -483,16 +485,17 @@ contract MinterSetPriceHolderV5 is
     }
 
     /**
-     * @notice Gets the base project configuration.
+     * @notice Gets the set price project configuration.
      * @param _projectId The ID of the project whose data needs to be fetched.
-     * @param _coreContract The address of the contract where the data is stored.
-     * @return ProjectConfig instance with the project configuration data.
+     * @param _coreContract The address of the core contract.
+     * @return SetPriceProjectConfig struct with the fixed price project
+     * configuration data.
      */
-    function projectConfig(
+    function setPriceProjectConfig(
         uint256 _projectId,
         address _coreContract
-    ) external view returns (ProjectConfig memory) {
-        return _projectConfigMapping[_coreContract][_projectId];
+    ) external view returns (SetPriceLib.SetPriceProjectConfig memory) {
+        return _setPriceProjectConfigMapping[_coreContract][_projectId];
     }
 
     /**
@@ -533,11 +536,13 @@ contract MinterSetPriceHolderV5 is
         uint256 _ownedNFTTokenId
     ) external view returns (bool) {
         return
-            TokenHolderLib.isAllowlistedNFT(
-                _allowedProjectHoldersMapping[_coreContract][_projectId],
-                _ownedNFTAddress,
-                _ownedNFTTokenId
-            );
+            TokenHolderLib.isAllowlistedNFT({
+                holderProjectConfig: _allowedProjectHoldersMapping[
+                    _coreContract
+                ][_projectId],
+                _ownedNFTAddress: _ownedNFTAddress,
+                _ownedNFTTokenId: _ownedNFTTokenId
+            });
     }
 
     /**
@@ -646,11 +651,12 @@ contract MinterSetPriceHolderV5 is
             address currencyAddress
         )
     {
-        ProjectConfig storage _projectConfig = _projectConfigMapping[
-            _coreContract
-        ][_projectId];
-        isConfigured = _projectConfig.priceIsConfigured;
-        tokenPriceInWei = _projectConfig.pricePerTokenInWei;
+        SetPriceLib.SetPriceProjectConfig
+            storage _setPriceProjectConfig = _setPriceProjectConfigMapping[
+                _coreContract
+            ][_projectId];
+        isConfigured = _setPriceProjectConfig.priceIsConfigured;
+        tokenPriceInWei = _setPriceProjectConfig.pricePerTokenInWei;
         currencySymbol = "ETH";
         currencyAddress = address(0);
     }
@@ -708,9 +714,10 @@ contract MinterSetPriceHolderV5 is
         address _vault
     ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
-        ProjectConfig storage _projectConfig = _projectConfigMapping[
-            _coreContract
-        ][_projectId];
+        SetPriceLib.SetPriceProjectConfig
+            storage _setPriceProjectConfig = _setPriceProjectConfigMapping[
+                _coreContract
+            ][_projectId];
         MaxInvocationsLib.MaxInvocationsProjectConfig
             storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
                 _coreContract
@@ -728,20 +735,25 @@ contract MinterSetPriceHolderV5 is
         );
 
         // require artist to have configured price of token on this minter
-        require(_projectConfig.priceIsConfigured, "Price not configured");
+        require(
+            _setPriceProjectConfig.priceIsConfigured,
+            "Price not configured"
+        );
 
         // load price of token into memory
-        uint256 pricePerTokenInWei = _projectConfig.pricePerTokenInWei;
+        uint256 pricePerTokenInWei = _setPriceProjectConfig.pricePerTokenInWei;
 
         require(msg.value >= pricePerTokenInWei, "Min value to mint req.");
 
         // require token used to claim to be in set of allowlisted NFTs
         require(
-            TokenHolderLib.isAllowlistedNFT(
-                _allowedProjectHoldersMapping[_coreContract][_projectId],
-                _ownedNFTAddress,
-                _ownedNFTTokenId
-            ),
+            TokenHolderLib.isAllowlistedNFT({
+                holderProjectConfig: _allowedProjectHoldersMapping[
+                    _coreContract
+                ][_projectId],
+                _ownedNFTAddress: _ownedNFTAddress,
+                _ownedNFTTokenId: _ownedNFTTokenId
+            }),
             "Only allowlisted NFTs"
         );
 

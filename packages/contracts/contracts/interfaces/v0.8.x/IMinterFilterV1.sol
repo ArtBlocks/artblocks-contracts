@@ -85,6 +85,13 @@ interface IMinterFilterV1 {
      */
     event CoreRegistryUpdated(address indexed coreRegistry);
 
+    // struct used to return minter info
+    // @dev this is not used for storage of data
+    struct MinterWithType {
+        address minterAddress;
+        string minterType;
+    }
+
     function setMinterForProject(
         uint256 _projectId,
         address _coreContract,
@@ -159,6 +166,15 @@ interface IMinterFilterV1 {
             address minterAddress,
             string memory minterType
         );
+
+    function getAllGloballyApprovedMinters()
+        external
+        view
+        returns (MinterWithType[] memory mintersWithTypes);
+
+    function getAllContractApprovedMinters(
+        address _coreContract
+    ) external view returns (MinterWithType[] memory mintersWithTypes);
 
     /**
      * Owner of contract.
