@@ -3,7 +3,6 @@
 
 pragma solidity 0.8.19;
 
-import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
 import "../../interfaces/v0.8.x/ISharedMinterV0.sol";
 import "../../interfaces/v0.8.x/ISharedMinterSEAV0.sol";
 import "../../interfaces/v0.8.x/IMinterFilterV1.sol";
@@ -509,29 +508,6 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         settleAuction(_settleTokenId, _coreContract);
         // attempt to bid on next token
         createBid(_bidTokenId, _coreContract);
-    }
-
-    /**
-     * @notice Inactive function - see `createBid` or
-     * `settleAuctionAndCreateBid`
-     */
-    function purchase(
-        uint256 /*_projectId*/,
-        address /*_coreContract*/
-    ) external payable returns (uint256 /*tokenId*/) {
-        revert("Inactive function");
-    }
-
-    /**
-     * @notice Inactive function - see `createBid` or
-     * `settleAuctionAndCreateBid`
-     */
-    function purchaseTo(
-        address /*_to*/,
-        uint256 /*_projectId*/,
-        address /*_coreContract*/
-    ) external payable returns (uint256 /*tokenId*/) {
-        revert("Inactive function");
     }
 
     /**
