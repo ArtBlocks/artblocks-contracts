@@ -17,7 +17,7 @@
     "jsdoc": "^4.0.2",
     "jsdoc-plugin-typescript": "^2.2.1",
     "lint-staged": "^14.0.1",
-    "prettier": "^3.0.2",
+    "prettier": "^3.0.3",
     "tsconfig": "*",
     "tsup": "^7.2.0",
     "typechain": "^8.3.1",
