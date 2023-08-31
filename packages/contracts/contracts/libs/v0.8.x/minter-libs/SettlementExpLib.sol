@@ -170,6 +170,8 @@ library SettlementExpLib {
      * @param _isEngine bool indicating whether the core contract is an engine
      * @return maxInvocationsUpdated whether or not the minter's local max
      * invocations state was updated during this function call.
+     * @return settledPriceUpdated whether or not the project's settled price
+     * was updated during this function call.
      */
     function distributeArtistAndAdminRevenues(
         uint256 _projectId,
@@ -179,7 +181,7 @@ library SettlementExpLib {
             storage _maxInvocationsProjectConfig,
         DAExpLib.DAProjectConfig storage _DAProjectConfig,
         bool _isEngine
-    ) internal returns (bool maxInvocationsUpdated) {
+    ) internal returns (bool maxInvocationsUpdated, bool settledPriceUpdated) {
         // require revenues to not have already been collected
         require(
             !_settlementAuctionProjectConfig.auctionRevenuesCollected,
@@ -229,6 +231,7 @@ library SettlementExpLib {
             // the base price is used for all future settlement calculations
             // EFFECTS
             _settlementAuctionProjectConfig.latestPurchasePrice = basePrice;
+            settledPriceUpdated = true;
         }
         _settlementAuctionProjectConfig.auctionRevenuesCollected = true;
         // calculate the artist and admin revenues
@@ -241,7 +244,7 @@ library SettlementExpLib {
             _coreContract: _coreContract,
             _isEngine: _isEngine
         });
-        // @dev maxInvocationsUpdated is returned
+        // @dev (maxInvocationsUpdated, settledPriceUpdated) is returned
     }
 
     /**

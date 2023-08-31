@@ -478,8 +478,10 @@ contract MinterDAExpSettlementV3 is
             _isEngineCaches[_coreContract]
         );
         // CHECKS-EFFECTS-INTERACTIONS
-        bool maxInvocationsUpdated = SettlementExpLib
-            .distributeArtistAndAdminRevenues({
+        (
+            bool maxInvocationsUpdated,
+            bool settledPriceUpdated
+        ) = SettlementExpLib.distributeArtistAndAdminRevenues({
                 _projectId: _projectId,
                 _coreContract: _coreContract,
                 _settlementAuctionProjectConfig: _settlementAuctionProjectConfig,
@@ -493,7 +495,17 @@ contract MinterDAExpSettlementV3 is
             SettlementExpLib.CONFIG_AUCTION_REVENUES_COLLECTED,
             true
         );
+        if (settledPriceUpdated) {
+            // notify indexing service of settled price update
+            emit ConfigValueSet(
+                _projectId,
+                _coreContract,
+                SettlementExpLib.CONFIG_CURRENT_SETTLED_PRICE,
+                uint256(_settlementAuctionProjectConfig.latestPurchasePrice)
+            );
+        }
         if (maxInvocationsUpdated) {
+            // notify indexing service of max invocations update
             emit ProjectMaxInvocationsLimitUpdated(
                 _projectId,
                 _coreContract,
