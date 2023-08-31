@@ -152,7 +152,7 @@ Date: 2023-08-29T17:53:05.705Z
 
 **Deployment Input File:** `deployments/minters/goerli-dev/shared-minter-deploy-config.dev.ts`
 
-### ABANDONED MINTER DEPLOYMENT (contains minor event emission bug, fixed in #1004)
+### ABANDONED MINTER DEPLOYMENT (contains minor event emission bug, fixed in #1005)
 
 **MinterDAExpSettlementV3:** https://goerli.etherscan.io/address/0xe3002BB7Bfd2ff61Ea1e9823e4723e4163C6BE72#code
 
