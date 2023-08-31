@@ -482,6 +482,9 @@ async function main() {
 
     // create image bucket
     let imageBucketCreated = false;
+    // @dev initial bucket name of TBD to handle case of failure to generate bucket.
+    // if bucket generation fails, TBD still enables output of DEPLOYMENTS file,
+    // while making it clear that the bucket was not created
     let bucketName = "TBD";
     try {
       ({ bucketName } = await createEngineBucket(tokenName, networkName));
