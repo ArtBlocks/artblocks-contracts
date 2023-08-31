@@ -4,7 +4,7 @@
 pragma solidity 0.8.19;
 
 import "../../interfaces/v0.8.x/IMinterFilterV1.sol";
-import "../../interfaces/v0.8.x/IFilteredMinterV0.sol";
+import "../../interfaces/v0.8.x/ISharedMinterV0.sol";
 import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
 import "../../interfaces/v0.8.x/ICoreRegistryV1.sol";
 
@@ -254,7 +254,7 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
         );
         emit MinterApprovedGlobally(
             _minter,
-            IFilteredMinterV0(_minter).minterType()
+            ISharedMinterV0(_minter).minterType()
         );
     }
 
@@ -307,7 +307,7 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
         emit MinterApprovedForContract({
             coreContract: _coreContract,
             minter: _minter,
-            minterType: IFilteredMinterV0(_minter).minterType()
+            minterType: ISharedMinterV0(_minter).minterType()
         });
     }
 
@@ -390,7 +390,7 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
             projectId: _projectId,
             coreContract: _coreContract,
             minter: _minter,
-            minterType: IFilteredMinterV0(_minter).minterType()
+            minterType: ISharedMinterV0(_minter).minterType()
         });
     }
 
@@ -571,7 +571,7 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
     {
         // @dev at() reverts if index is out of bounds
         (projectId, minterAddress) = minterForProject[_coreContract].at(_index);
-        minterType = IFilteredMinterV0(minterAddress).minterType();
+        minterType = ISharedMinterV0(minterAddress).minterType();
         return (projectId, minterAddress, minterType);
     }
 
@@ -632,6 +632,80 @@ contract MinterFilterV2 is Ownable, IMinterFilterV1 {
             }
         }
         return projectIds;
+    }
+
+    /**
+     * @notice Gets all minters that are globally approved on this minter
+     * filter. Returns an array of MinterWithType structs, which contain the
+     * minter address and minter type.
+     * This function has unbounded gas, and should only be used for off-chain
+     * queries.
+     * Alternatively, the subgraph indexing layer may be used to query these
+     * values.
+     * @return mintersWithTypes Array of MinterWithType structs, which contain
+     * the minter address and minter type.
+     */
+    function getAllGloballyApprovedMinters()
+        external
+        view
+        returns (MinterWithType[] memory mintersWithTypes)
+    {
+        // initialize arrays with appropriate length
+        uint256 numMinters = globallyApprovedMinters.length();
+        mintersWithTypes = new MinterWithType[](numMinters);
+        // iterate over all globally approved minters, adding to array
+        for (uint256 i; i < numMinters; ) {
+            address minterAddress = globallyApprovedMinters.at(i);
+            // @dev we know minterType() does not revert, because it was called
+            // when globally approving the minter
+            string memory minterType = ISharedMinterV0(minterAddress)
+                .minterType();
+            mintersWithTypes[i] = MinterWithType({
+                minterAddress: minterAddress,
+                minterType: minterType
+            });
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    /**
+     * @notice Gets all minters that are approved for a specific core contract.
+     * Returns an array of MinterWithType structs, which contain the minter
+     * address and minter type.
+     * This function has unbounded gas, and should only be used for off-chain
+     * queries.
+     * @param _coreContract Core contract to query.
+     * @return mintersWithTypes Array of MinterWithType structs, which contain
+     * the minter address and minter type.
+     */
+    function getAllContractApprovedMinters(
+        address _coreContract
+    ) external view returns (MinterWithType[] memory mintersWithTypes) {
+        // initialize arrays with appropriate length
+        EnumerableSet.AddressSet
+            storage _contractApprovedMinters = contractApprovedMinters[
+                _coreContract
+            ];
+        uint256 numMinters = _contractApprovedMinters.length();
+        mintersWithTypes = new MinterWithType[](numMinters);
+        // iterate over all minters approved for a given contract, adding to
+        // array
+        for (uint256 i; i < numMinters; ) {
+            address minterAddress = _contractApprovedMinters.at(i);
+            // @dev we know minterType() does not revert, because it was called
+            // when approving the minter for a contract
+            string memory minterType = ISharedMinterV0(minterAddress)
+                .minterType();
+            mintersWithTypes[i] = MinterWithType({
+                minterAddress: minterAddress,
+                minterType: minterType
+            });
+            unchecked {
+                ++i;
+            }
+        }
     }
 
     /**

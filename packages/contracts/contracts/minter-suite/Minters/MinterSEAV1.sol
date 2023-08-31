@@ -3,7 +3,6 @@
 
 pragma solidity 0.8.19;
 
-import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
 import "../../interfaces/v0.8.x/ISharedMinterV0.sol";
 import "../../interfaces/v0.8.x/ISharedMinterSEAV0.sol";
 import "../../interfaces/v0.8.x/IMinterFilterV1.sol";
