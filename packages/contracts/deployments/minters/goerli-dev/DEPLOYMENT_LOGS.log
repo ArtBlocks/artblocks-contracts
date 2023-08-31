@@ -128,3 +128,19 @@ https://goerli.etherscan.io/address/0x2D9B947c1f1E36d7f881D415A44598Ed9ff15b65#c
 [INFO] MinterDALinHolderV5 contract verified on Etherscan at 0x2D9B947c1f1E36d7f881D415A44598Ed9ff15b65
 [INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minters/goerli-dev/DEPLOYMENTS.md
 [INFO] Done!
+----------------------------------------
+[INFO] Datetime of deployment: 2023-08-31T23:53:05.748Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minters/goerli-dev/shared-minter-deploy-config2.dev.ts
+[INFO] MinterDAExpSettlementV3 deployed at 0xffFf56434Eb696f51775eDC7c9472A4046053c97
+[INFO] MinterDAExpSettlementV3 approved globally on minter filter at 0x6f333Fd0323B1dcfe67100690d0c0c16D66e0208
+[INFO] Verifying MinterDAExpSettlementV3 contract deployment...
+Nothing to compile
+Successfully submitted source code for contract
+contracts/minter-suite/Minters/MinterDAExpSettlementV3.sol:MinterDAExpSettlementV3 at 0xffFf56434Eb696f51775eDC7c9472A4046053c97
+for verification on the block explorer. Waiting for verification result...
+
+Successfully verified contract MinterDAExpSettlementV3 on Etherscan.
+https://goerli.etherscan.io/address/0xffFf56434Eb696f51775eDC7c9472A4046053c97#code
+[INFO] MinterDAExpSettlementV3 contract verified on Etherscan at 0xffFf56434Eb696f51775eDC7c9472A4046053c97
+[INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/minters/goerli-dev/DEPLOYMENTS.md
+[INFO] Done!

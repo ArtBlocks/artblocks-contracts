@@ -1,4 +1,3 @@
-
 # Shared Minter Deployment
 
 Date: 2023-08-29T17:27:57.020Z
@@ -16,7 +15,6 @@ Date: 2023-08-29T17:27:57.020Z
 **Deployment Args:** 0x6f333Fd0323B1dcfe67100690d0c0c16D66e0208
 
 ---
-
 
 # Shared Minter Deployment
 
@@ -36,7 +34,6 @@ Date: 2023-08-29T17:28:38.407Z
 
 ---
 
-
 # Shared Minter Deployment
 
 Date: 2023-08-29T17:32:25.506Z
@@ -54,7 +51,6 @@ Date: 2023-08-29T17:32:25.506Z
 **Deployment Args:** 0x6f333Fd0323B1dcfe67100690d0c0c16D66e0208,0x00000000000076A84feF008CDAbe6409d2FE638B
 
 ---
-
 
 # Shared Minter Deployment
 
@@ -74,7 +70,6 @@ Date: 2023-08-29T17:35:57.248Z
 
 ---
 
-
 # Shared Minter Deployment
 
 Date: 2023-08-29T17:39:42.262Z
@@ -92,7 +87,6 @@ Date: 2023-08-29T17:39:42.262Z
 **Deployment Args:** 0x6f333Fd0323B1dcfe67100690d0c0c16D66e0208,0x00000000000076A84feF008CDAbe6409d2FE638B
 
 ---
-
 
 # Shared Minter Deployment
 
@@ -112,7 +106,6 @@ Date: 2023-08-29T17:44:13.917Z
 
 ---
 
-
 # Shared Minter Deployment
 
 Date: 2023-08-29T17:47:04.912Z
@@ -130,7 +123,6 @@ Date: 2023-08-29T17:47:04.912Z
 **Deployment Args:** 0x6f333Fd0323B1dcfe67100690d0c0c16D66e0208
 
 ---
-
 
 # Shared Minter Deployment
 
@@ -150,7 +142,6 @@ Date: 2023-08-29T17:50:07.650Z
 
 ---
 
-
 # Shared Minter Deployment
 
 Date: 2023-08-29T17:53:05.705Z
@@ -161,6 +152,8 @@ Date: 2023-08-29T17:53:05.705Z
 
 **Deployment Input File:** `deployments/minters/goerli-dev/shared-minter-deploy-config.dev.ts`
 
+### ABANDONED MINTER DEPLOYMENT (contains minor event emission bug, fixed in #1004)
+
 **MinterDAExpSettlementV3:** https://goerli.etherscan.io/address/0xe3002BB7Bfd2ff61Ea1e9823e4723e4163C6BE72#code
 
 **Associated Minter Filter:** 0x6f333Fd0323B1dcfe67100690d0c0c16D66e0208
@@ -168,7 +161,6 @@ Date: 2023-08-29T17:53:05.705Z
 **Deployment Args:** 0x6f333Fd0323B1dcfe67100690d0c0c16D66e0208
 
 ---
-
 
 # Shared Minter Deployment
 
@@ -188,7 +180,6 @@ Date: 2023-08-29T17:56:11.239Z
 
 ---
 
-
 # Shared Minter Deployment
 
 Date: 2023-08-29T17:59:34.733Z
@@ -207,3 +198,20 @@ Date: 2023-08-29T17:59:34.733Z
 
 ---
 
+# Shared Minter Deployment
+
+Date: 2023-08-31T23:55:06.500Z
+
+## **Network:** goerli
+
+## **Environment:** dev
+
+**Deployment Input File:** `deployments/minters/goerli-dev/shared-minter-deploy-config2.dev.ts`
+
+**MinterDAExpSettlementV3:** https://goerli.etherscan.io/address/0xffFf56434Eb696f51775eDC7c9472A4046053c97#code
+
+**Associated Minter Filter:** 0x6f333Fd0323B1dcfe67100690d0c0c16D66e0208
+
+**Deployment Args:** 0x6f333Fd0323B1dcfe67100690d0c0c16D66e0208
+
+---
