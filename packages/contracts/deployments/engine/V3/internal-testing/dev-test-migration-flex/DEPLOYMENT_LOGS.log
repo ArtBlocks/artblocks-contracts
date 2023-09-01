@@ -1,0 +1,49 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-09-01T19:22:38.048Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/internal-testing/dev-test-migration-flex/deployment-config.dev.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: dev
+[INFO] New Admin ACL AdminACLV0 deployed at address: 0x3c615758a5C02C18d3C422590D84256c26EC7C1a
+[INFO] Randomizer BasicRandomizerV2 deployed at 0xa5C9C8d1D5ac6360f2B4271b0D9D78A38E9fAB9d
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x46F341F90Eb308D62C8211607B87421756190b7F
+[INFO] Minter Filter MinterFilterV1 deployed at 0x23c10E68c269A03246f5dF37335e148fE6B70c99
+[INFO] MinterSetPriceV4 deployed at 0x9cDe518fDC34e76f9CaC602EA37dB1eD2CBB12dd
+[INFO] MinterDAExpSettlementV1 deployed at 0xb1E1db1d10Db273971AF80658d368AD41c07399F
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0x23c10E68c269A03246f5dF37335e148fE6B70c99.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0x9cDe518fDC34e76f9CaC602EA37dB1eD2CBB12dd on minter filter.
+[INFO] Allowlisted minter MinterDAExpSettlementV1 at 0xb1E1db1d10Db273971AF80658d368AD41c07399F on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Skipping transfer of superAdmin role on adminACL.
+[INFO] Verifying core contract contract deployment...
+The contract 0x46F341F90Eb308D62C8211607B87421756190b7F has already been verified
+[INFO] Core contract verified on Etherscan at 0x46F341F90Eb308D62C8211607B87421756190b7F}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0x3c615758a5C02C18d3C422590D84256c26EC7C1a has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0x3c615758a5C02C18d3C422590D84256c26EC7C1a
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0x23c10E68c269A03246f5dF37335e148fE6B70c99 has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0x23c10E68c269A03246f5dF37335e148fE6B70c99
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+The contract 0x9cDe518fDC34e76f9CaC602EA37dB1eD2CBB12dd has already been verified
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0x9cDe518fDC34e76f9CaC602EA37dB1eD2CBB12dd
+[INFO] Verifying MinterDAExpSettlementV1 contract deployment...
+The contract 0xb1E1db1d10Db273971AF80658d368AD41c07399F has already been verified
+[INFO] MinterDAExpSettlementV1 contract verified on Etherscan at 0xb1E1db1d10Db273971AF80658d368AD41c07399F
+Created s3 bucket for https://engine-migrate-flex-goerli.s3.amazonaws.com
+[INFO] Created image bucket engine-migrate-flex-goerli
+[INFO] Deployment details written to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/internal-testing/dev-test-migration-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x46f341f90eb308d62c8211607b87421756190b7f",
+  "name": "Engine Migrate Flex",
+  "bucket_name": "engine-migrate-flex-goerli",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] render provider sales payment addresses remain as deployer addresses: 0x2246475beddf9333b6a6D9217194576E7617Afd1. Update later as needed.
+[ACTION] platform provider sales payment addresses remain as deployer addresses: 0x2246475beddf9333b6a6D9217194576E7617Afd1. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x2246475beddf9333b6a6D9217194576E7617Afd1, don't forget to update if required.
+[ACTION] Subgraph: Add Minter Filter and Minter contracts to subgraph config if desire to index minter suite.
