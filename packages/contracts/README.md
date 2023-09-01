@@ -74,14 +74,22 @@ erDiagram
     MINTERFILTER ||--o{ MINTER_1 : uses
     MINTERFILTER ||--o{ MINTER_2 : uses
     MINTERFILTER ||--o{ MINTER_N : uses
-    MINTER_1 ||--|| I_FILTERED_MINTER : implements
-    MINTER_2 ||--|| I_FILTERED_MINTER : implements
-    MINTER_N ||--|| I_FILTERED_MINTER : implements
+    MINTER_1 ||--|| I_SHARED_MINTER : implements
+    MINTER_2 ||--|| I_SHARED_MINTER : implements
+    MINTER_N ||--|| I_SHARED_MINTER : implements
     RANDOMIZER ||--|| CORE_V3_V3_FLEX : provides_random
     ENGINE_REGISTRY ||--o{ CORE_V3_V3_FLEX : notifies
 ```
 
 For a more detailed overview of this architecture, please see the [V3 Contract Architecture page](./V3_ARCHITECTURE.md).
+
+## Minter Suite
+
+Art Blocks has developed a shared Minter Suite that can be used to mint tokens. The Minter Suite is designed to be highly flexible, and can be used to mint tokens in a variety of ways on any V3 Flagship or Art Blocks Engine contract.
+
+A legacy, non-shared minter suite is also currently used by many partners, and is still in use by many partners during migration to the shared minter suite.
+
+For details on the Art Blocks Minter Suite, see the [minter suite documenation](./MINTER_SUITE.md).
 
 # Deployments
 
@@ -89,7 +97,7 @@ For a more detailed overview of this architecture, please see the [V3 Contract A
 
 > IMPORTANT - many scripts rely on typechain-generated factories, so ensure you have run `yarn generate:typechain` before running any deployment scripts.
 
-We have two types of deployment scripts: Generic and Specific.
+We have two types of deployment scripts: Generic and Specific. In general, most new deployments now use generic scripts.
 
 Generic deployment scripts are located in the `./scripts` directory. These scripts are used to deploy contracts that are not specific to a particular deployment. Generic deployment scripts are used to deploy contracts that are used by multiple partners or core contracts, such as the `Art Blocks Engine` contracts, or minters. Generic scripts take an input json file, located in the `/deployents/` directory, and execute the deployment as defined in the input file. In general, there are scripts prepared to run generic deployments for all networks and environments. For example, the following can be used to deploy the `Art Blocks Engine` contracts to the `goerli` test network (note that an input configuration is also required for all generic deployments.):
 
@@ -115,13 +123,14 @@ This is the Smart contract that controls the artwork created by the artist. No f
 
 Core contracts use the versioning schema below:
 
-|        Description        | Version  | Project Range | Mainnet Address                                                                                                                                                                                              |
-| :-----------------------: | :------: | :-----------: | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-|        AB Core V0         |    V0    |      0-2      | `0x059EDD72Cd353dF5106D2B9cC5ab83a52287aC3a`                                                                                                                                                                 |
-|        AB Core V1         |    V1    |     3-373     | `0xa7d8d9ef8D8Ce8992Df33D8b8CF4Aebabd5bD270`                                                                                                                                                                 |
-|     Engine Cores (V2)     | V2_PBAB  |   All PBAB    | Various - see `deployments/engine/` directory [DEPLOYMENTS.md files](https://github.com/search?q=repo%3AArtBlocks%2Fartblocks-contracts+extension%3Amd+filename%3ADEPLOYMENTS&type=Code&ref=advsearch&l=&l=) |
-| Engine Partner Cores (V2) | V2_PRTNR |   All PRTNR   | Various - see `deployments/engine/` directory [DEPLOYMENTS.md files](https://github.com/search?q=repo%3AArtBlocks%2Fartblocks-contracts+extension%3Amd+filename%3ADEPLOYMENTS&type=Code&ref=advsearch&l=&l=) |
-|   AB Core V3 (current)    |    V3    |     374+      | `0x99a9B7c1116f9ceEB1652de04d5969CcE509B069`                                                                                                                                                                 |
+|        Description        |          Version          | Project Range | Mainnet Address                                                                                                                                                                                                  |
+| :-----------------------: | :-----------------------: | :-----------: | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+|        AB Core V0         |            V0             |      0-2      | `0x059EDD72Cd353dF5106D2B9cC5ab83a52287aC3a`                                                                                                                                                                     |
+|        AB Core V1         |            V1             |     3-373     | `0xa7d8d9ef8D8Ce8992Df33D8b8CF4Aebabd5bD270`                                                                                                                                                                     |
+|     Engine Cores (V2)     |          V2_PBAB          | All V2 Engine | Various - see `deployments/engine/` directory [DEPLOYMENTS.md files](https://github.com/search?q=repo%3Aartblocks%2Fartblocks-contracts+path%3A*.md+path%3A**%2FDEPLOYMENTS.md&type=Code&ref=advsearch&l=&l=)    |
+| Engine Partner Cores (V2) |         V2_PRTNR          | All V2 PRTNR  | Various - see `deployments/engine/` directory [DEPLOYMENTS.md files](https://github.com/search?q=repo%3Aartblocks%2Fartblocks-contracts+path%3A*.md+path%3A**%2FDEPLOYMENTS.md&type=Code&ref=advsearch&l=&l=)    |
+|   AB Core V3 (current)    |            V3             |     374+      | `0x99a9B7c1116f9ceEB1652de04d5969CcE509B069`                                                                                                                                                                     |
+| Engine_V3, Engine_V3_Flex | Engine_V3, Engine_V3_Flex | All V3 Engine | Various - see `deployments/engine/V3/` directory [DEPLOYMENTS.md](https://github.com/search?q=repo%3Aartblocks%2Fartblocks-contracts+path%3A*.md+path%3A**%2FDEPLOYMENTS.md&type=Code&ref=advsearch&l=&l=) files |
 
 > AB Core V3 [changelog here](./contracts/V3_CHANGELOG.md), and [performance metrics here](./contracts/V3_PERFORMANCE.md).
 
@@ -153,17 +162,18 @@ Given that it is an externally linked library with a shared public deployment, t
 - V1 `BytecodeStorageReader` (arbitrum-goerli): https://goerli.arbiscan.io/address/0x681861cD4fC92d70aE57745385065ef862954662#code
 - V1 `BytecodeStorageReader` (arbitrum): https://arbiscan.io/address/0xa07f47c30C262adcC263A4D44595972c50e04db7#code
 
-## Minter Suite
-
-For details on the Flagship and Engine Minter Suite, see the [minter suite documenation](./MINTER_SUITE.md).
-
 ## Shared Randomizers
 
-- Goerli: https://goerli.etherscan.io/address/0xec5dae4b11213290b2dbe5295093f75920bd2982#code
-- Ropsten: https://ropsten.etherscan.io/address/0x7ba972189ED3C527847170453fC108707F62755a#code
-- Rinkeby: https://rinkeby.etherscan.io/address/0x3b30d421a6dA95694EaaE09971424F15Eb375269#code
-- Kovan: https://kovan.etherscan.io/address/0x3b30d421a6dA95694EaaE09971424F15Eb375269#code
-- Mainnet: https://etherscan.io/address/0x088098f7438773182b703625c4128aff85fcffc4#code
+Art Blocks has developed a shared Randomizer contract that is used to generate pseudo-random numbers for all Art Blocks Engine V3 tokens. The Randomizer contract is designed to handle all globally approved shared minters, including minters that may assign token hashes directly such as the Polyptych minter.
+
+Note that this is an area of active development, and legacy randomizer contracts will continue to be used by many contracts as they migrate to the shared randomizer and shared minter suite. Previous versions of the Randomizer contract are recorded on each V3 core contract itself, able to be queried via the `getHistoricalRandomizerAt()` function.
+
+The most recent version of the Shared Randomizer contract is deployed at the following addresses:
+
+- Goerli: TBD
+- Mainnet: TBD
+- Arbitrum Goerli: TBD
+- Arbitrum: TBD
 
 ## Contract Source Code Verification
 

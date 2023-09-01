@@ -13,14 +13,13 @@ pragma solidity ^0.8.0;
 
 library DALinLib {
     struct DAProjectConfig {
-        // @dev max uint64 ~= 1.8e19 sec ~= 570 billion years
-        uint64 timestampStart;
-        uint64 timestampEnd;
-        // @dev Prices are packed internally as uint128, resulting in a maximum
-        // allowed price of ~3.4e20 ETH. This is many orders of magnitude
-        // greater than current ETH supply.
-        uint128 startPrice;
-        uint128 basePrice;
+        // @dev max uint40 ~= 1.1e12 sec ~= 34 thousand years
+        uint40 timestampStart;
+        uint40 timestampEnd;
+        // @dev max uint88 ~= 3e26 Wei = ~300 million ETH, which is well above
+        // the expected prices of any NFT mint in the foreseeable future.
+        uint88 startPrice;
+        uint88 basePrice;
     }
 
     /**
@@ -38,21 +37,23 @@ library DALinLib {
      * @param _auctionTimestampEnd The timestamp when the auction will end.
      * @param _startPrice The starting price of the auction.
      * @param _basePrice The base price of the auction.
-     * @param _maxHasBeenInvoked Whether or not the minter-local max
-     * invocations have been invoked.
+     * @param _allowReconfigureAfterStart Bool indicating whether the auction
+     * can be reconfigured after it has started. This is sometimes useful for
+     * minter implementations that want to allow an artist to reconfigure the
+     * auction after it has reached minter-local max invocations, for example.
      */
     function setAuctionDetailsLin(
         DAProjectConfig storage _DAProjectConfig,
-        uint64 _auctionTimestampStart,
-        uint64 _auctionTimestampEnd,
-        uint128 _startPrice,
-        uint128 _basePrice,
-        bool _maxHasBeenInvoked
+        uint40 _auctionTimestampStart,
+        uint40 _auctionTimestampEnd,
+        uint88 _startPrice,
+        uint88 _basePrice,
+        bool _allowReconfigureAfterStart
     ) internal {
         require(
             _DAProjectConfig.timestampStart == 0 || // uninitialized
                 block.timestamp < _DAProjectConfig.timestampStart || // auction not yet started
-                _maxHasBeenInvoked, // minter-local max invocations have been reached
+                _allowReconfigureAfterStart, // specifically allowing reconfiguration after start
             "No modifications mid-auction"
         );
         require(
