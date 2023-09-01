@@ -44,6 +44,20 @@ export type DeployConfigDetails = {
   minterName?: string;
   minterFilterAddress?: string;
   approveMinterGlobally?: boolean;
+  // engine core fields (shared minter suite)
+  genArt721CoreContractName?: string;
+  tokenName?: string;
+  tokenTicker?: string;
+  startingProjectId?: number;
+  autoApproveArtistSplitProposals?: boolean;
+  renderProviderAddress?: string;
+  platformProviderAddress?: string;
+  addInitialProject?: boolean;
+  doTransferSuperAdmin?: boolean;
+  newSuperAdminAddress?: string;
+  renderProviderSplitPercentagePrimary?: number;
+  renderProviderSplitBPSSecondary?: number;
+  defaultVerticalName?: string;
 };
 
 export async function getConfigInputs(
