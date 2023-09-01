@@ -1,0 +1,33 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-08-29T17:20:49.926Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/internal-testing/dev-shared-minter-suite/deployment-config.dev.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: dev
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x61aB7ae8B289130D098316656Cd0bFBed3eDdE15
+[INFO] Using shared Randomizer at 0xD023790a7Bf5Dd71414409dc62008B8a190e0C28
+[INFO] Core GenArt721CoreV3_Engine deployed at 0x9C6A0509e3C69959228768221bB3B3064B88Fe38
+[INFO] Updated the Minter Filter on the Core contract to 0x6f333Fd0323B1dcfe67100690d0c0c16D66e0208.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping update of render provider split percentage primary, since it is already equal to the value of 10.
+[INFO] Skipping update of render provider split percentage secondary, since it is already equal to the value of 250.
+[INFO] Skipping transfer of superAdmin role on adminACL.
+[INFO] Verifying core contract contract deployment...
+The contract 0x9C6A0509e3C69959228768221bB3B3064B88Fe38 has already been verified
+[INFO] Core contract verified on Etherscan at 0x9C6A0509e3C69959228768221bB3B3064B88Fe38}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0x61aB7ae8B289130D098316656Cd0bFBed3eDdE15 has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0x61aB7ae8B289130D098316656Cd0bFBed3eDdE15
+Created s3 bucket for https://engine-shared-suite-goerli.s3.amazonaws.com
+[INFO] Created image bucket engine-shared-suite-goerli
+[INFO] Deployment details written to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/internal-testing/dev-shared-minter-suite/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x9c6a0509e3c69959228768221bb3b3064b88fe38",
+  "name": "Engine-Shared-Suite",
+  "bucket_name": "engine-shared-suite-goerli",
+  "default_vertical_name": "fullyonchain"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0x2246475beddf9333b6a6D9217194576E7617Afd1. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0x2246475beddf9333b6a6D9217194576E7617Afd1, don't forget to update if requred.

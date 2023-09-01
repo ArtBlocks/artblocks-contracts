@@ -11,8 +11,8 @@ export const deployConfigDetailsArray = [
     // the following must always be defined and accurate, even if using an existing admin ACL
     adminACLContractName: "AdminACLV1",
     genArt721CoreContractName: "GenArt721CoreV3_Engine",
-    tokenName: "Engine Partner",
-    tokenTicker: "PRTNR",
+    tokenName: "Engine-Shared-Suite",
+    tokenTicker: "ENGSHARESUITE",
     startingProjectId: 0,
     autoApproveArtistSplitProposals: true,
     renderProviderAddress: "deployer", // use either "0x..." or special "deployer" which sets the render provider to the deployer
