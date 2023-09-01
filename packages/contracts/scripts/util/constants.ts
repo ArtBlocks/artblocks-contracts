@@ -46,7 +46,7 @@ export function getActiveSharedMinterFilter(
 // format is [network]: { [environment]: [minter filter address] }
 const ACTIVE_SHARED_MINTER_FILTERS = {
   goerli: {
-    dev: "0xTBD",
+    dev: "0x6f333Fd0323B1dcfe67100690d0c0c16D66e0208",
     staging: "0xTBD",
   },
   mainnet: {
@@ -87,7 +87,7 @@ export function getActiveSharedRandomizer(
 // format is [network]: { [environment]: [randomizer address] }
 const ACTIVE_SHARED_RANDOMIZERS = {
   goerli: {
-    dev: "0xTBD",
+    dev: "0xD023790a7Bf5Dd71414409dc62008B8a190e0C28",
     staging: "0xTBD",
   },
   mainnet: {
@@ -114,7 +114,7 @@ const ACTIVE_SHARED_RANDOMIZERS = {
 export async function getActiveCoreRegistry(
   networkName: string,
   environment: string
-) {
+): Promise<string> {
   // get the active minter filter for the network and environment
   const activeMinterFilter = getActiveSharedMinterFilter(
     networkName,
@@ -122,13 +122,13 @@ export async function getActiveCoreRegistry(
   );
   const minterFilterFactory = await ethers.getContractFactory("MinterFilterV2");
   const minterFilter = minterFilterFactory.attach(activeMinterFilter);
-  const activeCoreRegistry = await minterFilter.coreRegistry();
-  if (!activeCoreRegistry?.address) {
+  const activeCoreRegistryAddress = await minterFilter.coreRegistry();
+  if (!activeCoreRegistryAddress) {
     throw new Error(
       `No active core registry found for network ${networkName} and environment ${environment}`
     );
   }
-  return activeCoreRegistry.address;
+  return activeCoreRegistryAddress;
 }
 
 // DEPRECATED - use getActiveCoreRegistry after migration to shared minter suite
