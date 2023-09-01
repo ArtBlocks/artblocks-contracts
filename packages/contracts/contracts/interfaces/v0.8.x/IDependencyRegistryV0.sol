@@ -18,9 +18,7 @@ interface IDependencyRegistryV0 {
         uint256 indexed _projectId
     );
 
-    event LicenseTypeAdded(
-        bytes32 _licenseType
-    );
+    event LicenseTypeAdded(bytes32 _licenseType);
 
     event DependencyAdded(
         bytes32 indexed _dependencyType,

@@ -109,9 +109,7 @@ contract DependencyRegistryV0 is
         require(_index < _length, "Index out of range");
     }
 
-    function _onlyExistingLicenseType(
-        bytes32 _licenseType
-    ) internal view {
+    function _onlyExistingLicenseType(bytes32 _licenseType) internal view {
         require(
             _licenseTypes.contains(_licenseType),
             "License type does not exist"
@@ -134,15 +132,12 @@ contract DependencyRegistryV0 is
      */
     function addLicenseType(bytes32 _licenseType) external {
         _onlyAdminACL(this.addLicenseType.selector);
-        require(
-            _licenseTypes.add(_licenseType),
-            "License type already exists"
-        );
+        require(_licenseTypes.add(_licenseType), "License type already exists");
         require(
             _licenseType != bytes32(""),
             "License type cannot be empty string"
         );
-       emit LicenseTypeAdded(_licenseType);
+        emit LicenseTypeAdded(_licenseType);
     }
 
     /**
@@ -676,9 +671,7 @@ contract DependencyRegistryV0 is
      * execution where there is no gas limit.
      */
     function getLicenseTypes() external view returns (string[] memory) {
-        string[] memory licenseTypes = new string[](
-            _licenseTypes.length()
-        );
+        string[] memory licenseTypes = new string[](_licenseTypes.length());
         uint256 numLicenseTypes = _licenseTypes.length();
 
         for (uint256 i = 0; i < numLicenseTypes; i++) {
