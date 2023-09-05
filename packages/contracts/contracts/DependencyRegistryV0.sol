@@ -634,10 +634,10 @@ contract DependencyRegistryV0 is
      * execution where there is no gas limit.
      */
     function getDependencyTypes() external view returns (string[] memory) {
-        string[] memory dependencyTypes = new string[](
-            _dependencyTypes.length()
-        );
         uint256 numDependencyTypes = _dependencyTypes.length();
+        string[] memory dependencyTypes = new string[](
+            numDependencyTypes
+        );
 
         for (uint256 i = 0; i < numDependencyTypes; i++) {
             dependencyTypes[i] = _dependencyTypes.at(i).toString();
@@ -671,8 +671,8 @@ contract DependencyRegistryV0 is
      * execution where there is no gas limit.
      */
     function getLicenseTypes() external view returns (string[] memory) {
-        string[] memory licenseTypes = new string[](_licenseTypes.length());
         uint256 numLicenseTypes = _licenseTypes.length();
+        string[] memory licenseTypes = new string[](numLicenseTypes);
 
         for (uint256 i = 0; i < numLicenseTypes; i++) {
             licenseTypes[i] = _licenseTypes.at(i).toString();
