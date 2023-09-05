@@ -132,6 +132,7 @@ contract DependencyRegistryV0 is
      */
     function addLicenseType(bytes32 _licenseType) external {
         _onlyAdminACL(this.addLicenseType.selector);
+          // @dev the add function returns false if set already contains value
         require(_licenseTypes.add(_licenseType), "License type already exists");
         require(
             _licenseType != bytes32(""),
