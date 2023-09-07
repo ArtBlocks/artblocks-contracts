@@ -948,9 +948,38 @@ contract DependencyRegistryV0 is
         _onlyExistingLicenseType(_licenseType);
         License storage licenseEntry = allLicenses[_licenseType];
         // store license chunk in contract bytecode
-        licenseEntry.licenseBytecodeAddresses[licenseEntry.licenseChunkCount] = _text
-            .writeToBytecode();
+        licenseEntry.licenseBytecodeAddresses[
+            licenseEntry.licenseChunkCount
+        ] = _text.writeToBytecode();
         licenseEntry.licenseChunkCount = licenseEntry.licenseChunkCount + 1;
+
+        emit LicenseTextUpdated(_licenseType);
+    }
+
+    /**
+     * @notice Updates the license text for license `_licenseType` at index `_index`,
+     *         by way of providing a string to write to bytecode storage.
+     * @param _licenseType Name of license type (i.e. "MIT") used to identify license.
+     * @param _index The index of a given license text chunk, relative to the overall `licenseChunkCount`.
+     * @param _text The updated license text value. Required to be a non-empty
+     *                string, but no further validation is performed.
+     */
+    function updateLicenseText(
+        bytes32 _licenseType,
+        uint256 _index,
+        string memory _text
+    ) external {
+        _onlyAdminACL(this.updateLicenseText.selector);
+        _onlyNonEmptyString(_text);
+        _onlyExistingLicenseType(_licenseType);
+        License storage licenseEntry = allLicenses[_licenseType];
+        _onlyInRangeIndex({
+            _index: _index,
+            _length: licenseEntry.licenseChunkCount
+        });
+        // store license text chunk in contract bytecode, replacing reference address from
+        // the contract that no longer exists with the newly created one
+        licenseEntry.licenseBytecodeAddresses[_index] = _text.writeToBytecode();
 
         emit LicenseTextUpdated(_licenseType);
     }
@@ -973,7 +1002,10 @@ contract DependencyRegistryV0 is
         uint256 _index
     ) external view returns (string memory) {
         License storage licenseEntry = allLicenses[_licenseType];
-        _onlyInRangeIndex({_index: _index, _length: licenseEntry.licenseChunkCount});
+        _onlyInRangeIndex({
+            _index: _index,
+            _length: licenseEntry.licenseChunkCount
+        });
 
         address licenseAddress = licenseEntry.licenseBytecodeAddresses[_index];
         bytes32 storageVersion = BytecodeStorageReader

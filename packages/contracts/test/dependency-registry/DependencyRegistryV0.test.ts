@@ -27,6 +27,7 @@ import { SignerWithAddress } from "@nomiclabs/hardhat-ethers/signers";
 
 const ONLY_ADMIN_ACL_ERROR = "Only Admin ACL allowed";
 const ONLY_EXISTING_DEPENDENCY_TYPE_ERROR = "Dependency type does not exist";
+const ONLY_EXISTING_LICENSE_TYPE_ERROR = "License type does not exist";
 const ONLY_NON_EMPTY_STRING_ERROR = "Must input non-empty string";
 const ONLY_NON_ZERO_ADDRESS_ERROR = "Must input non-zero address";
 const INDEX_OUT_OF_RANGE_ERROR = "Index out of range";
@@ -293,7 +294,7 @@ describe(`DependencyRegistryV0`, async function () {
               preferredRepository,
               referenceWebsite
             ),
-          "License type does not exist"
+          ONLY_EXISTING_LICENSE_TYPE_ERROR
         );
       });
 
@@ -2334,7 +2335,7 @@ describe(`DependencyRegistryV0`, async function () {
               ethers.utils.formatBytes32String("nonExistentLicenseType"),
               licenseText
             ),
-          "License type does not exist"
+          ONLY_EXISTING_LICENSE_TYPE_ERROR
         );
       });
       it("does not allow adding empty string as license text", async function () {
@@ -2361,6 +2362,83 @@ describe(`DependencyRegistryV0`, async function () {
         const storedLicenseText =
           await config.dependencyRegistry.getLicenseText(licenseTypeBytes, 0);
         expect(storedLicenseText).to.eq(licenseText);
+      });
+    });
+    describe("updateLicenseText", function () {
+      it("does not allow non-admins to update license text", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.artist)
+            .updateLicenseText(licenseTypeBytes, 0, "new license text"),
+          ONLY_ADMIN_ACL_ERROR
+        );
+      });
+
+      it("does not allow updating license text for a license that does not exist", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .updateLicenseText(
+              ethers.utils.formatBytes32String("nonExistentLicenseType"),
+              0,
+              "new license text"
+            ),
+          ONLY_EXISTING_LICENSE_TYPE_ERROR
+        );
+      });
+
+      it("does not allow updating a license text chunk that does not exist", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .updateLicenseText(licenseTypeBytes, 0, "new license text"),
+          INDEX_OUT_OF_RANGE_ERROR
+        );
+      });
+
+      it("does not allow updating an empty string as a license text", async function () {
+        // get config from beforeEach
+        const config = this.config;
+
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .addLicenseText(licenseTypeBytes, licenseText);
+
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .updateLicenseText(licenseTypeBytes, 0, ""),
+          ONLY_NON_EMPTY_STRING_ERROR
+        );
+      });
+
+      it("allows admin to update license text", async function () {
+        // get config from beforeEach
+        const config = this.config;
+
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .addLicenseText(licenseTypeBytes, licenseText);
+
+        const updatedText = "updated license text";
+
+        await expect(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .updateLicenseText(licenseTypeBytes, 0, updatedText)
+        )
+          .to.emit(config.dependencyRegistry, "LicenseTextUpdated")
+          .withArgs(licenseTypeBytes);
+
+        const storedLicenseText =
+          await config.dependencyRegistry.getLicenseText(licenseTypeBytes, 0);
+        expect(storedLicenseText).to.eq(updatedText);
       });
     });
   });
