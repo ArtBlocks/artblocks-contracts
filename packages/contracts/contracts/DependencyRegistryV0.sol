@@ -992,16 +992,20 @@ contract DependencyRegistryV0 is
         _onlyAdminACL(this.removeLicenseLastText.selector);
         _onlyExistingLicenseType(_licenseType);
         License storage licenseEntry = allLicenses[_licenseType];
-        require(licenseEntry.licenseChunkCount > 0, "there is no license text to remove");
+        require(
+            licenseEntry.licenseChunkCount > 0,
+            "there is no license text to remove"
+        );
         // delete reference to old storage contract address
-        delete licenseEntry.licenseBytecodeAddresses[licenseEntry.licenseChunkCount - 1];
+        delete licenseEntry.licenseBytecodeAddresses[
+            licenseEntry.licenseChunkCount - 1
+        ];
         unchecked {
             licenseEntry.licenseChunkCount = licenseEntry.licenseChunkCount - 1;
         }
 
         emit LicenseTextUpdated(_licenseType);
     }
-
 
     /**
      * @notice Returns license text for license `_licenseType` at script index `_index`.
