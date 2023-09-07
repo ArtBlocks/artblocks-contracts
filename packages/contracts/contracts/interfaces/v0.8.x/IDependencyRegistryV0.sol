@@ -18,8 +18,11 @@ interface IDependencyRegistryV0 {
         uint256 indexed _projectId
     );
 
+    event LicenseTypeAdded(bytes32 indexed _licenseType);
+
     event DependencyAdded(
         bytes32 indexed _dependencyType,
+        bytes32 indexed _licenseType,
         string _preferredCDN,
         string _preferredRepository,
         string _referenceWebsite
