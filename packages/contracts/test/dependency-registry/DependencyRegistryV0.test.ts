@@ -51,6 +51,8 @@ describe(`DependencyRegistryV0`, async function () {
   const dependencyTypeBytes = ethers.utils.formatBytes32String(dependencyType);
   const licenseType = "MIT";
   const licenseTypeBytes = ethers.utils.formatBytes32String(licenseType);
+  const licenseText =
+    "Copyright (c) 1995-2023 Lorem Ipsum Dolor Sit Amet Foundation. Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the “Software”), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions: The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software. THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.";
   const preferredCDN =
     "https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.0.0/p5.min.js";
   const preferredRepository = "https://github.com/processing/p5.js";
@@ -2293,6 +2295,72 @@ describe(`DependencyRegistryV0`, async function () {
           );
 
         expect(regDepType).to.eq(coreDepType);
+      });
+    });
+  });
+  describe("license scripts", function () {
+    this.beforeEach(async function () {
+      const config = await loadFixture(_beforeEach);
+      await config.dependencyRegistry
+        .connect(config.accounts.deployer)
+        .addDependency(
+          dependencyTypeBytes,
+          licenseTypeBytes,
+          preferredCDN,
+          preferredRepository,
+          referenceWebsite
+        );
+      // pass config to tests in this describe block
+      this.config = config;
+    });
+    describe("addLicenseText", function () {
+      it("does not allow non-admins to add license text", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.artist)
+            .addLicenseText(licenseTypeBytes, licenseText),
+          ONLY_ADMIN_ACL_ERROR
+        );
+      });
+      it("does not allow adding license text for a license that does not exist", async function () {
+        const config = await loadFixture(_beforeEach);
+        // admin can update
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .addLicenseText(
+              ethers.utils.formatBytes32String("nonExistentLicenseType"),
+              licenseText
+            ),
+          "License type does not exist"
+        );
+      });
+      it("does not allow adding empty string as license text", async function () {
+        const config = await loadFixture(_beforeEach);
+        // admin can update
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .addLicenseText(licenseTypeBytes, ""),
+          ONLY_NON_EMPTY_STRING_ERROR
+        );
+      });
+      it("allows admin to add license text", async function () {
+        const config = await loadFixture(_beforeEach);
+        // admin can update
+        await expect(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .addLicenseText(licenseTypeBytes, licenseText)
+        )
+          .to.emit(config.dependencyRegistry, "LicenseTextUpdated")
+          .withArgs(licenseTypeBytes);
+
+        const storedLicenseText =
+          await config.dependencyRegistry.getLicenseText(licenseTypeBytes, 0);
+        expect(storedLicenseText).to.eq(licenseText);
       });
     });
   });

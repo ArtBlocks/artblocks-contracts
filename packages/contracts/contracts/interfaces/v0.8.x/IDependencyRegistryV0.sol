@@ -95,4 +95,6 @@ interface IDependencyRegistryV0 {
         bytes32 _dependencyType,
         uint256 _index
     ) external view returns (string memory);
+
+    event LicenseTextUpdated(bytes32 indexed _licenseType);
 }

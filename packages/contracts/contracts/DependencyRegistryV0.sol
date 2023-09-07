@@ -61,12 +61,20 @@ contract DependencyRegistryV0 is
         uint24 scriptCount;
     }
 
+    struct License {
+        // mapping from license index to address storing script in bytecode
+        mapping(uint256 => address) licenseBytecodeAddresses;
+        uint24 licenseChunkCount;
+    }
+
     // dependency types, i.e. "type@version"
     EnumerableSet.Bytes32Set private _dependencyTypes;
     // mapping from dependencyTypes to Dependency, which stores the properties of each dependency
     mapping(bytes32 => Dependency) dependencyDetails;
     // source code license types, MIT, GPL, etc.
     EnumerableSet.Bytes32Set private _licenseTypes;
+    // mapping from licenseTypes to License, which stores the properties of each license
+    mapping(bytes32 => License) allLicenses;
 
     // set of supported core ArtBlocks contracts
     EnumerableSet.AddressSet private _supportedCoreContracts;
@@ -921,6 +929,51 @@ contract DependencyRegistryV0 is
                 );
         } else {
             return BytecodeStorageReader.readFromBytecode(scriptAddress);
+        }
+    }
+
+    /**
+     * @notice Adds a full license text to license `_licenseType`, by way of
+     *         providing a string to write to bytecode storage.
+     * @param _licenseType Name of license type (i.e. "MIT") used to identify license.
+     * @param _text Text to be added. Required to be a non-empty string,
+     *                but no further validation is performed.
+     */
+    function addLicenseText(
+        bytes32 _licenseType,
+        string memory _text
+    ) external {
+        _onlyAdminACL(this.addLicenseText.selector);
+        _onlyNonEmptyString(_text);
+        _onlyExistingLicenseType(_licenseType);
+        License storage licenseEntry = allLicenses[_licenseType];
+        // store license chunk in contract bytecode
+        licenseEntry.licenseBytecodeAddresses[licenseEntry.licenseChunkCount] = _text
+            .writeToBytecode();
+        licenseEntry.licenseChunkCount = licenseEntry.licenseChunkCount + 1;
+
+        emit LicenseTextUpdated(_licenseType);
+    }
+
+    function getLicenseText(
+        bytes32 _licenseType,
+        uint256 _index
+    ) external view returns (string memory) {
+        License storage licenseEntry = allLicenses[_licenseType];
+        _onlyInRangeIndex({_index: _index, _length: licenseEntry.licenseChunkCount});
+
+        address licenseAddress = licenseEntry.licenseBytecodeAddresses[_index];
+        bytes32 storageVersion = BytecodeStorageReader
+            .getLibraryVersionForBytecode(licenseAddress);
+        if (storageVersion == BytecodeStorageReader.UNKNOWN_VERSION_STRING) {
+            return
+                string(
+                    BytecodeStorageReader.readBytesFromSSTORE2Bytecode(
+                        licenseAddress
+                    )
+                );
+        } else {
+            return BytecodeStorageReader.readFromBytecode(licenseAddress);
         }
     }
 
