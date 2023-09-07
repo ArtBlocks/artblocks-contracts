@@ -132,7 +132,7 @@ contract DependencyRegistryV0 is
      */
     function addLicenseType(bytes32 _licenseType) external {
         _onlyAdminACL(this.addLicenseType.selector);
-          // @dev the add function returns false if set already contains value
+        // @dev the add function returns false if set already contains value
         require(_licenseTypes.add(_licenseType), "License type already exists");
         require(
             _licenseType != bytes32(""),
@@ -636,9 +636,7 @@ contract DependencyRegistryV0 is
      */
     function getDependencyTypes() external view returns (string[] memory) {
         uint256 numDependencyTypes = _dependencyTypes.length();
-        string[] memory dependencyTypes = new string[](
-            numDependencyTypes
-        );
+        string[] memory dependencyTypes = new string[](numDependencyTypes);
 
         for (uint256 i = 0; i < numDependencyTypes; i++) {
             dependencyTypes[i] = _dependencyTypes.at(i).toString();
