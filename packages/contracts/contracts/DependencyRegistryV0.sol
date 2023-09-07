@@ -985,6 +985,25 @@ contract DependencyRegistryV0 is
     }
 
     /**
+     * @notice Removes the last license text chunk from license `_licenseType`.
+     * @param _licenseType Name of license type (i.e. "MIT") used to identify license.
+     */
+    function removeLicenseLastText(bytes32 _licenseType) external {
+        _onlyAdminACL(this.removeLicenseLastText.selector);
+        _onlyExistingLicenseType(_licenseType);
+        License storage licenseEntry = allLicenses[_licenseType];
+        require(licenseEntry.licenseChunkCount > 0, "there is no license text to remove");
+        // delete reference to old storage contract address
+        delete licenseEntry.licenseBytecodeAddresses[licenseEntry.licenseChunkCount - 1];
+        unchecked {
+            licenseEntry.licenseChunkCount = licenseEntry.licenseChunkCount - 1;
+        }
+
+        emit LicenseTextUpdated(_licenseType);
+    }
+
+
+    /**
      * @notice Returns license text for license `_licenseType` at script index `_index`.
      * @param _licenseType Name of license type (i.e. "MIT") used to identify license.
      * @param _index The index of a given script, relative to the overall `licenseChunkCount`.
@@ -1020,6 +1039,16 @@ contract DependencyRegistryV0 is
         } else {
             return BytecodeStorageReader.readFromBytecode(licenseAddress);
         }
+    }
+
+    /**
+     * @notice Returns the count of license chunks for license `_licenseType`.
+     * @param _licenseType Name of license type (i.e. "MIT") used to identify dependency.
+     */
+    function getLicenseTextChunkCount(
+        bytes32 _licenseType
+    ) external view returns (uint256) {
+        return allLicenses[_licenseType].licenseChunkCount;
     }
 
     /**

@@ -2364,6 +2364,71 @@ describe(`DependencyRegistryV0`, async function () {
         expect(storedLicenseText).to.eq(licenseText);
       });
     });
+    describe("removeLicenseLastText", function () {
+      it("does not allow non-admins to remove license text", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.user)
+            .removeLicenseLastText(licenseTypeBytes),
+          ONLY_ADMIN_ACL_ERROR
+        );
+      });
+
+      it("does not allow removing license text from a license that does not exist", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .removeLicenseLastText(
+              ethers.utils.formatBytes32String("nonExistentLicenseType")
+            ),
+          ONLY_EXISTING_LICENSE_TYPE_ERROR
+        );
+      });
+
+      it("does not allow removing the last license text if non-existent", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .removeLicenseLastText(licenseTypeBytes),
+          "there is no license text to remove"
+        );
+      });
+
+      it("allows admin to remove last license text", async function () {
+        // get config from beforeEach
+        const config = this.config;
+
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .addLicenseText(licenseTypeBytes, licenseText);
+
+        await expect(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .removeLicenseLastText(licenseTypeBytes)
+        )
+          .to.emit(config.dependencyRegistry, "LicenseTextUpdated")
+          .withArgs(licenseTypeBytes);
+
+        const textChunkCount =
+          await config.dependencyRegistry.getLicenseTextChunkCount(
+            licenseTypeBytes
+          );
+        expect(textChunkCount).to.eq(0);
+
+        await expectRevert(
+          config.dependencyRegistry.getLicenseText(licenseTypeBytes, 0),
+          INDEX_OUT_OF_RANGE_ERROR
+        );
+      });
+    });
+
     describe("updateLicenseText", function () {
       it("does not allow non-admins to update license text", async function () {
         // get config from beforeEach
