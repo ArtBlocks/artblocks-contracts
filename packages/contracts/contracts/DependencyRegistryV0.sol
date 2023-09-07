@@ -955,6 +955,19 @@ contract DependencyRegistryV0 is
         emit LicenseTextUpdated(_licenseType);
     }
 
+    /**
+     * @notice Returns license text for license `_licenseType` at script index `_index`.
+     * @param _licenseType Name of license type (i.e. "MIT") used to identify license.
+     * @param _index The index of a given script, relative to the overall `licenseChunkCount`.
+     * @return A string containing the license text content at the given script chunk index for a given license.
+     * @dev This method attempts to introspectively determine which library version of
+     *      `BytecodeStorage` was used to write the stored script string that is being
+     *      read back, in order to use the proper read approach. If the version is
+     *      non-determinate, a fall-back to reading using the assumption that the bytes
+     *      were written with `SSTORE2` is used.
+     *      Also note that in this `SSTORE2` fallback handling, the approach of casting bytes to string
+     *      can cause failure (e.g. unexpected continuation byte).
+     */
     function getLicenseText(
         bytes32 _licenseType,
         uint256 _index
