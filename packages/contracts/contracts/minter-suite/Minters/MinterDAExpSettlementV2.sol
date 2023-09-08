@@ -1256,13 +1256,7 @@ contract MinterDAExpSettlementV2 is
             // ensure the local `maxHasBeenInvoked` state is accurate to
             // prevent any false negatives due to minting on other minters
             _projectConfig.maxHasBeenInvoked = true;
-            // emit event to ensure any indexers are aware of the change
-            // @dev this is not strictly necessary, but is included for
-            // convenience
-            emit ProjectMaxInvocationsLimitUpdated(
-                _projectId,
-                coreMaxInvocations
-            );
+            // @dev no event needed since no change to max invocations
         }
     }
 
