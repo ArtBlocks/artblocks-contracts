@@ -49,6 +49,8 @@ interface DependencyRegistryV0TestContext extends Mocha.Context {
 describe(`DependencyRegistryV0`, async function () {
   const dependencyType = "p5js@1.0.0";
   const dependencyTypeBytes = ethers.utils.formatBytes32String(dependencyType);
+  const licenseType = "MIT";
+  const licenseTypeBytes = ethers.utils.formatBytes32String(licenseType);
   const preferredCDN =
     "https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.0.0/p5.min.js";
   const preferredRepository = "https://github.com/processing/p5.js";
@@ -162,10 +164,73 @@ describe(`DependencyRegistryV0`, async function () {
       [] // no deployment args
     );
 
+    // add MIT license type
+    await config.dependencyRegistry
+      .connect(config.accounts.deployer)
+      .addLicenseType(licenseTypeBytes);
+
     return config;
   }
 
   describe("registered dependencies", function () {
+    describe("addLicenseType", function () {
+      it("does not allow non-admins to add a license type", async function () {
+        const config = await loadFixture(_beforeEach);
+        // deployer cannot update
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.artist)
+            .addLicenseType(licenseTypeBytes),
+          "Only Admin ACL allowed"
+        );
+      });
+
+      it("allows admin to add a license type", async function () {
+        const config = await loadFixture(_beforeEach);
+        // admin can update
+        await expect(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .addLicenseType(ethers.utils.formatBytes32String("GPL4"))
+        )
+          .to.emit(config.dependencyRegistry, "LicenseTypeAdded")
+          .withArgs(ethers.utils.formatBytes32String("GPL4"));
+
+        const registeredLicenseCount =
+          await config.dependencyRegistry.getLicenseTypeCount();
+        expect(registeredLicenseCount).to.eq(2);
+
+        const licenseTypes = await config.dependencyRegistry.getLicenseTypes();
+        expect(licenseTypes).to.deep.eq(["MIT", "GPL4"]);
+
+        const storedLicenseType =
+          await config.dependencyRegistry.getLicenseType(1);
+        expect(storedLicenseType).to.eq("GPL4");
+      });
+
+      it("does not allow adding an existing license type", async function () {
+        const config = await loadFixture(_beforeEach);
+        // admin can update
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .addLicenseType(licenseTypeBytes),
+          "License type already exists"
+        );
+      });
+
+      it("does not allow adding an empty string as a license type", async function () {
+        const config = await loadFixture(_beforeEach);
+        // admin can update
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .addLicenseType(ethers.utils.formatBytes32String("")),
+          "License type cannot be empty string"
+        );
+      });
+    });
+
     describe("addDependency", function () {
       it("does not allow non-admins to add a dependency", async function () {
         const config = await loadFixture(_beforeEach);
@@ -175,6 +240,7 @@ describe(`DependencyRegistryV0`, async function () {
             .connect(config.accounts.artist)
             .addDependency(
               ethers.utils.formatBytes32String("p5js@1.0.0"),
+              licenseTypeBytes,
               preferredCDN,
               preferredRepository,
               referenceWebsite
@@ -191,6 +257,7 @@ describe(`DependencyRegistryV0`, async function () {
             .connect(config.accounts.deployer)
             .addDependency(
               ethers.utils.formatBytes32String("p5js"),
+              licenseTypeBytes,
               preferredCDN,
               preferredRepository,
               referenceWebsite
@@ -202,11 +269,29 @@ describe(`DependencyRegistryV0`, async function () {
             .connect(config.accounts.deployer)
             .addDependency(
               ethers.utils.formatBytes32String("p5@js@1.0.0"),
+              licenseTypeBytes,
               preferredCDN,
               preferredRepository,
               referenceWebsite
             ),
           "must contain exactly one @"
+        );
+      });
+
+      it("does not allow a dependency to be added without a valid license type", async function () {
+        const config = await loadFixture(_beforeEach);
+        // deployer cannot update
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .addDependency(
+              dependencyTypeBytes,
+              ethers.utils.formatBytes32String("nonExistentLicenseType"),
+              preferredCDN,
+              preferredRepository,
+              referenceWebsite
+            ),
+          "License type does not exist"
         );
       });
 
@@ -218,6 +303,7 @@ describe(`DependencyRegistryV0`, async function () {
             .connect(config.accounts.deployer)
             .addDependency(
               dependencyTypeBytes,
+              licenseTypeBytes,
               preferredCDN,
               preferredRepository,
               referenceWebsite
@@ -226,6 +312,7 @@ describe(`DependencyRegistryV0`, async function () {
           .to.emit(config.dependencyRegistry, "DependencyAdded")
           .withArgs(
             dependencyTypeBytes,
+            licenseTypeBytes,
             preferredCDN,
             preferredRepository,
             referenceWebsite
@@ -249,6 +336,7 @@ describe(`DependencyRegistryV0`, async function () {
           );
         expect(dependencyDetails).to.deep.eq([
           dependencyType, // type@version
+          licenseType, // licenseType
           preferredCDN, // preferredCDN
           0, // aadditionalCDNCount
           preferredRepository, // preferredRepository
@@ -267,6 +355,7 @@ describe(`DependencyRegistryV0`, async function () {
           .connect(config.accounts.deployer)
           .addDependency(
             dependencyTypeBytes,
+            licenseTypeBytes,
             preferredCDN,
             preferredRepository,
             referenceWebsite
@@ -300,6 +389,7 @@ describe(`DependencyRegistryV0`, async function () {
           .connect(config.accounts.deployer)
           .addDependency(
             dependencyTypeBytes,
+            licenseTypeBytes,
             preferredCDN,
             preferredRepository,
             referenceWebsite
@@ -370,6 +460,7 @@ describe(`DependencyRegistryV0`, async function () {
           .connect(config.accounts.deployer)
           .addDependency(
             dependencyTypeBytes,
+            licenseTypeBytes,
             preferredCDN,
             preferredRepository,
             referenceWebsite
@@ -397,6 +488,7 @@ describe(`DependencyRegistryV0`, async function () {
           .connect(config.accounts.deployer)
           .addDependency(
             dependencyTypeBytes,
+            licenseTypeBytes,
             preferredCDN,
             preferredRepository,
             referenceWebsite
@@ -575,6 +667,7 @@ describe(`DependencyRegistryV0`, async function () {
         .connect(config.accounts.deployer)
         .addDependency(
           dependencyTypeBytes,
+          licenseTypeBytes,
           preferredCDN,
           preferredRepository,
           referenceWebsite
@@ -1262,6 +1355,7 @@ describe(`DependencyRegistryV0`, async function () {
         .connect(config.accounts.deployer)
         .addDependency(
           dependencyTypeBytes,
+          licenseTypeBytes,
           preferredCDN,
           preferredRepository,
           referenceWebsite
@@ -1528,6 +1622,7 @@ describe(`DependencyRegistryV0`, async function () {
         .connect(config.accounts.deployer)
         .addDependency(
           dependencyTypeBytes,
+          licenseTypeBytes,
           preferredCDN,
           preferredRepository,
           referenceWebsite
@@ -1807,6 +1902,7 @@ describe(`DependencyRegistryV0`, async function () {
         .connect(config.accounts.deployer)
         .addDependency(
           dependencyTypeBytes,
+          licenseTypeBytes,
           preferredCDN,
           preferredRepository,
           referenceWebsite
@@ -1837,6 +1933,28 @@ describe(`DependencyRegistryV0`, async function () {
             .connect(config.accounts.deployer)
             .addSupportedCoreContract(config.genArt721Core.address),
           "Contract already supported"
+        );
+      });
+      it("does not allow removing supported core contract that has already been removed", async function () {
+        // get config from beforeEach
+        const config = this.config;
+        await config.dependencyRegistry
+          .connect(config.accounts.deployer)
+          .addSupportedCoreContract(config.genArt721Core.address);
+
+        await expect(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .removeSupportedCoreContract(config.genArt721Core.address)
+        )
+          .to.emit(config.dependencyRegistry, "SupportedCoreContractRemoved")
+          .withArgs(config.genArt721Core.address);
+
+        await expectRevert(
+          config.dependencyRegistry
+            .connect(config.accounts.deployer)
+            .removeSupportedCoreContract(config.genArt721Core.address),
+          "Core contract already removed or not in set"
         );
       });
       it("does not allow the zero addresss", async function () {
@@ -1900,7 +2018,7 @@ describe(`DependencyRegistryV0`, async function () {
           config.dependencyRegistry
             .connect(config.accounts.deployer)
             .removeSupportedCoreContract(config.genArt721Core.address),
-          "Core contract not supported"
+          "Core contract already removed or not in set"
         );
       });
       it("allows admin to remove supported core contract", async function () {
@@ -2215,6 +2333,7 @@ describe(`DependencyRegistryV0`, async function () {
         .connect(config.accounts.user)
         .addDependency(
           ethers.utils.formatBytes32String("three@0.0.24"),
+          ethers.utils.formatBytes32String("MIT"),
           "preferredCDN",
           "preferredRepository",
           "referenceWebsite"
@@ -2246,6 +2365,7 @@ describe(`DependencyRegistryV0`, async function () {
           .connect(config.accounts.user)
           .addDependency(
             ethers.utils.formatBytes32String("three@0.0.24"),
+            ethers.utils.formatBytes32String("MIT"),
             "preferredCDN",
             "preferredRepository",
             "referenceWebsite"
