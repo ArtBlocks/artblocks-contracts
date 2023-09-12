@@ -1,0 +1,11 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-09-11T13:38:59.125Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/randomizer/goerli-staging/shared-randomizer-deploy-config.staging.ts
+[INFO] pseudorandom atomic contract PseudorandomAtomic deployed at 0x2fc784a8d3Cb5B440BFf01dcCe0AD93237033812
+[INFO] SharedRandomizerV0 deployed at 0x88293a3eef2516855BE0F798630e141D14333423
+[INFO] Verifying SharedRandomizerV0 contract deployment...
+The contract 0x88293a3eef2516855BE0F798630e141D14333423 has already been verified
+[INFO] SharedRandomizerV0 contract verified on Etherscan at 0x88293a3eef2516855BE0F798630e141D14333423
+[INFO] Deployment details written/appended to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/randomizer/goerli-staging/DEPLOYMENTS.md
+[INFO] Done!
+[INFO] No contracts were migrated to use the new shared randomizers. Each contract must be migrated individually.
