@@ -75,4 +75,9 @@ interface ISharedMinterSEAV0 {
         uint256 indexed projectId,
         address indexed coreContract
     );
+
+    function createBid(
+        uint256 _projectId,
+        address _coreContract
+    ) external payable;
 }
