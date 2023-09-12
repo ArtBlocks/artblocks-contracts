@@ -110,3 +110,24 @@ Date: 2023-09-08T00:08:20.765Z
 
 ---
 
+
+# Minter Deployment
+
+Date: 2023-09-11T23:30:13.482Z
+
+## **Network:** goerli
+
+## **Environment:** staging
+
+**Deployment Input File:** `deployments/engine/V3/partners/vca-flex/minter-deploy-config-2.staging.ts`
+
+**MinterMerkleV5:** https://goerli.etherscan.io/address/0x99389c14D3D815326aaf503A6987d1940A800250#code
+
+**Associated core contract:** 0xAf40b66072Fe00CAcF5A25Cd1b7F1688Cde20f2F
+
+**Associated minter filter:** 0x13a8Fca80084Bb968EDE9AA69E38b0cF59Ba603f
+
+**Deployment Args:** 0xAf40b66072Fe00CAcF5A25Cd1b7F1688Cde20f2F,0x13a8Fca80084Bb968EDE9AA69E38b0cF59Ba603f,0x00000000000076A84feF008CDAbe6409d2FE638B
+
+---
+
