@@ -819,6 +819,56 @@ runForEach.forEach((params) => {
             );
         });
       });
+
+      it("does not allow reentrant purchases", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndAdvanceToStart(config);
+        // deploy reentrancy contract
+        const reentrancy = await deployAndGet(
+          config,
+          "ReentrancyHolderMockShared",
+          []
+        );
+        // artist sents token zero of project zero to reentrant contract
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .transferFrom(
+            config.accounts.artist.address,
+            reentrancy.address,
+            config.projectZeroTokenZero.toNumber()
+          );
+        // perform attack
+        // @dev refund failed error message is expected, because attack occurrs during the refund call
+        await expectRevert(
+          reentrancy.connect(config.accounts.user).attack(
+            2, // qty to purchase
+            config.minter.address, // minter address
+            config.projectZero, // project id
+            config.genArt721Core.address, // core address
+            config.startingPrice.add("1"), // price to pay
+            config.genArt721Core.address, // held token address
+            config.projectZeroTokenZero.toNumber(), // held token id
+            {
+              value: config.startingPrice.add(1).mul(2),
+            }
+          ),
+          revertMessages.refundFailed
+        );
+
+        // does allow single purchase
+        await reentrancy.connect(config.accounts.user).attack(
+          1, // qty to purchase
+          config.minter.address, // minter address
+          config.projectZero, // project id
+          config.genArt721Core.address, // core address
+          config.startingPrice.add("1"), // price to pay
+          config.genArt721Core.address, // held token address
+          config.projectZeroTokenZero.toNumber(), // held token id
+          {
+            value: config.startingPrice.add(1),
+          }
+        );
+      });
     });
 
     describe("purchaseTo", async function () {

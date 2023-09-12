@@ -564,6 +564,10 @@ runForEach.forEach((params) => {
           );
         });
       });
+
+      // @dev not straightforward to test reentrancy attack, because it requires an ERC20 with pre or post
+      // transfer hooks, which we have not built a mock contract for. Instead, we test that the reentrancy
+      // guard is working on other minting contracts, and assume that the implementation works here as well.
     });
 
     describe("purchaseTo", async function () {

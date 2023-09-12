@@ -11,6 +11,7 @@ import {
   configureProjectZeroAuctionAndAdvanceOneDay,
   configureProjectZeroAuctionAndAdvanceOneDayAndWithdrawRevenues,
   configureProjectZeroAuctionAndAdvanceToStart,
+  configureProjectZeroAuctionAndSellout,
 } from "./helpers";
 import { Logger } from "@ethersproject/logger";
 // hide nuisance logs about event overloading
@@ -683,6 +684,47 @@ runForEach.forEach((params) => {
             config.genArt721Core.address
           );
         expect(latestPurchasePrice1).to.not.equal(0);
+      });
+
+      it("does not allow reentrant purchases", async function () {
+        const config = await loadFixture(_beforeEach);
+        // withdraw revenues to cause splits to happen atomically during purchase
+        await configureProjectZeroAuctionAndAdvanceOneDayAndWithdrawRevenues(
+          config
+        );
+        // deploy reentrancy contract
+        const reentrancy = await deployAndGet(
+          config,
+          "ReentrancyMockShared",
+          []
+        );
+        // perform attack
+        // @dev refund failed error message is expected, because attack occurrs during the refund call
+        await expectRevert(
+          reentrancy.connect(config.accounts.user).attack(
+            2, // qty to purchase
+            config.minter.address, // minter address
+            config.projectZero, // project id
+            config.genArt721Core.address, // core address
+            config.basePrice.add("1"), // price to pay
+            {
+              value: config.basePrice.add(1).mul(2),
+            }
+          ),
+          revertMessages.refundFailed
+        );
+
+        // does allow single purchase
+        await reentrancy.connect(config.accounts.user).attack(
+          1, // qty to purchase
+          config.minter.address, // minter address
+          config.projectZero, // project id
+          config.genArt721Core.address, // core address
+          config.basePrice.add("1"), // price to pay
+          {
+            value: config.basePrice.add(1),
+          }
+        );
       });
     });
 
