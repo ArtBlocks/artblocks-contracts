@@ -286,6 +286,8 @@ contract MinterSetPricePolyptychERC20V5 is
      * contract `_coreContract` to be `_currencySymbol` at address
      * `_currencyAddress`.
      * Only supports ERC20 tokens - for ETH minting, use a different minter.
+     * @dev nonReentrant because no reentrant use cases, and to eliminate an
+     * entire branch of reentrancy attack vectors.
      * @param _projectId Project ID to update.
      * @param _coreContract Core contract address for the given project.
      * @param _currencySymbol Currency symbol.
