@@ -9,6 +9,9 @@ import {
 } from "../../../util/common";
 import { ethers } from "hardhat";
 import { revertMessages } from "../../constants";
+import { Logger } from "@ethersproject/logger";
+// hide nuisance logs about event overloading
+Logger.setLogLevel(Logger.levels.ERROR);
 
 const { MerkleTree } = require("merkletreejs");
 const keccak256 = require("keccak256");
@@ -654,6 +657,89 @@ runForEach.forEach((params) => {
               }
             );
         });
+      });
+
+      it("does not allow reentrant purchases", async function () {
+        const config = await loadFixture(_beforeEach);
+        await config.minter
+          .connect(config.accounts.artist)
+          .updatePricePerTokenInWei(
+            config.projectZero,
+            config.genArt721Core.address,
+            config.pricePerTokenInWei
+          );
+        // deploy reentrancy contract
+        const reentrancy = await deployAndGet(
+          config,
+          "ReentrancyMerkleMockShared",
+          []
+        );
+
+        // artist generates a Merkle tree that includes malicious contract
+        const attackerAddress = reentrancy.address;
+
+        const elementsProjectZeroWithAttacker = [];
+
+        elementsProjectZeroWithAttacker.push(
+          config.accounts.deployer.address,
+          config.accounts.artist.address,
+          attackerAddress,
+          config.accounts.user.address,
+          config.accounts.user2.address
+        );
+
+        // build Merkle trees for projects zero, one, and two
+        const merkleTreeZero = new MerkleTree(
+          elementsProjectZeroWithAttacker.map((_addr) => hashAddress(_addr)),
+          keccak256,
+          {
+            sortPairs: true,
+          }
+        );
+
+        // artists updates project Merkle root
+        await config.minter
+          .connect(config.accounts.artist)
+          .updateMerkleRoot(
+            config.projectZero,
+            config.genArt721Core.address,
+            merkleTreeZero.getHexRoot()
+          );
+
+        // attacker calculates Merkle proof for malicious contract
+        const attackerMerkleProofZero = merkleTreeZero.getHexProof(
+          hashAddress(attackerAddress)
+        );
+
+        // perform attack
+        // @dev refund failed error message is expected, because attack occurrs during the refund call
+        await expectRevert(
+          reentrancy.connect(config.accounts.user).attack(
+            2, // qty to purchase
+            config.minter.address, // minter address
+            config.projectZero, // project id
+            config.genArt721Core.address, // core address
+            config.pricePerTokenInWei.add("1"), // price to pay
+            attackerMerkleProofZero, // Merkle proof
+            {
+              value: config.pricePerTokenInWei.add(1).mul(2),
+            }
+          ),
+          revertMessages.refundFailed
+        );
+
+        // does allow single purchase
+        await reentrancy.connect(config.accounts.user).attack(
+          1, // qty to purchase
+          config.minter.address, // minter address
+          config.projectZero, // project id
+          config.genArt721Core.address, // core address
+          config.pricePerTokenInWei.add("1"), // price to pay
+          attackerMerkleProofZero, // Merkle proof
+          {
+            value: config.pricePerTokenInWei.add(1),
+          }
+        );
       });
     });
 
