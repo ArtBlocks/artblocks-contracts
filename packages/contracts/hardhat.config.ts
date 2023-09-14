@@ -11,6 +11,7 @@ import "@openzeppelin/hardhat-upgrades";
 import { solidityConfig } from "./hardhat.solidity-config";
 
 const MAINNET_JSON_RPC_PROVIDER_URL = process.env.MAINNET_JSON_RPC_PROVIDER_URL;
+const SEPOLIA_JSON_RPC_PROVIDER_URL = process.env.SEPOLIA_JSON_RPC_PROVIDER_URL;
 const GOERLI_JSON_RPC_PROVIDER_URL = process.env.GOERLI_JSON_RPC_PROVIDER_URL;
 const MAINNET_PRIVATE_KEY = process.env.MAINNET_PRIVATE_KEY;
 const TESTNET_PRIVATE_KEY = process.env.TESTNET_PRIVATE_KEY;
@@ -21,6 +22,8 @@ const ARBISCAN_API_KEY = process.env.ARBISCAN_API_KEY;
 // L2 Configuration
 const ARBITRUM_MAINNET_JSON_RPC_PROVIDER_URL =
   process.env.ARBITRUM_MAINNET_JSON_RPC_PROVIDER_URL;
+const ARBITRUM_SEPOLIA_JSON_RPC_PROVIDER_URL =
+  process.env.ARBITRUM_SEPOLIA_JSON_RPC_PROVIDER_URL;
 const ARBITRUM_GOERLI_JSON_RPC_PROVIDER_URL =
   process.env.ARBITRUM_GOERLI_JSON_RPC_PROVIDER_URL;
 
@@ -52,6 +55,13 @@ module.exports = {
       gasMultiplier: 1.75,
       maxNominalGasPriceGwei: 50,
     },
+    sepolia: {
+      url: SEPOLIA_JSON_RPC_PROVIDER_URL,
+      accounts: [`0x${TESTNET_PRIVATE_KEY}`],
+      gasPrice: "auto",
+      gasMultiplier: 4.0,
+      maxNominalGasPriceGwei: 200,
+    },
     goerli: {
       url: GOERLI_JSON_RPC_PROVIDER_URL,
       accounts: [`0x${TESTNET_PRIVATE_KEY}`],
@@ -80,6 +90,13 @@ module.exports = {
       gasMultiplier: 1.5,
       maxNominalGasPriceGwei: 50,
     },
+    "arbitrum-sepolia": {
+      url: ARBITRUM_SEPOLIA_JSON_RPC_PROVIDER_URL,
+      accounts: [`0x${TESTNET_PRIVATE_KEY}`],
+      gasPrice: "auto",
+      gasMultiplier: 1.5,
+      maxNominalGasPriceGwei: 200,
+    },
     "arbitrum-goerli": {
       url: ARBITRUM_GOERLI_JSON_RPC_PROVIDER_URL,
       accounts: [`0x${TESTNET_PRIVATE_KEY}`],
@@ -97,6 +114,7 @@ module.exports = {
       goerli: ETHERSCAN_API_KEY,
       arbitrum: ARBISCAN_API_KEY, // This is unused but here in case hardhat changes
       arbitrumOne: ARBISCAN_API_KEY,
+      "arbitrum-sepolia": ARBISCAN_API_KEY,
       "arbitrum-goerli": ARBISCAN_API_KEY,
     },
   },
