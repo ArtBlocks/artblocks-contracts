@@ -1120,9 +1120,9 @@ contract MinterDAExpSettlementV3 is
                 _coreContract,
                 _isEngineCaches[_coreContract]
             );
-            SplitFundsLib.splitFundsETH({
+            SplitFundsLib.splitRevenuesETH({
                 _projectId: _projectId,
-                _pricePerTokenInWei: currentPriceInWei,
+                _valueInWei: currentPriceInWei,
                 _coreContract: _coreContract,
                 _isEngine: isEngine
             });
