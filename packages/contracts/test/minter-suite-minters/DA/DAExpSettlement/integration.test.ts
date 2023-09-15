@@ -642,17 +642,27 @@ runForEach.forEach((params) => {
         expect(artistBalance2).to.equal(artistBalance1);
       });
 
-      it("does distribute revenues after reaching base price and revenues collected", async function () {
+      it("does distribute revenues after reaching base price and revenues collected, NO refunds to purchaser", async function () {
         const config = await loadFixture(_beforeEach);
         await configureProjectZeroAuctionAndAdvanceOneDayAndWithdrawRevenues(
           config
         );
         // purchase 1
         const artistBalance1 = await config.accounts.artist.getBalance();
+        const userBalance1 = await config.accounts.user.getBalance();
+        // set gas price of next transaction to 0 to ensure no gas fees are paid for accurate balance tracking
+        await ethers.provider.send("hardhat_setNextBlockBaseFeePerGas", [
+          "0x0",
+        ]);
+        // important - over-paid to ensure excess payment is not refunded
+        const excessPaymentValue = config.startingPrice.add(
+          ethers.utils.parseEther("1.0")
+        );
         await config.minter
           .connect(config.accounts.user)
           .purchase(config.projectZero, config.genArt721Core.address, {
-            value: config.startingPrice,
+            value: excessPaymentValue,
+            gasPrice: 0,
           });
         // expect revenues to have been distributed
         const artistBalance2 = await config.accounts.artist.getBalance();
@@ -660,6 +670,12 @@ runForEach.forEach((params) => {
           ? config.basePrice.mul(8).div(10) // 80% to artist
           : config.basePrice.mul(9).div(10); // 90% to artist
         expect(artistBalance2).to.equal(artistBalance1.add(expectedRevenue));
+        // expect user's excess payment to NOT have been refunded
+        // @dev this is important, as refunds on the settlement minter take place during the
+        // settlement call, and distributing a refund here would cause a double-refund and
+        // could be used to drain the minter contract of all funds.
+        const userBalance2 = await config.accounts.user.getBalance();
+        expect(userBalance2).to.equal(userBalance1.sub(excessPaymentValue));
       });
 
       it("updates latest purchase price", async function () {
@@ -687,6 +703,10 @@ runForEach.forEach((params) => {
       });
 
       it("does not allow reentrant purchases", async function () {
+        // since refunds are not sent atomically to purchaser on settlement minter,
+        // attacker is must be priviliged artist or admin, making config a somewhat
+        // silly reentrancy attack. Still worth testing to ensure nonReentrant
+        // modifier is working.
         const config = await loadFixture(_beforeEach);
         // withdraw revenues to cause splits to happen atomically during purchase
         await configureProjectZeroAuctionAndAdvanceOneDayAndWithdrawRevenues(
@@ -698,6 +718,24 @@ runForEach.forEach((params) => {
           "ReentrancyMockShared",
           []
         );
+        // set reentrancy contract as provider or artblocks contract
+        // update platform payment address to the reentrancy mock contract
+        // route to appropriate core function
+        if (config.isEngine) {
+          await config.genArt721Core
+            .connect(config.accounts.deployer)
+            .updateProviderSalesAddresses(
+              reentrancy.address,
+              config.accounts.user.address,
+              config.accounts.additional.address,
+              config.accounts.additional2.address
+            );
+        } else {
+          await config.genArt721Core
+            .connect(config.accounts.deployer)
+            .updateArtblocksPrimarySalesAddress(reentrancy.address);
+        }
+
         // perform attack
         // @dev refund failed error message is expected, because attack occurrs during the refund call
         await expectRevert(
@@ -711,7 +749,9 @@ runForEach.forEach((params) => {
               value: config.basePrice.add(1).mul(2),
             }
           ),
-          revertMessages.refundFailed
+          // failure message occurs during payment to render provider, where reentrency
+          // attack occurs
+          revertMessages.renderProviderPaymentFailed
         );
 
         // does allow single purchase
