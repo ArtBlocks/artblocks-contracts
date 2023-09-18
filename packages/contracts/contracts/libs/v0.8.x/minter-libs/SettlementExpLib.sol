@@ -42,10 +42,11 @@ library SettlementExpLib {
         // In that case, the new auction will be required to have a starting
         // price less than or equal to this value, if one or more purchases
         // have been made on this minter.
-        // @dev max uint128 allows for > 1e51 ETH (much more than max supply)
+        // @dev max uint112 allows for > 1e15 ETH
+        // (one-hundred-trillion ETH is much more than max supply)
         // This enables struct packing, and is consistent with prices value
         // limits in DAExpLib's DAProjectConfig struct.
-        uint128 latestPurchasePrice;
+        uint112 latestPurchasePrice;
     }
 
     // The Receipt struct tracks the state of a user's settlement on a given
@@ -109,7 +110,7 @@ library SettlementExpLib {
     function adminEmergencyReduceSelloutPrice(
         uint256 _projectId,
         address _coreContract,
-        uint128 _newSelloutPrice,
+        uint112 _newSelloutPrice,
         SettlementAuctionProjectConfig storage _settlementAuctionProjectConfig,
         MaxInvocationsLib.MaxInvocationsProjectConfig
             storage _maxInvocationsProjectConfig,
@@ -221,7 +222,7 @@ library SettlementExpLib {
                 "Active auction not yet sold out"
             );
         } else {
-            uint128 basePrice = _DAProjectConfig.basePrice;
+            uint112 basePrice = _DAProjectConfig.basePrice;
             // base price of zero indicates no sales, since base price of zero
             // is not allowed when configuring an auction.
             // @dev no coverage else branch of following line because redundant

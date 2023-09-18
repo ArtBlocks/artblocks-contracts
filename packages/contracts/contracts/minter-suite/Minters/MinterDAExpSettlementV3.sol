@@ -383,7 +383,7 @@ contract MinterDAExpSettlementV3 is
     function adminEmergencyReduceSelloutPrice(
         uint256 _projectId,
         address _coreContract,
-        uint128 _newSelloutPrice
+        uint112 _newSelloutPrice
     ) external {
         AuthLib.onlyCoreAdminACL({
             _coreContract: _coreContract,
@@ -1089,7 +1089,7 @@ contract MinterDAExpSettlementV3 is
         // @dev this is used to enforce monotonically decreasing purchase price
         // across multiple auctions
         _settlementAuctionProjectConfig.latestPurchasePrice = currentPriceInWei
-            .toUint128();
+            .toUint112();
 
         tokenId = minterFilter.mint_joo({
             _to: _to,
