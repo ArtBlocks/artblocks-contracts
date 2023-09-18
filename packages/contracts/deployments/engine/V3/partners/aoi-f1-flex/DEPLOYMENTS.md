@@ -45,3 +45,50 @@ Date: 2023-08-11T21:38:34.853Z
 
 ---
 
+
+# Deployment
+
+Date: 2023-09-15T15:55:03.670Z
+
+## **Network:** mainnet
+
+## **Environment:** mainnet
+
+**Deployment Input File:** `deployments/engine/V3/partners/aoi-f1-flex/deployment-config.mainnet.ts`
+
+**GenArt721CoreV3_Engine_Flex:** https://etherscan.io/address/0x8cDBd7010Bd197848e95C1FD7F6E870AaC9b0d3C#code
+
+**AdminACLV1:** https://etherscan.io/address/0xF470012b134262C5Ec679F5b9Fc1107018DE7cd4#code
+
+**Engine Registry:** https://etherscan.io/address/0x652490c8BB6e7ec3Fd798537D2F348D7904BBbc2#code
+
+**MinterFilterV1:** https://etherscan.io/address/0x01B5E0E6Cb38121DbeDf5d2E964DF810E2c742c9#code
+
+**Minters:**
+
+**MinterSetPriceV4:** https://etherscan.io/address/0x1F708B1ca4a05F96d624A2dC8b90D01c9005e005#code
+
+**MinterDAExpSettlementV1:** https://etherscan.io/address/0x3f90c5C6fa6ddDC316221857456cdC9BD9dDF504#code
+
+**MinterHolderV4:** https://etherscan.io/address/0x6A0353e754d30bB5fA3a50001262A5a790A39100#code
+
+
+
+**Metadata**
+
+- **Starting Project Id:** 0
+- **Token Name:** AOI Engine
+- **Token Ticker:** AOI
+- **Auto Approve Artist Split Proposals:** false
+- **Render Provider Address, Primary Sales:** 0xd4F76BBd27168c7d9F2da881BF8CCBAB44e2Bd4a
+- **Platform Provider Address, Primary Sales:** 0xD533F117a926244974ac2690145Ed04829e72a39
+- **BytecodeStorageReader Library:** 0xf0585dF582A0ad119F1616FB82f3b449a98EeCd5
+
+**Other**
+
+- **Add initial project?:** false
+- **Add initial token?:** false
+- **Image Bucket:** aoi-engine-mainnet
+
+---
+
