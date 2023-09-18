@@ -980,7 +980,7 @@ contract MinterSetPricePolyptychV5 is
             _coreContract,
             _isEngineCaches[_coreContract]
         );
-        SplitFundsLib.splitFundsETH({
+        SplitFundsLib.splitFundsETHRefundSender({
             _projectId: _projectId,
             _pricePerTokenInWei: _setPriceProjectConfig.pricePerTokenInWei,
             _coreContract: _coreContract,
