@@ -122,6 +122,15 @@ library SplitFundsLib {
                 additionalPayeePrimaryAddress_
             ) = IGenArt721CoreContractV3_Engine(_coreContract)
                 .getPrimaryRevenueSplits(_projectId, _valueInWei);
+            // require total revenue split is 100%
+            require(
+                renderProviderRevenue_ +
+                    platformProviderRevenue_ +
+                    artistRevenue_ +
+                    additionalPayeePrimaryRevenue_ ==
+                    _valueInWei,
+                "Invalid revenue split totals"
+            );
             // Platform Provider payment (only possible if engine)
             if (platformProviderRevenue_ > 0) {
                 (success, ) = platformProviderAddress_.call{
@@ -141,6 +150,14 @@ library SplitFundsLib {
             ) = IGenArt721CoreContractV3(_coreContract).getPrimaryRevenueSplits(
                 _projectId,
                 _valueInWei
+            );
+            // require total revenue split is 100%
+            require(
+                renderProviderRevenue_ +
+                    artistRevenue_ +
+                    additionalPayeePrimaryRevenue_ ==
+                    _valueInWei,
+                "Invalid revenue split totals"
             );
         }
         // Render Provider / Art Blocks payment
@@ -225,6 +242,15 @@ library SplitFundsLib {
                 additionalPayeePrimaryAddress_
             ) = IGenArt721CoreContractV3_Engine(_coreContract)
                 .getPrimaryRevenueSplits(_projectId, _pricePerTokenInWei);
+            // require total revenue split is 100%
+            require(
+                renderProviderRevenue_ +
+                    platformProviderRevenue_ +
+                    artistRevenue_ +
+                    additionalPayeePrimaryRevenue_ ==
+                    _pricePerTokenInWei,
+                "Invalid revenue split totals"
+            );
             // Platform Provider payment (only possible if engine)
             if (platformProviderRevenue_ > 0) {
                 require(
@@ -248,6 +274,14 @@ library SplitFundsLib {
             ) = IGenArt721CoreContractV3(_coreContract).getPrimaryRevenueSplits(
                 _projectId,
                 _pricePerTokenInWei
+            );
+            // require total revenue split is 100%
+            require(
+                renderProviderRevenue_ +
+                    artistRevenue_ +
+                    additionalPayeePrimaryRevenue_ ==
+                    _pricePerTokenInWei,
+                "Invalid revenue split totals"
             );
         }
         // Art Blocks payment
