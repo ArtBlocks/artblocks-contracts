@@ -47,6 +47,14 @@ library SettlementExpLib {
         // This enables struct packing, and is consistent with prices value
         // limits in DAExpLib's DAProjectConfig struct.
         uint112 latestPurchasePrice;
+        // Track per-project fund balance, in wei. This is used as a redundant
+        // backstop to prevent one project from draining the minter's balance
+        // of ETH from other projects, which is a worthwhile failsafe on this
+        // shared minter.
+        // @dev maxuint112 allows for > 1e15 ETH
+        // (one-hundred-trillion ETH is much more than max supply)
+        // This enables struct packing.
+        uint112 projectBalance;
     }
 
     // The Receipt struct tracks the state of a user's settlement on a given
@@ -161,6 +169,8 @@ library SettlementExpLib {
      * marks the auction as having had its revenues collected.
      * IMPORTANT - this affects state and distributes revenue funds, so it
      * performs all three of CHECKS, EFFECTS and INTERACTIONS.
+     * This function updates a project's balance to reflect the amount of
+     * revenues distributed, and will revert if underflow occurs.
      * @param _projectId Project ID to get revenues for
      * @param _coreContract Core contract address
      * @param _settlementAuctionProjectConfig SettlementAuctionProjectConfig
@@ -238,6 +248,12 @@ library SettlementExpLib {
         // calculate the artist and admin revenues
         uint256 netRevenues = _settlementAuctionProjectConfig
             .numSettleableInvocations * _price;
+
+        // reduce project balance by the amount of ETH being distributed
+        // @dev underflow checked automatically in solidity ^0.8
+        _settlementAuctionProjectConfig.projectBalance -= netRevenues
+            .toUint112();
+
         // INTERACTIONS
         SplitFundsLib.splitRevenuesETHNoRefund({
             _projectId: _projectId,
