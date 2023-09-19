@@ -238,7 +238,7 @@ library SettlementExpLib {
         uint256 netRevenues = _settlementAuctionProjectConfig
             .numSettleableInvocations * _price;
         // INTERACTIONS
-        SplitFundsLib.splitRevenuesETH({
+        SplitFundsLib.splitRevenuesETHNoRefund({
             _projectId: _projectId,
             _valueInWei: netRevenues,
             _coreContract: _coreContract,

@@ -887,7 +887,7 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
             _coreContract,
             _isEngineCaches[_coreContract]
         );
-        SplitFundsLib.splitRevenuesETH({
+        SplitFundsLib.splitRevenuesETHNoRefund({
             _projectId: _projectId,
             _valueInWei: currentBid,
             _coreContract: _coreContract,
