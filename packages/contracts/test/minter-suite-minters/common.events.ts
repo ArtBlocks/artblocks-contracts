@@ -2,6 +2,10 @@ import { expect } from "chai";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { T_Config } from "../util/common";
 
+const minterTypesThatDoNotImplmentSyncMaxInvocationsToCore = [
+  "MinterDAExpSettlementV3",
+];
+
 /**
  * These tests are intended to check common events Minter functionality
  * for minters in our minter suite.
@@ -31,6 +35,17 @@ export const Common_Events = async (_beforeEach: () => Promise<T_Config>) => {
 
     it("emits event upon sync", async function () {
       const config = await loadFixture(_beforeEach);
+      const minterType = await config.minter.minterType();
+      if (
+        minterTypesThatDoNotImplmentSyncMaxInvocationsToCore.includes(
+          minterType
+        )
+      ) {
+        console.log(
+          "Minter type does not implement syncProjectMaxInvocationsToCore, skipping test..."
+        );
+        return;
+      }
       // artist manually limits
       await expect(
         config.minter

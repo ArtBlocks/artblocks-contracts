@@ -769,7 +769,7 @@ runForEach.forEach((params) => {
           config.minter
             .connect(config.accounts.artist)
             .updateRefundGasLimit(6_999),
-          revertMessages.onlyCoreAdminACL
+          revertMessages.onlyMinterFilterACL
         );
       });
 
@@ -802,7 +802,7 @@ runForEach.forEach((params) => {
           config.minter
             .connect(config.accounts.artist)
             .updateMinterTimeBufferSeconds(ONE_HOUR),
-          revertMessages.onlyCoreAdminACL
+          revertMessages.onlyMinterFilterACL
         );
       });
 

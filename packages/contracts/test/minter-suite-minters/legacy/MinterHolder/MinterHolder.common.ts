@@ -889,23 +889,6 @@ export const MinterHolder_Common = async (
   });
 
   describe("purchaseTo", async function () {
-    it("does not allow purchaseTo without NFT ownership args", async function () {
-      const config = await loadFixture(_beforeEach);
-      // expect revert due to price not being configured
-      await expectRevert(
-        config.minter
-          .connect(config.accounts.additional)
-          ["purchaseTo(address,uint256)"](
-            config.accounts.additional.address,
-            config.projectZero,
-            {
-              value: config.pricePerTokenInWei,
-            }
-          ),
-        "Must claim NFT ownership"
-      );
-    });
-
     it("allows `purchaseTo` by default", async function () {
       const config = await loadFixture(_beforeEach);
       await config.minter

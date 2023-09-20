@@ -453,18 +453,6 @@ export const MinterHolder_Common = async () => {
   });
 
   describe("purchase", async function () {
-    it("does not allow purchase without NFT ownership args", async function () {
-      // expect revert due to price not being configured
-      await expectRevert(
-        this.minter
-          .connect(this.accounts.additional)
-          ["purchase(uint256)"](this.projectZero, {
-            value: this.pricePerTokenInWei,
-          }),
-        "Must claim NFT ownership"
-      );
-    });
-
     it("does not allow purchase prior to configuring price", async function () {
       // expect revert due to price not being configured
       await expectRevert(
@@ -938,22 +926,6 @@ export const MinterHolder_Common = async () => {
   });
 
   describe("purchaseTo", async function () {
-    it("does not allow purchaseTo without NFT ownership args", async function () {
-      // expect revert due to price not being configured
-      await expectRevert(
-        this.minter
-          .connect(this.accounts.additional)
-          ["purchaseTo(address,uint256)"](
-            this.accounts.additional.address,
-            this.projectZero,
-            {
-              value: this.pricePerTokenInWei,
-            }
-          ),
-        "Must claim NFT ownership"
-      );
-    });
-
     it("allows `purchaseTo` by default", async function () {
       await this.minter
         .connect(this.accounts.artist)
@@ -1198,9 +1170,8 @@ export const MinterHolder_Common = async () => {
       const projectStateDataBefore = await viewFunctionWithInvocations(
         this.projectZero
       );
-      const executeTxResponse = await safeSdk2.executeTransaction(
-        safeTransaction
-      );
+      const executeTxResponse =
+        await safeSdk2.executeTransaction(safeTransaction);
       await executeTxResponse.transactionResponse?.wait();
       const projectStateDataAfter = await viewFunctionWithInvocations(
         this.projectZero

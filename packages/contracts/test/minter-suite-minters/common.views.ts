@@ -4,8 +4,8 @@ import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import {
   T_Config,
   deployCoreWithMinterFilter,
-  deployAndGet,
   isERC20Minter,
+  isDAMinter,
 } from "../util/common";
 import { Logger } from "@ethersproject/logger";
 // hide nuisance logs about event overloading
@@ -149,6 +149,12 @@ export const Common_Views = async (_beforeEach: () => Promise<T_Config>) => {
   describe("projectConfig", async function () {
     it("should return proper response when set", async function () {
       const config = await loadFixture(_beforeEach);
+      // DA minters do not have project config, so skip test if DA minter
+      if (await isDAMinter(config.minter)) {
+        console.log("DA minter does not have project config, skipping test...");
+        return;
+      }
+
       await config.minter
         .connect(config.accounts.artist)
         .updatePricePerTokenInWei(
@@ -158,7 +164,10 @@ export const Common_Views = async (_beforeEach: () => Promise<T_Config>) => {
         );
       const projectConfig = await config.minter
         .connect(config.accounts.artist)
-        .projectConfig(config.projectZero, config.genArt721Core.address);
+        .setPriceProjectConfig(
+          config.projectZero,
+          config.genArt721Core.address
+        );
 
       expect(projectConfig.pricePerTokenInWei).to.equal(
         config.pricePerTokenInWei
@@ -167,10 +176,18 @@ export const Common_Views = async (_beforeEach: () => Promise<T_Config>) => {
     });
     it("should return proper response when not set", async function () {
       const config = await loadFixture(_beforeEach);
+      // DA minters do not have project config, so skip test if DA minter
+      if (await isDAMinter(config.minter)) {
+        console.log("DA minter does not have project config, skipping test...");
+        return;
+      }
 
       const projectConfig = await config.minter
         .connect(config.accounts.artist)
-        .projectConfig(config.projectZero, config.genArt721Core.address);
+        .setPriceProjectConfig(
+          config.projectZero,
+          config.genArt721Core.address
+        );
 
       expect(projectConfig.pricePerTokenInWei).to.equal(constants.ZERO_BYTES32);
       expect(projectConfig.priceIsConfigured).to.equal(false);

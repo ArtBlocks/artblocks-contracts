@@ -43,42 +43,49 @@ module.exports = {
     hardhat: {
       gasPrice: 100000000000, // 100 gwei
       initialBaseFeePerGas: 0,
+      maxNominalGasPriceGwei: 200, // gwei
     },
     mainnet: {
       url: MAINNET_JSON_RPC_PROVIDER_URL,
       accounts: [`0x${MAINNET_PRIVATE_KEY}`],
       gasPrice: "auto",
       gasMultiplier: 1.75,
+      maxNominalGasPriceGwei: 50,
     },
     goerli: {
       url: GOERLI_JSON_RPC_PROVIDER_URL,
       accounts: [`0x${TESTNET_PRIVATE_KEY}`],
       gasPrice: "auto",
       gasMultiplier: 4.0,
+      maxNominalGasPriceGwei: 200,
     },
     palm_mainnet: {
       url: PALM_MAINNET_JSON_RPC_PROVIDER_URL,
       accounts: [`0x${MAINNET_PRIVATE_KEY}`],
       gasPrice: "auto",
       gasMultiplier: 1.5,
+      maxNominalGasPriceGwei: 50,
     },
     palm_testnet: {
       url: PALM_TESTNET_JSON_RPC_PROVIDER_URL,
       accounts: [`0x${TESTNET_PRIVATE_KEY}`],
       gasPrice: "auto",
       gasMultiplier: 1.5,
+      maxNominalGasPriceGwei: 200,
     },
     arbitrum: {
       url: ARBITRUM_MAINNET_JSON_RPC_PROVIDER_URL,
       accounts: [`0x${MAINNET_PRIVATE_KEY}`],
       gasPrice: "auto",
       gasMultiplier: 1.5,
+      maxNominalGasPriceGwei: 50,
     },
     "arbitrum-goerli": {
       url: ARBITRUM_GOERLI_JSON_RPC_PROVIDER_URL,
       accounts: [`0x${TESTNET_PRIVATE_KEY}`],
       gasPrice: "auto",
       gasMultiplier: 1.5,
+      maxNominalGasPriceGwei: 200,
     },
     coverage: {
       url: "http://localhost:8545",

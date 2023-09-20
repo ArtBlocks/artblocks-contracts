@@ -38,7 +38,7 @@ library AuthLib {
                 _contract: _contract,
                 _selector: _selector
             }),
-            "Only Core AdminACL allowed"
+            "Only MinterFilter AdminACL"
         );
     }
 

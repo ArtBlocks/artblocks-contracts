@@ -1,0 +1,84 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-08-11T21:46:52.211Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/gazelli-flex/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0xba1D8bB20f333aA12E6b24bDee4dBD217e574f19
+[INFO] Randomizer BasicRandomizerV2 deployed at 0xa595Cc8bd9d11900987D55300106D17A48EBB8Bd
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x810Fe1794aD3Ab416E57933229AD3f784501E272
+[INFO] Minter Filter MinterFilterV1 deployed at 0xf04efd8Fbf8Ea83A2c8Dff327eC9F500335E0EB9
+[INFO] MinterSetPriceV4 deployed at 0xe8fAFc6A4761f65B5AdCd9f52ee471F6746e0f65
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0xf04efd8Fbf8Ea83A2c8Dff327eC9F500335E0EB9.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0xe8fAFc6A4761f65B5AdCd9f52ee471F6746e0f65 on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0xFf90F956C9A7d52aC21C37fe7a34801849887f19.
+[INFO] Verifying core contract contract deployment...
+The contract 0x810Fe1794aD3Ab416E57933229AD3f784501E272 has already been verified
+[INFO] Core contract verified on Etherscan at 0x810Fe1794aD3Ab416E57933229AD3f784501E272}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0xba1D8bB20f333aA12E6b24bDee4dBD217e574f19 has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0xba1D8bB20f333aA12E6b24bDee4dBD217e574f19}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0xf04efd8Fbf8Ea83A2c8Dff327eC9F500335E0EB9 has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0xf04efd8Fbf8Ea83A2c8Dff327eC9F500335E0EB9}
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+The contract 0xe8fAFc6A4761f65B5AdCd9f52ee471F6746e0f65 has already been verified
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0xe8fAFc6A4761f65B5AdCd9f52ee471F6746e0f65}
+Created s3 bucket for https://gazell-io-goerli.s3.amazonaws.com
+[INFO] Created image bucket gazell-io-goerli
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/gazelli-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x810fe1794ad3ab416e57933229ad3f784501e272",
+  "name": "GAZELL.iO",
+  "bucket_name": "gazell-io-goerli",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0xFf90F956C9A7d52aC21C37fe7a34801849887f19, don't forget to update if requred.
+----------------------------------------
+[INFO] Datetime of deployment: 2023-08-11T21:51:08.180Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/gazelli-flex/deployment-config.mainnet.ts
+[INFO] Deploying to network: mainnet
+[INFO] Deploying to environment: mainnet
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0xD47c1AEeeb3e59B32b671F15a258E6Ce26D1327f
+[INFO] Randomizer BasicRandomizerV2 deployed at 0xc1e04a9a80806D864C2eAC1bdCE73A661f3964dF
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0xA86cD4EceBd96085fCe4697614d30600803455C4
+[INFO] Minter Filter MinterFilterV1 deployed at 0x0C35eb4b2646FF92E30cBB6f138006A7B74f7d60
+[INFO] MinterSetPriceV4 deployed at 0x936130f3042EE825d375A3beeDA04A2bA4880197
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0x0C35eb4b2646FF92E30cBB6f138006A7B74f7d60.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0x936130f3042EE825d375A3beeDA04A2bA4880197 on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0xFf90F956C9A7d52aC21C37fe7a34801849887f19.
+[INFO] Verifying core contract contract deployment...
+The contract 0xA86cD4EceBd96085fCe4697614d30600803455C4 has already been verified
+[INFO] Core contract verified on Etherscan at 0xA86cD4EceBd96085fCe4697614d30600803455C4}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0xD47c1AEeeb3e59B32b671F15a258E6Ce26D1327f has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0xD47c1AEeeb3e59B32b671F15a258E6Ce26D1327f}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0x0C35eb4b2646FF92E30cBB6f138006A7B74f7d60 has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0x0C35eb4b2646FF92E30cBB6f138006A7B74f7d60}
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+The contract 0x936130f3042EE825d375A3beeDA04A2bA4880197 has already been verified
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0x936130f3042EE825d375A3beeDA04A2bA4880197}
+Created s3 bucket for https://gazell-io-mainnet.s3.amazonaws.com
+[INFO] Created image bucket gazell-io-mainnet
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/gazelli-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0xa86cd4ecebd96085fce4697614d30600803455c4",
+  "name": "GAZELL.iO",
+  "bucket_name": "gazell-io-mainnet",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0xFf90F956C9A7d52aC21C37fe7a34801849887f19, don't forget to update if requred.

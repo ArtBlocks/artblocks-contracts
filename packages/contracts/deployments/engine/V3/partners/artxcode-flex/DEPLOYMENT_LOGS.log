@@ -1,0 +1,42 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-08-11T21:40:08.062Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/artxcode-flex/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0xffde3854d0221A28AF0A7B36d13565EeA449d453
+[INFO] Randomizer BasicRandomizerV2 deployed at 0xcC44988E0A2A8cE4fB571b232328935a6A2F52a3
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x6381703fAc9D6C3ea9d7Ff531120b9E47305835D
+[INFO] Minter Filter MinterFilterV1 deployed at 0xC3c74E2b0fb06793dBaa5Df3D0BAf470E8C6C9Be
+[INFO] MinterSetPriceV4 deployed at 0x22d680Fb73e4278b7C362324c101cC4bF03e9aD8
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0xC3c74E2b0fb06793dBaa5Df3D0BAf470E8C6C9Be.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0x22d680Fb73e4278b7C362324c101cC4bF03e9aD8 on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0xC3989DDDae38f59510bAf51A65EC7d1D3dE0A17e.
+[INFO] Verifying core contract contract deployment...
+The contract 0x6381703fAc9D6C3ea9d7Ff531120b9E47305835D has already been verified
+[INFO] Core contract verified on Etherscan at 0x6381703fAc9D6C3ea9d7Ff531120b9E47305835D}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0xffde3854d0221A28AF0A7B36d13565EeA449d453 has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0xffde3854d0221A28AF0A7B36d13565EeA449d453}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0xC3c74E2b0fb06793dBaa5Df3D0BAf470E8C6C9Be has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0xC3c74E2b0fb06793dBaa5Df3D0BAf470E8C6C9Be}
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+The contract 0x22d680Fb73e4278b7C362324c101cC4bF03e9aD8 has already been verified
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0x22d680Fb73e4278b7C362324c101cC4bF03e9aD8}
+Created s3 bucket for https://artxcode-goerli.s3.amazonaws.com
+[INFO] Created image bucket artxcode-goerli
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/artxcode-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x6381703fac9d6c3ea9d7ff531120b9e47305835d",
+  "name": "ARTXCODE",
+  "bucket_name": "artxcode-goerli",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63, don't forget to update if requred.

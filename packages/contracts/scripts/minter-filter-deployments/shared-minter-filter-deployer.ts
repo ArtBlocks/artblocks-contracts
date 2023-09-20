@@ -13,7 +13,6 @@ Logger.setLogLevel(Logger.levels.ERROR);
 // delay to avoid issues with reorgs and tx failures
 import { delay, getConfigInputs } from "../util/utils";
 import { EXTRA_DELAY_BETWEEN_TX } from "../util/constants";
-import { Contract } from "ethers";
 
 /**
  * This generic script was created to deploy shared minter filter contracts.
@@ -47,13 +46,21 @@ async function main() {
         `[ERROR] config file's network ${deployDetails.network} does not match the network you are deploying to ${networkName}`
       );
     }
-    // check sufficient adminACL input
-    if (
-      !(deployDetails.existingAdminACL || deployDetails.adminACLContractName)
-    ) {
-      throw new Error(
-        `[ERROR] existingAdminACL or adminACLContractName must be defined at index ${index}`
-      );
+    // verify a sensible AdminACL input config
+    if (deployDetails.existingAdminACL) {
+      // ensure a valid address
+      ethers.utils.isAddress(deployDetails.existingAdminACL);
+      // @dev it is acceptable to have an adminACLContractName or
+      // not have an adminACLContractName if existingAdminACL is defined
+    } else {
+      // ensure that the adminACL contract name is defined
+      if (deployDetails.adminACLContractName == undefined) {
+        throw new Error(
+          `[ERROR] adminACLContractName must be defined if existingAdminACL is not defined`
+        );
+      }
+      // ensure that the adminACL contract name is valid (i.e. the following doesn't throw)
+      await ethers.getContractFactory(deployDetails.adminACLContractName);
     }
     // check sufficient coreRegistry input
     if (

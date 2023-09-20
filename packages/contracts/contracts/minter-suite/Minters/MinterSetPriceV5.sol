@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
-import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
-import "../../interfaces/v0.8.x/IDelegationRegistry.sol";
+import "../../interfaces/v0.8.x/ISharedMinterSimplePurchaseV0.sol";
 import "../../interfaces/v0.8.x/ISharedMinterV0.sol";
 import "../../interfaces/v0.8.x/IMinterFilterV1.sol";
 
 import "../../libs/v0.8.x/AuthLib.sol";
 import "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
 import "../../libs/v0.8.x/minter-libs/MaxInvocationsLib.sol";
+import "../../libs/v0.8.x/minter-libs/SetPriceLib.sol";
 
 import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
 
@@ -36,7 +36,11 @@ pragma solidity 0.8.19;
  * Additional admin and artist privileged roles may be described on other
  * contracts that this minter integrates with.
  */
-contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
+contract MinterSetPriceV5 is
+    ReentrancyGuard,
+    ISharedMinterSimplePurchaseV0,
+    ISharedMinterV0
+{
     /// Minter filter address this minter interacts with
     address public immutable minterFilterAddress;
 
@@ -49,9 +53,17 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
     /// minter version for this minter
     string public constant minterVersion = "v5.0.0";
 
-    /// contractAddress => projectId => base project config
-    mapping(address => mapping(uint256 => ProjectConfig))
-        private _projectConfigMapping;
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // STATE VARIABLES FOR SetPriceLib begin here
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /// contractAddress => projectId => set price project config
+    mapping(address => mapping(uint256 => SetPriceLib.SetPriceProjectConfig))
+        private _setPriceProjectConfigMapping;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // STATE VARIABLES FOR SetPriceLib end here
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR SplitFundsLib begin here
@@ -146,11 +158,14 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
             _coreContract: _coreContract,
             _sender: msg.sender
         });
-        ProjectConfig storage _projectConfig = _projectConfigMapping[
-            _coreContract
-        ][_projectId];
-        _projectConfig.pricePerTokenInWei = _pricePerTokenInWei;
-        _projectConfig.priceIsConfigured = true;
+        SetPriceLib.SetPriceProjectConfig
+            storage _setPriceProjectConfig = _setPriceProjectConfigMapping[
+                _coreContract
+            ][_projectId];
+        SetPriceLib.updatePricePerTokenInWei(
+            _pricePerTokenInWei,
+            _setPriceProjectConfig
+        );
         emit PricePerTokenInWeiUpdated(
             _projectId,
             _coreContract,
@@ -211,16 +226,17 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
     }
 
     /**
-     * @notice Gets the base project configuration.
+     * @notice Gets the set price project configuration.
      * @param _projectId The ID of the project whose data needs to be fetched.
      * @param _coreContract The address of the core contract.
-     * @return ProjectConfig instance with the project configuration data.
+     * @return SetPriceProjectConfig struct with the fixed price project
+     * configuration data.
      */
-    function projectConfig(
+    function setPriceProjectConfig(
         uint256 _projectId,
         address _coreContract
-    ) external view returns (ProjectConfig memory) {
-        return _projectConfigMapping[_coreContract][_projectId];
+    ) external view returns (SetPriceLib.SetPriceProjectConfig memory) {
+        return _setPriceProjectConfigMapping[_coreContract][_projectId];
     }
 
     /**
@@ -329,11 +345,12 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
             address currencyAddress
         )
     {
-        ProjectConfig storage _projectConfig = _projectConfigMapping[
-            _coreContract
-        ][_projectId];
-        isConfigured = _projectConfig.priceIsConfigured;
-        tokenPriceInWei = _projectConfig.pricePerTokenInWei;
+        SetPriceLib.SetPriceProjectConfig
+            storage _setPriceProjectConfig = _setPriceProjectConfigMapping[
+                _coreContract
+            ][_projectId];
+        isConfigured = _setPriceProjectConfig.priceIsConfigured;
+        tokenPriceInWei = _setPriceProjectConfig.pricePerTokenInWei;
         currencySymbol = "ETH";
         currencyAddress = address(0);
     }
@@ -383,9 +400,10 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
         address _coreContract
     ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
-        ProjectConfig storage _projectConfig = _projectConfigMapping[
-            _coreContract
-        ][_projectId];
+        SetPriceLib.SetPriceProjectConfig
+            storage _setPriceProjectConfig = _setPriceProjectConfigMapping[
+                _coreContract
+            ][_projectId];
         MaxInvocationsLib.MaxInvocationsProjectConfig
             storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
                 _coreContract
@@ -403,10 +421,13 @@ contract MinterSetPriceV5 is ReentrancyGuard, ISharedMinterV0 {
         );
 
         // require artist to have configured price of token on this minter
-        require(_projectConfig.priceIsConfigured, "Price not configured");
+        require(
+            _setPriceProjectConfig.priceIsConfigured,
+            "Price not configured"
+        );
 
         // load price of token into memory
-        uint256 pricePerTokenInWei = _projectConfig.pricePerTokenInWei;
+        uint256 pricePerTokenInWei = _setPriceProjectConfig.pricePerTokenInWei;
 
         require(msg.value >= pricePerTokenInWei, "Min value to mint req.");
 

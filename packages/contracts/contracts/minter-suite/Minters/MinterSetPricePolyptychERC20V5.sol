@@ -7,8 +7,10 @@ import "../../interfaces/v0.8.x/ISharedMinterV0.sol";
 import "../../interfaces/v0.8.x/ISharedMinterHolderV0.sol";
 import "../../interfaces/v0.8.x/IMinterFilterV1.sol";
 
+import "../../libs/v0.8.x/AuthLib.sol";
 import "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
 import "../../libs/v0.8.x/minter-libs/MaxInvocationsLib.sol";
+import "../../libs/v0.8.x/minter-libs/SetPriceLib.sol";
 import "../../libs/v0.8.x/minter-libs/TokenHolderLib.sol";
 import "../../libs/v0.8.x/minter-libs/PolyptychLib.sol";
 
@@ -99,9 +101,17 @@ contract MinterSetPricePolyptychERC20V5 is
 
     uint256 constant ONE_MILLION = 1_000_000;
 
-    /// contractAddress => projectId => base project config
-    mapping(address => mapping(uint256 => ProjectConfig))
-        private _projectConfigMapping;
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // STATE VARIABLES FOR SetPriceLib begin here
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    /// contractAddress => projectId => set price project config
+    mapping(address => mapping(uint256 => SetPriceLib.SetPriceProjectConfig))
+        private _setPriceProjectConfigMapping;
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // STATE VARIABLES FOR SetPriceLib end here
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR SplitFundsLib begin here
@@ -158,23 +168,9 @@ contract MinterSetPricePolyptychERC20V5 is
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     // MODIFIERS
-    /**
-     * @dev Throws if called by any account other than the artist of the specified project.
-     * Requirements: `msg.sender` must be the artist associated with `_projectId`.
-     * @param _projectId The ID of the project being checked.
-     * @param _coreContract The address of the GenArt721CoreContractV3_Base contract.
-     */
-    function _onlyArtist(
-        uint256 _projectId,
-        address _coreContract
-    ) internal view {
-        require(
-            msg.sender ==
-                IGenArt721CoreContractV3_Base(_coreContract)
-                    .projectIdToArtistAddress(_projectId),
-            "Only Artist"
-        );
-    }
+    // @dev contract uses modifier-like internal functions instead of modifiers
+    // to reduce contract bytecode size
+    // @dev contract uses AuthLib for some modifier-like functions
 
     /**
      * @notice Initializes contract to be a Filtered Minter for
@@ -214,7 +210,11 @@ contract MinterSetPricePolyptychERC20V5 is
         address _coreContract,
         uint24 _maxInvocations
     ) external {
-        _onlyArtist(_projectId, _coreContract);
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
         MaxInvocationsLib.manuallyLimitProjectMaxInvocations(
             _projectId,
             _coreContract,
@@ -242,12 +242,19 @@ contract MinterSetPricePolyptychERC20V5 is
         address _coreContract,
         uint248 _pricePerTokenInWei
     ) external {
-        _onlyArtist(_projectId, _coreContract);
-        ProjectConfig storage _projectConfig = _projectConfigMapping[
-            _coreContract
-        ][_projectId];
-        _projectConfig.pricePerTokenInWei = _pricePerTokenInWei;
-        _projectConfig.priceIsConfigured = true;
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
+        SetPriceLib.SetPriceProjectConfig
+            storage _setPriceProjectConfig = _setPriceProjectConfigMapping[
+                _coreContract
+            ][_projectId];
+        SetPriceLib.updatePricePerTokenInWei(
+            _pricePerTokenInWei,
+            _setPriceProjectConfig
+        );
         emit PricePerTokenInWeiUpdated(
             _projectId,
             _coreContract,
@@ -266,8 +273,9 @@ contract MinterSetPricePolyptychERC20V5 is
         // @dev if local maxInvocations and maxHasBeenInvoked are both
         // initial values, we know they have not been populated on this minter
         if (
-            _maxInvocationsProjectConfig.maxInvocations == 0 &&
-            _maxInvocationsProjectConfig.maxHasBeenInvoked == false
+            MaxInvocationsLib.maxInvocationsIsUnconfigured(
+                _maxInvocationsProjectConfig
+            )
         ) {
             syncProjectMaxInvocationsToCore(_projectId, _coreContract);
         }
@@ -289,7 +297,11 @@ contract MinterSetPricePolyptychERC20V5 is
         string memory _currencySymbol,
         address _currencyAddress
     ) external nonReentrant {
-        _onlyArtist(_projectId, _coreContract);
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
         SplitFundsLib.SplitFundsProjectConfig
             storage _splitFundsProjectConfig = _splitFundsProjectConfigs[
                 _coreContract
@@ -329,12 +341,19 @@ contract MinterSetPricePolyptychERC20V5 is
         address[] memory _ownedNFTAddresses,
         uint256[] memory _ownedNFTProjectIds
     ) external {
-        _onlyArtist(_projectId, _coreContract);
-        TokenHolderLib.allowHoldersOfProjects(
-            _allowedProjectHoldersMapping[_coreContract][_projectId],
-            _ownedNFTAddresses,
-            _ownedNFTProjectIds
-        );
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
+        TokenHolderLib.allowHoldersOfProjects({
+            holderProjectConfig: _allowedProjectHoldersMapping[_coreContract][
+                _projectId
+            ],
+            _ownedNFTAddresses: _ownedNFTAddresses,
+            _ownedNFTProjectIds: _ownedNFTProjectIds
+        });
+
         // emit approve event
         emit AllowedHoldersOfProjects(
             _projectId,
@@ -366,13 +385,19 @@ contract MinterSetPricePolyptychERC20V5 is
         address[] memory _ownedNFTAddresses,
         uint256[] memory _ownedNFTProjectIds
     ) external {
-        _onlyArtist(_projectId, _coreContract);
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
         // require same length arrays
-        TokenHolderLib.removeHoldersOfProjects(
-            _allowedProjectHoldersMapping[_coreContract][_projectId],
-            _ownedNFTAddresses,
-            _ownedNFTProjectIds
-        );
+        TokenHolderLib.removeHoldersOfProjects({
+            holderProjectConfig: _allowedProjectHoldersMapping[_coreContract][
+                _projectId
+            ],
+            _ownedNFTAddresses: _ownedNFTAddresses,
+            _ownedNFTProjectIds: _ownedNFTProjectIds
+        });
         // emit removed event
         emit RemovedHoldersOfProjects(
             _projectId,
@@ -421,14 +446,21 @@ contract MinterSetPricePolyptychERC20V5 is
         address[] memory _ownedNFTAddressesRemove,
         uint256[] memory _ownedNFTProjectIdsRemove
     ) external {
-        _onlyArtist(_projectId, _coreContract);
-        TokenHolderLib.allowAndRemoveHoldersOfProjects(
-            _allowedProjectHoldersMapping[_coreContract][_projectId],
-            _ownedNFTAddressesAdd,
-            _ownedNFTProjectIdsAdd,
-            _ownedNFTAddressesRemove,
-            _ownedNFTProjectIdsRemove
-        );
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
+        TokenHolderLib.allowAndRemoveHoldersOfProjects({
+            holderProjectConfig: _allowedProjectHoldersMapping[_coreContract][
+                _projectId
+            ],
+            _ownedNFTAddressesAdd: _ownedNFTAddressesAdd,
+            _ownedNFTProjectIdsAdd: _ownedNFTProjectIdsAdd,
+            _ownedNFTAddressesRemove: _ownedNFTAddressesRemove,
+            _ownedNFTProjectIdsRemove: _ownedNFTProjectIdsRemove
+        });
+
         // emit events
         emit AllowedHoldersOfProjects(
             _projectId,
@@ -453,7 +485,11 @@ contract MinterSetPricePolyptychERC20V5 is
         uint256 _projectId,
         address _coreContract
     ) public {
-        _onlyArtist(_projectId, _coreContract);
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
         PolyptychLib.PolyptychProjectConfig
             storage _polyptychProjectConfig = _polyptychProjectConfigs[
                 _coreContract
@@ -466,24 +502,6 @@ contract MinterSetPricePolyptychERC20V5 is
             PolyptychLib.POLYPTYCH_PANEL_ID,
             _polyptychProjectConfig.polyptychPanelId
         );
-    }
-
-    /**
-     * @notice Inactive function - requires NFT ownership to purchase.
-     */
-    function purchase(uint256, address) external payable returns (uint256) {
-        revert("Purchase requires NFT ownership");
-    }
-
-    /**
-     * @notice Inactive function - requires NFT ownership to purchase.
-     */
-    function purchaseTo(
-        address,
-        uint256,
-        address
-    ) external payable returns (uint256) {
-        revert("Purchase requires NFT ownership");
     }
 
     /**
@@ -567,16 +585,17 @@ contract MinterSetPricePolyptychERC20V5 is
     }
 
     /**
-     * @notice Gets the base project configuration.
+     * @notice Gets the set price project configuration.
      * @param _projectId The ID of the project whose data needs to be fetched.
      * @param _coreContract The address of the core contract.
-     * @return ProjectConfig instance with the project configuration data.
+     * @return SetPriceProjectConfig struct with the fixed price project
+     * configuration data.
      */
-    function projectConfig(
+    function setPriceProjectConfig(
         uint256 _projectId,
         address _coreContract
-    ) external view returns (ProjectConfig memory) {
-        return _projectConfigMapping[_coreContract][_projectId];
+    ) external view returns (SetPriceLib.SetPriceProjectConfig memory) {
+        return _setPriceProjectConfigMapping[_coreContract][_projectId];
     }
 
     /**
@@ -617,11 +636,13 @@ contract MinterSetPricePolyptychERC20V5 is
         uint256 _ownedNFTTokenId
     ) external view returns (bool) {
         return
-            TokenHolderLib.isAllowlistedNFT(
-                _allowedProjectHoldersMapping[_coreContract][_projectId],
-                _ownedNFTAddress,
-                _ownedNFTTokenId
-            );
+            TokenHolderLib.isAllowlistedNFT({
+                holderProjectConfig: _allowedProjectHoldersMapping[
+                    _coreContract
+                ][_projectId],
+                _ownedNFTAddress: _ownedNFTAddress,
+                _ownedNFTTokenId: _ownedNFTTokenId
+            });
     }
 
     /**
@@ -667,8 +688,9 @@ contract MinterSetPricePolyptychERC20V5 is
         address _coreContract
     ) external view returns (bool) {
         return
-            _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-                .maxHasBeenInvoked;
+            MaxInvocationsLib.getMaxHasBeenInvoked(
+                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
+            );
     }
 
     /**
@@ -696,9 +718,8 @@ contract MinterSetPricePolyptychERC20V5 is
         address _coreContract
     ) external view returns (uint256) {
         return
-            uint256(
+            MaxInvocationsLib.getMaxInvocations(
                 _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-                    .maxInvocations
             );
     }
 
@@ -781,10 +802,11 @@ contract MinterSetPricePolyptychERC20V5 is
             address currencyAddress
         )
     {
-        ProjectConfig storage _projectConfig = _projectConfigMapping[
-            _coreContract
-        ][_projectId];
-        tokenPriceInWei = _projectConfig.pricePerTokenInWei;
+        SetPriceLib.SetPriceProjectConfig
+            storage _setPriceProjectConfig = _setPriceProjectConfigMapping[
+                _coreContract
+            ][_projectId];
+        tokenPriceInWei = _setPriceProjectConfig.pricePerTokenInWei;
         // get currency info from SplitFundsLib
         SplitFundsLib.SplitFundsProjectConfig
             storage _splitFundsProjectConfig = _splitFundsProjectConfigs[
@@ -796,7 +818,7 @@ contract MinterSetPricePolyptychERC20V5 is
         // report if price and ERC20 token are configured
         // @dev currencyAddress is non-zero if an ERC20 token is configured
         isConfigured =
-            _projectConfig.priceIsConfigured &&
+            _setPriceProjectConfig.priceIsConfigured &&
             currencyAddress != address(0);
     }
 
@@ -859,7 +881,11 @@ contract MinterSetPricePolyptychERC20V5 is
         uint256 _projectId,
         address _coreContract
     ) public {
-        _onlyArtist(_projectId, _coreContract);
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
 
         uint256 maxInvocations = MaxInvocationsLib
             .syncProjectMaxInvocationsToCore(
@@ -899,9 +925,10 @@ contract MinterSetPricePolyptychERC20V5 is
         address _vault
     ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
-        ProjectConfig storage _projectConfig = _projectConfigMapping[
-            _coreContract
-        ][_projectId];
+        SetPriceLib.SetPriceProjectConfig
+            storage _setPriceProjectConfig = _setPriceProjectConfigMapping[
+                _coreContract
+            ][_projectId];
         MaxInvocationsLib.MaxInvocationsProjectConfig
             storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
                 _coreContract
@@ -919,17 +946,22 @@ contract MinterSetPricePolyptychERC20V5 is
         );
 
         // require artist to have configured price of token on this minter
-        require(_projectConfig.priceIsConfigured, "Price not configured");
+        require(
+            _setPriceProjectConfig.priceIsConfigured,
+            "Price not configured"
+        );
         // @dev revert occurs during payment split if ERC20 token is not
         // configured (i.e. address(0)), so check is not performed here
 
         // require token used to claim to be in set of allowlisted NFTs
         require(
-            TokenHolderLib.isAllowlistedNFT(
-                _allowedProjectHoldersMapping[_coreContract][_projectId],
-                _ownedNFTAddress,
-                _ownedNFTTokenId
-            ),
+            TokenHolderLib.isAllowlistedNFT({
+                holderProjectConfig: _allowedProjectHoldersMapping[
+                    _coreContract
+                ][_projectId],
+                _ownedNFTAddress: _ownedNFTAddress,
+                _ownedNFTTokenId: _ownedNFTTokenId
+            }),
             "Only allowlisted NFTs"
         );
 
@@ -1054,7 +1086,7 @@ contract MinterSetPricePolyptychERC20V5 is
         SplitFundsLib.splitFundsERC20({
             _splitFundsProjectConfig: _splitFundsProjectConfig,
             _projectId: _projectId,
-            _pricePerTokenInWei: _projectConfig.pricePerTokenInWei,
+            _pricePerTokenInWei: _setPriceProjectConfig.pricePerTokenInWei,
             _coreContract: _coreContract,
             _isEngine: isEngine
         });

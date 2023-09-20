@@ -1,0 +1,52 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-08-11T21:34:15.504Z
+[INFO] Deployment configuration file: /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/aoi-f1-flex/deployment-config.staging.ts
+[INFO] Deploying to network: goerli
+[INFO] Deploying to environment: staging
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0x26aD7EB9dCB2495eF335e4F7957364039e6394A7
+[INFO] Randomizer BasicRandomizerV2 deployed at 0xfdF3Bc66B2d4D691a267cD537f8fF3A69E3AAE0A
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0xE7873B3fCe7C0eFf46985E7C5987b124Eb043009
+[INFO] Minter Filter MinterFilterV1 deployed at 0xfE3DceD40c585c9cFA48a18CF9219fD981358b28
+[INFO] MinterSetPriceV4 deployed at 0x422f6694C090800B852CFb1CB275F81A9e5bA669
+[INFO] MinterDAExpSettlementV1 deployed at 0x66a5d5b705CaF8A15c5A01F3C358f6C68B84Ca51
+[INFO] MinterHolderV4 deployed at 0x9eBBC054fe8277d09F5cc039ff4b3635b18B9252
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0xfE3DceD40c585c9cFA48a18CF9219fD981358b28.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0x422f6694C090800B852CFb1CB275F81A9e5bA669 on minter filter.
+[INFO] Allowlisted minter MinterDAExpSettlementV1 at 0x66a5d5b705CaF8A15c5A01F3C358f6C68B84Ca51 on minter filter.
+[INFO] Allowlisted minter MinterHolderV4 at 0x9eBBC054fe8277d09F5cc039ff4b3635b18B9252 on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0xa2b26cdc79a1f6ad79908eb3fcbea033108ba0c8.
+[INFO] Verifying core contract contract deployment...
+The contract 0xE7873B3fCe7C0eFf46985E7C5987b124Eb043009 has already been verified
+[INFO] Core contract verified on Etherscan at 0xE7873B3fCe7C0eFf46985E7C5987b124Eb043009}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0x26aD7EB9dCB2495eF335e4F7957364039e6394A7 has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0x26aD7EB9dCB2495eF335e4F7957364039e6394A7}
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0xfE3DceD40c585c9cFA48a18CF9219fD981358b28 has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0xfE3DceD40c585c9cFA48a18CF9219fD981358b28}
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+The contract 0x422f6694C090800B852CFb1CB275F81A9e5bA669 has already been verified
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0x422f6694C090800B852CFb1CB275F81A9e5bA669}
+[INFO] Verifying MinterDAExpSettlementV1 contract deployment...
+The contract 0x66a5d5b705CaF8A15c5A01F3C358f6C68B84Ca51 has already been verified
+[INFO] MinterDAExpSettlementV1 contract verified on Etherscan at 0x66a5d5b705CaF8A15c5A01F3C358f6C68B84Ca51}
+[INFO] Verifying MinterHolderV4 contract deployment...
+The contract 0x9eBBC054fe8277d09F5cc039ff4b3635b18B9252 has already been verified
+[INFO] MinterHolderV4 contract verified on Etherscan at 0x9eBBC054fe8277d09F5cc039ff4b3635b18B9252}
+Created s3 bucket for https://aoi-engine-goerli.s3.amazonaws.com
+[INFO] Created image bucket aoi-engine-goerli
+[INFO] Deployment details written to /Users/jakerockland/Code/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/aoi-f1-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0xe7873b3fce7c0eff46985e7c5987b124eb043009",
+  "name": "AOI Engine",
+  "bucket_name": "aoi-engine-goerli",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
+[ACTION] AdminACL's superAdmin address is 0xa2B26cdC79A1f6aD79908eb3FCbEa033108Ba0C8, don't forget to update if requred.

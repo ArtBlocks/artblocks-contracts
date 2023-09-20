@@ -16,3 +16,7 @@ We aim to follow the following guidelines when contributing new code:
 - We prefer to use named arguments when calling functions or emitting events that have many parameters
   - This helps ensure we do not swap two fields of the same type
   - Note: many of our existing contracts do not follow this guideline, but we are working to update them over time
+
+## Additional Links
+
+- Some great Solidity pointers from [RareSkills](https://www.rareskills.io/post/solidity-style-guide)
