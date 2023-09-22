@@ -89,4 +89,5 @@ export const revertMessages = {
   noZeroAddress: "No zero address",
   arrayLengthsMatch: "Array lengths must match",
   refundFailed: "Refund failed",
+  renderProviderPaymentFailed: "Render Provider payment failed",
 };

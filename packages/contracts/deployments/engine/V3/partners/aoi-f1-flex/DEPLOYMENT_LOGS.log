@@ -50,3 +50,55 @@ Contracts metadata upsert input:
 Successfully upserted 1 contract
 [ACTION] provider primary and secondary sales payment addresses remain as deployer addresses: 0xB8559AF91377e5BaB052A4E9a5088cB65a9a4d63. Update later as needed.
 [ACTION] AdminACL's superAdmin address is 0xa2B26cdC79A1f6aD79908eb3FCbEa033108Ba0C8, don't forget to update if requred.
+----------------------------------------
+[INFO] Datetime of deployment: 2023-09-15T15:51:03.539Z
+[INFO] Deployment configuration file: /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/aoi-f1-flex/deployment-config.mainnet.ts
+[INFO] Deploying to network: mainnet
+[INFO] Deploying to environment: mainnet
+[INFO] New Admin ACL AdminACLV1 deployed at address: 0xF470012b134262C5Ec679F5b9Fc1107018DE7cd4
+[INFO] Randomizer BasicRandomizerV2 deployed at 0x497B497dF4F041A571849316CF11AA8e93A1a658
+[INFO] Core GenArt721CoreV3_Engine_Flex deployed at 0x8cDBd7010Bd197848e95C1FD7F6E870AaC9b0d3C
+[INFO] Minter Filter MinterFilterV1 deployed at 0x01B5E0E6Cb38121DbeDf5d2E964DF810E2c742c9
+[INFO] MinterSetPriceV4 deployed at 0x1F708B1ca4a05F96d624A2dC8b90D01c9005e005
+[INFO] MinterDAExpSettlementV1 deployed at 0x3f90c5C6fa6ddDC316221857456cdC9BD9dDF504
+[INFO] MinterHolderV4 deployed at 0x6A0353e754d30bB5fA3a50001262A5a790A39100
+[INFO] Assigned randomizer to core and renounced ownership of randomizer
+[INFO] Updated the Minter Filter on the Core contract to 0x01B5E0E6Cb38121DbeDf5d2E964DF810E2c742c9.
+[INFO] Allowlisted minter MinterSetPriceV4 at 0x1F708B1ca4a05F96d624A2dC8b90D01c9005e005 on minter filter.
+[INFO] Allowlisted minter MinterDAExpSettlementV1 at 0x3f90c5C6fa6ddDC316221857456cdC9BD9dDF504 on minter filter.
+[INFO] Allowlisted minter MinterHolderV4 at 0x6A0353e754d30bB5fA3a50001262A5a790A39100 on minter filter.
+[INFO] Skipping adding placeholder initial project.
+[INFO] Skipping adding placeholder initial token.
+[INFO] Transferred superAdmin role on adminACL to 0xD533F117a926244974ac2690145Ed04829e72a39.
+[INFO] Verifying core contract contract deployment...
+The contract 0x8cDBd7010Bd197848e95C1FD7F6E870AaC9b0d3C has already been verified
+[INFO] Core contract verified on Etherscan at 0x8cDBd7010Bd197848e95C1FD7F6E870AaC9b0d3C}
+[INFO] Verifying AdminACL contract deployment...
+The contract 0xF470012b134262C5Ec679F5b9Fc1107018DE7cd4 has already been verified
+[INFO] AdminACL contract verified on Etherscan at 0xF470012b134262C5Ec679F5b9Fc1107018DE7cd4
+[INFO] Verifying MinterFilter contract deployment...
+The contract 0x01B5E0E6Cb38121DbeDf5d2E964DF810E2c742c9 has already been verified
+[INFO] MinterFilter contract verified on Etherscan at 0x01B5E0E6Cb38121DbeDf5d2E964DF810E2c742c9
+[INFO] Verifying MinterSetPriceV4 contract deployment...
+The contract 0x1F708B1ca4a05F96d624A2dC8b90D01c9005e005 has already been verified
+[INFO] MinterSetPriceV4 contract verified on Etherscan at 0x1F708B1ca4a05F96d624A2dC8b90D01c9005e005
+[INFO] Verifying MinterDAExpSettlementV1 contract deployment...
+The contract 0x3f90c5C6fa6ddDC316221857456cdC9BD9dDF504 has already been verified
+[INFO] MinterDAExpSettlementV1 contract verified on Etherscan at 0x3f90c5C6fa6ddDC316221857456cdC9BD9dDF504
+[INFO] Verifying MinterHolderV4 contract deployment...
+The contract 0x6A0353e754d30bB5fA3a50001262A5a790A39100 has already been verified
+[INFO] MinterHolderV4 contract verified on Etherscan at 0x6A0353e754d30bB5fA3a50001262A5a790A39100
+Created s3 bucket for https://aoi-engine-mainnet.s3.amazonaws.com
+[INFO] Created image bucket aoi-engine-mainnet
+[INFO] Deployment details written to /Users/ryleyohlsen/Documents/GitHub/artblocks-contracts/packages/contracts/deployments/engine/V3/partners/aoi-f1-flex/DEPLOYMENTS.md
+Upserting 1 contract...
+Contracts metadata upsert input:
+{
+  "address": "0x8cdbd7010bd197848e95c1fd7f6e870aac9b0d3c",
+  "name": "AOI Engine",
+  "bucket_name": "aoi-engine-mainnet",
+  "default_vertical_name": "flex"
+}
+Successfully upserted 1 contract
+[ACTION] AdminACL's superAdmin address is 0xD533F117a926244974ac2690145Ed04829e72a39, don't forget to update if required.
+[ACTION] Subgraph: Add Minter Filter and Minter contracts to subgraph config if desire to index minter suite.

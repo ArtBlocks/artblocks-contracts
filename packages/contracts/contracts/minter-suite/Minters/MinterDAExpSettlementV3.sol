@@ -383,7 +383,7 @@ contract MinterDAExpSettlementV3 is
     function adminEmergencyReduceSelloutPrice(
         uint256 _projectId,
         address _coreContract,
-        uint128 _newSelloutPrice
+        uint112 _newSelloutPrice
     ) external {
         AuthLib.onlyCoreAdminACL({
             _coreContract: _coreContract,
@@ -478,6 +478,9 @@ contract MinterDAExpSettlementV3 is
             _isEngineCaches[_coreContract]
         );
         // CHECKS-EFFECTS-INTERACTIONS
+        // @dev the following function updates the project's balance and will
+        // revert if the project's balance is insufficient to cover the
+        // settlement amount (which is expected to not be possible)
         (
             bool maxInvocationsUpdated,
             bool settledPriceUpdated
@@ -752,6 +755,25 @@ contract MinterDAExpSettlementV3 is
     }
 
     /**
+     * @notice Gets the balance of ETH, in wei, currently held by the minter
+     * for project `_projectId`. This value is non-zero if not all purchasers
+     * have reclaimed their excess settlement funds, or if an artist/admin has
+     * not yet withdrawn their revenues.
+     * @param _projectId Project ID to get balance for.
+     * @param _coreContract Contract address of the core contract
+     */
+    function getProjectBalance(
+        uint256 _projectId,
+        address _coreContract
+    ) external view returns (uint256 projectBalance) {
+        SettlementExpLib.SettlementAuctionProjectConfig
+            storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
+                _coreContract
+            ][_projectId];
+        return _settlementAuctionProjectConfig.projectBalance;
+    }
+
+    /**
      * @notice Gets if price of token is configured, price of minting a
      * token on project `_projectId`, and currency symbol and address to be
      * used as payment. Supersedes any core contract price information.
@@ -897,6 +919,11 @@ contract MinterDAExpSettlementV3 is
         uint232 newNetPosted = requiredAmountPosted.toUint232();
         _receipt.netPosted = newNetPosted;
 
+        // reduce project balance by the amount of ETH being distributed
+        // @dev underflow checked automatically in solidity ^0.8
+        _settlementAuctionProjectConfig.projectBalance -= excessSettlementFunds
+            .toUint112();
+
         emit ReceiptUpdated({
             _purchaser: msg.sender,
             _projectId: _projectId,
@@ -968,6 +995,12 @@ contract MinterDAExpSettlementV3 is
             uint232 newNetPosted = requiredAmountPosted.toUint232();
             _receipt.netPosted = newNetPosted;
 
+            // reduce project balance by the amount of ETH being distributed
+            // @dev underflow checked automatically in solidity ^0.8
+            _settlementAuctionProjectConfig
+                .projectBalance -= excessSettlementFundsForProject.toUint112();
+
+            // increase total excess settlement funds
             excessSettlementFunds += excessSettlementFundsForProject;
 
             // emit event indicating new receipt state
@@ -1068,6 +1101,9 @@ contract MinterDAExpSettlementV3 is
         });
 
         // EFFECTS
+        // update project balance
+        _settlementAuctionProjectConfig.projectBalance += msg.value.toUint112();
+
         // update the purchaser's receipt and require sufficient net payment
         SettlementExpLib.Receipt storage receipt = _receiptsMapping[msg.sender][
             _coreContract
@@ -1089,7 +1125,7 @@ contract MinterDAExpSettlementV3 is
         // @dev this is used to enforce monotonically decreasing purchase price
         // across multiple auctions
         _settlementAuctionProjectConfig.latestPurchasePrice = currentPriceInWei
-            .toUint128();
+            .toUint112();
 
         tokenId = minterFilter.mint_joo({
             _to: _to,
@@ -1109,20 +1145,28 @@ contract MinterDAExpSettlementV3 is
         // @dev this logic is intentionally defined here to avoid a dependency
         // in SettlementLib on SplitFundsLib, which would increase complexity
         if (_settlementAuctionProjectConfig.auctionRevenuesCollected) {
-            // if revenues have been collected, split funds immediately.
+            // if revenues have been collected, split revenues immediately.
             // @dev note that we are guaranteed to be at auction base price,
             // since we know we didn't sellout prior to this tx.
             // note that we don't refund msg.sender here, since a separate
             // settlement mechanism is provided on this minter, unrelated to
             // msg.value
+
+            // reduce project balance by the amount of ETH being distributed
+            // @dev specifically, this is not decremented by msg.value, as
+            // msg.sender is not refunded here
+            // @dev underflow checked automatically in solidity ^0.8
+            _settlementAuctionProjectConfig.projectBalance -= currentPriceInWei
+                .toUint112();
+
             // INTERACTIONS
             bool isEngine = SplitFundsLib.isEngine(
                 _coreContract,
                 _isEngineCaches[_coreContract]
             );
-            SplitFundsLib.splitFundsETH({
+            SplitFundsLib.splitRevenuesETHNoRefund({
                 _projectId: _projectId,
-                _pricePerTokenInWei: currentPriceInWei,
+                _valueInWei: currentPriceInWei,
                 _coreContract: _coreContract,
                 _isEngine: isEngine
             });
@@ -1131,6 +1175,7 @@ contract MinterDAExpSettlementV3 is
             // claimable by the artist and admin once auction is validated.
             // do not split revenue here since will be claimed at a later time.
             _settlementAuctionProjectConfig.numSettleableInvocations++;
+            // @dev project balance is unaffected because no funds are distributed
         }
 
         return tokenId;
