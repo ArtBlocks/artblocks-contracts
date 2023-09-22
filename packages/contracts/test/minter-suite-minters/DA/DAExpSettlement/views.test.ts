@@ -475,6 +475,32 @@ runForEach.forEach((params) => {
       });
     });
 
+    describe("getProjectBalance", async function () {
+      it("returns zero if no purchases have been made", async function () {
+        const config = await loadFixture(_beforeEach);
+        const projectBalance = await config.minter.getProjectBalance(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(projectBalance).to.equal(0);
+      });
+
+      it("returns balance after purchase", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndAdvanceToStart(config);
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        const projectBalance = await config.minter.getProjectBalance(
+          config.projectZero,
+          config.genArt721Core.address
+        );
+        expect(projectBalance).to.equal(config.startingPrice);
+      });
+    });
+
     describe("getProjectExcessSettlementFunds", async function () {
       it("does not allow query of zero address", async function () {
         const config = await loadFixture(_beforeEach);
