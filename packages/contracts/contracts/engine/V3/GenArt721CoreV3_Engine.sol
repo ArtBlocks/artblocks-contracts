@@ -259,7 +259,7 @@ contract GenArt721CoreV3_Engine is
     bool public immutable autoApproveArtistSplitProposals;
 
     /// version & type of this core contract
-    bytes32 constant CORE_VERSION = "v3.1.3";
+    bytes32 constant CORE_VERSION = "v3.1.4";
 
     function coreVersion() external pure returns (string memory) {
         return CORE_VERSION.toString();
@@ -366,8 +366,7 @@ contract GenArt721CoreV3_Engine is
         address _randomizerContract,
         address _adminACLContract,
         uint248 _startingProjectId,
-        bool _autoApproveArtistSplitProposals,
-        address _engineRegistryContract
+        bool _autoApproveArtistSplitProposals
     ) ERC721_PackedHashSeed(_tokenName, _tokenSymbol) {
         _onlyNonZeroAddress(_renderProviderAddress);
         _onlyNonZeroAddress(_platformProviderAddress);
