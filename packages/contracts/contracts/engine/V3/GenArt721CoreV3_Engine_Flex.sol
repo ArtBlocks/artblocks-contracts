@@ -5,7 +5,6 @@ pragma solidity 0.8.19;
 
 import "../../interfaces/v0.8.x/IRandomizer_V3CoreBase.sol";
 import "../../interfaces/v0.8.x/IAdminACLV0.sol";
-import "../../interfaces/v0.8.x/IEngineRegistryV0.sol";
 import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Engine_Flex.sol";
 import "../../interfaces/v0.8.x/IGenArt721CoreContractExposesHashSeed.sol";
 import "../../interfaces/v0.8.x/IDependencyRegistryCompatibleV0.sol";
