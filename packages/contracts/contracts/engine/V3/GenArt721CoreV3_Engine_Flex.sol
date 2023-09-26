@@ -419,12 +419,8 @@ contract GenArt721CoreV3_Engine_Flex is
         // initialize next project ID
         _nextProjectId = _startingProjectId;
         emit PlatformUpdated(FIELD_NEXT_PROJECT_ID);
-        // register contract as an Engine contract
-        IEngineRegistryV0(_engineRegistryContract).registerContract(
-            address(this),
-            CORE_VERSION,
-            CORE_TYPE
-        );
+        // @dev follow-on action: This contract does not self-register. A core
+        // registry owner must register contract in in a subsequent call.
     }
 
     /**
