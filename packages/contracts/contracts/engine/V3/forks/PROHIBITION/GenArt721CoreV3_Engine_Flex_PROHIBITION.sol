@@ -7,7 +7,6 @@ import "./interfaces/IAdminACLV0_PROHIBITION.sol";
 import "./interfaces/IGenArt721CoreContractV3_Engine_Flex_PROHIBITION.sol";
 
 import "../../../../interfaces/v0.8.x/IRandomizerV2.sol";
-import "../../../../interfaces/v0.8.x/IEngineRegistryV0.sol";
 import "../../../../interfaces/v0.8.x/IDependencyRegistryCompatibleV0.sol";
 import "../../../../interfaces/v0.8.x/IManifold.sol";
 
@@ -271,7 +270,7 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
     bool public immutable autoApproveArtistSplitProposals;
 
     /// version & type of this core contract
-    bytes32 constant CORE_VERSION = "v3.1.3";
+    bytes32 constant CORE_VERSION = "v3.1.5";
 
     function coreVersion() external pure returns (string memory) {
         return CORE_VERSION.toString();
@@ -392,8 +391,7 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
         address _randomizerContract,
         address _adminACLContract,
         uint248 _startingProjectId,
-        bool _autoApproveArtistSplitProposals,
-        address _engineRegistryContract
+        bool _autoApproveArtistSplitProposals
     ) ERC721_PackedHashSeed(_tokenName, _tokenSymbol) {
         _onlyNonZeroAddress(_renderProviderAddress);
         _onlyNonZeroAddress(_platformProviderAddress);
@@ -424,12 +422,8 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
         // initialize next project ID
         _nextProjectId = _startingProjectId;
         emit PlatformUpdated(FIELD_NEXT_PROJECT_ID);
-        // register contract as an Engine contract
-        IEngineRegistryV0(_engineRegistryContract).registerContract(
-            address(this),
-            CORE_VERSION,
-            CORE_TYPE
-        );
+        // @dev follow-on action: This contract does not self-register. A core
+        // registry owner must register contract in in a subsequent call.
     }
 
     /**

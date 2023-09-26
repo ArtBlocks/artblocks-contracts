@@ -351,7 +351,7 @@ for (const coreContractName of coreContractsToTest) {
     describe("coreVersion", function () {
       it("returns expected value", async function () {
         const config = await loadFixture(_beforeEach);
-        const targetCoreVersion = "v3.1.3";
+        const targetCoreVersion = "v3.1.6";
         const coreVersion = await config.genArt721Core
           .connect(config.accounts.deployer)
           .coreVersion();
@@ -452,7 +452,6 @@ for (const coreContractName of coreContractsToTest) {
               config.adminACL.address,
               nextProjectId,
               false,
-              engineRegistry.address, // Note: important to use a real engine registry
             ]
           );
         } else {
@@ -501,7 +500,6 @@ for (const coreContractName of coreContractsToTest) {
               config.adminACL.address,
               nextProjectId,
               false,
-              engineRegistry.address, // Note: important to use a real engine registry
             ]
           );
         } else {
