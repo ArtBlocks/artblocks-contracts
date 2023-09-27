@@ -423,7 +423,7 @@ contract GenArt721CoreV3_Engine_Flex_PROHIBITION is
         _nextProjectId = _startingProjectId;
         emit PlatformUpdated(FIELD_NEXT_PROJECT_ID);
         // @dev follow-on action: This contract does not self-register. A core
-        // registry owner must register contract in in a subsequent call.
+        // registry owner must register contract in a subsequent call.
     }
 
     /**
