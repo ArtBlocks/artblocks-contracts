@@ -388,9 +388,12 @@ contract MinterSetPriceMerkleV5 is
         address _coreContract,
         address _purchaser
     ) external view returns (uint256) {
-        MerkleLib.MerkleProjectConfig storage _merkleProjectConfig = MerkleLib
-            .getMerkleProjectConfig(_projectId, _coreContract);
-        return _merkleProjectConfig.userMintInvocations[_purchaser];
+        return
+            MerkleLib.projectUserMintInvocations(
+                _projectId,
+                _coreContract,
+                _purchaser
+            );
     }
 
     /**
@@ -567,9 +570,11 @@ contract MinterSetPriceMerkleV5 is
         uint256 _projectId,
         address _coreContract
     ) external view returns (uint256) {
-        MerkleLib.MerkleProjectConfig storage _projectConfig = MerkleLib
-            .getMerkleProjectConfig(_projectId, _coreContract);
-        return MerkleLib.projectMaxInvocationsPerAddress(_projectConfig);
+        return
+            MerkleLib.projectMaxInvocationsPerAddress(
+                _projectId,
+                _coreContract
+            );
     }
 
     /**
@@ -654,8 +659,6 @@ contract MinterSetPriceMerkleV5 is
             storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
                 _coreContract
             ][_projectId];
-        MerkleLib.MerkleProjectConfig storage _merkleProjectConfig = MerkleLib
-            .getMerkleProjectConfig(_projectId, _coreContract);
 
         // Note that `maxHasBeenInvoked` is only checked here to reduce gas
         // consumption after a project has been fully minted.
@@ -700,35 +703,12 @@ contract MinterSetPriceMerkleV5 is
             vault = _vault;
         }
 
-        // require valid Merkle proof
-        require(
-            MerkleLib.verifyAddress(
-                _merkleProjectConfig.merkleRoot,
-                _proof,
-                vault
-            ),
-            "Invalid Merkle proof"
-        );
-
-        // limit mints per address by project
-        uint256 _maxProjectInvocationsPerAddress = MerkleLib
-            .projectMaxInvocationsPerAddress(_merkleProjectConfig);
-
-        // note that mint limits index off of the `vault` (when applicable)
-        require(
-            _merkleProjectConfig.userMintInvocations[vault] <
-                _maxProjectInvocationsPerAddress ||
-                _maxProjectInvocationsPerAddress == 0,
-            "Max invocations reached"
-        );
+        // pre-mint MerkleLib checks
+        MerkleLib.preMintChecks(_projectId, _coreContract, _proof, vault);
 
         // EFFECTS
-        // increment user's invocations for this project
-        unchecked {
-            // this will never overflow since user's invocations on a project
-            // are limited by the project's max invocations
-            _merkleProjectConfig.userMintInvocations[vault]++;
-        }
+        // mint effects for MerkleLib
+        MerkleLib.mintEffects(_projectId, _coreContract, vault);
 
         tokenId = minterFilter.mint_joo(
             _to,

@@ -159,6 +159,55 @@ library MerkleLib {
         );
     }
 
+    function preMintChecks(
+        uint256 _projectId,
+        address _coreContract,
+        bytes32[] calldata _proof,
+        address _vault
+    ) internal view {
+        MerkleProjectConfig
+            storage _merkleProjectConfig = getMerkleProjectConfig(
+                _projectId,
+                _coreContract
+            );
+        // require valid Merkle proof
+        require(
+            verifyAddress(_merkleProjectConfig.merkleRoot, _proof, _vault),
+            "Invalid Merkle proof"
+        );
+
+        // limit mints per address by project
+        uint256 _maxProjectInvocationsPerAddress = projectMaxInvocationsPerAddress(
+                _merkleProjectConfig
+            );
+
+        // note that mint limits index off of the `_vault` (when applicable)
+        require(
+            _merkleProjectConfig.userMintInvocations[_vault] <
+                _maxProjectInvocationsPerAddress ||
+                _maxProjectInvocationsPerAddress == 0,
+            "Max invocations reached"
+        );
+    }
+
+    function mintEffects(
+        uint256 _projectId,
+        address _coreContract,
+        address _vault
+    ) internal {
+        MerkleProjectConfig
+            storage _merkleProjectConfig = getMerkleProjectConfig(
+                _projectId,
+                _coreContract
+            );
+        // increment mint invocations for vault address
+        unchecked {
+            // this will never overflow since user's invocations on a project
+            // are limited by the project's max invocations
+            _merkleProjectConfig.userMintInvocations[_vault]++;
+        }
+    }
+
     /**
      * @notice Hashes an address.
      * @param _address The address to hash.
@@ -200,9 +249,6 @@ library MerkleLib {
      * @notice Returns the maximum number of invocations per address for a project.
      * @param _projectConfig The merkle project config to check.
      * @return The maximum number of invocations per address.
-     * @dev this project prefers passing a storage reference to _projectConfig
-     * instead of a projectId and coreContract, to avoid the need to load the
-     * project config from storage during minting (gas costs).
      */
     function projectMaxInvocationsPerAddress(
         MerkleProjectConfig storage _projectConfig
@@ -212,6 +258,39 @@ library MerkleLib {
         } else {
             return DEFAULT_MAX_INVOCATIONS_PER_ADDRESS;
         }
+    }
+
+    /**
+     * @notice Returns the maximum number of invocations per address for a project.
+     * @param _projectId Project Id to get config for
+     * @param _coreContract Core contract address to get config for
+     * @return The maximum number of invocations per address.
+     */
+    function projectMaxInvocationsPerAddress(
+        uint256 _projectId,
+        address _coreContract
+    ) internal view returns (uint256) {
+        MerkleProjectConfig storage _projectConfig = getMerkleProjectConfig(
+            _projectId,
+            _coreContract
+        );
+        if (_projectConfig.useMaxInvocationsPerAddressOverride) {
+            return uint256(_projectConfig.maxInvocationsPerAddressOverride);
+        } else {
+            return DEFAULT_MAX_INVOCATIONS_PER_ADDRESS;
+        }
+    }
+
+    function projectUserMintInvocations(
+        uint256 _projectId,
+        address _coreContract,
+        address _purchaser
+    ) internal view returns (uint256) {
+        MerkleProjectConfig storage _projectConfig = getMerkleProjectConfig(
+            _projectId,
+            _coreContract
+        );
+        return _projectConfig.userMintInvocations[_purchaser];
     }
 
     /**
