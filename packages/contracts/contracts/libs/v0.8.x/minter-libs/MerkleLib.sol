@@ -274,11 +274,7 @@ library MerkleLib {
             _projectId,
             _coreContract
         );
-        if (_projectConfig.useMaxInvocationsPerAddressOverride) {
-            return uint256(_projectConfig.maxInvocationsPerAddressOverride);
-        } else {
-            return DEFAULT_MAX_INVOCATIONS_PER_ADDRESS;
-        }
+        return projectMaxInvocationsPerAddress(_projectConfig);
     }
 
     function projectUserMintInvocations(
