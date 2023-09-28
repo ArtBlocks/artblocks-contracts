@@ -194,7 +194,6 @@ contract MinterSetPriceMerkleV5 is
             _coreContract: _coreContract,
             _sender: msg.sender
         });
-        require(_root != bytes32(0), "Root must be provided");
         MerkleLib.updateMerkleRoot(_projectId, _coreContract, _root);
     }
 
