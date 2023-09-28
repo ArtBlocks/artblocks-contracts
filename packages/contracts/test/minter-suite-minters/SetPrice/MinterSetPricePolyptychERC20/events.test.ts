@@ -430,7 +430,10 @@ runForEach.forEach((params) => {
               config.ERC20.address
             )
         )
-          .to.emit(config.minter, "ProjectCurrencyInfoUpdated")
+          .to.emit(
+            await ethers.getContractFactory("SplitFundsLib"),
+            "ProjectCurrencyInfoUpdated"
+          )
           .withArgs(
             config.projectZero,
             config.genArt721Core.address,
