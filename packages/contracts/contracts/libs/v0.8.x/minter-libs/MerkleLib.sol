@@ -144,7 +144,7 @@ library MerkleLib {
         address _coreContract,
         bytes32 _root
     ) internal {
-        require(_root != bytes32(0), "Must provide root");
+        require(_root != bytes32(0), "Root must be provided");
         MerkleProjectConfig
             storage merkleProjectConfig = getMerkleProjectConfig(
                 _projectId,
