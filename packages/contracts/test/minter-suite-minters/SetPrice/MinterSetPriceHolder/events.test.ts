@@ -233,7 +233,10 @@ runForEach.forEach((params) => {
               [config.projectOne]
             )
         )
-          .to.emit(config.minter, "RemovedHoldersOfProjects")
+          .to.emit(
+            await ethers.getContractFactory("TokenHolderLib"),
+            "RemovedHoldersOfProjects"
+          )
           .withArgs(
             config.projectZero,
             config.genArt721Core.address,
@@ -254,7 +257,10 @@ runForEach.forEach((params) => {
               [config.projectOne, config.projectTwo]
             )
         )
-          .to.emit(config.minter, "RemovedHoldersOfProjects")
+          .to.emit(
+            await ethers.getContractFactory("TokenHolderLib"),
+            "RemovedHoldersOfProjects"
+          )
           .withArgs(
             config.projectZero,
             config.genArt721Core.address,
@@ -302,7 +308,10 @@ runForEach.forEach((params) => {
               [config.projectOne]
             )
         )
-          .to.emit(config.minter, "RemovedHoldersOfProjects")
+          .to.emit(
+            await ethers.getContractFactory("TokenHolderLib"),
+            "RemovedHoldersOfProjects"
+          )
           .withArgs(
             config.projectZero,
             config.genArt721Core.address,
@@ -351,7 +360,10 @@ runForEach.forEach((params) => {
               [config.projectOne, config.projectTwo]
             )
         )
-          .to.emit(config.minter, "RemovedHoldersOfProjects")
+          .to.emit(
+            await ethers.getContractFactory("TokenHolderLib"),
+            "RemovedHoldersOfProjects"
+          )
           .withArgs(
             config.projectZero,
             config.genArt721Core.address,
