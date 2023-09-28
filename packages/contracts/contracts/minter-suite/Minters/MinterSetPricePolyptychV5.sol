@@ -122,18 +122,6 @@ contract MinterSetPricePolyptychV5 is
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR MaxInvocationsLib begin here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    // contractAddress => projectId => max invocations specific project config
-    mapping(address => mapping(uint256 => MaxInvocationsLib.MaxInvocationsProjectConfig))
-        private _maxInvocationsProjectConfigMapping;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR MaxInvocationsLib end here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR PolyptychLib begin here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -211,12 +199,6 @@ contract MinterSetPricePolyptychV5 is
         MaxInvocationsLib.manuallyLimitProjectMaxInvocations(
             _projectId,
             _coreContract,
-            _maxInvocations,
-            _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-        );
-        emit ProjectMaxInvocationsLimitUpdated(
-            _projectId,
-            _coreContract,
             _maxInvocations
         );
     }
@@ -257,15 +239,12 @@ contract MinterSetPricePolyptychV5 is
         // sync local max invocations if not initially populated
         // @dev if local max invocations and maxHasBeenInvoked are both
         // initial values, we know they have not been populated.
-        MaxInvocationsLib.MaxInvocationsProjectConfig
-            storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
-                _coreContract
-            ][_projectId];
         // @dev if local maxInvocations and maxHasBeenInvoked are both
         // initial values, we know they have not been populated on this minter
         if (
             MaxInvocationsLib.maxInvocationsIsUnconfigured(
-                _maxInvocationsProjectConfig
+                _projectId,
+                _coreContract
             )
         ) {
             syncProjectMaxInvocationsToCore(_projectId, _coreContract);
@@ -535,7 +514,11 @@ contract MinterSetPricePolyptychV5 is
         view
         returns (MaxInvocationsLib.MaxInvocationsProjectConfig memory)
     {
-        return _maxInvocationsProjectConfigMapping[_coreContract][_projectId];
+        return
+            MaxInvocationsLib.getMaxInvocationsProjectConfig(
+                _projectId,
+                _coreContract
+            );
     }
 
     /**
@@ -642,9 +625,7 @@ contract MinterSetPricePolyptychV5 is
         address _coreContract
     ) external view returns (bool) {
         return
-            MaxInvocationsLib.getMaxHasBeenInvoked(
-                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-            );
+            MaxInvocationsLib.getMaxHasBeenInvoked(_projectId, _coreContract);
     }
 
     /**
@@ -671,10 +652,7 @@ contract MinterSetPricePolyptychV5 is
         uint256 _projectId,
         address _coreContract
     ) external view returns (uint256) {
-        return
-            MaxInvocationsLib.getMaxInvocations(
-                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-            );
+        return MaxInvocationsLib.getMaxInvocations(_projectId, _coreContract);
     }
 
     /**
@@ -780,16 +758,9 @@ contract MinterSetPricePolyptychV5 is
             _sender: msg.sender
         });
 
-        uint256 maxInvocations = MaxInvocationsLib
-            .syncProjectMaxInvocationsToCore(
-                _projectId,
-                _coreContract,
-                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-            );
-        emit ProjectMaxInvocationsLimitUpdated(
+        MaxInvocationsLib.syncProjectMaxInvocationsToCore(
             _projectId,
-            _coreContract,
-            maxInvocations
+            _coreContract
         );
     }
 
@@ -822,21 +793,15 @@ contract MinterSetPricePolyptychV5 is
             storage _setPriceProjectConfig = _setPriceProjectConfigMapping[
                 _coreContract
             ][_projectId];
-        MaxInvocationsLib.MaxInvocationsProjectConfig
-            storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
-                _coreContract
-            ][_projectId];
 
+        // pre-mint MaxInvocationsLib checks
         // Note that `maxHasBeenInvoked` is only checked here to reduce gas
         // consumption after a project has been fully minted.
         // `_maxInvocationsProjectConfig.maxHasBeenInvoked` is locally cached to reduce
         // gas consumption, but if not in sync with the core contract's value,
         // the core contract also enforces its own max invocation check during
         // minting.
-        require(
-            !_maxInvocationsProjectConfig.maxHasBeenInvoked,
-            "Max invocations reached"
-        );
+        MaxInvocationsLib.preMintChecks(_projectId, _coreContract);
 
         // require artist to have configured price of token on this minter
         require(
@@ -949,7 +914,7 @@ contract MinterSetPricePolyptychV5 is
 
         MaxInvocationsLib.validatePurchaseEffectsInvocations(
             tokenId,
-            _maxInvocationsProjectConfig
+            _coreContract
         );
 
         // INTERACTIONS

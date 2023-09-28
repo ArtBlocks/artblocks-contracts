@@ -139,18 +139,6 @@ contract MinterDAExpSettlementV3 is
     // STATE VARIABLES FOR DAExpLib end here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR MaxInvocationsLib begin here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    // contractAddress => projectId => max invocations specific project config
-    mapping(address => mapping(uint256 => MaxInvocationsLib.MaxInvocationsProjectConfig))
-        private _maxInvocationsProjectConfigMapping;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR MaxInvocationsLib end here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
     /**
      * @notice Initializes contract to be a Filtered Minter for
      * `_minterFilter` minter filter.
@@ -188,17 +176,8 @@ contract MinterDAExpSettlementV3 is
         MaxInvocationsLib.manuallyLimitProjectMaxInvocations({
             _projectId: _projectId,
             _coreContract: _coreContract,
-            _maxInvocations: _maxInvocations,
-            maxInvocationsProjectConfig: _maxInvocationsProjectConfigMapping[
-                _coreContract
-            ][_projectId]
+            _maxInvocations: _maxInvocations
         });
-
-        emit ProjectMaxInvocationsLimitUpdated(
-            _projectId,
-            _coreContract,
-            _maxInvocations
-        );
     }
 
     /**
@@ -279,27 +258,10 @@ contract MinterDAExpSettlementV3 is
         // current core contract state.
         // @dev this refresh enables the guarantee that a project's max
         // invocation state is always populated if an auction is configured.
-        MaxInvocationsLib.MaxInvocationsProjectConfig
-            storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
-                _coreContract
-            ][_projectId];
         // @dev this minter pays the higher gas cost of a full refresh here due
         // to the more severe ux degredation of a stale minter-local max
         // invocations state.
-        bool maxInvocationsUpdated = MaxInvocationsLib.refreshMaxInvocations(
-            _projectId,
-            _coreContract,
-            _maxInvocationsProjectConfig
-        );
-
-        // emit event to update state
-        if (maxInvocationsUpdated) {
-            emit ProjectMaxInvocationsLimitUpdated(
-                _projectId,
-                _coreContract,
-                _maxInvocationsProjectConfig.maxInvocations
-            );
-        }
+        MaxInvocationsLib.refreshMaxInvocations(_projectId, _coreContract);
     }
 
     /**
@@ -396,37 +358,24 @@ contract MinterDAExpSettlementV3 is
             storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
-        MaxInvocationsLib.MaxInvocationsProjectConfig
-            storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
-                _coreContract
-            ][_projectId];
         DAExpLib.DAProjectConfig
             storage _auctionProjectConfig = _auctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
 
-        bool maxInvocationsUpdated = SettlementExpLib
-            .adminEmergencyReduceSelloutPrice({
-                _projectId: _projectId,
-                _coreContract: _coreContract,
-                _newSelloutPrice: _newSelloutPrice,
-                _settlementAuctionProjectConfig: _settlementAuctionProjectConfig,
-                _maxInvocationsProjectConfig: _maxInvocationsProjectConfig,
-                _DAProjectConfig: _auctionProjectConfig
-            });
+        SettlementExpLib.adminEmergencyReduceSelloutPrice({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _newSelloutPrice: _newSelloutPrice,
+            _settlementAuctionProjectConfig: _settlementAuctionProjectConfig,
+            _DAProjectConfig: _auctionProjectConfig
+        });
         emit ConfigValueSet(
             _projectId,
             _coreContract,
             SettlementExpLib.CONFIG_CURRENT_SETTLED_PRICE,
             uint256(_newSelloutPrice)
         );
-        if (maxInvocationsUpdated) {
-            emit ProjectMaxInvocationsLimitUpdated(
-                _projectId,
-                _coreContract,
-                _maxInvocationsProjectConfig.maxInvocations
-            );
-        }
     }
 
     /**
@@ -458,10 +407,6 @@ contract MinterDAExpSettlementV3 is
             storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
-        MaxInvocationsLib.MaxInvocationsProjectConfig
-            storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
-                _coreContract
-            ][_projectId];
         DAExpLib.DAProjectConfig
             storage _auctionProjectConfig = _auctionProjectConfigMapping[
                 _coreContract
@@ -481,14 +426,11 @@ contract MinterDAExpSettlementV3 is
         // @dev the following function updates the project's balance and will
         // revert if the project's balance is insufficient to cover the
         // settlement amount (which is expected to not be possible)
-        (
-            bool maxInvocationsUpdated,
-            bool settledPriceUpdated
-        ) = SettlementExpLib.distributeArtistAndAdminRevenues({
+        bool settledPriceUpdated = SettlementExpLib
+            .distributeArtistAndAdminRevenues({
                 _projectId: _projectId,
                 _coreContract: _coreContract,
                 _settlementAuctionProjectConfig: _settlementAuctionProjectConfig,
-                _maxInvocationsProjectConfig: _maxInvocationsProjectConfig,
                 _DAProjectConfig: _auctionProjectConfig,
                 _isEngine: isEngine
             });
@@ -505,14 +447,6 @@ contract MinterDAExpSettlementV3 is
                 _coreContract,
                 SettlementExpLib.CONFIG_CURRENT_SETTLED_PRICE,
                 uint256(_settlementAuctionProjectConfig.latestPurchasePrice)
-            );
-        }
-        if (maxInvocationsUpdated) {
-            // notify indexing service of max invocations update
-            emit ProjectMaxInvocationsLimitUpdated(
-                _projectId,
-                _coreContract,
-                _maxInvocationsProjectConfig.maxInvocations
             );
         }
     }
@@ -606,7 +540,11 @@ contract MinterDAExpSettlementV3 is
         view
         returns (MaxInvocationsLib.MaxInvocationsProjectConfig memory)
     {
-        return _maxInvocationsProjectConfigMapping[_coreContract][_projectId];
+        return
+            MaxInvocationsLib.getMaxInvocationsProjectConfig(
+                _projectId,
+                _coreContract
+            );
     }
 
     /**
@@ -686,9 +624,7 @@ contract MinterDAExpSettlementV3 is
         address _coreContract
     ) external view returns (bool) {
         return
-            MaxInvocationsLib.getMaxHasBeenInvoked(
-                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-            );
+            MaxInvocationsLib.getMaxHasBeenInvoked(_projectId, _coreContract);
     }
 
     /**
@@ -715,10 +651,7 @@ contract MinterDAExpSettlementV3 is
         uint256 _projectId,
         address _coreContract
     ) external view returns (uint256) {
-        return
-            MaxInvocationsLib.getMaxInvocations(
-                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-            );
+        return MaxInvocationsLib.getMaxInvocations(_projectId, _coreContract);
     }
 
     /**
@@ -805,10 +738,6 @@ contract MinterDAExpSettlementV3 is
             storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
-        MaxInvocationsLib.MaxInvocationsProjectConfig
-            storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
-                _coreContract
-            ][_projectId];
         DAExpLib.DAProjectConfig
             storage auctionProjectConfig = _auctionProjectConfigMapping[
                 _coreContract
@@ -834,7 +763,6 @@ contract MinterDAExpSettlementV3 is
                 _projectId: _projectId,
                 _coreContract: _coreContract,
                 _settlementAuctionProjectConfig: _settlementAuctionProjectConfig,
-                _maxInvocationsProjectConfig: _maxInvocationsProjectConfig,
                 _DAProjectConfig: auctionProjectConfig
             });
         }
@@ -1065,25 +993,19 @@ contract MinterDAExpSettlementV3 is
             storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
-        MaxInvocationsLib.MaxInvocationsProjectConfig
-            storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
-                _coreContract
-            ][_projectId];
         DAExpLib.DAProjectConfig
             storage _auctionProjectConfig = _auctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
 
+        // pre-mint MaxInvocationsLib checks
         // Note that `maxHasBeenInvoked` is only checked here to reduce gas
         // consumption after a project has been fully minted.
         // `_maxInvocationsProjectConfig.maxHasBeenInvoked` is locally cached to reduce
         // gas consumption, but if not in sync with the core contract's value,
         // the core contract also enforces its own max invocation check during
         // minting.
-        require(
-            !_maxInvocationsProjectConfig.maxHasBeenInvoked,
-            "Max invocations reached"
-        );
+        MaxInvocationsLib.preMintChecks(_projectId, _coreContract);
 
         // _getPriceUnsafe reverts if auction has not yet started or auction is
         // unconfigured, and auction has not sold out or revenues have not been
@@ -1096,7 +1018,7 @@ contract MinterDAExpSettlementV3 is
         // invocation check fails.
         uint256 currentPriceInWei = SettlementExpLib.getPriceUnsafe({
             _settlementAuctionProjectConfig: _settlementAuctionProjectConfig,
-            _maxInvocationsProjectConfig: _maxInvocationsProjectConfig,
+            _maxHasBeenInvoked: false, // always false due to MaxInvocationsLib.preMintChecks
             _DAProjectConfig: _auctionProjectConfig
         });
 
@@ -1138,7 +1060,7 @@ contract MinterDAExpSettlementV3 is
         // update local maxHasBeenInvoked
         MaxInvocationsLib.validatePurchaseEffectsInvocations(
             tokenId,
-            _maxInvocationsProjectConfig
+            _coreContract
         );
 
         // INTERACTIONS
