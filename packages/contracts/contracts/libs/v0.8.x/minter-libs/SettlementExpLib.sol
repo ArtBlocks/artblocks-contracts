@@ -170,7 +170,6 @@ library SettlementExpLib {
      * @param _settlementAuctionProjectConfig SettlementAuctionProjectConfig
      * struct for the project.
      * @param _DAProjectConfig DAProjectConfig struct for the project.
-     * @param _isEngine bool indicating whether the core contract is an engine
      * @return settledPriceUpdated whether or not the project's settled price
      * was updated during this function call.
      */
@@ -178,8 +177,7 @@ library SettlementExpLib {
         uint256 _projectId,
         address _coreContract,
         SettlementAuctionProjectConfig storage _settlementAuctionProjectConfig,
-        DAExpLib.DAProjectConfig storage _DAProjectConfig,
-        bool _isEngine
+        DAExpLib.DAProjectConfig storage _DAProjectConfig
     ) internal returns (bool settledPriceUpdated) {
         // require revenues to not have already been collected
         require(
@@ -243,8 +241,7 @@ library SettlementExpLib {
         SplitFundsLib.splitRevenuesETHNoRefund({
             _projectId: _projectId,
             _valueInWei: netRevenues,
-            _coreContract: _coreContract,
-            _isEngine: _isEngine
+            _coreContract: _coreContract
         });
         // @dev (settledPriceUpdated) is returned
     }

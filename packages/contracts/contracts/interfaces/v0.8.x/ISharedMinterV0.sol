@@ -122,17 +122,8 @@ interface ISharedMinterV0 {
         bytes32 _key,
         bytes32 _value
     );
+
     ///////////////////////////
-    /**
-     * @notice Currency updated for project `_projectId` to symbol
-     * `_currencySymbol` and address `_currencyAddress`.
-     */
-    event ProjectCurrencyInfoUpdated(
-        uint256 indexed _projectId,
-        address indexed _coreContract,
-        address indexed _currencyAddress,
-        string _currencySymbol
-    );
 
     // Sets the local max invocations for a given project, checking that the provided max invocations is
     // less than or equal to the global max invocations for the project set on the core contract.

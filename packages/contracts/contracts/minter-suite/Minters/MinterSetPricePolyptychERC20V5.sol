@@ -102,21 +102,6 @@ contract MinterSetPricePolyptychERC20V5 is
     uint256 constant ONE_MILLION = 1_000_000;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR SplitFundsLib begin here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    // contractAddress => IsEngineCache
-    mapping(address => SplitFundsLib.IsEngineCache) private _isEngineCaches;
-
-    // contractAddress => projectId => SplitFundsProjectConfig
-    mapping(address => mapping(uint256 => SplitFundsLib.SplitFundsProjectConfig))
-        private _splitFundsProjectConfigs;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR SplitFundsLib end here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR PolyptychLib begin here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -263,20 +248,11 @@ contract MinterSetPricePolyptychERC20V5 is
             _coreContract: _coreContract,
             _sender: msg.sender
         });
-        SplitFundsLib.SplitFundsProjectConfig
-            storage _splitFundsProjectConfig = _splitFundsProjectConfigs[
-                _coreContract
-            ][_projectId];
         SplitFundsLib.updateProjectCurrencyInfoERC20({
-            _splitFundsProjectConfig: _splitFundsProjectConfig,
-            _currencySymbol: _currencySymbol,
-            _currencyAddress: _currencyAddress
-        });
-        emit ProjectCurrencyInfoUpdated({
             _projectId: _projectId,
             _coreContract: _coreContract,
-            _currencyAddress: _currencyAddress,
-            _currencySymbol: _currencySymbol
+            _currencySymbol: _currencySymbol,
+            _currencyAddress: _currencyAddress
         });
     }
 
@@ -623,9 +599,8 @@ contract MinterSetPricePolyptychERC20V5 is
      * @return bool indicating if `_coreContract` is a valid engine contract.
      */
     function isEngineView(address _coreContract) external view returns (bool) {
-        SplitFundsLib.IsEngineCache storage isEngineCache = _isEngineCaches[
-            _coreContract
-        ];
+        SplitFundsLib.IsEngineCache storage isEngineCache = SplitFundsLib
+            .getIsEngineCacheConfig(_coreContract);
         if (isEngineCache.isCached) {
             return isEngineCache.isEngine;
         } else {
@@ -695,14 +670,11 @@ contract MinterSetPricePolyptychERC20V5 is
         uint256 _projectId,
         address _coreContract
     ) external view returns (uint256 balance) {
-        SplitFundsLib.SplitFundsProjectConfig
-            storage _splitFundsProjectConfig = _splitFundsProjectConfigs[
-                _coreContract
-            ][_projectId];
-        balance = SplitFundsLib.getERC20Balance(
-            _splitFundsProjectConfig.currencyAddress,
-            msg.sender
+        (address currencyAddress, ) = SplitFundsLib.getCurrencyInfoERC20(
+            _projectId,
+            _coreContract
         );
+        balance = SplitFundsLib.getERC20Balance(currencyAddress, msg.sender);
         return balance;
     }
 
@@ -718,12 +690,12 @@ contract MinterSetPricePolyptychERC20V5 is
         uint256 _projectId,
         address _coreContract
     ) external view returns (uint256 remaining) {
-        SplitFundsLib.SplitFundsProjectConfig
-            storage _splitFundsProjectConfig = _splitFundsProjectConfigs[
-                _coreContract
-            ][_projectId];
+        (address currencyAddress, ) = SplitFundsLib.getCurrencyInfoERC20(
+            _projectId,
+            _coreContract
+        );
         remaining = SplitFundsLib.getERC20Allowance({
-            _currencyAddress: _splitFundsProjectConfig.currencyAddress,
+            _currencyAddress: currencyAddress,
             _walletAddress: msg.sender,
             _spenderAddress: address(this)
         });
@@ -767,12 +739,9 @@ contract MinterSetPricePolyptychERC20V5 is
                 .getSetPriceProjectConfig(_projectId, _coreContract);
         tokenPriceInWei = _setPriceProjectConfig.pricePerTokenInWei;
         // get currency info from SplitFundsLib
-        SplitFundsLib.SplitFundsProjectConfig
-            storage _splitFundsProjectConfig = _splitFundsProjectConfigs[
-                _coreContract
-            ][_projectId];
         (currencyAddress, currencySymbol) = SplitFundsLib.getCurrencyInfoERC20(
-            _splitFundsProjectConfig
+            _projectId,
+            _coreContract
         );
         // report if price and ERC20 token are configured
         // @dev currencyAddress is non-zero if an ERC20 token is configured
@@ -1016,21 +985,11 @@ contract MinterSetPricePolyptychERC20V5 is
         }
 
         // split funds
-        bool isEngine = SplitFundsLib.isEngine(
-            _coreContract,
-            _isEngineCaches[_coreContract]
-        );
         // process payment in ERC20
-        SplitFundsLib.SplitFundsProjectConfig
-            storage _splitFundsProjectConfig = _splitFundsProjectConfigs[
-                _coreContract
-            ][_projectId];
         SplitFundsLib.splitFundsERC20({
-            _splitFundsProjectConfig: _splitFundsProjectConfig,
             _projectId: _projectId,
             _pricePerTokenInWei: pricePerTokenInWei,
-            _coreContract: _coreContract,
-            _isEngine: isEngine
+            _coreContract: _coreContract
         });
 
         return tokenId;

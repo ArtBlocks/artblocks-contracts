@@ -20,6 +20,22 @@ pragma solidity ^0.8.0;
  */
 
 library SplitFundsLib {
+    /**
+     * @notice Currency updated for project `_projectId` to symbol
+     * `_currencySymbol` and address `_currencyAddress`.
+     */
+    event ProjectCurrencyInfoUpdated(
+        uint256 indexed _projectId,
+        address indexed _coreContract,
+        address indexed _currencyAddress,
+        string _currencySymbol
+    );
+
+    // position of Split Funds Lib storage, using a diamond storage pattern
+    // for this library
+    bytes32 constant SPLIT_FUNDS_LIB_STORAGE_POSITION =
+        keccak256("splitfundslib.storage");
+
     // contract-level variables
     struct IsEngineCache {
         bool isEngine;
@@ -30,6 +46,12 @@ library SplitFundsLib {
     struct SplitFundsProjectConfig {
         address currencyAddress; // address(0) if ETH
         string currencySymbol; // Assumed to be ETH if null
+    }
+
+    // Diamond storage pattern is used in this library
+    struct SplitFundsLibStorage {
+        mapping(address coreContract => mapping(uint256 projectId => SplitFundsProjectConfig)) splitFundsProjectConfigs;
+        mapping(address coreContract => IsEngineCache) isEngineCacheConfigs;
     }
 
     /**
@@ -48,13 +70,11 @@ library SplitFundsLib {
      * @param _pricePerTokenInWei Current price of token, in Wei.
      * @param _coreContract Address of the GenArt721CoreContract associated
      * with the project.
-     * @param _isEngine Whether the core contract is an engine contract.
      */
     function splitFundsETHRefundSender(
         uint256 _projectId,
         uint256 _pricePerTokenInWei,
-        address _coreContract,
-        bool _isEngine
+        address _coreContract
     ) internal {
         if (msg.value > 0) {
             bool success_;
@@ -68,8 +88,7 @@ library SplitFundsLib {
             splitRevenuesETHNoRefund(
                 _projectId,
                 _pricePerTokenInWei,
-                _coreContract,
-                _isEngine
+                _coreContract
             );
         }
     }
@@ -86,42 +105,33 @@ library SplitFundsLib {
      * @param _valueInWei Value to be split, in Wei.
      * @param _coreContract Address of the GenArt721CoreContract
      * associated with the project.
-     * @param _isEngine Whether the core contract is an engine contract.
      */
     function splitRevenuesETHNoRefund(
         uint256 _projectId,
         uint256 _valueInWei,
-        address _coreContract,
-        bool _isEngine
+        address _coreContract
     ) internal {
         if (_valueInWei == 0) {
             return; // return early
         }
-        bool success;
         // split funds between platforms, artist, and artist's
         // additional payee
-        uint256 renderProviderRevenue_;
-        address payable renderProviderAddress_;
-        uint256 artistRevenue_;
-        address payable artistAddress_;
-        uint256 additionalPayeePrimaryRevenue_;
-        address payable additionalPayeePrimaryAddress_;
-
-        if (_isEngine) {
+        bool isEngine_ = isEngine(_coreContract);
+        if (isEngine_) {
             // get engine splits
-            uint256 platformProviderRevenue_;
-            address payable platformProviderAddress_;
+            // uint256 platformProviderRevenue_;
+            // address payable platformProviderAddress_;
             (
-                renderProviderRevenue_,
-                renderProviderAddress_,
-                platformProviderRevenue_,
-                platformProviderAddress_,
-                artistRevenue_,
-                artistAddress_,
-                additionalPayeePrimaryRevenue_,
-                additionalPayeePrimaryAddress_
+                uint256 renderProviderRevenue_,
+                address payable renderProviderAddress_,
+                uint256 platformProviderRevenue_,
+                address payable platformProviderAddress_,
+                uint256 artistRevenue_,
+                address payable artistAddress_,
+                uint256 additionalPayeePrimaryRevenue_,
+                address payable additionalPayeePrimaryAddress_
             ) = IGenArt721CoreContractV3_Engine(_coreContract)
-                .getPrimaryRevenueSplits(_projectId, _valueInWei);
+                    .getPrimaryRevenueSplits(_projectId, _valueInWei);
             // require total revenue split is 100%
             require(
                 renderProviderRevenue_ +
@@ -133,24 +143,45 @@ library SplitFundsLib {
             );
             // Platform Provider payment (only possible if engine)
             if (platformProviderRevenue_ > 0) {
-                (success, ) = platformProviderAddress_.call{
+                (bool success, ) = platformProviderAddress_.call{
                     value: platformProviderRevenue_
                 }("");
                 require(success, "Platform Provider payment failed");
             }
+            // Render Provider / Art Blocks payment
+            if (renderProviderRevenue_ > 0) {
+                (bool success, ) = renderProviderAddress_.call{
+                    value: renderProviderRevenue_
+                }("");
+                require(success, "Render Provider payment failed");
+            }
+            // artist payment
+            if (artistRevenue_ > 0) {
+                (bool success, ) = artistAddress_.call{value: artistRevenue_}(
+                    ""
+                );
+                require(success, "Artist payment failed");
+            }
+            // additional payee payment
+            if (additionalPayeePrimaryRevenue_ > 0) {
+                (bool success, ) = additionalPayeePrimaryAddress_.call{
+                    value: additionalPayeePrimaryRevenue_
+                }("");
+                require(success, "Additional Payee payment failed");
+            }
         } else {
             // get flagship splits
             (
-                renderProviderRevenue_, // artblocks revenue
-                renderProviderAddress_, // artblocks address
-                artistRevenue_,
-                artistAddress_,
-                additionalPayeePrimaryRevenue_,
-                additionalPayeePrimaryAddress_
+                uint256 renderProviderRevenue_, // artblocks revenue
+                address payable renderProviderAddress_, // artblocks address
+                uint256 artistRevenue_,
+                address payable artistAddress_,
+                uint256 additionalPayeePrimaryRevenue_,
+                address payable additionalPayeePrimaryAddress_
             ) = IGenArt721CoreContractV3(_coreContract).getPrimaryRevenueSplits(
-                _projectId,
-                _valueInWei
-            );
+                    _projectId,
+                    _valueInWei
+                );
             // require total revenue split is 100%
             require(
                 renderProviderRevenue_ +
@@ -159,25 +190,27 @@ library SplitFundsLib {
                     _valueInWei,
                 "Invalid revenue split totals"
             );
-        }
-        // Render Provider / Art Blocks payment
-        if (renderProviderRevenue_ > 0) {
-            (success, ) = renderProviderAddress_.call{
-                value: renderProviderRevenue_
-            }("");
-            require(success, "Render Provider payment failed");
-        }
-        // artist payment
-        if (artistRevenue_ > 0) {
-            (success, ) = artistAddress_.call{value: artistRevenue_}("");
-            require(success, "Artist payment failed");
-        }
-        // additional payee payment
-        if (additionalPayeePrimaryRevenue_ > 0) {
-            (success, ) = additionalPayeePrimaryAddress_.call{
-                value: additionalPayeePrimaryRevenue_
-            }("");
-            require(success, "Additional Payee payment failed");
+            // Render Provider / Art Blocks payment
+            if (renderProviderRevenue_ > 0) {
+                (bool success, ) = renderProviderAddress_.call{
+                    value: renderProviderRevenue_
+                }("");
+                require(success, "Render Provider payment failed");
+            }
+            // artist payment
+            if (artistRevenue_ > 0) {
+                (bool success, ) = artistAddress_.call{value: artistRevenue_}(
+                    ""
+                );
+                require(success, "Artist payment failed");
+            }
+            // additional payee payment
+            if (additionalPayeePrimaryRevenue_ > 0) {
+                (bool success, ) = additionalPayeePrimaryAddress_.call{
+                    value: additionalPayeePrimaryRevenue_
+                }("");
+                require(success, "Additional Payee payment failed");
+            }
         }
     }
 
@@ -192,56 +225,57 @@ library SplitFundsLib {
      * @dev possible DoS during splits is acknowledged, and mitigated by
      * business practices, including end-to-end testing on mainnet, and
      * admin-accepted artist payment addresses.
-     * @param _splitFundsProjectConfig SplitFundsProjectConfig of the project.
      * @param _projectId Project ID for which funds shall be split.
      * @param _pricePerTokenInWei Current price of token, in Wei.
      * @param _coreContract Core contract address.
-     * @param _isEngine Whether the core contract is an engine contract.
      */
     function splitFundsERC20(
-        SplitFundsProjectConfig storage _splitFundsProjectConfig,
         uint256 _projectId,
         uint256 _pricePerTokenInWei,
-        address _coreContract,
-        bool _isEngine
+        address _coreContract
     ) internal {
         if (_pricePerTokenInWei == 0) {
             return; // nothing to split, return early
         }
-        address currencyAddress = _splitFundsProjectConfig.currencyAddress;
-        require(currencyAddress != address(0), "ERC20: payment not configured");
-        require(msg.value == 0, "ERC20: No ETH when using ERC20");
-        // ERC20 token is used for payment
-        validateERC20Approvals({
-            _msgSender: msg.sender,
-            _currencyAddress: currencyAddress,
-            _pricePerTokenInWei: _pricePerTokenInWei
-        });
-        IERC20 _projectCurrency = IERC20(currencyAddress);
+        IERC20 _projectCurrency;
+        // block scope to avoid stack too deep error
+        {
+            SplitFundsProjectConfig
+                storage splitFundsProjectConfig = getSplitFundsProjectConfig(
+                    _projectId,
+                    _coreContract
+                );
+            address currencyAddress = splitFundsProjectConfig.currencyAddress;
+            require(
+                currencyAddress != address(0),
+                "ERC20: payment not configured"
+            );
+            require(msg.value == 0, "ERC20: No ETH when using ERC20");
+            // ERC20 token is used for payment
+            validateERC20Approvals({
+                _msgSender: msg.sender,
+                _currencyAddress: currencyAddress,
+                _pricePerTokenInWei: _pricePerTokenInWei
+            });
+            _projectCurrency = IERC20(currencyAddress);
+        }
         // split remaining funds between foundation, artist, and artist's
-        // additional payee
-        uint256 renderProviderRevenue_;
-        address payable renderProviderAddress_;
-        uint256 artistRevenue_;
-        address payable artistAddress_;
-        uint256 additionalPayeePrimaryRevenue_;
-        address payable additionalPayeePrimaryAddress_;
-
-        if (_isEngine) {
+        bool isEngine_ = isEngine(_coreContract);
+        if (isEngine_) {
             // get engine splits
-            uint256 platformProviderRevenue_;
-            address payable platformProviderAddress_;
+            // uint256 platformProviderRevenue_;
+            // address payable platformProviderAddress_;
             (
-                renderProviderRevenue_,
-                renderProviderAddress_,
-                platformProviderRevenue_,
-                platformProviderAddress_,
-                artistRevenue_,
-                artistAddress_,
-                additionalPayeePrimaryRevenue_,
-                additionalPayeePrimaryAddress_
+                uint256 renderProviderRevenue_,
+                address payable renderProviderAddress_,
+                uint256 platformProviderRevenue_,
+                address payable platformProviderAddress_,
+                uint256 artistRevenue_,
+                address payable artistAddress_,
+                uint256 additionalPayeePrimaryRevenue_,
+                address payable additionalPayeePrimaryAddress_
             ) = IGenArt721CoreContractV3_Engine(_coreContract)
-                .getPrimaryRevenueSplits(_projectId, _pricePerTokenInWei);
+                    .getPrimaryRevenueSplits(_projectId, _pricePerTokenInWei);
             // require total revenue split is 100%
             require(
                 renderProviderRevenue_ +
@@ -262,19 +296,54 @@ library SplitFundsLib {
                     "Platform Provider payment failed"
                 );
             }
+            // Art Blocks payment
+            if (renderProviderRevenue_ > 0) {
+                require(
+                    _projectCurrency.transferFrom(
+                        msg.sender,
+                        renderProviderAddress_,
+                        renderProviderRevenue_
+                    ),
+                    "Render Provider payment failed"
+                );
+            }
+            // artist payment
+            if (artistRevenue_ > 0) {
+                require(
+                    _projectCurrency.transferFrom(
+                        msg.sender,
+                        artistAddress_,
+                        artistRevenue_
+                    ),
+                    "Artist payment failed"
+                );
+            }
+            // additional payee payment
+            if (additionalPayeePrimaryRevenue_ > 0) {
+                // @dev some ERC20 may not revert on transfer failure, so we
+                // check the return value
+                require(
+                    _projectCurrency.transferFrom(
+                        msg.sender,
+                        additionalPayeePrimaryAddress_,
+                        additionalPayeePrimaryRevenue_
+                    ),
+                    "Additional Payee payment failed"
+                );
+            }
         } else {
             // get flagship splits
             (
-                renderProviderRevenue_, // artblocks revenue
-                renderProviderAddress_, // artblocks address
-                artistRevenue_,
-                artistAddress_,
-                additionalPayeePrimaryRevenue_,
-                additionalPayeePrimaryAddress_
+                uint256 renderProviderRevenue_, // artblocks revenue
+                address payable renderProviderAddress_, // artblocks address
+                uint256 artistRevenue_,
+                address payable artistAddress_,
+                uint256 additionalPayeePrimaryRevenue_,
+                address payable additionalPayeePrimaryAddress_
             ) = IGenArt721CoreContractV3(_coreContract).getPrimaryRevenueSplits(
-                _projectId,
-                _pricePerTokenInWei
-            );
+                    _projectId,
+                    _pricePerTokenInWei
+                );
             // require total revenue split is 100%
             require(
                 renderProviderRevenue_ +
@@ -283,41 +352,41 @@ library SplitFundsLib {
                     _pricePerTokenInWei,
                 "Invalid revenue split totals"
             );
-        }
-        // Art Blocks payment
-        if (renderProviderRevenue_ > 0) {
-            require(
-                _projectCurrency.transferFrom(
-                    msg.sender,
-                    renderProviderAddress_,
-                    renderProviderRevenue_
-                ),
-                "Render Provider payment failed"
-            );
-        }
-        // artist payment
-        if (artistRevenue_ > 0) {
-            require(
-                _projectCurrency.transferFrom(
-                    msg.sender,
-                    artistAddress_,
-                    artistRevenue_
-                ),
-                "Artist payment failed"
-            );
-        }
-        // additional payee payment
-        if (additionalPayeePrimaryRevenue_ > 0) {
-            // @dev some ERC20 may not revert on transfer failure, so we
-            // check the return value
-            require(
-                _projectCurrency.transferFrom(
-                    msg.sender,
-                    additionalPayeePrimaryAddress_,
-                    additionalPayeePrimaryRevenue_
-                ),
-                "Additional Payee payment failed"
-            );
+            // Art Blocks payment
+            if (renderProviderRevenue_ > 0) {
+                require(
+                    _projectCurrency.transferFrom(
+                        msg.sender,
+                        renderProviderAddress_,
+                        renderProviderRevenue_
+                    ),
+                    "Render Provider payment failed"
+                );
+            }
+            // artist payment
+            if (artistRevenue_ > 0) {
+                require(
+                    _projectCurrency.transferFrom(
+                        msg.sender,
+                        artistAddress_,
+                        artistRevenue_
+                    ),
+                    "Artist payment failed"
+                );
+            }
+            // additional payee payment
+            if (additionalPayeePrimaryRevenue_ > 0) {
+                // @dev some ERC20 may not revert on transfer failure, so we
+                // check the return value
+                require(
+                    _projectCurrency.transferFrom(
+                        msg.sender,
+                        additionalPayeePrimaryAddress_,
+                        additionalPayeePrimaryRevenue_
+                    ),
+                    "Additional Payee payment failed"
+                );
+            }
         }
     }
 
@@ -328,12 +397,14 @@ library SplitFundsLib {
      * Only supports setting currency info of ERC20 tokens.
      * @dev artist-defined currency symbol is used instead of any on-chain
      * currency symbol.
-     * @param _splitFundsProjectConfig SplitFundsProjectConfig to update.
+     * @param _projectId Project ID to update.
+     * @param _coreContract Core contract address.
      * @param _currencySymbol Currency symbol.
      * @param _currencyAddress Currency address.
      */
     function updateProjectCurrencyInfoERC20(
-        SplitFundsProjectConfig storage _splitFundsProjectConfig,
+        uint256 _projectId,
+        address _coreContract,
         string memory _currencySymbol,
         address _currencyAddress
     ) internal {
@@ -341,8 +412,20 @@ library SplitFundsLib {
         require(_currencyAddress != address(0), "null address, only ERC20");
         require(bytes(_currencySymbol).length > 0, "only non-null symbol");
         // EFFECTS
-        _splitFundsProjectConfig.currencySymbol = _currencySymbol;
-        _splitFundsProjectConfig.currencyAddress = _currencyAddress;
+        SplitFundsProjectConfig
+            storage splitFundsProjectConfig = getSplitFundsProjectConfig(
+                _projectId,
+                _coreContract
+            );
+        splitFundsProjectConfig.currencySymbol = _currencySymbol;
+        splitFundsProjectConfig.currencyAddress = _currencyAddress;
+
+        emit ProjectCurrencyInfoUpdated({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _currencyAddress: _currencyAddress,
+            _currencySymbol: _currencySymbol
+        });
     }
 
     /**
@@ -413,17 +496,15 @@ library SplitFundsLib {
      * @notice Returns whether or not the provided address `_coreContract`
      * is an Art Blocks Engine core contract. Caches the result for future access.
      * @param _coreContract Address of the core contract to check.
-     * @param _isEngineCache The storage pointer to the project's
-     * SplitFundsProjectConfig struct.
      */
-    function isEngine(
-        address _coreContract,
-        IsEngineCache storage _isEngineCache
-    ) internal returns (bool) {
-        if (_isEngineCache.isCached) {
-            return _isEngineCache.isEngine;
+    function isEngine(address _coreContract) internal returns (bool) {
+        IsEngineCache storage isEngineCache = getIsEngineCacheConfig(
+            _coreContract
+        );
+        if (isEngineCache.isCached) {
+            return isEngineCache.isEngine;
         } else {
-            bool _isEngine = getV3CoreIsEngine(_coreContract, _isEngineCache);
+            bool _isEngine = getV3CoreIsEngine(_coreContract);
             return _isEngine;
         }
     }
@@ -484,22 +565,29 @@ library SplitFundsLib {
      * SplitFundsProjectConfig.
      * Only supports ERC20 tokens - returns currencySymbol of `UNCONFIG` if
      * `currencyAddress` is zero.
-     * @param _splitFundsProjectConfig SplitFundsProjectConfig to read
+     * @param _projectId Project ID to get config for
+     * @param _coreContract Core contract address to get config for
      * @return currencyAddress
      * @return currencySymbol
      */
     function getCurrencyInfoERC20(
-        SplitFundsProjectConfig storage _splitFundsProjectConfig
+        uint256 _projectId,
+        address _coreContract
     )
         internal
         view
         returns (address currencyAddress, string memory currencySymbol)
     {
-        currencyAddress = _splitFundsProjectConfig.currencyAddress;
+        SplitFundsProjectConfig
+            storage splitFundsProjectConfig = getSplitFundsProjectConfig(
+                _projectId,
+                _coreContract
+            );
+        currencyAddress = splitFundsProjectConfig.currencyAddress;
         // default to "UNCONFIG" if project currency address is initial value
         currencySymbol = currencyAddress == address(0)
             ? "UNCONFIG"
-            : _splitFundsProjectConfig.currencySymbol;
+            : splitFundsProjectConfig.currencySymbol;
     }
 
     /**
@@ -546,13 +634,11 @@ library SplitFundsLib {
      * @dev this function uses the length of the return data (in bytes) to
      * determine whether the core is an engine or not.
      * @param _coreContract The address of the deployed core contract.
-     * @param _isEngineCache The storage pointer to the project's
-     * IsEngineCache struct.
      */
-    function getV3CoreIsEngine(
-        address _coreContract,
-        IsEngineCache storage _isEngineCache
-    ) private returns (bool) {
+    function getV3CoreIsEngine(address _coreContract) private returns (bool) {
+        IsEngineCache storage isEngineCache = getIsEngineCacheConfig(
+            _coreContract
+        );
         // call getPrimaryRevenueSplits() on core contract
         bytes memory payload = abi.encodeWithSignature(
             "getPrimaryRevenueSplits(uint256,uint256)",
@@ -570,8 +656,8 @@ library SplitFundsLib {
             // the artist, and artist's additional payee, and Art Blocks.
             // also note that per Solidity ABI encoding, the address return
             // values are padded to 32 bytes.
-            _isEngineCache.isCached = true;
-            _isEngineCache.isEngine = false;
+            isEngineCache.isCached = true;
+            isEngineCache.isEngine = false;
             return false;
         } else if (returnDataLength == 8 * 32) {
             // 8 32-byte words returned if engine
@@ -581,8 +667,8 @@ library SplitFundsLib {
             // typically Art Blocks, and platform provider (partner).
             // also note that per Solidity ABI encoding, the address return
             // values are padded to 32 bytes.
-            _isEngineCache.isCached = true;
-            _isEngineCache.isEngine = true;
+            isEngineCache.isCached = true;
+            isEngineCache.isEngine = true;
             return true;
         } else {
             // unexpected return value length
@@ -615,5 +701,43 @@ library SplitFundsLib {
                 _pricePerTokenInWei,
             "Insufficient ERC20 balance"
         );
+    }
+
+    /**
+     * Loads the SplitFundsProjectConfig for a given project and core contract.
+     * @param _projectId Project Id to get config for
+     * @param _coreContract Core contract address to get config for
+     */
+    function getSplitFundsProjectConfig(
+        uint256 _projectId,
+        address _coreContract
+    ) internal view returns (SplitFundsProjectConfig storage) {
+        return s().splitFundsProjectConfigs[_coreContract][_projectId];
+    }
+
+    /**
+     * Loads the IsEngineCache for a given core contract.
+     * @param _coreContract Core contract address to get config for
+     */
+    function getIsEngineCacheConfig(
+        address _coreContract
+    ) internal view returns (IsEngineCache storage) {
+        return s().isEngineCacheConfigs[_coreContract];
+    }
+
+    /**
+     * @notice Return the storage struct for reading and writing. This library
+     * uses a diamond storage pattern when managing storage.
+     * @return storageStruct The SetPriceLibStorage struct.
+     */
+    function s()
+        internal
+        pure
+        returns (SplitFundsLibStorage storage storageStruct)
+    {
+        bytes32 position = SPLIT_FUNDS_LIB_STORAGE_POSITION;
+        assembly {
+            storageStruct.slot := position
+        }
     }
 }
