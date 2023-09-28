@@ -2,6 +2,7 @@
 // Created By: Art Blocks Inc.
 
 import "@openzeppelin-4.7/contracts/utils/cryptography/MerkleProof.sol";
+import {GenericMinterEventsLib} from "./GenericMinterEventsLib.sol";
 
 pragma solidity ^0.8.0;
 
@@ -31,45 +32,6 @@ library MerkleLib {
         uint256 defaultMaxInvocationsPerAddress
     );
     event DelegationRegistryUpdated(address delegationRegistry);
-
-    /// Generic Events from ISharedMinterV0 emitted by this library ///
-    // @dev These are duplicates of and a subset of the generic events in
-    // ISharedMinterV0. This allows downstream indexing services to watch for
-    // all generic events in ISharedMinterV0 instead of handling each generic
-    // event from each minter library separately.
-    /// BOOL
-    /**
-     * @notice Generic project minter configuration event. Sets value of key
-     * `_key` to `_value` for project `_projectId`.
-     */
-    event ConfigValueSet(
-        uint256 indexed _projectId,
-        address indexed _coreContract,
-        bytes32 _key,
-        bool _value
-    );
-    /// UINT256
-    /**
-     * @notice Generic project minter configuration event. Sets value of key
-     * `_key` to `_value` for project `_projectId`.
-     */
-    event ConfigValueSet(
-        uint256 indexed _projectId,
-        address indexed _coreContract,
-        bytes32 _key,
-        uint256 _value
-    );
-    /// BYTES32
-    /**
-     * @notice Generic project minter configuration event. Sets value of key
-     * `_key` to `_value` for project `_projectId`.
-     */
-    event ConfigValueSet(
-        uint256 indexed _projectId,
-        address indexed _coreContract,
-        bytes32 _key,
-        bytes32 _value
-    );
 
     /// @notice Default maximum invocations per address
     uint256 internal constant DEFAULT_MAX_INVOCATIONS_PER_ADDRESS = 1;
@@ -119,13 +81,13 @@ library MerkleLib {
         merkleProjectConfig.useMaxInvocationsPerAddressOverride = true;
         merkleProjectConfig
             .maxInvocationsPerAddressOverride = _maxInvocationsPerAddress;
-        emit ConfigValueSet(
+        emit GenericMinterEventsLib.ConfigValueSet(
             _projectId,
             _coreContract,
             MerkleLib.CONFIG_USE_MAX_INVOCATIONS_PER_ADDRESS_OVERRIDE,
             true
         );
-        emit ConfigValueSet(
+        emit GenericMinterEventsLib.ConfigValueSet(
             _projectId,
             _coreContract,
             MerkleLib.CONFIG_MAX_INVOCATIONS_OVERRIDE,
@@ -151,7 +113,7 @@ library MerkleLib {
                 _coreContract
             );
         merkleProjectConfig.merkleRoot = _root;
-        emit ConfigValueSet(
+        emit GenericMinterEventsLib.ConfigValueSet(
             _projectId,
             _coreContract,
             MerkleLib.CONFIG_MERKLE_ROOT,
