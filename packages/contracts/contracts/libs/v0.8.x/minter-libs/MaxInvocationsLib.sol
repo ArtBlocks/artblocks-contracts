@@ -435,7 +435,7 @@ library MaxInvocationsLib {
     }
 
     /**
-     * Loads the MerkleProjectConfig for a given project and core contract.
+     * Loads the MaxInvocationsProjectConfig for a given project and core contract.
      * @param _projectId Project Id to get config for
      * @param _coreContract Core contract address to get config for
      */
@@ -449,7 +449,7 @@ library MaxInvocationsLib {
     /**
      * @notice Return the storage struct for reading and writing. This library
      * uses a diamond storage pattern when managing storage.
-     * @return storageStruct The MerkleLibStorage struct.
+     * @return storageStruct The MaxInvocationsLibStorage struct.
      */
     function s()
         internal
