@@ -80,7 +80,7 @@
     "dotenv": "^16.3.1",
     "eslint": "^8.50.0",
     "eslint-config-custom": "*",
-    "eslint-plugin-mocha": "^10.1.0",
+    "eslint-plugin-mocha": "^10.2.0",
     "eslint-plugin-prettier": "^5.0.0",
     "ethereum-waffle": "^4.0.10",
     "ethers": "^5.7.2",
