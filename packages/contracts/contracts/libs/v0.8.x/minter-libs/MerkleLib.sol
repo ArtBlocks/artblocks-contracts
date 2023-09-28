@@ -17,11 +17,6 @@ pragma solidity ^0.8.0;
 library MerkleLib {
     using MerkleProof for bytes32[];
 
-    // position of Merkle Lib storage, using a diamond storage pattern for this
-    // library
-    bytes32 constant MERKLE_LIB_STORAGE_POSITION =
-        keccak256("merklelib.storage");
-
     /// Events specific to this library ///
     /**
      * @notice Notifies of the contract's default maximum mints allowed per
@@ -32,6 +27,11 @@ library MerkleLib {
         uint256 defaultMaxInvocationsPerAddress
     );
     event DelegationRegistryUpdated(address delegationRegistry);
+
+    // position of Merkle Lib storage, using a diamond storage pattern for this
+    // library
+    bytes32 constant MERKLE_LIB_STORAGE_POSITION =
+        keccak256("merklelib.storage");
 
     /// @notice Default maximum invocations per address
     uint256 internal constant DEFAULT_MAX_INVOCATIONS_PER_ADDRESS = 1;
