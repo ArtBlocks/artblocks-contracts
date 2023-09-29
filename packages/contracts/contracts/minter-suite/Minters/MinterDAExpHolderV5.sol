@@ -115,17 +115,6 @@ contract MinterDAExpHolderV5 is
     uint256 public minimumPriceDecayHalfLifeSeconds = 45; // 45 seconds
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR SplitFundsLib begin here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    // contractAddress => IsEngineCache
-    mapping(address => SplitFundsLib.IsEngineCache) private _isEngineCaches;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR SplitFundsLib end here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR DAExpLib begin here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -134,21 +123,6 @@ contract MinterDAExpHolderV5 is
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR DAExpLib end here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR TokenHolderLib begin here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    /**
-     * coreContract => projectId => ownedNFTAddress => ownedNFTProjectIds => bool
-     * projects whose holders are allowed to purchase a token on `projectId`
-     */
-    mapping(address => mapping(uint256 => TokenHolderLib.HolderProjectConfig))
-        private _allowedProjectHoldersMapping;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR TokenHolderLib end here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
@@ -168,7 +142,9 @@ contract MinterDAExpHolderV5 is
         delegationRegistryContract = IDelegationRegistry(
             _delegationRegistryAddress
         );
-        emit DelegationRegistryUpdated(_delegationRegistryAddress);
+        emit TokenHolderLib.DelegationRegistryUpdated(
+            _delegationRegistryAddress
+        );
         emit AuctionMinHalfLifeSecondsUpdated(minimumPriceDecayHalfLifeSeconds);
     }
 
@@ -229,20 +205,11 @@ contract MinterDAExpHolderV5 is
             _sender: msg.sender
         });
         TokenHolderLib.allowHoldersOfProjects({
-            holderProjectConfig: _allowedProjectHoldersMapping[_coreContract][
-                _projectId
-            ],
+            _projectId: _projectId,
+            _coreContract: _coreContract,
             _ownedNFTAddresses: _ownedNFTAddresses,
             _ownedNFTProjectIds: _ownedNFTProjectIds
         });
-
-        // emit approve event
-        emit AllowedHoldersOfProjects(
-            _projectId,
-            _coreContract,
-            _ownedNFTAddresses,
-            _ownedNFTProjectIds
-        );
     }
 
     /**
@@ -274,20 +241,11 @@ contract MinterDAExpHolderV5 is
         });
         // require same length arrays
         TokenHolderLib.removeHoldersOfProjects({
-            holderProjectConfig: _allowedProjectHoldersMapping[_coreContract][
-                _projectId
-            ],
+            _projectId: _projectId,
+            _coreContract: _coreContract,
             _ownedNFTAddresses: _ownedNFTAddresses,
             _ownedNFTProjectIds: _ownedNFTProjectIds
         });
-
-        // emit removed event
-        emit RemovedHoldersOfProjects(
-            _projectId,
-            _coreContract,
-            _ownedNFTAddresses,
-            _ownedNFTProjectIds
-        );
     }
 
     /**
@@ -335,28 +293,13 @@ contract MinterDAExpHolderV5 is
             _sender: msg.sender
         });
         TokenHolderLib.allowAndRemoveHoldersOfProjects({
-            holderProjectConfig: _allowedProjectHoldersMapping[_coreContract][
-                _projectId
-            ],
+            _projectId: _projectId,
+            _coreContract: _coreContract,
             _ownedNFTAddressesAdd: _ownedNFTAddressesAdd,
             _ownedNFTProjectIdsAdd: _ownedNFTProjectIdsAdd,
             _ownedNFTAddressesRemove: _ownedNFTAddressesRemove,
             _ownedNFTProjectIdsRemove: _ownedNFTProjectIdsRemove
         });
-
-        // emit events
-        emit AllowedHoldersOfProjects(
-            _projectId,
-            _coreContract,
-            _ownedNFTAddressesAdd,
-            _ownedNFTProjectIdsAdd
-        );
-        emit RemovedHoldersOfProjects(
-            _projectId,
-            _coreContract,
-            _ownedNFTAddressesRemove,
-            _ownedNFTProjectIdsRemove
-        );
     }
 
     /**
@@ -622,9 +565,8 @@ contract MinterDAExpHolderV5 is
      * @return bool indicating if `_coreContract` is a valid engine contract.
      */
     function isEngineView(address _coreContract) external view returns (bool) {
-        SplitFundsLib.IsEngineCache storage isEngineCache = _isEngineCaches[
-            _coreContract
-        ];
+        SplitFundsLib.IsEngineCache storage isEngineCache = SplitFundsLib
+            .getIsEngineCacheConfig(_coreContract);
         if (isEngineCache.isCached) {
             return isEngineCache.isEngine;
         } else {
@@ -748,7 +690,8 @@ contract MinterDAExpHolderV5 is
         uint256 _ownedNFTProjectId
     ) external view returns (bool) {
         return
-            _allowedProjectHoldersMapping[_coreContract][_projectId]
+            TokenHolderLib
+                .getHolderProjectConfig(_projectId, _coreContract)
                 .allowedProjectHolders[_ownedNFTAddress][_ownedNFTProjectId];
     }
 
@@ -770,9 +713,8 @@ contract MinterDAExpHolderV5 is
     ) external view returns (bool) {
         return
             TokenHolderLib.isAllowlistedNFT({
-                holderProjectConfig: _allowedProjectHoldersMapping[
-                    _coreContract
-                ][_projectId],
+                _projectId: _projectId,
+                _coreContract: _coreContract,
                 _ownedNFTAddress: _ownedNFTAddress,
                 _ownedNFTTokenId: _ownedNFTTokenId
             });
@@ -850,9 +792,8 @@ contract MinterDAExpHolderV5 is
         // require token used to claim to be in set of allowlisted NFTs
         require(
             TokenHolderLib.isAllowlistedNFT({
-                holderProjectConfig: _allowedProjectHoldersMapping[
-                    _coreContract
-                ][_projectId],
+                _projectId: _projectId,
+                _coreContract: _coreContract,
                 _ownedNFTAddress: _ownedNFTAddress,
                 _ownedNFTTokenId: _ownedNFTTokenId
             }),
@@ -910,16 +851,10 @@ contract MinterDAExpHolderV5 is
             _ownedNFTTokenId: _ownedNFTTokenId,
             _targetOwner: vault
         });
-
-        bool isEngine = SplitFundsLib.isEngine(
-            _coreContract,
-            _isEngineCaches[_coreContract]
-        );
         SplitFundsLib.splitFundsETHRefundSender({
             _projectId: _projectId,
             _pricePerTokenInWei: pricePerTokenInWei,
-            _coreContract: _coreContract,
-            _isEngine: isEngine
+            _coreContract: _coreContract
         });
 
         return tokenId;

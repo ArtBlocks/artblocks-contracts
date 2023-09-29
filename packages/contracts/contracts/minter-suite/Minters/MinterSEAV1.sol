@@ -136,17 +136,6 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
     // mapping is declared here to ProjectConfig structs
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR SplitFundsLib begin here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    // contractAddress => IsEngineCache
-    mapping(address => SplitFundsLib.IsEngineCache) private _isEngineCaches;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR SplitFundsLib end here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR SEALib begin here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -595,9 +584,8 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
      * @return bool indicating if `_coreContract` is a valid engine contract.
      */
     function isEngineView(address _coreContract) external view returns (bool) {
-        SplitFundsLib.IsEngineCache storage isEngineCache = _isEngineCaches[
-            _coreContract
-        ];
+        SplitFundsLib.IsEngineCache storage isEngineCache = SplitFundsLib
+            .getIsEngineCacheConfig(_coreContract);
         if (isEngineCache.isCached) {
             return isEngineCache.isEngine;
         } else {
@@ -854,15 +842,10 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
             tokenId: _tokenId
         });
         // distribute revenues from auction
-        bool isEngine = SplitFundsLib.isEngine(
-            _coreContract,
-            _isEngineCaches[_coreContract]
-        );
         SplitFundsLib.splitRevenuesETHNoRefund({
             _projectId: _projectId,
             _valueInWei: currentBid,
-            _coreContract: _coreContract,
-            _isEngine: isEngine
+            _coreContract: _coreContract
         });
 
         emit AuctionSettled({
