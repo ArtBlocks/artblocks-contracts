@@ -100,18 +100,6 @@ contract MinterSetPriceMerkleV5 is
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR MerkleLib begin here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    /// contractAddress => projectId => merkle specific project config
-    mapping(address => mapping(uint256 => MerkleLib.MerkleProjectConfig))
-        private _merkleProjectConfigMapping;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR MerkleLib end here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR MaxInvocationsLib begin here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -146,9 +134,9 @@ contract MinterSetPriceMerkleV5 is
         delegationRegistryContract = IDelegationRegistry(
             _delegationRegistryAddress
         );
-        emit DelegationRegistryUpdated(_delegationRegistryAddress);
+        emit MerkleLib.DelegationRegistryUpdated(_delegationRegistryAddress);
         // broadcast default max invocations per address for this minter
-        emit DefaultMaxInvocationsPerAddress(
+        emit MerkleLib.DefaultMaxInvocationsPerAddress(
             MerkleLib.DEFAULT_MAX_INVOCATIONS_PER_ADDRESS
         );
     }
@@ -258,17 +246,7 @@ contract MinterSetPriceMerkleV5 is
             _coreContract: _coreContract,
             _sender: msg.sender
         });
-        require(_root != bytes32(0), "Root must be provided");
-        MerkleLib.updateMerkleRoot(
-            _merkleProjectConfigMapping[_coreContract][_projectId],
-            _root
-        );
-        emit ConfigValueSet(
-            _projectId,
-            _coreContract,
-            MerkleLib.CONFIG_MERKLE_ROOT,
-            _root
-        );
+        MerkleLib.updateMerkleRoot(_projectId, _coreContract, _root);
     }
 
     /**
@@ -295,20 +273,9 @@ contract MinterSetPriceMerkleV5 is
             _sender: msg.sender
         });
         MerkleLib.setProjectInvocationsPerAddress(
-            _merkleProjectConfigMapping[_coreContract][_projectId],
+            _projectId,
+            _coreContract,
             _maxInvocationsPerAddress
-        );
-        emit ConfigValueSet(
-            _projectId,
-            _coreContract,
-            MerkleLib.CONFIG_USE_MAX_INVOCATIONS_PER_ADDRESS_OVERRIDE,
-            true
-        );
-        emit ConfigValueSet(
-            _projectId,
-            _coreContract,
-            MerkleLib.CONFIG_MAX_INVOCATIONS_OVERRIDE,
-            uint256(_maxInvocationsPerAddress)
         );
     }
 
@@ -397,10 +364,8 @@ contract MinterSetPriceMerkleV5 is
         uint256 _projectId,
         address _coreContract
     ) external view returns (bool, uint24, bytes32) {
-        MerkleLib.MerkleProjectConfig
-            storage _merkleProjectConfig = _merkleProjectConfigMapping[
-                _coreContract
-            ][_projectId];
+        MerkleLib.MerkleProjectConfig storage _merkleProjectConfig = MerkleLib
+            .getMerkleProjectConfig(_projectId, _coreContract);
         return (
             _merkleProjectConfig.useMaxInvocationsPerAddressOverride,
             _merkleProjectConfig.maxInvocationsPerAddressOverride,
@@ -422,11 +387,12 @@ contract MinterSetPriceMerkleV5 is
         address _coreContract,
         address _purchaser
     ) external view returns (uint256) {
-        MerkleLib.MerkleProjectConfig
-            storage _merkleProjectConfig = _merkleProjectConfigMapping[
-                _coreContract
-            ][_projectId];
-        return _merkleProjectConfig.userMintInvocations[_purchaser];
+        return
+            MerkleLib.projectUserMintInvocations(
+                _projectId,
+                _coreContract,
+                _purchaser
+            );
     }
 
     /**
@@ -579,13 +545,10 @@ contract MinterSetPriceMerkleV5 is
             uint256 mintInvocationsRemaining
         )
     {
-        MerkleLib.MerkleProjectConfig
-            storage _merkleProjectConfig = _merkleProjectConfigMapping[
-                _coreContract
-            ][_projectId];
         return
             MerkleLib.projectRemainingInvocationsForAddress(
-                _merkleProjectConfig,
+                _projectId,
+                _coreContract,
                 _address
             );
     }
@@ -606,11 +569,11 @@ contract MinterSetPriceMerkleV5 is
         uint256 _projectId,
         address _coreContract
     ) external view returns (uint256) {
-        MerkleLib.MerkleProjectConfig
-            storage _projectConfig = _merkleProjectConfigMapping[_coreContract][
-                _projectId
-            ];
-        return MerkleLib.projectMaxInvocationsPerAddress(_projectConfig);
+        return
+            MerkleLib.projectMaxInvocationsPerAddress(
+                _projectId,
+                _coreContract
+            );
     }
 
     /**
@@ -695,10 +658,6 @@ contract MinterSetPriceMerkleV5 is
             storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
                 _coreContract
             ][_projectId];
-        MerkleLib.MerkleProjectConfig
-            storage _merkleProjectConfig = _merkleProjectConfigMapping[
-                _coreContract
-            ][_projectId];
 
         // Note that `maxHasBeenInvoked` is only checked here to reduce gas
         // consumption after a project has been fully minted.
@@ -743,35 +702,12 @@ contract MinterSetPriceMerkleV5 is
             vault = _vault;
         }
 
-        // require valid Merkle proof
-        require(
-            MerkleLib.verifyAddress(
-                _merkleProjectConfig.merkleRoot,
-                _proof,
-                vault
-            ),
-            "Invalid Merkle proof"
-        );
-
-        // limit mints per address by project
-        uint256 _maxProjectInvocationsPerAddress = MerkleLib
-            .projectMaxInvocationsPerAddress(_merkleProjectConfig);
-
-        // note that mint limits index off of the `vault` (when applicable)
-        require(
-            _merkleProjectConfig.userMintInvocations[vault] <
-                _maxProjectInvocationsPerAddress ||
-                _maxProjectInvocationsPerAddress == 0,
-            "Max invocations reached"
-        );
+        // pre-mint MerkleLib checks
+        MerkleLib.preMintChecks(_projectId, _coreContract, _proof, vault);
 
         // EFFECTS
-        // increment user's invocations for this project
-        unchecked {
-            // this will never overflow since user's invocations on a project
-            // are limited by the project's max invocations
-            _merkleProjectConfig.userMintInvocations[vault]++;
-        }
+        // mint effects for MerkleLib
+        MerkleLib.mintEffects(_projectId, _coreContract, vault);
 
         tokenId = minterFilter.mint_joo(
             _to,
