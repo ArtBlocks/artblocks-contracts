@@ -5119,10 +5119,10 @@
     picocolors "^1.0.0"
     tslib "^2.6.0"
 
-"@remix-project/remixd@^0.6.17":
-  version "0.6.17"
-  resolved "https://registry.yarnpkg.com/@remix-project/remixd/-/remixd-0.6.17.tgz#fce47babdc5192cda7f409bd6f9622c075e2ef95"
-  integrity sha512-/nzWCjiZyBzMd+6OBrIgqOVfWvLTBWsjGh+hRsuRME28rBrptl9d8PDJPtlnd/zZUkotod1Vw7dZKCeb0tfBqw==
+"@remix-project/remixd@^0.6.18":
+  version "0.6.18"
+  resolved "https://registry.yarnpkg.com/@remix-project/remixd/-/remixd-0.6.18.tgz#230a06e509752a326b4814a73c25a58363a44606"
+  integrity sha512-7wvRdOMukKhbUmsDJ4AL6Frx2J9/cBsoKMP5sVUNAn4huO/UXy/cr3lwKxeoBOYxXK+V6cgSeorfLHj0pEYZkw==
   dependencies:
     "@remixproject/plugin" "0.3.33"
     "@remixproject/plugin-api" "0.3.33"
