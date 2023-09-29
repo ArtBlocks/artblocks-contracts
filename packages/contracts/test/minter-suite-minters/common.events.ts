@@ -1,4 +1,5 @@
 import { expect } from "chai";
+import { ethers } from "hardhat";
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { T_Config } from "../util/common";
 
@@ -25,7 +26,11 @@ export const Common_Events = async (_beforeEach: () => Promise<T_Config>) => {
             config.maxInvocations
           )
       )
-        .to.emit(config.minter, "ProjectMaxInvocationsLimitUpdated")
+        .to.emit(
+          // event is defined in MaxInvocationsLib
+          await ethers.getContractFactory("MaxInvocationsLib"),
+          "ProjectMaxInvocationsLimitUpdated"
+        )
         .withArgs(
           config.projectZero,
           config.genArt721Core.address,
@@ -55,7 +60,11 @@ export const Common_Events = async (_beforeEach: () => Promise<T_Config>) => {
             config.genArt721Core.address
           )
       )
-        .to.emit(config.minter, "ProjectMaxInvocationsLimitUpdated")
+        .to.emit(
+          // event is defined in MaxInvocationsLib
+          await ethers.getContractFactory("MaxInvocationsLib"),
+          "ProjectMaxInvocationsLimitUpdated"
+        )
         .withArgs(
           config.projectZero,
           config.genArt721Core.address,

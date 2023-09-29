@@ -54,18 +54,6 @@ contract MinterSetPriceV5 is
     string public constant minterVersion = "v5.0.0";
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR SetPriceLib begin here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    /// contractAddress => projectId => set price project config
-    mapping(address => mapping(uint256 => SetPriceLib.SetPriceProjectConfig))
-        private _setPriceProjectConfigMapping;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR SetPriceLib end here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR SplitFundsLib begin here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -74,18 +62,6 @@ contract MinterSetPriceV5 is
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR SplitFundsLib end here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR MaxInvocationsLib begin here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    // contractAddress => projectId => max invocations specific project config
-    mapping(address => mapping(uint256 => MaxInvocationsLib.MaxInvocationsProjectConfig))
-        private _maxInvocationsProjectConfigMapping;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR MaxInvocationsLib end here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     // MODIFIERS
@@ -129,12 +105,6 @@ contract MinterSetPriceV5 is
         MaxInvocationsLib.manuallyLimitProjectMaxInvocations(
             _projectId,
             _coreContract,
-            _maxInvocations,
-            _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-        );
-        emit ProjectMaxInvocationsLimitUpdated(
-            _projectId,
-            _coreContract,
             _maxInvocations
         );
     }
@@ -158,15 +128,7 @@ contract MinterSetPriceV5 is
             _coreContract: _coreContract,
             _sender: msg.sender
         });
-        SetPriceLib.SetPriceProjectConfig
-            storage _setPriceProjectConfig = _setPriceProjectConfigMapping[
-                _coreContract
-            ][_projectId];
         SetPriceLib.updatePricePerTokenInWei(
-            _pricePerTokenInWei,
-            _setPriceProjectConfig
-        );
-        emit PricePerTokenInWeiUpdated(
             _projectId,
             _coreContract,
             _pricePerTokenInWei
@@ -177,15 +139,12 @@ contract MinterSetPriceV5 is
         // @dev do not sync if max invocations have already been synced, as
         // local max invocations could have been manually set to be
         // intentionally less than the core contract's max invocations.
-        MaxInvocationsLib.MaxInvocationsProjectConfig
-            storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
-                _coreContract
-            ][_projectId];
         // @dev if local maxInvocations and maxHasBeenInvoked are both
         // initial values, we know they have not been populated on this minter
         if (
             MaxInvocationsLib.maxInvocationsIsUnconfigured(
-                _maxInvocationsProjectConfig
+                _projectId,
+                _coreContract
             )
         ) {
             syncProjectMaxInvocationsToCore(_projectId, _coreContract);
@@ -222,7 +181,11 @@ contract MinterSetPriceV5 is
         view
         returns (MaxInvocationsLib.MaxInvocationsProjectConfig memory)
     {
-        return _maxInvocationsProjectConfigMapping[_coreContract][_projectId];
+        return
+            MaxInvocationsLib.getMaxInvocationsProjectConfig(
+                _projectId,
+                _coreContract
+            );
     }
 
     /**
@@ -236,7 +199,7 @@ contract MinterSetPriceV5 is
         uint256 _projectId,
         address _coreContract
     ) external view returns (SetPriceLib.SetPriceProjectConfig memory) {
-        return _setPriceProjectConfigMapping[_coreContract][_projectId];
+        return SetPriceLib.getSetPriceProjectConfig(_projectId, _coreContract);
     }
 
     /**
@@ -282,9 +245,7 @@ contract MinterSetPriceV5 is
         address _coreContract
     ) external view returns (bool) {
         return
-            MaxInvocationsLib.getMaxHasBeenInvoked(
-                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-            );
+            MaxInvocationsLib.getMaxHasBeenInvoked(_projectId, _coreContract);
     }
 
     /**
@@ -311,10 +272,7 @@ contract MinterSetPriceV5 is
         uint256 _projectId,
         address _coreContract
     ) external view returns (uint256) {
-        return
-            MaxInvocationsLib.getMaxInvocations(
-                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-            );
+        return MaxInvocationsLib.getMaxInvocations(_projectId, _coreContract);
     }
 
     /**
@@ -346,9 +304,8 @@ contract MinterSetPriceV5 is
         )
     {
         SetPriceLib.SetPriceProjectConfig
-            storage _setPriceProjectConfig = _setPriceProjectConfigMapping[
-                _coreContract
-            ][_projectId];
+            storage _setPriceProjectConfig = SetPriceLib
+                .getSetPriceProjectConfig(_projectId, _coreContract);
         isConfigured = _setPriceProjectConfig.priceIsConfigured;
         tokenPriceInWei = _setPriceProjectConfig.pricePerTokenInWei;
         currencySymbol = "ETH";
@@ -373,16 +330,9 @@ contract MinterSetPriceV5 is
             _sender: msg.sender
         });
 
-        uint256 maxInvocations = MaxInvocationsLib
-            .syncProjectMaxInvocationsToCore(
-                _projectId,
-                _coreContract,
-                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-            );
-        emit ProjectMaxInvocationsLimitUpdated(
+        MaxInvocationsLib.syncProjectMaxInvocationsToCore(
             _projectId,
-            _coreContract,
-            maxInvocations
+            _coreContract
         );
     }
 
@@ -400,34 +350,21 @@ contract MinterSetPriceV5 is
         address _coreContract
     ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
-        SetPriceLib.SetPriceProjectConfig
-            storage _setPriceProjectConfig = _setPriceProjectConfigMapping[
-                _coreContract
-            ][_projectId];
-        MaxInvocationsLib.MaxInvocationsProjectConfig
-            storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
-                _coreContract
-            ][_projectId];
-
+        // pre-mint MaxInvocationsLib checks
         // Note that `maxHasBeenInvoked` is only checked here to reduce gas
         // consumption after a project has been fully minted.
         // `_maxInvocationsProjectConfig.maxHasBeenInvoked` is locally cached to reduce
         // gas consumption, but if not in sync with the core contract's value,
         // the core contract also enforces its own max invocation check during
         // minting.
-        require(
-            !_maxInvocationsProjectConfig.maxHasBeenInvoked,
-            "Max invocations reached"
-        );
+        MaxInvocationsLib.preMintChecks(_projectId, _coreContract);
 
-        // require artist to have configured price of token on this minter
-        require(
-            _setPriceProjectConfig.priceIsConfigured,
-            "Price not configured"
+        // pre-mint checks for set price lib, and get price per token in wei
+        // @dev price per token is loaded into memory here for gas efficiency
+        uint256 pricePerTokenInWei = SetPriceLib.preMintChecksAndGetPrice(
+            _projectId,
+            _coreContract
         );
-
-        // load price of token into memory
-        uint256 pricePerTokenInWei = _setPriceProjectConfig.pricePerTokenInWei;
 
         require(msg.value >= pricePerTokenInWei, "Min value to mint req.");
 
@@ -441,7 +378,7 @@ contract MinterSetPriceV5 is
 
         MaxInvocationsLib.validatePurchaseEffectsInvocations(
             tokenId,
-            _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
+            _coreContract
         );
 
         // INTERACTIONS
