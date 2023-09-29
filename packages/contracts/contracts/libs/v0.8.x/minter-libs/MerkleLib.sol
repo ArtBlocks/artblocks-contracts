@@ -2,6 +2,7 @@
 // Created By: Art Blocks Inc.
 
 import "@openzeppelin-4.7/contracts/utils/cryptography/MerkleProof.sol";
+import {GenericMinterEventsLib} from "./GenericMinterEventsLib.sol";
 
 pragma solidity ^0.8.0;
 
@@ -15,6 +16,22 @@ pragma solidity ^0.8.0;
 
 library MerkleLib {
     using MerkleProof for bytes32[];
+
+    /// Events specific to this library ///
+    /**
+     * @notice Notifies of the contract's default maximum mints allowed per
+     * user for a given project, on this minter. This value can be overridden
+     * by the artist of any project at any time.
+     */
+    event DefaultMaxInvocationsPerAddress(
+        uint256 defaultMaxInvocationsPerAddress
+    );
+    event DelegationRegistryUpdated(address delegationRegistry);
+
+    // position of Merkle Lib storage, using a diamond storage pattern for this
+    // library
+    bytes32 constant MERKLE_LIB_STORAGE_POSITION =
+        keccak256("merklelib.storage");
 
     /// @notice Default maximum invocations per address
     uint256 internal constant DEFAULT_MAX_INVOCATIONS_PER_ADDRESS = 1;
@@ -40,31 +57,117 @@ library MerkleLib {
         mapping(address => uint256) userMintInvocations;
     }
 
+    // Diamond storage pattern is used in this library
+    struct MerkleLibStorage {
+        mapping(address coreContract => mapping(uint256 projectId => MerkleProjectConfig)) merkleProjectConfigs;
+    }
+
     /**
      * @notice Sets the maximum number of invocations per address for a project.
-     * @param _projectConfig Merkle project config.
+     * @param _projectId The ID of the project to set the maximum invocations for.
+     * @param _coreContract The address of the core contract.
      * @param _maxInvocationsPerAddress The maximum number of invocations per address.
      */
     function setProjectInvocationsPerAddress(
-        MerkleProjectConfig storage _projectConfig,
+        uint256 _projectId,
+        address _coreContract,
         uint24 _maxInvocationsPerAddress
     ) internal {
-        _projectConfig.useMaxInvocationsPerAddressOverride = true;
-        _projectConfig
+        MerkleProjectConfig
+            storage merkleProjectConfig = getMerkleProjectConfig(
+                _projectId,
+                _coreContract
+            );
+        merkleProjectConfig.useMaxInvocationsPerAddressOverride = true;
+        merkleProjectConfig
             .maxInvocationsPerAddressOverride = _maxInvocationsPerAddress;
+        emit GenericMinterEventsLib.ConfigValueSet(
+            _projectId,
+            _coreContract,
+            MerkleLib.CONFIG_USE_MAX_INVOCATIONS_PER_ADDRESS_OVERRIDE,
+            true
+        );
+        emit GenericMinterEventsLib.ConfigValueSet(
+            _projectId,
+            _coreContract,
+            MerkleLib.CONFIG_MAX_INVOCATIONS_OVERRIDE,
+            uint256(_maxInvocationsPerAddress)
+        );
     }
 
     /**
      * @notice Updates the Merkle root of a project.
-     * @param _projectConfig Merkle project config.
+     * @param _projectId The ID of the project to update.
+     * @param _coreContract The address of the core contract.
      * @param _root The new Merkle root.
      */
     function updateMerkleRoot(
-        MerkleProjectConfig storage _projectConfig,
+        uint256 _projectId,
+        address _coreContract,
         bytes32 _root
     ) internal {
-        require(_root != bytes32(0), "Must provide root");
-        _projectConfig.merkleRoot = _root;
+        require(_root != bytes32(0), "Root must be provided");
+        MerkleProjectConfig
+            storage merkleProjectConfig = getMerkleProjectConfig(
+                _projectId,
+                _coreContract
+            );
+        merkleProjectConfig.merkleRoot = _root;
+        emit GenericMinterEventsLib.ConfigValueSet(
+            _projectId,
+            _coreContract,
+            MerkleLib.CONFIG_MERKLE_ROOT,
+            _root
+        );
+    }
+
+    function preMintChecks(
+        uint256 _projectId,
+        address _coreContract,
+        bytes32[] calldata _proof,
+        address _vault
+    ) internal view {
+        MerkleProjectConfig
+            storage _merkleProjectConfig = getMerkleProjectConfig(
+                _projectId,
+                _coreContract
+            );
+        // require valid Merkle proof
+        require(
+            verifyAddress(_merkleProjectConfig.merkleRoot, _proof, _vault),
+            "Invalid Merkle proof"
+        );
+
+        // limit mints per address by project
+        uint256 _maxProjectInvocationsPerAddress = projectMaxInvocationsPerAddress(
+                _merkleProjectConfig
+            );
+
+        // note that mint limits index off of the `_vault` (when applicable)
+        require(
+            _merkleProjectConfig.userMintInvocations[_vault] <
+                _maxProjectInvocationsPerAddress ||
+                _maxProjectInvocationsPerAddress == 0,
+            "Max invocations reached"
+        );
+    }
+
+    function mintEffects(
+        uint256 _projectId,
+        address _coreContract,
+        address _vault
+    ) internal {
+        MerkleProjectConfig
+            storage _merkleProjectConfig = getMerkleProjectConfig(
+                _projectId,
+                _coreContract
+            );
+        // increment mint invocations for vault address
+        unchecked {
+            // this will never overflow since user's invocations on a project
+            // are limited by the project's max invocations
+            _merkleProjectConfig.userMintInvocations[_vault]++;
+        }
     }
 
     /**
@@ -91,7 +194,7 @@ library MerkleLib {
 
     /**
      * @notice Verifies an address against a proof.
-     * @param _proofRoot The root of the proof to verify against.
+     * @param _proofRoot The root of the proof to verify agaisnst.
      * @param _proof The proof to verify.
      * @param _address The address to verify.
      * @return True if the address is verified, false otherwise.
@@ -120,6 +223,35 @@ library MerkleLib {
     }
 
     /**
+     * @notice Returns the maximum number of invocations per address for a project.
+     * @param _projectId Project Id to get config for
+     * @param _coreContract Core contract address to get config for
+     * @return The maximum number of invocations per address.
+     */
+    function projectMaxInvocationsPerAddress(
+        uint256 _projectId,
+        address _coreContract
+    ) internal view returns (uint256) {
+        MerkleProjectConfig storage _projectConfig = getMerkleProjectConfig(
+            _projectId,
+            _coreContract
+        );
+        return projectMaxInvocationsPerAddress(_projectConfig);
+    }
+
+    function projectUserMintInvocations(
+        uint256 _projectId,
+        address _coreContract,
+        address _purchaser
+    ) internal view returns (uint256) {
+        MerkleProjectConfig storage _projectConfig = getMerkleProjectConfig(
+            _projectId,
+            _coreContract
+        );
+        return _projectConfig.userMintInvocations[_purchaser];
+    }
+
+    /**
      * @notice Returns remaining invocations for a given address.
      * If `projectLimitsMintInvocationsPerAddress` is false, individual
      * addresses are only limited by the project's maximum invocations, and a
@@ -134,7 +266,8 @@ library MerkleLib {
      * a value greater than the project's remaining invocations.
      */
     function projectRemainingInvocationsForAddress(
-        MerkleProjectConfig storage _projectConfig,
+        uint256 _projectId,
+        address _coreContract,
         address _address
     )
         internal
@@ -144,6 +277,10 @@ library MerkleLib {
             uint256 mintInvocationsRemaining
         )
     {
+        MerkleProjectConfig storage _projectConfig = getMerkleProjectConfig(
+            _projectId,
+            _coreContract
+        );
         uint256 maxInvocationsPerAddress = projectMaxInvocationsPerAddress(
             _projectConfig
         );
@@ -170,6 +307,34 @@ library MerkleLib {
             }
             // else user has reached their maximum invocations, so leave
             // `mintInvocationsRemaining` at solidity initial value of zero
+        }
+    }
+
+    /**
+     * Loads the MerkleProjectConfig for a given project and core contract.
+     * @param _projectId Project Id to get config for
+     * @param _coreContract Core contract address to get config for
+     */
+    function getMerkleProjectConfig(
+        uint256 _projectId,
+        address _coreContract
+    ) internal view returns (MerkleProjectConfig storage) {
+        return s().merkleProjectConfigs[_coreContract][_projectId];
+    }
+
+    /**
+     * @notice Return the storage struct for reading and writing. This library
+     * uses a diamond storage pattern when managing storage.
+     * @return storageStruct The MerkleLibStorage struct.
+     */
+    function s()
+        internal
+        pure
+        returns (MerkleLibStorage storage storageStruct)
+    {
+        bytes32 position = MERKLE_LIB_STORAGE_POSITION;
+        assembly {
+            storageStruct.slot := position
         }
     }
 }
