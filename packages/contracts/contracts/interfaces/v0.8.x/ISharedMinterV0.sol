@@ -124,15 +124,6 @@ interface ISharedMinterV0 {
     );
     ///////////////////////////
     /**
-     * @notice Price per token in wei updated for project `_projectId` to
-     * `_pricePerTokenInWei`.
-     */
-    event PricePerTokenInWeiUpdated(
-        uint256 indexed _projectId,
-        address indexed _coreContract,
-        uint256 indexed _pricePerTokenInWei
-    );
-    /**
      * @notice Currency updated for project `_projectId` to symbol
      * `_currencySymbol` and address `_currencyAddress`.
      */

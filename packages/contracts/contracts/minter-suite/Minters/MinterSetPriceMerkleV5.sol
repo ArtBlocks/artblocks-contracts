@@ -77,18 +77,6 @@ contract MinterSetPriceMerkleV5 is
     IDelegationRegistry private immutable delegationRegistryContract;
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR SetPriceLib begin here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    /// contractAddress => projectId => set price project config
-    mapping(address => mapping(uint256 => SetPriceLib.SetPriceProjectConfig))
-        private _setPriceProjectConfigMapping;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR SetPriceLib end here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR SplitFundsLib begin here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -177,15 +165,7 @@ contract MinterSetPriceMerkleV5 is
             _coreContract: _coreContract,
             _sender: msg.sender
         });
-        SetPriceLib.SetPriceProjectConfig
-            storage _setPriceProjectConfig = _setPriceProjectConfigMapping[
-                _coreContract
-            ][_projectId];
         SetPriceLib.updatePricePerTokenInWei(
-            _pricePerTokenInWei,
-            _setPriceProjectConfig
-        );
-        emit PricePerTokenInWeiUpdated(
             _projectId,
             _coreContract,
             _pricePerTokenInWei
@@ -332,7 +312,7 @@ contract MinterSetPriceMerkleV5 is
         uint256 _projectId,
         address _coreContract
     ) external view returns (SetPriceLib.SetPriceProjectConfig memory) {
-        return _setPriceProjectConfigMapping[_coreContract][_projectId];
+        return SetPriceLib.getSetPriceProjectConfig(_projectId, _coreContract);
     }
 
     /**
@@ -480,9 +460,8 @@ contract MinterSetPriceMerkleV5 is
         )
     {
         SetPriceLib.SetPriceProjectConfig
-            storage _setPriceProjectConfig = _setPriceProjectConfigMapping[
-                _coreContract
-            ][_projectId];
+            storage _setPriceProjectConfig = SetPriceLib
+                .getSetPriceProjectConfig(_projectId, _coreContract);
         isConfigured = _setPriceProjectConfig.priceIsConfigured;
         tokenPriceInWei = _setPriceProjectConfig.pricePerTokenInWei;
         currencySymbol = "ETH";
@@ -621,11 +600,6 @@ contract MinterSetPriceMerkleV5 is
         address _vault // acceptable to be `address(0)` if no vault
     ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
-        SetPriceLib.SetPriceProjectConfig
-            storage _setPriceProjectConfig = _setPriceProjectConfigMapping[
-                _coreContract
-            ][_projectId];
-
         // pre-mint MaxInvocationsLib checks
         // Note that `maxHasBeenInvoked` is only checked here to reduce gas
         // consumption after a project has been fully minted.
@@ -635,14 +609,12 @@ contract MinterSetPriceMerkleV5 is
         // minting.
         MaxInvocationsLib.preMintChecks(_projectId, _coreContract);
 
-        // require artist to have configured price of token on this minter
-        require(
-            _setPriceProjectConfig.priceIsConfigured,
-            "Price not configured"
+        // pre-mint checks for set price lib, and get price per token in wei
+        // @dev price per token is loaded into memory here for gas efficiency
+        uint256 pricePerTokenInWei = SetPriceLib.preMintChecksAndGetPrice(
+            _projectId,
+            _coreContract
         );
-
-        // load price of token into memory
-        uint256 pricePerTokenInWei = _setPriceProjectConfig.pricePerTokenInWei;
 
         require(msg.value >= pricePerTokenInWei, "Min value to mint req.");
 
