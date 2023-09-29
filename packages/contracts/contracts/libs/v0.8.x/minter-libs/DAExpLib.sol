@@ -43,8 +43,8 @@ library DAExpLib {
     }
 
     // Diamond storage pattern is used in this library
-    struct DAEXPLibStorage {
-        mapping(address coreContract => mapping(uint256 projectId => DAProjectConfig)) holderProjectConfigs;
+    struct DAExpLibStorage {
+        mapping(address coreContract => mapping(uint256 projectId => DAProjectConfig)) DAProjectConfigs_;
     }
 
     /**
@@ -195,15 +195,15 @@ library DAExpLib {
         uint256 _projectId,
         address _coreContract
     ) internal view returns (DAProjectConfig storage) {
-        return s().holderProjectConfigs[_coreContract][_projectId];
+        return s().DAProjectConfigs_[_coreContract][_projectId];
     }
 
     /**
      * @notice Return the storage struct for reading and writing. This library
      * uses a diamond storage pattern when managing storage.
-     * @return storageStruct The DAEXPLibStorage struct.
+     * @return storageStruct The DAExpLibStorage struct.
      */
-    function s() internal pure returns (DAEXPLibStorage storage storageStruct) {
+    function s() internal pure returns (DAExpLibStorage storage storageStruct) {
         bytes32 position = DAE_EXP_LIB_STORAGE_POSITION;
         assembly {
             storageStruct.slot := position
