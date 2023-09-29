@@ -53,17 +53,6 @@ contract MinterSetPriceV5 is
     /// minter version for this minter
     string public constant minterVersion = "v5.0.0";
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR SplitFundsLib begin here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    // contractAddress => IsEngineCache
-    mapping(address => SplitFundsLib.IsEngineCache) private _isEngineCaches;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR SplitFundsLib end here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
     // MODIFIERS
     // @dev contract uses modifier-like internal functions instead of modifiers
     // to reduce contract bytecode size
@@ -215,9 +204,8 @@ contract MinterSetPriceV5 is
      * @return bool indicating if `_coreContract` is a valid engine contract.
      */
     function isEngineView(address _coreContract) external view returns (bool) {
-        SplitFundsLib.IsEngineCache storage isEngineCache = _isEngineCaches[
-            _coreContract
-        ];
+        SplitFundsLib.IsEngineCache storage isEngineCache = SplitFundsLib
+            .getIsEngineCacheConfig(_coreContract);
         if (isEngineCache.isCached) {
             return isEngineCache.isEngine;
         } else {
@@ -382,15 +370,10 @@ contract MinterSetPriceV5 is
         );
 
         // INTERACTIONS
-        bool isEngine = SplitFundsLib.isEngine(
-            _coreContract,
-            _isEngineCaches[_coreContract]
-        );
         SplitFundsLib.splitFundsETHRefundSender({
             _projectId: _projectId,
             _pricePerTokenInWei: pricePerTokenInWei,
-            _coreContract: _coreContract,
-            _isEngine: isEngine
+            _coreContract: _coreContract
         });
 
         return tokenId;

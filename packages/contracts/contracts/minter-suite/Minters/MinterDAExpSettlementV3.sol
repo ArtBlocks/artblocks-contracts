@@ -103,17 +103,6 @@ contract MinterDAExpSettlementV3 is
     uint256 public minimumPriceDecayHalfLifeSeconds = 45; // 45 seconds
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR SplitFundsLib begin here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    // contractAddress => IsEngineCache
-    mapping(address => SplitFundsLib.IsEngineCache) private _isEngineCaches;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR SplitFundsLib end here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR SettlementExpLib begin here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -415,13 +404,6 @@ contract MinterDAExpSettlementV3 is
         // @dev the following function affects settlement state and marks
         // revenues as collected. Therefore revenues MUST be subsequently sent
         // distributed in this call.
-        // @dev getting isEngine is considered a potential interaction, but
-        // with a trusted contract, and therefore may be done prior to some
-        // checks and effects
-        bool isEngine = SplitFundsLib.isEngine(
-            _coreContract,
-            _isEngineCaches[_coreContract]
-        );
         // CHECKS-EFFECTS-INTERACTIONS
         // @dev the following function updates the project's balance and will
         // revert if the project's balance is insufficient to cover the
@@ -431,8 +413,7 @@ contract MinterDAExpSettlementV3 is
                 _projectId: _projectId,
                 _coreContract: _coreContract,
                 _settlementAuctionProjectConfig: _settlementAuctionProjectConfig,
-                _DAProjectConfig: _auctionProjectConfig,
-                _isEngine: isEngine
+                _DAProjectConfig: _auctionProjectConfig
             });
         emit ConfigValueSet(
             _projectId,
@@ -594,9 +575,8 @@ contract MinterDAExpSettlementV3 is
      * @return bool indicating if `_coreContract` is a valid engine contract.
      */
     function isEngineView(address _coreContract) external view returns (bool) {
-        SplitFundsLib.IsEngineCache storage isEngineCache = _isEngineCaches[
-            _coreContract
-        ];
+        SplitFundsLib.IsEngineCache storage isEngineCache = SplitFundsLib
+            .getIsEngineCacheConfig(_coreContract);
         if (isEngineCache.isCached) {
             return isEngineCache.isEngine;
         } else {
@@ -1082,15 +1062,10 @@ contract MinterDAExpSettlementV3 is
                 .toUint112();
 
             // INTERACTIONS
-            bool isEngine = SplitFundsLib.isEngine(
-                _coreContract,
-                _isEngineCaches[_coreContract]
-            );
             SplitFundsLib.splitRevenuesETHNoRefund({
                 _projectId: _projectId,
                 _valueInWei: currentPriceInWei,
-                _coreContract: _coreContract,
-                _isEngine: isEngine
+                _coreContract: _coreContract
             });
         } else {
             // increment the number of settleable invocations that will be
