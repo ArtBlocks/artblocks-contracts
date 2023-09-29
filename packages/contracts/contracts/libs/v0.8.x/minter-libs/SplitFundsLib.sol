@@ -85,11 +85,11 @@ library SplitFundsLib {
                 require(success_, "Refund failed");
             }
             // split revenues
-            splitRevenuesETHNoRefund(
-                _projectId,
-                _pricePerTokenInWei,
-                _coreContract
-            );
+            splitRevenuesETHNoRefund({
+                _projectId: _projectId,
+                _valueInWei: _pricePerTokenInWei,
+                _coreContract: _coreContract
+            });
         }
     }
 
@@ -119,98 +119,69 @@ library SplitFundsLib {
         bool isEngine_ = isEngine(_coreContract);
         if (isEngine_) {
             // get engine splits
-            // uint256 platformProviderRevenue_;
-            // address payable platformProviderAddress_;
             (
-                uint256 renderProviderRevenue_,
-                address payable renderProviderAddress_,
-                uint256 platformProviderRevenue_,
-                address payable platformProviderAddress_,
-                uint256 artistRevenue_,
-                address payable artistAddress_,
-                uint256 additionalPayeePrimaryRevenue_,
-                address payable additionalPayeePrimaryAddress_
+                uint256 renderProviderRevenue,
+                address payable renderProviderAddress,
+                uint256 platformProviderRevenue,
+                address payable platformProviderAddress,
+                uint256 artistRevenue,
+                address payable artistAddress,
+                uint256 additionalPayeePrimaryRevenue,
+                address payable additionalPayeePrimaryAddress
             ) = IGenArt721CoreContractV3_Engine(_coreContract)
                     .getPrimaryRevenueSplits(_projectId, _valueInWei);
             // require total revenue split is 100%
             require(
-                renderProviderRevenue_ +
-                    platformProviderRevenue_ +
-                    artistRevenue_ +
-                    additionalPayeePrimaryRevenue_ ==
+                renderProviderRevenue +
+                    platformProviderRevenue +
+                    artistRevenue +
+                    additionalPayeePrimaryRevenue ==
                     _valueInWei,
                 "Invalid revenue split totals"
             );
-            // Platform Provider payment (only possible if engine)
-            if (platformProviderRevenue_ > 0) {
-                (bool success, ) = platformProviderAddress_.call{
-                    value: platformProviderRevenue_
-                }("");
-                require(success, "Platform Provider payment failed");
-            }
-            // Render Provider / Art Blocks payment
-            if (renderProviderRevenue_ > 0) {
-                (bool success, ) = renderProviderAddress_.call{
-                    value: renderProviderRevenue_
-                }("");
-                require(success, "Render Provider payment failed");
-            }
-            // artist payment
-            if (artistRevenue_ > 0) {
-                (bool success, ) = artistAddress_.call{value: artistRevenue_}(
-                    ""
-                );
-                require(success, "Artist payment failed");
-            }
-            // additional payee payment
-            if (additionalPayeePrimaryRevenue_ > 0) {
-                (bool success, ) = additionalPayeePrimaryAddress_.call{
-                    value: additionalPayeePrimaryRevenue_
-                }("");
-                require(success, "Additional Payee payment failed");
-            }
+            // distribute revenues
+            _sendPaymentsETH({
+                _platformProviderRevenue: platformProviderRevenue,
+                _platformProviderAddress: platformProviderAddress,
+                _renderProviderRevenue: renderProviderRevenue,
+                _renderProviderAddress: renderProviderAddress,
+                _artistRevenue: artistRevenue,
+                _artistAddress: artistAddress,
+                _additionalPayeePrimaryRevenue: additionalPayeePrimaryRevenue,
+                _additionalPayeePrimaryAddress: additionalPayeePrimaryAddress
+            });
         } else {
             // get flagship splits
             (
-                uint256 renderProviderRevenue_, // artblocks revenue
-                address payable renderProviderAddress_, // artblocks address
-                uint256 artistRevenue_,
-                address payable artistAddress_,
-                uint256 additionalPayeePrimaryRevenue_,
-                address payable additionalPayeePrimaryAddress_
+                uint256 renderProviderRevenue, // artblocks revenue
+                address payable renderProviderAddress, // artblocks address
+                uint256 artistRevenue,
+                address payable artistAddress,
+                uint256 additionalPayeePrimaryRevenue,
+                address payable additionalPayeePrimaryAddress
             ) = IGenArt721CoreContractV3(_coreContract).getPrimaryRevenueSplits(
                     _projectId,
                     _valueInWei
                 );
             // require total revenue split is 100%
             require(
-                renderProviderRevenue_ +
-                    artistRevenue_ +
-                    additionalPayeePrimaryRevenue_ ==
+                renderProviderRevenue +
+                    artistRevenue +
+                    additionalPayeePrimaryRevenue ==
                     _valueInWei,
                 "Invalid revenue split totals"
             );
-            // Render Provider / Art Blocks payment
-            if (renderProviderRevenue_ > 0) {
-                (bool success, ) = renderProviderAddress_.call{
-                    value: renderProviderRevenue_
-                }("");
-                require(success, "Render Provider payment failed");
-            }
-            // artist payment
-            if (artistRevenue_ > 0) {
-                (bool success, ) = artistAddress_.call{value: artistRevenue_}(
-                    ""
-                );
-                require(success, "Artist payment failed");
-            }
-            // additional payee payment
-            if (additionalPayeePrimaryRevenue_ > 0) {
-                (bool success, ) = additionalPayeePrimaryAddress_.call{
-                    value: additionalPayeePrimaryRevenue_
-                }("");
-                require(success, "Additional Payee payment failed");
-            }
+            // distribute revenues
+            _sendPaymentsETH({
+                _platformProviderRevenue: 0, // no platform provider for flagship
+                _platformProviderAddress: payable(address(0)), // dummy value
+                _renderProviderRevenue: renderProviderRevenue, // artblocks revenue
+                _renderProviderAddress: renderProviderAddress, // artblocks address
+                _artistRevenue: artistRevenue,
+                _artistAddress: artistAddress,
+                _additionalPayeePrimaryRevenue: additionalPayeePrimaryRevenue,
+                _additionalPayeePrimaryAddress: additionalPayeePrimaryAddress
+            });
         }
     }
 
@@ -220,7 +191,7 @@ library SplitFundsLib {
      * The function performs checks to ensure that the ERC20 token is
      * approved for transfer, and that a non-zero ERC20 token address is
      * configured.
-     * @dev This function relies on msg.sender and msg.value, so it must be
+     * @dev This function relies on msg.sender, so it must be
      * called directly from the contract that is receiving the payment.
      * @dev possible DoS during splits is acknowledged, and mitigated by
      * business practices, including end-to-end testing on mainnet, and
@@ -266,127 +237,70 @@ library SplitFundsLib {
             // uint256 platformProviderRevenue_;
             // address payable platformProviderAddress_;
             (
-                uint256 renderProviderRevenue_,
-                address payable renderProviderAddress_,
-                uint256 platformProviderRevenue_,
-                address payable platformProviderAddress_,
-                uint256 artistRevenue_,
-                address payable artistAddress_,
-                uint256 additionalPayeePrimaryRevenue_,
-                address payable additionalPayeePrimaryAddress_
+                uint256 renderProviderRevenue,
+                address payable renderProviderAddress,
+                uint256 platformProviderRevenue,
+                address payable platformProviderAddress,
+                uint256 artistRevenue,
+                address payable artistAddress,
+                uint256 additionalPayeePrimaryRevenue,
+                address payable additionalPayeePrimaryAddress
             ) = IGenArt721CoreContractV3_Engine(_coreContract)
                     .getPrimaryRevenueSplits(_projectId, _pricePerTokenInWei);
             // require total revenue split is 100%
             require(
-                renderProviderRevenue_ +
-                    platformProviderRevenue_ +
-                    artistRevenue_ +
-                    additionalPayeePrimaryRevenue_ ==
+                renderProviderRevenue +
+                    platformProviderRevenue +
+                    artistRevenue +
+                    additionalPayeePrimaryRevenue ==
                     _pricePerTokenInWei,
                 "Invalid revenue split totals"
             );
-            // Platform Provider payment (only possible if engine)
-            if (platformProviderRevenue_ > 0) {
-                require(
-                    _projectCurrency.transferFrom(
-                        msg.sender,
-                        platformProviderAddress_,
-                        platformProviderRevenue_
-                    ),
-                    "Platform Provider payment failed"
-                );
-            }
-            // Art Blocks payment
-            if (renderProviderRevenue_ > 0) {
-                require(
-                    _projectCurrency.transferFrom(
-                        msg.sender,
-                        renderProviderAddress_,
-                        renderProviderRevenue_
-                    ),
-                    "Render Provider payment failed"
-                );
-            }
-            // artist payment
-            if (artistRevenue_ > 0) {
-                require(
-                    _projectCurrency.transferFrom(
-                        msg.sender,
-                        artistAddress_,
-                        artistRevenue_
-                    ),
-                    "Artist payment failed"
-                );
-            }
-            // additional payee payment
-            if (additionalPayeePrimaryRevenue_ > 0) {
-                // @dev some ERC20 may not revert on transfer failure, so we
-                // check the return value
-                require(
-                    _projectCurrency.transferFrom(
-                        msg.sender,
-                        additionalPayeePrimaryAddress_,
-                        additionalPayeePrimaryRevenue_
-                    ),
-                    "Additional Payee payment failed"
-                );
-            }
+            // distribute revenues
+            _sendPaymentsERC20({
+                _projectCurrency: _projectCurrency,
+                _platformProviderRevenue: platformProviderRevenue,
+                _platformProviderAddress: platformProviderAddress,
+                _renderProviderRevenue: renderProviderRevenue,
+                _renderProviderAddress: renderProviderAddress,
+                _artistRevenue: artistRevenue,
+                _artistAddress: artistAddress,
+                _additionalPayeePrimaryRevenue: additionalPayeePrimaryRevenue,
+                _additionalPayeePrimaryAddress: additionalPayeePrimaryAddress
+            });
         } else {
             // get flagship splits
             (
-                uint256 renderProviderRevenue_, // artblocks revenue
-                address payable renderProviderAddress_, // artblocks address
-                uint256 artistRevenue_,
-                address payable artistAddress_,
-                uint256 additionalPayeePrimaryRevenue_,
-                address payable additionalPayeePrimaryAddress_
+                uint256 renderProviderRevenue, // artblocks revenue
+                address payable renderProviderAddress, // artblocks address
+                uint256 artistRevenue,
+                address payable artistAddress,
+                uint256 additionalPayeePrimaryRevenue,
+                address payable additionalPayeePrimaryAddress
             ) = IGenArt721CoreContractV3(_coreContract).getPrimaryRevenueSplits(
                     _projectId,
                     _pricePerTokenInWei
                 );
             // require total revenue split is 100%
             require(
-                renderProviderRevenue_ +
-                    artistRevenue_ +
-                    additionalPayeePrimaryRevenue_ ==
+                renderProviderRevenue +
+                    artistRevenue +
+                    additionalPayeePrimaryRevenue ==
                     _pricePerTokenInWei,
                 "Invalid revenue split totals"
             );
-            // Art Blocks payment
-            if (renderProviderRevenue_ > 0) {
-                require(
-                    _projectCurrency.transferFrom(
-                        msg.sender,
-                        renderProviderAddress_,
-                        renderProviderRevenue_
-                    ),
-                    "Render Provider payment failed"
-                );
-            }
-            // artist payment
-            if (artistRevenue_ > 0) {
-                require(
-                    _projectCurrency.transferFrom(
-                        msg.sender,
-                        artistAddress_,
-                        artistRevenue_
-                    ),
-                    "Artist payment failed"
-                );
-            }
-            // additional payee payment
-            if (additionalPayeePrimaryRevenue_ > 0) {
-                // @dev some ERC20 may not revert on transfer failure, so we
-                // check the return value
-                require(
-                    _projectCurrency.transferFrom(
-                        msg.sender,
-                        additionalPayeePrimaryAddress_,
-                        additionalPayeePrimaryRevenue_
-                    ),
-                    "Additional Payee payment failed"
-                );
-            }
+            // distribute revenues
+            _sendPaymentsERC20({
+                _projectCurrency: _projectCurrency,
+                _platformProviderRevenue: 0, // no platform provider for flagship
+                _platformProviderAddress: payable(address(0)), // dummy value
+                _renderProviderRevenue: renderProviderRevenue, // artblocks revenue
+                _renderProviderAddress: renderProviderAddress, // artblocks address
+                _artistRevenue: artistRevenue,
+                _artistAddress: artistAddress,
+                _additionalPayeePrimaryRevenue: additionalPayeePrimaryRevenue,
+                _additionalPayeePrimaryAddress: additionalPayeePrimaryAddress
+            });
         }
     }
 
@@ -701,6 +615,130 @@ library SplitFundsLib {
                 _pricePerTokenInWei,
             "Insufficient ERC20 balance"
         );
+    }
+
+    /**
+     * @notice Sends ETH revenues between providers, artist, and artist's
+     * additional payee. Reverts if any payment fails.
+     * @param _platformProviderRevenue Platform Provider revenue.
+     * @param _platformProviderAddress Platform Provider address.
+     * @param _renderProviderRevenue Render Provider revenue.
+     * @param _renderProviderAddress Render Provider address.
+     * @param _artistRevenue Artist revenue.
+     * @param _artistAddress Artist address.
+     * @param _additionalPayeePrimaryRevenue Additional Payee revenue.
+     * @param _additionalPayeePrimaryAddress Additional Payee address.
+     */
+    function _sendPaymentsETH(
+        uint256 _platformProviderRevenue,
+        address payable _platformProviderAddress,
+        uint256 _renderProviderRevenue,
+        address payable _renderProviderAddress,
+        uint256 _artistRevenue,
+        address payable _artistAddress,
+        uint256 _additionalPayeePrimaryRevenue,
+        address payable _additionalPayeePrimaryAddress
+    ) private {
+        // Platform Provider payment (only possible if engine)
+        if (_platformProviderRevenue > 0) {
+            (bool success, ) = _platformProviderAddress.call{
+                value: _platformProviderRevenue
+            }("");
+            require(success, "Platform Provider payment failed");
+        }
+        // Render Provider / Art Blocks payment
+        if (_renderProviderRevenue > 0) {
+            (bool success, ) = _renderProviderAddress.call{
+                value: _renderProviderRevenue
+            }("");
+            require(success, "Render Provider payment failed");
+        }
+        // artist payment
+        if (_artistRevenue > 0) {
+            (bool success, ) = _artistAddress.call{value: _artistRevenue}("");
+            require(success, "Artist payment failed");
+        }
+        // additional payee payment
+        if (_additionalPayeePrimaryRevenue > 0) {
+            (bool success, ) = _additionalPayeePrimaryAddress.call{
+                value: _additionalPayeePrimaryRevenue
+            }("");
+            require(success, "Additional Payee payment failed");
+        }
+    }
+
+    /**
+     * @notice Sends ERC20 revenues between providers, artist, and artist's
+     * additional payee. Reverts if any payment fails.
+     * @dev This function relies on msg.sender, so it must be called from
+     * the contract that is receiving the payment.
+     * @param _projectCurrency IERC20 payment token.
+     * @param _platformProviderRevenue Platform Provider revenue.
+     * @param _platformProviderAddress Platform Provider address.
+     * @param _renderProviderRevenue Render Provider revenue.
+     * @param _renderProviderAddress Render Provider address.
+     * @param _artistRevenue Artist revenue.
+     * @param _artistAddress Artist address.
+     * @param _additionalPayeePrimaryRevenue Additional Payee revenue.
+     * @param _additionalPayeePrimaryAddress Additional Payee address.
+     */
+    function _sendPaymentsERC20(
+        IERC20 _projectCurrency,
+        uint256 _platformProviderRevenue,
+        address payable _platformProviderAddress,
+        uint256 _renderProviderRevenue,
+        address payable _renderProviderAddress,
+        uint256 _artistRevenue,
+        address payable _artistAddress,
+        uint256 _additionalPayeePrimaryRevenue,
+        address payable _additionalPayeePrimaryAddress
+    ) private {
+        // Platform Provider payment (only possible if engine)
+        if (_platformProviderRevenue > 0) {
+            require(
+                _projectCurrency.transferFrom(
+                    msg.sender,
+                    _platformProviderAddress,
+                    _platformProviderRevenue
+                ),
+                "Platform Provider payment failed"
+            );
+        }
+        // Art Blocks payment
+        if (_renderProviderRevenue > 0) {
+            require(
+                _projectCurrency.transferFrom(
+                    msg.sender,
+                    _renderProviderAddress,
+                    _renderProviderRevenue
+                ),
+                "Render Provider payment failed"
+            );
+        }
+        // artist payment
+        if (_artistRevenue > 0) {
+            require(
+                _projectCurrency.transferFrom(
+                    msg.sender,
+                    _artistAddress,
+                    _artistRevenue
+                ),
+                "Artist payment failed"
+            );
+        }
+        // additional payee payment
+        if (_additionalPayeePrimaryRevenue > 0) {
+            // @dev some ERC20 may not revert on transfer failure, so we
+            // check the return value
+            require(
+                _projectCurrency.transferFrom(
+                    msg.sender,
+                    _additionalPayeePrimaryAddress,
+                    _additionalPayeePrimaryRevenue
+                ),
+                "Additional Payee payment failed"
+            );
+        }
     }
 
     /**
