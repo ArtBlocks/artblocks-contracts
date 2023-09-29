@@ -451,7 +451,7 @@ contract MinterDAExpSettlementV3 is
             _coreContract: _coreContract,
             _sender: msg.sender,
             _contract: address(this),
-            _selector: this.adminEmergencyReduceSelloutPrice.selector
+            _selector: this.withdrawArtistAndAdminRevenues.selector
         });
 
         SettlementExpLib.SettlementAuctionProjectConfig
