@@ -117,17 +117,6 @@ contract MinterDAExpSettlementV3 is
     // STATE VARIABLES FOR SettlementExpLib end here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR DAExpLib begin here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    mapping(address => mapping(uint256 => DAExpLib.DAProjectConfig))
-        private _auctionProjectConfigMapping;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR DAExpLib end here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
     /**
      * @notice Initializes contract to be a Filtered Minter for
      * `_minterFilter` minter filter.
@@ -137,7 +126,9 @@ contract MinterDAExpSettlementV3 is
     constructor(address _minterFilter) ReentrancyGuard() {
         minterFilterAddress = _minterFilter;
         minterFilter = IMinterFilterV1(_minterFilter);
-        emit AuctionMinHalfLifeSecondsUpdated(minimumPriceDecayHalfLifeSeconds);
+        emit DAExpLib.AuctionMinHalfLifeSecondsUpdated(
+            minimumPriceDecayHalfLifeSeconds
+        );
     }
 
     /**
@@ -195,10 +186,6 @@ contract MinterDAExpSettlementV3 is
             _sender: msg.sender
         });
         // CHECKS
-        DAExpLib.DAProjectConfig
-            storage _auctionProjectConfig = _auctionProjectConfigMapping[
-                _coreContract
-            ][_projectId];
         SettlementExpLib.SettlementAuctionProjectConfig
             storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
                 _coreContract
@@ -222,7 +209,8 @@ contract MinterDAExpSettlementV3 is
 
         // EFFECTS
         DAExpLib.setAuctionDetailsExp({
-            _DAProjectConfig: _auctionProjectConfig,
+            _projectId: _projectId,
+            _coreContract: _coreContract,
             _auctionTimestampStart: _auctionTimestampStart,
             _priceDecayHalfLifeSeconds: _priceDecayHalfLifeSeconds,
             _startPrice: _startPrice.toUint88(),
@@ -231,15 +219,6 @@ contract MinterDAExpSettlementV3 is
             // even after max has been invoked (require explicit auction reset
             // on settlement minter)
             _allowReconfigureAfterStart: false
-        });
-
-        emit SetAuctionDetailsExp({
-            _projectId: _projectId,
-            _coreContract: _coreContract,
-            _auctionTimestampStart: _auctionTimestampStart,
-            _priceDecayHalfLifeSeconds: _priceDecayHalfLifeSeconds,
-            _startPrice: _startPrice,
-            _basePrice: _basePrice
         });
 
         // refresh max invocations, ensuring the values are populated, and
@@ -274,7 +253,7 @@ contract MinterDAExpSettlementV3 is
         );
         minimumPriceDecayHalfLifeSeconds = _minimumPriceDecayHalfLifeSeconds;
 
-        emit AuctionMinHalfLifeSecondsUpdated(
+        emit DAExpLib.AuctionMinHalfLifeSecondsUpdated(
             _minimumPriceDecayHalfLifeSeconds
         );
     }
@@ -309,15 +288,13 @@ contract MinterDAExpSettlementV3 is
 
         // EFFECTS
         // delete auction parameters
-        delete _auctionProjectConfigMapping[_coreContract][_projectId];
+        DAExpLib.resetAuctionDetails({
+            _projectId: _projectId,
+            _coreContract: _coreContract
+        });
 
         // @dev do NOT delete settlement parameters, as they are used to
         // determine settlement amounts even through a reset
-
-        // @dev V3: changed this event to be fully consistent with
-        // non-settlement minters, as the settlement-specific parameters were
-        // not being used for any indexing purposes
-        emit ResetAuctionDetails(_projectId, _coreContract);
     }
 
     /**
@@ -347,17 +324,12 @@ contract MinterDAExpSettlementV3 is
             storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
-        DAExpLib.DAProjectConfig
-            storage _auctionProjectConfig = _auctionProjectConfigMapping[
-                _coreContract
-            ][_projectId];
 
         SettlementExpLib.adminEmergencyReduceSelloutPrice({
             _projectId: _projectId,
             _coreContract: _coreContract,
             _newSelloutPrice: _newSelloutPrice,
-            _settlementAuctionProjectConfig: _settlementAuctionProjectConfig,
-            _DAProjectConfig: _auctionProjectConfig
+            _settlementAuctionProjectConfig: _settlementAuctionProjectConfig
         });
         emit ConfigValueSet(
             _projectId,
@@ -396,10 +368,6 @@ contract MinterDAExpSettlementV3 is
             storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
-        DAExpLib.DAProjectConfig
-            storage _auctionProjectConfig = _auctionProjectConfigMapping[
-                _coreContract
-            ][_projectId];
 
         // @dev the following function affects settlement state and marks
         // revenues as collected. Therefore revenues MUST be subsequently sent
@@ -412,8 +380,7 @@ contract MinterDAExpSettlementV3 is
             .distributeArtistAndAdminRevenues({
                 _projectId: _projectId,
                 _coreContract: _coreContract,
-                _settlementAuctionProjectConfig: _settlementAuctionProjectConfig,
-                _DAProjectConfig: _auctionProjectConfig
+                _settlementAuctionProjectConfig: _settlementAuctionProjectConfig
             });
         emit ConfigValueSet(
             _projectId,
@@ -551,10 +518,11 @@ contract MinterDAExpSettlementV3 is
             uint256 basePrice
         )
     {
-        DAExpLib.DAProjectConfig
-            storage _auctionProjectConfig = _auctionProjectConfigMapping[
-                _coreContract
-            ][_projectId];
+        DAExpLib.DAProjectConfig storage _auctionProjectConfig = DAExpLib
+            .getDAProjectConfig({
+                _projectId: _projectId,
+                _coreContract: _coreContract
+            });
         timestampStart = _auctionProjectConfig.timestampStart;
         priceDecayHalfLifeSeconds = _auctionProjectConfig
             .priceDecayHalfLifeSeconds;
@@ -718,10 +686,11 @@ contract MinterDAExpSettlementV3 is
             storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
-        DAExpLib.DAProjectConfig
-            storage auctionProjectConfig = _auctionProjectConfigMapping[
-                _coreContract
-            ][_projectId];
+        DAExpLib.DAProjectConfig storage auctionProjectConfig = DAExpLib
+            .getDAProjectConfig({
+                _projectId: _projectId,
+                _coreContract: _coreContract
+            });
 
         // take action based on configured state
         isConfigured = (auctionProjectConfig.startPrice > 0);
@@ -742,8 +711,7 @@ contract MinterDAExpSettlementV3 is
             tokenPriceInWei = SettlementExpLib.getPriceSafe({
                 _projectId: _projectId,
                 _coreContract: _coreContract,
-                _settlementAuctionProjectConfig: _settlementAuctionProjectConfig,
-                _DAProjectConfig: auctionProjectConfig
+                _settlementAuctionProjectConfig: _settlementAuctionProjectConfig
             });
         }
         currencySymbol = "ETH";
@@ -973,10 +941,6 @@ contract MinterDAExpSettlementV3 is
             storage _settlementAuctionProjectConfig = _settlementAuctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
-        DAExpLib.DAProjectConfig
-            storage _auctionProjectConfig = _auctionProjectConfigMapping[
-                _coreContract
-            ][_projectId];
 
         // pre-mint MaxInvocationsLib checks
         // Note that `maxHasBeenInvoked` is only checked here to reduce gas
@@ -997,9 +961,10 @@ contract MinterDAExpSettlementV3 is
         // call later on in this function, when the core contract's max
         // invocation check fails.
         uint256 currentPriceInWei = SettlementExpLib.getPriceUnsafe({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
             _settlementAuctionProjectConfig: _settlementAuctionProjectConfig,
-            _maxHasBeenInvoked: false, // always false due to MaxInvocationsLib.preMintChecks
-            _DAProjectConfig: _auctionProjectConfig
+            _maxHasBeenInvoked: false // always false due to MaxInvocationsLib.preMintChecks
         });
 
         // EFFECTS

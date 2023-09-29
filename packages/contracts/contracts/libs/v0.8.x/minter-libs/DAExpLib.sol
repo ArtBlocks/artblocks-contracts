@@ -187,6 +187,19 @@ library DAExpLib {
     }
 
     /**
+     * Gets auction base price for project `_projectId` on core contract
+     * `_coreContract`.
+     * @param _projectId Project Id to get price for
+     * @param _coreContract Core contract address to get price for
+     */
+    function getAuctionBasePrice(
+        uint256 _projectId,
+        address _coreContract
+    ) internal view returns (uint256) {
+        return getDAProjectConfig(_projectId, _coreContract).basePrice;
+    }
+
+    /**
      * Loads the DAProjectConfig for a given project and core contract.
      * @param _projectId Project Id to get config for
      * @param _coreContract Core contract address to get config for
