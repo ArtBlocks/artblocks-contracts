@@ -163,7 +163,7 @@ runForEach.forEach((params) => {
               ethers.utils.formatBytes32String("DUMMY_VERSION"),
               ethers.utils.formatBytes32String("DUMMY_TYPE")
             ),
-          revertMessages.onlyOwnerOrigin
+          revertMessages.onlyOwner
         );
       });
 
@@ -235,7 +235,7 @@ runForEach.forEach((params) => {
               ethers.utils.formatBytes32String("DUMMY_VERSION"),
               ethers.utils.formatBytes32String("DUMMY_TYPE")
             ),
-          revertMessages.onlyOwnerOrRegistrant
+          revertMessages.onlyOwner
         );
       });
     });
