@@ -115,17 +115,6 @@ contract MinterDAExpHolderV5 is
     uint256 public minimumPriceDecayHalfLifeSeconds = 45; // 45 seconds
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR SplitFundsLib begin here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    // contractAddress => IsEngineCache
-    mapping(address => SplitFundsLib.IsEngineCache) private _isEngineCaches;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR SplitFundsLib end here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR DAExpLib begin here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -134,33 +123,6 @@ contract MinterDAExpHolderV5 is
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // STATE VARIABLES FOR DAExpLib end here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR MaxInvocationsLib begin here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    // contractAddress => projectId => max invocations specific project config
-    mapping(address => mapping(uint256 => MaxInvocationsLib.MaxInvocationsProjectConfig))
-        private _maxInvocationsProjectConfigMapping;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR MaxInvocationsLib end here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR TokenHolderLib begin here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    /**
-     * coreContract => projectId => ownedNFTAddress => ownedNFTProjectIds => bool
-     * projects whose holders are allowed to purchase a token on `projectId`
-     */
-    mapping(address => mapping(uint256 => TokenHolderLib.HolderProjectConfig))
-        private _allowedProjectHoldersMapping;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR TokenHolderLib end here
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     /**
@@ -180,7 +142,9 @@ contract MinterDAExpHolderV5 is
         delegationRegistryContract = IDelegationRegistry(
             _delegationRegistryAddress
         );
-        emit DelegationRegistryUpdated(_delegationRegistryAddress);
+        emit TokenHolderLib.DelegationRegistryUpdated(
+            _delegationRegistryAddress
+        );
         emit AuctionMinHalfLifeSecondsUpdated(minimumPriceDecayHalfLifeSeconds);
     }
 
@@ -209,17 +173,8 @@ contract MinterDAExpHolderV5 is
         MaxInvocationsLib.manuallyLimitProjectMaxInvocations({
             _projectId: _projectId,
             _coreContract: _coreContract,
-            _maxInvocations: _maxInvocations,
-            maxInvocationsProjectConfig: _maxInvocationsProjectConfigMapping[
-                _coreContract
-            ][_projectId]
+            _maxInvocations: _maxInvocations
         });
-
-        emit ProjectMaxInvocationsLimitUpdated(
-            _projectId,
-            _coreContract,
-            _maxInvocations
-        );
     }
 
     /**
@@ -250,20 +205,11 @@ contract MinterDAExpHolderV5 is
             _sender: msg.sender
         });
         TokenHolderLib.allowHoldersOfProjects({
-            holderProjectConfig: _allowedProjectHoldersMapping[_coreContract][
-                _projectId
-            ],
+            _projectId: _projectId,
+            _coreContract: _coreContract,
             _ownedNFTAddresses: _ownedNFTAddresses,
             _ownedNFTProjectIds: _ownedNFTProjectIds
         });
-
-        // emit approve event
-        emit AllowedHoldersOfProjects(
-            _projectId,
-            _coreContract,
-            _ownedNFTAddresses,
-            _ownedNFTProjectIds
-        );
     }
 
     /**
@@ -295,20 +241,11 @@ contract MinterDAExpHolderV5 is
         });
         // require same length arrays
         TokenHolderLib.removeHoldersOfProjects({
-            holderProjectConfig: _allowedProjectHoldersMapping[_coreContract][
-                _projectId
-            ],
+            _projectId: _projectId,
+            _coreContract: _coreContract,
             _ownedNFTAddresses: _ownedNFTAddresses,
             _ownedNFTProjectIds: _ownedNFTProjectIds
         });
-
-        // emit removed event
-        emit RemovedHoldersOfProjects(
-            _projectId,
-            _coreContract,
-            _ownedNFTAddresses,
-            _ownedNFTProjectIds
-        );
     }
 
     /**
@@ -356,28 +293,13 @@ contract MinterDAExpHolderV5 is
             _sender: msg.sender
         });
         TokenHolderLib.allowAndRemoveHoldersOfProjects({
-            holderProjectConfig: _allowedProjectHoldersMapping[_coreContract][
-                _projectId
-            ],
+            _projectId: _projectId,
+            _coreContract: _coreContract,
             _ownedNFTAddressesAdd: _ownedNFTAddressesAdd,
             _ownedNFTProjectIdsAdd: _ownedNFTProjectIdsAdd,
             _ownedNFTAddressesRemove: _ownedNFTAddressesRemove,
             _ownedNFTProjectIdsRemove: _ownedNFTProjectIdsRemove
         });
-
-        // emit events
-        emit AllowedHoldersOfProjects(
-            _projectId,
-            _coreContract,
-            _ownedNFTAddressesAdd,
-            _ownedNFTProjectIdsAdd
-        );
-        emit RemovedHoldersOfProjects(
-            _projectId,
-            _coreContract,
-            _ownedNFTAddressesRemove,
-            _ownedNFTProjectIdsRemove
-        );
     }
 
     /**
@@ -418,10 +340,6 @@ contract MinterDAExpHolderV5 is
             storage _auctionProjectConfig = _auctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
-        MaxInvocationsLib.MaxInvocationsProjectConfig
-            storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
-                _coreContract
-            ][_projectId];
 
         require(
             (_priceDecayHalfLifeSeconds >= minimumPriceDecayHalfLifeSeconds),
@@ -430,7 +348,8 @@ contract MinterDAExpHolderV5 is
 
         // EFFECTS
         bool maxHasBeenInvoked = MaxInvocationsLib.getMaxHasBeenInvoked(
-            _maxInvocationsProjectConfig
+            _projectId,
+            _coreContract
         );
         DAExpLib.setAuctionDetailsExp({
             _DAProjectConfig: _auctionProjectConfig,
@@ -455,7 +374,8 @@ contract MinterDAExpHolderV5 is
         // initial values, we know they have not been populated.
         if (
             MaxInvocationsLib.maxInvocationsIsUnconfigured(
-                _maxInvocationsProjectConfig
+                _projectId,
+                _coreContract
             )
         ) {
             syncProjectMaxInvocationsToCore(_projectId, _coreContract);
@@ -591,7 +511,11 @@ contract MinterDAExpHolderV5 is
         view
         returns (MaxInvocationsLib.MaxInvocationsProjectConfig memory)
     {
-        return _maxInvocationsProjectConfigMapping[_coreContract][_projectId];
+        return
+            MaxInvocationsLib.getMaxInvocationsProjectConfig(
+                _projectId,
+                _coreContract
+            );
     }
 
     /**
@@ -641,9 +565,8 @@ contract MinterDAExpHolderV5 is
      * @return bool indicating if `_coreContract` is a valid engine contract.
      */
     function isEngineView(address _coreContract) external view returns (bool) {
-        SplitFundsLib.IsEngineCache storage isEngineCache = _isEngineCaches[
-            _coreContract
-        ];
+        SplitFundsLib.IsEngineCache storage isEngineCache = SplitFundsLib
+            .getIsEngineCacheConfig(_coreContract);
         if (isEngineCache.isCached) {
             return isEngineCache.isEngine;
         } else {
@@ -671,9 +594,7 @@ contract MinterDAExpHolderV5 is
         address _coreContract
     ) external view returns (bool) {
         return
-            MaxInvocationsLib.getMaxHasBeenInvoked(
-                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-            );
+            MaxInvocationsLib.getMaxHasBeenInvoked(_projectId, _coreContract);
     }
 
     /**
@@ -700,10 +621,7 @@ contract MinterDAExpHolderV5 is
         uint256 _projectId,
         address _coreContract
     ) external view returns (uint256) {
-        return
-            MaxInvocationsLib.getMaxInvocations(
-                _maxInvocationsProjectConfigMapping[_coreContract][_projectId]
-            );
+        return MaxInvocationsLib.getMaxInvocations(_projectId, _coreContract);
     }
 
     /**
@@ -772,7 +690,8 @@ contract MinterDAExpHolderV5 is
         uint256 _ownedNFTProjectId
     ) external view returns (bool) {
         return
-            _allowedProjectHoldersMapping[_coreContract][_projectId]
+            TokenHolderLib
+                .getHolderProjectConfig(_projectId, _coreContract)
                 .allowedProjectHolders[_ownedNFTAddress][_ownedNFTProjectId];
     }
 
@@ -794,9 +713,8 @@ contract MinterDAExpHolderV5 is
     ) external view returns (bool) {
         return
             TokenHolderLib.isAllowlistedNFT({
-                holderProjectConfig: _allowedProjectHoldersMapping[
-                    _coreContract
-                ][_projectId],
+                _projectId: _projectId,
+                _coreContract: _coreContract,
                 _ownedNFTAddress: _ownedNFTAddress,
                 _ownedNFTTokenId: _ownedNFTTokenId
             });
@@ -820,19 +738,10 @@ contract MinterDAExpHolderV5 is
             _sender: msg.sender
         });
 
-        uint256 maxInvocations = MaxInvocationsLib
-            .syncProjectMaxInvocationsToCore({
-                _projectId: _projectId,
-                _coreContract: _coreContract,
-                maxInvocationsProjectConfig: _maxInvocationsProjectConfigMapping[
-                    _coreContract
-                ][_projectId]
-            });
-        emit ProjectMaxInvocationsLimitUpdated(
-            _projectId,
-            _coreContract,
-            maxInvocations
-        );
+        MaxInvocationsLib.syncProjectMaxInvocationsToCore({
+            _projectId: _projectId,
+            _coreContract: _coreContract
+        });
     }
 
     /**
@@ -859,26 +768,20 @@ contract MinterDAExpHolderV5 is
         address _vault
     ) public payable nonReentrant returns (uint256 tokenId) {
         // CHECKS
-        MaxInvocationsLib.MaxInvocationsProjectConfig
-            storage _maxInvocationsProjectConfig = _maxInvocationsProjectConfigMapping[
-                _coreContract
-            ][_projectId];
 
         DAExpLib.DAProjectConfig
             storage _auctionProjectConfig = _auctionProjectConfigMapping[
                 _coreContract
             ][_projectId];
 
+        // pre-mint MaxInvocationsLib checks
         // Note that `maxHasBeenInvoked` is only checked here to reduce gas
         // consumption after a project has been fully minted.
         // `_maxInvocationsProjectConfig.maxHasBeenInvoked` is locally cached to reduce
         // gas consumption, but if not in sync with the core contract's value,
         // the core contract also enforces its own max invocation check during
         // minting.
-        require(
-            !_maxInvocationsProjectConfig.maxHasBeenInvoked,
-            "Max invocations reached"
-        );
+        MaxInvocationsLib.preMintChecks(_projectId, _coreContract);
 
         // getPriceExp reverts if auction is unconfigured or has not started
         uint256 pricePerTokenInWei = DAExpLib.getPriceExp(
@@ -889,9 +792,8 @@ contract MinterDAExpHolderV5 is
         // require token used to claim to be in set of allowlisted NFTs
         require(
             TokenHolderLib.isAllowlistedNFT({
-                holderProjectConfig: _allowedProjectHoldersMapping[
-                    _coreContract
-                ][_projectId],
+                _projectId: _projectId,
+                _coreContract: _coreContract,
                 _ownedNFTAddress: _ownedNFTAddress,
                 _ownedNFTTokenId: _ownedNFTTokenId
             }),
@@ -933,7 +835,7 @@ contract MinterDAExpHolderV5 is
 
         MaxInvocationsLib.validatePurchaseEffectsInvocations(
             tokenId,
-            _maxInvocationsProjectConfig
+            _coreContract
         );
 
         // INTERACTIONS
@@ -949,16 +851,10 @@ contract MinterDAExpHolderV5 is
             _ownedNFTTokenId: _ownedNFTTokenId,
             _targetOwner: vault
         });
-
-        bool isEngine = SplitFundsLib.isEngine(
-            _coreContract,
-            _isEngineCaches[_coreContract]
-        );
-        SplitFundsLib.splitFundsETH({
+        SplitFundsLib.splitFundsETHRefundSender({
             _projectId: _projectId,
             _pricePerTokenInWei: pricePerTokenInWei,
-            _coreContract: _coreContract,
-            _isEngine: isEngine
+            _coreContract: _coreContract
         });
 
         return tokenId;

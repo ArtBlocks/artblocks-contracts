@@ -1,9 +1,18 @@
 // SPDX-License-Identifier: LGPL-3.0-only
 // Created By: Art Blocks Inc.
 
+import "@openzeppelin-4.7/contracts/utils/cryptography/MerkleProof.sol";
+import "./GenericMinterEventsLib.sol";
+
 pragma solidity ^0.8.0;
 
-interface ISharedMinterV0 {
+/**
+ * @title Art Blocks Generic Events Library
+ * @notice This library is designed to define a set of generic events that all
+ * shared minter libraries may utilize to populate indexed extra minter details
+ * @author Art Blocks Inc.
+ */
+library GenericMinterEventsLib {
     // This section defines events for generic project minter configuration updates
     /**
      * @dev Strings not supported. Recommend conversion of (short) strings to
@@ -122,43 +131,4 @@ interface ISharedMinterV0 {
         bytes32 _key,
         bytes32 _value
     );
-
-    ///////////////////////////
-
-    // Sets the local max invocations for a given project, checking that the provided max invocations is
-    // less than or equal to the global max invocations for the project set on the core contract.
-    // This does not impact the max invocations value defined on the core contract.
-    function manuallyLimitProjectMaxInvocations(
-        uint256 _projectId,
-        address _coreContract,
-        uint24 _maxInvocations
-    ) external;
-
-    // Called to make the minter contract aware of the max invocations for a
-    // given project.
-    function syncProjectMaxInvocationsToCore(
-        uint256 _projectId,
-        address _coreContract
-    ) external;
-
-    // getter function of public variable
-    function minterType() external view returns (string memory);
-
-    function minterFilterAddress() external returns (address);
-
-    // Gets if token price is configured, token price in wei, currency symbol,
-    // and currency address, assuming this is project's minter.
-    // Supersedes any defined core price.
-    function getPriceInfo(
-        uint256 _projectId,
-        address _coreContract
-    )
-        external
-        view
-        returns (
-            bool isConfigured,
-            uint256 tokenPriceInWei,
-            string memory currencySymbol,
-            address currencyAddress
-        );
 }
