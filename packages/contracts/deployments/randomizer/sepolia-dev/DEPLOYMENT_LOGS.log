@@ -1,0 +1,26 @@
+----------------------------------------
+[INFO] Datetime of deployment: 2023-09-30T23:59:14.732Z
+[INFO] Deployment configuration file: /Users/benlyaunzon/Documents/ab/artblocks-contracts/packages/contracts/deployments/randomizer/sepolia-dev/shared-randomizer-deploy-config.dev.ts
+----------------------------------------
+[INFO] Datetime of deployment: 2023-10-01T00:05:11.658Z
+[INFO] Deployment configuration file: /Users/benlyaunzon/Documents/ab/artblocks-contracts/packages/contracts/deployments/randomizer/sepolia-dev/shared-randomizer-deploy-config.dev.ts
+[INFO] pseudorandom atomic contract PseudorandomAtomic deployed at 0x410084bbEefF6f34D20e2067A453f6e673De720E
+[INFO] SharedRandomizerV0 deployed at 0xA6F7e62F3B52552f79b2Baa2858a1DB18016c09B
+[INFO] Verifying SharedRandomizerV0 contract deployment...
+[WARN] Etherscan verification of SharedRandomizerV0 failed: NomicLabsHardhatPluginError: You are trying to verify a contract in 'sepolia', but no API token was found for this network. Please provide one in your hardhat config. For example:
+
+{
+  ...
+  etherscan: {
+    apiKey: {
+      sepolia: 'your API key'
+    }
+  }
+}
+
+See https://etherscan.io/apis
+[ACTION] Verify SharedRandomizerV0 contract deployment with:
+yarn hardhat verify --network sepolia 0xA6F7e62F3B52552f79b2Baa2858a1DB18016c09B 0x410084bbEefF6f34D20e2067A453f6e673De720E
+[INFO] Deployment details written/appended to /Users/benlyaunzon/Documents/ab/artblocks-contracts/packages/contracts/deployments/randomizer/sepolia-dev/DEPLOYMENTS.md
+[INFO] Done!
+[INFO] No contracts were migrated to use the new shared randomizers. Each contract must be migrated individually.

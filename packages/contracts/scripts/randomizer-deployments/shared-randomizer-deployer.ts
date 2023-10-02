@@ -47,7 +47,12 @@ async function main() {
       );
     }
     // ensure mainnet uses pre-deployed pseudorandomAtomicContract
-    if (networkName != "goerli" && networkName != "arbitrum-goerli") {
+    if (
+      networkName != "goerli" &&
+      networkName != "arbitrum-goerli" &&
+      networkName != "sepolia" &&
+      networkName != "arbitrum-sepolia"
+    ) {
       // deploying on a mainnet
       if (!deployDetails.pseudorandomAtomicContractAddress) {
         throw new Error(

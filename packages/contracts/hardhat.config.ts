@@ -112,6 +112,7 @@ module.exports = {
     apiKey: {
       mainnet: ETHERSCAN_API_KEY,
       goerli: ETHERSCAN_API_KEY,
+      sepolia: ETHERSCAN_API_KEY,
       arbitrum: ARBISCAN_API_KEY, // This is unused but here in case hardhat changes
       arbitrumOne: ARBISCAN_API_KEY,
       "arbitrum-sepolia": ARBISCAN_API_KEY,
