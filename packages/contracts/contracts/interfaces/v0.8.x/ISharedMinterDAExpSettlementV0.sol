@@ -5,15 +5,6 @@ pragma solidity ^0.8.0;
 import "./ISharedMinterDAExpV0.sol";
 
 interface ISharedMinterDAExpSettlementV0 is ISharedMinterDAExpV0 {
-    /// receipt has an updated state
-    event ReceiptUpdated(
-        address indexed _purchaser,
-        uint256 indexed _projectId,
-        address indexed _coreContract,
-        uint24 _numPurchased,
-        uint256 _netPosted
-    );
-
     /// returns latest purchase price for project `_projectId`, or 0 if no
     /// purchases have been made.
     function getProjectLatestPurchasePrice(
