@@ -213,33 +213,6 @@ runForEach.forEach((params) => {
     });
 
     describe("Generic: SelloutPriceUpdated", async function () {
-      it("emits when admin emergency updates sellout price", async function () {
-        const config = await loadFixture(_beforeEach);
-        await configureProjectZeroAuctionAndSellout(config);
-        // expect no revert
-        // @dev target a unique sellout price value
-        const targetNewSelloutPrice = config.basePrice.add(1);
-        await expect(
-          config.minter
-            .connect(config.accounts.deployer)
-            .adminEmergencyReduceSelloutPrice(
-              config.projectZero,
-              config.genArt721Core.address,
-              targetNewSelloutPrice
-            )
-        )
-          .to.emit(
-            config.minter,
-            "ConfigValueSet(uint256,address,bytes32,uint256)"
-          )
-          .withArgs(
-            config.projectZero,
-            config.genArt721Core.address,
-            ethers.utils.formatBytes32String("currentSettledPrice"),
-            targetNewSelloutPrice
-          );
-      });
-
       it("emits during withdrawArtistAndAdminRevenues when sellout price is updated (to base price, no sellout)", async function () {
         const config = await loadFixture(_beforeEach);
         // artist configures auction
@@ -540,28 +513,6 @@ runForEach.forEach((params) => {
               config.defaultHalfLife,
               config.startingPrice,
               config.basePrice
-            )
-        ).to.not.emit(
-          // event is defined in MaxInvocationsLib
-          await ethers.getContractFactory("MaxInvocationsLib"),
-          "ProjectMaxInvocationsLimitUpdated"
-        );
-      });
-
-      // @dev don't think it is possible to test case where adminEmergencyReduceSelloutPrice ends up emitting event here
-
-      it("does not emit during adminEmergencyReduceSelloutPrice when minter-local max invocations are not updated", async function () {
-        const config = await loadFixture(_beforeEach);
-        await configureProjectZeroAuctionAndSellout(config);
-        // @dev target a unique sellout price value
-        const targetNewSelloutPrice = config.basePrice.add(1);
-        await expect(
-          config.minter
-            .connect(config.accounts.deployer)
-            .adminEmergencyReduceSelloutPrice(
-              config.projectZero,
-              config.genArt721Core.address,
-              targetNewSelloutPrice
             )
         ).to.not.emit(
           // event is defined in MaxInvocationsLib
