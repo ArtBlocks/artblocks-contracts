@@ -98,18 +98,6 @@ contract MinterSetPricePolyptychV5 is
     /// minter version for this minter
     string public constant minterVersion = "v5.0.0";
 
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR PolyptychLib begin here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    // contractAddress => projectId => polyptych project config
-    mapping(address => mapping(uint256 => PolyptychLib.PolyptychProjectConfig))
-        private _polyptychProjectConfigs;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR PolyptychLib end here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
     // MODIFIERS
     // @dev contract uses modifier-like internal functions instead of modifiers
     // to reduce contract bytecode size
@@ -346,18 +334,10 @@ contract MinterSetPricePolyptychV5 is
             _coreContract: _coreContract,
             _sender: msg.sender
         });
-        PolyptychLib.PolyptychProjectConfig
-            storage _polyptychProjectConfig = _polyptychProjectConfigs[
-                _coreContract
-            ][_projectId];
-        PolyptychLib.incrementPolyptychProjectPanelId(_polyptychProjectConfig);
-        // index the update
-        emit ConfigValueSet(
-            _projectId,
-            _coreContract,
-            PolyptychLib.POLYPTYCH_PANEL_ID,
-            _polyptychProjectConfig.polyptychPanelId
-        );
+        PolyptychLib.incrementPolyptychProjectPanelId({
+            _projectId: _projectId,
+            _coreContract: _coreContract
+        });
     }
 
     /**
@@ -625,11 +605,11 @@ contract MinterSetPricePolyptychV5 is
         uint256 _projectId,
         address _coreContract
     ) external view returns (uint256) {
-        PolyptychLib.PolyptychProjectConfig
-            storage _polyptychProjectConfig = _polyptychProjectConfigs[
-                _coreContract
-            ][_projectId];
-        return PolyptychLib.getPolyptychPanelId(_polyptychProjectConfig);
+        return
+            PolyptychLib.getPolyptychPanelId({
+                _projectId: _projectId,
+                _coreContract: _coreContract
+            });
     }
 
     /**
@@ -649,16 +629,13 @@ contract MinterSetPricePolyptychV5 is
         uint256 _panelId,
         bytes12 _hashSeed
     ) external view returns (bool) {
-        PolyptychLib.PolyptychProjectConfig
-            storage _polyptychProjectConfig = _polyptychProjectConfigs[
-                _coreContract
-            ][_projectId];
         return
-            PolyptychLib.getPolyptychPanelHashSeedIsMinted(
-                _polyptychProjectConfig,
-                _panelId,
-                _hashSeed
-            );
+            PolyptychLib.getPolyptychPanelHashSeedIsMinted({
+                _projectId: _projectId,
+                _coreContract: _coreContract,
+                _panelId: _panelId,
+                _hashSeed: _hashSeed
+            });
     }
 
     /**
@@ -780,18 +757,12 @@ contract MinterSetPricePolyptychV5 is
                 _ownedNFTTokenId
             );
 
-            // block scope to avoid stack too deep error (nested)
-            {
-                // validates hash seed and ensures each hash seed used max once per panel
-                PolyptychLib.PolyptychProjectConfig
-                    storage _polyptychProjectConfig = _polyptychProjectConfigs[
-                        _coreContract
-                    ][_projectId];
-                PolyptychLib.validatePolyptychEffects(
-                    _polyptychProjectConfig,
-                    _targetHashSeed
-                );
-            }
+            // validates hash seed and ensures each hash seed used max once per panel
+            PolyptychLib.validatePolyptychEffects({
+                _projectId: _projectId,
+                _coreContract: _coreContract,
+                _tokenHashSeed: _targetHashSeed
+            });
 
             uint256 _newTokenId = ABHelpers.tokenIdFromProjectIdAndTokenNumber({
                 _projectId: _projectId,
