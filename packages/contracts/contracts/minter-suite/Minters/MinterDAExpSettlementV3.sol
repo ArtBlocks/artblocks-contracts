@@ -51,7 +51,6 @@ pragma solidity 0.8.19;
  * contract:
  * - resetAuctionDetails (note: this will prevent minting until a new auction
  *   is created)
- * - adminEmergencyReduceSelloutPrice
  * ----------------------------------------------------------------------------
  * The following functions are restricted to a project's artist or the core
  * contract's Admin ACL contract:
@@ -275,35 +274,6 @@ contract MinterDAExpSettlementV3 is
 
         // @dev do NOT delete settlement parameters, as they are used to
         // determine settlement amounts even through a reset
-    }
-
-    /**
-     * @notice This represents an admin stepping in and reducing the sellout
-     * price of an auction. This is only callable by the core admin, only
-     * after the auction is complete, but before project revenues are
-     * withdrawn.
-     * This is only intended to be used in the case where for some reason, the
-     * sellout price was too high.
-     * @param _projectId Project ID to reduce auction sellout price for.
-     * @param _newSelloutPrice New sellout price to set for the auction. Must
-     * be less than the current sellout price.
-     */
-    function adminEmergencyReduceSelloutPrice(
-        uint256 _projectId,
-        address _coreContract,
-        uint112 _newSelloutPrice
-    ) external {
-        AuthLib.onlyCoreAdminACL({
-            _coreContract: _coreContract,
-            _sender: msg.sender,
-            _contract: address(this),
-            _selector: this.adminEmergencyReduceSelloutPrice.selector
-        });
-        SettlementExpLib.adminEmergencyReduceSelloutPrice({
-            _projectId: _projectId,
-            _coreContract: _coreContract,
-            _newSelloutPrice: _newSelloutPrice
-        });
     }
 
     /**
