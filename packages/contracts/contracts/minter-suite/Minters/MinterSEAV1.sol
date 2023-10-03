@@ -13,7 +13,6 @@ import "../../libs/v0.8.x/minter-libs/SEALib.sol";
 import "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
 import "../../libs/v0.8.x/minter-libs/MaxInvocationsLib.sol";
 
-import "@openzeppelin-4.7/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin-4.7/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
 import "@openzeppelin-4.7/contracts/utils/math/Math.sol";
@@ -131,22 +130,6 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
     // @dev SENDALL fallback is used to refund ETH if this limit is exceeded
     uint24 minterRefundGasLimit = 30_000;
 
-    // storage mappings for project and contract configs
-    // @dev base minter project config is not used on this minter, therefore no
-    // mapping is declared here to ProjectConfig structs
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR SEALib begin here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    // contractAddress => projectId => SEA project config
-    mapping(address => mapping(uint256 => SEALib.SEAProjectConfig))
-        private _SEAProjectConfigs;
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // STATE VARIABLES FOR SEALib end here
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
     // MODIFIERS
     // @dev contract uses modifier-like internal functions instead of modifiers
     // to reduce contract bytecode size
@@ -166,9 +149,11 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         minterFilterAddress = _minterFilter;
         minterFilter = IMinterFilterV1(_minterFilter);
         // emit events indicating default minter configuration values
-        emit MinAuctionDurationSecondsUpdated(MIN_AUCTION_DURATION_SECONDS);
-        emit MinterTimeBufferUpdated(minterTimeBufferSeconds);
-        emit MinterRefundGasLimitUpdated(minterRefundGasLimit);
+        emit SEALib.MinAuctionDurationSecondsUpdated(
+            MIN_AUCTION_DURATION_SECONDS
+        );
+        emit SEALib.MinterTimeBufferUpdated(minterTimeBufferSeconds);
+        emit SEALib.MinterRefundGasLimitUpdated(minterRefundGasLimit);
     }
 
     /**
@@ -202,7 +187,11 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         // @dev the following is unique behavior to this minter
         // for convenience, try to mint and assign a token to the project's
         // next slot
-        _tryMintTokenToNextSlot(_projectId, _coreContract);
+        SEALib.tryMintTokenToNextSlot({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _minterFilter: minterFilter
+        });
     }
 
     /**
@@ -225,7 +214,7 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         });
         // EFFECTS
         minterTimeBufferSeconds = _minterTimeBufferSeconds;
-        emit MinterTimeBufferUpdated(_minterTimeBufferSeconds);
+        emit SEALib.MinterTimeBufferUpdated(_minterTimeBufferSeconds);
     }
 
     /**
@@ -253,7 +242,7 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         require(_minterRefundGasLimit >= 7_000, "Only gte 7_000");
         // EFFECTS
         minterRefundGasLimit = _minterRefundGasLimit;
-        emit MinterRefundGasLimitUpdated(_minterRefundGasLimit);
+        emit SEALib.MinterRefundGasLimitUpdated(_minterRefundGasLimit);
     }
 
     /**
@@ -295,32 +284,17 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
             _coreContract: _coreContract,
             _sender: msg.sender
         });
-        SEALib.SEAProjectConfig storage _SEAProjectConfig = _SEAProjectConfigs[
-            _coreContract
-        ][_projectId];
-        require(
-            _timestampStart == 0 || block.timestamp < _timestampStart,
-            "Only future start times or 0"
-        );
         require(
             _auctionDurationSeconds >= MIN_AUCTION_DURATION_SECONDS,
             "Auction duration below minimum"
         );
-        // EFFECTS
-        _SEAProjectConfig.timestampStart = _timestampStart.toUint64();
-        _SEAProjectConfig.auctionDurationSeconds = _auctionDurationSeconds
-            .toUint32();
-        _SEAProjectConfig.basePrice = _basePrice;
-        _SEAProjectConfig
-            .minBidIncrementPercentage = _minBidIncrementPercentage;
-
-        emit ConfiguredFutureAuctions({
-            projectId: _projectId,
-            coreContract: _coreContract,
-            timestampStart: _timestampStart.toUint64(),
-            auctionDurationSeconds: _auctionDurationSeconds.toUint32(),
-            basePrice: _basePrice,
-            minBidIncrementPercentage: _minBidIncrementPercentage
+        SEALib.configureFutureAuctions({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _timestampStart: _timestampStart,
+            _auctionDurationSeconds: _auctionDurationSeconds,
+            _basePrice: _basePrice,
+            _minBidIncrementPercentage: _minBidIncrementPercentage
         });
 
         // for convenience, sync local max invocations to the core contract if
@@ -337,10 +311,14 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         ) {
             syncProjectMaxInvocationsToCore(_projectId, _coreContract);
             // @dev syncProjectMaxInvocationsToCore function calls
-            // _tryMintTokenToNextSlot, so we do not call it here.
+            // SEALib.tryMintTokenToNextSlot, so we do not call it here.
         } else {
             // for convenience, try to mint to next token slot
-            _tryMintTokenToNextSlot(_projectId, _coreContract);
+            SEALib.tryMintTokenToNextSlot({
+                _projectId: _projectId,
+                _coreContract: _coreContract,
+                _minterFilter: minterFilter
+            });
         }
     }
 
@@ -369,13 +347,12 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
             _contract: address(this),
             _selector: this.resetFutureAuctionDetails.selector
         });
-        SEALib.SEAProjectConfig storage _SEAProjectConfig = _SEAProjectConfigs[
-            _coreContract
-        ][_projectId];
         // reset to initial values
-        SEALib.resetFutureAuctionDetails(_SEAProjectConfig);
+        SEALib.resetFutureAuctionDetails({
+            _projectId: _projectId,
+            _coreContract: _coreContract
+        });
         // @dev do not affect next token or max invocations
-        emit ResetAuctionDetails(_projectId, _coreContract);
     }
 
     /**
@@ -408,35 +385,11 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
             _contract: address(this),
             _selector: this.ejectNextTokenTo.selector
         });
-        SEALib.SEAProjectConfig storage _SEAProjectConfig = _SEAProjectConfigs[
-            _coreContract
-        ][_projectId];
-        // CHECKS
-        // only if project is not configured (i.e. artist called
-        // `resetAuctionDetails`)
-        require(
-            !SEALib.projectIsConfigured(_SEAProjectConfig),
-            "Only unconfigured projects"
-        );
-        // only if project has a next token assigned
-        require(
-            _SEAProjectConfig.nextTokenNumberIsPopulated == true,
-            "No next token"
-        );
-        // EFFECTS
-        _SEAProjectConfig.nextTokenNumberIsPopulated = false;
-        // INTERACTIONS
-        // @dev overflow automatically handled by Sol ^0.8.0
-        uint256 nextTokenId = ABHelpers.tokenIdFromProjectIdAndTokenNumber({
+        SEALib.ejectNextTokenTo({
             _projectId: _projectId,
-            _tokenNumber: _SEAProjectConfig.nextTokenNumber
+            _coreContract: _coreContract,
+            _to: _to
         });
-        IERC721(_coreContract).transferFrom({
-            from: address(this),
-            to: _to,
-            tokenId: nextTokenId
-        });
-        emit ProjectNextTokenEjected(_projectId, _coreContract);
     }
 
     /**
@@ -600,17 +553,20 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
      * the returned `auction` will be the default struct.
      * @param _projectId The project ID
      * @param _coreContract The core contract address
-     * @return _SEAProjectConfig The SEA project configuration details
+     * @return SEAProjectConfig_ The SEA project configuration details
      */
     function SEAProjectConfigurationDetails(
         uint256 _projectId,
         address _coreContract
-    ) external view returns (SEALib.SEAProjectConfig memory _SEAProjectConfig) {
-        _SEAProjectConfig = _SEAProjectConfigs[_coreContract][_projectId];
+    ) external view returns (SEALib.SEAProjectConfig memory SEAProjectConfig_) {
+        SEAProjectConfig_ = SEALib.getSEAProjectConfig({
+            _projectId: _projectId,
+            _coreContract: _coreContract
+        });
         // clean up next token number to handle case where it is stale
-        _SEAProjectConfig.nextTokenNumber = _SEAProjectConfig
+        SEAProjectConfig_.nextTokenNumber = SEAProjectConfig_
             .nextTokenNumberIsPopulated
-            ? _SEAProjectConfig.nextTokenNumber
+            ? SEAProjectConfig_.nextTokenNumber
             : 0;
     }
 
@@ -624,10 +580,11 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         uint256 _projectId,
         address _coreContract
     ) external view returns (SEALib.Auction memory auction) {
-        SEALib.SEAProjectConfig storage _SEAProjectConfig = _SEAProjectConfigs[
-            _coreContract
-        ][_projectId];
-        return SEALib.projectActiveAuctionDetails(_SEAProjectConfig);
+        return
+            SEALib.projectActiveAuctionDetails({
+                _projectId: _projectId,
+                _coreContract: _coreContract
+            });
     }
 
     /**
@@ -649,10 +606,11 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         uint256 _projectId,
         address _coreContract
     ) external view returns (uint256) {
-        SEALib.SEAProjectConfig storage _SEAProjectConfig = _SEAProjectConfigs[
-            _coreContract
-        ][_projectId];
-        return SEALib.getTokenToBid(_SEAProjectConfig, _projectId);
+        return
+            SEALib.getTokenToBid({
+                _projectId: _projectId,
+                _coreContract: _coreContract
+            });
     }
 
     /**
@@ -667,10 +625,11 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         uint256 _projectId,
         address _coreContract
     ) external view returns (uint256 nextTokenId) {
-        SEALib.SEAProjectConfig storage _SEAProjectConfig = _SEAProjectConfigs[
-            _coreContract
-        ][_projectId];
-        return SEALib.getNextTokenId(_SEAProjectConfig, _projectId);
+        return
+            SEALib.getNextTokenId({
+                _projectId: _projectId,
+                _coreContract: _coreContract
+            });
     }
 
     /**
@@ -711,11 +670,10 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
             address currencyAddress
         )
     {
-        SEALib.SEAProjectConfig storage _SEAProjectConfig = _SEAProjectConfigs[
-            _coreContract
-        ][_projectId];
-        (isConfigured, tokenPriceInWei) = SEALib
-            .getPriceInfoFromSEAProjectConfig(_SEAProjectConfig);
+        (isConfigured, tokenPriceInWei) = SEALib.getPriceInfo({
+            _projectId: _projectId,
+            _coreContract: _coreContract
+        });
         // currency is always ETH
         currencySymbol = "ETH";
         currencyAddress = address(0);
@@ -746,7 +704,11 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
 
         // for convenience, try to mint and assign a token to the project's
         // next slot
-        _tryMintTokenToNextSlot(_projectId, _coreContract);
+        SEALib.tryMintTokenToNextSlot({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _minterFilter: minterFilter
+        });
     }
 
     /**
@@ -779,17 +741,21 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         });
         // CHECKS
         // revert if project is not configured on this minter
-        SEALib.SEAProjectConfig storage _SEAProjectConfig = _SEAProjectConfigs[
-            _coreContract
-        ][_projectId];
         require(
-            SEALib.projectIsConfigured(_SEAProjectConfig),
+            SEALib.projectIsConfigured({
+                _projectId: _projectId,
+                _coreContract: _coreContract
+            }),
             "Project not configured"
         );
         // INTERACTIONS
         // attempt to mint new token to this minter contract, only if max
         // invocations has not been reached
-        _tryMintTokenToNextSlot(_projectId, _coreContract);
+        SEALib.tryMintTokenToNextSlot({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _minterFilter: minterFilter
+        });
     }
 
     /**
@@ -803,56 +769,15 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
      * This function reverts if the auction for `_tokenId` exists, but has not
      * yet ended.
      * @param _tokenId Token ID to settle auction for.
-     * @param _coreContract Core contract address for the given project.
+     * @param _coreContract Core contract address for the given token.
      */
     function settleAuction(
         uint256 _tokenId,
         address _coreContract
     ) public nonReentrant {
-        uint256 _projectId = ABHelpers.tokenIdToProjectId(_tokenId);
-        SEALib.SEAProjectConfig storage _SEAProjectConfig = _SEAProjectConfigs[
-            _coreContract
-        ][_projectId];
-        SEALib.Auction storage _auction = _SEAProjectConfig.activeAuction;
-        // load from storage to memory for gas efficiency
-        address currentBidder = _auction.currentBidder;
-        uint256 currentBid = _auction.currentBid;
-        // CHECKS
-        // @dev this check is not strictly necessary, but is included for
-        // clear error messaging
-        require(
-            SEALib.auctionIsInitialized(_auction),
-            "Auction not initialized"
-        );
-        if (_auction.settled || (_auction.tokenId != _tokenId)) {
-            // auction already settled or is for a different token ID, so
-            // return early and do not modify state
-            return;
-        }
-        // @dev important that the following check is after the early return
-        // block above to maintain desired behavior
-        require(block.timestamp >= _auction.endTime, "Auction not yet ended");
-        // EFFECTS
-        _auction.settled = true;
-        // INTERACTIONS
-        // send token to the winning bidder
-        IERC721(_coreContract).transferFrom({
-            from: address(this),
-            to: currentBidder,
-            tokenId: _tokenId
-        });
-        // distribute revenues from auction
-        SplitFundsLib.splitRevenuesETHNoRefund({
-            _projectId: _projectId,
-            _valueInWei: currentBid,
+        SEALib.settleAuction({
+            _tokenId: _tokenId,
             _coreContract: _coreContract
-        });
-
-        emit AuctionSettled({
-            tokenId: _tokenId,
-            coreContract: _coreContract,
-            winner: currentBidder,
-            price: currentBid
         });
     }
 
@@ -896,239 +821,12 @@ contract MinterSEAV1 is ReentrancyGuard, ISharedMinterV0, ISharedMinterSEAV0 {
         uint256 _tokenId,
         address _coreContract
     ) public payable nonReentrant {
-        uint256 _projectId = ABHelpers.tokenIdToProjectId(_tokenId);
-        SEALib.SEAProjectConfig storage _SEAProjectConfig = _SEAProjectConfigs[
-            _coreContract
-        ][_projectId];
-        SEALib.Auction storage _auction = _SEAProjectConfig.activeAuction;
-        // CHECKS
-        // ProjectConfig storage _projectConfig = projectConfig[_projectId];
-        // load from storage to memory for gas efficiency
-        uint256 auctionEndTime = _auction.endTime;
-        uint256 previousBid = _auction.currentBid;
-
-        // if no auction exists, or current auction is already settled, attempt
-        // to initialize a new auction for the input token ID and immediately
-        // return
-        if ((!SEALib.auctionIsInitialized(_auction)) || _auction.settled) {
-            _initializeAuctionWithBid(_projectId, _coreContract, _tokenId);
-            return;
-        }
-        // @dev this branch is guaranteed to have an initialized auction that
-        // not settled, so no need to check for initialized or not settled
-
-        // ensure bids for a specific token ID are only applied to the auction
-        // for that token ID.
-        require(
-            _auction.tokenId == _tokenId,
-            "Token ID does not match auction"
-        );
-
-        // ensure auction is not already ended
-        require(auctionEndTime > block.timestamp, "Auction already ended");
-
-        // require bid to be sufficiently greater than current highest bid
-        // @dev no overflow enforced automatically by solidity ^0.8.0
-        require(
-            msg.value >= SEALib.getMinimumNextBid(_auction),
-            "Bid is too low"
-        );
-
-        // EFFECTS
-        // record previous highest bider for refunding
-        address payable previousBidder = _auction.currentBidder;
-
-        // update auction bid state
-        SEALib.auctionUpdateBid({
-            _auction: _auction,
-            _timeBufferSeconds: minterTimeBufferSeconds,
-            _bidAmount: msg.value,
-            _bidder: payable(msg.sender)
-        });
-
-        // INTERACTIONS
-        // refund previous highest bidder
-        SplitFundsLib.forceSafeTransferETH({
-            _to: previousBidder,
-            _amount: previousBid,
-            _minterRefundGasLimit: minterRefundGasLimit
-        });
-
-        emit AuctionBid({
-            tokenId: _tokenId,
-            coreContract: _coreContract,
-            bidder: msg.sender,
-            bidAmount: msg.value
-        });
-    }
-
-    /**
-     * @dev Internal function to initialize an auction for the next token ID
-     * on project `_projectId` with a bid of `msg.value` from `msg.sender`.
-     * This function reverts in any of the following cases:
-     *   - project is not configured on this minter
-     *   - project is configured but has not yet reached its start time
-     *   - project has a current active auction that is not settled
-     *   - insufficient bid amount (msg.value < basePrice)
-     *   - no next token has been minted for the project (artist may need to
-     *     call `tryPopulateNextToken`)
-     *   - `_targetTokenId` does not match the next token ID for the project
-     * After initializing a new auction, this function attempts to mint a new
-     * token and assign it to the project's next token slot, in preparation for
-     * a future token auction. However, if the project has reached its maximum
-     * invocations on either the core contract or minter, the next token slot
-     * for the project will remain empty.
-     * @dev This should be executed in a nonReentrant context to provide redundant
-     * protection against reentrancy.
-     */
-    function _initializeAuctionWithBid(
-        uint256 _projectId,
-        address _coreContract,
-        uint256 _targetTokenId
-    ) internal {
-        SEALib.SEAProjectConfig storage _SEAProjectConfig = _SEAProjectConfigs[
-            _coreContract
-        ][_projectId];
-        SEALib.Auction storage _auction = _SEAProjectConfig.activeAuction;
-        // CHECKS
-        // ensure project auctions are configured
-        // @dev base price of zero indicates auctions are not configured
-        // because only base price of gt zero is allowed when configuring
-        require(
-            SEALib.projectIsConfigured(_SEAProjectConfig),
-            "Project not configured"
-        );
-        // only initialize new auctions if they meet the start time
-        // requirement
-        require(
-            block.timestamp >= _SEAProjectConfig.timestampStart,
-            "Only gte project start time"
-        );
-        // the following require statement is redundant based on how this
-        // internal function is called, but it is included for protection
-        // against future changes that could easily introduce a bug if this
-        // check is not present
-        // @dev no cover else branch of next line because unreachable
-        require(
-            (!SEALib.auctionIsInitialized(_auction)) || _auction.settled,
-            "Existing auction not settled"
-        );
-        // require valid bid value
-        require(
-            msg.value >= _SEAProjectConfig.basePrice,
-            "Insufficient initial bid"
-        );
-        // require next token number is populated
-        // @dev this should only be encountered if the project has reached
-        // its maximum invocations on either the core contract or minter
-        require(
-            _SEAProjectConfig.nextTokenNumberIsPopulated,
-            "No next token, check max invocations"
-        );
-        // require next token number is the target token ID
-        require(
-            _SEAProjectConfig.nextTokenNumber ==
-                ABHelpers.tokenIdToTokenNumber(_targetTokenId),
-            "Incorrect target token ID"
-        );
-
-        // EFFECTS
-        // create new auction, overwriting previous auction if it exists
-        uint64 endTime = SEALib.overwriteProjectActiveAuction({
-            _SEAProjectConfig: _SEAProjectConfig,
-            _targetTokenId: _targetTokenId,
-            _bidAmount: msg.value,
-            _bidder: payable(msg.sender)
-        });
-        // mark next token number as not populated
-        // @dev intentionally not setting nextTokenNumber to zero to avoid
-        // unnecessary gas costs
-        _SEAProjectConfig.nextTokenNumberIsPopulated = false;
-
-        // @dev we intentionally emit event here due to potential of early
-        // return in INTERACTIONS section
-        emit AuctionInitialized({
-            tokenId: _targetTokenId,
-            coreContract: _coreContract,
-            bidder: msg.sender,
-            bidAmount: msg.value,
-            endTime: endTime,
-            minBidIncrementPercentage: _SEAProjectConfig
-                .activeAuction
-                .minBidIncrementPercentage
-        });
-
-        // INTERACTIONS
-        // attempt to mint new token to this minter contract, only if max
-        // invocations has not been reached
-        _tryMintTokenToNextSlot(_projectId, _coreContract);
-    }
-
-    /**
-     * @notice Internal function that attempts to mint a new token to the next
-     * token slot for the project `_projectId`.
-     * This function returns early and does not modify state if
-     *   - the project has reached its maximum invocations on either the core
-     *     contract or minter
-     *   - the project config's `nextTokenNumberIsPopulated` is already true
-     * @param _projectId The ID of the project to mint a new token for.
-     * @param _coreContract The core contract address
-     * @dev this calls mint with `msg.sender` as the sender, allowing artists
-     * to mint tokens to the next token slot for their project while a project
-     * is still paused. This happens when an artist is configuring their
-     * project's auction parameters or minter max invocations.
-     */
-    function _tryMintTokenToNextSlot(
-        uint256 _projectId,
-        address _coreContract
-    ) internal {
-        SEALib.SEAProjectConfig storage _SEAProjectConfig = _SEAProjectConfigs[
-            _coreContract
-        ][_projectId];
-        if (_SEAProjectConfig.nextTokenNumberIsPopulated) {
-            return;
-        }
-        // INTERACTIONS
-        // attempt to mint new token to this minter contract, only if max
-        // invocations has not been reached
-        // we require up-to-date invocation data to properly handle last token
-        // and avoid revert if relying on core to limit invocations, therefore
-        // use MaxInvocationsLib.invocationsRemain, which calls core contract
-        // to get latest invocation data
-        if (!MaxInvocationsLib.invocationsRemain(_projectId, _coreContract)) {
-            // we have reached the max invocations, so we do not mint a new
-            // token as the "next token", and leave the next token number as
-            // not populated
-            return;
-        }
-        // @dev this is an effect after a trusted contract interaction
-        _SEAProjectConfig.nextTokenNumberIsPopulated = true;
-        // mint a new token to this project's "next token" slot
-        // @dev this is an interaction with a trusted contract
-        uint256 nextTokenId = minterFilter.mint_joo(
-            address(this),
-            _projectId,
-            _coreContract,
-            msg.sender
-        );
-        // update state to reflect new token number
-        // @dev state changes after trusted contract interaction
-        // @dev unchecked is safe because mod 1e6 is guaranteed to be less than
-        // max uint24
-        unchecked {
-            _SEAProjectConfig.nextTokenNumber = uint24(
-                ABHelpers.tokenIdToTokenNumber(nextTokenId)
-            );
-        }
-        // update local maxHasBeenInvoked value if necessary
-        MaxInvocationsLib.validatePurchaseEffectsInvocations({
-            _tokenId: nextTokenId,
-            _coreContract: _coreContract
-        });
-        emit ProjectNextTokenUpdated({
-            projectId: _projectId,
-            coreContract: _coreContract,
-            tokenId: nextTokenId
+        SEALib.createBid({
+            _tokenId: _tokenId,
+            _coreContract: _coreContract,
+            _minterTimeBufferSeconds: minterTimeBufferSeconds,
+            _minterRefundGasLimit: minterRefundGasLimit,
+            _minterFilter: minterFilter
         });
     }
 }
