@@ -171,6 +171,8 @@ library SEALib {
         SEAProjectConfig_.minBidIncrementPercentage = 0;
         SEAProjectConfig_.basePrice = 0;
         SEAProjectConfig_.timestampStart = 0;
+
+        emit ResetAuctionDetails(_projectId, _coreContract);
     }
 
     /**
