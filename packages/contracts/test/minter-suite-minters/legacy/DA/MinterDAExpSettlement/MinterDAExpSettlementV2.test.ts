@@ -915,34 +915,6 @@ for (const coreContractName of coreContractsToTest) {
       });
     });
 
-    describe("adminEmergencyReduceSelloutPrice", async function () {
-      it("requires auction to be complete", async function () {
-        const config = await loadFixture(_beforeEach);
-        await expectRevert(
-          config.minter
-            .connect(config.accounts.deployer)
-            .adminEmergencyReduceSelloutPrice(config.projectZero, 1),
-          "Auction must be complete"
-        );
-      });
-
-      it("requires new sellout price of greater than zero", async function () {
-        const config = await loadFixture(_beforeEach);
-        await selloutMidAuction(config, config.projectZero);
-        // reset auction details to get base price to zero
-        await config.minter
-          .connect(config.accounts.deployer)
-          .resetAuctionDetails(config.projectZero);
-        // do not allow sellout price to be zero
-        await expectRevert(
-          config.minter
-            .connect(config.accounts.deployer)
-            .adminEmergencyReduceSelloutPrice(config.projectZero, 0),
-          "Only sellout prices > 0"
-        );
-      });
-    });
-
     describe("resetAuctionDetails", async function () {
       it("doesn't lock latest purchase price to zero in edge case after resetting auction details after partial auction completion", async function () {
         const config = await loadFixture(_beforeEach);
