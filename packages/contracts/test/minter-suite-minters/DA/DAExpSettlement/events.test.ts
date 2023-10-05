@@ -540,7 +540,7 @@ runForEach.forEach((params) => {
         // after configuring auction qualifies as "funny business"
         await expect(
           config.minter
-            .connect(config.accounts.artist)
+            .connect(config.accounts.deployer)
             .withdrawArtistAndAdminRevenues(
               config.projectZero,
               config.genArt721Core.address
