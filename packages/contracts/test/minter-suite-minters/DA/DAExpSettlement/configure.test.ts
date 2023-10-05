@@ -726,7 +726,7 @@ runForEach.forEach((params) => {
           );
       });
 
-      it("requires admin to withdraw funds if funny business (e.g. minting on other minter during auction)", async function () {
+      it("requires admin to withdraw funds if funny business. Case: minting on other minter during auction", async function () {
         const config = await loadFixture(_beforeEach);
         await configureProjectZeroAuctionAndAdvanceToStart(config);
         // set max invocations to 2 on minter
@@ -763,6 +763,34 @@ runForEach.forEach((params) => {
             config.projectZero,
             config.genArt721Core.address
           );
+      });
+
+      it("requires admin to withdraw funds if funny business. Case: reducing core contract max invocations after configuring auction", async function () {
+        const config = await loadFixture(_beforeEach);
+        // artist configures auction
+        await configureProjectZeroAuctionAndAdvanceToStart(config);
+        // artist reduces max invocations to 1 on core contract
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .updateProjectMaxInvocations(config.projectZero, 1);
+        // user purchases
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        // expect call to emit event
+        // @dev deployer must call because reducing max invocations on core contract
+        // after configuring auction qualifies as "funny business"
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .withdrawArtistAndAdminRevenues(
+              config.projectZero,
+              config.genArt721Core.address
+            ),
+          revertMessages.onlyCoreAdminACL
+        );
       });
 
       it("requires sellout if last purchase price is > base price", async function () {

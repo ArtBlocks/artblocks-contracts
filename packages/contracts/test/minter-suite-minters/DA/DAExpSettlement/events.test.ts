@@ -536,6 +536,8 @@ runForEach.forEach((params) => {
             value: config.startingPrice,
           });
         // expect call to emit event
+        // @dev deployer must call because reducing max invocations on core contract
+        // after configuring auction qualifies as "funny business"
         await expect(
           config.minter
             .connect(config.accounts.artist)
