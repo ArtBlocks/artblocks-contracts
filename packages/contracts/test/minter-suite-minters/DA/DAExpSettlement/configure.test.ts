@@ -174,55 +174,7 @@ runForEach.forEach((params) => {
         );
         expect(hasMaxBeenInvoked).to.be.true;
 
-        // increase invocations on the minter
-        await config.minter
-          .connect(config.accounts.artist)
-          .manuallyLimitProjectMaxInvocations(
-            config.projectZero,
-            config.genArt721Core.address,
-            3
-          );
-
-        // expect maxInvocations on the minter to be 3
-        const localMaxInvocations2 = await config.minter
-          .connect(config.accounts.artist)
-          .maxInvocationsProjectConfig(
-            config.projectZero,
-            config.genArt721Core.address
-          );
-        expect(localMaxInvocations2.maxInvocations).to.equal(3);
-
-        // expect projectMaxHasBeenInvoked to now be false
-        const hasMaxBeenInvoked2 = await config.minter.projectMaxHasBeenInvoked(
-          config.projectZero,
-          config.genArt721Core.address
-        );
-        expect(hasMaxBeenInvoked2).to.be.false;
-
-        // reduce invocations on the minter
-        await config.minter
-          .connect(config.accounts.artist)
-          .manuallyLimitProjectMaxInvocations(
-            config.projectZero,
-            config.genArt721Core.address,
-            1
-          );
-
-        // expect maxInvocations on the minter to be 1
-        const localMaxInvocations3 = await config.minter
-          .connect(config.accounts.artist)
-          .maxInvocationsProjectConfig(
-            config.projectZero,
-            config.genArt721Core.address
-          );
-        expect(localMaxInvocations3.maxInvocations).to.equal(1);
-
-        // expect projectMaxHasBeenInvoked to now be true
-        const hasMaxBeenInvoked3 = await config.minter.projectMaxHasBeenInvoked(
-          config.projectZero,
-          config.genArt721Core.address
-        );
-        expect(hasMaxBeenInvoked3).to.be.true;
+        // can no longer increase max invocations on this minter because a token has been purchased
       });
 
       it("enforces project max invocations set on minter", async function () {
@@ -243,6 +195,28 @@ runForEach.forEach((params) => {
               value: config.startingPrice,
             }),
           revertMessages.maximumInvocationsReached
+        );
+      });
+
+      it("reverts if called after one or more purchases", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndAdvanceToStart(config);
+        // mint a token
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        // revert when trying to set max invocations after a purchase
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .manuallyLimitProjectMaxInvocations(
+              config.projectZero,
+              config.genArt721Core.address,
+              1
+            ),
+          revertMessages.onlyBeforePurchases
         );
       });
     });
@@ -723,12 +697,6 @@ runForEach.forEach((params) => {
       it("refreshes max invocations from other mints on core", async function () {
         const config = await loadFixture(_beforeEach);
         await configureProjectZeroAuctionAndAdvanceToStart(config);
-        // mint a token
-        await config.minter
-          .connect(config.accounts.user)
-          .purchase(config.projectZero, config.genArt721Core.address, {
-            value: config.startingPrice,
-          });
         // set max invocations to 2 on minter
         await config.minter
           .connect(config.accounts.artist)
@@ -737,12 +705,60 @@ runForEach.forEach((params) => {
             config.genArt721Core.address,
             2
           );
+        // mint a token
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
         // mint another token on a different Minter
         await mintTokenOnDifferentMinter(config);
         // can now call withdrawArtistAndAdminRevenues, because invocations
         // from other minter will be accounted for
+        // @dev note that admin must be the caller here, because the artist
+        // is banned from calling this function after "funny business" of
+        // minting on other minter during live auction
+        await config.minter
+          .connect(config.accounts.deployer)
+          .withdrawArtistAndAdminRevenues(
+            config.projectZero,
+            config.genArt721Core.address
+          );
+      });
+
+      it("requires admin to withdraw funds if funny business (e.g. minting on other minter during auction)", async function () {
+        const config = await loadFixture(_beforeEach);
+        await configureProjectZeroAuctionAndAdvanceToStart(config);
+        // set max invocations to 2 on minter
         await config.minter
           .connect(config.accounts.artist)
+          .manuallyLimitProjectMaxInvocations(
+            config.projectZero,
+            config.genArt721Core.address,
+            2
+          );
+        // mint a token
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
+        // do some FUNNY BUSINESS! mint another token on a different Minter
+        await mintTokenOnDifferentMinter(config);
+        // artist may not call withdrawArtistAndAdminRevenues after "funny business"
+        // of minting on other minter during live auction
+        await expectRevert(
+          config.minter
+            .connect(config.accounts.artist)
+            .withdrawArtistAndAdminRevenues(
+              config.projectZero,
+              config.genArt721Core.address
+            ),
+          revertMessages.onlyCoreAdminACL
+        );
+        // admin may call withdrawArtistAndAdminRevenues
+        await config.minter
+          .connect(config.accounts.deployer)
           .withdrawArtistAndAdminRevenues(
             config.projectZero,
             config.genArt721Core.address
@@ -752,12 +768,6 @@ runForEach.forEach((params) => {
       it("requires sellout if last purchase price is > base price", async function () {
         const config = await loadFixture(_beforeEach);
         await configureProjectZeroAuctionAndAdvanceToStart(config);
-        // mint a token
-        await config.minter
-          .connect(config.accounts.user)
-          .purchase(config.projectZero, config.genArt721Core.address, {
-            value: config.startingPrice,
-          });
         // set max invocations to 2 on minter
         await config.minter
           .connect(config.accounts.artist)
@@ -766,6 +776,12 @@ runForEach.forEach((params) => {
             config.genArt721Core.address,
             2
           );
+        // mint a token
+        await config.minter
+          .connect(config.accounts.user)
+          .purchase(config.projectZero, config.genArt721Core.address, {
+            value: config.startingPrice,
+          });
         // reverts because last purchase price is > base price and auction is
         // not sold out
         await expectRevert(

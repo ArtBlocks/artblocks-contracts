@@ -525,16 +525,16 @@ runForEach.forEach((params) => {
         const config = await loadFixture(_beforeEach);
         // artist configures auction
         await configureProjectZeroAuctionAndAdvanceToStart(config);
+        // artist reduces max invocations to 1 on core contract
+        await config.genArt721Core
+          .connect(config.accounts.artist)
+          .updateProjectMaxInvocations(config.projectZero, 1);
         // user purchases
         await config.minter
           .connect(config.accounts.user)
           .purchase(config.projectZero, config.genArt721Core.address, {
             value: config.startingPrice,
           });
-        // artist reduces max invocations to 1 on core contract
-        await config.genArt721Core
-          .connect(config.accounts.artist)
-          .updateProjectMaxInvocations(config.projectZero, 1);
         // expect call to emit event
         await expect(
           config.minter
