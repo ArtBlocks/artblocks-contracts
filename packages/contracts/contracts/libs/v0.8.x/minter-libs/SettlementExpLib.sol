@@ -496,24 +496,6 @@ library SettlementExpLib {
     }
 
     /**
-     * Returns number of tokens to be auctioned for a project on the minter,
-     * for a given project.
-     * @param _projectId The id of the project.
-     * @param _coreContract The address of the core contract.
-     */
-    function getNumTokensToBeAuctioned(
-        uint256 _projectId,
-        address _coreContract
-    ) internal view returns (uint256) {
-        SettlementAuctionProjectConfig
-            storage settlementAuctionProjectConfig = getSettlementAuctionProjectConfig({
-                _projectId: _projectId,
-                _coreContract: _coreContract
-            });
-        return settlementAuctionProjectConfig.numTokensToBeAuctioned;
-    }
-
-    /**
      * @notice Returns the excess settlement funds for purchaser wallet
      * `_walletAddress` on project `_projectId`. Excess settlement funds are
      * the amount of funds posted by the purchaser that are in excess of the
