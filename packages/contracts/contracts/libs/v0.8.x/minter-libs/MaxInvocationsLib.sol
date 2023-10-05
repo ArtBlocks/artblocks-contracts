@@ -44,6 +44,13 @@ library MaxInvocationsLib {
     struct MaxInvocationsProjectConfig {
         bool maxHasBeenInvoked;
         uint24 maxInvocations;
+        // optional field to store the number of allocations for a project
+        // @dev e.g. used by settlement minters
+        uint24 numAllocations;
+        // optional field to store the number of invocations that have been
+        // made on this minter
+        // e.g. used by settlement minters
+        uint24 numInvocationsOnMinter;
     }
 
     // Diamond storage pattern is used in this library
@@ -173,6 +180,44 @@ library MaxInvocationsLib {
         }
     }
 
+    /**
+     * @notice Intended to be called prior to a token being minted on minters
+     * that utilize the optional capabilities of numInvocationsOnMinter, and
+     * numAllocations (e.g. Settlement minters).
+     * Increments the number of invocations on a minter by one, and also sets
+     * the number of allocations to the minter's max invocations minus the
+     * current core contract invocations if this is the first purchase on the
+     * minter.
+     * @param _projectId The id of the project.
+     * @param _coreContract The address of the core contract.
+     */
+    function preMintEffectsAllocations(
+        uint256 _projectId,
+        address _coreContract
+    ) internal {
+        MaxInvocationsProjectConfig
+            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig(
+                _projectId,
+                _coreContract
+            );
+        // if there are no previous invocations on this minter, set the number
+        // of allocations to (minter max invocations) - (current core contract invocations).
+        if (maxInvocationsProjectConfig.numInvocationsOnMinter == 0) {
+            // get up-to-data invocation data from core contract
+            (uint256 coreInvocations, ) = coreContractInvocationData(
+                _projectId,
+                _coreContract
+            );
+            // snap chalkline on the number of allocations
+            maxInvocationsProjectConfig.numAllocations = uint24(
+                maxInvocationsProjectConfig.maxInvocations - coreInvocations
+            );
+        }
+
+        // increment the number of invocations on this minter
+        maxInvocationsProjectConfig.numInvocationsOnMinter++;
+    }
+
     function preMintChecks(
         uint256 _projectId,
         address _coreContract
@@ -232,10 +277,7 @@ library MaxInvocationsLib {
         (
             uint256 coreInvocations,
             uint256 coreMaxInvocations
-        ) = MaxInvocationsLib.coreContractInvocationData(
-                _projectId,
-                _coreContract
-            );
+        ) = coreContractInvocationData(_projectId, _coreContract);
         // load minter-local max invocations into memory
         MaxInvocationsProjectConfig
             storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig(
@@ -319,6 +361,73 @@ library MaxInvocationsLib {
     }
 
     /**
+     * Returns number of invocations that have been made on the minter, for a
+     * given project. Note that this is an optional setting that is only used
+     * by some minters (e.g. Settlement minters).
+     * @param _projectId The id of the project.
+     * @param _coreContract The address of the core contract.
+     * to be queried.
+     */
+    function getNumInvocationsOnMinter(
+        uint256 _projectId,
+        address _coreContract
+    ) internal view returns (uint256) {
+        MaxInvocationsProjectConfig
+            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig(
+                _projectId,
+                _coreContract
+            );
+        return maxInvocationsProjectConfig.numInvocationsOnMinter;
+    }
+
+    /**
+     * Returns number of allocations that have been made on the minter, for a
+     * given project. Note that this is an optional setting that is only used
+     * by some minters (e.g. Settlement minters).
+     * @param _projectId The id of the project.
+     * @param _coreContract The address of the core contract.
+     * to be queried.
+     */
+    function getNumAllocations(
+        uint256 _projectId,
+        address _coreContract
+    ) internal view returns (uint256) {
+        MaxInvocationsProjectConfig
+            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig(
+                _projectId,
+                _coreContract
+            );
+        return maxInvocationsProjectConfig.numAllocations;
+    }
+
+    /**
+     * Returns if all allocations have been fulfilled, for a given project.
+     * Note that this is an optional setting that is only used by some
+     * minters (e.g. Settlement minters).
+     * Returns false if the number of allocations is zero, since that is the
+     * default value for unconfigured minters.
+     * @param _projectId The id of the project.
+     * @param _coreContract The address of the core contract.
+     * to be queried.
+     */
+    function getAllAllocationsFulfilled(
+        uint256 _projectId,
+        address _coreContract
+    ) internal view returns (bool) {
+        MaxInvocationsProjectConfig
+            storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig(
+                _projectId,
+                _coreContract
+            );
+        // @dev load numAllocations into memory for gas efficiency
+        uint256 numAllocations = maxInvocationsProjectConfig.numAllocations;
+        return
+            numAllocations > 0 &&
+            maxInvocationsProjectConfig.numInvocationsOnMinter ==
+            numAllocations;
+    }
+
+    /**
      * Get if a project has reached its max invocations.
      * Function is labaled as "safe" because it checks the core contract's
      * invocations and max invocations. If the local max invocations is greater
@@ -334,8 +443,10 @@ library MaxInvocationsLib {
         // get max invocations from core contract
         uint256 coreInvocations;
         uint256 coreMaxInvocations;
-        (coreInvocations, coreMaxInvocations) = MaxInvocationsLib
-            .coreContractInvocationData(_projectId, _coreContract);
+        (coreInvocations, coreMaxInvocations) = coreContractInvocationData(
+            _projectId,
+            _coreContract
+        );
 
         MaxInvocationsProjectConfig
             storage maxInvocationsProjectConfig = getMaxInvocationsProjectConfig(
@@ -397,8 +508,10 @@ library MaxInvocationsLib {
             // if local max invocations were already populated, validate the local state
             uint256 coreMaxInvocations;
             uint256 coreInvocations;
-            (coreInvocations, coreMaxInvocations) = MaxInvocationsLib
-                .coreContractInvocationData(_projectId, _coreContract);
+            (coreInvocations, coreMaxInvocations) = coreContractInvocationData(
+                _projectId,
+                _coreContract
+            );
 
             uint256 localMaxInvocations = maxInvocationsProjectConfig
                 .maxInvocations;

@@ -137,6 +137,15 @@ contract MinterDAExpSettlementV3 is
             _coreContract: _coreContract,
             _sender: msg.sender
         });
+        // @dev guard rail to prevent accidentally adjusting max invocations
+        // after one or more purchases have been made
+        require(
+            MaxInvocationsLib.getNumInvocationsOnMinter(
+                _projectId,
+                _coreContract
+            ) == 0,
+            "Only before purchases"
+        );
         MaxInvocationsLib.manuallyLimitProjectMaxInvocations({
             _projectId: _projectId,
             _coreContract: _coreContract,
@@ -811,6 +820,9 @@ contract MinterDAExpSettlementV3 is
             _msgValue: msg.value,
             _purchaserAddress: msg.sender
         });
+
+        // record allocations and invocations of all mints on this minter
+        MaxInvocationsLib.preMintEffectsAllocations(_projectId, _coreContract);
 
         // INTERACTIONS
         tokenId = minterFilter.mint_joo({

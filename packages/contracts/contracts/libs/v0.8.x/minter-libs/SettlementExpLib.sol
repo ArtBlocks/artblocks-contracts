@@ -4,6 +4,7 @@
 import "./MaxInvocationsLib.sol";
 import "./DAExpLib.sol";
 import "./SplitFundsLib.sol";
+import "../AuthLib.sol";
 import {GenericMinterEventsLib} from "./GenericMinterEventsLib.sol";
 
 import "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
@@ -200,6 +201,36 @@ library SettlementExpLib {
         });
         if (_price != basePrice) {
             require(maxHasBeenInvoked, "Active auction not yet sold out");
+            // if max has been invoked, but all invocations have not been
+            // fulfilled, funny business has been detected (e.g. project max
+            // invocations were reduced on core contract after initial
+            // purchase, purchases were made on a different minter after
+            // initial purchase, etc.), which could artifically inflate
+            // sellout price and harm purchasers. In that case, we should
+            // not revert (since max invocations have been reached), but we
+            // should require admin to be the caller of this function.
+            // Note that if admin determines the artist has been malicious,
+            // admin should replace artist address with a wallet controlled by
+            // admin on the core contract, update payee address on the core,
+            // collect revenues using this function, then distribute any
+            // additional settlement funds to purchasers at admin's discretion.
+            if (
+                !MaxInvocationsLib.getAllAllocationsFulfilled(
+                    _projectId,
+                    _coreContract
+                )
+            ) {
+                AuthLib.onlyCoreAdminACL({
+                    _coreContract: _coreContract,
+                    _sender: msg.sender,
+                    _contract: address(this),
+                    _selector: bytes4(
+                        keccak256(
+                            "distributeArtistAndAdminRevenues(uint256,address)"
+                        )
+                    )
+                });
+            }
         } else {
             // base price of zero indicates no sales, since base price of zero
             // is not allowed when configuring an auction.
