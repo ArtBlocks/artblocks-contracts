@@ -170,10 +170,10 @@ Note that this is an area of active development, and legacy randomizer contracts
 
 The most recent version of the Shared Randomizer contract is deployed at the following addresses:
 
-- Goerli: TBD
 - Mainnet: TBD
+- Goerli Staging: `0x88293a3eef2516855BE0F798630e141D14333423`
+- Arbitrum One: TBD
 - Arbitrum Goerli: TBD
-- Arbitrum: TBD
 
 ## Contract Source Code Verification
 
