@@ -759,27 +759,6 @@ contract MinterDAExpSettlementV3 is
     }
 
     /**
-     * @notice This function is intentionally not implemented for this version
-     * of the minter. Due to potential for unintended consequences, the
-     * function `manuallyLimitProjectMaxInvocations` should be used to manually
-     * and explicitly limit the maximum invocations for a project to a value
-     * other than the core contract's maximum invocations for a project.
-     * @param _coreContract Core contract address for the given project.
-     * @param _projectId Project ID to set the maximum invocations for.
-     */
-    function syncProjectMaxInvocationsToCore(
-        uint256 _projectId,
-        address _coreContract
-    ) public view {
-        AuthLib.onlyArtist({
-            _projectId: _projectId,
-            _coreContract: _coreContract,
-            _sender: msg.sender
-        });
-        revert("Not implemented");
-    }
-
-    /**
      * @notice Purchases a token from project `_projectId` and sets
      * the token's owner to `_to`.
      * @param _to Address to be the new token's owner.
@@ -852,5 +831,26 @@ contract MinterDAExpSettlementV3 is
         });
 
         return tokenId;
+    }
+
+    /**
+     * @notice This function is intentionally not implemented for this version
+     * of the minter. Due to potential for unintended consequences, the
+     * function `manuallyLimitProjectMaxInvocations` should be used to manually
+     * and explicitly limit the maximum invocations for a project to a value
+     * other than the core contract's maximum invocations for a project.
+     * @param _coreContract Core contract address for the given project.
+     * @param _projectId Project ID to set the maximum invocations for.
+     */
+    function syncProjectMaxInvocationsToCore(
+        uint256 _projectId,
+        address _coreContract
+    ) public view {
+        AuthLib.onlyArtist({
+            _projectId: _projectId,
+            _coreContract: _coreContract,
+            _sender: msg.sender
+        });
+        revert("Not implemented");
     }
 }
