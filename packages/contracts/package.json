@@ -40,11 +40,11 @@
     "deploy:shared-minters:arbitrum": "yarn require-low-gas arbitrum && yarn hardhat run --network arbitrum scripts/minter-deployments/shared-minters-deployer.ts",
     "require-low-gas": "yarn hardhat run scripts/require-low-gas.ts --network",
     "pre-commit": "yarn lint",
-    "deploy:deprecated:v3-engine:dev": "yarn codegen && yarn require-low-gas goerli && NODE_ENV=dev yarn hardhat run --network goerli scripts/engine/V3/deprecated/generic-engine-deployer.ts",
+    "deploy:deprecated:dev:v3-engine": "yarn codegen && yarn require-low-gas goerli && NODE_ENV=dev yarn hardhat run --network goerli scripts/engine/V3/deprecated/generic-engine-deployer.ts",
+    "deploy:deprecated:staging:v3-engine": "yarn codegen && yarn require-low-gas goerli && NODE_ENV=staging yarn hardhat run --network goerli scripts/engine/V3/deprecated/generic-engine-deployer.ts",
     "deploy:deprecated:dev-arbitrum:v3-engine": "yarn codegen && yarn require-low-gas arbitrum-goerli && NODE_ENV=arbitrum-dev yarn hardhat run --network arbitrum-goerli scripts/engine/V3/deprecated/generic-engine-deployer.ts",
     "deploy:deprecated:staging-arbitrum:v3-engine": "yarn codegen && yarn require-low-gas arbitrum-goerli && NODE_ENV=arbitrum-staging yarn hardhat run --network arbitrum-goerli scripts/engine/V3/deprecated/generic-engine-deployer.ts",
     "deploy:deprecated:arbitrum:v3-engine": "yarn codegen && yarn require-low-gas arbitrum && NODE_ENV=arbitrum yarn hardhat run --network arbitrum scripts/engine/V3/deprecated/generic-engine-deployer.ts",
-    "deploy:deprecated:staging:v3-engine": "yarn codegen && yarn require-low-gas goerli && NODE_ENV=staging yarn hardhat run --network goerli scripts/engine/V3/deprecated/generic-engine-deployer.ts",
     "deploy:deprecated:mainnet:v3-engine": "yarn codegen && yarn require-low-gas mainnet && NODE_ENV=mainnet yarn hardhat run --network mainnet scripts/engine/V3/deprecated/generic-engine-deployer.ts",
     "deploy:deprecated:goerli:non-shared-minter": "yarn require-low-gas goerli && yarn hardhat run --network goerli scripts/minter-deployments/V3/generic-minter-deployer-v3core.ts",
     "deploy:deprecated:mainnet:non-shared-minter": "yarn require-low-gas mainnet && yarn hardhat run --network mainnet scripts/minter-deployments/V3/generic-minter-deployer-v3core.ts"
