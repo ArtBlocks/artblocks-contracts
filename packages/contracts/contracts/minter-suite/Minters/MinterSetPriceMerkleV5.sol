@@ -53,6 +53,13 @@ pragma solidity 0.8.19;
  * Token-level delegations are configured by the vault owner, and contract-
  * level delegations must be configured for the core token contract as returned
  * by the public immutable variable `genArt721CoreAddress`.
+ * ----------------------------------------------------------------------------
+ * @notice Caution: While Engine projects must be registered on the Art Blocks
+ * Core Registry to assign this minter, this minter does not enforce that a
+ * project is registered when configured or queried. This is primarily for gas
+ * optimization purposes. It is, therefore, possible that fake projects may be
+ * configured on this minter, but they will not be able to mint tokens due to
+ * checks performed by this minter's Minter Filter.
  */
 contract MinterSetPriceMerkleV5 is
     ReentrancyGuard,

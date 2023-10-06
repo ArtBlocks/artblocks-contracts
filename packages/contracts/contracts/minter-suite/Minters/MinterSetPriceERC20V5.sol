@@ -37,6 +37,13 @@ pragma solidity 0.8.19;
  * ----------------------------------------------------------------------------
  * Additional admin and artist privileged roles may be described on other
  * contracts that this minter integrates with.
+ * ----------------------------------------------------------------------------
+ * @notice Caution: While Engine projects must be registered on the Art Blocks
+ * Core Registry to assign this minter, this minter does not enforce that a
+ * project is registered when configured or queried. This is primarily for gas
+ * optimization purposes. It is, therefore, possible that fake projects may be
+ * configured on this minter, but they will not be able to mint tokens due to
+ * checks performed by this minter's Minter Filter.
  */
 contract MinterSetPriceERC20V5 is
     ReentrancyGuard,
