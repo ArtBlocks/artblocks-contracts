@@ -317,7 +317,7 @@ function generateMinterForm(args: GenerateMinterFormArgs): ConfigurationForm {
         coreContractAddress
       );
 
-      await submitTransaction({
+      const { blockHash } = await submitTransaction({
         publicClient: sdk.publicClient,
         walletClient,
         address: minterConfiguration.minter.address as `0x${string}`,
@@ -329,9 +329,14 @@ function generateMinterForm(args: GenerateMinterFormArgs): ConfigurationForm {
       });
 
       onProgress?.(SubmissionStatusEnum.SYNCING);
-      const transactionConfirmedAt = new Date();
+
+      // Get block confirmation timestamp
+      const { timestamp } = await sdk.publicClient.getBlock({ blockHash });
+      const transactionConfirmedAt = new Date(Number(timestamp) * 1000);
 
       const expectedUpdates =
+        schemaWithProjectIdFiltered.transactionDetails
+          .syncCheckFieldsOverride ??
         schemaWithProjectIdFiltered.transactionDetails.args;
 
       // Poll for updates to the configuration

@@ -36,6 +36,7 @@ export const getProjectMinterConfigurationQueryDocument =
       base_price
       currency_address
       currency_symbol
+      max_invocations
       extra_minter_details
       minter {
         address

@@ -19,7 +19,7 @@ export async function submitTransaction({
   onUserAccepted?: () => void;
 }) {
   if (!walletClient.account) {
-    return;
+    throw Error("No account selected");
   }
 
   const hash = await walletClient.writeContract({
@@ -35,13 +35,15 @@ export async function submitTransaction({
 
   if (hash) {
     // If the transaction reverts this will throw an error
-    const { status } = await publicClient.waitForTransactionReceipt({
+    const { status, blockHash } = await publicClient.waitForTransactionReceipt({
       hash,
     });
 
     if (status !== "success") {
       throw new Error("Transaction reverted");
     }
+
+    return { hash, blockHash };
   } else {
     throw new Error("Cannot retrieve transaction hash");
   }

@@ -269,6 +269,8 @@ async function processAllowlistFileToMerkleRoot(
     allowedPrivilegedRolesForProject,
   } = args;
 
+  const bearerToken = `Bearer ${sdk.jwt}`;
+
   // Expect the form value to be a FileList
   if (!(value instanceof FileList && value.length > 0)) {
     throw new Error(
@@ -298,7 +300,7 @@ async function processAllowlistFileToMerkleRoot(
       projectId,
     },
     {
-      Authorization: `Bearer ${sdk.jwt}`,
+      Authorization: bearerToken,
     }
   );
 
@@ -312,15 +314,20 @@ async function processAllowlistFileToMerkleRoot(
   // Get signed s3 upload url for allowlist file
   const { url } = getAllowlistUploadUrlRes.getAllowlistUploadUrl;
 
-  // Upload allowlist file to s3 as a json file
-  await fetch(url, {
-    method: "PUT",
-    body: JSON.stringify(allowlist),
-    headers: {
-      "x-amz-acl": "public-read",
-      "Content-Type": "application/json",
-    },
-  });
+  try {
+    // Upload allowlist file to s3 as a json file
+    await fetch(url, {
+      method: "PUT",
+      body: JSON.stringify(allowlist),
+      headers: {
+        "x-amz-acl": "public-read",
+        "Content-Type": "application/json",
+      },
+    });
+  } catch (e) {
+    console.error(e);
+    throw new Error("Unexpected error uploading allowlist file");
+  }
 
   // Generate merkle root from allowlist
   const merkleRoot = getMerkleRoot(allowlist);
@@ -353,6 +360,7 @@ async function processAllowlistFileToMerkleRoot(
           return "base_user";
         }
       })(),
+      Authorization: bearerToken,
     }
   );
 

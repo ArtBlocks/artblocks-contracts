@@ -5,8 +5,17 @@ import { Abi } from "abitype";
  * TransactionDetails contains information required to call a smart contract function on the blockchain.
  */
 export type TransactionDetails = {
-  /** List of form field names in order that should be passed to function call. */
+  /** List of form field names in order that should be passed to function call.
+   * By default, the values of these fields will be checked to confirm changes
+   * during synchronization.
+   */
   args: string[];
+
+  /**
+   * An optional array of field names that should be checked to confirm changes during synchronization.
+   * If provided, only these fields will be checked instead of the default behavior of checking args.
+   */
+  syncCheckFieldsOverride?: string[];
 
   /** The name of the function to call. */
   functionName: string;
@@ -41,9 +50,44 @@ interface Option {
 }
 
 /**
+ * ValidationConditions is a constant object that defines the possible conditions for validation.
+ * These conditions can be used to determine the validity of a field's value.
+ */
+export const ValidationConditions = {
+  /** The value of the field must be greater than a specified value. */
+  GREATER_THAN: "greaterThan",
+  /** The value of the field must be less than a specified value. */
+  LESS_THAN: "lessThan",
+  /** The value of the field must be greater than or equal to a specified value. */
+  GREATER_THAN_OR_EQUAL: "greaterThanOrEqual",
+  /** The value of the field must be less than or equal to a specified value. */
+  LESS_THAN_OR_EQUAL: "lessThanOrEqual",
+  /** The value of the field must be equal to a specified value. */
+  EQUAL: "equal",
+} as const;
+
+/**
+ * ValidationCondition is a type that represents a validation condition.
+ * It is derived from the keys of the ValidationConditions constant object.
+ */
+type ValidationCondition =
+  (typeof ValidationConditions)[keyof typeof ValidationConditions];
+
+/**
+ * ValidationDependency is an interface that represents a validation dependency.
+ * It contains a field and a condition that the field must meet.
+ */
+interface ValidationDependency {
+  /** The name of the field that is being validated against. */
+  field: string;
+  /** The validation condition that the field must meet. */
+  condition: ValidationCondition;
+}
+
+/**
  * BaseFormFieldAttributes extends ConfigurationSchema7 to describe a basic property in the schema.
  */
-export interface BaseFormFieldSchema extends Omit<JSONSchema7, "properties"> {
+export interface BaseFormFieldSchema extends JSONSchema7 {
   /** Optional display label corresponding to the enum value. */
   displayLabels?: string[];
 
@@ -53,13 +97,10 @@ export interface BaseFormFieldSchema extends Omit<JSONSchema7, "properties"> {
   /** The name of another property that this property depends on. */
   dependsOn?: string;
 
-  /** Optional property indicating that a field is conditionally required. */
-  dependent?: boolean;
-
   /** Optional property indicating how a field should be transformed before submitting. */
   submissionProcessing?: "merkleRoot" | "tokenHolderAllowlist";
 
-  properties?: { [key: string]: BaseFormFieldSchema | boolean } | undefined;
+  validationDependency?: ValidationDependency;
 }
 
 interface FormFieldProperties {

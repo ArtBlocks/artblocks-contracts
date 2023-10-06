@@ -2,6 +2,7 @@ import { PublicClient, WalletClient } from "viem";
 import { Abi, AbiFunction, AbiParameter } from "abitype";
 import {
   z,
+  ZodAny,
   ZodArray,
   ZodBigInt,
   ZodEffects,
@@ -69,6 +70,7 @@ export type SupportedZodSchema =
   | ZodString
   | ZodObject<any>
   | ZodArray<any>
+  | ZodAny
   | ZodEffects<ZodNumber, number, number>
   | ZodEffects<ZodString, string, string>
   | ZodEffects<
@@ -139,6 +141,17 @@ export function formFieldSchemaToZod(
     fullKey: string
   ): SupportedZodSchema {
     let zodProp: SupportedZodSchema;
+
+    // Don't validate file inputs
+    if ("ui:widget" in prop && prop["ui:widget"] === "file") {
+      return z.any();
+    }
+
+    // Don't validate read-only inputs
+    if (prop.readOnly) {
+      return z.any();
+    }
+
     switch (prop.type) {
       case "number":
       case "integer":
@@ -185,6 +198,9 @@ export function formFieldSchemaToZod(
           }
           if (prop.maximum) {
             zodProp = zodProp.max(prop.maximum);
+          }
+          if (prop.multipleOf) {
+            zodProp = zodProp.multipleOf(prop.multipleOf);
           }
         }
 
