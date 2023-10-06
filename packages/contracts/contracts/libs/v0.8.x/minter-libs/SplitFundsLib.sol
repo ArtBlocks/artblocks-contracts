@@ -3,12 +3,12 @@
 
 pragma solidity ^0.8.0;
 
-import "../../../interfaces/v0.8.x/IMinterBaseV0.sol";
-import "../../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
-import "../../../interfaces/v0.8.x/IGenArt721CoreContractV3.sol";
-import "../../../interfaces/v0.8.x/IGenArt721CoreContractV3_Engine.sol";
+import {IMinterBaseV0} from "../../../interfaces/v0.8.x/IMinterBaseV0.sol";
+import {IGenArt721CoreContractV3_Base} from "../../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
+import {IGenArt721CoreContractV3} from "../../../interfaces/v0.8.x/IGenArt721CoreContractV3.sol";
+import {IGenArt721CoreContractV3_Engine} from "../../../interfaces/v0.8.x/IGenArt721CoreContractV3_Engine.sol";
 
-import "@openzeppelin-4.7/contracts/token/ERC20/IERC20.sol";
+import {IERC20} from "@openzeppelin-4.7/contracts/token/ERC20/IERC20.sol";
 
 /**
  * @title Art Blocks Split Funds Library

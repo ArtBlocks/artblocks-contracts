@@ -3,16 +3,16 @@
 
 pragma solidity 0.8.19;
 
-import "../../interfaces/v0.8.x/ISharedMinterSimplePurchaseV0.sol";
-import "../../interfaces/v0.8.x/ISharedMinterV0.sol";
-import "../../interfaces/v0.8.x/IMinterFilterV1.sol";
+import {ISharedMinterSimplePurchaseV0} from "../../interfaces/v0.8.x/ISharedMinterSimplePurchaseV0.sol";
+import {ISharedMinterV0} from "../../interfaces/v0.8.x/ISharedMinterV0.sol";
+import {IMinterFilterV1} from "../../interfaces/v0.8.x/IMinterFilterV1.sol";
 
-import "../../libs/v0.8.x/AuthLib.sol";
-import "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
-import "../../libs/v0.8.x/minter-libs/MaxInvocationsLib.sol";
-import "../../libs/v0.8.x/minter-libs/SetPriceLib.sol";
+import {AuthLib} from "../../libs/v0.8.x/AuthLib.sol";
+import {SplitFundsLib} from "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
+import {MaxInvocationsLib} from "../../libs/v0.8.x/minter-libs/MaxInvocationsLib.sol";
+import {SetPriceLib} from "../../libs/v0.8.x/minter-libs/SetPriceLib.sol";
 
-import "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
+import {ReentrancyGuard} from "@openzeppelin-4.5/contracts/security/ReentrancyGuard.sol";
 
 /**
  * @title Shared, filtered Minter contract that allows tokens to be minted with

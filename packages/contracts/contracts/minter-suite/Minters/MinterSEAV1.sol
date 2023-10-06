@@ -3,19 +3,19 @@
 
 pragma solidity 0.8.19;
 
-import "../../interfaces/v0.8.x/ISharedMinterV0.sol";
-import "../../interfaces/v0.8.x/ISharedMinterSEAV0.sol";
-import "../../interfaces/v0.8.x/IMinterFilterV1.sol";
+import {ISharedMinterV0} from "../../interfaces/v0.8.x/ISharedMinterV0.sol";
+import {ISharedMinterSEAV0} from "../../interfaces/v0.8.x/ISharedMinterSEAV0.sol";
+import {IMinterFilterV1} from "../../interfaces/v0.8.x/IMinterFilterV1.sol";
 
-import "../../libs/v0.8.x/ABHelpers.sol";
-import "../../libs/v0.8.x/AuthLib.sol";
-import "../../libs/v0.8.x/minter-libs/SEALib.sol";
-import "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
-import "../../libs/v0.8.x/minter-libs/MaxInvocationsLib.sol";
+import {ABHelpers} from "../../libs/v0.8.x/ABHelpers.sol";
+import {AuthLib} from "../../libs/v0.8.x/AuthLib.sol";
+import {SEALib} from "../../libs/v0.8.x/minter-libs/SEALib.sol";
+import {SplitFundsLib} from "../../libs/v0.8.x/minter-libs/SplitFundsLib.sol";
+import {MaxInvocationsLib} from "../../libs/v0.8.x/minter-libs/MaxInvocationsLib.sol";
 
-import "@openzeppelin-4.7/contracts/security/ReentrancyGuard.sol";
-import "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
-import "@openzeppelin-4.7/contracts/utils/math/Math.sol";
+import {ReentrancyGuard} from "@openzeppelin-4.7/contracts/security/ReentrancyGuard.sol";
+import {SafeCast} from "@openzeppelin-4.7/contracts/utils/math/SafeCast.sol";
+import {Math} from "@openzeppelin-4.7/contracts/utils/math/Math.sol";
 
 /**
  * @title Filtered Minter contract that allows tokens to be minted with ETH.

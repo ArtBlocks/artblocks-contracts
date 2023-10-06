@@ -3,14 +3,14 @@
 
 pragma solidity ^0.8.0;
 
-import "../../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
-import "../../../interfaces/v0.8.x/IGenArt721CoreContractExposesHashSeed.sol";
-import "../../../interfaces/v0.8.x/IGenArt721CoreContractV3WithSharedRandomizer.sol";
-import "../../../interfaces/v0.8.x/ISharedRandomizerV0.sol";
+import {IGenArt721CoreContractV3_Base} from "../../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
+import {IGenArt721CoreContractExposesHashSeed} from "../../../interfaces/v0.8.x/IGenArt721CoreContractExposesHashSeed.sol";
+import {IGenArt721CoreContractV3WithSharedRandomizer} from "../../../interfaces/v0.8.x/IGenArt721CoreContractV3WithSharedRandomizer.sol";
+import {ISharedRandomizerV0} from "../../../interfaces/v0.8.x/ISharedRandomizerV0.sol";
 
 import {GenericMinterEventsLib} from "./GenericMinterEventsLib.sol";
 
-import "@openzeppelin-4.7/contracts/token/ERC20/IERC20.sol";
+import {IERC20} from "@openzeppelin-4.7/contracts/token/ERC20/IERC20.sol";
 
 /**
  * @title Art Blocks Polyptych Minter Library

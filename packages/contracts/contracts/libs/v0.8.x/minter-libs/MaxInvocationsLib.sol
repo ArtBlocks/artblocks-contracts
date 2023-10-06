@@ -3,11 +3,11 @@
 
 pragma solidity ^0.8.0;
 
-import "../../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
+import {IGenArt721CoreContractV3_Base} from "../../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
 
-import "../ABHelpers.sol";
+import {ABHelpers} from "../ABHelpers.sol";
 
-import "@openzeppelin-4.7/contracts/utils/math/Math.sol";
+import {Math} from "@openzeppelin-4.7/contracts/utils/math/Math.sol";
 
 /**
  * @title Art Blocks Max Invocations Library

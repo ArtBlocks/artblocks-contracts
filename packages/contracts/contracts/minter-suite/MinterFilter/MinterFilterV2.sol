@@ -3,16 +3,17 @@
 
 pragma solidity 0.8.19;
 
-import "../../interfaces/v0.8.x/IMinterFilterV1.sol";
-import "../../interfaces/v0.8.x/ISharedMinterV0.sol";
-import "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
-import "../../interfaces/v0.8.x/ICoreRegistryV1.sol";
+import {IMinterFilterV1} from "../../interfaces/v0.8.x/IMinterFilterV1.sol";
+import {ISharedMinterV0} from "../../interfaces/v0.8.x/ISharedMinterV0.sol";
+import {IGenArt721CoreContractV3_Base} from "../../interfaces/v0.8.x/IGenArt721CoreContractV3_Base.sol";
+import {ICoreRegistryV1} from "../../interfaces/v0.8.x/ICoreRegistryV1.sol";
+import {IAdminACLV0} from "../../interfaces/v0.8.x/IAdminACLV0.sol";
 
-import "../../libs/v0.8.x/Bytes32Strings.sol";
+import {Bytes32Strings} from "../../libs/v0.8.x/Bytes32Strings.sol";
 
-import "@openzeppelin-4.7/contracts/access/Ownable.sol";
-import "@openzeppelin-4.7/contracts/utils/structs/EnumerableMap.sol";
-import "@openzeppelin-4.7/contracts/utils/structs/EnumerableSet.sol";
+import {Ownable} from "@openzeppelin-4.7/contracts/access/Ownable.sol";
+import {EnumerableMap} from "@openzeppelin-4.7/contracts/utils/structs/EnumerableMap.sol";
+import {EnumerableSet} from "@openzeppelin-4.7/contracts/utils/structs/EnumerableSet.sol";
 
 /**
  * @title MinterFilterV2
