@@ -43,3 +43,48 @@ Date: 2023-10-06T16:58:49.523Z
 
 ---
 
+
+# Deployment
+
+Date: 2023-10-06T17:48:09.625Z
+
+## **Network:** mainnet
+
+## **Environment:** mainnet
+
+**Deployment Input File:** `deployments/engine/V3/partners/artwrld/deployment-config.mainnet.ts`
+
+**GenArt721CoreV3_Engine_Flex:** https://etherscan.io/address/0x5fdf5E6CAf7b8b0F64c3612aFd85E9407A7e1389#code
+
+**AdminACLV1:** https://etherscan.io/address/0x630445399a5A698662bD15ec7f1C01d44dC277E0#code
+
+**Engine Registry:** https://etherscan.io/address/0x652490c8BB6e7ec3Fd798537D2F348D7904BBbc2#code
+
+**MinterFilterV1:** https://etherscan.io/address/0xEA503d02D36dd7C4DF205be3F1c18C266DdB3411#code
+
+**Minters:**
+
+**MinterSetPriceV4:** https://etherscan.io/address/0x3ade999397F6BE92a637acDCbfb875c63f4f96DE#code
+
+**MinterDAExpSettlementV1:** https://etherscan.io/address/0x80f2DBb3921FB09D5E95587F52702ea6F3D3B303#code
+
+
+
+**Metadata**
+
+- **Starting Project Id:** 1
+- **Token Name:** Artwrld
+- **Token Ticker:** WRLD
+- **Auto Approve Artist Split Proposals:** false
+- **Render Provider Address, Primary Sales:** 0xFc7C0b521ed8397E4625842eb00828c1A56f2ac1
+- **Platform Provider Address, Primary Sales:** 0xb24EDdc13d67FEa233D3810f7A2426ACAa0AC105
+- **BytecodeStorageReader Library:** 0xf0585dF582A0ad119F1616FB82f3b449a98EeCd5
+
+**Other**
+
+- **Add initial project?:** false
+- **Add initial token?:** false
+- **Image Bucket:** artwrld-mainnet
+
+---
+
